@@ -142,17 +142,17 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
 
 //arbitray limits, change if needed
-#define MAX_2D_VERTICES  0xFFFF //max u16: 65535
-#define MAX_2D_INDICES   3*MAX_2D_VERTICES
-#define MAX_2D_CMDS      1000
-#define UI_LAYERS        11
+#define MAX_TWOD_VERTICES  0xFFFF //max u16: 65535
+#define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
+#define MAX_TWOD_CMDS      1000
+#define TWOD_LAYERS        11
 typedef u32 TwodIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local TwodIndexVk twodVertexCount = 0;
 local TwodIndexVk twodIndexCount  = 0;
-local Vertex2     twodVertexArray[MAX_2D_VERTICES];
-local TwodIndexVk twodIndexArray [MAX_2D_INDICES];
-local TwodIndexVk twodCmdCounts[UI_LAYERS]; //start with 1
-local TwodCmdVk   twodCmdArrays[UI_LAYERS][MAX_2D_CMDS]; //different UI cmd per texture
+local Vertex2     twodVertexArray[MAX_TWOD_VERTICES];
+local TwodIndexVk twodIndexArray [MAX_TWOD_INDICES];
+local TwodIndexVk twodCmdCounts[TWOD_LAYERS]; //start with 1
+local TwodCmdVk   twodCmdArrays[TWOD_LAYERS][MAX_TWOD_CMDS]; //different UI cmd per texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -2832,7 +2832,7 @@ ResetCommands(){
 	{//2D commands
 		twodVertexCount = 0;
 		twodIndexCount  = 0;
-		forI(UI_LAYERS){
+		forI(TWOD_LAYERS){
 			memset(&twodCmdArrays[i][0], 0, sizeof(TwodCmdVk) * twodCmdCounts[i]);
 			twodCmdArrays[i][0].descriptorSet = textures[1].descriptorSet;
 			twodCmdCounts[i] = 1;
@@ -3057,7 +3057,7 @@ BuildCommands(){
 				push.translate.y = -1.0f;
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
-				forX(layer, UI_LAYERS){
+				forX(layer, TWOD_LAYERS){
 					if(twodCmdCounts[layer] > 1){
 						forX(cmd_idx, twodCmdCounts[layer]){
 							scissor.offset.x = (u32)twodCmdArrays[layer][cmd_idx].scissorOffset.x;
@@ -3223,9 +3223,11 @@ void Check2DCmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 		twodCmdArrays[layer][twodCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
 		twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset = twodIndexCount;
 		twodCmdArrays[layer][twodCmdCounts[layer]].textured = textured;
+		twodCmdArrays[layer][twodCmdCounts[layer]].scissorOffset = scissorOffset;
+		twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
 		twodCmdCounts[layer]++;
 	}
-	Assert(twodCmdCounts[layer] <= MAX_2D_CMDS);
+	Assert(twodCmdCounts[layer] <= MAX_TWOD_CMDS);
 }
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -3246,9 +3248,6 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 	twodVertexCount += 3;
 	twodIndexCount += 3;
 	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
-	
 }
 
 void Render::DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -3281,8 +3280,6 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 	twodVertexCount += 4;
 	twodIndexCount += 6;
 	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
@@ -3364,8 +3361,6 @@ void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 la
 	twodVertexCount += 4;
 	twodIndexCount += 6;
 	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 //TODO
@@ -3486,9 +3481,6 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		twodIndexCount += 3;
 		vp += 2; ip += 3;
 	}
-	
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 void Render::
@@ -3524,8 +3516,6 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				twodVertexCount += 4;
 				twodIndexCount += 6;
 				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				pos.x += font->max_width * scale.x;
 			}
 		}break;
@@ -3548,8 +3538,6 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				twodVertexCount += 4;
 				twodIndexCount += 6;
 				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -3589,8 +3577,6 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				twodVertexCount += 4;
 				twodIndexCount += 6;
 				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				pos.x += font->max_width * scale.x;
 			}
 		}break;
@@ -3613,8 +3599,6 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				twodVertexCount += 4;
 				twodIndexCount += 6;
 				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -3629,8 +3613,8 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u
 	
 	Check2DCmdArrays(layer, texture, 1, scissorOffset, scissorExtent);
 	
-	u32       col = PackColorU32(255, 255, 255, 255.f * alpha);
-	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	u32         col = PackColorU32(255, 255, 255, 255.f * alpha);
+	Vertex2*     vp = twodVertexArray + twodVertexCount;
 	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
 	
 	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
@@ -3643,16 +3627,12 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u
 	twodVertexCount += 4;
 	twodIndexCount += 6;
 	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 	
 }
 
-
 void Render::
 DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
-	vec2
-		center = (pos + size) / 2,
+	vec2 center = (pos + size) / 2,
 	p0 = Math::vec2RotateByAngle(rotation, pos              - center) + center,
 	p1 = Math::vec2RotateByAngle(rotation, pos.xAdd(size.x) - center) + center,
 	p2 = Math::vec2RotateByAngle(rotation, pos + size       - center) + center,
@@ -3660,6 +3640,34 @@ DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u3
 	
 	DrawTexture2D(texture, p0, p1, p2, p3, alpha, layer, scissorOffset, scissorExtent);
 }
+
+void Render::
+StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent){
+	twodCmdArrays[layer][twodCmdCounts[layer]].scissorOffset = scissorOffset;
+	twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
+	twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset = twodIndexCount;
+	twodCmdArrays[layer][twodCmdCounts[layer]].textured = (b32)tex;
+	twodCmdCounts[layer]++;
+}
+
+void Render::
+AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount){
+	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
+	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
+	
+	Vertex2*     vp = twodVertexArray + twodVertexCount;
+	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
+
+	memcpy(vp, vertstart, vertcount * sizeof(Vertex2));
+	forI(indexcount) ip[i] = twodVertexCount + indexstart[i];
+
+	twodVertexCount += vertcount;
+	twodIndexCount += indexcount;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += indexcount;
+}
+
+
 
 ///////////////////
 //// @settings ////
@@ -4472,7 +4480,7 @@ Init(){
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
-	forI(UI_LAYERS){ 
+	forI(TWOD_LAYERS){ 
 		twodCmdCounts[i] = 1; 
 		
 	}

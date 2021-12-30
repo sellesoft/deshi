@@ -162,11 +162,10 @@ namespace Render{
 	void DrawText2D(Font* font, wcstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
 	void DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha = 1, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
 	void DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation = 0, f32 alpha = 1, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	
+	void StartNewTwodCmd(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+	void AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount);
 
-	
-	//getters for index and vertex array 
-	
-	
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);
 	void UpdateCameraViewMatrix(mat4 m);
