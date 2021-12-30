@@ -142,15 +142,15 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
 
 //arbitray limits, change if needed
-#define MAX_TWOD_VERTICES  0xFFFF //max u16: 65535
-#define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
+#define MAX_TWOD_VERTICES  0xFFFFF //max u16: 65535
+#define MAX_TWOD_INDICIES   3*MAX_TWOD_VERTICES
 #define MAX_TWOD_CMDS      1000
 #define TWOD_LAYERS        11
 typedef u32 TwodIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local TwodIndexVk twodVertexCount = 0;
 local TwodIndexVk twodIndexCount  = 0;
 local Vertex2     twodVertexArray[MAX_TWOD_VERTICES];
-local TwodIndexVk twodIndexArray [MAX_TWOD_INDICES];
+local TwodIndexVk twodIndexArray [MAX_TWOD_INDICIES];
 local TwodIndexVk twodCmdCounts[TWOD_LAYERS]; //start with 1
 local TwodCmdVk   twodCmdArrays[TWOD_LAYERS][MAX_TWOD_CMDS]; //different UI cmd per texture
 
@@ -3228,6 +3228,9 @@ void Check2DCmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 		twodCmdCounts[layer]++;
 	}
 	Assert(twodCmdCounts[layer] <= MAX_TWOD_CMDS);
+	Assert(twodVertexCount <= MAX_TWOD_VERTICES);
+	Assert(twodIndexCount <= MAX_TWOD_INDICIES);
+
 }
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -3654,7 +3657,7 @@ StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent)
 void Render::
 AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount){
 	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
-	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
+	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICIES);
 	
 	Vertex2*     vp = twodVertexArray + twodVertexCount;
 	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
