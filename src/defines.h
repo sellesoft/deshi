@@ -169,18 +169,22 @@ global_const f32 MIN_F32 = -MAX_F32;
 global_const f64 MAX_F64 = 1.79769313486231e+308;
 global_const f64 MIN_F64 = -MAX_F64;
 
-global_const f32 M_ONETHIRD   = 0.33333333333f;
-global_const f32 M_ONESIXTH   = 0.16666666667f;
-global_const f32 M_EPSILON    = 0.00001f;
-global_const f32 M_FOURTHPI   = 0.78539816339f;
-global_const f32 M_HALFPI     = 1.57079632679f;
-global_const f32 M_PI         = 3.14159265359f;
-global_const f64 M_PId        = 3.14159265358979323846;
-global_const f32 M_2PI        = 6.28318530718f;
-global_const f32 M_TAU        = M_2PI;
-global_const f32 M_E          = 2.71828182846f;
-global_const f32 M_SQRT_TWO   = 1.41421356237f;
-global_const f32 M_SQRT_THREE = 1.73205080757f;
+global_const f32 M_ONETHIRD        = 0.33333333333f;
+global_const f32 M_ONESIXTH        = 0.16666666667f;
+global_const f32 M_EPSILON         = 0.00001f;
+global_const f32 M_FOURTHPI        = 0.78539816339f;
+global_const f32 M_HALFPI          = 1.57079632679f;
+global_const f32 M_PI              = 3.14159265359f;
+global_const f64 M_PId             = 3.14159265358979323846;
+global_const f32 M_2PI             = 6.28318530718f;
+global_const f32 M_TAU             = M_2PI;
+global_const f32 M_E               = 2.71828182846f;
+global_const f32 M_SQRT_TWO        = 1.41421356237f;
+global_const f32 M_SQRT_THREE      = 1.73205080757f;
+global_const f32 M_HALF_SQRT_TWO   = 0.707106781187f;
+global_const f32 M_HALF_SQRT_THREE = 0.866025403784f;
+
+
 
 ///////////////////////// 
 //// common var sizes////
@@ -254,6 +258,8 @@ template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min
 template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
+template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? Min(val+delta, target) : Max(val-delta, target) : target;}
+
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
