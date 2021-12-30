@@ -591,14 +591,29 @@ namespace Math {
 		return line_start + t * lstole;
 	}
 	
-	//return where two lines intersect on the x axis with slope and the y-intercept
-	static vec2 LineIntersect2(float slope1, float ycross1, float slope2, float ycross2){
-		//matN lhs(2,2,{ slope1, ycross1, slope2, ycross2 });
-		//matN rhs(2,1,{ 1, 1 });
-		//matN det = lhs.Inverse() * rhs;
-		//float x = 1 / det(1,0) * det(0,0);
-		//float y = slope1 * x + ycross1;
-		//return vec2(x, y);
+	//TODO(sushi) figure out how this worked
+	//returns where two lines intersect on the x axis with slope and the y-intercept
+	//static vec2 LineIntersect2(float slope1, float ycross1, float slope2, float ycross2){
+	//	matN lhs(2,2,{ slope1, ycross1, slope2, ycross2 });
+	//	matN rhs(2,1,{ 1, 1 });
+	//	matN det = lhs.Inverse() * rhs;
+	//	float x = 1 / det(1,0) * det(0,0);
+	//	float y = slope1 * x + ycross1;
+	//
+	//	f32 x = (ycross1 - ycross2 + slope)
+	//	return vec2(x, y);
+	//}
+
+	static vec2 LineIntersect2(vec2 p1, vec2 p2, vec2 p3, vec2 p4) {
+		f32 m1 = (p2.y - p1.y) / (p2.x - p1.x);
+		f32 m2 = (p4.y - p3.y) / (p4.x - p3.x);
+		f32 b1 = p2.y - m1 * p2.x;
+		f32 b2 = p4.y - m2 * p4.x;
+		f32 x = (b2 - b1) / (m1 - m2);
+		f32 y = m1 * x + b1;
+		return{ x,y };
+
+
 	}
 	
 	static vec3 LineMidpoint(vec3 start, vec3 end){
