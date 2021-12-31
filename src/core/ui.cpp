@@ -135,6 +135,14 @@ struct {
 
 }ui_state;
 
+struct {
+	u32 verticies = 0;
+	u32 indicies = 0;
+
+	u32 draw_cmds = 0;
+	u32 items = 0;
+}ui_stats;
+
 //helper defines
 #define StateHasFlag(flag) ((ui_state.flags) & (flag))
 #define StateHasFlags(flags) (((ui_state.flags) & (flags)) == (flags))
@@ -340,6 +348,7 @@ inline b32 isItemActive(UIItem* item) {
 inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
 	item->drawCmds.add(drawCmd);
+	ui_stats.draw_cmds++;
 	BreakOnDrawCmdCreation;
 }
 
@@ -789,7 +798,6 @@ enum GenShapes : u32 {
 	Shape_Rect,
 }; 
 
-
 pair<u32, u32> shapecounts[] = {
 	{3,3},
 	{4,6},
@@ -800,6 +808,13 @@ pair<u32, u32> shapecounts[] = {
 template<class... T>
 pair<u32, u32> sum_shapes(T... arg) {
 	return { (shapecounts[arg].first + ...),(shapecounts[arg].second + ...) };
+}
+
+template<class... T> 
+void size_drawcmd(UIDrawCmd& drawCmd, T...arg) {
+	auto p = sum_shapes(arg...);
+	drawCmd.vertices.resize(p.first);
+	drawCmd.indicies.resize(p.second);
 }
 
 //3 verts, 3 indicies
@@ -860,7 +875,6 @@ void MakeFilledRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, co
 
 }
 
-
 //8 verts, 24 indicies
 void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thickness, color color, u32 indicieOffset = 0) {
 	Assert(putverts && putindicies);
@@ -881,10 +895,10 @@ void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thic
 	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
 
 	memset(ip, indicieOffset, 24 * u32size);
-	ip[0] += 0; ip[1] += 1; ip[2] += 3;
-	ip[3] += 0; ip[4] += 3; ip[5] += 2;
-	ip[6] += 2; ip[7] += 3; ip[8] += 5;
-	ip[9] += 2; ip[10] += 5; ip[11] += 4;
+	ip[0] += 0;  ip[1] += 1; ip[2] += 3;
+	ip[3] += 0;  ip[4] += 3; ip[5] += 2;
+	ip[6] += 2;  ip[7] += 3; ip[8] += 5;
+	ip[9] += 2;  ip[10] += 5; ip[11] += 4;
 	ip[12] += 4; ip[13] += 5; ip[14] += 7;
 	ip[15] += 4; ip[16] += 7; ip[17] += 6;
 	ip[18] += 6; ip[19] += 7; ip[20] += 1;
@@ -899,6 +913,8 @@ void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thic
 	vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
 	vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
 }
+
+
 
 
 //@Primitive Items

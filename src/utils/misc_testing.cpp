@@ -163,7 +163,7 @@ void random_walk_avoid() {
 }
 
 void vector_field() {
-	f32 precision = 80;
+	f32 precision = 100;
 	static f32 zoom = 20;
 	if (DeshInput->ScrollDown()) zoom++;
 	if (DeshInput->ScrollUp()) zoom--;
@@ -193,10 +193,10 @@ void vector_field() {
 	static vec2 target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
 	
 	auto step = [&](vec2 pos) {
-		vec2 tc = (target - pos).normalized() / zoom;
+		vec2 tc = (DeshWinSize / 2 - pos).normalized() / zoom;
 		f32 x = tc.x, y = tc.y;
-		//vec2 tm = mp - pos;// - DeshWinSize / 2;
-		return vec2(sin(x), cos(y));
+		//vec2 tm = mp - pos;// - ;
+		return vec2(y, -x);
 	};
 
 	if (TIMER_END(vft) > 1000) {
