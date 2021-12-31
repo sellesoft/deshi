@@ -89,7 +89,8 @@ struct Edge {
 	//intersection and then seeing if that point lies on either of them
 	b32 edge_intersect(Edge e) {
 		if (slope() == e.slope() && (!on_edge(e.p[0]) || !on_edge(e.p[1]))) { return false; }
-		vec2 cross = Math::LineIntersect2(slope(), ycross(), e.slope(), e.ycross());
+		//vec2 cross = Math::LineIntersect2(slope(), ycross(), e.slope(), e.ycross());
+		vec2 cross = Math::LineIntersect2(p[!lead], p[lead], e.p[!e.lead], e.p[e.lead]);
 		if (within_domain(cross) && within_range(cross) &&
 			e.within_domain(cross) && e.within_range(cross)) {
 			return true;

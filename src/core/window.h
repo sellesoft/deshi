@@ -73,5 +73,6 @@ struct Window{
 //global_ window pointer
 extern Window* g_window;
 #define DeshWindow g_window
+#define DeshWinSize g_window->dimensions
 
 #endif //DESHI_WINDOW_H

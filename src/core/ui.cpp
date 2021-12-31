@@ -135,6 +135,14 @@ struct {
 
 }ui_state;
 
+struct {
+	u32 verticies = 0;
+	u32 indicies = 0;
+
+	u32 draw_cmds = 0;
+	u32 items = 0;
+}ui_stats;
+
 //helper defines
 #define StateHasFlag(flag) ((ui_state.flags) & (flag))
 #define StateHasFlags(flags) (((ui_state.flags) & (flags)) == (flags))
@@ -206,10 +214,22 @@ UIWindow* break_window_item = 0;
 u32 item_idx = -1;
 u32 item_layer = -1;
 
+//for breaking on a drawCmd
+u32 break_drawCmd_create_hash = -1;
+u32 break_drawCmd_draw_hash = -1;
+
 #ifdef DESHI_INTERNAL
 #define BreakOnItem if(break_window_item && break_window_item == curwin && curwin->items[item_layer].count == item_idx){ DebugBreakpoint;}
 #else
 #define BreakOnItem
+#endif
+
+#ifdef DESHI_INTERNAL
+#define BreakOnDrawCmdCreation if(break_drawCmd_create_hash == drawCmd.hash) {DebugBreakpoint;}
+#define BreakOnDrawCmdDraw     if(break_drawCmd_draw_hash == drawCmd.hash) {DebugBreakpoint;}
+#else
+#define BreakOnDrawCmdCreation
+#define BreakOnDrawCmdDraw 
 #endif
 
 
@@ -328,6 +348,8 @@ inline b32 isItemActive(UIItem* item) {
 inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
 	item->drawCmds.add(drawCmd);
+	ui_stats.draw_cmds++;
+	BreakOnDrawCmdCreation;
 }
 
 //internal master cursor controller
@@ -521,7 +543,7 @@ UIStyle& UI::GetStyle(){
 }
 
 UIWindow* UI::GetWindow() {
-    return curwin;
+	return curwin;
 }
 
 vec2 UI::GetLastItemPos() {
@@ -767,23 +789,141 @@ void DebugText(vec2 pos, const char* text, color col = Color_White) {
 	debugCmds.add(dc);
 }
 
+
+//@Shape Generators
+enum GenShapes : u32 {
+	Shape_FilledTriangle,
+	Shape_Line,
+	Shape_FilledRect,
+	Shape_Rect,
+}; 
+
+pair<u32, u32> shapecounts[] = {
+	{3,3},
+	{4,6},
+	{4,6},
+	{8,24},
+};
+
+template<class... T>
+pair<u32, u32> sum_shapes(T... arg) {
+	return { (shapecounts[arg].first + ...),(shapecounts[arg].second + ...) };
+}
+
+template<class... T> 
+void size_drawcmd(UIDrawCmd& drawCmd, T...arg) {
+	auto p = sum_shapes(arg...);
+	drawCmd.vertices.resize(p.first);
+	drawCmd.indicies.resize(p.second);
+}
+
+//3 verts, 3 indicies
+void MakeFilledTriangle(Vertex2* putverts, u32* putindicies, vec2 p1, vec2 p2, vec2 p3, color color, u32 indicieOffset = 0) {
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32*     ip = putindicies;
+
+	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
+}
+
+//4 verts, 6 indicies
+void MakeLine(Vertex2* putverts, u32* putindicies, vec2 start, vec2 end, f32 thickness, color color, u32 indicieOffset = 0) {
+	Assert(putverts && putindicies);
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32* ip = putindicies;
+
+	vec2 ott = end - start;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	ip[3] = indicieOffset; ip[4] = indicieOffset + 2; ip[5] = indicieOffset + 3;
+	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+	vp[0].pos += norm * thickness / 2;
+	vp[1].pos += norm * thickness / 2;
+	vp[2].pos -= norm * thickness / 2;
+	vp[3].pos -= norm * thickness / 2;
+}
+
+//4 verts, 6 indicies
+void MakeFilledRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, color color, u32 indicieOffset = 0) {
+	Assert(putverts && putindicies);
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32*     ip = putindicies;
+
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = pos + vec2(0, size.y);
+	vec2 tr = pos + vec2(size.x, 0);
+
+	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	ip[3] = indicieOffset; ip[4] = indicieOffset + 2; ip[5] = indicieOffset + 3;
+	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+}
+
+//8 verts, 24 indicies
+void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thickness, color color, u32 indicieOffset = 0) {
+	Assert(putverts && putindicies);
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32* ip = putindicies;
+
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = pos + vec2(0, size.y);
+	vec2 tr = pos + vec2(size.x, 0);
+
+	f32 sqt = sqrtf(thickness);
+	vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 bro = sqt * vec2(M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
+	vec2 tro = sqt * vec2(M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
+
+	memset(ip, indicieOffset, 24 * u32size);
+	ip[0] += 0;  ip[1] += 1; ip[2] += 3;
+	ip[3] += 0;  ip[4] += 3; ip[5] += 2;
+	ip[6] += 2;  ip[7] += 3; ip[8] += 5;
+	ip[9] += 2;  ip[10] += 5; ip[11] += 4;
+	ip[12] += 4; ip[13] += 5; ip[14] += 7;
+	ip[15] += 4; ip[16] += 7; ip[17] += 6;
+	ip[18] += 6; ip[19] += 7; ip[20] += 1;
+	ip[21] += 6; ip[22] += 1; ip[23] += 0;
+
+	vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = tr + tro; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = tr + blo; vp[3].uv = { 0,0 }; vp[3].color = col;
+	vp[4].pos = br + bro; vp[4].uv = { 0,0 }; vp[4].color = col;
+	vp[5].pos = br + tlo; vp[5].uv = { 0,0 }; vp[5].color = col;
+	vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
+	vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
+}
+
+
+
+
 //@Primitive Items
 
 
-
-//rectangle
-
-
-//TODO(sushi) decide if abstract objs should be placed in window space or screen space
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Rectangle};
-	drawCmd.position = vec2::ZERO;
-	drawCmd.dimensions = dimen;
-	drawCmd.color = color;
-	
-	item.position = pos;
-	item.size = dimen;
+
 	
 	item.drawCmds.add(drawCmd);
 	curwin->items[ui_state.layer].add(item);
@@ -1664,12 +1804,12 @@ void UI::Separator(f32 height) {
 
 
 //final input text
-b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
+b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
 	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
 	
-	size_t charCount = strlen(buff);
+	upt charCount = strlen(buff);
 	
 	item->position = position;
 	
@@ -1882,8 +2022,15 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text};
 		drawCmd.position = textStart;
-		drawCmd.text = string(buff);
-		drawCmd.color = style.colors[UIStyleCol_Text];
+		if (preview && !buff[0]) {
+			drawCmd.text = string(preview);
+			drawCmd.color = style.colors[UIStyleCol_Text];
+			drawCmd.color.a = floor(0.5f * 255);
+		}
+		else {
+			drawCmd.text = string(buff);
+			drawCmd.color = style.colors[UIStyleCol_Text];
+		}
 		drawCmd.font = style.font;
 		
 		AddDrawCmd(item, drawCmd);
@@ -1921,22 +2068,16 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	return false;
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags) {
-	vec2 position = PositionForNewItem();
-	
-	return InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callback, UIInputTextFlags flags) {
-	vec2 position = PositionForNewItem();
-	
-	return InputTextCall(label, buffer, buffSize, position, callback, flags, 1);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, callback, flags, 1);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	vec2 position = PositionForNewItem();
-	
-	if (InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1)) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
+	if (InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
 	}
@@ -1944,21 +2085,51 @@ b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextStat
 	return false;
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, callback, flags, 0);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, pos, preview, callback, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	if (InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0)) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
+	if (InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
 	}
 	getInputTextState = inputTexts.at(label);
 	return false;
+}
+
+//this doesnt need to be an enum at this point,
+//but im making it one incase this function becomes more complicated in the future
+enum CustomItemStage_{
+	CISNone = 0,
+	CISItemBegan = 1 << 0,
+	CISItemAdvancedCursor = 1 << 1,
+}; typedef u32 CustomItemStage;
+CustomItemStage cistage = CISNone;
+
+//@BeginCustomItem
+UIItem* UI::BeginCustomItem(u32 layeroffset) {
+	Assert(!cistage, "attempt to start a custom item");
+	AddFlag(cistage, CISItemBegan);
+	return BeginItem(UIItemType_Custom, layeroffset);
+}
+
+void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {
+	Assert(HasFlag(cistage, CISItemBegan), "attempt to advance a custom item who has not begun!");
+	AddFlag(cistage, CISItemAdvancedCursor);
+	AdvanceCursor(item, move_cursor);
+
+}
+
+
+void UI::EndCustomItem() {
+	Assert(HasFlag(cistage, CISItemBegan), "attempt to end a custom item that hasnt been started");
+	Assert(HasFlag(cistage, CISItemAdvancedCursor), "attempt to end a custom item who hasnt advanced the cursor yet");
+	cistage = CISNone;
 }
 
 
@@ -2648,10 +2819,14 @@ void EndCall() {
 	
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
 	UIItem* postitem = BeginItem(UIItemType_PostItems);
-	
+
 	preitem->position = vec2::ZERO;
 	postitem->position = vec2::ZERO;
 	
+	preitem->size  = curwin->dimensions;
+	postitem->size = curwin->dimensions;
+
+
 	vec2 mp = DeshInput->mousePos;
 	
 	curwin->minSizeForFit = CalcWindowMinSize();
@@ -2787,18 +2962,13 @@ void UI::End() {
 }
 
 void UI::EndChild() {
-	//Assert(!StateHasFlag(UISRowBegan), "Attempted to end a window with a Row in progress!");
-	//Assert(!StateHasFlag(UISComboBegan), "Attempted to end a window with a Combo in progress!");
-	
 	UIWindow* parent = curwin->parent;
 	vec2 scrollBarAdjust = vec2((CanScrollY(parent) ? style.scrollBarYWidth : 0), (CanScrollX(parent) ? style.scrollBarXHeight : 0));
 	curwin->visibleRegionStart = Max(parent->visibleRegionStart, curwin->position);
 	curwin->visibleRegionSize = ClampMin(Min(parent->visibleRegionStart + parent->visibleRegionSize - scrollBarAdjust, curwin->position + curwin->dimensions) - curwin->visibleRegionStart, vec2::ZERO);
 
 	EndCall();
-	indentStack.pop();
-
-	
+	indentStack.pop();	
 }
 
 void UI::EndPopOut() {
@@ -2824,10 +2994,6 @@ void UI::SetNextWindowSize(vec2 size) {
 void UI::SetNextWindowSize(f32 x, f32 y) {
 	NextWinSize = vec2(x, y);
 }
-
-//void UI::WinSetName(const char* name) {
-//	curwin->name = name;
-//}
 
 b32 UI::IsWinHovered() {
 	return WinHovered(curwin);
@@ -2861,20 +3027,56 @@ inline void MetricsDebugItem() {
 
 	enum DebugItemState {
 		None,
+		InspectingWindowPreItems,
 		InspectingWindowItems,
-		InpectingItem
+		InspectingWindowPostItems,
+		InspectingItem
 	};
 
 	persist DebugItemState distate = None;
 
-	persist b32       debugging_item = 0;
-	persist UIItem*   item;
+	persist UIItem    iteml;
+	persist UIWindow* debugee = 0;
 	persist vec2      mplatch;
 
-	if (distate) {
+	if (distate != None && distate != InspectingItem) {
+		AllowInputs;
 		Text("Press ESC to cancel");
+		Text("A: Select Pre Items");
+		Text("S: Select Items");
+		Text("D: Select Post Items");
+
+		if (DeshInput->KeyPressed(Key::A)) distate = InspectingWindowPreItems;
+		if (DeshInput->KeyPressed(Key::S)) distate = InspectingWindowItems;
+		if (DeshInput->KeyPressed(Key::D)) distate = InspectingWindowPostItems;
+
 		if (DeshInput->KeyPressed(Key::ESCAPE)) distate = None;
 	}
+
+	auto check_item = [&](UIItem& item) {
+		vec2 ipos = hovered->position + item.position;
+		if (MouseInArea(ipos, item.size)) {
+
+			DebugRect(ipos, item.size);
+			PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
+			BeginPopOut("MetricsDebugItemPopOut", ipos.xAdd(item.size.x) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
+
+			Text(UIItemTypeStrs[item.type], UITextFlags_NoWrap);
+			Text(toStr("DrawCmds: ", item.drawCmds.count).str, UITextFlags_NoWrap);
+
+			EndPopOut();
+			PopVar();
+
+			if (DeshInput->LMousePressed()) {
+				mplatch = ipos.xAdd(item.size.x);
+				iteml = item;
+				distate = InspectingItem;
+				debugee = hovered;
+			}
+			return true;
+		}
+		return false;
+	};
 
 	switch (distate) {
 		case None: {
@@ -2883,26 +3085,20 @@ inline void MetricsDebugItem() {
 				distate = InspectingWindowItems;
 			}
 		}break;
+		case InspectingWindowPreItems: {
+			if (hovered) {
+				for (UIItem& item : hovered->preItems) {
+					DebugRect(item.position + hovered->position, item.size);
+					check_item(item);
+				}
+			}
+		}break;
 		case InspectingWindowItems: {
-			
 			if (hovered) {
 				b32 item_found = 0;
 				forI(UI_WINDOW_ITEM_LAYERS) {
 					for (UIItem& item : hovered->items[i]) {
-						vec2 ipos = hovered->position + item.position;
-						if (MouseInArea(ipos, item.size)) {
-							item_found = 1;
-							DebugRect(ipos, item.size);
-							PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
-							BeginPopOut("MetricsDebugItemPopOut", ipos.xAdd(item.size.x) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
-
-							Text(UIItemTypeStrs[item.type], UITextFlags_NoWrap);
-							Text(toStr("DrawCmds: ", item.drawCmds.count).str, UITextFlags_NoWrap);
-
-							EndPopOut();
-							PopVar();
-
-						}
+						item_found = check_item(item);
 					}
 				}
 				//if we are mousing over empty space in a child window, highlight the child window
@@ -2911,16 +3107,82 @@ inline void MetricsDebugItem() {
 					PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
 					BeginPopOut("MetricsDebugItemPopOut", hovered->position.xAdd(hovered->width) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
 
-					Text("Child Window", UITextFlags_NoWrap);
+					Text(toStr("Child Window ", hovered->name).str, UITextFlags_NoWrap);
 
 					EndPopOut();
 					PopVar();
 				}
 			}
 		}break;
+		case InspectingWindowPostItems: {
+			if (hovered) {
+				for (UIItem& item : hovered->postItems) {
+					check_item(item);
+				}
+			}
+		}break;
+		case InspectingItem: {
+			vec2 ipos = iteml.position + debugee->position;
+			
+			
+			PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
+			//PushColor(UIStyleCol_WindowBg, color(50, 50, 50));
+			BeginPopOut("MetricsDebugItemPopOut", mplatch - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoInteract);
+
+			Text(UIItemTypeStrs[iteml.type], UITextFlags_NoWrap);
+			Text(toStr("DrawCmds: ", iteml.drawCmds.count).str, UITextFlags_NoWrap);
+			Text("Select to break on drawCmd", UITextFlags_NoWrap);
+
+			PushColor(UIStyleCol_WindowBg, color(30, 30, 30));
+			BeginChild("MetricsDebugItemPopOutDrawCmdChild", vec2(0,0), UIWindowFlags_NoBorder | UIWindowFlags_FitAllElements);
+
+			BeginRow(3, style.buttonHeightRelToFont* style.fontHeight);
+			RowSetupRelativeColumnWidths({ 1.1,1.1,1.1 });
+			for (UIDrawCmd& dc : iteml.drawCmds) {
+				Text(toStr(UIDrawTypeStrs[dc.type]).str, UITextFlags_NoWrap);
+				
+				if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+					switch (dc.type) {
+						case UIDrawType_Image:
+						case UIDrawType_Rectangle:
+						case UIDrawType_FilledRectangle: {
+							DebugRect(dc.position, dc.dimensions);
+						}break;
+						case UIDrawType_Circle:
+						case UIDrawType_CircleFilled: {
+							DebugCircle(dc.position, dc.thickness);
+						}break;
+						case UIDrawType_Line: {
+							vec2 up = Min(dc.position, dc.position2);
+							DebugRect(up, Max(dc.position, dc.position2) - up);
+						}break;
+						case UIDrawType_Text: {
+							DebugRect(dc.position, CalcTextSize(dc.text));
+						}break;
+					}
+				}
+
+				WinSetHovered(curwin);
+				if (Button("Creation")) {
+					break_drawCmd_create_hash = dc.hash;
+				}
+				if (Button("Draw")) {
+					break_drawCmd_draw_hash = dc.hash;
+				}
+				WinUnSetHovered(curwin);
+			}
+			EndRow();
+
+			EndChild();
+			EndPopOut();
+			PopColor();
+			PopVar();
+		}break;
 
 	}
 
+	if (distate) PreventInputs;
+	else AllowInputs;
 }
 
 inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {
@@ -3684,6 +3946,8 @@ void UI::Init() {
 	deshiStage |= DS_UI;
 	
 	TIMER_START(t_s);
+
+	
 	
 	curwin = new UIWindow();
 	curwin->name = "Base";
@@ -3825,12 +4089,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				if(drawCmd.useWindowScissor)
 					dcse += Min(winScissorOffset, vec2::ZERO);
 
-				DebugRect(winScissorOffset, winScissorExtent);
-				DebugRect(vec2::ONE * 300, dcse, Color_Blue);
-
-
 			}break;
-			
 		}
 		
 		dcse = ClampMin(dcse, vec2::ZERO);
@@ -3852,8 +4111,9 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		drawCmd.position = dcpos;
 		drawCmd.position2 = dcpos2;
 		drawCmd.thickness = dct;
+		BreakOnDrawCmdDraw;
 #endif
-		
+
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
 				Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
@@ -3961,7 +4221,8 @@ void CleanUpWindow(UIWindow* window) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
-	
+
+
 	
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
@@ -4089,7 +4350,7 @@ void UI::Update() {
 	}
 	debugCmds.clear();
 	
-	if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
+	//if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
 	
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);

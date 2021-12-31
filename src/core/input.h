@@ -157,6 +157,7 @@ struct Input{
 		if      (realScrollY < 0) newKeyState[MouseButton::SCROLLDOWN] = 1;
 		else if (realScrollY > 0) newKeyState[MouseButton::SCROLLUP] = 1;
 		else    { newKeyState[MouseButton::SCROLLDOWN] = 0; newKeyState[MouseButton::SCROLLUP] = 0; }
+		scrollY = realScrollY;
 		realScrollY = 0;
 		DeshTime->inputTime = TIMER_END(t_d);
 	}

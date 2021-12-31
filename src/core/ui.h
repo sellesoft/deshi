@@ -291,6 +291,11 @@ global_ const char* UIDrawTypeStrs[] = {
 	"Image",
 };
 
+#define UIDRAWCMD_MAX_VERTICES 0xFFFF
+#define UIDRAWCMD_MAX_INDICIES UIDRAWCMD_MAX_VERTICES * 3
+
+struct UIItem;
+
 //draw commands store what kind of command it is, and info relative to that command
 //this is to be stored on an array on UIWindow and determines what elements it draws when
 //we do the rendering pass
@@ -304,7 +309,16 @@ struct UIDrawCmd {
 	color      color; //draw cmds have either a texture or a color
 	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
 	u32 subdivisions; //circle subdivisons
-	
+
+	//TODO(sushi) eventually use static arrays when we get an idea of how large these usually are
+	//Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
+	//u32     vertcount;
+	//u32     indices[UIDRAWCMD_MAX_INDICIES];
+	//u32     indexcount;
+
+	array<Vertex2> vertices;
+	array<u32>     indicies;
+
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
@@ -321,7 +335,9 @@ struct UIDrawCmd {
 	b32  overrideScissorRules = false;
 	
 	//for matching draw cmds in debug
-	u32 hash = MAX_U32;
+	u32 hash = 0;
+	
+	UIItem* parent = 0;
 };
 
 enum UIItemType : u32 {
@@ -654,14 +670,17 @@ namespace UI {
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
 	//InputText item. This should only be used if you have a good reason to!
-	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
-	
-	
+	b32 InputText(const char* label, char* buffer, u32 buffSize, const char* preview = 0, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, const char* preview = 0, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview = 0, UIInputTextFlags flags = 0);
+
+	UIItem* BeginCustomItem(u32 layeroffset = 0);
+	void    CustomItemAdvanceCursor(UIItem* item, b32 move_cursor = 1);
+	void    EndCustomItem();
+
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, f32 style);

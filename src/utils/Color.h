@@ -14,7 +14,7 @@
 #define COLORU32_ASHIFT 24
 #define PackColorU32(R,G,B,A) PackU32(R,G,B,A)
 
-#define RANDCOL color(rand() % 255, rand() % 255, rand() % 255)
+#define randcolor color(rand() % 255, rand() % 255, rand() % 255)
 
 struct color{
 	union{

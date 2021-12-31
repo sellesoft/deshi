@@ -9,7 +9,7 @@ struct ModelCmdGl{
 	mat4  matrix;
 };
 
-struct UICmdGl{
+struct TwodCmdGl{
 	u16 indexOffset;
 	u16 indexCount;
 	vec2 scissorOffset;
@@ -117,17 +117,17 @@ local array<MaterialGl> glMaterials(deshi_allocator);
 //// @commands ////
 ///////////////////
 //arbitray limits, change if needed
-#define MAX_UI_VERTICES 0xFFFF //max u16: 65535
-#define MAX_UI_INDICES  3*MAX_UI_VERTICES
-#define MAX_UI_CMDS     1000
-#define UI_LAYERS       11
+#define MAX_TWOD_VERTICES 0xFFFF //max u16: 65535
+#define MAX_TWOD_INDICES  3*MAX_TWOD_VERTICES
+#define MAX_TWOD_CMDS     1000
+#define TWOD_LAYERS       11
 typedef u32 UIIndexGl; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
-local UIIndexGl uiVertexCount = 0;
-local UIIndexGl uiIndexCount  = 0;
-local Vertex2   uiVertexArray[MAX_UI_VERTICES];
-local UIIndexGl uiIndexArray [MAX_UI_INDICES];
-local UIIndexGl uiCmdCounts[UI_LAYERS];
-local UICmdGl   uiCmdArrays[UI_LAYERS][MAX_UI_CMDS];  //different UI cmd per font/texture
+local UIIndexGl twodVertexCount = 0;
+local UIIndexGl twodIndexCount  = 0;
+local Vertex2   twodVertexArray[MAX_TWOD_VERTICES];
+local UIIndexGl twodIndexArray[MAX_TWOD_INDICES];
+local UIIndexGl twodCmdCounts[TWOD_LAYERS];
+local TwodCmdGl twodCmdArrays[TWOD_LAYERS][MAX_TWOD_CMDS];  //different UI cmd per font/texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -306,8 +306,8 @@ DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args
 local void
 SetupCommands(){
 	//ui vertex and index buffers
-	u64 ui_vb_size = Max(1000*sizeof(Vertex2),   uiVertexCount * sizeof(Vertex2));
-	u64 ui_ib_size = Max(3000*sizeof(UIIndexGl), uiIndexCount  * sizeof(UIIndexGl));
+	u64 ui_vb_size = Max(1000*sizeof(Vertex2),   twodVertexCount * sizeof(Vertex2));
+	u64 ui_ib_size = Max(3000*sizeof(UIIndexGl), twodIndexCount  * sizeof(UIIndexGl));
 	if(ui_vb_size && ui_ib_size){
 		//create vertex array object and buffers if they dont exist
 		if(uiBuffers.vao_handle == 0){
@@ -338,8 +338,8 @@ SetupCommands(){
 		}
 		
 		//fill buffers
-		glBufferSubData(GL_ARRAY_BUFFER,         0, ui_vb_size, uiVertexArray);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ui_ib_size, uiIndexArray);
+		glBufferSubData(GL_ARRAY_BUFFER,         0, ui_vb_size, twodVertexArray);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ui_ib_size, twodIndexArray);
 	}
 	
 	//temp mesh vertex and index buffers
@@ -392,11 +392,11 @@ SetupCommands(){
 local void
 ResetCommands(){
 	{//UI commands
-		uiVertexCount = 0;
-		uiIndexCount  = 0;
+		twodVertexCount = 0;
+		twodIndexCount  = 0;
 		forX(layer, 9){
-			memset(&uiCmdArrays[layer][0], 0, sizeof(UICmdGl) * uiCmdCounts[layer]);
-			uiCmdCounts[layer] = 1;
+			memset(&twodCmdArrays[layer][0], 0, sizeof(TwodCmdGl) * twodCmdCounts[layer]);
+			twodCmdCounts[layer] = 1;
 		}
 	}
 	
@@ -725,18 +725,18 @@ vec2 prevScissorOffset = vec2::ZERO;
 vec2 prevScissorExtent = vec2::ZERO;
 
 void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset, vec2 scissorExtent){
-	if((uiCmdArrays[layer][uiCmdCounts[layer] - 1].textured != textured)
-	   || ((tex) ? uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != tex->idx : 0)
+	if((twodCmdArrays[layer][twodCmdCounts[layer] - 1].textured != textured)
+	   || ((tex) ? twodCmdArrays[layer][twodCmdCounts[layer] - 1].texIdx != tex->idx : 0)
 	   || (scissorOffset != prevScissorOffset)   //im doing these 2 because we have to know if we're drawing in a new window
 	   || (scissorExtent != prevScissorExtent)){ //and you could do text last in one, and text first in another {  
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;         //NOTE null_font is the default texture for 2D items, as its just a white square
-		uiCmdArrays[layer][uiCmdCounts[layer]].texIdx = (tex) ? tex->idx : 1;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdArrays[layer][uiCmdCounts[layer]].textured = textured;
-		uiCmdCounts[layer]++;
+		twodCmdArrays[layer][twodCmdCounts[layer]].texIdx = (tex) ? tex->idx : 1;
+		twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset = twodIndexCount;
+		twodCmdArrays[layer][twodCmdCounts[layer]].textured = textured;
+		twodCmdCounts[layer]++;
 	}
-	Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
+	Assert(twodCmdCounts[layer] <= MAX_TWOD_CMDS);
 }
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -746,19 +746,19 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	UIIndexGl* ip = twodIndexArray + twodIndexCount;
 	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
 	
-	uiVertexCount += 3;
-	uiIndexCount += 3;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+	twodVertexCount += 3;
+	twodIndexCount += 3;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 	
 }
 
@@ -779,21 +779,21 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	UIIndexGl* ip = twodIndexArray + twodIndexCount;
 	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+	ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
 	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+	twodVertexCount += 4;
+	twodIndexCount += 6;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
@@ -854,14 +854,14 @@ void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 la
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	UIIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
 	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+	ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -872,11 +872,11 @@ void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 la
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
 	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+	twodVertexCount += 4;
+	twodIndexCount += 6;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -889,8 +889,8 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 	f32 halfthick = thickness / 2;
 	
 	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	UIIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	{// first point
 		
@@ -900,14 +900,14 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
 		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
 		
-		ip[0] = uiVertexCount;
-		ip[1] = uiVertexCount + 1;
-		ip[3] = uiVertexCount;
+		ip[0] = twodVertexCount;
+		ip[1] = twodVertexCount + 1;
+		ip[3] = twodVertexCount;
 		
-		uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
+		twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
 		
-		uiVertexCount += 2;
-		uiIndexCount += 3;
+		twodVertexCount += 2;
+		twodIndexCount += 3;
 		vp += 2;
 	}
 	
@@ -956,20 +956,20 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 			ip[ipidx + 2] =
 			ip[ipidx + 4] =
 			ip[ipidx + 7] =
-			uiVertexCount;
+			twodVertexCount;
 		
 		ip[ipidx + 3] =
 			ip[ipidx + 5] =
-			uiVertexCount + 1;
+			twodVertexCount + 1;
 		
 		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 0, 0, 255);
 		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 0, 255, 255);
 		
-		uiVertexCount += 2;
-		uiIndexCount += 6;
+		twodVertexCount += 2;
+		twodIndexCount += 6;
 		vp += 2;
 		
-		uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+		twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
 		
 	}
 	
@@ -982,19 +982,19 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		
 		//set final indicies by pattern
 		u32 ipidx = 6 * (points.count - 2) + 2;
-		ip[ipidx + 0] = uiVertexCount;
-		ip[ipidx + 2] = uiVertexCount;
-		ip[ipidx + 3] = uiVertexCount + 1;
+		ip[ipidx + 0] = twodVertexCount;
+		ip[ipidx + 2] = twodVertexCount;
+		ip[ipidx + 3] = twodVertexCount + 1;
 		
-		uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
+		twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
 		
-		uiVertexCount += 2;
-		uiIndexCount += 3;
+		twodVertexCount += 2;
+		twodIndexCount += 3;
 		vp += 2; ip += 3;
 	}
 	
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 void Render::
@@ -1009,8 +1009,8 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		case FontType_BDF: case FontType_NONE:{
 			forI(text.count){
 				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				Vertex2*   vp = twodVertexArray + twodVertexCount;
+				UIIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				f32 w = font->max_width * scale.x;
 				f32 h = font->max_height * scale.y;
@@ -1020,18 +1020,18 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
 				
-				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+				ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff+font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff+font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff+font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff+font->uvOffset }; vp[3].color = col;
 				
-				uiVertexCount += 4;
-				uiIndexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+				twodVertexCount += 4;
+				twodIndexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				
 				pos.x += font->max_width * scale.x;
 			}
@@ -1040,23 +1040,23 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		case FontType_TTF:{
 			forI(text.count){
 				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				Vertex2*   vp = twodVertexArray + twodVertexCount;
+				UIIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
-				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+				ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 				vp[0].pos={q.x0,q.y0}; vp[0].uv={q.s0,q.t0+font->uvOffset}; vp[0].color=col;
 				vp[1].pos={q.x1,q.y0}; vp[1].uv={q.s1,q.t0+font->uvOffset}; vp[1].color=col;
 				vp[2].pos={q.x1,q.y1}; vp[2].uv={q.s1,q.t1+font->uvOffset}; vp[2].color=col;
 				vp[3].pos={q.x0,q.y1}; vp[3].uv={q.s0,q.t1+font->uvOffset}; vp[3].color=col;
 				
-				uiVertexCount += 4;
-				uiIndexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+				twodVertexCount += 4;
+				twodIndexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -1075,8 +1075,8 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 		case FontType_BDF: case FontType_NONE:{
 			forI(text.count){
 				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				Vertex2*   vp = twodVertexArray + twodVertexCount;
+				UIIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				f32 w = font->max_width * scale.x;
 				f32 h = font->max_height * scale.y;
@@ -1086,22 +1086,22 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
 				
-				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+				ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
 				
-				uiVertexCount += 4;
-				uiIndexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+				twodVertexCount += 4;
+				twodIndexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
 				if(scissorExtent.x != -1){
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+					twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+					twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				}else{
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = vec2((f32)width, (f32)height);
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = vec2(0, 0);
+					twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = vec2((f32)width, (f32)height);
+					twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = vec2(0, 0);
 				}
 				
 				pos.x += font->max_width * scale.x;
@@ -1111,23 +1111,23 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 		case FontType_TTF:{
 			forI(text.count){
 				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				Vertex2*   vp = twodVertexArray + twodVertexCount;
+				UIIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
-				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+				ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
 				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
 				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
 				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
 				
-				uiVertexCount += 4;
-				uiIndexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+				twodVertexCount += 4;
+				twodIndexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+				twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -1142,21 +1142,21 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u
 	CheckUICmdArrays(layer, texture, 1, scissorOffset, scissorExtent);
 	
 	u32       col = PackColorU32(255, 255, 255, 255.f * alpha);
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	UIIndexGl* ip = twodIndexArray + twodIndexCount;
 	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
+	ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
 	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
 	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
 	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
 	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
 	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+	twodVertexCount += 4;
+	twodIndexCount += 6;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 void Render::
@@ -1675,7 +1675,7 @@ Init(){
 	SetupPrograms();
 	
 	//not sure the appropriate place for this
-	forI(UI_LAYERS) uiCmdCounts[i] = 1;
+	forI(TWOD_LAYERS) twodCmdCounts[i] = 1;
 	
 	//glfwSwapInterval(1); //vsync
 	initialized = true;
@@ -1760,7 +1760,7 @@ Update(){
 	}
 	
 	//draw ui
-	if(uiVertexCount > 0 && uiIndexCount > 0){
+	if(twodVertexCount > 0 && twodIndexCount > 0){
 		glBindVertexArray(uiBuffers.vao_handle);
 		glBindBuffer(GL_UNIFORM_BUFFER, push2D.handle);
 		push2D.values.scale     = {2.0f/f32(width), -2.0f/f32(height)};
@@ -1775,16 +1775,16 @@ Update(){
 		
 		//NOTE I don't think using a 2D array would be any different than having a separate for loop
 		//     for each layer here, if its worse tell me and ill fix it.
-		forX(layer, UI_LAYERS){
-			forX(cmd_idx, uiCmdCounts[layer]){
-				glScissor(GLint(uiCmdArrays[layer][cmd_idx].scissorOffset.x),
-						  GLint((height - uiCmdArrays[layer][cmd_idx].scissorOffset.y) - uiCmdArrays[layer][cmd_idx].scissorExtent.y),
-						  GLsizei(uiCmdArrays[layer][cmd_idx].scissorExtent.x),
-						  GLsizei(uiCmdArrays[layer][cmd_idx].scissorExtent.y));
-				glBindTexture(glTextures[uiCmdArrays[layer][cmd_idx].texIdx].type, glTextures[uiCmdArrays[layer][cmd_idx].texIdx].handle);
+		forX(layer, TWOD_LAYERS){
+			forX(cmd_idx, twodCmdCounts[layer]){
+				glScissor(GLint(twodCmdArrays[layer][cmd_idx].scissorOffset.x),
+						  GLint((height - twodCmdArrays[layer][cmd_idx].scissorOffset.y) - twodCmdArrays[layer][cmd_idx].scissorExtent.y),
+						  GLsizei(twodCmdArrays[layer][cmd_idx].scissorExtent.x),
+						  GLsizei(twodCmdArrays[layer][cmd_idx].scissorExtent.y));
+				glBindTexture(glTextures[twodCmdArrays[layer][cmd_idx].texIdx].type, glTextures[twodCmdArrays[layer][cmd_idx].texIdx].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
-				glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_UI,
-										 (void*)(uiCmdArrays[layer][cmd_idx].indexOffset * sizeof(UIIndexGl)), 0);
+				glDrawElementsBaseVertex(GL_TRIANGLES, twodCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_UI,
+										 (void*)(twodCmdArrays[layer][cmd_idx].indexOffset * sizeof(UIIndexGl)), 0);
 			}
 		}
 		
