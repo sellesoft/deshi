@@ -59,6 +59,15 @@ data folder specified on launch
 smart text file parser (handles new line checking and formatting)
  linux/mac IO
 
+Input TODOs
+-----------
+add MouseInsideWindow() func to input or window
+
+Logger TODOs
+------------
+make a local Assert macro that logs the message before stopping
+make the most recent logging file be named log.txt, while the rest have a date
+
 Math TODOs
 ----------
 move geometry funcs out of math.h 
@@ -71,9 +80,9 @@ ____glm/detail/_swizzle.hpp
 Memory TODOs
 ------------
 when running out of memory, log an error then fallback on STL or OS (rather than assert)
-add macro interface over functions to track where they are called from (file, line, function)
 add a memory visualizer
 ____ref: https://en.wikipedia.org/wiki/Treemapping
+reformat ArenaHeap to work more like GenericHeap
 consider multiple thread contexts
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
@@ -113,6 +122,10 @@ vulkan auto-cleanup so that it frees the unused parts of memory every now and th
 multi-threaded command buffers, shader loading, image loading
 SSBOs in shaders so we can pass variable length arrays to it
 
+Sound TODOs
+-----------
+remake the sound system
+
 Storage TODOs
 -------------
 separate physics mesh info from regular mesh info
@@ -121,7 +134,13 @@ add edges and hulls to meshes, remove unused vars
 add MTL parsing
 store null128.png and null shader in code
 add versioning to Mesh since its saved in a binary format
+data streaming to prevent loading freeze
 speedup OBJ parsing and face generation
+
+Time TODOs
+----------
+remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
+make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
 
 UI TODOs
 --------
@@ -134,25 +153,21 @@ add some markup to text like underlining, bold, etc.
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 
-Ungrouped TODOs
----------------
-override Assert macro in Logger.h so it logs the message before stopping
-rename RoundUpTo() to AlignTo() in defines.h
-restyle map to match the rest of utils
-make the most recent logging file be named log.txt, while the rest have a date
-add MouseInsideWindow() func to input or window
+Window TODOs
+------------
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
+
+Ungrouped TODOs
+---------------
+remove GLFW and add platform layers
+rename RoundUpTo() to AlignTo() in defines.h
+restyle map to match the rest of utils
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
-make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
-deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
-____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
-____to update it's canvas system.
-remake the sound system
 look into integrating TODOP with Discord
 
-Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
+Bug Board       //NOTE mark these with a last-known active date (MM/DD/YY)
 ---------
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
@@ -185,8 +200,7 @@ __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.
 #include "utils/array_algorithms.h"
 #include "math/math.h"
 
-//// STL for core ////
-#include <cstdlib>
+//// libcpp for core ////
 #include <iostream>
 #include <iomanip>
 #include <filesystem>
