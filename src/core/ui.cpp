@@ -136,8 +136,8 @@ struct {
 }ui_state;
 
 struct {
-	u32 verticies = 0;
-	u32 indicies = 0;
+	u32 vertices = 0;
+	u32 indices = 0;
 
 	u32 draw_cmds = 0;
 	u32 items = 0;
@@ -343,14 +343,7 @@ inline b32 isItemActive(UIItem* item) {
 	return WinHovered(curwin) && CanTakeInput && isItemHovered(item);
 }
 
-//this is for debugging debug cmds, all it does extra is hash the drawCmd
-//so we can break on it later
-inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
-	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
-	item->drawCmds.add(drawCmd);
-	ui_stats.draw_cmds++;
-	BreakOnDrawCmdCreation;
-}
+
 
 //internal master cursor controller
 //  this is an attempt to centralize what happens at the end of each item function
@@ -440,31 +433,31 @@ inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin) {
 
 //TODO(sushi) eventually change these to always use curwin instead of checking everytime
 // probably just separate them into 2 overloaded functions each instead
-inline f32 BorderedRight(UIWindow* window = curwin)  { return window->dimensions.x - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-inline f32 BorderedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-inline f32 BorderedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-inline f32 BorderedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedRight(UIWindow* window = curwin)  { return window->dimensions.x - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 
-inline f32 MarginedRight(UIWindow* window = curwin) { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
-inline f32 MarginedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
-inline f32 MarginedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
-inline f32 MarginedBottom(UIWindow* window = curwin) { f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
+FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin) { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
+FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
+FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
+FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) { f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
 
-inline f32 ScrollBaredRight(UIWindow* window = curwin)  { return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
-inline f32 ScrollBaredLeft(UIWindow* window = curwin)   { return BorderedLeft(window); }
-inline f32 ScrollBaredTop(UIWindow* window = curwin)    { return BorderedTop(window); }
-inline f32 ScrollBaredBottom(UIWindow* window = curwin) { return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
+FORCE_INLINE f32 ScrollBaredRight(UIWindow* window = curwin)  { return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
+FORCE_INLINE f32 ScrollBaredLeft(UIWindow* window = curwin)   { return BorderedLeft(window); }
+FORCE_INLINE f32 ScrollBaredTop(UIWindow* window = curwin)    { return BorderedTop(window); }
+FORCE_INLINE f32 ScrollBaredBottom(UIWindow* window = curwin) { return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
 
 //return the maximum width an item can be in a non-scrolled state
-inline f32 MaxItemWidth(UIWindow* window = curwin) {
+FORCE_INLINE f32 MaxItemWidth(UIWindow* window = curwin) {
 	return MarginedRight(window) - MarginedLeft(window);
 }
 
-inline b32 MouseInArea(vec2 pos, vec2 size) {
+FORCE_INLINE b32 MouseInArea(vec2 pos, vec2 size) {
 	return Math::PointInRectangle(DeshInput->mousePos, pos, size);
 }
 
-inline b32 MouseInWinArea(vec2 pos, vec2 size) {
+FORCE_INLINE b32 MouseInWinArea(vec2 pos, vec2 size) {
 	return Math::PointInRectangle(DeshInput->mousePos - curwin->position, pos, size);
 }
 
@@ -500,38 +493,7 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 	
 }
 
-inline vec2 DecideWinSize(vec2 defaultSize, vec2 itemPos) {
-	vec2 size;
-	if (NextWinSize.x != -1) {
-		if (NextWinSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
-		else if (NextWinSize.x == 0)
-			if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
-		else size.x = defaultSize.x;
-		else size.x = NextWinSize.x;
-		
-		if (NextWinSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else if (NextWinSize.y == 0)
-			if (defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
-		else size.y = NextWinSize.y;
-	}
-	else {
-		if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
-		else size.x = defaultSize.x;
-		
-		if (defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
-	}
-	return size;
-}
-
-void WinSetdowCursor(CursorType curtype) {
+FORCE_INLINE void WinSetdowCursor(CursorType curtype) {
 	DeshWindow->SetCursor(curtype);
 	StateAddFlag(UISCursorSet);
 }
@@ -632,7 +594,7 @@ void UI::SetNextItemMinSizeIgnored() {
 }
 
 //internal last item getter, returns nullptr if there are none
-inline UIItem* UI::GetLastItem(u32 layeroffset) {
+FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {
 	return curwin->items[ui_state.layer + layeroffset].last;
 }
 
@@ -665,6 +627,7 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 		StateRemoveFlag(UISNextItemMinSizeIgnored);
 	}
 	
+	ui_stats.items++;
 	curwin->items_count++;
 	return UI::GetLastItem(layeroffset);
 }
@@ -673,6 +636,17 @@ inline void EndItem(UIItem* item) {
 	//copy the last made item to lastitem, so we can look back at it independently of custom item nonsense
 	//maybe only do this is we're making a custom item
 	//lastitem = *item;
+}
+
+//this is for debugging debug cmds, all it does extra is hash the drawCmd
+//so we can break on it later
+inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
+	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
+	item->drawCmds.add(drawCmd);
+	ui_stats.draw_cmds++;
+	ui_stats.vertices += drawCmd.counts.x;
+	ui_stats.indices += drawCmd.counts.y;
+	BreakOnDrawCmdCreation;
 }
 
 //@BeginRow
@@ -735,113 +709,46 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
 		row.columnWidths[i] = { widths[i], true };
 }
 
-//internal debug drawing functions
-void DebugRect(vec2 pos, vec2 size, color col = Color_Red) {
-	UIDrawCmd dc{ UIDrawType_Rectangle };
-	dc.color = col;
-	dc.position = pos;
-	dc.dimensions = size;
-	dc.thickness = 1;
-	debugCmds.add(dc);
-}
-
-void DebugRectFilled(vec2 pos, vec2 size, color col = Color_Red) {
-	UIDrawCmd dc{ UIDrawType_FilledRectangle };
-	dc.color = col;
-	dc.position = pos;
-	dc.dimensions = size;
-	debugCmds.add(dc);
-}
-
-void DebugCircle(vec2 pos, f32 radius, color col = Color_Red) {
-	UIDrawCmd dc{ UIDrawType_Circle };
-	dc.color = col;
-	dc.position = pos - vec2::ONE * radius / 2;
-	dc.thickness = radius;
-	dc.subdivisions = 30;
-	debugCmds.add(dc);
-}
-
-void DebugCircleFilled(vec2 pos, f32 radius, color col = Color_Red) {
-	UIDrawCmd dc{ UIDrawType_CircleFilled };
-	dc.color = col;
-	dc.position = pos;
-	dc.thickness = radius;
-	dc.subdivisions = 30;
-	debugCmds.add(dc);
-}
-
-void DebugLine(vec2 pos, vec2 pos2, color col = Color_Red) {
-	UIDrawCmd dc{ UIDrawType_Circle };
-	dc.color = col;
-	dc.position = pos;
-	dc.position2 = pos2;
-	dc.thickness = 1;
-	debugCmds.add(dc);
-}
-
-void DebugText(vec2 pos, const char* text, color col = Color_White) {
-	UIDrawCmd dc{ UIDrawType_Text };
-	dc.color = col;
-	dc.position = pos;
-	dc.text = string(text);
-	dc.font = style.font;
-	debugCmds.add(dc);
-}
 
 
-//@Shape Generators
-enum GenShapes : u32 {
-	Shape_FilledTriangle,
-	Shape_Line,
-	Shape_FilledRect,
-	Shape_Rect,
-}; 
-
-pair<u32, u32> shapecounts[] = {
-	{3,3},
-	{4,6},
-	{4,6},
-	{8,24},
-};
-
-template<class... T>
-pair<u32, u32> sum_shapes(T... arg) {
-	return { (shapecounts[arg].first + ...),(shapecounts[arg].second + ...) };
-}
-
-template<class... T> 
-void size_drawcmd(UIDrawCmd& drawCmd, T...arg) {
-	auto p = sum_shapes(arg...);
-	drawCmd.vertices.resize(p.first);
-	drawCmd.indicies.resize(p.second);
-}
-
-//3 verts, 3 indicies
-void MakeFilledTriangle(Vertex2* putverts, u32* putindicies, vec2 p1, vec2 p2, vec2 p3, color color, u32 indicieOffset = 0) {
+//3 verts, 3 indices
+FORCE_INLINE vec2 
+MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
+	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts;
-	u32*     ip = putindicies;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
 
-	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
+
+	return vec2(3, 3);
 }
 
-//4 verts, 6 indicies
-void MakeLine(Vertex2* putverts, u32* putindicies, vec2 start, vec2 end, f32 thickness, color color, u32 indicieOffset = 0) {
-	Assert(putverts && putindicies);
+FORCE_INLINE void
+MakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color) {
+	drawCmd.counts += MakeFilledTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, color);
+}
+
+//4 verts, 6 indices
+FORCE_INLINE vec2 
+MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
 
 	u32     col = color.rgba;
-	Vertex2* vp = putverts;
-	u32* ip = putindicies;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
 
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
 
-	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
-	ip[3] = indicieOffset; ip[4] = indicieOffset + 2; ip[5] = indicieOffset + 3;
+	ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
+	ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -851,37 +758,52 @@ void MakeLine(Vertex2* putverts, u32* putindicies, vec2 start, vec2 end, f32 thi
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
+
+	return vec2(4, 6);
 }
 
-//4 verts, 6 indicies
-void MakeFilledRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, color color, u32 indicieOffset = 0) {
-	Assert(putverts && putindicies);
+FORCE_INLINE void
+MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color) {
+	drawCmd.counts += MakeLine(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
+}
+
+//4 verts, 6 indices
+FORCE_INLINE vec2
+MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
 
 	u32     col = color.rgba;
-	Vertex2* vp = putverts;
-	u32*     ip = putindicies;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
 
 	vec2 tl = pos;
 	vec2 br = pos + size;
 	vec2 bl = pos + vec2(0, size.y);
 	vec2 tr = pos + vec2(size.x, 0);
 
-	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
-	ip[3] = indicieOffset; ip[4] = indicieOffset + 2; ip[5] = indicieOffset + 3;
+	ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
+	ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
 	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	return vec2(4, 6);
 }
 
-//8 verts, 24 indicies
-void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thickness, color color, u32 indicieOffset = 0) {
-	Assert(putverts && putindicies);
+FORCE_INLINE void
+MakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color) {
+	drawCmd.counts += MakeFilledRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, color);
+}
+//8 verts, 24 indices
+FORCE_INLINE vec2
+MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
 
 	u32     col = color.rgba;
-	Vertex2* vp = putverts;
-	u32* ip = putindicies;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
 
 	vec2 tl = pos;
 	vec2 br = pos + size;
@@ -890,15 +812,15 @@ void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thic
 
 	f32 sqt = sqrtf(thickness);
 	vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
-	vec2 bro = sqt * vec2(M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
-	vec2 tro = sqt * vec2(M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
-	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
+	vec2 bro = sqt * vec2( M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
+	vec2 tro = sqt * vec2( M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
 
-	memset(ip, indicieOffset, 24 * u32size);
-	ip[0] += 0;  ip[1] += 1; ip[2] += 3;
-	ip[3] += 0;  ip[4] += 3; ip[5] += 2;
-	ip[6] += 2;  ip[7] += 3; ip[8] += 5;
-	ip[9] += 2;  ip[10] += 5; ip[11] += 4;
+	memset(ip, offsets.y, 24 * u32size);
+	ip[0]  += 0; ip[1]  += 1; ip[2]  += 3;
+	ip[3]  += 0; ip[4]  += 3; ip[5]  += 2;
+	ip[6]  += 2; ip[7]  += 3; ip[8]  += 5;
+	ip[9]  += 2; ip[10] += 5; ip[11] += 4;
 	ip[12] += 4; ip[13] += 5; ip[14] += 7;
 	ip[15] += 4; ip[16] += 7; ip[17] += 6;
 	ip[18] += 6; ip[19] += 7; ip[20] += 1;
@@ -912,9 +834,170 @@ void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thic
 	vp[5].pos = br + tlo; vp[5].uv = { 0,0 }; vp[5].color = col;
 	vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
 	vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
+	return vec2(8, 24);
 }
 
+FORCE_INLINE void
+MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color) {
+	drawCmd.counts += MakeRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
+}
 
+//TODO(sushi) optimize these so that they dont need to use other Make functions to make circles
+FORCE_INLINE vec2
+MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+
+	vec2 sum;
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int) {
+		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
+		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
+
+		sum += MakeLine(vp, ip, sum, vec2(x0, y0), vec2(x1, y1), 1, color);
+	}
+
+	return sum;
+}
+
+FORCE_INLINE void
+MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, color color) {
+	drawCmd.counts += MakeCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, color);
+}
+
+FORCE_INLINE vec2 
+MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+
+	vec2 sum;
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int) {
+		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
+		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
+		sum += MakeFilledTriangle(vp, ip, sum, pos, vec2(x0, y0), vec2(x1, y1), color);
+	}
+
+	return sum;
+}
+
+FORCE_INLINE void
+MakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
+	drawCmd.counts += MakeFilledCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions_int, color);
+}
+
+//TODO make this not use string
+FORCE_INLINE vec2
+MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos, color color, vec2 scale) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
+
+	vec2 sum;
+	switch (style.font->type) {
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE: {
+			forI(text.count) {
+				u32     col = color.rgba;
+				Vertex2* vp = putverts + (u32)offsets.x;
+				u32*     ip = putindices + (u32)offsets.y;
+
+				f32 w = style.font->max_width * scale.x;
+				f32 h = style.font->max_height * scale.y;
+				f32 dy = 1.f / (f32)style.font->count;
+
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+
+				ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
+				ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + style.font->uvOffset }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + style.font->uvOffset }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + style.font->uvOffset }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff + style.font->uvOffset }; vp[3].color = col;
+
+				sum += vec2(4, 6);
+				pos.x += style.font->max_width * scale.x;
+			}
+		}break;
+			//// TTF font rendering ////
+		case FontType_TTF: {
+			forI(text.count) {
+				u32     col = color.rgba;
+				Vertex2* vp = putverts + (u32)offsets.x;
+				u32*     ip = putindices + (u32)offsets.y;
+
+				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
+
+				ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
+				ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
+				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + style.font->uvOffset }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + style.font->uvOffset }; vp[3].color = col;
+
+				sum += vec2(4, 6);
+			}break;
+		default: Assert(!"unhandled font type"); break;
+		}
+	}
+
+	return sum;
+}
+
+FORCE_INLINE void
+MakeText(UIDrawCmd& drawCmd, string text, vec2 pos, color color, vec2 scale) {
+	drawCmd.counts += MakeText(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, pos, color, scale);
+}
+
+//internal debug drawing functions
+void DebugRect(vec2 pos, vec2 size, color col = Color_Red) {
+	UIDrawCmd dc{ UIDrawType_Rectangle };
+	MakeRect(dc, pos, size, 1, col);
+	debugCmds.add(dc);
+}
+
+void DebugRectFilled(vec2 pos, vec2 size, color col = Color_Red) {
+	UIDrawCmd dc{ UIDrawType_FilledRectangle };
+	MakeFilledRect(dc, pos, size, col);
+	debugCmds.add(dc);
+}
+
+void DebugCircle(vec2 pos, f32 radius, color col = Color_Red) {
+	UIDrawCmd dc{ UIDrawType_Circle };
+	MakeCircle(dc, pos, radius, 20, col);
+	debugCmds.add(dc);
+}
+
+void DebugCircleFilled(vec2 pos, f32 radius, color col = Color_Red) {
+	UIDrawCmd dc{ UIDrawType_CircleFilled };
+	MakeFilledCircle(dc, pos, radius, 20, col);
+	debugCmds.add(dc);
+}
+
+void DebugLine(vec2 pos, vec2 pos2, color col = Color_Red) {
+	UIDrawCmd dc{ UIDrawType_Circle };
+	MakeLine(dc, pos, pos2, 1, col);
+	debugCmds.add(dc);
+}
+
+void DebugText(vec2 pos, const char* text, color col = Color_White) {
+	UIDrawCmd dc{ UIDrawType_Text };
+	MakeText(dc, text, pos, col, vec2::ONE);
+	debugCmds.add(dc);
+}
 
 
 //@Primitive Items
@@ -922,24 +1005,23 @@ void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thic
 
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_Rectangle};
+	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+	MakeRect(drawCmd, vec2::ZERO, dimen, 1, color);
+	AddDrawCmd(&item, drawCmd);
 
-	
-	item.drawCmds.add(drawCmd);
+	item.position = pos;
+	item.size = dimen;
 	curwin->items[ui_state.layer].add(item);
 }
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-	drawCmd.position = vec2::ZERO;
-	drawCmd.dimensions = dimen;
-	drawCmd.color = color;
+	MakeFilledRect(drawCmd, pos, dimen, color);
+	AddDrawCmd(&item, drawCmd);
 	
 	item.position = pos;
 	item.size = dimen;
-	
-	item.drawCmds.add(drawCmd);
 	curwin->items[ui_state.layer].add(item);
 }
 
@@ -4222,8 +4304,13 @@ void CleanUpWindow(UIWindow* window) {
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
 
+	//DebugRect(vec2::ONE * 300, vec2::ONE * 100);
 
-	
+	UIDrawCmd test;
+	MakeRect(test, vec2::ONE * 300, vec2::ONE * 300, 5, Color_Red);
+	MakeCircle(test, vec2::ONE * 400, 50, 20, Color_Blue);
+	debugCmds.add(test);
+
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
 		   "Frame ended with hanging windows in the stack, make sure you call End() if you call Begin()!");
@@ -4297,56 +4384,62 @@ void UI::Update() {
 	//draw all debug commands if there are any
 	
 	for (UIDrawCmd& drawCmd : debugCmds) {
-		vec2   dcpos = drawCmd.position;
-		vec2  dcpos2 = drawCmd.position2;
-		vec2   dcsiz = drawCmd.dimensions;
-		vec2    dcse = DeshWindow->dimensions;
-		vec2    dcso = vec2::ZERO;
-		color  dccol = drawCmd.color;
-		f32      dct = drawCmd.thickness;
-		u32      dcl = UI_LAYERS - 1;
-		u32    dcsub = drawCmd.subdivisions;
 
-		dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
-		dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
+		Render::StartNewTwodCmd(5, 0, vec2::ZERO, DeshWinSize);
+
+		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
-		Texture* dctex = drawCmd.tex;
 		
-		cstring dctext{ drawCmd.text.str,drawCmd.text.count };
-		wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
+		//vec2   dcpos = drawCmd.position;
+		//vec2  dcpos2 = drawCmd.position2;
+		//vec2   dcsiz = drawCmd.dimensions;
+		//vec2    dcse = DeshWindow->dimensions;
+		//vec2    dcso = vec2::ZERO;
+		//color  dccol = drawCmd.color;
+		//f32      dct = drawCmd.thickness;
+		//u32      dcl = UI_LAYERS - 1;
+		//u32    dcsub = drawCmd.subdivisions;
+		//
+		//dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
+		//dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
+		//
+		//Texture* dctex = drawCmd.tex;
+		//
+		//cstring dctext{ drawCmd.text.str,drawCmd.text.count };
+		//wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
+		//
+		//Font* font = drawCmd.font;
 		
-		Font* font = drawCmd.font;
-		
-		switch (drawCmd.type) {
-			case UIDrawType_FilledRectangle: {
-				Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Rectangle: {
-				Render::DrawRect2D(dcpos, dcsiz, dct, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Line: {
-				Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Circle: {
-				Render::DrawCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_CircleFilled: {
-				Render::FillCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Text: {
-				Render::DrawText2D(font, dctext, dcpos, dccol, vec2::ONE, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_WText: {
-				Render::DrawText2D(font, wdctext, dcpos, dccol, vec2::ONE, dcl, dcso, dcse);
-			}break;
-			
-			case UIDrawType_Image: {
-				Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
-			}break;
-			default: {
-				Assert(0, "unhandled UIDrawType!");
-			}break;
-		}
+		//switch (drawCmd.type) {
+		//	case UIDrawType_FilledRectangle: {
+		//		Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+		//	}break;
+		//	case UIDrawType_Rectangle: {
+		//		Render::DrawRect2D(dcpos, dcsiz, dct, dccol, dcl, dcso, dcse);
+		//	}break;
+		//	case UIDrawType_Line: {
+		//		Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
+		//	}break;
+		//	case UIDrawType_Circle: {
+		//		Render::DrawCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
+		//	}break;
+		//	case UIDrawType_CircleFilled: {
+		//		Render::FillCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
+		//	}break;
+		//	case UIDrawType_Text: {
+		//		Render::DrawText2D(font, dctext, dcpos, dccol, vec2::ONE, dcl, dcso, dcse);
+		//	}break;
+		//	case UIDrawType_WText: {
+		//		Render::DrawText2D(font, wdctext, dcpos, dccol, vec2::ONE, dcl, dcso, dcse);
+		//	}break;
+		//	
+		//	case UIDrawType_Image: {
+		//		Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
+		//	}break;
+		//	default: {
+		//		Assert(0, "unhandled UIDrawType!");
+		//	}break;
+		//}
 	}
 	debugCmds.clear();
 	

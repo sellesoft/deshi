@@ -291,8 +291,8 @@ global_ const char* UIDrawTypeStrs[] = {
 	"Image",
 };
 
-#define UIDRAWCMD_MAX_VERTICES 0xFFFF
-#define UIDRAWCMD_MAX_INDICIES UIDRAWCMD_MAX_VERTICES * 3
+#define UIDRAWCMD_MAX_VERTICES 0xFF
+#define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
 
 struct UIItem;
 
@@ -310,14 +310,12 @@ struct UIDrawCmd {
 	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
 	u32 subdivisions; //circle subdivisons
 
-	//TODO(sushi) eventually use static arrays when we get an idea of how large these usually are
-	//Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
-	//u32     vertcount;
-	//u32     indices[UIDRAWCMD_MAX_INDICIES];
-	//u32     indexcount;
+	Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
+	u32     indices[UIDRAWCMD_MAX_INDICES];
+	vec2 counts; //maybe make this a u32[2]
 
-	array<Vertex2> vertices;
-	array<u32>     indicies;
+	//array<Vertex2> vertices;
+	//array<u32>     indices;
 
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
