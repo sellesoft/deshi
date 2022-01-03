@@ -48,11 +48,18 @@ local void TEST_deshi_core_logging(){
 
 #include "memory.h"
 local void TEST_deshi_core_memory(){
-	ArenaHeap*   arena_heap = memory_expose_arena_heap();
+	ArenaHeap* arena_heap = memory_expose_arena_heap();
+	AssertAlways(arena_heap);
+	
 	GenericHeap* generic_heap = memory_expose_generic_heap();
-	Arena*       temp_arena = memory_expose_temp_arena();
+	AssertAlways(generic_heap);
+	
+	Arena* temp_arena = memory_expose_temp_arena();
+	AssertAlways(temp_arena);
+	
 #if DESHI_INTERNAL
 	Arena* naming_arena = memory_expose_naming_arena();
+	AssertAlways(naming_arena);
 #endif //DESHI_INTERNAL
 	
 	//arena creation
@@ -210,16 +217,109 @@ local void TEST_deshi_core_memory(){
 	memory_set_address_name(naming_arena, cstr_lit("Address Naming Arena"), 0);
 	AssertAlways(equals(cstr_lit("Address Naming Arena"), memory_get_address_name(naming_arena)));
 	
+	//reset to default
 	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"), 0);
 	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
 #endif //DESHI_INTERNAL
 	
-	/*
-//run out of generic memory SHOULD CRASH/ERROR
-	for(u32 i = 0; i < -1; ++i){
-		memory_alloc(Megabytes(1));
+	
+	{//// default to libc when running out of memory in arena heap ////
+		//use up all but 1KB of arena heap for setup
+		arena1 = memory_create_arena((arena_heap->size - (arena_heap->cursor - arena_heap->start)) - Kilobytes(1));
+		defer{ memory_delete_arena(arena1); };
+		
+		//create libc arena
+		arena2 = memory_create_arena(Kilobytes(32));
+		memset(arena2->start, 7, 128);
+		arena2->used = 128;
+		
+		//delete libc arena
+		memory_delete_arena(arena2);
+		
+		//grow libc arena
+		arena2 = memory_create_arena(Kilobytes(32));
+		memset(arena2->start, 7, 128);
+		arena2->used = 128;
+		arena2 = memory_grow_arena(arena2, Kilobytes(64));
+		memory_delete_arena(arena2);
+		
+		//grow arena into libc arena
+		arena2 = memory_create_arena(256);
+		memset(arena2->start, 7, 128);
+		arena2->used = 128;
+		arena2 = memory_grow_arena(arena2, Kilobytes(8));
+		memory_delete_arena(arena2);
 	}
-	*/
+	
+	{//// default to libc when running out of memory in generic heap ////
+		array<void*> setup;
+		void *alloc2, *alloc3;
+		
+		//use up all but 1KB of generic heap for setup
+		while((generic_heap->cursor + Kilobytes(63)) < (generic_heap->start + generic_heap->size)){ setup.add(memory_alloc(Kilobytes(63))); }
+		while((generic_heap->cursor + Kilobytes(1)) < (generic_heap->start + generic_heap->size)){ setup.add(memory_alloc(Kilobytes(1))); }
+		defer{ forE(setup){ memory_zfree(*it); } };
+		
+		//create libc alloc
+		alloc2 = memory_alloc(Kilobytes(4));
+		memset(alloc2, 7, 128);
+		
+		//delete libc alloc
+		memory_zfree(alloc2);
+		
+		//grow libc alloc
+		alloc2 = memory_alloc(Kilobytes(4));
+		memset(alloc2, 7, 128);
+		alloc3 = memory_realloc(alloc2, Kilobytes(8));
+		memset((u8*)alloc3 + 128, 8, 128);
+		memory_zfree(alloc3);
+		
+		//shrink libc alloc
+		alloc2 = memory_alloc(Kilobytes(4));
+		memset(alloc2, 7, 128);
+		alloc3 = memory_realloc(alloc2, Kilobytes(2));
+		memset((u8*)alloc3 + 128, 8, 128);
+		memory_zfree(alloc3);
+		
+		//grow alloc into libc alloc
+		alloc2 = memory_alloc(256);
+		memset(alloc2, 7, 128);
+		alloc3 = memory_realloc(alloc2, Kilobytes(4));
+		memset((u8*)alloc3 + 128, 8, 128);
+		memory_zfree(alloc3);
+	}
+	
+	{//// default to libc when running out of memory in temp arena ////
+		memory_clear_temp();
+		void *alloc1, *alloc2, *alloc3;
+		
+		//use up all but 1KB of temp arena for setup
+		alloc1 = memory_talloc((temp_arena->size - (temp_arena->cursor - temp_arena->start)) - Kilobytes(1));
+		defer{ memory_clear_temp(); };
+		
+		//create libc temp alloc
+		alloc2 = memory_talloc(Kilobytes(4));
+		memset(alloc2, 7, 128);
+		free((upt*)alloc2 - 1);
+		
+		//grow libc temp alloc
+		alloc2 = memory_talloc(Kilobytes(4));
+		memset(alloc2, 7, 128);
+		alloc3 = memory_trealloc(alloc2, Kilobytes(8));
+		free((upt*)alloc3 - 1);
+		
+		//shrink libc temp alloc
+		alloc2 = memory_talloc(Kilobytes(4));
+		memset(alloc2, 7, 128);
+		alloc3 = memory_trealloc(alloc2, Kilobytes(2));
+		free((upt*)alloc3 - 1);
+		
+		//grow temp alloc into libc temp alloc
+		alloc2 = memory_talloc(256);
+		memset(alloc2, 7, 128);
+		alloc3 = memory_trealloc(alloc2, Kilobytes(4));
+		free((upt*)alloc3 - 1);
+	}
 	
 	DESHI_TEST_CORE_TODO("memory");
 }

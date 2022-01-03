@@ -283,6 +283,7 @@ template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val
 #define InvalidPath Assert(false, "invalid path")
 #define TestMe AssertBreakpoint(false, "this needs to be tested")
 #define FixMe AssertBreakpoint(false, "this is broken in some way")
+#define DontCompile (0=__deshi_dont_compile_this__)
 
 /////////////////////////
 //// for-loop macros ////

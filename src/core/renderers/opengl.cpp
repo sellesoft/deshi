@@ -104,7 +104,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE; //!Incomplete
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL VARIABLES
-#define INDEX_TYPE_GL_UI   GL_UNSIGNED_INT
+#define INDEX_TYPE_GL_TWOD GL_UNSIGNED_INT
 #define INDEX_TYPE_GL_TEMP GL_UNSIGNED_SHORT
 #define INDEX_TYPE_GL_MESH GL_UNSIGNED_INT
 
@@ -121,13 +121,13 @@ local array<MaterialGl> glMaterials(deshi_allocator);
 #define MAX_TWOD_INDICES  3*MAX_TWOD_VERTICES
 #define MAX_TWOD_CMDS     1000
 #define TWOD_LAYERS       11
-typedef u32 UIIndexGl; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
-local UIIndexGl twodVertexCount = 0;
-local UIIndexGl twodIndexCount  = 0;
-local Vertex2   twodVertexArray[MAX_TWOD_VERTICES];
-local UIIndexGl twodIndexArray[MAX_TWOD_INDICES];
-local UIIndexGl twodCmdCounts[TWOD_LAYERS];
-local TwodCmdGl twodCmdArrays[TWOD_LAYERS][MAX_TWOD_CMDS];  //different UI cmd per font/texture
+typedef u32 TwodIndexGl; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
+local TwodIndexGl twodVertexCount = 0;
+local TwodIndexGl twodIndexCount  = 0;
+local Vertex2     twodVertexArray[MAX_TWOD_VERTICES];
+local TwodIndexGl twodIndexArray[MAX_TWOD_INDICES];
+local TwodIndexGl twodCmdCounts[TWOD_LAYERS];
+local TwodCmdGl   twodCmdArrays[TWOD_LAYERS][MAX_TWOD_CMDS];  //different 2d cmd per texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -307,7 +307,7 @@ local void
 SetupCommands(){
 	//ui vertex and index buffers
 	u64 ui_vb_size = Max(1000*sizeof(Vertex2),   twodVertexCount * sizeof(Vertex2));
-	u64 ui_ib_size = Max(3000*sizeof(UIIndexGl), twodIndexCount  * sizeof(UIIndexGl));
+	u64 ui_ib_size = Max(3000*sizeof(TwodIndexGl), twodIndexCount  * sizeof(TwodIndexGl));
 	if(ui_vb_size && ui_ib_size){
 		//create vertex array object and buffers if they dont exist
 		if(uiBuffers.vao_handle == 0){
@@ -718,7 +718,7 @@ NewFrame(){
 
 
 //-------------------------------------------------------------------------------------------------
-// @2D INTERFACE
+// @2D @TWOD INTERFACE
 //TODO(sushi) find a nicer way to keep track of this
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
 vec2 prevScissorOffset = vec2::ZERO;
@@ -747,7 +747,7 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = twodVertexArray + twodVertexCount;
-	UIIndexGl* ip = twodIndexArray + twodIndexCount;
+	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
@@ -780,7 +780,7 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = twodVertexArray + twodVertexCount;
-	UIIndexGl* ip = twodIndexArray + twodIndexCount;
+	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
 	ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
@@ -855,7 +855,7 @@ void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 la
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = twodVertexArray + twodVertexCount;
-	UIIndexGl* ip = twodIndexArray + twodIndexCount;
+	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -890,7 +890,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = twodVertexArray + twodVertexCount;
-	UIIndexGl* ip = twodIndexArray + twodIndexCount;
+	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	{// first point
 		
@@ -1010,7 +1010,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = twodVertexArray + twodVertexCount;
-				UIIndexGl* ip = twodIndexArray + twodIndexCount;
+				TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				f32 w = font->max_width * scale.x;
 				f32 h = font->max_height * scale.y;
@@ -1041,7 +1041,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = twodVertexArray + twodVertexCount;
-				UIIndexGl* ip = twodIndexArray + twodIndexCount;
+				TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
@@ -1076,7 +1076,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = twodVertexArray + twodVertexCount;
-				UIIndexGl* ip = twodIndexArray + twodIndexCount;
+				TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				f32 w = font->max_width * scale.x;
 				f32 h = font->max_height * scale.y;
@@ -1112,7 +1112,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = twodVertexArray + twodVertexCount;
-				UIIndexGl* ip = twodIndexArray + twodIndexCount;
+				TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
@@ -1141,9 +1141,9 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u
 	if(alpha == 0) return;
 	CheckUICmdArrays(layer, texture, 1, scissorOffset, scissorExtent);
 	
-	u32       col = PackColorU32(255, 255, 255, 255.f * alpha);
-	Vertex2*   vp = twodVertexArray + twodVertexCount;
-	UIIndexGl* ip = twodIndexArray + twodIndexCount;
+	u32         col = PackColorU32(255, 255, 255, 255.f * alpha);
+	Vertex2*     vp = twodVertexArray + twodVertexCount;
+	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	ip[0] = twodVertexCount; ip[1] = twodVertexCount + 1; ip[2] = twodVertexCount + 2;
 	ip[3] = twodVertexCount; ip[4] = twodVertexCount + 2; ip[5] = twodVertexCount + 3;
@@ -1169,6 +1169,32 @@ DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u3
 	p3 = Math::vec2RotateByAngle(rotation, pos.yAdd(size.y) - center) + center;
 	
 	DrawTexture2D(texture, p0, p1, p2, p3, alpha, layer, scissorOffset, scissorExtent);
+}
+
+void Render::
+StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent){
+	twodCmdArrays[layer][twodCmdCounts[layer]].scissorOffset = scissorOffset;
+	twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
+	twodCmdArrays[layer][twodCmdCounts[layer]].texIdx        = (tex) ? tex->idx : 0;
+	twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset   = twodIndexCount;
+	twodCmdArrays[layer][twodCmdCounts[layer]].textured      = (tex) ? true : false;
+	twodCmdCounts[layer]++;
+}
+
+void Render::
+AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount){
+	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
+	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
+	
+	Vertex2*     vp = twodVertexArray + twodVertexCount;
+	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
+	
+	memcpy(vp, vertstart, vertcount * sizeof(Vertex2));
+	forI(indexcount) ip[i] = twodVertexCount + indexstart[i];
+	
+	twodVertexCount += vertcount;
+	twodIndexCount += indexcount;
+	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += indexcount;
 }
 
 
@@ -1783,8 +1809,8 @@ Update(){
 						  GLsizei(twodCmdArrays[layer][cmd_idx].scissorExtent.y));
 				glBindTexture(glTextures[twodCmdArrays[layer][cmd_idx].texIdx].type, glTextures[twodCmdArrays[layer][cmd_idx].texIdx].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
-				glDrawElementsBaseVertex(GL_TRIANGLES, twodCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_UI,
-										 (void*)(twodCmdArrays[layer][cmd_idx].indexOffset * sizeof(UIIndexGl)), 0);
+				glDrawElementsBaseVertex(GL_TRIANGLES, twodCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_TWOD,
+										 (void*)(twodCmdArrays[layer][cmd_idx].indexOffset * sizeof(TwodIndexGl)), 0);
 			}
 		}
 		

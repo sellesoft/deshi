@@ -132,7 +132,7 @@ struct {
 	InputState input = ISNone;
 	u32 layer = UI_CENTER_LAYER;
 	u32 winlayer = UI_CENTER_LAYER;
-
+	
 }ui_state;
 
 struct {
@@ -753,7 +753,7 @@ MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end,
 	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	vp[0].pos += norm * thickness / 2;
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
@@ -809,7 +809,7 @@ MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, 
 	vec2 br = pos + size;
 	vec2 bl = pos + vec2(0, size.y);
 	vec2 tr = pos + vec2(size.x, 0);
-
+	
 	f32 sqt = sqrtf(thickness);
 	vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
 	vec2 bro = sqt * vec2( M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
@@ -825,7 +825,7 @@ MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, 
 	ip[15] += 4; ip[16] += 7; ip[17] += 6;
 	ip[18] += 6; ip[19] += 7; ip[20] += 1;
 	ip[21] += 6; ip[22] += 1; ip[23] += 0;
-
+	
 	vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = tr + tro; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -2107,7 +2107,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 		if (preview && !buff[0]) {
 			drawCmd.text = string(preview);
 			drawCmd.color = style.colors[UIStyleCol_Text];
-			drawCmd.color.a = floor(0.5f * 255);
+			drawCmd.color.a = (u8)floor(0.5f * 255);
 		}
 		else {
 			drawCmd.text = string(buff);
@@ -2204,7 +2204,7 @@ void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {
 	Assert(HasFlag(cistage, CISItemBegan), "attempt to advance a custom item who has not begun!");
 	AddFlag(cistage, CISItemAdvancedCursor);
 	AdvanceCursor(item, move_cursor);
-
+	
 }
 
 
@@ -2355,7 +2355,7 @@ b32 CheckForHoveredChildWindow(UIWindow* parent, UIWindow* child) {
 						WinSetHovered(child);
 						child_hovered = true;
 						hovered = child;
-
+						
 						if (!HasFlag(child->flags, UIWindowFlags_DontSetGlobalHoverFlag))
 							StateAddFlag(UISGlobalHovered);
 					}
@@ -2738,7 +2738,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			UIWindow* parent = curwin;
 			UIItem* item = BeginItem(UIItemType_PopOutWindow);
 			item->position = pos;
-
+			
 			if (parent->children.has(name)) {
 				item->size = parent->children[name]->dimensions;
 				if (NextWinSize.x != -1 || NextWinSize.y != 0) {
@@ -2746,17 +2746,17 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 						item->size.x = MarginedRight() - item->position.x;
 					else if (NextWinSize.x == -1) {}
 					else item->size.x = NextWinSize.x;
-
+					
 					if (NextWinSize.y == MAX_F32)
 						item->size.y = MarginedBottom() - item->position.x;
 					else if (NextWinSize.y == -1) {}
 					else item->size.y = NextWinSize.y;
 				}
-
+				
 				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-
+				
 				AdvanceCursor(item, 0);
-
+				
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
@@ -2765,10 +2765,10 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			else {
 				item->size = dimensions;
 				AdvanceCursor(item, 0);
-
+				
 				vec2 parentNewPos = PositionForNewItem();
 				curwin = new UIWindow();
-
+				
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
 				curwin->position = parentNewPos;
@@ -2776,10 +2776,10 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
 				curwin->windowlayer = parent->windowlayer + 1;
-
+				
 				parent->children.add(name, curwin);
 			}
-
+			
 			indentStack.add(0);
 			item->child = curwin;
 			curwin->parent = parent;
@@ -2825,10 +2825,10 @@ vec2 CalcWindowMinSize() {
 	forI(UI_WINDOW_ITEM_LAYERS) {
 		for (UIItem& item : curwin->items[i]) {
 			//if (item.type == UIItemType_Window && item.child->type != UIWindowType_PopOut){
-				if (item.trackedForMinSize) {
-					max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
-					max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
-				}
+			if (item.trackedForMinSize) {
+				max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
+				max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
+			}
 			//}
 		}
 	}
@@ -2901,14 +2901,14 @@ void EndCall() {
 	
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
 	UIItem* postitem = BeginItem(UIItemType_PostItems);
-
+	
 	preitem->position = vec2::ZERO;
 	postitem->position = vec2::ZERO;
 	
 	preitem->size  = curwin->dimensions;
 	postitem->size = curwin->dimensions;
-
-
+	
+	
 	vec2 mp = DeshInput->mousePos;
 	
 	curwin->minSizeForFit = CalcWindowMinSize();
@@ -3039,7 +3039,7 @@ void UI::End() {
 	
 	curwin->visibleRegionStart = curwin->position;
 	curwin->visibleRegionSize = curwin->dimensions;
-
+	
 	EndCall();
 }
 
@@ -3048,7 +3048,7 @@ void UI::EndChild() {
 	vec2 scrollBarAdjust = vec2((CanScrollY(parent) ? style.scrollBarYWidth : 0), (CanScrollX(parent) ? style.scrollBarXHeight : 0));
 	curwin->visibleRegionStart = Max(parent->visibleRegionStart, curwin->position);
 	curwin->visibleRegionSize = ClampMin(Min(parent->visibleRegionStart + parent->visibleRegionSize - scrollBarAdjust, curwin->position + curwin->dimensions) - curwin->visibleRegionStart, vec2::ZERO);
-
+	
 	EndCall();
 	indentStack.pop();	
 }
@@ -3056,7 +3056,7 @@ void UI::EndChild() {
 void UI::EndPopOut() {
 	curwin->visibleRegionStart = curwin->position;
 	curwin->visibleRegionSize = curwin->dimensions;
-
+	
 	EndCall();
 	indentStack.pop();
 }
@@ -3106,7 +3106,7 @@ inline UIWindow* MetricsDebugItemFindHoveredWindow(UIWindow* window = 0) {
 
 inline void MetricsDebugItem() {
 	using namespace UI;
-
+	
 	enum DebugItemState {
 		None,
 		InspectingWindowPreItems,
@@ -3114,41 +3114,41 @@ inline void MetricsDebugItem() {
 		InspectingWindowPostItems,
 		InspectingItem
 	};
-
+	
 	persist DebugItemState distate = None;
-
+	
 	persist UIItem    iteml;
 	persist UIWindow* debugee = 0;
 	persist vec2      mplatch;
-
+	
 	if (distate != None && distate != InspectingItem) {
 		AllowInputs;
 		Text("Press ESC to cancel");
 		Text("A: Select Pre Items");
 		Text("S: Select Items");
 		Text("D: Select Post Items");
-
+		
 		if (DeshInput->KeyPressed(Key::A)) distate = InspectingWindowPreItems;
 		if (DeshInput->KeyPressed(Key::S)) distate = InspectingWindowItems;
 		if (DeshInput->KeyPressed(Key::D)) distate = InspectingWindowPostItems;
-
+		
 		if (DeshInput->KeyPressed(Key::ESCAPE)) distate = None;
 	}
-
+	
 	auto check_item = [&](UIItem& item) {
 		vec2 ipos = hovered->position + item.position;
 		if (MouseInArea(ipos, item.size)) {
-
+			
 			DebugRect(ipos, item.size);
 			PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
 			BeginPopOut("MetricsDebugItemPopOut", ipos.xAdd(item.size.x) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
-
+			
 			Text(UIItemTypeStrs[item.type], UITextFlags_NoWrap);
 			Text(toStr("DrawCmds: ", item.drawCmds.count).str, UITextFlags_NoWrap);
-
+			
 			EndPopOut();
 			PopVar();
-
+			
 			if (DeshInput->LMousePressed()) {
 				mplatch = ipos.xAdd(item.size.x);
 				iteml = item;
@@ -3159,7 +3159,7 @@ inline void MetricsDebugItem() {
 		}
 		return false;
 	};
-
+	
 	switch (distate) {
 		case None: {
 			if (Button("Debug Item with Cursor") ||
@@ -3188,9 +3188,9 @@ inline void MetricsDebugItem() {
 					DebugRect(hovered->position, hovered->dimensions);
 					PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
 					BeginPopOut("MetricsDebugItemPopOut", hovered->position.xAdd(hovered->width) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
-
+					
 					Text(toStr("Child Window ", hovered->name).str, UITextFlags_NoWrap);
-
+					
 					EndPopOut();
 					PopVar();
 				}
@@ -3210,16 +3210,16 @@ inline void MetricsDebugItem() {
 			PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
 			//PushColor(UIStyleCol_WindowBg, color(50, 50, 50));
 			BeginPopOut("MetricsDebugItemPopOut", mplatch - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoInteract);
-
+			
 			Text(UIItemTypeStrs[iteml.type], UITextFlags_NoWrap);
 			Text(toStr("DrawCmds: ", iteml.drawCmds.count).str, UITextFlags_NoWrap);
 			Text("Select to break on drawCmd", UITextFlags_NoWrap);
-
+			
 			PushColor(UIStyleCol_WindowBg, color(30, 30, 30));
 			BeginChild("MetricsDebugItemPopOutDrawCmdChild", vec2(0,0), UIWindowFlags_NoBorder | UIWindowFlags_FitAllElements);
-
+			
 			BeginRow(3, style.buttonHeightRelToFont* style.fontHeight);
-			RowSetupRelativeColumnWidths({ 1.1,1.1,1.1 });
+			RowSetupRelativeColumnWidths({ 1.1f,1.1f,1.1f });
 			for (UIDrawCmd& dc : iteml.drawCmds) {
 				Text(toStr(UIDrawTypeStrs[dc.type]).str, UITextFlags_NoWrap);
 				
@@ -3243,7 +3243,7 @@ inline void MetricsDebugItem() {
 						}break;
 					}
 				}
-
+				
 				WinSetHovered(curwin);
 				if (Button("Creation")) {
 					break_drawCmd_create_hash = dc.hash;
@@ -3254,15 +3254,15 @@ inline void MetricsDebugItem() {
 				WinUnSetHovered(curwin);
 			}
 			EndRow();
-
+			
 			EndChild();
 			EndPopOut();
 			PopColor();
 			PopVar();
 		}break;
-
+		
 	}
-
+	
 	if (distate) PreventInputs;
 	else AllowInputs;
 }
@@ -3273,7 +3273,7 @@ inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {
 			if (MetricsCheckWindowBreaks(c, winbegin))
 				return true;
 		}
-
+		
 	}
 	else if (WinHovered(window)) {
 		DebugRect(window->position, window->dimensions);
@@ -3288,7 +3288,7 @@ inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {
 
 inline void MetricsBreaking() {
 	using namespace UI;
-
+	
 	enum BreakState {
 		BreakNone,
 		BreakItem,
@@ -3296,10 +3296,10 @@ inline void MetricsBreaking() {
 		BreakWindowBegin,
 		BreakWindowEnd,
 	};
-
+	
 	static BreakState breakstate = BreakNone;
 	static b32 frame_skip = 0;
-
+	
 	auto check_win_items = [&](UIWindow* win) {
 		forI(UI_WINDOW_ITEM_LAYERS) {
 			for (UIItem& item : win->items[i]) {
@@ -3317,7 +3317,7 @@ inline void MetricsBreaking() {
 			}
 		}
 	};
-
+	
 	auto check_win_drawcmds = [&](UIWindow* win) {
 		static u32 selected = -1;
 		forI(UI_WINDOW_ITEM_LAYERS) {
@@ -3333,7 +3333,7 @@ inline void MetricsBreaking() {
 							case UIDrawType_Rectangle: {
 								if (MouseInArea(ipos + dc.position, dc.dimensions)) {
 									DebugRect(ipos + dc.position, dc.dimensions, (o == selected ? Color_Green : Color_Red));
-
+									
 								}
 							}break;
 						}
@@ -3343,9 +3343,9 @@ inline void MetricsBreaking() {
 			}
 		}
 	};
-
 	
-
+	
+	
 	static u32 break_on_cursor = 0;
 	
 	if (breakstate) {
@@ -3353,7 +3353,7 @@ inline void MetricsBreaking() {
 		if (DeshInput->KeyPressed(Key::ESCAPE))
 			breakstate = BreakNone;
 	}
-
+	
 	switch (breakstate) {
 		case BreakNone: {
 			if (Button("Break Item on Cursor") ||
@@ -3366,7 +3366,7 @@ inline void MetricsBreaking() {
 			}
 			if (Button("Break on Window Begin")) {
 				breakstate = BreakWindowBegin;
-
+				
 			}
 			if (Button("Break on Window Begin")) {
 				breakstate = BreakWindowEnd;
@@ -3385,7 +3385,7 @@ inline void MetricsBreaking() {
 			}
 		}break;
 		case BreakDrawCmd: {
-
+			
 		}break;
 		case BreakWindowBegin: {
 			for (UIWindow* w : windows) {
@@ -3558,7 +3558,7 @@ UIWindow* DisplayMetrics() {
 		MetricsBreaking();
 		EndHeader();
 	}
-
+	
 	if (BeginHeader("Cursor Debugging")) {
 		MetricsDebugItem();
 		EndHeader();
@@ -4028,7 +4028,7 @@ void UI::Init() {
 	deshiStage |= DS_UI;
 	
 	TIMER_START(t_s);
-
+	
 	
 	
 	curwin = new UIWindow();
@@ -4170,14 +4170,14 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				dcse += Min(dcso - winScissorOffset, vec2::ZERO);
 				if(drawCmd.useWindowScissor)
 					dcse += Min(winScissorOffset, vec2::ZERO);
-
+				
 			}break;
 		}
 		
 		dcse = ClampMin(dcse, vec2::ZERO);
 		dcso = ClampMin(dcso, vec2::ZERO);
-
-
+		
+		
 		Texture* dctex = drawCmd.tex;
 		
 		cstring dctext{ drawCmd.text.str,drawCmd.text.count };
@@ -4195,7 +4195,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		drawCmd.thickness = dct;
 		BreakOnDrawCmdDraw;
 #endif
-
+		
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
 				Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
@@ -4242,7 +4242,7 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 		DrawItem(item, p);
 	}
 	
-
+	
 	forI(UI_WINDOW_ITEM_LAYERS) {
 		for (UIItem& item : p->items[i]) {
 			if (item.type == UIItemType_Window) {
@@ -4260,14 +4260,14 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 	for (UIItem& item : p->postItems) {
 		DrawItem(item, p);
 	}
-
+	
 	//after we draw everything to do with the base window we then draw its popouts
 	for (UIItem& item : p->popOuts) {
 		item.child->position = p->position + item.position * item.style.globalScale;
 		DrawWindow(item.child, p);
 		WinUnSetBegan(item.child);
 	}
-
+	
 	p->render_time = TIMER_END(winren);
 	
 	//when compiling for debug we defer this to after the metrics window
@@ -4306,10 +4306,10 @@ void UI::Update() {
 
 	//DebugRect(vec2::ONE * 300, vec2::ONE * 100);
 
-	UIDrawCmd test;
-	MakeRect(test, vec2::ONE * 300, vec2::ONE * 300, 5, Color_Red);
-	MakeCircle(test, vec2::ONE * 400, 50, 20, Color_Blue);
-	debugCmds.add(test);
+	//UIDrawCmd test;
+	//MakeRect(test, vec2::ONE * 300, vec2::ONE * 300, 5, Color_Red);
+	//MakeCircle(test, vec2::ONE * 400, 50, 20, Color_Blue);
+	//debugCmds.add(test);
 
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 

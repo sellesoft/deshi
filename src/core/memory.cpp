@@ -13,6 +13,9 @@
 #define MEMORY_BYTE_ALIGNMENT_MASK (MEMORY_BYTE_ALIGNMENT-1)
 #define MEMORY_DO_HEAP_CHECKS true
 #define MEMORY_DO_HEAP_PRINTS false
+#define MEMORY_DO_ARENA_PRINTS false
+#define MEMORY_DO_GENERIC_PRINTS false
+#define MEMORY_DO_TEMP_PRINTS false
 
 ////////////////
 //// @arena ////
@@ -22,6 +25,7 @@ local ArenaHeap* deshi__arena_heap = &deshi__arena_heap_;
 
 #define MEMORY_ARENA_MIN_ALLOC_SIZE ((sizeof(ArenaHeapNode) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
 #define MEMORY_ARENA_ALIGNMENT MEMORY_ARENA_MIN_ALLOC_SIZE
+#define MEMORY_ARENA_LIBC_FLAG 0x1 //had to use libc b/c we ran out of memory
 
 #if MEMORY_DO_HEAP_CHECKS
 local void
@@ -88,19 +92,40 @@ DEBUG_PrintArenaHeapNodes(ArenaHeap* heap){
 #  define DEBUG_PrintArenaHeapNodes(heap)
 #endif //MEMORY_DO_HEAP_PRINTS
 
+//TODO(delle) remove this
 local inline void
 UpdateArenaHeapCursor(ArenaHeap* heap){ //NOTE this relies on empty nodes having correct arena.start positions
 	ArenaHeapNode* last_order_node = CastFromMember(ArenaHeapNode, order, deshi__arena_heap->order.prev);
 	heap->cursor = last_order_node->arena.start + last_order_node->arena.size;
 }
 
+local inline b32
+ArenaUsedLibc(Arena* arena){
+	return HasFlag(*((upt*)(arena+1)), MEMORY_ARENA_LIBC_FLAG);
+}
+
+local Arena*
+CreateArenaLibc(upt size){
+	Arena* ptr = (Arena*)calloc(1, sizeof(Arena) + MEMORY_BYTE_ALIGNMENT + size);
+	Assert(ptr, "Libc failed to allocate memory");
+	*((upt*)(ptr+1)) = (upt)ptr | MEMORY_ARENA_LIBC_FLAG; //place special value for checking when deleting/growing
+	ptr->start  = (u8*)ptr + sizeof(Arena) + MEMORY_BYTE_ALIGNMENT;
+	ptr->cursor = ptr->start;
+	ptr->size   = size;
+	return ptr;
+}
+
 Arena*
-deshi__memory_arena_create(upt size, char* file, upt line){
+deshi__memory_arena_create(upt requested_size, char* file, upt line){
 	DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
-	if(size == 0) return 0;
-	Assert(deshi__arena_heap->start, "Attempted to create an arena before Memory::Init() has been called");
-	upt aligned_size = ClampMin(RoundUpTo(size, MEMORY_ARENA_ALIGNMENT), MEMORY_ARENA_MIN_ALLOC_SIZE);
-	Assert(deshi__arena_heap->used + aligned_size <= deshi__arena_heap->size, "Attempted to use more than max arena heap size");
+	if(requested_size == 0) return 0;
+	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to create an arena before Memory::Init() has been called");
+	
+#if MEMORY_DO_ARENA_PRINTS
+	Logf("memory","Creating an arena with %lld bytes (triggered at %s:%lld)", requested_size, file, line);
+#endif
+	
+	upt aligned_size = ClampMin(RoundUpTo(requested_size, MEMORY_ARENA_ALIGNMENT), MEMORY_ARENA_MIN_ALLOC_SIZE);
 	
 	//check if there are any empty nodes that can hold the new arena
 	for(Node* n = deshi__arena_heap->empty.next; n != &deshi__arena_heap->empty; n = n->next){
@@ -130,15 +155,20 @@ deshi__memory_arena_create(upt size, char* file, upt line){
 			node->arena.size   = aligned_size;
 			node->arena.used   = 0;
 			deshi__arena_heap->used += aligned_size;
-			UpdateArenaHeapCursor(deshi__arena_heap); //NOTE an empty node can't be the last order node //TODO(delle) comment this out then test
+			//UpdateArenaHeapCursor(deshi__arena_heap); //NOTE an empty node can't be the last order node so heap cursor wont change
 			
 			DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap);
 			return &node->arena;
 		}
 	}
 	
+	//if making a new arena and out of memory, default to libc
+	if(deshi__arena_heap->cursor + aligned_size + sizeof(ArenaHeapNode) > deshi__arena_heap->start + deshi__arena_heap->size){
+		LogfE("memory","Deshi ran out of main memory when attempting to create an arena (triggered at %s:%lld); defaulting to libc calloc.", file, line);
+		return CreateArenaLibc(requested_size);
+	}
+	
 	//if we cant replace an empty node, make a new order node for the new arena
-	Assert(deshi__arena_heap->cursor + aligned_size + sizeof(ArenaHeapNode) <= deshi__arena_heap->start + deshi__arena_heap->size, "Attempted to use more than max arena heap size");
 	ArenaHeapNode* new_node = (ArenaHeapNode*)deshi__arena_heap->cursor;
 	NodeInsertPrev(&deshi__arena_heap->order, &new_node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 	new_node->arena.start  = (u8*)new_node + sizeof(ArenaHeapNode);
@@ -157,53 +187,85 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap);
 	if(size == 0) return arena;
 	if(arena == 0) return 0;
-	Assert((u8*)arena >= deshi__arena_heap->start && (u8*)arena < deshi__arena_heap->cursor, "Attempted to grow an arena that's outside the arena heap");
-	Assert(deshi__arena_heap->used + size <= deshi__arena_heap->size, "Attempted to use more than max arena heap size");
+	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to grow an arena before Memory::Init() has been called");
+	
+#if MEMORY_DO_ARENA_PRINTS
+	Logf("memory","Growing an arena[0x%p \"%s\"] of size %lld bytes with %lld bytes (triggered at %s:%lld)", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, size, file, line);
+#endif
+	
+	//if out of memory, default to libc
+	if(ArenaUsedLibc(arena)){
+		upt old_size   = arena->size;
+		upt old_cursor = arena->cursor - arena->start;
+		arena = (Arena*)realloc(arena, sizeof(Arena) + MEMORY_BYTE_ALIGNMENT + old_size + size);
+		arena->start = (u8*)arena + sizeof(Arena) + MEMORY_BYTE_ALIGNMENT;
+		arena->cursor = arena->start + old_cursor;
+		arena->size += size;
+		ZeroMemory(arena->start + old_size, arena->size - old_size);
+		return arena;
+	}
+	Assert((u8*)arena >= deshi__arena_heap->start && (u8*)arena < deshi__arena_heap->cursor, "Attempted to grow an arena that's outside the arena heap and missing the libc flag");
 	
 	//check if the next node is empty and can hold the grown size, or if we need to make a new arena
 	Arena* result = arena;
 	upt aligned_size = RoundUpTo(size, MEMORY_ARENA_ALIGNMENT);
 	ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
 	ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, node->order.next);
-	if(&next->order == &deshi__arena_heap->order){ //we are the last node
-		Assert(deshi__arena_heap->cursor + size <= deshi__arena_heap->start + deshi__arena_heap->size, "Attempted to use more than max arena heap size");
-		upt growth_size = (deshi__arena_heap->cursor + aligned_size <= deshi__arena_heap->start + deshi__arena_heap->size) ? aligned_size : size;
+	
+	//current node is the last node
+	if(&next->order == &deshi__arena_heap->order){
+		if(deshi__arena_heap->cursor + aligned_size > deshi__arena_heap->start + deshi__arena_heap->size){
+			LogfE("memory","Deshi ran out of main memory when attempting to grow an arena[0x%p \"%s\"] of size %lld bytes with %lld bytes (triggered at %s:%lld); defaulting to libc calloc.", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, size, file, line);
+			result = CreateArenaLibc(arena->size + size);
+			result->cursor += (arena->cursor - arena->start);
+			result->used = arena->used;
+			memcpy(result->start, arena->start, arena->size);
+			deshi__memory_arena_delete(arena, file, line);
+			return result;
+		}
 		
-		arena->size += growth_size;
-		deshi__arena_heap->used += growth_size;
+		arena->size += aligned_size;
+		deshi__arena_heap->used += aligned_size;
 		UpdateArenaHeapCursor(deshi__arena_heap);
-	}else if((next->empty.next != 0) && (next->empty.prev != 0) && (next->arena.size >= size)){ //next node is empty and can hold the growth
-		upt growth_size = ((u8*)next + aligned_size <= deshi__arena_heap->start + deshi__arena_heap->size) ? aligned_size : size;
 		
+		DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap); 
+		return result;
+	}
+	
+	//next node is empty and can hold the growth
+	if((next->empty.next != 0) && (next->empty.prev != 0) && (next->arena.size >= aligned_size)){
 		//make new empty+order node after current node if there is enough space
-		upt leftover_size = next->arena.size - growth_size + sizeof(ArenaHeapNode);
+		upt leftover_size = next->arena.size - aligned_size + sizeof(ArenaHeapNode);
 		if(leftover_size > sizeof(ArenaHeapNode)){
-			ArenaHeapNode* new_node = (ArenaHeapNode*)((u8*)next + growth_size);
+			ArenaHeapNode* new_node = (ArenaHeapNode*)((u8*)next + aligned_size);
 			NodeInsertNext(&next->order, &new_node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 			NodeInsertNext(&next->empty, &new_node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 			new_node->arena.start = (u8*)(new_node+1);
-			new_node->arena.size = leftover_size - sizeof(ArenaHeapNode);
+			new_node->arena.size  = leftover_size - sizeof(ArenaHeapNode);
 			deshi__arena_heap->used += sizeof(ArenaHeapNode);
 		}else{
-			growth_size += leftover_size;
+			aligned_size += leftover_size;
 		}
 		
 		//add empty node space to current node
 		NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 		NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 		ZeroMemory(next, sizeof(ArenaHeapNode)); //NOTE only zero header since the node's memory should already be zeroed
-		arena->size += growth_size;
-		deshi__arena_heap->used += (growth_size - sizeof(ArenaHeapNode));
+		arena->size += aligned_size;
+		deshi__arena_heap->used += (aligned_size - sizeof(ArenaHeapNode));
 		UpdateArenaHeapCursor(deshi__arena_heap);
-	}else{ //need to move memory in order to fit new size
-		upt growth_size = (deshi__arena_heap->cursor + arena->size + aligned_size <= deshi__arena_heap->start + deshi__arena_heap->size) ? aligned_size : size;
-		Arena* new_arena = deshi__memory_arena_create(arena->size + growth_size, file, line);
-		memcpy(new_arena->start, arena->start, arena->used);
-		new_arena->used = arena->used;
-		new_arena->cursor = new_arena->start + (arena->cursor - arena->start);
-		result = new_arena;
-		deshi__memory_arena_delete(arena, file, line);
+		
+		DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap); 
+		return result;
 	}
+	
+	//need to move memory in order to fit new size
+	Arena* new_arena = deshi__memory_arena_create(arena->size + size, file, line);
+	memcpy(new_arena->start, arena->start, arena->used);
+	new_arena->used   = arena->used;
+	new_arena->cursor = new_arena->start + (arena->cursor - arena->start);
+	result = new_arena;
+	deshi__memory_arena_delete(arena, file, line);
 	
 	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap); 
 	return result;
@@ -211,16 +273,27 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 
 void
 deshi__memory_arena_clear(Arena* arena, char* file, upt line){
+#if MEMORY_DO_ARENA_PRINTS
+	Logf("memory","Clearing an arena[0x%p \"%s\"] of size %lld bytes (triggered at %s:%lld)", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, file, line);
+#endif
+	
 	ZeroMemory(arena->start, arena->used);
 	arena->cursor = arena->start;
-	arena->used = 0;
+	arena->used   = 0;
 }
 
 void
 deshi__memory_arena_delete(Arena* arena, char* file, upt line){
 	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap);
 	if(arena == 0) return;
-	Assert((u8*)arena >= deshi__arena_heap->start && (u8*)arena < deshi__arena_heap->cursor, "Attempted to delete an arena outside the main heap");
+	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to delete an arena before Memory::Init() has been called");
+	
+#if MEMORY_DO_ARENA_PRINTS
+	Logf("memory","Deleting an arena[0x%p \"%s\"] of size %lld bytes (triggered at %s:%lld)", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, file, line);
+#endif
+	
+	if(ArenaUsedLibc(arena)){ free(arena); return; }
+	Assert((u8*)arena >= deshi__arena_heap->start && (u8*)arena < deshi__arena_heap->cursor, "Attempted to delete an arena outside the main heap and missing the libc flag");
 	
 	ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
 	void* zero_pointer = arena->start;
@@ -311,17 +384,17 @@ local GenericHeap* deshi__generic_heap;
 //  To get the size, we mask off the bits holding these flags.
 //  ISARENAD and PREVINUSE should never be used together
 //
-//  PREVINUSE (0x1): when previous adjacent chunk is in use
-//  ISARENAD  (0x2): when the chunk was large enough to use an Arena rather than bins
+//  PREVINUSE (0x1): previous adjacent chunk is in use
+//  ISARENAD  (0x2): the chunk was large enough to use an Arena rather than bins
+//  LIBC      (0x4): deshi ran out of memory and had to call libc
 #define MEMORY_GENERIC_PREVINUSE_FLAG 0x1
 #define MEMORY_GENERIC_ISARENAD_FLAG 0x2
+#define MEMORY_GENERIC_LIBC_FLAG 0x4
 #define MEMORY_GENERIC_CHUNK_SIZE_BITS (MEMORY_GENERIC_PREVINUSE_FLAG | MEMORY_GENERIC_ISARENAD_FLAG)
 #define MEMORY_GENERIC_EXTRACT_SIZE_BITMASK (~MEMORY_GENERIC_CHUNK_SIZE_BITS)
 
 #define PrevChunkIsInUse(chunk_ptr)\
 ((chunk_ptr)->size & MEMORY_GENERIC_PREVINUSE_FLAG)
-#define ChunkIsArenad(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_GENERIC_ISARENAD_FLAG)
 #define GetChunkSize(chunk_ptr)\
 ((chunk_ptr)->size & MEMORY_GENERIC_EXTRACT_SIZE_BITMASK)
 #define GetNextOrderChunk(chunk_ptr)\
@@ -332,6 +405,10 @@ local GenericHeap* deshi__generic_heap;
 ((MemoryChunk*)((u8*)(chunk_ptr) + (offset)))
 #define ChunkIsInUse(chunk_ptr)\
 (((MemoryChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))->size & MEMORY_GENERIC_PREVINUSE_FLAG)
+#define ChunkIsArenad(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_GENERIC_ISARENAD_FLAG)
+#define ChunkIsLibc(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_GENERIC_LIBC_FLAG)
 
 
 #if MEMORY_DO_HEAP_CHECKS
@@ -398,11 +475,40 @@ DEBUG_PrintGenericArenaNodes(GenericHeap* heap){
 #  define DEBUG_PrintGenericArenaNodes(heap)
 #endif //MEMORY_DO_HEAP_PRINTS
 
+local void*
+AllocateLibc(upt aligned_size){
+	MemoryChunk* new_chunk = (MemoryChunk*)calloc(1, aligned_size);
+	Assert(new_chunk, "Libc failed to allocate memory");
+	new_chunk->size = aligned_size | MEMORY_GENERIC_LIBC_FLAG;
+	return &new_chunk->node;
+}
+
+local void* 
+ReallocateLibc(void* ptr, upt aligned_size){
+	MemoryChunk* chunk = MemoryToChunk(ptr);
+	upt old_size = GetChunkSize(chunk);
+	chunk = (MemoryChunk*)realloc(chunk, aligned_size);
+	chunk->size = aligned_size | MEMORY_GENERIC_LIBC_FLAG;
+	if(aligned_size > old_size) ZeroMemory((u8*)chunk + old_size, aligned_size - old_size);
+	return &chunk->node;
+}
+
+local void
+FreeLibc(void* ptr){
+	MemoryChunk* chunk = MemoryToChunk(ptr);
+	Assert(ChunkIsLibc(chunk), "This was not allocated using libc");
+	free(chunk);
+}
+
 void*
 deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
 	DEBUG_CheckGenericHeap(deshi__generic_heap);
 	if(requested_size == 0) return 0;
-	Assert(deshi__generic_heap, "Attempted to allocate before Memory::Init() has been called");
+	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before Memory::Init() has been called");
+	
+#if MEMORY_DO_GENERIC_PRINTS
+	Logf("memory","Creating an allocation of %lld bytes (triggered at %s:%lld)", requested_size, file, line);
+#endif
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
 	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MIN_ALLOC_SIZE);
@@ -412,7 +518,6 @@ deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
 		Arena* arena = deshi__memory_arena_create(aligned_size, file, line);
 		arena->used = aligned_size;
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
-		Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 		MemoryChunk* chunk = (MemoryChunk*)arena->start;
 		//chunk->prev = 0; //NOTE fresh memory is already zero
 		chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
@@ -454,8 +559,12 @@ deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
 		}
 	}
 	
-	//if we cant replace an empty node, make a new order node for the allocation
-	Assert(deshi__generic_heap->cursor + aligned_size <= deshi__generic_heap->start + deshi__generic_heap->size, "Attempted to use more than max generic heap size");
+	//if we cant replace an empty node, make a new order node for the allocation (if there is space)
+	if(deshi__generic_heap->cursor + aligned_size > deshi__generic_heap->start + deshi__generic_heap->size){
+		LogfE("memory","Deshi ran out of generic memory when attempting to allocate %lld bytes (triggered at %s:%lld); defaulting to libc calloc.", requested_size, file, line);
+		return AllocateLibc(aligned_size);
+	}
+	
 	MemoryChunk* new_chunk = (MemoryChunk*)deshi__generic_heap->cursor;
 	new_chunk->prev = deshi__generic_heap->last_chunk;
 	new_chunk->size = (deshi__generic_heap->last_chunk != 0) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
@@ -472,13 +581,18 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 	DEBUG_CheckGenericHeap(deshi__generic_heap); 
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
-	Assert(deshi__generic_heap, "Attempted to allocate before Memory::Init() has been called");
-	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to reallocate a pointer outside the main heap");
+	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before Memory::Init() has been called");
+	
+#if MEMORY_DO_GENERIC_PRINTS
+	Logf("memory","Reallocating a ptr[0x%p \"%s\"] to %lld bytes (triggered at %s:%lld)", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", requested_size, file, line);
+#endif
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
 	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MIN_ALLOC_SIZE);
 	MemoryChunk* chunk = MemoryToChunk(ptr);
-	spt difference = (spt)GetChunkSize(chunk) - (spt)aligned_size;
+	
+	if(ChunkIsLibc(chunk)){ return ReallocateLibc(ptr, aligned_size); }
+	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to reallocate a pointer outside the main heap and missing the libc flag");
 	
 	//previous allocation was an arena
 	if(ChunkIsArenad(chunk)){ 
@@ -486,7 +600,6 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		Arena* arena = &((ArenaHeapNode*)chunk - 1)->arena;
 		arena = deshi__memory_arena_grow(arena, aligned_size - arena->size, file, line);
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
-		Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 		arena->used = aligned_size;
 		chunk = (MemoryChunk*)arena->start;
 		//chunk->prev = 0; //NOTE it should already be zero
@@ -494,14 +607,13 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 		return &chunk->node;
 	}
-	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap and missing the libc flag");
 	
 	//new allocation needs to be an arena
 	if(aligned_size >= MEMORY_GENERIC_MAX_ALLOC_SIZE){
 		//NOTE since its larger than MEMORY_GENERIC_MAX_ALLOC_SIZE and not an arena already, it cant be less than previous size
 		Arena* arena = deshi__memory_arena_create(aligned_size, file, line);
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
-		Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 		arena->used = aligned_size;
 		memcpy(arena->start, chunk, GetChunkSize(chunk));
 		chunk = (MemoryChunk*)arena->start;
@@ -512,9 +624,21 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		return &chunk->node;
 	}
 	
+	spt difference = (spt)GetChunkSize(chunk) - (spt)aligned_size;
+	
 	//there is no used memory after this, so just adjust chunk size and heap cursor
 	if(chunk == deshi__generic_heap->last_chunk){
 		if(difference != 0){
+			//if out of memory, default to libc
+			if((deshi__generic_heap->cursor - difference) > (deshi__generic_heap->start + deshi__generic_heap->size)){
+				LogfE("memory","Deshi ran out of generic memory when attempting to reallocate a ptr[0x%p \"%s\"] (triggered at %s:%lld); defaulting to libc calloc.", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", file, line);
+				void* new_ptr = AllocateLibc(aligned_size);
+				MemoryChunk* new_chunk = MemoryToChunk(new_ptr);
+				memcpy(&new_chunk->node, &chunk->node, GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD);
+				deshi__memory_generic_zero_free(ptr);
+				return new_ptr;
+			}
+			
 			deshi__generic_heap->cursor -= difference;
 			if(difference > 0) ZeroMemory(deshi__generic_heap->cursor, difference);
 			deshi__generic_heap->used   -= difference;
@@ -542,12 +666,10 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 	
 	//if requested size is less than or equal to previous size and there is not enough space for a new chunk, do nothing
 	if(difference >= 0){
-		Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
 		return ptr;
 	}
 	
 	//requested size is greater than previous size and we need to move memory in order to fit the new size
-	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
 	void* new_ptr = deshi__memory_generic_allocate(requested_size, file, line);
 	Assert(GetChunkSize(MemoryToChunk(new_ptr)) >= GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, "New chunk size must be greater than previous size");
 	memcpy(new_ptr, &chunk->node, GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD);
@@ -561,9 +683,19 @@ void
 deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 	DEBUG_CheckGenericHeap(deshi__generic_heap);
 	if(ptr == 0) return;
-	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to free a pointer outside the main heap");
+	
+#if MEMORY_DO_GENERIC_PRINTS
+	Logf("memory","Zero freeing a ptr[0x%p \"%s\"] (triggered at %s:%lld)", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", file, line);
+#endif
 	
 	MemoryChunk* chunk = MemoryToChunk(ptr);
+	
+	if(ChunkIsLibc(chunk)){
+		FreeLibc(ptr);
+		return;
+	}
+	
+	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to free a pointer outside the main heap and missing the libc flag");
 	
 	if(ChunkIsArenad(chunk)){
 		deshi__memory_arena_delete(&((ArenaHeapNode*)chunk - 1)->arena, file, line);
@@ -645,25 +777,65 @@ local Arena* deshi__temp_arena = &deshi__temp_arena_;
 void*
 deshi__memory_temp_allocate(upt size, char* file, upt line){
 	if(size == 0) return 0;
-	Assert(deshi__temp_arena->used + size <= deshi__temp_arena->size, "Attempted to use more than max temp arena size");
+	Assert(deshi__temp_arena, "Attempted to temp allocate before Memory::Init() has been called");
+	
+#if MEMORY_DO_TEMP_PRINTS
+	Logf("memory","Creating a temp allocation of %lld bytes (triggered at %s:%lld)", size, file, line);
+#endif
+	
+	upt aligned_size = RoundUpTo(size + sizeof(upt), MEMORY_BYTE_ALIGNMENT);
+	if(deshi__temp_arena->used + aligned_size > deshi__temp_arena->size){
+		LogfE("memory","Deshi ran out of temporary memory when attempting to allocate %lld bytes (triggered at %s:%lld); defaulting to libc calloc which will not be automatically freed by clearing the temporary storage (aka: a memory leak)!", size, file, line);
+		upt* size_ptr = (upt*)calloc(1, aligned_size);
+		*size_ptr = aligned_size | 0x1;
+		return size_ptr+1;
+	}
 	
 	void* result = deshi__temp_arena->cursor + sizeof(upt);
-	*((upt*)deshi__temp_arena->cursor) = size; //place allocation size at cursor
-	deshi__temp_arena->cursor += size + sizeof(upt);
-	deshi__temp_arena->used += size + sizeof(upt);
+	*((upt*)deshi__temp_arena->cursor) = aligned_size; //place allocation size at cursor
+	deshi__temp_arena->cursor += aligned_size;
+	deshi__temp_arena->used += aligned_size;
 	return result;
 }
 
 void*
 deshi__memory_temp_reallocate(void* ptr, upt size, char* file, upt line){
+	if(size == 0) return 0;
+	if(ptr == 0) return 0;
+	
+#if MEMORY_DO_TEMP_PRINTS
+	Logf("memory","Reallocating a temp ptr[0x%p \"%s\"] to %lld bytes of (triggered at %s:%lld)", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", size, file, line);
+#endif
+	
+	upt* size_ptr = (upt*)ptr - 1;
+	upt  prev_size = *size_ptr; //including overhead and flags
+	upt  aligned_size = RoundUpTo(size + sizeof(upt), MEMORY_BYTE_ALIGNMENT);
+	
+	//allocation was done with libc
+	if(HasFlag(prev_size, 0x1)){
+		size_ptr = (upt*)realloc(size_ptr, aligned_size);
+		*size_ptr = aligned_size | 0x1;
+		return size_ptr+1;
+	}
+	
+	//if new size is less than previous size, just change the size header
+	if(aligned_size <= prev_size){
+		*size_ptr = aligned_size;
+		return ptr;
+	}
+	
+	//if its greater, then move the memory to a new allocation
 	void* new_ptr = deshi__memory_temp_allocate(size, file, line);
-	upt prev_size = *((upt*)ptr-1);
-	memcpy(new_ptr, ptr, (prev_size > size) ? size : prev_size); 
+	memcpy(new_ptr, ptr, prev_size - sizeof(upt)); 
 	return new_ptr;
 }
 
 void
 deshi__memory_temp_clear(){
+#if MEMORY_DO_TEMP_PRINTS
+	Logf("memory","Clearing temporary memory which used %lld bytes", deshi__temp_arena->used);
+#endif
+	
 	memory_clear_arena(deshi__temp_arena);
 }
 
@@ -757,8 +929,8 @@ deshi__memory_naming_expose(){
 void
 deshi__memory_init(upt main_size, upt temp_size){
 	void* base_address = 0;
-	u8*   allocation = 0;
-	u64   total_size = main_size + temp_size;
+	u8*   allocation   = 0;
+	u64   total_size   = main_size + temp_size;
 	
 #if DESHI_INTERNAL
 	base_address = (void*)Terabytes(2);
@@ -773,7 +945,7 @@ deshi__memory_init(upt main_size, upt temp_size){
 #  error not implemented
 	allocation = (u8*)calloc(1, total_size);
 #endif            //DESHI_MAC
-	Assert(allocation != 0, "Failed to allocate memory");
+	Assert(allocation, "Failed to allocate memory from the OS");
 	
 	deshi__arena_heap->start  = allocation;
 	deshi__arena_heap->cursor = allocation;

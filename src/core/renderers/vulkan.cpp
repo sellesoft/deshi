@@ -3650,7 +3650,7 @@ StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent)
 	twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
 	twodCmdArrays[layer][twodCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
 	twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset = twodIndexCount;
-	twodCmdArrays[layer][twodCmdCounts[layer]].textured = (b32)tex;
+	twodCmdArrays[layer][twodCmdCounts[layer]].textured = (tex) ? true : false;
 	twodCmdCounts[layer]++;
 }
 
@@ -3661,16 +3661,14 @@ AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u
 	
 	Vertex2*     vp = twodVertexArray + twodVertexCount;
 	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
-
+	
 	memcpy(vp, vertstart, vertcount * sizeof(Vertex2));
 	forI(indexcount) ip[i] = twodVertexCount + indexstart[i];
-
+	
 	twodVertexCount += vertcount;
 	twodIndexCount += indexcount;
 	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += indexcount;
 }
-
-
 
 ///////////////////
 //// @settings ////
