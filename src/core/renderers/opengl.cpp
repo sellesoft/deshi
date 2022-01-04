@@ -1275,17 +1275,67 @@ LoadTexture(Texture* texture){
 		glTexImage3D(tgl.type, 0, tgl.format, texture->width, texture->height, texture->depth, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
 	}
 	
-	glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-	glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//TODO(delle) EXT_texture_filter_anisotropic
-	if(texture->mipmaps > 1){
-		glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, (settings.textureFiltering) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
-		glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
-		glGenerateMipmap(tgl.type);
-	}else{
-		glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
-		glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
+	//setup texture filtering
+	switch(texture->filter){
+		case TextureFilter_Nearest:{
+			if(texture->mipmaps > 1){
+				glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glGenerateMipmap(tgl.type);
+			}else{
+				glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			}
+		}break;
+		case TextureFilter_Linear:TextureFilter_Cubic:{
+			if(texture->mipmaps > 1){
+				glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glGenerateMipmap(tgl.type);
+			}else{
+				glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			}
+		}break;
+		default: LogE("opengl", "Unhandled texture filter: ", texture->filter); break;
 	}
+	
+	//setup texture address mode
+	switch(texture->uvMode){
+		case TextureAddressMode_Repeat:{
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}break;
+		case TextureAddressMode_MirroredRepeat:{
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		}break;
+		case TextureAddressMode_ClampToEdge:{
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		}break;
+		case TextureAddressMode_ClampToWhite:{
+			float border_color[4] = {1.f, 1.f, 1.f, 1.f};
+			glTexParameterfv(tgl.type, GL_TEXTURE_BORDER_COLOR, border_color);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		}break;
+		case TextureAddressMode_ClampToBlack:{
+			float border_color[4] = {0.f, 0.f, 0.f, 1.f};
+			glTexParameterfv(tgl.type, GL_TEXTURE_BORDER_COLOR, border_color);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		}break;
+		case TextureAddressMode_ClampToTransparent:{
+			float border_color[4] = {0.f, 0.f, 0.f, 0.f};
+			glTexParameterfv(tgl.type, GL_TEXTURE_BORDER_COLOR, border_color);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		}break;
+		default: LogE("vulkan", "Unhandled texture address mode: ", texture->uvMode); break;
+	}
+	
+	//TODO(delle) EXT_texture_filter_anisotropic
 	
 	glTextures.add(tgl);
 }

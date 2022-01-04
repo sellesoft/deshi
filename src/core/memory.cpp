@@ -845,13 +845,13 @@ deshi__memory_temp_expose(){
 }
 
 
-///////////////// //set/get/remove names of pointers
-//// @naming //// //we don't copy names, so it expects constant strings to be passed in
-///////////////// //we don't use arena cursor here, so it's value will be invalid
+////////////////
+//// @debug ////
+////////////////
 #if DESHI_INTERNAL
 #  define MEMORY_NAMING_MAX_COUNT 4096 //arbitrary limit
 
-local Arena* deshi__naming_arena;
+local Arena* deshi__naming_arena; //we don't use arena cursor here, so it's value will be invalid
 
 local b32
 AddressNameInfo_LessThan(const AddressNameInfo& a, const AddressNameInfo& b){
@@ -919,6 +919,65 @@ deshi__memory_naming_get(void* address){
 Arena*
 deshi__memory_naming_expose(){
 	return deshi__naming_arena;
+}
+
+void
+deshi__memory_draw(){
+	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
+		if(bytes > Kilobytes(1)){
+			character = 'K'; divisor = Kilobytes(1);
+			if(bytes > Megabytes(1)){
+				character = 'M'; divisor = Megabytes(1);
+			}
+		}
+	};
+	
+	UI::PushColor(UIStyleCol_Border,    Color_Grey);
+	UI::PushColor(UIStyleCol_Separator, Color_Grey);
+	UI::PushVar(UIStyleVar_WindowPadding,    vec2::ZERO);
+	UI::PushVar(UIStyleVar_ItemSpacing,      vec2::ZERO);
+	UI::PushVar(UIStyleVar_WindowBorderSize, 0);
+	{UI::Begin("deshi_memory", DeshWindow->dimensions/4.f, DeshWindow->dimensions/2.f, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder);
+		UIWindow* window = UI::GetWindow();
+		char used_char = ' ', size_char = ' ';
+		f32  used_divisor = 1.f, size_divisor = 1.f;
+		
+		//left panel: generic heap
+		UI::SetNextWindowSize({window->width*.5f, window->height*.9f});
+		{UI::BeginChild("deshi_memory_generic", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);
+			bytes_sigfigs(deshi__generic_heap->used, used_char, used_divisor);
+			bytes_sigfigs(deshi__generic_heap->size, size_char, size_divisor);
+			UI::TextF("Generic Heap    %.2f %cB / %.2f %cB", (f32)deshi__generic_heap->used / used_divisor, used_char, (f32)deshi__generic_heap->size / size_divisor, size_char);
+			UI::RectFilled({0,UI::GetPositionForNextItem().y}, UI::GetWindowRemainingSpace(), Color_VeryDarkRed);
+			
+			f32 row_bytes = ceil(sqrtf((f32)deshi__generic_heap->size));
+			
+		}UI::EndChild();
+		
+		//right panel: arena heap
+		UI::SameLine();
+		UI::SetNextWindowSize({window->width*.5f, window->height*.9f});
+		{UI::BeginChild("deshi_memory_arena", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);
+			bytes_sigfigs(deshi__arena_heap->used, used_char, used_divisor);
+			bytes_sigfigs(deshi__arena_heap->size, size_char, size_divisor);
+			UI::TextF("Arena Heap    %.2f %cB / %.2f %cB", (f32)deshi__arena_heap->used / used_divisor, used_char, (f32)deshi__arena_heap->size / size_divisor, size_char);
+			UI::RectFilled({0,UI::GetPositionForNextItem().y}, UI::GetWindowRemainingSpace(), Color_VeryDarkGreen);
+			
+			
+		}UI::EndChild();
+		
+		//bottom panel: temp arena
+		UI::SetNextWindowSize({window->width, window->height*.1f});
+		{UI::BeginChild("deshi_memory_temp", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);
+			bytes_sigfigs(deshi__temp_arena->used, used_char, used_divisor);
+			bytes_sigfigs(deshi__temp_arena->size, size_char, size_divisor);
+			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)deshi__temp_arena->used / used_divisor, used_char, (f32)deshi__temp_arena->size / size_divisor, size_char);
+			UI::RectFilled({0,UI::GetPositionForNextItem().y}, UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
+			
+		}UI::EndChild();
+	}UI::End();
+	UI::PopVar(3);
+	UI::PopColor(2);
 }
 #endif //DESHI_INTERNAL
 

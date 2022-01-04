@@ -2,30 +2,10 @@
 #ifndef DESHI_MODEL_H
 #define DESHI_MODEL_H
 
+#include "texture.h"
 #include "../defines.h"
 #include "../math/math.h"
 #include "../utils/array.h"
-
-enum ImageFormat_{ //NOTE value = bytes per pixel
-	ImageFormat_BW   = 1,
-	ImageFormat_BWA  = 2,
-	ImageFormat_RGB  = 3,
-	ImageFormat_RGBA = 4,
-}; typedef u32 ImageFormat;
-
-enum TextureType_{
-	TextureType_1D,
-	TextureType_2D,
-	TextureType_3D,
-	TextureType_Cube,
-	TextureType_Array_1D,
-	TextureType_Array_2D,
-	TextureType_Array_Cube,
-	TextureType_COUNT
-}; typedef u32 TextureType;
-global_ const char* TextureTypeStrings[] = {
-	"1D", "2D", "3D", "Cube", "1D Array", "2D Array", "Cube Array",
-};
 
 enum Shader_{ 
 	Shader_NULL,
@@ -129,20 +109,6 @@ typedef Mesh::Vertex   MeshVertex;
 typedef Mesh::Index    MeshIndex;
 typedef Mesh::Triangle MeshTriangle;
 typedef Mesh::Face     MeshFace;
-
-struct Texture{
-	char name[DESHI_NAME_SIZE];
-	u32  idx;
-	int  width;
-	int  height;
-	int  depth;
-	int  mipmaps;
-	u8*  pixels;
-	b32  loaded;
-	b32  forceLinear;
-	ImageFormat format;
-	TextureType type;
-};
 
 struct Material{
 	MaterialFlags flags;
