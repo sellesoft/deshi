@@ -1175,7 +1175,7 @@ void Render::
 StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent){
 	twodCmdArrays[layer][twodCmdCounts[layer]].scissorOffset = scissorOffset;
 	twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer]].texIdx        = (tex) ? tex->idx : 0;
+	twodCmdArrays[layer][twodCmdCounts[layer]].texIdx        = (tex) ? tex->idx : 1;
 	twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset   = twodIndexCount;
 	twodCmdArrays[layer][twodCmdCounts[layer]].textured      = (tex) ? true : false;
 	twodCmdCounts[layer]++;
