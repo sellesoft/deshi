@@ -21,13 +21,13 @@ global_ const char* TextureFilterStrings[] = {
 	"Nearest", "Linear", "Cubic"
 };
 
-enum TextureAddressMode_{
-	TextureAddressMode_Repeat,
-	TextureAddressMode_MirroredRepeat,
-	TextureAddressMode_ClampToEdge,
-	TextureAddressMode_ClampToWhite,
-	TextureAddressMode_ClampToBlack,
-	TextureAddressMode_ClampToTransparent,
+enum TextureAddressMode_{ //what happens when uv values are beyond 0..1
+	TextureAddressMode_Repeat,             //uv values loop around (1.1 = .1)
+	TextureAddressMode_MirroredRepeat,     //uv values loop around but mirrored (1.1 = .9)
+	TextureAddressMode_ClampToEdge,        //uv values are the edge value (1.1 = 1)
+	TextureAddressMode_ClampToWhite,       //uv values are white
+	TextureAddressMode_ClampToBlack,       //uv values are black
+	TextureAddressMode_ClampToTransparent, //uv values are transparent
 	TextureAddressMode_COUNT,
 }; typedef u32 TextureAddressMode;
 global_ const char* TextureAddressModeStrings[] = {

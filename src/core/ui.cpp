@@ -398,8 +398,8 @@ inline b32 CanScrollY(UIWindow* window = curwin) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
 inline vec2 PositionForNewItem(UIWindow* window = curwin) {
-	vec2 pos = 
-		window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0) + vec2::ONE * style.windowBorderSize ;
+	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0)
+		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
 	return pos;
 }
