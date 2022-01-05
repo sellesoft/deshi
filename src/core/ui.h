@@ -710,8 +710,8 @@ namespace UI {
 	
 	
 	//// windows ////
-	void Begin(const char* name, UIWindowFlags flags = 0, UIWindowType type = UIWindowType_Normal);
-	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0, UIWindowType type = UIWindowType_Normal);
+	void Begin(const char* name, UIWindowFlags flags = 0);
+	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags = 0);
 	void BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);

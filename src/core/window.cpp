@@ -10,10 +10,10 @@ void glfwError(int id, const char* description){
 GLFWcursor* дефолткурсор;
 GLFWcursor* hResizeCursor;
 GLFWcursor* vResizeCursor;
+GLFWcursor* rDiagResizeCursor;
+GLFWcursor* lDiagResizeCursor;
 GLFWcursor* handCursor;
 GLFWcursor* textCursor;
-
-
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
@@ -65,11 +65,162 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
 	
-	дефолткурсор = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-	hResizeCursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-	vResizeCursor = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
-	handCursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
-	textCursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+	u32 W = 0xffffffff;
+	u32 B = 0xff000000;
+
+	u32 defaultcur[16 * 16] = {
+		B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		B,B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		B,W,B,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,B,0,0,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,W,B,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,W,W,B,0,0,0,0,0,0,0,0,
+		B,W,W,B,W,B,B,B,B,0,0,0,0,0,0,0,
+		B,W,B,B,W,B,0,0,0,0,0,0,0,0,0,0,
+		B,B,0,B,W,W,B,0,0,0,0,0,0,0,0,0,
+		B,0,0,0,B,W,B,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,B,B,0,0,0,0,0,0,0,
+		
+	};
+
+	u32 hresizecur[16 * 16] = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,B,0,0,0,0,0,0,B,0,0,0,0,
+		0,0,0,B,B,0,0,0,0,0,0,B,B,0,0,0,
+		0,0,B,W,B,0,0,0,0,0,0,B,W,B,0,0,
+		0,B,W,W,B,B,B,B,B,B,B,B,W,W,B,0,
+		B,W,W,W,W,W,W,W,W,W,W,W,W,W,W,B,
+		B,W,W,W,W,W,W,W,W,W,W,W,W,W,W,B,
+		0,B,W,W,B,B,B,B,B,B,B,B,W,W,B,0,
+		0,0,B,W,B,0,0,0,0,0,0,B,W,B,0,0,
+		0,0,0,B,B,0,0,0,0,0,0,B,B,0,0,0,
+		0,0,0,0,B,0,0,0,0,0,0,B,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	};
+
+	u32 vresizecur[16 * 16] = {
+		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,B,W,W,W,W,B,0,0,0,0,0,
+		0,0,0,0,B,W,W,W,W,W,W,B,0,0,0,0,
+		0,0,0,B,B,B,B,W,W,B,B,B,B,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,B,B,B,B,W,W,B,B,B,B,0,0,0,
+		0,0,0,0,B,W,W,W,W,W,W,B,0,0,0,0,
+		0,0,0,0,0,B,W,W,W,W,B,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
+	};
+
+	u32 rightdiagresizecur[16 * 16] = {
+		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
+		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
+		0,0,0,0,0,0,0,0,0,0,0,B,W,W,W,B,
+		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
+		0,0,0,0,0,0,0,0,0,B,W,W,W,B,W,B,
+		0,0,0,0,0,0,0,0,B,W,W,W,B,0,B,B,
+		0,0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,
+		0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,0,
+		B,B,0,B,W,W,W,B,0,0,0,0,0,0,0,0,
+		B,W,B,W,W,W,B,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
+		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
+	};
+
+	u32 leftdiagresizecur[16 * 16] = {
+		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
+		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
+		B,W,B,W,W,W,B,0,0,0,0,0,0,0,0,0,
+		B,B,0,B,W,W,W,B,0,0,0,0,0,0,0,0,
+		0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,
+		0,0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,
+		0,0,0,0,0,0,0,0,B,W,W,W,B,0,B,B,
+		0,0,0,0,0,0,0,0,0,B,W,W,W,B,W,B,
+		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
+		0,0,0,0,0,0,0,0,0,0,0,B,W,W,W,B,
+		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
+		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
+	};
+
+	u32 handcur[16 * 16] = {
+		0,0,0,0,0,0,0,0,0,B,B,0,0,0,0,0,
+		0,0,0,0,0,0,B,B,B,W,W,B,B,0,0,0,
+		0,0,0,0,0,B,W,W,B,W,W,B,W,B,0,0,
+		0,0,0,0,0,B,W,W,B,W,W,B,W,B,B,0,
+		0,0,0,0,0,B,W,W,B,W,W,B,W,B,W,B,
+		0,0,0,0,0,B,W,W,B,W,W,B,W,B,W,B,
+		0,B,B,B,0,B,W,W,B,W,W,B,W,B,W,B,
+		0,B,W,W,B,B,W,W,B,W,W,B,W,B,W,B,
+		0,B,W,W,W,B,W,W,W,W,W,W,W,W,W,B,
+		0,0,B,W,W,W,W,W,W,W,W,W,W,W,W,B,
+		0,0,B,W,W,W,W,W,W,W,W,W,W,W,B,0,
+		0,0,0,B,W,W,W,W,W,W,W,W,W,W,B,0,
+		0,0,0,B,W,W,W,W,W,W,W,W,W,B,0,0,
+		0,0,0,0,B,W,W,W,W,W,W,W,W,B,0,0,
+		0,0,0,0,B,W,W,W,W,W,W,W,B,0,0,0,
+		0,0,0,0,0,B,B,B,B,B,B,B,0,0,0,0,
+	};
+
+	u32 textcur[16 * 16] = {
+		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
+		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
+		0,0,0,B,B,B,W,W,W,B,B,B,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
+		0,0,0,B,B,B,W,W,W,B,B,B,0,0,0,0,
+		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
+		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
+	};
+	
+
+	GLFWimage image;
+	image.width = 16;
+	image.height = 16;
+
+	image.pixels = (u8*)defaultcur;
+	дефолткурсор = glfwCreateCursor(&image, 0, 0); //glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+	image.pixels = (u8*)hresizecur;
+	hResizeCursor = glfwCreateCursor(&image, 8, 8); //glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+	image.pixels = (u8*)vresizecur;
+	vResizeCursor = glfwCreateCursor(&image, 8, 8); //glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+	image.pixels = (u8*)rightdiagresizecur;
+	rDiagResizeCursor = glfwCreateCursor(&image, 8, 8);
+	image.pixels = (u8*)leftdiagresizecur;
+	lDiagResizeCursor = glfwCreateCursor(&image, 8, 8);
+	image.pixels = (u8*)handcur;
+	handCursor = glfwCreateCursor(&image, 8, 8); //glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+	image.pixels = (u8*)textcur;
+	textCursor = glfwCreateCursor(&image, 8, 8); //glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
 	
 	if(!дефолткурсор){ LogE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
 	
@@ -358,11 +509,13 @@ void Window::SetCursorPos(vec2 pos){
 
 void Window::SetCursor(CursorType curtype) {
 	switch (curtype) {
-		case CursorType_Arrow:   glfwSetCursor(window, дефолткурсор);  break;
-		case CursorType_HResize: glfwSetCursor(window, hResizeCursor); break;
-		case CursorType_VResize: glfwSetCursor(window, vResizeCursor); break;
-		case CursorType_Hand:    glfwSetCursor(window, handCursor);    break;
-		case CursorType_IBeam:   glfwSetCursor(window, textCursor);    break;
+		case CursorType_Arrow:           glfwSetCursor(window, дефолткурсор);      break;
+		case CursorType_HResize:         glfwSetCursor(window, hResizeCursor);     break;
+		case CursorType_VResize:         glfwSetCursor(window, vResizeCursor);     break;
+		case CursorType_RightDiagResize: glfwSetCursor(window, rDiagResizeCursor); break;
+		case CursorType_LeftDiagResize:  glfwSetCursor(window, lDiagResizeCursor); break;
+		case CursorType_Hand:            glfwSetCursor(window, handCursor);        break;
+		case CursorType_IBeam:           glfwSetCursor(window, textCursor);        break;
 	}
 }
 

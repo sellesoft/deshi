@@ -1168,7 +1168,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
-	MakeFilledRect(drawCmd, pos, dimen, color);
+	MakeFilledRect(drawCmd, vec2::ZERO, dimen, color);
 	AddDrawCmd(&item, drawCmd);
 	
 	item.position = pos;
@@ -2934,12 +2934,12 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 }
 
 
-void UI::Begin(const char* name, UIWindowFlags flags, UIWindowType type) {
-	BeginCall(name, vec2::ONE * 100, vec2(150, 300), flags, type);
+void UI::Begin(const char* name, UIWindowFlags flags) {
+	BeginCall(name, vec2::ONE * 100, vec2(150, 300), flags, UIWindowType_Normal);
 }
 
-void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWindowType type) {
-	BeginCall(name, pos, dimensions, flags, type);
+void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
+	BeginCall(name, pos, dimensions, flags, UIWindowType_Normal);
 }
 
 void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
