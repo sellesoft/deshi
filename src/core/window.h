@@ -27,9 +27,12 @@ enum CursorType_ {
 	CursorType_Arrow,
 	CursorType_HResize,
 	CursorType_VResize,
+	CursorType_RightDiagResize,
+	CursorType_LeftDiagResize,
 	CursorType_Hand,
 	CursorType_IBeam,
 }; typedef u32 CursorType;
+
 struct Window{
 	const char* name;
 	GLFWwindow*  window;

@@ -215,6 +215,7 @@ local VkAllocationCallbacks*   temp_allocator        = &temp_allocator_;
 local VkInstance               instance              = VK_NULL_HANDLE;
 local VkDebugUtilsMessengerEXT debugMessenger        = VK_NULL_HANDLE;
 local VkSurfaceKHR             surface;
+local VkSurfaceKHR             surface2;
 local VkPhysicalDevice         physicalDevice        = VK_NULL_HANDLE;
 local VkPhysicalDeviceProperties physicalDeviceProperties{};
 local VkSampleCountFlagBits    maxMsaaSamples        = VK_SAMPLE_COUNT_1_BIT;
