@@ -979,6 +979,59 @@ deshi__memory_draw(){
 	UI::PopVar(3);
 	UI::PopColor(2);
 }
+
+void 
+deshi__memory_bytes_draw() {
+	using namespace UI;
+
+	GenericHeap* heap = deshi__generic_heap;
+	u32 scale = 8;
+
+	Begin("memory_bytes_draw");
+
+	u32 winw = GetMarginedRight() - GetMarginedLeft();
+	
+	persist f32 selected_chunk = 0;
+
+	Slider("chunksel", &selected_chunk, 0, 450);
+	SameLine();
+	if (Button("<-")) selected_chunk = Max(--selected_chunk, 0.f);
+	SameLine();
+	if (Button("->")) selected_chunk++;
+
+	MemoryChunk* chunk = (MemoryChunk*)heap->start;
+	forI(s32(selected_chunk)) chunk = GetNextOrderChunk(chunk);
+
+	u8* mem = (u8*)ChunkToMemory(chunk);
+	u32 count = GetChunkSize(chunk);
+	
+	forI(Min(count, u32(5000))) {
+		u8 val = mem[i]; 
+		u32 canfit = winw / scale;
+
+
+		vec2 pos = vec2((i % canfit) * scale, i * scale / winw * scale) + GetPositionForNextItem();
+		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
+		if (Math::PointInRectangle(DeshInput->mousePos, GetLastItemScreenPos(), GetLastItemSize())) {
+			PushLayer(GetCenterLayer() + 1);
+			vec2 mp = (DeshInput->mousePos - GetWindow()->position);
+			RectFilled(mp + vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(toStr(mem + i)), Color_VeryDarkGrey);
+			Text(toStr(mem + i).str, mp + vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
+			RectFilled(mp + vec2(0, -GetStyle().fontHeight), CalcTextSize(toStr(val)), Color_VeryDarkGrey);
+			Text(toStr(val).str, mp + vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
+			PopLayer();
+		}
+
+	}
+	
+	
+	//Texture* memsnap = Storage::CreateTextureFromMemory(mem, (char*)chunk, ceil(sqrt(count)), ceil(sqrt(count)), ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToBlack, 0, 1).second;
+	//Image(memsnap);
+
+	End();
+}
+
+
 #endif //DESHI_INTERNAL
 
 

@@ -147,6 +147,7 @@ Arena* deshi__memory_naming_expose();
 #define memory_expose_naming_arena() deshi__memory_naming_expose()
 
 void deshi__memory_draw();
+void deshi__memory_bytes_draw();
 #else
 #  define memory_set_address_name(...)
 #  define memory_get_address_name(...) cstr_lit("null")

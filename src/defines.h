@@ -258,7 +258,7 @@ template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min
 template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
-template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? Min(val+delta, target) : Max(val-delta, target) : target;}
+template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? ((val + delta < target) ? val + delta : target) : ((val - delta > target) ? val - delta : target) : target;}
 
 
 /////////////////////// 
