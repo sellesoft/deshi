@@ -296,7 +296,7 @@ global_ const char* UIDrawTypeStrs[] = {
 	"Image",
 };
 
-#define UIDRAWCMD_MAX_VERTICES 0x5FF
+#define UIDRAWCMD_MAX_VERTICES 0x7FF
 #define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
 
 struct UIItem;
@@ -306,10 +306,13 @@ struct UIItem;
 //we do the rendering pass
 struct UIDrawCmd {
 	UIDrawType type;
-	
-	Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
-	u32     indices[UIDRAWCMD_MAX_INDICES] = {0};
-	vec2    counts; 
+
+	//array<Vertex2> verts;
+	//array<u32> indis;
+
+	Vertex2* vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
+	u32*     indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
+	vec2     counts; 
 	
 	Texture* tex = 0;
 
@@ -325,6 +328,23 @@ struct UIDrawCmd {
 	u32 hash = 0;
 	
 	UIItem* parent = 0;
+};
+
+template<>
+struct hash<UIDrawCmd> {
+	inline u32 operator()(const UIDrawCmd& s) {
+		u32 seed = 2166136261;
+		seed ^= (u32)s.vertices;
+		seed ^= (u32)s.indices;
+		seed ^= (u32)s.counts.x;
+		seed ^= (u32)s.counts.y;
+		seed ^= (u32)s.tex;
+		seed ^= (u32)s.scissorExtent.x;
+		seed ^= (u32)s.scissorExtent.y;
+		seed ^= (u32)s.scissorOffset.x;
+		seed ^= (u32)s.scissorOffset.y;
+		return seed;
+	}
 };
 
 enum UIItemType : u32 {

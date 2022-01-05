@@ -617,6 +617,8 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	ui_stats.draw_cmds++;
 	ui_stats.vertices += drawCmd.counts.x;
 	ui_stats.indices += drawCmd.counts.y;
+	Assert(drawCmd.counts.x < UIDRAWCMD_MAX_VERTICES);
+	Assert(drawCmd.counts.y < UIDRAWCMD_MAX_INDICES);
 	BreakOnDrawCmdCreation;
 }
 
@@ -680,7 +682,39 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
 		row.columnWidths[i] = { widths[i], true };
 }
 
+//4 verts, 6 indices
+FORCE_INLINE vec2
+MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
 
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32* ip = putindices + (u32)offsets.y;
+
+	vec2 ott = end - start;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+	vp[0].pos += norm * thickness / 2;
+	vp[1].pos += norm * thickness / 2;
+	vp[2].pos -= norm * thickness / 2;
+	vp[3].pos -= norm * thickness / 2;
+
+	return vec2(4, 6);
+}
+
+FORCE_INLINE void
+MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color) {
+	drawCmd.counts += MakeLine(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
+	drawCmd.type = UIDrawType_Line;
+}
 
 //3 verts, 3 indices
 FORCE_INLINE vec2 
@@ -715,43 +749,35 @@ MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1,
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
 
-	ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
-	ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
-	ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
-	ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
-	ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 1;
-	ip[15] = offsets.x + 4; ip[16] = offsets.x + 1; ip[17] = offsets.x + 0;
+	MakeLine(vp, ip, vec2::ZERO,  p0, p1, 1, color);
+	MakeLine(vp, ip, vec2(4, 6),  p1, p2, 1, color);
+	MakeLine(vp, ip, vec2(8, 12), p2, p0, 1, color);
 
-	f32 ang1 = Math::AngBetweenVectors(p1 - p0, p2 - p0)/2;
-	f32 ang2 = Math::AngBetweenVectors(p0 - p1, p2 - p1)/2;
-	f32 ang3 = Math::AngBetweenVectors(p1 - p2, p0 - p2)/2;
+	return vec2(12, 18);
 
-	vec2 p0offset = Math::vec2RotateByAngle(-ang1, p2 - p0).normalized();
-	vec2 p1offset = Math::vec2RotateByAngle(-ang2, p2 - p1).normalized();
-	vec2 p2offset = Math::vec2RotateByAngle(-ang3, p0 - p2).normalized();
+	//ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
+	//ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
+	//ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
+	//ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
+	//ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 1;
+	//ip[15] = offsets.x + 4; ip[16] = offsets.x + 1; ip[17] = offsets.x + 0;
+	//
+	//f32 ang1 = Math::AngBetweenVectors(p1 - p0, p2 - p0)/2;
+	//f32 ang2 = Math::AngBetweenVectors(p0 - p1, p2 - p1)/2;
+	//f32 ang3 = Math::AngBetweenVectors(p1 - p2, p0 - p2)/2;
+	//
+	//vec2 p0offset = (Math::vec2RotateByAngle(-ang1, p2 - p0).normalized() * thickness / (2 * sinf(Radians(ang1)))).clampedMag(0, thickness * 2);
+	//vec2 p1offset = (Math::vec2RotateByAngle(-ang2, p2 - p1).normalized() * thickness / (2 * sinf(Radians(ang2)))).clampedMag(0, thickness * 2);
+	//vec2 p2offset = (Math::vec2RotateByAngle(-ang3, p0 - p2).normalized() * thickness / (2 * sinf(Radians(ang3)))).clampedMag(0, thickness * 2);
+	//       
+	//vp[0].pos = p0 - p0offset; vp[0].uv = { 0,0 }; vp[0].color = col;
+	//vp[1].pos = p0 + p0offset; vp[1].uv = { 0,0 }; vp[1].color = col;
+	//vp[2].pos = p1 + p1offset; vp[2].uv = { 0,0 }; vp[2].color = col;
+	//vp[3].pos = p1 - p1offset; vp[3].uv = { 0,0 }; vp[3].color = col;
+	//vp[4].pos = p2 + p2offset; vp[4].uv = { 0,0 }; vp[4].color = col;
+	//vp[5].pos = p2 - p2offset; vp[5].uv = { 0,0 }; vp[5].color = col;
 
-	f32 th1 = thickness / (2 * sinf(Radians(ang1)));
-	f32 th2 = thickness / (2 * sinf(Radians(ang2)));
-	f32 th3 = thickness / (2 * sinf(Radians(ang3)));
-	       
-	vp[0].pos = p0 - p0offset * th1; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = p0 + p0offset * th1; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = p1 + p1offset * th2; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = p1 - p1offset * th2; vp[3].uv = { 0,0 }; vp[3].color = col;
-	vp[4].pos = p2 + p2offset * th3; vp[4].uv = { 0,0 }; vp[4].color = col;
-	vp[5].pos = p2 - p2offset * th3; vp[5].uv = { 0,0 }; vp[5].color = col;
-
-	
-	
-
-	//vp[0].pos += vec2::ONE * 20 * sinf(DeshTotalTime);
-	//vp[1].pos += vec2::ONE * 20 * sinf(DeshTotalTime);
-	//vp[2].pos += vec2::ONE * 20 * sinf(DeshTotalTime);
-	//vp[3].pos += vec2::ONE * 20 * sinf(DeshTotalTime);
-	//vp[4].pos += vec2::ONE * 20 * sinf(DeshTotalTime);
-	//vp[5].pos += vec2::ONE * 20 * sinf(DeshTotalTime);
-
-	return vec3(6, 18);
+	//return vec3(6, 18);
 }
 
 FORCE_INLINE void
@@ -760,39 +786,7 @@ MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color
 	drawCmd.type = UIDrawType_Triangle;
 }
 
-//4 verts, 6 indices
-FORCE_INLINE vec2 
-MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {
-	Assert(putverts && putindices);
-	if (color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	vec2 ott = end - start;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
 
-	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
-	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
-	vp[0].pos += norm * thickness / 2;
-	vp[1].pos += norm * thickness / 2;
-	vp[2].pos -= norm * thickness / 2;
-	vp[3].pos -= norm * thickness / 2;
-	
-	return vec2(4, 6);
-}
-
-FORCE_INLINE void
-MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color) {
-	drawCmd.counts += MakeLine(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
-	drawCmd.type = UIDrawType_Line;
-}
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
@@ -1162,7 +1156,7 @@ void DebugText(vec2 pos, char* text, color col = Color_White) {
 
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+	UIDrawCmd drawCmd;
 	MakeRect(drawCmd, vec2::ZERO, dimen, 1, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1173,7 +1167,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+	UIDrawCmd drawCmd;
 	MakeFilledRect(drawCmd, pos, dimen, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1188,7 +1182,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 
 void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_Line};
+	UIDrawCmd drawCmd;
 	MakeLine(drawCmd, start, end, thickness, color);
 	AddDrawCmd(&item, drawCmd);
 
@@ -1204,7 +1198,7 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 
 void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_Circle };
+	UIDrawCmd drawCmd;
 	MakeCircle(drawCmd, pos, radius, subdivisions, thickness, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1218,7 +1212,7 @@ void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color col
 
 void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_FilledCircle };
+	UIDrawCmd drawCmd;
 	MakeFilledCircle(drawCmd, pos, radius, subdivisions, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1242,14 +1236,14 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 
 //internal function for actually making and adding the drawCmd
 local void TextCall(char* text, vec2 pos, color color, UIItem* item) {
-	UIDrawCmd drawCmd{ UIDrawType_Text};
+	UIDrawCmd drawCmd;
 	MakeText(drawCmd, cstring{ text, strlen(text) }, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
 
 //secondary, for unicode
 local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {
-	UIDrawCmd drawCmd{ UIDrawType_WText};
+	UIDrawCmd drawCmd;
 	MakeText(drawCmd, wcstring{ text, wcslen(text) }, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
@@ -1878,7 +1872,7 @@ b32 UI::BeginHeader(const char* label) {
 	}
 	
 	{//button
-		UIDrawCmd drawCmd{ (*open ? UIDrawType_FilledCircle : UIDrawType_Circle) };
+		UIDrawCmd drawCmd;
 		vec2  position = vec2{ item->size.y / 4, item->size.y / 2 };
 		f32   radius = item->size.y / 4;
 		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
@@ -1901,7 +1895,7 @@ b32 UI::BeginHeader(const char* label) {
 	}
 	
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+		UIDrawCmd drawCmd;
 		vec2  position = bgpos;
 		vec2  dimensions = bgdim;
 		color col = style.colors[UIStyleCol_HeaderBorder];
@@ -3018,7 +3012,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 	
 	{//draw titlebar minimize button and check for it being clicked
 		if (!((curwin->flags & UIWindowFlags_NoMinimizeButton) || (curwin->flags & UIWindowFlags_NoMinimizeButton))) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+			UIDrawCmd drawCmd;
 			drawCmd.position = vec2(
 									curwin->x + (curwin->width - curwin->name.size * style.font->max_width) * 0.01,
 									curwin->y + (style.titleBarHeight * 0.5 - 2));
@@ -3087,7 +3081,7 @@ void EndCall() {
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 			
 			{//scroll bg
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				UIDrawCmd drawCmd;
 				vec2  position = vec2(ScrollBaredRight(), BorderedTop());
 				vec2  dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
 				color col = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
@@ -3096,7 +3090,7 @@ void EndCall() {
 			}
 			
 			{//scroll dragger
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				UIDrawCmd drawCmd;
 				vec2  position = draggerpos;
 				vec2  dimensions = vec2(style.scrollBarYWidth, draggerheight);
 				color col = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -3106,7 +3100,7 @@ void EndCall() {
 			
 			//if both scroll bars are active draw a little square to obscure the empty space 
 			if (CanScrollX()) {
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				UIDrawCmd drawCmd;
 				vec2  position = vec2(ScrollBaredRight(), scrollbarheight);
 				vec2  dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
 				color col = style.colors[UIStyleCol_WindowBg];
@@ -3130,7 +3124,7 @@ void EndCall() {
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 			
 			{//scroll bg
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				UIDrawCmd drawCmd;
 				vec2  position = vec2(0, ScrollBaredBottom());
 				vec2  dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
 				color col = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
@@ -3139,7 +3133,7 @@ void EndCall() {
 			}
 			
 			{//scroll dragger
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				UIDrawCmd drawCmd;
 				vec2  position = draggerpos;
 				vec2  dimensions = vec2(draggerwidth, style.scrollBarXHeight);
 				color col = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -3155,7 +3149,7 @@ void EndCall() {
 	if (!WinHasFlags(UIWindowFlags_Invisible)) {
 		//draw background
 		if (!WinHasFlag(UIWindowFlags_NoBackground)) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+			UIDrawCmd drawCmd;
 			vec2  position = vec2::ZERO;
 			vec2  dimensions = curwin->dimensions;
 			color col = style.colors[UIStyleCol_WindowBg];
@@ -3165,7 +3159,7 @@ void EndCall() {
 		
 		//draw border
 		if (!WinHasFlag(UIWindowFlags_NoBorder)) {
-			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+			UIDrawCmd drawCmd;
 			vec2  position = vec2::ONE * ceil(style.windowBorderSize / 2);
 			vec2  dimensions = curwin->dimensions - vec2::ONE * ceil(style.windowBorderSize);
 			color col = style.colors[UIStyleCol_Border];
@@ -3887,7 +3881,34 @@ UIWindow* DisplayMetrics() {
 		if (showDrawCmdTriangles) {
 			for (UIItem& item : debugee->preItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+					for (int i = 0; i < dc.counts.y; i += 3) {
+						DebugTriangle(
+							dc.vertices[dc.indices[i]].pos,
+							dc.vertices[dc.indices[i + 1]].pos,
+							dc.vertices[dc.indices[i + 2]].pos, Color_Green);
+					}
+				}
+			}
+			forI(UI_WINDOW_ITEM_LAYERS) {
+				for (UIItem& item : debugee->items[i]) {
+					for (UIDrawCmd& dc : item.drawCmds) {
+						for (int i = 0; i < dc.counts.y; i += 3) {
+							DebugTriangle(
+								dc.vertices[dc.indices[i]].pos,
+								dc.vertices[dc.indices[i + 1]].pos,
+								dc.vertices[dc.indices[i + 2]].pos);
+						}
+					}
+				}
+			}
+			for (UIItem& item : debugee->postItems) {
+				for (UIDrawCmd& dc : item.drawCmds) {
+					for (int i = 0; i < dc.counts.y; i += 3) {
+						DebugTriangle(
+							dc.vertices[dc.indices[i]].pos,
+							dc.vertices[dc.indices[i + 1]].pos,
+							dc.vertices[dc.indices[i + 2]].pos, Color_Blue);
+					}
 				}
 			}
 		}
@@ -4421,31 +4442,6 @@ void CleanUpWindow(UIWindow* window) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
-	//DebugText(vec2::ONE * 300, "oh yeah");
-
-	vec2 p0 = vec2::ONE * 300;
-	vec2 p1 = vec2(300, 400 + BoundTimeOsc(0, 100));
-	vec2 p2 = vec2(400, 300);
-	vec2 center = (p0 + p1 + p2) / 3;
-
-	f32 ang1 = Radians(Math::AngBetweenVectors(p1 - p0, p2 - p0));
-	f32 ang2 = Radians(Math::AngBetweenVectors(p0 - p1, p2 - p1));
-	f32 ang3 = Radians(Math::AngBetweenVectors(p1 - p2, p0 - p2));
-
-	vec2 p0offset = Math::vec2RotateByAngle(-Degrees(ang1 / 2), p2 - p0);
-	vec2 p1offset = Math::vec2RotateByAngle(-Degrees(ang2 / 2), p2 - p1);
-	vec2 p2offset = Math::vec2RotateByAngle(-Degrees(ang3 / 2), p0 - p2);
-
-	//DebugTriangleFilled(p0, p1, p2, Color_Green);
-	//DebugLine(p0, p0 + p0offset * 600);
-	//DebugLine(p1, p1 + p1offset * 600);
-	//DebugLine(p2, p2 + p2offset * 600);
-	//DebugCircle(center, 5);
-	//DebugLine(center, p0, Color_Cyan);
-	//DebugLine(center, p1, Color_Cyan);
-	//DebugLine(center, p2, Color_Cyan);
-
-	DebugTriangle(p0, p1, p2);
 
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
