@@ -203,8 +203,6 @@ struct {
 #define WinDragging       ui_state.input == ISDragging
 #define WinScrolling      ui_state.input == ISScrolling
 
-#define EndEvalDimensions vec2(-1,-1); //used in place of dimensions for a window when the window should evaluate the dimensions of itself in EndCall()
-
 //for breaking on a window's begin or end
 UIWindow* break_window_begin = 0;
 UIWindow* break_window_end = 0;
@@ -2042,7 +2040,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 		dim = UI::CalcTextSize(string(buff));
 	}
 	else {
-		dim = DecideItemSize(vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
+		dim = DecideItemSize(vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
 	
 	item->size = dim;
@@ -2646,8 +2644,8 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 //TODO(sushi) PLEASE clean this shit up
 void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 	//always clamp scroll to make sure that it doesnt get stuck pass max scroll when stuff changes inside the window
-	window->scx = Math::clamp(window->scx, 0.f, window->maxScroll.x);
-	window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y);
+	window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
+	window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
 	
 	//mouse wheel inputs
 	//if this is a child window and it cant scroll, redirect the scrolling inputs to the parent
@@ -2657,12 +2655,12 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 	}
 	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollUp()) {
 		window->scy -= style.scrollAmount.y;
-		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
+		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
 	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollDown()) {
 		window->scy += style.scrollAmount.y;
-		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
+		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
 	
@@ -4466,12 +4464,7 @@ void UI::Update() {
 	MarginPositionOffset = vec2::ZERO;
 	MarginSizeOffset = vec2::ZERO;
 	
-#ifdef DESHI_INTERNAL
-	//clear break vars in debug mode
-	break_window_item = 0;
-	item_idx = -1;
-	item_layer = -1;
-#endif
+
 	
 	//windows input checking functions
 	CheckWindowsForFocusInputs();
@@ -4491,6 +4484,17 @@ void UI::Update() {
 		DrawWindow(p);
 		WinUnSetBegan(p);
 	}
+
+#ifdef DESHI_INTERNAL
+	//clear break vars in debug mode
+	break_window_item = 0;
+	item_idx = -1;
+	item_layer = -1;
+	break_window_begin = 0;
+	break_window_end = 0;
+	break_drawCmd_create_hash = -1;
+	break_drawCmd_draw_hash = -1;
+#endif
 	
 	if (show_metrics) {
 		//DisplayMetrics();

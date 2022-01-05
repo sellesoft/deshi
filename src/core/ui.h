@@ -296,7 +296,7 @@ global_ const char* UIDrawTypeStrs[] = {
 	"Image",
 };
 
-#define UIDRAWCMD_MAX_VERTICES 0x7FF
+#define UIDRAWCMD_MAX_VERTICES 0x3FF
 #define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
 
 struct UIItem;
@@ -307,9 +307,7 @@ struct UIItem;
 struct UIDrawCmd {
 	UIDrawType type;
 
-	//array<Vertex2> verts;
-	//array<u32> indis;
-
+	//because of how much drawCmds move around, we have to store these things on the heap
 	Vertex2* vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
 	u32*     indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
 	vec2     counts; 
@@ -333,16 +331,8 @@ struct UIDrawCmd {
 template<>
 struct hash<UIDrawCmd> {
 	inline u32 operator()(const UIDrawCmd& s) {
-		u32 seed = 2166136261;
-		seed ^= (u32)s.vertices;
-		seed ^= (u32)s.indices;
-		seed ^= (u32)s.counts.x;
-		seed ^= (u32)s.counts.y;
-		seed ^= (u32)s.tex;
-		seed ^= (u32)s.scissorExtent.x;
-		seed ^= (u32)s.scissorExtent.y;
-		seed ^= (u32)s.scissorOffset.x;
-		seed ^= (u32)s.scissorOffset.y;
+		u32 seed = 2166134;
+		seed ^= (u32)s.vertices | (u32)s.indices << (u32)s.counts.x | (u32)s.counts.y;
 		return seed;
 	}
 };

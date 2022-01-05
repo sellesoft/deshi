@@ -449,14 +449,6 @@ namespace Math {
 	//interpolating
 	template<typename T> global_ T lerp(T a, T b, f32 t){ return a*(1.f-t) + b*t; }
 	
-	//clamping
-	template<typename T> inline global_ T clamp(T value, T lo, T hi){ 
-		return (value < lo) ? lo : ((value > hi) ? hi : value); 
-	}
-	template<> inline global_ vec3 clamp<vec3>(vec3 value, vec3 lo, vec3 hi){ 
-		return vec3(clamp(value.x,lo.x,hi.x), clamp(value.y,lo.y,hi.y), clamp(value.z,lo.z,hi.z));
-	}
-	
 	//returns how far along a polynomial fit for a set of data you are
 	//you are not allowed to have 2 points with the same x value here
 	//using Lagrange Polynomials
