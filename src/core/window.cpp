@@ -393,6 +393,12 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 							   }
 						   }
 					   });
+
+	//void character_callback(GLFWwindow* window, unsigned int codepoint)
+	glfwSetCharCallback(window,
+		[](GLFWwindow* window, unsigned int codepoint)->void{
+			DeshInput->charIn[DeshInput->realCharCount++] = codepoint;
+		});
 	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	glfwSetScrollCallback(window, 
@@ -416,7 +422,8 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 
 
 	//TODO(sushi) implement this function for use on InputText()
-	//glfwSetCharCallback()
+	// //void windo
+	//
 	
 	LogS("deshi","Finished window initialization in ",TIMER_END(t_s),"ms");
 } //Init()

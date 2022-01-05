@@ -116,7 +116,9 @@ struct Input{
 	f64 screenMouseX, screenMouseY;
 	f64 scrollX,      scrollY;
 	vec2 mousePos;
-	
+	u32 charIn[127] = { 0 };
+	u32 charCount = 0;
+
 	b32 zero[MAX_KEYBOARD_KEYS] = {0};
 	
 	b32 anyKeyDown = 0;
@@ -133,9 +135,17 @@ struct Input{
 	f64 realMouseX,       realMouseY;
 	f64 realScreenMouseX, realScreenMouseY;
 	f64 realScrollX,      realScrollY;
+	u32 realCharCount = 0;
 	b32 keyFocus, mouseFocus;
 	
 	b32 logInput = false;
+
+	f64 time_key_held = 0;
+	f64 time_char_held = 0;
+
+	TIMER_START(input__time_since_key_hold);
+	TIMER_START(input__time_since_char_hold);
+
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
@@ -144,21 +154,24 @@ struct Input{
 		memcpy(&newKeyState, &realKeyState, sizeof(b32) * MAX_KEYBOARD_KEYS);
 		
 		if (!memcmp(newKeyState, zero, MAX_KEYBOARD_KEYS)) {
+			TIMER_RESET(input__time_since_key_hold);
 			newKeyState[0] = 1;
 			anyKeyDown = 0;
 		}
 		else {
+			time_key_held = TIMER_END(input__time_since_key_hold);
 			anyKeyDown = 1;
 		}
-		
+
+		if (!realCharCount) TIMER_RESET(input__time_since_char_hold);
+		else time_char_held = TIMER_END(input__time_since_char_hold);
+
 		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
-		//bit scuffed mouse wheel stuff
-		if      (realScrollY < 0) newKeyState[MouseButton::SCROLLDOWN] = 1;
-		else if (realScrollY > 0) newKeyState[MouseButton::SCROLLUP] = 1;
-		else    { newKeyState[MouseButton::SCROLLDOWN] = 0; newKeyState[MouseButton::SCROLLUP] = 0; }
 		scrollY = realScrollY;
 		realScrollY = 0;
+		charCount = realCharCount;
+		realCharCount = 0;
 		DeshTime->inputTime = TIMER_END(t_d);
 	}
 	
@@ -187,9 +200,7 @@ struct Input{
 	inline b32 RMousePressed()  { return  newKeyState[MouseButton::RIGHT]      && !oldKeyState[MouseButton::RIGHT]; }
 	inline b32 LMouseReleased() { return !newKeyState[MouseButton::LEFT]       &&  oldKeyState[MouseButton::LEFT]; }
 	inline b32 RMouseReleased() { return !newKeyState[MouseButton::RIGHT]      &&  oldKeyState[MouseButton::RIGHT]; }
-	inline b32 ScrollUp()       { return  newKeyState[MouseButton::SCROLLUP]   && !oldKeyState[MouseButton::SCROLLUP]; }
-	inline b32 ScrollDown()     { return  newKeyState[MouseButton::SCROLLDOWN] && !oldKeyState[MouseButton::SCROLLDOWN]; }
-	
+
 	b32 ModsDown(u32 mods){
 		switch(mods){
 			case(InputMod_Any):            return true;
