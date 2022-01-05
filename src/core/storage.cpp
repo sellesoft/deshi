@@ -1749,7 +1749,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	u32 tsx = (u32)ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
 	
 	font->max_height = size;
-	font->max_width = u32(f32(widthmax) / f32(heightmax * size));
+	font->max_width = u32(f32(widthmax) / f32(heightmax) * size);
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 
