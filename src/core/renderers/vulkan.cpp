@@ -3414,7 +3414,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		
 		//figure out average norm
 		vec2
-			p01 = curr - last,
+		p01 = curr - last,
 		p12 = next - curr,
 		p02 = next - last,
 		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
