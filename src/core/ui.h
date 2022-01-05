@@ -45,47 +45,59 @@
 #include "../utils/map.h"
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	        // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,             // default vec2(1, 1)	     spacing between items within a window
-	UIStyleVar_WindowBorderSize,        // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	        // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,          // default vec2(0, 0.5)  	 how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,            // default vec2(5, 5)		 amount to scroll in pixels             
-	UIStyleVar_CheckboxSize,            // default vec2(10, 10)      
-	UIStyleVar_CheckboxFillPadding,     // default 2                 how far from the edge a checkbox's true filling is padding
-	UIStyleVar_InputTextTextAlign,      // default vec2(0, 0.5)      how text is aligned within InputText boxes
-	UIStyleVar_ButtonTextAlign,         // default vec2(0.5, 0.5)    how text is aligned within buttons
-	UIStyleVar_HeaderTextAlign,         // default vec2(0.05, 0.5)
-	UIStyleVar_ButtonHeightRelToFont,   // default 1.3                height of header box relative to the font height
-	UIStyleVar_HeaderHeightRelToFont,   // default 1.3
-	UIStyleVar_InputTextHeightRelToFont,// default 1.3
-	UIStyleVar_CheckboxHeightRelToFont, // default 1.3
-	UIStyleVar_RowItemAlign,            // default vec2(0.5, 0.5)    determines how rows align their items within their cells
-	UIStyleVar_RowCellPadding,          // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_ScrollBarYWidth,         // default 5
-	UIStyleVar_ScrollBarXHeight,        // default 5
-	UIStyleVar_IndentAmount,            // default 8
-	UIStyleVar_FontHeight,              // default font->height      height of font in pixels
-	UIStyleVar_Font,			        // default "gohufont-11.bdf" 
+	UIStyleVar_WindowPadding,	          // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,               // default vec2(1, 1)	       spacing between items within a window
+	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels                
+	UIStyleVar_TitleBarHeight,	          // default font.height * 1.2                                        
+	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)  	   how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,              // default vec2(5, 5)		   amount to scroll in pixels             
+	UIStyleVar_CheckboxSize,              // default vec2(10, 10)      
+	UIStyleVar_CheckboxFillPadding,       // default 2                 how far from the edge a checkbox's true filling is padding
+	UIStyleVar_InputTextTextAlign,        // default vec2(0, 0.5)      how text is aligned within InputText boxes
+	UIStyleVar_ButtonTextAlign,           // default vec2(0.5, 0.5)    how text is aligned within buttons
+	UIStyleVar_HeaderTextAlign,           // default vec2(0, 0.5)
+	UIStyleVar_SelectableTextAlign,       // default vec2(0.5, 0.5)
+	UIStyleVar_ButtonHeightRelToFont,     // default 1.3                height of header box relative to the font height
+	UIStyleVar_SelectableHeightRelToFont, // default 1.3 
+	UIStyleVar_HeaderHeightRelToFont,     // default 1.3
+	UIStyleVar_InputTextHeightRelToFont,  // default 1.3
+	UIStyleVar_CheckboxHeightRelToFont,   // default 1.3
+	UIStyleVar_RowItemAlign,              // default vec2(0.5, 0.5)    determines how rows align their items within their cells
+	UIStyleVar_RowCellPadding,            // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
+	UIStyleVar_ScrollBarYWidth,           // default 5
+	UIStyleVar_ScrollBarXHeight,          // default 5
+	UIStyleVar_IndentAmount,              // default 8
+	UIStyleVar_FontHeight,                // default font->height      height of font in pixels
+	UIStyleVar_Font,			          // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
 
 global_ const char* styleVarStr[] = {
-	"UIStyleVar_WindowPadding",
-	"UIStyleVar_ItemSpacing",
-	"UIStyleVar_WindowBorderSize",
-	"UIStyleVar_TitleBarHeight",
-	"UIStyleVar_TitleTextAlign",
-	"UIStyleVar_ScrollAmount",
-	"UIStyleVar_CheckboxSize",
-	"UIStyleVar_CheckboxFillPadding",
-	"UIStyleVar_InputTextTextAlign",
-	"UIStyleVar_ButtonTextAlign",     
-	"UIStyleVar_RowItemAlign",        
-	"UIStyleVar_RowCellPadding",    
-	"UIStyleVar_FontHeight",
-	"UIStyleVar_Font",
-	"UIStyleVar_COUNT"
+	"WindowPadding",	          
+	"ItemSpacing",               
+	"WindowBorderSize",          
+	"TitleBarHeight",	          
+	"TitleTextAlign",            
+	"ScrollAmount",              
+	"CheckboxSize",              
+	"CheckboxFillPadding",       
+	"InputTextTextAlign",        
+	"ButtonTextAlign",           
+	"HeaderTextAlign",           
+	"SelectableTextAlign",       
+	"ButtonHeightRelToFont",     
+	"SelectableHeightRelToFont", 
+	"HeaderHeightRelToFont",     
+	"InputTextHeightRelToFont",  
+	"CheckboxHeightRelToFont",   
+	"RowItemAlign",              
+	"RowCellPadding",            
+	"ScrollBarYWidth",           
+	"ScrollBarXHeight",          
+	"IndentAmount",              
+	"FontHeight",                
+	"Font",			          
+	"COUNT"
 };
 
 enum UIStyleCol : u32 {
@@ -160,10 +172,12 @@ struct UIStyle {
 	vec2 inputTextTextAlign;
 	vec2 buttonTextAlign;
 	vec2 headerTextAlign;
+	vec2 selectableTextAlign;
 	f32  buttonHeightRelToFont;
 	f32  headerHeightRelToFont;
 	f32  inputTextHeightRelToFont;
 	f32  checkboxHeightRelToFont;
+	f32  selectableHeightRelToFont;
 	vec2 rowItemAlign;
 	vec2 rowCellPadding;
 	f32  scrollBarYWidth;
@@ -726,7 +740,8 @@ namespace UI {
 	void DrawDebugCircle(vec2 pos, f32 radius, color color = Color_Red);
 	void DrawDebugCircleFilled(vec2 pos, f32 radius, color color = Color_Red);
 	void DrawDebugLine(vec2 pos1, vec2 pos2, color color = Color_Red);
-	
+	void DrawDebugTriangle(vec2 p0, vec2 p1, vec2 p2, color color = Color_Red);
+
 }; //namespace UI
 
 #endif //DESHI_UI_H

@@ -48,10 +48,12 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, inputTextTextAlign)},
 	{2, offsetof(UIStyle, buttonTextAlign)},
 	{2, offsetof(UIStyle, headerTextAlign)},
+	{2, offsetof(UIStyle, selectableTextAlign)},
 	{1, offsetof(UIStyle, buttonHeightRelToFont)},
 	{1, offsetof(UIStyle, headerHeightRelToFont)},
 	{1, offsetof(UIStyle, inputTextHeightRelToFont)},
 	{1, offsetof(UIStyle, checkboxHeightRelToFont)},
+	{1, offsetof(UIStyle, selectableHeightRelToFont)},
 	{2, offsetof(UIStyle, rowItemAlign)},
 	{2, offsetof(UIStyle, rowCellPadding)},
 	{1, offsetof(UIStyle, scrollBarYWidth)},
@@ -1781,7 +1783,7 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	
 	UIItem* item = BeginItem(UIItemType_Selectable, 0);
 	item->position = pos;
-	item->size = DecideItemSize(UI::CalcTextSize(label) * 1.5, item->position);
+	item->size = DecideItemSize(vec2(UI::CalcTextSize(label).x, style.fontHeight * style.selectableHeightRelToFont), item->position);
 	
 	b32 clicked = 0;
 	
@@ -1807,8 +1809,8 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	{//text
 		UIDrawCmd drawCmd;
 		vec2 position =
-			vec2((item->size.x - UI::CalcTextSize(label).x) * style.buttonTextAlign.x,
-				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+			vec2((item->size.x - UI::CalcTextSize(label).x) * style.selectableTextAlign.x,
+				 (style.fontHeight * style.selectableHeightRelToFont - style.fontHeight) * style.selectableTextAlign.y);
 		
 		color col = style.colors[UIStyleCol_Text];
 		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
@@ -2656,12 +2658,12 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 		return;
 	}
 	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollUp()) {
-		window->scy -= style.scrollAmount.y;
+		window->scy -= style.scrollAmount.y * abs(DeshInput->scrollY);
 		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
 	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollDown()) {
-		window->scy += style.scrollAmount.y;
+		window->scy += style.scrollAmount.y * abs(DeshInput->scrollY);
 		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
@@ -3469,21 +3471,25 @@ inline void MetricsBreaking() {
 		forI(UI_WINDOW_ITEM_LAYERS) {
 			for (UIItem& item : win->items[i]) {
 				if (MouseInArea(win->position + item.position, item.size)) {
-					DebugRect(win->position + item.position, item.size);
+					//DebugRect(win->position + item.position, item.size);
 					vec2 ipos = win->position + item.position;
 					selected = Clamp(selected, 0, item.drawCmds.count);
 					int o = 0;
 					for (UIDrawCmd& dc : item.drawCmds) {
-						switch (dc.type) {
-							case UIDrawType_FilledRectangle:
-							case UIDrawType_Rectangle: {
-								//if (MouseInArea(ipos + dc.position, dc.dimensions)) {
-								//	DebugRect(ipos + dc.position, dc.dimensions, (o == selected ? Color_Green : Color_Red));
-								//	
-								//}
-							}break;
+						for (u32 tri = 0; tri < dc.counts.y; tri += 3) {
+							vec2 
+							p0 = ipos + dc.vertices[dc.indices[tri]].pos,
+							p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
+							p2 = ipos + dc.vertices[dc.indices[tri+2]].pos;
+							DebugTriangle(p0, p1, p2, color(255, 0,0, 70));
+							if (Math::PointInTriangle(DeshInput->mousePos, p0, p1, p2)) {
+								DebugTriangle(p0, p1, p2);
+								if (DeshInput->LMousePressed()) {
+								
+								}
+							}
 						}
-						o++;
+						
 					}
 				}
 			}
@@ -3531,7 +3537,16 @@ inline void MetricsBreaking() {
 			}
 		}break;
 		case BreakDrawCmd: {
-			
+			for (UIWindow* w : windows) {
+				if (WinChildHovered(w)) {
+					for (UIWindow* c : w->children) {
+						check_win_drawcmds(c);
+					}
+				}
+				else if (WinHovered(w)) {
+					check_win_drawcmds(w);
+				}
+			}
 		}break;
 		case BreakWindowBegin: {
 			for (UIWindow* w : windows) {
@@ -3665,34 +3680,25 @@ UIWindow* DisplayMetrics() {
 		
 		Checkbox("show children", &showChildren);
 		
-		BeginChild("METRICSWindows", vec2(MAX_F32, 300));
+		SetNextWindowSize(vec2(MAX_F32, 300));
+		BeginChild("METRICSWindows", vec2::ZERO);
 		
+		PushVar(UIStyleVar_SelectableTextAlign, vec2(0, 0.5));
 		for (UIWindow* window : windows) {
-			Text(toStr(window->name, "; hovered: ", WinHovered(window)).str, UITextFlags_NoWrap);
-			UIItem* tex = GetLastItem();
-			SetNextItemSize(tex->size);
-			PushLayer(GetCenterLayer() - 1);
-			if (Selectable("", tex->position, window == debugee)) {
+			if (Selectable(toStr(window->name, "; hovered: ", WinHovered(window)).str, window == debugee)) {
 				debugee = window;
 			}
-			PopLayer();
 			if (showChildren) {
 				addGlobalIndent(13);
 				for (UIWindow* child : window->children) {
-					Text(toStr(child->name, "; hovered: ", WinHovered(child)).str, UITextFlags_NoWrap);
-					tex = GetLastItem();
-					
-					SetNextItemSize(tex->size);
-					PushLayer(GetCenterLayer() - 1);
-					if (Selectable("", tex->position, child == debugee)) {
+					if (Selectable(toStr(child->name, "; hovered: ", WinHovered(child)).str, child == debugee)) {
 						debugee = child;
-						
 					}
-					PopLayer();
 				}
 				popGlobalIndent;
 			}
 		}
+		PopVar();
 		
 		EndChild();
 		
@@ -3758,24 +3764,27 @@ UIWindow* DisplayMetrics() {
 			if (BeginHeader("Items")) {
 				SetNextWindowSize(vec2(MAX_F32, 300));
 				BeginChild("METRICSItems", vec2(0,0)); {
-					BeginRow(2, style.buttonHeightRelToFont * style.fontHeight);
-					RowSetupRelativeColumnWidths({ 1,1 });
 					forI(UI_WINDOW_ITEM_LAYERS) {
+						u32 count = 0;
 						for (UIItem& item : debugee->items[i]) {
-							Text(UIItemTypeStrs[item.type]);
-							if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
-								DebugRect(debugee->position + item.position, item.size);
+							if (BeginHeader(toStr(UIItemTypeStrs[item.type], " ", count).str)) {
+								for (UIDrawCmd& dc : item.drawCmds) {
+									Text(UIDrawTypeStrs[dc.type]);
+									if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+										for (int tri = 0; tri < dc.counts.y; tri += 3) {
+											vec2
+											p0 = item.position + debugee->position + dc.vertices[dc.indices[tri]].pos,
+											p1 = item.position + debugee->position + dc.vertices[dc.indices[tri + 1]].pos,
+											p2 = item.position + debugee->position + dc.vertices[dc.indices[tri + 2]].pos;
+											DebugTriangle(p0, p1, p2);
+										}
+									}
+								}
+								EndHeader();
 							}
-							
-							if (Button("break")) {
-								break_window_item = debugee;
-								item_idx = item.item_idx;
-								item_layer = item.item_layer;
-							}
-							
+							count++;
 						}
 					}
-					EndRow();
 				}EndChild();
 				EndHeader();
 			}
@@ -4280,26 +4289,28 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBarHovered, Color_DarkRed);
 	
 	//push default style variables
-	PushVar(UIStyleVar_WindowPadding,            vec2(10, 10));
-	PushVar(UIStyleVar_WindowBorderSize,         2);
-	PushVar(UIStyleVar_TitleBarHeight,           style.fontHeight * 1.2f);
-	PushVar(UIStyleVar_TitleTextAlign,           vec2(1, 0.5f));
-	PushVar(UIStyleVar_ItemSpacing,              vec2(1, 1));
-	PushVar(UIStyleVar_ScrollAmount,             vec2(10, 10));
-	PushVar(UIStyleVar_CheckboxSize,             vec2(10, 10));
-	PushVar(UIStyleVar_CheckboxFillPadding,      2);
-	PushVar(UIStyleVar_InputTextTextAlign,       vec2(0.f, 0.5f));
-	PushVar(UIStyleVar_ButtonTextAlign,          vec2(0.5f, 0.5f));
-	PushVar(UIStyleVar_HeaderTextAlign,          vec2(0.f, 0.5f));
-	PushVar(UIStyleVar_ButtonHeightRelToFont,    1.3f);
-	PushVar(UIStyleVar_HeaderHeightRelToFont,    1.3f);
-	PushVar(UIStyleVar_InputTextHeightRelToFont, 1.3f);
-	PushVar(UIStyleVar_CheckboxHeightRelToFont,  1.3f);
-	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5f, 0.5f));
-	PushVar(UIStyleVar_ScrollBarYWidth,          5);
-	PushVar(UIStyleVar_ScrollBarXHeight,         5);
-	PushVar(UIStyleVar_IndentAmount,             12);
-	PushVar(UIStyleVar_FontHeight,               (f32)style.font->max_height);
+	PushVar(UIStyleVar_WindowPadding,             vec2(10, 10));
+	PushVar(UIStyleVar_WindowBorderSize,          2);
+	PushVar(UIStyleVar_TitleBarHeight,            style.fontHeight * 1.2f);
+	PushVar(UIStyleVar_TitleTextAlign,            vec2(1, 0.5f));
+	PushVar(UIStyleVar_ItemSpacing,               vec2(1, 1));
+	PushVar(UIStyleVar_ScrollAmount,              vec2(10, 10));
+	PushVar(UIStyleVar_CheckboxSize,              vec2(10, 10));
+	PushVar(UIStyleVar_CheckboxFillPadding,       2);
+	PushVar(UIStyleVar_InputTextTextAlign,        vec2(0.f, 0.5f));
+	PushVar(UIStyleVar_ButtonTextAlign,           vec2(0.5f, 0.5f));
+	PushVar(UIStyleVar_HeaderTextAlign,           vec2(0.f, 0.5f));
+	PushVar(UIStyleVar_SelectableTextAlign,       vec2(0.5f, 0.5f));
+	PushVar(UIStyleVar_ButtonHeightRelToFont,     1.3f);
+	PushVar(UIStyleVar_HeaderHeightRelToFont,     1.3f);
+	PushVar(UIStyleVar_InputTextHeightRelToFont,  1.3f);
+	PushVar(UIStyleVar_CheckboxHeightRelToFont,   1.3f);
+	PushVar(UIStyleVar_SelectableHeightRelToFont, 1.3f);
+	PushVar(UIStyleVar_RowItemAlign,              vec2(0.5f, 0.5f));
+	PushVar(UIStyleVar_ScrollBarYWidth,           5);
+	PushVar(UIStyleVar_ScrollBarXHeight,          5);
+	PushVar(UIStyleVar_IndentAmount,              12);
+	PushVar(UIStyleVar_FontHeight,                (f32)style.font->max_height);
 	
 	PushScale(vec2(1, 1));
 	
@@ -4463,10 +4474,28 @@ void UI::Update() {
 	
 	Assert(indentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	
+
+	hovered = 0;
+	StateRemoveFlag(UISGlobalHovered);
+	StateRemoveFlag(UISCursorSet);
 	MarginPositionOffset = vec2::ZERO;
 	MarginSizeOffset = vec2::ZERO;
 	
+#ifdef DESHI_INTERNAL
+	//clear break vars in debug mode
+	break_window_item = 0;
+	item_idx = -1;
+	item_layer = -1;
+	break_window_begin = 0;
+	break_window_end = 0;
+	break_drawCmd_create_hash = -1;
+	break_drawCmd_draw_hash = -1;
+#endif
 
+	if (show_metrics) {
+		DisplayMetrics();
+		show_metrics = 0;
+	}
 	
 	//windows input checking functions
 	CheckWindowsForFocusInputs();
@@ -4481,28 +4510,17 @@ void UI::Update() {
 	//reset cursor to default if no item decided to set it 
 	if (!StateHasFlag(UISCursorSet)) DeshWindow->SetCursor(CursorType_Arrow);
 	
+
+
 	//draw windows in order 
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 		WinUnSetBegan(p);
 	}
 
-#ifdef DESHI_INTERNAL
-	//clear break vars in debug mode
-	break_window_item = 0;
-	item_idx = -1;
-	item_layer = -1;
-	break_window_begin = 0;
-	break_window_end = 0;
-	break_drawCmd_create_hash = -1;
-	break_drawCmd_draw_hash = -1;
-#endif
+
 	
-	if (show_metrics) {
-		//DisplayMetrics();
-		DrawWindow(DisplayMetrics());
-		show_metrics = 0;
-	}
+
 	
 	
 	//it should be safe to do this any time the mouse is released
@@ -4547,14 +4565,12 @@ void UI::Update() {
 	
 	//if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
 	
-	hovered = 0;
-	StateRemoveFlag(UISGlobalHovered);
-	StateRemoveFlag(UISCursorSet);
+
 }
 
-void UI::DrawDebugRect(vec2 pos, vec2 size, color col)          { DebugRect(pos, size, col); }
-void UI::DrawDebugRectFilled(vec2 pos, vec2 size, color col)    { DebugRectFilled(pos, size, col); }
-void UI::DrawDebugCircle(vec2 pos, f32 radius, color col)       { DebugCircle(pos, radius, col); }
-void UI::DrawDebugCircleFilled(vec2 pos, f32 radius, color col) { DebugCircleFilled(pos, radius, col); }
-void UI::DrawDebugLine(vec2 pos1, vec2 pos2, color col)         { DebugLine(pos1, pos2, col); }
-
+void UI::DrawDebugRect(vec2 pos, vec2 size, color col)             { DebugRect(pos, size, col); }
+void UI::DrawDebugRectFilled(vec2 pos, vec2 size, color col)       { DebugRectFilled(pos, size, col); }
+void UI::DrawDebugCircle(vec2 pos, f32 radius, color col)          { DebugCircle(pos, radius, col); }
+void UI::DrawDebugCircleFilled(vec2 pos, f32 radius, color col)    { DebugCircleFilled(pos, radius, col); }
+void UI::DrawDebugLine(vec2 pos1, vec2 pos2, color col)            { DebugLine(pos1, pos2, col); }
+void UI::DrawDebugTriangle(vec2 p0, vec2 p1, vec2 p2, color color) { DebugTriangle(p0, p1, p2, color); }
