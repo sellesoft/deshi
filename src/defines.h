@@ -184,8 +184,6 @@ global_const f32 M_SQRT_THREE      = 1.73205080757f;
 global_const f32 M_HALF_SQRT_TWO   = 0.707106781187f;
 global_const f32 M_HALF_SQRT_THREE = 0.866025403784f;
 
-
-
 ///////////////////////// 
 //// common var sizes////
 /////////////////////////
@@ -259,7 +257,7 @@ template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max
 template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? Min(val+delta, target) : Max(val-delta, target) : target;}
-
+template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){ return abs(a - b) < M_EPSILON; }
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise

@@ -27,10 +27,6 @@
 #  endif//not _MSC_VER
 #endif //not DESHI_DISABLE_SSE
 
-template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){
-	return (abs(a - b) < M_EPSILON);
-}
-
 //// CRT wrappers ////
 global_ inline f32 Sqrt(f32 a){
 	f32 result;

@@ -924,9 +924,9 @@ deshi__memory_naming_expose(){
 void
 deshi__memory_draw(){
 	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
-		if(bytes > Kilobytes(1)){
+		if(bytes >= Kilobytes(1)){
 			character = 'K'; divisor = Kilobytes(1);
-			if(bytes > Megabytes(1)){
+			if(bytes >= Megabytes(1)){
 				character = 'M'; divisor = Megabytes(1);
 			}
 		}
@@ -934,9 +934,8 @@ deshi__memory_draw(){
 	
 	UI::PushColor(UIStyleCol_Border,    Color_Grey);
 	UI::PushColor(UIStyleCol_Separator, Color_Grey);
-	UI::PushVar(UIStyleVar_WindowPadding,    vec2::ZERO);
-	UI::PushVar(UIStyleVar_ItemSpacing,      vec2::ZERO);
-	UI::PushVar(UIStyleVar_WindowBorderSize, 0);
+	UI::PushVar(UIStyleVar_WindowPadding, vec2::ZERO);
+	UI::PushVar(UIStyleVar_ItemSpacing,   vec2::ZERO);
 	{UI::Begin("deshi_memory", DeshWindow->dimensions/4.f, DeshWindow->dimensions/2.f, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder);
 		UIWindow* window = UI::GetWindow();
 		char used_char = ' ', size_char = ' ';
@@ -948,10 +947,8 @@ deshi__memory_draw(){
 			bytes_sigfigs(deshi__generic_heap->used, used_char, used_divisor);
 			bytes_sigfigs(deshi__generic_heap->size, size_char, size_divisor);
 			UI::TextF("Generic Heap    %.2f %cB / %.2f %cB", (f32)deshi__generic_heap->used / used_divisor, used_char, (f32)deshi__generic_heap->size / size_divisor, size_char);
-			UI::RectFilled({0,UI::GetPositionForNextItem().y}, UI::GetWindowRemainingSpace(), Color_VeryDarkRed);
-			
-			f32 row_bytes = ceil(sqrtf((f32)deshi__generic_heap->size));
-			
+			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace(), Color_VeryDarkRed);
+			//TODO this
 		}UI::EndChild();
 		
 		//right panel: arena heap
@@ -961,9 +958,30 @@ deshi__memory_draw(){
 			bytes_sigfigs(deshi__arena_heap->used, used_char, used_divisor);
 			bytes_sigfigs(deshi__arena_heap->size, size_char, size_divisor);
 			UI::TextF("Arena Heap    %.2f %cB / %.2f %cB", (f32)deshi__arena_heap->used / used_divisor, used_char, (f32)deshi__arena_heap->size / size_divisor, size_char);
-			UI::RectFilled({0,UI::GetPositionForNextItem().y}, UI::GetWindowRemainingSpace(), Color_VeryDarkGreen);
 			
+			vec2 cursor     = UI::GetPositionForNextItem();
+			vec2 panel_size = UI::GetWindowRemainingSpace();
+			UI::RectFilled(cursor, panel_size, Color_VeryDarkGreen);
 			
+			f32 row_bytes  = ceil(sqrtf((f32)deshi__arena_heap->used)) / 1024.f;
+			f32 row_height = panel_size.y / row_bytes;
+			
+			for(Node* order = &deshi__arena_heap->order; ; ){
+				if(order != &deshi__arena_heap->order){
+					ArenaHeapNode* node = CastFromMember(ArenaHeapNode, order, order);
+					f32 fully_used_rows;
+					f32 final_row_width = modf((f32)node->arena.used / row_bytes, &fully_used_rows) * panel_size.x;
+					if(fully_used_rows > 1){
+						//UI::Rect(cursor, {panel_size.x, row_height}, Color_Green);
+						cursor.y += row_height * fully_used_rows;
+					}
+					//UI::Rect(cursor, {final_row_width, row_height}, Color_Green);
+					cursor.x += final_row_width;
+					if(cursor.x >= panel_size.x) cursor.x = 0;
+				}
+				order = order->next;
+				if(order == &deshi__arena_heap->order) break;
+			}
 		}UI::EndChild();
 		
 		//bottom panel: temp arena
@@ -972,11 +990,12 @@ deshi__memory_draw(){
 			bytes_sigfigs(deshi__temp_arena->used, used_char, used_divisor);
 			bytes_sigfigs(deshi__temp_arena->size, size_char, size_divisor);
 			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)deshi__temp_arena->used / used_divisor, used_char, (f32)deshi__temp_arena->size / size_divisor, size_char);
-			UI::RectFilled({0,UI::GetPositionForNextItem().y}, UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
 			
+			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
+			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace() * vec2{((f32)deshi__temp_arena->used / (f32)deshi__temp_arena->size), 1.f}, Color_DarkCyan);
 		}UI::EndChild();
 	}UI::End();
-	UI::PopVar(3);
+	UI::PopVar(2);
 	UI::PopColor(2);
 }
 #endif //DESHI_INTERNAL
