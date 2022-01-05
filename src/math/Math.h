@@ -435,6 +435,7 @@ namespace Math {
 		constexpr f32 multiple = f32(pow(10,decimals));
 		return f32(s32(a * multiple + .5f)) / multiple;
 	}
+
 	template<int decimals = 2> inline global_ vec3 round(vec3 a){
 		constexpr f32 multiple = f32(pow(10,decimals));
 		return vec3(f32(s32(a.x * multiple + .5f)) / multiple,
@@ -442,7 +443,6 @@ namespace Math {
 					f32(s32(a.z * multiple + .5f)) / multiple);
 	}
 	
-	//average any std container probably
 	template<class FWIt> static float average(FWIt a, const FWIt b, int size){ return std::accumulate(a, b, 0.0) / size; }
 	template<class T> static f64 average(const T& container, int size){ return average(std::begin(container), std::end(container), size); }
 	
@@ -484,6 +484,18 @@ namespace Math {
 			point.y >= rectPos.y &&
 			point.x <= rectPos.x + rectDims.x &&
 			point.y <= rectPos.y + rectDims.y;
+	}
+
+	inline global_ b32 PointInTriangle(vec2 point, vec2 p0, vec2 p1, vec2 p2) {
+		vec2 p01 = p1 - p0;
+		vec2 p12 = p2 - p1;
+		vec2 p20 = p0 - p2;
+
+
+		return
+			(point - p0).dot(-vec2(p01.y, -p01.x)) < 0 &&
+			(point - p1).dot(-vec2(p12.y, -p12.x)) < 0 &&
+			(point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
 	}
 	
 #define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)

@@ -373,7 +373,7 @@ void Console::ChangeState(ConsoleState new_state) {
 			open_amount = console_dim.y;
 			console_pos = vec2(0, -1);
 			console_dim.x = (f32)DeshWindow->width;
-			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 			TIMER_RESET(open_timer);
 		}break;
 		case ConsoleState_OpenBig: {
@@ -381,7 +381,7 @@ void Console::ChangeState(ConsoleState new_state) {
 			open_amount = console_dim.y;
 			console_pos = vec2(0, -1);
 			console_dim.x = (f32)DeshWindow->width;
-			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 			TIMER_RESET(open_timer);
 		}break;
 		case ConsoleState_Popout: {
@@ -415,6 +415,7 @@ void Console::Init() {
 }
 
 void OpenToTarget() {
+	//TODO change this to Nudge
 	console_dim.y = Math::lerp(open_amount, open_target, Min((f32)TIMER_END(open_timer) / open_dt, 1.f));
 	if (console_dim.y == open_target) open_amount = open_target;
 }

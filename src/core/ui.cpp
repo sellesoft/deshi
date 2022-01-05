@@ -2042,6 +2042,8 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	else {
 		dim = DecideItemSize(vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
+
+
 	
 	item->size = dim;
 	
