@@ -271,17 +271,21 @@ enum UIButtonFlags_ {
 }; typedef u32 UIButtonFlags;
 
 enum UIDrawType : u32 {
+	UIDrawType_Triangle,
+	UIDrawType_FilledTriangle,
 	UIDrawType_Rectangle,
 	UIDrawType_FilledRectangle,
 	UIDrawType_Line,
 	UIDrawType_Circle,
-	UIDrawType_CircleFilled,
+	UIDrawType_FilledCircle,
 	UIDrawType_Text,
 	UIDrawType_WText,
 	UIDrawType_Image,
 };
 
 global_ const char* UIDrawTypeStrs[] = {
+	"Triangle",
+	"FilledTriangle",
 	"Rectangle",
 	"FilledRectangle",
 	"Line",
@@ -303,33 +307,17 @@ struct UIItem;
 struct UIDrawCmd {
 	UIDrawType type;
 	
-	vec2    position; //draw cmd start, line start
-	vec2   position2; //line end
-	vec2  dimensions; //rectangles have dimensions
-	f32    thickness; //line thickness, circle radius, texture alpha
-	color      color; //draw cmds have either a texture or a color
-	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
-	u32 subdivisions; //circle subdivisons
-	
 	Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
 	u32     indices[UIDRAWCMD_MAX_INDICES] = {0};
 	vec2    counts; 
+	
+	Texture* tex = 0;
 
-	//array<Vertex2> vertices;
-	//array<u32>     indices;
-	
-	//TODO
-	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
-	//at least with TTF, thats how we communicate what letter we want.
-	string text;
-	wstring wtext;
-	Font* font;
-	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	b32 trackedForMinSize = 1;
 	
-	vec2 scissorOffset = vec2(0, 0);
-	vec2 scissorExtent = vec2(0, 0);
+	vec2 scissorOffset = vec2::ZERO;
+	vec2 scissorExtent = vec2::ZERO;
 	b32  useWindowScissor = true;
 	b32  overrideScissorRules = false;
 	
@@ -487,7 +475,7 @@ struct UIWindow {
 	array<UIItem> postItems;
 	array<UIItem> popOuts;
 	
-	u32 windowlayer = 5;
+	u32 layer = 5;
 	
 	//a collection of child windows
 	UIWindow* parent = 0;
@@ -629,7 +617,7 @@ namespace UI {
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
 	void Line(vec2 start, vec2 end, f32 thickness = 1, color color = Color_White);
-	void Circle(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
+	void Circle(vec2 pos, f32 radius, f32 thickness = 1, u32 subdivisions = 30, color color = Color_White);
 	void CircleFilled(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
 	
 	

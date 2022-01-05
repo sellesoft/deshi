@@ -300,37 +300,6 @@ vec2 UI::CalcTextSize(wcstring text) {
 	return result;
 }
 
-//calculates the items position and size based on its draw commands
-//should really only be used when doing this manually is too annoying
-inline void CalcItemSize(UIItem* item) {
-	using namespace UI;
-	
-	vec2 max;
-	for (UIDrawCmd& drawCmd : item->drawCmds) {
-		switch (drawCmd.type) {
-			case UIDrawType_Rectangle:
-			case UIDrawType_FilledRectangle: {
-				max.x = Max(max.x, drawCmd.position.x + drawCmd.dimensions.x);
-				max.y = Max(max.y, drawCmd.position.y + drawCmd.dimensions.y);
-			}break;
-			case UIDrawType_Line: {
-				vec2 ulm{ Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
-				vec2 lrm{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) };
-				lrm -= item->position;
-				max.x = Max(max.x, lrm.x);
-				max.y = Max(max.y, lrm.y);
-				
-			}break;
-			case UIDrawType_Text: {
-				vec2 textSize = CalcTextSize(drawCmd.text);
-				max.x = Max(max.x, drawCmd.position.x + textSize.x);
-				max.y = Max(max.y, drawCmd.position.y + textSize.y);
-			}break;
-		}
-	}
-	item->size = max;
-}
-
 inline b32 isItemHovered(UIItem* item) {
 	return Math::PointInRectangle(DeshInput->mousePos, item->position + curwin->position, item->size * style.globalScale);
 }
@@ -342,8 +311,6 @@ inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
 inline b32 isItemActive(UIItem* item) {
 	return WinHovered(curwin) && CanTakeInput && isItemHovered(item);
 }
-
-
 
 //internal master cursor controller
 //  this is an attempt to centralize what happens at the end of each item function
@@ -468,16 +435,16 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 			size.x = MarginedRight() - itemPos.x;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
-		else size.x = defaultSize.x;
+				size.x = MarginedRight() - itemPos.x;
+			else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
+				size.y = MarginedBottom() - itemPos.y;
+			else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
 	}
 	else {
@@ -493,11 +460,14 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 	
 }
 
-FORCE_INLINE void WinSetdowCursor(CursorType curtype) {
+FORCE_INLINE void SetWindowCursor(CursorType curtype) {
 	DeshWindow->SetCursor(curtype);
 	StateAddFlag(UISCursorSet);
 }
 
+inline vec2 GetTextScale() {
+	return vec2::ONE* style.fontHeight / (f32)style.font->max_height * style.globalScale;
+}
 
 
 UIStyle& UI::GetStyle(){
@@ -641,6 +611,7 @@ inline void EndItem(UIItem* item) {
 //this is for debugging debug cmds, all it does extra is hash the drawCmd
 //so we can break on it later
 inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
+	if (!drawCmd.tex) drawCmd.tex = style.font->tex;
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
 	item->drawCmds.add(drawCmd);
 	ui_stats.draw_cmds++;
@@ -732,6 +703,7 @@ MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, ve
 FORCE_INLINE void
 MakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color) {
 	drawCmd.counts += MakeFilledTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, color);
+	drawCmd.type = UIDrawType_FilledTriangle;
 }
 
 //4 verts, 6 indices
@@ -765,6 +737,7 @@ MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end,
 FORCE_INLINE void
 MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color) {
 	drawCmd.counts += MakeLine(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
+	drawCmd.type = UIDrawType_Line;
 }
 
 //4 verts, 6 indices
@@ -794,6 +767,7 @@ MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 
 FORCE_INLINE void
 MakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color) {
 	drawCmd.counts += MakeFilledRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, color);
+	drawCmd.type = UIDrawType_FilledRectangle;
 }
 //8 verts, 24 indices
 FORCE_INLINE vec2
@@ -840,6 +814,7 @@ MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, 
 FORCE_INLINE void
 MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color) {
 	drawCmd.counts += MakeRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
+	drawCmd.type = UIDrawType_Rectangle;
 }
 
 FORCE_INLINE vec2
@@ -882,6 +857,7 @@ MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radiu
 FORCE_INLINE void
 MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color) {
 	drawCmd.counts += MakeCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, thickness, color);
+	drawCmd.type = UIDrawType_Circle;
 }
 
 FORCE_INLINE vec2 
@@ -913,10 +889,6 @@ MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32
 
 		u32 ipidx = 3 * i - 1;
 		ip[ipidx] = ip[ipidx + 2] = offsets.x + i + 1;
-
-		//f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
-		//f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
-		//sum += MakeFilledTriangle(vp, ip, sum, pos, vec2(x0, y0), vec2(x1, y1), color);
 	}
 
 	return vec2(subdivisions + 1, nuindexes);
@@ -925,11 +897,11 @@ MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32
 FORCE_INLINE void
 MakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
 	drawCmd.counts += MakeFilledCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions_int, color);
+	drawCmd.type = UIDrawType_FilledCircle;
 }
 
-//TODO make this not use string
 FORCE_INLINE vec2
-MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos, color color, vec2 scale) {
+MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 pos, color color, vec2 scale) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -939,8 +911,8 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 		case FontType_BDF: case FontType_NONE: {
 			forI(text.count) {
 				u32     col = color.rgba;
-				Vertex2* vp = putverts + (u32)offsets.x;
-				u32*     ip = putindices + (u32)offsets.y;
+				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
+				u32*     ip = putindices + (u32)offsets.y + 6 * i;
 				
 				f32 w = style.font->max_width * scale.x;
 				f32 h = style.font->max_height * scale.y;
@@ -950,45 +922,136 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
 
-				ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-				ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
+				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + style.font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff + style.font->uvOffset }; vp[3].color = col;
 				
-				sum += vec2(4, 6);
 				pos.x += style.font->max_width * scale.x;
+				
 			}
 		}break;
 		//// TTF font rendering ////
 		case FontType_TTF: {
 			forI(text.count) {
 				u32     col = color.rgba;
-				Vertex2* vp = putverts + (u32)offsets.x;
-				u32*     ip = putindices + (u32)offsets.y;
+				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
+				u32*     ip = putindices + (u32)offsets.y + 6 * i;
 				
 				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
 
-				ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-				ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
+				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
 				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + style.font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + style.font->uvOffset }; vp[3].color = col;
 				
-				sum += vec2(4, 6);
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
 	}
 	
-	return sum;
+	return vec2(4, 6) * text.count;
 }
 
 FORCE_INLINE void
-MakeText(UIDrawCmd& drawCmd, string text, vec2 pos, color color, vec2 scale) {
+MakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale) {
 	drawCmd.counts += MakeText(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, pos, color, scale);
+	drawCmd.tex = style.font->tex;
+	drawCmd.type = UIDrawType_Text;
+}
+
+FORCE_INLINE vec2
+MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 pos, color color, vec2 scale) {
+	Assert(putverts && putindices);
+	if (color.a == 0) return vec2::ZERO;
+
+	vec2 sum;
+	switch (style.font->type) {
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE: {
+			forI(text.count) {
+				u32     col = color.rgba;
+				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
+				u32* ip = putindices + (u32)offsets.y + 6 * i;
+
+				f32 w = style.font->max_width * scale.x;
+				f32 h = style.font->max_height * scale.y;
+				f32 dy = 1.f / (f32)style.font->count;
+
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+
+				ip[0] = offsets.x + 4 * i; ip[1] = offsets.x + 4 * i + 1; ip[2] = offsets.x + 4 * i + 2;
+				ip[3] = offsets.x + 4 * i; ip[4] = offsets.x + 4 * i + 2; ip[5] = offsets.x + 4 * i + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + style.font->uvOffset }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + style.font->uvOffset }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + style.font->uvOffset }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff + style.font->uvOffset }; vp[3].color = col;
+
+				pos.x += style.font->max_width * scale.x;
+
+			}
+		}break;
+			//// TTF font rendering ////
+		case FontType_TTF: {
+			forI(text.count) {
+				u32     col = color.rgba;
+				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
+				u32* ip = putindices + (u32)offsets.y + 6 * i;
+
+				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
+
+				ip[0] = offsets.x + 4 * i; ip[1] = offsets.x + 4 * i + 1; ip[2] = offsets.x + 4 * i + 2;
+				ip[3] = offsets.x + 4 * i; ip[4] = offsets.x + 4 * i + 2; ip[5] = offsets.x + 4 * i + 3;
+				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + style.font->uvOffset }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + style.font->uvOffset }; vp[3].color = col;
+
+			}break;
+		default: Assert(!"unhandled font type"); break;
+		}
+	}
+
+	return vec2(4, 6) * text.count;
+}
+
+FORCE_INLINE void
+MakeText(UIDrawCmd& drawCmd, wcstring text, vec2 pos, color color, vec2 scale) {
+	drawCmd.counts += MakeText(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, pos, color, scale);
+	drawCmd.type = UIDrawType_Text;
+}
+
+FORCE_INLINE vec2 
+MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha) {
+	Assert(putverts && putindices);
+	if (!alpha) return vec2::ZERO;
+
+
+	u32     col = PackColorU32(255,255,255,255.f * alpha);
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
+	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
+	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
+	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
+	
+	return vec2(4, 6);
+}
+
+FORCE_INLINE void
+MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha) {
+	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha);
+	drawCmd.type = UIDrawType_Image;
+	drawCmd.tex = texture;
 }
 
 //internal debug drawing functions
@@ -1011,7 +1074,7 @@ void DebugCircle(vec2 pos, f32 radius, color col = Color_Red) {
 }
 
 void DebugCircleFilled(vec2 pos, f32 radius, color col = Color_Red) {
-	UIDrawCmd dc{ UIDrawType_CircleFilled };
+	UIDrawCmd dc{ UIDrawType_FilledCircle };
 	MakeFilledCircle(dc, pos, radius, 20, col);
 	debugCmds.add(dc);
 }
@@ -1022,9 +1085,9 @@ void DebugLine(vec2 pos, vec2 pos2, color col = Color_Red) {
 	debugCmds.add(dc);
 }
 
-void DebugText(vec2 pos, const char* text, color col = Color_White) {
+void DebugText(vec2 pos, char* text, color col = Color_White) {
 	UIDrawCmd dc{ UIDrawType_Text };
-	MakeText(dc, text, pos, col, vec2::ONE);
+	MakeText(dc, cstring{ text, strlen(text) }, pos, col, vec2::ONE);
 	debugCmds.add(dc);
 }
 
@@ -1035,9 +1098,6 @@ void DebugText(vec2 pos, const char* text, color col = Color_White) {
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
-	drawCmd.position   = pos;
-	drawCmd.dimensions = dimen;
-	drawCmd.color      = color;
 	MakeRect(drawCmd, vec2::ZERO, dimen, 1, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1049,9 +1109,6 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-	drawCmd.position   = pos;
-	drawCmd.dimensions = dimen;
-	drawCmd.color      = color;
 	MakeFilledRect(drawCmd, pos, dimen, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1067,14 +1124,11 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Line};
-	drawCmd.position  = start;
-	drawCmd.position2 = end;
-	drawCmd.thickness = thickness;
-	drawCmd.    color = color;
-	
+	MakeLine(drawCmd, start, end, thickness, color);
+	AddDrawCmd(&item, drawCmd);
+
 	item.position = vec2::ZERO;// { Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
-	item.    size = vec2{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) } - item.position;
-	
+	item.    size = Max(start, end) - item.position;
 	item.drawCmds.add(drawCmd);
 	curwin->items[ui_state.layer].add(item);
 }
@@ -1083,13 +1137,11 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 //@Circle
 
 
-void UI::Circle(vec2 pos, f32 radius, u32 subdivisions, color color) {
+void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Circle };
-	drawCmd.position = vec2{ radius, radius };
-	drawCmd.thickness = radius;
-	drawCmd.subdivisions = subdivisions;
-	drawCmd.color = color;
+	MakeCircle(drawCmd, pos, radius, subdivisions, thickness, color);
+	AddDrawCmd(&item, drawCmd);
 	
 	item.position = pos - vec2::ONE * radius;
 	item.size = vec2::ONE * radius * 2;
@@ -1101,11 +1153,9 @@ void UI::Circle(vec2 pos, f32 radius, u32 subdivisions, color color) {
 
 void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_CircleFilled };
-	drawCmd.position = vec2{ radius, radius };
-	drawCmd.thickness = radius;
-	drawCmd.subdivisions = subdivisions;
-	drawCmd.color = color;
+	UIDrawCmd drawCmd{ UIDrawType_FilledCircle };
+	MakeFilledCircle(drawCmd, pos, radius, subdivisions, color);
+	AddDrawCmd(&item, drawCmd);
 	
 	item.position = pos - vec2::ONE * radius;
 	item.size = vec2::ONE * radius * 2;
@@ -1126,24 +1176,16 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 
 
 //internal function for actually making and adding the drawCmd
-local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
+local void TextCall(char* text, vec2 pos, color color, UIItem* item) {
 	UIDrawCmd drawCmd{ UIDrawType_Text};
-	drawCmd.text = string(text); 
-	drawCmd.position = pos;
-	drawCmd.color = color;
-	drawCmd.font = style.font;
-	
+	MakeText(drawCmd, cstring{ text, strlen(text) }, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
 
 //secondary, for unicode
-local void TextCall(const wchar* text, vec2 pos, color color, UIItem* item) {
+local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {
 	UIDrawCmd drawCmd{ UIDrawType_WText};
-	drawCmd.wtext = wstring(text);
-	drawCmd.position = pos;
-	drawCmd.color = color;
-	drawCmd.font = style.font;
-	
+	MakeText(drawCmd, wcstring{ text, wcslen(text) }, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
 
@@ -1211,7 +1253,8 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-							
+							item->size.x = Max(item->size.x, currlinew);
+
 							i = 0;
 							currlinew = 0;
 						}
@@ -1237,7 +1280,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 					//we need to see if the string goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
-						item->size.x = maxChars * (f32)style.font->max_width;
+						item->size.x = Max(item->size.x, maxChars * (f32)style.font->max_width);
 						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
@@ -1269,6 +1312,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 					else {
 						TextCall(t.str, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
+						item->size.x = Max(item->size.x, t.count * (f32)style.font->max_width);
 					}
 				}
 				
@@ -1280,7 +1324,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		
 		if (NextItemSize.x != -1)
 			item->size = NextItemSize;
-		else CalcItemSize(item);
+		//else CalcItemSize(item);
 		
 		item->size.y = workcur.y;
 		
@@ -1294,8 +1338,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		
 		NextItemSize = vec2{ -1, 0 };
 		
-		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
-		CalcItemSize(item);
+		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 	}
 	
 	AdvanceCursor(item, move_cursor);
@@ -1304,27 +1347,34 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 //second function for wrapping, using unicode
 //these can probably be merged into one but i dont feel like doing that rn
 local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {
-	
+
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
-	
+
 	if (!nowrap) {
 		wstring text = in;
-		
+
 		//we split wstring by newlines and put them into here 
 		//maybe make this into its own function
 		array<wstring> newlined;
-		
+
 		u32 newline = text.findFirstChar('\n');
-		if (newline != wstring::npos && newline != text.count - 1) {
+		if (newline != string::npos && newline != text.count - 1) {
 			wstring remainder = text.substr(newline + 1);
 			newlined.add(text.substr(0, newline - 1));
 			newline = remainder.findFirstChar('\n');
-			while (newline != wstring::npos) {
-				newlined.add(remainder.substr(0, newline - 1));
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
+			while (newline != string::npos) {
+				if (!newline) {
+					newlined.add(L"");
+					remainder.erase(0);
+					newline = remainder.findFirstChar('\n');
+				}
+				else {
+					newlined.add(remainder.substr(0, newline - 1));
+					remainder = remainder.substr(newline + 1);
+					newline = remainder.findFirstChar('\n');
+				}
 			}
 			newlined.add(remainder);
 		}
@@ -1332,31 +1382,34 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 			newlined.add(text);
 		}
 		vec2 workcur = vec2{ 0,0 };
-		
+
 		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
 		switch (style.font->type) {
-			
+
 			case FontType_TTF: {
 				Font* font = style.font;
-				
+
 				f32 wscale = style.fontHeight / font->aspect_ratio / font->max_width;
-				f32 maxw = curwin->width - 2 * style.windowPadding.x;
+				f32 maxw = MarginedRight() - item->position.x;
 				f32 currlinew = 0;
-				
+
 				for (wstring& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
 						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
-						
+
 						if (currlinew >= maxw) {
-							
+
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
-							wstring nustr = t.substr(0, (lastspc == wstring::npos) ? i - 1 : lastspc);
+							wstring nustr = t.substr(0, (lastspc == string::npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
-							
+
+							if (nustr.count == t.count) continue;
+
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-							
+							item->size.x = Max(item->size.x, currlinew);
+
 							i = 0;
 							currlinew = 0;
 						}
@@ -1366,41 +1419,45 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 						TextCall(t.str, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
-					
+
 				}
 			}break;
-			
+
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = u32(floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width));
-				
+				u32 maxChars = u32(floor(MarginedRight() - item->position.x) / style.font->max_width);
+
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
-				
+
 				//wrap each wstring in newline array
 				for (wstring& t : newlined) {
 					//we need to see if the wstring goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
-						item->size.x = maxChars * (f32)style.font->max_width;
-						
+						item->size.x = Max(item->size.x, maxChars * (f32)style.font->max_width);
+
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
-						wstring nustr = t.substr(0, (splitat == wstring::npos) ? maxChars - 1 : splitat);
+						wstring nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 						TextCall(nustr.str, workcur, color, item);
-						
+
+						if (nustr.count == t.count) continue;
+
 						t = t.substr(nustr.count);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
-						
+
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
 							splitat = t.findLastChar(' ', maxChars);
-							nustr = t.substr(0, (splitat == wstring::npos) ? maxChars - 1 : splitat);
+							nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 							TextCall(nustr.str, workcur, color, item);
-							
+
+							if (nustr.count == t.count) break;
+
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-							
+
 							if (!wcslen(t.str)) break;
 						}
 						//write last bit of text
@@ -1410,34 +1467,32 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 					else {
 						TextCall(t.str, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
+						item->size.x = Max(item->size.x, t.count * (f32)style.font->max_width);
 					}
 				}
-				
-				
-				
 			}break;
 			default:Assert(!"unknown font type?");
 		}
-		
+
 		if (NextItemSize.x != -1)
 			item->size = NextItemSize;
-		else CalcItemSize(item);
-		
+		//else CalcItemSize(item);
+
 		item->size.y = workcur.y;
-		
+
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
 		//TODO(sushi) make NoWrap also check for newlines
-		
+
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
-		
+
 		NextItemSize = vec2{ -1, 0 };
-		
-		TextCall(in, vec2{ 0,0 }, color, item);
-		CalcItemSize(item);
+
+		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 	}
+
 	AdvanceCursor(item, move_cursor);
 }
 
@@ -1475,38 +1530,39 @@ void UI::TextF(const char* fmt, ...) {
 b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Button);
 	item->position = pos;
-	item->size = DecideItemSize(vec2(Min(curwin->width, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
+	item->size = DecideItemSize(vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
 	AdvanceCursor(item);
 	
 	b32 active = WinHovered(curwin) && isItemHovered(item);
-	
+
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
-		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_ButtonBgActive : UIStyleCol_ButtonBgHovered) : UIStyleCol_ButtonBg)];
+		UIDrawCmd drawCmd;
+		vec2  bgpos = vec2::ZERO;
+		vec2  bgdim = item->size;
+		color bgcol = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_ButtonBgActive : UIStyleCol_ButtonBgHovered) : UIStyleCol_ButtonBg)];
+		MakeFilledRect(drawCmd, bgpos, bgdim, bgcol);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
-		drawCmd.color = style.colors[UIStyleCol_ButtonBorder];
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
+		UIDrawCmd drawCmd;
+		vec2  borpos = vec2::ZERO;
+		vec2  bordim = item->size;
+		color borcol = style.colors[UIStyleCol_ButtonBorder];
+		MakeRect(drawCmd, borpos, bordim, 1, borcol);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.color = style.colors[UIStyleCol_Text];
-		drawCmd.position =
-			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
-				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
-		drawCmd.scissorOffset = vec2::ZERO;
-		drawCmd.scissorExtent = item->size;
+		UIDrawCmd drawCmd;
+		drawCmd.scissorOffset = vec2::ONE;
+		drawCmd.scissorExtent = item->size - vec2::ONE;
 		drawCmd.useWindowScissor = false;
-		drawCmd.text = string(text);
-		drawCmd.font = style.font;
+		vec2 texpos =
+			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
+				(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+		color texcol = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ (char*)text, strlen(text) }, texpos, texcol, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -1546,7 +1602,7 @@ void UI::Checkbox(string label, b32* b) {
 	
 	AdvanceCursor(item);
 	
-	int fillPadding = (int)style.checkboxFillPadding;
+	u32 fillPadding = (u32)style.checkboxFillPadding;
 	vec2 fillpos = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
 	vec2 fillsiz = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 	
@@ -1554,45 +1610,40 @@ void UI::Checkbox(string label, b32* b) {
 	
 	
 	{//box
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-		drawCmd.position = vec2{ 0,0 };
-		drawCmd.dimensions = boxsiz;
-		drawCmd.color = style.colors[
-									 (bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)
-									 ];
-		
+		UIDrawCmd drawCmd;
+		vec2  position = vec2{ 0,0 };
+		vec2  dimensions = boxsiz;
+		color col = style.colors[(bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	//fill if true
 	if (*b) {
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-		drawCmd.position = fillpos;
-		drawCmd.dimensions = fillsiz;
-		drawCmd.color = style.colors[UIStyleCol_CheckboxFilling];
-		
+		UIDrawCmd drawCmd;
+		vec2  position = fillpos;
+		vec2  dimensions = fillsiz;
+		color col = style.colors[UIStyleCol_CheckboxFilling];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
-		drawCmd.color = style.colors[UIStyleCol_CheckboxBorder];
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[UIStyleCol_CheckboxBorder];
+		MakeRect(drawCmd, position, dimensions, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//label
-		UIDrawCmd drawCmd{ UIDrawType_Text};
-		drawCmd.position = vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.fontHeight) * 0.5);
-		drawCmd.text = label;
-		drawCmd.color = style.colors[UIStyleCol_Text];
-		drawCmd.font = style.font;
-		
+		UIDrawCmd drawCmd;
+		vec2  position = vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.fontHeight) * 0.5);
+		color col = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ label.str, label.count }, position, col, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
-	
-	
 	
 	if (DeshInput->LMousePressed() && bgactive) {
 		*b = !*b;
@@ -1624,25 +1675,24 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	}
 	
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
-		
 	}
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position =
-			vec2((item->size.x - CalcTextSize(prev_val).x) * style.buttonTextAlign.x,
-				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
-		drawCmd.text = string(prev_val);
-		drawCmd.color = style.colors[UIStyleCol_Text];
+		UIDrawCmd drawCmd;
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
-		drawCmd.font = style.font;
+	    vec2 position =
+			vec2((item->size.x - CalcTextSize(prev_val).x) * style.buttonTextAlign.x,
+				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+		color col = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ (char*)prev_val, strlen(prev_val) }, position, col, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -1687,27 +1737,24 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	}
 	
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.position = vec2(0, 0);
-		drawCmd.dimensions = item->size;
-		if (selected)
-			drawCmd.color = style.colors[(active && DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
-		else
-			drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col;
+		if (selected) col = style.colors[(active && DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
+		else          col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position =
+		UIDrawCmd drawCmd;
+		vec2 position =
 			vec2((item->size.x - UI::CalcTextSize(label).x) * style.buttonTextAlign.x,
 				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
-		drawCmd.text = string(label);
-		drawCmd.color = style.colors[UIStyleCol_Text];
-		//drawCmd.scissorOffset = vec2(0, item->size.y * selectables_added);
-		//drawCmd.scissorExtent = item->size;
-		//drawCmd.useWindowScissor = false;
-		drawCmd.font = style.font;
+		
+		color col = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -1738,7 +1785,6 @@ b32 UI::BeginHeader(const char* label) {
 	item->position = PositionForNewItem();
 	item->size = DecideItemSize(vec2(MAX_F32, style.fontHeight * style.headerHeightRelToFont), item->position);
 	
-	
 	AdvanceCursor(item);
 	
 	b32 active = isItemActive(item);
@@ -1758,41 +1804,43 @@ b32 UI::BeginHeader(const char* label) {
 	if (*open) indentStack.add(style.indentAmount + globalIndent);
 	
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.position = bgpos;
-		drawCmd.dimensions = bgdim;
-		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		UIDrawCmd drawCmd;
+		vec2 position = bgpos;
+		vec2 dimensions = bgdim;
+		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//button
-		UIDrawCmd drawCmd{ (*open ? UIDrawType_CircleFilled : UIDrawType_Circle) };
-		drawCmd.position = vec2{ item->size.y / 4, item->size.y / 2 };
-		drawCmd.thickness = item->size.y / 4;
-		drawCmd.subdivisions = 30;
-		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		UIDrawCmd drawCmd{ (*open ? UIDrawType_FilledCircle : UIDrawType_Circle) };
+		vec2  position = vec2{ item->size.y / 4, item->size.y / 2 };
+		f32   radius = item->size.y / 4;
+		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		if (*open) MakeFilledCircle(drawCmd, position, radius, 30, col);
+		else       MakeCircle(drawCmd, position, radius, 30, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.color = style.colors[UIStyleCol_Text];
-		drawCmd.position = 
-			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowPadding.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x + 3,
-				 ((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
+		UIDrawCmd drawCmd;
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
-		drawCmd.text = string(label);
-		drawCmd.font = style.font;
+		vec2 position = 
+			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowPadding.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x + 3,
+				 ((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
+		color col = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
-		drawCmd.color = style.colors[UIStyleCol_HeaderBorder];
-		drawCmd.position = bgpos;
-		drawCmd.dimensions = bgdim;
+		vec2  position = bgpos;
+		vec2  dimensions = bgdim;
+		color col = style.colors[UIStyleCol_HeaderBorder];
+		MakeRect(drawCmd, position, dimensions, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -1846,30 +1894,31 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	vec2 draggerpos = vec2{ (*val - val_min) / (val_max - val_min) * (item->size.x - draggersiz.x), 0 };
 	
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
-		drawCmd.color = style.colors[UIStyleCol_SliderBg];
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[UIStyleCol_SliderBg];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//dragger
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.position = draggerpos;
-		drawCmd.dimensions = draggersiz;
-		drawCmd.color = style.colors[((active || being_moved) ? (DeshInput->LMouseDown() ? UIStyleCol_SliderBarActive : UIStyleCol_SliderBarHovered) : UIStyleCol_SliderBar)];
+		UIDrawCmd drawCmd;
+		vec2  position = draggerpos;
+		vec2  dimensions = draggersiz;
+		color col = style.colors[((active || being_moved) ? (DeshInput->LMouseDown() ? UIStyleCol_SliderBarActive : UIStyleCol_SliderBarHovered) : UIStyleCol_SliderBar)];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
-		drawCmd.color = style.colors[UIStyleCol_SliderBorder];
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[UIStyleCol_SliderBorder];
+		MakeRect(drawCmd, position, dimensions, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
-	
-	
 }
 
 //@Image
@@ -1885,11 +1934,10 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	
 	//TODO(sushi) image borders
 	{//image
-		UIDrawCmd drawCmd{ UIDrawType_Image };
-		drawCmd.tex = image;
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
-		drawCmd.thickness = alpha;
+		UIDrawCmd drawCmd;
+		vec2 position = vec2::ZERO;
+		vec2 dimensions = item->size;
+		MakeTexture(drawCmd, image, position, dimensions, alpha);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -1907,11 +1955,11 @@ void UI::Separator(f32 height) {
 	
 	AdvanceCursor(item);
 	
-	UIDrawCmd drawCmd{ UIDrawType_Line };
-	drawCmd.position  = vec2(0, height / 2) + item->position;
-	drawCmd.position2 = vec2(item->size.x, height / 2) + item->position;
-	drawCmd.thickness = 1;
-	drawCmd.color = style.colors[UIStyleCol_Separator];
+	UIDrawCmd drawCmd;
+	vec2 start = vec2(0, height / 2);
+	vec2 end = vec2(item->size.x, height / 2);
+	color col = style.colors[UIStyleCol_Separator];
+	MakeLine(drawCmd, start, end, 1, col);
 	AddDrawCmd(item, drawCmd);
 	
 }
@@ -1965,7 +2013,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 		else if (active) activeId = -1;
 	}
 	
-	if (hovered) WinSetdowCursor(CursorType_IBeam);
+	if (hovered) SetWindowCursor(CursorType_IBeam);
 	
 	if (charCount < state->cursor)
 		state->cursor = charCount;
@@ -2123,12 +2171,11 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	}
 	
 	if (!(flags & UIInputTextFlags_NoBackground)) {//text box
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = dim;
-		drawCmd.color =
-			style.colors[(!active ? (hovered ? UIStyleCol_InputTextBgHovered : UIStyleCol_InputTextBg) : UIStyleCol_InputTextBg)];
-		
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = dim;
+		color col = style.colors[(!active ? (hovered ? UIStyleCol_InputTextBgHovered : UIStyleCol_InputTextBg) : UIStyleCol_InputTextBg)];
+		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2137,41 +2184,41 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 			 (style.fontHeight * style.inputTextHeightRelToFont - style.fontHeight) * style.inputTextTextAlign.y);
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text};
-		drawCmd.position = textStart;
+		UIDrawCmd drawCmd;
+		vec2 position = textStart;
 		if (preview && !buff[0]) {
-			drawCmd.text = string(preview);
-			drawCmd.color = style.colors[UIStyleCol_Text];
-			drawCmd.color.a = (u8)floor(0.5f * 255);
+			color col = style.colors[UIStyleCol_Text];
+			col.a = (u8)floor(0.5f * 255);
+			MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
+			
 		}
 		else {
-			drawCmd.text = string(buff);
-			drawCmd.color = style.colors[UIStyleCol_Text];
+			color col = style.colors[UIStyleCol_Text];
+			MakeText(drawCmd, cstring{ (char*)buff, strlen(buff) }, position, col, GetTextScale());
 		}
-		drawCmd.font = style.font;
 		
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
-		drawCmd.color = style.colors[UIStyleCol_InputTextBorder];
-		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item->size;
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[UIStyleCol_InputTextBorder];
+		MakeRect(drawCmd, position, dimensions, 1, col);
 		AddDrawCmd(item, drawCmd); 
 	}
 	
 	//TODO(sushi, Ui) impl different text cursors
 	if (active) {//cursor
-		UIDrawCmd drawCmd{ UIDrawType_Line};
-		drawCmd.position = item->position + textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
-		drawCmd.position2 = item->position + textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
-		drawCmd.color = 
+		UIDrawCmd drawCmd;
+		vec2  start = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
+		vec2  end = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
+		color col = 
 			color(255, 255, 255, 
 				  u8(255 * (cos(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 
 								- sin(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2));
-		drawCmd.thickness = 1;
-		
+		MakeLine(drawCmd, start, end, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2503,7 +2550,7 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 		
 		switch (activeSide) {
 			case wTop: {
-				WinSetdowCursor(CursorType_VResize);
+				SetWindowCursor(CursorType_VResize);
 				if (mdown) {
 					window->position.y = wpos.y + (mp.y - mouse.y);
 					window->dimensions = wdims.yAdd(mouse.y - mp.y);
@@ -2511,14 +2558,14 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 				}
 			}break;
 			case wBottom: {
-				WinSetdowCursor(CursorType_VResize); 
+				SetWindowCursor(CursorType_VResize); 
 				if (mdown) {
 					window->dimensions = wdims.yAdd(mp.y - mouse.y);
 					window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
 				}
 			}break;
 			case wLeft: {
-				WinSetdowCursor(CursorType_HResize);
+				SetWindowCursor(CursorType_HResize);
 				if (mdown) {
 					window->position.x = wpos.x + (mp.x - mouse.x);
 					window->dimensions = wdims.xAdd(mouse.x - mp.x);
@@ -2526,7 +2573,7 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 				}
 			}break;
 			case wRight: {
-				WinSetdowCursor(CursorType_HResize); 
+				SetWindowCursor(CursorType_HResize); 
 				if (mdown) {
 					window->dimensions = wdims.xAdd(mp.x - mouse.x);
 					window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
@@ -2758,7 +2805,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
-				curwin->windowlayer = parent->windowlayer;
+				curwin->layer = parent->layer;
 				
 				parent->children.add(name, curwin);
 			}
@@ -2809,7 +2856,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
-				curwin->windowlayer = parent->windowlayer + 1;
+				curwin->layer = parent->layer + 1;
 				
 				parent->children.add(name, curwin);
 			}
@@ -2976,26 +3023,29 @@ void EndCall() {
 			
 			{//scroll bg
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
-				drawCmd.position = vec2(ScrollBaredRight(), BorderedTop());
-				drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
+				vec2  position = vec2(ScrollBaredRight(), BorderedTop());
+				vec2  dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
+				color col = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
+				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
 			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
-				drawCmd.position = draggerpos;
-				drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
+				vec2  position = draggerpos;
+				vec2  dimensions = vec2(style.scrollBarYWidth, draggerheight);
+				color col = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
 			
 			//if both scroll bars are active draw a little square to obscure the empty space 
 			if (CanScrollX()) {
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[UIStyleCol_WindowBg];
-				drawCmd.position = vec2(ScrollBaredRight(), scrollbarheight);
-				drawCmd.dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
+				vec2  position = vec2(ScrollBaredRight(), scrollbarheight);
+				vec2  dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
+				color col = style.colors[UIStyleCol_WindowBg];
+				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
 		}
@@ -3016,17 +3066,19 @@ void EndCall() {
 			
 			{//scroll bg
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
-				drawCmd.position = vec2(0, ScrollBaredBottom());
-				drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
+				vec2  position = vec2(0, ScrollBaredBottom());
+				vec2  dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
+				color col = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
+				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
 			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
-				drawCmd.position = draggerpos;
-				drawCmd.dimensions = vec2(draggerwidth, style.scrollBarXHeight);
+				vec2  position = draggerpos;
+				vec2  dimensions = vec2(draggerwidth, style.scrollBarXHeight);
+				color col = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
 		}
@@ -3039,20 +3091,21 @@ void EndCall() {
 		//draw background
 		if (!WinHasFlag(UIWindowFlags_NoBackground)) {
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-			drawCmd.position = vec2::ZERO;
-			drawCmd.dimensions = curwin->dimensions;
-			drawCmd.color = style.colors[UIStyleCol_WindowBg];
-			
+			vec2  position = vec2::ZERO;
+			vec2  dimensions = curwin->dimensions;
+			color col = style.colors[UIStyleCol_WindowBg];
+			MakeFilledRect(drawCmd, position, dimensions, col);
 			AddDrawCmd(preitem, drawCmd);
 		}
 		
 		//draw border
 		if (!WinHasFlag(UIWindowFlags_NoBorder)) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
-			drawCmd.color = style.colors[UIStyleCol_Border];
-			drawCmd.position = vec2::ONE * ceil(style.windowBorderSize / 2);
-			drawCmd.dimensions = curwin->dimensions - vec2::ONE * ceil(style.windowBorderSize);
-			drawCmd.thickness = style.windowBorderSize;
+			vec2  position = vec2::ONE * ceil(style.windowBorderSize / 2);
+			vec2  dimensions = curwin->dimensions - vec2::ONE * ceil(style.windowBorderSize);
+			color col = style.colors[UIStyleCol_Border];
+			f32   thickness = style.windowBorderSize;
+			MakeRect(drawCmd, position, dimensions, thickness, col);
 			AddDrawCmd(postitem, drawCmd);
 		}
 	}
@@ -3259,22 +3312,22 @@ inline void MetricsDebugItem() {
 				
 				if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
 					switch (dc.type) {
-						case UIDrawType_Image:
-						case UIDrawType_Rectangle:
-						case UIDrawType_FilledRectangle: {
-							DebugRect(dc.position, dc.dimensions);
-						}break;
-						case UIDrawType_Circle:
-						case UIDrawType_CircleFilled: {
-							DebugCircle(dc.position, dc.thickness);
-						}break;
-						case UIDrawType_Line: {
-							vec2 up = Min(dc.position, dc.position2);
-							DebugRect(up, Max(dc.position, dc.position2) - up);
-						}break;
-						case UIDrawType_Text: {
-							DebugRect(dc.position, CalcTextSize(dc.text));
-						}break;
+						//case UIDrawType_Image:
+						//case UIDrawType_Rectangle:
+						//case UIDrawType_FilledRectangle: {
+						//	DebugRect(dc.position, dc.dimensions);
+						//}break;
+						//case UIDrawType_Circle:
+						//case UIDrawType_FilledCircle: {
+						//	DebugCircle(dc.position, dc.thickness);
+						//}break;
+						//case UIDrawType_Line: {
+						//	vec2 up = Min(dc.position, dc.position2);
+						//	DebugRect(up, Max(dc.position, dc.position2) - up);
+						//}break;
+						//case UIDrawType_Text: {
+						//	DebugRect(dc.position, CalcTextSize(dc.text));
+						//}break;
 					}
 				}
 				
@@ -3365,10 +3418,10 @@ inline void MetricsBreaking() {
 						switch (dc.type) {
 							case UIDrawType_FilledRectangle:
 							case UIDrawType_Rectangle: {
-								if (MouseInArea(ipos + dc.position, dc.dimensions)) {
-									DebugRect(ipos + dc.position, dc.dimensions, (o == selected ? Color_Green : Color_Red));
-									
-								}
+								//if (MouseInArea(ipos + dc.position, dc.dimensions)) {
+								//	DebugRect(ipos + dc.position, dc.dimensions, (o == selected ? Color_Green : Color_Red));
+								//	
+								//}
 							}break;
 						}
 						o++;
@@ -3713,11 +3766,11 @@ UIWindow* DisplayMetrics() {
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
 					{
-						UIDrawCmd dc{ UIDrawType_Rectangle };
-						dc.color = Color_Green;
-						dc.position = debugee->position + item.initialCurPos + item.style.windowPadding - vec2::ONE * 3 / 2.f;
-						dc.dimensions = vec2::ONE * 3;
-						debugCmds.add(dc);
+						//UIDrawCmd dc{ UIDrawType_Rectangle };
+						//dc.color = Color_Green;
+						//dc.position = debugee->position + item.initialCurPos + item.style.windowPadding - vec2::ONE * 3 / 2.f;
+						//dc.dimensions = vec2::ONE * 3;
+						//debugCmds.add(dc);
 					}
 				}
 			}
@@ -4176,21 +4229,16 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 	
 	vec2 itempos = window->position + item.position;
 	vec2 itemsiz = item.size;
-	
+
+	UIDrawCmd* lastdc = 0;
 	for (UIDrawCmd& drawCmd : item.drawCmds) {
-		vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
-		vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
-		vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-		vec2    dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);
-		vec2    dcso = (drawCmd.useWindowScissor ? winScissorOffset : itempos + drawCmd.scissorOffset);
-		f32      dct = drawCmd.thickness;
-		u32      dcl = window->windowlayer;
-		u32    dcsub = drawCmd.subdivisions;
-		color  dccol = drawCmd.color;
+		BreakOnDrawCmdDraw;
 		
-		dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
-		dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
+		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor(drawCmd.vertices[i].pos+itempos);
 		
+		vec2 dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);
+		vec2 dcso = (drawCmd.useWindowScissor ? winScissorOffset : itempos + drawCmd.scissorOffset);
+
 		//modify the scissor offset and extent according to the kind of window we are drawing
 		switch (window->type) {
 			case UIWindowType_PopOut:
@@ -4208,61 +4256,21 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				
 			}break;
 		}
-		
+
 		dcse = ClampMin(dcse, vec2::ZERO);
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
+		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
+		if(!lastdc) 
+			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
+		else if (dcse != lastdc->scissorExtent || dcso != lastdc->scissorOffset || drawCmd.tex != lastdc->tex)
+			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
 		
-		Texture* dctex = drawCmd.tex;
+		Render::AddTwodVertices(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
-		cstring dctext{ drawCmd.text.str,drawCmd.text.count };
-		wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
-		
-		Font* font = drawCmd.font;
-		
-#if DESHI_INTERNAL
-		//copy all drawCmd changes back to the actual drawCmd in debug mode so we
-		//can visualize it in metrics
 		drawCmd.scissorExtent = dcse;
 		drawCmd.scissorOffset = dcso;
-		drawCmd.position = dcpos;
-		drawCmd.position2 = dcpos2;
-		drawCmd.thickness = dct;
-		BreakOnDrawCmdDraw;
-#endif
-		
-		switch (drawCmd.type) {
-			case UIDrawType_FilledRectangle: {
-				Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Rectangle: {
-				Render::DrawRect2D(dcpos, dcsiz, dct, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Line: {
-				Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Circle: {
-				Render::DrawCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_CircleFilled: {
-				Render::FillCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_Text: {
-				vec2 scale = vec2::ONE * item.style.fontHeight / (f32)item.style.font->max_height * item.style.globalScale;
-				Render::DrawText2D(font, dctext, dcpos, dccol, scale, dcl, dcso, dcse);
-			}break;
-			case UIDrawType_WText: {
-				vec2 scale = vec2::ONE * item.style.fontHeight / (f32)item.style.font->max_height * item.style.globalScale;
-				Render::DrawText2D(font, wdctext, dcpos, dccol, scale, dcl, dcso, dcse);
-			}break;
-			
-			case UIDrawType_Image: {
-				Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
-			}break;
-			default: {
-				Assert(0, "unhandled UIDrawType!");
-			}break;
-		}
+		lastdc = &drawCmd;
 	}
 }
 
@@ -4338,14 +4346,7 @@ void CleanUpWindow(UIWindow* window) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
-	
-	//DebugRect(vec2::ONE * 300, vec2::ONE * 100);
-
-	UIDrawCmd test;
-	//MakeRect(test, vec2::ONE * 300, vec2::ONE * 300, 5, Color_Red);
-	MakeRect(test, vec2(800, 100), vec2::ONE * 300, 5, Color_Blue);
-	MakeFilledCircle(test, vec2::ONE * 400, 300, 40, Color_VeryDarkCyan);
-	debugCmds.add(test);
+	DebugText(vec2::ONE * 300, "oh yeah");
 
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
@@ -4418,90 +4419,10 @@ void UI::Update() {
 #endif
 	
 	//draw all debug commands if there are any
-	
 	for (UIDrawCmd& drawCmd : debugCmds) {
-		
-		Render::StartNewTwodCmd(5, 0, vec2::ZERO, DeshWinSize);
-		
+	
+		Render::StartNewTwodCmd(5, drawCmd.tex, vec2::ZERO, DeshWinSize);
 		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
-		
-		map<u32, u32> offsets;
-
-		static s32 start = 0;
-
-		if (DeshInput->KeyPressed(Key::I)) start += 3;
-		if (DeshInput->KeyPressed(Key::K)) start = Max(start - 3, s32(0));
-
-
-		UIDrawCmd ok;
-		MakeFilledTriangle(ok, drawCmd.vertices[drawCmd.indices[start]].pos, drawCmd.vertices[drawCmd.indices[start + 1]].pos, drawCmd.vertices[drawCmd.indices[start + 2]].pos, Color_Yellow);
-
-		Render::StartNewTwodCmd(6, 0, vec2::ZERO, DeshWinSize);
-		Render::AddTwodVertices(6, ok.vertices, ok.counts.x, ok.indices, ok.counts.y);
-
-		//for (u32 i = 0; i < drawCmd.counts.y; i++) {
-		//	if (!offsets.has(drawCmd.indices[i])) offsets.add(drawCmd.indices[i]);
-		//	//Render::FillCircle2D(drawCmd.vertices[i].pos, 5, 10,Color_Red, 6, vec2::ZERO, DeshWinSize );
-		//	
-		//	
-		//	
-		//
-		//	string v = toStr(i);
-		//	Render::DrawText2D(style.font, cstring{ v.str,v.count }, drawCmd.vertices[i % u32(drawCmd.counts.x)].pos + vec2(offsets[drawCmd.indices[i]], 0), Color_White, vec2::ONE, 5, vec2::ZERO, DeshWinSize);
-		//	offsets[drawCmd.indices[i]] += 5;
-		//}
-
-		
-		//vec2   dcpos = drawCmd.position;
-		//vec2  dcpos2 = drawCmd.position2;
-		//vec2   dcsiz = drawCmd.dimensions;
-		//vec2    dcse = DeshWindow->dimensions;
-		//vec2    dcso = vec2::ZERO;
-		//color  dccol = drawCmd.color;
-		//f32      dct = drawCmd.thickness;
-		//u32      dcl = UI_LAYERS - 1;
-		//u32    dcsub = drawCmd.subdivisions;
-		//
-		//dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
-		//dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
-		//
-		//Texture* dctex = drawCmd.tex;
-		//
-		//cstring dctext{ drawCmd.text.str,drawCmd.text.count };
-		//wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
-		//
-		//Font* font = drawCmd.font;
-		
-		//switch (drawCmd.type) {
-		//	case UIDrawType_FilledRectangle: {
-		//		Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-		//	}break;
-		//	case UIDrawType_Rectangle: {
-		//		Render::DrawRect2D(dcpos, dcsiz, dct, dccol, dcl, dcso, dcse);
-		//	}break;
-		//	case UIDrawType_Line: {
-		//		Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
-		//	}break;
-		//	case UIDrawType_Circle: {
-		//		Render::DrawCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
-		//	}break;
-		//	case UIDrawType_CircleFilled: {
-		//		Render::FillCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
-		//	}break;
-		//	case UIDrawType_Text: {
-		//		Render::DrawText2D(font, dctext, dcpos, dccol, vec2::ONE, dcl, dcso, dcse);
-		//	}break;
-		//	case UIDrawType_WText: {
-		//		Render::DrawText2D(font, wdctext, dcpos, dccol, vec2::ONE, dcl, dcso, dcse);
-		//	}break;
-		//	
-		//	case UIDrawType_Image: {
-		//		Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
-		//	}break;
-		//	default: {
-		//		Assert(0, "unhandled UIDrawType!");
-		//	}break;
-		//}
 	}
 	debugCmds.clear();
 	
