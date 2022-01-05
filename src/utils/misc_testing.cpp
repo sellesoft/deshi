@@ -164,9 +164,9 @@ void random_walk_avoid() {
 
 void vector_field() {
 	f32 precision = 100;
-	static f32 zoom = 20;
-	if (DeshInput->ScrollDown()) zoom++;
-	if (DeshInput->ScrollUp()) zoom--;
+	static f32 zoom = 1;
+	if (DeshInput->ScrollDown()) zoom += 0.1;
+	if (DeshInput->ScrollUp()) zoom -= 0.1;
 
 
 	static vec2 postrack(0, 0);
@@ -193,10 +193,10 @@ void vector_field() {
 	static vec2 target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
 	
 	auto step = [&](vec2 pos) {
-		vec2 tc = (DeshWinSize / 2 - pos).normalized() / zoom;
+		vec2 tc = (DeshWinSize / 2 - pos) * zoom;
 		f32 x = tc.x, y = tc.y;
 		//vec2 tm = mp - pos;// - ;
-		return vec2(y, -x);
+		return vec2(sin(x), sin(x)*cos(y + time));
 	};
 
 	if (TIMER_END(vft) > 1000) {
@@ -214,7 +214,6 @@ void vector_field() {
 			vec2 s = step(pos);
 			vec2 pos2 = pos + s.normalized() * 10;
 
-			f32 ang = Math::AngBetweenVectors(pos2 - pos, vec2(0, 1));
 			maxmag = Max(maxmag, s.mag());
 
 			//Render::DrawCircle2D(pos, 4, 10, Color_Red, 4, vec2::ZERO, DeshWinSize);

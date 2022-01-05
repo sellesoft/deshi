@@ -721,7 +721,7 @@ MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, ve
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
 
-	ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -747,8 +747,8 @@ MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end,
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
 
-	ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
-	ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -782,8 +782,8 @@ MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 
 	vec2 bl = pos + vec2(0, size.y);
 	vec2 tr = pos + vec2(size.x, 0);
 
-	ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
-	ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -816,15 +816,15 @@ MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, 
 	vec2 tro = sqt * vec2( M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
 	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
 
-	memset(ip, offsets.y, 24 * u32size);
-	ip[0]  += 0; ip[1]  += 1; ip[2]  += 3;
-	ip[3]  += 0; ip[4]  += 3; ip[5]  += 2;
-	ip[6]  += 2; ip[7]  += 3; ip[8]  += 5;
-	ip[9]  += 2; ip[10] += 5; ip[11] += 4;
-	ip[12] += 4; ip[13] += 5; ip[14] += 7;
-	ip[15] += 4; ip[16] += 7; ip[17] += 6;
-	ip[18] += 6; ip[19] += 7; ip[20] += 1;
-	ip[21] += 6; ip[22] += 1; ip[23] += 0;
+	
+	ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
+	ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
+	ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
+	ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
+	ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 7;
+	ip[15] = offsets.x + 4; ip[16] = offsets.x + 7; ip[17] = offsets.x + 6;
+	ip[18] = offsets.x + 6; ip[19] = offsets.x + 7; ip[20] = offsets.x + 1;
+	ip[21] = offsets.x + 6; ip[22] = offsets.x + 1; ip[23] = offsets.x + 0;
 	
 	vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
@@ -842,9 +842,8 @@ MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color) {
 	drawCmd.counts += MakeRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
 }
 
-//TODO(sushi) optimize these so that they dont need to use other Make functions to make circles
 FORCE_INLINE vec2
-MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
+MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -852,23 +851,37 @@ MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radiu
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
 
-	vec2 sum;
 	f32 subdivisions = f32(subdivisions_int);
-	forI(subdivisions_int) {
-		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
-		f32 a1 = (f32(i) * M_2PI) / subdivisions;
-		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
-		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
+	u32 nuindexes = subdivisions * 6;
 
-		sum += MakeLine(vp, ip, sum, vec2(x0, y0), vec2(x1, y1), 1, color);
+	//first and last point
+	vec2 last = pos + vec2(radius, 0);
+	vp[0].pos = last + vec2(-thickness / 2, 0);	vp[0].uv={0,0}; vp[0].color=col;
+	vp[1].pos = last + vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
+	ip[0] = offsets.x + 0; ip[1] = offsets.x + 1; ip[3] = offsets.x + 0;
+	ip[nuindexes - 1] = offsets.x + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.x + 1;
+
+	for (int i = 1; i < subdivisions_int; i++) {
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		vec2 offset(radius * cosf(a1), radius * sinf(a1));
+		vec2 point = pos + offset;
+
+		u32 idx = i * 2;
+		vp[idx].pos = point - offset.normalized() * thickness / 2; vp[idx].uv = { 0,0 }; vp[idx].color = col;
+		vp[idx + 1].pos = point + offset.normalized() * thickness / 2; vp[idx + 1].uv = { 0,0 }; vp[idx + 1 ].color = col;
+		
+		u32 ipidx1 = 6 * (i - 1) + 2;
+		u32 ipidx2 = 6 * i - 1;
+		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.x + idx + 1;
+		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.x + idx;
 	}
 
-	return sum;
+	return vec2(2 * subdivisions, nuindexes);
 }
 
 FORCE_INLINE void
-MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, color color) {
-	drawCmd.counts += MakeCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, color);
+MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color) {
+	drawCmd.counts += MakeCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, thickness, color);
 }
 
 FORCE_INLINE vec2 
@@ -880,17 +893,33 @@ MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
 
+	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = pos + vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
+	u32 nuindexes = 3 * subdivisions_int;
+
+	ip[1] = offsets.x + 1;
+	for (int i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
+
+	ip[nuindexes - 1] = offsets.x + 1;
+
 	vec2 sum;
 	f32 subdivisions = f32(subdivisions_int);
-	forI(subdivisions_int) {
-		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
+	for(u32 i = 1; i < subdivisions_int; i++) {
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
-		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
-		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
-		sum += MakeFilledTriangle(vp, ip, sum, pos, vec2(x0, y0), vec2(x1, y1), color);
+		vec2 offset(radius * cosf(a1), radius * sinf(a1));
+		vec2 point = pos + offset;
+
+		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;
+
+		u32 ipidx = 3 * i - 1;
+		ip[ipidx] = ip[ipidx + 2] = offsets.x + i + 1;
+
+		//f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
+		//f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
+		//sum += MakeFilledTriangle(vp, ip, sum, pos, vec2(x0, y0), vec2(x1, y1), color);
 	}
 
-	return sum;
+	return vec2(subdivisions + 1, nuindexes);
 }
 
 FORCE_INLINE void
@@ -921,8 +950,8 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
 
-				ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
-				ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
+				ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+				ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + style.font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + style.font->uvOffset }; vp[2].color = col;
@@ -941,8 +970,8 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 
 				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
 
-				ip[0] = offsets.y; ip[1] = offsets.y + 1; ip[2] = offsets.y + 2;
-				ip[3] = offsets.y; ip[4] = offsets.y + 2; ip[5] = offsets.y + 3;
+				ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+				ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + style.font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
@@ -977,7 +1006,7 @@ void DebugRectFilled(vec2 pos, vec2 size, color col = Color_Red) {
 
 void DebugCircle(vec2 pos, f32 radius, color col = Color_Red) {
 	UIDrawCmd dc{ UIDrawType_Circle };
-	MakeCircle(dc, pos, radius, 20, col);
+	MakeCircle(dc, pos, radius, 20, 1, col);
 	debugCmds.add(dc);
 }
 
@@ -4306,10 +4335,11 @@ void UI::Update() {
 
 	//DebugRect(vec2::ONE * 300, vec2::ONE * 100);
 
-	//UIDrawCmd test;
+	UIDrawCmd test;
 	//MakeRect(test, vec2::ONE * 300, vec2::ONE * 300, 5, Color_Red);
-	//MakeCircle(test, vec2::ONE * 400, 50, 20, Color_Blue);
-	//debugCmds.add(test);
+	MakeRect(test, vec2(800, 100), vec2::ONE * 300, 5, Color_Blue);
+	MakeFilledCircle(test, vec2::ONE * 400, 300, 40, Color_VeryDarkCyan);
+	debugCmds.add(test);
 
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
@@ -4389,6 +4419,32 @@ void UI::Update() {
 
 		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
+		map<u32, u32> offsets;
+
+		static s32 start = 0;
+
+		if (DeshInput->KeyPressed(Key::I)) start += 3;
+		if (DeshInput->KeyPressed(Key::K)) start = Max(start - 3, s32(0));
+
+
+		UIDrawCmd ok;
+		MakeFilledTriangle(ok, drawCmd.vertices[drawCmd.indices[start]].pos, drawCmd.vertices[drawCmd.indices[start + 1]].pos, drawCmd.vertices[drawCmd.indices[start + 2]].pos, Color_Yellow);
+
+		Render::StartNewTwodCmd(6, 0, vec2::ZERO, DeshWinSize);
+		Render::AddTwodVertices(6, ok.vertices, ok.counts.x, ok.indices, ok.counts.y);
+
+		//for (u32 i = 0; i < drawCmd.counts.y; i++) {
+		//	if (!offsets.has(drawCmd.indices[i])) offsets.add(drawCmd.indices[i]);
+		//	//Render::FillCircle2D(drawCmd.vertices[i].pos, 5, 10,Color_Red, 6, vec2::ZERO, DeshWinSize );
+		//	
+		//	
+		//	
+		//
+		//	string v = toStr(i);
+		//	Render::DrawText2D(style.font, cstring{ v.str,v.count }, drawCmd.vertices[i % u32(drawCmd.counts.x)].pos + vec2(offsets[drawCmd.indices[i]], 0), Color_White, vec2::ONE, 5, vec2::ZERO, DeshWinSize);
+		//	offsets[drawCmd.indices[i]] += 5;
+		//}
+
 		
 		//vec2   dcpos = drawCmd.position;
 		//vec2  dcpos2 = drawCmd.position2;

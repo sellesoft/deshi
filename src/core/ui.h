@@ -291,7 +291,7 @@ global_ const char* UIDrawTypeStrs[] = {
 	"Image",
 };
 
-#define UIDRAWCMD_MAX_VERTICES 0xFF
+#define UIDRAWCMD_MAX_VERTICES 0x5FF
 #define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
 
 struct UIItem;
@@ -311,8 +311,8 @@ struct UIDrawCmd {
 	u32 subdivisions; //circle subdivisons
 
 	Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
-	u32     indices[UIDRAWCMD_MAX_INDICES];
-	vec2 counts; //maybe make this a u32[2]
+	u32     indices[UIDRAWCMD_MAX_INDICES] = {0};
+	vec2    counts; 
 
 	//array<Vertex2> vertices;
 	//array<u32>     indices;
