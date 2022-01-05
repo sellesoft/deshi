@@ -62,7 +62,7 @@ Init(){
 	NullFont()->count = 1;
 	cpystr(NullFont()->name,"null",DESHI_NAME_SIZE);
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, false, false).second;
+	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
 	
 	
 	//DeleteTexture(nf_tex); //!Incomplete
@@ -441,7 +441,7 @@ AllocateTexture(){
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, b32 keepLoaded, b32 generateMipmaps, b32 forceLinear){
+CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -457,10 +457,11 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->idx = textures.size();
 	texture->format  = format;
 	texture->type    = type;
+	texture->filter  = filter;
+	texture->uvMode  = uvMode;
 	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, 
 								 &texture->depth, STBI_rgb_alpha);
 	texture->loaded  = true;
-	texture->forceLinear = forceLinear;
 	if(texture->pixels == 0){ 
 		LogE("storage","Failed to create texture '",filename,"': ",stbi_failure_reason()); 
 		memory_zfree(texture);
@@ -481,7 +482,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, b32 keepLoaded, b32 generateMipmaps, b32 forceLinear){
+CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
@@ -496,11 +497,12 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 	texture->idx     = textures.count;
 	texture->format  = format;
 	texture->type    = type;
+	texture->filter  = filter;
+	texture->uvMode  = uvMode;
 	texture->width   = width;
 	texture->height  = height;
 	texture->depth   = 4;
 	texture->loaded  = true;
-	texture->forceLinear = forceLinear;
 	texture->mipmaps = (generateMipmaps) ? (s32)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
 	//reinterpret image as RGBA32
@@ -1656,7 +1658,7 @@ CreateFontFromFileBDF(const char* filename){
 	}
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
-											   ImageFormat_BW, TextureType_2D, false, false, false).second;
+											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
 	//DeleteTexture(texture);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
@@ -1769,7 +1771,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	stbtt_PackEnd(pc);
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
-											   ImageFormat_BW, TextureType_2D, false, false, false).second;
+											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;

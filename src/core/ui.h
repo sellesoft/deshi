@@ -90,6 +90,7 @@ global_ const char* styleVarStr[] = {
 
 enum UIStyleCol : u32 {
 	UIStyleCol_Text,
+	UIStyleCol_Separator,
 	
 	UIStyleCol_WindowBg,
 	UIStyleCol_Border,
@@ -309,14 +310,14 @@ struct UIDrawCmd {
 	color      color; //draw cmds have either a texture or a color
 	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
 	u32 subdivisions; //circle subdivisons
-
+	
 	Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
 	u32     indices[UIDRAWCMD_MAX_INDICES] = {0};
 	vec2    counts; 
 
 	//array<Vertex2> vertices;
 	//array<u32>     indices;
-
+	
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
@@ -674,11 +675,11 @@ namespace UI {
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview = 0, UIInputTextFlags flags = 0);
-
+	
 	UIItem* BeginCustomItem(u32 layeroffset = 0);
 	void    CustomItemAdvanceCursor(UIItem* item, b32 move_cursor = 1);
 	void    EndCustomItem();
-
+	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, f32 style);

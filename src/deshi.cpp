@@ -79,7 +79,6 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
-when running out of memory, log an error then fallback on STL or OS (rather than assert)
 add a memory visualizer
 ____ref: https://en.wikipedia.org/wiki/Treemapping
 reformat ArenaHeap to work more like GenericHeap
@@ -89,7 +88,7 @@ ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad8
 
 Render TODOs
 ------------
-figure out how to use custom allocators with opengl3
+figure out how to use custom allocators with opengl3 and get opengl3 to use deshi memory
 remove usage of STL
 replace allocator with temp_allocator in relevant places
 rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
@@ -160,6 +159,8 @@ add the ability to limit framerate
 
 Ungrouped TODOs
 ---------------
+give Texture its own file, separate from model.h
+remove tuple (not pair) and container manager
 remove GLFW and add platform layers
 rename RoundUpTo() to AlignTo() in defines.h
 restyle map to match the rest of utils

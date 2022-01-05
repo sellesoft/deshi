@@ -138,7 +138,7 @@ struct {
 struct {
 	u32 vertices = 0;
 	u32 indices = 0;
-
+	
 	u32 draw_cmds = 0;
 	u32 items = 0;
 }ui_stats;
@@ -398,8 +398,8 @@ inline b32 CanScrollY(UIWindow* window = curwin) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
 inline vec2 PositionForNewItem(UIWindow* window = curwin) {
-	vec2 pos = 
-		window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0) + vec2::ONE * style.windowBorderSize ;
+	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0)
+		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
 	return pos;
 }
@@ -725,7 +725,7 @@ MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, ve
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
-
+	
 	return vec2(3, 3);
 }
 
@@ -739,11 +739,11 @@ FORCE_INLINE vec2
 MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
 
@@ -758,7 +758,7 @@ MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end,
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
-
+	
 	return vec2(4, 6);
 }
 
@@ -772,11 +772,11 @@ FORCE_INLINE vec2
 MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	vec2 tl = pos;
 	vec2 br = pos + size;
 	vec2 bl = pos + vec2(0, size.y);
@@ -800,11 +800,11 @@ FORCE_INLINE vec2
 MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	vec2 tl = pos;
 	vec2 br = pos + size;
 	vec2 bl = pos + vec2(0, size.y);
@@ -888,7 +888,7 @@ FORCE_INLINE vec2
 MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
@@ -932,7 +932,7 @@ FORCE_INLINE vec2
 MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos, color color, vec2 scale) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	vec2 sum;
 	switch (style.font->type) {
 		//// BDF (and NULL) font rendering ////
@@ -941,11 +941,11 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 				u32     col = color.rgba;
 				Vertex2* vp = putverts + (u32)offsets.x;
 				u32*     ip = putindices + (u32)offsets.y;
-
+				
 				f32 w = style.font->max_width * scale.x;
 				f32 h = style.font->max_height * scale.y;
 				f32 dy = 1.f / (f32)style.font->count;
-
+				
 				f32 idx = f32(text[i] - 32);
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
@@ -956,18 +956,18 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff + style.font->uvOffset }; vp[3].color = col;
-
+				
 				sum += vec2(4, 6);
 				pos.x += style.font->max_width * scale.x;
 			}
 		}break;
-			//// TTF font rendering ////
+		//// TTF font rendering ////
 		case FontType_TTF: {
 			forI(text.count) {
 				u32     col = color.rgba;
 				Vertex2* vp = putverts + (u32)offsets.x;
 				u32*     ip = putindices + (u32)offsets.y;
-
+				
 				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
 
 				ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
@@ -976,13 +976,13 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, string text, vec2 pos
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + style.font->uvOffset }; vp[3].color = col;
-
+				
 				sum += vec2(4, 6);
 			}break;
-		default: Assert(!"unhandled font type"); break;
+			default: Assert(!"unhandled font type"); break;
 		}
 	}
-
+	
 	return sum;
 }
 
@@ -1035,9 +1035,12 @@ void DebugText(vec2 pos, const char* text, color col = Color_White) {
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+	drawCmd.position   = pos;
+	drawCmd.dimensions = dimen;
+	drawCmd.color      = color;
 	MakeRect(drawCmd, vec2::ZERO, dimen, 1, color);
 	AddDrawCmd(&item, drawCmd);
-
+	
 	item.position = pos;
 	item.size = dimen;
 	curwin->items[ui_state.layer].add(item);
@@ -1046,6 +1049,9 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+	drawCmd.position   = pos;
+	drawCmd.dimensions = dimen;
+	drawCmd.color      = color;
 	MakeFilledRect(drawCmd, pos, dimen, color);
 	AddDrawCmd(&item, drawCmd);
 	
@@ -1905,7 +1911,7 @@ void UI::Separator(f32 height) {
 	drawCmd.position  = vec2(0, height / 2) + item->position;
 	drawCmd.position2 = vec2(item->size.x, height / 2) + item->position;
 	drawCmd.thickness = 1;
-	drawCmd.color = color(64,64,64);
+	drawCmd.color = style.colors[UIStyleCol_Separator];
 	AddDrawCmd(item, drawCmd);
 	
 }
@@ -2731,14 +2737,13 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 					else item->size.y = NextWinSize.y;
 				}
 				
-				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-				
 				AdvanceCursor(item);
 				
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
 				if (NextWinPos.x != -1) { curwin->position = NextWinPos; }
+				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 			}
 			else {
 				item->size = dimensions;
@@ -4074,6 +4079,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_Border,         Color_DarkGrey);
 	PushColor(UIStyleCol_WindowBg,       color(14, 14, 14));
 	PushColor(UIStyleCol_Text,           Color_White);
+	PushColor(UIStyleCol_Separator,      color(64, 64, 64));
 	
 	//backgrounds
 	PushColor(UIStyleCol_ScrollBarBg,  Color_VeryDarkCyan);
@@ -4332,7 +4338,7 @@ void CleanUpWindow(UIWindow* window) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
-
+	
 	//DebugRect(vec2::ONE * 300, vec2::ONE * 100);
 
 	UIDrawCmd test;
@@ -4414,9 +4420,9 @@ void UI::Update() {
 	//draw all debug commands if there are any
 	
 	for (UIDrawCmd& drawCmd : debugCmds) {
-
+		
 		Render::StartNewTwodCmd(5, 0, vec2::ZERO, DeshWinSize);
-
+		
 		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
 		map<u32, u32> offsets;

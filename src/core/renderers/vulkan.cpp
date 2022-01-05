@@ -3230,7 +3230,7 @@ void Check2DCmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 	Assert(twodCmdCounts[layer] <= MAX_TWOD_CMDS);
 	Assert(twodVertexCount <= MAX_TWOD_VERTICES);
 	Assert(twodIndexCount <= MAX_TWOD_INDICES);
-
+	
 }
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -3864,18 +3864,67 @@ LoadTexture(Texture* texture){
 	viewInfo.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 	viewInfo.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
 	AssertVk(vkCreateImageView(device, &viewInfo, allocator, &tvk.view), "failed to create texture image view");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tvk.view,
+						 toStr("Image View ", texture->name).str);
 	
 	//create texture sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-	samplerInfo.magFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	samplerInfo.minFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	samplerInfo.mipmapMode       = (settings.textureFiltering || texture->forceLinear) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	switch(texture->filter){
+		case TextureFilter_Nearest:{
+			samplerInfo.magFilter    = VK_FILTER_NEAREST;
+			samplerInfo.minFilter    = VK_FILTER_NEAREST;
+			samplerInfo.mipmapMode   = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		}break;
+		case TextureFilter_Linear:{
+			samplerInfo.magFilter    = VK_FILTER_LINEAR;
+			samplerInfo.minFilter    = VK_FILTER_LINEAR;
+			samplerInfo.mipmapMode   = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		}break;
+		case TextureFilter_Cubic:{
+			samplerInfo.magFilter    = VK_FILTER_CUBIC_EXT;
+			samplerInfo.minFilter    = VK_FILTER_CUBIC_EXT;
+			samplerInfo.mipmapMode   = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		}break;
+		default: LogE("vulkan", "Unhandled texture filter: ", texture->filter); break;
+	}
+	switch(texture->uvMode){
+		case TextureAddressMode_Repeat:{
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		}break;
+		case TextureAddressMode_MirroredRepeat:{
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		}break;
+		case TextureAddressMode_ClampToEdge:{
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		}break;
+		case TextureAddressMode_ClampToWhite:{
+			samplerInfo.borderColor  = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		}break;
+		case TextureAddressMode_ClampToBlack:{
+			samplerInfo.borderColor  = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		}break;
+		case TextureAddressMode_ClampToTransparent:{
+			samplerInfo.borderColor  = VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		}break;
+		default: LogE("vulkan", "Unhandled texture address mode: ", texture->uvMode); break;
+	}
 	samplerInfo.anisotropyEnable = settings.anistropicFiltering;
 	samplerInfo.maxAnisotropy    = (settings.anistropicFiltering) ?  physicalDeviceProperties.limits.maxSamplerAnisotropy : 1.0f;
-	samplerInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable    = VK_FALSE;
 	samplerInfo.compareOp        = VK_COMPARE_OP_ALWAYS;
@@ -3883,6 +3932,8 @@ LoadTexture(Texture* texture){
 	samplerInfo.minLod           = 0.0f;
 	samplerInfo.maxLod           = (f32)texture->mipmaps;
 	AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tvk.sampler), "failed to create texture sampler");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tvk.sampler,
+						 toStr("Sampler ", texture->name).str);
 	
 	//fill texture descriptor image info
 	tvk.descriptor.imageView   = tvk.view;

@@ -3,7 +3,7 @@
 #define DESHI_FONT_H
 
 #include "../defines.h"
-#include "model.h"
+#include "texture.h"
 
 //note, to calculate the width of a char from a specified height do
 //   height / aspect_ratio / max_width

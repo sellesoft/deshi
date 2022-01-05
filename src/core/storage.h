@@ -2,6 +2,7 @@
 #ifndef DESHI_STORAGE_H
 #define DESHI_STORAGE_H
 
+#include "texture.h"
 #include "model.h"
 #include "font.h"
 #include "../utils/color.h"
@@ -52,8 +53,8 @@ namespace Storage{
 	//////////////////
 	//// @texture ////
 	//////////////////
-	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, b32 keepLoaded = false, b32 generateMipmaps = true, b32 forceLinear = false);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type = TextureType_2D, b32 keepLoaded = false, b32 generateMipmaps = true, b32 forceLinear = false);
+	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, TextureFilter filter = TextureFilter_Nearest, TextureAddressMode uvMode = TextureAddressMode_Repeat, b32 keepLoaded = false, b32 generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type = TextureType_2D, TextureFilter filter = TextureFilter_Nearest, TextureAddressMode uvMode = TextureAddressMode_Repeat, b32 keepLoaded = false, b32 generateMipmaps = true);
 	void               DeleteTexture(Texture* texture);
 	
 	inline Texture*    NullTexture(){ return DeshStorage->null_texture; };

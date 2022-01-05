@@ -122,9 +122,9 @@ Arena* deshi__memory_temp_expose();
 #define memory_expose_temp_arena() deshi__memory_temp_expose()
 
 
-/////////////////
-//// @naming ////
-/////////////////
+////////////////
+//// @debug ////
+////////////////
 #if DESHI_INTERNAL
 struct AddressNameInfo{
 	void*   address;
@@ -145,10 +145,13 @@ cstring deshi__memory_naming_get(void* address);
 //exposes the internal naming arena
 Arena* deshi__memory_naming_expose();
 #define memory_expose_naming_arena() deshi__memory_naming_expose()
+
+void deshi__memory_draw();
 #else
 #  define memory_set_address_name(...)
 #  define memory_get_address_name(...)
 #  define memory_expose_naming_arena(...)
+#  define deshi__memory_init()
 #endif //DESHI_INTERNAL
 
 
