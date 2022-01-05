@@ -190,7 +190,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to grow an arena before Memory::Init() has been called");
 	
 #if MEMORY_DO_ARENA_PRINTS
-	Logf("memory","Growing an arena[0x%p \"%s\"] of size %lld bytes with %lld bytes (triggered at %s:%lld)", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, size, file, line);
+	Logf("memory","Growing an arena[0x%p \"%s\"] of size %lld bytes with %lld bytes (triggered at %s:%lld)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, size, file, line);
 #endif
 	
 	//if out of memory, default to libc
@@ -215,7 +215,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 	//current node is the last node
 	if(&next->order == &deshi__arena_heap->order){
 		if(deshi__arena_heap->cursor + aligned_size > deshi__arena_heap->start + deshi__arena_heap->size){
-			LogfE("memory","Deshi ran out of main memory when attempting to grow an arena[0x%p \"%s\"] of size %lld bytes with %lld bytes (triggered at %s:%lld); defaulting to libc calloc.", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, size, file, line);
+			LogfE("memory","Deshi ran out of main memory when attempting to grow an arena[0x%p \"%s\"] of size %lld bytes with %lld bytes (triggered at %s:%lld); defaulting to libc calloc.", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, size, file, line);
 			result = CreateArenaLibc(arena->size + size);
 			result->cursor += (arena->cursor - arena->start);
 			result->used = arena->used;
@@ -274,7 +274,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 void
 deshi__memory_arena_clear(Arena* arena, char* file, upt line){
 #if MEMORY_DO_ARENA_PRINTS
-	Logf("memory","Clearing an arena[0x%p \"%s\"] of size %lld bytes (triggered at %s:%lld)", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, file, line);
+	Logf("memory","Clearing an arena[0x%p \"%s\"] of size %lld bytes (triggered at %s:%lld)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, file, line);
 #endif
 	
 	ZeroMemory(arena->start, arena->used);
@@ -289,7 +289,7 @@ deshi__memory_arena_delete(Arena* arena, char* file, upt line){
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to delete an arena before Memory::Init() has been called");
 	
 #if MEMORY_DO_ARENA_PRINTS
-	Logf("memory","Deleting an arena[0x%p \"%s\"] of size %lld bytes (triggered at %s:%lld)", arena, (deshi__memory_naming_get(arena)) ? deshi__memory_naming_get(arena).str : "", arena->size, file, line);
+	Logf("memory","Deleting an arena[0x%p \"%s\"] of size %lld bytes (triggered at %s:%lld)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, file, line);
 #endif
 	
 	if(ArenaUsedLibc(arena)){ free(arena); return; }
@@ -584,7 +584,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before Memory::Init() has been called");
 	
 #if MEMORY_DO_GENERIC_PRINTS
-	Logf("memory","Reallocating a ptr[0x%p \"%s\"] to %lld bytes (triggered at %s:%lld)", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", requested_size, file, line);
+	Logf("memory","Reallocating a ptr[0x%p \"%s\"] to %lld bytes (triggered at %s:%lld)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", requested_size, file, line);
 #endif
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
@@ -631,7 +631,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		if(difference != 0){
 			//if out of memory, default to libc
 			if((deshi__generic_heap->cursor - difference) > (deshi__generic_heap->start + deshi__generic_heap->size)){
-				LogfE("memory","Deshi ran out of generic memory when attempting to reallocate a ptr[0x%p \"%s\"] (triggered at %s:%lld); defaulting to libc calloc.", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", file, line);
+				LogfE("memory","Deshi ran out of generic memory when attempting to reallocate a ptr[0x%p \"%s\"] (triggered at %s:%lld); defaulting to libc calloc.", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", file, line);
 				void* new_ptr = AllocateLibc(aligned_size);
 				MemoryChunk* new_chunk = MemoryToChunk(new_ptr);
 				memcpy(&new_chunk->node, &chunk->node, GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD);
@@ -685,7 +685,7 @@ deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 	if(ptr == 0) return;
 	
 #if MEMORY_DO_GENERIC_PRINTS
-	Logf("memory","Zero freeing a ptr[0x%p \"%s\"] (triggered at %s:%lld)", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", file, line);
+	Logf("memory","Zero freeing a ptr[0x%p \"%s\"] (triggered at %s:%lld)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", file, line);
 #endif
 	
 	MemoryChunk* chunk = MemoryToChunk(ptr);
@@ -804,7 +804,7 @@ deshi__memory_temp_reallocate(void* ptr, upt size, char* file, upt line){
 	if(ptr == 0) return 0;
 	
 #if MEMORY_DO_TEMP_PRINTS
-	Logf("memory","Reallocating a temp ptr[0x%p \"%s\"] to %lld bytes of (triggered at %s:%lld)", ptr, (deshi__memory_naming_get(ptr)) ? deshi__memory_naming_get(ptr).str : "", size, file, line);
+	Logf("memory","Reallocating a temp ptr[0x%p \"%s\"] to %lld bytes of (triggered at %s:%lld)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", size, file, line);
 #endif
 	
 	upt* size_ptr = (upt*)ptr - 1;
@@ -904,7 +904,7 @@ deshi__memory_naming_set(void* address, cstring name, Type type){
 }
 
 cstring
-deshi__memory_naming_get(void* address){
+memory_get_address_name(void* address){
 	if(address == 0) return {};
 	if(deshi__naming_arena->used == 0) return {};
 	

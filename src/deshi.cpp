@@ -143,14 +143,11 @@ make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
 
 UI TODOs
 --------
-remove BeginChild and EndChild and just do nested window stuff with Begin and End
 add functionality for resetting certain maps like windows and inputtexts
 ____maybe even removing certain labels from them
 tabs (vertical and horizontal)
-child windows
 add some markup to text like underlining, bold, etc.
 add a UI popup when reloading shaders
-add UI color palettes for easy color changing
 
 Window TODOs
 ------------
