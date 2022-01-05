@@ -205,6 +205,14 @@ struct {
 #define WinDragging       ui_state.input == ISDragging
 #define WinScrolling      ui_state.input == ISScrolling
 
+#define LeftMousePressed   DeshInput->LMousePressed()
+#define LeftMouseDown      DeshInput->LMouseDown()
+#define LeftMouseReleased  DeshInput->LMouseReleased()
+
+#define RightMousePressed  DeshInput->RMousePressed()
+#define RightMouseDown     DeshInput->RMouseDown()
+#define RightMouseReleased DeshInput->RMouseReleased()
+
 //for breaking on a window's begin or end
 UIWindow* break_window_begin = 0;
 UIWindow* break_window_end = 0;
@@ -301,7 +309,7 @@ vec2 UI::CalcTextSize(wcstring text) {
 }
 
 inline b32 isItemHovered(UIItem* item) {
-	return Math::PointInRectangle(DeshInput->mousePos, item->position + curwin->position, item->size * style.globalScale);
+	return Math::PointInRectangle(DeshInput->mousePos, item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
 
 inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
@@ -466,7 +474,7 @@ FORCE_INLINE void SetWindowCursor(CursorType curtype) {
 }
 
 FORCE_INLINE vec2 GetTextScale() {
-	return vec2::ONE* style.fontHeight / (f32)style.font->max_height * style.globalScale;
+	return vec2::ONE * style.fontHeight / (f32)style.font->max_height;
 }
 
 
@@ -755,6 +763,7 @@ MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1,
 
 	return vec2(12, 18);
 
+	//TODO(sushi) this should be fixed to replace reliance on MakeLine
 	//ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
 	//ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
 	//ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
@@ -785,8 +794,6 @@ MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color
 	drawCmd.counts += MakeTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, thickness, color);
 	drawCmd.type = UIDrawType_Triangle;
 }
-
-
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
@@ -2028,25 +2035,24 @@ void UI::Separator(f32 height) {
 
 
 //final input text
-b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
+b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
 	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
 	
-	upt charCount = strlen(buff);
+	upt charCount = (unicode ? wcslen((wchar*)buff) : strlen((char*)buff));
 	
 	item->position = position;
 	
 	vec2 dim;
 	if (flags & UIInputTextFlags_FitSizeToText) {
-		dim = UI::CalcTextSize(string(buff));
+		if(unicode) dim = UI::CalcTextSize((wchar*)buff);
+		else dim = UI::CalcTextSize((char*)buff);
 	}
 	else {
 		dim = DecideItemSize(vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
 
-
-	
 	item->size = dim;
 	
 	b32 hovered = isItemActive(item);
@@ -2082,10 +2088,10 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	//data for callback function
 	UIInputTextCallbackData data;
 	data.flags = flags;
-	data.buffer = buff;
+	data.buffer = (char*)buff;
+	data.wbuffer = (wchar*)buff;
 	data.selectionStart = state->selectStart;
 	data.selectionEnd = state->selectEnd;
-	
 	b32 bufferChanged = 0;
 	if (active) {
 		if (DeshInput->KeyPressed(Key::RIGHT) && state->cursor < charCount) state->cursor++;
@@ -2108,125 +2114,60 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 		//gather text into buffer from inputs
 		//make this only loop when a key has been pressed eventually
 		
-		persist TIMER_START(hold);
 		persist TIMER_START(throttle);
 		
-		//TODO(sushi) make this not count modifier keys
-		if (DeshInput->AnyKeyPressed()) {
-			TIMER_RESET(hold);
-		}
-		
 		auto insert = [&](char c, u32 idx) {
-			memmove(buff + idx + 1, buff + idx, (buffSize - idx) * CHAR_SIZE);
-			buff[idx] = c;
+			memmove((char*)buff + idx + 1, (char*)buff + idx, (buffSize - idx) * CHAR_SIZE);
+			((char*)buff)[idx] = c;
 		};
 		
 		auto erase = [&](u32 idx) {
-			if (charCount == 1) memset(buff, 0, buffSize);
-			else                memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
-			
+			if (charCount == 1) memset((char*)buff, 0, buffSize);
+			else memmove((char*)buff + idx, (char*)buff + idx + 1, (charCount-- - idx) * CHAR_SIZE);
 		};
+
+		auto winsert = [&](wchar c, u32 idx) {
+			memmove((wchar*)buff + idx + 1, (wchar*)buff + idx, (buffSize - idx) * CHAR_SIZE);
+			((wchar*)buff)[idx] = c;
+		};
+
+		auto werase = [&](u32 idx) {
+			if (charCount == 1) memset((wchar*)buff, 0, buffSize);
+			else memmove((wchar*)buff + idx, (wchar*)buff + idx + 1, (charCount-- - idx) * CHAR_SIZE);
+		};
+	
 		
-		char charPlaced;
-		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
-			//TODO(sushi) handle Numerical flag better
-			if (i >= Key::A && i <= Key::Z && !HasFlag(flags, UIInputTextFlags_Numerical)) {
-				if (DeshInput->capsLock || DeshInput->ShiftDown())
-					insert(toPlace, ins);
-				else
-					insert(toPlace + 32, ins);
-			}
-			else if (i >= Key::K0 && i <= Key::K9) {
-				if (DeshInput->ShiftDown() && !HasFlag(flags, UIInputTextFlags_Numerical)) {
-					switch (i) {
-						case Key::K0: data.character = ')'; insert(')', ins); break;
-						case Key::K1: data.character = '!'; insert('!', ins); break;
-						case Key::K2: data.character = '@'; insert('@', ins); break;
-						case Key::K3: data.character = '#'; insert('#', ins); break;
-						case Key::K4: data.character = '$'; insert('$', ins); break;
-						case Key::K5: data.character = '%'; insert('%', ins); break;
-						case Key::K6: data.character = '^'; insert('^', ins); break;
-						case Key::K7: data.character = '&'; insert('&', ins); break;
-						case Key::K8: data.character = '*'; insert('*', ins); break;
-						case Key::K9: data.character = '('; insert('(', ins); break;
-					}
-				}
-				else {
-					data.character = KeyStringsLiteral[i];
-					insert(KeyStringsLiteral[i], ins);
-				}
-			}
-			else {
-				if (DeshInput->ShiftDown() && !HasFlag(flags, UIInputTextFlags_Numerical)) {
-					switch (i) {
-						case Key::SEMICOLON:  data.character = ':';  insert(':', ins);  break;
-						case Key::APOSTROPHE: data.character = '"';  insert('"', ins);  break;
-						case Key::LBRACKET:   data.character = '{';  insert('{', ins);  break;
-						case Key::RBRACKET:   data.character = '}';  insert('}', ins);  break;
-						case Key::BACKSLASH:  data.character = '\\'; insert('\\', ins); break;
-						case Key::COMMA:      data.character = '<';  insert('<', ins);  break;
-						case Key::PERIOD:     data.character = '>';  insert('>', ins);  break;
-						case Key::SLASH:      data.character = '?';  insert('?', ins);  break;
-						case Key::MINUS:      data.character = '_';  insert('_', ins);  break;
-						case Key::EQUALS:     data.character = '+';  insert('+', ins);  break;
-						case Key::TILDE:      data.character = '~';  insert('~', ins);  break;
-					}
-				}
-				else {
-					if (HasFlag(flags, UIInputTextFlags_Numerical) && KeyStringsLiteral[i] == '.') {
-						data.character = '.';
-						insert('.', ins);
-					}
-					else if(!HasFlag(flags, UIInputTextFlags_Numerical)) {
-						data.character = KeyStringsLiteral[i];
-						insert(KeyStringsLiteral[i], ins);
-					}
-				}
-			}
+		forI(DeshInput->charCount) {
 			TIMER_RESET(state->timeSinceTyped);
-			if (flags & UIInputTextFlags_CallbackAlways) {
-				data.eventFlag = UIInputTextFlags_CallbackAlways;
-				callback(&data);
-			}
-		};
-		
-		if (DeshInput->anyKeyDown) {
-			if (TIMER_END(hold) < 1000) {
-				if (DeshInput->KeyPressed(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
-					erase(--state->cursor);
+			if(unicode) winsert((wchar)DeshInput->charIn[i], state->cursor++);
+			else insert((char)DeshInput->charIn[i], state->cursor++);
+		}
+
+		if (charCount) {
+			if (DeshInput->time_key_held < 500) {
+				if (DeshInput->KeyPressed(Key::BACKSPACE) && state->cursor != 0) {
+					if (unicode) werase(--state->cursor);
+					else erase(--state->cursor);
 					bufferChanged = 1;
 				}
-				else {
-					for (int i = 0; i < Key::Key_COUNT; i++) {
-						char toPlace = KeyStringsLiteral[i];
-						if (DeshInput->KeyPressed(i) && charCount < buffSize && toPlace != '\0') {
-							u32 ins = state->cursor++;
-							placeKey(i, ins, toPlace);
-							bufferChanged = 1;
-							break;
-						}
-					}
+				else if (DeshInput->KeyPressed(Key::DELETE) && state->cursor != charCount) {
+					if(unicode) werase(state->cursor);
+					else erase(state->cursor);
+					bufferChanged = 1;
 				}
 			}
-			else {
-				if (TIMER_END(throttle) > 50) {
-					if (DeshInput->KeyDown(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
-						erase(--state->cursor);
-						bufferChanged = 1;
-					}
-					else {
-						for (int i = 0; i < Key::Key_COUNT; i++) {
-							char toPlace = KeyStringsLiteral[i];
-							if (DeshInput->KeyDown(i) && charCount < buffSize && toPlace != '\0') {
-								u32 ins = state->cursor++;
-								placeKey(i, ins, toPlace);
-								bufferChanged = 1;
-								break;
-							}
-						}
-					}
-					TIMER_RESET(throttle);
+			else if (TIMER_END(throttle) > 25) {
+				if (DeshInput->KeyDown(Key::BACKSPACE) && state->cursor != 0) {
+					if(unicode) werase(--state->cursor);
+					else erase(--state->cursor);
+					bufferChanged = 1;
 				}
+				else if (DeshInput->KeyDown(Key::DELETE) && state->cursor != charCount) {
+					if(unicode) werase(state->cursor);
+					else erase(state->cursor);
+					bufferChanged = 1;
+				}
+				TIMER_RESET(throttle);
 			}
 		}
 	}
@@ -2247,15 +2188,29 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	{//text
 		UIDrawCmd drawCmd;
 		vec2 position = textStart;
-		if (preview && !buff[0]) {
-			color col = style.colors[UIStyleCol_Text];
-			col.a = (u8)floor(0.5f * 255);
-			MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
-			
+		if (unicode) {
+			if (preview && !((wchar*)buff)[0]) {
+				color col = style.colors[UIStyleCol_Text];
+				col.a = (u8)floor(0.5f * 255);
+				MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
+
+			}
+			else {
+				color col = style.colors[UIStyleCol_Text];
+				MakeText(drawCmd, wcstring{ (wchar*)buff, wcslen((wchar*)buff) }, position, col, GetTextScale());
+			}
 		}
 		else {
-			color col = style.colors[UIStyleCol_Text];
-			MakeText(drawCmd, cstring{ (char*)buff, strlen(buff) }, position, col, GetTextScale());
+			if (preview && !((char*)buff)[0]) {
+				color col = style.colors[UIStyleCol_Text];
+				col.a = (u8)floor(0.5f * 255);
+				MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
+
+			}
+			else {
+				color col = style.colors[UIStyleCol_Text];
+				MakeText(drawCmd, cstring{ (char*)buff, strlen((char*)buff) }, position, col, GetTextScale());
+			}
 		}
 		
 		AddDrawCmd(item, drawCmd);
@@ -2294,38 +2249,38 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1);
+	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, nullptr, flags, 1);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, callback, flags, 1);
-}
-
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
-	if (InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1)) {
-		getInputTextState = inputTexts.at(label);
-		return true;
-	}
-	getInputTextState = inputTexts.at(label);
-	return false;
+	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, callback, flags, 1);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0);
+	return InputTextCall(label, buffer, buffSize, 0, pos, preview, nullptr, flags, 0);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, preview, callback, flags, 0);
+	return InputTextCall(label, buffer, buffSize, 0, pos, preview, callback, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
-	if (InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0)) {
-		getInputTextState = inputTexts.at(label);
-		return true;
-	}
-	getInputTextState = inputTexts.at(label);
-	return false;
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, nullptr, flags, 1);
 }
+
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, callback, flags, 1);
+}
+
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, pos, preview, nullptr, flags, 0);
+}
+
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, pos, preview, callback, flags, 0);
+}
+
+
 
 //this doesnt need to be an enum at this point,
 //but im making it one incase this function becomes more complicated in the future
@@ -2584,13 +2539,18 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 		constexpr f32 boundrysize = 2;
 		
 		if (!mdown) {
-			if(MouseInArea(window->position.yAdd(-boundrysize), vec2(window->width,boundrysize + style.windowBorderSize)))
+			f32 borderscaledx = style.windowBorderSize * style.globalScale.x;
+			f32 borderscaledy = style.windowBorderSize * style.globalScale.y;
+			f32 widthscaled = window->width * style.globalScale.x;
+			f32 heightscaled = window->height * style.globalScale.y;
+
+			if(MouseInArea(window->position.yAdd(-boundrysize), vec2(widthscaled,boundrysize + borderscaledy)))
 				activeSide = wTop;
-			else if (MouseInArea(window->position.yAdd(window->height - style.windowBorderSize), vec2(window->width, boundrysize + style.windowBorderSize)))
+			else if (MouseInArea(window->position.yAdd(heightscaled - borderscaledy), vec2(widthscaled, boundrysize + borderscaledy)))
 				activeSide = wBottom;
-			else if (MouseInArea(window->position, vec2(boundrysize + style.windowBorderSize, window->height)))
+			else if (MouseInArea(window->position, vec2(boundrysize + borderscaledx, heightscaled)))
 				activeSide = wLeft;
-			else if (MouseInArea(window->position.xAdd(window->width - style.windowBorderSize), vec2(boundrysize + style.windowBorderSize, window->height)))
+			else if (MouseInArea(window->position.xAdd(widthscaled - borderscaledx), vec2(boundrysize + borderscaledx, heightscaled)))
 				activeSide = wRight;
 			else activeSide = wNone;
 		}
@@ -2657,13 +2617,8 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 		CheckWindowForScrollingInputs(window->parent, 1);
 		return;
 	}
-	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollUp()) {
-		window->scy -= style.scrollAmount.y * abs(DeshInput->scrollY);
-		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
-		return;
-	}
-	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollDown()) {
-		window->scy += style.scrollAmount.y * abs(DeshInput->scrollY);
+	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild)) {
+		window->scy -= style.scrollAmount.y * DeshInput->scrollY;
 		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
@@ -3681,18 +3636,24 @@ UIWindow* DisplayMetrics() {
 		Checkbox("show children", &showChildren);
 		
 		SetNextWindowSize(vec2(MAX_F32, 300));
-		BeginChild("METRICSWindows", vec2::ZERO);
+		BeginChild("METRICSWindows", vec2::ZERO, UIWindowFlags_NoScrollX);
 		
 		PushVar(UIStyleVar_SelectableTextAlign, vec2(0, 0.5));
 		for (UIWindow* window : windows) {
 			if (Selectable(toStr(window->name, "; hovered: ", WinHovered(window)).str, window == debugee)) {
 				debugee = window;
 			}
+			if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+				DebugRect(window->position, window->dimensions * window->style.globalScale);
+			}
 			if (showChildren) {
 				addGlobalIndent(13);
 				for (UIWindow* child : window->children) {
 					if (Selectable(toStr(child->name, "; hovered: ", WinHovered(child)).str, child == debugee)) {
 						debugee = child;
+					}
+					if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+						DebugRect(child->position, child->dimensions * child->style.globalScale);
 					}
 				}
 				popGlobalIndent;
@@ -3768,18 +3729,30 @@ UIWindow* DisplayMetrics() {
 						u32 count = 0;
 						for (UIItem& item : debugee->items[i]) {
 							if (BeginHeader(toStr(UIItemTypeStrs[item.type], " ", count).str)) {
+								persist f32 frs = CalcTextSize("FilledRectangle").x;
+								BeginRow(3, style.buttonHeightRelToFont * style.fontHeight);
+								RowSetupColumnWidths({ frs, 50, 40 });
+								
 								for (UIDrawCmd& dc : item.drawCmds) {
 									Text(UIDrawTypeStrs[dc.type]);
 									if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
 										for (int tri = 0; tri < dc.counts.y; tri += 3) {
 											vec2
-											p0 = item.position + debugee->position + dc.vertices[dc.indices[tri]].pos,
-											p1 = item.position + debugee->position + dc.vertices[dc.indices[tri + 1]].pos,
-											p2 = item.position + debugee->position + dc.vertices[dc.indices[tri + 2]].pos;
+												p0 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri]].pos,
+												p1 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 1]].pos,
+												p2 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 2]].pos;
 											DebugTriangle(p0, p1, p2);
 										}
 									}
+									if (Button("Create")) {
+										break_drawCmd_create_hash = dc.hash;
+									}
+									if (Button("Draw")) {
+										break_drawCmd_draw_hash = dc.hash;
+									}
+									
 								}
+								EndRow();
 								EndHeader();
 							}
 							count++;
@@ -3889,34 +3862,37 @@ UIWindow* DisplayMetrics() {
 
 		if (showDrawCmdTriangles) {
 			for (UIItem& item : debugee->preItems) {
+				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for (UIDrawCmd& dc : item.drawCmds) {
 					for (int i = 0; i < dc.counts.y; i += 3) {
 						DebugTriangle(
-							dc.vertices[dc.indices[i]].pos,
-							dc.vertices[dc.indices[i + 1]].pos,
-							dc.vertices[dc.indices[i + 2]].pos, Color_Green);
+							ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
+							ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
+							ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale, Color_Green);
 					}
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
+					vec2 ipos = debugee->position + item.position * item.style.globalScale;
 					for (UIDrawCmd& dc : item.drawCmds) {
 						for (int i = 0; i < dc.counts.y; i += 3) {
 							DebugTriangle(
-								dc.vertices[dc.indices[i]].pos,
-								dc.vertices[dc.indices[i + 1]].pos,
-								dc.vertices[dc.indices[i + 2]].pos);
+								ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
+								ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
+								ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale);
 						}
 					}
 				}
 			}
 			for (UIItem& item : debugee->postItems) {
+				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for (UIDrawCmd& dc : item.drawCmds) {
 					for (int i = 0; i < dc.counts.y; i += 3) {
 						DebugTriangle(
-							dc.vertices[dc.indices[i]].pos,
-							dc.vertices[dc.indices[i + 1]].pos,
-							dc.vertices[dc.indices[i + 2]].pos, Color_Blue);
+							ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
+							ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
+							ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale, Color_Blue);
 					}
 				}
 			}
@@ -4330,18 +4306,18 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 	vec2 winpos = vec2(window->x, window->y);
 	vec2 winsiz = vec2(window->width, window->height) * window->style.globalScale;
 	vec2 winScissorOffset = window->visibleRegionStart;
-	vec2 winScissorExtent = window->visibleRegionSize;
+	vec2 winScissorExtent = window->visibleRegionSize * window->style.globalScale;
 	
 	UIWindow* parent = window->parent;
 	
-	vec2 itempos = window->position + item.position;
+	vec2 itempos = window->position + item.position * item.style.globalScale;
 	vec2 itemsiz = item.size;
 
 	UIDrawCmd* lastdc = 0;
 	for (UIDrawCmd& drawCmd : item.drawCmds) {
 		BreakOnDrawCmdDraw;
 		
-		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor(drawCmd.vertices[i].pos+itempos);
+		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale +itempos));
 		
 		vec2 dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);
 		vec2 dcso = (drawCmd.useWindowScissor ? winScissorOffset : itempos + drawCmd.scissorOffset);
