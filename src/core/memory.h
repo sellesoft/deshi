@@ -150,9 +150,9 @@ void deshi__memory_draw();
 void deshi__memory_bytes_draw();
 #else
 #  define memory_set_address_name(...)
-#  define memory_get_address_name(...) cstr_lit("null")
+#  define memory_get_address_name(...) cstring{}
 #  define memory_expose_naming_arena(...)
-//#  define deshi__memory_init()
+#  define deshi__memory_draw()
 #endif //DESHI_INTERNAL
 
 
