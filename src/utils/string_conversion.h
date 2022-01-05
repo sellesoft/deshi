@@ -140,6 +140,17 @@ to_string(upt x){
     return s;
 }
 
+global_ string
+to_string(void* ptr) {
+    string s;
+    s.count = snprintf(nullptr, 0, "%p", ptr);
+    s.str = (char*)s.allocator->reserve(s.count + 1); Assert(s.str, "Failed to allocate memory");
+    s.allocator->commit(s.str, s.count + 1);
+    s.space = s.count + 1;
+    snprintf(s.str, s.count + 1, "%p", ptr);
+    return s;
+}
+
 global_ string 
 to_string(const color& x){
     string s;
