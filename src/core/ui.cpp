@@ -70,6 +70,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 local map<const char*, UIWindow*>        windows;   
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
 local map<const char*, UITabBar>         tabBars;     //stores known tab bars
+local map<const char*, UIRow>            rows;        //stores known Rows
 local map<const char*, b32>              combos;      //stores known combos and if they are open or not
 local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
 local map<const char*, b32>              headers;     //stores whether a header is open or not
@@ -112,6 +113,7 @@ enum InputState_ {
 	ISDragging,
 	ISResizing,
 	ISPreventInputs,
+	ISExternalPreventInputs,
 }; typedef u32 InputState;
 
 
@@ -127,7 +129,7 @@ local u32 currlayer = UI_CENTER_LAYER;
 local u32 winlayer = UI_CENTER_LAYER;
 local u32 activeId = -1; //the id of an active widget eg. input text
 
-local UIRow     row;    //row being worked with
+local UIRow*    row;    //row being worked with
 local UITabBar* tabBar; //tab bar being worked with
 
 local vec2 NextWinSize = vec2(-1, 0);
@@ -334,25 +336,37 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 	if (StateHasFlag(UISRowBegan)) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
-			row.items.add(itemmade);
+			UIColumn& col = row->columns[row->item_count % row->columns.count];
+			row->item_count++;
+
+			col.items.add(itemmade);
 			
-			f32 height = row.height;
+			f32 height = row->height;
 			f32 width;
 			//determine if the width is relative to the size of the item or not
-			if (row.columnWidths[(row.items.count - 1) % row.columns].second != false)
-				width = itemmade->size.x * row.columnWidths[(row.items.count - 1) % row.columns].first;
+			if (col.relative_width)
+				width = itemmade->size.x * col.width;
 			else
-				width = row.columnWidths[(row.items.count - 1) % row.columns].first;
+				width = col.width;
 			
-			itemmade->position.y = row.position.y + (height - itemmade->size.y) * itemmade->style.rowItemAlign.y + row.yoffset;
-			itemmade->position.x = row.position.x + row.xoffset + (width - itemmade->size.x) * itemmade->style.rowItemAlign.x;
+			vec2 align;
+			if (col.alignment != vec2::ONE * -1)
+				align = col.alignment;
+			else
+				align = itemmade->style.rowItemAlign;
+
+			itemmade->position.y = row->position.y + (height - itemmade->size.y) * align.y + row->yoffset;
+			itemmade->position.x = row->position.x + row->xoffset + (width - itemmade->size.x) * align.x;
 			
-			row.xoffset += width;
-			
+			row->xoffset += width;
+			if (col.max_width < itemmade->size.x) { col.reeval_width = true; col.max_width = itemmade->size.x; }
+			if (row->max_height < itemmade->size.y) { row->reeval_height = true; row->max_height = itemmade->size.y; }
+			row->max_height_frame = Max(row->max_height_frame, itemmade->size.y);
+
 			//if we have finished a row, set xoffset to 0 and offset y for another row
-			if (row.items.count % row.columns == 0) {
-				row.xoffset = 0;
-				row.yoffset += row.height;
+			if (row->item_count % row->columns.count == 0) {
+				row->xoffset = 0;
+				row->yoffset += row->height;
 			}
 			
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
@@ -454,6 +468,10 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 				size.y = MarginedBottom() - itemPos.y;
 			else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
+
+		if (NextItemSize.x == -2) size.x = size.y;
+		if (NextItemSize.y == -2) size.y = size.x;
+
 	}
 	else {
 		if (defaultSize.x == MAX_F32)
@@ -571,6 +589,16 @@ void UI::SetNextItemMinSizeIgnored() {
 	StateAddFlag(UISNextItemMinSizeIgnored);
 }
 
+void UI::SetPreventInputs() {
+	inputState = ISExternalPreventInputs;
+}
+
+void UI::SetAllowInputs()   {
+	if(inputState == ISExternalPreventInputs)
+		AllowInputs;
+}
+
+
 //internal last item getter, returns nullptr if there are none
 FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {
 	return curwin->items[currlayer + layeroffset].last;
@@ -630,65 +658,7 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	BreakOnDrawCmdCreation;
 }
 
-//@BeginRow
-//  a row is a collection of columns used to align a number of items nicely
-//  you are required to specify the width of each column when using Row, as it removes the complicated
-//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
-//  so you are required to define a static height upon calling the function
-//
 
-void UI::BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags) {
-	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
-	//TODO(sushi) when we have more row flags, check for mutually exclusive flags here
-	row.columns = columns;
-	row.flags = flags;
-	row.height = rowHeight;
-	row.position = PositionForNewItem();
-	forI(columns) row.columnWidths.add({ 0.f,false });
-	StateAddFlag(UISRowBegan);
-}
-
-void UI::EndRow() {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
-	Assert(row.items.count % row.columns == 0, "Attempted to end a Row without giving the correct amount of items!");
-	curwin->cursor = vec2{ 0, row.position.y  + row.yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
-	row.items.clear();
-	row.columnWidths.clear();
-	row = UIRow{ 0 };
-	StateRemoveFlag(UISRowBegan);
-}
-
-//this function sets up a static column width for a specified column that does not respect the size of the object
-void UI::RowSetupColumnWidth(u32 column, f32 width) {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row.columns && column >= 1, "Attempted to set a column who doesn't exists width!");
-	row.columnWidths[column - 1] = { width, false };
-}
-
-//this function sets up static column widths that do not respect the size of the item at all
-void UI::RowSetupColumnWidths(array<f32> widths){
-	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(widths.count == row.columns, "Passed in the wrong amount of column widths for in progress Row");
-	forI(row.columns)
-		row.columnWidths[i] = { widths[i], false };
-}
-
-//see the function below for what this does
-void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row.columns && column >= 1, "Attempted to set a column who doesn't exists width!");
-	row.columnWidths[column - 1] = { width, true };
-}
-
-//this function sets it so that column widths are relative to the size of the item the cell holds
-//meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
-//1.2 * width of the item
-void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(widths.count == row.columns, "Passed in the wrong amount of column widths for in progress Row");
-	forI(row.columns)
-		row.columnWidths[i] = { widths[i], true };
-}
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
@@ -1082,7 +1052,7 @@ MakeText(UIDrawCmd& drawCmd, wcstring text, vec2 pos, color color, vec2 scale) {
 }
 
 FORCE_INLINE vec2 
-MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha) {
+MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0) {
 	Assert(putverts && putindices);
 	if (!alpha) return vec2::ZERO;
 
@@ -1097,13 +1067,22 @@ MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, 
 	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
 	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
 	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+	if (flipx) {
+		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
+		vp[0].uv = u1; vp[1].uv = u0; vp[2].uv = u3; vp[3].uv = u2;
+	}
+	if (flipy) {
+		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
+		vp[0].uv = u3; vp[1].uv = u2; vp[2].uv = u1; vp[3].uv = u0;
+	}
 	
 	return vec2(4, 6);
 }
 
 FORCE_INLINE void
-MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha) {
-	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha);
+MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha, b32 flipx = 0, b32 flipy = 0) {
+	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha, flipx, flipy);
 	drawCmd.type = UIDrawType_Image;
 	drawCmd.tex = texture;
 }
@@ -1157,9 +1136,141 @@ void DebugText(vec2 pos, char* text, color col = Color_White) {
 	debugCmds.add(dc);
 }
 
+//@BeginRow
+//  a row is a collection of columns used to align a number of items nicely
+//  you are required to specify the width of each column when using Row, as it removes the complicated
+//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
+//  so you are required to define a static height upon calling the function
+//
+
+void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags) {
+	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
+	if (!rows.has(label)) { 
+		rows.add(label); 
+		row = rows.at(label);
+		row->columns.resize(columns);
+		row->flags = flags;
+		row->height = rowHeight;
+		row->label = label;
+		forI(columns) row->columns[i] = { 0.f,false };
+	}
+	
+
+	row = rows.at(label);
+	row->position = PositionForNewItem();
+	row->yoffset = 0;
+	row->xoffset = 0;
+	StateAddFlag(UISRowBegan);
+}
+
+void UI::EndRow() {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
+	Assert(row->item_count % row->columns.count == 0, "Attempted to end a Row without giving the correct amount of items!");
+	
+	if (HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax)) {
+		if (row->reeval_height) row->height = row->max_height;
+		for (UIColumn& col : row->columns)
+			if (col.reeval_width) col.width = col.max_width;
+
+		if (row->max_height_frame < row->max_height) row->max_height = row->max_height_frame;
+		
+	}
+
+	if (HasFlag(row->flags, UIRowFlags_FitWidthOfArea)) {
+		//TODO set up Row fitting relative to given edges
+	}
+
+	row->max_height_frame = 0;
+	curwin->cursor = vec2{ 0, row->position.y + row->yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+	StateRemoveFlag(UISRowBegan);
+}
+
+//this function sets up a static column width for a specified column that does not respect the size of the object
+void UI::RowSetupColumnWidth(u32 column, f32 width) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
+	Assert(column <= row->columns.count && column >= 1, "Attempted to set a column who doesn't exists width!");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	row->columns[column] = { width, false };
+}
+
+//this function sets up static column widths that do not respect the size of the item at all
+void UI::RowSetupColumnWidths(array<f32> widths) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	forI(row->columns.count)
+		row->columns[i] = { widths[i], false };
+}
+
+//see the function below for what this does
+void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
+	Assert(column <= row->columns.count && column >= 1, "Attempted to set a column who doesn't exists width!");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	row->columns[column] = { width, true };
+}
+
+//this function sets it so that column widths are relative to the size of the item the cell holds
+//meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
+//1.2 * width of the item
+void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	forI(row->columns.count)
+		row->columns[i] = { widths[i], true };
+}
+
+void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(ratios.count == row->columns.count);
+	AddFlag(row->flags, UIRowFlags_FitWidthOfArea);
+	row->left_edge = left_edge;
+	row->right_edge = right_edge;
+	f32 ratio_sum = 0;
+	forI(row->columns.count) {
+		ratio_sum += ratios[i];
+		row->columns[i].width = ratios[i];
+	}
+
+	Assert(1 - ratio_sum < 0.999998888f, "ratios given do not add up to one!");
+}
+
+void UI::RowSetupColumnAlignments(array<vec2> alignments) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(alignments.count == row->columns.count);
+	forI(row->columns.count)
+		row->columns[i].alignment = alignments[i];
+}
 
 //@Behavoir functions
 //these functions generalize behavoir that are used by several things
+
+enum ButtonType_ {
+	ButtonType_TrueOnHold,
+	ButtonType_TrueOnRelease,
+	ButtonType_TrueOnPressed,
+}; typedef u32 ButtonType;
+
+b32 ButtonBehavoir(ButtonType type) {
+	switch (type) {
+		case ButtonType_TrueOnHold: {
+			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
+			else return false;
+		}break;
+		case ButtonType_TrueOnRelease: {
+			PreventInputs;
+			if (DeshInput->LMouseReleased()) return true;
+			else return false;
+		}break;
+		case ButtonType_TrueOnPressed: {
+			if (DeshInput->LMousePressed()) {
+				PreventInputs;
+				return true;
+			}
+		}break;
+	}		
+}
 
 //returns true if buffer was changed
 b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32& cursor) {
@@ -1702,19 +1813,11 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	}
 	
 	if (active) {
-		//TODO(sushi) do this better
 		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnHold))
-			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
-		else return false;
-		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease)) {
-			PreventInputs;
-			if (DeshInput->LMouseReleased()) return true;
-			else return false;
-		}
-		if (DeshInput->LMousePressed()){ 
-			PreventInputs; 
-			return true;
-		}
+			return ButtonBehavoir(ButtonType_TrueOnHold);
+		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease))
+			return ButtonBehavoir(ButtonType_TrueOnRelease);
+		return ButtonBehavoir(ButtonType_TrueOnPressed);
 	}
 	return false;
 }
@@ -1823,7 +1926,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
-	    vec2 position =
+		vec2 position =
 			vec2((item->size.x - CalcTextSize(prev_val).x) * style.buttonTextAlign.x,
 				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		color col = style.colors[UIStyleCol_Text];
@@ -1834,7 +1937,10 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	
 	//we also check if the combo's button is visible, if not we dont draw the popout
 	if (open && item->position.y < curwin->height) {
-		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder);
+		PushVar(UIStyleVar_WindowPadding, vec2(0, 0));
+		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
+		SetNextWindowSize(vec2(item->size.x, style.fontHeight * style.selectableHeightRelToFont * 8));
+		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_NoBorder);
 		StateAddFlag(UISComboBegan);
 		return true;
 	}
@@ -1851,6 +1957,7 @@ void UI::EndCombo() {
 	Assert(StateHasFlag(UISComboBegan), "Attempted to end a combo without calling BeginCombo first, or EndCombo was called for a combo that was not open!");
 	StateRemoveFlag(UISComboBegan);
 	EndPopOut();
+	PopVar(2);
 }
 
 //@Selectable
@@ -1859,7 +1966,14 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	
 	UIItem* item = BeginItem(UIItemType_Selectable, 0);
 	item->position = pos;
-	item->size = DecideItemSize(vec2(UI::CalcTextSize(label).x, style.fontHeight * style.selectableHeightRelToFont), item->position);
+
+	vec2 defsize;
+	if (StateHasFlag(UISComboBegan)) {
+		defsize = vec2(MAX_F32, style.fontHeight * style.selectableHeightRelToFont);
+	}
+	else defsize = vec2(UI::CalcTextSize(label).x, style.fontHeight * style.selectableHeightRelToFont);
+
+	item->size = DecideItemSize(defsize, item->position);
 	
 	b32 clicked = 0;
 	
@@ -2000,6 +2114,7 @@ b32 UI::BeginTabBar(const char* label, UITabBarFlags flags){
 	StateAddFlag(UISTabBarBegan);
 	if (!tabBars.has(label)) tabBars.add(label);
 	tabBar = tabBars.at(label);
+	tabBar->flags = flags;
 
 	UIItem* item = BeginItem(UIItemType_TabBar);
 	item->position = PositionForNewItem();
@@ -2084,8 +2199,8 @@ b32 UI::BeginTab(const char* label){
 
 	if (selected) {
 		StateAddFlag(UISTabBegan);
-		PushLeftIndent(style.indentAmount + leftIndent);
-		PushRightIndent(style.indentAmount + rightIndent);
+		if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PushLeftIndent(style.indentAmount + leftIndent);
+		if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PushRightIndent(style.indentAmount + rightIndent);
 	}
 
 	return selected;
@@ -2094,8 +2209,8 @@ b32 UI::BeginTab(const char* label){
 void UI::EndTab() {
 	Assert(StateHasFlag(UISTabBegan), "attempt to end a tab without beginning one first");
 	StateRemoveFlag(UISTabBegan);
-	PopLeftIndent();
-	PopRightIndent();
+	if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PopLeftIndent();
+	if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PopRightIndent();
 }
 
 void UI::EndTabBar(){
@@ -2188,17 +2303,20 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Image);
 	
 	item->position = pos;
-	item->size = (NextItemSize.x == -1 ? vec2((f32)image->width, (f32)image->height) : NextItemSize);
-	NextItemSize = vec2(-1, 1);
-	
+	item->size = DecideItemSize(vec2((f32)image->width, (f32)image->height), item->position);
+
 	AdvanceCursor(item);
+
+	b32 flipx = HasFlag(flags, UIImageFlags_FlipX);
+	b32 flipy = HasFlag(flags, UIImageFlags_FlipY);
+
 	
 	//TODO(sushi) image borders
 	{//image
 		UIDrawCmd drawCmd;
 		vec2 position = vec2::ZERO;
 		vec2 dimensions = item->size;
-		MakeTexture(drawCmd, image, position, dimensions, alpha);
+		MakeTexture(drawCmd, image, position, dimensions, alpha, flipx, flipy);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2666,6 +2784,7 @@ void CheckForHoveredWindow(UIWindow* window = 0) {
 				WinUnSetHovered(w);
 			}
 		}
+		if (hovered_found) break;
 	}
 }
 
@@ -2962,12 +3081,12 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				item->size = parent->children[name]->dimensions;
 				if (NextWinSize.x != -1 || NextWinSize.y != 0) {
 					if (NextWinSize.x == MAX_F32)
-						item->size.x = MarginedRight() - item->position.x;
+						item->size.x = MarginedRight() - item->position.x - rightIndent;
 					else if (NextWinSize.x == -1) {}
 					else item->size.x = NextWinSize.x;
 					
 					if (NextWinSize.y == MAX_F32)
-						item->size.y = MarginedBottom() - item->position.x;
+						item->size.y = MarginedBottom() - item->position.y;
 					else if (NextWinSize.y == -1) {}
 					else item->size.y = NextWinSize.y;
 				}
@@ -3497,7 +3616,7 @@ inline void MetricsDebugItem() {
 			PushColor(UIStyleCol_WindowBg, color(30, 30, 30));
 			BeginChild("MetricsDebugItemPopOutDrawCmdChild", vec2(0,0), UIWindowFlags_NoBorder | UIWindowFlags_FitAllElements);
 			
-			BeginRow(3, style.buttonHeightRelToFont* style.fontHeight);
+			BeginRow("MetricsItemAlignment", 3, style.buttonHeightRelToFont* style.fontHeight);
 			RowSetupRelativeColumnWidths({ 1.1f,1.1f,1.1f });
 			for (UIDrawCmd& dc : iteml.drawCmds) {
 				Text(toStr(UIDrawTypeStrs[dc.type]).str, UITextFlags_NoWrap);
@@ -3760,7 +3879,7 @@ UIWindow* DisplayMetrics() {
 		persist f32 fw = CalcTextSize(slomotext).x + 5;
 		
 		PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
-		BeginRow(3, 11);
+		BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnWidths({ fw, sw, 55 });
 		
 		Text(slomotext.str);
@@ -3785,7 +3904,7 @@ UIWindow* DisplayMetrics() {
 		const char* str1 = "global hovered";
 		f32 fw = CalcTextSize(str1).x * 1.2;
 		
-		BeginRow(2, style.fontHeight * 1.2);
+		BeginRow("Metrics_21241",2, style.fontHeight * 1.2);
 		RowSetupColumnWidths({ fw, 96 });
 		
 		
@@ -3793,11 +3912,13 @@ UIWindow* DisplayMetrics() {
 		Text(str1); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
 		Text("input state: ");
 		switch (inputState) {
-			case ISNone:          Text("None");           break;
-			case ISScrolling:     Text("Scrolling");      break;
-			case ISResizing:      Text("Resizing");       break;
-			case ISDragging:      Text("Dragging");       break;
-			case ISPreventInputs: Text("Prevent Inputs"); break;
+			case ISNone:                  Text("None");                    break;
+			case ISScrolling:             Text("Scrolling");               break;
+			case ISResizing:              Text("Resizing");                break;
+			case ISDragging:              Text("Dragging");                break;
+			case ISPreventInputs:         Text("Prevent Inputs");          break;
+			case ISExternalPreventInputs: Text("External Prevent Inputs"); break;
+
 		}
 		Text("input upon: "); Text((inputupon ? inputupon->name.str : "none"));
 		
@@ -3856,7 +3977,7 @@ UIWindow* DisplayMetrics() {
 	Separator(20);
 	
 	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5f));
-	BeginRow(2, style.fontHeight * 1.5f);
+	BeginRow("Metrics_345135613", 2, style.fontHeight * 1.5f);
 	RowSetupRelativeColumnWidths({ 1.2f, 1 });
 	
 	persist u32 selected = 0;
@@ -3881,7 +4002,7 @@ UIWindow* DisplayMetrics() {
 		}
 		
 		if (BeginHeader("Window Vars")) {
-			BeginRow(2, style.fontHeight * 1.2);
+			BeginRow("MetricsWindowVarAlignment", 2, style.fontHeight * 1.2);
 			RowSetupColumnWidths({ CalcTextSize("Max Item Width: ").x , 10 });
 			
 			Text("Render Time: ");    Text(toStr(debugee->render_time, "ms").str);
@@ -3906,7 +4027,7 @@ UIWindow* DisplayMetrics() {
 						for (UIItem& item : debugee->items[i]) {
 							if (BeginHeader(toStr(UIItemTypeStrs[item.type], " ", count).str)) {
 								persist f32 frs = CalcTextSize("FilledRectangle").x;
-								BeginRow(3, style.buttonHeightRelToFont * style.fontHeight);
+								BeginRow("121255552525", 3, style.buttonHeightRelToFont * style.fontHeight);
 								RowSetupColumnWidths({ frs, 50, 40 });
 								
 								for (UIDrawCmd& dc : item.drawCmds) {
@@ -4201,7 +4322,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		BeginRow(3, 15);
+		BeginRow("Demo_35135", 3, 15);
 		RowSetupRelativeColumnWidths({ 1,1,1 });
 		Text("some text");
 		Button("a button");
@@ -4221,7 +4342,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		BeginRow(2, 30);
+		BeginRow("Demo_3541351", 2, 30);
 		RowSetupColumnWidths({ 100, 100 });
 		Text("example of"); Text("aligning text");
 		Text("evenly over"); Text("multiple rows");
@@ -4257,7 +4378,7 @@ void UI::DemoWindow() {
 		
 		switch (selected) {
 			case 0: {
-				BeginRow(3, 16);
+				BeginRow("Demo_1351351", 3, 16);
 				RowSetupColumnWidths({ scw1, scw2, scw3 });
 				Text("text");
 				Text("long text");
@@ -4269,7 +4390,7 @@ void UI::DemoWindow() {
 				Slider("demo_scw3", &scw3, 0, 90); SameLine(); Text(toStr(scw3).str);
 			}break;
 			case 1: {
-				BeginRow(3, 16);
+				BeginRow("Demo_66462", 3, 16);
 				RowSetupRelativeColumnWidths({ dcw1, dcw2, dcw3 });
 				Text("text");
 				Text("long text");

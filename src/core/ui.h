@@ -284,6 +284,9 @@ struct UIInputTextState {
 
 enum UITabBarFlags_ {
 	UITabBarFlags_NONE = 0,
+	UITabBarFlags_NoRightIndent = 1 << 0,
+	UITabBarFlags_NoLeftIndent  = 1 << 1,
+	UITabBarFlags_NoIndent      = UITabBarFlags_NoRightIndent | UITabBarFlags_NoLeftIndent,
 }; typedef u32 UITabBarFlags;
 
 struct UITab {
@@ -293,6 +296,7 @@ struct UITab {
 };
 
 struct UITabBar {
+	UITabBarFlags flags;
 	map<const char*, UITab> tabs;
 	u32  selected = 0;
 	f32 tabHeight = 0;
@@ -306,9 +310,12 @@ enum UISliderFlags_ {
 }; typedef u32 UISliderFlags;
 
 enum UIImageFlags_ {
-	UIImageFlags_NONE = 0,
+	UIImageFlags_NONE   = 0,
 	UIImageFlags_RestrictAspectRatio = 1 << 0,
 	UIImageFlags_Invert = 1 << 1,
+	UIImageFlags_FlipX  = 1 << 2,
+	UIImageFlags_FlipY  = 1 << 3,
+
 	
 }; typedef u32 UIImageFlags;
 
@@ -572,51 +579,48 @@ struct UIWindow {
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
-	UIRowFlags_FitWidthOfWindow   = 1 << 0,  
-	UIRowFlags_DrawCellBackground = 1 << 1,
-	UIRowFlags_CellBorderTop      = 1 << 2,
-	UIRowFlags_CellBorderBottom   = 1 << 3,
-	UIRowFlags_CellBorderLeft     = 1 << 4,
-	UIRowFlags_CellBorderRight    = 1 << 5,
-	UIRowFlags_CallBorderFull     = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
-	
+	UIRowFlags_FitWidthOfArea         = 1 << 0,  
+	UIRowFlags_DrawCellBackground     = 1 << 1,
+	UIRowFlags_LookbackAndResizeToMax = 1 << 2, //tells Row to lookback at its columns once its ended and reorient items to respect the max item size in each column
+	UIRowFlags_CellBorderTop          = 1 << 3,
+	UIRowFlags_CellBorderBottom       = 1 << 4,
+	UIRowFlags_CellBorderLeft         = 1 << 5,
+	UIRowFlags_CellBorderRight        = 1 << 6,
+	UIRowFlags_CallBorderFull         = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
 }; typedef u32 UIRowFlags;
 
-//for use internally only!
-//maybe i should move it to the cpp file
-// 
-// struct for organizing items to be aligned in a row
-//
-// rows of items can be made by calling Row(columns, ...)
-// you can use this to make tables by ensuring that each column is the same width
-// for several Row() calls.
-// 
-// however it's primary purpose is to allow easy placing of items on the same line
-// so consecutive Rows do not need to be aligned in anyway, more advanced table stuff will
-// be made into an actual Table item later on
-//
-// Row()'s default behavoir though is to act like ImGui's same line, where it simply aligns items
-// as if you were drawing them in a Row, left aligned, rather than new-lining them each time.
-// we have a SameLine() as well, but this makes it easy to same line several consecutive things 
-// rather than calling SameLine() everytime
-// 
-// the alignment of items within cells can be adjusted by changing UIStyleVar_RowItemAlign
-// this also works in between items as each item stores this variable so you can have one column of items
-// aligned different than the others
+struct UIColumn {
+	f32  width = 0;
+	b32  relative_width = 0;
+	f32  max_width = 0;
+	b32  reeval_width = 0;
+	vec2 alignment = vec2(-1,-1);
+	array<UIItem*> items;
+};
+
 struct UIRow {
 	UIRowFlags flags = 0;
-	u32 columns = 0;
 	
+	string label;
+
+	f32 left_edge = 0;
+	f32 right_edge = 0;
+
 	f32 height = 0;
 	f32 width = 0; 
 	f32 xoffset = 0;
 	f32 yoffset = 0; //used when using Row to make several rows
 	
+	f32 max_height = 0;
+	f32 max_height_frame = 0;
+
+	b32 reeval_height = 0;
+
 	//the position of the row to base offsets of items off of.
 	vec2 position;
-	
-	array<UIItem*> items; 
-	array<pair<f32, b32>> columnWidths;
+
+	u32 item_count = 0;
+	array<UIColumn> columns;
 };
 
 namespace UI {
@@ -665,17 +669,23 @@ namespace UI {
 	void SetMarginPositionOffset(vec2 offset);
 	void SetMarginSizeOffset(vec2 offset);
 	void SetNextItemMinSizeIgnored();
+	void SetPreventInputs();
+	void SetAllowInputs();
+
+
 	
 	
 	
 	//// rows ////
-	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
+	void BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
 	void RowSetupColumnWidths(array<f32> widths);
 	void RowSetupColumnWidth(u32 column, f32 width);
 	void RowSetupRelativeColumnWidth(u32 column, f32 width);
 	void RowSetupRelativeColumnWidths(array<f32> widths);
-	
+	void RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge);
+	void RowSetupColumnAlignments(array<vec2> alignments);
+
 	//// drawing ////
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
