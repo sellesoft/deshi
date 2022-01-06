@@ -1793,28 +1793,193 @@ DeleteFont(Font* font){ //!Incomplete
 }
 
 
+void DrawMeshesWindow() { 
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIMeshes", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+void DrawTexturesWindow() {
+
+	Storage_* st = DeshStorage;
+
+	//TODO make all of this stuff get checked only when necessary
+	b32 new_selected = 0;
+	persist Texture* selected = 0;
+	
+	Texture* largest = st->textures[0];
+	Texture* smallest = st->textures[0];
+
+	//gather size of textures in memory
+	upt texture_bytes = 0;
+
+
+	for (Texture* t : st->textures) {
+		texture_bytes += t->width * t->height * u8size;
+		if (t->width * t->height > largest->width * largest->height) largest = t;
+		if (t->width * t->height < smallest->width * smallest->height) smallest = t;
+
+	}
+
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUI_Textures", vec2::ZERO);
+	
+	BeginRow("StorageBrowserUI_Row1",2, 0, UIRowFlags_LookbackAndResizeToMax);
+	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+
+	Text("Textures Loaded: "); Text(toStr(st->textures.count).str);
+	Text("Memory Occupied: "); Text(toStr(texture_bytes / bytesDivisor(texture_bytes), " ", bytesUnit(texture_bytes)).str);
+
+	EndRow();
+
+	if (BeginCombo("StorageBrowserUI_Texture_Selection_Combo", (selected ? selected->name : "select texture"))) {
+		for (Texture* t : st->textures) {
+			if (Selectable(t->name, t == selected)) {
+				selected = t;
+				new_selected = 1;
+			}
+		}
+		EndCombo();
+	}
+
+	Separator(9);
+
+	if (BeginHeader("Stats")) {
+		BeginRow("StorageBrowserUI_Row2", 3, 0, UIRowFlags_LookbackAndResizeToMax);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
+
+		Text("Largest Texture: "); Text(largest->name); 
+		if (Button("select")) { selected = largest; new_selected = 1;}
+	
+		Text("Smallest Texture: "); Text(smallest->name);
+		if (Button("select")) { selected = smallest; new_selected = 1; }
+	
+		EndRow();
+	
+		EndHeader();
+	}
+
+	Separator(9);
+
+	if (selected && BeginHeader("Selected")) {
+		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
+
+		Text("Name:");     Text(selected->name);
+		Text("Index: ");   Text(toStr(selected->idx).str);
+		Text("Width: ");   Text(toStr(selected->width).str);
+		Text("Height: ");  Text(toStr(selected->height).str);
+		Text("Depth: ");   Text(toStr(selected->depth).str);
+		Text("MipMaps: "); Text(toStr(selected->mipmaps).str);
+		Text("Format: ");  Text(ImageFormatStrings[selected->format]);
+		Text("Type: ");    Text(TextureTypeStrings[selected->type]);
+		Text("Filter: ");  Text(TextureFilterStrings[selected->filter]);
+		Text("UV Mode: "); Text(TextureAddressModeStrings[selected->uvMode]);
+
+		EndRow();
+
+		PushColor(UIStyleCol_WindowBg, 0x272727FF);
+		SetNextWindowSize(vec2(MAX_F32, 300));
+		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoScroll);
+		persist f32  zoom = 300;
+		persist vec2 mpl;
+		persist vec2 imagepos;
+		persist vec2 imageposlatch;
+		persist UIImageFlags flags;
+
+		vec2 mp = DeshInput->mousePos;
+
+		if (Button("Flip x")) ToggleFlag(flags, UIImageFlags_FlipX); SameLine();
+		if (Button("Flip y")) ToggleFlag(flags, UIImageFlags_FlipY);
+
+		if (new_selected) {
+			zoom = GetWindow()->width / selected->width ;
+			imagepos = vec2(
+				(GetWindow()->width - selected->width) / 2,
+				(GetWindow()->height - selected->height) / 2
+			);
+		}
+
+		Text(toStr(zoom).str);
+
+		if (IsWinHovered()) {
+			SetPreventInputs();
+			
+		
+
+			if (DeshInput->scrollY) {
+				f32 val = 10 * DeshInput->scrollY;
+				zoom -= zoom / val;
+				//TODO make it zoom to the mouse 
+				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
+				//imagepos -= imtomp.normalized() * val / 2;
+			}
+			if (DeshInput->LMousePressed()) {
+				mpl = mp;
+				imageposlatch = imagepos;
+			}
+			if (DeshInput->LMouseDown()) {
+				imagepos = imageposlatch - (mpl - mp);
+			}
+
+		}
+		else SetAllowInputs();
+
+		SetNextItemSize(vec2(zoom * selected->width, zoom * selected->height));
+		Image(selected, imagepos, 1, flags);
+
+		EndChild();
+		PopColor();
+		EndHeader();
+	}
+	
+
+	EndChild();
+}
+
+void DrawMaterialsWindow(){
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIMaterials", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+void DrawModelsWindow(){
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIModels", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+void DrawFontsWindow(){
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIFonts", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+
 void Storage::
 StorageBrowserUI() {
 	using namespace UI;
 
-	enum Tabs {
-		Meshes,
-		Textures,
-		Materials,
-		Models,
-		Fonts,
-	}; typedef u32 Tab;
-
-
-	persist Tab selected_tab = Meshes;
 
 	Begin("StorageBrowserUI", vec2::ONE * 200, vec2(400, 600));
 
-	if (BeginTabBar("StorageBrowserUITabBar")) {
-		if(BeginTab())
+	if (BeginTabBar("StorageBrowserUITabBar", UITabBarFlags_NoIndent)) {
+		if (BeginTab("Meshes"))    {DrawMeshesWindow();	   EndTab();}
+		if (BeginTab("Textures"))  {DrawTexturesWindow();  EndTab();}
+		if (BeginTab("Materials")) {DrawMaterialsWindow(); EndTab();}
+		if (BeginTab("Models"))    {DrawModelsWindow();	   EndTab();}
+		if (BeginTab("Fonts"))     {DrawFontsWindow();     EndTab();}
+		EndTabBar();
 	}
-
-
 
 	End();
 
