@@ -33,6 +33,8 @@ extern Storage_* g_storage;
 namespace Storage{
 	void Init();
 	void Reset();
+
+	void StorageBrowserUI();
 	
 	///////////////
 	//// @mesh ////

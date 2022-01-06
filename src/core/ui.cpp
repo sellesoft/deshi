@@ -19,7 +19,6 @@ struct ColorMod {
 };
 
 #define UI_LAYERS 11
-static constexpr u32 CHAR_SIZE = sizeof(CHAR);
 static const u32 UI_CENTER_LAYER = (u32)floor((f32)UI_LAYERS / 2.f);
 
 //for style variable stack
@@ -49,39 +48,28 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, buttonTextAlign)},
 	{2, offsetof(UIStyle, headerTextAlign)},
 	{2, offsetof(UIStyle, selectableTextAlign)},
+	{2, offsetof(UIStyle, tabTextAlign)},
 	{1, offsetof(UIStyle, buttonHeightRelToFont)},
 	{1, offsetof(UIStyle, headerHeightRelToFont)},
 	{1, offsetof(UIStyle, inputTextHeightRelToFont)},
 	{1, offsetof(UIStyle, checkboxHeightRelToFont)},
 	{1, offsetof(UIStyle, selectableHeightRelToFont)},
+	{1, offsetof(UIStyle, tabHeightRelToFont)},
 	{2, offsetof(UIStyle, rowItemAlign)},
 	{2, offsetof(UIStyle, rowCellPadding)},
 	{1, offsetof(UIStyle, scrollBarYWidth)},
 	{1, offsetof(UIStyle, scrollBarXHeight)},
 	{1, offsetof(UIStyle, indentAmount)},
+	{1, offsetof(UIStyle, tabSpacing)},
 	{1, offsetof(UIStyle, fontHeight)},
 };
 
-//this variable defines the space the user is working in when calling UI functions
-//windows are primarily a way for the user to easily position things on screen relative to a parent
-//and to make detecting where text wraps and other things easier
-//by default a window that takes up the entire screen and is invisible is made on init
-UIWindow* curwin; 
-UIWindow* hovered;
-
-
-local vec2 NextWinSize  = vec2(-1, 0);
-local vec2 NextWinPos   = vec2(-1, 0);
-local vec2 NextItemPos  = vec2(-1, 0);
-local vec2 NextItemSize = vec2(-1, 0);
-
-local vec2 MarginPositionOffset = vec2::ZERO;
-local vec2 MarginSizeOffset = vec2::ZERO;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
 local map<const char*, UIWindow*>        windows;   
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local map<const char*, UITabBar>         tabBars;     //stores known tab bars
 local map<const char*, b32>              combos;      //stores known combos and if they are open or not
 local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
 local map<const char*, b32>              headers;     //stores whether a header is open or not
@@ -91,33 +79,31 @@ local array<VarMod>                      varStack;
 local array<vec2>                        scaleStack;  //global scales
 local array<Font*>                       fontStack;
 local array<u32>                         layerStack;
-local array<u32>                         winLayerStack;
-local array<f32>                         indentStack{ 0 }; //stores global indentations
+local array<f32>                         leftIndentStack{ 0 }; //stores global indentations
+local array<f32>                         rightIndentStack{ 0 }; //stores global indentations
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
 
-local u32 activeId = -1; //the id of an active widget eg. input text
-
 //row variables
-local UIRow row;
 
-//misc state vars
-local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
+
 
 //global ui state flags
-enum UIState_ {
+enum UIStateFlags_ {
 	UISNone                   = 0, 
 	UISGlobalHovered          = 1 << 0,
 	UISRowBegan               = 1 << 1,
 	UISComboBegan             = 1 << 2,
-	UISCursorSet              = 1 << 3,
-	UISNextItemSizeSet        = 1 << 4,
-	UISNextItemActive         = 1 << 5,
-	UISNextItemMinSizeIgnored = 1 << 6,
-}; typedef u32 UIState;
+	UISTabBarBegan            = 1 << 3,
+	UISTabBegan               = 1 << 4,
+	UISCursorSet              = 1 << 5,
+	UISNextItemSizeSet        = 1 << 6,
+	UISNextItemActive         = 1 << 7,
+	UISNextItemMinSizeIgnored = 1 << 8,
+}; typedef u32 UIStateFlags;
 
 //global ui input state
 enum InputState_ {
@@ -128,14 +114,29 @@ enum InputState_ {
 	ISPreventInputs,
 }; typedef u32 InputState;
 
-struct {
-	
-	UIState flags = UISNone;
-	InputState input = ISNone;
-	u32 layer = UI_CENTER_LAYER;
-	u32 winlayer = UI_CENTER_LAYER;
-	
-}ui_state;
+
+//main UI state variables	
+local UIWindow* curwin = 0;    //the window that is currently being worked with by the user
+local UIWindow* hovered = 0;   //the window that the mouse is hovering over, this is set every Update
+local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
+
+local UIStateFlags stateFlags = UISNone;
+local InputState   inputState = ISNone;
+
+local u32 currlayer = UI_CENTER_LAYER;
+local u32 winlayer = UI_CENTER_LAYER;
+local u32 activeId = -1; //the id of an active widget eg. input text
+
+local UIRow     row;    //row being worked with
+local UITabBar* tabBar; //tab bar being worked with
+
+local vec2 NextWinSize = vec2(-1, 0);
+local vec2 NextWinPos = vec2(-1, 0);
+local vec2 NextItemPos = vec2(-1, 0);
+local vec2 NextItemSize = vec2(-1, 0);
+
+local vec2 MarginPositionOffset = vec2::ZERO;
+local vec2 MarginSizeOffset = vec2::ZERO;
 
 struct {
 	u32 vertices = 0;
@@ -146,11 +147,11 @@ struct {
 }ui_stats;
 
 //helper defines
-#define StateHasFlag(flag) ((ui_state.flags) & (flag))
-#define StateHasFlags(flags) (((ui_state.flags) & (flags)) == (flags))
-#define StateAddFlag(flag) ui_state.flags |= flag
-#define StateRemoveFlag(flag) ((ui_state.flags) &= (~(flag)))
-#define StateResetFlags ui_state.flags = UISNone
+#define StateHasFlag(flag) ((stateFlags) & (flag))
+#define StateHasFlags(flags) (((stateFlags) & (flags)) == (flags))
+#define StateAddFlag(flag) stateFlags |= flag
+#define StateRemoveFlag(flag) ((stateFlags) &= (~(flag)))
+#define StateResetFlags stateFlags = UISNone
 
 #define WinBegan(win)         HasFlag(win->win_state.flags, UIWSBegan)
 #define WinEnded(win)         HasFlag(win->win_state.flags, UIWSEnded)
@@ -191,19 +192,18 @@ struct {
 #define DrawCmdScreenPos(pos) pos + item->position + curwin->position 
 #define ItemScreenPos item->position + curwin->position 
 
-#define globalIndent *indentStack.last
-#define addGlobalIndent(val) indentStack.add(val)
-#define popGlobalIndent indentStack.pop()
+#define leftIndent *leftIndentStack.last
+#define rightIndent *rightIndentStack.last
 
-#define CanTakeInput      ui_state.input == ISNone
-#define PreventInputs     ui_state.input = ISPreventInputs
-#define AllowInputs       ui_state.input = ISNone;      inputupon = 0;
-#define SetResizingInput  ui_state.input = ISResizing;  inputupon = window;
-#define SetDraggingInput  ui_state.input = ISDragging;  inputupon = window;
-#define SetScrollingInput ui_state.input = ISScrolling; inputupon = window; WinSetBeingScrolled(window);
-#define WinResizing       ui_state.input == ISResizing
-#define WinDragging       ui_state.input == ISDragging
-#define WinScrolling      ui_state.input == ISScrolling
+#define CanTakeInput      inputState == ISNone
+#define PreventInputs     inputState = ISPreventInputs
+#define AllowInputs       inputState = ISNone;      inputupon = 0;
+#define SetResizingInput  inputState = ISResizing;  inputupon = window;
+#define SetDraggingInput  inputState = ISDragging;  inputupon = window;
+#define SetScrollingInput inputState = ISScrolling; inputupon = window; WinSetBeingScrolled(window);
+#define WinResizing       inputState == ISResizing
+#define WinDragging       inputState == ISDragging
+#define WinScrolling      inputState == ISScrolling
 
 #define LeftMousePressed   DeshInput->LMousePressed()
 #define LeftMouseDown      DeshInput->LMouseDown()
@@ -287,7 +287,7 @@ vec2 UI::CalcTextSize(wcstring text) {
 					result.y += style.fontHeight;
 					line_width = 0;
 				}
-				line_width += style.font->max_width;
+				line_width += style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
 				if (line_width > result.x) result.x = line_width;
 				advance(&text, 1);
 			}
@@ -373,7 +373,7 @@ inline b32 CanScrollY(UIWindow* window = curwin) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
 inline vec2 PositionForNewItem(UIWindow* window = curwin) {
-	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0)
+	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
 	return pos;
@@ -413,7 +413,7 @@ FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   { return (window == c
 FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 
-FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin) { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
+FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
 FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
 FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
 FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) { f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
@@ -440,10 +440,10 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 	vec2 size;
 	if (NextItemSize.x != -1) {
 		if (NextItemSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
+			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-				size.x = MarginedRight() - itemPos.x;
+				size.x = MarginedRight() - itemPos.x - rightIndent;
 			else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
@@ -457,7 +457,7 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 	}
 	else {
 		if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
+			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else size.x = defaultSize.x;
 		
 		if (defaultSize.y == MAX_F32)
@@ -488,17 +488,17 @@ UIWindow* UI::GetWindow() {
 
 vec2 UI::GetLastItemPos() {
 	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
-	return curwin->items[ui_state.layer].last->position;
+	return curwin->items[currlayer].last->position;
 }
 
 vec2 UI::GetLastItemSize() {
 	//Assert(curwin->items.count, "Attempt to get last item size without creating any items!");
-	return curwin->items[ui_state.layer].last->size;
+	return curwin->items[currlayer].last->size;
 }
 
 vec2 UI::GetLastItemScreenPos() {
 	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
-	return curwin->position + curwin->items[ui_state.layer].last->position;
+	return curwin->position + curwin->items[currlayer].last->position;
 }
 
 vec2 UI::GetWindowRemainingSpace() {
@@ -533,9 +533,9 @@ pair<vec2, vec2> UI::GetScrollBaredArea() { return ScrollBaredArea(); }
 //width of the object
 void UI::SameLine() {
 	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
-	if (curwin->items[ui_state.layer].last) {
-		curwin->cursor.y = curwin->items[ui_state.layer].last->initialCurPos.y;
-		curwin->cursor.x += curwin->items[ui_state.layer].last->initialCurPos.x + curwin->items[ui_state.layer].last->size.x + style.itemSpacing.x;
+	if (curwin->items[currlayer].last) {
+		curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
+		curwin->cursor.x += curwin->items[currlayer].last->initialCurPos.x + curwin->items[currlayer].last->size.x + style.itemSpacing.x;
 	}
 }
 
@@ -573,7 +573,7 @@ void UI::SetNextItemMinSizeIgnored() {
 
 //internal last item getter, returns nullptr if there are none
 FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {
-	return curwin->items[ui_state.layer + layeroffset].last;
+	return curwin->items[currlayer + layeroffset].last;
 }
 
 //helper for making any new UIItem, since now we must work with item pointers internally
@@ -593,10 +593,10 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 		return curwin->popOuts.last;
 	}
 	else {
-		curwin->items[ui_state.layer + layeroffset].add(UIItem{ type, curwin->cursor, style });
+		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
 #ifdef DESHI_INTERNAL
-		UI::GetLastItem(layeroffset)->item_layer = ui_state.layer + layeroffset;
-		UI::GetLastItem(layeroffset)->item_idx = curwin->items[ui_state.layer + layeroffset].count;
+		UI::GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
+		UI::GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
 		BreakOnItem;
 #endif
 	}
@@ -1158,6 +1158,75 @@ void DebugText(vec2 pos, char* text, color col = Color_White) {
 }
 
 
+//@Behavoir functions
+//these functions generalize behavoir that are used by several things
+
+//returns true if buffer was changed
+b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32& cursor) {
+	persist TIMER_START(throttle);
+
+	auto insert = [&](char c, u32 idx) {
+		memmove((char*)buff + idx + 1, (char*)buff + idx, (buffSize - idx) * u8size);
+		((char*)buff)[idx] = c;
+		charCount++;
+	};
+
+	auto erase = [&](u32 idx) {
+		if (charCount == 1) memset((char*)buff, 0, buffSize);
+		else memmove((char*)buff + idx, (char*)buff + idx + 1, (charCount-- - idx) * u8size);
+	};
+
+	auto winsert = [&](wchar c, u32 idx) {
+		memmove((wchar*)buff + idx + 1, (wchar*)buff + idx, (buffSize - idx) * wcharsize);
+		((wchar*)buff)[idx] = c;
+		charCount++;
+	};
+
+	auto werase = [&](u32 idx) {
+		if (charCount == 1) memset((wchar*)buff, 0, buffSize);
+		else memmove((wchar*)buff + idx, (wchar*)buff + idx + 1, (charCount-- - idx) * wcharsize);
+	};
+
+
+	forI(DeshInput->charCount) {
+		if (charCount < buffSize) {
+			if (unicode) winsert((wchar)DeshInput->charIn[i], cursor++);
+			else insert((char)DeshInput->charIn[i], cursor++);
+		}
+	}
+
+	if (charCount) {
+		if (DeshInput->time_key_held < 500) {
+			if (DeshInput->KeyPressed(Key::BACKSPACE) && cursor != 0) {
+				if (unicode) werase(--cursor);
+				else erase(--cursor);
+				return true;
+			}
+			else if (DeshInput->KeyPressed(Key::DELETE) && cursor != charCount) {
+				if (unicode) werase(cursor);
+				else erase(cursor);
+				return true;
+			}
+		}
+		else if (TIMER_END(throttle) > 25) {
+			if (DeshInput->KeyDown(Key::BACKSPACE) && cursor != 0) {
+				if (unicode) werase(--cursor);
+				else erase(--cursor);
+				return true;
+			}
+			else if (DeshInput->KeyDown(Key::DELETE) && cursor != charCount) {
+				if (unicode) werase(cursor);
+				else erase(cursor);
+				return true;
+			}
+			TIMER_RESET(throttle);
+		}
+	}
+}
+
+
+
+
 //@Primitive Items
 
 
@@ -1169,7 +1238,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	
 	item.position = pos;
 	item.size = dimen;
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
@@ -1180,7 +1249,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	
 	item.position = pos;
 	item.size = dimen;
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -1196,7 +1265,7 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	item.position = vec2::ZERO;// { Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 	item.    size = Max(start, end) - item.position;
 	item.drawCmds.add(drawCmd);
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -1213,7 +1282,7 @@ void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color col
 	item.size = vec2::ONE * radius * 2;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 	
 }
 
@@ -1227,7 +1296,7 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 	item.size = vec2::ONE * radius * 2;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -1456,7 +1525,7 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 				Font* font = style.font;
 
 				f32 wscale = style.fontHeight / font->aspect_ratio / font->max_width;
-				f32 maxw = MarginedRight() - item->position.x;
+				f32 maxw = MarginedRight() - item->position.x - rightIndent;
 				f32 currlinew = 0;
 
 				for (wstring& t : newlined) {
@@ -1491,7 +1560,7 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = u32(floor(MarginedRight() - item->position.x) / style.font->max_width);
+				u32 maxChars = u32(floor(MarginedRight() - item->position.x - rightIndent) / style.font->max_width);
 
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
@@ -1867,7 +1936,10 @@ b32 UI::BeginHeader(const char* label) {
 		item->size.x - bgpos.x, 
 		item->size.y };
 	
-	if (*open) indentStack.add(style.indentAmount + globalIndent);
+	if (*open) { 
+		PushLeftIndent(style.indentAmount + leftIndent); 
+		PushRightIndent(style.indentAmount + rightIndent);
+	}
 	
 	{//background
 		UIDrawCmd drawCmd;
@@ -1915,7 +1987,130 @@ b32 UI::BeginHeader(const char* label) {
 }
 
 void UI::EndHeader() {
-	indentStack.pop();
+	PopLeftIndent();
+	PopRightIndent();
+}
+
+
+
+//@BeginTabBar
+
+b32 UI::BeginTabBar(const char* label, UITabBarFlags flags){
+	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
+	StateAddFlag(UISTabBarBegan);
+	if (!tabBars.has(label)) tabBars.add(label);
+	tabBar = tabBars.at(label);
+
+	UIItem* item = BeginItem(UIItemType_TabBar);
+	item->position = PositionForNewItem();
+
+	f32 tabBarLineHeight = 3;
+
+	item->size = DecideItemSize(vec2(MAX_F32, style.tabHeightRelToFont * style.fontHeight + tabBarLineHeight), item->position);
+	
+	tabBar->tabHeight = style.tabHeightRelToFont * style.fontHeight;
+	tabBar->item = item;
+
+	AdvanceCursor(item);
+
+	{//bar
+		UIDrawCmd drawCmd;
+		vec2  position = vec2(0, tabBar->tabHeight);
+		vec2  dimensions = vec2(item->size.x, tabBarLineHeight);
+		color col = style.colors[UIStyleCol_TabBar];
+		MakeFilledRect(drawCmd, position, dimensions, col);
+		AddDrawCmd(item, drawCmd);
+	}
+
+	return true;
+}
+
+b32 UI::BeginTab(const char* label){
+	Assert(StateHasFlag(UISTabBarBegan), "attempt to begin a tab without beginning a tab bar first");
+	
+	UITab* tab = 0;
+	if (!tabBar->tabs.has(label)) { 
+		tabBar->tabs.add(label);
+		tab = tabBar->tabs.at(label);
+		tab->height = style.tabHeightRelToFont * style.fontHeight;
+		tab->width = CalcTextSize(label).x * 1.2;
+	}
+	tab = tabBar->tabs.at(label);
+	//UITab& tab = tabBar->tabs[label];
+
+	UIItem* item = BeginItem(UIItemType_Tab);
+
+	item->position = vec2(tabBar->item->position.x + tabBar->xoffset, tabBar->item->position.y);
+	item->size = vec2(tab->width, tab->height);
+
+	tab->item = item;
+
+	b32 selected = tab == tabBar->tabs.atIdx(tabBar->selected);
+
+	b32 active = isItemActive(item) || selected;
+
+	tabBar->xoffset += tab->width + style.tabSpacing;
+
+	{//background
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[(active ? (LeftMousePressed ? UIStyleCol_TabBgActive : UIStyleCol_TabBgHovered) : UIStyleCol_TabBg) ];
+		MakeFilledRect(drawCmd, position, dimensions, col);
+		AddDrawCmd(item, drawCmd);
+	}
+
+	{//text
+		UIDrawCmd drawCmd;
+		drawCmd.scissorOffset = vec2::ZERO;
+		drawCmd.scissorExtent = item->size;
+		drawCmd.useWindowScissor = false;
+		vec2 position =
+			vec2((item->size.x - UI::CalcTextSize(label).x) * style.tabTextAlign.x,
+				((style.fontHeight * style.tabHeightRelToFont - style.fontHeight) * style.tabTextAlign.y));
+		color col = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
+		AddDrawCmd(item, drawCmd);
+	}
+
+	{//border
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[UIStyleCol_TabBorder];
+		MakeRect(drawCmd, position, dimensions, 1, col);
+		AddDrawCmd(item, drawCmd);
+	}
+
+	if (selected) {
+		StateAddFlag(UISTabBegan);
+		PushLeftIndent(style.indentAmount + leftIndent);
+		PushRightIndent(style.indentAmount + rightIndent);
+	}
+
+	return selected;
+}
+
+void UI::EndTab() {
+	Assert(StateHasFlag(UISTabBegan), "attempt to end a tab without beginning one first");
+	StateRemoveFlag(UISTabBegan);
+	PopLeftIndent();
+	PopRightIndent();
+}
+
+void UI::EndTabBar(){
+	Assert(!StateHasFlag(UISTabBegan), "attempt to end a tab bar without ending a tab");
+	Assert(StateHasFlag(UISTabBarBegan), "attempt to end a tab bar without beginning one first");
+	StateRemoveFlag(UISTabBarBegan);
+
+	tabBar->xoffset = 0;
+	forI(tabBar->tabs.count) {
+		UIItem* item = tabBar->tabs.atIdx(i)->item;
+		if (LeftMousePressed && MouseInWinArea(item->position, item->size)) {
+			tabBar->selected = i;
+		}
+	}
+
 }
 
 
@@ -2111,64 +2306,10 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 			callback(&data);
 		}
 		
-		//gather text into buffer from inputs
-		//make this only loop when a key has been pressed eventually
 		
-		persist TIMER_START(throttle);
-		
-		auto insert = [&](char c, u32 idx) {
-			memmove((char*)buff + idx + 1, (char*)buff + idx, (buffSize - idx) * CHAR_SIZE);
-			((char*)buff)[idx] = c;
-		};
-		
-		auto erase = [&](u32 idx) {
-			if (charCount == 1) memset((char*)buff, 0, buffSize);
-			else memmove((char*)buff + idx, (char*)buff + idx + 1, (charCount-- - idx) * CHAR_SIZE);
-		};
-
-		auto winsert = [&](wchar c, u32 idx) {
-			memmove((wchar*)buff + idx + 1, (wchar*)buff + idx, (buffSize - idx) * CHAR_SIZE);
-			((wchar*)buff)[idx] = c;
-		};
-
-		auto werase = [&](u32 idx) {
-			if (charCount == 1) memset((wchar*)buff, 0, buffSize);
-			else memmove((wchar*)buff + idx, (wchar*)buff + idx + 1, (charCount-- - idx) * CHAR_SIZE);
-		};
-	
-		
-		forI(DeshInput->charCount) {
+		if (TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
+			bufferChanged = 1;
 			TIMER_RESET(state->timeSinceTyped);
-			if(unicode) winsert((wchar)DeshInput->charIn[i], state->cursor++);
-			else insert((char)DeshInput->charIn[i], state->cursor++);
-		}
-
-		if (charCount) {
-			if (DeshInput->time_key_held < 500) {
-				if (DeshInput->KeyPressed(Key::BACKSPACE) && state->cursor != 0) {
-					if (unicode) werase(--state->cursor);
-					else erase(--state->cursor);
-					bufferChanged = 1;
-				}
-				else if (DeshInput->KeyPressed(Key::DELETE) && state->cursor != charCount) {
-					if(unicode) werase(state->cursor);
-					else erase(state->cursor);
-					bufferChanged = 1;
-				}
-			}
-			else if (TIMER_END(throttle) > 25) {
-				if (DeshInput->KeyDown(Key::BACKSPACE) && state->cursor != 0) {
-					if(unicode) werase(--state->cursor);
-					else erase(--state->cursor);
-					bufferChanged = 1;
-				}
-				else if (DeshInput->KeyDown(Key::DELETE) && state->cursor != charCount) {
-					if(unicode) werase(state->cursor);
-					else erase(state->cursor);
-					bufferChanged = 1;
-				}
-				TIMER_RESET(throttle);
-			}
 		}
 	}
 	
@@ -2181,6 +2322,8 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 		AddDrawCmd(item, drawCmd);
 	}
 	
+	
+
 	vec2 textStart =
 		vec2((dim.x - charCount * style.font->max_width) * style.inputTextTextAlign.x + 3, //TODO(sushi) make an input text offset style var
 			 (style.fontHeight * style.inputTextHeightRelToFont - style.fontHeight) * style.inputTextTextAlign.y);
@@ -2226,10 +2369,17 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	}
 	
 	//TODO(sushi, Ui) impl different text cursors
+
+	f32 lineoffset;
+	if (unicode) lineoffset = UI::CalcTextSize(wcstring{ (wchar*)buff, state->cursor }).x;
+	else lineoffset = UI::CalcTextSize(cstring{ (char*)buff, state->cursor }).x;
+
+	
+
 	if (active) {//cursor
 		UIDrawCmd drawCmd;
-		vec2  start = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
-		vec2  end = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
+		vec2  start = textStart +  vec2(lineoffset, 0);//vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
+		vec2  end = textStart + vec2(lineoffset, style.fontHeight - 1);
 		color col = 
 			color(255, 255, 255, 
 				  u8(255 * (cos(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 
@@ -2350,13 +2500,22 @@ void UI::PushScale(vec2 scale) {
 
 void UI::PushLayer(u32 layer) {
 	Assert(layer < UI_WINDOW_ITEM_LAYERS, "last layer is currently reserved by UI, increase the amount of layers in ui.h if you need more");
-	layerStack.add(ui_state.layer);
-	ui_state.layer = layer;
+	layerStack.add(currlayer);
+	currlayer = layer;
 }
 
 void UI::PushWindowLayer(u32 layer) {
 	
 }
+
+void UI::PushLeftIndent(f32 indent)	{
+	leftIndentStack.add(indent);
+}
+
+void UI::PushRightIndent(f32 indent){
+	rightIndentStack.add(indent);
+}
+
 
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
@@ -2400,10 +2559,23 @@ void UI::PopScale(u32 count) {
 
 void UI::PopLayer(u32 count) {
 	while (count-- > 0) {
-		ui_state.layer = *layerStack.last;
+		currlayer = *layerStack.last;
 		layerStack.pop();
 	}
 }
+
+void UI::PopLeftIndent(u32 count) {
+	while (count-- > 0) {
+		leftIndentStack.pop();
+	}
+}
+
+void UI::PopRightIndent(u32 count){
+	while (count-- > 0) {
+		rightIndentStack.pop();
+	}
+}
+
 
 
 //@Windows
@@ -2826,7 +2998,8 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				parent->children.add(name, curwin);
 			}
 			
-			indentStack.add(0);
+			UI::PushLeftIndent(0);
+			UI::PushRightIndent(0);
 			item->child = curwin;
 			curwin->parent = parent;
 			curwin->type = UIWindowType_Child;
@@ -2877,7 +3050,8 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				parent->children.add(name, curwin);
 			}
 			
-			indentStack.add(0);
+			UI::PushLeftIndent(0);
+			UI::PushRightIndent(0);
 			item->child = curwin;
 			curwin->parent = parent;
 			curwin->type = UIWindowType_PopOut;
@@ -2906,9 +3080,9 @@ void UI::BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags f
 }
 
 void UI::BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
-	//ui_state.layer = Min(++ui_state.layer, (u32)UI_LAYERS);
+	//currlayer = Min(++currlayer, (u32)UI_LAYERS);
 	BeginCall(name, pos, dimensions, flags, UIWindowType_PopOut);
-	//ui_state.layer--; //NOTE this will break if we are already on last layer fix it
+	//currlayer--; //NOTE this will break if we are already on last layer fix it
 }
 
 //@CalcWindowMinSize
@@ -3153,7 +3327,8 @@ void UI::EndChild() {
 	curwin->visibleRegionSize = ClampMin(Min(parent->visibleRegionStart + parent->visibleRegionSize - scrollBarAdjust, curwin->position + curwin->dimensions) - curwin->visibleRegionStart, vec2::ZERO);
 	
 	EndCall();
-	indentStack.pop();	
+	PopLeftIndent();
+	PopRightIndent();
 }
 
 void UI::EndPopOut() {
@@ -3161,7 +3336,8 @@ void UI::EndPopOut() {
 	curwin->visibleRegionSize = curwin->dimensions;
 	
 	EndCall();
-	indentStack.pop();
+	PopLeftIndent();
+	PopRightIndent();
 }
 
 void UI::SetNextWindowPos(vec2 pos) {
@@ -3616,7 +3792,7 @@ UIWindow* DisplayMetrics() {
 		
 		Text(str1); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
 		Text("input state: ");
-		switch (ui_state.input) {
+		switch (inputState) {
 			case ISNone:          Text("None");           break;
 			case ISScrolling:     Text("Scrolling");      break;
 			case ISResizing:      Text("Resizing");       break;
@@ -3647,7 +3823,7 @@ UIWindow* DisplayMetrics() {
 				DebugRect(window->position, window->dimensions * window->style.globalScale);
 			}
 			if (showChildren) {
-				addGlobalIndent(13);
+				PushLeftIndent(13);
 				for (UIWindow* child : window->children) {
 					if (Selectable(toStr(child->name, "; hovered: ", WinHovered(child)).str, child == debugee)) {
 						debugee = child;
@@ -3656,7 +3832,7 @@ UIWindow* DisplayMetrics() {
 						DebugRect(child->position, child->dimensions * child->style.globalScale);
 					}
 				}
-				popGlobalIndent;
+				PopLeftIndent();
 			}
 		}
 		PopVar();
@@ -4223,6 +4399,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBg,     Color_VeryDarkCyan);
 	PushColor(UIStyleCol_InputTextBg,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBg, Color_VeryDarkCyan);
+	PushColor(UIStyleCol_TabBg,        Color_VeryDarkCyan);
 	
 	//active backgrounds
 	PushColor(UIStyleCol_ScrollBarBgActive,  Color_VeryDarkCyan);
@@ -4232,6 +4409,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBgActive,     Color_Cyan);
 	PushColor(UIStyleCol_InputTextBgActive,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBgActive, Color_Cyan);
+	PushColor(UIStyleCol_TabBgActive,        Color_Cyan);
 	
 	//hovered backgrounds
 	PushColor(UIStyleCol_ScrollBarBgHovered,  Color_VeryDarkCyan);
@@ -4241,13 +4419,15 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBgHovered,     Color_DarkCyan);
 	PushColor(UIStyleCol_InputTextBgHovered,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBgHovered, Color_DarkCyan);
+	PushColor(UIStyleCol_TabBgHovered,        Color_DarkCyan);
 	
 	//borders
-	PushColor(UIStyleCol_ButtonBorder,   Color_Black);
-	PushColor(UIStyleCol_CheckboxBorder, Color_Black);
-	PushColor(UIStyleCol_HeaderBorder,   Color_Black);
-	PushColor(UIStyleCol_SliderBorder,   Color_Black);
-	PushColor(UIStyleCol_InputTextBorder,Color_Black);
+	PushColor(UIStyleCol_ButtonBorder,    Color_Black);
+	PushColor(UIStyleCol_CheckboxBorder,  Color_Black);
+	PushColor(UIStyleCol_HeaderBorder,    Color_Black);
+	PushColor(UIStyleCol_SliderBorder,    Color_Black);
+	PushColor(UIStyleCol_InputTextBorder, Color_Black);
+	PushColor(UIStyleCol_TabBorder,       Color_Black);
 	
 	//misc
 	PushColor(UIStyleCol_ScrollBarDragger,        Color_VeryDarkRed);
@@ -4263,6 +4443,8 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBar,		   Color_VeryDarkRed);
 	PushColor(UIStyleCol_SliderBarActive,  Color_Red);
 	PushColor(UIStyleCol_SliderBarHovered, Color_DarkRed);
+
+	PushColor(UIStyleCol_TabBar, Color_DarkCyan);
 	
 	//push default style variables
 	PushVar(UIStyleVar_WindowPadding,             vec2(10, 10));
@@ -4273,19 +4455,22 @@ void UI::Init() {
 	PushVar(UIStyleVar_ScrollAmount,              vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxSize,              vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxFillPadding,       2);
-	PushVar(UIStyleVar_InputTextTextAlign,        vec2(0.f, 0.5f));
+	PushVar(UIStyleVar_InputTextTextAlign,        vec2(0.f,  0.5f));
 	PushVar(UIStyleVar_ButtonTextAlign,           vec2(0.5f, 0.5f));
-	PushVar(UIStyleVar_HeaderTextAlign,           vec2(0.f, 0.5f));
+	PushVar(UIStyleVar_HeaderTextAlign,           vec2(0.f,  0.5f));
 	PushVar(UIStyleVar_SelectableTextAlign,       vec2(0.5f, 0.5f));
+	PushVar(UIStyleVar_TabTextAlign,              vec2(0.5f, 0.5f));
 	PushVar(UIStyleVar_ButtonHeightRelToFont,     1.3f);
 	PushVar(UIStyleVar_HeaderHeightRelToFont,     1.3f);
 	PushVar(UIStyleVar_InputTextHeightRelToFont,  1.3f);
 	PushVar(UIStyleVar_CheckboxHeightRelToFont,   1.3f);
 	PushVar(UIStyleVar_SelectableHeightRelToFont, 1.3f);
+	PushVar(UIStyleVar_TabHeightRelToFont,        1.3f);
 	PushVar(UIStyleVar_RowItemAlign,              vec2(0.5f, 0.5f));
 	PushVar(UIStyleVar_ScrollBarYWidth,           5);
 	PushVar(UIStyleVar_ScrollBarXHeight,          5);
 	PushVar(UIStyleVar_IndentAmount,              12);
+	PushVar(UIStyleVar_TabSpacing,                5);
 	PushVar(UIStyleVar_FontHeight,                (f32)style.font->max_height);
 	
 	PushScale(vec2(1, 1));
@@ -4448,8 +4633,8 @@ void UI::Update() {
 	Assert(colorStack.size() == initColorStackSize, 
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
-	Assert(indentStack.count == 1, "Forgot to call End for an indenting Begin!");
-	
+	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
+	Assert(rightIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);

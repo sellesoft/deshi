@@ -1700,6 +1700,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	//current ranges:
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
+	// Cyrillic         1024 - 1279 ~ 256 chars
 	// Super/Subscripts 8304 - 8348 ~  44 chars (we will want our own method for doing super/subscripts in suugu)
 	// Currency Symbols 8352 - 8384 ~  32 chars
 	// Arrows           8592 - 8703 ~ 111 chars
@@ -1709,14 +1710,15 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
 	
-	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(6*sizeof(*ranges));
+	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(7*sizeof(*ranges));
 	
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
-	ranges[2].num_chars = 44;   ranges[2].first_unicode_codepoint_in_range = 8304;
-	ranges[3].num_chars = 32;   ranges[3].first_unicode_codepoint_in_range = 8352;
-	ranges[4].num_chars = 111;  ranges[4].first_unicode_codepoint_in_range = 8592;
-	ranges[5].num_chars = 255;  ranges[5].first_unicode_codepoint_in_range = 8704;
+	ranges[2].num_chars = 255;  ranges[2].first_unicode_codepoint_in_range = 1024;
+	ranges[3].num_chars = 44;   ranges[3].first_unicode_codepoint_in_range = 8304;
+	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
+	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
+	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
 	
 	ranges[0].font_size = (f32)size; 
 	ranges[1].font_size = (f32)size; 
@@ -1724,14 +1726,16 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	ranges[3].font_size = (f32)size; 
 	ranges[4].font_size = (f32)size; 
 	ranges[5].font_size = (f32)size; 
-	
+	ranges[6].font_size = (f32)size;
+
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
 	ranges[2].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[2].num_chars*sizeof(stbtt_packedchar));
 	ranges[3].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[3].num_chars*sizeof(stbtt_packedchar));
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
-	
+	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
+
 	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(*pc));
 	
 	font->num_ranges = 6;
@@ -1786,6 +1790,34 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 void Storage::
 DeleteFont(Font* font){ //!Incomplete
 	NotImplemented;
+}
+
+
+void Storage::
+StorageBrowserUI() {
+	using namespace UI;
+
+	enum Tabs {
+		Meshes,
+		Textures,
+		Materials,
+		Models,
+		Fonts,
+	}; typedef u32 Tab;
+
+
+	persist Tab selected_tab = Meshes;
+
+	Begin("StorageBrowserUI", vec2::ONE * 200, vec2(400, 600));
+
+	if (BeginTabBar("StorageBrowserUITabBar")) {
+		if(BeginTab())
+	}
+
+
+
+	End();
+
 }
 
 #undef ParseError

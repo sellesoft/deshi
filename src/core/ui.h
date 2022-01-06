@@ -44,6 +44,10 @@
 #include "../utils/string.h"
 #include "../utils/map.h"
 
+struct UIDrawCmd;
+struct UIItem;
+struct UIWindow;
+
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,	          // default vec2(10, 10)      spacing between every item and the edges of the window
 	UIStyleVar_ItemSpacing,               // default vec2(1, 1)	       spacing between items within a window
@@ -53,20 +57,23 @@ enum UIStyleVar : u32 {
 	UIStyleVar_ScrollAmount,              // default vec2(5, 5)		   amount to scroll in pixels             
 	UIStyleVar_CheckboxSize,              // default vec2(10, 10)      
 	UIStyleVar_CheckboxFillPadding,       // default 2                 how far from the edge a checkbox's true filling is padding
-	UIStyleVar_InputTextTextAlign,        // default vec2(0, 0.5)      how text is aligned within InputText boxes
+	UIStyleVar_InputTextTextAlign,        // default vec2(0,   0.5)    how text is aligned within InputText boxes
 	UIStyleVar_ButtonTextAlign,           // default vec2(0.5, 0.5)    how text is aligned within buttons
-	UIStyleVar_HeaderTextAlign,           // default vec2(0, 0.5)
+	UIStyleVar_HeaderTextAlign,           // default vec2(0,   0.5)
 	UIStyleVar_SelectableTextAlign,       // default vec2(0.5, 0.5)
+	UIStyleVar_TabTextAlign,              // default vec2(0.5, 0.5)
 	UIStyleVar_ButtonHeightRelToFont,     // default 1.3                height of header box relative to the font height
-	UIStyleVar_SelectableHeightRelToFont, // default 1.3 
 	UIStyleVar_HeaderHeightRelToFont,     // default 1.3
 	UIStyleVar_InputTextHeightRelToFont,  // default 1.3
 	UIStyleVar_CheckboxHeightRelToFont,   // default 1.3
+	UIStyleVar_SelectableHeightRelToFont, // default 1.3 
+	UIStyleVar_TabHeightRelToFont,        // default 1.3 
 	UIStyleVar_RowItemAlign,              // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_RowCellPadding,            // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
 	UIStyleVar_ScrollBarYWidth,           // default 5
 	UIStyleVar_ScrollBarXHeight,          // default 5
 	UIStyleVar_IndentAmount,              // default 8
+	UIStyleVar_TabSpacing,                // default 5                 the spacing between tabs
 	UIStyleVar_FontHeight,                // default font->height      height of font in pixels
 	UIStyleVar_Font,			          // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
@@ -84,17 +91,20 @@ global_ const char* styleVarStr[] = {
 	"InputTextTextAlign",        
 	"ButtonTextAlign",           
 	"HeaderTextAlign",           
-	"SelectableTextAlign",       
+	"SelectableTextAlign",
+	"TabTextAlign",
 	"ButtonHeightRelToFont",     
-	"SelectableHeightRelToFont", 
 	"HeaderHeightRelToFont",     
 	"InputTextHeightRelToFont",  
 	"CheckboxHeightRelToFont",   
+	"SelectableHeightRelToFont",
+	"TabHeightRelToFont",
 	"RowItemAlign",              
 	"RowCellPadding",            
 	"ScrollBarYWidth",           
 	"ScrollBarXHeight",          
-	"IndentAmount",              
+	"IndentAmount",     
+	"TabSpacing",
 	"FontHeight",                
 	"Font",			          
 	"COUNT"
@@ -153,6 +163,12 @@ enum UIStyleCol : u32 {
 	UIStyleCol_SelectableBg,
 	UIStyleCol_SelectableBgActive,
 	UIStyleCol_SelectableBgHovered,
+
+	UIStyleCol_TabBar,
+	UIStyleCol_TabBg,
+	UIStyleCol_TabBgActive,
+	UIStyleCol_TabBgHovered,
+	UIStyleCol_TabBorder,
 	
 	UIStyleCol_TitleBg,
 	UIStyleCol_TitleBgHovered,
@@ -173,18 +189,20 @@ struct UIStyle {
 	vec2 buttonTextAlign;
 	vec2 headerTextAlign;
 	vec2 selectableTextAlign;
+	vec2 tabTextAlign;
 	f32  buttonHeightRelToFont;
 	f32  headerHeightRelToFont;
 	f32  inputTextHeightRelToFont;
 	f32  checkboxHeightRelToFont;
 	f32  selectableHeightRelToFont;
+	f32  tabHeightRelToFont;
 	vec2 rowItemAlign;
 	vec2 rowCellPadding;
 	f32  scrollBarYWidth;
 	f32  scrollBarXHeight;
 	f32  indentAmount;
+	f32  tabSpacing;
 	f32  fontHeight;
-	
 	//special vars that have special push/pop functions
 	vec2  globalScale;
 	Font* font;
@@ -263,11 +281,28 @@ struct UIInputTextState {
 	TIMER_START(timeSinceTyped);  //timer to time how long its been since typing, for cursor
 };
 
+
+enum UITabBarFlags_ {
+	UITabBarFlags_NONE = 0,
+}; typedef u32 UITabBarFlags;
+
+struct UITab {
+	f32    width = 0;
+	f32   height = 0;
+	UIItem* item = 0;
+};
+
+struct UITabBar {
+	map<const char*, UITab> tabs;
+	u32  selected = 0;
+	f32 tabHeight = 0;
+	u32   xoffset = 0; //how far along the bar we've placed tabs 
+	UIItem*  item = 0; //item representing this tabbar
+};
+
 enum UISliderFlags_ {
 	UISliderFlags_NONE     = 0,
 	UISliderFlags_Vertical = 1,
-	
-	
 }; typedef u32 UISliderFlags;
 
 enum UIImageFlags_ {
@@ -284,6 +319,7 @@ enum UIButtonFlags_ {
 	
 	
 }; typedef u32 UIButtonFlags;
+
 
 enum UIDrawType : u32 {
 	UIDrawType_Triangle,
@@ -314,7 +350,7 @@ global_ const char* UIDrawTypeStrs[] = {
 #define UIDRAWCMD_MAX_VERTICES 0x3FF
 #define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
 
-struct UIItem;
+
 
 //draw commands store what kind of command it is, and info relative to that command
 //this is to be stored on an array on UIWindow and determines what elements it draws when
@@ -370,6 +406,8 @@ enum UIItemType : u32 {
 	UIItemType_Combo,     // BeginCombo()
 	UIItemType_Image,     // Image()
 	UIItemType_Separator, // Separator()
+	UIItemType_TabBar,    // BeginTabBar()
+	UIItemType_Tab,       // BeginTab()
 };
 
 global_ const char* UIItemTypeStrs[] = {
@@ -390,6 +428,8 @@ global_ const char* UIItemTypeStrs[] = {
 	"Combo",     
 	"Image",     
 	"Separator", 
+	"TabBar",
+	"Tab",
 };
 
 //an item such as a button, checkbox, or input text
@@ -669,6 +709,11 @@ namespace UI {
 	b32  BeginHeader(const char* label);
 	void EndHeader();
 	
+	b32  BeginTabBar(const char* label, UITabBarFlags flags = 0);
+	b32  BeginTab(const char* label);
+	void EndTab();
+	void EndTabBar();
+
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 	
 	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
@@ -702,14 +747,18 @@ namespace UI {
 	void PushScale(vec2 scale);
 	void PushLayer(u32 layer);
 	void PushWindowLayer(u32 layer);
-	
+	void PushLeftIndent(f32 indent);
+	void PushRightIndent(f32 indent);
+
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
 	void PopScale(u32 count = 1);
 	void PopLayer(u32 count = 1);
 	void PopWindowLayer(u32 count = 1);
-	
+	void PopLeftIndent(u32 count = 1);
+	void PopRightIndent(u32 count = 1);
+
 	
 	//// windows ////
 	void Begin(const char* name, UIWindowFlags flags = 0);
