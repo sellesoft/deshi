@@ -1700,6 +1700,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	//current ranges:
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
+	// Cyrillic         1024 - 1279 ~ 256 chars
 	// Super/Subscripts 8304 - 8348 ~  44 chars (we will want our own method for doing super/subscripts in suugu)
 	// Currency Symbols 8352 - 8384 ~  32 chars
 	// Arrows           8592 - 8703 ~ 111 chars
@@ -1709,14 +1710,15 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
 	
-	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(6*sizeof(*ranges));
+	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(7*sizeof(*ranges));
 	
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
-	ranges[2].num_chars = 44;   ranges[2].first_unicode_codepoint_in_range = 8304;
-	ranges[3].num_chars = 32;   ranges[3].first_unicode_codepoint_in_range = 8352;
-	ranges[4].num_chars = 111;  ranges[4].first_unicode_codepoint_in_range = 8592;
-	ranges[5].num_chars = 255;  ranges[5].first_unicode_codepoint_in_range = 8704;
+	ranges[2].num_chars = 255;  ranges[2].first_unicode_codepoint_in_range = 1024;
+	ranges[3].num_chars = 44;   ranges[3].first_unicode_codepoint_in_range = 8304;
+	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
+	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
+	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
 	
 	ranges[0].font_size = (f32)size; 
 	ranges[1].font_size = (f32)size; 
@@ -1724,14 +1726,16 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	ranges[3].font_size = (f32)size; 
 	ranges[4].font_size = (f32)size; 
 	ranges[5].font_size = (f32)size; 
-	
+	ranges[6].font_size = (f32)size;
+
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
 	ranges[2].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[2].num_chars*sizeof(stbtt_packedchar));
 	ranges[3].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[3].num_chars*sizeof(stbtt_packedchar));
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
-	
+	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
+
 	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(*pc));
 	
 	font->num_ranges = 6;
@@ -1749,7 +1753,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	u32 tsx = (u32)ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
 	
 	font->max_height = size;
-	font->max_width = u32(f32(widthmax) / f32(heightmax * size));
+	font->max_width = u32(f32(widthmax) / f32(heightmax) * size);
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 
@@ -1786,6 +1790,199 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 void Storage::
 DeleteFont(Font* font){ //!Incomplete
 	NotImplemented;
+}
+
+
+void DrawMeshesWindow() { 
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIMeshes", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+void DrawTexturesWindow() {
+
+	Storage_* st = DeshStorage;
+
+	//TODO make all of this stuff get checked only when necessary
+	b32 new_selected = 0;
+	persist Texture* selected = 0;
+	
+	Texture* largest = st->textures[0];
+	Texture* smallest = st->textures[0];
+
+	//gather size of textures in memory
+	upt texture_bytes = 0;
+
+
+	for (Texture* t : st->textures) {
+		texture_bytes += t->width * t->height * u8size;
+		if (t->width * t->height > largest->width * largest->height) largest = t;
+		if (t->width * t->height < smallest->width * smallest->height) smallest = t;
+
+	}
+
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUI_Textures", vec2::ZERO);
+	
+	BeginRow("StorageBrowserUI_Row1",2, 0, UIRowFlags_LookbackAndResizeToMax);
+	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+
+	Text("Textures Loaded: "); Text(toStr(st->textures.count).str);
+	Text("Memory Occupied: "); Text(toStr(texture_bytes / bytesDivisor(texture_bytes), " ", bytesUnit(texture_bytes)).str);
+
+	EndRow();
+
+	if (BeginCombo("StorageBrowserUI_Texture_Selection_Combo", (selected ? selected->name : "select texture"))) {
+		for (Texture* t : st->textures) {
+			if (Selectable(t->name, t == selected)) {
+				selected = t;
+				new_selected = 1;
+			}
+		}
+		EndCombo();
+	}
+
+	Separator(9);
+
+	if (BeginHeader("Stats")) {
+		BeginRow("StorageBrowserUI_Row2", 3, 0, UIRowFlags_LookbackAndResizeToMax);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
+
+		Text("Largest Texture: "); Text(largest->name); 
+		if (Button("select")) { selected = largest; new_selected = 1;}
+	
+		Text("Smallest Texture: "); Text(smallest->name);
+		if (Button("select")) { selected = smallest; new_selected = 1; }
+	
+		EndRow();
+	
+		EndHeader();
+	}
+
+	Separator(9);
+
+	if (selected && BeginHeader("Selected")) {
+		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
+
+		Text("Name:");     Text(selected->name);
+		Text("Index: ");   Text(toStr(selected->idx).str);
+		Text("Width: ");   Text(toStr(selected->width).str);
+		Text("Height: ");  Text(toStr(selected->height).str);
+		Text("Depth: ");   Text(toStr(selected->depth).str);
+		Text("MipMaps: "); Text(toStr(selected->mipmaps).str);
+		Text("Format: ");  Text(ImageFormatStrings[selected->format]);
+		Text("Type: ");    Text(TextureTypeStrings[selected->type]);
+		Text("Filter: ");  Text(TextureFilterStrings[selected->filter]);
+		Text("UV Mode: "); Text(TextureAddressModeStrings[selected->uvMode]);
+
+		EndRow();
+
+		PushColor(UIStyleCol_WindowBg, 0x272727FF);
+		SetNextWindowSize(vec2(MAX_F32, 300));
+		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoScroll);
+		persist f32  zoom = 300;
+		persist vec2 mpl;
+		persist vec2 imagepos;
+		persist vec2 imageposlatch;
+		persist UIImageFlags flags;
+
+		vec2 mp = DeshInput->mousePos;
+
+		if (Button("Flip x")) ToggleFlag(flags, UIImageFlags_FlipX); SameLine();
+		if (Button("Flip y")) ToggleFlag(flags, UIImageFlags_FlipY);
+
+		if (new_selected) {
+			zoom = GetWindow()->width / selected->width ;
+			imagepos = vec2(
+				(GetWindow()->width - selected->width) / 2,
+				(GetWindow()->height - selected->height) / 2
+			);
+		}
+
+		Text(toStr(zoom).str);
+
+		if (IsWinHovered()) {
+			SetPreventInputs();
+			
+		
+
+			if (DeshInput->scrollY) {
+				f32 val = 10 * DeshInput->scrollY;
+				zoom -= zoom / val;
+				//TODO make it zoom to the mouse 
+				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
+				//imagepos -= imtomp.normalized() * val / 2;
+			}
+			if (DeshInput->LMousePressed()) {
+				mpl = mp;
+				imageposlatch = imagepos;
+			}
+			if (DeshInput->LMouseDown()) {
+				imagepos = imageposlatch - (mpl - mp);
+			}
+
+		}
+		else SetAllowInputs();
+
+		SetNextItemSize(vec2(zoom * selected->width, zoom * selected->height));
+		Image(selected, imagepos, 1, flags);
+
+		EndChild();
+		PopColor();
+		EndHeader();
+	}
+	
+
+	EndChild();
+}
+
+void DrawMaterialsWindow(){
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIMaterials", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+void DrawModelsWindow(){
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIModels", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+void DrawFontsWindow(){
+	using namespace UI;
+	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	BeginChild("StorageBrowserUIFonts", vec2(MAX_F32, MAX_F32));
+	Text("TODO");
+	EndChild();
+}
+
+
+void Storage::
+StorageBrowserUI() {
+	using namespace UI;
+
+
+	Begin("StorageBrowserUI", vec2::ONE * 200, vec2(400, 600));
+
+	if (BeginTabBar("StorageBrowserUITabBar", UITabBarFlags_NoIndent)) {
+		if (BeginTab("Meshes"))    {DrawMeshesWindow();	   EndTab();}
+		if (BeginTab("Textures"))  {DrawTexturesWindow();  EndTab();}
+		if (BeginTab("Materials")) {DrawMaterialsWindow(); EndTab();}
+		if (BeginTab("Models"))    {DrawModelsWindow();	   EndTab();}
+		if (BeginTab("Fonts"))     {DrawFontsWindow();     EndTab();}
+		EndTabBar();
+	}
+
+	End();
+
 }
 
 #undef ParseError

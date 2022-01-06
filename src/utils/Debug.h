@@ -9,10 +9,6 @@
 
 #include <string>
 
-//std::cout short form
-#define PRINTLN(x) std::cout << x << std::endl;
-
-#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 
 #define TOSTDSTRING(...) to_std_string(__VA_ARGS__)
 

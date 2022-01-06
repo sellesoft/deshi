@@ -10,6 +10,9 @@ enum ImageFormat_{ //NOTE value = bytes per pixel
 	ImageFormat_RGB  = 3,
 	ImageFormat_RGBA = 4,
 }; typedef u32 ImageFormat;
+global_ const char* ImageFormatStrings[] = {
+	"BW", "BWA", "RGB", "RGBA"
+};
 
 enum TextureFilter_{
 	TextureFilter_Nearest, //selects single value

@@ -19,7 +19,6 @@ struct ColorMod {
 };
 
 #define UI_LAYERS 11
-static constexpr u32 CHAR_SIZE = sizeof(CHAR);
 static const u32 UI_CENTER_LAYER = (u32)floor((f32)UI_LAYERS / 2.f);
 
 //for style variable stack
@@ -49,39 +48,29 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, buttonTextAlign)},
 	{2, offsetof(UIStyle, headerTextAlign)},
 	{2, offsetof(UIStyle, selectableTextAlign)},
+	{2, offsetof(UIStyle, tabTextAlign)},
 	{1, offsetof(UIStyle, buttonHeightRelToFont)},
 	{1, offsetof(UIStyle, headerHeightRelToFont)},
 	{1, offsetof(UIStyle, inputTextHeightRelToFont)},
 	{1, offsetof(UIStyle, checkboxHeightRelToFont)},
 	{1, offsetof(UIStyle, selectableHeightRelToFont)},
+	{1, offsetof(UIStyle, tabHeightRelToFont)},
 	{2, offsetof(UIStyle, rowItemAlign)},
 	{2, offsetof(UIStyle, rowCellPadding)},
 	{1, offsetof(UIStyle, scrollBarYWidth)},
 	{1, offsetof(UIStyle, scrollBarXHeight)},
 	{1, offsetof(UIStyle, indentAmount)},
+	{1, offsetof(UIStyle, tabSpacing)},
 	{1, offsetof(UIStyle, fontHeight)},
 };
 
-//this variable defines the space the user is working in when calling UI functions
-//windows are primarily a way for the user to easily position things on screen relative to a parent
-//and to make detecting where text wraps and other things easier
-//by default a window that takes up the entire screen and is invisible is made on init
-UIWindow* curwin; 
-UIWindow* hovered;
-
-
-local vec2 NextWinSize  = vec2(-1, 0);
-local vec2 NextWinPos   = vec2(-1, 0);
-local vec2 NextItemPos  = vec2(-1, 0);
-local vec2 NextItemSize = vec2(-1, 0);
-
-local vec2 MarginPositionOffset = vec2::ZERO;
-local vec2 MarginSizeOffset = vec2::ZERO;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
 local map<const char*, UIWindow*>        windows;   
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local map<const char*, UITabBar>         tabBars;     //stores known tab bars
+local map<const char*, UIRow>            rows;        //stores known Rows
 local map<const char*, b32>              combos;      //stores known combos and if they are open or not
 local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
 local map<const char*, b32>              headers;     //stores whether a header is open or not
@@ -91,33 +80,31 @@ local array<VarMod>                      varStack;
 local array<vec2>                        scaleStack;  //global scales
 local array<Font*>                       fontStack;
 local array<u32>                         layerStack;
-local array<u32>                         winLayerStack;
-local array<f32>                         indentStack{ 0 }; //stores global indentations
+local array<f32>                         leftIndentStack{ 0 }; //stores global indentations
+local array<f32>                         rightIndentStack{ 0 }; //stores global indentations
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
 
-local u32 activeId = -1; //the id of an active widget eg. input text
-
 //row variables
-local UIRow row;
 
-//misc state vars
-local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
+
 
 //global ui state flags
-enum UIState_ {
+enum UIStateFlags_ {
 	UISNone                   = 0, 
 	UISGlobalHovered          = 1 << 0,
 	UISRowBegan               = 1 << 1,
 	UISComboBegan             = 1 << 2,
-	UISCursorSet              = 1 << 3,
-	UISNextItemSizeSet        = 1 << 4,
-	UISNextItemActive         = 1 << 5,
-	UISNextItemMinSizeIgnored = 1 << 6,
-}; typedef u32 UIState;
+	UISTabBarBegan            = 1 << 3,
+	UISTabBegan               = 1 << 4,
+	UISCursorSet              = 1 << 5,
+	UISNextItemSizeSet        = 1 << 6,
+	UISNextItemActive         = 1 << 7,
+	UISNextItemMinSizeIgnored = 1 << 8,
+}; typedef u32 UIStateFlags;
 
 //global ui input state
 enum InputState_ {
@@ -126,16 +113,32 @@ enum InputState_ {
 	ISDragging,
 	ISResizing,
 	ISPreventInputs,
+	ISExternalPreventInputs,
 }; typedef u32 InputState;
 
-struct {
-	
-	UIState flags = UISNone;
-	InputState input = ISNone;
-	u32 layer = UI_CENTER_LAYER;
-	u32 winlayer = UI_CENTER_LAYER;
-	
-}ui_state;
+
+//main UI state variables	
+local UIWindow* curwin = 0;    //the window that is currently being worked with by the user
+local UIWindow* hovered = 0;   //the window that the mouse is hovering over, this is set every Update
+local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
+
+local UIStateFlags stateFlags = UISNone;
+local InputState   inputState = ISNone;
+
+local u32 currlayer = UI_CENTER_LAYER;
+local u32 winlayer = UI_CENTER_LAYER;
+local u32 activeId = -1; //the id of an active widget eg. input text
+
+local UIRow*    row;    //row being worked with
+local UITabBar* tabBar; //tab bar being worked with
+
+local vec2 NextWinSize = vec2(-1, 0);
+local vec2 NextWinPos = vec2(-1, 0);
+local vec2 NextItemPos = vec2(-1, 0);
+local vec2 NextItemSize = vec2(-1, 0);
+
+local vec2 MarginPositionOffset = vec2::ZERO;
+local vec2 MarginSizeOffset = vec2::ZERO;
 
 struct {
 	u32 vertices = 0;
@@ -146,11 +149,11 @@ struct {
 }ui_stats;
 
 //helper defines
-#define StateHasFlag(flag) ((ui_state.flags) & (flag))
-#define StateHasFlags(flags) (((ui_state.flags) & (flags)) == (flags))
-#define StateAddFlag(flag) ui_state.flags |= flag
-#define StateRemoveFlag(flag) ((ui_state.flags) &= (~(flag)))
-#define StateResetFlags ui_state.flags = UISNone
+#define StateHasFlag(flag) ((stateFlags) & (flag))
+#define StateHasFlags(flags) (((stateFlags) & (flags)) == (flags))
+#define StateAddFlag(flag) stateFlags |= flag
+#define StateRemoveFlag(flag) ((stateFlags) &= (~(flag)))
+#define StateResetFlags stateFlags = UISNone
 
 #define WinBegan(win)         HasFlag(win->win_state.flags, UIWSBegan)
 #define WinEnded(win)         HasFlag(win->win_state.flags, UIWSEnded)
@@ -191,19 +194,26 @@ struct {
 #define DrawCmdScreenPos(pos) pos + item->position + curwin->position 
 #define ItemScreenPos item->position + curwin->position 
 
-#define globalIndent *indentStack.last
-#define addGlobalIndent(val) indentStack.add(val)
-#define popGlobalIndent indentStack.pop()
+#define leftIndent *leftIndentStack.last
+#define rightIndent *rightIndentStack.last
 
-#define CanTakeInput      ui_state.input == ISNone
-#define PreventInputs     ui_state.input = ISPreventInputs
-#define AllowInputs       ui_state.input = ISNone;      inputupon = 0;
-#define SetResizingInput  ui_state.input = ISResizing;  inputupon = window;
-#define SetDraggingInput  ui_state.input = ISDragging;  inputupon = window;
-#define SetScrollingInput ui_state.input = ISScrolling; inputupon = window; WinSetBeingScrolled(window);
-#define WinResizing       ui_state.input == ISResizing
-#define WinDragging       ui_state.input == ISDragging
-#define WinScrolling      ui_state.input == ISScrolling
+#define CanTakeInput      inputState == ISNone
+#define PreventInputs     inputState = ISPreventInputs
+#define AllowInputs       inputState = ISNone;      inputupon = 0;
+#define SetResizingInput  inputState = ISResizing;  inputupon = window;
+#define SetDraggingInput  inputState = ISDragging;  inputupon = window;
+#define SetScrollingInput inputState = ISScrolling; inputupon = window; WinSetBeingScrolled(window);
+#define WinResizing       inputState == ISResizing
+#define WinDragging       inputState == ISDragging
+#define WinScrolling      inputState == ISScrolling
+
+#define LeftMousePressed   DeshInput->LMousePressed()
+#define LeftMouseDown      DeshInput->LMouseDown()
+#define LeftMouseReleased  DeshInput->LMouseReleased()
+
+#define RightMousePressed  DeshInput->RMousePressed()
+#define RightMouseDown     DeshInput->RMouseDown()
+#define RightMouseReleased DeshInput->RMouseReleased()
 
 //for breaking on a window's begin or end
 UIWindow* break_window_begin = 0;
@@ -279,7 +289,7 @@ vec2 UI::CalcTextSize(wcstring text) {
 					result.y += style.fontHeight;
 					line_width = 0;
 				}
-				line_width += style.font->max_width;
+				line_width += style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
 				if (line_width > result.x) result.x = line_width;
 				advance(&text, 1);
 			}
@@ -301,7 +311,7 @@ vec2 UI::CalcTextSize(wcstring text) {
 }
 
 inline b32 isItemHovered(UIItem* item) {
-	return Math::PointInRectangle(DeshInput->mousePos, item->position + curwin->position, item->size * style.globalScale);
+	return Math::PointInRectangle(DeshInput->mousePos, item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
 
 inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
@@ -326,25 +336,37 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 	if (StateHasFlag(UISRowBegan)) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
-			row.items.add(itemmade);
+			UIColumn& col = row->columns[row->item_count % row->columns.count];
+			row->item_count++;
 			
-			f32 height = row.height;
+			col.items.add(itemmade);
+			
+			f32 height = row->height;
 			f32 width;
 			//determine if the width is relative to the size of the item or not
-			if (row.columnWidths[(row.items.count - 1) % row.columns].second != false)
-				width = itemmade->size.x * row.columnWidths[(row.items.count - 1) % row.columns].first;
+			if (col.relative_width)
+				width = itemmade->size.x * col.width;
 			else
-				width = row.columnWidths[(row.items.count - 1) % row.columns].first;
+				width = col.width;
 			
-			itemmade->position.y = row.position.y + (height - itemmade->size.y) * itemmade->style.rowItemAlign.y + row.yoffset;
-			itemmade->position.x = row.position.x + row.xoffset + (width - itemmade->size.x) * itemmade->style.rowItemAlign.x;
+			vec2 align;
+			if (col.alignment != vec2::ONE * -1)
+				align = col.alignment;
+			else
+				align = itemmade->style.rowItemAlign;
 			
-			row.xoffset += width;
+			itemmade->position.y = row->position.y + (height - itemmade->size.y) * align.y + row->yoffset;
+			itemmade->position.x = row->position.x + row->xoffset + (width - itemmade->size.x) * align.x;
+			
+			row->xoffset += width;
+			if (col.max_width < itemmade->size.x) { col.reeval_width = true; col.max_width = itemmade->size.x; }
+			if (row->max_height < itemmade->size.y) { row->reeval_height = true; row->max_height = itemmade->size.y; }
+			row->max_height_frame = Max(row->max_height_frame, itemmade->size.y);
 			
 			//if we have finished a row, set xoffset to 0 and offset y for another row
-			if (row.items.count % row.columns == 0) {
-				row.xoffset = 0;
-				row.yoffset += row.height;
+			if (row->item_count % row->columns.count == 0) {
+				row->xoffset = 0;
+				row->yoffset += row->height;
 			}
 			
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
@@ -365,7 +387,7 @@ inline b32 CanScrollY(UIWindow* window = curwin) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
 inline vec2 PositionForNewItem(UIWindow* window = curwin) {
-	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0)
+	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
 	return pos;
@@ -405,7 +427,7 @@ FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   { return (window == c
 FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 
-FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin) { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
+FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
 FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
 FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
 FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) { f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
@@ -432,24 +454,28 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 	vec2 size;
 	if (NextItemSize.x != -1) {
 		if (NextItemSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
+			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-				size.x = MarginedRight() - itemPos.x;
-			else size.x = defaultSize.x;
+			size.x = MarginedRight() - itemPos.x - rightIndent;
+		else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-				size.y = MarginedBottom() - itemPos.y;
-			else size.y = defaultSize.y;
+			size.y = MarginedBottom() - itemPos.y;
+		else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
+		
+		if (NextItemSize.x == -2) size.x = size.y;
+		if (NextItemSize.y == -2) size.y = size.x;
+		
 	}
 	else {
 		if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x;
+			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else size.x = defaultSize.x;
 		
 		if (defaultSize.y == MAX_F32)
@@ -466,7 +492,7 @@ FORCE_INLINE void SetWindowCursor(CursorType curtype) {
 }
 
 FORCE_INLINE vec2 GetTextScale() {
-	return vec2::ONE* style.fontHeight / (f32)style.font->max_height * style.globalScale;
+	return vec2::ONE * style.fontHeight / (f32)style.font->max_height;
 }
 
 
@@ -480,17 +506,17 @@ UIWindow* UI::GetWindow() {
 
 vec2 UI::GetLastItemPos() {
 	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
-	return curwin->items[ui_state.layer].last->position;
+	return curwin->items[currlayer].last->position;
 }
 
 vec2 UI::GetLastItemSize() {
 	//Assert(curwin->items.count, "Attempt to get last item size without creating any items!");
-	return curwin->items[ui_state.layer].last->size;
+	return curwin->items[currlayer].last->size;
 }
 
 vec2 UI::GetLastItemScreenPos() {
 	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
-	return curwin->position + curwin->items[ui_state.layer].last->position;
+	return curwin->position + curwin->items[currlayer].last->position;
 }
 
 vec2 UI::GetWindowRemainingSpace() {
@@ -525,9 +551,9 @@ pair<vec2, vec2> UI::GetScrollBaredArea() { return ScrollBaredArea(); }
 //width of the object
 void UI::SameLine() {
 	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
-	if (curwin->items[ui_state.layer].last) {
-		curwin->cursor.y = curwin->items[ui_state.layer].last->initialCurPos.y;
-		curwin->cursor.x += curwin->items[ui_state.layer].last->initialCurPos.x + curwin->items[ui_state.layer].last->size.x + style.itemSpacing.x;
+	if (curwin->items[currlayer].last) {
+		curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
+		curwin->cursor.x += curwin->items[currlayer].last->initialCurPos.x + curwin->items[currlayer].last->size.x + style.itemSpacing.x;
 	}
 }
 
@@ -563,9 +589,19 @@ void UI::SetNextItemMinSizeIgnored() {
 	StateAddFlag(UISNextItemMinSizeIgnored);
 }
 
+void UI::SetPreventInputs() {
+	inputState = ISExternalPreventInputs;
+}
+
+void UI::SetAllowInputs()   {
+	if(inputState == ISExternalPreventInputs)
+		AllowInputs;
+}
+
+
 //internal last item getter, returns nullptr if there are none
 FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {
-	return curwin->items[ui_state.layer + layeroffset].last;
+	return curwin->items[currlayer + layeroffset].last;
 }
 
 //helper for making any new UIItem, since now we must work with item pointers internally
@@ -585,10 +621,10 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 		return curwin->popOuts.last;
 	}
 	else {
-		curwin->items[ui_state.layer + layeroffset].add(UIItem{ type, curwin->cursor, style });
+		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
 #ifdef DESHI_INTERNAL
-		UI::GetLastItem(layeroffset)->item_layer = ui_state.layer + layeroffset;
-		UI::GetLastItem(layeroffset)->item_idx = curwin->items[ui_state.layer + layeroffset].count;
+		UI::GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
+		UI::GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
 		BreakOnItem;
 #endif
 	}
@@ -622,91 +658,33 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	BreakOnDrawCmdCreation;
 }
 
-//@BeginRow
-//  a row is a collection of columns used to align a number of items nicely
-//  you are required to specify the width of each column when using Row, as it removes the complicated
-//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
-//  so you are required to define a static height upon calling the function
-//
 
-void UI::BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags) {
-	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
-	//TODO(sushi) when we have more row flags, check for mutually exclusive flags here
-	row.columns = columns;
-	row.flags = flags;
-	row.height = rowHeight;
-	row.position = PositionForNewItem();
-	forI(columns) row.columnWidths.add({ 0.f,false });
-	StateAddFlag(UISRowBegan);
-}
-
-void UI::EndRow() {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
-	Assert(row.items.count % row.columns == 0, "Attempted to end a Row without giving the correct amount of items!");
-	curwin->cursor = vec2{ 0, row.position.y  + row.yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
-	row.items.clear();
-	row.columnWidths.clear();
-	row = UIRow{ 0 };
-	StateRemoveFlag(UISRowBegan);
-}
-
-//this function sets up a static column width for a specified column that does not respect the size of the object
-void UI::RowSetupColumnWidth(u32 column, f32 width) {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row.columns && column >= 1, "Attempted to set a column who doesn't exists width!");
-	row.columnWidths[column - 1] = { width, false };
-}
-
-//this function sets up static column widths that do not respect the size of the item at all
-void UI::RowSetupColumnWidths(array<f32> widths){
-	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(widths.count == row.columns, "Passed in the wrong amount of column widths for in progress Row");
-	forI(row.columns)
-		row.columnWidths[i] = { widths[i], false };
-}
-
-//see the function below for what this does
-void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row.columns && column >= 1, "Attempted to set a column who doesn't exists width!");
-	row.columnWidths[column - 1] = { width, true };
-}
-
-//this function sets it so that column widths are relative to the size of the item the cell holds
-//meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
-//1.2 * width of the item
-void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
-	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(widths.count == row.columns, "Passed in the wrong amount of column widths for in progress Row");
-	forI(row.columns)
-		row.columnWidths[i] = { widths[i], true };
-}
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
 MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32* ip = putindices + (u32)offsets.y;
-
+	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-
+	
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	vp[0].pos += norm * thickness / 2;
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
-
+	
 	return vec2(4, 6);
 }
 
@@ -725,7 +703,7 @@ MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, ve
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
@@ -744,17 +722,18 @@ FORCE_INLINE vec2
 MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	MakeLine(vp, ip, vec2::ZERO,  p0, p1, 1, color);
 	MakeLine(vp, ip, vec2(4, 6),  p1, p2, 1, color);
 	MakeLine(vp, ip, vec2(8, 12), p2, p0, 1, color);
-
+	
 	return vec2(12, 18);
-
+	
+	//TODO(sushi) this should be fixed to replace reliance on MakeLine
 	//ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
 	//ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
 	//ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
@@ -776,7 +755,7 @@ MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1,
 	//vp[3].pos = p1 - p1offset; vp[3].uv = { 0,0 }; vp[3].color = col;
 	//vp[4].pos = p2 + p2offset; vp[4].uv = { 0,0 }; vp[4].color = col;
 	//vp[5].pos = p2 - p2offset; vp[5].uv = { 0,0 }; vp[5].color = col;
-
+	
 	//return vec3(6, 18);
 }
 
@@ -785,8 +764,6 @@ MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color
 	drawCmd.counts += MakeTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, thickness, color);
 	drawCmd.type = UIDrawType_Triangle;
 }
-
-
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
@@ -802,7 +779,7 @@ MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 
 	vec2 br = pos + size;
 	vec2 bl = pos + vec2(0, size.y);
 	vec2 tr = pos + vec2(size.x, 0);
-
+	
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
@@ -837,7 +814,7 @@ MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, 
 	vec2 bro = sqt * vec2( M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
 	vec2 tro = sqt * vec2( M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
 	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
-
+	
 	ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
 	ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
 	ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
@@ -872,22 +849,22 @@ MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radiu
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	f32 subdivisions = f32(subdivisions_int);
 	u32 nuindexes = subdivisions * 6;
-
+	
 	//first and last point
 	vec2 last = pos + vec2(radius, 0);
 	vp[0].pos = last + vec2(-thickness / 2, 0);	vp[0].uv={0,0}; vp[0].color=col;
 	vp[1].pos = last + vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
 	ip[0] = offsets.x + 0; ip[1] = offsets.x + 1; ip[3] = offsets.x + 0;
 	ip[nuindexes - 1] = offsets.x + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.x + 1;
-
+	
 	for (int i = 1; i < subdivisions_int; i++) {
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
 		vec2 offset(radius * cosf(a1), radius * sinf(a1));
 		vec2 point = pos + offset;
-
+		
 		u32 idx = i * 2;
 		vp[idx].pos = point - offset.normalized() * thickness / 2; vp[idx].uv = { 0,0 }; vp[idx].color = col;
 		vp[idx + 1].pos = point + offset.normalized() * thickness / 2; vp[idx + 1].uv = { 0,0 }; vp[idx + 1 ].color = col;
@@ -897,7 +874,7 @@ MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radiu
 		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.x + idx + 1;
 		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.x + idx;
 	}
-
+	
 	return vec2(2 * subdivisions, nuindexes);
 }
 
@@ -915,29 +892,29 @@ MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = pos + vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
 	u32 nuindexes = 3 * subdivisions_int;
-
+	
 	ip[1] = offsets.x + 1;
 	for (int i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
-
+	
 	ip[nuindexes - 1] = offsets.x + 1;
-
+	
 	vec2 sum;
 	f32 subdivisions = f32(subdivisions_int);
 	for(u32 i = 1; i < subdivisions_int; i++) {
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
 		vec2 offset(radius * cosf(a1), radius * sinf(a1));
 		vec2 point = pos + offset;
-
+		
 		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;
-
+		
 		u32 ipidx = 3 * i - 1;
 		ip[ipidx] = ip[ipidx + 2] = offsets.x + i + 1;
 	}
-
+	
 	return vec2(subdivisions + 1, nuindexes);
 }
 
@@ -968,7 +945,7 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 po
 				f32 idx = f32(text[i] - 32);
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
-
+				
 				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
 				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + style.font->uvOffset }; vp[0].color = col;
@@ -988,7 +965,7 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 po
 				u32*     ip = putindices + (u32)offsets.y + 6 * i;
 				
 				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
-
+				
 				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
 				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
 				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + style.font->uvOffset }; vp[0].color = col;
@@ -1015,7 +992,7 @@ FORCE_INLINE vec2
 MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 pos, color color, vec2 scale) {
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
-
+	
 	vec2 sum;
 	switch (style.font->type) {
 		//// BDF (and NULL) font rendering ////
@@ -1024,47 +1001,47 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 p
 				u32     col = color.rgba;
 				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
 				u32* ip = putindices + (u32)offsets.y + 6 * i;
-
+				
 				f32 w = style.font->max_width * scale.x;
 				f32 h = style.font->max_height * scale.y;
 				f32 dy = 1.f / (f32)style.font->count;
-
+				
 				f32 idx = f32(text[i] - 32);
 				f32 topoff = idx * dy;
 				f32 botoff = topoff + dy;
-
+				
 				ip[0] = offsets.x + 4 * i; ip[1] = offsets.x + 4 * i + 1; ip[2] = offsets.x + 4 * i + 2;
 				ip[3] = offsets.x + 4 * i; ip[4] = offsets.x + 4 * i + 2; ip[5] = offsets.x + 4 * i + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + style.font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff + style.font->uvOffset }; vp[3].color = col;
-
+				
 				pos.x += style.font->max_width * scale.x;
-
+				
 			}
 		}break;
-			//// TTF font rendering ////
+		//// TTF font rendering ////
 		case FontType_TTF: {
 			forI(text.count) {
 				u32     col = color.rgba;
 				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
 				u32* ip = putindices + (u32)offsets.y + 6 * i;
-
+				
 				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
-
+				
 				ip[0] = offsets.x + 4 * i; ip[1] = offsets.x + 4 * i + 1; ip[2] = offsets.x + 4 * i + 2;
 				ip[3] = offsets.x + 4 * i; ip[4] = offsets.x + 4 * i + 2; ip[5] = offsets.x + 4 * i + 3;
 				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + style.font->uvOffset }; vp[0].color = col;
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + style.font->uvOffset }; vp[3].color = col;
-
+				
 			}break;
-		default: Assert(!"unhandled font type"); break;
+			default: Assert(!"unhandled font type"); break;
 		}
 	}
-
+	
 	return vec2(4, 6) * text.count;
 }
 
@@ -1075,15 +1052,15 @@ MakeText(UIDrawCmd& drawCmd, wcstring text, vec2 pos, color color, vec2 scale) {
 }
 
 FORCE_INLINE vec2 
-MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha) {
+MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0) {
 	Assert(putverts && putindices);
 	if (!alpha) return vec2::ZERO;
-
-
+	
+	
 	u32     col = PackColorU32(255,255,255,255.f * alpha);
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
-
+	
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
@@ -1091,12 +1068,21 @@ MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, 
 	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
 	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
 	
+	if (flipx) {
+		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
+		vp[0].uv = u1; vp[1].uv = u0; vp[2].uv = u3; vp[3].uv = u2;
+	}
+	if (flipy) {
+		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
+		vp[0].uv = u3; vp[1].uv = u2; vp[2].uv = u1; vp[3].uv = u0;
+	}
+	
 	return vec2(4, 6);
 }
 
 FORCE_INLINE void
-MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha) {
-	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha);
+MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha, b32 flipx = 0, b32 flipy = 0) {
+	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha, flipx, flipy);
 	drawCmd.type = UIDrawType_Image;
 	drawCmd.tex = texture;
 }
@@ -1150,6 +1136,209 @@ void DebugText(vec2 pos, char* text, color col = Color_White) {
 	debugCmds.add(dc);
 }
 
+//@BeginRow
+//  a row is a collection of columns used to align a number of items nicely
+//  you are required to specify the width of each column when using Row, as it removes the complicated
+//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
+//  so you are required to define a static height upon calling the function
+//
+
+void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags) {
+	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
+	if (!rows.has(label)) { 
+		rows.add(label); 
+		row = rows.at(label);
+		row->columns.resize(columns);
+		row->flags = flags;
+		row->height = rowHeight;
+		row->label = label;
+		forI(columns) row->columns[i] = { 0.f,false };
+	}
+	
+	
+	row = rows.at(label);
+	row->position = PositionForNewItem();
+	row->yoffset = 0;
+	row->xoffset = 0;
+	StateAddFlag(UISRowBegan);
+}
+
+void UI::EndRow() {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
+	Assert(row->item_count % row->columns.count == 0, "Attempted to end a Row without giving the correct amount of items!");
+	
+	if (HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax)) {
+		if (row->reeval_height) row->height = row->max_height;
+		for (UIColumn& col : row->columns)
+			if (col.reeval_width) col.width = col.max_width;
+		
+		if (row->max_height_frame < row->max_height) row->max_height = row->max_height_frame;
+		
+	}
+	
+	if (HasFlag(row->flags, UIRowFlags_FitWidthOfArea)) {
+		//TODO set up Row fitting relative to given edges
+	}
+	
+	row->max_height_frame = 0;
+	curwin->cursor = vec2{ 0, row->position.y + row->yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+	StateRemoveFlag(UISRowBegan);
+}
+
+//this function sets up a static column width for a specified column that does not respect the size of the object
+void UI::RowSetupColumnWidth(u32 column, f32 width) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
+	Assert(column <= row->columns.count && column >= 1, "Attempted to set a column who doesn't exists width!");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+		row->columns[column] = { width, false };
+}
+
+//this function sets up static column widths that do not respect the size of the item at all
+void UI::RowSetupColumnWidths(array<f32> widths) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+		forI(row->columns.count)
+		row->columns[i] = { widths[i], false };
+}
+
+//see the function below for what this does
+void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
+	Assert(column <= row->columns.count && column >= 1, "Attempted to set a column who doesn't exists width!");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+		row->columns[column] = { width, true };
+}
+
+//this function sets it so that column widths are relative to the size of the item the cell holds
+//meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
+//1.2 * width of the item
+void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
+	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+		forI(row->columns.count)
+		row->columns[i] = { widths[i], true };
+}
+
+void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(ratios.count == row->columns.count);
+	AddFlag(row->flags, UIRowFlags_FitWidthOfArea);
+	row->left_edge = left_edge;
+	row->right_edge = right_edge;
+	f32 ratio_sum = 0;
+	forI(row->columns.count) {
+		ratio_sum += ratios[i];
+		row->columns[i].width = ratios[i];
+	}
+	
+	Assert(1 - ratio_sum < 0.999998888f, "ratios given do not add up to one!");
+}
+
+void UI::RowSetupColumnAlignments(array<vec2> alignments) {
+	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(alignments.count == row->columns.count);
+	forI(row->columns.count)
+		row->columns[i].alignment = alignments[i];
+}
+
+//@Behavoir functions
+//these functions generalize behavoir that are used by several things
+
+enum ButtonType_ {
+	ButtonType_TrueOnHold,
+	ButtonType_TrueOnRelease,
+	ButtonType_TrueOnPressed,
+}; typedef u32 ButtonType;
+
+b32 ButtonBehavoir(ButtonType type) {
+	switch (type) {
+		case ButtonType_TrueOnHold: {
+			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
+			else return false;
+		}break;
+		case ButtonType_TrueOnRelease: {
+			PreventInputs;
+			if (DeshInput->LMouseReleased()) return true;
+			else return false;
+		}break;
+		case ButtonType_TrueOnPressed: {
+			if (DeshInput->LMousePressed()) {
+				PreventInputs;
+				return true;
+			}
+		}break;
+	}
+	return false;
+}
+
+//returns true if buffer was changed
+b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32& cursor) {
+	persist TIMER_START(throttle);
+	
+	auto insert = [&](char c, u32 idx) {
+		memmove((char*)buff + idx + 1, (char*)buff + idx, (buffSize - idx) * u8size);
+		((char*)buff)[idx] = c;
+		charCount++;
+	};
+	
+	auto erase = [&](u32 idx) {
+		if (charCount == 1) memset((char*)buff, 0, buffSize);
+		else memmove((char*)buff + idx, (char*)buff + idx + 1, (charCount-- - idx) * u8size);
+	};
+	
+	auto winsert = [&](wchar c, u32 idx) {
+		memmove((wchar*)buff + idx + 1, (wchar*)buff + idx, (buffSize - idx) * wcharsize);
+		((wchar*)buff)[idx] = c;
+		charCount++;
+	};
+	
+	auto werase = [&](u32 idx) {
+		if (charCount == 1) memset((wchar*)buff, 0, buffSize);
+		else memmove((wchar*)buff + idx, (wchar*)buff + idx + 1, (charCount-- - idx) * wcharsize);
+	};
+	
+	
+	forI(DeshInput->charCount) {
+		if (charCount < buffSize) {
+			if (unicode) winsert((wchar)DeshInput->charIn[i], cursor++);
+			else insert((char)DeshInput->charIn[i], cursor++);
+		}
+	}
+	
+	if (charCount) {
+		if (DeshInput->time_key_held < 500) {
+			if (DeshInput->KeyPressed(Key::BACKSPACE) && cursor != 0) {
+				if (unicode) werase(--cursor);
+				else erase(--cursor);
+				return true;
+			}
+			else if (DeshInput->KeyPressed(Key::DELETE) && cursor != charCount) {
+				if (unicode) werase(cursor);
+				else erase(cursor);
+				return true;
+			}
+		}
+		else if (TIMER_END(throttle) > 25) {
+			if (DeshInput->KeyDown(Key::BACKSPACE) && cursor != 0) {
+				if (unicode) werase(--cursor);
+				else erase(--cursor);
+				return true;
+			}
+			else if (DeshInput->KeyDown(Key::DELETE) && cursor != charCount) {
+				if (unicode) werase(cursor);
+				else erase(cursor);
+				return true;
+			}
+			TIMER_RESET(throttle);
+		}
+	}
+	return false;
+}
+
+
+
 
 //@Primitive Items
 
@@ -1162,7 +1351,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	
 	item.position = pos;
 	item.size = dimen;
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
@@ -1173,7 +1362,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	
 	item.position = pos;
 	item.size = dimen;
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -1185,11 +1374,11 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	UIDrawCmd drawCmd;
 	MakeLine(drawCmd, start, end, thickness, color);
 	AddDrawCmd(&item, drawCmd);
-
+	
 	item.position = vec2::ZERO;// { Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 	item.    size = Max(start, end) - item.position;
 	item.drawCmds.add(drawCmd);
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -1206,7 +1395,7 @@ void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color col
 	item.size = vec2::ONE * radius * 2;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 	
 }
 
@@ -1220,7 +1409,7 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 	item.size = vec2::ONE * radius * 2;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items[ui_state.layer].add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -1313,7 +1502,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							item->size.x = Max(item->size.x, currlinew);
-
+							
 							i = 0;
 							currlinew = 0;
 						}
@@ -1406,18 +1595,18 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 //second function for wrapping, using unicode
 //these can probably be merged into one but i dont feel like doing that rn
 local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {
-
+	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
-
+	
 	if (!nowrap) {
 		wstring text = in;
-
+		
 		//we split wstring by newlines and put them into here 
 		//maybe make this into its own function
 		array<wstring> newlined;
-
+		
 		u32 newline = text.findFirstChar('\n');
 		if (newline != string::npos && newline != text.count - 1) {
 			wstring remainder = text.substr(newline + 1);
@@ -1441,34 +1630,34 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 			newlined.add(text);
 		}
 		vec2 workcur = vec2{ 0,0 };
-
+		
 		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
 		switch (style.font->type) {
-
+			
 			case FontType_TTF: {
 				Font* font = style.font;
-
+				
 				f32 wscale = style.fontHeight / font->aspect_ratio / font->max_width;
-				f32 maxw = MarginedRight() - item->position.x;
+				f32 maxw = MarginedRight() - item->position.x - rightIndent;
 				f32 currlinew = 0;
-
+				
 				for (wstring& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
 						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
-
+						
 						if (currlinew >= maxw) {
-
+							
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
 							wstring nustr = t.substr(0, (lastspc == string::npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
-
+							
 							if (nustr.count == t.count) continue;
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							item->size.x = Max(item->size.x, currlinew);
-
+							
 							i = 0;
 							currlinew = 0;
 						}
@@ -1478,45 +1667,45 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 						TextCall(t.str, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
-
+					
 				}
 			}break;
-
+			
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = u32(floor(MarginedRight() - item->position.x) / style.font->max_width);
-
+				u32 maxChars = u32(floor(MarginedRight() - item->position.x - rightIndent) / style.font->max_width);
+				
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
-
+				
 				//wrap each wstring in newline array
 				for (wstring& t : newlined) {
 					//we need to see if the wstring goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
 						item->size.x = Max(item->size.x, maxChars * (f32)style.font->max_width);
-
+						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
 						wstring nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 						TextCall(nustr.str, workcur, color, item);
-
+						
 						if (nustr.count == t.count) continue;
-
+						
 						t = t.substr(nustr.count);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
-
+						
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
 							splitat = t.findLastChar(' ', maxChars);
 							nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 							TextCall(nustr.str, workcur, color, item);
-
+							
 							if (nustr.count == t.count) break;
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-
+							
 							if (!wcslen(t.str)) break;
 						}
 						//write last bit of text
@@ -1532,26 +1721,26 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 			}break;
 			default:Assert(!"unknown font type?");
 		}
-
+		
 		if (NextItemSize.x != -1)
 			item->size = NextItemSize;
 		//else CalcItemSize(item);
-
+		
 		item->size.y = workcur.y;
-
+		
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
 		//TODO(sushi) make NoWrap also check for newlines
-
+		
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
-
+		
 		NextItemSize = vec2{ -1, 0 };
-
+		
 		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 	}
-
+	
 	AdvanceCursor(item, move_cursor);
 }
 
@@ -1593,7 +1782,7 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	AdvanceCursor(item);
 	
 	b32 active = WinHovered(curwin) && isItemHovered(item);
-
+	
 	{//background
 		UIDrawCmd drawCmd;
 		vec2  bgpos = vec2::ZERO;
@@ -1619,26 +1808,18 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 		drawCmd.useWindowScissor = false;
 		vec2 texpos =
 			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
-				(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		color texcol = style.colors[UIStyleCol_Text];
 		MakeText(drawCmd, cstring{ (char*)text, strlen(text) }, texpos, texcol, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
 	if (active) {
-		//TODO(sushi) do this better
 		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnHold))
-			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
-		else return false;
-		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease)) {
-			PreventInputs;
-			if (DeshInput->LMouseReleased()) return true;
-			else return false;
-		}
-		if (DeshInput->LMousePressed()){ 
-			PreventInputs; 
-			return true;
-		}
+			return ButtonBehavoir(ButtonType_TrueOnHold);
+		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease))
+			return ButtonBehavoir(ButtonType_TrueOnRelease);
+		return ButtonBehavoir(ButtonType_TrueOnPressed);
 	}
 	return false;
 }
@@ -1747,7 +1928,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
-	    vec2 position =
+		vec2 position =
 			vec2((item->size.x - CalcTextSize(prev_val).x) * style.buttonTextAlign.x,
 				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		color col = style.colors[UIStyleCol_Text];
@@ -1758,7 +1939,10 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	
 	//we also check if the combo's button is visible, if not we dont draw the popout
 	if (open && item->position.y < curwin->height) {
-		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder);
+		PushVar(UIStyleVar_WindowPadding, vec2(0, 0));
+		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
+		SetNextWindowSize(vec2(item->size.x, style.fontHeight * style.selectableHeightRelToFont * 8));
+		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_NoBorder);
 		StateAddFlag(UISComboBegan);
 		return true;
 	}
@@ -1775,6 +1959,7 @@ void UI::EndCombo() {
 	Assert(StateHasFlag(UISComboBegan), "Attempted to end a combo without calling BeginCombo first, or EndCombo was called for a combo that was not open!");
 	StateRemoveFlag(UISComboBegan);
 	EndPopOut();
+	PopVar(2);
 }
 
 //@Selectable
@@ -1783,7 +1968,14 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	
 	UIItem* item = BeginItem(UIItemType_Selectable, 0);
 	item->position = pos;
-	item->size = DecideItemSize(vec2(UI::CalcTextSize(label).x, style.fontHeight * style.selectableHeightRelToFont), item->position);
+	
+	vec2 defsize;
+	if (StateHasFlag(UISComboBegan)) {
+		defsize = vec2(MAX_F32, style.fontHeight * style.selectableHeightRelToFont);
+	}
+	else defsize = vec2(UI::CalcTextSize(label).x, style.fontHeight * style.selectableHeightRelToFont);
+	
+	item->size = DecideItemSize(defsize, item->position);
 	
 	b32 clicked = 0;
 	
@@ -1860,7 +2052,10 @@ b32 UI::BeginHeader(const char* label) {
 		item->size.x - bgpos.x, 
 		item->size.y };
 	
-	if (*open) indentStack.add(style.indentAmount + globalIndent);
+	if (*open) { 
+		PushLeftIndent(style.indentAmount + leftIndent); 
+		PushRightIndent(style.indentAmount + rightIndent);
+	}
 	
 	{//background
 		UIDrawCmd drawCmd;
@@ -1908,7 +2103,131 @@ b32 UI::BeginHeader(const char* label) {
 }
 
 void UI::EndHeader() {
-	indentStack.pop();
+	PopLeftIndent();
+	PopRightIndent();
+}
+
+
+
+//@BeginTabBar
+
+b32 UI::BeginTabBar(const char* label, UITabBarFlags flags){
+	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
+	StateAddFlag(UISTabBarBegan);
+	if (!tabBars.has(label)) tabBars.add(label);
+	tabBar = tabBars.at(label);
+	tabBar->flags = flags;
+	
+	UIItem* item = BeginItem(UIItemType_TabBar);
+	item->position = PositionForNewItem();
+	
+	f32 tabBarLineHeight = 3;
+	
+	item->size = DecideItemSize(vec2(MAX_F32, style.tabHeightRelToFont * style.fontHeight + tabBarLineHeight), item->position);
+	
+	tabBar->tabHeight = style.tabHeightRelToFont * style.fontHeight;
+	tabBar->item = item;
+	
+	AdvanceCursor(item);
+	
+	{//bar
+		UIDrawCmd drawCmd;
+		vec2  position = vec2(0, tabBar->tabHeight);
+		vec2  dimensions = vec2(item->size.x, tabBarLineHeight);
+		color col = style.colors[UIStyleCol_TabBar];
+		MakeFilledRect(drawCmd, position, dimensions, col);
+		AddDrawCmd(item, drawCmd);
+	}
+	
+	return true;
+}
+
+b32 UI::BeginTab(const char* label){
+	Assert(StateHasFlag(UISTabBarBegan), "attempt to begin a tab without beginning a tab bar first");
+	
+	UITab* tab = 0;
+	if (!tabBar->tabs.has(label)) { 
+		tabBar->tabs.add(label);
+		tab = tabBar->tabs.at(label);
+		tab->height = style.tabHeightRelToFont * style.fontHeight;
+		tab->width = CalcTextSize(label).x * 1.2;
+	}
+	tab = tabBar->tabs.at(label);
+	//UITab& tab = tabBar->tabs[label];
+	
+	UIItem* item = BeginItem(UIItemType_Tab);
+	
+	item->position = vec2(tabBar->item->position.x + tabBar->xoffset, tabBar->item->position.y);
+	item->size = vec2(tab->width, tab->height);
+	
+	tab->item = item;
+	
+	b32 selected = tab == tabBar->tabs.atIdx(tabBar->selected);
+	
+	b32 active = isItemActive(item) || selected;
+	
+	tabBar->xoffset += tab->width + style.tabSpacing;
+	
+	{//background
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[(active ? (LeftMousePressed ? UIStyleCol_TabBgActive : UIStyleCol_TabBgHovered) : UIStyleCol_TabBg) ];
+		MakeFilledRect(drawCmd, position, dimensions, col);
+		AddDrawCmd(item, drawCmd);
+	}
+	
+	{//text
+		UIDrawCmd drawCmd;
+		drawCmd.scissorOffset = vec2::ZERO;
+		drawCmd.scissorExtent = item->size;
+		drawCmd.useWindowScissor = false;
+		vec2 position =
+			vec2((item->size.x - UI::CalcTextSize(label).x) * style.tabTextAlign.x,
+				 ((style.fontHeight * style.tabHeightRelToFont - style.fontHeight) * style.tabTextAlign.y));
+		color col = style.colors[UIStyleCol_Text];
+		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
+		AddDrawCmd(item, drawCmd);
+	}
+	
+	{//border
+		UIDrawCmd drawCmd;
+		vec2  position = vec2::ZERO;
+		vec2  dimensions = item->size;
+		color col = style.colors[UIStyleCol_TabBorder];
+		MakeRect(drawCmd, position, dimensions, 1, col);
+		AddDrawCmd(item, drawCmd);
+	}
+	
+	if (selected) {
+		StateAddFlag(UISTabBegan);
+		if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PushLeftIndent(style.indentAmount + leftIndent);
+		if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PushRightIndent(style.indentAmount + rightIndent);
+	}
+	
+	return selected;
+}
+
+void UI::EndTab() {
+	Assert(StateHasFlag(UISTabBegan), "attempt to end a tab without beginning one first");
+	StateRemoveFlag(UISTabBegan);
+	if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PopLeftIndent();
+	if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PopRightIndent();
+}
+
+void UI::EndTabBar(){
+	Assert(!StateHasFlag(UISTabBegan), "attempt to end a tab bar without ending a tab");
+	Assert(StateHasFlag(UISTabBarBegan), "attempt to end a tab bar without beginning one first");
+	StateRemoveFlag(UISTabBarBegan);
+	
+	tabBar->xoffset = 0;
+	forI(tabBar->tabs.count) {
+		UIItem* item = tabBar->tabs.atIdx(i)->item;
+		if (LeftMousePressed && MouseInWinArea(item->position, item->size)) {
+			tabBar->selected = i;
+		}
+	}
+	
 }
 
 
@@ -1986,17 +2305,20 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Image);
 	
 	item->position = pos;
-	item->size = (NextItemSize.x == -1 ? vec2((f32)image->width, (f32)image->height) : NextItemSize);
-	NextItemSize = vec2(-1, 1);
+	item->size = DecideItemSize(vec2((f32)image->width, (f32)image->height), item->position);
 	
 	AdvanceCursor(item);
+	
+	b32 flipx = HasFlag(flags, UIImageFlags_FlipX);
+	b32 flipy = HasFlag(flags, UIImageFlags_FlipY);
+	
 	
 	//TODO(sushi) image borders
 	{//image
 		UIDrawCmd drawCmd;
 		vec2 position = vec2::ZERO;
 		vec2 dimensions = item->size;
-		MakeTexture(drawCmd, image, position, dimensions, alpha);
+		MakeTexture(drawCmd, image, position, dimensions, alpha, flipx, flipy);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2028,24 +2350,23 @@ void UI::Separator(f32 height) {
 
 
 //final input text
-b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
+b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
 	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
 	
-	upt charCount = strlen(buff);
+	upt charCount = (unicode ? wcslen((wchar*)buff) : strlen((char*)buff));
 	
 	item->position = position;
 	
 	vec2 dim;
 	if (flags & UIInputTextFlags_FitSizeToText) {
-		dim = UI::CalcTextSize(string(buff));
+		if(unicode) dim = UI::CalcTextSize((wchar*)buff);
+		else dim = UI::CalcTextSize((char*)buff);
 	}
 	else {
 		dim = DecideItemSize(vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
-
-
 	
 	item->size = dim;
 	
@@ -2082,10 +2403,10 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	//data for callback function
 	UIInputTextCallbackData data;
 	data.flags = flags;
-	data.buffer = buff;
+	data.buffer = (char*)buff;
+	data.wbuffer = (wchar*)buff;
 	data.selectionStart = state->selectStart;
 	data.selectionEnd = state->selectEnd;
-	
 	b32 bufferChanged = 0;
 	if (active) {
 		if (DeshInput->KeyPressed(Key::RIGHT) && state->cursor < charCount) state->cursor++;
@@ -2105,129 +2426,10 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 			callback(&data);
 		}
 		
-		//gather text into buffer from inputs
-		//make this only loop when a key has been pressed eventually
 		
-		persist TIMER_START(hold);
-		persist TIMER_START(throttle);
-		
-		//TODO(sushi) make this not count modifier keys
-		if (DeshInput->AnyKeyPressed()) {
-			TIMER_RESET(hold);
-		}
-		
-		auto insert = [&](char c, u32 idx) {
-			memmove(buff + idx + 1, buff + idx, (buffSize - idx) * CHAR_SIZE);
-			buff[idx] = c;
-		};
-		
-		auto erase = [&](u32 idx) {
-			if (charCount == 1) memset(buff, 0, buffSize);
-			else                memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
-			
-		};
-		
-		char charPlaced;
-		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
-			//TODO(sushi) handle Numerical flag better
-			if (i >= Key::A && i <= Key::Z && !HasFlag(flags, UIInputTextFlags_Numerical)) {
-				if (DeshInput->capsLock || DeshInput->ShiftDown())
-					insert(toPlace, ins);
-				else
-					insert(toPlace + 32, ins);
-			}
-			else if (i >= Key::K0 && i <= Key::K9) {
-				if (DeshInput->ShiftDown() && !HasFlag(flags, UIInputTextFlags_Numerical)) {
-					switch (i) {
-						case Key::K0: data.character = ')'; insert(')', ins); break;
-						case Key::K1: data.character = '!'; insert('!', ins); break;
-						case Key::K2: data.character = '@'; insert('@', ins); break;
-						case Key::K3: data.character = '#'; insert('#', ins); break;
-						case Key::K4: data.character = '$'; insert('$', ins); break;
-						case Key::K5: data.character = '%'; insert('%', ins); break;
-						case Key::K6: data.character = '^'; insert('^', ins); break;
-						case Key::K7: data.character = '&'; insert('&', ins); break;
-						case Key::K8: data.character = '*'; insert('*', ins); break;
-						case Key::K9: data.character = '('; insert('(', ins); break;
-					}
-				}
-				else {
-					data.character = KeyStringsLiteral[i];
-					insert(KeyStringsLiteral[i], ins);
-				}
-			}
-			else {
-				if (DeshInput->ShiftDown() && !HasFlag(flags, UIInputTextFlags_Numerical)) {
-					switch (i) {
-						case Key::SEMICOLON:  data.character = ':';  insert(':', ins);  break;
-						case Key::APOSTROPHE: data.character = '"';  insert('"', ins);  break;
-						case Key::LBRACKET:   data.character = '{';  insert('{', ins);  break;
-						case Key::RBRACKET:   data.character = '}';  insert('}', ins);  break;
-						case Key::BACKSLASH:  data.character = '\\'; insert('\\', ins); break;
-						case Key::COMMA:      data.character = '<';  insert('<', ins);  break;
-						case Key::PERIOD:     data.character = '>';  insert('>', ins);  break;
-						case Key::SLASH:      data.character = '?';  insert('?', ins);  break;
-						case Key::MINUS:      data.character = '_';  insert('_', ins);  break;
-						case Key::EQUALS:     data.character = '+';  insert('+', ins);  break;
-						case Key::TILDE:      data.character = '~';  insert('~', ins);  break;
-					}
-				}
-				else {
-					if (HasFlag(flags, UIInputTextFlags_Numerical) && KeyStringsLiteral[i] == '.') {
-						data.character = '.';
-						insert('.', ins);
-					}
-					else if(!HasFlag(flags, UIInputTextFlags_Numerical)) {
-						data.character = KeyStringsLiteral[i];
-						insert(KeyStringsLiteral[i], ins);
-					}
-				}
-			}
+		if (TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
+			bufferChanged = 1;
 			TIMER_RESET(state->timeSinceTyped);
-			if (flags & UIInputTextFlags_CallbackAlways) {
-				data.eventFlag = UIInputTextFlags_CallbackAlways;
-				callback(&data);
-			}
-		};
-		
-		if (DeshInput->anyKeyDown) {
-			if (TIMER_END(hold) < 1000) {
-				if (DeshInput->KeyPressed(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
-					erase(--state->cursor);
-					bufferChanged = 1;
-				}
-				else {
-					for (int i = 0; i < Key::Key_COUNT; i++) {
-						char toPlace = KeyStringsLiteral[i];
-						if (DeshInput->KeyPressed(i) && charCount < buffSize && toPlace != '\0') {
-							u32 ins = state->cursor++;
-							placeKey(i, ins, toPlace);
-							bufferChanged = 1;
-							break;
-						}
-					}
-				}
-			}
-			else {
-				if (TIMER_END(throttle) > 50) {
-					if (DeshInput->KeyDown(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
-						erase(--state->cursor);
-						bufferChanged = 1;
-					}
-					else {
-						for (int i = 0; i < Key::Key_COUNT; i++) {
-							char toPlace = KeyStringsLiteral[i];
-							if (DeshInput->KeyDown(i) && charCount < buffSize && toPlace != '\0') {
-								u32 ins = state->cursor++;
-								placeKey(i, ins, toPlace);
-								bufferChanged = 1;
-								break;
-							}
-						}
-					}
-					TIMER_RESET(throttle);
-				}
-			}
 		}
 	}
 	
@@ -2240,6 +2442,8 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 		AddDrawCmd(item, drawCmd);
 	}
 	
+	
+	
 	vec2 textStart =
 		vec2((dim.x - charCount * style.font->max_width) * style.inputTextTextAlign.x + 3, //TODO(sushi) make an input text offset style var
 			 (style.fontHeight * style.inputTextHeightRelToFont - style.fontHeight) * style.inputTextTextAlign.y);
@@ -2247,15 +2451,29 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	{//text
 		UIDrawCmd drawCmd;
 		vec2 position = textStart;
-		if (preview && !buff[0]) {
-			color col = style.colors[UIStyleCol_Text];
-			col.a = (u8)floor(0.5f * 255);
-			MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
-			
+		if (unicode) {
+			if (preview && !((wchar*)buff)[0]) {
+				color col = style.colors[UIStyleCol_Text];
+				col.a = (u8)floor(0.5f * 255);
+				MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
+				
+			}
+			else {
+				color col = style.colors[UIStyleCol_Text];
+				MakeText(drawCmd, wcstring{ (wchar*)buff, wcslen((wchar*)buff) }, position, col, GetTextScale());
+			}
 		}
 		else {
-			color col = style.colors[UIStyleCol_Text];
-			MakeText(drawCmd, cstring{ (char*)buff, strlen(buff) }, position, col, GetTextScale());
+			if (preview && !((char*)buff)[0]) {
+				color col = style.colors[UIStyleCol_Text];
+				col.a = (u8)floor(0.5f * 255);
+				MakeText(drawCmd, cstring{ (char*)preview, strlen(preview) }, position, col, GetTextScale());
+				
+			}
+			else {
+				color col = style.colors[UIStyleCol_Text];
+				MakeText(drawCmd, cstring{ (char*)buff, strlen((char*)buff) }, position, col, GetTextScale());
+			}
 		}
 		
 		AddDrawCmd(item, drawCmd);
@@ -2271,10 +2489,17 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 	}
 	
 	//TODO(sushi, Ui) impl different text cursors
+	
+	f32 lineoffset;
+	if (unicode) lineoffset = UI::CalcTextSize(wcstring{ (wchar*)buff, state->cursor }).x;
+	else lineoffset = UI::CalcTextSize(cstring{ (char*)buff, state->cursor }).x;
+	
+	
+	
 	if (active) {//cursor
 		UIDrawCmd drawCmd;
-		vec2  start = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
-		vec2  end = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
+		vec2  start = textStart +  vec2(lineoffset, 0);//vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
+		vec2  end = textStart + vec2(lineoffset, style.fontHeight - 1);
 		color col = 
 			color(255, 255, 255, 
 				  u8(255 * (cos(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 
@@ -2294,38 +2519,38 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, co
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1);
+	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, nullptr, flags, 1);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, callback, flags, 1);
-}
-
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
-	if (InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1)) {
-		getInputTextState = inputTexts.at(label);
-		return true;
-	}
-	getInputTextState = inputTexts.at(label);
-	return false;
+	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, callback, flags, 1);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0);
+	return InputTextCall(label, buffer, buffSize, 0, pos, preview, nullptr, flags, 0);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, preview, callback, flags, 0);
+	return InputTextCall(label, buffer, buffSize, 0, pos, preview, callback, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
-	if (InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0)) {
-		getInputTextState = inputTexts.at(label);
-		return true;
-	}
-	getInputTextState = inputTexts.at(label);
-	return false;
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, nullptr, flags, 1);
 }
+
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, callback, flags, 1);
+}
+
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, pos, preview, nullptr, flags, 0);
+}
+
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, 1, pos, preview, callback, flags, 0);
+}
+
+
 
 //this doesnt need to be an enum at this point,
 //but im making it one incase this function becomes more complicated in the future
@@ -2395,13 +2620,22 @@ void UI::PushScale(vec2 scale) {
 
 void UI::PushLayer(u32 layer) {
 	Assert(layer < UI_WINDOW_ITEM_LAYERS, "last layer is currently reserved by UI, increase the amount of layers in ui.h if you need more");
-	layerStack.add(ui_state.layer);
-	ui_state.layer = layer;
+	layerStack.add(currlayer);
+	currlayer = layer;
 }
 
 void UI::PushWindowLayer(u32 layer) {
 	
 }
+
+void UI::PushLeftIndent(f32 indent)	{
+	leftIndentStack.add(indent);
+}
+
+void UI::PushRightIndent(f32 indent){
+	rightIndentStack.add(indent);
+}
+
 
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
@@ -2445,10 +2679,23 @@ void UI::PopScale(u32 count) {
 
 void UI::PopLayer(u32 count) {
 	while (count-- > 0) {
-		ui_state.layer = *layerStack.last;
+		currlayer = *layerStack.last;
 		layerStack.pop();
 	}
 }
+
+void UI::PopLeftIndent(u32 count) {
+	while (count-- > 0) {
+		leftIndentStack.pop();
+	}
+}
+
+void UI::PopRightIndent(u32 count){
+	while (count-- > 0) {
+		rightIndentStack.pop();
+	}
+}
+
 
 
 //@Windows
@@ -2539,6 +2786,7 @@ void CheckForHoveredWindow(UIWindow* window = 0) {
 				WinUnSetHovered(w);
 			}
 		}
+		if (hovered_found) break;
 	}
 }
 
@@ -2584,13 +2832,18 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 		constexpr f32 boundrysize = 2;
 		
 		if (!mdown) {
-			if(MouseInArea(window->position.yAdd(-boundrysize), vec2(window->width,boundrysize + style.windowBorderSize)))
+			f32 borderscaledx = style.windowBorderSize * style.globalScale.x;
+			f32 borderscaledy = style.windowBorderSize * style.globalScale.y;
+			f32 widthscaled = window->width * style.globalScale.x;
+			f32 heightscaled = window->height * style.globalScale.y;
+			
+			if(MouseInArea(window->position.yAdd(-boundrysize), vec2(widthscaled,boundrysize + borderscaledy)))
 				activeSide = wTop;
-			else if (MouseInArea(window->position.yAdd(window->height - style.windowBorderSize), vec2(window->width, boundrysize + style.windowBorderSize)))
+			else if (MouseInArea(window->position.yAdd(heightscaled - borderscaledy), vec2(widthscaled, boundrysize + borderscaledy)))
 				activeSide = wBottom;
-			else if (MouseInArea(window->position, vec2(boundrysize + style.windowBorderSize, window->height)))
+			else if (MouseInArea(window->position, vec2(boundrysize + borderscaledx, heightscaled)))
 				activeSide = wLeft;
-			else if (MouseInArea(window->position.xAdd(window->width - style.windowBorderSize), vec2(boundrysize + style.windowBorderSize, window->height)))
+			else if (MouseInArea(window->position.xAdd(widthscaled - borderscaledx), vec2(boundrysize + borderscaledx, heightscaled)))
 				activeSide = wRight;
 			else activeSide = wNone;
 		}
@@ -2657,13 +2910,8 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 		CheckWindowForScrollingInputs(window->parent, 1);
 		return;
 	}
-	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollUp()) {
-		window->scy -= style.scrollAmount.y * abs(DeshInput->scrollY);
-		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
-		return;
-	}
-	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild) && DeshInput->ScrollDown()) {
-		window->scy += style.scrollAmount.y * abs(DeshInput->scrollY);
+	if (((WinHovered(window) && !WinChildHovered(window)) || fromChild)) {
+		window->scy -= style.scrollAmount.y * DeshInput->scrollY;
 		window->scy = Clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
@@ -2835,12 +3083,12 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				item->size = parent->children[name]->dimensions;
 				if (NextWinSize.x != -1 || NextWinSize.y != 0) {
 					if (NextWinSize.x == MAX_F32)
-						item->size.x = MarginedRight() - item->position.x;
+						item->size.x = MarginedRight() - item->position.x - rightIndent;
 					else if (NextWinSize.x == -1) {}
 					else item->size.x = NextWinSize.x;
 					
 					if (NextWinSize.y == MAX_F32)
-						item->size.y = MarginedBottom() - item->position.x;
+						item->size.y = MarginedBottom() - item->position.y;
 					else if (NextWinSize.y == -1) {}
 					else item->size.y = NextWinSize.y;
 				}
@@ -2871,7 +3119,8 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				parent->children.add(name, curwin);
 			}
 			
-			indentStack.add(0);
+			UI::PushLeftIndent(0);
+			UI::PushRightIndent(0);
 			item->child = curwin;
 			curwin->parent = parent;
 			curwin->type = UIWindowType_Child;
@@ -2922,7 +3171,8 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				parent->children.add(name, curwin);
 			}
 			
-			indentStack.add(0);
+			UI::PushLeftIndent(0);
+			UI::PushRightIndent(0);
 			item->child = curwin;
 			curwin->parent = parent;
 			curwin->type = UIWindowType_PopOut;
@@ -2951,9 +3201,9 @@ void UI::BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags f
 }
 
 void UI::BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
-	//ui_state.layer = Min(++ui_state.layer, (u32)UI_LAYERS);
+	//currlayer = Min(++currlayer, (u32)UI_LAYERS);
 	BeginCall(name, pos, dimensions, flags, UIWindowType_PopOut);
-	//ui_state.layer--; //NOTE this will break if we are already on last layer fix it
+	//currlayer--; //NOTE this will break if we are already on last layer fix it
 }
 
 //@CalcWindowMinSize
@@ -3198,7 +3448,8 @@ void UI::EndChild() {
 	curwin->visibleRegionSize = ClampMin(Min(parent->visibleRegionStart + parent->visibleRegionSize - scrollBarAdjust, curwin->position + curwin->dimensions) - curwin->visibleRegionStart, vec2::ZERO);
 	
 	EndCall();
-	indentStack.pop();	
+	PopLeftIndent();
+	PopRightIndent();
 }
 
 void UI::EndPopOut() {
@@ -3206,7 +3457,8 @@ void UI::EndPopOut() {
 	curwin->visibleRegionSize = curwin->dimensions;
 	
 	EndCall();
-	indentStack.pop();
+	PopLeftIndent();
+	PopRightIndent();
 }
 
 void UI::SetNextWindowPos(vec2 pos) {
@@ -3366,7 +3618,7 @@ inline void MetricsDebugItem() {
 			PushColor(UIStyleCol_WindowBg, color(30, 30, 30));
 			BeginChild("MetricsDebugItemPopOutDrawCmdChild", vec2(0,0), UIWindowFlags_NoBorder | UIWindowFlags_FitAllElements);
 			
-			BeginRow(3, style.buttonHeightRelToFont* style.fontHeight);
+			BeginRow("MetricsItemAlignment", 3, style.buttonHeightRelToFont* style.fontHeight);
 			RowSetupRelativeColumnWidths({ 1.1f,1.1f,1.1f });
 			for (UIDrawCmd& dc : iteml.drawCmds) {
 				Text(toStr(UIDrawTypeStrs[dc.type]).str, UITextFlags_NoWrap);
@@ -3478,14 +3730,14 @@ inline void MetricsBreaking() {
 					for (UIDrawCmd& dc : item.drawCmds) {
 						for (u32 tri = 0; tri < dc.counts.y; tri += 3) {
 							vec2 
-							p0 = ipos + dc.vertices[dc.indices[tri]].pos,
+								p0 = ipos + dc.vertices[dc.indices[tri]].pos,
 							p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
 							p2 = ipos + dc.vertices[dc.indices[tri+2]].pos;
 							DebugTriangle(p0, p1, p2, color(255, 0,0, 70));
 							if (Math::PointInTriangle(DeshInput->mousePos, p0, p1, p2)) {
 								DebugTriangle(p0, p1, p2);
 								if (DeshInput->LMousePressed()) {
-								
+									
 								}
 							}
 						}
@@ -3629,7 +3881,7 @@ UIWindow* DisplayMetrics() {
 		persist f32 fw = CalcTextSize(slomotext).x + 5;
 		
 		PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
-		BeginRow(3, 11);
+		BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnWidths({ fw, sw, 55 });
 		
 		Text(slomotext.str);
@@ -3654,19 +3906,21 @@ UIWindow* DisplayMetrics() {
 		const char* str1 = "global hovered";
 		f32 fw = CalcTextSize(str1).x * 1.2;
 		
-		BeginRow(2, style.fontHeight * 1.2);
+		BeginRow("Metrics_21241",2, style.fontHeight * 1.2);
 		RowSetupColumnWidths({ fw, 96 });
 		
 		
 		
 		Text(str1); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
 		Text("input state: ");
-		switch (ui_state.input) {
-			case ISNone:          Text("None");           break;
-			case ISScrolling:     Text("Scrolling");      break;
-			case ISResizing:      Text("Resizing");       break;
-			case ISDragging:      Text("Dragging");       break;
-			case ISPreventInputs: Text("Prevent Inputs"); break;
+		switch (inputState) {
+			case ISNone:                  Text("None");                    break;
+			case ISScrolling:             Text("Scrolling");               break;
+			case ISResizing:              Text("Resizing");                break;
+			case ISDragging:              Text("Dragging");                break;
+			case ISPreventInputs:         Text("Prevent Inputs");          break;
+			case ISExternalPreventInputs: Text("External Prevent Inputs"); break;
+			
 		}
 		Text("input upon: "); Text((inputupon ? inputupon->name.str : "none"));
 		
@@ -3681,21 +3935,27 @@ UIWindow* DisplayMetrics() {
 		Checkbox("show children", &showChildren);
 		
 		SetNextWindowSize(vec2(MAX_F32, 300));
-		BeginChild("METRICSWindows", vec2::ZERO);
+		BeginChild("METRICSWindows", vec2::ZERO, UIWindowFlags_NoScrollX);
 		
 		PushVar(UIStyleVar_SelectableTextAlign, vec2(0, 0.5));
 		for (UIWindow* window : windows) {
 			if (Selectable(toStr(window->name, "; hovered: ", WinHovered(window)).str, window == debugee)) {
 				debugee = window;
 			}
+			if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+				DebugRect(window->position, window->dimensions * window->style.globalScale);
+			}
 			if (showChildren) {
-				addGlobalIndent(13);
+				PushLeftIndent(13);
 				for (UIWindow* child : window->children) {
 					if (Selectable(toStr(child->name, "; hovered: ", WinHovered(child)).str, child == debugee)) {
 						debugee = child;
 					}
+					if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+						DebugRect(child->position, child->dimensions * child->style.globalScale);
+					}
 				}
-				popGlobalIndent;
+				PopLeftIndent();
 			}
 		}
 		PopVar();
@@ -3719,7 +3979,7 @@ UIWindow* DisplayMetrics() {
 	Separator(20);
 	
 	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5f));
-	BeginRow(2, style.fontHeight * 1.5f);
+	BeginRow("Metrics_345135613", 2, style.fontHeight * 1.5f);
 	RowSetupRelativeColumnWidths({ 1.2f, 1 });
 	
 	persist u32 selected = 0;
@@ -3744,7 +4004,7 @@ UIWindow* DisplayMetrics() {
 		}
 		
 		if (BeginHeader("Window Vars")) {
-			BeginRow(2, style.fontHeight * 1.2);
+			BeginRow("MetricsWindowVarAlignment", 2, style.fontHeight * 1.2);
 			RowSetupColumnWidths({ CalcTextSize("Max Item Width: ").x , 10 });
 			
 			Text("Render Time: ");    Text(toStr(debugee->render_time, "ms").str);
@@ -3768,18 +4028,30 @@ UIWindow* DisplayMetrics() {
 						u32 count = 0;
 						for (UIItem& item : debugee->items[i]) {
 							if (BeginHeader(toStr(UIItemTypeStrs[item.type], " ", count).str)) {
+								persist f32 frs = CalcTextSize("FilledRectangle").x;
+								BeginRow("121255552525", 3, style.buttonHeightRelToFont * style.fontHeight);
+								RowSetupColumnWidths({ frs, 50, 40 });
+								
 								for (UIDrawCmd& dc : item.drawCmds) {
 									Text(UIDrawTypeStrs[dc.type]);
 									if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
 										for (int tri = 0; tri < dc.counts.y; tri += 3) {
 											vec2
-											p0 = item.position + debugee->position + dc.vertices[dc.indices[tri]].pos,
-											p1 = item.position + debugee->position + dc.vertices[dc.indices[tri + 1]].pos,
-											p2 = item.position + debugee->position + dc.vertices[dc.indices[tri + 2]].pos;
+												p0 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri]].pos,
+											p1 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 1]].pos,
+											p2 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 2]].pos;
 											DebugTriangle(p0, p1, p2);
 										}
 									}
+									if (Button("Create")) {
+										break_drawCmd_create_hash = dc.hash;
+									}
+									if (Button("Draw")) {
+										break_drawCmd_draw_hash = dc.hash;
+									}
+									
 								}
+								EndRow();
 								EndHeader();
 							}
 							count++;
@@ -3886,37 +4158,40 @@ UIWindow* DisplayMetrics() {
 			}
 			
 		}
-
+		
 		if (showDrawCmdTriangles) {
 			for (UIItem& item : debugee->preItems) {
+				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for (UIDrawCmd& dc : item.drawCmds) {
 					for (int i = 0; i < dc.counts.y; i += 3) {
 						DebugTriangle(
-							dc.vertices[dc.indices[i]].pos,
-							dc.vertices[dc.indices[i + 1]].pos,
-							dc.vertices[dc.indices[i + 2]].pos, Color_Green);
+									  ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
+									  ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
+									  ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale, Color_Green);
 					}
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
+					vec2 ipos = debugee->position + item.position * item.style.globalScale;
 					for (UIDrawCmd& dc : item.drawCmds) {
 						for (int i = 0; i < dc.counts.y; i += 3) {
 							DebugTriangle(
-								dc.vertices[dc.indices[i]].pos,
-								dc.vertices[dc.indices[i + 1]].pos,
-								dc.vertices[dc.indices[i + 2]].pos);
+										  ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
+										  ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
+										  ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale);
 						}
 					}
 				}
 			}
 			for (UIItem& item : debugee->postItems) {
+				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for (UIDrawCmd& dc : item.drawCmds) {
 					for (int i = 0; i < dc.counts.y; i += 3) {
 						DebugTriangle(
-							dc.vertices[dc.indices[i]].pos,
-							dc.vertices[dc.indices[i + 1]].pos,
-							dc.vertices[dc.indices[i + 2]].pos, Color_Blue);
+									  ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
+									  ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
+									  ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale, Color_Blue);
 					}
 				}
 			}
@@ -4049,7 +4324,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		BeginRow(3, 15);
+		BeginRow("Demo_35135", 3, 15);
 		RowSetupRelativeColumnWidths({ 1,1,1 });
 		Text("some text");
 		Button("a button");
@@ -4069,7 +4344,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		BeginRow(2, 30);
+		BeginRow("Demo_3541351", 2, 30);
 		RowSetupColumnWidths({ 100, 100 });
 		Text("example of"); Text("aligning text");
 		Text("evenly over"); Text("multiple rows");
@@ -4105,7 +4380,7 @@ void UI::DemoWindow() {
 		
 		switch (selected) {
 			case 0: {
-				BeginRow(3, 16);
+				BeginRow("Demo_1351351", 3, 16);
 				RowSetupColumnWidths({ scw1, scw2, scw3 });
 				Text("text");
 				Text("long text");
@@ -4117,7 +4392,7 @@ void UI::DemoWindow() {
 				Slider("demo_scw3", &scw3, 0, 90); SameLine(); Text(toStr(scw3).str);
 			}break;
 			case 1: {
-				BeginRow(3, 16);
+				BeginRow("Demo_66462", 3, 16);
 				RowSetupRelativeColumnWidths({ dcw1, dcw2, dcw3 });
 				Text("text");
 				Text("long text");
@@ -4247,6 +4522,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBg,     Color_VeryDarkCyan);
 	PushColor(UIStyleCol_InputTextBg,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBg, Color_VeryDarkCyan);
+	PushColor(UIStyleCol_TabBg,        Color_VeryDarkCyan);
 	
 	//active backgrounds
 	PushColor(UIStyleCol_ScrollBarBgActive,  Color_VeryDarkCyan);
@@ -4256,6 +4532,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBgActive,     Color_Cyan);
 	PushColor(UIStyleCol_InputTextBgActive,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBgActive, Color_Cyan);
+	PushColor(UIStyleCol_TabBgActive,        Color_Cyan);
 	
 	//hovered backgrounds
 	PushColor(UIStyleCol_ScrollBarBgHovered,  Color_VeryDarkCyan);
@@ -4265,13 +4542,15 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBgHovered,     Color_DarkCyan);
 	PushColor(UIStyleCol_InputTextBgHovered,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBgHovered, Color_DarkCyan);
+	PushColor(UIStyleCol_TabBgHovered,        Color_DarkCyan);
 	
 	//borders
-	PushColor(UIStyleCol_ButtonBorder,   Color_Black);
-	PushColor(UIStyleCol_CheckboxBorder, Color_Black);
-	PushColor(UIStyleCol_HeaderBorder,   Color_Black);
-	PushColor(UIStyleCol_SliderBorder,   Color_Black);
-	PushColor(UIStyleCol_InputTextBorder,Color_Black);
+	PushColor(UIStyleCol_ButtonBorder,    Color_Black);
+	PushColor(UIStyleCol_CheckboxBorder,  Color_Black);
+	PushColor(UIStyleCol_HeaderBorder,    Color_Black);
+	PushColor(UIStyleCol_SliderBorder,    Color_Black);
+	PushColor(UIStyleCol_InputTextBorder, Color_Black);
+	PushColor(UIStyleCol_TabBorder,       Color_Black);
 	
 	//misc
 	PushColor(UIStyleCol_ScrollBarDragger,        Color_VeryDarkRed);
@@ -4288,6 +4567,8 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBarActive,  Color_Red);
 	PushColor(UIStyleCol_SliderBarHovered, Color_DarkRed);
 	
+	PushColor(UIStyleCol_TabBar, Color_DarkCyan);
+	
 	//push default style variables
 	PushVar(UIStyleVar_WindowPadding,             vec2(10, 10));
 	PushVar(UIStyleVar_WindowBorderSize,          2);
@@ -4297,19 +4578,22 @@ void UI::Init() {
 	PushVar(UIStyleVar_ScrollAmount,              vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxSize,              vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxFillPadding,       2);
-	PushVar(UIStyleVar_InputTextTextAlign,        vec2(0.f, 0.5f));
+	PushVar(UIStyleVar_InputTextTextAlign,        vec2(0.f,  0.5f));
 	PushVar(UIStyleVar_ButtonTextAlign,           vec2(0.5f, 0.5f));
-	PushVar(UIStyleVar_HeaderTextAlign,           vec2(0.f, 0.5f));
+	PushVar(UIStyleVar_HeaderTextAlign,           vec2(0.f,  0.5f));
 	PushVar(UIStyleVar_SelectableTextAlign,       vec2(0.5f, 0.5f));
+	PushVar(UIStyleVar_TabTextAlign,              vec2(0.5f, 0.5f));
 	PushVar(UIStyleVar_ButtonHeightRelToFont,     1.3f);
 	PushVar(UIStyleVar_HeaderHeightRelToFont,     1.3f);
 	PushVar(UIStyleVar_InputTextHeightRelToFont,  1.3f);
 	PushVar(UIStyleVar_CheckboxHeightRelToFont,   1.3f);
 	PushVar(UIStyleVar_SelectableHeightRelToFont, 1.3f);
+	PushVar(UIStyleVar_TabHeightRelToFont,        1.3f);
 	PushVar(UIStyleVar_RowItemAlign,              vec2(0.5f, 0.5f));
 	PushVar(UIStyleVar_ScrollBarYWidth,           5);
 	PushVar(UIStyleVar_ScrollBarXHeight,          5);
 	PushVar(UIStyleVar_IndentAmount,              12);
+	PushVar(UIStyleVar_TabSpacing,                5);
 	PushVar(UIStyleVar_FontHeight,                (f32)style.font->max_height);
 	
 	PushScale(vec2(1, 1));
@@ -4330,22 +4614,22 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 	vec2 winpos = vec2(window->x, window->y);
 	vec2 winsiz = vec2(window->width, window->height) * window->style.globalScale;
 	vec2 winScissorOffset = window->visibleRegionStart;
-	vec2 winScissorExtent = window->visibleRegionSize;
+	vec2 winScissorExtent = window->visibleRegionSize * window->style.globalScale;
 	
 	UIWindow* parent = window->parent;
 	
-	vec2 itempos = window->position + item.position;
+	vec2 itempos = window->position + item.position * item.style.globalScale;
 	vec2 itemsiz = item.size;
-
+	
 	UIDrawCmd* lastdc = 0;
 	for (UIDrawCmd& drawCmd : item.drawCmds) {
 		BreakOnDrawCmdDraw;
 		
-		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor(drawCmd.vertices[i].pos+itempos);
+		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale +itempos));
 		
 		vec2 dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);
 		vec2 dcso = (drawCmd.useWindowScissor ? winScissorOffset : itempos + drawCmd.scissorOffset);
-
+		
 		//modify the scissor offset and extent according to the kind of window we are drawing
 		switch (window->type) {
 			case UIWindowType_PopOut:
@@ -4363,7 +4647,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				
 			}break;
 		}
-
+		
 		dcse = ClampMin(dcse, vec2::ZERO);
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
@@ -4453,7 +4737,7 @@ void CleanUpWindow(UIWindow* window) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
-
+	
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
 		   "Frame ended with hanging windows in the stack, make sure you call End() if you call Begin()!");
@@ -4472,9 +4756,9 @@ void UI::Update() {
 	Assert(colorStack.size() == initColorStackSize, 
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
-	Assert(indentStack.count == 1, "Forgot to call End for an indenting Begin!");
+	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
+	Assert(rightIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	
-
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);
 	StateRemoveFlag(UISCursorSet);
@@ -4491,7 +4775,7 @@ void UI::Update() {
 	break_drawCmd_create_hash = -1;
 	break_drawCmd_draw_hash = -1;
 #endif
-
+	
 	if (show_metrics) {
 		DisplayMetrics();
 		show_metrics = 0;
@@ -4510,17 +4794,17 @@ void UI::Update() {
 	//reset cursor to default if no item decided to set it 
 	if (!StateHasFlag(UISCursorSet)) DeshWindow->SetCursor(CursorType_Arrow);
 	
-
-
+	
+	
 	//draw windows in order 
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 		WinUnSetBegan(p);
 	}
-
-
 	
-
+	
+	
+	
 	
 	
 	//it should be safe to do this any time the mouse is released
@@ -4539,11 +4823,11 @@ void UI::Update() {
 	
 	//draw all debug commands if there are any
 	for (UIDrawCmd& drawCmd : debugCmds) {
-	
+		
 		Render::StartNewTwodCmd(5, drawCmd.tex, vec2::ZERO, DeshWinSize);
 		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
-
-
+		
+		
 		//static s32 start = 0;
 		//if (DeshInput->KeyPressed(Key::I)) start += 3;
 		//if (DeshInput->KeyPressed(Key::K)) start = Max(start - 3, s32(0));
@@ -4558,14 +4842,14 @@ void UI::Update() {
 		//ip[0] = 0; ip[1] = 1; ip[2] = 2;
 		//
 		//Render::AddTwodVertices(6, vp, 3, ip, 3);
-
-
+		
+		
 	}
 	debugCmds.clear();
 	
 	//if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
 	
-
+	
 }
 
 void UI::DrawDebugRect(vec2 pos, vec2 size, color col)             { DebugRect(pos, size, col); }
