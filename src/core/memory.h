@@ -4,9 +4,6 @@
 
 #include "../defines.h"
 
-////////////////
-//// @arena ////
-////////////////
 struct Arena{
 	u8* start;
 	u8* cursor;
@@ -14,22 +11,35 @@ struct Arena{
 	upt used;
 };
 
-struct ArenaHeapNode{
-	Arena arena;
-	Node  order; //overall order
-	Node  empty; //empty node order
+struct MemChunk{
+	MemChunk* prev; //pointer to previous order chunk
+	upt       size; //size of this chunk (including this var and above vars as overhead)
+	Node      node; //user memory starts here when in use; points to free chunks when not
+};
+#define MEMORY_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemChunk, node))
+#define ChunkToMemory(chunk)\
+((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+#define ChunkToArena(chunk)\
+((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+#define MemoryToChunk(memory)\
+((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
+#define ArenaToChunk(memory)\
+((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
+
+struct Heap{
+	u8*       start;
+	u8*       cursor;
+	upt       used;
+	upt       size;
+	Node      empty_nodes;
+	MemChunk* last_chunk;
+	b32       initialized;
 };
 
-struct ArenaHeap{
-	u8*  start;
-	u8*  cursor;
-	upt  used;
-	upt  size;
-	Node order; //overall nodes
-	Node empty; //empty nodes
-	b32  initialized;
-};
 
+////////////////
+//// @arena ////
+////////////////
 //creates an arena AT LEAST 'size' in bytes with all memory zeroed
 Arena* deshi__memory_arena_create(upt size, char* file, upt line);
 #define memory_create_arena(size) deshi__memory_arena_create(size, __FILE__, __LINE__)
@@ -49,29 +59,13 @@ void deshi__memory_arena_delete(Arena* arena, char* file, upt line);
 #define memory_delete_arena(arena) deshi__memory_arena_delete(arena, __FILE__, __LINE__)
 
 //exposes the internal arena heap
-ArenaHeap* deshi__memory_arena_expose();
+Heap* deshi__memory_arena_expose();
 #define memory_expose_arena_heap() deshi__memory_arena_expose()
 
 
 //////////////////
 //// @generic ////
 //////////////////
-struct GenericHeapNode{
-	GenericHeapNode* prev; //pointer to previous order chunk
-	upt              size; //size of this chunk (including this var and above vars as overhead)
-	Node             node; //user memory starts here when in use; points to free chunks when not
-};
-
-struct GenericHeap{
-	u8*              start;
-	u8*              cursor;
-	upt              used;
-	upt              size;
-	Node             empty_nodes;
-	GenericHeapNode* last_chunk;
-	b32              initialized;
-};
-
 //allocates AT LEAST 'size' in bytes with all memory zeroed
 void* deshi__memory_generic_allocate(upt size, char* file, upt line);
 FORCE_INLINE void* deshi__memory_generic_allocate(upt size){return deshi__memory_generic_allocate(size, "", 0);}
@@ -94,7 +88,7 @@ FORCE_INLINE void deshi__memory_generic_zero_free(void* ptr){return deshi__memor
 #define memzfree(ptr) memory_zfree(ptr)
 
 //exposes the internal generic heap
-GenericHeap* deshi__memory_generic_expose();
+Heap* deshi__memory_generic_expose();
 #define memory_expose_generic_heap() deshi__memory_generic_expose()
 
 
@@ -134,8 +128,8 @@ struct AddressNameInfo{
 };
 
 //attaches a name and type to an address
-void deshi__memory_naming_set(void* address, cstring name, Type type);
-#define memory_set_address_name(address, name, type) deshi__memory_naming_set(address, name, type)
+void deshi__memory_naming_set(void* address, cstring name);
+#define memory_set_address_name(address, name) deshi__memory_naming_set(address, name)
 
 //gets the name of a previously named address
 //  returns an empty cstring if not previously named
@@ -150,7 +144,7 @@ void deshi__memory_draw();
 #else
 #  define memory_set_address_name(...)
 #  define memory_get_address_name(...) cstring{}
-#  define memory_expose_naming_arena(...)
+#  define memory_expose_naming_arena(...) 0
 #  define deshi__memory_draw()
 #endif //DESHI_INTERNAL
 

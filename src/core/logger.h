@@ -7,9 +7,6 @@
 #include "../utils/cstring.h"
 #include "../utils/string_conversion.h"
 
-//TODO look into https://github.com/fmtlib/fmt
-//TODO can probably optimize by using a single buffer instead of strings in Log() and LogA()
-//TODO add severity/levels to logging
 ////////////////////
 //// @interface ////
 ////////////////////

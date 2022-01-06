@@ -222,7 +222,8 @@ global_const u64 wcharsize = sizeof(wchar);
 #define Radians(a) ((a) * (M_PI / 180.f))
 #define Degrees(a) ((a) * (180.f / M_PI))
 #define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((upt)((value) + (((upt)(multiple))-1)) / (upt)(multiple)) * (upt)(multiple))
+#define RoundUpTo(value,multiple) (((upt)((value) + (((upt)(multiple))-1)) / (upt)(multiple)) * (upt)(multiple))
+#define AlignToPow2(value,power) (((value) + ((power)-1)) & ~((power)-1))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
 #define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
 #define PointerAsInt(a) PointerDifference(a,0)
@@ -259,9 +260,9 @@ template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (
 template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? Min(val+delta, target) : Max(val-delta, target) : target;}
 template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){ return abs(a - b) < M_EPSILON; }
 
-/////////////////////// 
-//// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
-/////////////////////// //TODO(delle) refactor Assert() usages so the expression is not used
+/////////////////////// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
+//// assert macros //// //TODO(delle) refactor Assert() usages so the expression is not used
+/////////////////////// //TODO(delle) assert message popup thru the OS
 #define AssertAlways(expression, ...) STMNT( if(!(expression)){*(volatile int*)0 = 0;} ) //works regardless of SLOW or INTERNAL
 #define AssertBreakpoint(expression, ...) STMNT( if(!(expression)){ DebugBreakpoint; } )
 #define StaticAssertAlways(expression, ...) char GLUE(__ignore__, GLUE(__LINE__,__default__))[(expression)?1:-1]

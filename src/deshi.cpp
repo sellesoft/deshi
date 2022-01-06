@@ -65,8 +65,11 @@ add MouseInsideWindow() func to input or window
 
 Logger TODOs
 ------------
+add push/pop indentation level
 make a local Assert macro that logs the message before stopping
 make the most recent logging file be named log.txt, while the rest have a date
+can probably optimize by using a single buffer instead of strings in Log() and LogA()
+look into https://github.com/fmtlib/fmt for fast formatting
 
 Math TODOs
 ----------
@@ -79,9 +82,9 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
+store more info (file, line, name, type, timepoint) per allocation in debug mode
 add a memory visualizer
 ____ref: https://en.wikipedia.org/wiki/Treemapping
-reformat ArenaHeap to work more like GenericHeap
 consider multiple thread contexts
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
@@ -156,7 +159,7 @@ add the ability to limit framerate
 
 Ungrouped TODOs
 ---------------
-give Texture its own file, separate from model.h
+move config saving/loading to its own core file
 remove tuple (not pair) and container manager
 remove GLFW and add platform layers
 rename RoundUpTo() to AlignTo() in defines.h

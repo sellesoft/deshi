@@ -48,10 +48,10 @@ local void TEST_deshi_core_logging(){
 
 #include "memory.h"
 local void TEST_deshi_core_memory(){
-	ArenaHeap* arena_heap = memory_expose_arena_heap();
+	Heap* arena_heap = memory_expose_arena_heap();
 	AssertAlways(arena_heap);
 	
-	GenericHeap* generic_heap = memory_expose_generic_heap();
+	Heap* generic_heap = memory_expose_generic_heap();
 	AssertAlways(generic_heap);
 	
 	Arena* temp_arena = memory_expose_temp_arena();
@@ -167,15 +167,6 @@ local void TEST_deshi_core_memory(){
 	string1 = (char*)memory_realloc(string1, 32);
 	memory_zfree(string1);
 	
-	//generic rellocation with stuff to the right and needs to move
-	string1 = (char*)memory_alloc(64);
-	memset(string1, '1', 32);
-	string2 = (char*)memory_alloc(64);
-	memset(string2, '2', 32);
-	string1 = (char*)memory_realloc(string1, 128);
-	memory_zfree(string1);
-	memory_zfree(string2);
-	
 	//generic rellocation with stuff to the right where new size is less than previous
 	string1 = (char*)memory_alloc(64);
 	memset(string1, '1', 48);
@@ -197,6 +188,27 @@ local void TEST_deshi_core_memory(){
 	memory_zfree(string1);
 	memory_zfree(string2);
 	
+	//generic rellocation with stuff to the right but its empty and can hold the growth
+	string1 = (char*)memory_alloc(64);
+	memset(string1, '1', 32);
+	string2 = (char*)memory_alloc(128);
+	memset(string2, '2', 32);
+	string3 = (char*)memory_alloc(64);
+	memset(string3, '3', 32);
+	memory_zfree(string2);
+	string1 = (char*)memory_realloc(string1, 128);
+	memory_zfree(string1);
+	memory_zfree(string3);
+	
+	//generic rellocation with stuff to the right and needs to move
+	string1 = (char*)memory_alloc(64);
+	memset(string1, '1', 32);
+	string2 = (char*)memory_alloc(64);
+	memset(string2, '2', 32);
+	string1 = (char*)memory_realloc(string1, 128);
+	memory_zfree(string1);
+	memory_zfree(string2);
+	
 #if DESHI_INTERNAL
 	//default names
 	AssertAlways(equals(cstr_lit("Arena Heap"),   memory_get_address_name(arena_heap)));
@@ -205,20 +217,20 @@ local void TEST_deshi_core_memory(){
 	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
 	
 	//removing a name
-	memory_set_address_name(naming_arena, {}, 0);
+	memory_set_address_name(naming_arena, {});
 	cstring name = memory_get_address_name(naming_arena);
 	AssertAlways(name.str == 0 && name.count == 0);
 	
 	//setting a name
-	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"), 0);
+	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"));
 	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
 	
 	//renaming
-	memory_set_address_name(naming_arena, cstr_lit("Address Naming Arena"), 0);
+	memory_set_address_name(naming_arena, cstr_lit("Address Naming Arena"));
 	AssertAlways(equals(cstr_lit("Address Naming Arena"), memory_get_address_name(naming_arena)));
 	
 	//reset to default
-	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"), 0);
+	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"));
 	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
 #endif //DESHI_INTERNAL
 	
@@ -240,7 +252,7 @@ local void TEST_deshi_core_memory(){
 		arena2 = memory_create_arena(Kilobytes(32));
 		memset(arena2->start, 7, 128);
 		arena2->used = 128;
-		arena2 = memory_grow_arena(arena2, Kilobytes(64));
+		arena2 = memory_grow_arena(arena2, Kilobytes(32));
 		memory_delete_arena(arena2);
 		
 		//grow arena into libc arena

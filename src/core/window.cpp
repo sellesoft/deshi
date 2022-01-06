@@ -67,7 +67,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	
 	u32 W = 0xffffffff;
 	u32 B = 0xff000000;
-
+	
 	u32 defaultcur[16 * 16] = {
 		B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		B,B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -87,7 +87,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		0,0,0,0,0,0,B,B,B,0,0,0,0,0,0,0,
 		
 	};
-
+	
 	u32 hresizecur[16 * 16] = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -106,7 +106,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	};
-
+	
 	u32 vresizecur[16 * 16] = {
 		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
@@ -125,7 +125,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
 	};
-
+	
 	u32 rightdiagresizecur[16 * 16] = {
 		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
 		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
@@ -144,7 +144,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
 		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
 	};
-
+	
 	u32 leftdiagresizecur[16 * 16] = {
 		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
 		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
@@ -163,7 +163,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
 		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
 	};
-
+	
 	u32 handcur[16 * 16] = {
 		0,0,0,0,0,0,0,0,0,B,B,0,0,0,0,0,
 		0,0,0,0,0,0,B,B,B,W,W,B,B,0,0,0,
@@ -182,7 +182,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		0,0,0,0,B,W,W,W,W,W,W,W,B,0,0,0,
 		0,0,0,0,0,B,B,B,B,B,B,B,0,0,0,0,
 	};
-
+	
 	u32 textcur[16 * 16] = {
 		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
 		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
@@ -202,11 +202,11 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
 	};
 	
-
+	
 	GLFWimage image;
 	image.width = 16;
 	image.height = 16;
-
+	
 	image.pixels = (u8*)defaultcur;
 	дефолткурсор = glfwCreateCursor(&image, 0, 0); //glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
 	image.pixels = (u8*)hresizecur;
@@ -231,6 +231,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	GLFWimage icon; int icon_channels;
 	icon.pixels = stbi_load("data/textures/deshi_icon.png", &icon.width, &icon.height, &icon_channels, STBI_rgb_alpha);
 	if(icon.pixels){
+		memory_set_address_name(icon.pixels, cstring_lit("deshi_icon.png"));
 		glfwSetWindowIcon(window, 1, &icon);
 		stbi_image_free(icon.pixels);
 	}else{
@@ -409,12 +410,12 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	
 	//void window_focus_callback(GLFWwindow* window, int focused)
 	glfwSetWindowFocusCallback(window,
-		[](GLFWwindow* window, int focused) {
-			if (focused) block_mouse_pos_change = false;
-			else block_mouse_pos_change = true;
-		});
-
-
+							   [](GLFWwindow* window, int focused) {
+								   if (focused) block_mouse_pos_change = false;
+								   else block_mouse_pos_change = true;
+							   });
+	
+	
 	//TODO(sushi) implement this function for use on InputText()
 	//glfwSetCharCallback()
 	
