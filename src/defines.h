@@ -211,6 +211,8 @@ global_const u64 wcharsize = sizeof(wchar);
 #define STRINGIZE(a) STRINGIZE_(a)
 #define GLUE_(a,b) a##b
 #define GLUE(a,b) GLUE_(a,b)
+#define PRINTLN(x) std::cout << x << std::endl;
+#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 #define ToggleBool(variable) variable = !variable
 #define Kilobytes(a) (((u64)(a)) << 10)
 #define Megabytes(a) (((u64)(a)) << 20)
@@ -238,13 +240,16 @@ global_const u64 wcharsize = sizeof(wchar);
 #define HasAllFlags(var,flags) (((var) & (flags)) == (flags))
 #define AddFlag(var,flag) ((var) |= (flag))
 #define RemoveFlag(var,flag) ((var) &= (~(flag)))
+#define ToggleFlag(var,flag) ((var) ^= (flag))
 
 //////////////////////////
 //// common functions ////
 //////////////////////////
 FORCE_INLINE void ZeroMemory(void* ptr, upt bytes){memset(ptr, 0, bytes);}
-FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
-FORCE_INLINE upt roundUpToPow2(upt x) { return (upt)1 << (upt)((upt)log2(f64(--x)) + 1); }
+FORCE_INLINE b32  IsPow2(u64 value)       {return (value != 0) && ((value & (value-1)) == 0);}
+FORCE_INLINE upt  roundUpToPow2(upt x)    { return (upt)1 << (upt)((upt)log2(f64(--x)) + 1); }
+FORCE_INLINE char bytesUnit(upt bytes)    { return (bytes > Kilobytes(1) ? bytes > Megabytes(1) ? bytes > Gigabytes(1) ? bytes > Terabytes(1) ? 'T' : 'G' : 'M' : 'K' : 'B'); }
+FORCE_INLINE f32  bytesDivisor(upt bytes) { return (bytes > Kilobytes(1) ? bytes > Megabytes(1) ? bytes > Gigabytes(1) ? bytes > Terabytes(1) ? Terabytes(1) : Gigabytes(1) : Megabytes(1) : Kilobytes(1) : 1); }
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
 template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
@@ -258,6 +263,7 @@ template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (
 template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? ((val + delta < target) ? val + delta : target) : ((val - delta > target) ? val - delta : target) : target;}
 template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){ return abs(a - b) < M_EPSILON; }
+
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
