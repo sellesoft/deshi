@@ -2111,7 +2111,7 @@ void UI::EndHeader() {
 
 //@BeginTabBar
 
-b32 UI::BeginTabBar(const char* label, UITabBarFlags flags){
+void UI::BeginTabBar(const char* label, UITabBarFlags flags){
 	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
 	StateAddFlag(UISTabBarBegan);
 	if (!tabBars.has(label)) tabBars.add(label);
@@ -2138,8 +2138,6 @@ b32 UI::BeginTabBar(const char* label, UITabBarFlags flags){
 		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
-	
-	return true;
 }
 
 b32 UI::BeginTab(const char* label){
@@ -2575,11 +2573,15 @@ void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {
 	
 }
 
-
 void UI::EndCustomItem() {
 	Assert(HasFlag(cistage, CISItemBegan), "attempt to end a custom item that hasnt been started");
 	Assert(HasFlag(cistage, CISItemAdvancedCursor), "attempt to end a custom item who hasnt advanced the cursor yet");
 	cistage = CISNone;
+}
+
+
+b32 UI::IsLastItemHovered(){ //TODO handle layers
+	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize());
 }
 
 
