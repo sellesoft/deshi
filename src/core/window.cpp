@@ -231,7 +231,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	GLFWimage icon; int icon_channels;
 	icon.pixels = stbi_load("data/textures/deshi_icon.png", &icon.width, &icon.height, &icon_channels, STBI_rgb_alpha);
 	if(icon.pixels){
-		memory_set_address_name(icon.pixels, cstring_lit("deshi_icon.png"));
+		deshi__memory_allocinfo_set(icon.pixels, cstring_lit("deshi_icon.png"), 0);
 		glfwSetWindowIcon(window, 1, &icon);
 		stbi_image_free(icon.pixels);
 	}else{
@@ -394,12 +394,12 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 							   }
 						   }
 					   });
-
+	
 	//void character_callback(GLFWwindow* window, unsigned int codepoint)
 	glfwSetCharCallback(window,
-		[](GLFWwindow* window, unsigned int codepoint)->void{
-			DeshInput->charIn[DeshInput->realCharCount++] = codepoint;
-		});
+						[](GLFWwindow* window, unsigned int codepoint)->void{
+							DeshInput->charIn[DeshInput->realCharCount++] = codepoint;
+						});
 	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	glfwSetScrollCallback(window, 

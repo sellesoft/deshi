@@ -82,9 +82,8 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
-store more info (file, line, name, type, timepoint) per allocation in debug mode
+change PREVINUSE chunk tag to EMPTY
 add a memory visualizer
-____ref: https://en.wikipedia.org/wiki/Treemapping
 consider multiple thread contexts
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
@@ -143,6 +142,7 @@ Time TODOs
 ----------
 remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
 make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
+rename 'updateCount' to 'frame'
 
 UI TODOs
 --------

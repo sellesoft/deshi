@@ -70,9 +70,9 @@ struct cstring{
 	FORCE_INLINE char* end()  { return &str[count]; }
 	FORCE_INLINE const char* begin()const{ return &str[0]; }
 	FORCE_INLINE const char* end()  const{ return &str[count]; }
-};
 #define cstring_lit(s) cstring{(char*)s, sizeof(s)-1}
 #define cstr_lit(s) cstring{(char*)s, sizeof(s)-1}
+};
 
 template<typename T>
 struct carray{
@@ -86,6 +86,12 @@ struct carray{
 	FORCE_INLINE T* end()  { return &data[count]; }
 	FORCE_INLINE const T* begin()const{ return &data[0]; }
 	FORCE_INLINE const T* end()  const{ return &data[count]; }
+};
+
+struct CodeLocation{
+	cstring file;
+	u32     line;
+	u32     column;
 };
 
 //TODO(delle) function pointer signature macro
@@ -106,6 +112,7 @@ struct Allocator{
 };
 
 enum Types{
+	//defines
 	Type_void,
 	Type_s8,
 	Type_s16,
@@ -121,7 +128,11 @@ enum Types{
 	Type_f64,
 	Type_b32,
 	Type_uchar,
+	Type_cstring,
+	Type_carray,
+	Type_CodeLocation,
 	Type_Allocator,
+	Type_Node,
 	
 	//TODO define deshi types elsewhere
 	//math
@@ -134,8 +145,6 @@ enum Types{
 	Type_quat,
 	
 	//utils
-	Type_cstring,
-	Type_carray,
 	Type_array,
 	Type_string,
 	Type_ring_array,
@@ -145,6 +154,11 @@ enum Types{
 	Type_optional,
 	Type_hash,
 	
+	//memory
+	Type_Arena,
+	Type_MemChunk,
+	Type_Heap,
+	Type_AllocInfo,
 };
 
 //////////////////////////
@@ -325,7 +339,7 @@ struct Node{
 #define NodeInsertPrev(x,node) ((node)->prev=(x)->prev,(node)->next=(x),(node)->prev->next=(node),(x)->prev=(node))
 #define NodeRemove(node) ((node)->next->prev=(node)->prev,(node)->prev->next=(node)->next)
 
-//// C/C++ STL allocator ////
+//// C/C++ STL allocator //// //TODO rename this to libc allocator (STL is something different)
 global_ void* STLAllocator_Reserve(upt size){void* a = calloc(1,size); Assert(a); return a;}
 global_ void  STLAllocator_Release(void* ptr){free(ptr);}
 global_ void* STLAllocator_Resize(void* ptr, upt size){void* a = realloc(ptr,size); Assert(a); return a;}
