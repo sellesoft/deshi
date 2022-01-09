@@ -13,18 +13,9 @@ struct Arena{
 
 struct MemChunk{
 	MemChunk* prev; //pointer to previous order chunk
-	upt       size; //size of this chunk (including this var and above vars as overhead)
+	upt       size; //size of this chunk (including this var and above vars as overhead)(OR'd with flags)
 	Node      node; //user memory starts here when in use; points to free chunks when not
 };
-#define MEMORY_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemChunk, node))
-#define ChunkToMemory(chunk)\
-((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
-#define ChunkToArena(chunk)\
-((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
-#define MemoryToChunk(memory)\
-((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
-#define ArenaToChunk(memory)\
-((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
 
 struct Heap{
 	u8*       start;
@@ -47,6 +38,51 @@ struct AllocInfo{
 	cstring name;
 	Type type;
 };
+
+
+////////////////
+//// @chunk ////
+////////////////
+#define MEMORY_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemChunk, node))
+#define ChunkToMemory(chunk)\
+((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+#define ChunkToArena(chunk)\
+((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+#define MemoryToChunk(memory)\
+((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
+#define ArenaToChunk(arena)\
+((MemChunk*)((u8*)(arena) - MEMORY_CHUNK_MEMORY_OFFSET))
+
+//NOTE Chunk Flags !ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1224
+//  Chunk flags are stored in the lower bits of the chunk's size variable, and this doesn't cause problems b/c the size 
+//  is always greater than 8 bytes on 32bit and 16 bytes on on 64bit (void* + upt).
+//  To get the size, we mask off the bits holding these flags.
+//  None of these flags should be used together.
+//
+//  EMPTY  (0x1): chunk is empty
+//  ARENAD (0x2): the generic chunk was large enough to use an Arena
+//  LIBC   (0x4): allocated with libc b/c deshi ran out of memory
+#define MEMORY_EMPTY_FLAG 0x1
+#define MEMORY_ARENAD_FLAG 0x2
+#define MEMORY_LIBC_FLAG 0x4
+
+#define MEMORY_CHUNK_SIZE_BITS (MEMORY_EMPTY_FLAG | MEMORY_ARENAD_FLAG | MEMORY_LIBC_FLAG)
+#define MEMORY_EXTRACT_SIZE_BITMASK (~MEMORY_CHUNK_SIZE_BITS)
+
+#define GetChunkSize(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
+#define GetNextOrderChunk(chunk_ptr)\
+((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
+#define GetPrevOrderChunk(chunk_ptr)\
+((chunk_ptr)->prev)
+#define GetChunkAtOffset(chunk_ptr,offset)\
+((MemChunk*)((u8*)(chunk_ptr) + (offset)))
+#define ChunkIsEmpty(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_EMPTY_FLAG)
+#define ChunkIsArenad(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_ARENAD_FLAG)
+#define ChunkIsLibc(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_LIBC_FLAG)
 
 
 ////////////////

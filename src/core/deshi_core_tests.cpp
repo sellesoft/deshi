@@ -217,7 +217,6 @@ local void TEST_deshi_core_memory(){
 		//check arena heap defaults
 		AllocInfo info = deshi__memory_allocinfo_get(arena_heap);
 		AssertAlways(info.address == arena_heap);
-		AssertAlways(info.index == 0);
 		AssertAlways(info.creation_frame == 0);
 		AssertAlways(info.deletion_frame == -1);
 		AssertAlways(equals(info.name, cstr_lit("Arena Heap")));
@@ -227,7 +226,6 @@ local void TEST_deshi_core_memory(){
 		deshi__memory_allocinfo_set(arena_heap, cstr_lit("blah"), Type_Arena);
 		info = deshi__memory_allocinfo_get(arena_heap);
 		AssertAlways(info.address == arena_heap);
-		AssertAlways(info.index == 0);
 		AssertAlways(info.creation_frame == 0);
 		AssertAlways(info.deletion_frame == -1);
 		AssertAlways(equals(info.name, cstr_lit("blah")));
@@ -242,7 +240,6 @@ local void TEST_deshi_core_memory(){
 		Arena* arena = memory_create_arena(Kilobytes(4));
 		info = deshi__memory_allocinfo_get(arena);
 		AssertAlways(info.address == arena);
-		AssertAlways(info.index > 3);
 		AssertAlways(info.creation_frame == DeshTime->updateCount);
 		AssertAlways(info.deletion_frame == -1);
 		AssertAlways(equals(info.name, cstr_lit("")));
@@ -252,7 +249,6 @@ local void TEST_deshi_core_memory(){
 		deshi__memory_allocinfo_set(arena, cstr_lit("an arena"), Type_Arena);
 		info = deshi__memory_allocinfo_get(arena);
 		AssertAlways(info.address == arena);
-		AssertAlways(info.index > 3);
 		AssertAlways(info.creation_frame == DeshTime->updateCount);
 		AssertAlways(info.deletion_frame == -1);
 		AssertAlways(equals(info.name, cstr_lit("an arena")));
@@ -262,7 +258,6 @@ local void TEST_deshi_core_memory(){
 		memory_delete_arena(arena);
 		info = deshi__memory_allocinfo_get(arena);
 		AssertAlways(info.address == arena);
-		AssertAlways(info.index > 3);
 		AssertAlways(info.creation_frame == DeshTime->updateCount);
 		AssertAlways(info.deletion_frame == DeshTime->updateCount);
 		AssertAlways(equals(info.name, cstr_lit("an arena")));
@@ -272,7 +267,6 @@ local void TEST_deshi_core_memory(){
 		void* alloc = memory_alloc(sizeof(Allocator));
 		info = deshi__memory_allocinfo_get(alloc);
 		AssertAlways(info.address == alloc);
-		AssertAlways(info.index > 4);
 		AssertAlways(info.creation_frame == DeshTime->updateCount);
 		AssertAlways(info.deletion_frame == -1);
 		AssertAlways(equals(info.name, cstr_lit("")));
@@ -282,7 +276,6 @@ local void TEST_deshi_core_memory(){
 		deshi__memory_allocinfo_set(alloc, cstr_lit("some allocator"), Type_Allocator);
 		info = deshi__memory_allocinfo_get(alloc);
 		AssertAlways(info.address == alloc);
-		AssertAlways(info.index > 4);
 		AssertAlways(info.creation_frame == DeshTime->updateCount);
 		AssertAlways(info.deletion_frame == -1);
 		AssertAlways(equals(info.name, cstr_lit("some allocator")));
@@ -292,7 +285,6 @@ local void TEST_deshi_core_memory(){
 		memory_zfree(alloc);
 		info = deshi__memory_allocinfo_get(alloc);
 		AssertAlways(info.address == alloc);
-		AssertAlways(info.index > 4);
 		AssertAlways(info.creation_frame == DeshTime->updateCount);
 		AssertAlways(info.deletion_frame == DeshTime->updateCount);
 		AssertAlways(equals(info.name, cstr_lit("some allocator")));

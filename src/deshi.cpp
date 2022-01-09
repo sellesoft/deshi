@@ -82,7 +82,6 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
-change PREVINUSE chunk tag to EMPTY
 add a memory visualizer
 consider multiple thread contexts
 add fast generic bins

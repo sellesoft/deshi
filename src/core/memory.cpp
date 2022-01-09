@@ -10,7 +10,7 @@
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false
 #define MEMORY_PRINT_GENERIC_CHUNKS false
-#define MEMORY_PRINT_GENERIC_ACTIONS true
+#define MEMORY_PRINT_GENERIC_ACTIONS false
 #define MEMORY_PRINT_TEMP_ACTIONS false
 
 local Heap   deshi__arena_heap_;
@@ -34,39 +34,6 @@ local array<AllocInfo> deshi__alloc_infos(stl_allocator); //uses libc so it is e
 #define MEMORY_CHUNK_ALIGNMENT MEMORY_MIN_CHUNK_SIZE
 #define MEMORY_MAX_GENERIC_SIZE (Kilobytes(64) - 1)
 
-//NOTE Chunk Flags !ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1224
-//  Chunk flags are stored in the lower bits of the chunk's size variable, and this doesn't cause problems b/c the size 
-//  is always greater than 8 bytes on 32bit and 16 bytes on on 64bit (MEMORY_BYTE_ALIGNMENT).
-//  To get the size, we mask off the bits holding these flags.
-//  ISARENAD and PREVINUSE should never be used together
-//
-//  PREVINUSE (0x1): previous adjacent chunk is in use //TODO maybe just change to INUSE/EMPTY?
-//  ISARENAD  (0x2): the chunk was large enough to use an Arena
-//  LIBC      (0x4): deshi ran out of memory and had to call libc
-#define MEMORY_PREVINUSE_FLAG 0x1
-#define MEMORY_ISARENAD_FLAG 0x2
-#define MEMORY_LIBC_FLAG 0x4
-
-#define MEMORY_CHUNK_SIZE_BITS (MEMORY_PREVINUSE_FLAG | MEMORY_ISARENAD_FLAG | MEMORY_LIBC_FLAG)
-#define MEMORY_EXTRACT_SIZE_BITMASK (~MEMORY_CHUNK_SIZE_BITS)
-
-#define GetChunkSize(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
-#define GetNextOrderChunk(chunk_ptr)\
-((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
-#define GetPrevOrderChunk(chunk_ptr)\
-((chunk_ptr)->prev)
-#define GetChunkAtOffset(chunk_ptr,offset)\
-((MemChunk*)((u8*)(chunk_ptr) + (offset)))
-#define PrevChunkIsInUse(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_PREVINUSE_FLAG)
-#define ChunkIsInUse(chunk_ptr)\
-(((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))->size & MEMORY_PREVINUSE_FLAG)
-#define ChunkIsArenad(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_ISARENAD_FLAG)
-#define ChunkIsLibc(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_LIBC_FLAG)
-
 #if MEMORY_CHECK_HEAPS
 local void
 DEBUG_CheckHeap(Heap* heap){
@@ -81,13 +48,13 @@ DEBUG_CheckHeap(Heap* heap){
 	
 	if(heap->initialized && heap->used > 0){
 		upt overall_used = 0;
-		for(MemChunk* chunk = (MemChunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
 			Assert((u8*)chunk < heap->cursor, "All chunks must be below the cursor");
 			Assert(GetChunkSize(chunk) >= MEMORY_MIN_CHUNK_SIZE, "Chunk size is less than minimum");
 			Assert(GetChunkSize(chunk) % MEMORY_BYTE_ALIGNMENT == 0, "Chunk size is not aligned correctly");
 			if(chunk != heap->last_chunk){
 				Assert(GetNextOrderChunk(chunk)->prev == chunk, "Next order chunk is not correctly pointing to current chunk");
-				if(!PrevChunkIsInUse(GetNextOrderChunk(chunk))){
+				if(ChunkIsEmpty(chunk)){
 					overall_used += sizeof(MemChunk);
 				}else{
 					overall_used += GetChunkSize(chunk);
@@ -108,10 +75,10 @@ local void
 DEBUG_PrintHeapChunks(Heap* heap, char* heap_name){
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
-		for(MemChunk* chunk = (MemChunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
 			heap_order += to_string("0x%p", chunk); heap_order += " -> ";
 			if(chunk != heap->last_chunk){
-				if(!ChunkIsInUse(chunk)){
+				if(ChunkIsEmpty(chunk)){
 					heap_empty += to_string("0x%p", chunk);
 					heap_empty += " -> ";
 				}else{
@@ -178,7 +145,7 @@ DEBUG_CheckArenaHeapArenas(){
 	if(deshi__arena_heap->initialized && deshi__arena_heap->used > 0){
 		for(MemChunk* chunk = (MemChunk*)deshi__arena_heap->start; chunk != deshi__arena_heap->last_chunk; ){
 			MemChunk* next = GetNextOrderChunk(chunk);
-			if(PrevChunkIsInUse(next)){
+			if(!ChunkIsEmpty(chunk)){
 				Arena* arena = ChunkToArena(chunk);
 				Assert(PointerDifference(arena->start + arena->size, next) == 0, "Arena start and size dont point to the next chunk");
 			}
@@ -233,7 +200,7 @@ deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&deshi__arena_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
-				new_chunk->size = leftover_size; //NOTE this gets OR'd with MEMORY_GENERIC_PREVINUSE_FLAG below
+				new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 				next->prev = new_chunk;
 				next = new_chunk;
 				deshi__arena_heap->used += sizeof(MemChunk);
@@ -244,8 +211,7 @@ deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 			//convert empty node to order node
 			NodeRemove(&chunk->node);
 			//chunk->node = {0}; //NOTE not necessary since its overwritten below
-			chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
-			next->size |= MEMORY_PREVINUSE_FLAG; //set PREVINUSE flag on next chunk
+			chunk->size = aligned_size;
 			deshi__arena_heap->used += aligned_size - sizeof(MemChunk);
 			
 			result = ChunkToArena(chunk);
@@ -288,7 +254,7 @@ deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 	
 	MemChunk* new_chunk = (MemChunk*)deshi__arena_heap->cursor;
 	new_chunk->prev = deshi__arena_heap->last_chunk;
-	new_chunk->size = (deshi__arena_heap->last_chunk != 0) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+	new_chunk->size = aligned_size;
 	deshi__arena_heap->cursor    += aligned_size;
 	deshi__arena_heap->used      += aligned_size;
 	deshi__arena_heap->last_chunk = new_chunk;
@@ -398,7 +364,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 	//next chunk is empty and can hold the growth, so grow into next
 	MemChunk* next = GetNextOrderChunk(chunk);
 	upt next_chunk_size = GetChunkSize(next);
-	if((next != deshi__arena_heap->last_chunk) && !ChunkIsInUse(next) && (next_chunk_size >= aligned_size)){
+	if(ChunkIsEmpty(next) && (next_chunk_size >= aligned_size)){
 		upt leftover_size = next_chunk_size - aligned_size;
 		Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 		
@@ -408,7 +374,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 			MemChunk* new_chunk = GetChunkAtOffset(chunk, GetChunkSize(chunk) + aligned_size);
 			NodeInsertNext(&deshi__arena_heap->empty_nodes, &new_chunk->node);
 			new_chunk->prev = chunk;
-			new_chunk->size = leftover_size | MEMORY_PREVINUSE_FLAG;
+			new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 			next_next->prev = new_chunk;
 			deshi__arena_heap->used += sizeof(MemChunk);
 		}else{
@@ -500,12 +466,11 @@ deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
 	
 	//insert current chunk into heap's empty nodes (as first empty node for locality)
 	NodeInsertNext(&deshi__arena_heap->empty_nodes, &chunk->node);
+	chunk->size |= MEMORY_EMPTY_FLAG;
 	
 	//try to merge next empty into current empty
 	MemChunk* next = GetNextOrderChunk(chunk);
-	if(   (chunk != deshi__arena_heap->last_chunk) //we are not the last chunk
-	   && (next  != deshi__arena_heap->last_chunk) //next is not the last chunk
-	   && (!ChunkIsInUse(next))){                  //next is empty
+	if((chunk != deshi__arena_heap->last_chunk) && ChunkIsEmpty(next)){
 		MemChunk* next_next = GetNextOrderChunk(next);
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
@@ -518,8 +483,7 @@ deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
 	
 	//try to merge current empty into prev empty
 	MemChunk* prev = GetPrevOrderChunk(chunk);
-	if(   (prev != 0)                  //we are not the first chunk
-	   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
+	if((prev != 0) && ChunkIsEmpty(prev)){
 		if(chunk == deshi__arena_heap->last_chunk){
 			deshi__arena_heap->last_chunk = prev;
 		}else{
@@ -528,7 +492,7 @@ deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
 		NodeRemove(&chunk->node);
 		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
 		NodeInsertNext(&deshi__arena_heap->empty_nodes, &prev->node);
-		prev->size += chunk->size; //NOTE not GetChunkSize(chunk) b/c we know that PREVINUSE flag is not there
+		prev->size += GetChunkSize(chunk);
 		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
@@ -543,9 +507,6 @@ deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
 		zero_pointer = chunk;
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
-	}else{
-		Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
-		next->size &= ~(MEMORY_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 	}
 	
 	deshi__arena_heap->used -= used_amount;
@@ -620,7 +581,7 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 		
 		MemChunk* chunk = (MemChunk*)arena->start;
-		chunk->size = arena->size | MEMORY_ISARENAD_FLAG;
+		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
@@ -648,7 +609,7 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
-				new_chunk->size = leftover_size; //NOTE this gets OR'd with MEMORY_GENERIC_PREVINUSE_FLAG below
+				new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 				next->prev = new_chunk;
 				next = new_chunk;
 				deshi__generic_heap->used += sizeof(MemChunk);
@@ -656,11 +617,11 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 				aligned_size += leftover_size;
 			}
 			
-			//convert empty node to order node  //NOTE chunk->prev doesnt need to change
+			//convert empty node to order node
 			NodeRemove(&chunk->node);
+			//NOTE chunk->prev doesnt need to change
 			chunk->node = {0}; //zero this data since it will be used by the allocation
-			chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
-			next->size |= MEMORY_PREVINUSE_FLAG; //set PREVINUSE flag on next chunk
+			chunk->size = aligned_size;
 			deshi__generic_heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
 			
@@ -694,7 +655,7 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 	
 	MemChunk* new_chunk = (MemChunk*)deshi__generic_heap->cursor;
 	new_chunk->prev = deshi__generic_heap->last_chunk;
-	new_chunk->size = (deshi__generic_heap->last_chunk != 0) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+	new_chunk->size = aligned_size;
 	deshi__generic_heap->cursor    += aligned_size;
 	deshi__generic_heap->used      += aligned_size;
 	deshi__generic_heap->last_chunk = new_chunk;
@@ -757,7 +718,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 		arena->used = aligned_size;
 		
 		chunk = (MemChunk*)arena->start;
-		chunk->size = arena->size | MEMORY_ISARENAD_FLAG;
+		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
@@ -787,7 +748,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 		
 		chunk = (MemChunk*)arena->start;
 		chunk->prev = 0;
-		chunk->size = arena->size | MEMORY_ISARENAD_FLAG;
+		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
@@ -835,9 +796,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 		}
 		
 		deshi__generic_heap->cursor -= difference;
-		if(difference > 0) ZeroMemory(deshi__generic_heap->cursor, difference);
 		deshi__generic_heap->used   -= difference;
-		chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+		if(difference > 0) ZeroMemory(deshi__generic_heap->cursor, difference);
+		chunk->size = aligned_size;
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
 		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, requested_size, file.str, line);
@@ -854,10 +815,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 		MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 		NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 		new_chunk->prev = chunk;
-		new_chunk->size = (upt)difference | MEMORY_PREVINUSE_FLAG;
+		new_chunk->size = (upt)difference | MEMORY_EMPTY_FLAG;
 		chunk->size -= difference;
 		next->prev = new_chunk;
-		next->size &= ~(MEMORY_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 		deshi__generic_heap->used -= difference;
 		deshi__generic_heap->used += sizeof(MemChunk);
 		
@@ -878,7 +838,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 	//if requested size is greater than previous size and next chunk is empty and next chunk can hold growth, grow into that chunk
 	MemChunk* next = GetNextOrderChunk(chunk);
 	upt next_chunk_size = GetChunkSize(next);
-	if((next != deshi__generic_heap->last_chunk) && !ChunkIsInUse(next) && (next_chunk_size >= aligned_size)){
+	if(ChunkIsEmpty(next) && (next_chunk_size >= aligned_size)){
 		upt leftover_size = next_chunk_size + difference;
 		Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 		
@@ -889,7 +849,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 			MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 			NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 			new_chunk->prev = chunk;
-			new_chunk->size = leftover_size | MEMORY_PREVINUSE_FLAG;
+			new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 			next_next->prev = new_chunk;
 			deshi__generic_heap->used += sizeof(MemChunk);
 		}else{
@@ -901,7 +861,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 		next->prev = 0;
 		next->size = 0;
 		next->node = {0};
-		chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+		chunk->size = aligned_size;
 		deshi__generic_heap->used += -difference - sizeof(MemChunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
@@ -979,12 +939,11 @@ deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 	
 	//insert current chunk into heap's empty nodes (as first empty node for locality)
 	NodeInsertNext(&deshi__generic_heap->empty_nodes, &chunk->node);
+	chunk->size |= MEMORY_EMPTY_FLAG;
 	
 	//try to merge next empty into current empty
 	MemChunk* next = GetNextOrderChunk(chunk);
-	if(   (chunk != deshi__generic_heap->last_chunk) //we are not the last chunk
-	   && (next  != deshi__generic_heap->last_chunk) //next is not the last chunk
-	   && (!ChunkIsInUse(next))){                    //next is empty
+	if((chunk != deshi__generic_heap->last_chunk) && ChunkIsEmpty(next)){
 		MemChunk* next_next = GetNextOrderChunk(next);
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
@@ -997,8 +956,7 @@ deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 	
 	//try to merge current empty into prev empty
 	MemChunk* prev = GetPrevOrderChunk(chunk);
-	if(   (prev != 0)                  //we are not the first chunk
-	   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
+	if((prev != 0) && ChunkIsEmpty(prev)){
 		if(chunk == deshi__generic_heap->last_chunk){
 			deshi__generic_heap->last_chunk = prev;
 		}else{
@@ -1007,7 +965,7 @@ deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 		NodeRemove(&chunk->node);
 		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
 		NodeInsertNext(&deshi__generic_heap->empty_nodes, &prev->node);
-		prev->size += chunk->size; //NOTE not GetChunkSize(chunk) b/c we know that PREVINUSE flag is not there
+		prev->size += GetChunkSize(chunk);
 		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
@@ -1022,9 +980,6 @@ deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 		zero_pointer = chunk;
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
-	}else{
-		Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
-		next->size &= ~(MEMORY_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 	}
 	
 	deshi__generic_heap->used -= used_amount;
