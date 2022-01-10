@@ -1770,7 +1770,7 @@ void UI::TextF(const char* fmt, ...) {
 	s.space = s.count+1;
 	vsnprintf(s.str, s.count+1, fmt, argptr);
 	va_end(argptr);
-	TextW(s.str, curwin->cursor, style.colors[UIStyleCol_Text], false);
+	TextW(s.str, PositionForNewItem(), style.colors[UIStyleCol_Text], false);
 }
 
 //@Button

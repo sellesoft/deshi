@@ -49,12 +49,12 @@ struct UIItem;
 struct UIWindow;
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	          // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,               // default vec2(1, 1)	       spacing between items within a window
+	UIStyleVar_WindowPadding,             // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,               // default vec2(1, 1)        spacing between items within a window
 	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	          // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)  	   how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,              // default vec2(5, 5)		   amount to scroll in pixels             
+	UIStyleVar_TitleBarHeight,            // default font.height * 1.2                                        
+	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)      how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,              // default vec2(5, 5)        amount to scroll in pixels             
 	UIStyleVar_CheckboxSize,              // default vec2(10, 10)      
 	UIStyleVar_CheckboxFillPadding,       // default 2                 how far from the edge a checkbox's true filling is padding
 	UIStyleVar_InputTextTextAlign,        // default vec2(0,   0.5)    how text is aligned within InputText boxes
@@ -75,7 +75,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_IndentAmount,              // default 8
 	UIStyleVar_TabSpacing,                // default 5                 the spacing between tabs
 	UIStyleVar_FontHeight,                // default font->height      height of font in pixels
-	UIStyleVar_Font,			          // default "gohufont-11.bdf" 
+	UIStyleVar_Font,                      // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
 
@@ -721,7 +721,7 @@ namespace UI {
 	
 	void BeginTabBar(const char* label, UITabBarFlags flags = 0);
 	b32  BeginTab(const char* label);
-	void EndTab();
+	void EndTab(); //NOTE this should only be called if BeginTab returns true
 	void EndTabBar();
 	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
@@ -759,7 +759,7 @@ namespace UI {
 	void PushVar(UIStyleVar idx, vec2 style);
 	void PushFont(Font* font);
 	void PushScale(vec2 scale);
-	void PushLayer(u32 layer);
+	void PushLayer(u32 layer); //NOTE default layer is 5
 	void PushWindowLayer(u32 layer);
 	void PushLeftIndent(f32 indent);
 	void PushRightIndent(f32 indent);
