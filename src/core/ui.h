@@ -238,7 +238,6 @@ enum UIWindowFlags_ {
 	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
 
-
 enum UIInputTextFlags_ {
 	UIInputTextFlags_NONE                  = 0,
 	UIInputTextFlags_EnterReturnsTrue      = 1 << 0,
@@ -316,7 +315,6 @@ enum UIImageFlags_ {
 	UIImageFlags_FlipX  = 1 << 2,
 	UIImageFlags_FlipY  = 1 << 3,
 	
-	
 }; typedef u32 UIImageFlags;
 
 enum UIButtonFlags_ {
@@ -324,9 +322,14 @@ enum UIButtonFlags_ {
 	UIButtonFlags_ReturnTrueOnHold    = 1 << 0,
 	UIButtonFlags_ReturnTrueOnRelease = 1 << 1,
 	
-	
 }; typedef u32 UIButtonFlags;
 
+enum UIHeaderFlags_ {
+	UIHeaderFlags_NONE = 0,
+	UIHeaderFlags_NoIndentLeft = 1 << 0,
+	UIHeaderFlags_NoIndentRight = 1 << 1,
+	UIHeaderFlags_NoIndent = UIHeaderFlags_NoIndentLeft | UIHeaderFlags_NoIndentRight,
+}; typedef u32 UIHeaderFlags;
 
 enum UIDrawType : u32 {
 	UIDrawType_Triangle,
@@ -356,8 +359,6 @@ global_ const char* UIDrawTypeStrs[] = {
 
 #define UIDRAWCMD_MAX_VERTICES 0x3FF
 #define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
-
-
 
 //draw commands store what kind of command it is, and info relative to that command
 //this is to be stored on an array on UIWindow and determines what elements it draws when
@@ -720,7 +721,7 @@ namespace UI {
 	b32 Selectable(const char* label, b32 selected); 
 	b32 Selectable(const char* label, vec2 pos, b32 selected);
 	
-	b32  BeginHeader(const char* label);
+	b32  BeginHeader(const char* label, UIHeaderFlags flags = 0);
 	void EndHeader();
 	
 	void BeginTabBar(const char* label, UITabBarFlags flags = 0);
@@ -770,7 +771,6 @@ namespace UI {
 	void PushLeftIndent(f32 indent);
 	void PushRightIndent(f32 indent);
 	
-	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
@@ -779,9 +779,6 @@ namespace UI {
 	void PopWindowLayer(u32 count = 1);
 	void PopLeftIndent(u32 count = 1);
 	void PopRightIndent(u32 count = 1);
-
-	
-
 	
 	//// windows ////
 	void Begin(const char* name, UIWindowFlags flags = 0);

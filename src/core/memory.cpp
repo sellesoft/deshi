@@ -1159,14 +1159,17 @@ deshi__memory_draw(){
 			if(UI::BeginTab("deshi_memory_generic")){
 				bytes_sigfigs(deshi__generic_heap->used, used_char, used_divisor);
 				bytes_sigfigs(deshi__generic_heap->size, size_char, size_divisor);
-				//UI::Text("test");
+				UI::Separator(style.fontHeight / 2.f);
 				UI::TextF("Generic Heap    %.2f %cB / %.2f %cB", (f32)deshi__generic_heap->used / used_divisor, used_char, (f32)deshi__generic_heap->size / size_divisor, size_char);
 				UI::Separator(style.fontHeight/2.f);
 				
-				UI::PushColor(UIStyleCol_WindowBg,           Color_VeryDarkRed);
-				UI::PushColor(UIStyleCol_ScrollBarBg,        Color_DarkGrey);
-				UI::PushColor(UIStyleCol_ScrollBarBgHovered, Color_Grey);
-				UI::PushColor(UIStyleCol_ScrollBarBgActive,  Color_LightGrey);
+				UI::PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
+				UI::PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+				UI::PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+				UI::PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+				UI::PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+				UI::PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+				UI::PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
 				UI::SetNextWindowSize({MAX_F32, MAX_F32});
 				UI::BeginChild("deshi_memory_generic_timeline", vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
 #if MEMORY_TRACK_ALLOCS
@@ -1189,7 +1192,7 @@ deshi__memory_draw(){
 					}
 #endif //MEMORY_TRACK_ALLOCS
 				}UI::EndChild();
-				UI::PopColor(4);
+				UI::PopColor(7);
 				
 				UI::EndTab();
 			}
@@ -1198,6 +1201,7 @@ deshi__memory_draw(){
 			if(UI::BeginTab("deshi_memory_arena")){
 				bytes_sigfigs(deshi__arena_heap->used, used_char, used_divisor);
 				bytes_sigfigs(deshi__arena_heap->size, size_char, size_divisor);
+				UI::Separator(style.fontHeight / 2.f);
 				UI::TextF("Arena Heap    %.2f %cB / %.2f %cB", (f32)deshi__arena_heap->used / used_divisor, used_char, (f32)deshi__arena_heap->size / size_divisor, size_char);
 				UI::Separator(style.fontHeight/2.f);
 				

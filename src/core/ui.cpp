@@ -612,7 +612,7 @@ FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {
 
 //helper for making any new UIItem, since now we must work with item pointers internally
 //this function also decides if we are working with a new item or continuing to work on a previous
-inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
+inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0) {
 	
 	if (type == UIItemType_PreItems) {
 		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
@@ -639,16 +639,15 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 		StateRemoveFlag(UISNextItemMinSizeIgnored);
 	}
 	
+	GetDefaultItemFlags(type, UI::GetLastItem(layeroffset)->flags);
+	AddFlag(UI::GetLastItem()->flags, userflags);
+
 	ui_stats.items++;
 	curwin->items_count++;
 	return UI::GetLastItem(layeroffset);
 }
 
-inline void EndItem(UIItem* item) {
-	//copy the last made item to lastitem, so we can look back at it independently of custom item nonsense
-	//maybe only do this is we're making a custom item
-	//lastitem = *item;
-}
+inline void EndItem(UIItem* item) {}
 
 //this is for debugging debug cmds, all it does extra is hash the drawCmd
 //so we can break on it later
@@ -1381,7 +1380,6 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	
 	item.position = vec2::ZERO;// { Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 	item.    size = Max(start, end) - item.position;
-	item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
 }
 
@@ -1784,9 +1782,7 @@ void UI::TextF(const char* fmt, ...) {
 //@Button
 
 b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
-	GetDefaultItemFlags(UIItemType_Button, flags);
-
-	UIItem* item = BeginItem(UIItemType_Button);
+	UIItem* item = BeginItem(UIItemType_Button, flags);
 	item->position = pos;
 	item->size = DecideItemSize(vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
 	AdvanceCursor(item);
@@ -1825,9 +1821,9 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	}
 	
 	if (active) {
-		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnHold))
+		if (HasFlag(item->flags, UIButtonFlags_ReturnTrueOnHold))
 			return ButtonBehavoir(ButtonType_TrueOnHold);
-		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease))
+		if (HasFlag(item->flags, UIButtonFlags_ReturnTrueOnRelease))
 			return ButtonBehavoir(ButtonType_TrueOnRelease);
 		return ButtonBehavoir(ButtonType_TrueOnPressed);
 	}
@@ -1975,8 +1971,7 @@ void UI::EndCombo() {
 //@Selectable
 
 b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 1) {
-	
-	UIItem* item = BeginItem(UIItemType_Selectable, 0);
+	UIItem* item = BeginItem(UIItemType_Selectable, 0, 0);
 	item->position = pos;
 	
 	vec2 defsize;
@@ -2033,8 +2028,8 @@ b32 UI::Selectable(const char* label, b32 selected) {
 
 //@Header
 
-b32 UI::BeginHeader(const char* label) {
-	UIItem* item = BeginItem(UIItemType_Header);
+b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
+	UIItem* item = BeginItem(UIItemType_Header, flags);
 	
 	b32* open = 0;
 	if (!headers.has(label)) {
@@ -2055,16 +2050,16 @@ b32 UI::BeginHeader(const char* label) {
 		PreventInputs;
 	}
 	
-	f32 buttonrad = item->size.y / 4;
-	
-	vec2 bgpos = vec2{ buttonrad * 2 + 5, 0 };
-	vec2 bgdim = vec2{ 
-		item->size.x - bgpos.x, 
-		item->size.y };
+	f32 arrowSpaceWidth = style.indentAmount;
+	f32 arrowwidth = arrowSpaceWidth / 3;
+	f32 arrowheight = item->size.y / 3;
+
+	vec2 bgpos = vec2{ arrowSpaceWidth, 0 };
+	vec2 bgdim = vec2{ item->size.x - bgpos.x, item->size.y };
 	
 	if (*open) { 
-		PushLeftIndent(style.indentAmount + leftIndent); 
-		PushRightIndent(style.indentAmount + rightIndent);
+		if(!HasFlag(item->flags, UIHeaderFlags_NoIndentLeft))  PushLeftIndent(style.indentAmount + leftIndent); 
+		if(!HasFlag(item->flags, UIHeaderFlags_NoIndentRight)) PushRightIndent(style.indentAmount + rightIndent);
 	}
 	
 	{//background
@@ -2081,7 +2076,14 @@ b32 UI::BeginHeader(const char* label) {
 		vec2  position = vec2{ item->size.y / 4, item->size.y / 2 };
 		f32   radius = item->size.y / 4;
 		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
-		if (*open) MakeFilledCircle(drawCmd, position, radius, 30, col);
+		vec2 arrowtop((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
+		vec2 arrowpoint((arrowSpaceWidth + arrowwidth) / 2, item->size.y / 2);
+		vec2 arrowbot((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
+
+		if (*open) { 
+			MakeLine(drawCmd, arrowtop, arrowpoint, 1, col);
+			MakeLine(drawCmd, arrowbot, arrowpoint, 1, col);
+		}
 		else       MakeCircle(drawCmd, position, radius, 30, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -2117,17 +2119,14 @@ void UI::EndHeader() {
 	PopRightIndent();
 }
 
-
-
 //@BeginTabBar
 
 void UI::BeginTabBar(const char* label, UITabBarFlags flags){
-	GetDefaultItemFlags(UIItemType_TabBar, flags);
-
 	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
 	StateAddFlag(UISTabBarBegan);
 	if (!tabBars.has(label)) tabBars.add(label);
 	tabBar = tabBars.at(label);
+	GetDefaultItemFlags(UIItemType_TabBar, flags);
 	tabBar->flags = flags;
 	
 	UIItem* item = BeginItem(UIItemType_TabBar);
@@ -2245,9 +2244,7 @@ void UI::EndTabBar(){
 
 
 void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){
-	GetDefaultItemFlags(UIItemType_Slider, flags);
-
-	UIItem* item = BeginItem(UIItemType_Slider);
+	UIItem* item = BeginItem(UIItemType_Slider, flags);
 	
 	b32 being_moved = 0;
 	if (!sliders.has(label)) {
@@ -2314,8 +2311,6 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 //@Image
 
 void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
-	GetDefaultItemFlags(UIItemType_Image, flags);
-
 	UIItem* item = BeginItem(UIItemType_Image);
 	
 	item->position = pos;
@@ -2323,8 +2318,8 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	
 	AdvanceCursor(item);
 	
-	b32 flipx = HasFlag(flags, UIImageFlags_FlipX);
-	b32 flipy = HasFlag(flags, UIImageFlags_FlipY);
+	b32 flipx = HasFlag(item->flags, UIImageFlags_FlipX);
+	b32 flipy = HasFlag(item->flags, UIImageFlags_FlipY);
 	
 	
 	//TODO(sushi) image borders
@@ -4786,7 +4781,7 @@ void UI::Update() {
 		Assert(0);
 	}
 	
-	Assert(colorStack.size() == initColorStackSize, 
+	Assert(colorStack.count == initColorStackSize, 
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
 	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");

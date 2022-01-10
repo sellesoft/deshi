@@ -1818,13 +1818,22 @@ void DrawTexturesWindow() {
 	
 	for (Texture* t : st->textures) {
 		texture_bytes += t->width * t->height * u8size;
-		if (t->width * t->height > largest->width * largest->height) largest = t;
+		if (t->width * t->height > largest->width * largest->height)   largest = t;
 		if (t->width * t->height < smallest->width * smallest->height) smallest = t;
 		
 	}
 	
 	using namespace UI;
 	
+	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
+	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
+	PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
+	PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUI_Textures", vec2::ZERO, UIWindowFlags_NoBorder);
 	
@@ -1936,6 +1945,7 @@ void DrawTexturesWindow() {
 	
 	
 	EndChild();
+	PopColor(9);
 }
 
 void DrawMaterialsWindow(){
@@ -1966,9 +1976,13 @@ void DrawFontsWindow(){
 void Storage::
 StorageBrowserUI() {
 	using namespace UI;
+	PushColor(UIStyleCol_Border, Color_Grey);
+	PushColor(UIStyleCol_Separator, Color_Grey);
 	Begin("StorageBrowserUI", vec2::ONE * 200, vec2(400, 600));
 	
+
 	BeginTabBar("StorageBrowserUITabBar", UITabBarFlags_NoIndent);
+	Separator(9);
 	if(BeginTab("Meshes"))   {DrawMeshesWindow();    EndTab();}
 	if(BeginTab("Textures")) {DrawTexturesWindow();  EndTab();}
 	if(BeginTab("Materials")){DrawMaterialsWindow(); EndTab();}
@@ -1977,6 +1991,7 @@ StorageBrowserUI() {
 	EndTabBar();
 	
 	End();
+	PopColor(2);
 }
 
 #undef ParseError
