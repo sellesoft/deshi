@@ -1864,7 +1864,7 @@ void DrawTexturesWindow() {
 
 	Separator(9);
 
-	if (selected && BeginHeader("Selected")) {
+	if (selected) {
 		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 
@@ -1881,8 +1881,8 @@ void DrawTexturesWindow() {
 
 		EndRow();
 
-		PushColor(UIStyleCol_WindowBg, 0x272727FF);
-		SetNextWindowSize(vec2(MAX_F32, 300));
+		PushColor(UIStyleCol_WindowBg, 0x103156ff);
+		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoScroll);
 		persist f32  zoom = 300;
 		persist vec2 mpl;
@@ -1933,7 +1933,6 @@ void DrawTexturesWindow() {
 
 		EndChild();
 		PopColor();
-		EndHeader();
 	}
 	
 
