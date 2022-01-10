@@ -363,6 +363,7 @@ void deshi::cleanup(){
 	Render::Cleanup();
 	deshi_window.Cleanup();
 	Logger::Cleanup();
+	memory_cleanup();
 }
 
 b32 deshi::shouldClose(){

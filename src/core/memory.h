@@ -175,12 +175,16 @@ void deshi__memory_draw();
 void deshi__memory_bytes_draw();
 
 
-///////////////
-//// @init ////
-///////////////
+////////////////
+//// @state ////
+////////////////
 //reserves and commits one large chunk of memory from the OS
 void deshi__memory_init(upt main_size, upt temp_size);
 #define memory_init(main_size, temp_size) deshi__memory_init(main_size, temp_size)
+
+//prevents memory operations on program close, since OS will cleanup anyways
+void deshi__memory_cleanup();
+#define memory_cleanup() deshi__memory_cleanup()
 
 
 ////////////////////
