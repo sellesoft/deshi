@@ -415,6 +415,7 @@ enum UIItemType : u32 {
 	UIItemType_Separator, // Separator()
 	UIItemType_TabBar,    // BeginTabBar()
 	UIItemType_Tab,       // BeginTab()
+	UIItemType_COUNT
 };
 
 global_ const char* UIItemTypeStrs[] = {
@@ -458,6 +459,8 @@ struct UIItem {
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle    style;         //style at the time of making the item
 	
+	Flags flags; 
+
 	vec2 position; //relative to the window its being held in
 	vec2 size;
 	
@@ -469,6 +472,7 @@ struct UIItem {
 	
 	//set false when you dont want the item to affect scrolling or fitting all elements
 	b32 trackedForMinSize = 1;
+	b32 visible = 1; //TODO check items for visibility when they're created so we can opt drawing them
 	
 	//DEBUG info
 	u32 item_idx;
@@ -749,9 +753,11 @@ namespace UI {
 	void    CustomItemAdvanceCursor(UIItem* item, b32 move_cursor = 1);
 	void    EndCustomItem();
 	
-	
 	b32 IsLastItemHovered();
-	
+
+	void AddItemFlags(UIItemType type, Flags flags);
+	void RemoveItemFlags(UIItemType type, Flags flags);
+	void ResetItemFlags(UIItemType type);
 	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
@@ -764,6 +770,7 @@ namespace UI {
 	void PushLeftIndent(f32 indent);
 	void PushRightIndent(f32 indent);
 	
+	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
@@ -772,7 +779,9 @@ namespace UI {
 	void PopWindowLayer(u32 count = 1);
 	void PopLeftIndent(u32 count = 1);
 	void PopRightIndent(u32 count = 1);
+
 	
+
 	
 	//// windows ////
 	void Begin(const char* name, UIWindowFlags flags = 0);

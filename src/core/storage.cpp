@@ -1824,8 +1824,9 @@ void DrawTexturesWindow() {
 	}
 	
 	using namespace UI;
+	
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUI_Textures", vec2::ZERO);
+	BeginChild("StorageBrowserUI_Textures", vec2::ZERO, UIWindowFlags_NoBorder);
 	
 	BeginRow("StorageBrowserUI_Row1",2, 0, UIRowFlags_LookbackAndResizeToMax);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
@@ -1883,7 +1884,7 @@ void DrawTexturesWindow() {
 		PushColor(UIStyleCol_WindowBg, 0x103156ff);
 		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 
-		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoScroll);
+		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoInteract);
 		persist f32  zoom = 300;
 		persist vec2 mpl;
 		persist vec2 imagepos;
@@ -1907,8 +1908,6 @@ void DrawTexturesWindow() {
 		
 		if (IsWinHovered()) {
 			SetPreventInputs();
-			
-			
 			
 			if (DeshInput->scrollY) {
 				f32 val = 10 * DeshInput->scrollY;
