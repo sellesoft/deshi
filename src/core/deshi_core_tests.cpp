@@ -57,11 +57,6 @@ local void TEST_deshi_core_memory(){
 	Arena* temp_arena = memory_expose_temp_arena();
 	AssertAlways(temp_arena);
 	
-#if DESHI_INTERNAL
-	Arena* naming_arena = memory_expose_naming_arena();
-	AssertAlways(naming_arena);
-#endif //DESHI_INTERNAL
-	
 	//arena creation
 	Arena* arena1 = memory_create_arena(Kilobytes(4));
 	AssertAlways(arena1);
@@ -209,32 +204,95 @@ local void TEST_deshi_core_memory(){
 	memory_zfree(string1);
 	memory_zfree(string2);
 	
+	{//// allocation info ////
 #if DESHI_INTERNAL
-	//default names
-	AssertAlways(equals(cstr_lit("Arena Heap"),   memory_get_address_name(arena_heap)));
-	AssertAlways(equals(cstr_lit("Generic Heap"), memory_get_address_name(generic_heap)));
-	AssertAlways(equals(cstr_lit("Temp Arena"),   memory_get_address_name(temp_arena)));
-	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
-	
-	//removing a name
-	memory_set_address_name(naming_arena, {});
-	cstring name = memory_get_address_name(naming_arena);
-	AssertAlways(name.str == 0 && name.count == 0);
-	
-	//setting a name
-	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"));
-	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
-	
-	//renaming
-	memory_set_address_name(naming_arena, cstr_lit("Address Naming Arena"));
-	AssertAlways(equals(cstr_lit("Address Naming Arena"), memory_get_address_name(naming_arena)));
-	
-	//reset to default
-	memory_set_address_name(naming_arena, cstr_lit("Naming Arena"));
-	AssertAlways(equals(cstr_lit("Naming Arena"), memory_get_address_name(naming_arena)));
+		//alloc info array
+		AssertAlways(deshi__memory_allocinfo_expose().count >= 3);
+		
+		//default names
+		AssertAlways(equals(cstr_lit("Arena Heap"),   deshi__memory_allocinfo_get(arena_heap).name));
+		AssertAlways(equals(cstr_lit("Generic Heap"), deshi__memory_allocinfo_get(generic_heap).name));
+		AssertAlways(equals(cstr_lit("Temp Arena"),   deshi__memory_allocinfo_get(temp_arena).name));
+		
+		//check arena heap defaults
+		AllocInfo info = deshi__memory_allocinfo_get(arena_heap);
+		AssertAlways(info.address == arena_heap);
+		AssertAlways(info.creation_frame == 0);
+		AssertAlways(info.deletion_frame == -1);
+		AssertAlways(equals(info.name, cstr_lit("Arena Heap")));
+		AssertAlways(info.type == Type_Heap);
+		
+		//changing name and type
+		deshi__memory_allocinfo_set(arena_heap, cstr_lit("blah"), Type_Arena);
+		info = deshi__memory_allocinfo_get(arena_heap);
+		AssertAlways(info.address == arena_heap);
+		AssertAlways(info.creation_frame == 0);
+		AssertAlways(info.deletion_frame == -1);
+		AssertAlways(equals(info.name, cstr_lit("blah")));
+		AssertAlways(info.type == Type_Arena);
+		
+		//reset to default
+		deshi__memory_allocinfo_set(arena_heap, cstr_lit("Arena Heap"), Type_Heap);
+		AssertAlways(equals(cstr_lit("Arena Heap"), deshi__memory_allocinfo_get(arena_heap).name));
+		AssertAlways(Type_Heap == deshi__memory_allocinfo_get(arena_heap).type);
+		
+		//check arena allocation defaults
+		Arena* arena = memory_create_arena(Kilobytes(4));
+		info = deshi__memory_allocinfo_get(arena);
+		AssertAlways(info.address == arena);
+		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.deletion_frame == -1);
+		AssertAlways(equals(info.name, cstr_lit("")));
+		AssertAlways(info.type == 0);
+		
+		//change arena allocation
+		deshi__memory_allocinfo_set(arena, cstr_lit("an arena"), Type_Arena);
+		info = deshi__memory_allocinfo_get(arena);
+		AssertAlways(info.address == arena);
+		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.deletion_frame == -1);
+		AssertAlways(equals(info.name, cstr_lit("an arena")));
+		AssertAlways(info.type == Type_Arena);
+		
+		//check after arena allocaton is freed
+		memory_delete_arena(arena);
+		info = deshi__memory_allocinfo_get(arena);
+		AssertAlways(info.address == arena);
+		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.deletion_frame == DeshTime->updateCount);
+		AssertAlways(equals(info.name, cstr_lit("an arena")));
+		AssertAlways(info.type == Type_Arena);
+		
+		//check generic allocation defaults
+		void* alloc = memory_alloc(sizeof(Allocator));
+		info = deshi__memory_allocinfo_get(alloc);
+		AssertAlways(info.address == alloc);
+		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.deletion_frame == -1);
+		AssertAlways(equals(info.name, cstr_lit("")));
+		AssertAlways(info.type == 0);
+		
+		//change generic allocation
+		deshi__memory_allocinfo_set(alloc, cstr_lit("some allocator"), Type_Allocator);
+		info = deshi__memory_allocinfo_get(alloc);
+		AssertAlways(info.address == alloc);
+		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.deletion_frame == -1);
+		AssertAlways(equals(info.name, cstr_lit("some allocator")));
+		AssertAlways(info.type == Type_Allocator);
+		
+		//check after generic allocaton is freed
+		memory_zfree(alloc);
+		info = deshi__memory_allocinfo_get(alloc);
+		AssertAlways(info.address == alloc);
+		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.deletion_frame == DeshTime->updateCount);
+		AssertAlways(equals(info.name, cstr_lit("some allocator")));
+		AssertAlways(info.type == Type_Allocator);
 #endif //DESHI_INTERNAL
+	}
 	
-	
+	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");
 	{//// default to libc when running out of memory in arena heap ////
 		//use up all but 1KB of arena heap for setup
 		arena1 = memory_create_arena((arena_heap->size - (arena_heap->cursor - arena_heap->start)) - Kilobytes(1));
@@ -332,6 +390,7 @@ local void TEST_deshi_core_memory(){
 		alloc3 = memory_trealloc(alloc2, Kilobytes(4));
 		free((upt*)alloc3 - 1);
 	}
+	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
 	DESHI_TEST_CORE_TODO("memory");
 }

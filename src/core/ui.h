@@ -49,12 +49,12 @@ struct UIItem;
 struct UIWindow;
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	          // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,               // default vec2(1, 1)	       spacing between items within a window
+	UIStyleVar_WindowPadding,             // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,               // default vec2(1, 1)        spacing between items within a window
 	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	          // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)  	   how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,              // default vec2(5, 5)		   amount to scroll in pixels             
+	UIStyleVar_TitleBarHeight,            // default font.height * 1.2                                        
+	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)      how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,              // default vec2(5, 5)        amount to scroll in pixels             
 	UIStyleVar_CheckboxSize,              // default vec2(10, 10)      
 	UIStyleVar_CheckboxFillPadding,       // default 2                 how far from the edge a checkbox's true filling is padding
 	UIStyleVar_InputTextTextAlign,        // default vec2(0,   0.5)    how text is aligned within InputText boxes
@@ -75,7 +75,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_IndentAmount,              // default 8
 	UIStyleVar_TabSpacing,                // default 5                 the spacing between tabs
 	UIStyleVar_FontHeight,                // default font->height      height of font in pixels
-	UIStyleVar_Font,			          // default "gohufont-11.bdf" 
+	UIStyleVar_Font,                      // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
 
@@ -163,7 +163,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_SelectableBg,
 	UIStyleCol_SelectableBgActive,
 	UIStyleCol_SelectableBgHovered,
-
+	
 	UIStyleCol_TabBar,
 	UIStyleCol_TabBg,
 	UIStyleCol_TabBgActive,
@@ -315,7 +315,7 @@ enum UIImageFlags_ {
 	UIImageFlags_Invert = 1 << 1,
 	UIImageFlags_FlipX  = 1 << 2,
 	UIImageFlags_FlipY  = 1 << 3,
-
+	
 	
 }; typedef u32 UIImageFlags;
 
@@ -364,14 +364,14 @@ global_ const char* UIDrawTypeStrs[] = {
 //we do the rendering pass
 struct UIDrawCmd {
 	UIDrawType type;
-
+	
 	//because of how much drawCmds move around, we have to store these things on the heap
 	Vertex2* vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
 	u32*     indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
 	vec2     counts; 
 	
 	Texture* tex = 0;
-
+	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	b32 trackedForMinSize = 1;
 	
@@ -602,10 +602,10 @@ struct UIRow {
 	UIRowFlags flags = 0;
 	
 	string label;
-
+	
 	f32 left_edge = 0;
 	f32 right_edge = 0;
-
+	
 	f32 height = 0;
 	f32 width = 0; 
 	f32 xoffset = 0;
@@ -613,12 +613,12 @@ struct UIRow {
 	
 	f32 max_height = 0;
 	f32 max_height_frame = 0;
-
+	
 	b32 reeval_height = 0;
-
+	
 	//the position of the row to base offsets of items off of.
 	vec2 position;
-
+	
 	u32 item_count = 0;
 	array<UIColumn> columns;
 };
@@ -671,8 +671,8 @@ namespace UI {
 	void SetNextItemMinSizeIgnored();
 	void SetPreventInputs();
 	void SetAllowInputs();
-
-
+	
+	
 	
 	
 	
@@ -685,7 +685,7 @@ namespace UI {
 	void RowSetupRelativeColumnWidths(array<f32> widths);
 	void RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge);
 	void RowSetupColumnAlignments(array<vec2> alignments);
-
+	
 	//// drawing ////
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
@@ -719,11 +719,11 @@ namespace UI {
 	b32  BeginHeader(const char* label);
 	void EndHeader();
 	
-	b32  BeginTabBar(const char* label, UITabBarFlags flags = 0);
+	void BeginTabBar(const char* label, UITabBarFlags flags = 0);
 	b32  BeginTab(const char* label);
-	void EndTab();
+	void EndTab(); //NOTE this should only be called if BeginTab returns true
 	void EndTabBar();
-
+	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 	
 	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
@@ -743,11 +743,15 @@ namespace UI {
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-
-
+	
+	
 	UIItem* BeginCustomItem(u32 layeroffset = 0);
 	void    CustomItemAdvanceCursor(UIItem* item, b32 move_cursor = 1);
 	void    EndCustomItem();
+	
+	
+	b32 IsLastItemHovered();
+	
 	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
@@ -755,11 +759,11 @@ namespace UI {
 	void PushVar(UIStyleVar idx, vec2 style);
 	void PushFont(Font* font);
 	void PushScale(vec2 scale);
-	void PushLayer(u32 layer);
+	void PushLayer(u32 layer); //NOTE default layer is 5
 	void PushWindowLayer(u32 layer);
 	void PushLeftIndent(f32 indent);
 	void PushRightIndent(f32 indent);
-
+	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
@@ -768,7 +772,7 @@ namespace UI {
 	void PopWindowLayer(u32 count = 1);
 	void PopLeftIndent(u32 count = 1);
 	void PopRightIndent(u32 count = 1);
-
+	
 	
 	//// windows ////
 	void Begin(const char* name, UIWindowFlags flags = 0);
@@ -802,7 +806,7 @@ namespace UI {
 	void DrawDebugCircleFilled(vec2 pos, f32 radius, color color = Color_Red);
 	void DrawDebugLine(vec2 pos1, vec2 pos2, color color = Color_Red);
 	void DrawDebugTriangle(vec2 p0, vec2 p1, vec2 p2, color color = Color_Red);
-
+	
 }; //namespace UI
 
 #endif //DESHI_UI_H

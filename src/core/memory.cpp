@@ -1,20 +1,29 @@
 //NOTE Memory Layout: 
-//|                                Total Size                                 |
-//|                            Main Heap                        |  Temp Arena |
-//| Generic Arena |      Heap Arena      |      Heap Arena      | Item | Item |
-//| Chunk | Chunk | Header |    Memory   | Header |    Memory   |      |      |
-//|       |       |        | Item | Item |        | Item | Item |      |      |
+//|                      Total Size                         |
+//|                Main Heap                  |  Temp Arena |
+//| Generic Heap  |  Heap Arena |  Heap Arena | Item | Item |
+//| Chunk | Chunk | Item | Item | Item | Item |      |      |
 
-////////////////
-//// @utils ////
-////////////////
-#define MEMORY_CHECK_HEAPS true
+#define MEMORY_CHECK_HEAPS DESHI_INTERNAL
+#define MEMORY_TRACK_ALLOCS DESHI_INTERNAL
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false
 #define MEMORY_PRINT_GENERIC_CHUNKS false
 #define MEMORY_PRINT_GENERIC_ACTIONS false
 #define MEMORY_PRINT_TEMP_ACTIONS false
 
+local Heap   deshi__arena_heap_;
+local Heap*  deshi__arena_heap = &deshi__arena_heap_;
+local Arena* deshi__generic_arena; //deshi__generic_heap is stored here; not used otherwise
+local Heap*  deshi__generic_heap;
+
+#if MEMORY_TRACK_ALLOCS
+local array<AllocInfo> deshi__alloc_infos(stl_allocator); //uses libc so it is external the system
+#endif //MEMORY_TRACK_ALLOCS
+
+////////////////
+//// @utils ////
+////////////////
 #define MEMORY_POINTER_SIZE sizeof(void*)
 #define MEMORY_BYTE_ALIGNMENT (2*MEMORY_POINTER_SIZE)
 #define MEMORY_BYTE_ALIGNMENT_MASK (MEMORY_BYTE_ALIGNMENT-1)
@@ -23,39 +32,6 @@
 #define MEMORY_MIN_CHUNK_SIZE ((sizeof(MemChunk) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
 #define MEMORY_CHUNK_ALIGNMENT MEMORY_MIN_CHUNK_SIZE
 #define MEMORY_MAX_GENERIC_SIZE (Kilobytes(64) - 1)
-
-//NOTE Chunk Flags !ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1224
-//  Chunk flags are stored in the lower bits of the chunk's size variable, and this doesn't cause problems b/c the size 
-//  is always greater than 8 bytes on 32bit and 16 bytes on on 64bit (MEMORY_GENERIC_MIN_ALLOC_SIZE).
-//  To get the size, we mask off the bits holding these flags.
-//  ISARENAD and PREVINUSE should never be used together
-//
-//  PREVINUSE (0x1): previous adjacent chunk is in use //TODO maybe just change to INUSE/EMPTY?
-//  ISARENAD  (0x2): the chunk was large enough to use an Arena
-//  LIBC      (0x4): deshi ran out of memory and had to call libc
-#define MEMORY_PREVINUSE_FLAG 0x1
-#define MEMORY_ISARENAD_FLAG 0x2
-#define MEMORY_LIBC_FLAG 0x4
-
-#define MEMORY_CHUNK_SIZE_BITS (MEMORY_PREVINUSE_FLAG | MEMORY_ISARENAD_FLAG | MEMORY_LIBC_FLAG)
-#define MEMORY_EXTRACT_SIZE_BITMASK (~MEMORY_CHUNK_SIZE_BITS)
-
-#define GetChunkSize(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
-#define GetNextOrderChunk(chunk_ptr)\
-((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
-#define GetPrevOrderChunk(chunk_ptr)\
-((chunk_ptr)->prev)
-#define GetChunkAtOffset(chunk_ptr,offset)\
-((MemChunk*)((u8*)(chunk_ptr) + (offset)))
-#define PrevChunkIsInUse(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_PREVINUSE_FLAG)
-#define ChunkIsInUse(chunk_ptr)\
-(((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))->size & MEMORY_PREVINUSE_FLAG)
-#define ChunkIsArenad(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_ISARENAD_FLAG)
-#define ChunkIsLibc(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_LIBC_FLAG)
 
 #if MEMORY_CHECK_HEAPS
 local void
@@ -71,13 +47,13 @@ DEBUG_CheckHeap(Heap* heap){
 	
 	if(heap->initialized && heap->used > 0){
 		upt overall_used = 0;
-		for(MemChunk* chunk = (MemChunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
 			Assert((u8*)chunk < heap->cursor, "All chunks must be below the cursor");
 			Assert(GetChunkSize(chunk) >= MEMORY_MIN_CHUNK_SIZE, "Chunk size is less than minimum");
 			Assert(GetChunkSize(chunk) % MEMORY_BYTE_ALIGNMENT == 0, "Chunk size is not aligned correctly");
 			if(chunk != heap->last_chunk){
 				Assert(GetNextOrderChunk(chunk)->prev == chunk, "Next order chunk is not correctly pointing to current chunk");
-				if(!PrevChunkIsInUse(GetNextOrderChunk(chunk))){
+				if(ChunkIsEmpty(chunk)){
 					overall_used += sizeof(MemChunk);
 				}else{
 					overall_used += GetChunkSize(chunk);
@@ -98,10 +74,10 @@ local void
 DEBUG_PrintHeapChunks(Heap* heap, char* heap_name){
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
-		for(MemChunk* chunk = (MemChunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
 			heap_order += to_string("0x%p", chunk); heap_order += " -> ";
 			if(chunk != heap->last_chunk){
-				if(!ChunkIsInUse(chunk)){
+				if(ChunkIsEmpty(chunk)){
 					heap_empty += to_string("0x%p", chunk);
 					heap_empty += " -> ";
 				}else{
@@ -119,19 +95,56 @@ DEBUG_PrintHeapChunks(Heap* heap, char* heap_name){
 	}
 }
 
+local b32
+AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){
+	return a.address < b.address;
+}
+
+#if MEMORY_TRACK_ALLOCS
+local AllocInfo*
+DEBUG_AllocInfo_Creation(void* address, cstring file, upt line){
+	spt middle = 0;
+	if(deshi__alloc_infos.count > 0){
+		spt left  = 0;
+		spt right = deshi__alloc_infos.count-1;
+		while(left <= right){
+			middle = left + ((right - left) / 2);
+			if(deshi__alloc_infos[middle].address == address){
+				break;
+			}
+			if(deshi__alloc_infos[middle].address < address){
+				left = middle + 1;
+				middle = left + ((right - left) / 2);
+			}else{
+				right = middle - 1;
+			}
+		}
+		
+		deshi__alloc_infos.insert(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")}, middle);
+	}else{
+		deshi__alloc_infos.add(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")});
+	}
+	return &deshi__alloc_infos[middle];
+}
+
+local void
+DEBUG_AllocInfo_Deletion(void* address){
+	if(address == 0) return;
+	upt index = binary_search(deshi__alloc_infos, AllocInfo{address}, AllocInfo_LessThan);
+	if(index != -1) deshi__alloc_infos[index].deletion_frame = DeshTime->updateCount;
+}
+#endif //MEMORY_TRACK_ALLOCS
+
 ////////////////
 //// @arena ////
 ////////////////
-local Heap deshi__arena_heap_;
-local Heap* deshi__arena_heap = &deshi__arena_heap_;
-
 #if MEMORY_CHECK_HEAPS
 local void
 DEBUG_CheckArenaHeapArenas(){
 	if(deshi__arena_heap->initialized && deshi__arena_heap->used > 0){
 		for(MemChunk* chunk = (MemChunk*)deshi__arena_heap->start; chunk != deshi__arena_heap->last_chunk; ){
 			MemChunk* next = GetNextOrderChunk(chunk);
-			if(PrevChunkIsInUse(next)){
+			if(!ChunkIsEmpty(chunk)){
 				Arena* arena = ChunkToArena(chunk);
 				Assert(PointerDifference(arena->start + arena->size, next) == 0, "Arena start and size dont point to the next chunk");
 			}
@@ -162,8 +175,9 @@ CreateArenaLibc(upt aligned_size){ //NOTE expects pre-aligned size with arena ov
 }
 
 Arena*
-deshi__memory_arena_create(upt requested_size, char* file, upt line){
+deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__arena_heap);
+	
 	if(requested_size == 0) return 0;
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to create an arena before memory_init() has been called");
 	
@@ -185,7 +199,7 @@ deshi__memory_arena_create(upt requested_size, char* file, upt line){
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&deshi__arena_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
-				new_chunk->size = leftover_size; //NOTE this gets OR'd with MEMORY_GENERIC_PREVINUSE_FLAG below
+				new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 				next->prev = new_chunk;
 				next = new_chunk;
 				deshi__arena_heap->used += sizeof(MemChunk);
@@ -196,8 +210,7 @@ deshi__memory_arena_create(upt requested_size, char* file, upt line){
 			//convert empty node to order node
 			NodeRemove(&chunk->node);
 			//chunk->node = {0}; //NOTE not necessary since its overwritten below
-			chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
-			next->size |= MEMORY_PREVINUSE_FLAG; //set PREVINUSE flag on next chunk
+			chunk->size = aligned_size;
 			deshi__arena_heap->used += aligned_size - sizeof(MemChunk);
 			
 			result = ChunkToArena(chunk);
@@ -207,24 +220,32 @@ deshi__memory_arena_create(upt requested_size, char* file, upt line){
 			result->used   = 0;
 			
 #if MEMORY_PRINT_ARENA_ACTIONS
-			Logf("memory","Created an arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file, line);
+			Logf("memory","Created an arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+			DEBUG_CheckHeap(deshi__arena_heap);
+			DEBUG_CheckArenaHeapArenas();
+			DEBUG_PrintArenaHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+			DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 			
 			Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
-			DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
 			return result;
 		}
 	}
 	
 	//if we cant replace an empty node, make a new order node for the allocation (if there is space)
 	if(deshi__arena_heap->cursor + aligned_size > deshi__arena_heap->start + deshi__arena_heap->size){
-		LogfE("memory","Deshi ran out of main memory when attempting to create an arena (triggered at %s:%zu); defaulting to libc calloc.", file, line);
+		LogfE("memory","Deshi ran out of main memory when attempting to create an arena (triggered at %s:%zu); defaulting to libc calloc.", file.str, line);
 		
 		result = CreateArenaLibc(aligned_size);
 		
 #if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Created a libc arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file, line);
+		Logf("memory","Created a libc arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+#if MEMORY_TRACK_ALLOCS
+		DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 		
 		Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
 		return result;
@@ -232,7 +253,7 @@ deshi__memory_arena_create(upt requested_size, char* file, upt line){
 	
 	MemChunk* new_chunk = (MemChunk*)deshi__arena_heap->cursor;
 	new_chunk->prev = deshi__arena_heap->last_chunk;
-	new_chunk->size = (deshi__arena_heap->last_chunk != 0) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+	new_chunk->size = aligned_size;
 	deshi__arena_heap->cursor    += aligned_size;
 	deshi__arena_heap->used      += aligned_size;
 	deshi__arena_heap->last_chunk = new_chunk;
@@ -244,24 +265,32 @@ deshi__memory_arena_create(upt requested_size, char* file, upt line){
 	result->used   = 0;
 	
 #if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Created an arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file, line);
+	Logf("memory","Created an arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_CheckHeap(deshi__arena_heap);
+	DEBUG_CheckArenaHeapArenas();
+	DEBUG_PrintArenaHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+	DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 	
 	Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
-	DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
 	return result;
 }
 
 Arena*
-deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
-	DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas();
+deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
+	DEBUG_CheckHeap(deshi__arena_heap);
+	DEBUG_CheckArenaHeapArenas();
+	
 	if(size == 0) return arena;
 	if(arena == 0) return 0;
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to grow an arena before memory_init() has been called");
 	
+	upt aligned_size = RoundUpTo(size, MEMORY_BYTE_ALIGNMENT);
+	AllocInfo info = deshi__memory_allocinfo_get(arena);
 	MemChunk* chunk = ArenaToChunk(arena);
 	Arena* result = arena;
-	upt aligned_size = RoundUpTo(size, MEMORY_BYTE_ALIGNMENT);
 	
 	//if already using libc, keep using it
 	if(ChunkIsLibc(chunk)){
@@ -277,11 +306,17 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 		result->size  += size;
 		ZeroMemory(result->start + old_size, size);
 		
-		memory_set_address_name(result, memory_get_address_name(arena));
 #if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Grew a libc arena[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", result, size, file, line);
+		Logf("memory","Grew a libc arena[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", arena, info.name.str, result, size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
-		memory_set_address_name((result != arena) ? arena : 0, cstring{});
+#if MEMORY_TRACK_ALLOCS
+		if(arena != result){
+			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
+			new_info->name = info.name;
+			new_info->type = info.type;
+			DEBUG_AllocInfo_Deletion(arena);
+		}
+#endif //MEMORY_TRACK_ALLOCS
 		
 		return result;
 	}
@@ -290,17 +325,21 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 	//current chunk is the last chunk, so grow current
 	if(chunk == deshi__arena_heap->last_chunk){
 		if(deshi__arena_heap->cursor + aligned_size > deshi__arena_heap->start + deshi__arena_heap->size){
-			LogfE("memory","Deshi ran out of main memory when attempting to grow an arena[0x%p]%s of size %zu bytes with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, size, file, line);
+			LogfE("memory","Deshi ran out of main memory when attempting to grow an arena[0x%p]%s of size %zu bytes with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", arena, info.name.str, arena->size, size, file.str, line);
 			
 			result = CreateArenaLibc(arena->size + size);
 			result->cursor += (arena->cursor - arena->start);
 			result->used    = arena->used;
 			memcpy(result->start, arena->start, arena->size);
 			
-			memory_set_address_name(result, memory_get_address_name(arena));
 #if MEMORY_PRINT_ARENA_ACTIONS
-			Logf("memory","Grew an arena   [0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", result, size, file, line);
+			Logf("memory","Grew an arena   [0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", arena, info.name.str, result, size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+#if MEMORY_TRACK_ALLOCS
+			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
+			new_info->name = info.name;
+			new_info->type = info.type;
+#endif //MEMORY_TRACK_ALLOCS
 			
 			deshi__memory_arena_delete(arena, file, line);
 			return result;
@@ -312,17 +351,19 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 		deshi__arena_heap->used   += aligned_size;
 		
 #if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Grew an arena   [0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", aligned_size, file, line);
+		Logf("memory","Grew an arena   [0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_CheckHeap(deshi__arena_heap);
+		DEBUG_CheckArenaHeapArenas();
+		DEBUG_PrintArenaHeapChunks();
 		
-		DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
 		return result;
 	}
 	
 	//next chunk is empty and can hold the growth, so grow into next
 	MemChunk* next = GetNextOrderChunk(chunk);
 	upt next_chunk_size = GetChunkSize(next);
-	if((next != deshi__arena_heap->last_chunk) && !ChunkIsInUse(next) && (next_chunk_size >= aligned_size)){
+	if(ChunkIsEmpty(next) && (next_chunk_size >= aligned_size)){
 		upt leftover_size = next_chunk_size - aligned_size;
 		Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 		
@@ -332,7 +373,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 			MemChunk* new_chunk = GetChunkAtOffset(chunk, GetChunkSize(chunk) + aligned_size);
 			NodeInsertNext(&deshi__arena_heap->empty_nodes, &new_chunk->node);
 			new_chunk->prev = chunk;
-			new_chunk->size = leftover_size | MEMORY_PREVINUSE_FLAG;
+			new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 			next_next->prev = new_chunk;
 			deshi__arena_heap->used += sizeof(MemChunk);
 		}else{
@@ -349,10 +390,12 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 		deshi__arena_heap->used += aligned_size - sizeof(MemChunk);
 		
 #if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Grew an arena   [0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", aligned_size, file, line);
+		Logf("memory","Grew an arena   [0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_CheckHeap(deshi__arena_heap);
+		DEBUG_CheckArenaHeapArenas();
+		DEBUG_PrintArenaHeapChunks();
 		
-		DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
 		return result;
 	}
 	
@@ -362,21 +405,25 @@ deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
 	result->used   = arena->used;
 	result->cursor = result->start + (arena->cursor - arena->start);
 	
-	memory_set_address_name(result, memory_get_address_name(arena));
 #if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Grew an arena   [0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", result, aligned_size, file, line);
+	Logf("memory","Grew an arena   [0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", arena, info.name.str, result, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_CheckHeap(deshi__arena_heap);
+	DEBUG_CheckArenaHeapArenas();
+	DEBUG_PrintArenaHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+	deshi__memory_allocinfo_set(result, info.name, info.type);
+#endif //MEMORY_TRACK_ALLOCS
 	
 	deshi__memory_arena_delete(arena, file, line);
-	
-	DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
 	return result;
 }
 
 void
-deshi__memory_arena_clear(Arena* arena, char* file, upt line){
+deshi__memory_arena_clear(Arena* arena, cstring file, upt line){
 #if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, file, line);
+	AllocInfo info = deshi__memory_allocinfo_get(arena);
+	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
 	
 	ZeroMemory(arena->start, arena->used);
@@ -385,21 +432,27 @@ deshi__memory_arena_clear(Arena* arena, char* file, upt line){
 }
 
 void
-deshi__memory_arena_delete(Arena* arena, char* file, upt line){
-	DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas();
+deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
+	DEBUG_CheckHeap(deshi__arena_heap);
+	DEBUG_CheckArenaHeapArenas();
+	
 	if(arena == 0) return;
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to delete an arena before memory_init() has been called");
 	
+	AllocInfo info = deshi__memory_allocinfo_get(arena);
 	MemChunk* chunk = ArenaToChunk(arena);
+	
+#if MEMORY_TRACK_ALLOCS
+	DEBUG_AllocInfo_Deletion(arena);
+#endif //MEMORY_TRACK_ALLOCS
 	
 	//if allocated from libc, free with libc
 	if(ChunkIsLibc(chunk)){
 		free(chunk);
 		
 #if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Deleted a libc arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, file, line);
+		Logf("memory","Deleted a libc arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
-		memory_set_address_name(arena, cstring{});
 		
 		return;
 	}
@@ -412,12 +465,11 @@ deshi__memory_arena_delete(Arena* arena, char* file, upt line){
 	
 	//insert current chunk into heap's empty nodes (as first empty node for locality)
 	NodeInsertNext(&deshi__arena_heap->empty_nodes, &chunk->node);
+	chunk->size |= MEMORY_EMPTY_FLAG;
 	
 	//try to merge next empty into current empty
 	MemChunk* next = GetNextOrderChunk(chunk);
-	if(   (chunk != deshi__arena_heap->last_chunk) //we are not the last chunk
-	   && (next  != deshi__arena_heap->last_chunk) //next is not the last chunk
-	   && (!ChunkIsInUse(next))){                  //next is empty
+	if((chunk != deshi__arena_heap->last_chunk) && ChunkIsEmpty(next)){
 		MemChunk* next_next = GetNextOrderChunk(next);
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
@@ -430,8 +482,7 @@ deshi__memory_arena_delete(Arena* arena, char* file, upt line){
 	
 	//try to merge current empty into prev empty
 	MemChunk* prev = GetPrevOrderChunk(chunk);
-	if(   (prev != 0)                  //we are not the first chunk
-	   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
+	if((prev != 0) && ChunkIsEmpty(prev)){
 		if(chunk == deshi__arena_heap->last_chunk){
 			deshi__arena_heap->last_chunk = prev;
 		}else{
@@ -440,7 +491,7 @@ deshi__memory_arena_delete(Arena* arena, char* file, upt line){
 		NodeRemove(&chunk->node);
 		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
 		NodeInsertNext(&deshi__arena_heap->empty_nodes, &prev->node);
-		prev->size += chunk->size; //NOTE not GetChunkSize(chunk) b/c we know that PREVINUSE flag is not there
+		prev->size += GetChunkSize(chunk);
 		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
@@ -455,20 +506,17 @@ deshi__memory_arena_delete(Arena* arena, char* file, upt line){
 		zero_pointer = chunk;
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
-	}else{
-		Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
-		next->size &= ~(MEMORY_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 	}
-	
-#if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Deleted an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, (memory_get_address_name(arena)) ? memory_get_address_name(arena).str : "", arena->size, file, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
-	memory_set_address_name(arena, cstring{});
 	
 	deshi__arena_heap->used -= used_amount;
 	ZeroMemory(zero_pointer, zero_amount);
 	
-	DEBUG_CheckHeap(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+#if MEMORY_PRINT_ARENA_ACTIONS
+	Logf("memory","Deleted an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
+#endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_CheckHeap(deshi__arena_heap);
+	DEBUG_CheckArenaHeapArenas();
+	DEBUG_PrintArenaHeapChunks();
 }
 
 Heap*
@@ -480,9 +528,6 @@ deshi__memory_arena_expose(){
 //////////////////
 //// @generic ////
 //////////////////
-local Arena* deshi__generic_arena; //deshi__generic_heap is stored here; not used otherwise
-local Heap* deshi__generic_heap;
-
 #if MEMORY_PRINT_GENERIC_CHUNKS
 FORCE_INLINE void DEBUG_PrintGenericHeapChunks(){ DEBUG_PrintHeapChunks(deshi__generic_heap,"Generic Heap"); }
 #else //MEMORY_PRINT_GENERIC_CHUNKS
@@ -516,8 +561,9 @@ FreeLibc(void* ptr){
 }
 
 void*
-deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
+deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
+	
 	if(requested_size == 0) return 0;
 	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before memory_init() has been called");
 	
@@ -534,12 +580,15 @@ deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 		
 		MemChunk* chunk = (MemChunk*)arena->start;
-		chunk->size = arena->size | MEMORY_ISARENAD_FLAG;
+		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file, line);
+		Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+#if MEMORY_TRACK_ALLOCS
+		DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 		
 		return result;
 	}
@@ -559,7 +608,7 @@ deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
-				new_chunk->size = leftover_size; //NOTE this gets OR'd with MEMORY_GENERIC_PREVINUSE_FLAG below
+				new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 				next->prev = new_chunk;
 				next = new_chunk;
 				deshi__generic_heap->used += sizeof(MemChunk);
@@ -567,71 +616,91 @@ deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
 				aligned_size += leftover_size;
 			}
 			
-			//convert empty node to order node  //NOTE chunk->prev doesnt need to change
+			//convert empty node to order node
 			NodeRemove(&chunk->node);
+			//NOTE chunk->prev doesnt need to change
 			chunk->node = {0}; //zero this data since it will be used by the allocation
-			chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
-			next->size |= MEMORY_PREVINUSE_FLAG; //set PREVINUSE flag on next chunk
+			chunk->size = aligned_size;
 			deshi__generic_heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
 			
 #if MEMORY_PRINT_GENERIC_ACTIONS
-			Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, aligned_size, file, line);
+			Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+			DEBUG_CheckHeap(deshi__generic_heap);
+			DEBUG_PrintGenericHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+			DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 			
-			DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 			return result;
 		}
 	}
 	
 	//if we cant replace an empty node, make a new order node for the allocation (if there is space)
 	if(deshi__generic_heap->cursor + aligned_size > deshi__generic_heap->start + deshi__generic_heap->size){
-		LogfE("memory","Deshi ran out of generic memory when attempting to allocate %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", requested_size, file, line);
+		LogfE("memory","Deshi ran out of generic memory when attempting to allocate %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", requested_size, file.str, line);
 		result = AllocateLibc(aligned_size);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Created a libc allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file, line);
+		Logf("memory","Created a libc allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+#if MEMORY_TRACK_ALLOCS
+		DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 		
 		return result;
 	}
 	
 	MemChunk* new_chunk = (MemChunk*)deshi__generic_heap->cursor;
 	new_chunk->prev = deshi__generic_heap->last_chunk;
-	new_chunk->size = (deshi__generic_heap->last_chunk != 0) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+	new_chunk->size = aligned_size;
 	deshi__generic_heap->cursor    += aligned_size;
 	deshi__generic_heap->used      += aligned_size;
 	deshi__generic_heap->last_chunk = new_chunk;
 	result = ChunkToMemory(new_chunk);
 	
 #if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file, line);
+	Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+	DEBUG_CheckHeap(deshi__generic_heap);
+	DEBUG_PrintGenericHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+	DEBUG_AllocInfo_Creation(result, file, line);
+#endif //MEMORY_TRACK_ALLOCS
 	
-	DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 	return result;
 }
 
 void*
-deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt line){
-	DEBUG_CheckHeap(deshi__generic_heap); 
+deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, upt line){
+	DEBUG_CheckHeap(deshi__generic_heap);
+	
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
 	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before memory_init() has been called");
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
 	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_CHUNK_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_MIN_CHUNK_SIZE);
+	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	MemChunk* chunk = MemoryToChunk(ptr);
 	void* result = ptr;
 	
 	if(ChunkIsLibc(chunk)){
 		result = ReallocateLibc(ptr, aligned_size);
 		
-		memory_set_address_name(result, memory_get_address_name(ptr));
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated a libc allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", result, requested_size, file, line);
+		Logf("memory","Reallocated a libc allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
-		memory_set_address_name((ptr != result) ? ptr : 0, cstring{});
+#if MEMORY_TRACK_ALLOCS
+		if(ptr != result){
+			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
+			new_info->name = info.name;
+			new_info->type = info.type;
+			DEBUG_AllocInfo_Deletion(ptr);
+		}
+#endif //MEMORY_TRACK_ALLOCS
+		
 		return result;
 	}
 	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to reallocate a pointer outside the main heap and missing the libc flag");
@@ -648,15 +717,23 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		arena->used = aligned_size;
 		
 		chunk = (MemChunk*)arena->start;
-		chunk->size = arena->size | MEMORY_ISARENAD_FLAG;
+		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
-		memory_set_address_name(result, memory_get_address_name(ptr));
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", result, requested_size, file, line);
+		Logf("memory","Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
-		memory_set_address_name((ptr != result) ? ptr : 0, cstring{});
-		DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
+		DEBUG_CheckHeap(deshi__generic_heap);
+		DEBUG_PrintGenericHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+		if(ptr != result){
+			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
+			new_info->name = info.name;
+			new_info->type = info.type;
+			DEBUG_AllocInfo_Deletion(ptr);
+		}
+#endif //MEMORY_TRACK_ALLOCS
+		
 		return result;
 	}
 	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap and missing the libc flag");
@@ -670,17 +747,21 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		
 		chunk = (MemChunk*)arena->start;
 		chunk->prev = 0;
-		chunk->size = arena->size | MEMORY_ISARENAD_FLAG;
+		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
-		memory_set_address_name(result, memory_get_address_name(ptr));
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", result, requested_size, file, line);
+		Logf("memory","Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+		DEBUG_CheckHeap(deshi__generic_heap);
+		DEBUG_PrintGenericHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+		AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
+		new_info->name = info.name;
+		new_info->type = info.type;
+#endif //MEMORY_TRACK_ALLOCS
 		
 		deshi__memory_generic_zero_free(ptr, file, line);
-		
-		DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 		return result;
 	}
 	
@@ -694,31 +775,36 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 	if(chunk == deshi__generic_heap->last_chunk){
 		//if out of memory, default to libc
 		if((deshi__generic_heap->cursor - difference) > (deshi__generic_heap->start + deshi__generic_heap->size)){
-			LogfE("memory","Deshi ran out of generic memory when attempting to reallocate a ptr[0x%p]%s (triggered at %s:%zu); defaulting to libc calloc.", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", file, line);
+			LogfE("memory","Deshi ran out of generic memory when attempting to reallocate a ptr[0x%p]%s (triggered at %s:%zu); defaulting to libc calloc.", ptr, info.name.str, file.str, line);
 			
 			result = AllocateLibc(aligned_size);
 			MemChunk* new_chunk = MemoryToChunk(result);
 			memcpy(&new_chunk->node, &chunk->node, GetChunkSize(chunk) - MEMORY_CHUNK_OVERHEAD);
 			
-			memory_set_address_name(result, memory_get_address_name(ptr));
 #if MEMORY_PRINT_GENERIC_ACTIONS
-			Logf("memory","Reallocated an allocation[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", result, requested_size, file, line);
+			Logf("memory","Reallocated an allocation[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+#if MEMORY_TRACK_ALLOCS
+			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
+			new_info->name = info.name;
+			new_info->type = info.type;
+#endif //MEMORY_TRACK_ALLOCS
 			
-			deshi__memory_generic_zero_free(ptr);
+			deshi__memory_generic_zero_free(ptr, file, line);
 			return result;
 		}
 		
 		deshi__generic_heap->cursor -= difference;
-		if(difference > 0) ZeroMemory(deshi__generic_heap->cursor, difference);
 		deshi__generic_heap->used   -= difference;
-		chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+		if(difference > 0) ZeroMemory(deshi__generic_heap->cursor, difference);
+		chunk->size = aligned_size;
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", requested_size, file, line);
+		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+		DEBUG_CheckHeap(deshi__generic_heap);
+		DEBUG_PrintGenericHeapChunks();
 		
-		DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 		return ptr;
 	}
 	
@@ -728,18 +814,18 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 		NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 		new_chunk->prev = chunk;
-		new_chunk->size = (upt)difference | MEMORY_PREVINUSE_FLAG;
+		new_chunk->size = (upt)difference | MEMORY_EMPTY_FLAG;
 		chunk->size -= difference;
 		next->prev = new_chunk;
-		next->size &= ~(MEMORY_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 		deshi__generic_heap->used -= difference;
 		deshi__generic_heap->used += sizeof(MemChunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", requested_size, file, line);
+		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+		DEBUG_CheckHeap(deshi__generic_heap);
+		DEBUG_PrintGenericHeapChunks();
 		
-		DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 		return ptr;
 	}
 	
@@ -751,7 +837,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 	//if requested size is greater than previous size and next chunk is empty and next chunk can hold growth, grow into that chunk
 	MemChunk* next = GetNextOrderChunk(chunk);
 	upt next_chunk_size = GetChunkSize(next);
-	if((next != deshi__generic_heap->last_chunk) && !ChunkIsInUse(next) && (next_chunk_size >= aligned_size)){
+	if(ChunkIsEmpty(next) && (next_chunk_size >= aligned_size)){
 		upt leftover_size = next_chunk_size + difference;
 		Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 		
@@ -762,7 +848,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 			MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 			NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 			new_chunk->prev = chunk;
-			new_chunk->size = leftover_size | MEMORY_PREVINUSE_FLAG;
+			new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
 			next_next->prev = new_chunk;
 			deshi__generic_heap->used += sizeof(MemChunk);
 		}else{
@@ -774,14 +860,15 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 		next->prev = 0;
 		next->size = 0;
 		next->node = {0};
-		chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_PREVINUSE_FLAG : aligned_size;
+		chunk->size = aligned_size;
 		deshi__generic_heap->used += -difference - sizeof(MemChunk);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", aligned_size, file, line);
+		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+		DEBUG_CheckHeap(deshi__generic_heap);
+		DEBUG_PrintGenericHeapChunks();
 		
-		DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 		return ptr;
 	}
 	
@@ -791,32 +878,38 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt 
 	memcpy(result, &chunk->node, GetChunkSize(chunk) - MEMORY_CHUNK_OVERHEAD);
 	chunk = MemoryToChunk(result);
 	
-	memory_set_address_name(result, memory_get_address_name(ptr));
 #if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Reallocated an allocation[0x%p%s] to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", result, requested_size, file, line);
+	Logf("memory","Reallocated an allocation[0x%p%s] to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
+	DEBUG_CheckHeap(deshi__generic_heap);
+	DEBUG_PrintGenericHeapChunks();
+#if MEMORY_TRACK_ALLOCS
+	deshi__memory_allocinfo_set(result, info.name, info.type);
+#endif //MEMORY_TRACK_ALLOCS
 	
 	deshi__memory_generic_zero_free(ptr, file, line);
-	
-	DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 	return result;
 }
 
 void
-deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
+deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
 	if(ptr == 0) return;
 	
+	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	MemChunk* chunk = MemoryToChunk(ptr);
+	
+#if MEMORY_TRACK_ALLOCS
+	DEBUG_AllocInfo_Deletion(ptr);
+#endif //MEMORY_TRACK_ALLOCS
 	
 	//if allocated from libc, free with libc
 	if(ChunkIsLibc(chunk)){
 		FreeLibc(ptr);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Freed a libc allocation[0x%p]%s (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", file, line);
+		Logf("memory","Freed a libc allocation[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
-		memory_set_address_name(ptr, cstring{});
 		
 		return;
 	}
@@ -829,11 +922,11 @@ deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 		deshi__memory_arena_delete((Arena*)chunk - 1, file, line);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Freed an allocation  [0x%p]%s (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", file, line);
+		Logf("memory","Freed an allocation  [0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
-		memory_set_address_name(ptr, cstring{});
+		DEBUG_CheckHeap(deshi__generic_heap);
+		DEBUG_PrintGenericHeapChunks();
 		
-		DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
 		return;
 	}
 	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to free a pointer outside the generic heap");
@@ -845,12 +938,11 @@ deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 	
 	//insert current chunk into heap's empty nodes (as first empty node for locality)
 	NodeInsertNext(&deshi__generic_heap->empty_nodes, &chunk->node);
+	chunk->size |= MEMORY_EMPTY_FLAG;
 	
 	//try to merge next empty into current empty
 	MemChunk* next = GetNextOrderChunk(chunk);
-	if(   (chunk != deshi__generic_heap->last_chunk) //we are not the last chunk
-	   && (next  != deshi__generic_heap->last_chunk) //next is not the last chunk
-	   && (!ChunkIsInUse(next))){                    //next is empty
+	if((chunk != deshi__generic_heap->last_chunk) && ChunkIsEmpty(next)){
 		MemChunk* next_next = GetNextOrderChunk(next);
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
@@ -863,8 +955,7 @@ deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 	
 	//try to merge current empty into prev empty
 	MemChunk* prev = GetPrevOrderChunk(chunk);
-	if(   (prev != 0)                  //we are not the first chunk
-	   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
+	if((prev != 0) && ChunkIsEmpty(prev)){
 		if(chunk == deshi__generic_heap->last_chunk){
 			deshi__generic_heap->last_chunk = prev;
 		}else{
@@ -873,7 +964,7 @@ deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 		NodeRemove(&chunk->node);
 		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
 		NodeInsertNext(&deshi__generic_heap->empty_nodes, &prev->node);
-		prev->size += chunk->size; //NOTE not GetChunkSize(chunk) b/c we know that PREVINUSE flag is not there
+		prev->size += GetChunkSize(chunk);
 		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
@@ -888,20 +979,16 @@ deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
 		zero_pointer = chunk;
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
-	}else{
-		Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
-		next->size &= ~(MEMORY_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 	}
 	
 	deshi__generic_heap->used -= used_amount;
 	ZeroMemory(zero_pointer, zero_amount);
 	
 #if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Freed an allocation  [0x%p]%s (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", file, line);
+	Logf("memory","Freed an allocation  [0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
-	memory_set_address_name(ptr, cstring{});
-	
-	DEBUG_CheckHeap(deshi__generic_heap); DEBUG_PrintGenericHeapChunks();
+	DEBUG_CheckHeap(deshi__generic_heap);
+	DEBUG_PrintGenericHeapChunks();
 }
 
 Heap*
@@ -916,13 +1003,13 @@ local Arena deshi__temp_arena_;
 local Arena* deshi__temp_arena = &deshi__temp_arena_;
 
 void*
-deshi__memory_temp_allocate(upt size, char* file, upt line){
+deshi__memory_temp_allocate(upt size, cstring file, upt line){
 	if(size == 0) return 0;
 	Assert(deshi__temp_arena, "Attempted to temp allocate before memory_init() has been called");
 	
 	upt aligned_size = RoundUpTo(size + sizeof(upt), MEMORY_BYTE_ALIGNMENT);
 	if(deshi__temp_arena->used + aligned_size > deshi__temp_arena->size){
-		LogfE("memory","Deshi ran out of temporary memory when attempting to allocate %zu bytes (triggered at %s:%zu); defaulting to libc calloc which will not be automatically freed by clearing the temporary storage (aka: a memory leak)!", size, file, line);
+		LogfE("memory","Deshi ran out of temporary memory when attempting to allocate %zu bytes (triggered at %s:%zu); defaulting to libc calloc which will not be automatically freed by clearing the temporary storage (aka: a memory leak)!", size, file.str, line);
 		upt* size_ptr = (upt*)calloc(1, aligned_size);
 		Assert(size_ptr, "libc failed to allocate memory");
 		*size_ptr = aligned_size | 0x1;
@@ -935,18 +1022,19 @@ deshi__memory_temp_allocate(upt size, char* file, upt line){
 	deshi__temp_arena->used += aligned_size;
 	
 #if MEMORY_PRINT_TEMP_ACTIONS
-	Logf("memory","Created a temp allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, aligned_size, file, line);
+	Logf("memory","Created a temp allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_TEMP_ACTIONS
 	return result;
 }
 
 void*
-deshi__memory_temp_reallocate(void* ptr, upt size, char* file, upt line){
+deshi__memory_temp_reallocate(void* ptr, upt size, cstring file, upt line){
 	if(size == 0) return 0;
 	if(ptr == 0) return 0;
 	
 #if MEMORY_PRINT_TEMP_ACTIONS
-	Logf("memory","Reallocating a temp ptr[0x%p]%s to %zu bytes (triggered at %s:%zu)", ptr, (memory_get_address_name(ptr)) ? memory_get_address_name(ptr).str : "", size, file, line);
+	AllocInfo info = deshi__memory_allocinfo_get(ptr);
+	Logf("memory","Reallocating a temp ptr[0x%p]%s to %zu bytes (triggered at %s:%zu)", ptr, info.name.str, size, file.str, line);
 #endif //MEMORY_PRINT_TEMP_ACTIONS
 	
 	upt* size_ptr = (upt*)ptr - 1;
@@ -991,34 +1079,24 @@ deshi__memory_temp_expose(){
 ////////////////
 //// @debug ////
 ////////////////
-#if DESHI_INTERNAL
-#  define MEMORY_NAMING_MAX_COUNT 4096 //arbitrary limit
-
-local Arena* deshi__naming_arena; //we don't use arena cursor here, so it's value will be invalid
-
-local b32
-AddressNameInfo_LessThan(const AddressNameInfo& a, const AddressNameInfo& b){
-	return a.address < b.address;
-}
-
 void
-deshi__memory_naming_set(void* address, cstring name){
+deshi__memory_allocinfo_set(void* address, cstring name, Type type){
+#if MEMORY_TRACK_ALLOCS
 	if(address == 0) return;
 	
 	//binary search for address index (or index to insert at)
-	carray<AddressNameInfo> arr{(AddressNameInfo*)deshi__naming_arena->start, deshi__naming_arena->used / sizeof(AddressNameInfo)};
 	spt index = -1;
 	spt middle = 0;
-	if(arr.count > 0){
+	if(deshi__alloc_infos.count > 0){
 		spt left  = 0;
-		spt right = arr.count-1;
+		spt right = deshi__alloc_infos.count-1;
 		while(left <= right){
 			middle = left + ((right - left) / 2);
-			if(arr[middle].address == address){
+			if(deshi__alloc_infos[middle].address == address){
 				index = middle;
 				break;
 			}
-			if(arr[middle].address < address){
+			if(deshi__alloc_infos[middle].address < address){
 				left = middle + 1;
 				middle = left + ((right - left) / 2);
 			}else{
@@ -1027,40 +1105,33 @@ deshi__memory_naming_set(void* address, cstring name){
 		}
 	}
 	
-	if(name){ //set address name
-		if(index != -1){ //info already exists
-			//arr[index].address = address; //NOTE the address doesnt change
-			arr[index].name = name;
-		}else{ //make a new info
-			if(deshi__naming_arena->used >= deshi__naming_arena->size){ 
-				LogE("memory","Address naming arena is out of space"); 
-				return; 
-			}
-			array_insert(arr, AddressNameInfo{ address, name }, middle);
-			deshi__naming_arena->used += sizeof(AddressNameInfo);
-		}
-	}else if(index != -1){ //remove address name
-		array_remove_ordered(arr, index);
-		deshi__naming_arena->used -= sizeof(AddressNameInfo);
+	if(index != -1){
+		deshi__alloc_infos[index].name = name;
+		deshi__alloc_infos[index].type = type;
+	}else{
+		deshi__alloc_infos.insert(AllocInfo{address, {}, DeshTime->updateCount, upt(-1), name, type}, middle);
 	}
+#endif //MEMORY_TRACK_ALLOCS
 }
 
-cstring
-memory_get_address_name(void* address){
-	if(address == 0) return {};
-	if(deshi__naming_arena->used == 0) return {};
-	
-	carray<AddressNameInfo> arr{
-		(AddressNameInfo*)deshi__naming_arena->start,
-		deshi__naming_arena->used / sizeof(AddressNameInfo)
-	};
-	upt index = binary_search(arr, AddressNameInfo{address}, AddressNameInfo_LessThan);
-	return (index != -1) ? arr[index].name : cstring{};
+AllocInfo
+deshi__memory_allocinfo_get(void* address){
+#if MEMORY_TRACK_ALLOCS
+	if(address == 0) return AllocInfo{0, {}, 0, upt(-1), cstr_lit(""), 0};
+	upt index = binary_search(deshi__alloc_infos, AllocInfo{address}, AllocInfo_LessThan);
+	return (index != -1) ? deshi__alloc_infos[index] : AllocInfo{0, {}, 0, upt(-1), cstr_lit(""), 0};
+#else //MEMORY_TRACK_ALLOCS
+	return AllocInfo{0, {}, 0, upt(-1), cstr_lit(""), 0};
+#endif //MEMORY_TRACK_ALLOCS
 }
 
-Arena*
-deshi__memory_naming_expose(){
-	return deshi__naming_arena;
+carray<AllocInfo>
+deshi__memory_allocinfo_expose(){
+#if MEMORY_TRACK_ALLOCS
+	return carray<AllocInfo>{deshi__alloc_infos.data, deshi__alloc_infos.count};
+#else
+	return carray<AllocInfo>{};
+#endif //MEMORY_TRACK_ALLOCS
 }
 
 void
@@ -1074,39 +1145,76 @@ deshi__memory_draw(){
 		}
 	};
 	
-	UI::PushColor(UIStyleCol_Border,    Color_Grey);
-	UI::PushColor(UIStyleCol_Separator, Color_Grey);
-	UI::PushVar(UIStyleVar_WindowPadding, vec2::ZERO);
-	UI::PushVar(UIStyleVar_ItemSpacing,   vec2::ZERO);
-	{UI::Begin("deshi_memory", DeshWindow->dimensions/4.f, DeshWindow->dimensions/2.f, UIWindowFlags_NoScroll);
+	UI::PushColor(UIStyleCol_Border,             Color_Grey);
+	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
+	UI::Begin("deshi_memory", DeshWindow->dimensions/4.f, DeshWindow->dimensions/2.f, UIWindowFlags_NoScroll);{
 		UIWindow* window = UI::GetWindow();
+		UIStyle& style = UI::GetStyle();
 		char used_char = ' ', size_char = ' ';
 		f32  used_divisor = 1.f, size_divisor = 1.f;
 		
-		//left panel: generic heap
-		UI::SetNextWindowSize({window->width*.5f, window->height*.9f});
-		{UI::BeginChild("deshi_memory_generic", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);
-			bytes_sigfigs(deshi__generic_heap->used, used_char, used_divisor);
-			bytes_sigfigs(deshi__generic_heap->size, size_char, size_divisor);
-			UI::TextF("Generic Heap    %.2f %cB / %.2f %cB", (f32)deshi__generic_heap->used / used_divisor, used_char, (f32)deshi__generic_heap->size / size_divisor, size_char);
-			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace(), Color_VeryDarkRed);
-			//TODO this
-		}UI::EndChild();
-		
-		//right panel: arena heap
-		UI::SameLine();
-		UI::SetNextWindowSize({window->width*.5f, window->height*.9f});
-		{UI::BeginChild("deshi_memory_arena", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);
-			bytes_sigfigs(deshi__arena_heap->used, used_char, used_divisor);
-			bytes_sigfigs(deshi__arena_heap->size, size_char, size_divisor);
-			UI::TextF("Arena Heap    %.2f %cB / %.2f %cB", (f32)deshi__arena_heap->used / used_divisor, used_char, (f32)deshi__arena_heap->size / size_divisor, size_char);
-			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace(), Color_VeryDarkGreen);
-			//TODO this
-		}UI::EndChild();
-		
+		//UI::SetNextItemSize({MAX_F32, window->height*.9f});
+		UI::BeginTabBar("deshi_memory_top_panel", UITabBarFlags_NoIndent);{
+			//left panel: generic heap
+			if(UI::BeginTab("deshi_memory_generic")){
+				bytes_sigfigs(deshi__generic_heap->used, used_char, used_divisor);
+				bytes_sigfigs(deshi__generic_heap->size, size_char, size_divisor);
+				//UI::Text("test");
+				UI::TextF("Generic Heap    %.2f %cB / %.2f %cB", (f32)deshi__generic_heap->used / used_divisor, used_char, (f32)deshi__generic_heap->size / size_divisor, size_char);
+				UI::Separator(style.fontHeight/2.f);
+				
+				UI::PushColor(UIStyleCol_WindowBg,           Color_VeryDarkRed);
+				UI::PushColor(UIStyleCol_ScrollBarBg,        Color_DarkGrey);
+				UI::PushColor(UIStyleCol_ScrollBarBgHovered, Color_Grey);
+				UI::PushColor(UIStyleCol_ScrollBarBgActive,  Color_LightGrey);
+				UI::SetNextWindowSize({MAX_F32, MAX_F32});
+				UI::BeginChild("deshi_memory_generic_timeline", vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
+#if MEMORY_TRACK_ALLOCS
+					f32 alloc_height = 10.f;
+					f32 frame_width  = 5.f;
+					
+					forI(deshi__alloc_infos.count){
+						UI::TextF("0x%p", deshi__alloc_infos[i].address);
+						if(UI::IsLastItemHovered()){
+							UI::PushColor(UIStyleCol_WindowBg, color(32,0,0,255));
+							UI::BeginPopOut("deshi_memory_generic_hovered", DeshInput->mousePos - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
+								UI::TextF("Trigger: %s:%u", deshi__alloc_infos[i].trigger.file.str, deshi__alloc_infos[i].trigger.line);
+								UI::TextF("Name: %s", deshi__alloc_infos[i].name.str);
+								UI::TextF("Type: %u", deshi__alloc_infos[i].type);
+							}UI::EndPopOut();
+							UI::PopColor();
+						}
+						
+						//TODO draw rect for time the alloc has been alive
+					}
+#endif //MEMORY_TRACK_ALLOCS
+				}UI::EndChild();
+				UI::PopColor(4);
+				
+				UI::EndTab();
+			}
+			
+			//right panel: arena heap
+			if(UI::BeginTab("deshi_memory_arena")){
+				bytes_sigfigs(deshi__arena_heap->used, used_char, used_divisor);
+				bytes_sigfigs(deshi__arena_heap->size, size_char, size_divisor);
+				UI::TextF("Arena Heap    %.2f %cB / %.2f %cB", (f32)deshi__arena_heap->used / used_divisor, used_char, (f32)deshi__arena_heap->size / size_divisor, size_char);
+				UI::Separator(style.fontHeight/2.f);
+				
+				UI::PushColor(UIStyleCol_WindowBg, Color_VeryDarkGreen);
+				UI::SetNextWindowSize({MAX_F32, MAX_F32});
+				UI::BeginChild("deshi_memory_arena_treemap", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
+					//TODO this
+				}UI::EndChild();
+				UI::PopColor();
+				
+				UI::EndTab();
+			}
+		}UI::EndTabBar();
+		/*
 		//bottom panel: temp arena
-		UI::SetNextWindowSize({window->width, window->height*.1f});
-		{UI::BeginChild("deshi_memory_temp", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);
+		UI::SetNextWindowSize({MAX_F32, window->height*.1f});
+		UI::BeginChild("deshi_memory_bottom_panel", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
 			bytes_sigfigs(deshi__temp_arena->used, used_char, used_divisor);
 			bytes_sigfigs(deshi__temp_arena->size, size_char, size_divisor);
 			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)deshi__temp_arena->used / used_divisor, used_char, (f32)deshi__temp_arena->size / size_divisor, size_char);
@@ -1114,8 +1222,8 @@ deshi__memory_draw(){
 			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
 			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace() * vec2{((f32)deshi__temp_arena->used / (f32)deshi__temp_arena->size), 1.f}, Color_DarkCyan);
 		}UI::EndChild();
+		*/
 	}UI::End();
-	UI::PopVar(2);
 	UI::PopColor(2);
 }
 
@@ -1148,7 +1256,6 @@ deshi__memory_bytes_draw() {
 		u8 val = mem[i]; 
 		u32 canfit = winw / scale;
 		
-		
 		vec2 pos = vec2((i % canfit) * scale, i * scale / winw * scale) + GetPositionForNextItem();
 		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
 		if (Math::PointInRectangle(DeshInput->mousePos, GetLastItemScreenPos(), GetLastItemSize())) {
@@ -1160,18 +1267,13 @@ deshi__memory_bytes_draw() {
 			Text(toStr(val).str, mp + vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
 			PopLayer();
 		}
-		
 	}
-	
 	
 	//Texture* memsnap = Storage::CreateTextureFromMemory(mem, (char*)chunk, ceil(sqrt(count)), ceil(sqrt(count)), ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToBlack, 0, 1).second;
 	//Image(memsnap);
 	
 	End();
 }
-
-
-#endif //DESHI_INTERNAL
 
 
 ////////////////
@@ -1206,6 +1308,7 @@ deshi__memory_init(upt main_size, upt temp_size){
 	deshi__arena_heap->last_chunk = 0;
 	deshi__arena_heap->initialized = true;
 	DEBUG_CheckHeap(deshi__arena_heap);
+	deshi__memory_allocinfo_set(deshi__arena_heap, cstring_lit("Arena Heap"), Type_Heap);
 	
 	deshi__generic_arena = memory_create_arena(Megabytes(64)+sizeof(Heap));
 	deshi__generic_heap = (Heap*)deshi__generic_arena->start;
@@ -1217,19 +1320,13 @@ deshi__memory_init(upt main_size, upt temp_size){
 	deshi__generic_heap->last_chunk = 0;
 	deshi__generic_heap->initialized = true;
 	DEBUG_CheckHeap(deshi__generic_heap);
+	deshi__memory_allocinfo_set(deshi__generic_heap, cstring_lit("Generic Heap"), Type_Heap);
 	
 	deshi__temp_arena->start  = deshi__arena_heap->start + deshi__arena_heap->size;
 	deshi__temp_arena->cursor = deshi__temp_arena->start;
 	deshi__temp_arena->size   = temp_size;
 	deshi__temp_arena->used   = 0;
-	
-#if DESHI_INTERNAL
-	deshi__naming_arena = memory_create_arena(MEMORY_NAMING_MAX_COUNT*sizeof(AddressNameInfo));
-	memory_set_address_name(deshi__arena_heap,   cstr_lit("Arena Heap"));
-	memory_set_address_name(deshi__generic_heap, cstr_lit("Generic Heap"));
-	memory_set_address_name(deshi__temp_arena,   cstr_lit("Temp Arena"));
-	memory_set_address_name(deshi__naming_arena, cstr_lit("Naming Arena"));
-#endif //DESHI_INTERNAL
+	deshi__memory_allocinfo_set(deshi__temp_arena, cstring_lit("Temp Arena"), Type_Arena);
 	
 	deshiStage |= DS_MEMORY;
 }

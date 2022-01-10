@@ -146,5 +146,6 @@ namespace Logger{
 	
 	void Cleanup(){
 		fclose(file);
+		is_logging = false;
 	}
 }; //namespace Logging

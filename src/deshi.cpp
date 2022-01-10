@@ -28,12 +28,10 @@ add device_info command (graphics card, sound device, monitor res, etc)
 Console TODOs
 -------------
 showing a command's help if tab is pressed when the command is already typed
-input history from previous inputs on UP and DOWN arrows
-add PAGEUP and PAGEDOWN binds (CTRL for max scroll up/down)
+input history from previous inputs on UP and DOWN arrows (just store history index on chunk)
 popout and window console states
 tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 add auto complete for commands and arguments
-add console flag for showing text in bottom right message bar like error does
 implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
 
 Fun TODOs
@@ -82,9 +80,6 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
-store more info (file, line, name, type, timepoint) per allocation in debug mode
-add a memory visualizer
-____ref: https://en.wikipedia.org/wiki/Treemapping
 consider multiple thread contexts
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
@@ -143,6 +138,7 @@ Time TODOs
 ----------
 remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
 make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
+rename 'updateCount' to 'frame'
 
 UI TODOs
 --------
@@ -151,6 +147,10 @@ ____maybe even removing certain labels from them
 tabs (vertical and horizontal)
 add some markup to text like underlining, bold, etc.
 add a UI popup when reloading shaders
+specify Separator() parameters and add one for line height
+add PAGEUP and PAGEDOWN binds (CTRL for max scroll up/down)
+add stuff like fps and window size to metrics instead of active windows
+add push/pop per-item flags like UITextFlags
 
 Window TODOs
 ------------
