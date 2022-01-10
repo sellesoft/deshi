@@ -17,13 +17,12 @@ core:
 
 Command TODOs
 -------------
-use Logger instead of directly adding text to the console
 implement command chaining
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
-make binds and aliases check if one already exists for a key or a command. if a key already exists probably just overwrite it?
-add a component_state command to print state of a component (add str methods to all components/systems)
+make binds and aliases check if one already exists for a key or a command (if a key already exists, probably just overwrite it?)
 add device_info command (graphics card, sound device, monitor res, etc)
+change Run()'s input from string to cstring
 
 Console TODOs
 -------------
@@ -177,6 +176,9 @@ __________ alternatively, we can store those specific assets in the source contr
 __________ this might not be an error with our stuff and just a quirk of the windows console
 (12/23/21) if the console fills up too much, it crashes
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
+(01/10/22) hovering over UI text input flickers between text and pointer cursors
+(01/10/22) color formatting does not work thru Log()
+__________ see commands.cpp 'test' command
 */
 
 #include "defines.h"
@@ -242,7 +244,7 @@ enum DeshiStage{
 local Flags deshiStage = DS_NONE;
 
 #define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
-#define DeshiModuleLoaded(stages) (deshiStage & (stages)) == (stages)
+#define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
 
 //// core headers ////
 #include "deshi.h"
@@ -360,7 +362,6 @@ void deshi::cleanup(){
 		DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
-	deshi_console.Cleanup();
 	Logger::Cleanup();
 }
 

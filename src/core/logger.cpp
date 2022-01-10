@@ -72,8 +72,7 @@ namespace Logger{
 		if (!is_logging) return;
 		fputs(str.str, file);
 		if (mirror_to_stdout) {
-			if (str.endsWith("\n")) str--;
-			puts(str.str);
+			fputs(str.str, stdout);
 		}
 		memcpy(log_buffer, str.str, str.count);
 		last_message_len = str.count;

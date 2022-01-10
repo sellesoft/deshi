@@ -31,10 +31,10 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
 	glfwWindowHint(GLFW_RESIZABLE,               GLFW_TRUE); 
-	glfwWindowHint(GLFW_FOCUSED,                 GLFW_FALSE);
+	//glfwWindowHint(GLFW_FOCUSED,                 GLFW_FALSE); //TODO(delle) make this a config
 	glfwWindowHint(GLFW_CENTER_CURSOR,           GLFW_FALSE);
 	glfwWindowHint(GLFW_VISIBLE,                 GLFW_FALSE);
-	glfwWindowHint(GLFW_FOCUS_ON_SHOW,           GLFW_FALSE);
+	glfwWindowHint(GLFW_FOCUS_ON_SHOW,           GLFW_TRUE);
 	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
 	
 #if   DESHI_VULKAN

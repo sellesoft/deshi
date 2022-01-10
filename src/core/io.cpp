@@ -1,4 +1,4 @@
-local b32 io_crash_on_error = false;
+local b32    io_crash_on_error = false;
 
 #if   DESHI_WINDOWS
 void Win32LogLastError(const char* func_name){
@@ -19,7 +19,7 @@ void Win32LogLastError(const char* func_name){
 //TODO(delle) search filters
 array<File>
 get_directory_files(const char* directory){
-	array<File> result;
+	array<File> result(deshi_temp_allocator);
 #if   DESHI_WINDOWS
 	string pattern = directory;
 	pattern += (pattern[pattern.count-1] != '/') ? "/*" : "*";
