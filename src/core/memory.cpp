@@ -12,6 +12,7 @@
 #define MEMORY_PRINT_GENERIC_ACTIONS false
 #define MEMORY_PRINT_TEMP_ACTIONS false
 
+local b32    deshi__cleanup_happened = false;
 local Heap   deshi__arena_heap_;
 local Heap*  deshi__arena_heap = &deshi__arena_heap_;
 local Arena* deshi__generic_arena; //deshi__generic_heap is stored here; not used otherwise
@@ -178,6 +179,7 @@ Arena*
 deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__arena_heap);
 	
+	if(deshi__cleanup_happened) return 0;
 	if(requested_size == 0) return 0;
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to create an arena before memory_init() has been called");
 	
@@ -283,6 +285,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	
+	if(deshi__cleanup_happened) return 0;
 	if(size == 0) return arena;
 	if(arena == 0) return 0;
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to grow an arena before memory_init() has been called");
@@ -421,6 +424,8 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 
 void
 deshi__memory_arena_clear(Arena* arena, cstring file, upt line){
+	if(deshi__cleanup_happened) return;
+	
 #if MEMORY_PRINT_ARENA_ACTIONS
 	AllocInfo info = deshi__memory_allocinfo_get(arena);
 	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
@@ -436,6 +441,7 @@ deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	
+	if(deshi__cleanup_happened) return;
 	if(arena == 0) return;
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to delete an arena before memory_init() has been called");
 	
@@ -564,6 +570,7 @@ void*
 deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
 	
+	if(deshi__cleanup_happened) return 0;
 	if(requested_size == 0) return 0;
 	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before memory_init() has been called");
 	
@@ -676,6 +683,7 @@ void*
 deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
 	
+	if(deshi__cleanup_happened) return 0;
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
 	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before memory_init() has been called");
@@ -894,6 +902,8 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 void
 deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
+	
+	if(deshi__cleanup_happened) return;
 	if(ptr == 0) return;
 	
 	AllocInfo info = deshi__memory_allocinfo_get(ptr);
@@ -1004,6 +1014,7 @@ local Arena* deshi__temp_arena = &deshi__temp_arena_;
 
 void*
 deshi__memory_temp_allocate(upt size, cstring file, upt line){
+	if(deshi__cleanup_happened) return 0;
 	if(size == 0) return 0;
 	Assert(deshi__temp_arena, "Attempted to temp allocate before memory_init() has been called");
 	
@@ -1029,6 +1040,7 @@ deshi__memory_temp_allocate(upt size, cstring file, upt line){
 
 void*
 deshi__memory_temp_reallocate(void* ptr, upt size, cstring file, upt line){
+	if(deshi__cleanup_happened) return 0;
 	if(size == 0) return 0;
 	if(ptr == 0) return 0;
 	
@@ -1063,6 +1075,8 @@ deshi__memory_temp_reallocate(void* ptr, upt size, cstring file, upt line){
 
 void
 deshi__memory_temp_clear(){
+	if(deshi__cleanup_happened) return;
+	
 #if MEMORY_PRINT_TEMP_ACTIONS
 	Logf("memory","Clearing temporary memory which used %zu bytes", deshi__temp_arena->used);
 #endif //MEMORY_PRINT_TEMP_ACTIONS
@@ -1082,6 +1096,7 @@ deshi__memory_temp_expose(){
 void
 deshi__memory_allocinfo_set(void* address, cstring name, Type type){
 #if MEMORY_TRACK_ALLOCS
+	if(deshi__cleanup_happened) return;
 	if(address == 0) return;
 	
 	//binary search for address index (or index to insert at)
@@ -1114,14 +1129,16 @@ deshi__memory_allocinfo_set(void* address, cstring name, Type type){
 #endif //MEMORY_TRACK_ALLOCS
 }
 
+local AllocInfo deshi__null_alloc_info{0, {}, 0, upt(-1), cstr_lit(""), 0};
 AllocInfo
 deshi__memory_allocinfo_get(void* address){
 #if MEMORY_TRACK_ALLOCS
-	if(address == 0) return AllocInfo{0, {}, 0, upt(-1), cstr_lit(""), 0};
+	if(deshi__cleanup_happened) return deshi__null_alloc_info;
+	if(address == 0) return deshi__null_alloc_info;
 	upt index = binary_search(deshi__alloc_infos, AllocInfo{address}, AllocInfo_LessThan);
-	return (index != -1) ? deshi__alloc_infos[index] : AllocInfo{0, {}, 0, upt(-1), cstr_lit(""), 0};
+	return (index != -1) ? deshi__alloc_infos[index] : deshi__null_alloc_info;
 #else //MEMORY_TRACK_ALLOCS
-	return AllocInfo{0, {}, 0, upt(-1), cstr_lit(""), 0};
+	return deshi__null_alloc_info;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
@@ -1333,4 +1350,8 @@ deshi__memory_init(upt main_size, upt temp_size){
 	deshi__memory_allocinfo_set(deshi__temp_arena, cstring_lit("Temp Arena"), Type_Arena);
 	
 	deshiStage |= DS_MEMORY;
+}
+
+void deshi__memory_cleanup(){
+	deshi__cleanup_happened = true;
 }

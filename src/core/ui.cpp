@@ -488,8 +488,10 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 			size.y = MarginedBottom() - itemPos.y;
 		else size.y = defaultSize.y;
 	}
-	return size;
 	
+	NextItemSize.x = -1;
+	NextItemSize.y = -1;
+	return size;
 }
 
 FORCE_INLINE void SetWindowCursor(CursorType curtype) {

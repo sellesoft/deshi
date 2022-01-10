@@ -88,7 +88,7 @@ struct{
 local map<const char*, color> color_strings{
 	{"red",    Color_Red},     {"dred",    Color_DarkRed},
 	{"blue",   Color_Blue},    {"dblue",   Color_DarkBlue},
-	{"cyan",   Color_Cyan},    {"dcyan",   Color_DarkRed},
+	{"cyan",   Color_Cyan},    {"dcyan",   Color_DarkCyan},
 	{"grey",   Color_Grey},    {"dgrey",   Color_DarkGrey},
 	{"green",  Color_Green},   {"dgreen",  Color_DarkGreen},
 	{"yellow", Color_Yellow},  {"dyellow", Color_DarkYellow},
@@ -96,34 +96,6 @@ local map<const char*, color> color_strings{
 	{"white",  Color_White},   {"black",   Color_Black}
 };
 
-//message modifier syntax:
-//	
-//  {{c=red} some kind of message {}}
-//
-//	{{a} some kind of alert!! {}}
-// 
-//  {{t=vulkan, c=yellow} a message with multiple modifiers {}}
-// 
-//	if a message is formatted and ends without terminating the formatting
-//  its still valid, {}} only ends the formatting so you can have different formatting per message
-//  for example
-// 
-//  {{c=yellow} some message
-//	
-//  will still color the message yellow also,
-// 
-//  some text before formatting {{.a} some formatted text at the end
-//  
-//  will not format the first part, and format the rest
-// 
-//modifiers
-// 
-//	.a     - (alert)        flashes the background of the message red
-//  .e     - (error)        these messages are red
-//  .w     - (warning)      these messages are yellow
-//  .t=... - (tag)          these messages have a tag they can be filtered by
-//  .c=... - (color)        sets the color of the wrapped message
-//
 //TODO(sushi) clean this function up please
 void ParseMessage(string& input, s32 chstart = -1) {
 	//if the input is less than 7 characters its impossible for it to have valid modifier syntax
@@ -483,7 +455,7 @@ void Console::Update() {
 					PushColor(UIStyleCol_Text, colstr.color);
 				}
 				if (HasFlag(format, Alert)) {
-					
+					//TODO handle alert flashing
 				}
 				
 				static UIItem* last_tag = 0;
@@ -581,8 +553,10 @@ void Console::Update() {
 		vec2 itpos(GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight);
 		if (InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, itpos, "enter a command", UIInputTextFlags_EnterReturnsTrue)) {
 			scroll_to_bottom = 1;
-			string input(inputBuf);
-			AddLog(input);
+			string input = inputBuf;
+			string modified = toStr("{{c=cyan}/{}}{{c=dcyan}\\ {}}",input);
+			AddLog(modified);
+			Cmd::Run(input);
 			memset(inputBuf, 0, CONSOLE_INPUT_BUFFER_SIZE);
 		}
 		
@@ -591,8 +565,3 @@ void Console::Update() {
 		PopColor();
 	}
 }
-
-void Console::Cleanup() {
-	
-}
-
