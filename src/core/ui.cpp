@@ -7,6 +7,7 @@
 //TODO(sushi, Ui) standardize what UI element each color belongs to
 local struct {
 	//TODO make a nice default palette maybe
+
 } colors;
 
 //global styling
@@ -82,6 +83,9 @@ local array<Font*>                       fontStack;
 local array<u32>                         layerStack;
 local array<f32>                         leftIndentStack{ 0 }; //stores global indentations
 local array<f32>                         rightIndentStack{ 0 }; //stores global indentations
+
+
+local u32 itemFlags[UIItemType_COUNT]; //stores the default flags for every item that supports flagging, these can be set using SetItemFlags
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
@@ -214,6 +218,8 @@ struct {
 #define RightMousePressed  DeshInput->RMousePressed()
 #define RightMouseDown     DeshInput->RMouseDown()
 #define RightMouseReleased DeshInput->RMouseReleased()
+
+#define GetDefaultItemFlags(type, var) var |= itemFlags[type]
 
 //for breaking on a window's begin or end
 UIWindow* break_window_begin = 0;
@@ -1340,8 +1346,6 @@ b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32
 }
 
 
-
-
 //@Primitive Items
 
 
@@ -1747,18 +1751,22 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 }
 
 void UI::Text(const char* text, UITextFlags flags) {
+	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
 void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
+	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
 void UI::Text(const wchar* text, UITextFlags flags){
+	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
 void UI::Text(const wchar* text, vec2 pos, UITextFlags flags){
+	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
@@ -1778,6 +1786,8 @@ void UI::TextF(const char* fmt, ...) {
 //@Button
 
 b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
+	GetDefaultItemFlags(UIItemType_Button, flags);
+
 	UIItem* item = BeginItem(UIItemType_Button);
 	item->position = pos;
 	item->size = DecideItemSize(vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
@@ -2114,6 +2124,8 @@ void UI::EndHeader() {
 //@BeginTabBar
 
 void UI::BeginTabBar(const char* label, UITabBarFlags flags){
+	GetDefaultItemFlags(UIItemType_TabBar, flags);
+
 	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
 	StateAddFlag(UISTabBarBegan);
 	if (!tabBars.has(label)) tabBars.add(label);
@@ -2235,6 +2247,8 @@ void UI::EndTabBar(){
 
 
 void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){
+	GetDefaultItemFlags(UIItemType_Slider, flags);
+
 	UIItem* item = BeginItem(UIItemType_Slider);
 	
 	b32 being_moved = 0;
@@ -2302,6 +2316,8 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 //@Image
 
 void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
+	GetDefaultItemFlags(UIItemType_Image, flags);
+
 	UIItem* item = BeginItem(UIItemType_Image);
 	
 	item->position = pos;
@@ -2351,6 +2367,8 @@ void UI::Separator(f32 height) {
 
 //final input text
 b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
+	GetDefaultItemFlags(UIItemType_InputText, flags);
+
 	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
@@ -2585,6 +2603,19 @@ void UI::EndCustomItem() {
 b32 UI::IsLastItemHovered(){ //TODO handle layers
 	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize());
 }
+
+void UI::AddItemFlags(UIItemType type, Flags flags){
+	AddFlag(itemFlags[type], flags);
+}
+
+void UI::RemoveItemFlags(UIItemType type, Flags flags){
+	RemoveFlag(itemFlags[type], flags);
+}
+
+void UI::ResetItemFlags(UIItemType type){
+	itemFlags[type] = 0;
+}
+
 
 
 //@Utilities
@@ -4513,10 +4544,10 @@ void UI::Init() {
 	
 	//push default color scheme
 	//this is never meant to be popped
-	PushColor(UIStyleCol_Border,         Color_DarkGrey);
-	PushColor(UIStyleCol_WindowBg,       color(14, 14, 14));
-	PushColor(UIStyleCol_Text,           Color_White);
-	PushColor(UIStyleCol_Separator,      color(64, 64, 64));
+	PushColor(UIStyleCol_Border,    0x000000ff);
+	PushColor(UIStyleCol_WindowBg,  0x111111ff);
+	PushColor(UIStyleCol_Text,      Color_White);
+	PushColor(UIStyleCol_Separator, color(64, 64, 64));
 	
 	//backgrounds
 	PushColor(UIStyleCol_ScrollBarBg,  Color_VeryDarkCyan);
@@ -4763,6 +4794,9 @@ void UI::Update() {
 	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	Assert(rightIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	
+	forI(UIItemType_COUNT)
+		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");
+
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);
 	StateRemoveFlag(UISCursorSet);
