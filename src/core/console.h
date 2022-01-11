@@ -30,6 +30,7 @@
 //  .c=... - (color)        sets the color of the wrapped message
 
 #include "../defines.h"
+#include "utils/string.h"
 
 enum ConsoleState_ {
 	ConsoleState_Closed,
