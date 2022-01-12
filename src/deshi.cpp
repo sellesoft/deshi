@@ -35,7 +35,7 @@ implement filtering console buffer by function and file name (add __FILENAME__ a
 Fun TODOs
 ---------
 look into implementing Lua (or finish su and make it an embeddable language!)
-write a preprocessing/postprocessing compiler that makes saving easier
+write a preprocessing/postprocessing compiler that makes serialization easier
 hotloadable UI
 
 IO TODOs
@@ -44,7 +44,6 @@ add file reading (simple and smart)
 add file writing (simple and smart)
 add file/dir creation
 add file/dir renaming
-add file/dir existence checking
 add file locking and determination
 add hard/symbolic link creation/deletion
 add file hard/symbolic link determination

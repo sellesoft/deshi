@@ -20,8 +20,9 @@ void Win32LogLastError(const char* func_name){
 array<File>
 get_directory_files(const char* directory){
 	array<File> result(deshi_temp_allocator);
+	if(directory == 0) return result;
 #if   DESHI_WINDOWS
-	string pattern = directory;
+	string pattern(directory); //TODO add allocator to string
 	pattern += (pattern[pattern.count-1] != '/') ? "/*" : "*";
 	WIN32_FIND_DATAA data; HANDLE next;
 	ULARGE_INTEGER size;   ULARGE_INTEGER time;
@@ -30,6 +31,7 @@ get_directory_files(const char* directory){
 	if(next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)){
 		Win32LogLastError("FindFirstFileA");
 		LogaE("io-win32","'$' is not a valid directory.",directory);
+		FindClose(next);
 		return result;
 	}
 	while(next != INVALID_HANDLE_VALUE){
@@ -39,6 +41,7 @@ get_directory_files(const char* directory){
 		}
 		
 		File file;
+		file.handle = next;
 		time.LowPart = data.ftCreationTime.dwLowDateTime; time.HighPart = data.ftCreationTime.dwHighDateTime;
 		file.time_creation = WindowsTimeToUnixTime(time.QuadPart);
 		time.LowPart = data.ftLastAccessTime.dwLowDateTime; time.HighPart = data.ftLastAccessTime.dwHighDateTime;
@@ -81,6 +84,7 @@ get_directory_files(const char* directory){
 //TODO(delle) add safety checks so deletion only happens within the data folder
 void
 delete_file(const char* filepath){
+	if(filepath == 0) return;
 #if   DESHI_WINDOWS
 	WIN32_FIND_DATAA data;
 	HANDLE next = FindFirstFileA(filepath, &data);
@@ -105,4 +109,16 @@ delete_file(const char* filepath){
 #elif DESHI_MAC   //DESHI_LINUX
 	
 #endif            //DESHI_MAC
+}
+
+b32
+file_exists(const char* filepath){
+	if(filepath == 0) return false;
+	WIN32_FIND_DATAA data; 
+	HANDLE handle = FindFirstFileA(filepath, &data);
+	if(handle != INVALID_HANDLE_VALUE){
+		FindClose(handle);
+		return true;
+	}
+	return false;
 }

@@ -32,6 +32,10 @@ namespace Cmd{
 			delete_file(args[0].str);
 		}CMDEND(rm, CmdArgument_String);
 		
+		CMDSTART(file_exists, "Checks if a file exists"){
+			Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
+		}CMDEND(file_exists, CmdArgument_String);
+		
 		CMDSTART(add, "Adds two numbers together"){
 			s32 i0 = atoi(args[0].str);
 			s32 i1 = atoi(args[1].str);
