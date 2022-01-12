@@ -150,6 +150,7 @@ struct {
 	
 	u32 draw_cmds = 0;
 	u32 items = 0;
+	u32 windows = 0;
 }ui_stats;
 
 //helper defines
@@ -2053,8 +2054,8 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
 	}
 	
 	f32 arrowSpaceWidth = style.indentAmount;
-	f32 arrowwidth = arrowSpaceWidth / 3;
-	f32 arrowheight = item->size.y / 3;
+	f32 arrowwidth = ceil(arrowSpaceWidth / 2);
+	f32 arrowheight = ceil(item->size.y / 1.5);
 
 	vec2 bgpos = vec2{ arrowSpaceWidth, 0 };
 	vec2 bgdim = vec2{ item->size.x - bgpos.x, item->size.y };
@@ -2078,15 +2079,21 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
 		vec2  position = vec2{ item->size.y / 4, item->size.y / 2 };
 		f32   radius = item->size.y / 4;
 		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
-		vec2 arrowtop((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
-		vec2 arrowpoint((arrowSpaceWidth + arrowwidth) / 2, item->size.y / 2);
-		vec2 arrowbot((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
-
+		
+		
+		//TODO(sushi) this is ugly please fix it 
 		if (*open) { 
-			MakeLine(drawCmd, arrowtop, arrowpoint, 1, col);
-			MakeLine(drawCmd, arrowbot, arrowpoint, 1, col);
+			vec2 arrowright((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
+			vec2 arrowleft((arrowSpaceWidth + arrowwidth) / 2, (item->size.y - arrowheight) / 2);
+			vec2 arrowpoint(arrowSpaceWidth / 2, (item->size.y + arrowheight) / 2);
+			MakeFilledTriangle(drawCmd, arrowleft, arrowright, arrowpoint, col);
 		}
-		else       MakeCircle(drawCmd, position, radius, 30, 1, col);
+		else {
+			vec2 arrowtop((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
+			vec2 arrowpoint((arrowSpaceWidth + arrowwidth) / 2, item->size.y / 2);
+			vec2 arrowbot((arrowSpaceWidth - arrowwidth) / 2, (item->size.y + arrowheight) / 2);
+			MakeFilledTriangle(drawCmd, arrowtop, arrowpoint, arrowbot, col);
+		}
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2103,7 +2110,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
 		AddDrawCmd(item, drawCmd);
 	}
 	
-	{//border
+	if(!HasFlag(item->flags, UIHeaderFlags_NoBorder)){//border
 		UIDrawCmd drawCmd;
 		vec2  position = bgpos;
 		vec2  dimensions = bgdim;
@@ -2313,7 +2320,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 //@Image
 
 void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
-	UIItem* item = BeginItem(UIItemType_Image);
+	UIItem* item = BeginItem(UIItemType_Image, flags);
 	
 	item->position = pos;
 	item->size = DecideItemSize(vec2((f32)image->width, (f32)image->height), item->position);
@@ -3073,6 +3080,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 	TIMER_RESET(wincreate);
 	//save previous window on stack
 	windowStack.add(curwin);
+	ui_stats.windows++;
 	
 	switch (type) {
 		case UIWindowType_Normal: { //////////////////////////////////////////////////////////////////////
@@ -3898,7 +3906,24 @@ UIWindow* DisplayMetrics() {
 	Begin("METRICS", DeshWindow->dimensions - vec2(300,500), vec2(300, 500));
 	myself = curwin;
 	
-	Text(toStr("Active Windows: ", windowStack.count).str);
+	BeginRow("Metrics_General_Stats", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+	Text("FPS: "); Text(toStr(1/DeshTime->deltaTime).str);
+	EndRow();
+
+	if (BeginHeader("UI Stats")) {
+		BeginRow("Metrics_UI_Stats", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+
+		Text("Windows: ");  Text(toStr(ui_stats.windows).str);
+		Text("Items: ");    Text(toStr(ui_stats.items).str);
+		Text("DrawCmds: "); Text(toStr(ui_stats.draw_cmds).str);
+		Text("Vertices: "); Text(toStr(ui_stats.vertices).str);
+		Text("Indices: ");  Text(toStr(ui_stats.indices).str);
+
+		EndRow();
+		EndHeader();
+	}
 	
 	Separator(20);
 	
@@ -4813,6 +4838,8 @@ void UI::Update() {
 		DisplayMetrics();
 		show_metrics = 0;
 	}
+
+	ui_stats = { 0 };
 	
 	//windows input checking functions
 	CheckWindowsForFocusInputs();
@@ -4836,10 +4863,6 @@ void UI::Update() {
 	}
 	
 	
-	
-	
-	
-	
 	//it should be safe to do this any time the mouse is released
 	if (DeshInput->LMouseReleased()) { AllowInputs; }
 	
@@ -4856,33 +4879,10 @@ void UI::Update() {
 	
 	//draw all debug commands if there are any
 	for (UIDrawCmd& drawCmd : debugCmds) {
-		
 		Render::StartNewTwodCmd(5, drawCmd.tex, vec2::ZERO, DeshWinSize);
 		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
-		
-		
-		//static s32 start = 0;
-		//if (DeshInput->KeyPressed(Key::I)) start += 3;
-		//if (DeshInput->KeyPressed(Key::K)) start = Max(start - 3, s32(0));
-		//
-		//Render::StartNewTwodCmd(6, drawCmd.tex, vec2::ZERO, DeshWinSize);
-		//Vertex2 vp[3];
-		//u32 ip[3];
-		//
-		//vp[0].pos = drawCmd.vertices[drawCmd.indices[start]].pos;	vp[0].uv={0,0}; vp[0].color=Color_Magenta.rgba;
-		//vp[1].pos = drawCmd.vertices[drawCmd.indices[start+1]].pos;	vp[1].uv={0,0}; vp[1].color=Color_Magenta.rgba;
-		//vp[2].pos = drawCmd.vertices[drawCmd.indices[start+2]].pos; vp[2].uv={0,0}; vp[2].color=Color_Magenta.rgba; 
-		//ip[0] = 0; ip[1] = 1; ip[2] = 2;
-		//
-		//Render::AddTwodVertices(6, vp, 3, ip, 3);
-		
-		
 	}
 	debugCmds.clear();
-	
-	//if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
-	
-	
 }
 
 void UI::DrawDebugRect(vec2 pos, vec2 size, color col)             { DebugRect(pos, size, col); }

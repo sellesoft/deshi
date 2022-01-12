@@ -114,8 +114,8 @@ struct Material{
 	MaterialFlags flags;
 	char name[DESHI_NAME_SIZE];
 	u32  idx;
-	Shader        shader;
-	array<u32>    textures;
+	Shader     shader;
+	array<u32> textures;
 };
 
 struct Armature;

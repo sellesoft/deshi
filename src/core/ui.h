@@ -329,6 +329,7 @@ enum UIHeaderFlags_ {
 	UIHeaderFlags_NoIndentLeft = 1 << 0,
 	UIHeaderFlags_NoIndentRight = 1 << 1,
 	UIHeaderFlags_NoIndent = UIHeaderFlags_NoIndentLeft | UIHeaderFlags_NoIndentRight,
+	UIHeaderFlags_NoBorder = 1 << 2,
 }; typedef u32 UIHeaderFlags;
 
 enum UIDrawType : u32 {

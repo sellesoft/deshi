@@ -1802,7 +1802,6 @@ void DrawMeshesWindow() {
 }
 
 void DrawTexturesWindow() {
-	
 	Storage_* st = DeshStorage;
 	
 	//TODO make all of this stuff get checked only when necessary
@@ -1820,20 +1819,13 @@ void DrawTexturesWindow() {
 		texture_bytes += t->width * t->height * u8size;
 		if (t->width * t->height > largest->width * largest->height)   largest = t;
 		if (t->width * t->height < smallest->width * smallest->height) smallest = t;
-		
 	}
 	
 	using namespace UI;
+
+	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
 	
-	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
-	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
-	PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
-	PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
-	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
-	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
-	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
-	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
-	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
+	
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUI_Textures", vec2::ZERO, UIWindowFlags_NoBorder);
 	
@@ -1841,7 +1833,7 @@ void DrawTexturesWindow() {
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 	
 	Text("Textures Loaded: "); Text(toStr(st->textures.count).str);
-	Text("Memory Occupied: "); Text(toStr(texture_bytes / bytesDivisor(texture_bytes), " ", bytesUnit(texture_bytes)).str);
+	Text("Memory Occupied: "); Text(toStr(texture_bytes / bytesDivisor(texture_bytes), " ", bytesUnit(texture_bytes), "b").str);
 	
 	EndRow();
 	
@@ -1878,21 +1870,24 @@ void DrawTexturesWindow() {
 		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 		
-		Text("Name:");     Text(selected->name);
-		Text("Index: ");   Text(toStr(selected->idx).str);
-		Text("Width: ");   Text(toStr(selected->width).str);
-		Text("Height: ");  Text(toStr(selected->height).str);
-		Text("Depth: ");   Text(toStr(selected->depth).str);
-		Text("MipMaps: "); Text(toStr(selected->mipmaps).str);
-		Text("Format: ");  Text(ImageFormatStrings[selected->format]);
-		Text("Type: ");    Text(TextureTypeStrings[selected->type]);
-		Text("Filter: ");  Text(TextureFilterStrings[selected->filter]);
-		Text("UV Mode: "); Text(TextureAddressModeStrings[selected->uvMode]);
+		u32 texbytes = selected->width * selected->height * u8size;
+
+		Text("Name:");         Text(selected->name);
+		Text("Index: ");       Text(toStr(selected->idx).str);
+		Text("Width: ");       Text(toStr(selected->width).str);
+		Text("Height: ");      Text(toStr(selected->height).str);
+		Text("Depth: ");       Text(toStr(selected->depth).str);
+		Text("MipMaps: ");     Text(toStr(selected->mipmaps).str);
+		Text("Format: ");      Text(ImageFormatStrings[selected->format - 1]);
+		Text("Type: ");        Text(TextureTypeStrings[selected->type]);
+		Text("Filter: ");      Text(TextureFilterStrings[selected->filter]);
+		Text("UV Mode: ");     Text(TextureAddressModeStrings[selected->uvMode]);
+		Text("Memory Used: "); Text(toStr(texbytes / bytesDivisor(texbytes), " ", bytesUnit(texbytes), "b").str);
 		
 		EndRow();
-		PushColor(UIStyleCol_WindowBg, 0x103156ff);
-		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+		PushColor(UIStyleCol_WindowBg, 0x073030ff);
 
+		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoInteract);
 		persist f32  zoom = 300;
 		persist vec2 mpl;
@@ -1902,15 +1897,19 @@ void DrawTexturesWindow() {
 		
 		vec2 mp = DeshInput->mousePos;
 		
-		if (Button("Flip x")) ToggleFlag(flags, UIImageFlags_FlipX); SameLine();
-		if (Button("Flip y")) ToggleFlag(flags, UIImageFlags_FlipY);
+		if (Button("Flip x")) 
+			ToggleFlag(flags, UIImageFlags_FlipX);
+		SameLine();
+		if (Button("Flip y")) 
+			ToggleFlag(flags, UIImageFlags_FlipY);
 		
 		if (new_selected) {
-			zoom = GetWindow()->width / selected->width ;
-			imagepos = vec2(
-							(GetWindow()->width - selected->width) / 2,
-							(GetWindow()->height - selected->height) / 2
-							);
+			zoom = f32(GetWindow()->width) / selected->width ;
+			//imagepos = vec2(
+			//				(GetWindow()->width - selected->width) / 2,
+			//				(GetWindow()->height - selected->height) / 2
+			//				);
+			imagepos = vec2::ZERO;
 		}
 		
 		Text(toStr(zoom).str);
@@ -1920,10 +1919,10 @@ void DrawTexturesWindow() {
 			
 			if (DeshInput->scrollY) {
 				f32 val = 10 * DeshInput->scrollY;
-				zoom -= zoom / val;
+				zoom += zoom / val;
 				//TODO make it zoom to the mouse 
 				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
-				//imagepos -= imtomp.normalized() * val / 2;
+				//imagepos -= imtomp.normalized() * val * 4;
 			}
 			if (DeshInput->LMousePressed()) {
 				mpl = mp;
@@ -1945,14 +1944,34 @@ void DrawTexturesWindow() {
 	
 	
 	EndChild();
-	PopColor(9);
+	ResetItemFlags(UIItemType_Header);
 }
 
 void DrawMaterialsWindow(){
+	Storage_* st = DeshStorage;
+
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUIMaterials", vec2(MAX_F32, MAX_F32));
-	Text("TODO");
+	BeginChild("StorageBrowserUI_Materials", vec2::ZERO, UIWindowFlags_NoBorder);
+
+	Separator(5);
+
+	SetNextWindowSize(vec2(MAX_F32, 200));
+	BeginChild("StorageBrowserUI_Materials_List", vec2::ZERO, UIWindowFlags_NoInteract); {
+		BeginRow("StorageBrowserUI_Materials_List", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+
+		forI(st->materials.count) {
+			Text(toStr(i, "  ").str);
+			Text(st->materials[i]->name);
+		}
+
+		EndRow();
+	}EndChild();
+
+	Separator(5);
+	
+	
 	EndChild();
 }
 
@@ -1983,6 +2002,15 @@ StorageBrowserUI() {
 
 	BeginTabBar("StorageBrowserUITabBar", UITabBarFlags_NoIndent);
 	Separator(9);
+	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
+	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
+	PushColor(UIStyleCol_WindowBg,                Color_VeryDarkGrey);
+	PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
 	if(BeginTab("Meshes"))   {DrawMeshesWindow();    EndTab();}
 	if(BeginTab("Textures")) {DrawTexturesWindow();  EndTab();}
 	if(BeginTab("Materials")){DrawMaterialsWindow(); EndTab();}
@@ -1991,7 +2019,7 @@ StorageBrowserUI() {
 	EndTabBar();
 	
 	End();
-	PopColor(2);
+	PopColor(11);
 }
 
 #undef ParseError
