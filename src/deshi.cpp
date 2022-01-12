@@ -27,8 +27,7 @@ change Run()'s input from string to cstring
 Console TODOs
 -------------
 showing a command's help if tab is pressed when the command is already typed
-input history from previous inputs on UP and DOWN arrows (just store history index on chunk)
-popout and window console states
+popout console state (require extra window creation)
 tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 add auto complete for commands and arguments
 implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
@@ -149,7 +148,6 @@ add a UI popup when reloading shaders
 specify Separator() parameters and add one for line height
 add PAGEUP and PAGEDOWN binds (CTRL for max scroll up/down)
 add stuff like fps and window size to metrics instead of active windows
-add push/pop per-item flags like UITextFlags
 
 Window TODOs
 ------------
@@ -176,7 +174,6 @@ __________ alternatively, we can store those specific assets in the source contr
 __________ this might not be an error with our stuff and just a quirk of the windows console
 (12/23/21) if the console fills up too much, it crashes
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
-(01/10/22) hovering over UI text input flickers between text and pointer cursors
 (01/10/22) color formatting does not work thru Log()
 __________ see commands.cpp 'test' command
 */

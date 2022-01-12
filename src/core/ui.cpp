@@ -7,7 +7,7 @@
 //TODO(sushi, Ui) standardize what UI element each color belongs to
 local struct {
 	//TODO make a nice default palette maybe
-
+	
 } colors;
 
 //global styling
@@ -601,7 +601,7 @@ void UI::SetPreventInputs() {
 	inputState = ISExternalPreventInputs;
 }
 
-void UI::SetAllowInputs()   {
+void UI::SetAllowInputs() {
 	if(inputState == ISExternalPreventInputs)
 		AllowInputs;
 }
@@ -643,7 +643,7 @@ inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0
 	
 	GetDefaultItemFlags(type, UI::GetLastItem(layeroffset)->flags);
 	AddFlag(UI::GetLastItem()->flags, userflags);
-
+	
 	ui_stats.items++;
 	curwin->items_count++;
 	return UI::GetLastItem(layeroffset);
@@ -2055,7 +2055,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
 	f32 arrowSpaceWidth = style.indentAmount;
 	f32 arrowwidth = arrowSpaceWidth / 3;
 	f32 arrowheight = item->size.y / 3;
-
+	
 	vec2 bgpos = vec2{ arrowSpaceWidth, 0 };
 	vec2 bgdim = vec2{ item->size.x - bgpos.x, item->size.y };
 	
@@ -2081,7 +2081,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
 		vec2 arrowtop((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
 		vec2 arrowpoint((arrowSpaceWidth + arrowwidth) / 2, item->size.y / 2);
 		vec2 arrowbot((arrowSpaceWidth - arrowwidth) / 2, (item->size.y - arrowheight) / 2);
-
+		
 		if (*open) { 
 			MakeLine(drawCmd, arrowtop, arrowpoint, 1, col);
 			MakeLine(drawCmd, arrowbot, arrowpoint, 1, col);
@@ -2363,7 +2363,7 @@ void UI::Separator(f32 height) {
 //final input text
 b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
 	GetDefaultItemFlags(UIItemType_InputText, flags);
-
+	
 	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
@@ -2424,6 +2424,8 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	if (active) {
 		if (DeshInput->KeyPressed(Key::RIGHT) && state->cursor < charCount) state->cursor++;
 		if (DeshInput->KeyPressed(Key::LEFT) && state->cursor > 0) state->cursor--;
+		if (DeshInput->KeyPressed(Key::HOME)) state->cursor = 0;
+		if (DeshInput->KeyPressed(Key::END)) state->cursor = charCount;
 		
 		data.cursorPos = state->cursor;
 		
@@ -4791,10 +4793,9 @@ void UI::Update() {
 	
 	forI(UIItemType_COUNT)
 		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");
-
+	
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);
-	StateRemoveFlag(UISCursorSet);
 	MarginPositionOffset = vec2::ZERO;
 	MarginSizeOffset = vec2::ZERO;
 	
@@ -4825,8 +4826,11 @@ void UI::Update() {
 	
 	
 	//reset cursor to default if no item decided to set it 
-	if (!StateHasFlag(UISCursorSet)) DeshWindow->SetCursor(CursorType_Arrow);
-	
+	if (!StateHasFlag(UISCursorSet)){
+		DeshWindow->SetCursor(CursorType_Arrow);
+	}else{
+		StateRemoveFlag(UISCursorSet);
+	}
 	
 	
 	//draw windows in order 
@@ -4834,10 +4838,6 @@ void UI::Update() {
 		DrawWindow(p);
 		WinUnSetBegan(p);
 	}
-	
-	
-	
-	
 	
 	
 	//it should be safe to do this any time the mouse is released
@@ -4850,8 +4850,6 @@ void UI::Update() {
 	for (UIWindow* p : windows) {
 		CleanUpWindow(p);
 	}
-	
-	
 #endif
 	
 	//draw all debug commands if there are any
