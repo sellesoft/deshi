@@ -412,6 +412,7 @@ void Console::Update(){
 		if(input_history_index >= input_history.count) input_history_index = -1;
 	}
 	if(change_input){
+		DeshInput->SimulateKeyPress(Key::END);
 		ZeroMemory(inputBuf, CONSOLE_INPUT_BUFFER_SIZE);
 		if(input_history_index != -1){
 			u32 cursor = 0;
