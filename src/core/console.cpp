@@ -1,40 +1,4 @@
-local vec2 console_pos;
-local vec2 console_dim;
-
-//fancy console opening parameters
-local f32 open_small_percent = 0.2f; //percentage of the height of the window to open to in small mode
-local f32 open_max_percent = 0.7f;   //percentage of the height of the window to open to
-local f32 open_amount = 0.0f;        //current opened amount
-local f32 open_target = 0.0f;        //target opened amount
-local f32 open_dt = 200.0f;         //speed at which it opens
-local TIMER_START(open_timer);
-
-//console 
-#define CONSOLE_INPUT_BUFFER_SIZE 256
-local constexpr u32 DICT_SIZE = 512;
-local FILE*     buffer;      //this is always from Logger
-local char      inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
-local UIWindow* conmain = 0; //the main console window
-local UIWindow* conterm = 0; //the terminal child window
-local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
-local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
-
-//state of console
-local b32 show_autocomplete = 0;
-local u32 scroll_y = 0;
-local u32 rows_in_buffer = 0;
-local b32 scroll_to_bottom = 0;
-local b32 intercepting_inputs = 0;
-
-local ConsoleState state = ConsoleState_Closed;
-
-//console preferences
-local b32 tag_show = 1;
-local b32 tag_highlighting = 1;
-local b32 tag_outlines = 1;
-local b32 line_highlighing = 1;
-
-enum Format_ {
+enum ConChunkFormat_{
 	None    = 0,
 	Alert   = 1 << 0, 
 	Success = 1 << 1, //these 3 are mutually exclusive!
@@ -42,11 +6,11 @@ enum Format_ {
 	Error   = 1 << 3, //these 3 are mutually exclusive!
 	Tagged  = 1 << 4,
 	Colored = 1 << 5,
-}; typedef u32 Format;
+}; typedef u32 ConChunkFormat;
 
 struct Chunk{
 	color color = Color_White;
-	Format format = None;
+	ConChunkFormat format = None;
 	u32 charstart = 0;
 	u32 strsize = 0;
 	b32 eol = 0; //true if this Chunk is the end of a line
@@ -57,12 +21,11 @@ struct Chunk{
 #endif 
 };
 
-
-struct{
+struct ConsoleDictionary{
 	ring_array<Chunk> dict;
 	u32& count = dict.count;
 	
-	void add(string to_logger, Chunk chunk) {
+	void add(string to_logger, Chunk chunk){
 		dict.add(chunk);
 		
 #ifdef DESHI_INTERNAL
@@ -73,17 +36,51 @@ struct{
 	}
 	
 	//for chunks that have already been logged
-	void add(Chunk chunk) {
+	void add(Chunk chunk){
 		dict.add(chunk);
 	}
 	
-	Chunk& operator[] (u32 idx) { return *dict.at(idx); }
-	
-	//u32 count() { return dict.count; }
-	
-} dictionary;
+	Chunk& operator[](u32 idx){ return *dict.at(idx); }
+};
 
+//// terminal ////
+local FILE* buffer; //this is always from Logger
 
+#define CONSOLE_DICTIONARY_SIZE 512
+local ConsoleDictionary dictionary;
+
+#define CONSOLE_INPUT_BUFFER_SIZE 256
+local char inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
+local b32  intercepting_inputs = 0;
+local u32  max_input_history = 200;
+local u32  input_history_index = -1;
+local ring_array<pair<u32,u32>> input_history;
+
+//// visuals ////
+local vec2 console_pos;
+local vec2 console_dim;
+local u32  scroll_y = 0;
+local u32  rows_in_buffer = 0;
+local ConsoleState state = ConsoleState_Closed;
+
+local b32 show_autocomplete = 0;
+local b32 scroll_to_bottom = 0;
+local b32 tag_show = 1;
+local b32 tag_highlighting = 1;
+local b32 tag_outlines = 1;
+local b32 line_highlighing = 1;
+
+local UIWindow* conmain = 0; //the main console window
+local UIWindow* conterm = 0; //the terminal child window
+local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
+local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
+
+local f32 open_small_percent = 0.2f; //percentage of the height of the window to open to in small mode
+local f32 open_max_percent = 0.7f;   //percentage of the height of the window to open to
+local f32 open_amount = 0.0f;        //current opened amount
+local f32 open_target = 0.0f;        //target opened amount
+local f32 open_dt = 200.0f;          //speed at which it opens
+local TIMER_START(open_timer);
 
 local map<const char*, color> color_strings{
 	{"red",    Color_Red},     {"dred",    Color_DarkRed},
@@ -375,7 +372,8 @@ void Console::Init() {
 	TIMER_START(t_s);
 	buffer = Logger::GetFilePtr();
 	
-	dictionary.dict.init(DICT_SIZE, deshi_allocator);
+	dictionary.dict.init(CONSOLE_DICTIONARY_SIZE, deshi_allocator);
+	input_history.init(max_input_history, deshi_allocator);
 	
 	scroll_to_bottom = 1;
 	
@@ -384,12 +382,6 @@ void Console::Init() {
 	
 	Logger::SetMirrorToConsole(true);
 	LogS("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
-}
-
-void OpenToTarget() {
-	//TODO change this to Nudge
-	console_dim.y = Math::lerp(open_amount, open_target, Min((f32)TIMER_END(open_timer) / open_dt, 1.f));
-	if (console_dim.y == open_target) open_amount = open_target;
 }
 
 void Console::Update() {
@@ -408,11 +400,48 @@ void Console::Update() {
 		}
 	}
 	
-	if (open_target != open_amount) OpenToTarget();
+	//check for history inputs
+	b32 change_input = false;
+	if(DeshInput->KeyPressed(Key::UP)){
+		change_input = true;
+		input_history_index--;
+		if(input_history_index == -2) input_history_index = input_history.count-1;
+	}
+	if(DeshInput->KeyPressed(Key::DOWN)){
+		change_input = true;
+		input_history_index++;
+		if(input_history_index >= input_history.count) input_history_index = -1;
+	}
+	if(change_input){
+		ZeroMemory(inputBuf, CONSOLE_INPUT_BUFFER_SIZE);
+		if(input_history_index != -1){
+			u32 cursor = 0;
+			u32 chunk_idx = input_history[input_history_index].first;
+			Chunk& chunk = dictionary[chunk_idx];
+			
+			fseek(buffer, chunk.charstart, SEEK_SET);
+			for(;;){
+				u32 characters = (cursor + chunk.strsize > CONSOLE_INPUT_BUFFER_SIZE) ? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.strsize) : chunk.strsize;
+				fread(inputBuf, sizeof(char), characters, buffer);
+				cursor += characters;
+				
+				if(chunk_idx >= input_history[input_history_index].second || cursor >= CONSOLE_INPUT_BUFFER_SIZE){
+					break;
+				}else{
+					chunk = dictionary[++chunk_idx];
+				}
+			}
+		}
+	}
 	
+	//console openness
+	if(open_target != open_amount){
+		//TODO change this to Nudge
+		console_dim.y = Math::lerp(open_amount, open_target, Min((f32)TIMER_END(open_timer) / open_dt, 1.f));
+		if (console_dim.y == open_target) open_amount = open_target;
+	}
 	
 	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
-	
 	if (console_dim.y > 0) {
 		if (open_target != open_amount || state != ConsoleState_Popout) {
 			SetNextWindowPos(console_pos);
@@ -552,12 +581,21 @@ void Console::Update() {
 		SetNextItemSize(vec2(MAX_F32, inputBoxHeight));
 		vec2 itpos(GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight);
 		if (InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, itpos, "enter a command", UIInputTextFlags_EnterReturnsTrue)) {
-			scroll_to_bottom = 1;
-			string input = inputBuf;
-			string modified = toStr("{{c=cyan}/{}}{{c=dcyan}\\ {}}",input);
-			AddLog(modified);
-			Cmd::Run(input);
-			memset(inputBuf, 0, CONSOLE_INPUT_BUFFER_SIZE);
+			if(inputBuf[0] != '\0'){
+				scroll_to_bottom = 1;
+				string input = inputBuf;
+				string modified = toStr("{{c=cyan}/{}}{{c=dcyan}\\ {}}",input);
+				
+				u32 start_chunk = dictionary.count+2; //NOTE skip /\ chunks
+				AddLog(modified);
+				
+				u32 end_chunk = dictionary.count-1; //TODO prevent adding duplicate input to history
+				input_history.add({start_chunk,end_chunk});
+				input_history_index = -1;
+				
+				Cmd::Run(input);
+				memset(inputBuf, 0, CONSOLE_INPUT_BUFFER_SIZE);
+			}
 		}
 		
 		PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
