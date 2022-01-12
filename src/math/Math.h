@@ -7,7 +7,6 @@
 #include "quaternion.h"
 #include "matN.h"
 #include "../defines.h"
-#include "../utils/tuple.h"
 
 #include <math.h>
 #include <algorithm>
@@ -435,7 +434,7 @@ namespace Math {
 		constexpr f32 multiple = f32(pow(10,decimals));
 		return f32(s32(a * multiple + .5f)) / multiple;
 	}
-
+	
 	template<int decimals = 2> inline global_ vec3 round(vec3 a){
 		constexpr f32 multiple = f32(pow(10,decimals));
 		return vec3(f32(s32(a.x * multiple + .5f)) / multiple,
@@ -485,17 +484,17 @@ namespace Math {
 			point.x <= rectPos.x + rectDims.x &&
 			point.y <= rectPos.y + rectDims.y;
 	}
-
+	
 	inline global_ b32 PointInTriangle(vec2 point, vec2 p0, vec2 p1, vec2 p2) {
 		vec2 p01 = p1 - p0;
 		vec2 p12 = p2 - p1;
 		vec2 p20 = p0 - p2;
-
-
+		
+		
 		return
-			(point - p0).dot(-vec2(p01.y, -p01.x)) < 0 &&
-			(point - p1).dot(-vec2(p12.y, -p12.x)) < 0 &&
-			(point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
+		(point - p0).dot(-vec2(p01.y, -p01.x)) < 0 &&
+		(point - p1).dot(-vec2(p12.y, -p12.x)) < 0 &&
+		(point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
 	}
 	
 #define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)
@@ -607,7 +606,7 @@ namespace Math {
 	//	f32 x = (ycross1 - ycross2 + slope)
 	//	return vec2(x, y);
 	//}
-
+	
 	static vec2 LineIntersect2(vec2 p1, vec2 p2, vec2 p3, vec2 p4) {
 		f32 m1 = (p2.y - p1.y) / (p2.x - p1.x);
 		f32 m2 = (p4.y - p3.y) / (p4.x - p3.x);
@@ -616,8 +615,8 @@ namespace Math {
 		f32 x = (b2 - b1) / (m1 - m2);
 		f32 y = m1 * x + b1;
 		return{ x,y };
-
-
+		
+		
 	}
 	
 	static vec3 LineMidpoint(vec3 start, vec3 end){

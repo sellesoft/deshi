@@ -170,8 +170,6 @@ Bug Board       //NOTE mark these with a last-known active date (MM/DD/YY)
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 __________ alternatively, we can store those specific assets in the source control
-(09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
-__________ this might not be an error with our stuff and just a quirk of the windows console
 (12/23/21) if the console fills up too much, it crashes
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 (01/10/22) color formatting does not work thru Log()
@@ -182,22 +180,19 @@ __________ see commands.cpp 'test' command
 #include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
 
 //// utility headers ////"
-//#define DESHI_ARRAY_ALLOCATOR deshi_allocator //NOTE we cant do this b/c we dont have static initialization like STL does
-//#define DESHI_STRING_ALLOCATOR deshi_allocator
 #include "utils/array.h"
-#include "utils/string.h"
+#include "utils/array_algorithms.h"
 #include "utils/carray.h"
 #include "utils/cstring.h"
 #include "utils/color.h"
-#include "utils/tuple.h"
-#include "utils/container_manager.h"
-#include "utils/utils.h"
-#include "utils/optional.h"
 #include "utils/debug.h"
-#include "utils/ring_array.h"
 #include "utils/hash.h"
 #include "utils/map.h"
-#include "utils/array_algorithms.h"
+#include "utils/optional.h"
+#include "utils/pair.h"
+#include "utils/ring_array.h"
+#include "utils/string.h"
+#include "utils/utils.h"
 #include "math/math.h"
 
 //// libcpp for core ////
