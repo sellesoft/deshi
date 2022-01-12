@@ -2,9 +2,9 @@
 #ifndef DESHI_MAP_H
 #define DESHI_MAP_H
 
-#include "hash.h"
 #include "array.h"
-#include "tuple.h"
+#include "hash.h"
+#include "pair.h"
 
 //TODO(delle) make this sorted so its faster
 template<typename Key, typename Value, typename HashStruct = hash<Key>>

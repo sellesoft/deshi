@@ -7,7 +7,7 @@
 #include "font.h"
 #include "../utils/color.h"
 #include "../utils/array.h"
-#include "../utils/tuple.h"
+#include "../utils/pair.h"
 
 struct Light;
 
@@ -33,7 +33,7 @@ extern Storage_* g_storage;
 namespace Storage{
 	void Init();
 	void Reset();
-
+	
 	void StorageBrowserUI();
 	
 	///////////////

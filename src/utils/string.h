@@ -6,8 +6,6 @@
 #  define DESHI_STRING_ALLOCATOR stl_allocator
 #endif
 
-#include "tuple.h"
-#include "utils.h"
 #include "../defines.h"
 
 #include <cstring>
@@ -64,7 +62,7 @@ struct string{
 	b32 beginsWith(const string& s) const;
 	b32 endsWith(const string& s) const;
 	b32 contains(const string& s) const;
-
+	
 	static string eatSpacesLeading(const string& s);
 	static string eatSpacesTrailing(const string& s);
 	static string toUpper(const string& s);

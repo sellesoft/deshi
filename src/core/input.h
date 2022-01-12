@@ -2,10 +2,10 @@
 #ifndef DESHI_INPUT_H
 #define DESHI_INPUT_H
 
+#include "time.h"
 #include "../defines.h"
 #include "../math/vector.h"
-#include "../utils/tuple.h"
-#include "time.h"
+#include "../utils/pair.h"
 
 #include <map>
 #include <vector>
@@ -118,7 +118,7 @@ struct Input{
 	vec2 mousePos;
 	u32 charIn[127] = { 0 };
 	u32 charCount = 0;
-
+	
 	b32 zero[MAX_KEYBOARD_KEYS] = {0};
 	
 	b32 anyKeyDown = 0;
@@ -139,13 +139,13 @@ struct Input{
 	b32 keyFocus, mouseFocus;
 	
 	b32 logInput = false;
-
+	
 	f64 time_key_held = 0;
 	f64 time_char_held = 0;
-
+	
 	TIMER_START(input__time_since_key_hold);
 	TIMER_START(input__time_since_char_hold);
-
+	
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
@@ -162,10 +162,10 @@ struct Input{
 			time_key_held = TIMER_END(input__time_since_key_hold);
 			anyKeyDown = 1;
 		}
-
+		
 		if (!realCharCount) TIMER_RESET(input__time_since_char_hold);
 		else time_char_held = TIMER_END(input__time_since_char_hold);
-
+		
 		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
 		scrollY = realScrollY;
@@ -200,7 +200,7 @@ struct Input{
 	inline b32 RMousePressed()  { return  newKeyState[MouseButton::RIGHT]      && !oldKeyState[MouseButton::RIGHT]; }
 	inline b32 LMouseReleased() { return !newKeyState[MouseButton::LEFT]       &&  oldKeyState[MouseButton::LEFT]; }
 	inline b32 RMouseReleased() { return !newKeyState[MouseButton::RIGHT]      &&  oldKeyState[MouseButton::RIGHT]; }
-
+	
 	b32 ModsDown(u32 mods){
 		switch(mods){
 			case(InputMod_Any):            return true;

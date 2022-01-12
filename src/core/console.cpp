@@ -1,40 +1,4 @@
-local vec2 console_pos;
-local vec2 console_dim;
-
-//fancy console opening parameters
-local f32 open_small_percent = 0.2f; //percentage of the height of the window to open to in small mode
-local f32 open_max_percent = 0.7f;   //percentage of the height of the window to open to
-local f32 open_amount = 0.0f;        //current opened amount
-local f32 open_target = 0.0f;        //target opened amount
-local f32 open_dt = 200.0f;         //speed at which it opens
-local TIMER_START(open_timer);
-
-//console 
-#define CONSOLE_INPUT_BUFFER_SIZE 256
-local constexpr u32 DICT_SIZE = 512;
-local FILE*     buffer;      //this is always from Logger
-local char      inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
-local UIWindow* conmain = 0; //the main console window
-local UIWindow* conterm = 0; //the terminal child window
-local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
-local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
-
-//state of console
-local b32 show_autocomplete = 0;
-local u32 scroll_y = 0;
-local u32 rows_in_buffer = 0;
-local b32 scroll_to_bottom = 0;
-local b32 intercepting_inputs = 0;
-
-local ConsoleState state = ConsoleState_Closed;
-
-//console preferences
-local b32 tag_show = 1;
-local b32 tag_highlighting = 1;
-local b32 tag_outlines = 1;
-local b32 line_highlighing = 1;
-
-enum Format_ {
+enum ConChunkFormat_{
 	None    = 0,
 	Alert   = 1 << 0, 
 	Success = 1 << 1, //these 3 are mutually exclusive!
@@ -42,11 +6,11 @@ enum Format_ {
 	Error   = 1 << 3, //these 3 are mutually exclusive!
 	Tagged  = 1 << 4,
 	Colored = 1 << 5,
-}; typedef u32 Format;
+}; typedef u32 ConChunkFormat;
 
 struct Chunk{
 	color color = Color_White;
-	Format format = None;
+	ConChunkFormat format = None;
 	u32 charstart = 0;
 	u32 strsize = 0;
 	b32 eol = 0; //true if this Chunk is the end of a line
@@ -57,12 +21,11 @@ struct Chunk{
 #endif 
 };
 
-
-struct{
+struct ConsoleDictionary{
 	ring_array<Chunk> dict;
 	u32& count = dict.count;
 	
-	void add(string to_logger, Chunk chunk) {
+	void add(string to_logger, Chunk chunk){
 		dict.add(chunk);
 		
 #ifdef DESHI_INTERNAL
@@ -73,17 +36,52 @@ struct{
 	}
 	
 	//for chunks that have already been logged
-	void add(Chunk chunk) {
+	void add(Chunk chunk){
 		dict.add(chunk);
 	}
 	
-	Chunk& operator[] (u32 idx) { return *dict.at(idx); }
-	
-	//u32 count() { return dict.count; }
-	
-} dictionary;
+	Chunk& operator[](u32 idx){ return *dict.at(idx); }
+};
 
+//// terminal ////
+local FILE* buffer; //this is always from Logger
+local b32 intercepting_inputs = 0;
+local b32 open_console_pressed = 0;
 
+#define CONSOLE_DICTIONARY_SIZE 512
+local ConsoleDictionary dictionary;
+
+#define CONSOLE_INPUT_BUFFER_SIZE 256
+local char last_submitted_input[CONSOLE_INPUT_BUFFER_SIZE]{};
+local char inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
+local u32  max_input_history = 200;
+local u32  input_history_index = -1;
+local ring_array<pair<u32,u32>> input_history;
+
+//// visuals ////
+local vec2 console_pos;
+local vec2 console_dim;
+local u32  scroll_y = 0;
+local u32  rows_in_buffer = 0;
+local ConsoleState state = ConsoleState_Closed;
+
+local b32 show_autocomplete = 0;
+local b32 scroll_to_bottom = 0;
+local b32 tag_show = 1;
+local b32 tag_highlighting = 1;
+local b32 tag_outlines = 1;
+local b32 line_highlighing = 1;
+
+local UIWindow* conmain = 0; //the main console window
+local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
+local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
+
+local f32 open_small_percent = 0.2f; //percentage of the height of the window to open to in small mode
+local f32 open_max_percent = 0.7f;   //percentage of the height of the window to open to
+local f32 open_amount = 0.0f;        //current opened amount
+local f32 open_target = 0.0f;        //target opened amount
+local f32 open_dt = 200.0f;          //speed at which it opens
+local TIMER_START(open_timer);
 
 local map<const char*, color> color_strings{
 	{"red",    Color_Red},     {"dred",    Color_DarkRed},
@@ -97,16 +95,16 @@ local map<const char*, color> color_strings{
 };
 
 //TODO(sushi) clean this function up please
-void ParseMessage(string& input, s32 chstart = -1) {
+void ParseMessage(string& input, s32 chstart = -1){
 	//if the input is less than 7 characters its impossible for it to have valid modifier syntax
-	if (input.count < 7) {
+	if(input.count < 7){
 		Chunk chunk;
 		chunk.charstart = (chstart == -1 ? ftell(buffer) : chstart);
 		chunk.strsize = input.count;
 		chunk.color = Color_White;
 		chunk.eol = 1;
 		chunk.format = None;
-		if (chstart == -1) {
+		if(chstart == -1){
 			dictionary.add(input + "\n", chunk);
 		}
 		else {
@@ -129,7 +127,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 #define ConFormatClosing    (i + 2 < input.count && input[i] == '{' && input[i + 1] == '}' && input[i + 2] == '}')
 #define ResetChunk chunk = Chunk()
 #define AddChunk if(chstart == -1){ string tl(chunk_start, chunk.strsize); dictionary.add(tl, chunk); } else dictionary.add(chunk);
-#define AddChunkWithNewline if(chstart == -1) { string tl(chunk_start, chunk.strsize); dictionary.add(tl + "\n", chunk); } else dictionary.add(chunk);
+#define AddChunkWithNewline if(chstart == -1){ string tl(chunk_start, chunk.strsize); dictionary.add(tl + "\n", chunk); } else dictionary.add(chunk);
 	
 	char* formatting_start = 0;
 	char* specifier_start = 0;
@@ -139,7 +137,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 	
 	u32 charstart = (chstart == -1 ? ftell(buffer) : chstart);
 	
-	for (int i = 0; i < input.count; i++) {
+	for(int i = 0; i < input.count; i++){
 #if 0
 		//leaving this here for whenever this function goes wrong again,
 		// as its stupidly finicky
@@ -154,9 +152,9 @@ void ParseMessage(string& input, s32 chstart = -1) {
 		PRINTLN("   chunk strsize: " << chunk.strsize);
 		PRINTLN("            curr: " << curr);
 #endif
-		switch (state) {
+		switch (state){
 			case Init: { //initial state and state after finishing a formatted string
-				if (ConFormatOpening) {
+				if(ConFormatOpening){
 					state = ParsingFormatting;
 					formatting_start = &input[i];
 					specifier_start = formatting_start + 2;
@@ -169,7 +167,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 				}
 			}break;
 			case ParsingChunk: {
-				if (ConFormatOpening) {
+				if(ConFormatOpening){
 					state = ParsingFormatting;
 					formatting_start = &input[i];
 					specifier_start = formatting_start + 2;
@@ -180,7 +178,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 					ResetChunk;
 					i++; continue;
 				}
-				else if (input[i] == '\n') {
+				else if(input[i] == '\n'){
 					//we end the chunk if we find a newline
 					state = Init;
 					chunk.strsize = &input[i] - chunk_start;
@@ -189,7 +187,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 					//dictionary.add(chunk_start, chunk);
 					ResetChunk;
 				}
-				else if (i == input.count - 1) {
+				else if(i == input.count - 1){
 					//we've reached the end of the string
 					chunk.strsize = (&input[i] - chunk_start) + 1;
 					chunk.eol = 1;
@@ -198,37 +196,37 @@ void ParseMessage(string& input, s32 chstart = -1) {
 				}
 			}break;
 			case ParsingFormatting: {
-				auto parse_specifier = [&](string& specifier) {
-					if (!HasAllFlags(chunk.format, (Warning | Error))) {
-						if (specifier == "e") {
+				auto parse_specifier = [&](string& specifier){
+					if(!HasAllFlags(chunk.format, (Warning | Error))){
+						if(specifier == "e"){
 							AddFlag(chunk.format, Error);
 							return;
 						}
-						else if (specifier == "w") {
+						else if(specifier == "w"){
 							AddFlag(chunk.format, Warning);
 							return;
 						}
-						else if (specifier == "s") {
+						else if(specifier == "s"){
 							AddFlag(chunk.format, Success);
 							return;
 						}
 					}
-					if (specifier == "a") {
+					if(specifier == "a"){
 						chunk.format |= Alert;
 						return;
 					}
-					if (specifier[0] == 'c' && specifier[1] == '=') {
+					if(specifier[0] == 'c' && specifier[1] == '='){
 						chunk.format |= Colored;
 						chunk.color = color_strings[specifier.substr(2).str];
 						return;
 					}
-					if (specifier[0] == 't' && specifier[1] == '=') {
+					if(specifier[0] == 't' && specifier[1] == '='){
 						chunk.format |= Tagged;
 						chunk.tag = specifier.substr(2);
 						return;
 					}
 				};
-				if (ConFormatSpecifierClosing) {
+				if(ConFormatSpecifierClosing){
 					state = ParsingFormattedChunk;
 					string specifier(specifier_start, (&input[i] - specifier_start));
 					parse_specifier(specifier);
@@ -237,14 +235,14 @@ void ParseMessage(string& input, s32 chstart = -1) {
 					chunk.charstart = charstart;
 					
 				}
-				else if (ConFormatSpecifierSeparator) {
+				else if(ConFormatSpecifierSeparator){
 					i++;
 					string specifier(specifier_start, (&input[i] - specifier_start) - 1);
 					parse_specifier(specifier);
 					specifier_start += specifier.count + 1;
 					
 				}
-				else if (input[i] == '\n') {
+				else if(input[i] == '\n'){
 					//what we were parsing must not have actually been formatting
 					//so just end the chunk and start again
 					state = Init;
@@ -256,7 +254,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 					charstart += chunk.strsize + 1;
 					
 				}
-				else if (i == input.count - 1) {
+				else if(i == input.count - 1){
 					//we've reached the end of the string
 					chunk.strsize = (&input[i] - formatting_start);
 					chunk.eol = 1;
@@ -265,11 +263,11 @@ void ParseMessage(string& input, s32 chstart = -1) {
 				}
 			}break;
 			case ParsingFormattedChunk: {
-				if (ConFormatClosing) {
+				if(ConFormatClosing){
 					state = Init;
 					chunk.strsize = (&input[i] - chunk_start);
 					i += 2;
-					if (i == input.count - 1) { 
+					if(i == input.count - 1){ 
 						chunk.eol = 1; 
 						AddChunkWithNewline;
 						break;
@@ -280,9 +278,9 @@ void ParseMessage(string& input, s32 chstart = -1) {
 					}
 					ResetChunk;
 				}
-				else if (input[i] == '\n') {
+				else if(input[i] == '\n'){
 					i++;
-					if (ConFormatClosing) {
+					if(ConFormatClosing){
 						//in this case we find a newline right at the end of a formatted chunk
 						state = Init;
 						i--;
@@ -303,7 +301,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 						chunk.charstart = charstart;
 					}
 				}
-				else if (i == input.count - 1) {
+				else if(i == input.count - 1){
 					//we've reached the end of the string
 					chunk.strsize = (&input[i] - chunk_start) + 1;
 					chunk.eol = 1;
@@ -315,59 +313,59 @@ void ParseMessage(string& input, s32 chstart = -1) {
 }
 
 void Console::AddLog(string input){
-	if(DeshiModuleLoaded(DS_CONSOLE)) 
-		ParseMessage(input);
+	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input);
 }
 
-void Console::LoggerMirror(string input, u32 charstart) {
-	if(DeshiModuleLoaded(DS_CONSOLE)) 
-		ParseMessage(input, charstart);
+void Console::LoggerMirror(string input, u32 charstart){
+	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input, charstart);
 }
 
-void Console::ChangeState(ConsoleState new_state) {
-	if (state == new_state) new_state = ConsoleState_Closed;
+void Console::ChangeState(ConsoleState new_state){
+	if(state == new_state) new_state = ConsoleState_Closed;
 	
 	intercepting_inputs = true;
 	
-	switch (new_state) {
-		case ConsoleState_Closed: {
-			if (state == ConsoleState_Popout) {
-				console_dim = conmain->dimensions;
+	switch(new_state){
+		case ConsoleState_Closed:{
+			if(state == ConsoleState_Popout){
 				console_pos = conmain->position;
+				console_dim = conmain->dimensions;
 			}
 			open_target = 0;
 			open_amount = console_dim.y;
 			intercepting_inputs = false;
 			TIMER_RESET(open_timer);
 		}break;
-		case ConsoleState_OpenSmall: {
+		case ConsoleState_OpenSmall:{
 			open_target = (f32)DeshWindow->height * open_small_percent;
 			open_amount = console_dim.y;
 			console_pos = vec2(0, -1);
 			console_dim.x = (f32)DeshWindow->width;
 			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
+			open_console_pressed = 1;
 			TIMER_RESET(open_timer);
 		}break;
-		case ConsoleState_OpenBig: {
+		case ConsoleState_OpenBig:{
 			open_target = (f32)DeshWindow->height * open_max_percent;
 			open_amount = console_dim.y;
 			console_pos = vec2(0, -1);
 			console_dim.x = (f32)DeshWindow->width;
 			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
+			open_console_pressed = 1;
 			TIMER_RESET(open_timer);
 		}break;
-		case ConsoleState_Popout: {
+		case ConsoleState_Popout:{
 			open_target = console_dim.y;
 			open_amount = 0;
 			flags = 0;
+			open_console_pressed = 1;
 			TIMER_RESET(open_timer);
-			
 		}break;
 	}
 	state = new_state;
 }
 
-void Console::Init() {
+void Console::Init(){
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	AssertDS(DS_LOGGER, "Attempt to load Console without loading Logger first");
 	deshiStage |= DS_CONSOLE;
@@ -375,7 +373,8 @@ void Console::Init() {
 	TIMER_START(t_s);
 	buffer = Logger::GetFilePtr();
 	
-	dictionary.dict.init(DICT_SIZE, deshi_allocator);
+	dictionary.dict.init(CONSOLE_DICTIONARY_SIZE, deshi_allocator);
+	input_history.init(max_input_history, deshi_allocator);
 	
 	scroll_to_bottom = 1;
 	
@@ -386,35 +385,64 @@ void Console::Init() {
 	LogS("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
 }
 
-void OpenToTarget() {
-	//TODO change this to Nudge
-	console_dim.y = Math::lerp(open_amount, open_target, Min((f32)TIMER_END(open_timer) / open_dt, 1.f));
-	if (console_dim.y == open_target) open_amount = open_target;
-}
-
-void Console::Update() {
+void Console::Update(){
 	using namespace UI;
 	
 	//check for console state changing inputs
-	if (DeshInput->KeyPressed(Key::TILDE)) {
-		if (DeshInput->ShiftDown()) {
+	if(DeshInput->KeyPressed(Key::TILDE)){
+		if      (DeshInput->ShiftDown()){
 			ChangeState(ConsoleState_OpenBig);
-		}
-		else if (DeshInput->CtrlDown()) {
+		}else if(DeshInput->CtrlDown()){
 			ChangeState(ConsoleState_Popout);
-		}
-		else {
+		}else{
 			ChangeState(ConsoleState_OpenSmall);
 		}
 	}
 	
-	if (open_target != open_amount) OpenToTarget();
+	//check for history inputs
+	b32 change_input = false;
+	if(DeshInput->KeyPressed(Key::UP)){
+		change_input = true;
+		input_history_index--;
+		if(input_history_index == -2) input_history_index = input_history.count-1;
+	}
+	if(DeshInput->KeyPressed(Key::DOWN)){
+		change_input = true;
+		input_history_index++;
+		if(input_history_index >= input_history.count) input_history_index = -1;
+	}
+	if(change_input){
+		ZeroMemory(inputBuf, CONSOLE_INPUT_BUFFER_SIZE);
+		if(input_history_index != -1){
+			u32 cursor = 0;
+			u32 chunk_idx = input_history[input_history_index].first;
+			Chunk& chunk = dictionary[chunk_idx];
+			
+			fseek(buffer, chunk.charstart, SEEK_SET);
+			for(;;){
+				u32 characters = (cursor + chunk.strsize > CONSOLE_INPUT_BUFFER_SIZE) ? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.strsize) : chunk.strsize;
+				fread(inputBuf, sizeof(char), characters, buffer);
+				cursor += characters;
+				
+				if(chunk_idx >= input_history[input_history_index].second || cursor >= CONSOLE_INPUT_BUFFER_SIZE){
+					break;
+				}else{
+					chunk = dictionary[++chunk_idx];
+				}
+			}
+		}
+	}
 	
+	//console openness
+	if(open_target != open_amount){
+		//TODO change this to Nudge
+		console_dim.y = Math::lerp(open_amount, open_target, Min((f32)TIMER_END(open_timer) / open_dt, 1.f));
+		if(console_dim.y == open_target) open_amount = open_target;
+	}
 	
 	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
-	
-	if (console_dim.y > 0) {
-		if (open_target != open_amount || state != ConsoleState_Popout) {
+	if(console_dim.y > 0){
+		if(open_target != open_amount || state != ConsoleState_Popout){
 			SetNextWindowPos(console_pos);
 			SetNextWindowSize(console_dim);
 		}
@@ -424,44 +452,43 @@ void Console::Update() {
 		
 		SetNextWindowSize(vec2(MAX_F32, GetMarginedBottom() - (uistyle->fontHeight * uistyle->inputTextHeightRelToFont + uistyle->itemSpacing.y) * 3));
 		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
-		conterm = GetWindow(); //TODO(sushi) try to get this only once
 		
-		//draw text fro the dictionary
+		//draw text for the dictionary
 		PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
 		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
 		char toprint[1024];
-		for (int i = 0; i < dictionary.count; i++) {
+		for(int i = 0; i < dictionary.count; i++){
 			Chunk& colstr = dictionary[i];
 			u32 format = colstr.format;
 			
+			//get chunk from the log file
 			fseek(buffer, colstr.charstart, SEEK_SET);
 			fread(toprint, colstr.strsize + 1, 1, buffer);
 			toprint[dictionary[i].strsize] = 0;
 			
-			
 			//adjust what we're going to print based on formatting
-			if (format) {
+			if(format){
 				string tp = toprint;
-				if (HasFlag(format, Error)) {
+				if(HasFlag(format, Error)){
 					PushColor(UIStyleCol_Text, Color_Red);
 				}
-				else if (HasFlag(format, Warning)) {
+				else if(HasFlag(format, Warning)){
 					PushColor(UIStyleCol_Text, Color_Yellow);
 				}
-				else if (HasFlag(format, Success)) {
+				else if(HasFlag(format, Success)){
 					PushColor(UIStyleCol_Text, Color_Green);
 				}
-				else if (HasFlag(format, Colored)) {
+				else if(HasFlag(format, Colored)){
 					PushColor(UIStyleCol_Text, colstr.color);
 				}
-				if (HasFlag(format, Alert)) {
+				if(HasFlag(format, Alert)){
 					//TODO handle alert flashing
 				}
 				
 				static UIItem* last_tag = 0;
-				if (tag_show && HasFlag(format, Tagged)) {
+				if(tag_show && HasFlag(format, Tagged)){
 					//TODO(sushi) make a boolean for turning off fancy tag showing
-					if (!i || dictionary[i - 1].tag != colstr.tag) {
+					if(!i || dictionary[i - 1].tag != colstr.tag){
 						
 						f32 lpy = GetPositionForNextItem().y;
 						f32 mr = GetMarginedRight();
@@ -470,13 +497,13 @@ void Console::Update() {
 						//look ahead for the end of the tag range
 						//dont draw if its not visible
 						f32 tag_end = lpy;
-						for (int o = i; o < dictionary.count; o++) {
-							if (dictionary[o].tag == colstr.tag)
+						for(int o = i; o < dictionary.count; o++){
+							if(dictionary[o].tag == colstr.tag)
 								tag_end += tagsize.y;
 							else break;
 						}
-						if (tag_end > GetMarginedTop()) {
-							if (tag_end < tagsize.y) {
+						if(tag_end > GetMarginedTop()){
+							if(tag_end < tagsize.y){
 								lpy = GetMarginedTop() + (tag_end - tagsize.y);
 							}
 							else {
@@ -487,7 +514,7 @@ void Console::Update() {
 							Text(colstr.tag.str, vec2(mr - tagsize.x, lpy));
 							PopColor();
 							
-							if (tag_outlines && tag_end - (lpy + tagsize.y) > 4) {
+							if(tag_outlines && tag_end - (lpy + tagsize.y) > 4){
 								//vertline
 								Line(vec2(mr - 1, lpy + tagsize.y + 3), vec2(mr - 1, tag_end - 3), 2, color(150, 150, 150, 150));
 								//tag underline
@@ -497,7 +524,7 @@ void Console::Update() {
 								
 							}
 							
-							if (tag_highlighting) {
+							if(tag_highlighting){
 								PushLayer(GetCenterLayer() - 1);
 								SetNextItemSize(vec2(GetMarginedRight(), tag_end - lpy));
 								PushColor(UIStyleCol_SelectableBg, Color_Clear);
@@ -511,18 +538,16 @@ void Console::Update() {
 							
 							SetMarginSizeOffset(vec2(-tagsize.x, 0));
 						}
-						
-						
 					}
 				}
 				
 				Text(tp.str);
-				if (!colstr.eol && i != (dictionary.count - 1)) SameLine();
+				if(!colstr.eol && i != (dictionary.count - 1)) SameLine();
 				
-				if (HasFlag(format, Error | Warning | Success | Colored))
+				if(HasFlag(format, Error | Warning | Success | Colored))
 					PopColor();
 				
-				if (line_highlighing) {
+				if(line_highlighing){
 					UIItem* last_text = GetLastItem();
 					SetNextItemSize(vec2(GetMarginedRight(), last_text->size.y));
 					PushLayer(GetCenterLayer() - 1);
@@ -541,7 +566,7 @@ void Console::Update() {
 		}
 		PopVar(2);
 		
-		if (scroll_to_bottom) { SetScroll(vec2(0, MAX_F32)); scroll_to_bottom = 0; }
+		if(scroll_to_bottom){ SetScroll(vec2(0, MAX_F32)); scroll_to_bottom = 0; }
 		
 		//SetScroll(vec2(0, MAX_F32));
 		EndChild();
@@ -550,18 +575,33 @@ void Console::Update() {
 		//get text input
 		f32 inputBoxHeight = uistyle->inputTextHeightRelToFont * uistyle->fontHeight;
 		SetNextItemSize(vec2(MAX_F32, inputBoxHeight));
-		vec2 itpos(GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight);
-		if (InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, itpos, "enter a command", UIInputTextFlags_EnterReturnsTrue)) {
-			scroll_to_bottom = 1;
-			string input = inputBuf;
-			string modified = toStr("{{c=cyan}/{}}{{c=dcyan}\\ {}}",input);
-			AddLog(modified);
-			Cmd::Run(input);
-			memset(inputBuf, 0, CONSOLE_INPUT_BUFFER_SIZE);
+		if(open_console_pressed) UI::SetNextItemActive();
+		if(InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, {GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight}, "enter a command", UIInputTextFlags_EnterReturnsTrue)){
+			if(inputBuf[0] != '\0'){
+				scroll_to_bottom = 1;
+				input_history_index = -1;
+				
+				string input = inputBuf;
+				string modified = toStr("{{c=cyan}/{}}{{c=dcyan}\\ {}}",input);
+				
+				u32 start_chunk = dictionary.count+2; //NOTE skip /\ chunks
+				AddLog(modified);
+				
+				if(strncmp(inputBuf, last_submitted_input, CONSOLE_INPUT_BUFFER_SIZE) != 0){
+					CopyMemory(last_submitted_input, inputBuf, CONSOLE_INPUT_BUFFER_SIZE);
+					u32 end_chunk = dictionary.count-1;
+					input_history.add({start_chunk,end_chunk});
+				}
+				
+				Cmd::Run(input);
+				ZeroMemory(inputBuf, CONSOLE_INPUT_BUFFER_SIZE);
+			}
 		}
 		
 		PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
 		End();
 		PopColor();
 	}
+	
+	open_console_pressed = 0;
 }

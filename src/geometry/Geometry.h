@@ -23,14 +23,14 @@ global_ vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
 	f32  u = 1.0f - v - w;
 	if      (u < 0.0f){
 		vec3 v12 = tri2 - tri1;
-		f32  t = Math::clamp(v12.dot(point - tri1) / v12.dot(v12), 0.0f, 1.0f);
+		f32  t = Clamp(v12.dot(point - tri1) / v12.dot(v12), 0.0f, 1.0f);
 		u = 0.0f; v = 1.0f - t; w = t;
 	}else if(v < 0.0f){
 		vec3 v20 = tri0 - tri2;
-		f32  t = Math::clamp(v20.dot(point - tri2) / v20.dot(v20), 0.0f, 1.0f);
+		f32  t = Clamp(v20.dot(point - tri2) / v20.dot(v20), 0.0f, 1.0f);
 		u = t; v = 0.0f; w = 1.0f - t;
 	}else if(w < 0.0f){
-		f32 t = Math::clamp(dot20 / dot00, 0.0f, 1.0f);
+		f32 t = Clamp(dot20 / dot00, 0.0f, 1.0f);
 		u = 1.0f - t; v = t; w = 0.0f;
 	}
 	return vec3(u*tri0.x + v*tri1.x + w*tri2.x, u*tri0.y + v*tri1.y + w*tri2.y, u*tri0.z + v*tri1.z + w*tri2.z);
@@ -71,7 +71,7 @@ inline global_ vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec
 }
 
 inline global_ vec3 ClosestPointOnAABB(vec3 halfDims, vec3 target) {
-	return Math::clamp(target, -halfDims, halfDims);
+	return Clamp(target, -halfDims, halfDims);
 }
 
 inline global_ vec3 ClosestPointOnSphere(float radius, vec3 target) {

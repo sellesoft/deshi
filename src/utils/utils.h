@@ -2,7 +2,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "tuple.h"
+#include "pair.h"
 #include "../defines.h"
 
 #include <string>
@@ -10,9 +10,6 @@
 #include <cmath>
 
 namespace Utils{
-	
-
-	
 	///////////////////////////////
 	//// FNV-1a hash functions ////
 	///////////////////////////////

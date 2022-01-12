@@ -815,9 +815,9 @@ local void TEST_deshi_utils_string_conversion(){
 	printf("[DESHI-TEST] TODO:   utils/string_conversion\n");
 }
 
-#include "tuple.h"
-local void TEST_deshi_utils_tuple(){
-	printf("[DESHI-TEST] TODO:   utils/tuple\n");
+#include "pair.h"
+local void TEST_deshi_utils_pair(){
+	printf("[DESHI-TEST] TODO:   utils/pair\n");
 }
 
 #include "utils.h"
@@ -837,7 +837,7 @@ local void TEST_deshi_utils(){
 	TEST_deshi_utils_ring_array();
 	TEST_deshi_utils_string();
 	TEST_deshi_utils_string_conversion();
-	TEST_deshi_utils_tuple();
+	TEST_deshi_utils_pair();
 	TEST_deshi_utils_utils();
 	
 	

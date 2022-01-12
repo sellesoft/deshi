@@ -462,7 +462,7 @@ struct UIItem {
 	UIStyle    style;         //style at the time of making the item
 	
 	Flags flags; 
-
+	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
 	
@@ -679,9 +679,6 @@ namespace UI {
 	void SetAllowInputs();
 	
 	
-	
-	
-	
 	//// rows ////
 	void BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
@@ -691,6 +688,7 @@ namespace UI {
 	void RowSetupRelativeColumnWidths(array<f32> widths);
 	void RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge);
 	void RowSetupColumnAlignments(array<vec2> alignments);
+	
 	
 	//// drawing ////
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
@@ -756,10 +754,11 @@ namespace UI {
 	void    EndCustomItem();
 	
 	b32 IsLastItemHovered();
-
+	
 	void AddItemFlags(UIItemType type, Flags flags);
 	void RemoveItemFlags(UIItemType type, Flags flags);
 	void ResetItemFlags(UIItemType type);
+	
 	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
@@ -780,6 +779,7 @@ namespace UI {
 	void PopWindowLayer(u32 count = 1);
 	void PopLeftIndent(u32 count = 1);
 	void PopRightIndent(u32 count = 1);
+	
 	
 	//// windows ////
 	void Begin(const char* name, UIWindowFlags flags = 0);

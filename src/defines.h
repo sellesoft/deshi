@@ -261,6 +261,7 @@ global_const u64 wcharsize = sizeof(wchar);
 //// common functions ////
 //////////////////////////
 FORCE_INLINE void ZeroMemory(void* ptr, upt bytes){memset(ptr, 0, bytes);}
+FORCE_INLINE void CopyMemory(void* dst, void* src, upt bytes){memcpy(dst,src,bytes);}
 FORCE_INLINE b32  IsPow2(u64 value)       {return (value != 0) && ((value & (value-1)) == 0);}
 FORCE_INLINE upt  roundUpToPow2(upt x)    { return (upt)1 << (upt)((upt)log2(f64(--x)) + 1); }
 FORCE_INLINE char bytesUnit(upt bytes)    { return (bytes > Kilobytes(1) ? bytes > Megabytes(1) ? bytes > Gigabytes(1) ? bytes > Terabytes(1) ? 'T' : 'G' : 'M' : 'K' : 'B'); }
