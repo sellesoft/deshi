@@ -51,6 +51,7 @@ struct string{
 	void   clear();
 	void   erase(u32 idx);
 	void   insert(CHAR c, u32 idx); //inserts at specified idx, pushing the CHARacter at idx and all following CHARacters to the right
+	void   replace(CHAR c, const string& with); //replaces all occurences of a char with a string
 	CHAR   at(u32 idx) const; //returns a copy of the CHARacter at idx
 	string substr(u32 start, u32 end = npos) const; //returns a string including the start and end CHARacters, end equals the end of the string (size-1) if npos
 	u32    findFirstStr(const string& s) const;
@@ -293,6 +294,18 @@ inline void string::insert(CHAR c, u32 idx){
 	}
 }
 
+//TODO implement this better
+inline void string::replace(CHAR c, const string& with) {
+	for (u32 i = 0; i < count; i++) {
+		if (str[i] == c) {
+			erase(i);
+			for (u32 o = with.count; o != 0; o--) {
+				insert(with[o - 1], i);
+			}
+		}
+	}
+}
+
 inline string::CHAR string::at(u32 idx) const{
 	Assert(idx <= count);
 	return str[idx];
@@ -345,6 +358,7 @@ inline u32 string::CHARCount(CHAR c) const{
 	for(u32 i = 0; i < count; ++i){ if(str[i] == c){ sum++; } }
 	return sum;
 }
+
 
 inline string string::substrToChar(CHAR c) const{
 	u32 idx = findFirstChar(c);

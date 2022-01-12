@@ -1,0 +1,519 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="extra">
+      <UniqueIdentifier>{7d0daf8e-585c-4b54-9179-c4b56dde52ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{6b9b72dd-a556-4b71-92b0-e4dbff78417e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extra\cfg">
+      <UniqueIdentifier>{4cef9034-cbca-43b8-8f3b-c5e5873dc54d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extra\docs">
+      <UniqueIdentifier>{7bda59fa-4ee3-41fc-8cb8-3b6b776acdd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extra\fonts">
+      <UniqueIdentifier>{8f889467-96fa-488c-a7f4-d1cb51f9b519}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extra\misc">
+      <UniqueIdentifier>{45042099-378a-485c-8076-223be06d2eb2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extra\shaders">
+      <UniqueIdentifier>{cccdc140-9aeb-4a85-bb3a-e7503d8c0bd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core">
+      <UniqueIdentifier>{0b93b0a9-0416-489a-bb47-27c52215dc6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\renderers">
+      <UniqueIdentifier>{ad38dbca-ff8d-4643-9420-81ebe6d97198}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\external">
+      <UniqueIdentifier>{5c903fb9-a90f-4d09-8901-51d7194d73eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\external\draudio">
+      <UniqueIdentifier>{9acd9d43-c766-4227-af52-269f19079c8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\external\imgui">
+      <UniqueIdentifier>{2d84e486-a40f-4bcd-a871-05f44b3481e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\external\stb">
+      <UniqueIdentifier>{c784f8e0-ac04-4413-846f-6e38095c44b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\external\d3dx12">
+      <UniqueIdentifier>{7d3f7429-a8c0-4695-adef-8416e9d5baf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\geometry">
+      <UniqueIdentifier>{0b4e28f2-3c92-4ae2-a0d1-34bc6ee02d13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\math">
+      <UniqueIdentifier>{9c981bd9-3445-4e3c-a74c-58896970bc7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\utils">
+      <UniqueIdentifier>{a5cdd25c-11f0-471e-8ace-0a4dd11f7f47}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="suugu.vcxproj">
+      <Filter>extra\misc</Filter>
+    </None>
+    <None Include="cpp.hint">
+      <Filter>extra\misc</Filter>
+    </None>
+    <None Include="..\.gitmodules">
+      <Filter>extra\misc</Filter>
+    </None>
+    <None Include="..\.gitignore">
+      <Filter>extra\misc</Filter>
+    </None>
+    <None Include="..\data\shaders\twod_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\twod_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\ui.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\ui.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\ui_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\ui_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\utils.glsl">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\wireframe.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\wireframe.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\wireframe_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\wireframe_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\base.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\base.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\base_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\base_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\fixedimguishader.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\fixedimguishader_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\flat.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\flat.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\flat_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\flat_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\lavalamp.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\lavalamp.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\lavalamp_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\lavalamp_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\normaldebug.geom">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\normaldebug_gl3.geom">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\nothing.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\nothing.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\nothing_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\nothing_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\null.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\null.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\null_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\null_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\offscreen.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\offscreen_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\pbr.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\pbr.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\pbr_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\pbr_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\phong.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\phong.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\phong_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\phong_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\shadowmapDEBUG.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\shadowmapDEBUG.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\shadowmapDEBUG_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\shadowmapDEBUG_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing0.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing0.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing0_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing0_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing1.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing1.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing1_gl3.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing1_gl3.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\twod.frag">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\twod.vert">
+      <Filter>extra\shaders</Filter>
+    </None>
+    <None Include="src\math\mat3.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="src\math\mat4.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="src\math\vec2.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="src\math\vec3.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="src\math\vec4.inl">
+      <Filter>src\math</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\vk_layer_settings.txt">
+      <Filter>extra\misc</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="debugvis.natvis">
+      <Filter>extra\misc</Filter>
+    </Natvis>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\core\assets.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\commands.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\console.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\deshi_core_tests.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\io.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\logger.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\memory.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\storage.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ui.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\window.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\renderers\directx.cpp">
+      <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\renderers\opengl.cpp">
+      <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\renderers\vulkan.cpp">
+      <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_demo.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_draw.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_impl_dx12.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_impl_glfw.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_impl_vulkan.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_tables.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\external\imgui\imgui_widgets.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\deshi_utils_tests.cpp">
+      <Filter>src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\misc_testing.cpp">
+      <Filter>src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="src\deshi.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\core\armature.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\assets.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\camera.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\commands.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\console.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\font.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\imgui.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\input.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\io.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\logger.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\memory.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\model.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\renderer.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\storage.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\time.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ui.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\window.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\draudio\dr_flac.h">
+      <Filter>src\external\draudio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\draudio\dr_mp3.h">
+      <Filter>src\external\draudio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\draudio\dr_wav.h">
+      <Filter>src\external\draudio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imconfig.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imgui.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imgui_impl_dx12.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imgui_impl_glfw.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imgui_impl_vulkan.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imgui_internal.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imstb_rectpack.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imstb_textedit.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\imgui\imstb_truetype.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\stb\stb_image.h">
+      <Filter>src\external\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\stb\stb_truetype.h">
+      <Filter>src\external\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\d3dx12\d3dx12.h">
+      <Filter>src\external\d3dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geometry\Edge.h">
+      <Filter>src\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geometry\Geometry.h">
+      <Filter>src\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\Math.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\matN.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\matrix.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\Quaternion.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math\vector.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\array.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\array_algorithms.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\carray.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\color.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\container_manager.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\cstring.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\Debug.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\hash.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\map.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\optional.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\ring_array.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\string.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\string_conversion.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\tuple.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\type.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\utils.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="src\defines.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\deshi.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
