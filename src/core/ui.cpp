@@ -1196,7 +1196,7 @@ void UI::EndRow() {
 //this function sets up a static column width for a specified column that does not respect the size of the object
 void UI::RowSetupColumnWidth(u32 column, f32 width) {
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row->columns.count && column >= 1, "Attempted to set a column who doesn't exists width!");
+	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
 	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
 		row->columns[column] = { width, false };
 }
@@ -1213,7 +1213,7 @@ void UI::RowSetupColumnWidths(array<f32> widths) {
 //see the function below for what this does
 void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row->columns.count && column >= 1, "Attempted to set a column who doesn't exists width!");
+	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
 	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
 		row->columns[column] = { width, true };
 }
