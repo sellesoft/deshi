@@ -260,11 +260,14 @@ struct Input{
 	inline b32 KeyReleased(u32 mod_key = InputMod_Any){
 		return !newKeyState[mod_key & 0x000000FF] && oldKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
 	}
+	
+	inline void SimulateKeyPress(u32 key){
+		newKeyState[key] = true;
+	}
 };
 
 //global input pointer
 extern Input* g_input;
 #define DeshInput g_input
-
 
 #endif //DESHI_INPUT_H

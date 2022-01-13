@@ -2,7 +2,14 @@
 #ifndef DESHI_IO_H
 #define DESHI_IO_H
 
-#include "../utils/cstring.h"
+#include "../utils/array.h"
+#include "../utils/string.h"
+
+enum FileAccessFlags{
+	FileAccessFlag_Read  = 1 << 0,
+	FileAccessFlag_Write = 1 << 1,
+	FileAccessFlag_Exec  = 1 << 2,
+};
 
 #define MAX_FILEPATH_SIZE 1024
 #define MAX_FILENAME_SIZE 256
@@ -33,8 +40,15 @@ struct FileReader{
 
 //returns a temporary array of the files in the target directory
 array<File> get_directory_files(const char* directory);
+FORCE_INLINE array<File> get_directory_files(cstring directory){ return get_directory_files(directory.str); }
 
 void delete_file(const char* filepath);
-FORCE_INLINE void delete_file(File* file){ delete_file(file->path); }
+FORCE_INLINE void delete_file(File* file){ return delete_file(file->path); }
+
+//returns true if a filepath is valid
+b32 file_exists(const char* filepath);
+FORCE_INLINE b32 file_exists(File* file){ return file_exists(file->path); }
+
+void rename_file(const char* old_filepath, const char* new_filepath);
 
 #endif //DESHI_IO_H
