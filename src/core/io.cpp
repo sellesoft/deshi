@@ -1,4 +1,59 @@
-local b32    io_crash_on_error = false;
+local b32   io_crash_on_error = false;
+local Arena file_data_arena;
+
+
+//TODO binary file loading if needed
+FileReader init_reader(const File& file){
+#if DESHI_WINDOWS
+	FileReader fr;
+	if (io_crash_on_error) Assert(file.handle, "attempted to pass an uninitialized file");
+	if (!file.handle) {
+		fr.failed = true;
+		return fr;
+	}
+	//TODO eventually arena file data allocations
+	fr.raw.str = (char*)memalloc(file.bytes_size);
+	u32 bytes_read = 0;
+	if (!ReadFile(file.handle, fr.raw.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+		fr.failed = true; return fr;
+	}
+
+
+
+	
+
+
+#elif DESHI_LINUX
+#error "File not implemented for linux platforms"
+#elif DESHI_MAC
+#error "File not implemented for macOS"
+#endif
+}
+
+FileReader init_reader(const char* data) {
+	return FileReader();
+}
+
+cstring get_line(FileReader& reader){
+	return cstring{};
+}
+
+void goto_line(FileReader& reader, u32 linenum){
+
+}
+
+void goto_idx(FileReader& reader, u32 charnum){
+
+}
+
+cstring get_chunk(FileReader& reader, char delimiter){
+	return cstring{};
+}
+
+cstring get_value_from_key(FileReader& reader, const char* key, char value_delimiter){
+	return cstring{};
+}
+
 
 #if   DESHI_WINDOWS
 void Win32LogLastError(const char* func_name){
@@ -15,6 +70,62 @@ void Win32LogLastError(const char* func_name){
 #elif DESHI_MAC   //DESHI_LINUX
 #error "not implemented yet for mac"
 #endif            //DESHI_MAC
+
+//opens a file if it already exists or creates a new one if it doesnt
+//this does not load any data, you must use FileReader to do that!
+File open_file(const char* path, FileAccessFlags flags) {
+	Assert(flags, "attempt to open_file without specifing access flags");
+	File file;
+	file.flags = flags;
+
+#if DESHI_WINDOWS
+	DWORD access = (HasFlag(flags, FileAccess_Write) ? GENERIC_WRITE : 0) | (HasFlag(flags, FileAccess_Read) ? GENERIC_READ : 0);
+	file.handle = CreateFileA(path, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+	if (GetLastError()) Win32LogLastError("CreateFileA");
+	
+	//read data of opened file
+	BY_HANDLE_FILE_INFORMATION data;
+	ULARGE_INTEGER time;
+	ULARGE_INTEGER size;
+	
+	if (!GetFileInformationByHandle(file.handle, &data)) Win32LogLastError("GetFileInformationByHandle");
+
+	time.LowPart = data.ftCreationTime.dwLowDateTime; time.HighPart = data.ftCreationTime.dwHighDateTime;
+	file.time_creation = WindowsTimeToUnixTime(time.QuadPart);
+	time.LowPart = data.ftLastAccessTime.dwLowDateTime; time.HighPart = data.ftLastAccessTime.dwHighDateTime;
+	file.time_last_access = WindowsTimeToUnixTime(time.QuadPart);
+	time.LowPart = data.ftLastWriteTime.dwLowDateTime; time.HighPart = data.ftLastWriteTime.dwHighDateTime;
+	file.time_last_write = WindowsTimeToUnixTime(time.QuadPart);
+	size.LowPart = data.nFileSizeLow; size.HighPart = data.nFileSizeHigh;
+	file.bytes_size = size.QuadPart;
+	file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+
+	u32 pathlength = GetFinalPathNameByHandleA(file.handle, file.path, MAX_FILEPATH_SIZE, FILE_NAME_NORMALIZED);
+	if (pathlength > MAX_FILEPATH_SIZE) LogW("IO", "file path for '", path, "' has a length greater than MAX_FILEPATH_SIZE\npath length was ", pathlength);
+
+	//file.path_length = Min(pathlength, u32(MAX_FILEPATH_SIZE));
+
+	string pathstr(file.path);
+	//remove \\?\ prefix, however this may cause issues in the future with network paths, so TODO add checking for that
+	//see https://stackoverflow.com/questions/31439011/getfinalpathnamebyhandle-result-without-prepended
+	pathstr = pathstr.substr(4); 
+	pathstr.replace('\\', "/");
+	strcpy(file.path, pathstr.str);
+	file.path_length = pathstr.count;
+	pathstr = pathstr.substr(pathstr.findLastChar('/')+1);
+	strcpy(file.name, pathstr.str);
+	file.name_length = pathstr.count;
+	file.short_length = pathstr.findFirstChar('.');
+	file.ext_length = pathstr.count - file.short_length - 1;
+
+#elif DESHI_LINUX
+#error "File not implemented for linux platforms"
+#elif DESHI_MAC
+#error "File not implemented for macOS"
+#endif
+
+	return file;
+}
 
 //TODO(delle) search filters
 array<File>
