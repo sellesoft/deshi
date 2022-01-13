@@ -2,59 +2,6 @@ local b32   io_crash_on_error = false;
 local Arena file_data_arena;
 
 
-//TODO binary file loading if needed
-FileReader init_reader(const File& file){
-#if DESHI_WINDOWS
-	FileReader fr;
-	if (io_crash_on_error) Assert(file.handle, "attempted to pass an uninitialized file");
-	if (!file.handle) {
-		fr.failed = true;
-		return fr;
-	}
-	//TODO eventually arena file data allocations
-	fr.raw.str = (char*)memalloc(file.bytes_size);
-	u32 bytes_read = 0;
-	if (!ReadFile(file.handle, fr.raw.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
-		fr.failed = true; return fr;
-	}
-
-
-
-	
-
-
-#elif DESHI_LINUX
-#error "File not implemented for linux platforms"
-#elif DESHI_MAC
-#error "File not implemented for macOS"
-#endif
-}
-
-FileReader init_reader(const char* data) {
-	return FileReader();
-}
-
-cstring get_line(FileReader& reader){
-	return cstring{};
-}
-
-void goto_line(FileReader& reader, u32 linenum){
-
-}
-
-void goto_idx(FileReader& reader, u32 charnum){
-
-}
-
-cstring get_chunk(FileReader& reader, char delimiter){
-	return cstring{};
-}
-
-cstring get_value_from_key(FileReader& reader, const char* key, char value_delimiter){
-	return cstring{};
-}
-
-
 #if   DESHI_WINDOWS
 void Win32LogLastError(const char* func_name){
 	LPVOID msg_buffer;
@@ -71,6 +18,147 @@ void Win32LogLastError(const char* func_name){
 #error "not implemented yet for mac"
 #endif            //DESHI_MAC
 
+//TODO binary file loading if needed
+//initializes a FileReader for a given File
+FileReader init_reader(const File& file) {
+	FileReader fr;
+	if (!file.handle ) { LogE("IO", "attempted to initalize a FileReader on a file that's not initialized"); fr.failed = true; return fr; }
+	if (!HasFlag(file.flags, FileAccess_Read)) { LogE("IO", "attempted to initialize a FileReader on a file that doesn't have read access"); fr.failed = true; return fr; }
+	fr.raw.str = (char*)memalloc(file.bytes_size); //TODO eventually arena file data allocations
+	fr.raw.count = file.bytes_size;
+
+#if DESHI_WINDOWS /////////////////////////////////////////////////////////////////// Windows
+
+	u32 bytes_read = 0;
+	if (!ReadFile(file.handle, fr.raw.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+		Win32LogLastError("ReadFile");
+		fr.failed = true; return fr;
+	}
+	if (bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
+
+#elif DESHI_LINUX /////////////////////////////////////////////////////////////////// Linux
+#error "File not implemented for linux platforms"
+#elif DESHI_MAC ///////////////////////////////////////////////////////////////////// Mac
+#error "File not implemented for macOS"
+#endif
+
+	//TODO decide if we should replace \r\n with just \n (change CRLF files to LF)
+	//     it would make FileReader's next_line a little smoother
+
+	fr.file = &file;
+	fr.read = { fr.raw.str, 0 };
+	return fr;
+}
+
+FileReader init_reader(const char* data, u32 datasize) {
+	FileReader fr;
+	fr.raw.str = (char*)memalloc(datasize);
+	memcpy(fr.raw.str, data, datasize);
+	fr.raw.count = datasize;
+	return FileReader();
+}
+
+b32 next_char(FileReader& reader) {
+	reader.read.str += reader.read.count;
+	reader.read.count = 1;
+	if (reader.read.str > reader.raw.str + reader.raw.count) return false;
+}
+
+b32 next_line(FileReader& reader) {
+	char*& readstr = reader.read.str;
+	upt& readcount = reader.read.count;
+	char*   rawstr = reader.raw.str;
+	upt   rawcount = reader.raw.count;
+	
+	//ensure that for the first line read points to starts at the beginnng of the file 
+	//and we dont skip the first line
+	if (!reader.line_number) {
+		readstr = rawstr;
+		readcount = rawcount;
+		u32 idx = find_first_char(reader.read, '\n');
+		if (idx != npos) {
+			readcount = idx;
+			if (readstr[readcount - 1] == '\r') readcount--;
+		}
+	}
+	else {
+		readstr += readcount;
+		if (*readstr == '\r') readstr += 2;
+		else readstr++;
+		if (readstr >= rawstr + rawcount) return false;
+		u32 index = find_first_char(readstr, rawcount - (readstr - rawstr), '\n');
+		if (index == npos) readcount = rawcount - (readstr - rawstr);
+		else readcount = index;
+		if (reader.read[readcount - 1] == '\r') readcount--;
+	}
+	reader.line_number++;
+	return true;
+}
+
+b32 next_chunk(FileReader& reader, char delimiter, b32 include_delimiter) {
+	char*& readstr = reader.read.str;
+	upt& readcount = reader.read.count;
+	char*   rawstr = reader.raw.str;
+	upt   rawcount = reader.raw.count;
+
+	readstr += readcount;
+	if (readstr >= rawstr + rawcount) return false;
+	if (*readstr == delimiter) readstr++;
+	u32 index = find_first_char(readstr, rawcount - (readstr - rawstr), delimiter);
+	if (index == npos) readcount = rawcount - (readstr - rawstr);
+	else readcount = index + (include_delimiter ? 1 : 0);
+	
+	return true;
+}
+
+//TODO maybe make key a cstring instead 
+//you may pass 0 for inbetween char if there is none
+b32 next_value_from_key(FileReader& reader, const char* key, char inbetween_char, char value_delimiter) {
+	char*& readstr = reader.read.str;
+	upt& readcount = reader.read.count;
+	char*   rawstr = reader.raw.str;
+	upt   rawcount = reader.raw.count;
+
+	readstr += readcount;
+	if (readstr >= rawstr + rawcount) return false;
+	u32 index = find_first_string(readstr, rawcount - (readstr - rawstr), key, strlen(key));
+	if (index == npos) return false;
+	readstr += index + strlen(key);
+	if (inbetween_char) {
+		//if an inbetween char is passed we pass it 
+		index = find_first_char(readstr, rawcount - (readstr - rawstr), inbetween_char);
+		if (index == npos) { LogE("IO", "next_value_from_key could not find an inbetween character for a key and value pair on line ", reader.line_number, " of file ", get_file_name(*reader.file)); return false; }
+		readstr += index +1;
+	}
+	//eat spaces
+	index = find_first_char_not(readstr, ' ');
+	readstr += index;
+	//find end of value
+	index = find_first_char(readstr, rawcount - (readstr - rawstr), value_delimiter);
+	if (index == npos) readcount = rawcount - (readstr - rawstr);
+	else readcount = index;
+
+	return true;
+}
+
+
+void goto_line(FileReader& reader, u32 linenum) {
+	//TODO goto_line
+	//TODO maybe count lines on file load
+}
+
+void goto_char(FileReader& reader, u32 charnum) {
+	Assert(charnum < reader.file->bytes_size);
+	reader.read.str = reader.raw.str + charnum;
+	reader.read.count = 1;
+}
+
+void reset_reader(FileReader& reader) {
+	reader.read.str = reader.raw.str;
+	reader.read.count = 0;
+}
+
+
 //opens a file if it already exists or creates a new one if it doesnt
 //this does not load any data, you must use FileReader to do that!
 File open_file(const char* path, FileAccessFlags flags) {
@@ -81,7 +169,7 @@ File open_file(const char* path, FileAccessFlags flags) {
 #if DESHI_WINDOWS
 	DWORD access = (HasFlag(flags, FileAccess_Write) ? GENERIC_WRITE : 0) | (HasFlag(flags, FileAccess_Read) ? GENERIC_READ : 0);
 	file.handle = CreateFileA(path, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-	if (GetLastError()) Win32LogLastError("CreateFileA");
+	if (GetLastError() != ERROR_FILE_EXISTS && GetLastError()) Win32LogLastError("CreateFileA");
 	
 	//read data of opened file
 	BY_HANDLE_FILE_INFORMATION data;
