@@ -122,3 +122,9 @@ file_exists(const char* filepath){
 	}
 	return false;
 }
+
+void
+rename_file(const char* old_filepath, const char* new_filepath){
+	BOOL success = MoveFileA(old_filepath, new_filepath);
+	if(!success) Win32LogLastError("MoveFileA");
+}

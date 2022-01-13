@@ -43,12 +43,12 @@ array<File> get_directory_files(const char* directory);
 FORCE_INLINE array<File> get_directory_files(cstring directory){ return get_directory_files(directory.str); }
 
 void delete_file(const char* filepath);
-FORCE_INLINE void delete_file(cstring filepath){ return delete_file(filepath.str); }
 FORCE_INLINE void delete_file(File* file){ return delete_file(file->path); }
 
 //returns true if a filepath is valid
 b32 file_exists(const char* filepath);
-FORCE_INLINE b32 file_exists(cstring filepath){ return file_exists(filepath.str); }
 FORCE_INLINE b32 file_exists(File* file){ return file_exists(file->path); }
+
+void rename_file(const char* old_filepath, const char* new_filepath);
 
 #endif //DESHI_IO_H

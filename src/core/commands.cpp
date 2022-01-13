@@ -16,7 +16,8 @@ namespace Cmd{
 		}CMDEND(test);
 		
 		CMDSTART(dir, "List the contents of a directory"){
-			array<File> files = get_directory_files(args[0].str);
+			string arg0(args[0].str, args[0].count);
+			array<File> files = get_directory_files(arg0.str);
 			char time_str[1024];
 			if(files.count){
 				Loga("","Directory of '$':",args[0]);
@@ -29,12 +30,20 @@ namespace Cmd{
 		}CMDEND(dir, CmdArgument_String);
 		
 		CMDSTART(rm, "Remove a file"){
-			delete_file(args[0].str);
+			string arg0(args[0].str, args[0].count);
+			delete_file(arg0.str);
 		}CMDEND(rm, CmdArgument_String);
 		
 		CMDSTART(file_exists, "Checks if a file exists"){
-			Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
+			string arg0(args[0].str, args[0].count);
+			Log("cmd","File '",args[0],"' ",(file_exists(arg0.str)) ? "exists." : "does not exist.");
 		}CMDEND(file_exists, CmdArgument_String);
+		
+		CMDSTART(rename, "Renames a file"){
+			string arg0(args[0].str, args[0].count);
+			string arg1(args[1].str, args[1].count);
+			rename_file(arg0.str, arg1.str);
+		}CMDEND(rename, CmdArgument_String, CmdArgument_String);
 		
 		CMDSTART(add, "Adds two numbers together"){
 			s32 i0 = atoi(args[0].str);
