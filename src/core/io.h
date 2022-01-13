@@ -45,18 +45,24 @@ struct FileReader{
 	b32 failed = false;
 	const File* file = 0;
 
+	array<cstring> lines;
+	array<cstring> chunks;
+
 	operator bool() const { return !failed; }
 };
 
 FileReader init_reader(const File& file);
-FileReader init_reader(const char* data, u32 datasize);
+FileReader init_reader(char* data, u32 datasize);
 b32        next_char(FileReader& reader);
 b32        next_line(FileReader& reader); //next_ functions advance the reader's internal read cstring
-b32        next_chunk(FileReader& reader, char delimiter, b32 include_delimiter = false);
 b32        next_value_from_key(FileReader& reader, const char* key, char inbetween_char, char value_delimiter);
 void       read_line(FileReader& reader, cstring& out); //read_ functions place data into an external buffer
 void       read_chunk(FileReader& reader, cstring& out, char delimiter); //TODO maybe implement these
 void       read_value_from_key(FileReader& reader, cstring& out, const char* key, char value_delimiter);
+void       chunk_file(FileReader& reader, char delimiter, b32 stop_on_newline = false);
+void       chunk_file(FileReader& reader, char begin_delimiter, char end_delimiter, b32 stop_on_newline = false);
+void       chunk_line(FileReader& reader, u32 line, char delimiter);
+void       chunk_line(FileReader& reader, u32 line, char begin_delimiter, char end_delimiter);
 void       goto_char(FileReader& reader, u32 charnum);
 void       goto_line(FileReader& reader, u32 linenum);
 void       reset_reader(FileReader& reader);
