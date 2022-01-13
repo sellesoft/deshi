@@ -1458,11 +1458,11 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		array<string> newlined;
 		
 		u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.count - 1) {
+		if (newline != npos && newline != text.count - 1) {
 			string remainder = text.substr(newline + 1);
 			newlined.add(text.substr(0, newline - 1));
 			newline = remainder.findFirstChar('\n');
-			while (newline != string::npos) {
+			while (newline != npos) {
 				if (!newline) {
 					newlined.add("");
 					remainder.erase(0);
@@ -1499,7 +1499,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 							
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
-							string nustr = t.substr(0, (lastspc == string::npos) ? i - 1 : lastspc);
+							string nustr = t.substr(0, (lastspc == npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
 							
 							if (nustr.count == t.count) continue;
@@ -1537,7 +1537,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
-						string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+						string nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
 						TextCall(nustr.str, workcur, color, item);
 						
 						if (nustr.count == t.count) continue;
@@ -1548,7 +1548,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
 							splitat = t.findLastChar(' ', maxChars);
-							nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+							nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
 							TextCall(nustr.str, workcur, color, item);
 							
 							if (nustr.count == t.count) break;
@@ -1613,11 +1613,11 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 		array<wstring> newlined;
 		
 		u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.count - 1) {
+		if (newline != npos && newline != text.count - 1) {
 			wstring remainder = text.substr(newline + 1);
 			newlined.add(text.substr(0, newline - 1));
 			newline = remainder.findFirstChar('\n');
-			while (newline != string::npos) {
+			while (newline != npos) {
 				if (!newline) {
 					newlined.add(L"");
 					remainder.erase(0);
@@ -1654,7 +1654,7 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 							
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
-							wstring nustr = t.substr(0, (lastspc == string::npos) ? i - 1 : lastspc);
+							wstring nustr = t.substr(0, (lastspc == npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
 							
 							if (nustr.count == t.count) continue;
@@ -1692,7 +1692,7 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
-						wstring nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+						wstring nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
 						TextCall(nustr.str, workcur, color, item);
 						
 						if (nustr.count == t.count) continue;
@@ -1703,7 +1703,7 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
 							splitat = t.findLastChar(' ', maxChars);
-							nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+							nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
 							TextCall(nustr.str, workcur, color, item);
 							
 							if (nustr.count == t.count) break;

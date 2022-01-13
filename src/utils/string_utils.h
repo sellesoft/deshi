@@ -14,14 +14,14 @@
 ///////////////
 //// @stox ////
 ///////////////
-global_ int 
-stoi(const string& s){
-	int x;
+global_ u32
+stoi(const string& s) {
+	u32 x;
 	(void)sscanf(s.str, "%d", &x);
 	return x;
 }
 
-global_ double
+global_ f64
 stod(const string& s) {
 	return strtod(s.str, 0);
 }
@@ -247,7 +247,7 @@ to_string(const matN& x, bool trunc = true) {
 	
 	string str = to_string(x.rows) + "x" + to_string(x.cols) + " matN<n,m>:\n|";
 	if (x.rows == 1) {
-		for (int i = 0; i < x.cols - 1; ++i) {
+		for (u32 i = 0; i < x.cols - 1; ++i) {
 			char buffer[15];
 			snprintf(buffer, 15, "%+g", x.data[i]);
 			str += string(buffer) + ", ";
@@ -258,7 +258,7 @@ to_string(const matN& x, bool trunc = true) {
 		return str;
 	}
 	
-	for (int i = 0; i < x.elementCount - 1; ++i) {
+	for (u32 i = 0; i < x.elementCount - 1; ++i) {
 		char buffer[15];
 		snprintf(buffer, 15, "%+g", x.data[i]);
 		str += string(buffer);
@@ -284,6 +284,7 @@ ToString(T... args){
 	forI(arg_count) str += arr[i];
 	return str;
 }
+
 
 
 global_ u32 
@@ -326,6 +327,23 @@ global_ u32 find_last_char_not(const char*    str, char c, u32 offset = 0) { ret
 global_ u32 find_last_char_not(const cstring& str, char c, u32 offset = 0) { return find_last_char_not(str.str, str.count, c, offset); }
 global_ u32 find_last_char_not(const string&  str, char c, u32 offset = 0) { return find_last_char_not(str.str, str.count, c, offset); }
 
+global_ u32 
+find_first_string(const char* str, u32 strsize, const char* str2, u32 str2size, u32 offset = 0) {
+	if (str2size > strsize) return npos;
+	for (u32 i = offset; i < strsize - str2size; i++)
+		if (!memcmp(str + i, str2, str2size)) return i;
+	return npos;
+}
+global_ u32 find_first_string(const string&  buf1, const string&  buf2, u32 offset = 0) { return find_first_string(buf1.str, buf1.count, buf2.str, buf2.count, offset); }
+global_ u32 find_first_string(const cstring& buf1, const cstring& buf2, u32 offset = 0) { return find_first_string(buf1.str, buf1.count, buf2.str, buf2.count, offset); }
+global_ u32 find_first_string(const string&  buf1, const cstring& buf2, u32 offset = 0) { return find_first_string(buf1.str, buf1.count, buf2.str, buf2.count, offset); }
+global_ u32 find_first_string(const cstring& buf1, const string&  buf2, u32 offset = 0) { return find_first_string(buf1.str, buf1.count, buf2.str, buf2.count, offset); }
+global_ u32 find_first_string(const char*    buf1, const string&  buf2, u32 offset = 0) { return find_first_string(buf1, strlen(buf1), buf2.str, buf2.count, offset); }
+global_ u32 find_first_string(const string&  buf1, const char*    buf2, u32 offset = 0) { return find_first_string(buf1.str, buf1.count, buf2, strlen(buf2), offset); }
+global_ u32 find_first_string(const char*    buf1, const cstring& buf2, u32 offset = 0) { return find_first_string(buf1, strlen(buf1), buf2.str, buf2.count, offset); }
+global_ u32 find_first_string(const cstring& buf1, const char*    buf2, u32 offset = 0) { return find_first_string(buf1.str, buf1.count, buf2, strlen(buf2), offset); }
+global_ u32 find_first_string(const char*    buf1, const char*    buf2, u32 offset = 0) { return find_first_string(buf1, strlen(buf1), buf2, strlen(buf2), offset); }
+
 FORCE_INLINE global_ b32
 str_begins_with(const char* buf1, const char* buf2, u32 buf2len) {return !memcmp(buf1, buf2, buf2len);}
 global_ b32 str_begins_with(const string&  buf1, const string&  buf2) { return str_begins_with(buf1.str, buf2.str, buf2.count); }
@@ -339,7 +357,7 @@ global_ b32 str_begins_with(const cstring& buf1, const char*    buf2) { return s
 global_ b32 str_begins_with(const char*    buf1, const char*    buf2) { return str_begins_with(buf1, buf2, strlen(buf2)); }
 
 FORCE_INLINE global_ b32
-str_ends_with(const char* buf1, u32 buf1len, const char* buf2, u32 buf2len) {return (buf2len > buf1len ? 0 : !memcmp(buf1 + (buf2len - buf1len), buf2, buf2len);}
+str_ends_with(const char* buf1, u32 buf1len, const char* buf2, u32 buf2len) {return (buf2len > buf1len ? 0 : !memcmp(buf1 + (buf2len - buf1len), buf2, buf2len));}
 global_ b32 str_ends_with(const string&  buf1, const string&  buf2) { return str_ends_with(buf1.str, buf1.count, buf2.str, buf2.count); }
 global_ b32 str_ends_with(const cstring& buf1, const cstring& buf2) { return str_ends_with(buf1.str, buf1.count, buf2.str, buf2.count); }
 global_ b32 str_ends_with(const string&  buf1, const cstring& buf2) { return str_ends_with(buf1.str, buf1.count, buf2.str, buf2.count); }

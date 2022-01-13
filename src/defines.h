@@ -198,6 +198,8 @@ global_const f32 M_SQRT_THREE      = 1.73205080757f;
 global_const f32 M_HALF_SQRT_TWO   = 0.707106781187f;
 global_const f32 M_HALF_SQRT_THREE = 0.866025403784f;
 
+global_const u32 npos = -1;
+
 ///////////////////////// 
 //// common var sizes////
 /////////////////////////
