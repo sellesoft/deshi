@@ -27,6 +27,7 @@ struct string{
 	string(const CHAR* s);
 	string(const CHAR* s, u32 count);
 	string(const string& s);
+	string(const cstring& s);
 	~string();
 	
 	CHAR&  operator[](u32 idx);
@@ -100,10 +101,19 @@ inline string::string(const CHAR* s, u32 _size){
 inline string::string(const string& s){
 	allocator = DESHI_STRING_ALLOCATOR;
 	count = s.count;
-	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
-	allocator->commit(str, space*CHAR_SIZE);
-	memcpy(str, s.str, count*CHAR_SIZE);
+	space = RoundUpTo(count + 1, 4);
+	str = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space * CHAR_SIZE);
+	memcpy(str, s.str, count * CHAR_SIZE);
+}
+
+inline string::string(const cstring& s) {
+	allocator = DESHI_STRING_ALLOCATOR;
+	count = s.count;
+	space = RoundUpTo(count + 1, 4);
+	str = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space * CHAR_SIZE);
+	memcpy(str, s.str, count * CHAR_SIZE);
 }
 
 inline string::~string(){

@@ -361,8 +361,8 @@ clear(){
 	memset(data, 0, count*sizeof(T));
 	
 	count = 0;
-	first = 0;
-	iter  = 0;
+	first = data;
+	iter  = data;
 	last  = 0;
 }
 
