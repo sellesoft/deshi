@@ -126,6 +126,7 @@ Storage TODOs
 separate physics mesh info from regular mesh info
 merge mesh faces with <10 degree normal difference (for physics)
 add edges and hulls to meshes, remove unused vars
+make an interface for updating textures that have already been created
 add MTL parsing
 store null128.png and null shader in code
 add versioning to Mesh since its saved in a binary format
