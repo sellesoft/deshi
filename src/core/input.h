@@ -27,6 +27,7 @@ namespace Key {
 		INSERT, DELETE, HOME, END, PAGEUP, PAGEDOWN, PAUSE, SCROLL,
 		NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
 		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK,
+		LMETA, RMETA,
 		MBLEFT, MBRIGHT, MBMIDDLE, MBFOUR, MBFIVE, MBSIX, MBSEVEN, MBEIGHT, MBSCROLLDOWN, MBSCROLLUP,
 		Key_COUNT
 	}; typedef u32 Key;
@@ -43,23 +44,16 @@ global_ const char* KeyStrings[] = {
 	"INSERT","DELETE","HOME","END","PAGEUP","PAGEDOWN","PAUSE","SCROLL",
 	"NUMPAD0","NUMPAD1","NUMPAD2","NUMPAD3","NUMPAD4","NUMPAD5","NUMPAD6","NUMPAD7","NUMPAD8","NUMPAD9",
 	"NUMPADMULTIPLY","NUMPADDIVIDE","NUMPADPLUS","NUMPADMINUS","NUMPADPERIOD","NUMPADENTER","NUMLOCK",
+	"LMETA", "RMETA",
 	"MBLEFT","MBRIGHT","MBMIDDLE","MBFOUR","MBFIVE","MBSIX","MBSEVEN","MBEIGHT","MBSCROLLDOWN","MBSCROLLUP"
 };
 
-global_ const char KeyStringsLiteral[] = { //for translating keys to what would appear in a str (for UI::InputText())
-	'\0',
-	'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-	'0','1','2','3','4','5','6','7','8','9',
-	'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0',
-	'\0','\0','\0','\0',
-	'\0','`','\t','\0','\0','\0','\0',
-	'\0','\0','\0','\0','\0','-','=','[',']',
-	'/',';','\'',',','.','\\',' ',
-	'\0','\0','\0','\0','\0','\0','\0','\0',
-	'0','1','2','3','4','5','6','7','8','9',
-	'*','/','+','-','.','\0','\0',
-	'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'
-};
+#if DESHI_WINDOWS
+
+#elif DESHI_LINUX
+#elif DESHI_MAC
+#endif
+
 
 namespace MouseButton{
 	enum MouseButton_{
@@ -130,7 +124,7 @@ struct Input{
 	std::vector<pair<std::string, Key::Key>> binds; //TODO remove/move this and make it array
 	b32 checkbinds = false; //needed bc glfw callbacks would call the function too early
 	
-	//real values are updated through GLFW callbacks
+	//real values are updated through OS input callbacks
 	b32 realKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	f64 realMouseX,       realMouseY;
 	f64 realScreenMouseX, realScreenMouseY;
@@ -138,7 +132,7 @@ struct Input{
 	u32 realCharCount = 0;
 	b32 keyFocus, mouseFocus;
 	
-	b32 logInput = false;
+	b32 logInput = true;
 	
 	f64 time_key_held = 0;
 	f64 time_char_held = 0;
@@ -166,7 +160,7 @@ struct Input{
 		if (!realCharCount) TIMER_RESET(input__time_since_char_hold);
 		else time_char_held = TIMER_END(input__time_since_char_hold);
 		
-		mousePos.x = mouseX; mousePos.y = mouseY;
+		mousePos.x = mouseX = realMouseX; mousePos.y = mouseY = realMouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
 		scrollY = realScrollY;
 		realScrollY = 0;

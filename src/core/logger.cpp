@@ -15,7 +15,7 @@ namespace Logger{
 			u32 rb = str.findFirstChar(']');
 			string tag = str.substr(1, rb - 1);
 			
-			if (rb != string::npos) {
+			if (rb != npos) {
 				if (tag.endsWith("-ERROR")) {
 					modified += "e,";
 				}

@@ -519,7 +519,7 @@ struct UIWindow {
 		vec2 position;
 		struct { f32 x, y; };
 	};
-	
+	//TODO differenciate between client and non client area like in win32
 	union {
 		vec2 dimensions;
 		struct { f32 width, height; };

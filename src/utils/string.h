@@ -14,7 +14,7 @@
 
 struct string{
 	typedef char CHAR;
-	static constexpr u32 npos = -1;
+	//static constexpr u32 npos = -1;
 	static constexpr u32 CHAR_SIZE = sizeof(CHAR);
 	
 	u32   count;
@@ -27,6 +27,7 @@ struct string{
 	string(const CHAR* s);
 	string(const CHAR* s, u32 count);
 	string(const string& s);
+	string(const cstring& s);
 	~string();
 	
 	CHAR&  operator[](u32 idx);
@@ -59,9 +60,9 @@ struct string{
 	u32    findLastCharNot(CHAR c) const;
 	u32    CHARCount(CHAR c) const; //returns how many times a CHAR appears in the string
 	string substrToChar(CHAR c) const; //returns a substring from the beginning to specifiec CHAR, not including the CHAR
-	b32 beginsWith(const string& s) const;
-	b32 endsWith(const string& s) const;
-	b32 contains(const string& s) const;
+	b32    beginsWith(const string& s) const;
+	b32    endsWith(const string& s) const;
+	b32    contains(const string& s) const;
 	
 	static string eatSpacesLeading(const string& s);
 	static string eatSpacesTrailing(const string& s);
@@ -100,10 +101,19 @@ inline string::string(const CHAR* s, u32 _size){
 inline string::string(const string& s){
 	allocator = DESHI_STRING_ALLOCATOR;
 	count = s.count;
-	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
-	allocator->commit(str, space*CHAR_SIZE);
-	memcpy(str, s.str, count*CHAR_SIZE);
+	space = RoundUpTo(count + 1, 4);
+	str = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space * CHAR_SIZE);
+	memcpy(str, s.str, count * CHAR_SIZE);
+}
+
+inline string::string(const cstring& s) {
+	allocator = DESHI_STRING_ALLOCATOR;
+	count = s.count;
+	space = RoundUpTo(count + 1, 4);
+	str = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space * CHAR_SIZE);
+	memcpy(str, s.str, count * CHAR_SIZE);
 }
 
 inline string::~string(){

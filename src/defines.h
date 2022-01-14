@@ -315,6 +315,8 @@ global_const f32 M_SQRT_THREE      = 1.73205080757f;
 global_const f32 M_HALF_SQRT_TWO   = 0.707106781187f;
 global_const f32 M_HALF_SQRT_THREE = 0.866025403784f;
 
+global_const u32 npos = -1;
+
 ///////////////////////// 
 //// common var sizes////
 /////////////////////////
@@ -420,6 +422,7 @@ template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){ return abs(a - b) 
 #define TestMe AssertBreakpoint(false, "this needs to be tested")
 #define FixMe AssertBreakpoint(false, "this is broken in some way")
 #define DontCompile (0=__deshi_dont_compile_this__)
+#define WarnFuncNotImplemented(extra) LogW("FUNC", "Function ", __FUNCTION__, " has not been implemented or is not finished", (extra ? "\n" : ""), extra);
 
 /////////////////////////
 //// for-loop macros ////

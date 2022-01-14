@@ -5,7 +5,7 @@
 #include "../defines.h"
 #include "../utils/string.h"
 #include "../utils/cstring.h"
-#include "../utils/string_conversion.h"
+#include "../utils/string_utils.h"
 
 ////////////////////
 //// @interface ////

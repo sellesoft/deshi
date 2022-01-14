@@ -1787,6 +1787,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	return result;
 }
 
+
 void Storage::
 DeleteFont(Font* font){ //!Incomplete
 	NotImplemented;

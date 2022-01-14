@@ -3,7 +3,7 @@
 #define DESHI_DEBUG_H
 
 #include "string.h"
-#include "string_conversion.h"
+#include "string_utils.h"
 #include "array.h"
 #include "../defines.h"
 
