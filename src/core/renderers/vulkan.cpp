@@ -935,13 +935,34 @@ CreateInstance(){
 	validationFeatures.enabledValidationFeatureCount  = validationFeaturesEnabled.count;
 	validationFeatures.pEnabledValidationFeatures     = validationFeaturesEnabled.data;
 	
+	u32 pcount = 0;
+	vkEnumerateInstanceExtensionProperties(0, &pcount, 0);
+	VkExtensionProperties* eprops = (VkExtensionProperties*)memalloc(pcount*sizeof(VkExtensionProperties));
+	vkEnumerateInstanceExtensionProperties(0, &pcount, eprops);
+	forI(pcount) {
+		PRINTLN(eprops[i].extensionName);
+	}
+
 	//get required extensions
 	PrintVk(3, "Getting required extensions");
-	u32 glfwExtensionCount = 0;
+	
+#if DESHI_WINDOWS
+	u32 extensionCount = 2;
+	array<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+	if (settings.debugging) extensions.add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#elif DESHI_LINUX
+	u32 extensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-	if(settings.debugging) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	array<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	if (settings.debugging) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#elif DESHI_MAC
+	u32 extensionCount = 0;
+	const char** glfwExtensions;
+	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+	array<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	if (settings.debugging) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 	
 	//setup instance debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
@@ -953,7 +974,7 @@ CreateInstance(){
 	VkInstanceCreateInfo createInfo{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
 	createInfo.pApplicationInfo        = &appInfo;
 	createInfo.enabledExtensionCount   = (u32)extensions.size();
-	createInfo.ppEnabledExtensionNames = extensions.data();
+	createInfo.ppEnabledExtensionNames = extensions.data;
 	if(settings.debugging){
 		createInfo.enabledLayerCount   = (u32)ArrayCount(validationLayers);
 		createInfo.ppEnabledLayerNames = validationLayers;
@@ -988,11 +1009,23 @@ SetupDebugMessenger(){
 
 local void 
 CreateSurface(){
-	PrintVk(2, "Creating GLFW-Vulkan surface");
 	AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
 	rendererStage |= RSVK_SURFACE;
 	
+	//NOTE(sushi) not sure if its necessary for this to be in any interface file
+#ifdef DESHI_WINDOWS
+	PrintVk(2, "Creating Win32-Vulkan surface");
+	VkWin32SurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
+	info.hwnd = (HWND)DeshWindow->handle;
+	info.hinstance = (HINSTANCE)DeshWindow->instance;
+	AssertVk(vkCreateWin32SurfaceKHR(instance, &info, 0, &surface), "failed to create win32 surface");
+#elif DESHI_LINUX
+	PrintVk(2, "Creating glfw-Vulkan surface");
 	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surface), "failed to create window surface");
+#elif DESHI_MAC
+	PrintVk(2, "Creating glfw-Vulkan surface");
+	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surface), "failed to create window surface");
+#endif
 }
 
 local void 
@@ -1148,7 +1181,7 @@ CreateSwapChain(){
 	vkDeviceWaitIdle(device);
 	
 	//update width and height
-	glfwGetFramebufferSize(DeshWindow->window, &width, &height);
+	DeshWindow->GetScreenSize(width, height);
 	
 	{//check GPU's features/capabilities for the new swapchain
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &supportDetails.capabilities);
@@ -1427,9 +1460,9 @@ CreateFrames(){
 	
 	{//color framebuffer attachment
 		if(attachments.colorImage){
-			vkDestroyImageView(device, attachments.colorImageView, nullptr);
-			vkDestroyImage(device, attachments.colorImage, nullptr);
-			vkFreeMemory(device, attachments.colorImageMemory, nullptr);
+			vkDestroyImageView(device, attachments.colorImageView, allocator);
+			vkDestroyImage(device, attachments.colorImage, allocator);
+			vkFreeMemory(device, attachments.colorImageMemory, allocator);
 		}
 		VkFormat colorFormat = surfaceFormat.format;
 		CreateImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
@@ -1442,9 +1475,9 @@ CreateFrames(){
 	
 	{//depth framebuffer attachment
 		if(attachments.depthImage){
-			vkDestroyImageView(device, attachments.depthImageView, nullptr);
-			vkDestroyImage(device, attachments.depthImage, nullptr);
-			vkFreeMemory(device, attachments.depthImageMemory, nullptr);
+			vkDestroyImageView(device, attachments.depthImageView, allocator);
+			vkDestroyImage(device, attachments.depthImage, allocator);
+			vkFreeMemory(device, attachments.depthImageMemory, allocator);
 		}
 		VkFormat depthFormat = findDepthFormat();
 		CreateImage(width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
@@ -1463,12 +1496,12 @@ CreateFrames(){
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)frames[i].image, TOSTDSTRING("Frame image ", i).c_str());
 		
 		//create the image views
-		if(frames[i].imageView) vkDestroyImageView(device, frames[i].imageView, nullptr);
+		if(frames[i].imageView) vkDestroyImageView(device, frames[i].imageView, allocator);
 		frames[i].imageView = CreateImageView(frames[i].image, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)frames[i].imageView, TOSTDSTRING("Frame imageview ", i).c_str());
 		
 		//create the framebuffers
-		if(frames[i].framebuffer) vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr);
+		if(frames[i].framebuffer) vkDestroyFramebuffer(device, frames[i].framebuffer, allocator);
 		
 		std::vector<VkImageView> frameBufferAttachments; //TODO(delle) fix scuffed msaa hack
 		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
@@ -3151,7 +3184,13 @@ Init(){
 	//ImGui::StyleColorsClassic();
 	
 	//Setup Platform/Renderer backends
+#if DESHI_WINDOWS
+	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
+#elif DESHI_LINUX
 	ImGui_ImplGlfw_InitForVulkan(DeshWindow->window, true);
+#elif DESHI_MAC
+	ImGui_ImplGlfw_InitForVulkan(DeshWindow->window, true);
+#endif
 	ImGui_ImplVulkan_InitInfo init_info{};
 	init_info.Instance        = instance;
 	init_info.PhysicalDevice  = physicalDevice;
@@ -3195,14 +3234,28 @@ void DeshiImGui::
 Cleanup(){
 	AssertVk(vkDeviceWaitIdle(device));
 	ImGui_ImplVulkan_Shutdown();
+#if DESHI_WINDOWS
+	ImGui_ImplWin32_Shutdown();
+#elif DESHI_LINUX
 	ImGui_ImplGlfw_Shutdown();
+#elif DESHI_MAC
+	ImGui_ImplGlfw_Shutdown();
+#endif
 	ImGui::DestroyContext();
 }
 
 void DeshiImGui::
 NewFrame(){
 	ImGui_ImplVulkan_NewFrame();
+
+#if DESHI_WINDOWS
+	ImGui_ImplWin32_NewFrame();
+#elif DESHI_LINUX
+	ImGui_ImplGlfw_Shutdown();
+#elif DESHI_MAC
 	ImGui_ImplGlfw_NewFrame();
+#endif
+
 	ImGui::NewFrame();
 }
 
@@ -4555,7 +4608,7 @@ Update(){
 	
 	if(DeshWindow->resized) remakeWindow = true;
 	if(remakeWindow){
-		glfwGetFramebufferSize(DeshWindow->window, &width, &height);
+		DeshWindow->GetScreenSize(width, height);
 		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
 		vkDeviceWaitIdle(device);
 		CreateSwapChain();

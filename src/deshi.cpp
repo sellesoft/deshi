@@ -206,19 +206,7 @@ __________ see commands.cpp 'test' command
 #include <set>
 #include <unordered_map>
 
-//// platform ////
-#if   DESHI_WINDOWS
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#undef ERROR
-#undef DELETE
-#elif DESHI_LINUX //DESHI_WINDOWS
 
-#elif DESHI_MAC   //DESHI_LINUX
-
-#else             //DESHI_MAC
-#error "unknown platform"
-#endif //DESHI_WINDOWS
 
 enum DeshiStage{
 	DS_NONE    = 0,
@@ -263,6 +251,23 @@ local Flags deshiStage = DS_NONE;
 #include "core/ui.h"
 #include "core/window.h"
 
+
+//// platform ////
+#if   DESHI_WINDOWS
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <windowsx.h>
+#include "core/platforms/win32_deshi.cpp"
+#undef ERROR
+#undef DELETE
+#elif DESHI_LINUX //DESHI_WINDOWS
+#include "core/platforms/linux_deshi.cpp"
+#elif DESHI_MAC   //DESHI_LINUX
+#include "core/platforms/osx_deshi.cpp"
+#else             //DESHI_MAC
+#error "unknown platform"
+#endif //DESHI_WINDOWS
+
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 //#define STB_TRUETYPE_IMPLEMENTATION
@@ -280,11 +285,20 @@ local Flags deshiStage = DS_NONE;
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
-#include <vulkan/vulkan.h>
+//TODO do this better later
+#ifdef DESHI_WINDOWS
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <imgui/imgui_impl_win32.cpp>
+#elif DESHI_LINUX
 #include <GLFW/glfw3.h>
+#include <imgui/imgui_impl_glfw.cpp>
+#elif DESHI_MAX
+#include <GLFW/glfw3.h>
+#include <imgui/imgui_impl_glfw.cpp>
+#endif
+#include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>
 #include <imgui/imgui_impl_vulkan.cpp>
-#include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL //DESHI_VULKAN
 #define GLAD_GL_IMPLEMENTATION
@@ -310,11 +324,13 @@ local Flags deshiStage = DS_NONE;
 #error "no renderer selected"
 #endif //DESHI_VULKAN
 
+#undef DeleteFont
+
+
 //// core cpp ////
 #include "core/io.cpp"
 #include "core/memory.cpp"
 #include "core/logger.cpp"
-#include "core/window.cpp"
 #include "core/assets.cpp"
 #include "core/console.cpp"
 #include "core/storage.cpp"
@@ -345,7 +361,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	UI::Init();
 	Cmd::Init();
 	
-	glfwShowWindow(deshi_window.window);
+	DeshWindow->ShowWindow();
 	LogS("deshi","Finished deshi initialization in ",TIMER_END(t_s),"ms");
 }
 
@@ -359,6 +375,6 @@ void deshi::cleanup(){
 }
 
 b32 deshi::shouldClose(){
-	glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
-	return glfwWindowShouldClose(deshi_window.window) || deshi_window.closeWindow;
+	//glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
+	return deshi_window.closeWindow;
 }

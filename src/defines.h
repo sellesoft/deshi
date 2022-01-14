@@ -305,6 +305,7 @@ template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){ return abs(a - b) 
 #define TestMe AssertBreakpoint(false, "this needs to be tested")
 #define FixMe AssertBreakpoint(false, "this is broken in some way")
 #define DontCompile (0=__deshi_dont_compile_this__)
+#define WarnFuncNotImplemented(extra) LogW("FUNC", "Function ", __FUNCTION__, " has not been implemented or is not finished", (extra ? "\n" : ""), extra);
 
 /////////////////////////
 //// for-loop macros ////
