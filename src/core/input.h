@@ -161,7 +161,7 @@ struct Input{
 		else time_char_held = TIMER_END(input__time_since_char_hold);
 		
 		mousePos.x = mouseX = realMouseX; mousePos.y = mouseY = realMouseY;
-		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
+		screenMouseX = realScreenMouseX; screenMouseY = realScreenMouseY;
 		scrollY = realScrollY;
 		realScrollY = 0;
 		charCount = realCharCount;
