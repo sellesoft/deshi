@@ -107,6 +107,7 @@ struct Texture;
 struct Material;
 struct Model;
 struct Font;
+struct Window;
 namespace Render{
 	
 	void LoadSettings();
@@ -165,6 +166,9 @@ namespace Render{
 	
 	void StartNewTwodCmd(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 	void AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount);
+
+	u32  GetMaxSurfaces();
+	void InitChildWindow(u32 idx, Window* window);
 
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);

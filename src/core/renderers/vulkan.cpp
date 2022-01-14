@@ -141,6 +141,8 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define INDEX_TYPE_VK_TEMP VK_INDEX_TYPE_UINT16
 #define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
 
+#define MAX_SURFACES 2
+
 //arbitray limits, change if needed
 #define MAX_TWOD_VERTICES  0xFFFFF //max u16: 65535
 #define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
@@ -214,8 +216,7 @@ local VkAllocationCallbacks    temp_allocator_       = {};
 local VkAllocationCallbacks*   temp_allocator        = &temp_allocator_;
 local VkInstance               instance              = VK_NULL_HANDLE;
 local VkDebugUtilsMessengerEXT debugMessenger        = VK_NULL_HANDLE;
-local VkSurfaceKHR             surface;
-local VkSurfaceKHR             surface2;
+local VkSurfaceKHR             surfaces[MAX_SURFACES]           = { VK_NULL_HANDLE };
 local VkPhysicalDevice         physicalDevice        = VK_NULL_HANDLE;
 local VkPhysicalDeviceProperties physicalDeviceProperties{};
 local VkSampleCountFlagBits    maxMsaaSamples        = VK_SAMPLE_COUNT_1_BIT;
@@ -230,14 +231,28 @@ local VkDeviceSize             bufferMemoryAlignment = 256;
 ////////////////////
 //// @swapchain ////
 ////////////////////
-local s32                     width          = 0;
-local s32                     height         = 0;
-local VkSwapchainKHR          swapchain      = VK_NULL_HANDLE;
-local SwapChainSupportDetails supportDetails = {};
-local VkSurfaceFormatKHR      surfaceFormat  = {};
-local VkPresentModeKHR        presentMode    = VK_PRESENT_MODE_FIFO_KHR;
-local VkExtent2D              extent         = {};
-local s32                     minImageCount  = 0;
+struct VkSwapchain {
+	s32                      width          = 0;
+	s32                      height         = 0;
+	VkSwapchainKHR           swapchain      = VK_NULL_HANDLE;
+	SwapChainSupportDetails  supportDetails = {};
+	VkSurfaceFormatKHR       surfaceFormat  = {};
+	VkPresentModeKHR         presentMode    = VK_PRESENT_MODE_FIFO_KHR;
+	VkExtent2D               extent         = {};
+	s32                      minImageCount  = 0;
+	Window*                  window         = 0;
+	u32                      imageCount     = 0;
+	u32                      frameIndex     = 0;
+	array<FrameVk>           frames;
+	FramebufferAttachmentsVk attachments{};
+
+};
+
+local VkSwapchain swapchains[MAX_SURFACES];
+local u32 active_swapchain = 0;
+//TODO make all of the Create functions take in a swapchain/surface rather than always indexing with a global var :)
+#define activeSwapchain swapchains[active_swapchain] //TODO replace these with original text eventually or make better getter
+#define activeSwapchainKHR swapchains[active_swapchain].swapchain
 
 /////////////////////
 //// @renderpass ////
@@ -249,10 +264,6 @@ local VkRenderPass renderPass = VK_NULL_HANDLE;
 /////////////////
 //// @frames ////
 /////////////////
-local u32 imageCount = 0;
-local u32 frameIndex = 0;
-local std::vector<FrameVk> frames;
-local FramebufferAttachmentsVk attachments{};
 local VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE;
 local VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE;
 local VkCommandPool commandPool = VK_NULL_HANDLE;
@@ -923,7 +934,7 @@ CreateInstance(){
 	
 	//set instance's application info
 	VkApplicationInfo appInfo{VK_STRUCTURE_TYPE_APPLICATION_INFO};
-	appInfo.pApplicationName   = DeshWindow->name;
+	appInfo.pApplicationName   = DeshWindow->name.str;
 	appInfo.applicationVersion = VK_MAKE_VERSION(1,0,0);
 	appInfo.pEngineName        = "deshi";
 	appInfo.engineVersion      = VK_MAKE_VERSION(1,0,0);
@@ -1007,29 +1018,30 @@ SetupDebugMessenger(){
 	AssertVk(err, "failed to setup debug messenger");
 }
 
-local void 
-CreateSurface(){
+local void
+CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0) {
 	AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
+	Assert(surface_idx < MAX_SURFACES);
 	rendererStage |= RSVK_SURFACE;
 	
-	//NOTE(sushi) not sure if its necessary for this to be in any interface file
+	
 #ifdef DESHI_WINDOWS
 	PrintVk(2, "Creating Win32-Vulkan surface");
 	VkWin32SurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
-	info.hwnd = (HWND)DeshWindow->handle;
-	info.hinstance = (HINSTANCE)DeshWindow->instance;
-	AssertVk(vkCreateWin32SurfaceKHR(instance, &info, 0, &surface), "failed to create win32 surface");
+	info.hwnd = (HWND)win->handle;
+	info.hinstance = (HINSTANCE)win->instance;
+	AssertVk(vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]), "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating glfw-Vulkan surface");
-	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surface), "failed to create window surface");
+	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surfaces[active_swapchain]), "failed to create window surface");
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");
-	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surface), "failed to create window surface");
+	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surfaces[active_swapchain]), "failed to create window surface");
 #endif
 }
 
 local void 
-PickPhysicalDevice(){
+PickPhysicalDevice(u32 surface_index = 0){
 	PrintVk(2, "Picking physical device");
 	AssertRS(RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
 	rendererStage |= RSVK_PHYSICALDEVICE;
@@ -1054,7 +1066,7 @@ PickPhysicalDevice(){
 				if(queueFamilies[family_idx].queueFlags & VK_QUEUE_GRAPHICS_BIT) physicalQueueFamilies.graphicsFamily = family_idx;
 				
 				VkBool32 presentSupport = false;
-				vkGetPhysicalDeviceSurfaceSupportKHR(device, family_idx, surface, &presentSupport);
+				vkGetPhysicalDeviceSurfaceSupportKHR(device, family_idx, surfaces[surface_index], &presentSupport);
 				if(presentSupport) physicalQueueFamilies.presentFamily = family_idx;
 				
 				if(physicalQueueFamilies.isComplete()) break;
@@ -1079,9 +1091,11 @@ PickPhysicalDevice(){
 		{//check if the device's swapchain is valid
 			u32 formatCount;
 			u32 presentModeCount;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surfaces[surface_index], &formatCount, nullptr);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surfaces[surface_index], &presentModeCount, nullptr);
 			
+
+
 			if(formatCount == 0 || presentModeCount == 0) continue;
 		}
 		
@@ -1171,41 +1185,43 @@ CreateLogicalDevice(){
 ////////////////////
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
 local void 
-CreateSwapChain(){
+CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){
 	PrintVk(2, "Creating swapchain");
-	AssertRS(RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
+	AssertRS(RSVK_LOGICALDEVICE, "CreateSwapchain called before CreateLogicalDevice");
+	Assert(swapchain_idx < MAX_SURFACES);
 	rendererStage |= RSVK_SWAPCHAIN;
 	
-	VkSwapchainKHR oldSwapChain = swapchain;
-	swapchain = VK_NULL_HANDLE;
+	active_swapchain = swapchain_idx;
+	VkSwapchainKHR oldSwapChain = activeSwapchainKHR;
+	activeSwapchainKHR = VK_NULL_HANDLE;
 	vkDeviceWaitIdle(device);
 	
 	//update width and height
-	DeshWindow->GetScreenSize(width, height);
+	win->GetScreenSize(activeSwapchain.width, activeSwapchain.height);
 	
 	{//check GPU's features/capabilities for the new swapchain
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &supportDetails.capabilities);
-		
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surfaces[active_swapchain], &activeSwapchain.supportDetails.capabilities);
+
 		u32 formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-		if(formatCount != 0){
-			supportDetails.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, supportDetails.formats.data);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[active_swapchain], &formatCount, nullptr);
+		if (formatCount != 0) {
+			activeSwapchain.supportDetails.formats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[active_swapchain], &formatCount, activeSwapchain.supportDetails.formats.data);
 		}
 		
 		u32 presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-		if(presentModeCount != 0){
-			supportDetails.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, supportDetails.presentModes.data);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surfaces[active_swapchain], &presentModeCount, nullptr);
+		if (presentModeCount != 0) {
+			activeSwapchain.supportDetails.presentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surfaces[active_swapchain], &presentModeCount, activeSwapchain.supportDetails.presentModes.data);
 		}
 	}
 	
 	{//choose swapchain's surface format
-		surfaceFormat = supportDetails.formats[0];
-		for(VkSurfaceFormatKHR availableFormat : supportDetails.formats){
+		activeSwapchain.surfaceFormat = activeSwapchain.supportDetails.formats[0];
+		for(VkSurfaceFormatKHR availableFormat : activeSwapchain.supportDetails.formats){
 			if(availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT){
-				surfaceFormat = availableFormat;
+				activeSwapchain.surfaceFormat = availableFormat;
 				break;
 			}
 		}
@@ -1217,7 +1233,7 @@ CreateSwapChain(){
 		bool fifo_relaxed = false;
 		bool mailbox      = false;
 		
-		for(VkPresentModeKHR availablePresentMode : supportDetails.presentModes){
+		for(VkPresentModeKHR availablePresentMode : activeSwapchain.supportDetails.presentModes){
 			if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)    immediate    = true;
 			if(availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)      mailbox      = true;
 			if(availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) fifo_relaxed = true;
@@ -1226,38 +1242,38 @@ CreateSwapChain(){
 		//NOTE immediate is forced false b/c ImGui requires minImageCount to be at least 2
 		if      (immediate && false){
 			settings.vsync = VSyncType_Immediate;
-			presentMode    = VK_PRESENT_MODE_IMMEDIATE_KHR;
+			activeSwapchain.presentMode    = VK_PRESENT_MODE_IMMEDIATE_KHR;
 		}else if(mailbox){
 			settings.vsync = VSyncType_Mailbox;
-			presentMode    = VK_PRESENT_MODE_MAILBOX_KHR;
+			activeSwapchain.presentMode    = VK_PRESENT_MODE_MAILBOX_KHR;
 		}else if(fifo_relaxed){
 			settings.vsync = VSyncType_FifoRelaxed;
-			presentMode    = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+			activeSwapchain.presentMode    = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 		}else{
 			settings.vsync = VSyncType_Fifo;
-			presentMode    = VK_PRESENT_MODE_FIFO_KHR;
+			activeSwapchain.presentMode    = VK_PRESENT_MODE_FIFO_KHR;
 		}
 	}
 	
 	//find the actual extent of the swapchain
-	if(supportDetails.capabilities.currentExtent.width != UINT32_MAX){
-		extent = supportDetails.capabilities.currentExtent;
+	if(activeSwapchain.supportDetails.capabilities.currentExtent.width != UINT32_MAX){
+		activeSwapchain.extent = activeSwapchain.supportDetails.capabilities.currentExtent;
 	}else{
-		extent = { (u32)width, (u32)height };
-		extent.width  = Max(supportDetails.capabilities.minImageExtent.width,  
-							Min(supportDetails.capabilities.maxImageExtent.width,  extent.width));
-		extent.height = Max(supportDetails.capabilities.minImageExtent.height, 
-							Min(supportDetails.capabilities.maxImageExtent.height, extent.height));
+		activeSwapchain.extent = { (u32)activeSwapchain.width, (u32)activeSwapchain.height };
+		activeSwapchain.extent.width  = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.width,  
+							Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.width,  activeSwapchain.extent.width));
+		activeSwapchain.extent.height = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.height, 
+							Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.height, activeSwapchain.extent.height));
 	}
 	
 	//get min image count if not specified
-	if(minImageCount == 0){ //TODO(delle,ReVu) add render settings here (extra buffering)
-		switch(presentMode){
-			case VK_PRESENT_MODE_MAILBOX_KHR:     { minImageCount =  2; }break;
-			case VK_PRESENT_MODE_FIFO_KHR:        { minImageCount =  2; }break;
-			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:{ minImageCount =  2; }break;
-			case VK_PRESENT_MODE_IMMEDIATE_KHR:   { minImageCount =  1; }break;
-			default:                              { minImageCount = -1; }break;
+	if(activeSwapchain.minImageCount == 0){ //TODO(delle,ReVu) add render settings here (extra buffering)
+		switch(activeSwapchain.presentMode){
+			case VK_PRESENT_MODE_MAILBOX_KHR:     { activeSwapchain.minImageCount =  2; }break;
+			case VK_PRESENT_MODE_FIFO_KHR:        { activeSwapchain.minImageCount =  2; }break;
+			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:{ activeSwapchain.minImageCount =  2; }break;
+			case VK_PRESENT_MODE_IMMEDIATE_KHR:   { activeSwapchain.minImageCount =  1; }break;
+			default:                              { activeSwapchain.minImageCount = -1; }break;
 		}
 	}
 	
@@ -1267,9 +1283,9 @@ CreateSwapChain(){
 	
 	//create swapchain and swap chain images, set width and height
 	VkSwapchainCreateInfoKHR info{VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
-	info.surface                   = surface;
-	info.imageFormat               = surfaceFormat.format;
-	info.imageColorSpace           = surfaceFormat.colorSpace;
+	info.surface                   = surfaces[active_swapchain];
+	info.imageFormat               = activeSwapchain.surfaceFormat.format;
+	info.imageColorSpace           = activeSwapchain.surfaceFormat.colorSpace;
 	info.imageArrayLayers          = 1;
 	info.imageUsage                = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	if(physicalQueueFamilies.graphicsFamily.value != physicalQueueFamilies.presentFamily.value){
@@ -1281,24 +1297,26 @@ CreateSwapChain(){
 		info.queueFamilyIndexCount = 0;
 		info.pQueueFamilyIndices   = 0;
 	}
-	info.preTransform              = supportDetails.capabilities.currentTransform;
+	info.preTransform              = activeSwapchain.supportDetails.capabilities.currentTransform;
 	info.compositeAlpha            = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	info.presentMode               = presentMode;
+	info.presentMode               = activeSwapchain.presentMode;
 	info.clipped                   = VK_TRUE;
 	info.oldSwapchain              = oldSwapChain;
-	info.minImageCount             = minImageCount;
-	if(supportDetails.capabilities.maxImageCount != 0 && info.minImageCount > supportDetails.capabilities.maxImageCount){
-		info.minImageCount         = supportDetails.capabilities.maxImageCount;
+	info.minImageCount             = activeSwapchain.minImageCount;
+	if(activeSwapchain.supportDetails.capabilities.maxImageCount != 0 && info.minImageCount > activeSwapchain.supportDetails.capabilities.maxImageCount){
+		info.minImageCount         = activeSwapchain.supportDetails.capabilities.maxImageCount;
 	}
-	if(extent.width == 0xffffffff){
-		info.imageExtent.width  = width;
-		info.imageExtent.height = height;
+	if(activeSwapchain.extent.width == 0xffffffff){
+		info.imageExtent.width  = activeSwapchain.width;
+		info.imageExtent.height = activeSwapchain.height;
 	} else {
-		info.imageExtent.width  = width  = extent.width;
-		info.imageExtent.height = height = extent.height;
+		info.imageExtent.width  = activeSwapchain.width  = activeSwapchain.extent.width;
+		info.imageExtent.height = activeSwapchain.height = activeSwapchain.extent.height;
 	}
-	AssertVk(vkCreateSwapchainKHR(device, &info, allocator, &swapchain), "failed to create swap chain");
+	AssertVk(vkCreateSwapchainKHR(device, &info, allocator, &activeSwapchainKHR), "failed to create swap chain");
 	
+	activeSwapchain.window = win;
+
 	//delete old swap chain
 	if(oldSwapChain != VK_NULL_HANDLE) vkDestroySwapchainKHR(device, oldSwapChain, allocator);
 }
@@ -1341,7 +1359,7 @@ CreateRenderpasses(){
 	
 	VkAttachmentDescription attachments[3]{};
 	//attachment 0: color 
-	attachments[0].format         = surfaceFormat.format;
+	attachments[0].format         = activeSwapchain.surfaceFormat.format;
 	attachments[0].samples        = msaaSamples;
 	attachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1359,7 +1377,7 @@ CreateRenderpasses(){
 	attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	//attachment 2: color resolve
-	attachments[2].format         = surfaceFormat.format;
+	attachments[2].format         = activeSwapchain.surfaceFormat.format;
 	attachments[2].samples        = VK_SAMPLE_COUNT_1_BIT;
 	attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1452,82 +1470,83 @@ CreateFrames(){
 	rendererStage |= RSVK_FRAMES;
 	
 	//get swap chain images
-	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr); //gets the image count
-	Assert(imageCount >= minImageCount, "the window should always have at least the min image count");
-	Assert(imageCount < 16, "the window should have less than 16 images, around 2-3 is ideal");
+	vkGetSwapchainImagesKHR(device, activeSwapchainKHR, &activeSwapchain.imageCount, nullptr); //gets the image count
+	Assert(activeSwapchain.imageCount >= activeSwapchain.minImageCount, "the window should always have at least the min image count");
+	Assert(activeSwapchain.imageCount < 16, "the window should have less than 16 images, around 2-3 is ideal");
 	VkImage images[16] = {};
-	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, images); //assigns to images
+	vkGetSwapchainImagesKHR(device, activeSwapchainKHR, &activeSwapchain.imageCount, images); //assigns to images
 	
 	{//color framebuffer attachment
-		if(attachments.colorImage){
-			vkDestroyImageView(device, attachments.colorImageView, allocator);
-			vkDestroyImage(device, attachments.colorImage, allocator);
-			vkFreeMemory(device, attachments.colorImageMemory, allocator);
+		if(activeSwapchain.attachments.colorImage){
+			vkDestroyImageView(device, activeSwapchain.attachments.colorImageView, allocator);
+			vkDestroyImage(device, activeSwapchain.attachments.colorImage, allocator);
+			vkFreeMemory(device, activeSwapchain.attachments.colorImageMemory, allocator);
 		}
-		VkFormat colorFormat = surfaceFormat.format;
-		CreateImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
+		VkFormat colorFormat = activeSwapchain.surfaceFormat.format;
+		CreateImage(activeSwapchain.width, activeSwapchain.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
 					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.colorImage, attachments.colorImageMemory);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)attachments.colorImage, "Framebuffer color image");
-		attachments.colorImageView = CreateImageView(attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)attachments.colorImageView, "Framebuffer color imageview");
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, activeSwapchain.attachments.colorImage, activeSwapchain.attachments.colorImageMemory);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.attachments.colorImage, "Framebuffer color image");
+		activeSwapchain.attachments.colorImageView = CreateImageView(activeSwapchain.attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.attachments.colorImageView, "Framebuffer color imageview");
 	}
 	
 	{//depth framebuffer attachment
-		if(attachments.depthImage){
-			vkDestroyImageView(device, attachments.depthImageView, allocator);
-			vkDestroyImage(device, attachments.depthImage, allocator);
-			vkFreeMemory(device, attachments.depthImageMemory, allocator);
+		if(activeSwapchain.attachments.depthImage){
+			vkDestroyImageView(device, activeSwapchain.attachments.depthImageView, allocator);
+			vkDestroyImage(device, activeSwapchain.attachments.depthImage, allocator);
+			vkFreeMemory(device, activeSwapchain.attachments.depthImageMemory, allocator);
 		}
 		VkFormat depthFormat = findDepthFormat();
-		CreateImage(width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
+		CreateImage(activeSwapchain.width, activeSwapchain.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
 					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.depthImage, attachments.depthImageMemory);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)attachments.depthImage, "Framebuffer depth image");
-		attachments.depthImageView = CreateImageView(attachments.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)attachments.depthImageView, "Framebuffer depth imageview");
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, activeSwapchain.attachments.depthImage, activeSwapchain.attachments.depthImageMemory);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.attachments.depthImage, "Framebuffer depth image");
+		activeSwapchain.attachments.depthImageView = CreateImageView(activeSwapchain.attachments.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.attachments.depthImageView, "Framebuffer depth imageview");
 	}
 	
-	frames.resize(imageCount);
-	for(u32 i = 0; i < imageCount; ++i){
+	activeSwapchain.frames.resize(activeSwapchain.imageCount);
+	for(u32 i = 0; i < activeSwapchain.imageCount; ++i){
 		//set the frame images to the swap chain images
 		//NOTE the previous image and its memory gets freed when the swapchain gets destroyed
-		frames[i].image = images[i];
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)frames[i].image, TOSTDSTRING("Frame image ", i).c_str());
+		activeSwapchain.frames[i].image = images[i];
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.frames[i].image, TOSTDSTRING("Frame image ", i).c_str());
 		
 		//create the image views
-		if(frames[i].imageView) vkDestroyImageView(device, frames[i].imageView, allocator);
-		frames[i].imageView = CreateImageView(frames[i].image, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)frames[i].imageView, TOSTDSTRING("Frame imageview ", i).c_str());
+		if(activeSwapchain.frames[i].imageView) vkDestroyImageView(device, activeSwapchain.frames[i].imageView, allocator);
+		activeSwapchain.frames[i].imageView = CreateImageView(activeSwapchain.frames[i].image, activeSwapchain.surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.frames[i].imageView, TOSTDSTRING("Frame imageview ", i).c_str());
 		
 		//create the framebuffers
-		if(frames[i].framebuffer) vkDestroyFramebuffer(device, frames[i].framebuffer, allocator);
-		
+		if(activeSwapchain.frames[i].framebuffer) vkDestroyFramebuffer(device, activeSwapchain.frames[i].framebuffer, allocator);
+
 		std::vector<VkImageView> frameBufferAttachments; //TODO(delle) fix scuffed msaa hack
-		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
-			frameBufferAttachments = { attachments.colorImageView, attachments.depthImageView, frames[i].imageView };
-		}else{
-			frameBufferAttachments = { frames[i].imageView, attachments.depthImageView, };
+		if (msaaSamples != VK_SAMPLE_COUNT_1_BIT) {
+			frameBufferAttachments = { activeSwapchain.attachments.colorImageView, activeSwapchain.attachments.depthImageView, activeSwapchain.frames[i].imageView };
 		}
-		
-		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
-		info.renderPass      = renderPass;
+		else {
+			frameBufferAttachments = { activeSwapchain.frames[i].imageView, activeSwapchain.attachments.depthImageView, };
+		}
+
+		VkFramebufferCreateInfo info{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+		info.renderPass = renderPass;
 		info.attachmentCount = frameBufferAttachments.size();
-		info.pAttachments    = frameBufferAttachments.data();
-		info.width           = width;
-		info.height          = height;
-		info.layers          = 1;
-		AssertVk(vkCreateFramebuffer(device, &info, allocator, &frames[i].framebuffer), "failed to create framebuffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)frames[i].framebuffer, TOSTDSTRING("Frame framebuffer ", i).c_str());
+		info.pAttachments = frameBufferAttachments.data();
+		info.width = activeSwapchain.width;
+		info.height = activeSwapchain.height;
+		info.layers = 1;
+		AssertVk(vkCreateFramebuffer(device, &info, allocator, &activeSwapchain.frames[i].framebuffer), "failed to create framebuffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)activeSwapchain.frames[i].framebuffer, TOSTDSTRING("Frame framebuffer ", i).c_str());
 		
 		//allocate command buffers
-		if(frames[i].commandBuffer) vkFreeCommandBuffers(device, commandPool, 1, &frames[i].commandBuffer);
-		VkCommandBufferAllocateInfo allocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-		allocInfo.commandPool        = commandPool;
-		allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		if(activeSwapchain.frames[i].commandBuffer) vkFreeCommandBuffers(device, commandPool, 1, &activeSwapchain.frames[i].commandBuffer);
+		VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
-		AssertVk(vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer), "failed to allocate command buffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)frames[i].commandBuffer, TOSTDSTRING("Frame command buffer ", i).c_str());
+		AssertVk(vkAllocateCommandBuffers(device, &allocInfo, &activeSwapchain.frames[i].commandBuffer), "failed to allocate command buffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)activeSwapchain.frames[i].commandBuffer, TOSTDSTRING("Frame command buffer ", i).c_str());
 	}
 }
 
@@ -1578,7 +1597,7 @@ UpdateUniformBuffers(){
 	{//update scene vertex shader ubo
 		uboVS.values.time = DeshTime->totalTime;
 		std::copy(vkLights, vkLights+10, uboVS.values.lights);
-		uboVS.values.screen = vec2((f32)extent.width, (f32)extent.height);
+		uboVS.values.screen = vec2((f32)activeSwapchain.extent.width, (f32)activeSwapchain.extent.height);
 		uboVS.values.mousepos = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
 		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
 		uboVS.values.enablePCF = settings.shadowPCF;
@@ -2902,17 +2921,17 @@ BuildCommands(){
 	VkCommandBufferBeginInfo cmdBufferInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 	VkViewport viewport{}; //scales the image
-	VkRect2D   scissor{};  //cuts the scaled image //TODO(delle,Re) letterboxing settings here
+	VkRect2D   scissor{};  //cuts the scaled image
 	
-	forI(imageCount){
-		VkCommandBuffer cmdBuffer = frames[i].commandBuffer;
+	forI(activeSwapchain.imageCount){
+		VkCommandBuffer cmdBuffer = activeSwapchain.frames[i].commandBuffer;
 		AssertVk(vkBeginCommandBuffer(cmdBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		
 		////////////////////////////
 		//// @first render pass ////
 		////////////////////////////
 		{//generate shadow map by rendering the scene offscreen
-			clearValues[0].depthStencil = {1.0f, 0};
+			clearValues[0].depthStencil             = {1.0f, 0};
 			renderPassInfo.renderPass               = offscreen.renderpass;
 			renderPassInfo.framebuffer              = offscreen.framebuffer;
 			renderPassInfo.renderArea.offset        = {0, 0};
@@ -2964,21 +2983,21 @@ BuildCommands(){
 			clearValues[0].color        = {settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a};
 			clearValues[1].depthStencil = {1.0f, 0};
 			renderPassInfo.renderPass        = renderPass;
-			renderPassInfo.framebuffer       = frames[i].framebuffer;
+			renderPassInfo.framebuffer       = activeSwapchain.frames[i].framebuffer;
 			renderPassInfo.clearValueCount   = 2;
 			renderPassInfo.pClearValues      = clearValues;
 			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent = extent;
+			renderPassInfo.renderArea.extent = activeSwapchain.extent;
 			viewport.x        = 0;
 			viewport.y        = 0;
-			viewport.width    = (f32)width;
-			viewport.height   = (f32)height;
+			viewport.width    = (f32)activeSwapchain.width;
+			viewport.height   = (f32)activeSwapchain.height;
 			viewport.minDepth = 0.f;
 			viewport.maxDepth = 1.f;
 			scissor.offset.x      = 0;
 			scissor.offset.y      = 0;
-			scissor.extent.width  = width;
-			scissor.extent.height = height;
+			scissor.extent.width  = activeSwapchain.width;
+			scissor.extent.height = activeSwapchain.height;
 			
 			DebugBeginLabelVk(cmdBuffer, "Scene Render Pass", render_pass_color);
 			vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -3085,8 +3104,8 @@ BuildCommands(){
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
 				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, INDEX_TYPE_VK_UI);
 				Push2DVk push{};
-				push.scale.x = 2.0f / (f32)width;
-				push.scale.y = 2.0f / (f32)height;
+				push.scale.x = 2.0f / (f32)activeSwapchain.width;
+				push.scale.y = 2.0f / (f32)activeSwapchain.height;
 				push.translate.x = -1.0f;
 				push.translate.y = -1.0f;
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
@@ -3111,8 +3130,8 @@ BuildCommands(){
 				
 				scissor.offset.x = 0;
 				scissor.offset.y = 0;
-				scissor.extent.width = width;
-				scissor.extent.height = height;
+				scissor.extent.width = activeSwapchain.width;
+				scissor.extent.height = activeSwapchain.height;
 				
 				DebugEndLabelVk(cmdBuffer);
 			}
@@ -3130,8 +3149,8 @@ BuildCommands(){
 			
 			//DEBUG draw shadow map
 			if(settings.showShadowMap){
-				viewport.x      = (f32)(width - 400);
-				viewport.y      = (f32)(height - 400);
+				viewport.x      = (f32)(activeSwapchain.width - 400);
+				viewport.y      = (f32)(activeSwapchain.height - 400);
 				viewport.width  = 400.f;
 				viewport.height = 400.f;
 				vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
@@ -3145,8 +3164,8 @@ BuildCommands(){
 				
 				viewport.x      = 0;
 				viewport.y      = 0;
-				viewport.width  = (f32)width;
-				viewport.height = (f32)height;
+				viewport.width  = (f32)activeSwapchain.width;
+				viewport.height = (f32)activeSwapchain.height;
 			}
 			
 			vkCmdEndRenderPass(cmdBuffer);
@@ -3200,15 +3219,15 @@ Init(){
 	init_info.PipelineCache   = pipelineCache;
 	init_info.DescriptorPool  = descriptorPool;
 	init_info.Allocator       = allocator;
-	init_info.MinImageCount   = minImageCount;
-	init_info.ImageCount      = imageCount;
+	init_info.MinImageCount   = activeSwapchain.minImageCount;
+	init_info.ImageCount      = activeSwapchain.imageCount;
 	init_info.CheckVkResultFn = imguiCheckVkResult;
 	init_info.MSAASamples     = msaaSamples;
 	ImGui_ImplVulkan_Init(&init_info, renderPass);
 	
 	//Upload Fonts
 	VkCommandPool   command_pool   = commandPool;
-	VkCommandBuffer command_buffer = frames[frameIndex].commandBuffer;
+	VkCommandBuffer command_buffer = activeSwapchain.frames[activeSwapchain.frameIndex].commandBuffer;
 	
 	AssertVk(vkResetCommandPool(device, command_pool, 0));
 	
@@ -3551,8 +3570,8 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE: {
 			forI(text.count){
-				u32       col = color.rgba;
-				Vertex2*   vp = twodVertexArray + twodVertexCount;
+				u32         col = color.rgba;
+				Vertex2*     vp = twodVertexArray + twodVertexCount;
 				TwodIndexVk* ip = twodIndexArray + twodIndexCount;
 				
 				f32 w = font->max_width * scale.x;
@@ -3579,8 +3598,8 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		//// TTF font rendering ////
 		case FontType_TTF: {
 			forI(text.count){
-				u32       col = color.rgba;
-				Vertex2*   vp = twodVertexArray + twodVertexCount;
+				u32         col = color.rgba;
+				Vertex2*     vp = twodVertexArray + twodVertexCount;
 				TwodIndexVk* ip = twodIndexArray + twodIndexCount;
 				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
@@ -4509,6 +4528,32 @@ remakeOffscreen(){
 	_remakeOffscreen = true;
 }
 
+u32  Render::GetMaxSurfaces() {
+	return MAX_SURFACES;
+}
+
+void Render::InitChildWindow(u32 idx, Window* window) {
+	AssertDS(DS_RENDER, "Attempt to initialize a surface and swapchain on a window without initializaing renderer first");
+	Assert(idx < MAX_SURFACES);
+	CreateSurface(window, idx);
+	
+	u32 formatCount;
+	u32 presentModeCount;
+	VkBool32 presentSupport = false;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[idx], &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surfaces[idx], &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, physicalQueueFamilies.presentFamily.value, surfaces[idx], &presentSupport);
+
+	if (!formatCount || !presentModeCount || !presentSupport)  {
+		LogE("VULKAN", "Vulkan failed to init a new surface on the current physical device for window ", window->name);
+		surfaces[idx] = VK_NULL_HANDLE;
+		return;
+	}
+
+	CreateSwapchain(window, idx);
+	CreateFrames();
+}
+
 ///////////////
 //// @init ////
 ///////////////
@@ -4569,7 +4614,7 @@ Init(){
 	PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// setup window-specific Vulkan objects ////
-	CreateSwapChain();
+	CreateSwapchain();
 	PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateRenderpasses();
 	PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
@@ -4606,104 +4651,118 @@ Update(){
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
 	
-	if(DeshWindow->resized) remakeWindow = true;
-	if(remakeWindow){
-		DeshWindow->GetScreenSize(width, height);
-		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
-		vkDeviceWaitIdle(device);
-		CreateSwapChain();
-		CreateFrames();
-		frameIndex = 0;
-		remakeWindow = false;
-	}
-	
-	//reset frame stats
-	stats = {};
+	//TODO this is definitely not the best way to do this, especially if we ever want to have more than 2 windows 
+	//     implement a count of how many surfaces have been made instead, maybe even use array 
 	TIMER_START(t_r);
-	
-	//get next image from surface
-	u32 imageIndex;
-	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
-	if(result == VK_ERROR_OUT_OF_DATE_KHR){
-		remakeWindow = true;
-		return;
-	}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
-		Assert(!"failed to acquire swap chain image");
+	forI(MAX_SURFACES) {
+		if (!swapchains[i].swapchain) continue;
+		active_swapchain = i;
+		Window* scwin = activeSwapchain.window;
+
+		if (scwin->resized) remakeWindow = true;
+		if (remakeWindow) {
+			scwin->GetScreenSize(activeSwapchain.width, activeSwapchain.height);
+			if (activeSwapchain.width <= 0 || activeSwapchain.height <= 0) { ImGui::EndFrame(); return; }
+			vkDeviceWaitIdle(device);
+			CreateSwapchain(scwin, i);
+			CreateFrames();
+			activeSwapchain.frameIndex = 0;
+			remakeWindow = false;
+		}
+
+		//reset frame stats
+		stats = {};
+
+		//get next image from surface
+		u32 imageIndex;
+		VkResult result = vkAcquireNextImageKHR(device, activeSwapchainKHR, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			remakeWindow = true;
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			Assert(!"failed to acquire swap chain image");
+		}
+
+		//render stuff
+		if (settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
+		if (DeshiModuleLoaded(DS_IMGUI)) {
+			ImGui::Render();
+		}
+		UpdateUniformBuffers();
+		SetupCommands();
+
+		//execute draw commands
+		BuildCommands();
+
+		//submit the command buffer to the queue
+		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &imageAcquiredSemaphore;
+		submitInfo.pWaitDstStageMask = &wait_stage;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &activeSwapchain.frames[imageIndex].commandBuffer;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
+		AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
+
+		if (remakeWindow) { return; }
+
+		//present the image
+		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &activeSwapchainKHR;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = 0;
+		result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {  //!Cleanup remakeWindow is already checked
+			vkDeviceWaitIdle(device);
+			CreateSwapchain(scwin, i);
+			CreateFrames();
+			remakeWindow = false;
+		}
+		else if (result != VK_SUCCESS) {
+			Assert(!"failed to present swap chain image");
+		}
+
+		//iterate the frame index
+		activeSwapchain.frameIndex = (activeSwapchain.frameIndex + 1) % activeSwapchain.minImageCount; //loops back to zero after reaching minImageCount
+		result = vkQueueWaitIdle(graphicsQueue);
+		switch (result) {
+			case VK_ERROR_OUT_OF_HOST_MEMORY:   LogE("vulkan", "OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;
+			case VK_ERROR_OUT_OF_DEVICE_MEMORY: LogE("vulkan", "OUT_OF_DEVICE_MEMORY"); Assert(!"GPU ran out of memory"); break;
+			case VK_ERROR_DEVICE_LOST:          LogE("vulkan", "DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
+			case VK_SUCCESS:default: break;
+		}
+
+		
 	}
-	
-	//render stuff
-	if(settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
-	if(DeshiModuleLoaded(DS_IMGUI)){
-		ImGui::Render();
-	}
-	UpdateUniformBuffers();
-	SetupCommands();
-	
-	//execute draw commands
-	BuildCommands();
-	
-	//submit the command buffer to the queue
-	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-	submitInfo.waitSemaphoreCount   = 1;
-	submitInfo.pWaitSemaphores      = &imageAcquiredSemaphore;
-	submitInfo.pWaitDstStageMask    = &wait_stage;
-	submitInfo.commandBufferCount   = 1;
-	submitInfo.pCommandBuffers      = &frames[imageIndex].commandBuffer;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores    = &renderCompleteSemaphore;
-	AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
-	
-	if(remakeWindow){ return; }
-	
-	//present the image
-	VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores    = &renderCompleteSemaphore;
-	presentInfo.swapchainCount     = 1;
-	presentInfo.pSwapchains        = &swapchain;
-	presentInfo.pImageIndices      = &imageIndex;
-	presentInfo.pResults           = 0;
-	result = vkQueuePresentKHR(presentQueue, &presentInfo);
-	
-	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){  //!Cleanup remakeWindow is already checked
-		vkDeviceWaitIdle(device);
-		CreateSwapChain();
-		CreateFrames();
-		remakeWindow = false;
-	}else if(result != VK_SUCCESS){
-		Assert(!"failed to present swap chain image");
-	}
-	
-	//iterate the frame index
-	frameIndex = (frameIndex + 1) % minImageCount; //loops back to zero after reaching minImageCount
-	result = vkQueueWaitIdle(graphicsQueue);
-	switch(result){
-		case VK_ERROR_OUT_OF_HOST_MEMORY:   LogE("vulkan","OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY: LogE("vulkan","OUT_OF_DEVICE_MEMORY"); Assert(!"GPU ran out of memory"); break;
-		case VK_ERROR_DEVICE_LOST:          LogE("vulkan","DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
-		case VK_SUCCESS:default: break;
-	}
-	
+
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
 	//stats.totalVertices  += (u32)vertexBuffer.size() + twodVertexCount + tempWireframeVertexCount;
 	//stats.totalIndices   += (u32)indexBuffer.size()  + twodIndexCount  + tempWireframeIndexCount; //!Incomplete
 	stats.totalTriangles += stats.totalIndices / 3;
-	stats.renderTimeMS    = TIMER_END(t_r);
-	
+	stats.renderTimeMS = TIMER_END(t_r);
+
 	ResetCommands();
-	
-	if(remakePipelines){ 
-		CreatePipelines(); 
+
+	if (remakePipelines) {
+		CreatePipelines();
 		UpdateMaterialPipelines();
-		remakePipelines = false; 
+		remakePipelines = false;
 	}
-	if(_remakeOffscreen){
+	if (_remakeOffscreen) {
 		SetupOffscreenRendering();
 		_remakeOffscreen = false;
 	}
+	active_swapchain = 0;
 	DeshTime->renderTime = TIMER_END(t_d);
+
 }
 
 
