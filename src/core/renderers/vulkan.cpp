@@ -153,8 +153,8 @@ local TwodIndexVk twodVertexCount = 0;
 local TwodIndexVk twodIndexCount  = 0;
 local Vertex2     twodVertexArray[MAX_TWOD_VERTICES];
 local TwodIndexVk twodIndexArray [MAX_TWOD_INDICES];
-local TwodIndexVk twodCmdCounts[MAX_SURFACES][TWOD_LAYERS]; //start with 1
-local TwodCmdVk   twodCmdArrays[MAX_SURFACES][TWOD_LAYERS][MAX_TWOD_CMDS]; //different UI cmd per texture
+local TwodIndexVk twodCmdCounts[MAX_SURFACES][TWOD_LAYERS+1]; //these always start with 1
+local TwodCmdVk   twodCmdArrays[MAX_SURFACES][TWOD_LAYERS+1][MAX_TWOD_CMDS]; //different UI cmd per texture
 //3d array baybe!!
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
@@ -408,7 +408,7 @@ local std::vector<pair<std::string, VkShaderModule>> shaderModules;
 //// @other  //// 
 /////////////////
 local struct{ //TODO(delle,Vu) distribute these variables around
-	s32 width, height;
+	s32                   width, height;
 	VkImage               depthImage;
 	VkDeviceMemory        depthImageMemory;
 	VkImageView           depthImageView;
@@ -417,6 +417,17 @@ local struct{ //TODO(delle,Vu) distribute these variables around
 	VkRenderPass          renderpass;
 	VkFramebuffer         framebuffer;
 } offscreen{};
+
+local struct {
+	s32                   width, height;
+	VkImage               image;
+	VkDeviceMemory        imageMemory;
+	VkImageView           imageView;
+	VkSampler             sampler;
+	VkDescriptorImageInfo descriptor;
+	VkRenderPass          renderpass;
+	VkFramebuffer         framebuffer;
+} topmost{};
 
 
 //-------------------------------------------------------------------------------------------------
@@ -1779,6 +1790,121 @@ SetupOffscreenRendering(){
 	}
 }
 
+//TODO(sushi) make a generic function for doing this maybe
+local void
+SetupTopMostRendering() {
+	PrintVk(2, "Creating topmost rendering layer");
+	AssertRS(RSVK_LOGICALDEVICE, "SetupTopMost called before CreateLogicalDevice");
+	rendererStage |= RSVK_RENDERPASS;
+
+	//cleanup previous offscreen stuff
+	if (topmost.framebuffer) {
+		vkDestroyImageView(device, topmost.imageView, allocator);
+		vkDestroyImage(device, topmost.image, allocator);
+		vkFreeMemory(device, topmost.imageMemory, allocator);
+		vkDestroySampler(device, topmost.sampler, allocator);
+		vkDestroyRenderPass(device, topmost.renderpass, allocator);
+		vkDestroyFramebuffer(device, topmost.framebuffer, allocator);
+	}
+
+	topmost.width = 0; //set by window later
+	topmost.height = 0;
+	VkFormat depthFormat = findDepthFormat();
+
+	{//create the depth image and image view to be used in a sampler
+		CreateImage(topmost.width, topmost.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			topmost.image, topmost.imageMemory);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)topmost.image, "Top Most image");
+
+		topmost.imageView = CreateImageView(topmost.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)topmost.imageView, "Top Most image view");
+	}
+
+	{//create the sampler for the depth attachment used in frag shader for shadow mapping
+		VkSamplerCreateInfo sampler{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+		sampler.magFilter = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		sampler.minFilter = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		sampler.mipmapMode = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.mipLodBias = 0.0f;
+		sampler.maxAnisotropy = 1.0f;
+		sampler.minLod = 0.0f;
+		sampler.maxLod = 1.0f;
+		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		AssertVk(vkCreateSampler(device, &sampler, nullptr, &topmost.sampler), "failed to create topmost depth attachment sampler");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)topmost.sampler, "Top Most sampler");
+	}
+
+	{//create image descriptor for depth attachment
+		topmost.descriptor.sampler = topmost.sampler;
+		topmost.descriptor.imageView = topmost.imageView;
+		topmost.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+	}
+
+	{//create the render pass
+		VkAttachmentDescription attachments[1]{};
+		attachments[0].format = depthFormat;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; //clear depth at beginning of pass
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; //store results so it can be read later
+		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //don't care about initial layout
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL; //transition to shader read after pass
+
+		VkAttachmentReference depthReference{};
+		depthReference.attachment = 0;
+		depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; //attachment will be used as depth/stencil during pass
+
+		VkSubpassDescription subpasses[1]{};
+		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpasses[0].colorAttachmentCount = 0;
+		subpasses[0].pDepthStencilAttachment = &depthReference;
+
+		//use subpass dependencies for layout transitions
+		VkSubpassDependency dependencies[2]{};
+		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[0].dstSubpass = 0;
+		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		dependencies[1].srcSubpass = 0;
+		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		VkRenderPassCreateInfo createInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = attachments;
+		createInfo.subpassCount = 1;
+		createInfo.pSubpasses = subpasses;
+		createInfo.dependencyCount = 2;
+		createInfo.pDependencies = dependencies;
+		AssertVk(vkCreateRenderPass(device, &createInfo, allocator, &topmost.renderpass), "failed to create topmost render pass");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)topmost.renderpass, "TopMost render pass");
+	}
+
+	{//create the framebuffer
+		VkFramebufferCreateInfo createInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+		createInfo.renderPass = topmost.renderpass;
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = &topmost.imageView;
+		createInfo.width = topmost.width;
+		createInfo.height = topmost.height;
+		createInfo.layers = 1;
+		AssertVk(vkCreateFramebuffer(device, &createInfo, allocator, &topmost.framebuffer), "failed to create topmost framebuffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)topmost.framebuffer, "Offscreen framebuffer");
+	}
+}
+
 
 ////////////////////////// descriptor pool, layouts, pipeline cache
 //// @pipelines setup //// pipeline create info structs
@@ -2884,7 +3010,7 @@ SetupCommands(){
 local void
 ResetCommands(){
 	{//2D commands
-		forI(TWOD_LAYERS){
+		forI(TWOD_LAYERS+1){
 			memset(&twodCmdArrays[active_swapchain][i][0], 0, sizeof(TwodCmdVk) * twodCmdCounts[active_swapchain][i]);
 			twodCmdArrays[active_swapchain][i][0].descriptorSet = textures[1].descriptorSet;
 			twodCmdCounts[active_swapchain][i] = 1;
@@ -3166,7 +3292,35 @@ BuildCommands(){
 				viewport.width  = (f32)activeSwapchain.width;
 				viewport.height = (f32)activeSwapchain.height;
 			}
-			
+
+			//draw topmost stuff (custom window decorations for now)
+			if (twodCmdCounts[active_swapchain][TWOD_LAYERS] > 0) {
+				DebugBeginLabelVk(cmdBuffer, "Z-Zero", draw_group_color);
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
+				VkDeviceSize offsets[1] = { 0 };
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, INDEX_TYPE_VK_UI);
+				Push2DVk push{};
+				push.scale.x = 2.0f / (f32)activeSwapchain.width;
+				push.scale.y = 2.0f / (f32)activeSwapchain.height;
+				push.translate.x = -1.0f;
+				push.translate.y = -1.0f;
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
+
+				forX(cmd_idx, twodCmdCounts[active_swapchain][TWOD_LAYERS]) {
+					scissor.offset.x = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorOffset.x;
+					scissor.offset.y = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorOffset.y;
+					scissor.extent.width = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorExtent.x;
+					scissor.extent.height = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorExtent.y;
+					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+					if (twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].descriptorSet) {
+						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].descriptorSet, 0, nullptr);
+						vkCmdDrawIndexed(cmdBuffer, twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].indexCount, 1, twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].indexOffset, 0, 0);
+					}
+				}
+			}
+
 			vkCmdEndRenderPass(cmdBuffer);
 			DebugEndLabelVk(cmdBuffer);
 		}
@@ -3303,6 +3457,32 @@ void Check2DCmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 	Assert(twodVertexCount <= MAX_TWOD_VERTICES);
 	Assert(twodIndexCount <= MAX_TWOD_INDICES);
 	
+}
+
+void Render::
+StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent) {
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorOffset = scissorOffset;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorExtent = scissorExtent;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].indexOffset = twodIndexCount;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].textured = (tex) ? true : false;
+	twodCmdCounts[active_swapchain][layer]++;
+}
+
+void Render::
+AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount) {
+	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
+	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
+
+	Vertex2* vp = twodVertexArray + twodVertexCount;
+	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
+
+	memcpy(vp, vertstart, vertcount * sizeof(Vertex2));
+	forI(indexcount) ip[i] = twodVertexCount + indexstart[i];
+
+	twodVertexCount += vertcount;
+	twodIndexCount += indexcount;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += indexcount;
 }
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -3716,31 +3896,20 @@ DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u3
 	DrawTexture2D(texture, p0, p1, p2, p3, alpha, layer, scissorOffset, scissorExtent);
 }
 
-void Render::
-StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent){
-	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorOffset = scissorOffset;
-	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorExtent = scissorExtent;
-	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
-	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].indexOffset = twodIndexCount;
-	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].textured = (tex) ? true : false;
-	twodCmdCounts[active_swapchain][layer]++;
+//gets the max layers that UI can draw to
+u32 Render::GetMaxLayerIndex(){
+	return TWOD_LAYERS-1;
 }
 
-void Render::
-AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount){
-	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
-	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
-	
-	Vertex2*     vp = twodVertexArray + twodVertexCount;
-	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
-	
-	memcpy(vp, vertstart, vertcount * sizeof(Vertex2));
-	forI(indexcount) ip[i] = twodVertexCount + indexstart[i];
-	
-	twodVertexCount += vertcount;
-	twodIndexCount += indexcount;
-	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += indexcount;
+//gets the absolute top layer that UI cannot access,
+//this layer must be manually drawn to using Render functions as its implementation
+//is coming from custom window decorations
+u32 Render::GetZZeroLayerIndex(){
+	return TWOD_LAYERS;
 }
+
+
+
 
 ///////////////////
 //// @settings ////
@@ -4647,9 +4816,8 @@ Init(){
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
-	forI(TWOD_LAYERS){ 
+	forI(TWOD_LAYERS+1){ 
 		twodCmdCounts[active_swapchain][i] = 1; 
-		
 	}
 	
 	initialized = true;

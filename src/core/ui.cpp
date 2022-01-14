@@ -85,7 +85,6 @@ local array<f32>                         leftIndentStack{ 0 }; //stores global i
 local array<f32>                         rightIndentStack{ 0 }; //stores global indentations
 local array<u32>                         drawTargetStack{ 0 }; //stores draw target indexes for the renderer
 
-
 local u32 itemFlags[UIItemType_COUNT]; //stores the default flags for every item that supports flagging, these can be set using SetItemFlags
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last

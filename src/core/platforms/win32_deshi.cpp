@@ -277,11 +277,12 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 }
 
 void Titlebar(Window* win) {
+	using namespace Render;
 	s32& x=win->x, y=win->y;
 	s32& width = win->width, height = win->height;
 	s32& screenWidth=win->screenWidth, screenHeight=win->screenHeight;
-	Render::StartNewTwodCmd(9, 0, vec2::ZERO, DeshWinSize);
-	Render::FillRect2D(vec2::ZERO, vec2(width, 20), color(30,30,30), 9, vec2::ZERO, DeshWinSize);
+	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, DeshWinSize);
+	FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(30,30,30), GetZZeroLayerIndex(), vec2::ZERO, DeshWinSize);
 
 }
 

@@ -48,6 +48,8 @@ struct Window{
 
 	s32 x, y;
 	s32 width, height;
+	s32 cx, cy; //position of client area in window's coordinates
+	s32 cwidth, cheight; //size of client area
 	s32 screenWidth, screenHeight;
 	s32 restoreX, restoreY;
 	s32 restoreW, restoreH;
