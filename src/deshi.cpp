@@ -31,6 +31,8 @@ popout console state (require extra window creation)
 tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 add auto complete for commands and arguments
 implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
+config variable modification
+simple terminal emulation
 
 Fun TODOs
 ---------

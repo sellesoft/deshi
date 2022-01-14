@@ -1,6 +1,113 @@
 #pragma once
 #ifndef DEFINES_H
 #define DEFINES_H
+////////////////////////////////////////// compilers: COMPILER_CL, COMPILER_CLANG, COMPILER_GCC
+//// compiler, platform, architecture //// platforms: OS_WINDOWS. OS_LINUX, OS_MAC
+////////////////////////////////////////// architectures: ARCH_X64, ARCH_X86, ARCH_ARM64, ARCH_ARM32
+//// CL Compiler //// (used for windows)
+#if defined(_MSC_VER)
+#  define COMPILER_CL 1
+
+#  if defined(_WIN32)
+#    define OS_WINDOWS 1
+#  else //_WIN32
+#    error "unhandled compiler/platform combo"
+#  endif //_WIN32
+
+#  if defined(_M_AMD64)
+#    define ARCH_X64 1
+#  elif defined(_M_IX86) //_M_AMD64
+#    define ARCH_X86 1
+#  elif defined(_M_ARM64) //_M_IX86
+#    define ARCH_ARM64 1
+#  elif defined(_M_ARM) //_M_ARM64
+#    define ARCH_ARM32 1
+#  else //_M_ARM
+#    error "unhandled architecture"
+#  endif
+
+//// CLANG Compiler //// (used for mac)
+#elif defined(__clang__) //_MSC_VER
+#  define COMPILER_CLANG 1
+
+#  if defined(__APPLE__) && defined(__MACH__)
+#    define OS_MAC 1
+#  else //__APPLE__ || __MACH__
+#    error "unhandled compiler/platform combo"
+#  endif //__APPLE__ || __MACH__
+
+#  if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64)
+#    define ARCH_X64 1
+#  elif defined(i386) || defined(__i386) || defined(__i386__) //__amd64__ || __amd64 || __x86_64 || __x86_64__
+#    define ARCH_X86 1
+#  elif defined(__aarch64__) //i386 || __i386__ || __i386__
+#    define ARCH_ARM64 1
+#  elif defined(__arm__) //__aarch64__
+#    define ARCH_ARM32 1
+#  else //__arm__
+#    error "unhandled architecture"
+#  endif
+
+//// GCC Compiler //// (used for linux)
+#elif defined(__GNUC__) || defined(__GNUG__) //__clang__
+#  define COMPILER_GCC 1
+
+#  if defined(__gnu_linux__)
+#    define OS_LINUX 1
+#  else //__gnu_linux__
+#    error "unhandled compiler/platform combo"
+#  endif
+
+#  if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64)
+#    define ARCH_X64 1
+#  elif defined(i386) || defined(__i386) || defined(__i386__) //__amd64__ || __amd64 || __x86_64 || __x86_64__
+#    define ARCH_X86 1
+#  elif defined(__aarch64__) //i386 || __i386__ || __i386__
+#    define ARCH_ARM64 1
+#  elif defined(__arm__) //__aarch64__
+#    define ARCH_ARM32 1
+#  else //__arm__
+#    error "unhandled architecture"
+#  endif
+
+#if !defined(COMPILER_CL)
+#  define COMPILER_CL 0
+#endif
+#if !defined(COMPILER_CLANG)
+#  define COMPILER_CLANG 0
+#endif
+#if !defined(COMPILER_GCC)
+#  define COMPILER_GCC 0
+#endif
+
+#if !defined(OS_WINDOWS)
+#  define OS_WINDOWS 0
+#endif
+#if !defined(OS_LINUX)
+#  define OS_LINUX 0
+#endif
+#if !defined(OS_MAC)
+#  define OS_MAC 0
+#endif
+
+#if !defined(ARCH_X64)
+#  define ARCH_X64 0
+#endif
+#if !defined(ARCH_X86)
+#  define ARCH_X86 0
+#endif
+#if !defined(ARCH_ARM64)
+#  define ARCH_ARM64 0
+#endif
+#if !defined(ARCH_ARM32)
+#  define ARCH_ARM32 0
+#endif
+
+//// Unhandled Compiler ////
+#else //__GNUC__ || __GNUG__
+#  error "unhandled compiler"
+#endif
+
 ///////////////////////// //NOTE this file is included is almost every other file of the project, so be frugal with includes here
 //// common includes ////
 /////////////////////////
@@ -21,22 +128,32 @@
 /////////////////////////////////////
 //// compiler-dependent builtins ////
 /////////////////////////////////////
-#if   defined(_MSC_VER)
+#if COMPILER_CL
 #  define FORCE_INLINE __forceinline
-#  define DEBUG_BREAK __debugbreak()
+#  define DebugBreakpoint __debugbreak()
 #  define ByteSwap16(x) _byteswap_ushort(x)
 #  define ByteSwap32(x) _byteswap_ulong(x)
 #  define ByteSwap64(x) _byteswap_uint64(x)
-#elif defined(__GNUC__) || defined(__clang__) //_MSC_VER
+#elif COMPILER_CLANG || COMPILER_GCC //COMPILER_CL
 #  define FORCE_INLINE inline __attribute__((always_inline))
 #  error "unhandled debug breakpoint; look at: https://github.com/scottt/debugbreak"
 #  define ByteSwap16(x) __builtin_bswap16(x)
 #  define ByteSwap32(x) __builtin_bswap32(x)
 #  define ByteSwap64(x) __builtin_bswap64(x)
-#else //__GNUC__ || __clang__
+#else
 #  error "unhandled compiler"
 #endif
-#define DebugBreakpoint DEBUG_BREAK
+
+//// stack allocation ////
+#if OS_WINDOWS
+#  include <malloc.h>
+#  define StackAlloc(bytes) _alloca(bytes)
+#elif OS_LINUX || OS_MAC //OS_WINDOWS
+#  include <alloca.h>
+#  define StackAlloc(bytes) alloca(bytes)
+#else //OS_LINUX || OS_MAC
+#  error "unhandled os"
+#endif
 
 //////////////////////
 //// common types ////
