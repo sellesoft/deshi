@@ -169,6 +169,8 @@ namespace Render{
 
 	u32  GetMaxSurfaces();
 	void InitChildWindow(u32 idx, Window* window);
+	void SetSurfaceDrawTargetByIdx(u32 idx);
+	void SetSurfaceDrawTargetByWindow(Window* window);
 
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);

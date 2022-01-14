@@ -153,8 +153,9 @@ local TwodIndexVk twodVertexCount = 0;
 local TwodIndexVk twodIndexCount  = 0;
 local Vertex2     twodVertexArray[MAX_TWOD_VERTICES];
 local TwodIndexVk twodIndexArray [MAX_TWOD_INDICES];
-local TwodIndexVk twodCmdCounts[TWOD_LAYERS]; //start with 1
-local TwodCmdVk   twodCmdArrays[TWOD_LAYERS][MAX_TWOD_CMDS]; //different UI cmd per texture
+local TwodIndexVk twodCmdCounts[MAX_SURFACES][TWOD_LAYERS]; //start with 1
+local TwodCmdVk   twodCmdArrays[MAX_SURFACES][TWOD_LAYERS][MAX_TWOD_CMDS]; //different UI cmd per texture
+//3d array baybe!!
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -2883,12 +2884,10 @@ SetupCommands(){
 local void
 ResetCommands(){
 	{//2D commands
-		twodVertexCount = 0;
-		twodIndexCount  = 0;
 		forI(TWOD_LAYERS){
-			memset(&twodCmdArrays[i][0], 0, sizeof(TwodCmdVk) * twodCmdCounts[i]);
-			twodCmdArrays[i][0].descriptorSet = textures[1].descriptorSet;
-			twodCmdCounts[i] = 1;
+			memset(&twodCmdArrays[active_swapchain][i][0], 0, sizeof(TwodCmdVk) * twodCmdCounts[active_swapchain][i]);
+			twodCmdArrays[active_swapchain][i][0].descriptorSet = textures[1].descriptorSet;
+			twodCmdCounts[active_swapchain][i] = 1;
 		}
 	}
 	
@@ -3111,17 +3110,17 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(layer, TWOD_LAYERS){
-					if(twodCmdCounts[layer] > 1){
-						forX(cmd_idx, twodCmdCounts[layer]){
-							scissor.offset.x = (u32)twodCmdArrays[layer][cmd_idx].scissorOffset.x;
-							scissor.offset.y = (u32)twodCmdArrays[layer][cmd_idx].scissorOffset.y;
-							scissor.extent.width = (u32)twodCmdArrays[layer][cmd_idx].scissorExtent.x;
-							scissor.extent.height = (u32)twodCmdArrays[layer][cmd_idx].scissorExtent.y;
+					if(twodCmdCounts[active_swapchain][layer] > 1){
+						forX(cmd_idx, twodCmdCounts[active_swapchain][layer]){
+							scissor.offset.x = (u32)twodCmdArrays[active_swapchain][layer][cmd_idx].scissorOffset.x;
+							scissor.offset.y = (u32)twodCmdArrays[active_swapchain][layer][cmd_idx].scissorOffset.y;
+							scissor.extent.width = (u32)twodCmdArrays[active_swapchain][layer][cmd_idx].scissorExtent.x;
+							scissor.extent.height = (u32)twodCmdArrays[active_swapchain][layer][cmd_idx].scissorExtent.y;
 							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 							
-							if(twodCmdArrays[layer][cmd_idx].descriptorSet){
-								vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &twodCmdArrays[layer][cmd_idx].descriptorSet, 0, nullptr);
-								vkCmdDrawIndexed(cmdBuffer, twodCmdArrays[layer][cmd_idx].indexCount, 1, twodCmdArrays[layer][cmd_idx].indexOffset, 0, 0);
+							if(twodCmdArrays[active_swapchain][layer][cmd_idx].descriptorSet){
+								vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &twodCmdArrays[active_swapchain][layer][cmd_idx].descriptorSet, 0, nullptr);
+								vkCmdDrawIndexed(cmdBuffer, twodCmdArrays[active_swapchain][layer][cmd_idx].indexCount, 1, twodCmdArrays[active_swapchain][layer][cmd_idx].indexOffset, 0, 0);
 							}
 						}
 					}
@@ -3287,20 +3286,20 @@ vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(0, 0);
 
 void Check2DCmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset, vec2 scissorExtent){
-	if((twodCmdArrays[layer][twodCmdCounts[layer] - 1].textured != textured)
-	   || ((tex) ? twodCmdArrays[layer][twodCmdCounts[layer] - 1].descriptorSet != textures[tex->idx].descriptorSet : 0)
+	if((twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].textured != textured)
+	   || ((tex) ? twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].descriptorSet != textures[tex->idx].descriptorSet : 0)
 	   || (scissorOffset != prevScissorOffset)   //im doing these 2 because we have to know if we're drawing in a new window
 	   || (scissorExtent != prevScissorExtent)){ //and you could do text last in one, and text first in another {  
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;         //NOTE null_font is the default texture for 2D items, as its just a white square
-		twodCmdArrays[layer][twodCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
-		twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset = twodIndexCount;
-		twodCmdArrays[layer][twodCmdCounts[layer]].textured = textured;
-		twodCmdArrays[layer][twodCmdCounts[layer]].scissorOffset = scissorOffset;
-		twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
-		twodCmdCounts[layer]++;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].indexOffset = twodIndexCount;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].textured = textured;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorOffset = scissorOffset;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorExtent = scissorExtent;
+		twodCmdCounts[active_swapchain][layer]++;
 	}
-	Assert(twodCmdCounts[layer] <= MAX_TWOD_CMDS);
+	Assert(twodCmdCounts[active_swapchain][layer] <= MAX_TWOD_CMDS);
 	Assert(twodVertexCount <= MAX_TWOD_VERTICES);
 	Assert(twodIndexCount <= MAX_TWOD_INDICES);
 	
@@ -3323,7 +3322,7 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 	
 	twodVertexCount += 3;
 	twodIndexCount += 3;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 3;
 }
 
 void Render::DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
@@ -3355,7 +3354,7 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 	
 	twodVertexCount += 4;
 	twodIndexCount += 6;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
@@ -3436,7 +3435,7 @@ void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 la
 	
 	twodVertexCount += 4;
 	twodIndexCount += 6;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 }
 
 //TODO
@@ -3469,7 +3468,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		ip[1] = twodVertexCount + 1;
 		ip[3] = twodVertexCount;
 		
-		twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 3;
 		
 		twodVertexCount += 2;
 		twodIndexCount += 3;
@@ -3534,7 +3533,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		twodIndexCount += 6;
 		vp += 2;
 		
-		twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 		
 	}
 	
@@ -3551,7 +3550,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		ip[ipidx + 2] = twodVertexCount;
 		ip[ipidx + 3] = twodVertexCount + 1;
 		
-		twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 3;
+		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 3;
 		
 		twodVertexCount += 2;
 		twodIndexCount += 3;
@@ -3591,7 +3590,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				
 				twodVertexCount += 4;
 				twodIndexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 				pos.x += font->max_width * scale.x;
 			}
 		}break;
@@ -3613,7 +3612,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				
 				twodVertexCount += 4;
 				twodIndexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -3652,7 +3651,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				
 				twodVertexCount += 4;
 				twodIndexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 				pos.x += font->max_width * scale.x;
 			}
 		}break;
@@ -3674,7 +3673,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				
 				twodVertexCount += 4;
 				twodIndexCount += 6;
-				twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+				twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -3702,7 +3701,7 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u
 	
 	twodVertexCount += 4;
 	twodIndexCount += 6;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += 6;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += 6;
 	
 }
 
@@ -3719,12 +3718,12 @@ DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u3
 
 void Render::
 StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent){
-	twodCmdArrays[layer][twodCmdCounts[layer]].scissorOffset = scissorOffset;
-	twodCmdArrays[layer][twodCmdCounts[layer]].scissorExtent = scissorExtent;
-	twodCmdArrays[layer][twodCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
-	twodCmdArrays[layer][twodCmdCounts[layer]].indexOffset = twodIndexCount;
-	twodCmdArrays[layer][twodCmdCounts[layer]].textured = (tex) ? true : false;
-	twodCmdCounts[layer]++;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorOffset = scissorOffset;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorExtent = scissorExtent;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].indexOffset = twodIndexCount;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].textured = (tex) ? true : false;
+	twodCmdCounts[active_swapchain][layer]++;
 }
 
 void Render::
@@ -3740,7 +3739,7 @@ AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u
 	
 	twodVertexCount += vertcount;
 	twodIndexCount += indexcount;
-	twodCmdArrays[layer][twodCmdCounts[layer] - 1].indexCount += indexcount;
+	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += indexcount;
 }
 
 ///////////////////
@@ -4528,11 +4527,13 @@ remakeOffscreen(){
 	_remakeOffscreen = true;
 }
 
-u32  Render::GetMaxSurfaces() {
+u32  Render::
+GetMaxSurfaces() {
 	return MAX_SURFACES;
 }
 
-void Render::InitChildWindow(u32 idx, Window* window) {
+void Render::
+InitChildWindow(u32 idx, Window* window) {
 	AssertDS(DS_RENDER, "Attempt to initialize a surface and swapchain on a window without initializaing renderer first");
 	Assert(idx < MAX_SURFACES);
 	CreateSurface(window, idx);
@@ -4552,6 +4553,21 @@ void Render::InitChildWindow(u32 idx, Window* window) {
 
 	CreateSwapchain(window, idx);
 	CreateFrames();
+
+	//TODO automatic indexing
+	window->renderer_surface_index = idx; 
+}
+
+void Render::
+SetSurfaceDrawTargetByIdx(u32 idx){
+	Assert(idx < MAX_SURFACES);
+	active_swapchain = idx;
+}
+
+void Render::
+SetSurfaceDrawTargetByWindow(Window* window){
+	Assert(window->renderer_surface_index != -1, "Attempt to set draw target to a window who hasnt been registered to the renderer");
+	active_swapchain = window->renderer_surface_index;
 }
 
 ///////////////
@@ -4632,7 +4648,7 @@ Init(){
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	forI(TWOD_LAYERS){ 
-		twodCmdCounts[i] = 1; 
+		twodCmdCounts[active_swapchain][i] = 1; 
 		
 	}
 	
@@ -4739,6 +4755,7 @@ Update(){
 			case VK_SUCCESS:default: break;
 		}
 
+		ResetCommands();
 		
 	}
 
@@ -4749,7 +4766,6 @@ Update(){
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS = TIMER_END(t_r);
 
-	ResetCommands();
 
 	if (remakePipelines) {
 		CreatePipelines();
@@ -4760,6 +4776,8 @@ Update(){
 		SetupOffscreenRendering();
 		_remakeOffscreen = false;
 	}
+	twodVertexCount = 0;
+	twodIndexCount = 0;
 	active_swapchain = 0;
 	DeshTime->renderTime = TIMER_END(t_d);
 

@@ -83,6 +83,7 @@ local array<Font*>                       fontStack;
 local array<u32>                         layerStack;
 local array<f32>                         leftIndentStack{ 0 }; //stores global indentations
 local array<f32>                         rightIndentStack{ 0 }; //stores global indentations
+local array<u32>                         drawTargetStack{ 0 }; //stores draw target indexes for the renderer
 
 
 local u32 itemFlags[UIItemType_COUNT]; //stores the default flags for every item that supports flagging, these can be set using SetItemFlags
@@ -657,6 +658,7 @@ inline void EndItem(UIItem* item) {}
 inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	if (!drawCmd.tex) drawCmd.tex = style.font->tex;
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
+	drawCmd.render_surface_target_idx = *drawTargetStack.last;
 	item->drawCmds.add(drawCmd);
 	ui_stats.draw_cmds++;
 	ui_stats.vertices += drawCmd.counts.x;
@@ -2664,7 +2666,7 @@ void UI::PushLayer(u32 layer) {
 }
 
 void UI::PushWindowLayer(u32 layer) {
-	
+	WarnFuncNotImplemented("");
 }
 
 void UI::PushLeftIndent(f32 indent)	{
@@ -2675,6 +2677,15 @@ void UI::PushRightIndent(f32 indent){
 	rightIndentStack.add(indent);
 }
 
+void UI::PushDrawTarget(u32 idx){
+	Assert(idx < Render::GetMaxSurfaces());
+	drawTargetStack.add(idx);
+}
+
+void UI::PushDrawTarget(Window* window){
+	Assert(window->renderer_surface_index != -1, "Attempt to push a draw target that has not been registered with the renderer");
+	drawTargetStack.add(window->renderer_surface_index);
+}
 
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
@@ -2687,18 +2698,16 @@ void UI::PopColor(u32 count) {
 
 void UI::PopVar(u32 count) {
 	while (count-- > 0) {
-		//TODO(sushi, UiCl) do this better
 		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
 		if (type.count == 1) {
 			f32* p = (f32*)((u8*)&style + type.offset);
 			*p = varStack.last->oldFloat[0];
-			varStack.pop();
 		}
 		else {
 			vec2* p = (vec2*)((u8*)&style + type.offset);
 			*p = vec2(varStack.last->oldFloat[0], varStack.last->oldFloat[1]);
-			varStack.pop();
 		}
+		varStack.pop();
 	}
 }
 
@@ -2732,6 +2741,12 @@ void UI::PopLeftIndent(u32 count) {
 void UI::PopRightIndent(u32 count){
 	while (count-- > 0) {
 		rightIndentStack.pop();
+	}
+}
+
+void UI::PopDrawTarget(u32 count) {
+	while (count-- > 0) {
+		drawTargetStack.pop();
 	}
 }
 
@@ -4708,6 +4723,8 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		dcse = ClampMin(dcse, vec2::ZERO);
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
+		Render::SetSurfaceDrawTargetByIdx(drawCmd.render_surface_target_idx);
+
 		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
 		if(!lastdc) 
 			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
@@ -4720,6 +4737,8 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		drawCmd.scissorOffset = dcso;
 		lastdc = &drawCmd;
 	}
+
+	Render::SetSurfaceDrawTargetByIdx(0);
 }
 
 inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
@@ -4815,6 +4834,7 @@ void UI::Update() {
 	
 	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	Assert(rightIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
+	Assert(drawTargetStack.count == 1, "Forgot to pop a draw target!");
 	
 	forI(UIItemType_COUNT)
 		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");

@@ -44,6 +44,7 @@ struct Window{
 	
 	Window* children[max_child_windows];
 	u32 child_count = 0;
+	u32 renderer_surface_index = -1;
 
 	s32 x, y;
 	s32 width, height;
