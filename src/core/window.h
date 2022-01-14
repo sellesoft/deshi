@@ -33,14 +33,18 @@ enum CursorType_ {
 	CursorType_IBeam,
 }; typedef u32 CursorType;
 
+constexpr u32 max_child_windows = 2;
 struct Window{
-	const char* name;
+	string name;
 	GLFWwindow*  window;
 	GLFWmonitor* monitor;
 
 	void* handle = 0; //win32: HWND; linux/mac not implemented
 	void* instance = 0; //win32: HINSTANCE; linux/mac not implemented
 	
+	Window* children[max_child_windows];
+	u32 child_count = 0;
+
 	s32 x, y;
 	s32 width, height;
 	s32 screenWidth, screenHeight;
@@ -54,28 +58,31 @@ struct Window{
 	b32 rawInput;
 	b32 resizable;
 	b32 closeWindow;
+
+	u32 titlebarheight = 20;
 	
 	b32  resized;
 	
 	vec2 dimensions;
 	
 	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
-	void Init(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
-	void Update();
-	void Cleanup();
-	void UpdateDisplayMode(DisplayMode mode);
-	void UpdateCursorMode(CursorMode mode); 
-	void SetCursorPos(vec2 pos);
-	void SetCursor(CursorType curtype);
-	void UpdateRawInput(b32 rawInput);
-	void UpdateResizable(b32 resizable);
-	void GetScreenSize(s32& width, s32& height);
-	void Close();
-	void UpdateTitle(const char* title);
-	void ShowWindow();
-	void HideWindow();
-	void CloseConsole();
-	b32  ShouldClose();
+	void    Init(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
+	Window* MakeChild(const char* name, s32 width, s32 height, s32 x = 0, s32 y = 0);
+	void    Update();
+	void    Cleanup();
+	void    UpdateDisplayMode(DisplayMode mode);
+	void    UpdateCursorMode(CursorMode mode); 
+	void    SetCursorPos(vec2 pos);
+	void    SetCursor(CursorType curtype);
+	void    UpdateRawInput(b32 rawInput);
+	void    UpdateResizable(b32 resizable);
+	void    GetScreenSize(s32& width, s32& height);
+	void    Close();
+	void    UpdateTitle(const char* title);
+	void    ShowWindow(u32 child = -1);
+	void    HideWindow(u32 child = -1);
+	void    CloseConsole();
+	b32     ShouldClose();
 
 	//define custom cursors
 	//maybe could put this somewhere else bc it will make the window struct very large
@@ -221,7 +228,9 @@ public:
 
 //global_ window pointer
 extern Window* g_window;
+extern Window* g_window2;
 #define DeshWindow g_window
+#define DeshWindow2 g_window2 //make better names later
 #define DeshWinSize g_window->dimensions
-
+#define DeshWin2Size g_window2->dimensions
 #endif //DESHI_WINDOW_H
