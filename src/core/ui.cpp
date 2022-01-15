@@ -83,7 +83,7 @@ local array<Font*>                       fontStack;
 local array<u32>                         layerStack;
 local array<f32>                         leftIndentStack{ 0 }; //stores global indentations
 local array<f32>                         rightIndentStack{ 0 }; //stores global indentations
-
+local array<u32>                         drawTargetStack{ 0 }; //stores draw target indexes for the renderer
 
 local u32 itemFlags[UIItemType_COUNT]; //stores the default flags for every item that supports flagging, these can be set using SetItemFlags
 
@@ -91,10 +91,6 @@ local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
-
-//row variables
-
-
 
 //global ui state flags
 enum UIStateFlags_ {
@@ -657,6 +653,7 @@ inline void EndItem(UIItem* item) {}
 inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	if (!drawCmd.tex) drawCmd.tex = style.font->tex;
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
+	drawCmd.render_surface_target_idx = *drawTargetStack.last;
 	item->drawCmds.add(drawCmd);
 	ui_stats.draw_cmds++;
 	ui_stats.vertices += drawCmd.counts.x;
@@ -665,8 +662,6 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	Assert(drawCmd.counts.y < UIDRAWCMD_MAX_INDICES);
 	BreakOnDrawCmdCreation;
 }
-
-
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
@@ -2664,7 +2659,7 @@ void UI::PushLayer(u32 layer) {
 }
 
 void UI::PushWindowLayer(u32 layer) {
-	
+	WarnFuncNotImplemented("");
 }
 
 void UI::PushLeftIndent(f32 indent)	{
@@ -2675,6 +2670,15 @@ void UI::PushRightIndent(f32 indent){
 	rightIndentStack.add(indent);
 }
 
+void UI::PushDrawTarget(u32 idx){
+	Assert(idx < Render::GetMaxSurfaces());
+	drawTargetStack.add(idx);
+}
+
+void UI::PushDrawTarget(Window* window){
+	Assert(window->renderer_surface_index != -1, "Attempt to push a draw target that has not been registered with the renderer");
+	drawTargetStack.add(window->renderer_surface_index);
+}
 
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
@@ -2687,18 +2691,16 @@ void UI::PopColor(u32 count) {
 
 void UI::PopVar(u32 count) {
 	while (count-- > 0) {
-		//TODO(sushi, UiCl) do this better
 		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
 		if (type.count == 1) {
 			f32* p = (f32*)((u8*)&style + type.offset);
 			*p = varStack.last->oldFloat[0];
-			varStack.pop();
 		}
 		else {
 			vec2* p = (vec2*)((u8*)&style + type.offset);
 			*p = vec2(varStack.last->oldFloat[0], varStack.last->oldFloat[1]);
-			varStack.pop();
 		}
+		varStack.pop();
 	}
 }
 
@@ -2732,6 +2734,12 @@ void UI::PopLeftIndent(u32 count) {
 void UI::PopRightIndent(u32 count){
 	while (count-- > 0) {
 		rightIndentStack.pop();
+	}
+}
+
+void UI::PopDrawTarget(u32 count) {
+	while (count-- > 0) {
+		drawTargetStack.pop();
 	}
 }
 
@@ -3090,7 +3098,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			if (windows.has(name)) {
 				curwin = windows[name];
 				curwin->cursor = vec2(0, 0);
-				if (NextWinPos.x != -1) curwin->position = NextWinPos;
+				if (NextWinPos.x != -1) curwin->position = NextWinPos + DeshWindow->GetClientAreaPosition();
 				if (NextWinSize.x != -1) curwin->dimensions = NextWinSize;
 				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 				curwin->flags = flags;
@@ -3100,7 +3108,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
-				curwin->position = pos;
+				curwin->position = pos + DeshWindow->GetClientAreaPosition();
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
@@ -3191,7 +3199,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
-				if (NextWinPos.x != -1) { curwin->position = NextWinPos; }
+				if (NextWinPos.x != -1) { curwin->position = NextWinPos + DeshWindow->GetClientAreaPosition(); }
 			}
 			else {
 				item->size = dimensions;
@@ -4178,38 +4186,38 @@ UIWindow* DisplayMetrics() {
 		if (showAllDrawCmdScissors) {
 			for (UIItem& item : debugee->preItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+					DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Red);
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+						DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 					}
 				}
 			}
 			for (UIItem& item : debugee->postItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
+					DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Green);
 				}
 			}
 			
 			for (UIWindow* c : debugee->children) {
 				for (UIItem& item : c->preItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+						DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Red);
 					}
 				}
 				forI(UI_WINDOW_ITEM_LAYERS) {
 					for (UIItem& item : c->items[i]) {
 						for (UIDrawCmd& dc : item.drawCmds) {
-							DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+							DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 						}
 					}
 				}
 				for (UIItem& item : c->postItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
+						DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Green);
 					}
 				}
 			}
@@ -4553,8 +4561,6 @@ void UI::Init() {
 	
 	TIMER_START(t_s);
 	
-	
-	
 	curwin = new UIWindow();
 	curwin->name = "Base";
 	curwin->position = vec2(0,0);
@@ -4708,6 +4714,8 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		dcse = ClampMin(dcse, vec2::ZERO);
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
+		Render::SetSurfaceDrawTargetByIdx(drawCmd.render_surface_target_idx);
+
 		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
 		if(!lastdc) 
 			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
@@ -4720,6 +4728,8 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		drawCmd.scissorOffset = dcso;
 		lastdc = &drawCmd;
 	}
+
+	Render::SetSurfaceDrawTargetByIdx(0);
 }
 
 inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
@@ -4815,6 +4825,7 @@ void UI::Update() {
 	
 	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	Assert(rightIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
+	Assert(drawTargetStack.count == 1, "Forgot to pop a draw target!");
 	
 	forI(UIItemType_COUNT)
 		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");

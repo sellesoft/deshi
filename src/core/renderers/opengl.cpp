@@ -393,7 +393,7 @@ local void
 ResetCommands(){
 	{//UI commands
 		twodVertexCount = 0;
-		twodIndexCount  = 0;
+		twodIndexCount = 0;
 		forX(layer, 9){
 			memset(&twodCmdArrays[layer][0], 0, sizeof(TwodCmdGl) * twodCmdCounts[layer]);
 			twodCmdCounts[layer] = 1;

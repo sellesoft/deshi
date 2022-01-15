@@ -374,6 +374,9 @@ struct UIDrawCmd {
 	
 	Texture* tex = 0;
 	
+	//the surface this drawCmd draws to in the renderer
+	u32 render_surface_target_idx = 0;
+
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	b32 trackedForMinSize = 1;
 	
@@ -770,6 +773,8 @@ namespace UI {
 	void PushWindowLayer(u32 layer);
 	void PushLeftIndent(f32 indent);
 	void PushRightIndent(f32 indent);
+	void PushDrawTarget(u32 idx);
+	void PushDrawTarget(Window* idx);
 	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
@@ -779,7 +784,7 @@ namespace UI {
 	void PopWindowLayer(u32 count = 1);
 	void PopLeftIndent(u32 count = 1);
 	void PopRightIndent(u32 count = 1);
-	
+	void PopDrawTarget(u32 count = 1);
 	
 	//// windows ////
 	void Begin(const char* name, UIWindowFlags flags = 0);

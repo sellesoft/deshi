@@ -38,7 +38,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			const s32 width = LOWORD(lParam);
 			const s32 height = HIWORD(lParam);
 			win->width = width; win->height = height;
-			win->dimensions = vec2(width, height);
+			win->cwidth = width; win->cheight = height - win->titlebarheight;
+			win->dimensions = vec2(win->cwidth, win->cheight);
+			if (wParam == SIZE_MINIMIZED) win->minimized = true;
+			else win->minimized = false;
 		}break;
 		case WM_MOVE: { ////////////////////////////////////////////////////////////// Window Moved
 			const s32 x = LOWORD(lParam);
@@ -49,7 +52,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			const s32 xPos = GET_X_LPARAM(lParam);
 			const s32 yPos = GET_Y_LPARAM(lParam);
 			in->realMouseX = xPos;
-			in->realMouseY = yPos;
+			in->realMouseY = yPos - win->titlebarheight;
+			POINT p = { xPos, yPos };
+			ClientToScreen((HWND)win->handle, &p);
+			in->realScreenMouseX = p.x; in->realScreenMouseY = p.y;
+		}break;
+		case WM_MOUSEHOVER: { //////////////////////////////////////////////////////// Mouse Hovers
+			//TODO
 		}break;
 		case WM_MOUSEWHEEL: { //////////////////////////////////////////////////////// Mouse Scrolled
 			const s32 zDelta = GET_WHEEL_DELTA_WPARAM(wParam) / (f64)WHEEL_DELTA;
@@ -60,14 +69,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			in->realScrollY = zDelta;
 		}break;
 		                       /////////////////////////////////////////////////////// Mouse Button Down
-		case WM_LBUTTONDOWN: { in->realKeyState[Key::MBLEFT]   = true; }break;
-		case WM_RBUTTONDOWN: { in->realKeyState[Key::MBRIGHT]  = true; }break;
-		case WM_MBUTTONDOWN: { in->realKeyState[Key::MBMIDDLE] = true; }break;
+		case WM_LBUTTONDOWN: { in->realKeyState[Key::MBLEFT]   = true; SetCapture((HWND)win->handle); }break;
+		case WM_RBUTTONDOWN: { in->realKeyState[Key::MBRIGHT]  = true; SetCapture((HWND)win->handle); }break;
+		case WM_MBUTTONDOWN: { in->realKeyState[Key::MBMIDDLE] = true; SetCapture((HWND)win->handle); }break;
 		case WM_XBUTTONDOWN: { in->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Key::MBFOUR : Key::MBFIVE)] = true; return true; }break;
 			                   /////////////////////////////////////////////////////// Mouse Button Up
-		case WM_LBUTTONUP:   { in->realKeyState[Key::MBLEFT]   = false; }break;
-		case WM_RBUTTONUP:   { in->realKeyState[Key::MBRIGHT]  = false; }break;
-		case WM_MBUTTONUP:   { in->realKeyState[Key::MBMIDDLE] = false; }break;
+		case WM_LBUTTONUP:   { in->realKeyState[Key::MBLEFT]   = false; ReleaseCapture(); }break;
+		case WM_RBUTTONUP:   { in->realKeyState[Key::MBRIGHT]  = false; ReleaseCapture(); }break;
+		case WM_MBUTTONUP:   { in->realKeyState[Key::MBMIDDLE] = false; ReleaseCapture(); }break;
 		case WM_XBUTTONUP:   { in->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Key::MBFOUR : Key::MBFIVE)] = false; return true; }break;
 		case WM_KEYUP:        //////////////////////////////////////////////////////// Key Down/Up
 		case WM_SYSKEYUP: 
@@ -154,6 +163,27 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 
 		}break;
+		case WM_NCHITTEST: {
+			//from https://stackoverflow.com/questions/7773771/how-do-i-implement-dragging-a-window-using-its-client-area
+			//allows us to drag the window from whereever we want in the client area
+			if (win->decorations != Decoration_SystemDecorations) {
+				if(Math::PointInRectangle(in->mousePos, vec2(0, -f32(win->titlebarheight)), vec2(win->width, win->titlebarheight))) {
+					LRESULT hit = DefWindowProc((HWND)win->handle, msg, wParam, lParam);
+					if (hit == HTCLIENT) hit = HTCAPTION;
+					return hit;
+				}
+				else {//else test for resizing
+					LRESULT hit = DefWindowProc((HWND)win->handle, msg, wParam, lParam);
+					if (hit == HTLEFT) {
+						Log("", "hitleft");
+					}
+				}
+			}
+		}
+	}
+	if (win) {
+		if (GetForegroundWindow() == (HWND)win->handle) win->active = true;
+		else win->active = false;
 	}
 	return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
@@ -171,7 +201,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 
 	//make and register window class
 	WNDCLASSA wc;
-	wc.        style = CS_DROPSHADOW; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
+	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
 	wc.  lpfnWndProc = WndProc;
 	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
 	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
@@ -186,9 +216,9 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 
 	//create window
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	DWORD winstyle = WS_OVERLAPPEDWINDOW; //default window style, has title bar, titlebar buttons, title, etc.
-	handle = CreateWindowA(_name, _name, winstyle, x, y, width, height, NULL, NULL, (HINSTANCE)instance, NULL);
+	handle = CreateWindowA(_name, _name, 0, x, y, width, height, NULL, NULL, (HINSTANCE)instance, NULL);
 	if (!handle) Win32LogLastError("CreateWindowA", true);
+	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
 
 	POINT mp = { 0 };
@@ -205,14 +235,121 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) Win32LogLastError("RegisterRawInputDevices");
 
 	UpdateDisplayMode(displayMode);
+	UpdateDecorations(Decoration_SystemDecorations);
+
+	name = _name;
+	renderer_surface_index = 0; ///main win is always first surface
 
 	LogS("deshi", "Finished window initialization in ", TIMER_END(t_s), "ms");
+}
+
+//returns nullptr if the function fails to make the child;
+Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y) {
+	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
+	if (child_count == max_child_windows) { LogE("WINDOW-WIN32", "Window failed to make a child window: max child windows reached."); return 0; }
+	TIMER_START(t_s);
+
+	//TODO make global window counter
+
+	Window* child = (Window*)memalloc(sizeof(Window));
+
+	child->instance = GetModuleHandle(NULL);
+
+	//make and register window class
+	WNDCLASSA wc;
+	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
+	wc.  lpfnWndProc = WndProc;
+	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
+	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
+	wc.    hInstance = (HINSTANCE)child->instance;
+	wc.        hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
+	wc.hbrBackground = NULL;
+	wc. lpszMenuName = NULL;
+	wc.lpszClassName = _name;
+
+	if (!RegisterClassA(&wc)) { 
+		LogE("WINDOW-WIN32", "Window failed to register WNDCLASS for child window");
+		Win32LogLastError("RegisterClassA"); 
+		memzfree(child);
+		return 0;
+	}
+
+	//create window
+	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+	child->handle = CreateWindowA(_name, _name, 0, x, y, width, height, NULL, NULL, (HINSTANCE)instance, NULL);
+	if (!child->handle) {
+		LogE("WINDOW-WIN32", "Windows failed to create child window");
+		Win32LogLastError("CreateWindowA", true);
+		memzfree(child);
+		return 0;
+	}
+	//set WndProc user data to be a pointer to this window
+	SetWindowLongPtr((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
+
+	children[child_count++] = child;
+	child->name = _name;
+	UpdateDecorations(Decoration_SystemDecorations);
+
+	LogS("deshi", "Finished child window initialization in ", TIMER_END(t_s), "ms");
+	return child;
+}
+
+void DrawDecorations(Window* win) {
+	using namespace Render;
+	s32 x=win->x, y=win->y;
+	s32 width = win->width, height = win->height;
+	s32 cwidth = win->cwidth, cheight = win->cheight;
+	u32 decor = win->decorations;
+	SetSurfaceDrawTargetByWindow(win);
+	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, vec2(width, height));
+
+
+
+	//minimal titlebar takes precedence over all other title bar flags
+	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
+		win->titlebarheight = 5;
+		FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
+	}
+	else {
+		if (HasFlag(decor, Decoration_Titlebar)) {
+			win->titlebarheight = 5;
+			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
+		}
+		if (HasFlag(decor, Decoration_TitlebarTitle)) {
+
+		}
+	}
+
+	if (HasFlag(decor, Decoration_MouseBorders)) {
+		vec2 mp = DeshInput->mousePos;
+		color
+		bcol = color(1,1,1) * 1,
+		tcol = color(1,1,1) * 1,
+		lcol = color(1,1,1) * 1,
+		rcol = color(1,1,1) * 1;
+
+		Log("bcol", mp.y);
+		Log("tcol", (cheight - mp.y));
+		Log("lcol", (cwidth - mp.x));
+		Log("rcol", mp.x);
+
+
+		//FillRect2D(vec2::ZERO,                            vec2(width, win->titlebarheight),  tcol);
+		//FillRect2D(vec2::ZERO,                            vec2(win->titlebarheight, height), bcol);
+		//FillRect2D(vec2(width - win->titlebarheight, 0),  vec2(width, win->titlebarheight),  rcol);
+		//FillRect2D(vec2(0, height - win->titlebarheight), vec2(width, win->titlebarheight),  lcol);
+
+
+	}
+
 }
 
 void Window::Update() {
 	TIMER_START(t_d);
 
 	resized = false;
+
 
 	//iterate through all window messages 
 	MSG msg;
@@ -223,6 +360,12 @@ void Window::Update() {
 			DispatchMessageA(&msg);
 		}
 	}
+
+	//update children (this should maybe be done by whoever creates it instead of the parent)
+	forI(child_count) children[i]->Update();
+
+	if(decorations != Decoration_SystemDecorations)
+		DrawDecorations(this);
 
 	if(cursorMode == CursorMode_FirstPerson) ::SetCursorPos(x + width / 2, y + height / 2);
 	DeshTime->windowTime = TIMER_END(t_d);
@@ -281,6 +424,19 @@ void Window::UpdateCursorMode(CursorMode mode) {
 	WarnFuncNotImplemented("");
 }
 
+void Window::UpdateDecorations(Decoration _decorations) {
+	decorations = _decorations;
+	HWND hwnd = (HWND)handle;
+	u32 style = GetWindowLongA(hwnd, GWL_STYLE);
+	if (decorations == Decoration_SystemDecorations) {
+		SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
+		titlebarheight = 0;
+	}
+	else 
+		SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
+	resized = true;
+}
+
 void Window::SetCursorPos(vec2 pos) {
 	::SetCursorPos(pos.x, pos.y);
 }
@@ -299,10 +455,20 @@ void Window::UpdateResizable(b32 resizable) {
 }
 
 void Window::GetScreenSize(s32& _width, s32& _height) {
-	if (!GetClientRect((HWND)handle, &winrect)) Win32LogLastError("GetClientRect");
-	else {
-		_width = winrect.right; _height = winrect.bottom;
-	}
+	_width = width; _height = height;	
+}
+
+void Window::GetClientSize(s32& _width, s32& _height) {
+	_width = cwidth; _height = cheight;
+ }
+
+
+vec2 Window::GetClientAreaPosition(){
+	return vec2(0, titlebarheight);
+}
+
+vec2 Window::GetClientAreaDimensions(){
+	return vec2(width, height - titlebarheight);
 }
 
 
@@ -310,12 +476,14 @@ void Window::UpdateTitle(const char* title) {
 	SetWindowTextA((HWND)handle, title);
 }
 
-void Window::ShowWindow() {
-	::ShowWindow((HWND)handle, SW_SHOWNORMAL);
+void Window::ShowWindow(u32 child) {
+	if (child != npos) { ::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL); }
+	else ::ShowWindow((HWND)handle, SW_SHOWNORMAL);
 }
 
-void Window::HideWindow() {
-	::ShowWindow((HWND)handle, SW_HIDE);
+void Window::HideWindow(u32 child) {
+	if (child != npos) {::ShowWindow((HWND)children[child]->handle, SW_HIDE);}
+	else ::ShowWindow((HWND)handle, SW_HIDE);
 }
 
 void Window::CloseConsole() {
@@ -414,6 +582,7 @@ File open_file(const char* path, FileAccessFlags flags) {
 	//file.path_length = Min(pathlength, u32(MAX_FILEPATH_SIZE));
 
 	string pathstr(file.path);
+	//NOTE when we start using unicode stuff for windows path, ideally store this separate from the path name, or just set up the get name funcs to remove the prefix on call
 	//remove \\?\ prefix, however this may cause issues in the future with network paths, so TODO add checking for that
 	//see https://stackoverflow.com/questions/31439011/getfinalpathnamebyhandle-result-without-prepended
 	pathstr = pathstr.substr(4);
