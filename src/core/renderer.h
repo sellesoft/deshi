@@ -153,24 +153,24 @@ namespace Render{
 	//2d drawing functions
 	void StartNewTwodCmd(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 	void AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount);
-	void FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void FillRect2D(vec2 pos, vec2 dimensions, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness = 1, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void FillCircle2D(vec2 pos, f32 radius, u32 subdivisions, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawCircle2D(vec2 pos, f32 radius, u32 subdivisions, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawLine2D(vec2 start, vec2 end, f32 thickness = 1, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawLines2D(array<vec2>& points, f32 thickness = 1, color col = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawText2D(Font* font,  cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawText2D(Font* font, wcstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha = 1, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation = 0, f32 alpha = 1, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void FillRect2D(vec2 pos, vec2 dimensions, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness = 1, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void FillCircle2D(vec2 pos, f32 radius, u32 subdivisions, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawCircle2D(vec2 pos, f32 radius, u32 subdivisions, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawLine2D(vec2 start, vec2 end, f32 thickness = 1, color _color = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawLines2D(array<vec2>& points, f32 thickness = 1, color col = Color_White, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawText2D(Font* font,  cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawText2D(Font* font, wcstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha = 1, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
+	void DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation = 0, f32 alpha = 1, u32 layer = -1, vec2 scissorOffset = vec2(MAX_F32,MAX_F32), vec2 scissorExtent = vec2(MAX_F32, MAX_F32));
 	
 	u32  GetMaxLayerIndex();
 	u32  GetZZeroLayerIndex(); 
 
 	u32  GetMaxSurfaces();
-	void InitChildWindow(u32 idx, Window* window);
+	void RegisterChildWindow(u32 idx, Window* window);
 	void SetSurfaceDrawTargetByIdx(u32 idx);
 	void SetSurfaceDrawTargetByWindow(Window* window);
 
