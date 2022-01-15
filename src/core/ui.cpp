@@ -92,10 +92,6 @@ local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
 
-//row variables
-
-
-
 //global ui state flags
 enum UIStateFlags_ {
 	UISNone                   = 0, 
@@ -666,8 +662,6 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 	Assert(drawCmd.counts.y < UIDRAWCMD_MAX_INDICES);
 	BreakOnDrawCmdCreation;
 }
-
-
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
@@ -3104,7 +3098,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			if (windows.has(name)) {
 				curwin = windows[name];
 				curwin->cursor = vec2(0, 0);
-				if (NextWinPos.x != -1) curwin->position = NextWinPos;
+				if (NextWinPos.x != -1) curwin->position = NextWinPos + DeshWindow->GetClientAreaPosition();
 				if (NextWinSize.x != -1) curwin->dimensions = NextWinSize;
 				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 				curwin->flags = flags;
@@ -3114,7 +3108,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
-				curwin->position = pos;
+				curwin->position = pos + DeshWindow->GetClientAreaPosition();
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
@@ -3205,7 +3199,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
-				if (NextWinPos.x != -1) { curwin->position = NextWinPos; }
+				if (NextWinPos.x != -1) { curwin->position = NextWinPos + DeshWindow->GetClientAreaPosition(); }
 			}
 			else {
 				item->size = dimensions;
@@ -4192,38 +4186,38 @@ UIWindow* DisplayMetrics() {
 		if (showAllDrawCmdScissors) {
 			for (UIItem& item : debugee->preItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+					DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Red);
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+						DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 					}
 				}
 			}
 			for (UIItem& item : debugee->postItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
+					DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Green);
 				}
 			}
 			
 			for (UIWindow* c : debugee->children) {
 				for (UIItem& item : c->preItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+						DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Red);
 					}
 				}
 				forI(UI_WINDOW_ITEM_LAYERS) {
 					for (UIItem& item : c->items[i]) {
 						for (UIDrawCmd& dc : item.drawCmds) {
-							DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+							DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 						}
 					}
 				}
 				for (UIItem& item : c->postItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
+						DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Green);
 					}
 				}
 			}
@@ -4566,8 +4560,6 @@ void UI::Init() {
 	deshiStage |= DS_UI;
 	
 	TIMER_START(t_s);
-	
-	
 	
 	curwin = new UIWindow();
 	curwin->name = "Base";

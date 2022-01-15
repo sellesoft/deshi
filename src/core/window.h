@@ -17,6 +17,19 @@ enum DisplayMode_{
 	DisplayMode_Fullscreen
 }; typedef u32 DisplayMode;
 
+enum Decoration_ {
+	Decoration_Titlebar          = 1 << 0, // full titlebar
+	Decoration_TitlebarClose     = 1 << 1, // close button	  
+	Decoration_TitlebarMaximize  = 1 << 2, // maxmize button  
+	Decoration_TitlebarMinimize  = 1 << 3, // minimize button 
+	Decoration_TitlebarTitle     = 1 << 4, // title of window in title bar
+	Decoration_TitlebarFull      = Decoration_TitlebarTitle | Decoration_TitlebarMinimize | Decoration_TitlebarMaximize | Decoration_TitlebarClose | Decoration_Titlebar,
+	Decoration_MinimalTitlebar   = 1 << 5, // thin titlebar that just moves the window, it cant have listed above
+	Decoration_Borders           = 1 << 6,
+	Decoration_MouseBorders      = 1 << 7, // only displays borders when the mouse gets close to them for resizing
+	Decoration_SystemDecorations = 0xFFFFFFFF
+}; typedef u32 Decoration;
+
 enum CursorMode_{
 	CursorMode_Default, 
 	CursorMode_FirstPerson, 
@@ -45,10 +58,16 @@ struct Window{
 	Window* children[max_child_windows];
 	u32 child_count = 0;
 	u32 renderer_surface_index = -1;
+	
+	//TODO add support for colored decor
+	Decoration decorations;
+
+	//this is only set in the main window, child windows can not set this, and so it is only accessible on the main window's pointer
+	Window* activeWindow = 0;
 
 	s32 x, y;
 	s32 width, height;
-	s32 cx, cy; //position of client area in window's coordinates
+	s32 cx, cy;          //position of client area in window's coordinates
 	s32 cwidth, cheight; //size of client area
 	s32 screenWidth, screenHeight;
 	s32 restoreX, restoreY;
@@ -57,14 +76,15 @@ struct Window{
 	s32 refreshRate, screenRefreshRate; //TODO(delle,Wi) add selecting the refresh rate
 	DisplayMode displayMode;
 	CursorMode cursorMode;
+	
+	b32 active;
+	b32 resized;
 	b32 minimized;
 	b32 rawInput;
 	b32 resizable;
 	b32 closeWindow;
 
 	u32 titlebarheight = 20;
-	
-	b32  resized;
 	
 	vec2 dimensions;
 	
@@ -75,11 +95,15 @@ struct Window{
 	void    Cleanup();
 	void    UpdateDisplayMode(DisplayMode mode);
 	void    UpdateCursorMode(CursorMode mode); 
+	void    UpdateDecorations(Decoration decorations);
 	void    SetCursorPos(vec2 pos);
 	void    SetCursor(CursorType curtype);
 	void    UpdateRawInput(b32 rawInput);
 	void    UpdateResizable(b32 resizable);
 	void    GetScreenSize(s32& width, s32& height);
+	void    GetClientSize(s32& width, s32& height);
+	vec2    GetClientAreaPosition();
+	vec2    GetClientAreaDimensions();
 	void    Close();
 	void    UpdateTitle(const char* title);
 	void    ShowWindow(u32 child = -1);
