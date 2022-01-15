@@ -4520,6 +4520,8 @@ Init(){
 	deshiStage |= DS_RENDER;
 	
 	TIMER_START(t_s);
+	Log("vulkan","Starting vulkan renderer initialization");
+	Logger::PushIndent();
 	
 	//// load RenderSettings ////
 	LoadSettings();
@@ -4586,13 +4588,10 @@ Init(){
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
-	forI(TWOD_LAYERS){ 
-		twodCmdCounts[i] = 1; 
-		
-	}
-	
+	forI(TWOD_LAYERS){ twodCmdCounts[i] = 1; }
 	initialized = true;
 	
+	Logger::PopIndent();
 	LogS("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");
 }
 

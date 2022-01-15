@@ -31,15 +31,16 @@ namespace Logger{
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...);
 	template<typename... T> void LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args);
 	
-	void LogInternal(string& msg);
-	cstring LastMessage();
+	void LogInternal(const string& tag, const string& msg);
+	void LogFromConsole(const string& in);
 	
-	void LogFromConsole(string in);
-	
-	void SetIsLogging(b32 thebooleanforthisfunction);
-	void SetMirrorToConsole(b32 mirrorToConsole);
+	void PushIndent(u32 count = 1);
+	void PopIndent(u32 count = 1);
 	
 	FILE* GetFilePtr();
+	cstring LastMessage();
+	void SetIsLogging(b32 thebooleanforthisfunction);
+	void SetMirrorToConsole(b32 mirrorToConsole);
 	
 	void Init(u32 log_count = 5, b32 mirror = true);
 	void Update();
@@ -51,16 +52,21 @@ namespace Logger{
 /////////////////////////
 template<typename... T> inline void Logger::
 Log_(const char* filepath, upt line_number, const char* tag, T... args){
-	string str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
+	string tag_str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
+	
+	string msg;
 	constexpr auto arg_count{sizeof...(T)};
 	string arr[arg_count] = {to_string(std::forward<T>(args))...};
-	forI(arg_count) str += arr[i];
-	LogInternal(str);
+	forI(arg_count) msg += arr[i];
+	
+	LogInternal(tag_str, msg);
 }
 
 template<typename... T> inline void Logger::
 LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args){
-	string str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
+	string tag_str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
+	
+	string msg;
 	constexpr auto arg_count{sizeof...(T)};
 	string arr[arg_count] = {to_string(std::forward<T>(args))...};
 	
@@ -70,12 +76,12 @@ LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T
 	while(*cursor != '\0'){
 		if(*cursor == '$'){
 			if(*(cursor+1) != '$'){
-				str += string(sub_start,cursor-sub_start);
+				msg += string(sub_start,cursor-sub_start);
 				Assert(special_count < arg_count, "more $ than args");
-				str += to_string(arr[special_count]);
+				msg += to_string(arr[special_count]);
 				sub_start = cursor+1;
 			}else{
-				str += "$";
+				msg += "$";
 				sub_start = cursor+2;
 				cursor++;
 			}
@@ -83,9 +89,10 @@ LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T
 		}
 		cursor++;
 	}
-	str += string(sub_start,cursor-sub_start);
+	msg += string(sub_start,cursor-sub_start);
+	
 	if(special_count != arg_count) Log("logging","More arguments passed to loga() than $ characters in the format string");
-	LogInternal(str);
+	LogInternal(tag_str, msg);
 }
 
 #endif //DESHI_LOGGING_H

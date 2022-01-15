@@ -293,6 +293,7 @@ local void TEST_deshi_core_memory(){
 	}
 	
 	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");
+	Logger::PushIndent();
 	{//// default to libc when running out of memory in arena heap ////
 		//use up all but 1KB of arena heap for setup
 		arena1 = memory_create_arena((arena_heap->size - (arena_heap->cursor - arena_heap->start)) - Kilobytes(1));
@@ -390,6 +391,7 @@ local void TEST_deshi_core_memory(){
 		alloc3 = memory_trealloc(alloc2, Kilobytes(4));
 		free((upt*)alloc3 - 1);
 	}
+	Logger::PopIndent();
 	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
 	DESHI_TEST_CORE_TODO("memory");
