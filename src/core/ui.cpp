@@ -1,5 +1,3 @@
-#include "ui.h"
-#include "../utils/array_algorithms.h"
 //color pallete 
 //current palette:
 //https://lospec.com/palette-list/slso8

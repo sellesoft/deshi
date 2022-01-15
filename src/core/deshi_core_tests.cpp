@@ -207,7 +207,11 @@ local void TEST_deshi_core_memory(){
 	{//// allocation info ////
 #if DESHI_INTERNAL
 		//alloc info array
-		AssertAlways(deshi__memory_allocinfo_expose().count >= 3);
+		carray<AllocInfo> active = deshi__memory_allocinfo_active_expose();
+		AssertAlways(active.count >= 3);
+		for(int i=1; i<active.count-1; ++i){
+			AssertAlways(active[i].address > active[i-1].address);
+		}
 		
 		//default names
 		AssertAlways(equals(cstr_lit("Arena Heap"),   deshi__memory_allocinfo_get(arena_heap).name));

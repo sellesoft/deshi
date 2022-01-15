@@ -176,7 +176,6 @@ __________ alternatively, we can store those specific assets in the source contr
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 (01/10/22) color formatting does not work thru Log()
 __________ see commands.cpp 'test' command
-(01/15/22) core/memory test fails on alloc info retreival
 (01/15/22) vulkan backend crashes on window close
 */
 
@@ -185,7 +184,7 @@ __________ see commands.cpp 'test' command
 
 //// utility headers ////"
 #include "utils/array.h"
-#include "utils/array_algorithms.h"
+#include "utils/array_utils.h"
 #include "utils/carray.h"
 #include "utils/cstring.h"
 #include "utils/color.h"
@@ -196,6 +195,7 @@ __________ see commands.cpp 'test' command
 #include "utils/pair.h"
 #include "utils/ring_array.h"
 #include "utils/string.h"
+#include "utils/string_utils.h"
 #include "utils/utils.h"
 #include "math/math.h"
 
