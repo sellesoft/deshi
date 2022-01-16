@@ -28,31 +28,42 @@ void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {
 	if (crash_on_error) ExitProcess(error);
 }
 
+//@Resize
+void WinResized(Window* win, s32 width, s32 height, b32 minimized) {
+	win->width = width; win->height = height;
+	win->cwidth = width; win->cheight = height - win->titlebarheight;
+	win->dimensions = vec2(win->cwidth, win->cheight);
+	if (minimized) win->minimized = true;
+	else win->minimized = false;
+	win->resized = true;
+}
+
+enum HitTest_ : s32 {
+	HitTest_TBorder,
+	HitTest_BBorder,
+	HitTest_RBorder,
+	HitTest_LBorder,
+	HitTest_Titlebar,
+};
+
 //win32's callback function 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	Window* win = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	Input* in = DeshInput;
 	switch (msg) {
-		case WM_SIZE: { ////////////////////////////////////////////////////////////// Window Resized
-			win->resized = true;
-			const s32 width = LOWORD(lParam);
-			const s32 height = HIWORD(lParam);
-			win->width = width; win->height = height;
-			win->cwidth = width; win->cheight = height - win->titlebarheight;
-			win->dimensions = vec2(win->cwidth, win->cheight);
-			if (wParam == SIZE_MINIMIZED) win->minimized = true;
-			else win->minimized = false;
-		}break;
+		case WM_CREATE: {		}break;
+		case WM_SIZE: { if(win) WinResized(win, LOWORD(lParam), HIWORD(lParam), wParam == SIZE_MINIMIZED); }break;
 		case WM_MOVE: { ////////////////////////////////////////////////////////////// Window Moved
 			const s32 x = LOWORD(lParam);
 			const s32 y = HIWORD(lParam);
-			win->x = x; win->y = y;
+			
+			if (win) { win->x = x; win->y = y; }
 		}break;
 		case WM_MOUSEMOVE: { ///////////////////////////////////////////////////////// Mouse Moved
 			const s32 xPos = GET_X_LPARAM(lParam);
 			const s32 yPos = GET_Y_LPARAM(lParam);
 			in->realMouseX = xPos;
-			in->realMouseY = yPos - win->titlebarheight;
+			in->realMouseY = yPos - f64(win->titlebarheight);
 			POINT p = { xPos, yPos };
 			ClientToScreen((HWND)win->handle, &p);
 			in->realScreenMouseX = p.x; in->realScreenMouseY = p.y;
@@ -173,10 +184,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 					return hit;
 				}
 				else {//else test for resizing
-					LRESULT hit = DefWindowProc((HWND)win->handle, msg, wParam, lParam);
-					if (hit == HTLEFT) {
-						Log("", "hitleft");
+					switch (win->hittest) {
+						case HitTestTitle:       return HTCAPTION;
+						case HitTestLeft:        return HTLEFT;
+						case HitTestRight:       return HTRIGHT;
+						case HitTestBottom:      return HTBOTTOM;
+						case HitTestTop:         return HTTOP;
+						case HitTestTopRight:    return HTTOPRIGHT;
+						case HitTestTopLeft:     return HTTOPLEFT;
+						case HitTestBottomRight: return HTBOTTOMRIGHT;
+						case HitTestBottomLeft:  return HTBOTTOMLEFT;
 					}
+					
 				}
 			}
 		}
@@ -216,7 +235,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 
 	//create window
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	handle = CreateWindowA(_name, _name, 0, x, y, width, height, NULL, NULL, (HINSTANCE)instance, NULL);
+	handle = CreateWindowA(_name, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
 	if (!handle) Win32LogLastError("CreateWindowA", true);
 	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
@@ -235,7 +254,9 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) Win32LogLastError("RegisterRawInputDevices");
 
 	UpdateDisplayMode(displayMode);
-	UpdateDecorations(Decoration_SystemDecorations);
+	UpdateDecorations(Decoration_MinimalTitlebar | Decoration_MouseBorders);
+	titlebarheight = 5;
+	SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
 
 	name = _name;
 	renderer_surface_index = 0; ///main win is always first surface
@@ -252,6 +273,7 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	//TODO make global window counter
 
 	Window* child = (Window*)memalloc(sizeof(Window));
+	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
 
 	child->instance = GetModuleHandle(NULL);
 
@@ -277,7 +299,7 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 
 	//create window
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	child->handle = CreateWindowA(_name, _name, 0, x, y, width, height, NULL, NULL, (HINSTANCE)instance, NULL);
+	child->handle = CreateWindowA(_name, _name,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
 	if (!child->handle) {
 		LogE("WINDOW-WIN32", "Windows failed to create child window");
 		Win32LogLastError("CreateWindowA", true);
@@ -289,7 +311,10 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 
 	children[child_count++] = child;
 	child->name = _name;
-	UpdateDecorations(Decoration_SystemDecorations);
+	child->UpdateDisplayMode(displayMode);
+	child->UpdateDecorations(Decoration_MinimalTitlebar | Decoration_MouseBorders);
+	child->titlebarheight = 5;
+	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
 
 	LogS("deshi", "Finished child window initialization in ", TIMER_END(t_s), "ms");
 	return child;
@@ -301,19 +326,21 @@ void DrawDecorations(Window* win) {
 	s32 width = win->width, height = win->height;
 	s32 cwidth = win->cwidth, cheight = win->cheight;
 	u32 decor = win->decorations;
+	b32 hitset = 0;
 	SetSurfaceDrawTargetByWindow(win);
 	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, vec2(width, height));
 
-
+	if(Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
 
 	//minimal titlebar takes precedence over all other title bar flags
 	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
 		win->titlebarheight = 5;
 		FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
+		if (Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, win->titlebarheight))) { win->hittest = HitTestTitle; hitset = 1; }
 	}
 	else {
 		if (HasFlag(decor, Decoration_Titlebar)) {
-			win->titlebarheight = 5;
+			win->titlebarheight = 20;
 			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
 		}
 		if (HasFlag(decor, Decoration_TitlebarTitle)) {
@@ -323,26 +350,32 @@ void DrawDecorations(Window* win) {
 
 	if (HasFlag(decor, Decoration_MouseBorders)) {
 		vec2 mp = DeshInput->mousePos;
-		color
-		bcol = color(1,1,1) * 1,
-		tcol = color(1,1,1) * 1,
-		lcol = color(1,1,1) * 1,
-		rcol = color(1,1,1) * 1;
+		f32 distToAppear = 7;
+		f32 borderSize = 1;
+		vec2 
+		lbpos = vec2::ZERO,
+		rbpos = vec2(width - borderSize, 0),
+		bbpos = vec2(0, height - borderSize),
+		lbsiz = vec2(borderSize, height),
+		rbsiz = vec2(borderSize, height),
+		bbsiz = vec2(width, borderSize);
+		color //TODO make these not show if the mouse goes beyond the window
+		bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
+		rcol = color(255,255,255, Remap(Clamp(mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize))),
+		lcol = color(255,255,255, Remap(Clamp(cwidth - mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize)));
 
-		Log("bcol", mp.y);
-		Log("tcol", (cheight - mp.y));
-		Log("lcol", (cwidth - mp.x));
-		Log("rcol", mp.x);
+		if (!hitset && Math::PointInRectangle(mp, lbpos, lbsiz)) {win->hittest = HitTestLeft;   hitset = 1;}
+		else if (Math::PointInRectangle(mp, rbpos, rbsiz))       {win->hittest = HitTestRight;  hitset = 1;}
+		else if (Math::PointInRectangle(mp, bbpos, bbsiz))       {win->hittest = HitTestBottom; hitset = 1;}
 
-
-		//FillRect2D(vec2::ZERO,                            vec2(width, win->titlebarheight),  tcol);
-		//FillRect2D(vec2::ZERO,                            vec2(win->titlebarheight, height), bcol);
-		//FillRect2D(vec2(width - win->titlebarheight, 0),  vec2(width, win->titlebarheight),  rcol);
-		//FillRect2D(vec2(0, height - win->titlebarheight), vec2(width, win->titlebarheight),  lcol);
+		FillRect2D(vec2::ZERO, vec2(borderSize, height), lcol);
+		FillRect2D(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
+		FillRect2D(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
 
 
 	}
 
+	Log("", win->hittest);
 }
 
 void Window::Update() {
@@ -367,6 +400,7 @@ void Window::Update() {
 	if(decorations != Decoration_SystemDecorations)
 		DrawDecorations(this);
 
+	hittest = HitTestNone;
 	if(cursorMode == CursorMode_FirstPerson) ::SetCursorPos(x + width / 2, y + height / 2);
 	DeshTime->windowTime = TIMER_END(t_d);
 }
@@ -434,7 +468,7 @@ void Window::UpdateDecorations(Decoration _decorations) {
 	}
 	else 
 		SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
-	resized = true;
+	SetWindowPos(hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
 }
 
 void Window::SetCursorPos(vec2 pos) {

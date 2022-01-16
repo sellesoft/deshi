@@ -30,6 +30,20 @@ enum Decoration_ {
 	Decoration_SystemDecorations = 0xFFFFFFFF
 }; typedef u32 Decoration;
 
+enum HitTest : u32 {
+	HitTestNone,
+	HitTestTop,
+	HitTestBottom,
+	HitTestLeft,
+	HitTestRight,
+	HitTestTopRight,
+	HitTestTopLeft,
+	HitTestBottomRight,
+	HitTestBottomLeft,
+	HitTestTitle,
+	HitTestClient
+};
+
 enum CursorMode_{
 	CursorMode_Default, 
 	CursorMode_FirstPerson, 
@@ -65,6 +79,8 @@ struct Window{
 	//this is only set in the main window, child windows can not set this, and so it is only accessible on the main window's pointer
 	Window* activeWindow = 0;
 
+	HitTest hittest = HitTestNone;
+
 	s32 x, y;
 	s32 width, height;
 	s32 cx, cy;          //position of client area in window's coordinates
@@ -84,7 +100,7 @@ struct Window{
 	b32 resizable;
 	b32 closeWindow;
 
-	u32 titlebarheight = 20;
+	u32 titlebarheight = 0;
 	
 	vec2 dimensions;
 	
