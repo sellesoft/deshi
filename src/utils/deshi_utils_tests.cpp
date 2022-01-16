@@ -306,9 +306,9 @@ local void TEST_deshi_utils_array(){
 	AssertAlways(destruct_sum == 38);
 	AssertAlways(array2.count == 0);
 	AssertAlways(array2.space == 16);
-	AssertAlways(array2.first == 0);
+	AssertAlways(array2.first == array2.data);
 	AssertAlways(array2.last == 0);
-	AssertAlways(array2.iter == 0);
+	AssertAlways(array2.iter == array2.data);
 	AssertAlways(array2.data[0].value == 0);
 	AssertAlways(array2.data[10].value == 0);
 	
@@ -379,42 +379,67 @@ local void TEST_deshi_utils_array(){
 	printf("[DESHI-TEST] PASSED: utils/array\n");
 }
 
-#include "array_algorithms.h"
-local void TEST_deshi_utils_array_algorithms(){
-	srand(time(0));
+#include "array_utils.h"
+local void TEST_deshi_utils_array_utils(){
+#define PRINT_ARRAY_SPEEDS true
+	TIMER_START(timer);
 	
 	//bubble sort
+	srand(time(0));
 	array<s32> array1(1024);
 	forI(1024) array1.add(rand() % 1024);
+	TIMER_RESET(timer);
 	bubble_sort(array1, [](s32 a, s32 b){return a < b;});
+#if PRINT_ARRAY_SPEEDS
+	Log("deshi-test","bubble_sort() took ",TIMER_END(timer),"ms");
+#endif
 	forI(1024){ if(i){ AssertAlways(array1[i] <= array1[i-1]); } }
+	printf("[DESHI-TEST] PASSED: utils/array_utils/bubble_sort()\n");
 	
 	srand(time(0));
 	array1.clear();
 	forI(1024) array1.add(rand() % 1024);
+	TIMER_RESET(timer);
 	bubble_sort_low_to_high(array1);
+#if PRINT_ARRAY_SPEEDS
+	Log("deshi-test","bubble_sort_low_to_high() took ",TIMER_END(timer),"ms");
+#endif
 	forI(1024){ if(i){ AssertAlways(array1[i] >= array1[i-1]); } }
+	printf("[DESHI-TEST] PASSED: utils/array_utils/bubble_sort_low_to_high()\n");
 	
 	srand(time(0));
 	array1.clear();
 	forI(1024) array1.add(rand() % 1024);
+	TIMER_RESET(timer);
 	bubble_sort_high_to_low(array1);
+#if PRINT_ARRAY_SPEEDS
+	Log("deshi-test","bubble_sort_high_to_low() took ",TIMER_END(timer),"ms");
+#endif
 	forI(1024){ if(i){ AssertAlways(array1[i] <= array1[i-1]); } }
+	printf("[DESHI-TEST] PASSED: utils/array_utils/bubble_sort_high_to_low()\n");
 	
 	//reverse
+	TIMER_RESET(timer);
 	reverse(array1);
+#if PRINT_ARRAY_SPEEDS
+	Log("deshi-test","reverse() took ",TIMER_END(timer),"ms");
+#endif
 	forI(1024){ if(i){ AssertAlways(array1[i] >= array1[i-1]); } }
+	printf("[DESHI-TEST] PASSED: utils/array_utils/reverse()\n");
 	
 	//binary search
+	//TODO test binary search comparator
+	
 	array1[0] = MAX_S32;
 	array1[84] = MIN_S32;
 	array1[123] = 0;
 	bubble_sort_low_to_high(array1);
-	AssertAlways(binary_search(array1, MAX_S32) != -1);
-	AssertAlways(binary_search(array1, MIN_S32) != -1);
-	AssertAlways(binary_search(array1, 0) != -1);
+	AssertAlways(binary_search_low_to_high(array1, MAX_S32) != -1);
+	AssertAlways(binary_search_low_to_high(array1, MIN_S32) != -1);
+	AssertAlways(binary_search_low_to_high(array1, 0) != -1);
+	printf("[DESHI-TEST] PASSED: utils/array_utils/binary_search_low_to_high()\n");
 	
-	printf("[DESHI-TEST] PASSED: utils/array_algorithms\n");
+	printf("[DESHI-TEST] PASSED: utils/array_utils\n");
 }
 
 #include "carray.h"
@@ -810,9 +835,9 @@ local void TEST_deshi_utils_string(){
 	printf("[DESHI-TEST] PASSED: utils/string\n");
 }
 
-#include "string_conversion.h"
-local void TEST_deshi_utils_string_conversion(){
-	printf("[DESHI-TEST] TODO:   utils/string_conversion\n");
+#include "string_utils.h"
+local void TEST_deshi_utils_string_utils(){
+	printf("[DESHI-TEST] TODO:   utils/string_utils\n");
 }
 
 #include "pair.h"
@@ -926,7 +951,7 @@ local void TEST_deshi_utils_utils(){
 
 local void TEST_deshi_utils(){
 	TEST_deshi_utils_array();
-	TEST_deshi_utils_array_algorithms();
+	TEST_deshi_utils_array_utils();
 	TEST_deshi_utils_carray();
 	TEST_deshi_utils_color();
 	TEST_deshi_utils_cstring();
@@ -935,7 +960,7 @@ local void TEST_deshi_utils(){
 	TEST_deshi_utils_optional();
 	TEST_deshi_utils_ring_array();
 	TEST_deshi_utils_string();
-	TEST_deshi_utils_string_conversion();
+	TEST_deshi_utils_string_utils();
 	TEST_deshi_utils_pair();
 	TEST_deshi_utils_unicode();
 	TEST_deshi_utils_utils();

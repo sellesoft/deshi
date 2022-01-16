@@ -4646,6 +4646,8 @@ Init(){
 	deshiStage |= DS_RENDER;
 	
 	TIMER_START(t_s);
+	Log("vulkan","Starting vulkan renderer initialization");
+	Logger::PushIndent();
 	
 	//// load RenderSettings ////
 	LoadSettings();
@@ -4715,9 +4717,9 @@ Init(){
 	forI(TWOD_LAYERS+1){ 
 		twodCmdCounts[active_swapchain][i] = 1; 
 	}
-	
 	initialized = true;
 	
+	Logger::PopIndent();
 	LogS("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");
 }
 

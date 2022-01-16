@@ -169,7 +169,8 @@ void deshi__memory_allocinfo_set(void* address, cstring name, Type type);
 AllocInfo deshi__memory_allocinfo_get(void* address);
 
 //exposes the internal allocation info array
-carray<AllocInfo> deshi__memory_allocinfo_expose();
+carray<AllocInfo> deshi__memory_allocinfo_active_expose();
+carray<AllocInfo> deshi__memory_allocinfo_inactive_expose();
 
 void deshi__memory_draw();
 void deshi__memory_bytes_draw();

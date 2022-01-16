@@ -19,7 +19,8 @@ local Arena* deshi__generic_arena; //deshi__generic_heap is stored here; not use
 local Heap*  deshi__generic_heap;
 
 #if MEMORY_TRACK_ALLOCS
-local array<AllocInfo> deshi__alloc_infos(stl_allocator); //uses libc so it is external the system
+local array<AllocInfo> deshi__alloc_infos_active(stl_allocator); //uses libc so it is external the system
+local array<AllocInfo> deshi__alloc_infos_inactive(stl_allocator);
 #endif //MEMORY_TRACK_ALLOCS
 
 ////////////////
@@ -96,24 +97,24 @@ DEBUG_PrintHeapChunks(Heap* heap, char* heap_name){
 	}
 }
 
-local b32
-AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){
-	return a.address < b.address;
-}
+local b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
+local b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
 
 #if MEMORY_TRACK_ALLOCS
 local AllocInfo*
 DEBUG_AllocInfo_Creation(void* address, cstring file, upt line){
 	spt middle = 0;
-	if(deshi__alloc_infos.count > 0){
+	upt index = -1;
+	if(deshi__alloc_infos_active.count > 0){
 		spt left  = 0;
-		spt right = deshi__alloc_infos.count-1;
+		spt right = deshi__alloc_infos_active.count-1;
 		while(left <= right){
 			middle = left + ((right - left) / 2);
-			if(deshi__alloc_infos[middle].address == address){
+			if(deshi__alloc_infos_active[middle].address == address){
+				index = middle;
 				break;
 			}
-			if(deshi__alloc_infos[middle].address < address){
+			if(deshi__alloc_infos_active[middle].address < address){
 				left = middle + 1;
 				middle = left + ((right - left) / 2);
 			}else{
@@ -121,18 +122,24 @@ DEBUG_AllocInfo_Creation(void* address, cstring file, upt line){
 			}
 		}
 		
-		deshi__alloc_infos.insert(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")}, middle);
+		Assert(index == -1, "There is already an existing active AllocInfo with this address");
+		deshi__alloc_infos_active.insert(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")}, middle);
 	}else{
-		deshi__alloc_infos.add(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")});
+		deshi__alloc_infos_active.add(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")});
 	}
-	return &deshi__alloc_infos[middle];
+	return &deshi__alloc_infos_active[middle];
 }
 
 local void
 DEBUG_AllocInfo_Deletion(void* address){
 	if(address == 0) return;
-	upt index = binary_search(deshi__alloc_infos, AllocInfo{address}, AllocInfo_LessThan);
-	if(index != -1) deshi__alloc_infos[index].deletion_frame = DeshTime->updateCount;
+	upt index = binary_search(deshi__alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
+	if(index != -1){
+		deshi__alloc_infos_active[index].deletion_frame = DeshTime->updateCount;
+		deshi__alloc_infos_inactive.add(deshi__alloc_infos_active[index]);
+		bubble_sort(deshi__alloc_infos_inactive, AllocInfo_GreaterThan); //TODO use binary_insertion_sort_low_to_high after testing it
+		deshi__alloc_infos_active.remove(index);
+	}
 }
 #endif //MEMORY_TRACK_ALLOCS
 
@@ -1102,16 +1109,16 @@ deshi__memory_allocinfo_set(void* address, cstring name, Type type){
 	//binary search for address index (or index to insert at)
 	spt index = -1;
 	spt middle = 0;
-	if(deshi__alloc_infos.count > 0){
+	if(deshi__alloc_infos_active.count > 0){
 		spt left  = 0;
-		spt right = deshi__alloc_infos.count-1;
+		spt right = deshi__alloc_infos_active.count-1;
 		while(left <= right){
 			middle = left + ((right - left) / 2);
-			if(deshi__alloc_infos[middle].address == address){
+			if(deshi__alloc_infos_active[middle].address == address){
 				index = middle;
 				break;
 			}
-			if(deshi__alloc_infos[middle].address < address){
+			if(deshi__alloc_infos_active[middle].address < address){
 				left = middle + 1;
 				middle = left + ((right - left) / 2);
 			}else{
@@ -1121,31 +1128,55 @@ deshi__memory_allocinfo_set(void* address, cstring name, Type type){
 	}
 	
 	if(index != -1){
-		deshi__alloc_infos[index].name = name;
-		deshi__alloc_infos[index].type = type;
+		deshi__alloc_infos_active[index].name = name;
+		deshi__alloc_infos_active[index].type = type;
 	}else{
-		deshi__alloc_infos.insert(AllocInfo{address, {}, DeshTime->updateCount, upt(-1), name, type}, middle);
+		deshi__alloc_infos_active.insert(AllocInfo{address, {}, DeshTime->updateCount, upt(-1), name, type}, middle);
 	}
 #endif //MEMORY_TRACK_ALLOCS
 }
 
 local AllocInfo deshi__null_alloc_info{0, {}, 0, upt(-1), cstr_lit(""), 0};
+local AllocInfo deshi__test_alloc_info{0, {}, 0, upt(-1), cstr_lit(""), 0};
 AllocInfo
 deshi__memory_allocinfo_get(void* address){
 #if MEMORY_TRACK_ALLOCS
 	if(deshi__cleanup_happened) return deshi__null_alloc_info;
 	if(address == 0) return deshi__null_alloc_info;
-	upt index = binary_search(deshi__alloc_infos, AllocInfo{address}, AllocInfo_LessThan);
-	return (index != -1) ? deshi__alloc_infos[index] : deshi__null_alloc_info;
+	
+	deshi__test_alloc_info.address = address;
+	upt index = binary_search(deshi__alloc_infos_active, deshi__test_alloc_info, AllocInfo_LessThan);
+	if(index != -1){
+		return deshi__alloc_infos_active[index];
+	}else{
+		index = binary_search(deshi__alloc_infos_inactive, deshi__test_alloc_info, AllocInfo_LessThan);
+		while(   (index < deshi__alloc_infos_inactive.count-1)
+			  && (deshi__alloc_infos_inactive[index].address == deshi__alloc_infos_inactive[index+1].address)){
+			++index;
+		}
+		if(index != -1){
+			return deshi__alloc_infos_inactive[index];
+		}
+	}
+	return deshi__null_alloc_info;
 #else //MEMORY_TRACK_ALLOCS
 	return deshi__null_alloc_info;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
 carray<AllocInfo>
-deshi__memory_allocinfo_expose(){
+deshi__memory_allocinfo_active_expose(){
 #if MEMORY_TRACK_ALLOCS
-	return carray<AllocInfo>{deshi__alloc_infos.data, deshi__alloc_infos.count};
+	return carray<AllocInfo>{deshi__alloc_infos_active.data, deshi__alloc_infos_active.count};
+#else
+	return carray<AllocInfo>{};
+#endif //MEMORY_TRACK_ALLOCS
+}
+
+carray<AllocInfo>
+deshi__memory_allocinfo_inactive_expose(){
+#if MEMORY_TRACK_ALLOCS
+	return carray<AllocInfo>{deshi__alloc_infos_inactive.data, deshi__alloc_infos_inactive.count};
 #else
 	return carray<AllocInfo>{};
 #endif //MEMORY_TRACK_ALLOCS
@@ -1189,7 +1220,7 @@ deshi__memory_draw(){
 				UI::PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
 				UI::SetNextWindowSize({MAX_F32, MAX_F32});
 				UI::BeginChild("deshi_memory_generic_timeline", vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
-#if MEMORY_TRACK_ALLOCS
+#if 0 //MEMORY_TRACK_ALLOCS //TODO update this to new alloc info arrays
 					f32 alloc_height = 10.f;
 					f32 frame_width  = 5.f;
 					

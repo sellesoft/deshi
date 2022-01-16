@@ -176,6 +176,7 @@ __________ alternatively, we can store those specific assets in the source contr
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 (01/10/22) color formatting does not work thru Log()
 __________ see commands.cpp 'test' command
+(01/15/22) vulkan backend crashes on window close
 */
 
 #include "defines.h"
@@ -183,7 +184,7 @@ __________ see commands.cpp 'test' command
 
 //// utility headers ////"
 #include "utils/array.h"
-#include "utils/array_algorithms.h"
+#include "utils/array_utils.h"
 #include "utils/carray.h"
 #include "utils/cstring.h"
 #include "utils/color.h"
@@ -194,6 +195,7 @@ __________ see commands.cpp 'test' command
 #include "utils/pair.h"
 #include "utils/ring_array.h"
 #include "utils/string.h"
+#include "utils/string_utils.h"
 #include "utils/utils.h"
 #include "math/math.h"
 
@@ -285,19 +287,17 @@ local Flags deshiStage = DS_NONE;
 #include <imgui/imgui_tables.cpp>
 #include <imgui/imgui_widgets.cpp>
 
-//// renderer cpp (and libs) ////
-#if   DESHI_VULKAN
-//TODO do this better later
-#ifdef DESHI_WINDOWS
+//// platform ////
+#if DESHI_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <imgui/imgui_impl_win32.cpp>
-#elif DESHI_LINUX
-#include <GLFW/glfw3.h>
-#include <imgui/imgui_impl_glfw.cpp>
-#elif DESHI_MAX
+#else //DESHI_WINDOWS
 #include <GLFW/glfw3.h>
 #include <imgui/imgui_impl_glfw.cpp>
 #endif
+
+//// renderer cpp (and libs) ////
+#if   DESHI_VULKAN
 #include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>
 #include <imgui/imgui_impl_vulkan.cpp>
@@ -324,7 +324,7 @@ local Flags deshiStage = DS_NONE;
 #include "core/renderers/directx.cpp"
 #else  //DESHI_DIRECTX12
 #error "no renderer selected"
-#endif //DESHI_VULKAN
+#endif
 
 #undef DeleteFont
 

@@ -207,7 +207,11 @@ local void TEST_deshi_core_memory(){
 	{//// allocation info ////
 #if DESHI_INTERNAL
 		//alloc info array
-		AssertAlways(deshi__memory_allocinfo_expose().count >= 3);
+		carray<AllocInfo> active = deshi__memory_allocinfo_active_expose();
+		AssertAlways(active.count >= 3);
+		for(int i=1; i<active.count-1; ++i){
+			AssertAlways(active[i].address > active[i-1].address);
+		}
 		
 		//default names
 		AssertAlways(equals(cstr_lit("Arena Heap"),   deshi__memory_allocinfo_get(arena_heap).name));
@@ -293,6 +297,7 @@ local void TEST_deshi_core_memory(){
 	}
 	
 	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");
+	Logger::PushIndent();
 	{//// default to libc when running out of memory in arena heap ////
 		//use up all but 1KB of arena heap for setup
 		arena1 = memory_create_arena((arena_heap->size - (arena_heap->cursor - arena_heap->start)) - Kilobytes(1));
@@ -390,6 +395,7 @@ local void TEST_deshi_core_memory(){
 		alloc3 = memory_trealloc(alloc2, Kilobytes(4));
 		free((upt*)alloc3 - 1);
 	}
+	Logger::PopIndent();
 	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
 	DESHI_TEST_CORE_TODO("memory");

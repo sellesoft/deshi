@@ -8,8 +8,10 @@ namespace Logger{
 	local b32   mirror_to_stdout = false;
 	local b32   mirror_to_console = false;
 	local b32   is_logging = false;
+	local u32   indent_level = 0;
+	local u32   indent_spaces = 2;
 	
-	void ConsoleMirror(string str, u32 chst) {
+	void ConsoleMirror(const string& str, u32 file_char_offset) {
 		if (str[0] == '[') {
 			string modified = "{{";
 			u32 rb = str.findFirstChar(']');
@@ -26,49 +28,52 @@ namespace Logger{
 					modified += "s,";
 				}
 				modified += "t=" + tag + "}" + str.substr(rb + 2) + "{}}";
-				DeshConsole->LoggerMirror(modified, chst + tag.count + 3);
+				DeshConsole->LoggerMirror(modified, file_char_offset + tag.count + 3);
 				return;
 			}
 		}
-		DeshConsole->LoggerMirror(str, chst);
+		DeshConsole->LoggerMirror(str, file_char_offset);
 	}
 	
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
-		if (!is_logging) return;
-		int cursor = (tag && *tag != 0) ? snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] ", string::toUpper(tag).str) : 0;
-		va_list args; va_start(args, fmt);
+		if(!is_logging) return;
+		int cursor = (tag && *tag != 0) ? snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] ", string::toUpper(tag).str) : 0; //tag
+		cursor += snprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, "%*s", indent_level*indent_spaces, ""); //indentation
+		
+		va_list args; //fmt
+		va_start(args, fmt);{
 		cursor += vsnprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, fmt, args);
-		va_end(args);
+		}va_end(args);
+		
 		if(mirror_to_stdout) puts(log_buffer);
 		log_buffer[cursor] = '\n'; log_buffer[cursor+1] = '\0';
 		cursor += 1;
-		u32 chst = ftell(file);
+		u32 file_char_offset = ftell(file);
 		fputs(log_buffer, file);
 		last_message_len = cursor;
-		if (mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(toStr(LastMessage()), chst);
+		if(mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(toStr(LastMessage()), file_char_offset);
 	}
 	
-	inline void LogInternal(string& str){
+	inline void LogInternal(const string& tag, const string& msg){
 		if(!is_logging) return;
-		if(mirror_to_stdout) puts(str.str);
+		
+		string str = tag;
+		forI(indent_level*indent_spaces) str += " ";
+		str += msg;
 		if(str.count >= LOG_BUFFER_SIZE) LogW("logger","Attempted to log a message more than 4096 characters long.");
+		if(mirror_to_stdout) puts(str.str);
 		str += "\n";
 		
-		u32 chst = ftell(file);
+		u32 file_char_offset = ftell(file);
 		fputs(str.str, file);
 		memcpy(log_buffer, str.str, ClampMax(str.count, LOG_BUFFER_SIZE));
 		last_message_len = ClampMax(str.count, LOG_BUFFER_SIZE);
-		if(mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(str, chst);
-	}
-	
-	
-	inline cstring LastMessage(){
-		return cstring{log_buffer,last_message_len};
+		if(mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(str, file_char_offset);
 	}
 	
 	//just a special function called by Console to prevent feedback between 
 	//console and logger and to prevent logger from appending a newline
-	void LogFromConsole(string str) {
+	void LogFromConsole(const string& str) {
 		if (!is_logging) return;
 		fputs(str.str, file);
 		if (mirror_to_stdout) {
@@ -78,16 +83,33 @@ namespace Logger{
 		last_message_len = str.count;
 	}
 	
+	void PushIndent(u32 count){
+		indent_level += count;
+	}
+	
+	void PopIndent(u32 count){
+		u32 temp = indent_level - count;
+		if(temp > indent_level){
+			indent_level = 0;
+		}else{
+			indent_level = temp;
+		}
+	}
+	
+	 FILE* GetFilePtr() {
+		return file;
+	}
+	
+	cstring LastMessage(){
+		return cstring{log_buffer,last_message_len};
+	}
+	
 	void SetIsLogging(b32 yep) {
 		is_logging = yep;
 	}
 	
 	void SetMirrorToConsole(b32 mirrorToConsole){
 		mirror_to_console = mirrorToConsole;
-	}
-	
-	inline FILE* GetFilePtr() {
-		return file;
 	}
 	
 	void Init(u32 log_count, b32 mirror){
@@ -140,7 +162,8 @@ namespace Logger{
 	
 	//TODO maybe flush every X seconds/frames instead of every update?
 	void Update(){
-		Assert(!fflush(file), "logger failed to flush file");
+		int error = fflush(file);
+		Assert(!error, "logger failed to flush file");
 	}
 	
 	void Cleanup(){
