@@ -159,9 +159,7 @@ add the ability to limit framerate
 Ungrouped TODOs
 ---------------
 move config saving/loading to its own core file
-remove tuple (not pair) and container manager
 remove GLFW and add platform layers
-rename RoundUpTo() to AlignTo() in defines.h
 restyle map to match the rest of utils
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
@@ -177,6 +175,7 @@ __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.
 (01/10/22) color formatting does not work thru Log()
 __________ see commands.cpp 'test' command
 (01/15/22) vulkan backend crashes on window close
+(01/16/22) memory system sometimes fails to alloc memory from OS
 */
 
 #include "defines.h"
