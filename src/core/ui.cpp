@@ -2682,6 +2682,7 @@ void UI::PushDrawTarget(Window* window){
 
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
+	Assert(count <= colorStack.count - initColorStackSize);
 	//Assert(count < colorStack.size() - 1, "Attempt to pop too many colors!");
 	while (count-- > 0) {
 		style.colors[(colorStack.last)->element] = colorStack.last->oldCol;
@@ -2690,6 +2691,7 @@ void UI::PopColor(u32 count) {
 }
 
 void UI::PopVar(u32 count) {
+	Assert(count <= varStack.count - initStyleStackSize);
 	while (count-- > 0) {
 		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
 		if (type.count == 1) {
@@ -2705,6 +2707,7 @@ void UI::PopVar(u32 count) {
 }
 
 void UI::PopFont(u32 count) {
+	Assert(count <= fontStack.count);
 	while (count-- > 0) {
 		style.font = *fontStack.last;
 		fontStack.pop();
@@ -2712,6 +2715,7 @@ void UI::PopFont(u32 count) {
 }
 
 void UI::PopScale(u32 count) {
+	Assert(count <= scaleStack.count);
 	while (count-- > 0) {
 		style.globalScale = *scaleStack.last;
 		scaleStack.pop();
@@ -2719,6 +2723,7 @@ void UI::PopScale(u32 count) {
 }
 
 void UI::PopLayer(u32 count) {
+	Assert(count <= layerStack.count);
 	while (count-- > 0) {
 		currlayer = *layerStack.last;
 		layerStack.pop();
@@ -2726,18 +2731,22 @@ void UI::PopLayer(u32 count) {
 }
 
 void UI::PopLeftIndent(u32 count) {
+	Assert(count < leftIndentStack.count);
 	while (count-- > 0) {
 		leftIndentStack.pop();
 	}
 }
 
 void UI::PopRightIndent(u32 count){
+	Assert(count < rightIndentStack.count);
 	while (count-- > 0) {
 		rightIndentStack.pop();
 	}
 }
 
 void UI::PopDrawTarget(u32 count) {
+	Assert(count < drawTargetStack.count
+);
 	while (count-- > 0) {
 		drawTargetStack.pop();
 	}
@@ -3915,6 +3924,7 @@ UIWindow* DisplayMetrics() {
 	
 	Begin("METRICS", DeshWindow->dimensions - vec2(300,500), vec2(300, 500));
 	myself = curwin;
+	WinSetHovered(curwin);
 	
 	BeginRow("Metrics_General_Stats", 2, 0, UIRowFlags_LookbackAndResizeToMax);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
@@ -4001,9 +4011,11 @@ UIWindow* DisplayMetrics() {
 		
 		SetNextWindowSize(vec2(MAX_F32, 300));
 		BeginChild("METRICSWindows", vec2::ZERO, UIWindowFlags_NoScrollX);
-		
+		WinSetHovered(curwin);
+
 		PushVar(UIStyleVar_SelectableTextAlign, vec2(0, 0.5));
 		for (UIWindow* window : windows) {
+			SetNextItemSize(vec2(MAX_F32, 0));
 			if (Selectable(toStr(window->name, "; hovered: ", WinHovered(window)).str, window == debugee)) {
 				debugee = window;
 			}
@@ -4013,6 +4025,7 @@ UIWindow* DisplayMetrics() {
 			if (showChildren) {
 				PushLeftIndent(13);
 				for (UIWindow* child : window->children) {
+					SetNextItemSize(vec2(MAX_F32, 0));
 					if (Selectable(toStr(child->name, "; hovered: ", WinHovered(child)).str, child == debugee)) {
 						debugee = child;
 					}
@@ -4024,7 +4037,7 @@ UIWindow* DisplayMetrics() {
 			}
 		}
 		PopVar();
-		
+		WinUnSetHovered(curwin);
 		EndChild();
 		
 		
@@ -4043,24 +4056,9 @@ UIWindow* DisplayMetrics() {
 	
 	Separator(20);
 	
-	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5f));
-	BeginRow("Metrics_345135613", 2, style.fontHeight * 1.5f);
-	RowSetupRelativeColumnWidths({ 1.2f, 1 });
-	
-	persist u32 selected = 0;
-	if (BeginCombo("METRICSwindows", "windows")) {
-		for (int i = 0; i < winsorted.count; i++) {
-			if (UI::Selectable(winsorted[i]->name.str, selected == i)) {
-				selected = i;
-				debugee = winsorted[i];
-			}
-		}
-		EndCombo();
-	}
 	
 	Text(toStr("Selected Window: ", (debugee ? debugee->name : "none")).str);
 	
-	EndRow();
 	
 	if (debugee) {
 		
@@ -4186,38 +4184,38 @@ UIWindow* DisplayMetrics() {
 		if (showAllDrawCmdScissors) {
 			for (UIItem& item : debugee->preItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Red);
+					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 					}
 				}
 			}
 			for (UIItem& item : debugee->postItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
-					DebugRect(debugee->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Green);
+					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
 				}
 			}
 			
 			for (UIWindow* c : debugee->children) {
 				for (UIItem& item : c->preItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Red);
+						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
 					}
 				}
 				forI(UI_WINDOW_ITEM_LAYERS) {
 					for (UIItem& item : c->items[i]) {
 						for (UIDrawCmd& dc : item.drawCmds) {
-							DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+							DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 						}
 					}
 				}
 				for (UIItem& item : c->postItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
-						DebugRect(c->position + item.position + dc.scissorOffset, dc.scissorExtent, Color_Green);
+						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
 					}
 				}
 			}
@@ -4279,8 +4277,8 @@ UIWindow* DisplayMetrics() {
 	}
 	
 	
-	
-	PopVar();
+	WinUnSetHovered(curwin);
+
 	End();
 	
 	//PopColor(5);
@@ -4698,15 +4696,15 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 			case UIWindowType_PopOut:
 			case UIWindowType_Normal: {
 				dcso = Min(winpos + winScissorExtent - dcse, Max(winpos, dcso));
-				dcse += Min(dcso - winpos, vec2::ZERO);
+				dcse += Min(dcso - winpos, vec2::ZERO + DeshWindow->GetClientAreaPosition());
 				if (drawCmd.useWindowScissor)
-					dcse += Min(winpos, vec2::ZERO);
+					dcse += Min(winpos, vec2::ZERO + DeshWindow->GetClientAreaPosition());
 			}break;
 			case UIWindowType_Child: {
 				dcso = Min(winScissorOffset + winScissorExtent - dcse, Max(dcso, winScissorOffset));
-				dcse += Min(dcso - winScissorOffset, vec2::ZERO);
+				dcse += Min(dcso - winScissorOffset, vec2::ZERO + DeshWindow->GetClientAreaPosition());
 				if(drawCmd.useWindowScissor)
-					dcse += Min(winScissorOffset, vec2::ZERO);
+					dcse += Min(winScissorOffset, vec2::ZERO + DeshWindow->GetClientAreaPosition());
 				
 			}break;
 		}
@@ -4846,10 +4844,7 @@ void UI::Update() {
 	break_drawCmd_draw_hash = -1;
 #endif
 	
-	if (show_metrics) {
-		DisplayMetrics();
-		show_metrics = 0;
-	}
+
 
 	ui_stats = { 0 };
 	
@@ -4875,6 +4870,11 @@ void UI::Update() {
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 		WinUnSetBegan(p);
+	}
+
+	if (show_metrics) {
+		DrawWindow(DisplayMetrics());
+		show_metrics = 0;
 	}
 	
 	
