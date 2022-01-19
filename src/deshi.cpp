@@ -79,6 +79,7 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
+maybe temp memory should not default to zero?
 consider multiple thread contexts
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555

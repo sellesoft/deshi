@@ -61,7 +61,7 @@ namespace Cmd{
 		}CMDEND(time_engine);
 		
 		CMDSTART(list, "Lists available commands"){
-			string commands_list;
+			string commands_list(deshi_temp_allocator);
 			forE(commands){
 				commands_list += it->name;
 				commands_list += ": ";
@@ -312,35 +312,38 @@ namespace Cmd{
 	//// @interface ////
 	////////////////////
 	void Add(CmdFunc func, const string& name, const string& desc, const array<Type>& args){
-		u32 min_args = 0;
-		u32 max_args = 0;
-		string usage = name;
+		commands.add(Command{});
+		Command* cmd = &commands[commands.count-1];
+		cmd->func = func;
+		cmd->name = string(name, deshi_allocator);
+		cmd->desc = string(desc, deshi_allocator);
+		cmd->usage = string(name, deshi_allocator);
+		cmd->args = args;
 		forE(args){
-			max_args++;
-			usage += " ";
+			cmd->max_args++;
+			cmd->usage += " ";
 			if(*it & CmdArgument_OPTIONAL){
-				usage += "[";
+				cmd->usage += "[";
 			}else{
-				usage += "<";
-				min_args++;
+				cmd->usage += "<";
+				cmd->min_args++;
 			}
 			
 			if      (*it & CmdArgument_S32){
-				usage += "S32";
+				cmd->usage += "S32";
 			}else if(*it & CmdArgument_String){
-				usage += "String";
+				cmd->usage += "String";
 			}else{
 				Assert(!"unhandled command arguent");
 				NotImplemented;
 			}
 			
 			if(*it & CmdArgument_OPTIONAL){
-				usage += "]";
+				cmd->usage += "]";
 			}else{
-				usage += ">";
+				cmd->usage += ">";
 			}
 		}
-		commands.add({func, name, desc, usage, min_args, max_args, args});
 	}
 	
 	void Init(){
@@ -381,11 +384,11 @@ namespace Cmd{
 		}
 		if(!args.count) return;
 		
-		string command_name = string(args[0].str, args[0].count);
-		args.remove(0);
+		cstring command_name = args[0];
+		args.data++; args.count--; //ignore first item
 		b32 found = false;
 		forE(commands){
-			if(command_name == it->name){
+			if(equals(command_name, cstring{it->name.str, it->name.count})){
 				if(it->func){
 					if(args.count < it->min_args){
 						LogE("cmd", "Command '",command_name,"' requires at least ",it->min_args," arguments");
@@ -401,8 +404,10 @@ namespace Cmd{
 				break;
 			}
 		}
+		args.data--; args.count++; //restore first item
+		
 		forE(aliases){
-			if(command_name == it->name){
+			if(equals(command_name, cstring{it->name.str, it->name.count})){
 				Run(it->command);
 				found = true;
 				break;

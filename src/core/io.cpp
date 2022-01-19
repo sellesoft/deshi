@@ -25,6 +25,7 @@ b32 next_char(FileReader& reader) {
 	reader.read.str++;
 	reader.read.count = 1;
 	if (reader.read.str > reader.raw.str + reader.raw.count) return false;
+	return true;
 }
 
 b32 next_line(FileReader& reader) {

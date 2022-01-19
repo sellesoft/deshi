@@ -2,9 +2,9 @@
 #ifndef DESHI_COMMANDS_H
 #define DESHI_COMMANDS_H
 
+#include "memory.h"
 #include "../defines.h"
 #include "../utils/string.h"
-#include "../utils/cstring.h"
 
 enum CmdArgument{
 	CmdArgument_NONE,
