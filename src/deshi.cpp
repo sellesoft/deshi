@@ -79,6 +79,7 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
+maybe temp memory should not default to zero?
 consider multiple thread contexts
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
@@ -159,9 +160,7 @@ add the ability to limit framerate
 Ungrouped TODOs
 ---------------
 move config saving/loading to its own core file
-remove tuple (not pair) and container manager
 remove GLFW and add platform layers
-rename RoundUpTo() to AlignTo() in defines.h
 restyle map to match the rest of utils
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
@@ -177,6 +176,7 @@ __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.
 (01/10/22) color formatting does not work thru Log()
 __________ see commands.cpp 'test' command
 (01/15/22) vulkan backend crashes on window close
+(01/16/22) memory system sometimes fails to alloc memory from OS
 */
 
 
@@ -267,18 +267,18 @@ local Flags deshiStage = DS_NONE;
 
 //// platform ////
 #if   DESHI_WINDOWS
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <windowsx.h>
-#include "core/platforms/win32_deshi.cpp"
-#undef ERROR
-#undef DELETE
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#  include <windowsx.h>
+#  include "core/platforms/win32_deshi.cpp"
+#  undef ERROR
+#  undef DELETE
 #elif DESHI_LINUX //DESHI_WINDOWS
-#include "core/platforms/linux_deshi.cpp"
+#  include "core/platforms/linux_deshi.cpp"
 #elif DESHI_MAC   //DESHI_LINUX
-#include "core/platforms/osx_deshi.cpp"
+#  include "core/platforms/osx_deshi.cpp"
 #else             //DESHI_MAC
-#error "unknown platform"
+#  error "unknown platform"
 #endif //DESHI_WINDOWS
 
 //// external for core ////
@@ -299,39 +299,49 @@ local Flags deshiStage = DS_NONE;
 
 //// platform ////
 #if DESHI_WINDOWS
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <imgui/imgui_impl_win32.cpp>
+#  define VK_USE_PLATFORM_WIN32_KHR
+#  include <imgui/imgui_impl_win32.cpp>
 #else //DESHI_WINDOWS
-#include <GLFW/glfw3.h>
-#include <imgui/imgui_impl_glfw.cpp>
+#  include <GLFW/glfw3.h>
+#  include <imgui/imgui_impl_glfw.cpp>
 #endif
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
-#include <vulkan/vulkan.h>
-#include <shaderc/shaderc.h>
-#include <imgui/imgui_impl_vulkan.cpp>
-#include "core/renderers/vulkan.cpp"
+#  include <vulkan/vulkan.h>
+#  include <shaderc/shaderc.h>
+#  include <imgui/imgui_impl_vulkan.cpp>
+#  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL //DESHI_VULKAN
+<<<<<<< HEAD
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #include <imgui/imgui_impl_opengl3.cpp>
 #include "core/renderers/opengl.cpp"
+=======
+#  define GLAD_GL_IMPLEMENTATION
+#  include <glad/gl.h>
+#  include <GLFW/glfw3.h>
+#  define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#  include <imgui/imgui_impl_opengl3.cpp>
+#  include <imgui/imgui_impl_glfw.cpp>
+#  include "core/renderers/opengl.cpp"
+>>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 #elif DESHI_DIRECTX12 //DESHI_OPENGL
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#include "d3dx12/d3dx12.h"
-#include <d3d12.h>
-#include <wrl/client.h> //ComPtr
-#include <dxgi1_6.h>
-//#include <d3dcompiler.h> this is for compiling HLSL shaders at runtime, which ideally we wont do, but ill keep it just incase
+#  include <GLFW/glfw3.h>
+#  define GLFW_EXPOSE_NATIVE_WIN32
+#  include <GLFW/glfw3native.h>
+#  include "d3dx12/d3dx12.h"
+#  include <d3d12.h>
+#  include <wrl/client.h> //ComPtr
+#  include <dxgi1_6.h>
+//#  include <d3dcompiler.h> this is for compiling HLSL shaders at runtime, which ideally we wont do, but ill keep it just incase
 // if we do, dont forget to link against d3dcompiler.lib and copy D3dcompiler_47.dll to the same file as our exe
-#include <DirectXMath.h>
-#include "core/renderers/directx.cpp"
+#  include <DirectXMath.h>
+#  include "core/renderers/directx.cpp"
 #else  //DESHI_DIRECTX12
-#error "no renderer selected"
+#  error "no renderer selected"
 #endif
 
 #undef DeleteFont
@@ -351,7 +361,7 @@ local Flags deshiStage = DS_NONE;
 
 local Time     deshi_time;    Time*     g_time    = &deshi_time;
 local Window   deshi_window;  Window*   g_window  = &deshi_window;
-local Input    deshi_input;   Input*    g_input   = &deshi_input;
+local Input    deshi_input{}; Input*    g_input   = &deshi_input;
 local Console  deshi_console; Console*  g_console = &deshi_console;
 local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 

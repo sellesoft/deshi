@@ -830,7 +830,7 @@ local void TEST_deshi_utils_string(){
 	}
 	
 	//TODO(sushi) write tests for the remaining functions
-	
+	//TODO write tests for wstring
 	
 	printf("[DESHI-TEST] PASSED: utils/string\n");
 }

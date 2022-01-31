@@ -4,7 +4,11 @@
 //| Generic Heap  |  Heap Arena |  Heap Arena | Item | Item |
 //| Chunk | Chunk | Item | Item | Item | Item |      |      |
 
+<<<<<<< HEAD
 #define MEMORY_CHECK_HEAPS false
+=======
+#define MEMORY_CHECK_HEAPS true
+>>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 #define MEMORY_TRACK_ALLOCS false
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false
@@ -205,6 +209,8 @@ deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 			
 			//make new empty chunk after current chunk if there is enough space for arena overhead
 			if(leftover_size > MEMORY_ARENA_OVERHEAD){
+				NodeRemove(&chunk->node); //NOTE remove this early so new_chunk doesnt break chunk's nodes before removal
+				
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&deshi__arena_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
@@ -214,10 +220,10 @@ deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 				deshi__arena_heap->used += sizeof(MemChunk);
 			}else{
 				aligned_size += leftover_size;
+				NodeRemove(&chunk->node);
 			}
 			
 			//convert empty node to order node
-			NodeRemove(&chunk->node);
 			//chunk->node = {0}; //NOTE not necessary since its overwritten below
 			chunk->size = aligned_size;
 			deshi__arena_heap->used += aligned_size - sizeof(MemChunk);
@@ -380,6 +386,11 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 		//make new empty chunk after current chunk if there is enough space for arena overhead
 		MemChunk* next_next = GetNextOrderChunk(next);
 		if(leftover_size > MEMORY_ARENA_OVERHEAD){
+			NodeRemove(&next->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+			next->prev = 0;
+			next->size = 0;
+			next->node = {0};
+			
 			MemChunk* new_chunk = GetChunkAtOffset(chunk, GetChunkSize(chunk) + aligned_size);
 			NodeInsertNext(&deshi__arena_heap->empty_nodes, &new_chunk->node);
 			new_chunk->prev = chunk;
@@ -388,13 +399,13 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 			deshi__arena_heap->used += sizeof(MemChunk);
 		}else{
 			aligned_size += leftover_size;
+			NodeRemove(&next->node);
+			next->prev = 0;
+			next->size = 0;
+			next->node = {0};
 		}
 		
 		//zero next's overhead for use by current chunk and grow current chunk
-		NodeRemove(&next->node);
-		next->prev = 0;
-		next->size = 0;
-		next->node = {0};
 		chunk->size += aligned_size;
 		result->size += aligned_size;
 		deshi__arena_heap->used += aligned_size - sizeof(MemChunk);
@@ -624,6 +635,9 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 			//make new empty chunk after current chunk if there is enough space for an empty chunk
 			//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
 			if(leftover_size >= MEMORY_MIN_CHUNK_SIZE){
+				NodeRemove(&chunk->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+				chunk->node = {0};
+				
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
@@ -633,12 +647,11 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 				deshi__generic_heap->used += sizeof(MemChunk);
 			}else{
 				aligned_size += leftover_size;
+				NodeRemove(&chunk->node);
+				chunk->node = {0}; //zero this data since it will be used by the allocation
 			}
 			
-			//convert empty node to order node
-			NodeRemove(&chunk->node);
-			//NOTE chunk->prev doesnt need to change
-			chunk->node = {0}; //zero this data since it will be used by the allocation
+			//convert empty node to order node //NOTE chunk->prev doesnt need to change
 			chunk->size = aligned_size;
 			deshi__generic_heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
@@ -872,6 +885,11 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 		//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
 		MemChunk* next_next = GetNextOrderChunk(next);
 		if(leftover_size >= MEMORY_MIN_CHUNK_SIZE){
+			NodeRemove(&next->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+			next->prev = 0;
+			next->size = 0;
+			next->node = {0};
+			
 			MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 			NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 			new_chunk->prev = chunk;
@@ -880,13 +898,15 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 			deshi__generic_heap->used += sizeof(MemChunk);
 		}else{
 			aligned_size += leftover_size;
+			
+			//zero next's overhead for use by current chunk 
+			NodeRemove(&next->node);
+			next->prev = 0;
+			next->size = 0;
+			next->node = {0};
 		}
 		
-		//zero next's overhead for use by current chunk and grow current chunk
-		NodeRemove(&next->node);
-		next->prev = 0;
-		next->size = 0;
-		next->node = {0};
+		//grow current chunk
 		chunk->size = aligned_size;
 		deshi__generic_heap->used += -difference - sizeof(MemChunk);
 		

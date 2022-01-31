@@ -26,7 +26,7 @@ void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {DPZon
 	LPVOID msg_buffer;
 	DWORD error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
+				  0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
 	LogfE("io-win32", "%s failed with error %d: %s", func_name, (u32)error, (const char*)msg_buffer);
 	LocalFree(msg_buffer);
 	if (crash_on_error) ExitProcess(error);
@@ -35,13 +35,45 @@ void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {DPZon
 //@Resize
 void WinResized(Window* win, s32 width, s32 height, b32 minimized) {DPZoneScoped;
 	win->width = width; win->height = height;
+<<<<<<< HEAD
 	win->cwidth = width - 2 * win->borderthickness; win->cheight = height - (win->titlebarheight + 2*win->borderthickness);
+=======
+	win->cwidth = width; win->cheight = height - win->titlebarheight;
+	win->centerX = win->width/2; win->centerY = win->height/2;
+>>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 	win->dimensions = vec2(win->cwidth, win->cheight);
 	win->cx = win->borderthickness; win->cy = win->borderthickness + win->titlebarheight;
 	if (minimized) win->minimized = true;
 	else win->minimized = false;
 	win->resized = true;
 }
+
+void Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int* working_x = 0, int* working_y = 0, int* working_w = 0, int* working_h = 0){
+	HMONITOR monitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+	if(monitor){
+		MONITORINFO monitor_info = {sizeof(MONITORINFO)};
+		if(GetMonitorInfo(monitor, &monitor_info)){
+			if(screen_w) *screen_w = monitor_info.rcMonitor.right  - monitor_info.rcMonitor.left;
+			if(screen_h) *screen_h = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
+			if(working_x) *working_x = monitor_info.rcWork.left;
+			if(working_y) *working_y = monitor_info.rcWork.top;
+			if(working_w) *working_w = monitor_info.rcWork.right  - monitor_info.rcWork.left;
+			if(working_h) *working_h = monitor_info.rcWork.bottom - monitor_info.rcWork.top;
+		}else{
+			Win32LogLastError("GetMonitorInfo");
+		}
+	}else{
+		Win32LogLastError("MonitorFromWindow");
+	}
+}
+
+enum HitTest_ : s32 {
+	HitTest_TBorder,
+	HitTest_BBorder,
+	HitTest_RBorder,
+	HitTest_LBorder,
+	HitTest_Titlebar,
+};
 
 //win32's callback function 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZoneScoped;
@@ -75,12 +107,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			const s32 zDelta = GET_WHEEL_DELTA_WPARAM(wParam) / (f64)WHEEL_DELTA;
 			in->realScrollY = zDelta;
 		}break;
-		                       /////////////////////////////////////////////////////// Mouse Button Down
+		/////////////////////////////////////////////////////// Mouse Button Down
 		case WM_LBUTTONDOWN: { in->realKeyState[Key::MBLEFT]   = true; SetCapture((HWND)win->handle); }break;
 		case WM_RBUTTONDOWN: { in->realKeyState[Key::MBRIGHT]  = true; SetCapture((HWND)win->handle); }break;
 		case WM_MBUTTONDOWN: { in->realKeyState[Key::MBMIDDLE] = true; SetCapture((HWND)win->handle); }break;
 		case WM_XBUTTONDOWN: { in->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Key::MBFOUR : Key::MBFIVE)] = true; return true; }break;
-			                   /////////////////////////////////////////////////////// Mouse Button Up
+		/////////////////////////////////////////////////////// Mouse Button Up
 		case WM_LBUTTONUP:   { in->realKeyState[Key::MBLEFT]   = false; ReleaseCapture(); }break;
 		case WM_RBUTTONUP:   { in->realKeyState[Key::MBRIGHT]  = false; ReleaseCapture(); }break;
 		case WM_MBUTTONUP:   { in->realKeyState[Key::MBMIDDLE] = false; ReleaseCapture(); }break;
@@ -94,12 +126,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			b32 upFlag = (HIWORD(lParam) & KF_UP) == KF_UP;              // transition-state flag, 1 on keyup
 			b32 repeatFlag = (HIWORD(lParam) & KF_REPEAT) == KF_REPEAT;  // previous key-state flag, 1 on autorepeat
 			u16 repeatCount = LOWORD(lParam);
-
+			
 			//these are probably unused for now
 			b32 altDownFlag  = (HIWORD(lParam) & KF_ALTDOWN) == KF_ALTDOWN;    // ALT key was pressed
 			b32 dlgModeFlag  = (HIWORD(lParam) & KF_DLGMODE) == KF_DLGMODE;    // dialog box is active
 			b32 menuModeFlag = (HIWORD(lParam) & KF_MENUMODE) == KF_MENUMODE;  // menu is active
-
+			
 			//check modifier keys
 			if (GetKeyState(VK_LSHIFT) & 0x8000)   in->realKeyState[Key::LSHIFT] = true;
 			else                                   in->realKeyState[Key::LSHIFT] = false;
@@ -114,17 +146,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			if (GetKeyState(VK_RMENU) & 0x8000)    in->realKeyState[Key::RALT] = true;
 			else                                   in->realKeyState[Key::RALT] = false;
 			if(GetKeyState(VK_LWIN) & 0x8000)      in->realKeyState[Key::LMETA] = true;
-			else 								   in->realKeyState[Key::LMETA] = false;
-			if (GetKeyState(VK_RWIN) & 0x8000)	   in->realKeyState[Key::RMETA] = true;
-			else								   in->realKeyState[Key::RMETA] = false;
-
+			else                                   in->realKeyState[Key::LMETA] = false;
+			if (GetKeyState(VK_RWIN) & 0x8000)     in->realKeyState[Key::RMETA] = true;
+			else                                   in->realKeyState[Key::RMETA] = false;
+			
 			//get key from vcode
 			Key::Key* key = vkToKey.at(vcode);
-
+			
 			if (key) {
 				if (upFlag) in->realKeyState[*key] = false;
 				else        in->realKeyState[*key] = true;
-
+				
 				if (in->logInput) { 
 					string out = toStr(KeyStrings[*key], (upFlag ? " released" : " pressed"));
 					if(in->realKeyState[Key::LSHIFT]) {out += " + LSHIFT";}
@@ -132,8 +164,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 					if(in->realKeyState[Key::LCTRL])  {out += " + LCTRL";}
 					if(in->realKeyState[Key::RCTRL])  {out += " + RCTRL";}
 					if(in->realKeyState[Key::LALT])   {out += " + LALT";}
-					if(in->realKeyState[Key::RALT])	  {out += " + RALT";}
+					if(in->realKeyState[Key::RALT])   {out += " + RALT";}
+#if 0
 					Log("input", out); 
+#endif
 				}
 			}
 		}break;
@@ -147,12 +181,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			//get size of rawinput
 			GetRawInputData(ri, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
 			data = (RAWINPUT*)memtalloc(size);
-
+			
 			if (GetRawInputData(ri, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER)) == (u32)-1) {
 				//LogE("WINDOW-WIN32", "failed to retrieve raw input data in WndProc case WM_INPUT");
 				break;
 			}
-
+			
 			RAWMOUSE mdata = data->data.mouse;
 			s32 dx, dy;
 			if (HasFlag(mdata.usFlags, MOUSE_MOVE_ABSOLUTE)) {
@@ -161,14 +195,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			else {
 				dx = mdata.lLastX; dy = mdata.lLastY;
 			}
-
+			
 			in->realMouseX += dx; in->realMouseY += dy;
-
+			
 			//TODO maybe implement raw key inputs from this
 			RAWKEYBOARD kdata = data->data.keyboard;
 			RAWHID      hdata = data->data.hid; //TODO human interface device input
-
-
+			
+			
 		}break;
 		case WM_NCHITTEST: {
 			s32  xPos = GET_X_LPARAM(lParam);
@@ -211,8 +245,8 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	
 	//TODO load and set icon
 	//HICON icon = LoadImageA(NULL, "data/textures/deshi_icon.png", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_DEFAULTCOLOR);;
-
-	//make and register window class
+	
+	//// register window class ////
 	WNDCLASSA wc;
 	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
 	wc.  lpfnWndProc = WndProc;
@@ -224,38 +258,54 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
 	wc.lpszClassName = _name;
-
+	
 	if (!RegisterClassA(&wc)) Win32LogLastError("RegisterClassA", true); 
-
-	//create window
+	
+	//// create window ////
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 	handle = CreateWindowA(_name, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
 	if (!handle) Win32LogLastError("CreateWindowA", true);
 	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
-
+	
+	//// get mouse coords ////
 	POINT mp = { 0 };
 	GetCursorPos(&mp);
+<<<<<<< HEAD
 	DeshInput->realMouseX = mp.x - x; DeshInput->realMouseY = mp.y - y;
 
+=======
+	DeshInput->realMouseX = mp.x - x;
+	DeshInput->realMouseY = mp.y - y;
+	
+	//// setup raw input ////
+>>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 	RAWINPUTDEVICE rid;
 	rid.usUsagePage = 0x01;
-	rid.usUsage = 0x02;
-	rid.dwFlags = 0; //set this to RIDEV_INPUTSINK to update mouse pos even when window isnt focused
-	rid.hwndTarget = NULL;
-
+	rid.    usUsage = 0x02;
+	rid.    dwFlags = 0; //set this to RIDEV_INPUTSINK to update mouse pos even when window isnt focused
+	rid. hwndTarget = NULL;
+	
 	if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) Win32LogLastError("RegisterRawInputDevices");
-
+	
+	//// get monitor info ////
+	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
+	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
+	
+	//// setup default window pos/size ////
+	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
+		x = work_x + ((work_w -  width) / 2);
+		y = work_y + ((work_h - height) / 2);
+	}
+	
+	//// update window to requested properties ////
 	UpdateDisplayMode(displayMode);
 	UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
 	titlebarheight = 5;
 	SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
-	
 	name = _name;
 	renderer_surface_index = 0; ///main win is always first surface
-
-	UpdateDecorations(Decoration_SystemDecorations);
-
+	
 	LogS("deshi", "Finished window initialization in ", TIMER_END(t_s), "ms");
 }
 
@@ -264,14 +314,14 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
 	if (child_count == max_child_windows) { LogE("WINDOW-WIN32", "Window failed to make a child window: max child windows reached."); return 0; }
 	TIMER_START(t_s);
-
+	
 	//TODO make global window counter
-
+	
 	Window* child = (Window*)memalloc(sizeof(Window));
 	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
-
+	
 	child->instance = GetModuleHandle(NULL);
-
+	
 	//make and register window class
 	WNDCLASSA wc;
 	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
@@ -284,14 +334,14 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
 	wc.lpszClassName = _name;
-
+	
 	if (!RegisterClassA(&wc)) { 
 		LogE("WINDOW-WIN32", "Window failed to register WNDCLASS for child window");
 		Win32LogLastError("RegisterClassA"); 
 		memzfree(child);
 		return 0;
 	}
-
+	
 	//create window
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 	child->handle = CreateWindowA(_name, _name,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
@@ -303,14 +353,24 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	}
 	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
-
+	
+	//// get monitor info ////
+	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
+	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
+	
+	//// setup default window pos/size ////
+	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
+		x = work_x + ((work_w -  width) / 2);
+		y = work_y + ((work_h - height) / 2);
+	}
+	
 	children[child_count++] = child;
 	child->name = _name;
 	child->UpdateDisplayMode(displayMode);
 	child->UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
 	child->titlebarheight = 5;
 	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
-
+	
 	LogS("deshi", "Finished child window initialization in ", TIMER_END(t_s), "ms");
 	return child;
 }
@@ -326,80 +386,63 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 	persist Font* decorfont = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
 	SetSurfaceDrawTargetByWindow(win);
 	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, vec2(width, height));
-
+	
+	if(Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
+	
+	//minimal titlebar takes precedence over all other title bar flags
+	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
+		win->titlebarheight = 5;
+		FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
+		if (Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, win->titlebarheight))) { win->hittest = HitTestTitle; hitset = 1; }
+	}
+	else {
+		if (HasFlag(decor, Decoration_Titlebar)) {
+			win->titlebarheight = 20;
+			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
+		}
+		if (HasFlag(decor, Decoration_TitlebarTitle)) {
+			
+		}
+	}
+	
 	if (HasFlag(decor, Decoration_MouseBorders)) {
 		vec2 mp = DeshInput->mousePos;
 		f32 distToAppear = 7;
 		f32 borderSize = 1;
 		vec2 
-		lbpos = vec2::ZERO,
+			lbpos = vec2::ZERO,
 		rbpos = vec2(width - borderSize, 0),
 		bbpos = vec2(0, height - borderSize),
 		lbsiz = vec2(borderSize, height),
 		rbsiz = vec2(borderSize, height),
 		bbsiz = vec2(width, borderSize);
 		color //TODO make these not show if the mouse goes beyond the window
-		bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
+			bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
 		rcol = color(255,255,255, Remap(Clamp(mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize))),
 		lcol = color(255,255,255, Remap(Clamp(cwidth - mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize)));
-
+		
 		if (!hitset && Math::PointInRectangle(mp, lbpos, lbsiz)) {win->hittest = HitTestLeft;   hitset = 1;}
 		else if (Math::PointInRectangle(mp, rbpos, rbsiz))       {win->hittest = HitTestRight;  hitset = 1;}
 		else if (Math::PointInRectangle(mp, bbpos, bbsiz))       {win->hittest = HitTestBottom; hitset = 1;}
-
+		
 		FillRect2D(vec2::ZERO, vec2(borderSize, height), lcol);
 		FillRect2D(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
 		FillRect2D(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
-
-
+		
+		
 	}
-	else if (HasFlag(decor, Decoration_Borders)) {
-		win->borderthickness = 2;
-		f32 borderSize = win->borderthickness;
-		vec2 
-		tbpos = vec2::ZERO,
-		lbpos = vec2::ZERO,
-		rbpos = vec2(width - borderSize, 0),
-		bbpos = vec2(0, height - borderSize),
-		tbsiz = vec2(width, borderSize),
-		lbsiz = vec2(borderSize, height),
-		rbsiz = vec2(borderSize, height),
-		bbsiz = vec2(width, borderSize);
-		color 
-		tcol = color(133,133,133),
-		bcol = color(133,133,133),
-		rcol = color(133,133,133),
-		lcol = color(133,133,133);
-
-		FillRect2D(lbpos, lbsiz, lcol);
-		FillRect2D(rbpos, rbsiz, rcol);
-		FillRect2D(bbpos, bbsiz, bcol);
-		FillRect2D(tbpos, tbsiz, tcol);
-
-	}
-
-	//minimal titlebar takes precedence over all other title bar flags
-	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
-		win->titlebarheight = 5;
-		FillRect2D(vec2(win->borderthickness, win->borderthickness), vec2(width - 2 * win->borderthickness, win->titlebarheight), color(133, 133, 133));
-	}
-	else {
-		if (HasFlag(decor, Decoration_Titlebar)) {
-			win->titlebarheight = 20;
-			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60, 60, 60));
-		}
-		if (HasFlag(decor, Decoration_TitlebarTitle)) {
-			DrawText2D(decorfont, { win->name.str, win->name.count }, floor(vec2(10, win->borderthickness + (win->titlebarheight - decorfont->max_height) * 0.5)), Color_White, vec2::ONE, GetZZeroLayerIndex());
-		}
-	}
+	
+#if 0
+	Log("", win->hittest);
+#endif
 }
 
 void Window::Update() {DPZoneScoped;
 	TIMER_START(t_d);
-
+	
 	resized = false;
-
-
+	
+	
 	//iterate through all window messages 
 	MSG msg;
 	while (PeekMessageA(&msg, (HWND)handle, 0, 0, PM_REMOVE)) {
@@ -409,19 +452,15 @@ void Window::Update() {DPZoneScoped;
 			DispatchMessageA(&msg);
 		}
 	}
-
-
+	
 	//update children (this should maybe be done by whoever creates it instead of the parent)
 	forI(child_count) children[i]->Update();
-
-	 
-
+	
 	if(decorations != Decoration_SystemDecorations)
 		DrawDecorations(this);
-
-	//TODO make a dedicated hit testing function
+	
 	hittest = HitTestNone;
-	if(cursorMode == CursorMode_FirstPerson) ::SetCursorPos(x + width / 2, y + height / 2);
+	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY + titlebarheight);
 	DeshTime->windowTime = TIMER_END(t_d);
 }
 
@@ -451,7 +490,7 @@ void Window::UpdateDisplayMode(DisplayMode dm) {DPZoneScoped;
 				b32 failed = false;
 				if (!GetWindowPlacement(hwnd, &wp)) { Win32LogLastError("GetWindowPlacement"); failed = true; }
 				if (!GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)) { Win32LogLastError("GetMonitorInfo"); failed = true; }
-
+				
 				if (!failed) {
 					SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
 					RECT mr = mi.rcMonitor;
@@ -475,7 +514,36 @@ void Window::UpdateDisplayMode(DisplayMode dm) {DPZoneScoped;
 }
 
 void Window::UpdateCursorMode(CursorMode mode) {DPZoneScoped;
-	WarnFuncNotImplemented("");
+	if(mode == this->cursorMode){return;}
+	cursorMode = mode;
+	
+	switch(mode){
+		case(CursorMode_Default):default:{
+			SetCursor(CursorType_Arrow); //TODO setup a restore cursor?
+			ClipCursor(0);
+		}break;
+		case(CursorMode_FirstPerson):{
+			//set cursor to middle of screen
+			SetCursorPos(centerX, centerY + titlebarheight);
+			
+			//hide cursor
+			SetCursor(CursorType_Hidden);
+			
+			//restrict cursor to client rect
+			RECT clip_rect;
+			GetClientRect((HWND)handle, &clip_rect);
+			ClientToScreen((HWND)handle, (POINT*)&clip_rect.left); //NOTE transforms .top as well
+			ClientToScreen((HWND)handle, (POINT*)&clip_rect.right);
+			ClipCursor(&clip_rect);
+		}break;
+		case(CursorMode_Hidden):{
+			SetCursor(CursorType_Hidden);
+			ClipCursor(0);
+		}break;
+	}
+#if 0
+	Log("window", "Setting cursor mode to ", mode);
+#endif
 }
 
 void Window::UpdateDecorations(Decoration _decorations) {DPZoneScoped;
@@ -488,16 +556,66 @@ void Window::UpdateDecorations(Decoration _decorations) {DPZoneScoped;
 	}
 	else 
 		SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
-	SetWindowPos(hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOSIZE);
+	SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
 }
 
-void Window::SetCursorPos(vec2 pos) {DPZoneScoped;
-	::SetCursorPos(pos.x, pos.y);
+void Window::SetCursorPos(f64 _x, f64 _y) {DPZoneScoped;
+#if 1
+	Logf("window", "SetCursorPos old(%f,%f) new(%f,%f)", DeshInput->mouseX, DeshInput->mouseY, _x, _y);
+#endif
+	
+	POINT p = {LONG(_x), LONG(_y)};
+	ClientToScreen((HWND)handle, &p);
+	::SetCursorPos(p.x, p.y);
+	
+	DeshInput->mouseX = _x;
+	DeshInput->mouseY = _y;
 }
 
-void Window::SetCursor(CursorType curtype) {DPZoneScoped;
-	//TODO ref glfw's createIcon
-	//WarnFuncNotImplemented;
+void Window::SetCursorPosScreen(f64 _x, f64 _y) {
+#if 1
+	Logf("window", "SetCursorPosScreen old(%f,%f) new(%f,%f)", DeshInput->screenMouseX, DeshInput->screenMouseY, _x, _y);
+#endif
+	
+	::SetCursorPos(_x, _y);
+	DeshInput->screenMouseX = _x;
+	DeshInput->screenMouseY = _y;
+}
+
+void Window::SetCursor(CursorType curtype) {
+	switch(curtype){
+		case CursorType_Arrow:{
+			::SetCursor(LoadCursor(0, IDC_ARROW));
+		}break;
+		case CursorType_HResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZEWE));
+		}break;
+		case CursorType_VResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZENS));
+		}break;
+		case CursorType_RightDiagResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZENESW));
+		}break;
+		case CursorType_LeftDiagResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZENWSE));
+		}break;
+		case CursorType_Hand:{
+			::SetCursor(LoadCursor(0, IDC_HAND));
+		}break;
+		case CursorType_IBeam:{
+			::SetCursor(LoadCursor(0, IDC_IBEAM));
+		}break;
+		case CursorType_Hidden:{
+			::SetCursor(0);
+		}break;
+		default:{
+			Log("window","Unknown cursor type: ", curtype);
+			::SetCursor(LoadCursor(0, IDC_ARROW));
+		}break;
+	}
+#if 0
+	Log("window", "Setting cursor type to ", curtype);
+#endif
 }
 
 void Window::UpdateRawInput(b32 rawInput) {DPZoneScoped;
@@ -509,12 +627,16 @@ void Window::UpdateResizable(b32 resizable) {DPZoneScoped;
 }
 
 void Window::GetScreenSize(s32& _width, s32& _height) {DPZoneScoped;
+	_width = screenWidth; _height = screenHeight;
+}
+
+void Window::GetWindowSize(s32& _width, s32& _height) {DPZoneScoped;
 	_width = width; _height = height;	
 }
 
 void Window::GetClientSize(s32& _width, s32& _height) {DPZoneScoped;
 	_width = cwidth; _height = cheight;
- }
+}
 
 
 vec2 Window::GetClientAreaPosition(){DPZoneScoped;
@@ -575,14 +697,14 @@ FileReader init_reader(const File & file) {
 	if (!HasFlag(file.flags, FileAccess_Read)) { LogE("IO", "attempted to initialize a FileReader on a file that doesn't have read access"); fr.failed = true; return fr; }
 	fr.raw.str = (char*)memalloc(file.bytes_size); //TODO eventually arena file data allocations
 	fr.raw.count = file.bytes_size;
-
+	
 	u32 bytes_read = 0;
 	if (!ReadFile(file.handle, fr.raw.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
 		Win32LogLastError("ReadFile");
 		fr.failed = true; return fr;
 	}
 	if (bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
-
+	
 	//gather lines
 	//TODO maybe make a way to disable this
 	//maybe make a function gather_lines or something and only cache lines when thats called
@@ -596,7 +718,7 @@ FileReader init_reader(const File & file) {
 		advance(&raw);
 	}
 	if (!fr.lines.count) fr.lines.add(fr.raw);
-
+	
 	fr.file = &file;
 	fr.read = { fr.raw.str, 0 };
 	return fr;
@@ -609,18 +731,18 @@ File open_file(const char* path, FileAccessFlags flags) {
 	Assert(flags, "attempt to open_file without specifing access flags");
 	File file;
 	file.flags = flags;
-
+	
 	DWORD access = (HasFlag(flags, FileAccess_Write) ? GENERIC_WRITE : 0) | (HasFlag(flags, FileAccess_Read) ? GENERIC_READ : 0);
 	file.handle = CreateFileA(path, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 	if (GetLastError() != ERROR_FILE_EXISTS && GetLastError()) Win32LogLastError("CreateFileA");
-
+	
 	//read data of opened file
 	BY_HANDLE_FILE_INFORMATION data;
 	ULARGE_INTEGER time;
 	ULARGE_INTEGER size;
-
+	
 	if (!GetFileInformationByHandle(file.handle, &data)) Win32LogLastError("GetFileInformationByHandle");
-
+	
 	time.LowPart = data.ftCreationTime.dwLowDateTime; time.HighPart = data.ftCreationTime.dwHighDateTime;
 	file.time_creation = WindowsTimeToUnixTime(time.QuadPart);
 	time.LowPart = data.ftLastAccessTime.dwLowDateTime; time.HighPart = data.ftLastAccessTime.dwHighDateTime;
@@ -630,12 +752,12 @@ File open_file(const char* path, FileAccessFlags flags) {
 	size.LowPart = data.nFileSizeLow; size.HighPart = data.nFileSizeHigh;
 	file.bytes_size = size.QuadPart;
 	file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
-
+	
 	u32 pathlength = GetFinalPathNameByHandleA(file.handle, file.path, MAX_FILEPATH_SIZE, FILE_NAME_NORMALIZED);
 	if (pathlength > MAX_FILEPATH_SIZE) LogW("IO", "file path for '", path, "' has a length greater than MAX_FILEPATH_SIZE\npath length was ", pathlength);
-
+	
 	//file.path_length = Min(pathlength, u32(MAX_FILEPATH_SIZE));
-
+	
 	string pathstr(file.path);
 	//NOTE when we start using unicode stuff for windows path, ideally store this separate from the path name, or just set up the get name funcs to remove the prefix on call
 	//remove \\?\ prefix, however this may cause issues in the future with network paths, so TODO add checking for that
@@ -657,12 +779,12 @@ array<File>
 get_directory_files(const char* directory) {
 	array<File> result(deshi_temp_allocator);
 	if (directory == 0) return result;
-
+	
 	string pattern(directory); //TODO add allocator to string
 	pattern += (pattern[pattern.count - 1] != '/') ? "/*" : "*";
 	WIN32_FIND_DATAA data; HANDLE next;
 	ULARGE_INTEGER size;   ULARGE_INTEGER time;
-
+	
 	next = FindFirstFileA(pattern.str, &data);
 	if (next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 		Win32LogLastError("FindFirstFileA");
@@ -675,7 +797,7 @@ get_directory_files(const char* directory) {
 			if (FindNextFileA(next, &data) == 0) break;
 			continue;
 		}
-
+		
 		File file;
 		file.handle = next;
 		time.LowPart = data.ftCreationTime.dwLowDateTime; time.HighPart = data.ftCreationTime.dwHighDateTime;
@@ -687,7 +809,7 @@ get_directory_files(const char* directory) {
 		size.LowPart = data.nFileSizeLow; size.HighPart = data.nFileSizeHigh;
 		file.bytes_size = size.QuadPart;
 		file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
-
+		
 		u32 path_len = pattern.count - 1;
 		u32 name_len = strlen(data.cFileName);
 		u32 short_len = name_len;
@@ -700,7 +822,7 @@ get_directory_files(const char* directory) {
 		memcpy(file.path, pattern.str, pattern.count - 1);
 		memcpy(file.path + path_len, data.cFileName, name_len);
 		memcpy(file.name, data.cFileName, name_len);
-
+		
 		result.add(file);
 		if (FindNextFileA(next, &data) == 0) break;
 	}
@@ -709,7 +831,7 @@ get_directory_files(const char* directory) {
 		Win32LogLastError("FindNextFileA");
 	}
 	FindClose(next);
-
+	
 	return result;
 }
 
@@ -718,14 +840,14 @@ get_directory_files(const char* directory) {
 void
 delete_file(const char* filepath) {
 	if (filepath == 0) return;
-
+	
 	WIN32_FIND_DATAA data;
 	HANDLE next = FindFirstFileA(filepath, &data);
 	if (next == INVALID_HANDLE_VALUE) {
 		Win32LogLastError("FindFirstFileA");
 		return;
 	}
-
+	
 	//if directory, recursively delete all files and directories
 	if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		array<File> dir_files = get_directory_files(filepath);

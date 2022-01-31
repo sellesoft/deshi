@@ -12,7 +12,6 @@
 
 #include "../defines.h"
 
-#include <cstring>
 #include <cstdio>
 #include <iostream> //std::ostream operator<<
 
@@ -26,13 +25,14 @@ struct string{
 	u32   space;
 	CHAR* str;
 	
-	Allocator* allocator; //TODO(delle) maybe make this a constructor arg like array?
+	Allocator* allocator;
 	
 	string();
-	string(const CHAR* s);
-	string(const CHAR* s, u32 count);
-	string(const string& s);
-	string(const cstring& s);
+	string(Allocator* a);
+	string(const CHAR* s, Allocator* a = DESHI_STRING_ALLOCATOR);
+	string(const CHAR* s, u32 count, Allocator* a = DESHI_STRING_ALLOCATOR);
+	string(const string& s, Allocator* a = DESHI_STRING_ALLOCATOR);
+	string(const cstring& s, Allocator* a = DESHI_STRING_ALLOCATOR);
 	~string();
 	
 	CHAR&  operator[](u32 idx);
@@ -81,55 +81,58 @@ struct string{
 
 inline string::string(){DPZoneScoped;
 	allocator = DESHI_STRING_ALLOCATOR;
-	count  = 0;
+	count = 0;
 	space = 0;
 	str   = 0;
 };
 
+inline string::string(Allocator* a){DPZoneScoped;
+	allocator = a;
+	count = 0;
+	space = 0;
+	str   = 0;
+};
 
-inline string::string(const CHAR* s){DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
-	count  = strlen(s);
+inline string::string(const CHAR* s, Allocator* a){
+	allocator = a;
+	count = strlen(s);
 	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-
-inline string::string(const CHAR* s, u32 _size){DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
+inline string::string(const CHAR* s, u32 _size, Allocator* a){DPZoneScoped;
+	allocator = a;
 	count  = _size;
-	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	space  = RoundUpTo(count+1, 4);
+	str    = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-
-inline string::string(const string& s){DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
+inline string::string(const string& s, Allocator* a){DPZoneScoped;
+	allocator = a;
 	count = s.count;
 	space = RoundUpTo(count + 1, 4);
-	str = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space * CHAR_SIZE);
 	memcpy(str, s.str, count * CHAR_SIZE);
 }
 
-
-inline string::string(const cstring& s) {DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
+inline string::string(const cstring& s, Allocator* a){DPZoneScoped;
+	allocator = a;
 	count = s.count;
 	space = RoundUpTo(count + 1, 4);
-	str = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space * CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space * CHAR_SIZE);
 	memcpy(str, s.str, count * CHAR_SIZE);
 }
-
 
 inline string::~string(){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator){
+		allocator->release(str);
+	}
 }
 
 ////////////////////
@@ -147,27 +150,27 @@ inline string::CHAR string::operator[](u32 idx) const {DPZoneScoped;
 	return str[idx];
 }
 
-
 inline void string::operator= (const CHAR* s){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator){
+		allocator->release(str);
+	}else{
+		allocator = DESHI_STRING_ALLOCATOR;
+	}
 	
-	count  = strlen(s);
+	count = strlen(s);
 	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-
 inline void string::operator= (const string& s){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator) allocator->release(str);
 	allocator = s.allocator;
 	
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space*CHAR_SIZE); 
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
@@ -179,14 +182,15 @@ inline void string::operator+=(const CHAR* s){DPZoneScoped;
 	if(str_len == 0) return;
 	count += str_len;
 	
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s, count*CHAR_SIZE);
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		str   = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
 	}else{
 		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
@@ -200,6 +204,7 @@ inline void string::operator+=(const string& s){DPZoneScoped;
 	if(str_len == 0) return;
 	count += str_len;
 	
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
 		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -230,8 +235,8 @@ inline string string::operator+ (const CHAR* c) const{DPZoneScoped;
 	string result;
 	result.count  = count + str_len;
 	result.space = RoundUpTo(result.count+1, 4);
-	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
-	allocator->commit(result.str, result.space*CHAR_SIZE);
+	result.str = (CHAR*)result.allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	result.allocator->commit(result.str, result.space*CHAR_SIZE);
 	memcpy(result.str,       str, count*CHAR_SIZE);
 	memcpy(result.str+count, c,   str_len*CHAR_SIZE);
 	return result;
@@ -244,8 +249,8 @@ inline string string::operator+(const string& s) const{DPZoneScoped;
 	string result;
 	result.count  = count + s.count;
 	result.space = RoundUpTo(result.count+1, 4);
-	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
-	allocator->commit(result.str, result.space*CHAR_SIZE);
+	result.str = (CHAR*)result.allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	result.allocator->commit(result.str, result.space*CHAR_SIZE);
 	memcpy(result.str,       str,   count*CHAR_SIZE);
 	memcpy(result.str+count, s.str, s.count*CHAR_SIZE);
 	return result;
@@ -296,10 +301,12 @@ inline void string::reserve(u32 _space){DPZoneScoped;
 	}
 }
 
-
 inline void string::clear(){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator){
+		allocator->release(str);
+	}else{
+		allocator = DESHI_STRING_ALLOCATOR;
+	}
 	count = 0;
 	space = 0;
 	str   = 0;
@@ -316,6 +323,8 @@ inline void string::erase(u32 idx){DPZoneScoped;
 inline void string::insert(CHAR c, u32 idx){DPZoneScoped;
 	Assert(idx <= count);
 	count += 1;
+	
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	if(space == 0){
 		space = 4;
 		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -479,12 +488,13 @@ struct wstring {
 	u32   space;
 	CHAR* str;
 	
-	Allocator* allocator; //TODO(delle) maybe make this a constructor arg like array?
+	Allocator* allocator;
 	
 	wstring();
-	wstring(const CHAR* s);
-	wstring(const CHAR* s, u32 count);
-	wstring(const wstring& s);
+	wstring(Allocator* a);
+	wstring(const CHAR* s, Allocator* a = DESHI_STRING_ALLOCATOR);
+	wstring(const CHAR* s, u32 count, Allocator* a = DESHI_STRING_ALLOCATOR);
+	wstring(const wstring& s, Allocator* a = DESHI_STRING_ALLOCATOR);
 	~wstring();
 	
 	CHAR& operator[](u32 idx);
@@ -538,9 +548,15 @@ inline wstring::wstring(){DPZoneScoped;
 	str   = 0;
 };
 
+inline wstring::wstring(Allocator* a){DPZoneScoped;
+	allocator = a;
+	count  = 0;
+	space = 0;
+	str   = 0;
+};
 
-inline wstring::wstring(const CHAR* s){DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
+inline wstring::wstring(const CHAR* s, Allocator* a){DPZoneScoped;
+	allocator = a;
 	count  = wcslen(s);
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -548,9 +564,8 @@ inline wstring::wstring(const CHAR* s){DPZoneScoped;
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-
-inline wstring::wstring(const CHAR* s, u32 _size){DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
+inline wstring::wstring(const CHAR* s, u32 _size, Allocator* a){DPZoneScoped;
+	allocator = a;
 	count  = _size;
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -558,9 +573,8 @@ inline wstring::wstring(const CHAR* s, u32 _size){DPZoneScoped;
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-
-inline wstring::wstring(const wstring& s){DPZoneScoped;
-	allocator = DESHI_STRING_ALLOCATOR;
+inline wstring::wstring(const wstring& s, Allocator* a){DPZoneScoped;
+	allocator = a;
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -568,10 +582,10 @@ inline wstring::wstring(const wstring& s){DPZoneScoped;
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
 
-
 inline wstring::~wstring(){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator){
+		allocator->release(str);
+	}
 }
 
 ////////////////////
@@ -583,27 +597,27 @@ inline wstring::CHAR& wstring::operator[](u32 idx){DPZoneScoped;
 	return str[idx];
 }
 
-
 inline void wstring::operator= (const CHAR* s){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator){
+		allocator->release(str);
+	}else{
+		allocator = DESHI_STRING_ALLOCATOR;
+	}
 	
-	count  = wcslen(s);
+	count = wcslen(s);
 	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-
 inline void wstring::operator= (const wstring& s){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator) allocator->release(str);
 	allocator = s.allocator;
 	
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
-	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	allocator->commit(str, space*CHAR_SIZE); 
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
@@ -615,9 +629,10 @@ inline void wstring::operator+=(const CHAR* s){DPZoneScoped;
 	if(str_len == 0) return;
 	count += str_len;
 	
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s, count*CHAR_SIZE);
 	}else if(space < count+1){
@@ -636,14 +651,15 @@ inline void wstring::operator+=(const wstring& s){DPZoneScoped;
 	if(str_len == 0) return;
 	count += str_len;
 	
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		str   = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s.str, count*CHAR_SIZE);
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		str   = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
 	}else{
 		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
@@ -666,8 +682,8 @@ inline wstring wstring::operator+ (const CHAR* c) const{DPZoneScoped;
 	wstring result;
 	result.count  = count + str_len;
 	result.space = RoundUpTo(result.count+1, 4);
-	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
-	allocator->commit(result.str, result.space*CHAR_SIZE);
+	result.str = (CHAR*)result.allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	result.allocator->commit(result.str, result.space*CHAR_SIZE);
 	memcpy(result.str,       str, count*CHAR_SIZE);
 	memcpy(result.str+count, c,   str_len*CHAR_SIZE);
 	return result;
@@ -680,8 +696,8 @@ inline wstring wstring::operator+(const wstring& s) const{DPZoneScoped;
 	wstring result;
 	result.count  = count + s.count;
 	result.space = RoundUpTo(result.count+1, 4);
-	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
-	allocator->commit(result.str, result.space*CHAR_SIZE);
+	result.str = (CHAR*)result.allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	result.allocator->commit(result.str, result.space*CHAR_SIZE);
 	memcpy(result.str,       str,   count*CHAR_SIZE);
 	memcpy(result.str+count, s.str, s.count*CHAR_SIZE);
 	return result;
@@ -721,10 +737,12 @@ inline void wstring::reserve(u32 _space){DPZoneScoped;
 	}
 }
 
-
 inline void wstring::clear(){DPZoneScoped;
-	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
-	allocator->release(str);
+	if(allocator){
+		allocator->release(str);
+	}else{
+		allocator = DESHI_STRING_ALLOCATOR;
+	}
 	count = 0;
 	space = 0;
 	str   = 0;
@@ -741,6 +759,8 @@ inline void wstring::erase(u32 idx){DPZoneScoped;
 inline void wstring::insert(CHAR c, u32 idx){DPZoneScoped;
 	Assert(idx <= count);
 	count += 1;
+	
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	if(space == 0){
 		space = 4;
 		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");

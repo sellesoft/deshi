@@ -2049,7 +2049,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 	f32 arrowSpaceWidth = style.indentAmount;
 	f32 arrowwidth = ceil(arrowSpaceWidth / 2);
 	f32 arrowheight = ceil(item->size.y / 1.5);
-
+	
 	vec2 bgpos = vec2{ arrowSpaceWidth, 0 };
 	vec2 bgdim = vec2{ item->size.x - bgpos.x, item->size.y };
 	
@@ -2744,7 +2744,7 @@ void UI::PopRightIndent(u32 count){DPZoneScoped;
 
 void UI::PopDrawTarget(u32 count) {DPZoneScoped;
 	Assert(count < drawTargetStack.count
-);
+		   );
 	while (count-- > 0) {
 		drawTargetStack.pop();
 	}
@@ -3928,17 +3928,17 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 	Text("FPS: "); Text(toStr(1/DeshTime->deltaTime).str);
 	EndRow();
-
+	
 	if (BeginHeader("UI Stats")) {
 		BeginRow("Metrics_UI_Stats", 2, 0, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-
+		
 		Text("Windows: ");  Text(toStr(ui_stats.windows).str);
 		Text("Items: ");    Text(toStr(ui_stats.items).str);
 		Text("DrawCmds: "); Text(toStr(ui_stats.draw_cmds).str);
 		Text("Vertices: "); Text(toStr(ui_stats.vertices).str);
 		Text("Indices: ");  Text(toStr(ui_stats.indices).str);
-
+		
 		EndRow();
 		EndHeader();
 	}
@@ -4010,7 +4010,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 		SetNextWindowSize(vec2(MAX_F32, 300));
 		BeginChild("METRICSWindows", vec2::ZERO, UIWindowFlags_NoScrollX);
 		WinSetHovered(curwin);
-
+		
 		PushVar(UIStyleVar_SelectableTextAlign, vec2(0, 0.5));
 		for (UIWindow* window : windows) {
 			SetNextItemSize(vec2(MAX_F32, 0));
@@ -4276,7 +4276,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	
 	
 	WinUnSetHovered(curwin);
-
+	
 	End();
 	
 	//PopColor(5);
@@ -4711,7 +4711,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
 		Render::SetSurfaceDrawTargetByIdx(drawCmd.render_surface_target_idx);
-
+		
 		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
 		if(!lastdc) 
 			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
@@ -4724,7 +4724,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		drawCmd.scissorOffset = dcso;
 		lastdc = &drawCmd;
 	}
-
+	
 	Render::SetSurfaceDrawTargetByIdx(0);
 }
 
@@ -4842,8 +4842,8 @@ void UI::Update() {DPZoneScoped;
 	break_drawCmd_draw_hash = -1;
 #endif
 	
-
-
+	
+	
 	ui_stats = { 0 };
 	
 	//windows input checking functions
@@ -4858,7 +4858,9 @@ void UI::Update() {DPZoneScoped;
 	
 	//reset cursor to default if no item decided to set it 
 	if (!StateHasFlag(UISCursorSet)){
-		DeshWindow->SetCursor(CursorType_Arrow);
+		if(StateHasFlag(UISGlobalHovered)){
+			DeshWindow->SetCursor(CursorType_Arrow);
+		}
 	}else{
 		StateRemoveFlag(UISCursorSet);
 	}
@@ -4869,7 +4871,7 @@ void UI::Update() {DPZoneScoped;
 		DrawWindow(p);
 		WinUnSetBegan(p);
 	}
-
+	
 	if (show_metrics) {
 		DrawWindow(DisplayMetrics());
 		show_metrics = 0;
