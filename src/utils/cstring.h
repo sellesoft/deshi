@@ -6,23 +6,23 @@
 #include <cstring> //strncmp, memcpy
 
 global_ inline void
-advance(cstring* s, upt count = 1){
+advance(cstring* s, upt count = 1){DPZoneScoped;
     s->str += count; s->count -= count;
 }
 
 global_ inline b32
-equals(cstring a, cstring b){
+equals(cstring a, cstring b){DPZoneScoped;
 	return (a.count == b.count) && (strncmp(a.str, b.str, a.count) == 0);
 }
 
 global_ inline cstring 
-eat_until_char(cstring s, char c){
+eat_until_char(cstring s, char c){DPZoneScoped;
     for(upt i=0; i<s.count; ++i){ if(s[i] == c){ return cstring{s.str, i}; } }
     return cstring{};
 }
 
 global_ inline cstring 
-eat_until_char_skip_quotes(cstring s, char c){
+eat_until_char_skip_quotes(cstring s, char c){DPZoneScoped;
     bool in_quotes = false;
     for(upt i=0; i<s.count; ++i){ 
         if(s[i] == '\"') in_quotes = !in_quotes;
@@ -34,25 +34,25 @@ eat_until_char_skip_quotes(cstring s, char c){
 }
 
 global_ inline cstring
-eat_spaces(cstring s){
+eat_spaces(cstring s){DPZoneScoped;
     while(*s.str == ' '){ s.str++; s.count--; }
     return s;
 }
 
 global_ inline char*
-to_c_string(cstring s){
+to_c_string(cstring s){DPZoneScoped;
     char* cs = (char*)calloc(s.count+1, sizeof(char));
     memcpy(cs, s.str, s.count);
     return cs;
 }
 
 global_ inline upt
-isnumber(char c){
+isnumber(char c){DPZoneScoped;
     return (c >= '0' && c <= '9') ? true : false;
 }
 
 global_ inline upt
-ishex(char c){
+ishex(char c){DPZoneScoped;
     return ((c >= '0' && c <= '9') || 
             (c >= 'A' && c <= 'F') || 
             (c >= 'a' && c <= 'f') || 
@@ -60,7 +60,7 @@ ishex(char c){
 }
 
 global_ inline u64
-b10tou64(cstring s, cstring* next = 0){
+b10tou64(cstring s, cstring* next = 0){DPZoneScoped;
     u64 result = 0;
     u64 sign = 1;
     u32 idx = 0;
@@ -96,7 +96,7 @@ b10tou64(cstring s, cstring* next = 0){
 }
 
 global_ inline u64
-b16tou64(cstring s, cstring* next = 0){
+b16tou64(cstring s, cstring* next = 0){DPZoneScoped;
     u64 result = 0;
     u64 sign = 1;
     u32 idx = 0;
@@ -151,27 +151,27 @@ struct wcstring{
     wchar_t* str;
     u64    count;
 	
-    inline wchar_t operator[](u32 idx){ return str[idx]; }
-    inline explicit operator bool(){ return count; }
-    inline bool operator==(wcstring s){ return (count == s.count) && (wcsncmp(str, s.str, count) == 0); }
+    inline wchar_t operator[](u32 idx){DPZoneScoped; return str[idx]; }
+    inline explicit operator bool(){DPZoneScoped; return count; }
+    inline bool operator==(wcstring s){DPZoneScoped; return (count == s.count) && (wcsncmp(str, s.str, count) == 0); }
 };
 
 #define wcstring_lit(s) wcstring{(wchar_t*)s, sizeof(s)/2-1}
 #define wcstr_lit(s) wcstring{(wchar_t*)s, sizeof(s)/2-1}
 
 global_ inline void
-advance(wcstring* s, u64 count = 1){
+advance(wcstring* s, u64 count = 1){DPZoneScoped;
     s->str += count; s->count -= count;
 }
 
 global_ inline wcstring
-eat_until_char(wcstring s, wchar_t c){
+eat_until_char(wcstring s, wchar_t c){DPZoneScoped;
     for (u64 i = 0; i < s.count; ++i){ if(s[i] == c){ return wcstring{ s.str, i }; } }
     return wcstring{};
 }
 
 global_ inline wcstring
-eat_until_wchar_t_skip_quotes(wcstring s, wchar_t c){
+eat_until_wchar_t_skip_quotes(wcstring s, wchar_t c){DPZoneScoped;
     bool in_quotes = false;
     for (u64 i = 0; i < s.count; ++i){
         if(s[i] == '\"') in_quotes = !in_quotes;
@@ -183,25 +183,25 @@ eat_until_wchar_t_skip_quotes(wcstring s, wchar_t c){
 }
 
 global_ inline wcstring
-eat_spaces(wcstring s){
+eat_spaces(wcstring s){DPZoneScoped;
     while(*s.str == ' '){ s.str++; s.count--; }
     return s;
 }
 
 global_ inline wchar_t*
-to_c_string(wcstring s){
+to_c_string(wcstring s){DPZoneScoped;
     wchar_t* cs = (wchar_t*)calloc(s.count + 1, sizeof(wchar_t));
     memcpy(cs, s.str, s.count);
     return cs;
 }
 
 global_ inline u64
-isnumber(wchar_t c){
+isnumber(wchar_t c){DPZoneScoped;
     return (c >= '0' && c <= '9') ? true : false;
 }
 
 global_ inline u64
-ishex(wchar_t c){
+ishex(wchar_t c){DPZoneScoped;
     return ((c >= '0' && c <= '9') ||
 			(c >= 'A' && c <= 'F') ||
 			(c >= 'a' && c <= 'f') ||
@@ -209,7 +209,7 @@ ishex(wchar_t c){
 }
 
 global_ inline u64
-b10tou64(wcstring s, wcstring* next = 0){
+b10tou64(wcstring s, wcstring* next = 0){DPZoneScoped;
     u64 result = 0;
     u64 sign = 1;
     u32 idx = 0;
@@ -245,7 +245,7 @@ b10tou64(wcstring s, wcstring* next = 0){
 }
 
 global_ inline u64
-b16tou64(wcstring s, wcstring* next = 0){
+b16tou64(wcstring s, wcstring* next = 0){DPZoneScoped;
     u64 result = 0;
     u64 sign = 1;
     u32 idx = 0;

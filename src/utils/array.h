@@ -12,6 +12,10 @@
 #  define DESHI_ARRAY_ALLOCATOR stl_allocator
 #endif
 
+#ifdef TRACY_ENABLE
+#include "Tracy.hpp"
+#endif
+
 #include "../defines.h"
 #include <cstdlib>
 #include <cstring>
@@ -89,7 +93,7 @@ struct array{
 //// @constructors ////
 ///////////////////////
 template<typename T> inline array<T>::
-array(){
+array(){DPZoneScoped;
 	allocator = DESHI_ARRAY_ALLOCATOR;
 	
 	space = 0;
@@ -101,7 +105,7 @@ array(){
 }
 
 template<typename T> inline array<T>::
-array(Allocator* a){
+array(Allocator* a){DPZoneScoped;
 	allocator = a;
 	
 	space = 0;
@@ -113,7 +117,7 @@ array(Allocator* a){
 }
 
 template<typename T> inline array<T>::
-array(u32 _count, Allocator* a){
+array(u32 _count, Allocator* a){DPZoneScoped;
 	allocator = a;
 	
 	count = 0;
@@ -126,7 +130,7 @@ array(u32 _count, Allocator* a){
 }
 
 template<typename T> inline array<T>::
-array(std::initializer_list<T> l, Allocator* a){
+array(std::initializer_list<T> l, Allocator* a){DPZoneScoped;
 	allocator = a;
 	
 	count = l.size();
@@ -145,7 +149,7 @@ array(std::initializer_list<T> l, Allocator* a){
 //its necessary so when we return elements the entire array copies properly
 //so we have to make sure everything in the array gets recreated
 template<typename T> inline array<T>::
-array(const array<T>& array, Allocator* a){
+array(const array<T>& array, Allocator* a){DPZoneScoped;
 	allocator = a;
 	
 	count = array.count;
@@ -161,7 +165,7 @@ array(const array<T>& array, Allocator* a){
 }
 
 template<typename T> inline array<T>::
-array(T* _data, u32 _count, Allocator* a){
+array(T* _data, u32 _count, Allocator* a){DPZoneScoped;
 	allocator = a;
 	
 	count = _count;
@@ -226,7 +230,7 @@ size() const{
 }
 
 template<typename T> inline void array<T>::
-add(const T& t){
+add(const T& t){DPZoneScoped;
 	if(space == 0){ //if first item, allocate memory
 		space = DESHI_ARRAY_SPACE_ALIGNMENT;
 		data  = (T*)allocator->reserve(space*sizeof(T));
@@ -258,19 +262,19 @@ add(const T& t){
 }
 
 template<typename T> inline void array<T>::
-add_array(const array<T>& t){
+add_array(const array<T>& t){DPZoneScoped;
 	for(const T& item : t){
 		this->add(item);
 	}
 }
 
 template<typename T> inline void array<T>::
-emplace(const T& t){
+emplace(const T& t){DPZoneScoped;
 	this->add(t); //TODO emplace function signature should mimic the type's constructor
 }
 
 template<typename T> inline void array<T>::
-insert(const T& t, u32 idx){
+insert(const T& t, u32 idx){DPZoneScoped;
 	Assert(idx <= count);
 	if(space == 0){ //if first item, allocate memory
 		space = DESHI_ARRAY_SPACE_ALIGNMENT;
@@ -309,7 +313,7 @@ insert(const T& t, u32 idx){
 }
 
 template<typename T> inline void array<T>::
-pop(u32 _count){
+pop(u32 _count){DPZoneScoped;
 	Assert(count >= _count, "attempted to pop more than array size");
 	forI(_count){
 		last->~T();
@@ -325,7 +329,7 @@ pop(u32 _count){
 }	
 
 template<typename T> inline void array<T>::
-remove(u32 i){
+remove(u32 i){DPZoneScoped;
 	Assert(count > 0, "can't remove element from empty vector");
 	Assert(i < count, "index is out of bounds");
 	data[i].~T();
@@ -356,7 +360,7 @@ remove(u32 i){
 //}
 
 template<typename T> inline void array<T>::
-clear(){
+clear(){DPZoneScoped;
 	forI(count){ data[i].~T(); }
 	memset(data, 0, count*sizeof(T));
 	
@@ -367,7 +371,7 @@ clear(){
 }
 
 template<typename T> inline void array<T>::
-resize(u32 new_count){
+resize(u32 new_count){DPZoneScoped;
 	if(new_count > space){
 		space = new_count;
 		data = (T*)allocator->resize(data, space*sizeof(T));
@@ -391,7 +395,7 @@ resize(u32 new_count){
 }
 
 template<typename T> inline void array<T>::
-reserve(u32 new_space){
+reserve(u32 new_space){DPZoneScoped;
 	if(new_space > space){
 		space = RoundUpTo(new_space, DESHI_ARRAY_SPACE_ALIGNMENT);
 		data = (T*)allocator->resize(data, space*sizeof(T));
@@ -404,7 +408,7 @@ reserve(u32 new_space){
 }
 
 template<typename T> inline void array<T>::
-swap(u32 idx1, u32 idx2){
+swap(u32 idx1, u32 idx2){DPZoneScoped;
 	Assert(idx1 < count && idx2 < count, "index out of bounds");
 	Assert(idx1 != idx2, "can't swap an element with itself");
 	T save = data[idx1];
@@ -413,7 +417,7 @@ swap(u32 idx1, u32 idx2){
 }
 
 template<typename T> inline bool array<T>::
-has(const T& value){
+has(const T& value){DPZoneScoped;
 	for(const T& blahabuasjdas : *this){
 		if(blahabuasjdas == value){
 			return true;
@@ -423,13 +427,13 @@ has(const T& value){
 }
 
 template<typename T> inline T& array<T>::
-at(u32 i){
+at(u32 i){DPZoneScoped;
 	Assert(i < count);
 	return data[i];
 }
 
 template<typename T> inline T& array<T>::
-next(u32 count){
+next(u32 count){DPZoneScoped;
 	if (last - iter + 1 >= 0) {
 		iter += count;
 		return *iter;
@@ -438,42 +442,42 @@ next(u32 count){
 }
 
 template<typename T> inline T& array<T>::
-peek(u32 i){
+peek(u32 i){DPZoneScoped;
 	if(last - iter + 1 >= 0) return *(iter + i);
 	return *iter;
 }
 
 template<typename T> inline T& array<T>::
-prev(){
+prev(){DPZoneScoped;
 	if(first - iter + 1 >= 0) return *iter--;
 }
 
 template<typename T> inline T& array<T>::
-lookback(u32 i){
+lookback(u32 i){DPZoneScoped;
 	if(first - iter + 1 >= 0) return *(iter - i);
 }
 
 template<typename T> inline T* array<T>::
-nextptr(){
+nextptr(){DPZoneScoped;
 	if(iter + 1 - last >= 0) return iter++;
 	else return nullptr;
 }
 
 //TODO come up with a better name for this and the corresponding previous overload
 template<typename T> inline T* array<T>::
-peekptr(u32 i){
+peekptr(u32 i){DPZoneScoped;
 	if(iter + 1 - last >= 0) return iter + i;
 	else return nullptr;
 }
 
 template<typename T> inline T* array<T>::
-prevptr(){
+prevptr(){DPZoneScoped;
 	if(iter - 1 - first >= 0) return iter--;
 	else return nullptr;
 }
 
 template<typename T> inline T* array<T>::
-lookbackptr(u32 i){
+lookbackptr(u32 i){DPZoneScoped;
 	if(iter - 1 - first >= 0) return iter - i;
 	else return nullptr;
 }

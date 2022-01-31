@@ -5,6 +5,13 @@
 #include "../defines.h"
 #include "../math/vector.h"
 
+#ifdef DESHI_PROFILE_WINDOW
+#define DPWinFrameMark DPFrameMark
+#define DPWinZoneScoped DPZoneScoped
+#define DPWinZoneScopedN(name) DPZoneScopedN(name)
+//TODO continue this idea for this and other modules 
+#endif
+
 struct Input;
 struct GLFWwindow;
 struct GLFWmonitor;
@@ -100,7 +107,8 @@ struct Window{
 	b32 resizable;
 	b32 closeWindow;
 
-	u32 titlebarheight = 0;
+	s32 titlebarheight = 0;
+	s32 borderthickness = 0;
 	
 	vec2 dimensions;
 	

@@ -249,7 +249,7 @@ u32 break_drawCmd_draw_hash = -1;
 
 //this calculates text taking into account newlines, BUT NOT WRAPPING
 //useful for sizing a window to fit some text
-vec2 UI::CalcTextSize(cstring text){
+vec2 UI::CalcTextSize(cstring text){DPZoneScoped;
 	vec2 result = vec2{0, f32(style.fontHeight)};
 	f32 line_width = 0;
 	switch(style.font->type){
@@ -280,7 +280,7 @@ vec2 UI::CalcTextSize(cstring text){
 	return result;
 }
 
-vec2 UI::CalcTextSize(wcstring text) {
+vec2 UI::CalcTextSize(wcstring text) {DPZoneScoped;
 	vec2 result = vec2{ 0, f32(style.fontHeight) };
 	f32 line_width = 0;
 	switch (style.font->type) {
@@ -311,15 +311,15 @@ vec2 UI::CalcTextSize(wcstring text) {
 	return result;
 }
 
-inline b32 isItemHovered(UIItem* item) {
+inline b32 isItemHovered(UIItem* item) {DPZoneScoped;
 	return Math::PointInRectangle(DeshInput->mousePos, item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
 
-inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
+inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {DPZoneScoped;
 	return Math::PointInRectangle(DeshInput->mousePos, pos + item->position + curwin->position, size);
 }
 
-inline b32 isItemActive(UIItem* item) {
+inline b32 isItemActive(UIItem* item) {DPZoneScoped;
 	return WinHovered(curwin) && CanTakeInput && isItemHovered(item);
 }
 
@@ -329,7 +329,7 @@ inline b32 isItemActive(UIItem* item) {
 //  i expect this to fall through at some point, as not all items are created equal and may need to
 //  have different things happen after its creation, which could be handled as special cases within
 //  the function itself.
-inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
+inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {DPZoneScoped;
 	
 	//if a row is in progress, we must reposition the item to conform to row style variables
 	//this means that you MUST ensure that this happens before any interactions with the item are calculated
@@ -377,17 +377,17 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 }
 
 //returns if the window can scroll over x
-inline b32 CanScrollX(UIWindow* window = curwin) {
+inline b32 CanScrollX(UIWindow* window = curwin) {DPZoneScoped;
 	return !HasFlag(window->flags, UIWindowFlags_NoScrollX) && window->width < window->minSizeForFit.x;
 }
 
-inline b32 CanScrollY(UIWindow* window = curwin) {
+inline b32 CanScrollY(UIWindow* window = curwin) {DPZoneScoped;
 	return !HasFlag(window->flags, UIWindowFlags_NoScrollY) && window->height < window->minSizeForFit.y;
 }
 
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
-inline vec2 PositionForNewItem(UIWindow* window = curwin) {
+inline vec2 PositionForNewItem(UIWindow* window = curwin) {DPZoneScoped;
 	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
@@ -396,7 +396,7 @@ inline vec2 PositionForNewItem(UIWindow* window = curwin) {
 
 //returns a pair representing the area of the window that is bordered
 //first is the position and second is the size
-inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin) {
+inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin) {DPZoneScoped;
 	return make_pair(
 					 vec2::ONE * style.windowBorderSize,
 					 window->dimensions - vec2::ONE * 2 * style.windowBorderSize
@@ -404,7 +404,7 @@ inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin) {
 }
 
 //same as the bordered area, but also takes into account the margins
-inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin) {
+inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin) {DPZoneScoped;
 	vec2 f = vec2::ONE * style.windowBorderSize + vec2::ONE * style.windowPadding;
 	vec2 s = window->dimensions - 2 * f - MarginSizeOffset;
 	s.x -= (CanScrollY() ? style.scrollBarYWidth : 0);
@@ -414,7 +414,7 @@ inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin) {
 }
 
 //the bordered area taking into account the scroll bars
-inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin) {
+inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin) {DPZoneScoped;
 	auto p = BorderedArea(window);
 	p.second.x -= (CanScrollY(window) ? style.scrollBarYWidth : 0);
 	p.second.y -= (CanScrollX(window) ? style.scrollBarXHeight : 0);
@@ -423,35 +423,35 @@ inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin) {
 
 //TODO(sushi) eventually change these to always use curwin instead of checking everytime
 // probably just separate them into 2 overloaded functions each instead
-FORCE_INLINE f32 BorderedRight(UIWindow* window = curwin)  { return window->dimensions.x - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedRight(UIWindow* window = curwin)  {DPZoneScoped; return window->dimensions.x - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   {DPZoneScoped; return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    {DPZoneScoped; return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) {DPZoneScoped; return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 
-FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
-FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
-FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
-FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) { f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
+FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  {DPZoneScoped; f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
+FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   {DPZoneScoped; return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
+FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    {DPZoneScoped; return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
+FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) {DPZoneScoped; f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
 
-FORCE_INLINE f32 ScrollBaredRight(UIWindow* window = curwin)  { return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
-FORCE_INLINE f32 ScrollBaredLeft(UIWindow* window = curwin)   { return BorderedLeft(window); }
-FORCE_INLINE f32 ScrollBaredTop(UIWindow* window = curwin)    { return BorderedTop(window); }
-FORCE_INLINE f32 ScrollBaredBottom(UIWindow* window = curwin) { return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
+FORCE_INLINE f32 ScrollBaredRight(UIWindow* window = curwin)  {DPZoneScoped; return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
+FORCE_INLINE f32 ScrollBaredLeft(UIWindow* window = curwin)   {DPZoneScoped; return BorderedLeft(window); }
+FORCE_INLINE f32 ScrollBaredTop(UIWindow* window = curwin)    {DPZoneScoped; return BorderedTop(window); }
+FORCE_INLINE f32 ScrollBaredBottom(UIWindow* window = curwin) {DPZoneScoped; return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
 
 //return the maximum width an item can be in a non-scrolled state
-FORCE_INLINE f32 MaxItemWidth(UIWindow* window = curwin) {
+FORCE_INLINE f32 MaxItemWidth(UIWindow* window = curwin) {DPZoneScoped;
 	return MarginedRight(window) - MarginedLeft(window);
 }
 
-FORCE_INLINE b32 MouseInArea(vec2 pos, vec2 size) {
+FORCE_INLINE b32 MouseInArea(vec2 pos, vec2 size) {DPZoneScoped;
 	return Math::PointInRectangle(DeshInput->mousePos, pos, size);
 }
 
-FORCE_INLINE b32 MouseInWinArea(vec2 pos, vec2 size) {
+FORCE_INLINE b32 MouseInWinArea(vec2 pos, vec2 size) {DPZoneScoped;
 	return Math::PointInRectangle(DeshInput->mousePos - curwin->position, pos, size);
 }
 
-inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
+inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
 	vec2 size;
 	if (NextItemSize.x != -1) {
 		if (NextItemSize.x == MAX_F32)
@@ -489,70 +489,70 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 	return size;
 }
 
-FORCE_INLINE void SetWindowCursor(CursorType curtype) {
+FORCE_INLINE void SetWindowCursor(CursorType curtype) {DPZoneScoped;
 	DeshWindow->SetCursor(curtype);
 	StateAddFlag(UISCursorSet);
 }
 
-FORCE_INLINE vec2 GetTextScale() {
+FORCE_INLINE vec2 GetTextScale() {DPZoneScoped;
 	return vec2::ONE * style.fontHeight / (f32)style.font->max_height;
 }
 
 
-UIStyle& UI::GetStyle(){
+UIStyle& UI::GetStyle(){DPZoneScoped;
 	return style;
 }
 
-UIWindow* UI::GetWindow() {
+UIWindow* UI::GetWindow() {DPZoneScoped;
 	return curwin;
 }
 
-vec2 UI::GetLastItemPos() {
+vec2 UI::GetLastItemPos() {DPZoneScoped;
 	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
 	return curwin->items[currlayer].last->position;
 }
 
-vec2 UI::GetLastItemSize() {
+vec2 UI::GetLastItemSize() {DPZoneScoped;
 	//Assert(curwin->items.count, "Attempt to get last item size without creating any items!");
 	return curwin->items[currlayer].last->size;
 }
 
-vec2 UI::GetLastItemScreenPos() {
+vec2 UI::GetLastItemScreenPos() {DPZoneScoped;
 	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
 	return curwin->position + curwin->items[currlayer].last->position;
 }
 
-vec2 UI::GetWindowRemainingSpace() {
+vec2 UI::GetWindowRemainingSpace() {DPZoneScoped;
 	return vec2(MarginedRight() - curwin->curx, MarginedBottom() - curwin->cury);
 }
 
-vec2 UI::GetPositionForNextItem() {
+vec2 UI::GetPositionForNextItem() {DPZoneScoped;
 	return PositionForNewItem();
 }
 
-u32 UI::GetCenterLayer() {
+u32 UI::GetCenterLayer() {DPZoneScoped;
 	return UI_CENTER_LAYER;
 }
 
-f32 UI::GetBorderedRight()                { return BorderedRight(); }
-f32 UI::GetBorderedLeft()                 { return BorderedLeft(); }
-f32 UI::GetBorderedTop()                  { return BorderedTop(); }
-f32 UI::GetBorderedBottom()               { return BorderedBottom(); }
-f32 UI::GetMarginedRight()                { return MarginedRight(); }
-f32 UI::GetMarginedLeft()                 { return MarginedLeft(); }
-f32 UI::GetMarginedTop()                  { return MarginedTop(); }
-f32 UI::GetMarginedBottom()               { return MarginedBottom(); }
-f32 UI::GetScrollBaredRight()             { return ScrollBaredRight(); }
-f32 UI::GetScrollBaredLeft()              { return ScrollBaredLeft(); }
-f32 UI::GetScrollBaredTop()               { return ScrollBaredTop(); }
-f32 UI::GetScrollBaredBottom()            { return ScrollBaredBottom(); }
-pair<vec2, vec2> UI::GetBorderedArea()    { return BorderedArea(); }
-pair<vec2, vec2> UI::GetMarginedArea()    { return MarginedArea(); }
-pair<vec2, vec2> UI::GetScrollBaredArea() { return ScrollBaredArea(); }
+f32 UI::GetBorderedRight()                {DPZoneScoped; return BorderedRight(); }
+f32 UI::GetBorderedLeft()                 {DPZoneScoped; return BorderedLeft(); }
+f32 UI::GetBorderedTop()                  {DPZoneScoped; return BorderedTop(); }
+f32 UI::GetBorderedBottom()               {DPZoneScoped; return BorderedBottom(); }
+f32 UI::GetMarginedRight()                {DPZoneScoped; return MarginedRight(); }
+f32 UI::GetMarginedLeft()                 {DPZoneScoped; return MarginedLeft(); }
+f32 UI::GetMarginedTop()                  {DPZoneScoped; return MarginedTop(); }
+f32 UI::GetMarginedBottom()               {DPZoneScoped; return MarginedBottom(); }
+f32 UI::GetScrollBaredRight()             {DPZoneScoped; return ScrollBaredRight(); }
+f32 UI::GetScrollBaredLeft()              {DPZoneScoped; return ScrollBaredLeft(); }
+f32 UI::GetScrollBaredTop()               {DPZoneScoped; return ScrollBaredTop(); }
+f32 UI::GetScrollBaredBottom()            {DPZoneScoped; return ScrollBaredBottom(); }
+pair<vec2, vec2> UI::GetBorderedArea()    {DPZoneScoped; return BorderedArea(); }
+pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; return MarginedArea(); }
+pair<vec2, vec2> UI::GetScrollBaredArea() {DPZoneScoped; return ScrollBaredArea(); }
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
-void UI::SameLine() {
+void UI::SameLine() {DPZoneScoped;
 	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
 	if (curwin->items[currlayer].last) {
 		curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
@@ -560,7 +560,7 @@ void UI::SameLine() {
 	}
 }
 
-void UI::SetScroll(vec2 scroll) {
+void UI::SetScroll(vec2 scroll) {DPZoneScoped;
 	if (scroll.x == MAX_F32)
 		curwin->scx = curwin->maxScroll.x;
 	else
@@ -572,44 +572,44 @@ void UI::SetScroll(vec2 scroll) {
 		curwin->scy = scroll.y;
 }
 
-void UI::SetNextItemActive() {
+void UI::SetNextItemActive() {DPZoneScoped;
 	StateAddFlag(UISNextItemActive);
 }
 
-void UI::SetNextItemSize(vec2 size) {
+void UI::SetNextItemSize(vec2 size) {DPZoneScoped;
 	NextItemSize = size;
 }
 
-void UI::SetMarginPositionOffset(vec2 offset) {
+void UI::SetMarginPositionOffset(vec2 offset) {DPZoneScoped;
 	MarginPositionOffset = offset;
 }
 
-void UI::SetMarginSizeOffset(vec2 offset){
+void UI::SetMarginSizeOffset(vec2 offset){DPZoneScoped;
 	MarginSizeOffset = offset;
 }
 
-void UI::SetNextItemMinSizeIgnored() {
+void UI::SetNextItemMinSizeIgnored() {DPZoneScoped;
 	StateAddFlag(UISNextItemMinSizeIgnored);
 }
 
-void UI::SetPreventInputs() {
+void UI::SetPreventInputs() {DPZoneScoped;
 	inputState = ISExternalPreventInputs;
 }
 
-void UI::SetAllowInputs() {
+void UI::SetAllowInputs() {DPZoneScoped;
 	if(inputState == ISExternalPreventInputs)
 		AllowInputs;
 }
 
 
 //internal last item getter, returns nullptr if there are none
-FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {
+FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {DPZoneScoped;
 	return curwin->items[currlayer + layeroffset].last;
 }
 
 //helper for making any new UIItem, since now we must work with item pointers internally
 //this function also decides if we are working with a new item or continuing to work on a previous
-inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0) {
+inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0) {DPZoneScoped;
 	
 	if (type == UIItemType_PreItems) {
 		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
@@ -644,11 +644,11 @@ inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0
 	return UI::GetLastItem(layeroffset);
 }
 
-inline void EndItem(UIItem* item) {}
+inline void EndItem(UIItem* item) {DPZoneScoped;}
 
 //this is for debugging debug cmds, all it does extra is hash the drawCmd
 //so we can break on it later
-inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
+inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {DPZoneScoped;
 	if (!drawCmd.tex) drawCmd.tex = style.font->tex;
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
 	drawCmd.render_surface_target_idx = *drawTargetStack.last;
@@ -663,7 +663,7 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
-MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {
+MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -690,14 +690,14 @@ MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end,
 }
 
 FORCE_INLINE void
-MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color) {
+MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color) {DPZoneScoped;
 	drawCmd.counts += MakeLine(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
 	drawCmd.type = UIDrawType_Line;
 }
 
 //3 verts, 3 indices
 FORCE_INLINE vec2 
-MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color) {
+MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -714,13 +714,13 @@ MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, ve
 }
 
 FORCE_INLINE void
-MakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color) {
+MakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color) {DPZoneScoped;
 	drawCmd.counts += MakeFilledTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, color);
 	drawCmd.type = UIDrawType_FilledTriangle;
 }
 
 FORCE_INLINE vec2
-MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color) {
+MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -761,14 +761,14 @@ MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1,
 }
 
 FORCE_INLINE void
-MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color) {
+MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color) {DPZoneScoped;
 	drawCmd.counts += MakeTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, thickness, color);
 	drawCmd.type = UIDrawType_Triangle;
 }
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
-MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color) {
+MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -791,13 +791,13 @@ MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 
 }
 
 FORCE_INLINE void
-MakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color) {
+MakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color) {DPZoneScoped;
 	drawCmd.counts += MakeFilledRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, color);
 	drawCmd.type = UIDrawType_FilledRectangle;
 }
 //8 verts, 24 indices
 FORCE_INLINE vec2
-MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color) {
+MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -837,13 +837,13 @@ MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, 
 }
 
 FORCE_INLINE void
-MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color) {
+MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color) {DPZoneScoped;
 	drawCmd.counts += MakeRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
 	drawCmd.type = UIDrawType_Rectangle;
 }
 
 FORCE_INLINE vec2
-MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color) {
+MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -880,13 +880,13 @@ MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radiu
 }
 
 FORCE_INLINE void
-MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color) {
+MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color) {DPZoneScoped;
 	drawCmd.counts += MakeCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, thickness, color);
 	drawCmd.type = UIDrawType_Circle;
 }
 
 FORCE_INLINE vec2 
-MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
+MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -920,13 +920,13 @@ MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32
 }
 
 FORCE_INLINE void
-MakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color) {
+MakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color) {DPZoneScoped;
 	drawCmd.counts += MakeFilledCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions_int, color);
 	drawCmd.type = UIDrawType_FilledCircle;
 }
 
 FORCE_INLINE vec2
-MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 pos, color color, vec2 scale) {
+MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 pos, color color, vec2 scale) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -983,14 +983,14 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 po
 }
 
 FORCE_INLINE void
-MakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale) {
+MakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale) {DPZoneScoped;
 	drawCmd.counts += MakeText(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, pos, color, scale);
 	drawCmd.tex = style.font->tex;
 	drawCmd.type = UIDrawType_Text;
 }
 
 FORCE_INLINE vec2
-MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 pos, color color, vec2 scale) {
+MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 pos, color color, vec2 scale) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
@@ -1047,13 +1047,13 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 p
 }
 
 FORCE_INLINE void
-MakeText(UIDrawCmd& drawCmd, wcstring text, vec2 pos, color color, vec2 scale) {
+MakeText(UIDrawCmd& drawCmd, wcstring text, vec2 pos, color color, vec2 scale) {DPZoneScoped;
 	drawCmd.counts += MakeText(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, pos, color, scale);
 	drawCmd.type = UIDrawType_Text;
 }
 
 FORCE_INLINE vec2 
-MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0) {
+MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (!alpha) return vec2::ZERO;
 	
@@ -1082,56 +1082,56 @@ MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, 
 }
 
 FORCE_INLINE void
-MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha, b32 flipx = 0, b32 flipy = 0) {
+MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha, b32 flipx = 0, b32 flipy = 0) {DPZoneScoped;
 	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha, flipx, flipy);
 	drawCmd.type = UIDrawType_Image;
 	drawCmd.tex = texture;
 }
 
 //internal debug drawing functions
-void DebugTriangle(vec2 p0, vec2 p1, vec2 p2, color col = Color_Red) {
+void DebugTriangle(vec2 p0, vec2 p1, vec2 p2, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeTriangle(dc, p0, p1, p2, 1, col);
 	debugCmds.add(dc);
 }
 
-void DebugTriangleFilled(vec2 p0, vec2 p1, vec2 p2, color col = Color_Red) {
+void DebugTriangleFilled(vec2 p0, vec2 p1, vec2 p2, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeFilledTriangle(dc, p0, p1, p2, col);
 	debugCmds.add(dc);
 }
 
-void DebugRect(vec2 pos, vec2 size, color col = Color_Red) {
+void DebugRect(vec2 pos, vec2 size, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeRect(dc, pos, size, 1, col);
 	debugCmds.add(dc);
 }
 
-void DebugRectFilled(vec2 pos, vec2 size, color col = Color_Red) {
+void DebugRectFilled(vec2 pos, vec2 size, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeFilledRect(dc, pos, size, col);
 	debugCmds.add(dc);
 }
 
-void DebugCircle(vec2 pos, f32 radius, color col = Color_Red) {
+void DebugCircle(vec2 pos, f32 radius, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeCircle(dc, pos, radius, 20, 1, col);
 	debugCmds.add(dc);
 }
 
-void DebugCircleFilled(vec2 pos, f32 radius, color col = Color_Red) {
+void DebugCircleFilled(vec2 pos, f32 radius, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeFilledCircle(dc, pos, radius, 20, col);
 	debugCmds.add(dc);
 }
 
-void DebugLine(vec2 pos, vec2 pos2, color col = Color_Red) {
+void DebugLine(vec2 pos, vec2 pos2, color col = Color_Red) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeLine(dc, pos, pos2, 1, col);
 	debugCmds.add(dc);
 }
 
-void DebugText(vec2 pos, char* text, color col = Color_White) {
+void DebugText(vec2 pos, char* text, color col = Color_White) {DPZoneScoped;
 	UIDrawCmd dc;
 	MakeText(dc, cstring{ text, strlen(text) }, pos, col, vec2::ONE);
 	debugCmds.add(dc);
@@ -1144,7 +1144,7 @@ void DebugText(vec2 pos, char* text, color col = Color_White) {
 //  so you are required to define a static height upon calling the function
 //
 
-void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags) {
+void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags) {DPZoneScoped;
 	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
 	if (!rows.has(label)) { 
 		rows.add(label); 
@@ -1164,7 +1164,7 @@ void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flag
 	StateAddFlag(UISRowBegan);
 }
 
-void UI::EndRow() {
+void UI::EndRow() {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
 	Assert(row->item_count % row->columns.count == 0, "Attempted to end a Row without giving the correct amount of items!");
 	
@@ -1187,7 +1187,7 @@ void UI::EndRow() {
 }
 
 //this function sets up a static column width for a specified column that does not respect the size of the object
-void UI::RowSetupColumnWidth(u32 column, f32 width) {
+void UI::RowSetupColumnWidth(u32 column, f32 width) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
 	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
 	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
@@ -1195,7 +1195,7 @@ void UI::RowSetupColumnWidth(u32 column, f32 width) {
 }
 
 //this function sets up static column widths that do not respect the size of the item at all
-void UI::RowSetupColumnWidths(array<f32> widths) {
+void UI::RowSetupColumnWidths(array<f32> widths) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
 	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
@@ -1204,7 +1204,7 @@ void UI::RowSetupColumnWidths(array<f32> widths) {
 }
 
 //see the function below for what this does
-void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
+void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
 	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
 	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
@@ -1214,7 +1214,7 @@ void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
 //this function sets it so that column widths are relative to the size of the item the cell holds
 //meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
 //1.2 * width of the item
-void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
+void UI::RowSetupRelativeColumnWidths(array<f32> widths) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
 	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
@@ -1222,7 +1222,7 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
 		row->columns[i] = { widths[i], true };
 }
 
-void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {
+void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(ratios.count == row->columns.count);
 	AddFlag(row->flags, UIRowFlags_FitWidthOfArea);
@@ -1237,7 +1237,7 @@ void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {
 	Assert(1 - ratio_sum < 0.999998888f, "ratios given do not add up to one!");
 }
 
-void UI::RowSetupColumnAlignments(array<vec2> alignments) {
+void UI::RowSetupColumnAlignments(array<vec2> alignments) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(alignments.count == row->columns.count);
 	forI(row->columns.count)
@@ -1253,7 +1253,7 @@ enum ButtonType_ {
 	ButtonType_TrueOnPressed,
 }; typedef u32 ButtonType;
 
-b32 ButtonBehavoir(ButtonType type) {
+b32 ButtonBehavoir(ButtonType type) {DPZoneScoped;
 	switch (type) {
 		case ButtonType_TrueOnHold: {
 			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
@@ -1275,7 +1275,7 @@ b32 ButtonBehavoir(ButtonType type) {
 }
 
 //returns true if buffer was changed
-b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32& cursor) {
+b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32& cursor) {DPZoneScoped;
 	persist TIMER_START(throttle);
 	
 	auto insert = [&](char c, u32 idx) {
@@ -1342,7 +1342,7 @@ b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32
 //@Primitive Items
 
 
-void UI::Rect(vec2 pos, vec2 dimen, color color) {
+void UI::Rect(vec2 pos, vec2 dimen, color color) {DPZoneScoped;
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeRect(drawCmd, vec2::ZERO, dimen, 1, color);
@@ -1353,7 +1353,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	curwin->items[currlayer].add(item);
 }
 
-void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
+void UI::RectFilled(vec2 pos, vec2 dimen, color color) {DPZoneScoped;
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeFilledRect(drawCmd, vec2::ZERO, dimen, color);
@@ -1368,7 +1368,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 //@Line
 
 
-void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
+void UI::Line(vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeLine(drawCmd, start, end, thickness, color);
@@ -1383,7 +1383,7 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 //@Circle
 
 
-void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color color) {
+void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color color) {DPZoneScoped;
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeCircle(drawCmd, pos, radius, subdivisions, thickness, color);
@@ -1397,7 +1397,7 @@ void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color col
 	
 }
 
-void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
+void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {DPZoneScoped;
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeFilledCircle(drawCmd, pos, radius, subdivisions, color);
@@ -1422,14 +1422,14 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 
 
 //internal function for actually making and adding the drawCmd
-local void TextCall(char* text, vec2 pos, color color, UIItem* item) {
+local void TextCall(char* text, vec2 pos, color color, UIItem* item) {DPZoneScoped;
 	UIDrawCmd drawCmd;
 	MakeText(drawCmd, cstring{ text, strlen(text) }, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
 
 //secondary, for unicode
-local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {
+local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {DPZoneScoped;
 	UIDrawCmd drawCmd;
 	MakeText(drawCmd, wcstring{ text, wcslen(text) }, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
@@ -1437,7 +1437,7 @@ local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
-local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {
+local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
 	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
@@ -1592,7 +1592,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 
 //second function for wrapping, using unicode
 //these can probably be merged into one but i dont feel like doing that rn
-local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {
+local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
 	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
@@ -1742,27 +1742,27 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 	AdvanceCursor(item, move_cursor);
 }
 
-void UI::Text(const char* text, UITextFlags flags) {
+void UI::Text(const char* text, UITextFlags flags) {DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
-void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
+void UI::Text(const char* text, vec2 pos, UITextFlags flags) {DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
-void UI::Text(const wchar* text, UITextFlags flags){
+void UI::Text(const wchar* text, UITextFlags flags){DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
-void UI::Text(const wchar* text, vec2 pos, UITextFlags flags){
+void UI::Text(const wchar* text, vec2 pos, UITextFlags flags){DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
-void UI::TextF(const char* fmt, ...) {
+void UI::TextF(const char* fmt, ...) {DPZoneScoped;
 	string s;
 	va_list argptr;
 	va_start(argptr, fmt);
@@ -1777,7 +1777,7 @@ void UI::TextF(const char* fmt, ...) {
 
 //@Button
 
-b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
+b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Button, flags);
 	item->position = pos;
 	item->size = DecideItemSize(vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
@@ -1826,13 +1826,13 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	return false;
 }
 
-b32 UI::Button(const char* text, UIButtonFlags flags) {
+b32 UI::Button(const char* text, UIButtonFlags flags) {DPZoneScoped;
 	return Button(text, PositionForNewItem(), flags);
 }
 
 //@Checkbox
 
-void UI::Checkbox(string label, b32* b) {
+void UI::Checkbox(string label, b32* b) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Checkbox);
 	
 	vec2 boxpos = PositionForNewItem();
@@ -1896,7 +1896,7 @@ void UI::Checkbox(string label, b32* b) {
 //@Combo
 
 //a combo is built by selectables called within its Begin/End
-b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
+b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Combo, 1);
 	item->position = pos;
 	item->size = DecideItemSize(CalcTextSize(prev_val) * 1.5, item->position);
@@ -1951,13 +1951,13 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	return false;
 }
 
-b32 UI::BeginCombo(const char* label, const char* prev_val) {
+b32 UI::BeginCombo(const char* label, const char* prev_val) {DPZoneScoped;
 	return BeginCombo(label, prev_val, PositionForNewItem());
 }
 
 
 
-void UI::EndCombo() {
+void UI::EndCombo() {DPZoneScoped;
 	Assert(StateHasFlag(UISComboBegan), "Attempted to end a combo without calling BeginCombo first, or EndCombo was called for a combo that was not open!");
 	StateRemoveFlag(UISComboBegan);
 	EndPopOut();
@@ -1966,7 +1966,7 @@ void UI::EndCombo() {
 
 //@Selectable
 
-b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 1) {
+b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 1) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Selectable, 0, 0);
 	item->position = pos;
 	
@@ -2014,17 +2014,17 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	return clicked;
 }
 
-b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
+b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {DPZoneScoped;
 	return SelectableCall(label, pos, selected, 0);
 }
 
-b32 UI::Selectable(const char* label, b32 selected) {
+b32 UI::Selectable(const char* label, b32 selected) {DPZoneScoped;
 	return SelectableCall(label, PositionForNewItem(), selected);
 }
 
 //@Header
 
-b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
+b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Header, flags);
 	
 	b32* open = 0;
@@ -2116,14 +2116,14 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {
 	return *open;
 }
 
-void UI::EndHeader() {
+void UI::EndHeader() {DPZoneScoped;
 	PopLeftIndent();
 	PopRightIndent();
 }
 
 //@BeginTabBar
 
-void UI::BeginTabBar(const char* label, UITabBarFlags flags){
+void UI::BeginTabBar(const char* label, UITabBarFlags flags){DPZoneScoped;
 	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
 	StateAddFlag(UISTabBarBegan);
 	if (!tabBars.has(label)) tabBars.add(label);
@@ -2153,7 +2153,7 @@ void UI::BeginTabBar(const char* label, UITabBarFlags flags){
 	}
 }
 
-b32 UI::BeginTab(const char* label){
+b32 UI::BeginTab(const char* label){DPZoneScoped;
 	Assert(StateHasFlag(UISTabBarBegan), "attempt to begin a tab without beginning a tab bar first");
 	
 	UITab* tab = 0;
@@ -2219,14 +2219,14 @@ b32 UI::BeginTab(const char* label){
 	return selected;
 }
 
-void UI::EndTab() {
+void UI::EndTab() {DPZoneScoped;
 	Assert(StateHasFlag(UISTabBegan), "attempt to end a tab without beginning one first");
 	StateRemoveFlag(UISTabBegan);
 	if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PopLeftIndent();
 	if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PopRightIndent();
 }
 
-void UI::EndTabBar(){
+void UI::EndTabBar(){DPZoneScoped;
 	Assert(!StateHasFlag(UISTabBegan), "attempt to end a tab bar without ending a tab");
 	Assert(StateHasFlag(UISTabBarBegan), "attempt to end a tab bar without beginning one first");
 	StateRemoveFlag(UISTabBarBegan);
@@ -2245,7 +2245,7 @@ void UI::EndTabBar(){
 //@Slider
 
 
-void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){
+void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Slider, flags);
 	
 	b32 being_moved = 0;
@@ -2312,7 +2312,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 
 //@Image
 
-void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
+void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Image, flags);
 	
 	item->position = pos;
@@ -2335,12 +2335,12 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	
 }
 
-void UI::Image(Texture* image, f32 alpha, UIImageFlags flags) {
+void UI::Image(Texture* image, f32 alpha, UIImageFlags flags) {DPZoneScoped;
 	Image(image, PositionForNewItem(), alpha, flags);
 }
 
 
-void UI::Separator(f32 height) {
+void UI::Separator(f32 height) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Separator);
 	item->position = PositionForNewItem();
 	item->size = vec2(MarginedRight() - item->position.x, height);
@@ -2361,7 +2361,7 @@ void UI::Separator(f32 height) {
 
 
 //final input text
-b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
+b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_InputText, flags);
 	
 	UIItem* item = BeginItem(UIItemType_InputText);
@@ -2533,35 +2533,35 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	return false;
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, nullptr, flags, 1);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, callback, flags, 1);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 0, pos, preview, nullptr, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 0, pos, preview, callback, flags, 0);
 }
 
-b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, nullptr, flags, 1);
 }
 
-b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, callback, flags, 1);
 }
 
-b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 1, pos, preview, nullptr, flags, 0);
 }
 
-b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {DPZoneScoped;
 	return InputTextCall(label, buffer, buffSize, 1, pos, preview, callback, flags, 0);
 }
 
@@ -2577,39 +2577,39 @@ enum CustomItemStage_{
 CustomItemStage cistage = CISNone;
 
 //@BeginCustomItem
-UIItem* UI::BeginCustomItem(u32 layeroffset) {
+UIItem* UI::BeginCustomItem(u32 layeroffset) {DPZoneScoped;
 	Assert(!cistage, "attempt to start a custom item");
 	AddFlag(cistage, CISItemBegan);
 	return BeginItem(UIItemType_Custom, layeroffset);
 }
 
-void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {
+void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {DPZoneScoped;
 	Assert(HasFlag(cistage, CISItemBegan), "attempt to advance a custom item who has not begun!");
 	AddFlag(cistage, CISItemAdvancedCursor);
 	AdvanceCursor(item, move_cursor);
 	
 }
 
-void UI::EndCustomItem() {
+void UI::EndCustomItem() {DPZoneScoped;
 	Assert(HasFlag(cistage, CISItemBegan), "attempt to end a custom item that hasnt been started");
 	Assert(HasFlag(cistage, CISItemAdvancedCursor), "attempt to end a custom item who hasnt advanced the cursor yet");
 	cistage = CISNone;
 }
 
 
-b32 UI::IsLastItemHovered(){ //TODO handle layers
+b32 UI::IsLastItemHovered(){DPZoneScoped; //TODO handle layers
 	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize());
 }
 
-void UI::AddItemFlags(UIItemType type, Flags flags){
+void UI::AddItemFlags(UIItemType type, Flags flags){DPZoneScoped;
 	AddFlag(itemFlags[type], flags);
 }
 
-void UI::RemoveItemFlags(UIItemType type, Flags flags){
+void UI::RemoveItemFlags(UIItemType type, Flags flags){DPZoneScoped;
 	RemoveFlag(itemFlags[type], flags);
 }
 
-void UI::ResetItemFlags(UIItemType type){
+void UI::ResetItemFlags(UIItemType type){DPZoneScoped;
 	itemFlags[type] = 0;
 }
 
@@ -2619,67 +2619,67 @@ void UI::ResetItemFlags(UIItemType type){
 
 
 //Push/Pop functions
-void UI::PushColor(UIStyleCol idx, color color) {
+void UI::PushColor(UIStyleCol idx, color color) {DPZoneScoped;
 	//save old color
 	colorStack.add(ColorMod{ idx, style.colors[idx] });
 	//change to new color
 	style.colors[idx] = color;
 }
 
-void UI::PushVar(UIStyleVar idx, f32 nuStyle) {
+void UI::PushVar(UIStyleVar idx, f32 nuStyle) {DPZoneScoped;
 	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a f32 on a vec2 style variable!");
 	f32* p = (f32*)((u8*)&style + uiStyleVarTypes[idx].offset);
 	varStack.add(VarMod(idx, *p));
 	*p = nuStyle;
 }
 
-void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {
+void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {DPZoneScoped;
 	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a f32 on a vec2 style variable!");
 	vec2* p = (vec2*)((u8*)&style + uiStyleVarTypes[idx].offset);
 	varStack.add(VarMod(idx, *p));
 	*p = nuStyle;
 }
 
-void UI::PushFont(Font* font) { 
+void UI::PushFont(Font* font) {DPZoneScoped; 
 	fontStack.add(style.font);
 	style.font = font;
 }
 
-void UI::PushScale(vec2 scale) {
+void UI::PushScale(vec2 scale) {DPZoneScoped;
 	scaleStack.add(style.globalScale);
 	style.globalScale = scale;
 }
 
-void UI::PushLayer(u32 layer) {
+void UI::PushLayer(u32 layer) {DPZoneScoped;
 	Assert(layer < UI_WINDOW_ITEM_LAYERS, "last layer is currently reserved by UI, increase the amount of layers in ui.h if you need more");
 	layerStack.add(currlayer);
 	currlayer = layer;
 }
 
-void UI::PushWindowLayer(u32 layer) {
+void UI::PushWindowLayer(u32 layer) {DPZoneScoped;
 	WarnFuncNotImplemented("");
 }
 
-void UI::PushLeftIndent(f32 indent)	{
+void UI::PushLeftIndent(f32 indent)	{DPZoneScoped;
 	leftIndentStack.add(indent);
 }
 
-void UI::PushRightIndent(f32 indent){
+void UI::PushRightIndent(f32 indent){DPZoneScoped;
 	rightIndentStack.add(indent);
 }
 
-void UI::PushDrawTarget(u32 idx){
+void UI::PushDrawTarget(u32 idx){DPZoneScoped;
 	Assert(idx < Render::GetMaxSurfaces());
 	drawTargetStack.add(idx);
 }
 
-void UI::PushDrawTarget(Window* window){
+void UI::PushDrawTarget(Window* window){DPZoneScoped;
 	Assert(window->renderer_surface_index != -1, "Attempt to push a draw target that has not been registered with the renderer");
 	drawTargetStack.add(window->renderer_surface_index);
 }
 
 //we always leave the current color on top of the stack and the previous gets popped
-void UI::PopColor(u32 count) {
+void UI::PopColor(u32 count) {DPZoneScoped;
 	Assert(count <= colorStack.count - initColorStackSize);
 	//Assert(count < colorStack.size() - 1, "Attempt to pop too many colors!");
 	while (count-- > 0) {
@@ -2688,7 +2688,7 @@ void UI::PopColor(u32 count) {
 	}
 }
 
-void UI::PopVar(u32 count) {
+void UI::PopVar(u32 count) {DPZoneScoped;
 	Assert(count <= varStack.count - initStyleStackSize);
 	while (count-- > 0) {
 		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
@@ -2704,7 +2704,7 @@ void UI::PopVar(u32 count) {
 	}
 }
 
-void UI::PopFont(u32 count) {
+void UI::PopFont(u32 count) {DPZoneScoped;
 	Assert(count <= fontStack.count);
 	while (count-- > 0) {
 		style.font = *fontStack.last;
@@ -2712,7 +2712,7 @@ void UI::PopFont(u32 count) {
 	}
 }
 
-void UI::PopScale(u32 count) {
+void UI::PopScale(u32 count) {DPZoneScoped;
 	Assert(count <= scaleStack.count);
 	while (count-- > 0) {
 		style.globalScale = *scaleStack.last;
@@ -2720,7 +2720,7 @@ void UI::PopScale(u32 count) {
 	}
 }
 
-void UI::PopLayer(u32 count) {
+void UI::PopLayer(u32 count) {DPZoneScoped;
 	Assert(count <= layerStack.count);
 	while (count-- > 0) {
 		currlayer = *layerStack.last;
@@ -2728,21 +2728,21 @@ void UI::PopLayer(u32 count) {
 	}
 }
 
-void UI::PopLeftIndent(u32 count) {
+void UI::PopLeftIndent(u32 count) {DPZoneScoped;
 	Assert(count < leftIndentStack.count);
 	while (count-- > 0) {
 		leftIndentStack.pop();
 	}
 }
 
-void UI::PopRightIndent(u32 count){
+void UI::PopRightIndent(u32 count){DPZoneScoped;
 	Assert(count < rightIndentStack.count);
 	while (count-- > 0) {
 		rightIndentStack.pop();
 	}
 }
 
-void UI::PopDrawTarget(u32 count) {
+void UI::PopDrawTarget(u32 count) {DPZoneScoped;
 	Assert(count < drawTargetStack.count
 );
 	while (count-- > 0) {
@@ -2758,7 +2758,7 @@ void UI::PopDrawTarget(u32 count) {
 
 //window input helper funcs 
 
-void SetFocusedWindow(UIWindow* window) {
+void SetFocusedWindow(UIWindow* window) {DPZoneScoped;
 	//we must find what idx the window is at
 	//i think
 	for (int i = 0; i < windows.count; i++) {
@@ -2771,7 +2771,7 @@ void SetFocusedWindow(UIWindow* window) {
 }
 
 //function to recursively check child windows
-b32 CheckForHoveredChildWindow(UIWindow* parent, UIWindow* child) {
+b32 CheckForHoveredChildWindow(UIWindow* parent, UIWindow* child) {DPZoneScoped;
 	b32 child_hovered = 0;
 	if (WinBegan(child)) {
 		for (UIWindow* c : child->children) {
@@ -2813,7 +2813,7 @@ b32 CheckForHoveredChildWindow(UIWindow* parent, UIWindow* child) {
 	return child_hovered;
 }
 
-void CheckForHoveredWindow(UIWindow* window = 0) {
+void CheckForHoveredWindow(UIWindow* window = 0) {DPZoneScoped;
 	b32 hovered_found = 0;
 	for (int i = windows.count - 1; i > 0; i--) {
 		UIWindow* w = *windows.atIdx(i);
@@ -2845,7 +2845,7 @@ void CheckForHoveredWindow(UIWindow* window = 0) {
 }
 
 //this function is checked in UI::Update, while the other 3 are checked per window
-void CheckWindowsForFocusInputs() {
+void CheckWindowsForFocusInputs() {DPZoneScoped;
 	//special case where we always check for metrics first since it draws last
 	
 	for (int i = windows.count - 1; i > 0; i--) {
@@ -2868,7 +2868,7 @@ void CheckWindowsForFocusInputs() {
 	
 }
 
-void CheckWindowForResizingInputs(UIWindow* window) {
+void CheckWindowForResizingInputs(UIWindow* window) {DPZoneScoped;
 	//check for edge resizing
 	if (!(window->flags & UIWindowFlags_NoResize) && (CanTakeInput || WinResizing)) {
 		vec2 mp = DeshInput->mousePos;
@@ -2953,7 +2953,7 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 }
 
 //TODO(sushi) PLEASE clean this shit up
-void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
+void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped;
 	//always clamp scroll to make sure that it doesnt get stuck pass max scroll when stuff changes inside the window
 	window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
 	window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
@@ -3057,7 +3057,7 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 	}
 }
 
-void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {
+void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped;
 	if (CanTakeInput || WinDragging) { //drag
 		//if this is a child window check the uppermost parent instead
 		if (window->parent && WinHovered(window)) { 
@@ -3092,7 +3092,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
 TIMER_START(wincreate);
-void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWindowType type) {
+void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWindowType type) {DPZoneScoped;
 	Assert(type != UIWindowType_Normal || !StateHasFlag(UISRowBegan), "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
 	TIMER_RESET(wincreate);
 	//save previous window on stack
@@ -3239,23 +3239,23 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 }
 
 
-void UI::Begin(const char* name, UIWindowFlags flags) {
+void UI::Begin(const char* name, UIWindowFlags flags) {DPZoneScoped;
 	BeginCall(name, vec2::ONE * 100, vec2(150, 300), flags, UIWindowType_Normal);
 }
 
-void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
+void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {DPZoneScoped;
 	BeginCall(name, pos, dimensions, flags, UIWindowType_Normal);
 }
 
-void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
+void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {DPZoneScoped;
 	BeginCall(name, PositionForNewItem(), dimensions, flags, UIWindowType_Child);
 }
 
-void UI::BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
+void UI::BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {DPZoneScoped;
 	BeginCall(name, pos, dimensions, flags, UIWindowType_Child);
 }
 
-void UI::BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
+void UI::BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {DPZoneScoped;
 	//currlayer = Min(++currlayer, (u32)UI_LAYERS);
 	BeginCall(name, pos, dimensions, flags, UIWindowType_PopOut);
 	//currlayer--; //NOTE this will break if we are already on last layer fix it
@@ -3267,7 +3267,7 @@ void UI::BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags 
 //this would probably be better to be handled as we add items to the window
 //instead of doing it at the end, so maybe make an addItem() that calculates this
 //everytime we add one
-vec2 CalcWindowMinSize() {
+vec2 CalcWindowMinSize() {DPZoneScoped;
 	vec2 max;
 	forI(UI_WINDOW_ITEM_LAYERS) {
 		for (UIItem& item : curwin->items[i]) {
@@ -3287,7 +3287,7 @@ vec2 CalcWindowMinSize() {
 
 
 //draw title bar
-if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
+if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {DPZoneScoped;
 	{
 		UIDrawCmd drawCmd; //inst 40
 		drawCmd.type = UIDrawType_FilledRectangle;
@@ -3343,7 +3343,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 
 //@End
 
-void EndCall() {
+void EndCall() {DPZoneScoped;
 	Assert(windowStack.count, "Attempted to end the base window");
 	
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
@@ -3486,7 +3486,7 @@ void EndCall() {
 	windowStack.pop();
 }
 
-void UI::End() {
+void UI::End() {DPZoneScoped;
 	Assert(!StateHasFlag(UISRowBegan), "Attempted to end a window with a Row in progress!");
 	Assert(!StateHasFlag(UISComboBegan), "Attempted to end a window with a Combo in progress!");
 	
@@ -3496,7 +3496,7 @@ void UI::End() {
 	EndCall();
 }
 
-void UI::EndChild() {
+void UI::EndChild() {DPZoneScoped;
 	UIWindow* parent = curwin->parent;
 	vec2 scrollBarAdjust = vec2((CanScrollY(parent) ? style.scrollBarYWidth : 0), (CanScrollX(parent) ? style.scrollBarXHeight : 0));
 	curwin->visibleRegionStart = Max(parent->visibleRegionStart, curwin->position);
@@ -3507,7 +3507,7 @@ void UI::EndChild() {
 	PopRightIndent();
 }
 
-void UI::EndPopOut() {
+void UI::EndPopOut() {DPZoneScoped;
 	curwin->visibleRegionStart = curwin->position;
 	curwin->visibleRegionSize = curwin->dimensions;
 	
@@ -3516,31 +3516,31 @@ void UI::EndPopOut() {
 	PopRightIndent();
 }
 
-void UI::SetNextWindowPos(vec2 pos) {
+void UI::SetNextWindowPos(vec2 pos) {DPZoneScoped;
 	NextWinPos = pos;
 }
 
-void UI::SetNextWindowPos(f32 x, f32 y) {
+void UI::SetNextWindowPos(f32 x, f32 y) {DPZoneScoped;
 	NextWinPos = vec2(x,y);
 }
 
-void UI::SetNextWindowSize(vec2 size) {
+void UI::SetNextWindowSize(vec2 size) {DPZoneScoped;
 	NextWinSize = size.yAdd(style.titleBarHeight);
 }
 
-void UI::SetNextWindowSize(f32 x, f32 y) {
+void UI::SetNextWindowSize(f32 x, f32 y) {DPZoneScoped;
 	NextWinSize = vec2(x, y);
 }
 
-b32 UI::IsWinHovered() {
+b32 UI::IsWinHovered() {DPZoneScoped;
 	return WinHovered(curwin);
 }
 
-b32 UI::AnyWinHovered() {
+b32 UI::AnyWinHovered() {DPZoneScoped;
 	return StateHasFlag(UISGlobalHovered) || !CanTakeInput;
 }
 
-inline UIWindow* MetricsDebugItemFindHoveredWindow(UIWindow* window = 0) {
+inline UIWindow* MetricsDebugItemFindHoveredWindow(UIWindow* window = 0) {DPZoneScoped;
 	if (window) {
 		if (WinChildHovered(window)) {
 			for (UIWindow* w : window->children) {
@@ -3559,7 +3559,7 @@ inline UIWindow* MetricsDebugItemFindHoveredWindow(UIWindow* window = 0) {
 	}
 }
 
-inline void MetricsDebugItem() {
+inline void MetricsDebugItem() {DPZoneScoped;
 	using namespace UI;
 	
 	enum DebugItemState {
@@ -3722,7 +3722,7 @@ inline void MetricsDebugItem() {
 	else AllowInputs;
 }
 
-inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {
+inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {DPZoneScoped;
 	if (WinChildHovered(window)) {
 		for (UIWindow* c : window->children) {
 			if (MetricsCheckWindowBreaks(c, winbegin))
@@ -3741,7 +3741,7 @@ inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {
 	return false;
 }
 
-inline void MetricsBreaking() {
+inline void MetricsBreaking() {DPZoneScoped;
 	using namespace UI;
 	
 	enum BreakState {
@@ -3895,7 +3895,7 @@ inline void MetricsBreaking() {
 	}
 }
 
-UIWindow* DisplayMetrics() {
+UIWindow* DisplayMetrics() {DPZoneScoped;
 	using namespace UI;
 	
 	persist UIWindow* debugee = nullptr;
@@ -4288,11 +4288,11 @@ UIWindow* DisplayMetrics() {
 //this just sets a flag to show the window at the very end of the frame, so we can gather all data
 //about windows incase the user tries to call this before making all their windows
 b32 show_metrics = 0;
-void UI::ShowMetricsWindow() {
+void UI::ShowMetricsWindow() {DPZoneScoped;
 	show_metrics = 1;
 }
 
-void UI::DemoWindow() {
+void UI::DemoWindow() {DPZoneScoped;
 	Begin("deshiUIDEMO", vec2::ONE * 300, vec2::ONE * 300);
 	
 	if (BeginHeader("Text")) {
@@ -4549,7 +4549,7 @@ void UI::DemoWindow() {
 //@Init
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
-void UI::Init() {
+void UI::Init() {DPZoneScoped;
 	AssertDS(DS_MEMORY,  "Attempt to load UI without loading Memory first");
 	AssertDS(DS_WINDOW,  "Attempt to load UI without loading Window first");
 	AssertDS(DS_STORAGE, "Attempt to load UI without loading Storage first");
@@ -4668,7 +4668,7 @@ void UI::Init() {
 
 //in our final draw system, this is the function that primarily does the work
 //of figuring out how each draw call will be sent to the renderer
-inline void DrawItem(UIItem& item, UIWindow* window) {
+inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 	
 	vec2 winpos = vec2(window->x, window->y);
 	vec2 winsiz = vec2(window->width, window->height) * window->style.globalScale;
@@ -4728,7 +4728,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 	Render::SetSurfaceDrawTargetByIdx(0);
 }
 
-inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
+inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {DPZoneScoped;
 	TIMER_START(winren);
 	
 	if (WinHovered(p) && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
@@ -4786,7 +4786,7 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 	
 }
 
-void CleanUpWindow(UIWindow* window) {
+void CleanUpWindow(UIWindow* window) {DPZoneScoped;
 	window->preItems.clear();
 	window->postItems.clear();
 	window->popOuts.clear();
@@ -4799,7 +4799,7 @@ void CleanUpWindow(UIWindow* window) {
 }
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
-void UI::Update() {
+void UI::Update() {DPZoneScoped;
 	
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
@@ -4896,9 +4896,9 @@ void UI::Update() {
 	debugCmds.clear();
 }
 
-void UI::DrawDebugRect(vec2 pos, vec2 size, color col)             { DebugRect(pos, size, col); }
-void UI::DrawDebugRectFilled(vec2 pos, vec2 size, color col)       { DebugRectFilled(pos, size, col); }
-void UI::DrawDebugCircle(vec2 pos, f32 radius, color col)          { DebugCircle(pos, radius, col); }
-void UI::DrawDebugCircleFilled(vec2 pos, f32 radius, color col)    { DebugCircleFilled(pos, radius, col); }
-void UI::DrawDebugLine(vec2 pos1, vec2 pos2, color col)            { DebugLine(pos1, pos2, col); }
-void UI::DrawDebugTriangle(vec2 p0, vec2 p1, vec2 p2, color color) { DebugTriangle(p0, p1, p2, color); }
+void UI::DrawDebugRect(vec2 pos, vec2 size, color col)             {DPZoneScoped; DebugRect(pos, size, col); }
+void UI::DrawDebugRectFilled(vec2 pos, vec2 size, color col)       {DPZoneScoped; DebugRectFilled(pos, size, col); }
+void UI::DrawDebugCircle(vec2 pos, f32 radius, color col)          {DPZoneScoped; DebugCircle(pos, radius, col); }
+void UI::DrawDebugCircleFilled(vec2 pos, f32 radius, color col)    {DPZoneScoped; DebugCircleFilled(pos, radius, col); }
+void UI::DrawDebugLine(vec2 pos1, vec2 pos2, color col)            {DPZoneScoped; DebugLine(pos1, pos2, col); }
+void UI::DrawDebugTriangle(vec2 p0, vec2 p1, vec2 p2, color color) {DPZoneScoped; DebugTriangle(p0, p1, p2, color); }

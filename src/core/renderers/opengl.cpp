@@ -696,7 +696,13 @@ Init(){
 	//ImGui::StyleColorsClassic();
 	
 	//Setup Platform/Renderer backends
-	ImGui_ImplGlfw_InitForOpenGL(DeshWindow->window, true);
+#if DESHI_WINDOWS
+	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
+#elif DESHI_LINUX
+	ImGui_ImplGlfw_InitForopenGl(DeshWindow->window, true);
+#elif DESHI_MAC
+	ImGui_ImplGlfw_InitForopenGl(DeshWindow->window, true);
+#endif
 	ImGui_ImplOpenGL3_Init();
 	
 	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
@@ -705,14 +711,26 @@ Init(){
 void DeshiImGui::
 Cleanup(){
 	ImGui_ImplOpenGL3_Shutdown();
+#if DESHI_WINDOWS
+	ImGui_ImplWin32_Shutdown();
+#elif DESHI_LINUX
 	ImGui_ImplGlfw_Shutdown();
+#elif DESHI_MAC
+	ImGui_ImplGlfw_Shutdown();
+#endif
 	ImGui::DestroyContext();
 }
 
 void DeshiImGui::
 NewFrame(){
 	ImGui_ImplOpenGL3_NewFrame();
+#if DESHI_WINDOWS
+	ImGui_ImplWin32_NewFrame();
+#elif DESHI_LINUX
+	ImGui_ImplGlfw_Shutdown();
+#elif DESHI_MAC
 	ImGui_ImplGlfw_NewFrame();
+#endif
 	ImGui::NewFrame();
 }
 

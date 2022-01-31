@@ -3,6 +3,10 @@ local b32 _resized = false;
 local b32 block_mouse_pos_change = false;
 local RECT winrect = { 0 };
 
+
+
+
+
 #undef DELETE
 map<s32, Key::Key> vkToKey{
 	{ 'A', Key::A},{'B', Key::B},{'C', Key::C},{'D', Key::D},{'E', Key::E},{'F', Key::F},{'G', Key::G},{'H', Key::H},{'I', Key::I},{'J', Key::J},{'K', Key::K},{'L', Key::L},{'M', Key::M},{'N', Key::N},{'O', Key::O},{'P', Key::P},{'Q', Key::Q},{'R', Key::R},{'S', Key::S},{'T', Key::T},{'U', Key::U},{'V', Key::V},{'W', Key::W},{'X', Key::X},{'Y', Key::Y},{'Z', Key::Z},
@@ -18,7 +22,7 @@ map<s32, Key::Key> vkToKey{
 	{ VK_LWIN, Key::LMETA },{ VK_RWIN, Key::RMETA },
 };
 
-void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {
+void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {DPZoneScoped;
 	LPVOID msg_buffer;
 	DWORD error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
@@ -29,25 +33,18 @@ void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {
 }
 
 //@Resize
-void WinResized(Window* win, s32 width, s32 height, b32 minimized) {
+void WinResized(Window* win, s32 width, s32 height, b32 minimized) {DPZoneScoped;
 	win->width = width; win->height = height;
-	win->cwidth = width; win->cheight = height - win->titlebarheight;
+	win->cwidth = width - 2 * win->borderthickness; win->cheight = height - (win->titlebarheight + 2*win->borderthickness);
 	win->dimensions = vec2(win->cwidth, win->cheight);
+	win->cx = win->borderthickness; win->cy = win->borderthickness + win->titlebarheight;
 	if (minimized) win->minimized = true;
 	else win->minimized = false;
 	win->resized = true;
 }
 
-enum HitTest_ : s32 {
-	HitTest_TBorder,
-	HitTest_BBorder,
-	HitTest_RBorder,
-	HitTest_LBorder,
-	HitTest_Titlebar,
-};
-
 //win32's callback function 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZoneScoped;
 	Window* win = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	Input* in = DeshInput;
 	switch (msg) {
@@ -56,14 +53,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_MOVE: { ////////////////////////////////////////////////////////////// Window Moved
 			const s32 x = LOWORD(lParam);
 			const s32 y = HIWORD(lParam);
-			
 			if (win) { win->x = x; win->y = y; }
 		}break;
 		case WM_MOUSEMOVE: { ///////////////////////////////////////////////////////// Mouse Moved
 			const s32 xPos = GET_X_LPARAM(lParam);
 			const s32 yPos = GET_Y_LPARAM(lParam);
-			in->realMouseX = xPos;
-			in->realMouseY = yPos - f64(win->titlebarheight);
+			in->realMouseX = xPos - f64(win->borderthickness);
+			in->realMouseY = yPos - f64(win->titlebarheight + win->titlebarheight);
 			POINT p = { xPos, yPos };
 			ClientToScreen((HWND)win->handle, &p);
 			in->realScreenMouseX = p.x; in->realScreenMouseY = p.y;
@@ -175,29 +171,27 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 		}break;
 		case WM_NCHITTEST: {
-			//from https://stackoverflow.com/questions/7773771/how-do-i-implement-dragging-a-window-using-its-client-area
-			//allows us to drag the window from whereever we want in the client area
-			if (win->decorations != Decoration_SystemDecorations) {
-				if(Math::PointInRectangle(in->mousePos, vec2(0, -f32(win->titlebarheight)), vec2(win->width, win->titlebarheight))) {
-					LRESULT hit = DefWindowProc((HWND)win->handle, msg, wParam, lParam);
-					if (hit == HTCLIENT) hit = HTCAPTION;
-					return hit;
-				}
-				else {//else test for resizing
-					switch (win->hittest) {
-						case HitTestTitle:       return HTCAPTION;
-						case HitTestLeft:        return HTLEFT;
-						case HitTestRight:       return HTRIGHT;
-						case HitTestBottom:      return HTBOTTOM;
-						case HitTestTop:         return HTTOP;
-						case HitTestTopRight:    return HTTOPRIGHT;
-						case HitTestTopLeft:     return HTTOPLEFT;
-						case HitTestBottomRight: return HTBOTTOMRIGHT;
-						case HitTestBottomLeft:  return HTBOTTOMLEFT;
-					}
-					
-				}
-			}
+			s32  xPos = GET_X_LPARAM(lParam);
+			s32  yPos = GET_Y_LPARAM(lParam);
+			s32  x = win->x, y = win->y;
+			s32  width = win->width, height = win->height;
+			s32  cx = win->cx, cy = win->cy;
+			s32  cwidth = win->cwidth, cheight = win->cheight;
+			s32  tbh = win->titlebarheight;
+			s32  bt = win->borderthickness;
+			vec2 mp = DeshInput->mousePos + vec2(bt, tbh+bt*2);
+			u32  decor = win->decorations;
+			b32  hitset = 0;
+			if (Math::PointInRectangle(mp, vec2(cx, cy),                  vec2(cwidth, cheight)))                   return HTCLIENT;  
+			if (Math::PointInRectangle(mp, vec2(bt, bt),                  vec2(width - 2*bt, win->titlebarheight))) return HTCAPTION;  
+			if (Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, bt)))                            return HTTOPLEFT;	  
+			if (Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(bt, bt)))                            return HTBOTTOMLEFT;  
+			if (Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, bt)))                            return HTTOPRIGHT;	  
+			if (Math::PointInRectangle(mp, vec2(width - bt, height - bt), vec2(bt, bt)))                            return HTBOTTOMRIGHT; 
+			if (Math::PointInRectangle(mp, vec2::ZERO,                    vec2(width, bt)))                         return HTTOP;		  
+			if (Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(width, bt)))                         return HTBOTTOM;       
+			if (Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, height)))                        return HTLEFT;		  
+			if (Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, height)))                        return HTRIGHT;		  
 		}
 	}
 	if (win) {
@@ -207,7 +201,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
-void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode) {
+void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode) {DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	deshiStage |= DS_WINDOW;
 	TIMER_START(t_s);
@@ -242,7 +236,6 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 
 	POINT mp = { 0 };
 	GetCursorPos(&mp);
-
 	DeshInput->realMouseX = mp.x - x; DeshInput->realMouseY = mp.y - y;
 
 	RAWINPUTDEVICE rid;
@@ -254,18 +247,20 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) Win32LogLastError("RegisterRawInputDevices");
 
 	UpdateDisplayMode(displayMode);
-	UpdateDecorations(Decoration_MinimalTitlebar | Decoration_MouseBorders);
+	UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
 	titlebarheight = 5;
 	SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
-
+	
 	name = _name;
 	renderer_surface_index = 0; ///main win is always first surface
+
+	UpdateDecorations(Decoration_SystemDecorations);
 
 	LogS("deshi", "Finished window initialization in ", TIMER_END(t_s), "ms");
 }
 
 //returns nullptr if the function fails to make the child;
-Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y) {
+Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y) {DPZoneScoped;
 	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
 	if (child_count == max_child_windows) { LogE("WINDOW-WIN32", "Window failed to make a child window: max child windows reached."); return 0; }
 	TIMER_START(t_s);
@@ -312,7 +307,7 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	children[child_count++] = child;
 	child->name = _name;
 	child->UpdateDisplayMode(displayMode);
-	child->UpdateDecorations(Decoration_MinimalTitlebar | Decoration_MouseBorders);
+	child->UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
 	child->titlebarheight = 5;
 	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
 
@@ -320,33 +315,17 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	return child;
 }
 
-void DrawDecorations(Window* win) {
+//TODO options for decoration colors
+void DrawDecorations(Window* win) {DPZoneScoped;
 	using namespace Render;
 	s32 x=win->x, y=win->y;
 	s32 width = win->width, height = win->height;
 	s32 cwidth = win->cwidth, cheight = win->cheight;
 	u32 decor = win->decorations;
 	b32 hitset = 0;
+	persist Font* decorfont = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
 	SetSurfaceDrawTargetByWindow(win);
 	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, vec2(width, height));
-
-	if(Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
-
-	//minimal titlebar takes precedence over all other title bar flags
-	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
-		win->titlebarheight = 5;
-		FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
-		if (Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, win->titlebarheight))) { win->hittest = HitTestTitle; hitset = 1; }
-	}
-	else {
-		if (HasFlag(decor, Decoration_Titlebar)) {
-			win->titlebarheight = 20;
-			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
-		}
-		if (HasFlag(decor, Decoration_TitlebarTitle)) {
-
-		}
-	}
 
 	if (HasFlag(decor, Decoration_MouseBorders)) {
 		vec2 mp = DeshInput->mousePos;
@@ -374,11 +353,48 @@ void DrawDecorations(Window* win) {
 
 
 	}
+	else if (HasFlag(decor, Decoration_Borders)) {
+		win->borderthickness = 2;
+		f32 borderSize = win->borderthickness;
+		vec2 
+		tbpos = vec2::ZERO,
+		lbpos = vec2::ZERO,
+		rbpos = vec2(width - borderSize, 0),
+		bbpos = vec2(0, height - borderSize),
+		tbsiz = vec2(width, borderSize),
+		lbsiz = vec2(borderSize, height),
+		rbsiz = vec2(borderSize, height),
+		bbsiz = vec2(width, borderSize);
+		color 
+		tcol = color(133,133,133),
+		bcol = color(133,133,133),
+		rcol = color(133,133,133),
+		lcol = color(133,133,133);
 
-	Log("", win->hittest);
+		FillRect2D(lbpos, lbsiz, lcol);
+		FillRect2D(rbpos, rbsiz, rcol);
+		FillRect2D(bbpos, bbsiz, bcol);
+		FillRect2D(tbpos, tbsiz, tcol);
+
+	}
+
+	//minimal titlebar takes precedence over all other title bar flags
+	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
+		win->titlebarheight = 5;
+		FillRect2D(vec2(win->borderthickness, win->borderthickness), vec2(width - 2 * win->borderthickness, win->titlebarheight), color(133, 133, 133));
+	}
+	else {
+		if (HasFlag(decor, Decoration_Titlebar)) {
+			win->titlebarheight = 20;
+			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60, 60, 60));
+		}
+		if (HasFlag(decor, Decoration_TitlebarTitle)) {
+			DrawText2D(decorfont, { win->name.str, win->name.count }, floor(vec2(10, win->borderthickness + (win->titlebarheight - decorfont->max_height) * 0.5)), Color_White, vec2::ONE, GetZZeroLayerIndex());
+		}
+	}
 }
 
-void Window::Update() {
+void Window::Update() {DPZoneScoped;
 	TIMER_START(t_d);
 
 	resized = false;
@@ -394,18 +410,22 @@ void Window::Update() {
 		}
 	}
 
+
 	//update children (this should maybe be done by whoever creates it instead of the parent)
 	forI(child_count) children[i]->Update();
+
+	 
 
 	if(decorations != Decoration_SystemDecorations)
 		DrawDecorations(this);
 
+	//TODO make a dedicated hit testing function
 	hittest = HitTestNone;
 	if(cursorMode == CursorMode_FirstPerson) ::SetCursorPos(x + width / 2, y + height / 2);
 	DeshTime->windowTime = TIMER_END(t_d);
 }
 
-void Window::UpdateDisplayMode(DisplayMode dm) {
+void Window::UpdateDisplayMode(DisplayMode dm) {DPZoneScoped;
 	switch (dm) {
 		case DisplayMode_Windowed: {
 			if (displayMode != DisplayMode_Windowed) {
@@ -454,11 +474,11 @@ void Window::UpdateDisplayMode(DisplayMode dm) {
 	}
 }
 
-void Window::UpdateCursorMode(CursorMode mode) {
+void Window::UpdateCursorMode(CursorMode mode) {DPZoneScoped;
 	WarnFuncNotImplemented("");
 }
 
-void Window::UpdateDecorations(Decoration _decorations) {
+void Window::UpdateDecorations(Decoration _decorations) {DPZoneScoped;
 	decorations = _decorations;
 	HWND hwnd = (HWND)handle;
 	u32 style = GetWindowLongA(hwnd, GWL_STYLE);
@@ -468,72 +488,73 @@ void Window::UpdateDecorations(Decoration _decorations) {
 	}
 	else 
 		SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
-	SetWindowPos(hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
+	SetWindowPos(hwnd, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOSIZE);
 }
 
-void Window::SetCursorPos(vec2 pos) {
+void Window::SetCursorPos(vec2 pos) {DPZoneScoped;
 	::SetCursorPos(pos.x, pos.y);
 }
 
-void Window::SetCursor(CursorType curtype) {
+void Window::SetCursor(CursorType curtype) {DPZoneScoped;
 	//TODO ref glfw's createIcon
 	//WarnFuncNotImplemented;
 }
 
-void Window::UpdateRawInput(b32 rawInput) {
+void Window::UpdateRawInput(b32 rawInput) {DPZoneScoped;
 	WarnFuncNotImplemented("");
 }
 
-void Window::UpdateResizable(b32 resizable) {
+void Window::UpdateResizable(b32 resizable) {DPZoneScoped;
 	WarnFuncNotImplemented("");
 }
 
-void Window::GetScreenSize(s32& _width, s32& _height) {
+void Window::GetScreenSize(s32& _width, s32& _height) {DPZoneScoped;
 	_width = width; _height = height;	
 }
 
-void Window::GetClientSize(s32& _width, s32& _height) {
+void Window::GetClientSize(s32& _width, s32& _height) {DPZoneScoped;
 	_width = cwidth; _height = cheight;
  }
 
 
-vec2 Window::GetClientAreaPosition(){
+vec2 Window::GetClientAreaPosition(){DPZoneScoped;
 	return vec2(0, titlebarheight);
 }
 
-vec2 Window::GetClientAreaDimensions(){
+vec2 Window::GetClientAreaDimensions(){DPZoneScoped;
 	return vec2(width, height - titlebarheight);
 }
 
 
-void Window::UpdateTitle(const char* title) {
+void Window::UpdateTitle(const char* title) {DPZoneScoped;
 	SetWindowTextA((HWND)handle, title);
 }
 
-void Window::ShowWindow(u32 child) {
+void Window::ShowWindow(u32 child) {DPZoneScoped;
 	if (child != npos) { ::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL); }
 	else ::ShowWindow((HWND)handle, SW_SHOWNORMAL);
 }
 
-void Window::HideWindow(u32 child) {
+void Window::HideWindow(u32 child) {DPZoneScoped;
 	if (child != npos) {::ShowWindow((HWND)children[child]->handle, SW_HIDE);}
 	else ::ShowWindow((HWND)handle, SW_HIDE);
 }
 
-void Window::CloseConsole() {
+void Window::CloseConsole() {DPZoneScoped;
 	//TODO funciton for making a new console 
 	FreeConsole();
 }
 
-b32 Window::ShouldClose() {
+b32 Window::ShouldClose() {DPZoneScoped;
+	DPFrameMark;
 	return closeWindow;
 }
 
-void Window::Close(){
+void Window::Close(){DPZoneScoped;
 	closeWindow = true;
 }
 
-void Window::Cleanup() {
+void Window::Cleanup() {DPZoneScoped;
 	DestroyWindow((HWND)handle);
 }
 

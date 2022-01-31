@@ -82,58 +82,58 @@ inline global_ color Color_VeryDarkGray = Color_VeryDarkGrey;
 ///////////////////////
 //// @constructors ////
 ///////////////////////
-inline color::color(){
+inline color::color(){DPZoneScoped;
 	r = 0; g = 0; b = 0; a = 0;
 };
 
-inline color::color(u8 _r, u8 _g, u8 _b, u8 _a){
+inline color::color(u8 _r, u8 _g, u8 _b, u8 _a){DPZoneScoped;
 	r = _r; g = _g; b = _b; a = _a;
 }
 
-inline color::color(u32 _rgba){
+inline color::color(u32 _rgba){DPZoneScoped;
 	rgba = ByteSwap32(_rgba);
 }
 
 ////////////////////
 //// @operators ////
 ////////////////////
-inline void color::operator*=(float rhs){
+inline void color::operator*=(float rhs){DPZoneScoped;
 	r = u8((f32)r * rhs); g = u8((f32)g * rhs); b = u8((f32)b * rhs);
 }
 
-inline color color::operator* (color rhs) const{
+inline color color::operator* (color rhs) const{DPZoneScoped;
 	return color(r*rhs.r, g*rhs.g, b*rhs.b, a);
 }
 
-inline bool color::operator==(color rhs) const{
+inline bool color::operator==(color rhs) const{DPZoneScoped;
 	return rgba == rhs.rgba;
 }
 
-inline color color::operator* (float rhs) const{
+inline color color::operator* (float rhs) const{DPZoneScoped;
 	return color(u8((f32)r * rhs), u8((f32)g * rhs), u8((f32)b * rhs), a);
 }
 
-inline color color::operator/ (float rhs) const{
+inline color color::operator/ (float rhs) const{DPZoneScoped;
 	return color(u8((f32)r / rhs), u8((f32)g / rhs), u8((f32)b / rhs), a);
 }
 
 ///////////////////////////
 //// @static functions ////
 ///////////////////////////
-inline color color::FloatsToColor(f32 r, f32 g, f32 b, f32 a){
+inline color color::FloatsToColor(f32 r, f32 g, f32 b, f32 a){DPZoneScoped;
 	return color((u8)(r * 255.0f),
 				 (u8)(g * 255.0f),
 				 (u8)(b * 255.0f),
 				 (u8)(a * 255.0f));
 }
 
-inline void color::FillFloat3FromU32(f32* floats, u32 color){
+inline void color::FillFloat3FromU32(f32* floats, u32 color){DPZoneScoped;
 	*(floats+0) = (f32)((color >> COLORU32_RSHIFT) & 0xFF) / 255.0f;
 	*(floats+1) = (f32)((color >> COLORU32_GSHIFT) & 0xFF) / 255.0f;
 	*(floats+2) = (f32)((color >> COLORU32_BSHIFT) & 0xFF) / 255.0f;
 }
 
-inline void color::FillFloat4FromU32(f32* floats, u32 color){
+inline void color::FillFloat4FromU32(f32* floats, u32 color){DPZoneScoped;
 	*(floats+0) = (f32)((color >> COLORU32_RSHIFT) & 0xFF) / 255.0f;
 	*(floats+1) = (f32)((color >> COLORU32_GSHIFT) & 0xFF) / 255.0f;
 	*(floats+2) = (f32)((color >> COLORU32_BSHIFT) & 0xFF) / 255.0f;

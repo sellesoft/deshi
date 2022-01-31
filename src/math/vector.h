@@ -88,12 +88,12 @@ struct vec2 {
 #include "vec2.inl"
 
 struct vec3 {
-	union{
+	union {
 		f32 arr[3] = {};
-		struct{ f32 x, y, z; };
-		struct{ f32 r, g, b; };
-		struct{ vec2 xy; f32 _unusedZ0; };
-		struct{ f32 _unusedX0; vec2 yz; };
+		struct { f32 x, y, z; };
+		struct { f32 r, g, b; };
+		struct { vec2 xy; f32 _unusedZ0; };
+		struct { f32 _unusedX0; vec2 yz; };
 	};
 	
 	vec3(){};

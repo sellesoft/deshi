@@ -38,7 +38,7 @@ namespace Storage{
 //// @init ////
 ///////////////
 void Storage::
-Init(){
+Init(){DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to load Storage without loading Memory first");
 	deshiStage |= DS_STORAGE;
 	
@@ -71,7 +71,7 @@ Init(){
 }
 
 void Storage::
-Reset(){
+Reset(){DPZoneScoped;
 	for(s32 i=meshes.size()-1;    i>0; --i){ DeleteMesh(meshes[i]);        meshes.pop(); } 
 	for(s32 i=materials.size()-1; i>0; --i){ DeleteMaterial(materials[i]); materials.pop(); } 
 	for(s32 i=textures.size()-1;  i>0; --i){ DeleteTexture(textures[i]);   textures.pop(); } 
@@ -85,7 +85,7 @@ Reset(){
 //// @mesh ////
 ///////////////
 local Mesh* 
-AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){
+AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){DPZoneScoped;
 	Assert(indexCount && vertexCount && faceCount);
 	
 	u32 triangleCount = indexCount/3;
@@ -126,7 +126,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 
 //TODO(delle) change this to take in 8 points
 pair<u32,Mesh*> Storage::
-CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
+CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	width /= 2.f; height /= 2.f; depth /= 2.f;
 	pair<u32,Mesh*> result(0, NullMesh());
 	
@@ -319,7 +319,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 }
 
 pair<u32,Mesh*> Storage::
-CreateMeshFromFile(const char* filename){
+CreateMeshFromFile(const char* filename){DPZoneScoped;
 	pair<u32,Mesh*> result(0, NullMesh());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -357,7 +357,7 @@ CreateMeshFromFile(const char* filename){
 }
 
 pair<u32,Mesh*> Storage::
-CreateMeshFromMemory(void* data){
+CreateMeshFromMemory(void* data){DPZoneScoped;
 	pair<u32,Mesh*> result(0, NullMesh());
 	
 	u32 bytes = *((u32*)data);
@@ -420,13 +420,13 @@ CreateMeshFromMemory(void* data){
 }
 
 void Storage::
-SaveMesh(Mesh* mesh){
+SaveMesh(Mesh* mesh){DPZoneScoped;
 	Assets::writeFileBinary(Assets::dirModels()+std::string(mesh->name)+".mesh", mesh, mesh->bytes);
 	Log("storage","Successfully created ",mesh->name,".mesh");
 }
 
 void Storage::
-DeleteMesh(Mesh* mesh){ //!Incomplete
+DeleteMesh(Mesh* mesh){DPZoneScoped; //!Incomplete
 	NotImplemented;
 }
 
@@ -435,13 +435,13 @@ DeleteMesh(Mesh* mesh){ //!Incomplete
 //// @texture ////
 //////////////////
 local Texture* 
-AllocateTexture(){
+AllocateTexture(){DPZoneScoped;
 	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
 	return texture;
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){
+CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	pair<u32,Texture*> result(0, NullTexture());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -482,7 +482,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){
+CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
@@ -545,7 +545,7 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 }
 
 void Storage::
-DeleteTexture(Texture* texture){ //!Incomplete
+DeleteTexture(Texture* texture){DPZoneScoped; //!Incomplete
 	NotImplemented;
 }
 
@@ -554,14 +554,14 @@ DeleteTexture(Texture* texture){ //!Incomplete
 //// @material ////
 ///////////////////
 local Material* 
-AllocateMaterial(u32 textureCount){
+AllocateMaterial(u32 textureCount){DPZoneScoped;
 	Material* material = (Material*)memory_alloc(sizeof(Material));
 	material->textures = array<u32>(textureCount);
 	return material;
 }
 
 pair<u32,Material*> Storage::
-CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> mat_textures){
+CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> mat_textures){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	
 	//check if created already
@@ -583,7 +583,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 }
 
 pair<u32,Material*> Storage::
-CreateMaterialFromFile(const char* filename, b32 warnMissing){
+CreateMaterialFromFile(const char* filename, b32 warnMissing){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -696,7 +696,7 @@ CreateMaterialFromFile(const char* filename, b32 warnMissing){
 }
 
 void Storage::
-SaveMaterial(Material* material){
+SaveMaterial(Material* material){DPZoneScoped;
 	std::string mat_text = TOSTDSTRING(">material"
 									   "\nname   \"", material->name,"\""
 									   "\nshader ", ShaderStrings[material->shader],
@@ -712,7 +712,7 @@ SaveMaterial(Material* material){
 }
 
 void Storage::
-DeleteMaterial(Material* material){ //!Incomplete
+DeleteMaterial(Material* material){DPZoneScoped; //!Incomplete
 	NotImplemented;
 }
 
@@ -721,7 +721,7 @@ DeleteMaterial(Material* material){ //!Incomplete
 //// @model ////
 ////////////////
 local Model* 
-AllocateModel(u32 batchCount){
+AllocateModel(u32 batchCount){DPZoneScoped;
 	Model* model = (Model*)memory_alloc(sizeof(Model));
 	model->batches = array<Model::Batch>();
 	model->batches.resize((batchCount) ? batchCount : 1);
@@ -729,7 +729,7 @@ AllocateModel(u32 batchCount){
 }
 
 pair<u32,Model*> Storage::
-CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){
+CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
 	pair<u32,Model*> result(0, NullModel());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -1423,7 +1423,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){
 }
 
 pair<u32,Model*> Storage::
-CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
+CreateModelFromMesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	pair<u32,Model*> result(0, NullModel());
 	
 	string model_name(mesh->name);
@@ -1450,7 +1450,7 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 }
 
 pair<u32,Model*> Storage::
-CopyModel(Model* _model){
+CopyModel(Model* _model){DPZoneScoped;
 	pair<u32,Model*> result(0, NullModel());
 	
 	Model* model = AllocateModel(_model->batches.size());
@@ -1472,7 +1472,7 @@ CopyModel(Model* _model){
 }
 
 void Storage::
-SaveModel(Model* model){
+SaveModel(Model* model){DPZoneScoped;
 	SaveMesh(model->mesh);
 	std::string model_save = TOSTDSTRING(">model"
 										 "\nname     \"",model->name,"\""
@@ -1492,7 +1492,7 @@ SaveModel(Model* model){
 }
 
 void Storage::
-DeleteModel(Model* model){ //!Incomplete
+DeleteModel(Model* model){DPZoneScoped; //!Incomplete
 	NotImplemented;
 }
 
@@ -1501,7 +1501,7 @@ DeleteModel(Model* model){ //!Incomplete
 //// @font ////
 ///////////////
 local Font* 
-AllocateFont(Type type){
+AllocateFont(Type type){DPZoneScoped;
 	Font* font = (Font*)memory_alloc(sizeof(Font));
 	font->type = type;
 	font->idx = Storage::fonts.count;
@@ -1509,7 +1509,7 @@ AllocateFont(Type type){
 }
 
 pair<u32,Font*> Storage::
-CreateFontFromFileBDF(const char* filename){
+CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
@@ -1672,7 +1672,7 @@ CreateFontFromFileBDF(const char* filename){
 
 //TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
 pair<u32,Font*> Storage::
-CreateFontFromFileTTF(const char* filename, u32 size){
+CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
@@ -1789,12 +1789,12 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 
 
 void Storage::
-DeleteFont(Font* font){ //!Incomplete
+DeleteFont(Font* font){DPZoneScoped; //!Incomplete
 	NotImplemented;
 }
 
 
-void DrawMeshesWindow() { 
+void DrawMeshesWindow() {DPZoneScoped; 
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUIMeshes", vec2(MAX_F32, MAX_F32));
@@ -1802,7 +1802,7 @@ void DrawMeshesWindow() {
 	EndChild();
 }
 
-void DrawTexturesWindow() {
+void DrawTexturesWindow() {DPZoneScoped;
 	Storage_* st = DeshStorage;
 	
 	//TODO make all of this stuff get checked only when necessary
@@ -1948,7 +1948,7 @@ void DrawTexturesWindow() {
 	ResetItemFlags(UIItemType_Header);
 }
 
-void DrawMaterialsWindow(){
+void DrawMaterialsWindow(){DPZoneScoped;
 	Storage_* st = DeshStorage;
 
 	using namespace UI;
@@ -1976,7 +1976,7 @@ void DrawMaterialsWindow(){
 	EndChild();
 }
 
-void DrawModelsWindow(){
+void DrawModelsWindow(){DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUIModels", vec2(MAX_F32, MAX_F32));
@@ -1984,7 +1984,7 @@ void DrawModelsWindow(){
 	EndChild();
 }
 
-void DrawFontsWindow(){
+void DrawFontsWindow(){DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUIFonts", vec2(MAX_F32, MAX_F32));
@@ -1994,7 +1994,7 @@ void DrawFontsWindow(){
 
 
 void Storage::
-StorageBrowserUI() {
+StorageBrowserUI() {DPZoneScoped;
 	using namespace UI;
 	PushColor(UIStyleCol_Border, Color_Grey);
 	PushColor(UIStyleCol_Separator, Color_Grey);

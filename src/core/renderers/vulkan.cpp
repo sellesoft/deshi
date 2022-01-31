@@ -440,7 +440,7 @@ local struct {
 
 template<typename... Args>
 local inline void
-PrintVk(u32 level, Args... args){
+PrintVk(u32 level, Args... args){DPZoneScoped;
 	if(settings.loggingLevel >= level){
 		Log("vulkan", args...);
 	}
@@ -448,7 +448,7 @@ PrintVk(u32 level, Args... args){
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
 local inline void 
-DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){
+DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){DPZoneScoped;
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName = label_name;
@@ -462,7 +462,7 @@ DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 c
 
 PFN_vkCmdEndDebugUtilsLabelEXT func_vkCmdEndDebugUtilsLabelEXT;
 local inline void 
-DebugEndLabelVk(VkCommandBuffer command_buffer){
+DebugEndLabelVk(VkCommandBuffer command_buffer){DPZoneScoped;
 #ifdef DESHI_INTERNAL
 	func_vkCmdEndDebugUtilsLabelEXT(command_buffer);
 #endif //DESHI_INTERNAL
@@ -470,7 +470,7 @@ DebugEndLabelVk(VkCommandBuffer command_buffer){
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
 local inline void 
-DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){
+DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){DPZoneScoped;
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName = label_name;
@@ -484,7 +484,7 @@ DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 
 
 PFN_vkSetDebugUtilsObjectNameEXT func_vkSetDebugUtilsObjectNameEXT;
 local inline void 
-DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handle, const char *object_name){
+DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handle, const char *object_name){DPZoneScoped;
 #ifdef DESHI_INTERNAL
 	if(!object_handle) return;
 	VkDebugUtilsObjectNameInfoEXT nameInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
@@ -497,7 +497,7 @@ DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handl
 
 //returns a command buffer that will only execute once
 local VkCommandBuffer
-BeginSingleTimeCommands(){
+BeginSingleTimeCommands(){DPZoneScoped;
 	AssertRS(RSVK_COMMANDPOOL, "BeginSingleTimeCommands called before CreateCommandPool");
 	VkCommandBuffer commandBuffer;
 	
@@ -516,7 +516,7 @@ BeginSingleTimeCommands(){
 
 //ends a command buffer and frees that buffers memory
 local void
-EndSingleTimeCommands(VkCommandBuffer commandBuffer){
+EndSingleTimeCommands(VkCommandBuffer commandBuffer){DPZoneScoped;
 	//TODO(delle,ReOpVu) maybe add a fence to ensure the buffer has finished executing
 	//instead of waiting for queue to be idle, see: sascha/VulkanDevice.cpp:508
 	vkEndCommandBuffer(commandBuffer);
@@ -554,7 +554,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 ////////////////////////
 //finds which memory types the graphics card offers
 local u32
-FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
+FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){DPZoneScoped;
 	PrintVk(4,"Finding memory types");
 	AssertRS(RSVK_PHYSICALDEVICE, "FindMemoryType called before PickPhysicalDevice");
 	VkPhysicalDeviceMemoryProperties memProperties;
@@ -572,7 +572,7 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 
 //creates an image view specifying how to use an image
 local VkImageView
-CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels){
+CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels){DPZoneScoped;
 	PrintVk(4, "Creating image view");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateImageView called before CreateLogicalDevice");
 	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -592,7 +592,7 @@ CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
 
 //creates and binds a vulkan image to the GPU
 local void 
-CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory){
+CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory){DPZoneScoped;
 	PrintVk(4,"Creating image");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateImage called before CreateLogicalDevice");
 	VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -623,7 +623,7 @@ CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
 
 //converts a VkImage from one layout to another using an image memory barrier
 local void 
-TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels){
+TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels){DPZoneScoped;
 	PrintVk(4,"Transitioning image layout");
 	AssertRS(RSVK_LOGICALDEVICE, "TransitionImageLayout called before CreateLogicalDevice");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
@@ -665,7 +665,7 @@ TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 
 //scans an image for max possible mipmaps and generates them
 local void 
-GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels){
+GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels){DPZoneScoped;
 	PrintVk(4,"Creating image mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
@@ -736,7 +736,7 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 
 //creates a buffer of defined usage and size on the device
 local void 
-CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSize& buffer_size, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSize& buffer_size, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){DPZoneScoped;
 	VkBuffer old_buffer = buffer; buffer = VK_NULL_HANDLE;
 	VkDeviceMemory old_buffer_memory = buffer_memory; buffer_memory = VK_NULL_HANDLE;
 	
@@ -781,13 +781,13 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSi
 }
 
 local void 
-CreateOrResizeBuffer(BufferVk* buffer, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+CreateOrResizeBuffer(BufferVk* buffer, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){DPZoneScoped;
 	CreateOrResizeBuffer(buffer->buffer, buffer->memory, buffer->size, new_size, usage, properties);
 }
 
 //creates a buffer and maps provided data to it
 local void 
-CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){DPZoneScoped;
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator); 
 	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator); 
@@ -833,7 +833,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 
 //uses commands to copy a buffer to an image
 local void 
-CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){
+CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){DPZoneScoped;
 	PrintVk(4,"Copying buffer to image");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		VkBufferImageCopy region{};
@@ -852,7 +852,7 @@ CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){
 
 //copies a buffer, we use this to copy from CPU to GPU
 local void 
-CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
+CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){DPZoneScoped;
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		VkBufferCopy copyRegion{};
 		copyRegion.size = size;
@@ -865,7 +865,7 @@ CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
 //// @initialization ////
 /////////////////////////
 local void 
-SetupAllocator(){
+SetupAllocator(){DPZoneScoped;
 	//!ref: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkAllocationCallbacks.html
 	PrintVk(2,"Setting up vulkan allocator");
 	Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at SetupAllocator");
@@ -916,7 +916,7 @@ SetupAllocator(){
 }
 
 local void 
-CreateInstance(){
+CreateInstance(){DPZoneScoped;
 	PrintVk(2,"Creating vulkan instance");
 	Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
 	rendererStage |= RSVK_INSTANCE;
@@ -1011,7 +1011,7 @@ CreateInstance(){
 }
 
 local void 
-SetupDebugMessenger(){
+SetupDebugMessenger(){DPZoneScoped;
 	PrintVk(2, "Setting up debug messenger");
 	AssertRS(RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
 	
@@ -1031,7 +1031,7 @@ SetupDebugMessenger(){
 }
 
 local void
-CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0) {
+CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0) {DPZoneScoped;
 	AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
 	Assert(surface_idx < MAX_SURFACES);
 	rendererStage |= RSVK_SURFACE;
@@ -1053,7 +1053,7 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0) {
 }
 
 local void 
-PickPhysicalDevice(u32 surface_index = 0){
+PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 	PrintVk(2, "Picking physical device");
 	AssertRS(RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
 	rendererStage |= RSVK_PHYSICALDEVICE;
@@ -1132,7 +1132,7 @@ PickPhysicalDevice(u32 surface_index = 0){
 }
 
 local void 
-CreateLogicalDevice(){
+CreateLogicalDevice(){DPZoneScoped;
 	PrintVk(2, "Creating logical device");
 	AssertRS(RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
 	rendererStage |= RSVK_LOGICALDEVICE;
@@ -1197,7 +1197,7 @@ CreateLogicalDevice(){
 ////////////////////
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
 local void 
-CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){
+CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 	PrintVk(2, "Creating swapchain");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateSwapchain called before CreateLogicalDevice");
 	Assert(swapchain_idx < MAX_SURFACES);
@@ -1338,7 +1338,7 @@ CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){
 //// @renderpass ////
 /////////////////////
 local VkFormat
-findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
+findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features){DPZoneScoped;
 	PrintVk(4, "Finding supported image formats");
 	for(VkFormat format : candidates){
 		VkFormatProperties props;
@@ -1356,12 +1356,12 @@ findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tilin
 }
 
 local VkFormat
-findDepthFormat(){
+findDepthFormat(){DPZoneScoped;
 	return findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 local void 
-CreateRenderpasses(){
+CreateRenderpasses(){DPZoneScoped;
 	PrintVk(2, "Creating render pass");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPasses called before CreateLogicalDevice");
 	rendererStage |= RSVK_RENDERPASS;
@@ -1461,7 +1461,7 @@ CreateRenderpasses(){
 //// @frames ////
 /////////////////
 local void 
-CreateCommandPool(){
+CreateCommandPool(){DPZoneScoped;
 	PrintVk(2, "Creating command pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
 	rendererStage |= RSVK_COMMANDPOOL;
@@ -1476,7 +1476,7 @@ CreateCommandPool(){
 
 //creates image views, color/depth resources, framebuffers, commandbuffers
 local void 
-CreateFrames(){
+CreateFrames(){DPZoneScoped;
 	PrintVk(2, "Creating frames");
 	AssertRS(RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
 	rendererStage |= RSVK_FRAMES;
@@ -1566,7 +1566,7 @@ CreateFrames(){
 //semaphores (GPU-GPU) coordinate operations across command buffers so that they execute in a specified order
 //fences (CPU-GPU) are similar but are waited for in the code itself rather than threads
 local void 
-CreateSyncObjects(){
+CreateSyncObjects(){DPZoneScoped;
 	PrintVk(2, "Creating sync objects");
 	AssertRS(RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
 	rendererStage |= RSVK_SYNCOBJECTS;
@@ -1590,7 +1590,7 @@ CreateSyncObjects(){
 //////////////////
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 local void 
-UpdateUniformBuffers(){
+UpdateUniformBuffers(){DPZoneScoped;
 	AssertRS(RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
 	//PrintVk(2, "  Updating Uniform Buffer");
 	
@@ -1634,7 +1634,7 @@ UpdateUniformBuffers(){
 }
 
 local void 
-CreateUniformBuffers(){
+CreateUniformBuffers(){DPZoneScoped;
 	PrintVk(2, "Creating uniform buffers");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
 	rendererStage |= RSVK_UNIFORMBUFFER;
@@ -1677,7 +1677,7 @@ CreateUniformBuffers(){
 //// @other ////
 ////////////////
 local void 
-SetupOffscreenRendering(){
+SetupOffscreenRendering(){DPZoneScoped;
 	PrintVk(2, "Creating offscreen rendering stuffs");
 	AssertRS(RSVK_LOGICALDEVICE, "SetupOffscreenRendering called before CreateLogicalDevice");
 	rendererStage |= RSVK_RENDERPASS;
@@ -1796,7 +1796,7 @@ SetupOffscreenRendering(){
 ////////////////////////// (rasterizer, depth test, etc)
 //creates descriptor set layouts, push constants for shaders, and the pipeline layout
 local void 
-CreateLayouts(){
+CreateLayouts(){DPZoneScoped;
 	PrintVk(2, "Creating layouts");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateLayouts called before CreateLogicalDevice");
 	rendererStage |= RSVK_LAYOUTS;
@@ -1951,7 +1951,7 @@ CreateLayouts(){
 //creates a pool of descriptors of different types to be sent to shaders
 //TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
 local void 
-CreateDescriptorPool(){
+CreateDescriptorPool(){DPZoneScoped;
 	PrintVk(2, "Creating descriptor pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
 	rendererStage |= RSVK_DESCRIPTORPOOL;
@@ -1981,7 +1981,7 @@ CreateDescriptorPool(){
 
 //allocates in the descriptor pool and creates the descriptor sets
 local void 
-CreateDescriptorSets(){
+CreateDescriptorSets(){DPZoneScoped;
 	AssertRS(RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER, "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
 	rendererStage |= RSVK_DESCRIPTORSETS;
 	
@@ -2071,7 +2071,7 @@ CreateDescriptorSets(){
 }
 
 local void 
-CreatePipelineCache(){
+CreatePipelineCache(){DPZoneScoped;
 	PrintVk(2, "Creating pipeline cache");
 	AssertRS(RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
 	
@@ -2087,7 +2087,7 @@ CreatePipelineCache(){
 }
 
 local void 
-SetupPipelineCreation(){
+SetupPipelineCreation(){DPZoneScoped;
 	PrintVk(2, "Setting up pipeline creation");
 	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPasses");
 	rendererStage |= RSVK_PIPELINESETUP;
@@ -2224,7 +2224,7 @@ SetupPipelineCreation(){
 //////////////////
 //TODO(delle,ReCl) clean this up
 local std::vector<std::string> 
-GetUncompiledShaders(){
+GetUncompiledShaders(){DPZoneScoped;
 	std::vector<std::string> compiled;
 	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
 		if(entry.path().extension() == ".spv"){
@@ -2249,7 +2249,7 @@ GetUncompiledShaders(){
 
 //creates a pipeline shader stage from the shader bytecode
 local VkPipelineShaderStageCreateInfo 
-loadShader(std::string filename, VkShaderStageFlagBits stage){
+loadShader(std::string filename, VkShaderStageFlagBits stage){DPZoneScoped;
 	PrintVk(3, "Loading shader: ", filename);
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
@@ -2283,7 +2283,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage){
 
 //TODO(delle,Re) maybe dont crash on failed shader compile?
 local VkPipelineShaderStageCreateInfo 
-CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false){
+CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false){DPZoneScoped;
 	PrintVk(3, "Compiling and loading shader: ", filename);
 	//check if file exists
 	std::filesystem::path entry(Assets::dirShaders() + filename);
@@ -2346,7 +2346,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 
 
 local void 
-CompileAllShaders(bool optimize = false){
+CompileAllShaders(bool optimize = false){DPZoneScoped;
 	//setup shader compiler
 	shaderc_compiler_t compiler       = shaderc_compiler_initialize();
 	shaderc_compile_options_t options = shaderc_compile_options_initialize();
@@ -2398,7 +2398,7 @@ CompileAllShaders(bool optimize = false){
 }
 
 local void
-CompileShader(std::string& filename, bool optimize){
+CompileShader(std::string& filename, bool optimize){DPZoneScoped;
 	PrintVk(3, "Compiling shader: ", filename);
 	std::filesystem::path entry(Assets::dirShaders() + filename);
 	if(std::filesystem::exists(entry)){
@@ -2450,7 +2450,7 @@ CompileShader(std::string& filename, bool optimize){
 //// @pipelines creation ////
 /////////////////////////////
 local void 
-CreatePipelines(){
+CreatePipelines(){DPZoneScoped;
 	PrintVk(2, "Creating pipelines");
 	AssertRS(RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
 	rendererStage |= RSVK_PIPELINECREATE;
@@ -2732,7 +2732,7 @@ specializationInfo.mapEntryCount = 1;
 } //CreatePipelines
 
 local VkPipeline 
-GetPipelineFromShader(u32 shader){
+GetPipelineFromShader(u32 shader){DPZoneScoped;
 	switch(shader){
 		case(Shader_NULL):default:{ return pipelines.null;      }
 		case(Shader_Flat):        { return pipelines.flat;      }
@@ -2746,7 +2746,7 @@ GetPipelineFromShader(u32 shader){
 }
 
 local void 
-UpdateMaterialPipelines(){
+UpdateMaterialPipelines(){DPZoneScoped;
 	PrintVk(4, "Updating material pipelines");
 	for(auto& mat : vkMaterials){
 		mat.pipeline = GetPipelineFromShader(mat.base->shader);
@@ -2757,7 +2757,7 @@ UpdateMaterialPipelines(){
 //// @commands ////
 ///////////////////
 local void
-SetupCommands(){
+SetupCommands(){DPZoneScoped;
 	//create 2D vertex and index buffers
 	size_t ui_vb_size = Max(1000*sizeof(Vertex2),   twodVertexCount * sizeof(Vertex2));
 	size_t ui_ib_size = Max(3000*sizeof(TwodIndexVk), twodIndexCount  * sizeof(TwodIndexVk));
@@ -2893,7 +2893,7 @@ SetupCommands(){
 }
 
 local void
-ResetCommands(){
+ResetCommands(){DPZoneScoped;
 	{//2D commands
 		forI(TWOD_LAYERS+1){
 			memset(&twodCmdArrays[active_swapchain][i][0], 0, sizeof(TwodCmdVk) * twodCmdCounts[active_swapchain][i]);
@@ -2923,7 +2923,7 @@ local vec4 draw_cmd_color    = vec4(0.40f, 0.61f, 0.27f, 1.0f);
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
 local void 
-BuildCommands(){
+BuildCommands(){DPZoneScoped;
 	//PrintVk(2, "Building Command Buffers");
 	AssertRS(RSVK_DESCRIPTORSETS | RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreateDescriptorSets or CreatePipelines");
 	
@@ -3179,7 +3179,7 @@ BuildCommands(){
 			}
 
 			//draw topmost stuff (custom window decorations for now)
-			if (twodCmdCounts[active_swapchain][TWOD_LAYERS] > 0) {
+			if (twodCmdCounts[active_swapchain][TWOD_LAYERS] > 1) {
 				DebugBeginLabelVk(cmdBuffer, "Z-Zero", draw_group_color);
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
 				VkDeviceSize offsets[1] = { 0 };
@@ -3234,7 +3234,7 @@ local void imguiCheckVkResult(VkResult err){
 
 local char iniFilepath[256] = {};
 void DeshiImGui::
-Init(){
+Init(){DPZoneScoped;
 	AddFlag(deshiStage, DS_IMGUI);
 	TIMER_START(t_s);
 	
@@ -3296,7 +3296,7 @@ Init(){
 }
 
 void DeshiImGui::
-Cleanup(){
+Cleanup(){DPZoneScoped;
 	AssertVk(vkDeviceWaitIdle(device));
 	ImGui_ImplVulkan_Shutdown();
 #if DESHI_WINDOWS
@@ -3310,7 +3310,7 @@ Cleanup(){
 }
 
 void DeshiImGui::
-NewFrame(){
+NewFrame(){DPZoneScoped;
 	ImGui_ImplVulkan_NewFrame();
 
 #if DESHI_WINDOWS
@@ -3331,7 +3331,7 @@ vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(0, 0);
 u32  prevLayer = 0;
  
-void Check2DCmdArrays(u32& layer, Texture* tex, b32 textured, vec2& scissorOffset, vec2& scissorExtent){
+void Check2DCmdArrays(u32& layer, Texture* tex, b32 textured, vec2& scissorOffset, vec2& scissorExtent){DPZoneScoped;
 	if (layer == -1) layer = prevLayer;
 	if (scissorOffset == vec2::ONE * MAX_F32) scissorOffset = prevScissorOffset;
 	if (scissorExtent == vec2::ONE * MAX_F32) scissorExtent = prevScissorExtent;
@@ -3355,7 +3355,7 @@ void Check2DCmdArrays(u32& layer, Texture* tex, b32 textured, vec2& scissorOffse
 }
 
 void Render::
-StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent) {
+StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent) {DPZoneScoped;
 	prevScissorOffset = scissorOffset; prevScissorExtent = scissorExtent; prevLayer = layer;
 	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorOffset = scissorOffset;
 	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorExtent = scissorExtent;
@@ -3366,7 +3366,7 @@ StartNewTwodCmd(u32 layer, Texture* tex, vec2 scissorOffset, vec2 scissorExtent)
 }
 
 void Render::
-AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount) {
+AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount) {DPZoneScoped;
 	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
 	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
 
@@ -3635,7 +3635,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 }
 
 void Render::
-DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
@@ -3696,7 +3696,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 }
 
 void Render::
-DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
@@ -3757,7 +3757,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 }
 
 void Render::
-DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	if(alpha == 0) return;
@@ -3782,7 +3782,7 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u
 }
 
 void Render::
-DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	vec2 center = (pos + size) / 2,
 	p0 = Math::vec2RotateByAngle(rotation, pos              - center) + center,
 	p1 = Math::vec2RotateByAngle(rotation, pos.xAdd(size.x) - center) + center,
@@ -3811,27 +3811,27 @@ u32 Render::GetZZeroLayerIndex(){
 //// @settings ////
 ///////////////////
 void Render::
-SaveSettings(){
+SaveSettings(){DPZoneScoped;
 	Assets::saveConfig("render.cfg", configMap);
 }
 
 void Render::
-LoadSettings(){
+LoadSettings(){DPZoneScoped;
 	Assets::loadConfig("render.cfg", configMap);
 }
 
 RenderSettings* Render::
-GetSettings(){
+GetSettings(){DPZoneScoped;
 	return &settings;
 }
 
 RenderStats* Render::
-GetStats(){
+GetStats(){DPZoneScoped;
 	return &stats;
 }
 
 RendererStage* Render::
-GetStage(){
+GetStage(){DPZoneScoped;
 	return &rendererStage;
 }
 
@@ -3840,7 +3840,7 @@ GetStage(){
 ///////////////
 //TODO(delle) upload extra mesh data to an SSBO
 void Render::
-LoadMesh(Mesh* mesh){
+LoadMesh(Mesh* mesh){DPZoneScoped;
 	AssertRS(RSVK_LOGICALDEVICE, "LoadMesh called before CreateLogicalDevice");
 	MeshVk mvk{};
 	mvk.base = mesh;
@@ -3894,7 +3894,7 @@ LoadMesh(Mesh* mesh){
 }
 
 void Render::
-LoadTexture(Texture* texture){
+LoadTexture(Texture* texture){DPZoneScoped;
 	AssertRS(RSVK_COMMANDPOOL, "LoadTexture called before CreateCommandPool");
 	TextureVk tvk{};
 	tvk.base = texture;
@@ -4101,7 +4101,7 @@ LoadTexture(Texture* texture){
 
 //TODO(delle) this currently requires 4 textures, fix that
 void Render::
-LoadMaterial(Material* material){
+LoadMaterial(Material* material){DPZoneScoped;
 	AssertRS(RSVK_DESCRIPTORPOOL, "LoadMaterial called before CreateDescriptorPool");
 	MaterialVk mvk{};
 	mvk.base     = material;
@@ -4152,7 +4152,7 @@ LoadMaterial(Material* material){
 //// @update ////
 /////////////////
 void Render::
-UpdateMaterial(Material* material){
+UpdateMaterial(Material* material){DPZoneScoped;
 	MaterialVk* mvk = &vkMaterials[material->idx];
 	mvk->pipeline = GetPipelineFromShader(material->shader);
 	
@@ -4191,17 +4191,17 @@ UpdateMaterial(Material* material){
 //// @unload ////
 /////////////////
 void Render::
-UnloadTexture(Texture* texture){
+UnloadTexture(Texture* texture){DPZoneScoped;
 	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadMaterial(Material* material){
+UnloadMaterial(Material* material){DPZoneScoped;
 	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadMesh(Mesh* mesh){
+UnloadMesh(Mesh* mesh){DPZoneScoped;
 	Assert(!"not implemented yet"); //!Incomplete
 }
 
@@ -4214,7 +4214,7 @@ UnloadMesh(Mesh* mesh){
 //      2. most commands will be remade every frame the exact same with just the matrix differing
 //      3. this relies on scene mesh indexes matching renderer mesh indexes
 void Render:: 
-DrawModel(Model* model, mat4 matrix){
+DrawModel(Model* model, mat4 matrix){DPZoneScoped;
 	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	ModelCmdVk* cmd = modelCmdArray + modelCmdCount;
 	
@@ -4231,12 +4231,12 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* model, mat4 matrix, color color){
+DrawModelWireframe(Model* model, mat4 matrix, color color){DPZoneScoped;
 	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-DrawLine(vec3 start, vec3 end, color color){
+DrawLine(vec3 start, vec3 end, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	u32 col = color.rgba;
@@ -4254,7 +4254,7 @@ DrawLine(vec3 start, vec3 end, color color){
 }
 
 void Render::
-DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){
+DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	u32 col = color.rgba;
@@ -4273,7 +4273,7 @@ DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){
 }
 
 void Render::
-DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){
+DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	u32 col = color.rgba;
@@ -4292,7 +4292,7 @@ DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){
 }
 
 void Render::
-DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
+DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	DrawLine(p0, p1, color);
 	DrawLine(p1, p2, color);
@@ -4301,14 +4301,14 @@ DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
 }
 
 inline void Render::
-DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
+DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	DrawTriangleFilled(p0, p1, p2, color);
 	DrawTriangleFilled(p0, p2, p3, color);
 }
 
 void Render::
-DrawPoly(array<vec3>& points, color color){
+DrawPoly(array<vec3>& points, color color){DPZoneScoped;
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(s32 i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
@@ -4316,7 +4316,7 @@ DrawPoly(array<vec3>& points, color color){
 }
 
 void Render::
-DrawPolyFilled(array<vec3>& points, color color){
+DrawPolyFilled(array<vec3>& points, color color){DPZoneScoped;
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(s32 i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
@@ -4324,7 +4324,7 @@ DrawPolyFilled(array<vec3>& points, color color){
 }
 
 void Render::
-DrawBox(const mat4& transform, color color){
+DrawBox(const mat4& transform, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -4340,7 +4340,7 @@ DrawBox(const mat4& transform, color color){
 }
 
 void Render::
-DrawBoxFilled(const mat4& transform, color color){
+DrawBoxFilled(const mat4& transform, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -4358,7 +4358,7 @@ DrawBoxFilled(const mat4& transform, color color){
 }
 
 void Render::
-DrawCircle(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color c){
+DrawCircle(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color c){DPZoneScoped;
 	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
 	f32 subdivisions = f32(subdivisions_int);
 	forI(subdivisions_int){
@@ -4372,7 +4372,7 @@ DrawCircle(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color
 }
 
 void Render::
-DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color cx, color cy, color cz){
+DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color cx, color cy, color cz){DPZoneScoped;
 	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
 	f32 subdivisions = f32(subdivisions_int);
 	forI(subdivisions_int){
@@ -4388,7 +4388,7 @@ DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color
 }
 
 void Render::
-DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
+DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	f32 y = tanf(Radians(fovx / 2.0f));
@@ -4440,7 +4440,7 @@ DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f
 //// @debug ////
 ////////////////
 void Render::
-ClearDebug(){
+ClearDebug(){DPZoneScoped;
 	debugWireframeVertexCount = 0;
 	debugWireframeIndexCount  = 0;
 	debugFilledVertexCount = 0;
@@ -4448,7 +4448,7 @@ ClearDebug(){
 }
 
 void Render::
-DebugLine(vec3 start, vec3 end, color color){
+DebugLine(vec3 start, vec3 end, color color){DPZoneScoped;
 	if(color.a == 0) return;
 	
 	u32 col = color.rgba;
@@ -4475,22 +4475,22 @@ DebugLine(vec3 start, vec3 end, color color){
 //// @camera ////
 /////////////////
 void Render::
-UpdateCameraPosition(vec3 position){
+UpdateCameraPosition(vec3 position){DPZoneScoped;
 	uboVS.values.viewPos = vec4(position, 1.f);
 }
 
 void Render::
-UpdateCameraViewMatrix(mat4 m){
+UpdateCameraViewMatrix(mat4 m){DPZoneScoped;
 	uboVS.values.view = m;
 }
 
 void Render::
-UpdateCameraProjectionMatrix(mat4 m){
+UpdateCameraProjectionMatrix(mat4 m){DPZoneScoped;
 	uboVS.values.proj = m;
 }
 
 void Render::
-UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
+UseDefaultViewProjMatrix(vec3 position, vec3 rotation){DPZoneScoped;
 	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
 	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix((f32)DeshWindow->width, (f32)DeshWindow->height, 90.f, 1000.f, 0.1f);
@@ -4500,7 +4500,7 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 //// @shaders ////
 //////////////////
 void Render::
-ReloadShader(u32 shader){
+ReloadShader(u32 shader){DPZoneScoped;
 	switch(shader){
 		case(Shader_NULL):{ 
 			vkDestroyPipeline(device, pipelines.null, nullptr);
@@ -4574,7 +4574,7 @@ ReloadShader(u32 shader){
 }
 
 void Render::
-ReloadAllShaders(){
+ReloadAllShaders(){DPZoneScoped;
 	CompileAllShaders();
 	remakePipelines = true;
 }
@@ -4583,22 +4583,22 @@ ReloadAllShaders(){
 //// @fixme ////
 ////////////////
 void Render::
-UpdateLight(u32 lightIdx, vec4 vec){
+UpdateLight(u32 lightIdx, vec4 vec){DPZoneScoped;
 	vkLights[lightIdx] = vec;
 }
 
 void Render::
-remakeOffscreen(){
+remakeOffscreen(){DPZoneScoped;
 	_remakeOffscreen = true;
 }
 
 u32  Render::
-GetMaxSurfaces() {
+GetMaxSurfaces() {DPZoneScoped;
 	return MAX_SURFACES;
 }
 
 void Render::
-RegisterChildWindow(u32 idx, Window* window) {
+RegisterChildWindow(u32 idx, Window* window) {DPZoneScoped;
 	AssertDS(DS_RENDER, "Attempt to initialize a surface and swapchain on a window without initializaing renderer first");
 	Assert(idx < MAX_SURFACES);
 	CreateSurface(window, idx);
@@ -4624,13 +4624,13 @@ RegisterChildWindow(u32 idx, Window* window) {
 }
 
 void Render::
-SetSurfaceDrawTargetByIdx(u32 idx){
+SetSurfaceDrawTargetByIdx(u32 idx){DPZoneScoped;
 	Assert(idx < MAX_SURFACES);
 	active_swapchain = idx;
 }
 
 void Render::
-SetSurfaceDrawTargetByWindow(Window* window){
+SetSurfaceDrawTargetByWindow(Window* window){DPZoneScoped;
 	Assert(window->renderer_surface_index != -1, "Attempt to set draw target to a window who hasnt been registered to the renderer");
 	active_swapchain = window->renderer_surface_index;
 }
@@ -4639,7 +4639,7 @@ SetSurfaceDrawTargetByWindow(Window* window){
 //// @init ////
 ///////////////
 void Render::
-Init(){
+Init(){DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to init Vulkan without loading Memory first");
 	AssertDS(DS_LOGGER, "Attempt to init Vulkan without loading Logger first");
 	AssertDS(DS_WINDOW, "Attempt to init Vulkan without loading Window first");
@@ -4728,7 +4728,7 @@ Init(){
 //// @update ////
 /////////////////
 void Render::
-Update(){
+Update(){DPZoneScoped;
 	TIMER_START(t_d);
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
@@ -4772,11 +4772,17 @@ Update(){
 			ImGui::Render();
 		}
 		UpdateUniformBuffers();
+
+		TIMER_START(cmd);
 		SetupCommands();
+		DeshTime->miscDebugTime1 = TIMER_END(cmd);
+		TIMER_RESET(cmd);
 
 		//execute draw commands
 		BuildCommands();
+		DeshTime->miscDebugTime2 = TIMER_END(cmd);
 
+		TIMER_RESET(cmd);
 		//submit the command buffer to the queue
 		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
@@ -4788,9 +4794,12 @@ Update(){
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
 		AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
+		DeshTime->miscDebugTime3 = TIMER_END(cmd);
+
 
 		if (remakeWindow) { return; }
 
+		TIMER_RESET(cmd);
 		//present the image
 		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		presentInfo.waitSemaphoreCount = 1;
@@ -4800,6 +4809,7 @@ Update(){
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = 0;
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
+		DeshTime->miscDebugTime4 = TIMER_END(cmd);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {  //!Cleanup remakeWindow is already checked
 			vkDeviceWaitIdle(device);
@@ -4811,6 +4821,7 @@ Update(){
 			Assert(!"failed to present swap chain image");
 		}
 
+		TIMER_RESET(cmd);
 		//iterate the frame index
 		activeSwapchain.frameIndex = (activeSwapchain.frameIndex + 1) % activeSwapchain.minImageCount; //loops back to zero after reaching minImageCount
 		result = vkQueueWaitIdle(graphicsQueue);
@@ -4820,6 +4831,8 @@ Update(){
 			case VK_ERROR_DEVICE_LOST:          LogE("vulkan", "DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
 			case VK_SUCCESS:default: break;
 		}
+		DeshTime->miscDebugTime5 = TIMER_END(cmd);
+
 
 		ResetCommands();
 		
@@ -4854,7 +4867,7 @@ Update(){
 //// @reset ////
 ////////////////
 void Render::
-Reset(){
+Reset(){DPZoneScoped;
 	PrintVk(1,"Resetting renderer");
 	
 	vkDeviceWaitIdle(device); //wait before cleanup
@@ -4867,7 +4880,7 @@ Reset(){
 //////////////////
 //TODO(delle,Vu) maybe cache pipeline creation vars?
 void Render::
-Cleanup(){
+Cleanup(){DPZoneScoped;
 	PrintVk(1, "Initializing cleanup\n");
 	
 	Render::SaveSettings();

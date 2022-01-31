@@ -13,13 +13,13 @@ struct map {
 	array<Value> data;
 	u32 count;
 	
-	map(Allocator* a = stl_allocator){
+	map(Allocator* a = stl_allocator){DPZoneScoped;
 		hashes.allocator = a;
 		data.allocator = a;
 		count = 0;
 	}
 	
-	map(std::initializer_list<pair<Key,Value>> list, Allocator* a = stl_allocator) {
+	map(std::initializer_list<pair<Key,Value>> list, Allocator* a = stl_allocator) {DPZoneScoped;
 		hashes.allocator = a;
 		data.allocator = a;
 		count = 0;
@@ -29,36 +29,36 @@ struct map {
 		}
 	}
 	
-	void clear() {
+	void clear() {DPZoneScoped;
 		hashes.clear();
 		data.clear();
 		count = 0;
 	}
 	
-	bool has(const Key& key) {
+	bool has(const Key& key) {DPZoneScoped;
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return true; } }
 		return false;
 	}
 	
-	Value* at(const Key& key) {
+	Value* at(const Key& key) {DPZoneScoped;
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return &data[i]; } }
 		return 0;
 	}
 	
-	Value* atIdx(u32 index){
+	Value* atIdx(u32 index){DPZoneScoped;
 		return &data[index];
 	}
 	
-	Value& operator[](const Key& key) {
+	Value& operator[](const Key& key) {DPZoneScoped;
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count) { if (hashed == hashes[i]) { return data[i]; } }
 		throw "nokey";
 	}
 	
 	//returns index of added or existing key
-	u32 add(const Key& key){
+	u32 add(const Key& key){DPZoneScoped;
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return i; } }
 		hashes.add(hashed);
@@ -67,7 +67,7 @@ struct map {
 		return count-1;
 	}
 	
-	u32 add(const Key& key, const Value& value){
+	u32 add(const Key& key, const Value& value){DPZoneScoped;
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return i; } }
 		hashes.add(hashed);
@@ -76,15 +76,15 @@ struct map {
 		return count-1;
 	}
 	
-	void swap(u32 idx1, u32 idx2) {
+	void swap(u32 idx1, u32 idx2) {DPZoneScoped;
 		hashes.swap(idx1, idx2);
 		data.swap(idx1, idx2);
 	}
 	
-	Value* begin() { return data.begin(); }
-	Value* end()   { return data.end(); }
-	const Value* begin() const { return data.begin(); }
-	const Value* end()   const { return data.end(); }
+	Value* begin() {DPZoneScoped; return data.begin(); }
+	Value* end()   {DPZoneScoped; return data.end(); }
+	const Value* begin() const {DPZoneScoped; return data.begin(); }
+	const Value* end()   const {DPZoneScoped; return data.end(); }
 };
 
 template<typename Key, typename HashStruct = hash<Key>>

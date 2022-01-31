@@ -11,7 +11,7 @@ namespace Logger{
 	local u32   indent_level = 0;
 	local u32   indent_spaces = 2;
 	
-	void ConsoleMirror(const string& str, u32 file_char_offset) {
+	void ConsoleMirror(const string& str, u32 file_char_offset) {DPZoneScoped;
 		if (str[0] == '[') {
 			string modified = "{{";
 			u32 rb = str.findFirstChar(']');
@@ -35,7 +35,7 @@ namespace Logger{
 		DeshConsole->LoggerMirror(str, file_char_offset);
 	}
 	
-	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
+	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){DPZoneScoped;
 		if(!is_logging) return;
 		int cursor = (tag && *tag != 0) ? snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] ", string::toUpper(tag).str) : 0; //tag
 		cursor += snprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, "%*s", indent_level*indent_spaces, ""); //indentation
@@ -54,7 +54,7 @@ namespace Logger{
 		if(mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(toStr(LastMessage()), file_char_offset);
 	}
 	
-	inline void LogInternal(const string& tag, const string& msg){
+	inline void LogInternal(const string& tag, const string& msg){DPZoneScoped;
 		if(!is_logging) return;
 		
 		string str = tag;
@@ -73,7 +73,7 @@ namespace Logger{
 	
 	//just a special function called by Console to prevent feedback between 
 	//console and logger and to prevent logger from appending a newline
-	void LogFromConsole(const string& str) {
+	void LogFromConsole(const string& str) {DPZoneScoped;
 		if (!is_logging) return;
 		fputs(str.str, file);
 		if (mirror_to_stdout) {
@@ -83,11 +83,11 @@ namespace Logger{
 		last_message_len = str.count;
 	}
 	
-	void PushIndent(u32 count){
+	void PushIndent(u32 count){DPZoneScoped;
 		indent_level += count;
 	}
 	
-	void PopIndent(u32 count){
+	void PopIndent(u32 count){DPZoneScoped;
 		u32 temp = indent_level - count;
 		if(temp > indent_level){
 			indent_level = 0;
@@ -96,23 +96,23 @@ namespace Logger{
 		}
 	}
 	
-	 FILE* GetFilePtr() {
+	 FILE* GetFilePtr() {DPZoneScoped;
 		return file;
 	}
 	
-	cstring LastMessage(){
+	cstring LastMessage(){DPZoneScoped;
 		return cstring{log_buffer,last_message_len};
 	}
 	
-	void SetIsLogging(b32 yep) {
+	void SetIsLogging(b32 yep) {DPZoneScoped;
 		is_logging = yep;
 	}
 	
-	void SetMirrorToConsole(b32 mirrorToConsole){
+	void SetMirrorToConsole(b32 mirrorToConsole){DPZoneScoped;
 		mirror_to_console = mirrorToConsole;
 	}
 	
-	void Init(u32 log_count, b32 mirror){
+	void Init(u32 log_count, b32 mirror){DPZoneScoped;
 		AssertDS(DS_MEMORY, "Attempt to initialize Logger without loading memory first");
 		deshiStage |= DS_LOGGER;
 		
@@ -161,12 +161,12 @@ namespace Logger{
 	}
 	
 	//TODO maybe flush every X seconds/frames instead of every update?
-	void Update(){
+	void Update(){DPZoneScoped;
 		int error = fflush(file);
 		Assert(!error, "logger failed to flush file");
 	}
 	
-	void Cleanup(){
+	void Cleanup(){DPZoneScoped;
 		fclose(file);
 		is_logging = false;
 	}

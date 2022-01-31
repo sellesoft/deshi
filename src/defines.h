@@ -114,6 +114,7 @@
 #include <cstddef> //size_t, ptrdiff_t
 #include <cstdlib> //malloc, calloc, free
 #include <cstring> //memcpy, memset, strcpy, strlen, etc
+#include "core/profiling.h" //for any header that includes defines, this header should almost never change, but if you want it moved just say so 
 
 ///////////////////////
 //// static macros ////

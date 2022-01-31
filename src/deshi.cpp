@@ -179,8 +179,19 @@ __________ see commands.cpp 'test' command
 (01/15/22) vulkan backend crashes on window close
 */
 
+
+
 #include "defines.h"
 #include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
+
+#ifdef TRACY_ENABLE
+#include "TracyClient.cpp"
+#include "Tracy.hpp"
+#undef ERROR
+#undef DELETE
+#endif
+
+#include "core/profiling.h"
 
 //// utility headers ////"
 #include "utils/array.h"
@@ -209,8 +220,6 @@ __________ see commands.cpp 'test' command
 #include <vector>
 #include <set>
 #include <unordered_map>
-
-
 
 enum DeshiStage{
 	DS_NONE    = 0,
@@ -287,6 +296,7 @@ local Flags deshiStage = DS_NONE;
 #include <imgui/imgui_tables.cpp>
 #include <imgui/imgui_widgets.cpp>
 
+
 //// platform ////
 #if DESHI_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -305,10 +315,8 @@ local Flags deshiStage = DS_NONE;
 #elif DESHI_OPENGL //DESHI_VULKAN
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #include <imgui/imgui_impl_opengl3.cpp>
-#include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12 //DESHI_OPENGL
 #include <GLFW/glfw3.h>
@@ -327,6 +335,8 @@ local Flags deshiStage = DS_NONE;
 #endif
 
 #undef DeleteFont
+
+
 
 
 //// core cpp ////

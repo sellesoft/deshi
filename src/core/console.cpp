@@ -95,7 +95,7 @@ local map<const char*, color> color_strings{
 };
 
 //TODO(sushi) clean this function up please
-void ParseMessage(string& input, s32 chstart = -1){
+void ParseMessage(string& input, s32 chstart = -1){DPZoneScoped;
 	//if the input is less than 7 characters its impossible for it to have valid modifier syntax
 	if(input.count < 7){
 		Chunk chunk;

@@ -11,7 +11,7 @@
 
 //removes the last items
 template<typename T> global_ void
-array_pop(T* arr, upt arr_count, upt count = 1){
+array_pop(T* arr, upt arr_count, upt count = 1){DPZoneScoped;
 	forI(count){ arr[arr_count--].~T(); }
 	memset(arr+arr_count, 0, count*sizeof(T));
 }
@@ -19,7 +19,7 @@ template<typename T> FORCE_INLINE void array_pop(carray<T> arr, upt count = 1){ 
 
 //swaps the last item with the item at index, then pops one
 template<typename T> global_ void
-array_remove_unordered(T* arr, upt arr_count, upt idx){
+array_remove_unordered(T* arr, upt arr_count, upt idx){DPZoneScoped;
 	arr[idx] = arr[arr_count-1];
 	array_pop(arr, arr_count, 1);
 }
@@ -27,7 +27,7 @@ template<typename T> FORCE_INLINE void array_remove_unordered(carray<T> arr, upt
 
 //shifts all items left of index to the left by one
 template<typename T> global_ void
-array_remove_ordered(T* arr, upt arr_count, upt idx){
+array_remove_ordered(T* arr, upt arr_count, upt idx){DPZoneScoped;
 	arr[idx].~T();
 	memmove(arr+idx, arr+idx+1, (arr_count-idx)*sizeof(T));
 	memset(arr+arr_count-1, 0, sizeof(T));
@@ -36,7 +36,7 @@ template<typename T> FORCE_INLINE void array_remove_ordered(carray<T> arr, upt i
 
 //shift all items at and to the right of index to the right by one
 template<typename T> global_ void
-array_insert(T* arr, upt arr_count, T& item, upt idx){
+array_insert(T* arr, upt arr_count, T& item, upt idx){DPZoneScoped;
 	memmove(arr+idx+1, arr+idx, (arr_count-idx)*sizeof(T));
 	arr[idx] = item;
 }

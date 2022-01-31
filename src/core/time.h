@@ -25,6 +25,8 @@ struct Time{
 	u64 updateCount = 0;
 	
 	f32 timeTime{}, windowTime{}, inputTime{}, consoleTime{}, renderTime{}, frameTime{};
+
+	f32 miscDebugTime1{}, miscDebugTime2{}, miscDebugTime3{}, miscDebugTime4{}, miscDebugTime5{};
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
 	
