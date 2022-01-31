@@ -4,8 +4,8 @@
 //| Generic Heap  |  Heap Arena |  Heap Arena | Item | Item |
 //| Chunk | Chunk | Item | Item | Item | Item |      |      |
 
-#define MEMORY_CHECK_HEAPS DESHI_INTERNAL
-#define MEMORY_TRACK_ALLOCS DESHI_INTERNAL
+#define MEMORY_CHECK_HEAPS true
+#define MEMORY_TRACK_ALLOCS false
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false
 #define MEMORY_PRINT_GENERIC_CHUNKS false

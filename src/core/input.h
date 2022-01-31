@@ -106,7 +106,8 @@ struct Input{
 	
 	b32 oldKeyState[MAX_KEYBOARD_KEYS] = {0};
 	b32 newKeyState[MAX_KEYBOARD_KEYS] = {0};
-	f64 mouseX,       mouseY;
+	
+	f64 mouseX,       mouseY; //window space
 	f64 screenMouseX, screenMouseY;
 	f64 scrollX,      scrollY;
 	vec2 mousePos;

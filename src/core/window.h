@@ -4,6 +4,7 @@
 
 #include "../defines.h"
 #include "../math/vector.h"
+#include "../utils/string.h"
 
 struct Input;
 struct GLFWwindow;
@@ -58,6 +59,7 @@ enum CursorType_ {
 	CursorType_LeftDiagResize,
 	CursorType_Hand,
 	CursorType_IBeam,
+	CursorType_Hidden,
 }; typedef u32 CursorType;
 
 constexpr u32 max_child_windows = 2;
@@ -65,7 +67,7 @@ struct Window{
 	string name;
 	GLFWwindow*  window;
 	GLFWmonitor* monitor;
-
+	
 	void* handle = 0; //win32: HWND; linux/mac not implemented
 	void* instance = 0; //win32: HINSTANCE; linux/mac not implemented
 	
@@ -75,12 +77,12 @@ struct Window{
 	
 	//TODO add support for colored decor
 	Decoration decorations;
-
+	
 	//this is only set in the main window, child windows can not set this, and so it is only accessible on the main window's pointer
 	Window* activeWindow = 0;
-
+	
 	HitTest hittest = HitTestNone;
-
+	
 	s32 x, y;
 	s32 width, height;
 	s32 cx, cy;          //position of client area in window's coordinates
@@ -99,40 +101,47 @@ struct Window{
 	b32 rawInput;
 	b32 resizable;
 	b32 closeWindow;
-
+	
 	u32 titlebarheight = 0;
 	
 	vec2 dimensions;
 	
-	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
 	void    Init(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
-	Window* MakeChild(const char* name, s32 width, s32 height, s32 x = 0, s32 y = 0);
+	Window* MakeChild(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF);
+	
 	void    Update();
 	void    Cleanup();
+	void    Close();
+	b32     ShouldClose();
+	
 	void    UpdateDisplayMode(DisplayMode mode);
-	void    UpdateCursorMode(CursorMode mode); 
 	void    UpdateDecorations(Decoration decorations);
-	void    SetCursorPos(vec2 pos);
-	void    SetCursor(CursorType curtype);
-	void    UpdateRawInput(b32 rawInput);
 	void    UpdateResizable(b32 resizable);
 	void    GetScreenSize(s32& width, s32& height);
+	void    GetWindowSize(s32& width, s32& height);
 	void    GetClientSize(s32& width, s32& height);
 	vec2    GetClientAreaPosition();
 	vec2    GetClientAreaDimensions();
-	void    Close();
-	void    UpdateTitle(const char* title);
 	void    ShowWindow(u32 child = -1);
 	void    HideWindow(u32 child = -1);
+	void    UpdateTitle(const char* title);
 	void    CloseConsole();
-	b32     ShouldClose();
-
+	
+	// cursor and input
+	void    UpdateRawInput(b32 rawInput);
+	void    UpdateCursorMode(CursorMode mode); 
+	void    SetCursor(CursorType type);
+	void    SetCursorPos(f64 x, f64 y);
+	FORCE_INLINE void SetCursorPos(vec2 pos){ SetCursorPos(pos.x, pos.y); }
+	void    SetCursorPosScreen(f64 x, f64 y);
+	FORCE_INLINE void SetCursorPosScreen(vec2 pos){ SetCursorPosScreen(pos.x, pos.y); }
+	
 	//define custom cursors
 	//maybe could put this somewhere else bc it will make the window struct very large
-private:
+	private:
 	u32 W = 0xffffffff;
 	u32 B = 0xff000000;
-public:
+	public:
 	u32 defaultcur[16 * 16] = {
 		B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		B,B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -150,9 +159,9 @@ public:
 		0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,B,B,B,0,0,0,0,0,0,0,
-
+		
 	};
-
+	
 	u32 hresizecur[16 * 16] = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -171,7 +180,7 @@ public:
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	};
-
+	
 	u32 vresizecur[16 * 16] = {
 		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
@@ -190,7 +199,7 @@ public:
 		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
 	};
-
+	
 	u32 rightdiagresizecur[16 * 16] = {
 		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
 		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
@@ -209,7 +218,7 @@ public:
 		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
 		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
 	};
-
+	
 	u32 leftdiagresizecur[16 * 16] = {
 		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
 		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
@@ -228,7 +237,7 @@ public:
 		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
 		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
 	};
-
+	
 	u32 handcur[16 * 16] = {
 		0,0,0,0,0,0,0,0,0,B,B,0,0,0,0,0,
 		0,0,0,0,0,0,B,B,B,W,W,B,B,0,0,0,
@@ -247,7 +256,7 @@ public:
 		0,0,0,0,B,W,W,W,W,W,W,W,B,0,0,0,
 		0,0,0,0,0,B,B,B,B,B,B,B,0,0,0,0,
 	};
-
+	
 	u32 textcur[16 * 16] = {
 		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
 		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
@@ -266,7 +275,7 @@ public:
 		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
 		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
 	};
-
+	
 };
 
 //global_ window pointer
