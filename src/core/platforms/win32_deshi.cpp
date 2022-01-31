@@ -35,12 +35,8 @@ void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {DPZon
 //@Resize
 void WinResized(Window* win, s32 width, s32 height, b32 minimized) {DPZoneScoped;
 	win->width = width; win->height = height;
-<<<<<<< HEAD
-	win->cwidth = width - 2 * win->borderthickness; win->cheight = height - (win->titlebarheight + 2*win->borderthickness);
-=======
 	win->cwidth = width; win->cheight = height - win->titlebarheight;
 	win->centerX = win->width/2; win->centerY = win->height/2;
->>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 	win->dimensions = vec2(win->cwidth, win->cheight);
 	win->cx = win->borderthickness; win->cy = win->borderthickness + win->titlebarheight;
 	if (minimized) win->minimized = true;
@@ -271,15 +267,10 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	//// get mouse coords ////
 	POINT mp = { 0 };
 	GetCursorPos(&mp);
-<<<<<<< HEAD
-	DeshInput->realMouseX = mp.x - x; DeshInput->realMouseY = mp.y - y;
-
-=======
 	DeshInput->realMouseX = mp.x - x;
 	DeshInput->realMouseY = mp.y - y;
 	
 	//// setup raw input ////
->>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 	RAWINPUTDEVICE rid;
 	rid.usUsagePage = 0x01;
 	rid.    usUsage = 0x02;
@@ -410,14 +401,14 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		f32 distToAppear = 7;
 		f32 borderSize = 1;
 		vec2 
-			lbpos = vec2::ZERO,
+		lbpos = vec2::ZERO,
 		rbpos = vec2(width - borderSize, 0),
 		bbpos = vec2(0, height - borderSize),
 		lbsiz = vec2(borderSize, height),
 		rbsiz = vec2(borderSize, height),
 		bbsiz = vec2(width, borderSize);
 		color //TODO make these not show if the mouse goes beyond the window
-			bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
+		bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
 		rcol = color(255,255,255, Remap(Clamp(mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize))),
 		lcol = color(255,255,255, Remap(Clamp(cwidth - mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize)));
 		
@@ -428,10 +419,32 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		FillRect2D(vec2::ZERO, vec2(borderSize, height), lcol);
 		FillRect2D(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
 		FillRect2D(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
-		
-		
 	}
-	
+	else if (HasFlag(decor, Decoration_Borders)) {
+		win->borderthickness = 2;
+		f32 borderSize = win->borderthickness;
+		vec2 
+		tbpos = vec2::ZERO,
+		lbpos = vec2::ZERO,
+		rbpos = vec2(width - borderSize, 0),
+		bbpos = vec2(0, height - borderSize),
+		tbsiz = vec2(width, borderSize),
+		lbsiz = vec2(borderSize, height),
+		rbsiz = vec2(borderSize, height),
+		bbsiz = vec2(width, borderSize);
+		color 
+		tcol = color(133,133,133),
+		bcol = color(133,133,133),
+		rcol = color(133,133,133),
+		lcol = color(133,133,133);
+
+		FillRect2D(lbpos, lbsiz, lcol);
+		FillRect2D(rbpos, rbsiz, rcol);
+		FillRect2D(bbpos, bbsiz, bcol);
+		FillRect2D(tbpos, tbsiz, tcol);
+
+	}'
+
 #if 0
 	Log("", win->hittest);
 #endif
