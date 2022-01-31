@@ -108,14 +108,9 @@ struct Window{
 	b32 rawInput;
 	b32 resizable;
 	b32 closeWindow;
-<<<<<<< HEAD
 
 	s32 titlebarheight = 0;
 	s32 borderthickness = 0;
-=======
-	
-	u32 titlebarheight = 0;
->>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 	
 	vec2 dimensions;
 	

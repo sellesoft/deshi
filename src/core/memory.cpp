@@ -4,11 +4,7 @@
 //| Generic Heap  |  Heap Arena |  Heap Arena | Item | Item |
 //| Chunk | Chunk | Item | Item | Item | Item |      |      |
 
-<<<<<<< HEAD
-#define MEMORY_CHECK_HEAPS false
-=======
 #define MEMORY_CHECK_HEAPS true
->>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 #define MEMORY_TRACK_ALLOCS false
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false

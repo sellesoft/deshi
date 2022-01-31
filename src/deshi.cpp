@@ -313,21 +313,11 @@ local Flags deshiStage = DS_NONE;
 #  include <imgui/imgui_impl_vulkan.cpp>
 #  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL //DESHI_VULKAN
-<<<<<<< HEAD
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #include <imgui/imgui_impl_opengl3.cpp>
 #include "core/renderers/opengl.cpp"
-=======
-#  define GLAD_GL_IMPLEMENTATION
-#  include <glad/gl.h>
-#  include <GLFW/glfw3.h>
-#  define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#  include <imgui/imgui_impl_opengl3.cpp>
-#  include <imgui/imgui_impl_glfw.cpp>
-#  include "core/renderers/opengl.cpp"
->>>>>>> b56567a9fed36dcf44643bdbe380c0a8c5b89585
 #elif DESHI_DIRECTX12 //DESHI_OPENGL
 #  include <GLFW/glfw3.h>
 #  define GLFW_EXPOSE_NATIVE_WIN32
