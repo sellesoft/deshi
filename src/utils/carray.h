@@ -11,14 +11,14 @@
 //initializes and allocates an array
 template<typename T> global_ void
 init(carray<T>* arr, upt count, Allocator* a = stl_allocator){DPZoneScoped;
-	arr->data  = a->reserve(count*sizeof(T));
+	arr->data  = (T*)a->reserve(count*sizeof(T));
 	arr->count = count;
 }
 
 //reserves space for an array
 template<typename T> global_ void
 reserve(carray<T>* arr, upt count, Allocator* a = stl_allocator){DPZoneScoped;
-	arr->data  = a->reserve(count*sizeof(T));
+	arr->data  = (T*)a->reserve(count*sizeof(T));
 }
 
 //removes the last items
