@@ -77,6 +77,7 @@ struct Window{
 	
 	void* handle = 0; //win32: HWND; linux/mac not implemented
 	void* instance = 0; //win32: HINSTANCE; linux/mac not implemented
+	void* dc = 0; //win32: HDC; linux/mac not implemented
 	
 	Window* children[max_child_windows];
 	u32 child_count = 0;
@@ -108,7 +109,7 @@ struct Window{
 	b32 rawInput;
 	b32 resizable;
 	b32 closeWindow;
-
+	
 	s32 titlebarheight = 0;
 	s32 borderthickness = 0;
 	
@@ -134,6 +135,7 @@ struct Window{
 	void    HideWindow(u32 child = -1);
 	void    UpdateTitle(const char* title);
 	void    CloseConsole();
+	void    SwapBuffers();
 	
 	// cursor and input
 	void    UpdateRawInput(b32 rawInput);

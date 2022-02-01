@@ -1,11 +1,10 @@
-﻿local int _width, _height, _x, _y;
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @Windows Utils
+
+local int _width, _height, _x, _y;
 local b32 _resized = false;
 local b32 block_mouse_pos_change = false;
 local RECT winrect = { 0 };
-
-
-
-
 
 #undef DELETE
 map<s32, Key::Key> vkToKey{
@@ -231,6 +230,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 	return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @Window API
+
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode) {DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	deshiStage |= DS_WINDOW;
@@ -244,7 +248,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	
 	//// register window class ////
 	WNDCLASSA wc;
-	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
+	wc.        style = CS_OWNDC; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
 	wc.  lpfnWndProc = WndProc;
 	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
 	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
@@ -263,6 +267,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	if (!handle) Win32LogLastError("CreateWindowA", true);
 	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
+	dc = GetDC((HWND)handle);
 	
 	//// get mouse coords ////
 	POINT mp = { 0 };
@@ -344,6 +349,7 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	}
 	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
+	child->dc = GetDC((HWND)child->handle);
 	
 	//// get monitor info ////
 	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
@@ -392,7 +398,7 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
 		}
 		if (HasFlag(decor, Decoration_TitlebarTitle)) {
-			
+			//!Incomplete
 		}
 	}
 	
@@ -401,14 +407,14 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		f32 distToAppear = 7;
 		f32 borderSize = 1;
 		vec2 
-		lbpos = vec2::ZERO,
+			lbpos = vec2::ZERO,
 		rbpos = vec2(width - borderSize, 0),
 		bbpos = vec2(0, height - borderSize),
 		lbsiz = vec2(borderSize, height),
 		rbsiz = vec2(borderSize, height),
 		bbsiz = vec2(width, borderSize);
 		color //TODO make these not show if the mouse goes beyond the window
-		bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
+			bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
 		rcol = color(255,255,255, Remap(Clamp(mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize))),
 		lcol = color(255,255,255, Remap(Clamp(cwidth - mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize)));
 		
@@ -424,7 +430,7 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		win->borderthickness = 2;
 		f32 borderSize = win->borderthickness;
 		vec2 
-		tbpos = vec2::ZERO,
+			tbpos = vec2::ZERO,
 		lbpos = vec2::ZERO,
 		rbpos = vec2(width - borderSize, 0),
 		bbpos = vec2(0, height - borderSize),
@@ -433,18 +439,18 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		rbsiz = vec2(borderSize, height),
 		bbsiz = vec2(width, borderSize);
 		color 
-		tcol = color(133,133,133),
+			tcol = color(133,133,133),
 		bcol = color(133,133,133),
 		rcol = color(133,133,133),
 		lcol = color(133,133,133);
-
+		
 		FillRect2D(lbpos, lbsiz, lcol);
 		FillRect2D(rbpos, rbsiz, rcol);
 		FillRect2D(bbpos, bbsiz, bcol);
 		FillRect2D(tbpos, tbsiz, tcol);
-
-	}'
-
+		
+	}
+	
 #if 0
 	Log("", win->hittest);
 #endif
@@ -475,6 +481,19 @@ void Window::Update() {DPZoneScoped;
 	hittest = HitTestNone;
 	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY + titlebarheight);
 	DeshTime->windowTime = TIMER_END(t_d);
+}
+
+b32 Window::ShouldClose() {DPZoneScoped;
+	DPFrameMark;
+	return closeWindow;
+}
+
+void Window::Close(){DPZoneScoped;
+	closeWindow = true;
+}
+
+void Window::Cleanup() {DPZoneScoped;
+	DestroyWindow((HWND)handle);
 }
 
 void Window::UpdateDisplayMode(DisplayMode dm) {DPZoneScoped;
@@ -680,27 +699,14 @@ void Window::CloseConsole() {DPZoneScoped;
 	FreeConsole();
 }
 
-b32 Window::ShouldClose() {DPZoneScoped;
-	DPFrameMark;
-	return closeWindow;
-}
-
-void Window::Close(){DPZoneScoped;
-	closeWindow = true;
-}
-
-void Window::Cleanup() {DPZoneScoped;
-	DestroyWindow((HWND)handle);
+void Window::SwapBuffers(){
+	::SwapBuffers((HDC)dc);
 }
 
 
 
-
-
-
-//////////////////
-//// File API ////
-//////////////////
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @File @IO API
 
 //TODO binary file loading when needed
 //initializes a FileReader for a given File
@@ -891,4 +897,36 @@ void
 rename_file(const char* old_filepath, const char* new_filepath) {
 	BOOL success = MoveFileA(old_filepath, new_filepath);
 	if (!success) Win32LogLastError("MoveFileA");
+}
+
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @Module API
+
+void*
+platform_load_module(const char* module_path){
+	return LoadLibraryA(module_path);
+}
+
+void*
+platform_load_module(str16 module_path){
+	return LoadLibraryW((LPCWSTR)module_path.str);
+}
+
+void
+platform_free_module(void* module){
+	FreeLibrary((HMODULE)module);
+}
+
+platform_symbol
+platform_get_module_symbol(void* module, const char* symbol_name){
+	return (platform_symbol)GetProcAddress((HMODULE)module, symbol_name);
+}
+
+platform_symbol
+platform_get_module_symbol(void* module, str16 symbol_name){
+	str8 utf8 = str8_from_str16(symbol_name, stl_allocator);
+	defer{ free(utf8.str); };
+	return (platform_symbol)GetProcAddress((HMODULE)module, (char*)utf8.str);
 }

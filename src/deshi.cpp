@@ -159,6 +159,7 @@ add the ability to limit framerate
 
 Ungrouped TODOs
 ---------------
+remove commit/decommit from defines.h
 move config saving/loading to its own core file
 remove GLFW and add platform layers
 restyle map to match the rest of utils
@@ -207,6 +208,7 @@ __________ see commands.cpp 'test' command
 #include "utils/ring_array.h"
 #include "utils/string.h"
 #include "utils/string_utils.h"
+#include "utils/unicode.h"
 #include "utils/utils.h"
 #include "math/math.h"
 
@@ -258,6 +260,7 @@ local Flags deshiStage = DS_NONE;
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"
+#include "core/platform.h"
 #include "core/renderer.h"
 #include "core/storage.h"
 #include "core/time.h"
