@@ -671,7 +671,7 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 		LogfE("memory","Deshi ran out of generic memory when attempting to allocate %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", requested_size, file.str, line);
 		result = AllocateLibc(aligned_size);
 		
-
+		
 #if MEMORY_PRINT_GENERIC_ACTIONS
 		Logf("memory","Created a libc allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
@@ -690,7 +690,7 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 	deshi__generic_heap->last_chunk = new_chunk;
 	result = ChunkToMemory(new_chunk);
 	
-
+	
 #if MEMORY_PRINT_GENERIC_ACTIONS
 	Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
@@ -721,7 +721,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 	if(ChunkIsLibc(chunk)){
 		result = ReallocateLibc(ptr, aligned_size);
 		
-
+		
 #if MEMORY_PRINT_GENERIC_ACTIONS
 		Logf("memory","Reallocated a libc allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
@@ -816,7 +816,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 			MemChunk* new_chunk = MemoryToChunk(result);
 			memcpy(&new_chunk->node, &chunk->node, GetChunkSize(chunk) - MEMORY_CHUNK_OVERHEAD);
 			
-
+			
 #if MEMORY_PRINT_GENERIC_ACTIONS
 			Logf("memory","Reallocated an allocation[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
@@ -938,7 +938,7 @@ void
 deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
 	
-
+	
 	if(deshi__cleanup_happened) return;
 	if(ptr == 0) return;
 	
@@ -1362,12 +1362,12 @@ deshi__memory_bytes_draw() {
 ////////////////
 void
 deshi__memory_init(upt main_size, upt temp_size){
-	#ifdef TRACY_ENABLE && DESHI_WAIT_FOR_TRACY_CONNECTION
-		PRINTLN("TRACY_ENABLE and DESHI_WAIT_FOR_TRACY_CONNECTION both enabled. Waiting for connection...");
-		while(!TracyIsConnected){}
-	#endif
-
-
+#if defined(TRACY_ENABLE) && defined(DESHI_WAIT_FOR_TRACY_CONNECTION)
+	PRINTLN("TRACY_ENABLE and DESHI_WAIT_FOR_TRACY_CONNECTION both enabled. Waiting for connection...");
+	while(!TracyIsConnected){}
+#endif
+	
+	
 	void* base_address = 0;
 	u8*   allocation   = 0;
 	u64   total_size   = main_size + temp_size;
