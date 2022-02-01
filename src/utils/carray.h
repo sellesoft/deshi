@@ -3,11 +3,23 @@
 #define DESHI_CARRAY_H
 
 #include "../defines.h"
-#include <cstring> //memcpy, memset
 
 //NOTE The purposed of these functions is to avoid rewriting their implementations everywhere, not to be fully functional.
 //     As such, they do no error checking and do not change external values, so that stuff should be handled externally.
-//     Also, I don't guarantee proper moving of complex types using operator=(), I just use memcpy().
+//     Also, I don't guarantee proper moving of complex types using operator=(), I just use memcpy/memmove.
+
+//initializes and allocates an array
+template<typename T> global_ void
+init(carray<T>* arr, upt count, Allocator* a = stl_allocator){DPZoneScoped;
+	arr->data  = a->reserve(count*sizeof(T));
+	arr->count = count;
+}
+
+//reserves space for an array
+template<typename T> global_ void
+reserve(carray<T>* arr, upt count, Allocator* a = stl_allocator){DPZoneScoped;
+	arr->data  = a->reserve(count*sizeof(T));
+}
 
 //removes the last items
 template<typename T> global_ void
