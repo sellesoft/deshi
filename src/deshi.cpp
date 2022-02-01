@@ -363,11 +363,11 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	Assets::enforceDirectories();
 	memory_init(Gigabytes(1), Gigabytes(1));
 	Logger::Init(5);
-	deshi_time.Init();
-	deshi_window.Init("deshi", winWidth, winHeight);
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	deshi_console.Init();
 #endif
+	deshi_time.Init();
+	deshi_window.Init("deshi", winWidth, winHeight);
 	Render::Init();
 	Storage::Init();
 #ifndef DESHI_DISABLE_IMGUI
@@ -375,8 +375,8 @@ void deshi::init(u32 winWidth, u32 winHeight){
 #endif
 	UI::Init();
 	Cmd::Init();
-	
 	DeshWindow->ShowWindow();
+	Render::UseDefaultViewProjMatrix();
 	LogS("deshi","Finished deshi initialization in ",TIMER_END(t_s),"ms");
 }
 

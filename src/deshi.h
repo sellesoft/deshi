@@ -35,18 +35,22 @@ namespace deshi {
 //////////////////////////
 //// deshi quickstart ////
 //////////////////////////
-global_ void deshi_init(u32 winWidth = 1280, u32 winHeight = 720);
-global_ void deshi_cleanup();
+#define deshi_init() deshi::init()
+
+#define deshi_cleanup() deshi::cleanup()
+
 #define deshi_loop_start() \
 TIMER_START(t_f); \
 while(!DeshWindow->ShouldClose()){ \
-DeshWindow-> Update(); \
+DeshWindow->Update(); \
 DeshiImGui::NewFrame(); \
-DeshInput->  Update();
+DeshInput->Update();
+
 #define deshi_loop_end() \
 DeshConsole->Update(); \
-UI::         Update(); \
-Render::     Update(); \
+UI::Update(); \
+Render::Update(); \
+memory_clear_temp(); \
 DeshTime->frameTime = TIMER_END(t_f); TIMER_RESET(t_f); \
 }
 
