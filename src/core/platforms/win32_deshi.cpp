@@ -26,9 +26,12 @@ void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {DPZon
 	DWORD error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
 				  0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
-	LogfE("io-win32", "%s failed with error %d: %s", func_name, (u32)error, (const char*)msg_buffer);
+	LogfE("win32", "%s failed with error %d: %s", func_name, (u32)error, (const char*)msg_buffer);
 	LocalFree(msg_buffer);
-	if (crash_on_error) ExitProcess(error);
+	if(crash_on_error){
+		Assert(!"assert before exit so we can stack trace in debug mode");
+		ExitProcess(error);
+	}
 }
 
 //@Resize
@@ -234,6 +237,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Window API
+#define DESHI_WND_CLASSNAME_A "_DESHI_"
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode) {DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
@@ -257,13 +261,16 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
-	wc.lpszClassName = _name;
-	
+	wc.lpszClassName = DESHI_WND_CLASSNAME_A;
 	if (!RegisterClassA(&wc)) Win32LogLastError("RegisterClassA", true); 
 	
 	//// create window ////
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	handle = CreateWindowA(_name, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+#if DESHI_OPENGL
+	handle = CreateWindowA(DESHI_WND_CLASSNAME_A, _name, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+#else
+	handle = CreateWindowA(DESHI_WND_CLASSNAME_A, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+#endif
 	if (!handle) Win32LogLastError("CreateWindowA", true);
 	//set WndProc user data to be a pointer to this window
 	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
@@ -318,7 +325,7 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	
 	child->instance = GetModuleHandle(NULL);
 	
-	//make and register window class
+	//make and register window class //TODO reuse above window class to not pollute atom table
 	WNDCLASSA wc;
 	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
 	wc.  lpfnWndProc = WndProc;
