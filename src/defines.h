@@ -400,6 +400,7 @@ template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (
 template<typename T> FORCE_INLINE T Nudge(T val, T target, T delta) {return (val != target) ? (val < target) ? ((val + delta < target) ? val + delta : target) : ((val - delta > target) ? val - delta : target) : target;}
 template<typename T> FORCE_INLINE b32 EpsilonEqual(T a, T b){ return abs(a - b) < M_EPSILON; }
 template<typename T> FORCE_INLINE T Remap(T val, T nu_min, T nu_max, T old_min, T old_max) { return (val - old_min) / (old_max - old_min) * (nu_max - nu_min); }
+template<typename... T, typename A> inline b32 match_any(A tested, T... in) { return((tested == in) || ...); }
 
 /////////////////////// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
 //// assert macros //// //TODO(delle) refactor Assert() usages so the expression is not used

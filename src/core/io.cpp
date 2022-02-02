@@ -6,7 +6,7 @@ FileReader init_reader(char* data, u32 datasize) {
 	fr.raw.str = data;
 	fr.raw.count = datasize;
 	fr.read.str = fr.raw.str;
-
+	
 	char* start = fr.raw.str, end = 0;
 	cstring raw = fr.raw;
 	forI(datasize + 1) {
@@ -17,7 +17,7 @@ FileReader init_reader(char* data, u32 datasize) {
 		advance(&raw);
 	}
 	if (!fr.lines.count) fr.lines.add(fr.raw);
-
+	
 	return fr;
 }
 
@@ -40,7 +40,7 @@ b32 next_line(FileReader& reader) {
 	//upt& readcount = reader.read.count;
 	//char*   rawstr = reader.raw.str;
 	//upt   rawcount = reader.raw.count;
-
+	
 	////ensure that for the first line read points to starts at the beginnng of the file 
 	////and we dont skip the first line
 	//if (!reader.line_number) {
@@ -75,7 +75,7 @@ b32 next_chunk(FileReader& reader, char delimiter, b32 include_delimiter) {
 	upt& readcount = reader.read.count;
 	char*   rawstr = reader.raw.str;
 	upt   rawcount = reader.raw.count;
-
+	
 	readstr += readcount;
 	if (readstr >= rawstr + rawcount) return false;
 	if (*readstr == delimiter) readstr++;
@@ -99,7 +99,7 @@ b32 next_chunk(FileReader& reader, char chunk_begin, char chunk_end, b32 include
 	index = find_first_char(readstr, chunk_end);
 	if (index == npos) readcount = rawcount - (readstr - rawstr);
 	else readcount = index + (include_delimiters ? 1 : 0);
-
+	
 	return true;
 }
 #endif
@@ -111,7 +111,7 @@ b32 next_value_from_key(FileReader& reader, const char* key, char inbetween_char
 	upt& readcount = reader.read.count;
 	char*   rawstr = reader.raw.str;
 	upt   rawcount = reader.raw.count;
-
+	
 	if (readstr >= rawstr + rawcount) return false;
 	u32 index = find_first_string(readstr, rawcount - (readstr - rawstr), key, strlen(key));
 	if (index == npos) return false;
@@ -129,7 +129,7 @@ b32 next_value_from_key(FileReader& reader, const char* key, char inbetween_char
 	index = find_first_char(readstr, rawcount - (readstr - rawstr), value_delimiter);
 	if (index == npos) readcount = rawcount - (readstr - rawstr);
 	else readcount = index;
-
+	
 	return true;
 }
 

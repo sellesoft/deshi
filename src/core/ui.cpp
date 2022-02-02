@@ -2762,7 +2762,7 @@ void SetFocusedWindow(UIWindow* window) {DPZoneScoped;
 	//we must find what idx the window is at
 	//i think
 	for (int i = 0; i < windows.count; i++) {
-		if (*windows.atIdx(i) == window) {
+		if (windows[i] == window) {
 			for (int move = i; move < windows.count - 1; move++)
 				windows.swap(move, move + 1);
 			break;
@@ -2816,7 +2816,7 @@ b32 CheckForHoveredChildWindow(UIWindow* parent, UIWindow* child) {DPZoneScoped;
 void CheckForHoveredWindow(UIWindow* window = 0) {DPZoneScoped;
 	b32 hovered_found = 0;
 	for (int i = windows.count - 1; i > 0; i--) {
-		UIWindow* w = *windows.atIdx(i);
+		UIWindow* w = windows[i];
 		if (WinBegan(w)) {
 			//check children first, because there could be popout children who are out of the parents bounds
 			for (UIWindow* c : w->children) {
@@ -2849,7 +2849,7 @@ void CheckWindowsForFocusInputs() {DPZoneScoped;
 	//special case where we always check for metrics first since it draws last
 	
 	for (int i = windows.count - 1; i > 0; i--) {
-		UIWindow* w = *windows.atIdx(i);
+		UIWindow* w = windows[i];
 		WinUnSetFocused(w);
 		if (!(w->flags & UIWindowFlags_NoFocus)) {
 			if (i == windows.count - 1 && WinHovered(w)) {
@@ -3902,10 +3902,10 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	
 	UIWindow* myself = 0; //pointer returned for drawing
 	
-	persist UIWindow* slomo = *windows.atIdx(0);
-	persist UIWindow* quick = *windows.atIdx(0);
-	persist UIWindow* mostitems = *windows.atIdx(0);
-	persist UIWindow* longname = *windows.atIdx(0);
+	persist UIWindow* slomo = windows.data[0];
+	persist UIWindow* quick = windows.data[0];
+	persist UIWindow* mostitems = windows.data[0];
+	persist UIWindow* longname = windows.data[0];
 	
 	array<UIWindow*> winsorted;
 	for (UIWindow* win : windows) {

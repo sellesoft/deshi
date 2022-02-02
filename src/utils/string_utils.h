@@ -11,20 +11,47 @@
 #include <cstdarg>
 #include <string>
 
+global_ string 
+stringf(const char* fmt, ...){
+	va_list argptr;
+	va_start(argptr, fmt);
+	string s;
+	s.count = vsnprintf(nullptr, 0, fmt, argptr);
+	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
+	s.space = s.count+1;
+	vsnprintf(s.str, s.count+1, fmt, argptr);
+	va_end(argptr);
+	return s;
+}
+
 ///////////////
 //// @stox ////
 ///////////////
-global_ u32
-stoi(const string& s) {
-	u32 x;
-	(void)sscanf(s.str, "%d", &x);
+global_ s32
+stoi(char* s){
+	s32 x;
+	(void)sscanf(s, "%d", &x);
 	return x;
 }
+FORCE_INLINE s32 stoi(cstring s){ return stoi(s.str); }
+FORCE_INLINE s32 stoi(const string& s){ return stoi(s.str); }
+
+global_ s64
+stolli(char* s){
+	s64 x;
+	(void)sscanf(s, "%lli", &x);
+	return x;
+}
+FORCE_INLINE s64 stolli(cstring s){ return stolli(s.str); }
+FORCE_INLINE s64 stolli(const string& s){ return stolli(s.str); }
 
 global_ f64
-stod(const string& s) {
-	return strtod(s.str, 0);
+stod(char* s) {
+	return strtod(s, 0);
 }
+FORCE_INLINE f64 stod(cstring s){ return stod(s.str); }
+FORCE_INLINE f64 stod(const string& s){ return stod(s.str); }
 
 ////////////////////
 //// @to_string ////
@@ -40,6 +67,11 @@ to_string(char* str){
 }
 
 global_ string 
+to_string(const char* str){ 
+	return string(str); 
+}
+
+global_ string 
 to_string(const string& str){ 
 	return str; 
 }
@@ -47,20 +79,6 @@ to_string(const string& str){
 global_ string 
 to_string(const std::string& str){ 
 	return str.c_str(); 
-}
-
-global_ string 
-to_string(const char* fmt, ...){
-	va_list argptr;
-	va_start(argptr, fmt);
-	string s;
-	s.count = vsnprintf(nullptr, 0, fmt, argptr);
-	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-	s.allocator->commit(s.str, s.count+1);
-	s.space = s.count+1;
-	vsnprintf(s.str, s.count+1, fmt, argptr);
-	va_end(argptr);
-	return s;
 }
 
 global_ string 
@@ -81,13 +99,24 @@ to_string(s32 x){
 }
 
 global_ string 
-to_string(u32 x){
+to_string(s64 x){
 	string s;
-	s.count = snprintf(nullptr, 0, "%d", x);
+	s.count = snprintf(nullptr, 0, "%lld", x);
 	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
 	s.allocator->commit(s.str, s.count+1);
 	s.space = s.count+1;
-	snprintf(s.str, s.count+1, "%d", x);
+	snprintf(s.str, s.count+1, "%lld", x);
+	return s;
+}
+
+global_ string 
+to_string(u32 x){
+	string s;
+	s.count = snprintf(nullptr, 0, "%u", x);
+	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
+	s.space = s.count+1;
+	snprintf(s.str, s.count+1, "%u", x);
 	return s;
 }
 
@@ -275,18 +304,19 @@ to_string(const matN& x, bool trunc = true) {
 	return str;
 }
 
-#define toStr(...) ToString(__VA_ARGS__)
+#define toStr(...) (ToString(__VA_ARGS__))
 template<class... T> global_ string 
 ToString(T... args){
 	string str;
 	constexpr auto arg_count{sizeof...(T)};
-	string arr[arg_count] = {to_string(std::forward<T>(args))...};
+	string arr[arg_count] = {to_string(args)...};
 	forI(arg_count) str += arr[i];
 	return str;
 }
 
-
-
+///////////////
+//// @find ////
+///////////////
 global_ u32 
 find_first_char(const char* str, u32 strsize, char c, u32 offset = 0) {
 	for (u32 i = offset; i < strsize; ++i)
@@ -357,7 +387,7 @@ global_ b32 str_begins_with(const cstring& buf1, const char*    buf2) { return s
 global_ b32 str_begins_with(const char*    buf1, const char*    buf2) { return str_begins_with(buf1, buf2, strlen(buf2)); }
 
 FORCE_INLINE global_ b32
-str_ends_with(const char* buf1, u32 buf1len, const char* buf2, u32 buf2len) {return (buf2len > buf1len ? 0 : !memcmp(buf1 + (buf2len - buf1len), buf2, buf2len));}
+str_ends_with(const char* buf1, u32 buf1len, const char* buf2, u32 buf2len) {return (buf2len > buf1len ? 0 : !memcmp(buf1 + (buf1len - buf2len), buf2, buf2len));}
 global_ b32 str_ends_with(const string&  buf1, const string&  buf2) { return str_ends_with(buf1.str, buf1.count, buf2.str, buf2.count); }
 global_ b32 str_ends_with(const cstring& buf1, const cstring& buf2) { return str_ends_with(buf1.str, buf1.count, buf2.str, buf2.count); }
 global_ b32 str_ends_with(const string&  buf1, const cstring& buf2) { return str_ends_with(buf1.str, buf1.count, buf2.str, buf2.count); }

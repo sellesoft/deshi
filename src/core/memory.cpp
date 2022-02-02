@@ -77,10 +77,10 @@ DEBUG_PrintHeapChunks(Heap* heap, char* heap_name){
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
 		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
-			heap_order += to_string("0x%p", chunk); heap_order += " -> ";
+			heap_order += stringf("0x%p", chunk); heap_order += " -> ";
 			if(chunk != heap->last_chunk){
 				if(ChunkIsEmpty(chunk)){
-					heap_empty += to_string("0x%p", chunk);
+					heap_empty += stringf("0x%p", chunk);
 					heap_empty += " -> ";
 				}else{
 					heap_empty += "                  ";
