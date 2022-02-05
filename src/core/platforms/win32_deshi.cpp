@@ -592,9 +592,11 @@ void Window::UpdateDecorations(Decoration _decorations) {DPZoneScoped;
 	if (decorations == Decoration_SystemDecorations) {
 		SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
 		titlebarheight = 0;
+		borderthickness = 0;
 	}
-	else 
+	else {
 		SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
+	}
 	SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
 }
 
