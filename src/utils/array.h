@@ -72,7 +72,7 @@ struct array{
 	//returns the value of iter + some value and doesn't increment it 
 	T& peek(u32 i = 1);
 	//returns the value of iter and decrements it by one
-	T& prev();
+	T& prev(u32 count = 0);
 	T& lookback(u32 i = 1);
 	//iterator functions that return pou32ers if the object isnt already one
 	T* nextptr();
@@ -81,6 +81,7 @@ struct array{
 	//returns the value of iter and decrements it by one
 	T* prevptr();
 	T* lookbackptr(u32 i = 1);
+	void setiter(u32 i);
 	
 	//begin/end functions for for-each loops
 	inline T* begin(){ return &data[0]; }
@@ -435,8 +436,7 @@ at(u32 i){DPZoneScoped;
 template<typename T> inline T& array<T>::
 next(u32 count){DPZoneScoped;
 	if (last - iter + 1 >= 0) {
-		iter += count;
-		return *iter;
+		return iter += count, *iter;
 	}
 	return *iter;
 }
@@ -448,8 +448,16 @@ peek(u32 i){DPZoneScoped;
 }
 
 template<typename T> inline T& array<T>::
-prev(){DPZoneScoped;
-	if(first - iter + 1 >= 0) return *iter--;
+prev(u32 count){DPZoneScoped;
+	if (iter - first + 1 >= 0) {
+		return iter -= count, *iter;
+	}
+	return *--iter;
+}
+
+template<typename T> inline void array<T>::
+setiter(u32 i) {
+	iter = data + i;
 }
 
 template<typename T> inline T& array<T>::

@@ -419,7 +419,7 @@ inline u32 string::CHARCount(CHAR c) const{DPZoneScoped;
 
 inline string string::substrToChar(CHAR c) const{DPZoneScoped;
 	u32 idx = findFirstChar(c);
-	return (idx != npos) ? *this : string(str, idx); //!TestMe
+	return (idx != npos) ? string(str, idx) : *this;
 }
 
 
