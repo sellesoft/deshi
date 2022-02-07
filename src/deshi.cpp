@@ -90,8 +90,6 @@ figure out how to use custom allocators with opengl3 and get opengl3 to use desh
 remove usage of STL
 replace allocator with temp_allocator in relevant places
 rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
-make functions for exposing render's 2D vertex and index arrays so the app can freely make custom
-____2D shapes
 give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
 find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
 add texture/material recreation without restart
@@ -263,6 +261,7 @@ local Flags deshiStage = DS_NONE;
 #include "core/platform.h"
 #include "core/renderer.h"
 #include "core/storage.h"
+#include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
 #include "core/window.h"
@@ -354,11 +353,12 @@ local Flags deshiStage = DS_NONE;
 #include "core/ui.cpp"
 #include "core/commands.cpp"
 
-local Time     deshi_time;    Time*     g_time    = &deshi_time;
-local Window   deshi_window;  Window*   g_window  = &deshi_window;
-local Input    deshi_input{}; Input*    g_input   = &deshi_input;
-local Console  deshi_console; Console*  g_console = &deshi_console;
-local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
+local Time          deshi_time;           Time*          g_time     = &deshi_time;
+local Window        deshi_window;         Window*        g_window   = &deshi_window;
+local Input         deshi_input{};        Input*         g_input    = &deshi_input;
+local Console       deshi_console;        Console*       g_console  = &deshi_console;
+local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_storage;
+local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
 
 void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_s);

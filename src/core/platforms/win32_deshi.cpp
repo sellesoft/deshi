@@ -1,4 +1,4 @@
-//~////////////////////////////////////////////////////////////////////////////////////////////////
+﻿//~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Windows Utils
 
 local int _width, _height, _x, _y;
@@ -135,18 +135,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			else                                   in->realKeyState[Key::LSHIFT] = false;
 			if (GetKeyState(VK_RSHIFT) & 0x8000)   in->realKeyState[Key::RSHIFT] = true;
 			else                                   in->realKeyState[Key::RSHIFT] = false;
-			if (GetKeyState(VK_LCONTROL) & 0x8000) in->realKeyState[Key::LCTRL] = true;
-			else                                   in->realKeyState[Key::LCTRL] = false;
-			if (GetKeyState(VK_RCONTROL) & 0x8000) in->realKeyState[Key::RCTRL] = true;
-			else                                   in->realKeyState[Key::RCTRL] = false;
-			if (GetKeyState(VK_LMENU) & 0x8000)    in->realKeyState[Key::LALT] = true;
-			else                                   in->realKeyState[Key::LALT] = false;
-			if (GetKeyState(VK_RMENU) & 0x8000)    in->realKeyState[Key::RALT] = true;
-			else                                   in->realKeyState[Key::RALT] = false;
-			if(GetKeyState(VK_LWIN) & 0x8000)      in->realKeyState[Key::LMETA] = true;
-			else                                   in->realKeyState[Key::LMETA] = false;
-			if (GetKeyState(VK_RWIN) & 0x8000)     in->realKeyState[Key::RMETA] = true;
-			else                                   in->realKeyState[Key::RMETA] = false;
+			if (GetKeyState(VK_LCONTROL) & 0x8000) in->realKeyState[Key::LCTRL]  = true;
+			else                                   in->realKeyState[Key::LCTRL]  = false;
+			if (GetKeyState(VK_RCONTROL) & 0x8000) in->realKeyState[Key::RCTRL]  = true;
+			else                                   in->realKeyState[Key::RCTRL]  = false;
+			if (GetKeyState(VK_LMENU) & 0x8000)    in->realKeyState[Key::LALT]   = true;
+			else                                   in->realKeyState[Key::LALT]   = false;
+			if (GetKeyState(VK_RMENU) & 0x8000)    in->realKeyState[Key::RALT]   = true;
+			else                                   in->realKeyState[Key::RALT]   = false;
+			if(GetKeyState(VK_LWIN) & 0x8000)      in->realKeyState[Key::LMETA]  = true;
+			else                                   in->realKeyState[Key::LMETA]  = false;
+			if (GetKeyState(VK_RWIN) & 0x8000)     in->realKeyState[Key::RMETA]  = true;
+			else                                   in->realKeyState[Key::RMETA]  = false;
 			
 			//get key from vcode
 			Key::Key* key = vkToKey.at(vcode);
@@ -936,4 +936,277 @@ platform_get_module_symbol(void* module, str16 symbol_name){
 	str8 utf8 = str8_from_str16(symbol_name, stl_allocator);
 	defer{ free(utf8.str); };
 	return (platform_symbol)GetProcAddress((HMODULE)module, (char*)utf8.str);
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @Threading
+
+void manager_return_callback(Thread* t){
+	DeshThreadManager->return_callback_lock.lock();
+	DeshThreadManager->last_returned = t;
+	DeshThreadManager->waitcv.notify_all();
+	DeshThreadManager->return_callback_lock.unlock();
+}
+
+mutex::
+mutex(){DPZoneScoped;
+	if(handle = CreateMutex(NULL, FALSE, NULL); !handle)
+		Win32LogLastError("CreateMutex");
+}
+
+mutex::
+~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedmutex for this
+	CloseHandle(handle);
+}
+
+void mutex::
+lock(){DPZoneScoped;
+	DWORD waitResult = WaitForSingleObject(handle, INFINITE);
+	switch(waitResult){
+		case WAIT_ABANDONED:{
+			//TODO maybe have an option somewhere to suppress this error
+			LogE("threading-win32", "Attempted to lock an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
+		}break;
+		//TODO set up our own error reporting once i figure out what error codes are what for this
+		case WAIT_FAILED:{ Win32LogLastError("CreateMutex"); Assert(0); }break;
+	}
+	is_locked = 1;
+}
+
+b32 mutex::
+try_lock(){DPZoneScoped;
+	DWORD waitResult = WaitForSingleObject(handle, 0);
+	switch(waitResult){
+		case WAIT_ABANDONED:{
+			//TODO maybe have an option somewhere to suppress this error
+			LogE("threading-win32", "Locking an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
+		}break;
+		case WAIT_TIMEOUT:{
+			return false;
+		}break;
+		//TODO set up our own error reporting once i figure out what error codes are what for this
+		case WAIT_FAILED:{ Win32LogLastError("CreateMutex"); Assert(0); }break;
+	}
+	is_locked = 1;
+	return true;
+}
+
+b32 mutex::
+try_lock_for(u64 milliseconds){DPZoneScoped;
+	DWORD waitResult = WaitForSingleObject(handle, milliseconds);
+	switch(waitResult){
+		case WAIT_ABANDONED:{
+			//TODO maybe have an option somewhere to suppress this error
+			LogE("threading-win32", "Locking an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
+		}break;
+		case WAIT_TIMEOUT:{
+			return false;
+		}break;
+		//TODO set up our own error reporting once i figure out what error codes are what for this
+		case WAIT_FAILED:{ Win32LogLastError("CreateMutex"); Assert(0); }break;
+	}
+	is_locked = 1;
+	return true;
+}
+
+void mutex::
+unlock(){DPZoneScoped;
+	if(!ReleaseMutex(handle)) { Win32LogLastError("ReleaseMutex"); Assert(0); }
+}
+
+
+condition_variable::condition_variable(){DPZoneScoped;
+	//NOTE i have to use std mem here in the case that condvar is used before memory is initialized (eg. a condvar global var)
+	cvhandle = malloc(sizeof(CONDITION_VARIABLE));
+	cshandle = malloc(sizeof(CRITICAL_SECTION));
+	InitializeCriticalSection((CRITICAL_SECTION*)cshandle);
+	InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
+}
+
+condition_variable::~condition_variable(){DPZoneScoped;
+	free(cvhandle); free(cshandle);
+}
+
+void condition_variable::
+notify_one() {DPZoneScoped;
+	WakeConditionVariable((CONDITION_VARIABLE*)cvhandle);
+}
+
+void condition_variable::
+notify_all() {DPZoneScoped;
+	WakeAllConditionVariable((CONDITION_VARIABLE*)cvhandle);
+}
+
+void condition_variable::
+wait() {DPZoneScoped;
+	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
+	SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE);
+	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
+}
+
+void condition_variable::
+wait_for(u64 milliseconds) {DPZoneScoped;
+	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
+	SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, milliseconds);
+	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
+}
+
+template<typename FuncToRun, typename... FuncArgs>
+DWORD WINAPI threadfunc_stub(LPVOID in){DPZoneScoped;
+	upt o = 2;
+	tuple<Thread*, FuncToRun, FuncArgs...>* intup = (tuple<Thread*, FuncToRun, FuncArgs...>*)in;
+	intup->get<0>()->threadfunc<FuncToRun, FuncArgs...>(intup->get<1>(), (*((FuncArgs*)&intup->raw[intup->offsets[o++]]), ...));
+	return 0;
+}
+
+template<typename FuncToRun, typename... FuncArgs>
+void Thread::threadfunc(FuncToRun f, FuncArgs... args){DPZoneScoped;
+	SetName(str16_from_str8(comment.str));
+	while(state!=ThreadState_Close){
+		if(state==ThreadState_CallFunction){
+			while(functioncalls--){f(deref_if_ptr(args)...);}
+		}
+		manager_return_callback(this);
+		ChangeState(ThreadState_Sleep);
+		calling_thread_cv.notify_all();
+		if(state==ThreadState_Sleep) thread_cv.wait();
+	}
+	calling_thread_cv.notify_all();
+}
+
+template<typename FuncToRun, typename... FuncArgs>
+void Thread::SetFunction(FuncToRun f, FuncArgs...args){DPZoneScoped;
+    using tup = tuple<Thread*, FuncToRun, FuncArgs...>;
+	memfree(tuple_handle);
+	CloseAndJoin(); ChangeState(ThreadState_Initializing);
+	tuple_handle = memalloc(sizeof(tup));
+	(*(tup*)tuple_handle) = tup(this, f, args...); 
+	CreateThread(0, 0, threadfunc_stub<FuncToRun, FuncArgs...>, tuple_handle, 0, 0);
+}
+
+template<typename FuncToRun, typename... FuncArgs>
+void Thread::SetFunctionAndWait(FuncToRun f, FuncArgs...args){DPZoneScoped;
+	SetFunction(f, args...);
+	Wait();
+}
+
+
+void Thread::WakeUp(){DPZoneScoped;
+	thread_cv.notify_all();
+}
+
+void Thread::ChangeState(ThreadState ts){DPZoneScoped;
+	scopedlock lock(state_mutex);
+	state = ts;
+}
+
+
+b32 Thread::Wait(u64 timeout){DPZoneScoped;
+	return 0;
+}
+
+
+void Thread::Run(int count){DPZoneScoped;
+
+}
+
+
+void Thread::WaitToRun(int count){DPZoneScoped;
+
+}
+
+
+void Thread::RunAndWait(int count){DPZoneScoped;
+
+}
+
+
+void Thread::WaitToRunAndWait(int count){DPZoneScoped;
+
+}
+
+
+void Thread::Close(){DPZoneScoped;
+
+}
+
+
+void Thread::CloseAndJoin(){DPZoneScoped;
+
+}
+
+void Thread::SetName(str16 name){
+	if(FAILED(SetThreadDescription(handle, (LPCWSTR)name.str))){
+		//TODO handle whatever errors this may throw
+	}
+}
+
+Thread::~Thread(){
+
+}
+
+
+Thread* ThreadManager::MakeNewThread(const string& comment){DPZoneScoped;
+    if(!thread_arena) thread_arena = memory_create_arena(sizeof(Thread)*max_threads);
+    if(threads.count >= max_threads) return 0;
+    Thread* nu = memory_arena_add_new<Thread>(thread_arena);
+    if(comment.count) nu->comment = comment;
+    threads.add(nu,nu);
+    return nu;
+}
+
+void ThreadManager::StopAndDeleteThread(Thread* thread){DPZoneScoped;
+    if(Thread** tcheck = threads.at(thread); !tcheck) return; //maybe assert here?
+    thread->Close();
+    threads.remove(thread);
+}
+
+
+void ThreadManager::StopAndDeleteThreadAndWait(Thread* thread){DPZoneScoped;
+    if(Thread** tcheck = threads.at(thread); !tcheck) return; //maybe assert here?
+    thread->CloseAndJoin();
+    threads.remove(thread);
+}
+
+void ThreadManager::StopAndDeleteAllThreads(){DPZoneScoped;
+    for(Thread* t : threads)
+    	t->Close();
+	threads.clear();
+}
+
+
+void ThreadManager::StopAndDeleteAllThreadsAndWait(){DPZoneScoped;
+   	for(Thread* t : threads)
+    	t->CloseAndJoin();
+	threads.clear();
+}
+
+
+void ThreadManager::DeleteThread(Thread* thread){DPZoneScoped;
+    threads.remove(thread); //no need to check if it exists here
+}
+
+void ThreadManager::CloseAllThreads(){DPZoneScoped;
+	for(Thread* t : threads) t->Close();
+}
+
+void ThreadManager::WaitForAllThreadsToFinish(u64 timeout){DPZoneScoped;
+    for(Thread* t : threads) t->Wait(timeout);
+}
+
+Thread* ThreadManager::GetNextAvaliableThread() {DPZoneScoped;
+	for(Thread* t : threads)
+    	if(match_any(t->state, ThreadState_Sleep, ThreadState_NotInitialized)) return t;
+    return 0;
+}
+
+Thread* ThreadManager::WaitForFirstAvaliableThread() {DPZoneScoped;
+	if(Thread* early = GetNextAvaliableThread(); early) return early;
+	waitcv.wait();	
+	return last_returned;
+}
+
+ThreadManager::~ThreadManager(){
+    
 }
