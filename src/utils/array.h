@@ -54,6 +54,9 @@ struct array{
 	void pop(u32 _count = 1);
 	//removes element at i and shifts all following elements down one
 	void remove(u32 i);
+	//sets element at i to the last element and zeros last element
+	//NOTE does not explicitly destruct element at i as it uses operator= do replace value at i
+	void remove_unordered(u32 i);
 	//removes all elements but DOES NOT affect space
 	void clear();
 	//resizes space for count elements and zero-inits any new elements
@@ -184,6 +187,12 @@ template<typename T> inline array<T>::
 ~array(){
 	forI(count){ data[i].~T(); }
 	allocator->release(data);
+	space = 0;
+	count = 0;
+	data  = 0;
+	first = 0;
+	iter  = 0;
+	last  = 0;
 }
 
 ////////////////////
@@ -334,9 +343,24 @@ remove(u32 i){DPZoneScoped;
 	Assert(count > 0, "can't remove element from empty vector");
 	Assert(i < count, "index is out of bounds");
 	data[i].~T();
-	for(u32 o = i; o < count; o++){
+	for(u32 o = i; o < count-1; o++){
 		data[o] = data[o+1];
 	}
+	memset(last, 0, sizeof(T));
+	last--;
+	count--;
+	if(count == 0){
+		first = 0;
+		last  = 0;
+		iter  = 0;
+	}
+}
+
+template<typename T> inline void array<T>::
+remove_unordered(u32 i){DPZoneScoped;
+	Assert(count > 0, "can't remove element from empty vector");
+	Assert(i < count, "index is out of bounds");
+	data[i] = data[count-1];
 	memset(last, 0, sizeof(T));
 	last--;
 	count--;

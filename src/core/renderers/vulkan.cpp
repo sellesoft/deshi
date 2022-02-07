@@ -246,7 +246,7 @@ struct VkSwapchain {
 	u32                      frameIndex     = 0;
 	array<FrameVk>           frames;
 	FramebufferAttachmentsVk attachments{};
-
+	
 };
 
 local VkSwapchain swapchains[MAX_SURFACES];
@@ -962,10 +962,10 @@ CreateInstance(){DPZoneScoped;
 	vkEnumerateInstanceExtensionProperties(0, &pcount, 0);
 	VkExtensionProperties* eprops = (VkExtensionProperties*)memalloc(pcount*sizeof(VkExtensionProperties));
 	vkEnumerateInstanceExtensionProperties(0, &pcount, eprops);
-	forI(pcount) {
+	/*forI(pcount) {
 		PRINTLN(eprops[i].extensionName);
-	}
-
+	}*/
+	
 	//get required extensions
 	PrintVk(3, "Getting required extensions");
 	
@@ -1106,8 +1106,8 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surfaces[surface_index], &formatCount, nullptr);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surfaces[surface_index], &presentModeCount, nullptr);
 			
-
-
+			
+			
 			if(formatCount == 0 || presentModeCount == 0) continue;
 		}
 		
@@ -1213,7 +1213,7 @@ CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 	
 	{//check GPU's features/capabilities for the new swapchain
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surfaces[active_swapchain], &activeSwapchain.supportDetails.capabilities);
-
+		
 		u32 formatCount;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[active_swapchain], &formatCount, nullptr);
 		if (formatCount != 0) {
@@ -1273,9 +1273,9 @@ CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 	}else{
 		activeSwapchain.extent = { (u32)activeSwapchain.width, (u32)activeSwapchain.height };
 		activeSwapchain.extent.width  = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.width,  
-							Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.width,  activeSwapchain.extent.width));
+											Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.width,  activeSwapchain.extent.width));
 		activeSwapchain.extent.height = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.height, 
-							Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.height, activeSwapchain.extent.height));
+											Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.height, activeSwapchain.extent.height));
 	}
 	
 	//get min image count if not specified
@@ -1328,7 +1328,7 @@ CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 	AssertVk(vkCreateSwapchainKHR(device, &info, allocator, &activeSwapchainKHR), "failed to create swap chain");
 	
 	activeSwapchain.window = win;
-
+	
 	//delete old swap chain
 	if(oldSwapChain != VK_NULL_HANDLE) vkDestroySwapchainKHR(device, oldSwapChain, allocator);
 }
@@ -1532,7 +1532,7 @@ CreateFrames(){DPZoneScoped;
 		
 		//create the framebuffers
 		if(activeSwapchain.frames[i].framebuffer) vkDestroyFramebuffer(device, activeSwapchain.frames[i].framebuffer, allocator);
-
+		
 		std::vector<VkImageView> frameBufferAttachments; //TODO(delle) fix scuffed msaa hack
 		if (msaaSamples != VK_SAMPLE_COUNT_1_BIT) {
 			frameBufferAttachments = { activeSwapchain.attachments.colorImageView, activeSwapchain.attachments.depthImageView, activeSwapchain.frames[i].imageView };
@@ -1540,7 +1540,7 @@ CreateFrames(){DPZoneScoped;
 		else {
 			frameBufferAttachments = { activeSwapchain.frames[i].imageView, activeSwapchain.attachments.depthImageView, };
 		}
-
+		
 		VkFramebufferCreateInfo info{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 		info.renderPass = renderPass;
 		info.attachmentCount = frameBufferAttachments.size();
@@ -3128,7 +3128,7 @@ BuildCommands(){DPZoneScoped;
 							scissor.extent.width = (u32)twodCmdArrays[active_swapchain][layer][cmd_idx].scissorExtent.x;
 							scissor.extent.height = (u32)twodCmdArrays[active_swapchain][layer][cmd_idx].scissorExtent.y;
 							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-
+							
 							if(twodCmdArrays[active_swapchain][layer][cmd_idx].descriptorSet){
 								vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &twodCmdArrays[active_swapchain][layer][cmd_idx].descriptorSet, 0, nullptr);
 								vkCmdDrawIndexed(cmdBuffer, twodCmdArrays[active_swapchain][layer][cmd_idx].indexCount, 1, twodCmdArrays[active_swapchain][layer][cmd_idx].indexOffset, 0, 0);
@@ -3177,7 +3177,7 @@ BuildCommands(){DPZoneScoped;
 				viewport.width  = (f32)activeSwapchain.width;
 				viewport.height = (f32)activeSwapchain.height;
 			}
-
+			
 			//draw topmost stuff (custom window decorations for now)
 			if (twodCmdCounts[active_swapchain][TWOD_LAYERS] > 1) {
 				DebugBeginLabelVk(cmdBuffer, "Z-Zero", draw_group_color);
@@ -3199,21 +3199,21 @@ BuildCommands(){DPZoneScoped;
 				viewport.minDepth = 0.f;
 				viewport.maxDepth = 1.f;
 				vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
-
+				
 				forX(cmd_idx, twodCmdCounts[active_swapchain][TWOD_LAYERS]) {
 					scissor.offset.x = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorOffset.x;
 					scissor.offset.y = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorOffset.y;
 					scissor.extent.width = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorExtent.x;
 					scissor.extent.height = (u32)twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].scissorExtent.y;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-
+					
 					if (twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].descriptorSet) {
 						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].descriptorSet, 0, nullptr);
 						vkCmdDrawIndexed(cmdBuffer, twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].indexCount, 1, twodCmdArrays[active_swapchain][TWOD_LAYERS][cmd_idx].indexOffset, 0, 0);
 					}
 				}
 			}
-
+			
 			vkCmdEndRenderPass(cmdBuffer);
 			DebugEndLabelVk(cmdBuffer);
 		}
@@ -3312,7 +3312,7 @@ Cleanup(){DPZoneScoped;
 void DeshiImGui::
 NewFrame(){DPZoneScoped;
 	ImGui_ImplVulkan_NewFrame();
-
+	
 #if DESHI_WINDOWS
 	ImGui_ImplWin32_NewFrame();
 #elif DESHI_LINUX
@@ -3320,7 +3320,7 @@ NewFrame(){DPZoneScoped;
 #elif DESHI_MAC
 	ImGui_ImplGlfw_NewFrame();
 #endif
-
+	
 	ImGui::NewFrame();
 }
 
@@ -3330,7 +3330,7 @@ NewFrame(){DPZoneScoped;
 vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(0, 0);
 u32  prevLayer = 0;
- 
+
 void Check2DCmdArrays(u32& layer, Texture* tex, b32 textured, vec2& scissorOffset, vec2& scissorExtent){DPZoneScoped;
 	if (layer == -1) layer = prevLayer;
 	if (scissorOffset == vec2::ONE * MAX_F32) scissorOffset = prevScissorOffset;
@@ -3369,13 +3369,13 @@ void Render::
 AddTwodVertices(u32 layer, Vertex2* vertstart, u32 vertcount, u32* indexstart, u32 indexcount) {DPZoneScoped;
 	Assert(vertcount + twodVertexCount < MAX_TWOD_VERTICES);
 	Assert(indexcount + twodIndexCount < MAX_TWOD_INDICES);
-
+	
 	Vertex2* vp = twodVertexArray + twodVertexCount;
 	TwodIndexVk* ip = twodIndexArray + twodIndexCount;
-
+	
 	memcpy(vp, vertstart, vertcount * sizeof(Vertex2));
 	forI(indexcount) ip[i] = twodVertexCount + indexstart[i];
-
+	
 	twodVertexCount += vertcount;
 	twodIndexCount += indexcount;
 	twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].indexCount += indexcount;
@@ -3562,7 +3562,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		
 		//figure out average norm
 		vec2
-		p01 = curr - last,
+			p01 = curr - last,
 		p12 = next - curr,
 		p02 = next - last,
 		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
@@ -4609,16 +4609,16 @@ RegisterChildWindow(u32 idx, Window* window) {DPZoneScoped;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[idx], &formatCount, nullptr);
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surfaces[idx], &presentModeCount, nullptr);
 	vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, physicalQueueFamilies.presentFamily.value, surfaces[idx], &presentSupport);
-
+	
 	if (!formatCount || !presentModeCount || !presentSupport)  {
 		LogE("VULKAN", "Vulkan failed to init a new surface on the current physical device for window ", window->name);
 		surfaces[idx] = VK_NULL_HANDLE;
 		return;
 	}
-
+	
 	CreateSwapchain(window, idx);
 	CreateFrames();
-
+	
 	//TODO automatic indexing
 	window->renderer_surface_index = idx; 
 }
@@ -4740,7 +4740,7 @@ Update(){DPZoneScoped;
 		if (!swapchains[i].swapchain) continue;
 		active_swapchain = i;
 		Window* scwin = activeSwapchain.window;
-
+		
 		if (scwin->resized) remakeWindow = true;
 		if (remakeWindow) {
 			scwin->GetClientSize(activeSwapchain.width, activeSwapchain.height);
@@ -4751,10 +4751,10 @@ Update(){DPZoneScoped;
 			activeSwapchain.frameIndex = 0;
 			remakeWindow = false;
 		}
-
+		
 		//reset frame stats
 		stats = {};
-
+		
 		//get next image from surface
 		u32 imageIndex;
 		VkResult result = vkAcquireNextImageKHR(device, activeSwapchainKHR, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -4765,23 +4765,23 @@ Update(){DPZoneScoped;
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 			Assert(!"failed to acquire swap chain image");
 		}
-
+		
 		//render stuff
 		if (settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
 		if (DeshiModuleLoaded(DS_IMGUI)) {
 			ImGui::Render();
 		}
 		UpdateUniformBuffers();
-
+		
 		TIMER_START(cmd);
 		SetupCommands();
 		DeshTime->miscDebugTime1 = TIMER_END(cmd);
 		TIMER_RESET(cmd);
-
+		
 		//execute draw commands
 		BuildCommands();
 		DeshTime->miscDebugTime2 = TIMER_END(cmd);
-
+		
 		TIMER_RESET(cmd);
 		//submit the command buffer to the queue
 		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -4795,10 +4795,10 @@ Update(){DPZoneScoped;
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
 		AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
 		DeshTime->miscDebugTime3 = TIMER_END(cmd);
-
-
+		
+		
 		if (remakeWindow) { return; }
-
+		
 		TIMER_RESET(cmd);
 		//present the image
 		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
@@ -4810,7 +4810,7 @@ Update(){DPZoneScoped;
 		presentInfo.pResults = 0;
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
 		DeshTime->miscDebugTime4 = TIMER_END(cmd);
-
+		
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {  //!Cleanup remakeWindow is already checked
 			vkDeviceWaitIdle(device);
 			CreateSwapchain(scwin, i);
@@ -4820,7 +4820,7 @@ Update(){DPZoneScoped;
 		else if (result != VK_SUCCESS) {
 			Assert(!"failed to present swap chain image");
 		}
-
+		
 		TIMER_RESET(cmd);
 		//iterate the frame index
 		activeSwapchain.frameIndex = (activeSwapchain.frameIndex + 1) % activeSwapchain.minImageCount; //loops back to zero after reaching minImageCount
@@ -4832,20 +4832,20 @@ Update(){DPZoneScoped;
 			case VK_SUCCESS:default: break;
 		}
 		DeshTime->miscDebugTime5 = TIMER_END(cmd);
-
-
+		
+		
 		ResetCommands();
 		
 	}
-
+	
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
 	//stats.totalVertices  += (u32)vertexBuffer.size() + twodVertexCount + tempWireframeVertexCount;
 	//stats.totalIndices   += (u32)indexBuffer.size()  + twodIndexCount  + tempWireframeIndexCount; //!Incomplete
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS = TIMER_END(t_r);
-
-
+	
+	
 	if (remakePipelines) {
 		CreatePipelines();
 		UpdateMaterialPipelines();
@@ -4859,7 +4859,7 @@ Update(){DPZoneScoped;
 	twodIndexCount = 0;
 	active_swapchain = 0;
 	DeshTime->renderTime = TIMER_END(t_d);
-
+	
 }
 
 

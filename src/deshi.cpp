@@ -79,6 +79,7 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
+add a way to disable this and set deshi_allocator to libc
 maybe temp memory should not default to zero?
 consider multiple thread contexts
 add fast generic bins

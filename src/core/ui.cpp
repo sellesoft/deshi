@@ -1340,6 +1340,7 @@ b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32
 
 
 //@Primitive Items
+//NOTE item pos conflicts with vertex positions, so set only one (see DrawItem())
 
 
 void UI::Rect(vec2 pos, vec2 dimen, color color) {DPZoneScoped;
@@ -1389,10 +1390,10 @@ void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color col
 	MakeCircle(drawCmd, pos, radius, subdivisions, thickness, color);
 	AddDrawCmd(&item, drawCmd);
 	
-	item.position = pos - vec2::ONE * radius;
+	item.position = vec2::ZERO;//pos - vec2::ONE * radius;
 	item.size = vec2::ONE * radius * 2;
 	
-	item.drawCmds.add(drawCmd);
+	//item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
 	
 }
@@ -1403,10 +1404,10 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {DPZo
 	MakeFilledCircle(drawCmd, pos, radius, subdivisions, color);
 	AddDrawCmd(&item, drawCmd);
 	
-	item.position = pos - vec2::ONE * radius;
+	item.position = vec2::ZERO;//pos - vec2::ONE * radius;
 	item.size = vec2::ONE * radius * 2;
 	
-	item.drawCmds.add(drawCmd);
+	//item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
 }
 
@@ -4049,6 +4050,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	
 	if (BeginHeader("Cursor Debugging")) {
 		MetricsDebugItem();
+		TextF("Cursor Pos: (%4d,%4d)", s32(DeshInput->mouseX), s32(DeshInput->mouseY));
 		EndHeader();
 	}
 	
@@ -4137,6 +4139,8 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 		
 		persist b32 showItemBoxes = false;
 		persist b32 showItemCursors = false;
+		persist b32 showItemNames = false;
+		persist b32 showItemCoords = false;
 		persist b32 showAllDrawCmdScissors = false;
 		persist b32 showDrawCmdTriangles = false;
 		persist b32 showBorderArea = false;
@@ -4147,6 +4151,8 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 		if (BeginHeader("Window Debug Visuals")) {
 			Checkbox("Show Item Boxes", &showItemBoxes);
 			Checkbox("Show Item Cursors", &showItemCursors);
+			Checkbox("Show Item Names", &showItemNames);
+			Checkbox("Show Item Coords", &showItemCoords);
 			Checkbox("Show All DrawCmd Scissors", &showAllDrawCmdScissors);
 			Checkbox("Show All DrawCmd Triangles", &showDrawCmdTriangles);
 			Checkbox("Show Bordered Area", &showBorderArea);
@@ -4175,6 +4181,22 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 						//dc.dimensions = vec2::ONE * 3;
 						//debugCmds.add(dc);
 					}
+				}
+			}
+		}
+		
+		if(showItemNames){
+			forI(UI_WINDOW_ITEM_LAYERS){
+				for(UIItem& item : debugee->items[i]){
+					DebugText(debugee->position + item.position, (char*)UIItemTypeStrs[item.type]);
+				}
+			}
+		}
+		
+		if(showItemCoords){
+			forI(UI_WINDOW_ITEM_LAYERS){
+				for(UIItem& item : debugee->items[i]){
+					DebugText(debugee->position + item.position, toStr("(",item.position.x,",",item.position.y,")").str);
 				}
 			}
 		}
@@ -4684,6 +4706,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 	for (UIDrawCmd& drawCmd : item.drawCmds) {
 		BreakOnDrawCmdDraw;
 		
+		//NOTE this expects vertex positions to be in item space
 		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale +itempos));
 		
 		vec2 dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);

@@ -28,4 +28,14 @@ typedef void (*platform_symbol)(void);
 platform_symbol platform_get_module_symbol(void* module, const char* symbol_name);
 platform_symbol platform_get_module_symbol(void* module, str16 symbol_name);
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @Clipboard API
+
+//TODO add getting the clipboard (imgui.cpp:11568)
+const char* platform_get_clipboard();
+
+//TODO add setting the clipboard (imgui.cpp:11591)
+void platform_set_clipboard(const char* text);
+void platform_set_clipboard(str16 text);
+
 #endif //DESHI_PLATFORM_H
