@@ -16,6 +16,9 @@
 #define TIMER_RESET(name) name = std::chrono::high_resolution_clock::now()
 #define TIMER_END(name) std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - name).count()
 
+//crude waiting macro
+#define WaitFor(milliseconds) TIMER_START(O_s_a_s_f); while(TIMER_END(O_s_a_s_f) < milliseconds) {}
+
 #define WindowsTimeToUnixTime(x) ((u64(x) / 10000000LL) - 11644473600LL)
 
 struct Time{
