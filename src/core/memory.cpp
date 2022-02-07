@@ -544,6 +544,21 @@ deshi__memory_arena_expose(){
 	return deshi__arena_heap;
 }
 
+template<typename T>
+T* memory_arena_add(Arena* arena, const T& item){
+	if(arena->cursor-(arena->start+arena->size) > -upt(sizeof(T))) return 0; //TODO maybe handle this better somehow
+	memcpy(arena->cursor, &item, sizeof(T));
+	arena->cursor+=sizeof(T);
+	return (T*)(arena->cursor-sizeof(T));
+}
+
+template<typename T>
+T* memory_arena_add_new(Arena* arena){
+	if(arena->cursor-(arena->start+arena->size) > -upt(sizeof(T))) return 0; //TODO maybe handle this better somehow
+	new(arena->cursor) T();
+	arena->cursor+=sizeof(T);
+	return (T*)(arena->cursor-sizeof(T));
+}
 
 //////////////////
 //// @generic ////

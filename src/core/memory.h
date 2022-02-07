@@ -11,6 +11,8 @@ struct Arena{
 	upt used;
 };
 
+
+
 struct MemChunk{
 	MemChunk* prev; //pointer to previous order chunk
 	upt       size; //size of this chunk (including this var and above vars as overhead)(OR'd with flags)
@@ -109,6 +111,13 @@ void deshi__memory_arena_delete(Arena* arena, cstring file, upt line);
 //exposes the internal arena heap
 Heap* deshi__memory_arena_expose();
 #define memory_expose_arena_heap() deshi__memory_arena_expose()
+
+//TODO maybe implement file/line number stuff for these
+template<typename T>
+T* memory_arena_add(Arena* arena, const T& item);
+
+template<typename T>
+T* memory_arena_add_new(Arena* arena);
 
 
 //////////////////
