@@ -37,6 +37,7 @@ struct array{
 	array(std::initializer_list<T> l, Allocator* a = DESHI_ARRAY_ALLOCATOR);
 	array(const array<T>& array, Allocator* a = DESHI_ARRAY_ALLOCATOR);
 	array(T* _data, u32 _count, Allocator* a = DESHI_ARRAY_ALLOCATOR);
+	array(carray<T> arr, Allocator* a = DESHI_ARRAY_ALLOCATOR);
 	~array();
 	
 	//copies the values and allocator from rhs
@@ -181,6 +182,22 @@ array(T* _data, u32 _count, Allocator* a){DPZoneScoped;
 	first = data;
 	iter  = data;
 	last  = data + (_count-1);
+}
+
+template<typename T> inline array<T>::
+array(carray<T> arr, Allocator* a){DPZoneScoped;
+	allocator = a;
+	
+	count = arr.count;
+	space = RoundUpTo(arr.count, DESHI_ARRAY_SPACE_ALIGNMENT);
+	data  = (T*)allocator->reserve(space*sizeof(T));
+	allocator->commit(data, count*sizeof(T));
+	
+	forI(arr.count) data[i] = arr.data[i];
+	
+	first = data;
+	iter  = first;
+	last  = data+(arr.count-1);
 }
 
 template<typename T> inline array<T>::
