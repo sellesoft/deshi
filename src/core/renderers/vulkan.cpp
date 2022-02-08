@@ -4729,6 +4729,8 @@ Init(){DPZoneScoped;
 /////////////////
 void Render::
 Update(){DPZoneScoped;
+	if(DeshWindow->ShouldClose()){ ImGui::EndFrame(); return; } //HACK the window is destroyed before we reach this in win32 by DefWindowProc(), but we might want to keep this anyways after fixing that
+	
 	TIMER_START(t_d);
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
