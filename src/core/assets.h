@@ -2,11 +2,11 @@
 #ifndef DESHI_ASSETS_H
 #define DESHI_ASSETS_H
 
-#include "../defines.h"
-#include "../utils/pair.h"
-#include "../utils/string.h"
-#include "../utils/cstring.h"
-#include "../utils/array.h"
+#include "kigu/array.h"
+#include "kigu/common.h"
+#include "kigu/cstring.h"
+#include "kigu/pair.h"
+#include "kigu/string.h"
 
 #include <string>
 #include <vector>

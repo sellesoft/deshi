@@ -1,7 +1,7 @@
 #include <typeinfo>
 #include <cstdio>
 #include <ctime>
-#include "../defines.h"
+#include "kigu/common.h"
 
 #define DESHI_TEST_CORE_TODO(name) printf("[DESHI-TEST] TODO:   core/"name"\n")
 #define DESHI_TEST_CORE_PASSED(name) printf("[DESHI-TEST] PASSED: core/"name"\n")

@@ -38,11 +38,11 @@
 
 #include "renderer.h"
 #include "font.h"
-#include "../defines.h"
-#include "../math/math.h"
-#include "../utils/color.h"
-#include "../utils/string.h"
-#include "../utils/map.h"
+#include "kigu/color.h"
+#include "kigu/common.h"
+#include "kigu/map.h"
+#include "kigu/string.h"
+#include "math/math.h"
 
 struct UIDrawCmd;
 struct UIItem;
@@ -376,7 +376,7 @@ struct UIDrawCmd {
 	
 	//the surface this drawCmd draws to in the renderer
 	u32 render_surface_target_idx = 0;
-
+	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	b32 trackedForMinSize = 1;
 	

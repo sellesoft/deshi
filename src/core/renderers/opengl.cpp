@@ -19,7 +19,7 @@ struct TwodCmdGl{
 };
 
 struct ShaderGl{
-	char filename[DESHI_NAME_SIZE];
+	char filename[64];
 	u32 handle;
 	ShaderStage stage;
 };
@@ -295,7 +295,7 @@ CompileAndLoadShader(const char* filename, ShaderStage stage){
 	forE(glShaders){ if(strcmp(it->filename, filename) == 0){ return u32(it-it_begin); } }
 	
 	ShaderGl sgl{};
-	cpystr(sgl.filename, filename, DESHI_NAME_SIZE);
+	cpystr(sgl.filename, filename, 64);
 	sgl.stage = stage;
 	
 	//create shader, load file, and compile shader

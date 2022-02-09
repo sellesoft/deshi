@@ -2,12 +2,12 @@
 #ifndef DESHI_ARMATURE_H
 #define DESHI_ARMATURE_H
 
-#include "../defines.h"
-#include "../math/vector.h"
-#include "../math/matrix.h"
+#include "kigu/common.h"
+#include "math/vector.h"
+#include "math/matrix.h"
 
 struct Bone{
-	char name[DESHI_NAME_SIZE];
+	char name[64];
 	
 	vec3 head; //relative to armature
 	vec3 tail; //vector from head
@@ -18,7 +18,7 @@ struct Bone{
 };
 
 struct Armature{
-	char name[DESHI_NAME_SIZE];
+	char name[64];
 	
 	u32 boneCount;
 	Bone* boneArray;

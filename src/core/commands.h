@@ -3,8 +3,8 @@
 #define DESHI_COMMANDS_H
 
 #include "memory.h"
-#include "../defines.h"
-#include "../utils/string.h"
+#include "kigu/common.h"
+#include "kigu/string.h"
 
 enum CmdArgument{
 	CmdArgument_NONE,

@@ -2,11 +2,11 @@
 #ifndef DESHI_RENDERER_H
 #define DESHI_RENDERER_H
 
-#include "../defines.h"
-#include "../math/math.h"
-#include "../utils/color.h"
-#include "../utils/cstring.h"
-#include "../utils/array.h"
+#include "kigu/array.h"
+#include "kigu/color.h"
+#include "kigu/common.h"
+#include "kigu/cstring.h"
+#include "math/math.h"
 
 enum VSyncType_{
 	VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
@@ -168,12 +168,12 @@ namespace Render{
 	
 	u32  GetMaxLayerIndex();
 	u32  GetZZeroLayerIndex(); 
-
+	
 	u32  GetMaxSurfaces();
 	void RegisterChildWindow(u32 idx, Window* window);
 	void SetSurfaceDrawTargetByIdx(u32 idx);
 	void SetSurfaceDrawTargetByWindow(Window* window);
-
+	
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);
 	void UpdateCameraViewMatrix(mat4 m);

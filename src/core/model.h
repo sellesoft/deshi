@@ -3,9 +3,9 @@
 #define DESHI_MODEL_H
 
 #include "texture.h"
-#include "../defines.h"
-#include "../math/math.h"
-#include "../utils/array.h"
+#include "kigu/array.h"
+#include "kigu/common.h"
+#include "math/math.h"
 
 enum Shader_{ 
 	Shader_NULL,
@@ -33,7 +33,7 @@ enum ModelFlags_{
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
 	u32  bytes;
-	char name[DESHI_NAME_SIZE];
+	char name[64];
 	u32  idx;
 	vec3 aabbMin;
 	vec3 aabbMax;
@@ -112,7 +112,7 @@ typedef Mesh::Face     MeshFace;
 
 struct Material{
 	MaterialFlags flags;
-	char name[DESHI_NAME_SIZE];
+	char name[64];
 	u32  idx;
 	Shader     shader;
 	array<u32> textures;
@@ -121,7 +121,7 @@ struct Material{
 struct Armature;
 struct Model{
 	ModelFlags flags;
-	char name[DESHI_NAME_SIZE];
+	char name[64];
 	u32  idx;
 	Mesh*      mesh;
 	Armature*  armature;

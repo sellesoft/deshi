@@ -1,0 +1,3 @@
+[submodule "kigu"]
+	path = src/kigu
+	url = https://github.com/sellesoft/kigu.git

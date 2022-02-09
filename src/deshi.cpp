@@ -181,7 +181,7 @@ __________ see commands.cpp 'test' command
 
 
 
-#include "defines.h"
+#include "kigu/common.h"
 #include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
 
 #ifdef TRACY_ENABLE
@@ -193,22 +193,22 @@ __________ see commands.cpp 'test' command
 
 #include "core/profiling.h"
 
-//// utility headers ////"
-#include "utils/array.h"
-#include "utils/array_utils.h"
-#include "utils/carray.h"
-#include "utils/cstring.h"
-#include "utils/color.h"
-#include "utils/debug.h"
-#include "utils/hash.h"
-#include "utils/map.h"
-#include "utils/optional.h"
-#include "utils/pair.h"
-#include "utils/ring_array.h"
-#include "utils/string.h"
-#include "utils/string_utils.h"
-#include "utils/unicode.h"
-#include "utils/utils.h"
+//// kigu headers ////"
+#include "kigu/array.h"
+#include "kigu/array_utils.h"
+#include "kigu/carray.h"
+#include "kigu/cstring.h"
+#include "kigu/color.h"
+#include "kigu/debug.h"
+#include "kigu/hash.h"
+#include "kigu/map.h"
+#include "kigu/optional.h"
+#include "kigu/pair.h"
+#include "kigu/ring_array.h"
+#include "kigu/string.h"
+#include "kigu/string_utils.h"
+#include "kigu/unicode.h"
+#include "kigu/utils.h"
 #include "math/math.h"
 
 //// libcpp for core ////
@@ -242,7 +242,6 @@ local Flags deshiStage = DS_NONE;
 
 //// core headers ////
 #include "deshi.h"
-#include "defines.h"
 #include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"

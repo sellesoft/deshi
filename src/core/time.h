@@ -2,10 +2,10 @@
 #ifndef DESHI_TIME_H
 #define DESHI_TIME_H
 
-//NOTE real-world times should be un 64bit unix format
+//NOTE real-world times should be in 64bit unix format
 
-#include "../defines.h"
 #include "logger.h"
+#include "kigu/common.h"
 
 #include <chrono>
 #include <ctime>
@@ -28,7 +28,7 @@ struct Time{
 	u64 updateCount = 0;
 	
 	f32 timeTime{}, windowTime{}, inputTime{}, consoleTime{}, renderTime{}, frameTime{};
-
+	
 	f32 miscDebugTime1{}, miscDebugTime2{}, miscDebugTime3{}, miscDebugTime4{}, miscDebugTime5{};
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
@@ -48,7 +48,7 @@ extern Time* g_time;
 inline void Time::Init(){
 	//AssertDS(DS_MEMORY, "Attempt to load Time without loading Memory first");
 	//deshiStage |= DS_TIME;
-
+	
 	TIMER_START(t_s);
 	
 	tp1 = std::chrono::system_clock::now();

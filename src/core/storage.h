@@ -2,15 +2,14 @@
 #ifndef DESHI_STORAGE_H
 #define DESHI_STORAGE_H
 
-#include "texture.h"
-#include "model.h"
 #include "font.h"
-#include "../utils/color.h"
-#include "../utils/array.h"
-#include "../utils/pair.h"
+#include "model.h"
+#include "texture.h"
+#include "kigu/array.h"
+#include "kigu/color.h"
+#include "kigu/pair.h"
 
 struct Light;
-
 struct Storage_{
 	array<Mesh*>     meshes;
 	array<Texture*>  textures;

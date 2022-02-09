@@ -2,7 +2,7 @@
 #ifndef DESHI_MEMORY_H
 #define DESHI_MEMORY_H
 
-#include "../defines.h"
+#include "kigu/common.h"
 
 struct Arena{
 	u8* start;
@@ -10,8 +10,6 @@ struct Arena{
 	upt size;
 	upt used;
 };
-
-
 
 struct MemChunk{
 	MemChunk* prev; //pointer to previous order chunk

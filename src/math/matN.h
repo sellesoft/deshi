@@ -76,7 +76,7 @@ The transformation matrix will follow the format to the right:                  
 #define DESHI_matN_H
 
 #include "vector.h"
-#include "../utils/array.h"
+#include "kigu/array.h"
 #include <cstring> //memcpy
 
 struct matN {
@@ -786,5 +786,46 @@ inline matN matN::Diag(const matN& m){
 //	this->rows = 1; this->cols = 4; this->elementCount = 4;
 //	this->data = {v.x, v.y, v.z, w};
 //}
+
+///////////////////
+//// to_string ////
+///////////////////
+#include "kigu/string.h"
+
+global_ string
+to_string(const matN& x, bool trunc = true) {
+	if (x.rows == 0 || x.cols == 0) {
+		return "|Zero dimension matrix|";
+	}
+	
+	string str = to_string(x.rows) + "x" + to_string(x.cols) + " matN<n,m>:\n|";
+	if (x.rows == 1) {
+		for (u32 i = 0; i < x.cols - 1; ++i) {
+			char buffer[15];
+			snprintf(buffer, 15, "%+g", x.data[i]);
+			str += string(buffer) + ", ";
+		}
+		char buffer[15];
+		snprintf(buffer, 15, "%+g", x.data[x.elementCount - 1]);
+		str += string(buffer) + "|";
+		return str;
+	}
+	
+	for (u32 i = 0; i < x.elementCount - 1; ++i) {
+		char buffer[15];
+		snprintf(buffer, 15, "%+g", x.data[i]);
+		str += string(buffer);
+		if ((i + 1) % x.cols != 0) {
+			str += ", ";
+		}
+		else {
+			str += "|\n|";
+		}
+	}
+	char buffer[15];
+	snprintf(buffer, 15, "%+g", x.data[x.elementCount - 1]);
+	str += string(buffer) + "|";
+	return str;
+}
 
 #endif //DESHI_matN_H

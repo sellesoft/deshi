@@ -2,8 +2,8 @@
 #ifndef DESHI_FONT_H
 #define DESHI_FONT_H
 
-#include "../defines.h"
 #include "texture.h"
+#include "kigu/common.h"
 
 //note, to calculate the width of a char from a specified height do
 //   height / aspect_ratio / max_width
@@ -42,8 +42,8 @@ struct Font{
 	Type     type;
 	u32      idx;
 	Texture* tex;
-	char     name[DESHI_NAME_SIZE];
-	char     weight[DESHI_NAME_SIZE];
+	char     name[64];
+	char     weight[64];
 	u32      max_width;
 	u32      max_height;
 	u32      rendered_resolution;

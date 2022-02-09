@@ -2,9 +2,9 @@
 #ifndef DESHI_IO_H
 #define DESHI_IO_H
 
-#include "../utils/array.h"
-#include "../utils/string.h"
-#include "../utils/string_utils.h"
+#include "kigu/array.h"
+#include "kigu/string.h"
+#include "kigu/string_utils.h"
 
 enum FileAccessFlags_ {
 	FileAccess_Read  = 1 << 0,
@@ -44,10 +44,10 @@ struct FileReader{
 	b32 skip_comments_and_whitespace = true;
 	b32 failed = false;
 	const File* file = 0;
-
+	
 	array<cstring> lines;
 	array<cstring> chunks;
-
+	
 	operator bool() const { return !failed; }
 };
 
@@ -72,7 +72,7 @@ File open_file(const char* path, FileAccessFlags flags);
 //returns a temporary array of the files in the target directory
 array<File> get_directory_files(const char* directory);
 FORCE_INLINE array<File> get_directory_files(cstring directory){ return get_directory_files(directory.str); }
- 
+
 void delete_file(const char* filepath);
 FORCE_INLINE void delete_file(File* file){ return delete_file(file->path); }
 

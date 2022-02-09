@@ -46,11 +46,11 @@ Init(){DPZoneScoped;
 	
 	stbi_set_flip_vertically_on_load(true);
 	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
-	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
+	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", 64);
 	//DeshStorage->null_texture  = CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA),second;
 	DeshStorage->null_texture  = CreateTextureFromFile("null128.png").second;
 	DeshStorage->null_material = CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0}).second;
-	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", DESHI_NAME_SIZE);
+	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", 64);
 	
 	//create null font (white square)
 	DeshStorage->null_font     = (Font*)memory_alloc(sizeof(Font));
@@ -60,7 +60,7 @@ Init(){DPZoneScoped;
 	NullFont()->max_width = 6;
 	NullFont()->max_height = 12;
 	NullFont()->count = 1;
-	cpystr(NullFont()->name,"null",DESHI_NAME_SIZE);
+	cpystr(NullFont()->name,"null",64);
 	u8 white_pixels[4] = {255,255,255,255};
 	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
 	
@@ -138,7 +138,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	}
 	
 	Mesh* mesh = AllocateMesh(36, 8, 6, 36, 24, 24, 24, 24);
-	cpystr(mesh->name, "box_mesh", DESHI_NAME_SIZE);
+	cpystr(mesh->name, "box_mesh", 64);
 	mesh->idx      = meshes.count;
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
@@ -453,7 +453,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	}
 	
 	Texture* texture = AllocateTexture();
-	cpystr(texture->name, filename, DESHI_NAME_SIZE);
+	cpystr(texture->name, filename, 64);
 	texture->idx = textures.size();
 	texture->format  = format;
 	texture->type    = type;
@@ -493,7 +493,7 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 	}
 	
 	Texture* texture = AllocateTexture();
-	cpystr(texture->name, name, DESHI_NAME_SIZE);
+	cpystr(texture->name, name, 64);
 	texture->idx     = textures.count;
 	texture->format  = format;
 	texture->type    = type;
@@ -568,7 +568,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
 	
 	Material* material = AllocateMaterial(mat_textures.count);
-	cpystr(material->name, name, DESHI_NAME_SIZE);
+	cpystr(material->name, name, 64);
 	material->idx = materials.count;
 	material->shader = shader;
 	material->flags  = flags;
@@ -681,7 +681,7 @@ CreateMaterialFromFile(const char* filename, b32 warnMissing){DPZoneScoped;
 	}
 	
 	Material* material = AllocateMaterial(mat_textures.count);
-	cpystr(material->name, mat_name.str, DESHI_NAME_SIZE);
+	cpystr(material->name, mat_name.str, 64);
 	material->idx = materials.count;
 	material->shader = mat_shader;
 	material->flags = mat_flags;
@@ -1110,7 +1110,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		Mesh* mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
 								  totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
-		cpystr(mesh->name, name.str, DESHI_NAME_SIZE);
+		cpystr(mesh->name, name.str, 64);
 		mesh->idx = meshes.count;
 		mesh->aabbMin  = aabb_min;
 		mesh->aabbMax  = aabb_max;
@@ -1202,7 +1202,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		}
 		
 		model = AllocateModel(mArray.count);
-		cpystr(model->name,name.str, DESHI_NAME_SIZE);
+		cpystr(model->name,name.str, 64);
 		model->idx = models.count;
 		model->flags = flags;
 		model->mesh     = mesh;
@@ -1299,7 +1299,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		}
 		
 		model = AllocateModel(mArray.count);
-		cpystr(model->name,name.str, DESHI_NAME_SIZE);
+		cpystr(model->name,name.str, 64);
 		model->idx = models.count;
 		model->flags = flags;
 		model->mesh     = mesh;
@@ -1399,7 +1399,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		}
 		
 		model = AllocateModel(model_load_batches.count);
-		cpystr(model->name, model_load_name.str, DESHI_NAME_SIZE);
+		cpystr(model->name, model_load_name.str, 64);
 		model->idx      = models.count;
 		model->flags    = model_load_flags;
 		model->mesh     = CreateMeshFromFile(model_load_mesh.str).second;
@@ -1437,7 +1437,7 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	}
 	
 	Model* model = AllocateModel(1);
-	cpystr(model->name, model_name.str, DESHI_NAME_SIZE);
+	cpystr(model->name, model_name.str, 64);
 	model->idx = models.size();
 	model->mesh = mesh;
 	model->armature = 0;
@@ -1454,7 +1454,7 @@ CopyModel(Model* _model){DPZoneScoped;
 	pair<u32,Model*> result(0, NullModel());
 	
 	Model* model = AllocateModel(_model->batches.size());
-	cpystr(model->name, _model->name, DESHI_NAME_SIZE);
+	cpystr(model->name, _model->name, 64);
 	model->idx      = models.size();
 	model->flags    = _model->flags;
 	model->mesh     = _model->mesh;
@@ -1514,7 +1514,7 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 	
 	//check if created already
 	forX(fi, fonts.size()){
-		if(strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0){
+		if(strncmp(filename, fonts[fi]->name, 64) == 0){
 			return pair<u32,Font*>(fi,fonts[fi]);
 		}
 	}
@@ -1639,9 +1639,9 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 			font->max_width  = (u32)font_bbx.x;
 			font->max_height = (u32)font_bbx.y;
 		}else if(strncmp("FONT_NAME",   key_start, key_end-key_start) == 0){
-			cpystr(font->name,   string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
+			cpystr(font->name,   string(value_start+1, value_end-value_start-2).str,64);
 		}else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
-			cpystr(font->weight, string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
+			cpystr(font->weight, string(value_start+1, value_end-value_start-2).str,64);
 		}else if(strncmp("CHARS",       key_start, key_end-key_start) == 0){
 			font->count = strtol(value_start, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
@@ -1679,7 +1679,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	//TODO look into why if we load the same font w a different size it gets weird
 	//(i took that check out of here for now)
 	forX(fi, fonts.size()) {
-		if ((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0)) {
+		if ((strncmp(filename, fonts[fi]->name, 64) == 0)) {
 			return pair<u32, Font*>(fi, fonts[fi]);
 		}
 	}
@@ -1757,7 +1757,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 
-	cpystr(font->name,filename,DESHI_NAME_SIZE);
+	cpystr(font->name,filename,64);
 	
 	u8* pixels = (u8*)memory_talloc((tsx * tsy)*sizeof(u8));
 	pixels[0]     = 255;
@@ -1823,7 +1823,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 	}
 	
 	using namespace UI;
-
+	
 	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
 	
 	
@@ -1866,13 +1866,13 @@ void DrawTexturesWindow() {DPZoneScoped;
 	}
 	
 	Separator(9);
-
+	
 	if (selected) {
 		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 		
 		u32 texbytes = selected->width * selected->height * u8size;
-
+		
 		Text("Name:");         Text(selected->name);
 		Text("Index: ");       Text(toStr(selected->idx).str);
 		Text("Width: ");       Text(toStr(selected->width).str);
@@ -1887,7 +1887,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 		
 		EndRow();
 		PushColor(UIStyleCol_WindowBg, 0x073030ff);
-
+		
 		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoInteract);
 		persist f32  zoom = 300;
@@ -1950,26 +1950,26 @@ void DrawTexturesWindow() {DPZoneScoped;
 
 void DrawMaterialsWindow(){DPZoneScoped;
 	Storage_* st = DeshStorage;
-
+	
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUI_Materials", vec2::ZERO, UIWindowFlags_NoBorder);
-
+	
 	Separator(5);
-
+	
 	SetNextWindowSize(vec2(MAX_F32, 200));
 	BeginChild("StorageBrowserUI_Materials_List", vec2::ZERO, UIWindowFlags_NoInteract); {
 		BeginRow("StorageBrowserUI_Materials_List", 2, 0, UIRowFlags_LookbackAndResizeToMax);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-
+		
 		forI(st->materials.count) {
 			Text(toStr(i, "  ").str);
 			Text(st->materials[i]->name);
 		}
-
+		
 		EndRow();
 	}EndChild();
-
+	
 	Separator(5);
 	
 	
@@ -2000,7 +2000,7 @@ StorageBrowserUI() {DPZoneScoped;
 	PushColor(UIStyleCol_Separator, Color_Grey);
 	Begin("StorageBrowserUI", vec2::ONE * 200, vec2(400, 600));
 	
-
+	
 	BeginTabBar("StorageBrowserUITabBar", UITabBarFlags_NoIndent);
 	Separator(9);
 	PushColor(UIStyleCol_HeaderBg,                0x073030ff);

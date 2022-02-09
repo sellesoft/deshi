@@ -3,7 +3,7 @@
 #define DESHI_H
 
 //// core headers ////
-#include "defines.h"
+#include "kigu/common.h"
 #include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"

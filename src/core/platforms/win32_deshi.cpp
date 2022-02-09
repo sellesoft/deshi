@@ -83,8 +83,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 		case WM_CLOSE:
 		case WM_DESTROY:
 		case WM_QUIT:{
-			win->closeWindow = true;
-			return 0;
+			if(win){
+				win->closeWindow = true;
+				return 0;
+			}
 		}break;
 		case WM_MOVE: { ////////////////////////////////////////////////////////////// Window Moved
 			const s32 x = LOWORD(lParam);

@@ -2,10 +2,10 @@
 #ifndef DESHI_LOGGING_H
 #define DESHI_LOGGING_H
 
-#include "../defines.h"
-#include "../utils/string.h"
-#include "../utils/cstring.h"
-#include "../utils/string_utils.h"
+#include "kigu/common.h"
+#include "kigu/string.h"
+#include "kigu/cstring.h"
+#include "kigu/string_utils.h"
 
 ////////////////////
 //// @interface ////

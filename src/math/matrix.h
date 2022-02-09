@@ -27,6 +27,7 @@ The transformation matrix will follow the format to the below:
 #pragma once
 #ifndef DESHI_MATRIX_H
 #define DESHI_MATRIX_H
+
 #include "math_utils.h"
 #include "vector.h"
 
@@ -228,6 +229,64 @@ To3x3() const{
 	return mat3(arr[0], arr[1], arr[2],
 				arr[4], arr[5], arr[6],
 				arr[8], arr[9], arr[10]);
+}
+
+/////////////////
+//// hashing ////
+/////////////////
+#include "kigu/hash.h"
+
+template<> 
+struct hash<mat3>{
+	inline size_t operator()(mat3 const& m) const{
+		size_t seed = 0;
+		hash<float> hasher; size_t hash;
+		forI(9){
+			hash = hasher(m.arr[i]);
+			hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= hash;
+		}
+		return seed;
+	}
+};
+
+template<> 
+struct hash<mat4>{
+	inline size_t operator()(mat4 const& m) const{
+		size_t seed = 0;
+		hash<float> hasher; size_t hash;
+		forI(16){
+			hash = hasher(m.arr[i]);
+			hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= hash;
+		}
+		return seed;
+	}
+};
+
+///////////////////
+//// to_string ////
+///////////////////
+#include "kigu/string.h"
+
+global_ string 
+to_string(const mat3& x, bool trunc = true){
+	string s;
+	forI(3){ 
+		s += to_string(*((vec3*)(x.arr+(i*3))), trunc);
+		s += "\n";
+	}
+	return s;
+}
+
+global_ string 
+to_string(const mat4& x, bool trunc = true){
+	string s;
+	forI(4){ 
+		s += to_string(*((vec4*)(x.arr+(i*4))), trunc);
+		s += "\n";
+	}
+	return s;
 }
 
 #endif //DESHI_MATRIX_H

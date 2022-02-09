@@ -29,8 +29,8 @@
 //  .t=... - (tag)          these messages have a tag they can be filtered by
 //  .c=... - (color)        sets the color of the wrapped message
 
-#include "../defines.h"
-#include "utils/string.h"
+#include "kigu/common.h"
+#include "kigu/string.h"
 
 enum ConsoleState_ {
 	ConsoleState_Closed,

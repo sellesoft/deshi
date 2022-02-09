@@ -3,9 +3,9 @@
 #define DESHI_INPUT_H
 
 #include "time.h"
-#include "../defines.h"
-#include "../math/vector.h"
-#include "../utils/pair.h"
+#include "kigu/common.h"
+#include "kigu/pair.h"
+#include "math/vector.h"
 
 #include <map>
 #include <vector>

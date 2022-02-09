@@ -2,7 +2,7 @@
 #ifndef DESHI_TEXTURE_H
 #define DESHI_TEXTURE_H
 
-#include "../defines.h"
+#include "kigu/common.h"
 
 enum ImageFormat_{ //NOTE value = bytes per pixel
 	ImageFormat_BW   = 1,
@@ -52,7 +52,7 @@ global_ const char* TextureTypeStrings[] = {
 };
 
 struct Texture{
-	char name[DESHI_NAME_SIZE];
+	char name[64];
 	u32  idx;
 	int  width;
 	int  height;

@@ -2,9 +2,9 @@
 #ifndef DESHI_WINDOW_H
 #define DESHI_WINDOW_H
 
-#include "../defines.h"
-#include "../math/vector.h"
-#include "../utils/string.h"
+#include "kigu/common.h"
+#include "kigu/string.h"
+#include "math/vector.h"
 
 #ifdef DESHI_PROFILE_WINDOW
 #define DPWinFrameMark DPFrameMark

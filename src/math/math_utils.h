@@ -2,7 +2,7 @@
 #ifndef DESHI_MATH_UTILS_H
 #define DESHI_MATH_UTILS_H
 
-#include "../defines.h"
+#include "kigu/common.h"
 #include <cmath>
 
 //// enable SSE if available ////

@@ -1,6 +1,7 @@
 #pragma once
 #ifndef DESHI_VECTOR_H
 #define DESHI_VECTOR_H
+
 #include "math_utils.h"
 
 struct vec2;
@@ -426,4 +427,108 @@ template<> FORCE_INLINE vec4 Clamp(vec4 value, vec4 min, vec4 max)      { return
 template<> FORCE_INLINE vec4 ClampMin(vec4 value, vec4 min)             { return vec4(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z), ClampMin(value.w, min.w)); };
 template<> FORCE_INLINE vec4 ClampMax(vec4 value, vec4 max)             { return vec4(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z), ClampMax(value.w, max.w)); };
 template<> FORCE_INLINE vec4 Nudge(vec4 value, vec4 target, vec4 delta) { return vec4(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y), Nudge(value.z, target.z, delta.z), Nudge(value.w, target.w, delta.w)); }
+
+/////////////////
+//// hashing ////
+/////////////////
+#include "kigu/hash.h"
+
+template<> 
+struct hash<vec2>{
+	inline size_t operator()(vec2 const& v) const{
+		size_t seed = 0;
+		hash<float> hasher; size_t hash;
+		hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		return seed;
+	}
+};
+
+template<> 
+struct hash<vec3>{
+	inline size_t operator()(vec3 const& v) const{
+		size_t seed = 0;
+		hash<float> hasher; size_t hash;
+		hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		hash = hasher(v.z); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		return seed;
+	}
+};
+
+template<> 
+struct hash<vec4>{
+	inline size_t operator()(vec4 const& v) const{
+		size_t seed = 0;
+		hash<float> hasher; size_t hash;
+		hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		hash = hasher(v.z); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		hash = hasher(v.w); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+		return seed;
+	}
+};
+
+///////////////////
+//// to_string ////
+///////////////////
+#include "kigu/string.h"
+
+global_ string 
+to_string(const vec2& x, bool trunc = true){
+	string s;
+	if(trunc){
+		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf(s.str, s.count+1, "(%g, %g)", x.x, x.y);
+	}else{
+		s.count = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf(s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
+	}
+	return s;
+}
+
+global_ string 
+to_string(const vec3& x, bool trunc = true){
+	string s;
+	if(trunc){
+		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf(s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
+	}else{
+		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf(s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
+	}
+	return s;
+}
+
+global_ string 
+to_string(const vec4& x, bool trunc = true){
+	string s;
+	if(trunc){
+		s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf(s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+	}else{
+		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf(s.str, s.count+1, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
+	}
+	return s;
+}
+
 #endif //DESHI_VECTOR_H
