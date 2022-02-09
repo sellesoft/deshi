@@ -1392,15 +1392,21 @@ deshi__memory_init(upt main_size, upt temp_size){
 	base_address = (void*)Terabytes(2);
 #endif //DESHI_INTERNAL
 	
+	u32 retries = 0;
+	u32 max_retries = 1000;
+	while(allocation == 0 && retries < max_retries){
 #if   DESHI_WINDOWS
-	allocation = (u8*)VirtualAlloc((LPVOID)base_address, (SIZE_T)total_size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+		allocation = (u8*)VirtualAlloc((LPVOID)base_address, (SIZE_T)total_size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 #elif DESHI_LINUX //DESHI_WINDOWS
 #  error not implemented
-	allocation = (u8*)calloc(1, total_size);
+		allocation = (u8*)calloc(1, total_size);
 #elif DESHI_MAC   //DESHI_LINUX
 #  error not implemented
-	allocation = (u8*)calloc(1, total_size);
+		allocation = (u8*)calloc(1, total_size);
 #endif            //DESHI_MAC
+		retries++;
+		if(!allocation) PRINTLN("[MEMORY-ERROR] Failed to allocate memory from OS. Retrying (" << retries << ")");
+	}
 	Assert(allocation, "Failed to allocate memory from the OS");
 	
 	deshi__arena_heap->start      = allocation;
