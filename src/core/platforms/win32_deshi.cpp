@@ -80,6 +80,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 	switch (msg) {
 		case WM_CREATE: {		}break;
 		case WM_SIZE: { if(win) WinResized(win, LOWORD(lParam), HIWORD(lParam), wParam == SIZE_MINIMIZED); }break;
+		case WM_CLOSE:
+		case WM_DESTROY:
+		case WM_QUIT:{
+			win->closeWindow = true;
+			return 0;
+		}break;
 		case WM_MOVE: { ////////////////////////////////////////////////////////////// Window Moved
 			const s32 x = LOWORD(lParam);
 			const s32 y = HIWORD(lParam);
@@ -473,7 +479,7 @@ void Window::Update() {DPZoneScoped;
 	//iterate through all window messages 
 	MSG msg;
 	while (PeekMessageA(&msg, (HWND)handle, 0, 0, PM_REMOVE)) {
-		if (msg.message == WM_QUIT) { closeWindow = true; }
+		if (msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY) { closeWindow = true; }
 		else {
 			TranslateMessage(&msg);
 			DispatchMessageA(&msg);
@@ -1111,32 +1117,32 @@ b32 Thread::Wait(u64 timeout){DPZoneScoped;
 
 
 void Thread::Run(int count){DPZoneScoped;
-
+	
 }
 
 
 void Thread::WaitToRun(int count){DPZoneScoped;
-
+	
 }
 
 
 void Thread::RunAndWait(int count){DPZoneScoped;
-
+	
 }
 
 
 void Thread::WaitToRunAndWait(int count){DPZoneScoped;
-
+	
 }
 
 
 void Thread::Close(){DPZoneScoped;
-
+	
 }
 
 
 void Thread::CloseAndJoin(){DPZoneScoped;
-
+	
 }
 
 void Thread::SetName(str16 name){
@@ -1146,7 +1152,7 @@ void Thread::SetName(str16 name){
 }
 
 Thread::~Thread(){
-
+	
 }
 
 
@@ -1180,7 +1186,7 @@ void ThreadManager::StopAndDeleteAllThreads(){DPZoneScoped;
 
 
 void ThreadManager::StopAndDeleteAllThreadsAndWait(){DPZoneScoped;
-   	for(Thread* t : threads)
+	for(Thread* t : threads)
     	t->CloseAndJoin();
 	threads.clear();
 }
