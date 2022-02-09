@@ -672,6 +672,8 @@ namespace UI {
 	//// control functions ////
 	void SameLine();
 	void SetCursor(vec2 pos);
+	void SetCursorX(f32 x);
+	void SetCursorY(f32 y);
 	void SetScroll(vec2 scroll); //MAX_F32 sets to max scroll
 	void SetNextItemActive();
 	void SetNextItemSize(vec2 size);

@@ -134,6 +134,7 @@ local vec2 NextWinSize = vec2(-1, 0);
 local vec2 NextWinPos = vec2(-1, 0);
 local vec2 NextItemPos = vec2(-1, 0);
 local vec2 NextItemSize = vec2(-1, 0);
+local vec2 NextCursorPos = vec2(-1,-1);
 
 local vec2 MarginPositionOffset = vec2::ZERO;
 local vec2 MarginSizeOffset = vec2::ZERO;
@@ -391,6 +392,9 @@ inline vec2 PositionForNewItem(UIWindow* window = curwin) {DPZoneScoped;
 	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
+	if(NextCursorPos.x!=-1)pos.x=NextCursorPos.x;
+	if(NextCursorPos.y!=-1)pos.y=NextCursorPos.y;
+	NextCursorPos=vec2(-1,-1);
 	return pos;
 }
 
@@ -559,6 +563,19 @@ void UI::SameLine() {DPZoneScoped;
 		curwin->cursor.x += curwin->items[currlayer].last->initialCurPos.x + curwin->items[currlayer].last->size.x + style.itemSpacing.x;
 	}
 }
+
+void UI::SetCursor(vec2 pos){
+	NextCursorPos=pos;
+}
+
+void UI::SetCursorX(f32 x){
+	NextCursorPos.x=x;
+}
+
+void UI::SetCursorY(f32 y){
+	NextCursorPos.y=y;
+}	
+
 
 void UI::SetScroll(vec2 scroll) {DPZoneScoped;
 	if (scroll.x == MAX_F32)
