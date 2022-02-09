@@ -16,7 +16,7 @@ struct Chunk{
 	b32 eol = 0; //true if this Chunk is the end of a line
 	string tag = ""; //change to a char array eventually
 	
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	string message = "";
 #endif 
 };
@@ -28,7 +28,7 @@ struct ConsoleDictionary{
 	void add(string to_logger, Chunk chunk){
 		dict.add(chunk);
 		
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 		chunk.message = to_logger;
 #endif
 		

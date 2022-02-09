@@ -1388,9 +1388,9 @@ deshi__memory_init(upt main_size, upt temp_size){
 	u8*   allocation   = 0;
 	u64   total_size   = main_size + temp_size;
 	
-#if DESHI_INTERNAL
+#if BUILD_INTERNAL
 	base_address = (void*)Terabytes(2);
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 	
 	u32 retries = 0;
 	u32 max_retries = 1000;

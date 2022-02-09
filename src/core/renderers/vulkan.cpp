@@ -449,7 +449,7 @@ PrintVk(u32 level, Args... args){DPZoneScoped;
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
 local inline void 
 DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){DPZoneScoped;
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName = label_name;
 	label.color[0]   = color.r;
@@ -457,21 +457,21 @@ DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 c
 	label.color[2]   = color.b;
 	label.color[3]   = color.a;
 	func_vkCmdBeginDebugUtilsLabelEXT(command_buffer, &label);
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 }
 
 PFN_vkCmdEndDebugUtilsLabelEXT func_vkCmdEndDebugUtilsLabelEXT;
 local inline void 
 DebugEndLabelVk(VkCommandBuffer command_buffer){DPZoneScoped;
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	func_vkCmdEndDebugUtilsLabelEXT(command_buffer);
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 }
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
 local inline void 
 DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){DPZoneScoped;
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName = label_name;
 	label.color[0]   = color.r;
@@ -479,20 +479,20 @@ DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 
 	label.color[2]   = color.b;
 	label.color[3]   = color.a;
 	func_vkCmdInsertDebugUtilsLabelEXT(command_buffer, &label);
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 }
 
 PFN_vkSetDebugUtilsObjectNameEXT func_vkSetDebugUtilsObjectNameEXT;
 local inline void 
 DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handle, const char *object_name){DPZoneScoped;
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	if(!object_handle) return;
 	VkDebugUtilsObjectNameInfoEXT nameInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
 	nameInfo.objectType   = object_type;
 	nameInfo.objectHandle = object_handle;
 	nameInfo.pObjectName  = object_name;
 	func_vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 }
 
 //returns a command buffer that will only execute once
@@ -4665,12 +4665,12 @@ Init(){DPZoneScoped;
 	PrintVk(3, "Finished setting up debug messenger in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// grab Vulkan extension functions ////
-#if DESHI_INTERNAL
+#if BUILD_INTERNAL
 	func_vkSetDebugUtilsObjectNameEXT  = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
 	func_vkCmdBeginDebugUtilsLabelEXT  = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
 	func_vkCmdEndDebugUtilsLabelEXT    = (PFN_vkCmdEndDebugUtilsLabelEXT)   vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
 	func_vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT");
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 	
 	//// setup Vulkan-OperatingSystem interactions ////
 	CreateSurface();

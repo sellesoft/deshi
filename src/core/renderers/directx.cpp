@@ -632,7 +632,7 @@ local ComPtr<IDXGIAdapter4> GetAdapter() {
 	
 	IDXGIFactory4* dxgiFactory;
 	u32 flags = 0;
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	flags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
 	AssertDx(CreateDXGIFactory2(flags, IID_PPV_ARGS(&dxgiFactory)));
@@ -669,7 +669,7 @@ local ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter){
 	
 	
 	//if were in debug, enable debug messages
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	ComPtr<ID3D12InfoQueue> infoQueue;
 	if (SUCCEEDED(d3d12Device2.As(&infoQueue))) {
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
@@ -749,7 +749,7 @@ local ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQue
 	ComPtr<IDXGIFactory4> dxgiFactory4;
 	u32 createFactoryFlags = 0;
 	
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
 	
@@ -870,7 +870,7 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 void Render::
 Init(){ //!Incomplete
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
-
+	
 	TIMER_START(t_s);
 	
 	//// load RenderSettings ////
@@ -882,7 +882,7 @@ Init(){ //!Incomplete
 	//// temp testing ////
 	
 	//enable Dx debug layer
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	ComPtr<ID3D12Debug> debugInterface;
 	AssertDx(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
 	debugInterface->EnableDebugLayer();

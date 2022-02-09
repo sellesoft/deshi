@@ -574,7 +574,7 @@ struct UIWindow {
 	
 	
 	//debug information for use with metrics
-	//#ifdef DESHI_INTERNAL
+	//#ifdef BUILD_INTERNAL
 	f32 render_time = 0;
 	f32 creation_time = 0;
 	u32 items_count = 0;

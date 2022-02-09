@@ -205,7 +205,7 @@ local void TEST_deshi_core_memory(){
 	memory_zfree(string2);
 	
 	{//// allocation info ////
-#if DESHI_INTERNAL
+#if BUILD_INTERNAL
 		//alloc info array
 		carray<AllocInfo> active = deshi__memory_allocinfo_active_expose();
 		AssertAlways(active.count >= 3);
@@ -293,7 +293,7 @@ local void TEST_deshi_core_memory(){
 		AssertAlways(info.deletion_frame == DeshTime->updateCount);
 		AssertAlways(equals(info.name, cstr_lit("some allocator")));
 		AssertAlways(info.type == Type_Allocator);
-#endif //DESHI_INTERNAL
+#endif //BUILD_INTERNAL
 	}
 	
 	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");

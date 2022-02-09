@@ -230,13 +230,13 @@ u32 item_layer = -1;
 u32 break_drawCmd_create_hash = -1;
 u32 break_drawCmd_draw_hash = -1;
 
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 #define BreakOnItem if(break_window_item && break_window_item == curwin && curwin->items[item_layer].count == item_idx){ DebugBreakpoint;}
 #else
 #define BreakOnItem
 #endif
 
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 #define BreakOnDrawCmdCreation if(break_drawCmd_create_hash == drawCmd.hash) {DebugBreakpoint;}
 #define BreakOnDrawCmdDraw     if(break_drawCmd_draw_hash == drawCmd.hash) {DebugBreakpoint;}
 #else
@@ -642,7 +642,7 @@ inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0
 	}
 	else {
 		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 		UI::GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
 		UI::GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
 		BreakOnItem;
@@ -4808,7 +4808,7 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {DPZoneScoped;
 	p->render_time = TIMER_END(winren);
 	
 	//when compiling for debug we defer this to after the metrics window
-#ifndef DESHI_INTERNAL
+#ifndef BUILD_INTERNAL
 	p->preItems.clear();
 	p->postItems.clear();
 	forI(UI_WINDOW_ITEM_LAYERS) {
@@ -4871,7 +4871,7 @@ void UI::Update() {DPZoneScoped;
 	MarginPositionOffset = vec2::ZERO;
 	MarginSizeOffset = vec2::ZERO;
 	
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	//clear break vars in debug mode
 	break_window_item = 0;
 	item_idx = -1;
@@ -4924,7 +4924,7 @@ void UI::Update() {DPZoneScoped;
 	
 	//we defer window item clearing to after the metrics window is drawn
 	//in debug builds
-#ifdef DESHI_INTERNAL
+#ifdef BUILD_INTERNAL
 	for (UIWindow* p : windows) {
 		CleanUpWindow(p);
 	}

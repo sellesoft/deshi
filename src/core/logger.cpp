@@ -42,7 +42,7 @@ namespace Logger{
 		
 		va_list args; //fmt
 		va_start(args, fmt);{
-		cursor += vsnprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, fmt, args);
+			cursor += vsnprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, fmt, args);
 		}va_end(args);
 		
 		if(mirror_to_stdout) puts(log_buffer);
@@ -96,7 +96,7 @@ namespace Logger{
 		}
 	}
 	
-	 FILE* GetFilePtr() {DPZoneScoped;
+	FILE* GetFilePtr() {DPZoneScoped;
 		return file;
 	}
 	
@@ -151,10 +151,10 @@ namespace Logger{
 		tm* timeinfo = localtime(&rawtime);
 		strftime(log_buffer,LOG_BUFFER_SIZE,"%c",timeinfo);
 		//fprintf(file,"%s\n\n",log_buffer);
-#if DESHI_SLOW
+#if BUILD_SLOW
 		//write immediately when debugging so that a log() right before Assert() still writes
 		setvbuf(file,0,_IONBF,0);
-#endif //DESHI_SLOW
+#endif //BUILD_SLOW
 		
 		is_logging = true; //NOTE this prevents errors in calls to Log before Logger is finished initializing
 		LogS("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
