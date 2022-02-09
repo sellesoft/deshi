@@ -495,7 +495,7 @@ void Window::Update() {DPZoneScoped;
 		DrawDecorations(this);
 	
 	hittest = HitTestNone;
-	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY + titlebarheight);
+	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY /*+ titlebarheight*/);
 	DeshTime->windowTime = TIMER_END(t_d);
 }
 
@@ -572,7 +572,7 @@ void Window::UpdateCursorMode(CursorMode mode) {DPZoneScoped;
 		}break;
 		case(CursorMode_FirstPerson):{
 			//set cursor to middle of screen
-			SetCursorPos(centerX, centerY + titlebarheight);
+			SetCursorPos(centerX, centerY /*+ titlebarheight*/);
 			
 			//hide cursor
 			SetCursor(CursorType_Hidden);
@@ -610,11 +610,11 @@ void Window::UpdateDecorations(Decoration _decorations) {DPZoneScoped;
 }
 
 void Window::SetCursorPos(f64 _x, f64 _y) {DPZoneScoped;
-#if 1
+#if 0
 	Logf("window", "SetCursorPos old(%f,%f) new(%f,%f)", DeshInput->mouseX, DeshInput->mouseY, _x, _y);
 #endif
 	
-	POINT p = {LONG(_x), LONG(_y)};
+	POINT p = {LONG(_x), LONG(_y + 2.f*titlebarheight)};
 	ClientToScreen((HWND)handle, &p);
 	::SetCursorPos(p.x, p.y);
 	
@@ -623,7 +623,7 @@ void Window::SetCursorPos(f64 _x, f64 _y) {DPZoneScoped;
 }
 
 void Window::SetCursorPosScreen(f64 _x, f64 _y) {
-#if 1
+#if 0
 	Logf("window", "SetCursorPosScreen old(%f,%f) new(%f,%f)", DeshInput->screenMouseX, DeshInput->screenMouseY, _x, _y);
 #endif
 	

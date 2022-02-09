@@ -6,7 +6,7 @@
 #include "matrix.h"
 #include "quaternion.h"
 #include "matN.h"
-#include "../defines.h"
+#include "kigu/common.h"
 
 #include <math.h>
 #include <algorithm>

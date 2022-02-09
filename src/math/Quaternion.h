@@ -2,7 +2,7 @@
 #ifndef DESHI_QUATERNION_H
 #define DESHI_QUATERNION_H
 
-#include "../defines.h"
+#include "kigu/common.h"
 
 struct vec3;
 struct mat3;
