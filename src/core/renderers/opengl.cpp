@@ -1967,7 +1967,7 @@ Update(){DPZoneScoped;
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_SCISSOR_TEST);
-		glEnable(GL_FRAMEBUFFER_SRGB);
+		//glEnable(GL_FRAMEBUFFER_SRGB);
 		glScissor(0, 0, width, height);
 	}
 	
