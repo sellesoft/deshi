@@ -455,7 +455,7 @@ void Console::Update(){
 		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
 		
 		//draw text for the dictionary
-		PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
+		PushVar(UIStyleVar_WindowMargins, vec2(5, 0));
 		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
 		char toprint[1024];
 		for(int i = 0; i < dictionary.count; i++){
@@ -491,7 +491,7 @@ void Console::Update(){
 					//TODO(sushi) make a boolean for turning off fancy tag showing
 					if(!i || dictionary[i - 1].tag != colstr.tag){
 						
-						f32 lpy = GetPositionForNextItem().y;
+						f32 lpy = GetWinCursor().y;
 						f32 mr = GetMarginedRight();
 						vec2 tagsize = CalcTextSize(colstr.tag);
 						

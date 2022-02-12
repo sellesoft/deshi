@@ -1830,7 +1830,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
 	BeginChild("StorageBrowserUI_Textures", vec2::ZERO, UIWindowFlags_NoBorder);
 	
-	BeginRow("StorageBrowserUI_Row1",2, 0, UIRowFlags_LookbackAndResizeToMax);
+	BeginRow("StorageBrowserUI_Row1",2, 0, UIRowFlags_AutoSize);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 	
 	Text("Textures Loaded: "); Text(toStr(st->textures.count).str);
@@ -1851,7 +1851,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 	Separator(9);
 	
 	if (BeginHeader("Stats")) {
-		BeginRow("StorageBrowserUI_Row2", 3, 0, UIRowFlags_LookbackAndResizeToMax);
+		BeginRow("StorageBrowserUI_Row2", 3, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
 		
 		Text("Largest Texture: "); Text(largest->name); 
@@ -1868,7 +1868,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 	Separator(9);
 	
 	if (selected) {
-		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 		
 		u32 texbytes = selected->width * selected->height * u8size;
@@ -1959,7 +1959,7 @@ void DrawMaterialsWindow(){DPZoneScoped;
 	
 	SetNextWindowSize(vec2(MAX_F32, 200));
 	BeginChild("StorageBrowserUI_Materials_List", vec2::ZERO, UIWindowFlags_NoInteract); {
-		BeginRow("StorageBrowserUI_Materials_List", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		BeginRow("StorageBrowserUI_Materials_List", 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
 		forI(st->materials.count) {

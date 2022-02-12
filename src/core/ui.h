@@ -29,10 +29,7 @@ Be careful of non-integer positions as they influence other positions in as floa
 they get converted to integer positions in the end.
 
 delle's Annoyances:
-comment out flags that are not implemented/not working
 better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
-rename GetPositionForNextItem() to GetCursor()/GetWindowCursor() (in order to match setcursor())
-move function descriptions and notes to the header
 pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
 
 metrics window: (partially in order, since some later ones remove the need for previous ones)
@@ -604,7 +601,7 @@ struct UIWindow {
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
-	//TODO UIRowFlags_FitWidthOfArea         = 1 << 0,  
+	UIRowFlags_FitWidthOfArea         = 1 << 0,  
 	//TODO UIRowFlags_DrawCellBackground     = 1 << 1,
 	UIRowFlags_AutoSize               = 1 << 2, 
 	//TODO UIRowFlags_CellBorderTop          = 1 << 3,
@@ -664,7 +661,7 @@ namespace UI {
 	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)
 	UIWindow* GetWindow();
 	//returns a pointer to the last placed item
-	UIItem*   GetLastItem(u32 layeroffset = 0)
+	UIItem*   GetLastItem(u32 layeroffset = 0);
 	//returns the position of the last placed item
 	vec2      GetLastItemPos();
 	//returns the size of the last placed item
@@ -674,7 +671,7 @@ namespace UI {
 	//returns the remaining space left in a window. TODO test this function
 	vec2      GetWindowRemainingSpace();
 	//returns where ui will automatically place the next item.
-	vec2      GetCursor();
+	vec2      GetWinCursor();
 	u32       GetCenterLayer();
 	//returns the x coordinate (in window space) of the right side of the window, taking into account the borders
 	f32       GetBorderedRight();
@@ -716,12 +713,14 @@ namespace UI {
 	void SameLine();
 	//manaully set the windows cursor to a specified position. 
 	//after the next item is placed the cursor goes back to default placement behavoir, this means that it will return to the MarginedLeft part of the window, below the y level of the last placed item
-	void SetCursor(vec2 pos);
-	void SetCursor(s32 x, s32 y) {SetCursor(vec2(x,y));}
+	//TODO better name than SetWinCursor that doesnt conflict with win32's SetCursor
+	void SetWinCursor(vec2 pos);
+	//dont know why this doesnt work void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
+
 	//manually set the cursor's X position
-	void SetCursorX(f32 x);
+	void SetWinCursorX(f32 x);
 	//manually set the cursors Y position
-	void SetCursorY(f32 y);
+	void SetWinCursorY(f32 y);
 	//sets the window's scroll values
 	//use MAX_F32 to set it to max scroll
 	void SetScroll(vec2 scroll); 
@@ -782,6 +781,8 @@ namespace UI {
 	
 	
 	//// text ////
+
+	//wraps by default
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const wchar* text, UITextFlags flags = 0);

@@ -531,7 +531,7 @@ vec2 UI::GetWindowRemainingSpace() {DPZoneScoped;
 	return vec2(MarginedRight() - curwin->curx, MarginedBottom() - curwin->cury);
 }
 
-vec2 UI::GetCursor() {DPZoneScoped;
+vec2 UI::GetWinCursor() {DPZoneScoped;
 	return PositionForNewItem();
 }
 
@@ -565,15 +565,15 @@ void UI::SameLine() {DPZoneScoped;
 	}
 }
 
-void UI::SetCursor(vec2 pos){
+void UI::SetWinCursor(vec2 pos){
 	NextCursorPos=pos;
 }
 
-void UI::SetCursorX(f32 x){
+void UI::SetWinCursorX(f32 x){
 	NextCursorPos.x=x;
 }
 
-void UI::SetCursorY(f32 y){
+void UI::SetWinCursorY(f32 y){
 	NextCursorPos.y=y;
 }	
 
@@ -2589,27 +2589,6 @@ enum CustomItemStage_{
 	CISItemAdvancedCursor = 1 << 1,
 }; typedef u32 CustomItemStage;
 CustomItemStage cistage = CISNone;
-
-//@BeginCustomItem
-UIItem* UI::BeginCustomItem(u32 layeroffset) {DPZoneScoped;
-	Assert(!cistage, "attempt to start a custom item");
-	AddFlag(cistage, CISItemBegan);
-	return BeginItem(UIItemType_Custom, layeroffset);
-}
-
-void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {DPZoneScoped;
-	Assert(HasFlag(cistage, CISItemBegan), "attempt to advance a custom item who has not begun!");
-	AddFlag(cistage, CISItemAdvancedCursor);
-	AdvanceCursor(item, move_cursor);
-	
-}
-
-void UI::EndCustomItem() {DPZoneScoped;
-	Assert(HasFlag(cistage, CISItemBegan), "attempt to end a custom item that hasnt been started");
-	Assert(HasFlag(cistage, CISItemAdvancedCursor), "attempt to end a custom item who hasnt advanced the cursor yet");
-	cistage = CISNone;
-}
-
 
 b32 UI::IsLastItemHovered(){DPZoneScoped; //TODO handle layers
 	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize());

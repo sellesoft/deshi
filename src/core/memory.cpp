@@ -1316,8 +1316,8 @@ deshi__memory_draw(){
 			bytes_sigfigs(deshi__temp_arena->size, size_char, size_divisor);
 			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)deshi__temp_arena->used / used_divisor, used_char, (f32)deshi__temp_arena->size / size_divisor, size_char);
 			
-			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
-			UI::RectFilled(UI::GetPositionForNextItem(), UI::GetWindowRemainingSpace() * vec2{((f32)deshi__temp_arena->used / (f32)deshi__temp_arena->size), 1.f}, Color_DarkCyan);
+			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
+			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace() * vec2{((f32)deshi__temp_arena->used / (f32)deshi__temp_arena->size), 1.f}, Color_DarkCyan);
 		}UI::EndChild();
 		*/
 	}UI::End();
@@ -1353,7 +1353,7 @@ deshi__memory_bytes_draw() {
 		u8 val = mem[i]; 
 		u32 canfit = winw / scale;
 		
-		vec2 pos = vec2((i % canfit) * scale, i * scale / winw * scale) + GetPositionForNextItem();
+		vec2 pos = vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
 		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
 		if (Math::PointInRectangle(DeshInput->mousePos, GetLastItemScreenPos(), GetLastItemSize())) {
 			PushLayer(GetCenterLayer() + 1);
