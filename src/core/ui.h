@@ -61,7 +61,7 @@ struct UIItem;
 struct UIWindow;
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,             // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_WindowMargins,             // default vec2(10, 10)      spacing between every item and the edges of the window
 	UIStyleVar_ItemSpacing,               // default vec2(1, 1)        spacing between items within a window
 	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels
 	UIStyleVar_ButtonBorderSize,          // default 1
@@ -244,8 +244,8 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoScroll               = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
 	UIWindowFlags_NoFocus                = 1 << 9,
 	UIWindowFlags_FocusOnHover           = 1 << 10,
-	UIWindowFlags_NoMinimize             = 1 << 11,
-	UIWindowFlags_NoMinimizeButton       = 1 << 12,
+	//TODO UIWindowFlags_NoMinimize             = 1 << 11,
+	//TODO UIWindowFlags_NoMinimizeButton       = 1 << 12,
 	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 13,
 	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
 	
@@ -325,8 +325,8 @@ enum UISliderFlags_ {
 
 enum UIImageFlags_ {
 	UIImageFlags_NONE   = 0,
-	UIImageFlags_RestrictAspectRatio = 1 << 0,
-	UIImageFlags_Invert = 1 << 1,
+	//TODO UIImageFlags_RestrictAspectRatio = 1 << 0,
+	//TODO UIImageFlags_Invert = 1 << 1,
 	UIImageFlags_FlipX  = 1 << 2,
 	UIImageFlags_FlipY  = 1 << 3,
 	
@@ -604,14 +604,14 @@ struct UIWindow {
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
-	UIRowFlags_FitWidthOfArea         = 1 << 0,  
-	UIRowFlags_DrawCellBackground     = 1 << 1,
-	UIRowFlags_LookbackAndResizeToMax = 1 << 2, //tells Row to lookback at its columns once its ended and reorient items to respect the max item size in each column
-	UIRowFlags_CellBorderTop          = 1 << 3,
-	UIRowFlags_CellBorderBottom       = 1 << 4,
-	UIRowFlags_CellBorderLeft         = 1 << 5,
-	UIRowFlags_CellBorderRight        = 1 << 6,
-	UIRowFlags_CallBorderFull         = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
+	//TODO UIRowFlags_FitWidthOfArea         = 1 << 0,  
+	//TODO UIRowFlags_DrawCellBackground     = 1 << 1,
+	UIRowFlags_AutoSize               = 1 << 2, 
+	//TODO UIRowFlags_CellBorderTop          = 1 << 3,
+	//TODO UIRowFlags_CellBorderBottom       = 1 << 4,
+	//TODO UIRowFlags_CellBorderLeft         = 1 << 5,
+	//TODO UIRowFlags_CellBorderRight        = 1 << 6,
+	//TODO UIRowFlags_CallBorderFull         = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
 }; typedef u32 UIRowFlags;
 
 struct UIColumn {
@@ -651,52 +651,101 @@ struct UIRow {
 namespace UI {
 	
 	//// helpers ////
+
+	//calculates the given text size as it would appear onscreen with the current font pointed to by the style var
 	vec2              CalcTextSize(cstring text);
 	vec2              CalcTextSize(wcstring text);
 	FORCE_INLINE vec2 CalcTextSize(const string& text)  { return CalcTextSize(cstring {text.str,u64(text.count)}); }
 	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
 	FORCE_INLINE vec2 CalcTextSize(const wchar* text)   { return CalcTextSize(wcstring{(wchar*)text,u64(wcslen(text)) }); }
+	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
 	UIStyle&  GetStyle();
+	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)
 	UIWindow* GetWindow();
-	UIItem*   GetLastItem(u32 layeroffset = 0);
+	//returns a pointer to the last placed item
+	UIItem*   GetLastItem(u32 layeroffset = 0)
+	//returns the position of the last placed item
 	vec2      GetLastItemPos();
+	//returns the size of the last placed item
 	vec2      GetLastItemSize();
+	//returns the position of the last placed item in screen space
 	vec2      GetLastItemScreenPos();
+	//returns the remaining space left in a window. TODO test this function
 	vec2      GetWindowRemainingSpace();
-	vec2      GetPositionForNextItem();
+	//returns where ui will automatically place the next item.
+	vec2      GetCursor();
 	u32       GetCenterLayer();
+	//returns the x coordinate (in window space) of the right side of the window, taking into account the borders
 	f32       GetBorderedRight();
-	f32       GetBorderedLeft();
-	f32       GetBorderedTop();
+	//returns the x coordinate (in window space) of the left side of the window, taking into account the borders 
+	f32       GetBorderedLeft();  
+	//returns the y coordinate (in window space) of the top of the window, taking into account the borders
+	f32       GetBorderedTop();   
+	//returns the y coordinate (in window space) of the bottom of the window, taking into account the borders
 	f32       GetBorderedBottom();
+	//returns the x coordinate (in window space) of the right side of the window, taking into account the margin
 	f32       GetMarginedRight();
+	//returns the x coordinate (in window space) of the left side of the window, taking into account the margin
 	f32       GetMarginedLeft();
+	//returns the y coordinate (in window space) of the top of the window, taking into account the margin
 	f32       GetMarginedTop();
+	//returns the y coordinate (in window space) of the bottom of the window, taking into account the margin
 	f32       GetMarginedBottom();
-	f32       GetScrollBaredRight();
-	f32       GetScrollBaredLeft();
-	f32       GetScrollBaredTop();
-	f32       GetScrollBaredBottom();
+	//returns the x coordinate (in window space) of the right side of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	f32       GetClientRight();
+	//returns the x coordinate (in window space) of the left side of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	f32       GetClientLeft();
+	//returns the y coordinate (in window space) of the top of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	f32       GetClientTop();
+	//returns the y coordinate (in window space) of the bottom of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	f32       GetClientBottom();
+	//returns a pair of vec2s, the first being the position in window space and second the area. 
+	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
 	pair<vec2, vec2> GetBorderedArea();
+	//returns a pair of vec2s, the first being the position in window space and second the area. 
+	//margined area is the area inside the window that items automatically align themselves within. its size is controlled by the style var UIStyleVar_WindowMargins.
 	pair<vec2, vec2> GetMarginedArea();
-	pair<vec2, vec2> GetScrollBaredArea();
-	
-	
-	
-	
+	//returns a pair of vec2s, the first being the position in window space and second the area. 
+	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
+	pair<vec2, vec2> GetClientArea();
+
 	//// control functions ////
+
+	//positions the window's cursor to be on the same level as the last placed item. if you wish to have more advanced functionality with this see BeginRow
 	void SameLine();
+	//manaully set the windows cursor to a specified position. 
+	//after the next item is placed the cursor goes back to default placement behavoir, this means that it will return to the MarginedLeft part of the window, below the y level of the last placed item
 	void SetCursor(vec2 pos);
+	void SetCursor(s32 x, s32 y) {SetCursor(vec2(x,y));}
+	//manually set the cursor's X position
 	void SetCursorX(f32 x);
+	//manually set the cursors Y position
 	void SetCursorY(f32 y);
-	void SetScroll(vec2 scroll); //MAX_F32 sets to max scroll
+	//sets the window's scroll values
+	//use MAX_F32 to set it to max scroll
+	void SetScroll(vec2 scroll); 
+	//TODO sets the window's X scroll
+	//use MAX_F32 to set it to max X scroll
+	void SetScrollX(vec2 scroll); 
+	//TODO sets the window's Y scroll
+	//use MAX_F32 to set it to max Y scroll
+	void SetScrollY(vec2 scroll); 
+	//sets the next item to be 'active'
+	//TODO I think I need to make this work with things other than InputText
+	//InputText: sets keyboard focus (maybe make this its own function?)
 	void SetNextItemActive();
+	//sets the size of the next item
 	void SetNextItemSize(vec2 size);
+	//offsets the margin's position (see GetMarginedArea for what this area is)
 	void SetMarginPositionOffset(vec2 offset);
+	//offsets the margin's size (see GetMarginedArea for what this area is)
 	void SetMarginSizeOffset(vec2 offset);
+	//tells UI that this item does not affect the windows size when the flag UIWindowFlags_FitAllElements is used
 	void SetNextItemMinSizeIgnored();
+	//sets UI's internal input state to PreventInputs, this prevents any window from receiving any input, such as scrolling, dragging, resizing, and any action that could be taken on any item. this is undone using SetAllowInputs
 	void SetPreventInputs();
+	//sets UI's internal unput state to AllowInputs. undoing SetPreventInputs
 	void SetAllowInputs();
 	
 	
@@ -709,11 +758,18 @@ namespace UI {
 	//  NOTE primitives/abstracts are not considered in rows
 	void BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
+	//takes an array of size equal to the number of columns specified and sets their widths to the specified sizes in pixels
 	void RowSetupColumnWidths(array<f32> widths);
+	//sets one columns width in pixels
 	void RowSetupColumnWidth(u32 column, f32 width);
+	//sets a columns width relative to the size of the item it holds. 
+	//for example 1 will make the columns width 30 when it holds an item of width 30, 2 will make the columns width 60
 	void RowSetupRelativeColumnWidth(u32 column, f32 width);
+	//takes an array of size equal to the number of columns specified and sets their widths relative to the item they hold 
 	void RowSetupRelativeColumnWidths(array<f32> widths);
+	//TODO
 	void RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge);
+	//sets individual item alignments for each column
 	void RowSetupColumnAlignments(array<vec2> alignments);
 	
 	
@@ -734,32 +790,44 @@ namespace UI {
 	
 	
 	//// items ////
+	
+	//a simple clickable button. the condition it returns true for depends on the flag given, if no behavoir flag is given it returns true on click by default
 	b32 Button(const char* text, UIButtonFlags flags = 0);
 	b32 Button(const char* text, vec2 pos, UIButtonFlags flags = 0);
 	
+	//a checkbox with a label. you must provide the boolean it changes
 	void Checkbox(string label, b32* b);
 	
+	//TODO 
 	b32 BeginCombo(const char* label, const char* preview_val);
 	b32 BeginCombo(const char* label, const char* preview_val, vec2 pos);
-	
 	void EndCombo();
 	
+	//a selectable that takes in a boolean that determines if its selected or not. it returns true if it has been clicked on
 	b32 Selectable(const char* label, b32 selected); 
 	b32 Selectable(const char* label, vec2 pos, b32 selected);
 	
+	//a collapsable header that groups items and lets you hide them. by default it indents the content, but this can be disabled with flags
 	b32  BeginHeader(const char* label, UIHeaderFlags flags = 0);
 	void EndHeader();
 	
+	//begins the bar a tab sits on. this must be called before BeginTab
 	void BeginTabBar(const char* label, UITabBarFlags flags = 0);
+	//begins a tab, this must be called after BeginTabBar
 	b32  BeginTab(const char* label);
-	void EndTab(); //NOTE this should only be called if BeginTab returns true
+	//ends a tab, this must be called if BeginTab is called, calling it otherwise will assert
+	void EndTab(); 
+	//this must be called if BeginTabBar is called, calling it otherwise will assert
 	void EndTabBar();
 	
+	//a slider that modifies a given value using the mouse
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 	
+	//displays an image. set the size using SetNextItemSize
 	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
 	void Image(Texture* image, f32 alpha = 1, UIImageFlags flags = 0);
 	
+	//makes a horizontal rule across the window
 	void Separator(f32 height);
 	
 	//these overloads are kind of silly change them eventually
@@ -774,14 +842,12 @@ namespace UI {
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-	
-	
-	UIItem* BeginCustomItem(u32 layeroffset = 0);
-	void    CustomItemAdvanceCursor(UIItem* item, b32 move_cursor = 1);
-	void    EndCustomItem();
-	
+
+	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
 	
+	//allows adding flags to an item so you dont have to keep specifying them everytime you make one.
+	//you are required to either remove all the added flags or reset a modified items flags by the time UI::Update is called
 	void AddItemFlags(UIItemType type, Flags flags);
 	void RemoveItemFlags(UIItemType type, Flags flags);
 	void ResetItemFlags(UIItemType type);

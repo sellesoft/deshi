@@ -438,10 +438,10 @@ FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   {DPZoneScoped; return
 FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    {DPZoneScoped; return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
 FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) {DPZoneScoped; f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
 
-FORCE_INLINE f32 ScrollBaredRight(UIWindow* window = curwin)  {DPZoneScoped; return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
-FORCE_INLINE f32 ScrollBaredLeft(UIWindow* window = curwin)   {DPZoneScoped; return BorderedLeft(window); }
-FORCE_INLINE f32 ScrollBaredTop(UIWindow* window = curwin)    {DPZoneScoped; return BorderedTop(window); }
-FORCE_INLINE f32 ScrollBaredBottom(UIWindow* window = curwin) {DPZoneScoped; return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
+FORCE_INLINE f32 ClientRight(UIWindow* window = curwin)  {DPZoneScoped; return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
+FORCE_INLINE f32 ClientLeft(UIWindow* window = curwin)   {DPZoneScoped; return BorderedLeft(window); }
+FORCE_INLINE f32 ClientTop(UIWindow* window = curwin)    {DPZoneScoped; return BorderedTop(window); }
+FORCE_INLINE f32 ClientBottom(UIWindow* window = curwin) {DPZoneScoped; return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
 
 //return the maximum width an item can be in a non-scrolled state
 FORCE_INLINE f32 MaxItemWidth(UIWindow* window = curwin) {DPZoneScoped;
@@ -531,7 +531,7 @@ vec2 UI::GetWindowRemainingSpace() {DPZoneScoped;
 	return vec2(MarginedRight() - curwin->curx, MarginedBottom() - curwin->cury);
 }
 
-vec2 UI::GetPositionForNextItem() {DPZoneScoped;
+vec2 UI::GetCursor() {DPZoneScoped;
 	return PositionForNewItem();
 }
 
@@ -547,13 +547,13 @@ f32 UI::GetMarginedRight()                {DPZoneScoped; return MarginedRight();
 f32 UI::GetMarginedLeft()                 {DPZoneScoped; return MarginedLeft(); }
 f32 UI::GetMarginedTop()                  {DPZoneScoped; return MarginedTop(); }
 f32 UI::GetMarginedBottom()               {DPZoneScoped; return MarginedBottom(); }
-f32 UI::GetScrollBaredRight()             {DPZoneScoped; return ScrollBaredRight(); }
-f32 UI::GetScrollBaredLeft()              {DPZoneScoped; return ScrollBaredLeft(); }
-f32 UI::GetScrollBaredTop()               {DPZoneScoped; return ScrollBaredTop(); }
-f32 UI::GetScrollBaredBottom()            {DPZoneScoped; return ScrollBaredBottom(); }
+f32 UI::GetClientRight()             	  {DPZoneScoped; return ClientRight(); }
+f32 UI::GetClientLeft()              	  {DPZoneScoped; return ClientLeft(); }
+f32 UI::GetClientTop()               	  {DPZoneScoped; return ClientTop(); }
+f32 UI::GetClientBottom()            	  {DPZoneScoped; return ClientBottom(); }
 pair<vec2, vec2> UI::GetBorderedArea()    {DPZoneScoped; return BorderedArea(); }
 pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; return MarginedArea(); }
-pair<vec2, vec2> UI::GetScrollBaredArea() {DPZoneScoped; return ScrollBaredArea(); }
+pair<vec2, vec2> UI::GetClientArea() {DPZoneScoped; return ScrollBaredArea(); }
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
@@ -1179,7 +1179,7 @@ void UI::EndRow() {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
 	Assert(row->item_count % row->columns.count == 0, "Attempted to end a Row without giving the correct amount of items!");
 	
-	if (HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax)) {
+	if (HasFlag(row->flags, UIRowFlags_AutoSize)) {
 		if (row->reeval_height) row->height = row->max_height;
 		for (UIColumn& col : row->columns)
 			if (col.reeval_width) col.width = col.max_width;
@@ -1201,7 +1201,7 @@ void UI::EndRow() {DPZoneScoped;
 void UI::RowSetupColumnWidth(u32 column, f32 width) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
 	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
-	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
 		row->columns[column] = { width, false };
 }
 
@@ -1209,7 +1209,7 @@ void UI::RowSetupColumnWidth(u32 column, f32 width) {DPZoneScoped;
 void UI::RowSetupColumnWidths(array<f32> widths) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
-	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
 		forI(row->columns.count)
 		row->columns[i] = { widths[i], false };
 }
@@ -1218,7 +1218,7 @@ void UI::RowSetupColumnWidths(array<f32> widths) {DPZoneScoped;
 void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
 	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
-	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
 		row->columns[column] = { width, true };
 }
 
@@ -1228,7 +1228,7 @@ void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {DPZoneScoped;
 void UI::RowSetupRelativeColumnWidths(array<f32> widths) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
-	if(!HasFlag(row->flags, UIRowFlags_LookbackAndResizeToMax))
+	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
 		forI(row->columns.count)
 		row->columns[i] = { widths[i], true };
 }
@@ -1955,7 +1955,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {DPZoneSco
 	
 	//we also check if the combo's button is visible, if not we dont draw the popout
 	if (open && item->position.y < curwin->height) {
-		PushVar(UIStyleVar_WindowPadding, vec2(0, 0));
+		PushVar(UIStyleVar_WindowMargins, vec2(0, 0));
 		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
 		SetNextWindowSize(vec2(item->size.x, style.fontHeight * style.selectableHeightRelToFont * 8));
 		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_NoBorder);
@@ -2971,7 +2971,9 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneS
 	//always clamp scroll to make sure that it doesnt get stuck pass max scroll when stuff changes inside the window
 	window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
 	window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
-	
+	if(DeshInput->scrollY){
+		int i = 0;
+	}
 	//mouse wheel inputs
 	//if this is a child window and it cant scroll, redirect the scrolling inputs to the parent
 	if (window->parent && WinHovered(window) && window->maxScroll.x == 0 && window->maxScroll.y == 0) {
@@ -3007,11 +3009,11 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneS
 		b32 mrele = DeshInput->LMouseReleased();
 		
 		if (!hscroll && !HasFlag(flags, UIWindowFlags_NoScrollY)) {
-			f32 scrollbarheight = ScrollBaredBottom(window) - ScrollBaredTop(window);
+			f32 scrollbarheight = ClientBottom(window) - ClientTop(window);
 			f32 draggerheight = scrollbarheight * scrollbarheight / winmin.y;
-			vec2 draggerpos(ScrollBaredRight(), (scrollbarheight - draggerheight) * window->scy / window->maxScroll.y + BorderedTop(window));
+			vec2 draggerpos(ClientRight(), (scrollbarheight - draggerheight) * window->scy / window->maxScroll.y + BorderedTop(window));
 			
-			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredRight(window), BorderedTop(window)), vec2(style.scrollBarYWidth, scrollbarheight));
+			b32 scbgactive = MouseInWinArea(vec2(ClientRight(window), BorderedTop(window)), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 			
 			if (scdractive && DeshInput->LMouseDown() || !initial) {
@@ -3039,11 +3041,11 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneS
 			
 		}
 		if (!vscroll && !HasFlag(flags, UIWindowFlags_NoScrollX)) {
-			f32 scrollbarwidth = ScrollBaredRight(window) - ScrollBaredLeft(window);
+			f32 scrollbarwidth = ClientRight(window) - ClientLeft(window);
 			f32 draggerwidth = scrollbarwidth * window->dimensions.x / winmin.x;
-			vec2 draggerpos((scrollbarwidth - draggerwidth) * window->scx / window->maxScroll.x, ScrollBaredBottom(window));
+			vec2 draggerpos((scrollbarwidth - draggerwidth) * window->scx / window->maxScroll.x, ClientBottom(window));
 			
-			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredBottom(window), BorderedLeft(window)), vec2(scrollbarwidth, style.scrollBarXHeight));
+			b32 scbgactive = MouseInWinArea(vec2(ClientBottom(window), BorderedLeft(window)), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 			
 			if (scdractive && DeshInput->LMouseDown() || !initial) {
@@ -3394,16 +3396,16 @@ void EndCall() {DPZoneScoped;
 	if (!WinHasFlag(UIWindowFlags_NoScrollY) && yCanScroll) {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y + (xCanScroll ? style.scrollBarXHeight : 0);
 		if (!WinHasFlag(UIWindowFlags_NoScrollBarY)) {
-			f32 scrollbarheight = ScrollBaredBottom() - ScrollBaredTop();
+			f32 scrollbarheight = ClientBottom() - ClientTop();
 			f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
-			vec2 draggerpos(ScrollBaredRight(), (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y + BorderedTop());
+			vec2 draggerpos(ClientRight(), (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y + BorderedTop());
 			
-			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredRight(), BorderedTop()), vec2(style.scrollBarYWidth, scrollbarheight));
+			b32 scbgactive = MouseInWinArea(vec2(ClientRight(), BorderedTop()), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 			
 			{//scroll bg
 				UIDrawCmd drawCmd;
-				vec2  position = vec2(ScrollBaredRight(), BorderedTop());
+				vec2  position = vec2(ClientRight(), BorderedTop());
 				vec2  dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
 				color col = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
 				MakeFilledRect(drawCmd, position, dimensions, col);
@@ -3422,7 +3424,7 @@ void EndCall() {DPZoneScoped;
 			//if both scroll bars are active draw a little square to obscure the empty space 
 			if (CanScrollX()) {
 				UIDrawCmd drawCmd;
-				vec2  position = vec2(ScrollBaredRight(), scrollbarheight);
+				vec2  position = vec2(ClientRight(), scrollbarheight);
 				vec2  dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
 				color col = style.colors[UIStyleCol_WindowBg];
 				MakeFilledRect(drawCmd, position, dimensions, col);
@@ -3437,16 +3439,16 @@ void EndCall() {DPZoneScoped;
 	if (!WinHasFlag(UIWindowFlags_NoScrollX) && CanScrollX()) {
 		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x + (yCanScroll ? style.scrollBarYWidth : 0);
 		if (!WinHasFlag(UIWindowFlags_NoScrollBarX)) {
-			f32 scrollbarwidth = ScrollBaredRight() - ScrollBaredLeft();
+			f32 scrollbarwidth = ClientRight() - ClientLeft();
 			f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
-			vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, ScrollBaredBottom());
+			vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, ClientBottom());
 			
-			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredBottom(), BorderedLeft()), vec2(scrollbarwidth, style.scrollBarXHeight));
+			b32 scbgactive = MouseInWinArea(vec2(ClientBottom(), BorderedLeft()), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 			
 			{//scroll bg
 				UIDrawCmd drawCmd;
-				vec2  position = vec2(0, ScrollBaredBottom());
+				vec2  position = vec2(0, ClientBottom());
 				vec2  dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
 				color col = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
 				MakeFilledRect(drawCmd, position, dimensions, col);
@@ -3609,7 +3611,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 		if (MouseInArea(ipos, item.size)) {
 			
 			DebugRect(ipos, item.size);
-			PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
+			PushVar(UIStyleVar_WindowMargins, vec2(3, 3));
 			BeginPopOut("MetricsDebugItemPopOut", ipos.xAdd(item.size.x) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
 			
 			Text(UIItemTypeStrs[item.type], UITextFlags_NoWrap);
@@ -3655,7 +3657,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 				//if we are mousing over empty space in a child window, highlight the child window
 				if (!item_found && hovered->parent) {
 					DebugRect(hovered->position, hovered->dimensions);
-					PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
+					PushVar(UIStyleVar_WindowMargins, vec2(3, 3));
 					BeginPopOut("MetricsDebugItemPopOut", hovered->position.xAdd(hovered->width) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
 					
 					Text(toStr("Child Window ", hovered->name).str, UITextFlags_NoWrap);
@@ -3676,7 +3678,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 			vec2 ipos = iteml.position + debugee->position;
 			
 			
-			PushVar(UIStyleVar_WindowPadding, vec2(3, 3));
+			PushVar(UIStyleVar_WindowMargins, vec2(3, 3));
 			//PushColor(UIStyleCol_WindowBg, color(50, 50, 50));
 			BeginPopOut("MetricsDebugItemPopOut", mplatch - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoInteract);
 			
@@ -3936,15 +3938,15 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	
 	Begin("METRICS", DeshWindow->dimensions - vec2(300,500), vec2(300, 500));
 	myself = curwin;
-	WinSetHovered(curwin);
+	//WinSetHovered(curwin);
 	
-	BeginRow("Metrics_General_Stats", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+	BeginRow("Metrics_General_Stats", 2, 0, UIRowFlags_AutoSize);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 	Text("FPS: "); Text(toStr(1/DeshTime->deltaTime).str);
 	EndRow();
 	
 	if (BeginHeader("UI Stats")) {
-		BeginRow("Metrics_UI_Stats", 2, 0, UIRowFlags_LookbackAndResizeToMax);
+		BeginRow("Metrics_UI_Stats", 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
 		Text("Windows: ");  Text(toStr(ui_stats.windows).str);
@@ -3968,7 +3970,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 		persist f32 fw = CalcTextSize(slomotext).x + 5;
 		
 		PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
-		BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_LookbackAndResizeToMax);
+		BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_AutoSize);
 		RowSetupColumnWidths({ fw, sw, 55 });
 		
 		Text(slomotext.str);
@@ -4310,7 +4312,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	}
 	
 	
-	WinUnSetHovered(curwin);
+	//WinUnSetHovered(curwin);
 	
 	End();
 	
@@ -4677,7 +4679,7 @@ void UI::Init() {DPZoneScoped;
 	PushColor(UIStyleCol_TabBar, Color_DarkCyan);
 	
 	//push default style variables
-	PushVar(UIStyleVar_WindowPadding,             vec2(10, 10));
+	PushVar(UIStyleVar_WindowMargins,             vec2(10, 10));
 	PushVar(UIStyleVar_WindowBorderSize,          1);
 	PushVar(UIStyleVar_ButtonBorderSize,          1);
 	PushVar(UIStyleVar_TitleBarHeight,            style.fontHeight * 1.2f);
@@ -4763,11 +4765,8 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		Render::SetSurfaceDrawTargetByIdx(drawCmd.render_surface_target_idx);
 		
 		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
-		if(!lastdc) 
+		if(!lastdc || dcse != lastdc->scissorExtent || dcso != lastdc->scissorOffset || drawCmd.tex != lastdc->tex) 
 			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
-		else if (dcse != lastdc->scissorExtent || dcso != lastdc->scissorOffset || drawCmd.tex != lastdc->tex)
-			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
-		
 		Render::AddTwodVertices(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
 		drawCmd.scissorExtent = dcse;
