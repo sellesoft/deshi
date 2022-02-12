@@ -38,6 +38,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, windowPadding)},
 	{2, offsetof(UIStyle, itemSpacing)},
 	{1, offsetof(UIStyle, windowBorderSize)},
+	{1, offsetof(UIStyle, buttonBorderSize)},
 	{1, offsetof(UIStyle, titleBarHeight)},
 	{2, offsetof(UIStyle, titleTextAlign)},
 	{2, offsetof(UIStyle, scrollAmount)},
@@ -1154,13 +1155,6 @@ void DebugText(vec2 pos, char* text, color col = Color_White) {DPZoneScoped;
 	debugCmds.add(dc);
 }
 
-//@BeginRow
-//  a row is a collection of columns used to align a number of items nicely
-//  you are required to specify the width of each column when using Row, as it removes the complicated
-//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
-//  so you are required to define a static height upon calling the function
-//
-
 void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags) {DPZoneScoped;
 	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
 	if (!rows.has(label)) { 
@@ -1812,12 +1806,14 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {DPZoneScoped;
 		AddDrawCmd(item, drawCmd);
 	}
 	
-	{//border
+	//border
+	f32 border_size = (HasFlag(item->flags, UIButtonFlags_NoBorder)) ? 0 : style.buttonBorderSize;
+	if(border_size > M_EPSILON){
 		UIDrawCmd drawCmd;
 		vec2  borpos = vec2::ZERO;
 		vec2  bordim = item->size;
 		color borcol = style.colors[UIStyleCol_ButtonBorder];
-		MakeRect(drawCmd, borpos, bordim, 1, borcol);
+		MakeRect(drawCmd, borpos, bordim, border_size, borcol);
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -4378,6 +4374,19 @@ void UI::DemoWindow() {DPZoneScoped;
 		}
 		Text(str2.str);
 		
+		Separator(7);
+		
+		Text("Style Vars: ");
+		
+		persist char button_border_size_buff[7] = {};
+		Text("Button Border Size (f32): "); SameLine();
+		if(InputText("demo_button_border_size", button_border_size_buff, 7, "1.0", UIInputTextFlags_Numerical | UIInputTextFlags_AnyChangeReturnsTrue  | UIInputTextFlags_EnterReturnsTrue)){
+			style.buttonBorderSize = stod(button_border_size_buff);
+		}
+		
+		persist color button_border_color = style.colors[UIStyleCol_ButtonBorder];
+		Text("Style Colors: ");
+		Text("TODO button colors");
 		
 		EndHeader();
 	}
@@ -4669,7 +4678,8 @@ void UI::Init() {DPZoneScoped;
 	
 	//push default style variables
 	PushVar(UIStyleVar_WindowPadding,             vec2(10, 10));
-	PushVar(UIStyleVar_WindowBorderSize,          2);
+	PushVar(UIStyleVar_WindowBorderSize,          1);
+	PushVar(UIStyleVar_ButtonBorderSize,          1);
 	PushVar(UIStyleVar_TitleBarHeight,            style.fontHeight * 1.2f);
 	PushVar(UIStyleVar_TitleTextAlign,            vec2(1, 0.5f));
 	PushVar(UIStyleVar_ItemSpacing,               vec2(1, 1));
@@ -4886,10 +4896,14 @@ void UI::Update() {DPZoneScoped;
 	
 	ui_stats = { 0 };
 	
+	if (show_metrics) {
+		DisplayMetrics();
+		show_metrics = 0;
+	}
+	
 	//windows input checking functions
 	CheckWindowsForFocusInputs();
 	CheckForHoveredWindow();
-	
 	
 	if (inputupon) CheckWindowForScrollingInputs(inputupon);
 	if (inputupon) CheckWindowForResizingInputs(inputupon);
@@ -4910,11 +4924,6 @@ void UI::Update() {DPZoneScoped;
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 		WinUnSetBegan(p);
-	}
-	
-	if (show_metrics) {
-		DrawWindow(DisplayMetrics());
-		show_metrics = 0;
 	}
 	
 	

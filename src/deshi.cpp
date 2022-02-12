@@ -144,12 +144,17 @@ UI TODOs
 --------
 add functionality for resetting certain maps like windows and inputtexts
 ____maybe even removing certain labels from them
-tabs (vertical and horizontal)
 add some markup to text like underlining, bold, etc.
-add a UI popup when reloading shaders
 specify Separator() parameters and add one for line height
-add PAGEUP and PAGEDOWN binds (CTRL for max scroll up/down)
+add PAGEUP and PAGEDOWN scrolling keybinds (CTRL for max scroll up/down)
 add stuff like fps and window size to metrics instead of active windows
+window snapping (to borders, to other windows, window tabifying when dropped onto another window)
+menus that open on hover (the direction they open is flag controlled, down vs right)(ImGui::BeginMenu)
+vertical tabs
+add button flag: return true on hover
+begintab()/button() for images
+window flags for no margin and no padding
+context menu
 
 Window TODOs
 ------------
@@ -175,8 +180,7 @@ __________ alternatively, we can store those specific assets in the source contr
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 (01/10/22) color formatting does not work thru Log()
 __________ see commands.cpp 'test' command
-(01/15/22) vulkan backend crashes on window close
-(01/16/22) memory system sometimes fails to alloc memory from OS
+(01/16/22) memory system sometimes fails to alloc memory from OS (HACK fixed with looping until success)
 */
 
 

@@ -312,8 +312,9 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	//// update window to requested properties ////
 	UpdateDisplayMode(displayMode);
 	//UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
+	//titlebarheight = 5;
 	UpdateDecorations(Decoration_SystemDecorations);
-	titlebarheight = 5;
+	titlebarheight = 0;
 	SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
 	name = _name;
 	renderer_surface_index = 0; ///main win is always first surface

@@ -24,6 +24,9 @@
 	has clicked it or not. this is because Row moves items and if you attempt to query for any 
 	interaction before AdvanceCursor correctly positions the item, it will not be in the correct 
 	place when the user attempts to interact with it 
+
+Be careful of non-integer positions as they influence other positions in as floats even though
+they get converted to integer positions in the end.
 	
   BIG TODOS:
   
@@ -32,7 +35,23 @@
 	Ability to set flags on Button that allow it to return true if its held, only if mouse is released over it, etc.
 	The internal set up for Child Windows is incredibly messy and needs to be redone
 
+delle's Annoyances:
+comment out flags that are not implemented/not working
+better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
+rename GetPositionForNextItem() to GetCursor()/GetWindowCursor() (in order to match setcursor())
+move function descriptions and notes to the header
+pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
 
+metrics window: (partially in order, since some later ones remove the need for previous ones)
+fix scrolling and dragging (works inside child windows)(scroll bar isnt draggable)
+draw red outlines on max layer
+move slowest render group under windows header
+combine UI Stats and UI Globals headers
+unnest window items and children from window vars
+move window debug visual header with the other headers rather than with window vars
+combine window items and children then move them under windows header (so moving thru windows/items is seamless)
+selected item rather than selected window (with contextual vars rather than just window vars)
+simulate hovered/clicked/toggled on items
 
 */
 
@@ -51,7 +70,8 @@ struct UIWindow;
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,             // default vec2(10, 10)      spacing between every item and the edges of the window
 	UIStyleVar_ItemSpacing,               // default vec2(1, 1)        spacing between items within a window
-	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels                
+	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels
+	UIStyleVar_ButtonBorderSize,          // default 1
 	UIStyleVar_TitleBarHeight,            // default font.height * 1.2                                        
 	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)      how title text is aligned in title bar 
 	UIStyleVar_ScrollAmount,              // default vec2(5, 5)        amount to scroll in pixels             
@@ -83,6 +103,7 @@ global_ const char* styleVarStr[] = {
 	"WindowPadding",	          
 	"ItemSpacing",               
 	"WindowBorderSize",          
+	"ButtonBorderSize",
 	"TitleBarHeight",	          
 	"TitleTextAlign",            
 	"ScrollAmount",              
@@ -180,6 +201,7 @@ struct UIStyle {
 	vec2 windowPadding;
 	vec2 itemSpacing;
 	f32  windowBorderSize;
+	f32  buttonBorderSize;
 	f32  titleBarHeight;
 	vec2 titleTextAlign;
 	vec2 scrollAmount;
@@ -321,6 +343,7 @@ enum UIButtonFlags_ {
 	UIButtonFlags_NONE = 0,
 	UIButtonFlags_ReturnTrueOnHold    = 1 << 0,
 	UIButtonFlags_ReturnTrueOnRelease = 1 << 1,
+	UIButtonFlags_NoBorder            = 1 << 2,
 	
 }; typedef u32 UIButtonFlags;
 
@@ -684,7 +707,13 @@ namespace UI {
 	void SetAllowInputs();
 	
 	
-	//// rows ////
+	//// @rows ////
+	//  a row is a collection of columns used to align a number of items nicely
+	//  you are required to specify the width of each column when using Row, as it removes the complicated
+	//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
+	//  so you are required to define a static height upon calling the function
+	//
+	//  NOTE primitives/abstracts are not considered in rows
 	void BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
 	void RowSetupColumnWidths(array<f32> widths);
