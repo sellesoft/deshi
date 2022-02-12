@@ -790,7 +790,7 @@ inline matN matN::Diag(const matN& m){
 ///////////////////
 //// to_string ////
 ///////////////////
-#include "kigu/string.h"
+#include "kigu/string_utils.h"
 
 global_ string
 to_string(const matN& x, bool trunc = true) {
