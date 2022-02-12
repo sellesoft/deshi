@@ -27,13 +27,6 @@
 
 Be careful of non-integer positions as they influence other positions in as floats even though
 they get converted to integer positions in the end.
-	
-  BIG TODOS:
-  
-	Tabs
-	An actual table item
-	Ability to set flags on Button that allow it to return true if its held, only if mouse is released over it, etc.
-	The internal set up for Child Windows is incredibly messy and needs to be redone
 
 delle's Annoyances:
 comment out flags that are not implemented/not working
