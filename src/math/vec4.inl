@@ -365,7 +365,17 @@ zInvert() const {
 
 inline vec4 vec4::
 wInvert() const {
-	return vec4(x, y, z,-w);
+	return vec4(x, y, z, -w);
 }
+
+inline vec4 vec4::
+ceil() const{
+	return vec4(std::ceil(x), std::ceil(y), std::ceil(z), std::ceil(w));
+};
+
+inline vec4 vec4::
+floor() const{
+	return vec4(std::floor(x), std::floor(y), std::floor(z), std::floor(w));
+};
 
 #endif //DESHI_VEC4_INL

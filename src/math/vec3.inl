@@ -351,4 +351,14 @@ zInvert() const{
 	return vec3(x, y, -z);
 }
 
+inline vec3 vec3::
+ceil() const{
+	return vec3(std::ceil(x), std::ceil(y), std::ceil(z));
+};
+
+inline vec3 vec3::
+floor() const{
+	return vec3(std::floor(x), std::floor(y), std::floor(z));
+};
+
 #endif //DESHI_VEC3_INL

@@ -259,5 +259,14 @@ yAdd(f32 add) const{
 	return vec2(x, y + add);
 }
 
+inline vec2 vec2::
+ceil() const{
+	return vec2(std::ceil(x), std::ceil(y));
+};
+
+inline vec2 vec2::
+floor() const{
+	return vec2(std::floor(x), std::floor(y));
+};
 
 #endif //DESHI_VEC2_INL

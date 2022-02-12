@@ -57,28 +57,30 @@ struct vec2 {
 	bool operator!=(const vec2& rhs) const;
 	friend vec2 operator* (f32 lhs, const vec2& rhs){ return rhs * lhs; }
 	
-	void  set(f32 x, f32 y);
-	vec2  absV() const;
-	vec2  copy() const;
-	f32   dot(const vec2& rhs) const;
-	vec2  perp() const;
-	f32   mag()  const;
-	void  normalize();
-	vec2  normalized() const;
-	void  clampMag(f32 min, f32 max);
-	vec2  clampedMag(f32 min, f32 max) const;
-	f32   distanceTo(const vec2& rhs)  const;
-	vec2  compOn(const vec2& rhs)      const;
-	f32   projectOn(const vec2& rhs)   const;
-	vec2  midpoint(const vec2& rhs)    const;
-	vec2  xComp() const;
-	vec2  yComp() const;
-	vec2  xInvert() const;
-	vec2  yInvert() const;
-	vec2  xSet(f32 set) const; 
-	vec2  ySet(f32 set) const; 
-	vec2  xAdd(f32 set) const; 
-	vec2  yAdd(f32 set) const; 
+	void set(f32 x, f32 y);
+	vec2 absV() const;
+	vec2 copy() const;
+	f32  dot(const vec2& rhs) const;
+	vec2 perp() const;
+	f32  mag()  const;
+	void normalize();
+	vec2 normalized() const;
+	void clampMag(f32 min, f32 max);
+	vec2 clampedMag(f32 min, f32 max) const;
+	f32  distanceTo(const vec2& rhs)  const;
+	vec2 compOn(const vec2& rhs)      const;
+	f32  projectOn(const vec2& rhs)   const;
+	vec2 midpoint(const vec2& rhs)    const;
+	vec2 xComp() const;
+	vec2 yComp() const;
+	vec2 xInvert() const;
+	vec2 yInvert() const;
+	vec2 xSet(f32 set) const; 
+	vec2 ySet(f32 set) const; 
+	vec2 xAdd(f32 set) const; 
+	vec2 yAdd(f32 set) const; 
+	vec2 ceil() const;
+	vec2 floor() const;
 	
 	//vector interactions
 	vec2(const vec3& v);
@@ -162,6 +164,8 @@ struct vec3 {
 	vec3 xInvert() const;
 	vec3 yInvert() const;
 	vec3 zInvert() const;
+	vec3 ceil() const;
+	vec3 floor() const;
 	
 	//vector interactions
 	vec3(const vec2& v);
@@ -260,6 +264,8 @@ struct vec4{
 	vec4 yInvert() const;
 	vec4 zInvert() const;
 	vec4 wInvert() const;
+	vec4 ceil() const;
+	vec4 floor() const;
 	
 	//vector interactions
 	vec4(const vec2& v, f32 z, f32 w);
