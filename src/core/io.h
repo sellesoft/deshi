@@ -72,16 +72,26 @@ File open_file(const char* path, FileAccessFlags flags);
 //returns a temporary array of the files in the target directory
 array<File> get_directory_files(const char* directory);
 FORCE_INLINE array<File> get_directory_files(cstring directory){ return get_directory_files(directory.str); }
+FORCE_INLINE array<File> get_directory_files(File* directory){ return (directory->is_directory) ? get_directory_files(directory->path) : array<File>();}
 
 void delete_file(const char* filepath);
+FORCE_INLINE void delete_file(cstring filepath){ return delete_file(filepath.str); }
 FORCE_INLINE void delete_file(File* file){ return delete_file(file->path); }
 
 //returns true if a filepath is valid
 b32 file_exists(const char* filepath);
+FORCE_INLINE b32 file_exists(cstring filepath){ return file_exists(filepath.str); }
 FORCE_INLINE b32 file_exists(File* file){ return file_exists(file->path); }
 
 void rename_file(const char* old_filepath, const char* new_filepath);
 
+//returns a temporary cstring of the absolute path to the file or directory specified, empty cstring if it doesn't exist
+cstring absolute_path(const char* relative_path);
+FORCE_INLINE cstring absolute_path(cstring relative_path){ return absolute_path(relative_path.str); }
+FORCE_INLINE cstring absolute_path(File* file){ return absolute_path(file->path); }
 
+//returns a pointer to a temporary File object, 0 if the file does not exist
+File* file_info(const char* filepath);
+FORCE_INLINE File* file_info(cstring filepath){ return file_info(filepath.str); }
 
 #endif //DESHI_IO_H

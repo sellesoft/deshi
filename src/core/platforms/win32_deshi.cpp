@@ -178,7 +178,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			}
 		}break;
 		case WM_CHAR: { ////////////////////////////////////////////////////////////// Char From Key 
-			DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
+			if(LOWORD(wParam) != '\r'){ //NOTE skip \r in text input
+				DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
+			}
 		}break;
 		case WM_INPUT: { ///////////////////////////////////////////////////////////// Raw Input
 			UINT size = 0;
@@ -830,6 +832,7 @@ get_directory_files(const char* directory) {
 		FindClose(next);
 		return result;
 	}
+	
 	while (next != INVALID_HANDLE_VALUE) {
 		if ((strcmp(data.cFileName, ".") == 0) || (strcmp(data.cFileName, "..") == 0)) {
 			if (FindNextFileA(next, &data) == 0) break;
@@ -916,6 +919,56 @@ void
 rename_file(const char* old_filepath, const char* new_filepath) {
 	BOOL success = MoveFileA(old_filepath, new_filepath);
 	if (!success) Win32LogLastError("MoveFileA");
+}
+
+cstring
+absolute_path(const char* relative_path){
+	cstring result{};
+	result.str   = (char*)memory_talloc(MAX_PATH*sizeof(char));
+	result.count = (upt)GetFullPathNameA(relative_path, MAX_PATH, result.str, 0);
+	if(!result.count) Win32LogLastError("GetFullPathNameA");
+	return result;
+}
+
+File*
+file_info(const char* filepath){
+	if(filepath == 0) return 0;
+	
+	WIN32_FIND_DATAA data;
+	HANDLE next = FindFirstFileA(filepath, &data);
+	defer{ FindClose(next); };
+	if(next == INVALID_HANDLE_VALUE){
+		Win32LogLastError("FindFirstFileA");
+		return 0;
+	}
+	
+	ULARGE_INTEGER size, time;
+	File* result = (File*)memory_talloc(sizeof(File));
+	result->handle = next;
+	time.LowPart = data.ftCreationTime.dwLowDateTime; time.HighPart = data.ftCreationTime.dwHighDateTime;
+	result->time_creation = WindowsTimeToUnixTime(time.QuadPart);
+	time.LowPart = data.ftLastAccessTime.dwLowDateTime; time.HighPart = data.ftLastAccessTime.dwHighDateTime;
+	result->time_last_access = WindowsTimeToUnixTime(time.QuadPart);
+	time.LowPart = data.ftLastWriteTime.dwLowDateTime; time.HighPart = data.ftLastWriteTime.dwHighDateTime;
+	result->time_last_write = WindowsTimeToUnixTime(time.QuadPart);
+	size.LowPart = data.nFileSizeLow; size.HighPart = data.nFileSizeHigh;
+	result->bytes_size = size.QuadPart;
+	result->is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+	
+	u32 path_len = strlen(filepath);
+	u32 name_len = strlen(data.cFileName);
+	u32 short_len = name_len;
+	while (short_len && data.cFileName[short_len--] != '.');
+	result->path_length = path_len + name_len;
+	result->name_length = name_len;
+	result->short_length = short_len + 1;
+	result->ext_length = name_len - short_len - 1;
+	Assert(result->path_length < MAX_FILEPATH_SIZE);
+	memcpy(result->path, filepath, path_len);
+	memcpy(result->path + path_len, data.cFileName, name_len);
+	memcpy(result->name, data.cFileName, name_len);
+	
+	return result;
 }
 
 
