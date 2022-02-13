@@ -33,14 +33,12 @@ better flag descriptions on how they interact with other flags (no scroll vs no 
 pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
 
 metrics window: (partially in order, since some later ones remove the need for previous ones)
-fix scrolling and dragging (works inside child windows)(scroll bar isnt draggable)
-draw red outlines on max layer
-move slowest render group under windows header
-combine UI Stats and UI Globals headers
-unnest window items and children from window vars
 move window debug visual header with the other headers rather than with window vars
 combine window items and children then move them under windows header (so moving thru windows/items is seamless)
+
+//sushi: selected item is difficult since items disppear every frame
 selected item rather than selected window (with contextual vars rather than just window vars)
+
 simulate hovered/clicked/toggled on items
 
 */
@@ -809,6 +807,8 @@ namespace UI {
 	b32 Selectable(const char* label, vec2 pos, b32 selected);
 	
 	//a collapsable header that groups items and lets you hide them. by default it indents the content, but this can be disabled with flags
+	//by default the header spans the whole width of the window
+	//TODO different header styles, including one that is empty and takes a clickable area for custom graphix
 	b32  BeginHeader(const char* label, UIHeaderFlags flags = 0);
 	void EndHeader();
 	
@@ -829,6 +829,11 @@ namespace UI {
 	void Image(Texture* image, f32 alpha = 1, UIImageFlags flags = 0);
 	
 	//makes a horizontal rule across the window
+	//TODO vertical separators
+	//TODO text in a separator 
+	//text------------
+	//-----text-------
+	//with arbitrary placing like this
 	void Separator(f32 height);
 	
 	//these overloads are kind of silly change them eventually

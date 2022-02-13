@@ -1887,7 +1887,7 @@ void UI::Checkbox(string label, b32* b) {DPZoneScoped;
 	{//border
 		UIDrawCmd drawCmd;
 		vec2  position = vec2::ZERO;
-		vec2  dimensions = item->size;
+		vec2  dimensions = boxsiz;
 		color col = style.colors[UIStyleCol_CheckboxBorder];
 		MakeRect(drawCmd, position, dimensions, 1, col);
 		AddDrawCmd(item, drawCmd);
@@ -1957,6 +1957,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {DPZoneSco
 	if (open && item->position.y < curwin->height) {
 		PushVar(UIStyleVar_WindowMargins, vec2(0, 0));
 		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
+		//TODO BUG the combo selection popout doesnt actually follow the button
 		SetNextWindowSize(vec2(item->size.x, style.fontHeight * style.selectableHeightRelToFont * 8));
 		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_NoBorder);
 		StateAddFlag(UISComboBegan);
@@ -3904,6 +3905,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	
 	array<UIWindow*> winsorted;
 	for (UIWindow* win : windows) {
+		//TODO optional metrics filter or allow text filtering 
 		//if (!(win->name == "METRICS")) {
 		if (win->render_time > slomo->render_time)     slomo = win;
 		if (win->render_time < quick->render_time)     quick = win;
@@ -3925,61 +3927,16 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	EndRow();
 	
 	if (BeginHeader("UI Stats")) {
+	
 		BeginRow("Metrics_UI_Stats", 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
-		Text("Windows: ");  Text(toStr(ui_stats.windows).str);
-		Text("Items: ");    Text(toStr(ui_stats.items).str);
-		Text("DrawCmds: "); Text(toStr(ui_stats.draw_cmds).str);
-		Text("Vertices: "); Text(toStr(ui_stats.vertices).str);
-		Text("Indices: ");  Text(toStr(ui_stats.indices).str);
-		
-		EndRow();
-		EndHeader();
-	}
-	
-	Separator(20);
-	
-	string slomotext = toStr("Slowest Render:");
-	string quicktext = toStr("Fastest Render:");
-	string mostitext = toStr("Most Items: "); 
-	
-	{
-		persist f32 sw = CalcTextSize(longname->name).x;
-		persist f32 fw = CalcTextSize(slomotext).x + 5;
-		
-		PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
-		BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_AutoSize);
-		RowSetupColumnWidths({ fw, sw, 55 });
-		
-		Text(slomotext.str);
-		Text(slomo->name.str);
-		if (Button("select")) debugee = slomo;
-		
-		Text(quicktext.str);
-		Text(quick->name.str);
-		if (Button("select")) debugee = quick;
-		
-		Text(mostitext.str);
-		Text(mostitems->name.str);
-		if (Button("select")) debugee = mostitems;
-		
-		PopVar();
-		EndRow();
-	}
-	
-	Separator(20);
-	
-	if (BeginHeader("UI Globals")) {
-		const char* str1 = "global hovered";
-		f32 fw = CalcTextSize(str1).x * 1.2;
-		
-		BeginRow("Metrics_21241",2, style.fontHeight * 1.2);
-		RowSetupColumnWidths({ fw, 96 });
-		
-		
-		
-		Text(str1); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
+		Text("Windows: ");      Text(toStr(ui_stats.windows).str);
+		Text("Items: ");        Text(toStr(ui_stats.items).str);
+		Text("DrawCmds: ");     Text(toStr(ui_stats.draw_cmds).str);
+		Text("Vertices: ");     Text(toStr(ui_stats.vertices).str);
+		Text("Indices: ");      Text(toStr(ui_stats.indices).str);
+		Text("Global Hover: "); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
 		Text("input state: ");
 		switch (inputState) {
 			case ISNone:                  Text("None");                    break;
@@ -3988,16 +3945,43 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 			case ISDragging:              Text("Dragging");                break;
 			case ISPreventInputs:         Text("Prevent Inputs");          break;
 			case ISExternalPreventInputs: Text("External Prevent Inputs"); break;
-			
 		}
 		Text("input upon: "); Text((inputupon ? inputupon->name.str : "none"));
 		
-		EndRow();
-		
+		EndRow();		
 		EndHeader();
 	}
 	
 	if (BeginHeader("Windows")) {
+
+		{//window stats (maybe put this in a header?)
+			string slomotext = toStr("Slowest Render:");
+			string quicktext = toStr("Fastest Render:");
+			string mostitext = toStr("Most Items: "); 
+		
+			persist f32 sw = CalcTextSize(longname->name).x;
+			persist f32 fw = CalcTextSize(slomotext).x + 5;
+
+			PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
+			BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_AutoSize);
+			RowSetupColumnWidths({ fw, sw, 55 });
+
+			Text(slomotext.str);
+			Text(slomo->name.str);
+			if (Button("select")) debugee = slomo;
+
+			Text(quicktext.str);
+			Text(quick->name.str);
+			if (Button("select")) debugee = quick;
+
+			Text(mostitext.str);
+			Text(mostitems->name.str);
+			if (Button("select")) debugee = mostitems;
+
+			PopVar();
+			EndRow();
+		}
+
 		persist b32 showChildren = 0;
 		
 		Checkbox("show children", &showChildren);
@@ -4060,10 +4044,10 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 			SetFocusedWindow(debugee);
 		}
 		
-		if (BeginHeader("Window Vars")) {
-			BeginRow("MetricsWindowVarAlignment", 2, style.fontHeight * 1.2);
+		if (BeginHeader("Vars")) {
+			BeginRow("MetricsWindowVarAlignment", 2, style.fontHeight * 1.2, UIRowFlags_AutoSize);
 			RowSetupColumnWidths({ CalcTextSize("Max Item Width: ").x , 10 });
-			
+			RowSetupColumnAlignments({{0,0.5},{0,0.5}});
 			Text("Render Time: ");    Text(toStr(debugee->render_time, "ms").str);
 			Text("Creation Time: ");  Text(toStr(debugee->creation_time, "ms").str);
 			Text("Item Count: ");     Text(toStr(debugee->items_count).str);
@@ -4078,7 +4062,12 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 			
 			EndRow();
 			
-			if (BeginHeader("Items")) {
+			
+			
+			EndHeader();
+		}
+
+		if (BeginHeader("Items")) {
 				SetNextWindowSize(vec2(MAX_F32, 300));
 				BeginChild("METRICSItems", vec2(0,0)); {
 					forI(UI_WINDOW_ITEM_LAYERS) {
@@ -4127,9 +4116,6 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 				}
 				EndHeader();
 			}
-			
-			EndHeader();
-		}
 		
 		persist b32 showItemBoxes = false;
 		persist b32 showItemCursors = false;
@@ -4142,7 +4128,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 		persist b32 showScrollBarArea = false;
 		
 		
-		if (BeginHeader("Window Debug Visuals")) {
+		if (BeginHeader("Debug Visuals")) {
 			Checkbox("Show Item Boxes", &showItemBoxes);
 			Checkbox("Show Item Cursors", &showItemCursors);
 			Checkbox("Show Item Names", &showItemNames);
@@ -4902,6 +4888,7 @@ void UI::Update() {DPZoneScoped;
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 		WinUnSetBegan(p);
+		p->items_count = 0;
 	}
 	
 	
