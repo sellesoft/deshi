@@ -25,12 +25,15 @@
 	interaction before AdvanceCursor correctly positions the item, it will not be in the correct 
 	place when the user attempts to interact with it 
 
-Be careful of non-integer positions as they influence other positions in as floats even though
+Be careful of non-integer positions as they influence other positions as floats even though
 they get converted to integer positions in the end.
 
 delle's Annoyances:
 better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
 pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
+buttons dont work with UIWindowFlags_FitAllElements since they depend on eachother (buttons shrink to fit rather than get cut off)
+popout windows pass thru inputs to their parent window
+fix inputtext backspace not working
 
 metrics window: (partially in order, since some later ones remove the need for previous ones)
 move window debug visual header with the other headers rather than with window vars
@@ -228,7 +231,7 @@ enum UIWindowFlags_ {
 	UIWindowFlags_None                   = 0,
 	UIWindowFlags_NoResize               = 1 << 0,
 	UIWindowFlags_NoMove                 = 1 << 1,
-	UIWindowFlags_NoTitleBar             = 1 << 2,
+	//TODO UIWindowFlags_NoTitleBar             = 1 << 2,
 	UIWindowFlags_NoBorder               = 1 << 3,
 	UIWindowFlags_NoBackground           = 1 << 4,
 	UIWindowFlags_NoScrollBarX           = 1 << 5,
@@ -245,7 +248,7 @@ enum UIWindowFlags_ {
 	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
 	
 	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
-	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
+	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus //| UIWindowFlags_NoTitleBar
 }; typedef u32 UIWindowFlags;
 
 enum UIInputTextFlags_ {
@@ -646,7 +649,7 @@ struct UIRow {
 namespace UI {
 	
 	//// helpers ////
-
+	
 	//calculates the given text size as it would appear onscreen with the current font pointed to by the style var
 	vec2              CalcTextSize(cstring text);
 	vec2              CalcTextSize(wcstring text);
@@ -704,9 +707,9 @@ namespace UI {
 	//returns a pair of vec2s, the first being the position in window space and second the area. 
 	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	pair<vec2, vec2> GetClientArea();
-
+	
 	//// control functions ////
-
+	
 	//positions the window's cursor to be on the same level as the last placed item. if you wish to have more advanced functionality with this see BeginRow
 	void SameLine();
 	//manaully set the windows cursor to a specified position. 
@@ -714,7 +717,7 @@ namespace UI {
 	//TODO better name than SetWinCursor that doesnt conflict with win32's SetCursor
 	void SetWinCursor(vec2 pos);
 	//dont know why this doesnt work void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
-
+	
 	//manually set the cursor's X position
 	void SetWinCursorX(f32 x);
 	//manually set the cursors Y position
@@ -779,7 +782,7 @@ namespace UI {
 	
 	
 	//// text ////
-
+	
 	//wraps by default
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
@@ -848,7 +851,7 @@ namespace UI {
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-
+	
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
 	

@@ -1792,7 +1792,8 @@ void UI::TextF(const char* fmt, ...) {DPZoneScoped;
 b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {DPZoneScoped;
 	UIItem* item = BeginItem(UIItemType_Button, flags);
 	item->position = pos;
-	item->size = DecideItemSize(vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
+	//item->size = DecideItemSize(vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
+	item->size = DecideItemSize(vec2(Max(50.f, CalcTextSize(text).x * 1.1f), style.fontHeight * style.buttonHeightRelToFont), item->position);
 	AdvanceCursor(item);
 	
 	b32 active = WinHovered(curwin) && isItemHovered(item);
@@ -3927,7 +3928,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	EndRow();
 	
 	if (BeginHeader("UI Stats")) {
-	
+		
 		BeginRow("Metrics_UI_Stats", 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
@@ -3953,35 +3954,35 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 	}
 	
 	if (BeginHeader("Windows")) {
-
+		
 		{//window stats (maybe put this in a header?)
 			string slomotext = toStr("Slowest Render:");
 			string quicktext = toStr("Fastest Render:");
 			string mostitext = toStr("Most Items: "); 
-		
+			
 			persist f32 sw = CalcTextSize(longname->name).x;
 			persist f32 fw = CalcTextSize(slomotext).x + 5;
-
+			
 			PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
 			BeginRow("MetricsWindowStatsAlignment", 3, 11, UIRowFlags_AutoSize);
 			RowSetupColumnWidths({ fw, sw, 55 });
-
+			
 			Text(slomotext.str);
 			Text(slomo->name.str);
 			if (Button("select")) debugee = slomo;
-
+			
 			Text(quicktext.str);
 			Text(quick->name.str);
 			if (Button("select")) debugee = quick;
-
+			
 			Text(mostitext.str);
 			Text(mostitems->name.str);
 			if (Button("select")) debugee = mostitems;
-
+			
 			PopVar();
 			EndRow();
 		}
-
+		
 		persist b32 showChildren = 0;
 		
 		Checkbox("show children", &showChildren);
@@ -4066,56 +4067,56 @@ UIWindow* DisplayMetrics() {DPZoneScoped;
 			
 			EndHeader();
 		}
-
+		
 		if (BeginHeader("Items")) {
-				SetNextWindowSize(vec2(MAX_F32, 300));
-				BeginChild("METRICSItems", vec2(0,0)); {
-					forI(UI_WINDOW_ITEM_LAYERS) {
-						u32 count = 0;
-						for (UIItem& item : debugee->items[i]) {
-							if (BeginHeader(toStr(UIItemTypeStrs[item.type], " ", count).str)) {
-								persist f32 frs = CalcTextSize("FilledRectangle").x;
-								BeginRow("121255552525", 3, style.buttonHeightRelToFont * style.fontHeight);
-								RowSetupColumnWidths({ frs, 50, 40 });
-								
-								for (UIDrawCmd& dc : item.drawCmds) {
-									Text(UIDrawTypeStrs[dc.type]);
-									if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
-										for (int tri = 0; tri < dc.counts.y; tri += 3) {
-											vec2
-												p0 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri]].pos,
-											p1 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 1]].pos,
-											p2 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 2]].pos;
-											DebugTriangle(p0, p1, p2);
-										}
+			SetNextWindowSize(vec2(MAX_F32, 300));
+			BeginChild("METRICSItems", vec2(0,0)); {
+				forI(UI_WINDOW_ITEM_LAYERS) {
+					u32 count = 0;
+					for (UIItem& item : debugee->items[i]) {
+						if (BeginHeader(toStr(UIItemTypeStrs[item.type], " ", count).str)) {
+							persist f32 frs = CalcTextSize("FilledRectangle").x;
+							BeginRow("121255552525", 3, style.buttonHeightRelToFont * style.fontHeight);
+							RowSetupColumnWidths({ frs, 50, 40 });
+							
+							for (UIDrawCmd& dc : item.drawCmds) {
+								Text(UIDrawTypeStrs[dc.type]);
+								if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+									for (int tri = 0; tri < dc.counts.y; tri += 3) {
+										vec2
+											p0 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri]].pos,
+										p1 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 1]].pos,
+										p2 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 2]].pos;
+										DebugTriangle(p0, p1, p2);
 									}
-									if (Button("Create")) {
-										break_drawCmd_create_hash = dc.hash;
-									}
-									if (Button("Draw")) {
-										break_drawCmd_draw_hash = dc.hash;
-									}
-									
 								}
-								EndRow();
-								EndHeader();
+								if (Button("Create")) {
+									break_drawCmd_create_hash = dc.hash;
+								}
+								if (Button("Draw")) {
+									break_drawCmd_draw_hash = dc.hash;
+								}
+								
 							}
-							count++;
+							EndRow();
+							EndHeader();
 						}
-					}
-				}EndChild();
-				EndHeader();
-			}
-			
-			
-			if (debugee->children.count && BeginHeader("Children")) {
-				for(UIWindow* c : debugee->children) {
-					if (Button(c->name.str)) {
-						debugee = c;
+						count++;
 					}
 				}
-				EndHeader();
+			}EndChild();
+			EndHeader();
+		}
+		
+		
+		if (debugee->children.count && BeginHeader("Children")) {
+			for(UIWindow* c : debugee->children) {
+				if (Button(c->name.str)) {
+					debugee = c;
+				}
 			}
+			EndHeader();
+		}
 		
 		persist b32 showItemBoxes = false;
 		persist b32 showItemCursors = false;
