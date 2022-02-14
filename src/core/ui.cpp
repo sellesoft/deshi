@@ -2250,7 +2250,7 @@ void UI::EndTabBar(){DPZoneScoped;
 	tabBar->xoffset = 0;
 	forI(tabBar->tabs.count) {
 		UIItem* item = tabBar->tabs.atIdx(i)->item;
-		if (LeftMousePressed && MouseInWinArea(item->position, item->size)) {
+		if (WinHovered(curwin) && LeftMousePressed && MouseInWinArea(item->position, item->size)) {
 			tabBar->selected = i;
 		}
 	}
