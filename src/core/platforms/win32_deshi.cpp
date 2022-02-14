@@ -178,7 +178,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			}
 		}break;
 		case WM_CHAR: { ////////////////////////////////////////////////////////////// Char From Key 
-			if(LOWORD(wParam) != '\r'){ //NOTE skip \r in text input
+		
+			if(!match_any(LOWORD(wParam), '\r', '\b')){ //NOTE skip \r and \b in text input
 				DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
 			}
 		}break;
