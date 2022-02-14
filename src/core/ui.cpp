@@ -4907,8 +4907,8 @@ void UI::Update() {DPZoneScoped;
 	
 	//draw all debug commands if there are any
 	for (UIDrawCmd& drawCmd : debugCmds) {
-		Render::StartNewTwodCmd(5, drawCmd.tex, vec2::ZERO, DeshWinSize);
-		Render::AddTwodVertices(5, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
+		Render::StartNewTwodCmd(Render::GetZZeroLayerIndex(), drawCmd.tex, vec2::ZERO, DeshWinSize);
+		Render::AddTwodVertices(Render::GetZZeroLayerIndex(), drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 	}
 	debugCmds.clear();
 }
