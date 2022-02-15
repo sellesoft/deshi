@@ -155,6 +155,8 @@ add button flag: return true on hover
 begintab()/button() for images
 window flags for no margin and no padding
 context menu
+text input mouse click to place cursor
+text selection (and clipboard)
 
 Window TODOs
 ------------

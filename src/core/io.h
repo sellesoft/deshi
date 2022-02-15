@@ -72,6 +72,7 @@ void       reset_reader(FileReader& reader);
 File open_file(const char* path, FileAccessFlags flags);
 
 //returns a temporary array of the files in the target directory
+//TODO return carray instead of array
 array<File> get_directory_files(const char* directory);
 FORCE_INLINE array<File> get_directory_files(cstring directory){ return get_directory_files(directory.str); }
 FORCE_INLINE array<File> get_directory_files(File* directory){ return (directory->is_directory) ? get_directory_files(directory->path) : array<File>();}

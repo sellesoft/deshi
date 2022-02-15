@@ -736,6 +736,7 @@ namespace UI {
 	void SetNextItemActive();
 	//sets the size of the next item
 	void SetNextItemSize(vec2 size);
+	FORCE_INLINE void SetNextItemSize(f32 x, f32 y){ SetNextItemSize(vec2{x,y}); }
 	//offsets the margin's position (see GetMarginedArea for what this area is)
 	void SetMarginPositionOffset(vec2 offset);
 	//offsets the margin's size (see GetMarginedArea for what this area is)
