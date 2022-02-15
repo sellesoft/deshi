@@ -531,8 +531,14 @@ vec2 UI::GetWindowRemainingSpace() {DPZoneScoped;
 	return vec2(MarginedRight() - curwin->curx, MarginedBottom() - curwin->cury);
 }
 
+//NOTE this should match PositionForNewItem(), just without resetting NextCursorPos
 vec2 UI::GetWinCursor() {DPZoneScoped;
-	return PositionForNewItem();
+	vec2 pos = curwin->cursor + (style.windowPadding + MarginPositionOffset - curwin->scroll) + vec2(leftIndent, 0)
+		+ vec2::ONE * ((HasFlag(curwin->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
+	MarginPositionOffset = vec2::ZERO;
+	if(NextCursorPos.x!=-1)pos.x=NextCursorPos.x;
+	if(NextCursorPos.y!=-1)pos.y=NextCursorPos.y;
+	return pos;
 }
 
 u32 UI::GetCenterLayer() {DPZoneScoped;
@@ -3128,7 +3134,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			UIItem* item = BeginItem(UIItemType_Window);
 			
 			//TODO(sushi) add custom positioning for child windows
-			item->position = PositionForNewItem();
+			item->position = pos;
 			
 			//check if were making a new child or working with one we already know
 			if (parent->children.has(name)) {
