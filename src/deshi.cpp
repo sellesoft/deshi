@@ -14,177 +14,174 @@ core:
   lower_underscore_unscoped_vars (.cpp only)
   DowhateverLocal_vars (usually lowerCamel or lower_underscore)
   g_global_vars (defined in deshi.cpp only, declared in specific header)
+*/
 
-Command TODOs
--------------
-implement command chaining
-command to print all avaliable keys for binding
-command to print all keybinds, with (maybe) an option for printing only contextual keybinds
-make binds and aliases check if one already exists for a key or a command (if a key already exists, probably just overwrite it?)
-add device_info command (graphics card, sound device, monitor res, etc)
-change Run()'s input from string to cstring
+/* `TODOs
+//Format: [MM/DD/YY,DIFFICULTY,Tags...] description
+//        ____ continued description
+//Assumed Difficulties: EASY, MEDI, HARD
+//Common Tags: Feature, Tweak, Bug
 
-Console TODOs
--------------
-showing a command's help if tab is pressed when the command is already typed
-popout console state (require extra window creation)
-tabbing so we can sort different kinds of info into each tab like Errors and Warnings
-add auto complete for commands and arguments
-implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
-config variable modification
-simple terminal emulation
-
-Fun TODOs
+`Command
 ---------
-look into implementing Lua (or finish su and make it an embeddable language!)
-write a preprocessing/postprocessing compiler that makes serialization easier
-hotloadable UI
+[04/12/21,EASY,Feature] command to print all avaliable keys for binding
+[04/12/21,EASY,Feature] command to print all keybinds, with (maybe) an option for printing only contextual keybinds
+[04/15/21,EASY,Feature] make binds and aliases check if one already exists for a key or a command (if a key already exists, probably just overwrite it?)
+[06/09/21,EASY,Feature] add device_info command (graphics card, sound device, monitor res, etc)
+[08/07/21,EASY,Feature] implement command chaining
+[01/10/22,EASY,Tweak] change Run()'s input from string to cstring
 
-IO TODOs
+`Console
+---------
+[04/12/21,MEDI,Feature] add auto complete for commands and arguments
+[04/15/21,EASY,Feature] implement filtering console buffer by tags
+[04/15/21,MEDI,Feature] popout console state (require extra window creation)
+[06/16/21,EASY,Feature] tabbing so we can sort different kinds of info into each tab like Errors and Warnings
+[12/23/21,MEDI,Bug] if the console fills up too much, it crashes
+__________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
+[12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed
+[01/10/22,EASY,Bug] color formatting does not work thru Log()
+__________ see commands.cpp 'test' command
+[01/13/22,EASY,Feature] config variable modification
+[01/13/22,EASY,Feature] simple terminal emulation
+
+`File
+------
+[09/16/21,MEDI,Feature] data folder specified on launch
+[10/20/21,EASY,Tweak] safety checks for IO operations
+[10/20/21,EASY,Feature] add search filters to get_directory_files
+[10/20/21,HARD,System] linux/mac file IO
+[12/28/21,EASY,Feature] add file reading (simple and smart)
+[12/28/21,EASY,Feature] add file writing (simple and smart)
+[12/28/21,EASY,Feature] add file/dir creation
+[12/28/21,EASY,Feature] add file/dir renaming
+[12/28/21,EASY,Feature] add file locking and determination
+[12/28/21,EASY,Feature] add hard/symbolic link creation/deletion
+[12/28/21,EASY,Feature] add file hard/symbolic link determination
+[12/28/21,EASY,Feature] add drive statistics
+
+`Fun
+-----
+[04/12/21,HARD,System] look into implementing Lua (or finish su and make it an embeddable language!)
+[06/09/21,HARD,System] write a preprocessing/postprocessing compiler that makes serialization easier
+[07/26/21,HARD,Feature] hotloadable UI
+
+`Input
+-------
+[10/28/21,EASY,Feature] add MouseInsideWindow() func to input or window
+
+`Logger
 --------
-add file reading (simple and smart)
-add file writing (simple and smart)
-add file/dir creation
-add file/dir renaming
-add file locking and determination
-add hard/symbolic link creation/deletion
-add file hard/symbolic link determination
-add drive statistics
-safety checks for IO operations
-add search filters to get_directory_files
-data folder specified on launch
-smart text file parser (handles new line checking and formatting)
- linux/mac IO
+[12/31/21,EASY,Tweak] make a local Assert macro that logs the message before stopping
+[12/31/21,EASY,Tweak] make the most recent logging file be named log.txt, while the rest have a date
+[01/06/22,EASY,Tweak] can probably optimize by using a single buffer instead of strings in Log() and LogA()
+[01/06/22,MEDI,Tweak] look into https://github.com/fmtlib/fmt for fast formatting
 
-Input TODOs
------------
-add MouseInsideWindow() func to input or window
-
-Logger TODOs
-------------
-add push/pop indentation level
-make a local Assert macro that logs the message before stopping
-make the most recent logging file be named log.txt, while the rest have a date
-can probably optimize by using a single buffer instead of strings in Log() and LogA()
-look into https://github.com/fmtlib/fmt for fast formatting
-
-Math TODOs
-----------
-move geometry funcs out of math.h 
-add quaternions and converions between them and other linear algebra primitives
-add functions and members similar to what glsl/glm has where you can do stuff like
+`Math
+------
+[03/13/21,MEDI,Feature] add quaternions and converions between them and other linear algebra primitives
+[05/03/21,MEDI,Feature] add functions and members similar to what glsl/glm has where you can do stuff like
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 ____you probably just need to add a vec2/3 for each permutation of each vector
 ____glm/detail/_swizzle.hpp
+[10/20/21,EASY,Tweak] move geometry funcs out of math.h 
 
-Memory TODOs
-------------
-add a way to disable this and set deshi_allocator to libc
-maybe temp memory should not default to zero?
-consider multiple thread contexts
-add fast generic bins
+`Memory
+--------
+[12/22/21,HARD,Feature] consider multiple thread contexts
+[12/22/21,HARD,Feature] add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
+[01/09/22,EASY,Tweak] maybe temp memory should not default to zero?
+[01/16/22,MEDIUM,Bug] memory system sometimes fails to alloc memory from OS (might only be during debugging)
+[02/06/22,MEDI,Tweak] add a way to disable this and set deshi_allocator to libc
 
-Render TODOs
-------------
-figure out how to use custom allocators with opengl3 and get opengl3 to use deshi memory
-remove usage of STL
-replace allocator with temp_allocator in relevant places
-rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
-give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
-find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
-add texture/material recreation without restart
-revert phong shader so it is like it used to be, but keeps the shadows
-fix directional shadow mapping's (projection?) errors
-rework lights
-add omnidirectional shadow mapping
-add not-on-screen object culling thru mesh AABBs (if they dont cast shadow)
-add front-to-back sorting for perf gain and transparency?
-delete shader .spv if failed to compile it after printing error messages
-setup more generalized material/pipeline creation
-____specialization constants
-____uber shaders
-____runtime pipeline creation/specialization
-look into getting info from shaders, or setting up compute shaders
+`Render
+--------
+[03/22/21,HARD,Feature] multi-threaded command buffers, shader loading, image loading
+[04/04/21,EASY,Feature] add instancing
+[04/06/21,MEDI,Tweak] fix texture transparency
+[04/30/21,MEDI,Feature] upload extra mesh info to an SSBO
+[05/13/21,HARD,Feature] look into getting info from shaders, or setting up compute shaders
 ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
 ____the primary reason being that we need to optimize outlining objects, which will
 ____involve clipping triangles and stuff
-add standard render/video settings
-upload extra mesh info to an SSBO
-fix texture transparency
-____check those vulkan-tutorial links for the suggestions and optimizations
-add instancing
-vulkan auto-cleanup so that it frees the unused parts of memory every now and then
-multi-threaded command buffers, shader loading, image loading
-SSBOs in shaders so we can pass variable length arrays to it
+[06/16/21,MEDI,Feature] SSBOs in shaders so we can pass variable length arrays to it
+[06/17/21,EASY,Feature] add standard render/video settings
+[07/06/21,MEDI,Feature] add omnidirectional shadow mapping
+[07/06/21,EASY,Feature] add not-on-screen object culling thru mesh AABBs (if they dont cast shadow)
+[07/06/21,MEDI,Feature] add front-to-back sorting for perf gain and transparency?
+[07/06/21,EASY,Tweak] delete shader .spv if failed to compile it after printing error messages
+[07/06/21,HARD,System] setup more generalized material/pipeline creation
+____specialization constants
+____uber shaders
+____runtime pipeline creation/specialization
+[07/09/21,MEDI,System] rework lights
+[07/10/21,HARD,Bug] fix directional shadow mapping's (projection?) errors
+[08/07/21,MEDI,Feature] add texture/material recreation without restart
+[08/07/21,EASY,Feature] vulkan auto-cleanup so that it frees the unused parts of memory every now and then
+[08/07/21,EASY,Tweak] revert phong shader so it is like it used to be, but keeps the shadows
+[09/26/21,MEDI,Tweak] give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
+[09/26/21,EASY,Tweak] find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
+[11/26/21,EASY,Tweak] rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
+[12/18/21,EASY,Tweak] remove usage of STL
+[12/18/21,EASY,Tweak] replace allocator with temp_allocator in relevant places
+[01/04/22,EASY,Tweak] figure out how to use custom allocators with opengl3 and get opengl3 to use deshi memory
 
-Sound TODOs
------------
-remake the sound system
+`Sound
+-------
+[04/05/21,HARD,System] remake the sound system
 
-Storage TODOs
--------------
-separate physics mesh info from regular mesh info
-merge mesh faces with <10 degree normal difference (for physics)
-add edges and hulls to meshes, remove unused vars
-make an interface for updating textures that have already been created
-add MTL parsing
-store null128.png and null shader in code
-add versioning to Mesh since its saved in a binary format
-data streaming to prevent loading freeze
-speedup OBJ parsing and face generation
-
-Time TODOs
-----------
-remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
-make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
-rename 'updateCount' to 'frame'
-
-UI TODOs
---------
-add functionality for resetting certain maps like windows and inputtexts
-____maybe even removing certain labels from them
-add some markup to text like underlining, bold, etc.
-specify Separator() parameters and add one for line height
-add PAGEUP and PAGEDOWN scrolling keybinds (CTRL for max scroll up/down)
-add stuff like fps and window size to metrics instead of active windows
-window snapping (to borders, to other windows, window tabifying when dropped onto another window)
-menus that open on hover (the direction they open is flag controlled, down vs right)(ImGui::BeginMenu)
-vertical tabs
-add button flag: return true on hover
-begintab()/button() for images
-window flags for no margin and no padding
-context menu
-text input mouse click to place cursor
-text selection (and clipboard)
-
-Window TODOs
-------------
-make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
-add the ability to limit framerate
-
-Ungrouped TODOs
----------------
-remove commit/decommit from defines.h
-move config saving/loading to its own core file
-remove GLFW and add platform layers
-restyle map to match the rest of utils
-centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
-look into integrating TODOP with Discord
-
-Bug Board       //NOTE mark these with a last-known active date (MM/DD/YY)
+`Storage
 ---------
-(07/10/21) the program crashes if default asset files are not present
+[07/10/21,EASY,Bug] the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 __________ alternatively, we can store those specific assets in the source control
-(12/23/21) if the console fills up too much, it crashes
-__________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
-(01/10/22) color formatting does not work thru Log()
-__________ see commands.cpp 'test' command
-(01/16/22) memory system sometimes fails to alloc memory from OS (HACK fixed with looping until success)
-*/
+[08/07/21,MEDI,Tweak] speedup OBJ parsing and face generation
+[08/22/21,EASY,Tweak] store null128.png and null shader in code
+[08/22/21,EASY,Tweak] add versioning to Mesh since its saved in a binary format
+[10/20/21,EASY,Tweak] separate physics mesh info from regular mesh info
+[10/20/21,EASY,Tweak] merge mesh faces with <10 degree normal difference (for physics)
+[10/20/21,MEDI,Tweak] add edges and hulls to meshes, remove unused vars
+[10/20/21,MEDI,Feature] add MTL parsing
+[12/31/21,MEDI,Tweak] data streaming to prevent loading freeze
+[01/12/22,EASY,Feature] make an interface for updating textures that have already been created
 
+`Time
+------
+[09/16/21,MEDI,Feature] make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
+[12/31/21,EASY,Tweak] remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
+[01/08/22,EASY,Tweak] rename 'updateCount' to 'frame'
+
+`UI
+----
+[08/05/21,MEDI,Feature] add functionality for resetting certain maps like windows and inputtexts
+____maybe even removing certain labels from them
+[08/09/21,MEDI,Feature] vertical tabs
+[08/15/21,MEDI,Feature] add some markup to text like underlining, bold, etc.
+[01/09/22,EASY,Tweak] specify Separator() parameters and add one for line height
+[02/12/22,EASY,Tweak] add PAGEUP and PAGEDOWN scrolling keybinds (CTRL for max scroll up/down)
+[02/12/22,MEDI,Feature] window snapping (to borders, to other windows, window tabifying when dropped onto another window)
+[02/12/22,MEDI,Feature] menus that open on hover (the direction they open is flag controlled, down vs right)(ImGui::BeginMenu)
+[02/12/22,EASY,Tweak] add button flag: return true on hover
+[02/12/22,EASY,Feature] begintab()/button() for images
+[02/12/22,EASY,Tweak] window flags for no margin and no padding
+[02/12/22,HARD,Feature] context menu
+[02/12/22,Easy,Feature] text input mouse click to place cursor
+[02/12/22,HARD,System] text selection (and clipboard)
+
+`Window
+--------
+[08/07/21,HARD,Feature] add the ability to limit framerate
+[09/01/21,EASY,Feature] make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
+
+`Ungrouped
+-----------
+[07/19/21,MEDI,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
+[08/03/21,EASY,Tweak] convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
+[12/31/21,HARD,System] remove GLFW and add platform layers
+[01/06/22,MEDI,Tweak] move config saving/loading to its own core file
+[02/01/22,EASY,Tweak] remove commit/decommit from defines.h
+*/
 
 
 #include "kigu/common.h"
