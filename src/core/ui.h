@@ -221,6 +221,12 @@ struct UIStyle {
 	color colors[UIStyleCol_COUNT];
 };
 
+struct UIContextInfo {
+	UIWindow* hovered_window = 0;
+	UIWindow* focused_window = 0;
+	UIItem* last_placed_item = 0;
+};
+
 enum UITextFlags_ {
 	UITextFlags_None = 0,
 	UITextFlags_NoWrap = 1 << 0,
@@ -228,18 +234,18 @@ enum UITextFlags_ {
 
 enum UIWindowFlags_ {
 	UIWindowFlags_None                   = 0,
-	UIWindowFlags_NoResize               = 1 << 0,
-	UIWindowFlags_NoMove                 = 1 << 1,
+	UIWindowFlags_NoResize               = 1 << 0, //prevents the user from resizing with the edges 
+	UIWindowFlags_NoMove                 = 1 << 1, //prevents the user from moving the window
 	//TODO UIWindowFlags_NoTitleBar             = 1 << 2,
-	UIWindowFlags_NoBorder               = 1 << 3,
-	UIWindowFlags_NoBackground           = 1 << 4,
-	UIWindowFlags_NoScrollBarX           = 1 << 5,
-	UIWindowFlags_NoScrollBarY           = 1 << 6, 
-	UIWindowFlags_NoScrollBars           = UIWindowFlags_NoScrollBarX | UIWindowFlags_NoScrollBarY,
-	UIWindowFlags_NoScrollX              = 1 << 7 | UIWindowFlags_NoScrollBarX,
+	UIWindowFlags_NoBorder               = 1 << 3, //doesnt draw a border
+	UIWindowFlags_NoBackground           = 1 << 4, //doesnt draw a background
+	UIWindowFlags_NoScrollBarX           = 1 << 5, //doesnt draw a horizonal scrollbar, but can still scroll
+	UIWindowFlags_NoScrollBarY           = 1 << 6, //doesnt draw a vertical scrollbar, but can still scroll
+	UIWindowFlags_NoScrollBars           = UIWindowFlags_NoScrollBarX | UIWindowFlags_NoScrollBarY, 
+	UIWindowFlags_NoScrollX              = 1 << 7 | UIWindowFlags_NoScrollBarX, 
 	UIWindowFlags_NoScrollY              = 1 << 8 | UIWindowFlags_NoScrollBarY,
 	UIWindowFlags_NoScroll               = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
-	UIWindowFlags_NoFocus                = 1 << 9,
+	UIWindowFlags_NoFocus                = 1 << 9, 
 	UIWindowFlags_FocusOnHover           = 1 << 10,
 	//TODO UIWindowFlags_NoMinimize             = 1 << 11,
 	//TODO UIWindowFlags_NoMinimizeButton       = 1 << 12,
@@ -254,11 +260,11 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_NONE                  = 0,
 	UIInputTextFlags_EnterReturnsTrue      = 1 << 0,
 	UIInputTextFlags_AnyChangeReturnsTrue  = 1 << 1,
-	UIInputTextFlags_CallbackTab           = 1 << 2,
-	UIInputTextFlags_CallbackEnter         = 1 << 3,
-	UIInputTextFlags_CallbackAlways        = 1 << 4,
-	UIInputTextFlags_CallbackUpDown        = 1 << 5,
-	UIInputTextFlags_NoBackground          = 1 << 6,
+	UIInputTextFlags_CallbackTab           = 1 << 2, //calls the given callback function when tab is pressed
+	UIInputTextFlags_CallbackEnter         = 1 << 3, //calls the given callback function when enter is pressed
+	UIInputTextFlags_CallbackAlways        = 1 << 4, //calls the given callback function when any key is pressed
+	UIInputTextFlags_CallbackUpDown        = 1 << 5, //calls the given callback function when up or down are pressed
+	UIInputTextFlags_NoBackground          = 1 << 6, 
 	UIInputTextFlags_FitSizeToText         = 1 << 7,
 	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
 	UIInputTextFlags_Numerical             = 1 << 9, //only allows input of [0-9|.]
@@ -317,7 +323,7 @@ struct UITabBar {
 
 enum UISliderFlags_ {
 	UISliderFlags_NONE     = 0,
-	UISliderFlags_Vertical = 1,
+	//TODO UISliderFlags_Vertical = 1,
 }; typedef u32 UISliderFlags;
 
 enum UIImageFlags_ {
@@ -338,12 +344,28 @@ enum UIButtonFlags_ {
 }; typedef u32 UIButtonFlags;
 
 enum UIHeaderFlags_ {
-	UIHeaderFlags_NONE = 0,
-	UIHeaderFlags_NoIndentLeft = 1 << 0,
+	UIHeaderFlags_NONE          = 0,
+	UIHeaderFlags_NoIndentLeft  = 1 << 0,
 	UIHeaderFlags_NoIndentRight = 1 << 1,
-	UIHeaderFlags_NoIndent = UIHeaderFlags_NoIndentLeft | UIHeaderFlags_NoIndentRight,
-	UIHeaderFlags_NoBorder = 1 << 2,
+	UIHeaderFlags_NoIndent      = UIHeaderFlags_NoIndentLeft | UIHeaderFlags_NoIndentRight,
+	UIHeaderFlags_NoBorder      = 1 << 2,
 }; typedef u32 UIHeaderFlags;
+
+enum UIMenuFlags_ {
+	UIMenuFlags_NONE                   = 0,
+	UIMenuFlags_AppearAtMouse          = 1 << 0, //makes the menu's initial position where the mouse is when called
+	UIMenuFlags_AutoFitElements        = 1 << 1, //the menu will autofit the width and height of all contained items. you must have at least one item that is manually sized for this to work properly eg. you can't use vec2(MAX_F32,MAX_F32) to size all of the items. this flag is default when no size argument is given
+	UIMenuFlags_KeepOpenOnScroll       = 1 << 2, //keeps the menu open if the user scrolls 
+	UIMenuFlags_MoveWithScroll         = 1 << 3, //follows the scrolling of the parent window
+	UIMenuFlags_KeepOpenOnClick        = 1 << 4, //keeps the menu open when an element it holds is clicked
+	UIMenuFlags_KeepOpenOnOutsideClick = 1 << 5, //keeps the menu open even when the user clicks outside of it 
+}; typedef u32 UIMenuFlags;
+
+struct UIMenu {
+	UIMenuFlags flags;
+	vec2 pos;
+	vec2 size;
+};
 
 enum UIDrawType : u32 {
 	UIDrawType_Triangle,
@@ -433,6 +455,7 @@ enum UIItemType : u32 {
 	UIItemType_Separator, // Separator()
 	UIItemType_TabBar,    // BeginTabBar()
 	UIItemType_Tab,       // BeginTab()
+	UIItemType_Menu,      // BeginMenu()
 	UIItemType_COUNT
 };
 
@@ -466,11 +489,6 @@ global_ const char* UIItemTypeStrs[] = {
 // it also keeps track of certain things when it was created such as where the cursor 
 // was before it moved it and all the style options it used to create itself.
 // this is useful for when we have to look back at previous items to position a new one
-// 
-// this does have a drawback, in our final drawing loop we have to add one more for loop to loop
-// over all items and then their draw calls. it also probably eats up a good bit more memory, considering
-// im saving the state of style everytime you make an item, this could maybe be reduced by only storing important
-// things instead
 struct UIWindow;
 struct UIItem {
 	UIItemType type;
@@ -851,6 +869,14 @@ namespace UI {
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	
+	//begins a menu, which is just a wrapper around BeginPopOut
+	//its purpose is to provide an easy way to have lists of options such as in a context menu as well
+	//as provide a way to autosize the popout
+	void BeginMenu(vec2 pos, UIMenuFlags flags); //default autosize overload
+	void BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags);
+	void EndMenu();
+
+
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
 	

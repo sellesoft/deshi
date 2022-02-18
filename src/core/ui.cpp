@@ -70,11 +70,12 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 local map<const char*, UIWindow*>        windows;   
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
 local map<const char*, UITabBar>         tabBars;     //stores known tab bars
+local map<const char*, UIMenu>           menus;       //stores known menus
 local map<const char*, UIRow>            rows;        //stores known Rows
 local map<const char*, b32>              combos;      //stores known combos and if they are open or not
 local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
 local map<const char*, b32>              headers;     //stores whether a header is open or not
-local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
+local array<UIWindow*>                   windowStack; 
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
 local array<vec2>                        scaleStack;  //global scales
@@ -117,44 +118,44 @@ enum InputState_ {
 
 
 //main UI state variables	
-local UIWindow* curwin = 0;    //the window that is currently being worked with by the user
-local UIWindow* hovered = 0;   //the window that the mouse is hovering over, this is set every Update
+local UIWindow* curwin    = 0;    //the window that is currently being worked with by the user
+local UIWindow* hovered   = 0;   //the window that the mouse is hovering over, this is set every Update
 local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
 
 local UIStateFlags stateFlags = UISNone;
 local InputState   inputState = ISNone;
 
 local u32 currlayer = UI_CENTER_LAYER;
-local u32 winlayer = UI_CENTER_LAYER;
-local u32 activeId = -1; //the id of an active widget eg. input text
+local u32 winlayer  = UI_CENTER_LAYER;
+local u32 activeId  = -1; //the id of an active item eg. input text
 
 local UIRow*    row;    //row being worked with
 local UITabBar* tabBar; //tab bar being worked with
 
-local vec2 NextWinSize = vec2(-1, 0);
-local vec2 NextWinPos = vec2(-1, 0);
-local vec2 NextItemPos = vec2(-1, 0);
-local vec2 NextItemSize = vec2(-1, 0);
+local vec2 NextWinSize   = vec2(-1, 0);
+local vec2 NextWinPos    = vec2(-1, 0);
+local vec2 NextItemPos   = vec2(-1, 0);
+local vec2 NextItemSize  = vec2(-1, 0);
 local vec2 NextCursorPos = vec2(-1,-1);
 
 local vec2 MarginPositionOffset = vec2::ZERO;
-local vec2 MarginSizeOffset = vec2::ZERO;
+local vec2 MarginSizeOffset     = vec2::ZERO;
 
 struct {
-	u32 vertices = 0;
-	u32 indices = 0;
+	u32 vertices  = 0;
+	u32 indices   = 0;
 	
 	u32 draw_cmds = 0;
-	u32 items = 0;
-	u32 windows = 0;
+	u32 items     = 0;
+	u32 windows   = 0;
 }ui_stats;
 
 //helper defines
-#define StateHasFlag(flag) ((stateFlags) & (flag))
-#define StateHasFlags(flags) (((stateFlags) & (flags)) == (flags))
-#define StateAddFlag(flag) stateFlags |= flag
+#define StateHasFlag(flag)    ((stateFlags) & (flag))
+#define StateHasFlags(flags)  (((stateFlags) & (flags)) == (flags))
+#define StateAddFlag(flag)    stateFlags |= flag
 #define StateRemoveFlag(flag) ((stateFlags) &= (~(flag)))
-#define StateResetFlags stateFlags = UISNone
+#define StateResetFlags       stateFlags = UISNone
 
 #define WinBegan(win)         HasFlag(win->win_state.flags, UIWSBegan)
 #define WinEnded(win)         HasFlag(win->win_state.flags, UIWSEnded)
@@ -627,7 +628,7 @@ FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {DPZoneScoped;
 
 //helper for making any new UIItem, since now we must work with item pointers internally
 //this function also decides if we are working with a new item or continuing to work on a previous
-inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0) {DPZoneScoped;
+inline UIItem* BeginItem(UIItemType type, u32& userflags = 0, u32 layeroffset = 0) {DPZoneScoped;
 	
 	if (type == UIItemType_PreItems) {
 		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
@@ -2581,16 +2582,22 @@ b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIIn
 	return InputTextCall(label, buffer, buffSize, 1, pos, preview, callback, flags, 0);
 }
 
+void BeginMenuCall(vec2 pos, vec2 size, UIMenuFlags flags){
+	UIItem* item = BeginItem(UIItemType_Menu, flags);
+}
 
+void UI::BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags){
+	BeginMenuCall(pos, size, flags);
+}
 
-//this doesnt need to be an enum at this point,
-//but im making it one incase this function becomes more complicated in the future
-enum CustomItemStage_{
-	CISNone = 0,
-	CISItemBegan = 1 << 0,
-	CISItemAdvancedCursor = 1 << 1,
-}; typedef u32 CustomItemStage;
-CustomItemStage cistage = CISNone;
+void UI::BeginMenu(vec2 pos, UIMenuFlags flags){
+	BeginMenuCall(pos, vec2(MAX_F32,MAX_F32), flags);
+}
+
+void UI::EndMenu(){
+
+}
+
 
 b32 UI::IsLastItemHovered(){DPZoneScoped; //TODO handle layers
 	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize());
