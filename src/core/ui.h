@@ -28,6 +28,8 @@
 	be careful of non-integer positions as they influence other positions as floats even though
 	they get converted to integer positions in the end.
 
+be careful of pushing vars before creating child windows for the window internals, as it will also affect the window itself
+
 delle's Annoyances:
 better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
 pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
@@ -754,6 +756,7 @@ namespace UI {
 	void SetNextItemActive();
 	//sets the size of the next item
 	void SetNextItemSize(vec2 size);
+	FORCE_INLINE void SetNextItemSize(f32 x, f32 y){ SetNextItemSize(vec2{x,y}); }
 	//offsets the margin's position (see GetMarginedArea for what this area is)
 	void SetMarginPositionOffset(vec2 offset);
 	//offsets the margin's size (see GetMarginedArea for what this area is)

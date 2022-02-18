@@ -21,12 +21,12 @@ map<s32, Key::Key> vkToKey{
 	{ VK_LWIN, Key::LMETA },{ VK_RWIN, Key::RMETA },
 };
 
-void Win32LogLastError(const char* func_name, b32 crash_on_error = false) {DPZoneScoped;
+void Win32LogLastError(const char* func_name, b32 crash_on_error = false, const char* custom = "") {DPZoneScoped;
 	LPVOID msg_buffer;
 	DWORD error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
 				  0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
-	LogfE("win32", "%s failed with error %d: %s", func_name, (u32)error, (const char*)msg_buffer);
+	LogfE("win32", "%s failed with error %d: %s. %s", func_name, (u32)error, (const char*)msg_buffer, custom);
 	LocalFree(msg_buffer);
 	if(crash_on_error){
 		Assert(!"assert before exit so we can stack trace in debug mode");
@@ -178,7 +178,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			}
 		}break;
 		case WM_CHAR: { ////////////////////////////////////////////////////////////// Char From Key 
-		
+			
 			if(!match_any(LOWORD(wParam), '\r', '\b')){ //NOTE skip \r and \b in text input
 				DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
 			}
@@ -730,10 +730,11 @@ void Window::SwapBuffers(){
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @File @IO API
 local b32 io__crash_on_error = false;
+//TODO maybe use a common buffer for string filename operations
 
 //TODO binary file loading when needed
 //initializes a FileReader for a given File
-FileReader init_reader(const File & file) {
+FileReader init_reader(const File& file) {
 	FileReader fr;
 	if (!file.handle) { LogE("IO", "attempted to initalize a FileReader on a file that's not initialized"); fr.failed = true; return fr; }
 	if (!HasFlag(file.flags, FileAccess_Read)) { LogE("IO", "attempted to initialize a FileReader on a file that doesn't have read access"); fr.failed = true; return fr; }
@@ -767,21 +768,21 @@ FileReader init_reader(const File & file) {
 }
 
 
-File open_file(const char* path, FileAccessFlags flags) {
+File open_file(const char* path, FileAccessFlags flags){
 	Assert(flags, "attempt to open_file without specifing access flags");
 	File file;
 	file.flags = flags;
 	
 	DWORD access = (HasFlag(flags, FileAccess_Write) ? GENERIC_WRITE : 0) | (HasFlag(flags, FileAccess_Read) ? GENERIC_READ : 0);
 	file.handle = CreateFileA(path, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-	if (GetLastError() != ERROR_FILE_EXISTS && GetLastError()) Win32LogLastError("CreateFileA", io__crash_on_error);
+	if(GetLastError() != ERROR_FILE_EXISTS && GetLastError()) Win32LogLastError("CreateFileA", io__crash_on_error, path);
 	
 	//read data of opened file
 	BY_HANDLE_FILE_INFORMATION data;
 	ULARGE_INTEGER time;
 	ULARGE_INTEGER size;
 	
-	if (!GetFileInformationByHandle(file.handle, &data)) Win32LogLastError("GetFileInformationByHandle", io__crash_on_error);
+	if(!GetFileInformationByHandle(file.handle, &data)) Win32LogLastError("GetFileInformationByHandle", io__crash_on_error, path);
 	
 	time.LowPart = data.ftCreationTime.dwLowDateTime; time.HighPart = data.ftCreationTime.dwHighDateTime;
 	file.time_creation = WindowsTimeToUnixTime(time.QuadPart);
@@ -794,7 +795,7 @@ File open_file(const char* path, FileAccessFlags flags) {
 	file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 	
 	u32 pathlength = GetFinalPathNameByHandleA(file.handle, file.path, MAX_FILEPATH_SIZE, FILE_NAME_NORMALIZED);
-	if (pathlength > MAX_FILEPATH_SIZE) LogW("IO", "file path for '", path, "' has a length greater than MAX_FILEPATH_SIZE\npath length was ", pathlength);
+	if(pathlength > MAX_FILEPATH_SIZE) LogW("IO", "file path for '", path, "' has a length greater than MAX_FILEPATH_SIZE\npath length was ", pathlength);
 	
 	//file.path_length = Min(pathlength, u32(MAX_FILEPATH_SIZE));
 	
@@ -818,7 +819,8 @@ File open_file(const char* path, FileAccessFlags flags) {
 array<File>
 get_directory_files(const char* directory) {
 	array<File> result(deshi_temp_allocator);
-	if (directory == 0) return result;
+	if(directory == 0) return result;
+	if(directory[0] == '\0') return result;
 	
 	string pattern(directory); //TODO add allocator to string
 	pattern += (pattern[pattern.count-1] == '/' || pattern[pattern.count-1] == '\\') ? "*" : "/*";
@@ -826,16 +828,15 @@ get_directory_files(const char* directory) {
 	ULARGE_INTEGER size;   ULARGE_INTEGER time;
 	
 	next = FindFirstFileA(pattern.str, &data);
-	if (next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-		Win32LogLastError("FindFirstFileA", io__crash_on_error);
-		LogaE("io-win32", "'$' is not a valid directory.", directory);
+	if(next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+		Win32LogLastError("FindFirstFileA", io__crash_on_error, directory);
 		FindClose(next);
 		return result;
 	}
 	
-	while (next != INVALID_HANDLE_VALUE) {
-		if ((strcmp(data.cFileName, ".") == 0) || (strcmp(data.cFileName, "..") == 0)) {
-			if (FindNextFileA(next, &data) == 0) break;
+	while(next != INVALID_HANDLE_VALUE){
+		if((strcmp(data.cFileName, ".") == 0) || (strcmp(data.cFileName, "..") == 0)){
+			if(FindNextFileA(next, &data) == 0) break;
 			continue;
 		}
 		
@@ -865,11 +866,11 @@ get_directory_files(const char* directory) {
 		CopyMemory(file.name, data.cFileName, name_len);
 		
 		result.add(file);
-		if (FindNextFileA(next, &data) == 0) break;
+		if(FindNextFileA(next, &data) == 0) break;
 	}
 	DWORD error = GetLastError();
-	if (error != ERROR_NO_MORE_FILES) {
-		Win32LogLastError("FindNextFileA", io__crash_on_error);
+	if(error != ERROR_NO_MORE_FILES){
+		Win32LogLastError("FindNextFileA", io__crash_on_error, directory);
 	}
 	FindClose(next);
 	
@@ -879,36 +880,50 @@ get_directory_files(const char* directory) {
 
 //TODO(delle) add safety checks so deletion only happens within the data folder
 void
-delete_file(const char* filepath) {
-	if (filepath == 0) return;
+delete_file(const char* _filepath){
+	if(_filepath == 0) return;
+	if(_filepath[0] == '\0') return;
+	
+	string filepath(_filepath, deshi_temp_allocator);
+	if(filepath[filepath.count-1] == '/' || filepath[filepath.count-1] == '\\'){
+		filepath[filepath.count-1] = '\0';
+		filepath.count--;
+	}
 	
 	WIN32_FIND_DATAA data;
-	HANDLE next = FindFirstFileA(filepath, &data);
-	if (next == INVALID_HANDLE_VALUE) {
-		Win32LogLastError("FindFirstFileA", io__crash_on_error);
+	HANDLE next = FindFirstFileA(filepath.str, &data);
+	if(next == INVALID_HANDLE_VALUE){
+		Win32LogLastError("FindFirstFileA", io__crash_on_error, filepath.str);
 		return;
 	}
 	
 	//if directory, recursively delete all files and directories
-	if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-		array<File> dir_files = get_directory_files(filepath);
+	if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
+		array<File> dir_files = get_directory_files(filepath.str);
 		forE(dir_files) delete_file(it->path);
-		BOOL success = RemoveDirectoryA(filepath);
-		if (!success) Win32LogLastError("RemoveDirectoryA", io__crash_on_error);
-	}
-	else {
-		BOOL success = DeleteFileA(filepath);
-		if (!success) Win32LogLastError("DeleteFile", io__crash_on_error);
+		BOOL success = RemoveDirectoryA(filepath.str);
+		if(!success) Win32LogLastError("RemoveDirectoryA", io__crash_on_error, filepath.str);
+	}else{
+		BOOL success = DeleteFileA(filepath.str);
+		if(!success) Win32LogLastError("DeleteFile", io__crash_on_error, filepath.str);
 	}
 	FindClose(next);
 }
 
 b32
-file_exists(const char* filepath) {
-	if (filepath == 0) return false;
+file_exists(const char* _filepath){
+	if(_filepath == 0) return false;
+	if(_filepath[0] == '\0') return false;
+	
+	string filepath(_filepath, deshi_temp_allocator);
+	if(filepath[filepath.count-1] == '/' || filepath[filepath.count-1] == '\\'){
+		filepath[filepath.count-1] = '\0';
+		filepath.count--;
+	}
+	
 	WIN32_FIND_DATAA data;
-	HANDLE handle = FindFirstFileA(filepath, &data);
-	if (handle != INVALID_HANDLE_VALUE) {
+	HANDLE handle = FindFirstFileA(filepath.str, &data);
+	if(handle != INVALID_HANDLE_VALUE){
 		FindClose(handle);
 		return true;
 	}
@@ -916,19 +931,36 @@ file_exists(const char* filepath) {
 }
 
 void
-rename_file(const char* old_filepath, const char* new_filepath) {
-	BOOL success = MoveFileA(old_filepath, new_filepath);
-	if (!success) Win32LogLastError("MoveFileA", io__crash_on_error);
+rename_file(const char* old_filepath, const char* new_filepath){
+	if(old_filepath == 0) return;
+	if(old_filepath[0] == '\0') return;
+	
+	string filepath(old_filepath, deshi_temp_allocator);
+	if(filepath[filepath.count-1] == '/' || filepath[filepath.count-1] == '\\'){
+		filepath[filepath.count-1] = '\0';
+		filepath.count--;
+	}
+	
+	BOOL success = MoveFileA(filepath.str, new_filepath);
+	if(!success) Win32LogLastError("MoveFileA", io__crash_on_error, filepath.str);
 }
 
 cstring
 absolute_path(const char* relative_path){
+	if(relative_path == 0) return cstring{};
+	if(relative_path[0] == '\0') return cstring{};
+	
+	string filepath(relative_path, deshi_temp_allocator);
+	if(filepath[filepath.count-1] == '/' || filepath[filepath.count-1] == '\\'){
+		filepath[filepath.count-1] = '\0';
+		filepath.count--;
+	}
+	
 	cstring result{};
 	result.str   = (char*)memory_talloc(MAX_PATH*sizeof(char));
-	result.count = (upt)GetFullPathNameA(relative_path, MAX_PATH, result.str, 0);
+	result.count = (upt)GetFullPathNameA(filepath.str, MAX_PATH, result.str, 0);
 	if(!result.count){
-		Win32LogLastError("GetFullPathNameA", io__crash_on_error);
-		LogaE("io-win32", "'$' is not a valid filepath.", relative_path);
+		Win32LogLastError("GetFullPathNameA", io__crash_on_error, filepath.str);
 		return cstring{};
 	}
 	return result;
@@ -937,6 +969,8 @@ absolute_path(const char* relative_path){
 File*
 file_info(const char* _filepath){
 	if(_filepath == 0) return 0;
+	if(_filepath[0] == '\0') return 0;
+	
 	string filepath(_filepath, deshi_temp_allocator);
 	if(filepath[filepath.count-1] == '/' || filepath[filepath.count-1] == '\\'){
 		filepath[filepath.count-1] = '\0';
@@ -947,8 +981,7 @@ file_info(const char* _filepath){
 	HANDLE next = FindFirstFileA(filepath.str, &data);
 	defer{ FindClose(next); };
 	if(next == INVALID_HANDLE_VALUE){
-		Win32LogLastError("FindFirstFileA", io__crash_on_error);
-		LogaE("io-win32", "'$' is not a valid filepath.", filepath);
+		Win32LogLastError("FindFirstFileA", io__crash_on_error, filepath.str);
 		return 0;
 	}
 	
