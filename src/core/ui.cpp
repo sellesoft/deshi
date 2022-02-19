@@ -657,7 +657,7 @@ FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {DPZoneScoped;
 
 //helper for making any new UIItem, since now we must work with item pointers internally
 //this function also decides if we are working with a new item or continuing to work on a previous
-inline UIItem* BeginItem(UIItemType type, u32& userflags = 0, u32 layeroffset = 0) {DPZoneScoped;
+inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0) {DPZoneScoped;
 	
 	if (type == UIItemType_PreItems) {
 		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
