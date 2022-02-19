@@ -656,6 +656,9 @@ namespace UI {
 	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
 	FORCE_INLINE vec2 CalcTextSize(const wchar* text)   { return CalcTextSize(wcstring{(wchar*)text,u64(wcslen(text)) }); }
+	//calculates where a char in a string will appear relative to the topleft corner of the text item it places
+	//TODO overloads for text whose size is already calculated. maybe make a struct that allows application caching of text with information useful to ui about it
+	vec2 CalcCharPosition(cstring text, u64 idx);
 	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
 	UIStyle&  GetStyle();
 	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)

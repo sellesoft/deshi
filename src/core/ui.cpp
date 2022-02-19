@@ -313,6 +313,29 @@ vec2 UI::CalcTextSize(wcstring text) {DPZoneScoped;
 	return result;
 }
 
+vec2 UI::CalcCharPosition(cstring text, u64 idx){
+	vec2 pos;
+	forI(idx){
+		switch (style.font->type) {
+			case FontType_BDF: case FontType_NONE: {
+				pos.x += style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
+			}break;
+			case FontType_TTF: {
+				pos.x += style.font->GetPackedChar(text[i])->xadvance * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
+
+		if(text[i]=='\n'){
+			pos.x=0;
+			pos.y+=style.fontHeight;
+		}
+	}
+	
+
+	return pos;
+}
+
 inline b32 isItemHovered(UIItem* item) {DPZoneScoped;
 	return Math::PointInRectangle(DeshInput->mousePos, item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
@@ -1455,35 +1478,37 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
 	
-	if (!nowrap) {
-		string text = in;
+	string text = in;
 		
-		//we split string by newlines and put them into here 
-		//maybe make this into its own function
-		array<string> newlined;
-		
-		u32 newline = text.findFirstChar('\n');
-		if (newline != npos && newline != text.count - 1) {
-			string remainder = text.substr(newline + 1);
-			newlined.add(text.substr(0, newline - 1));
-			newline = remainder.findFirstChar('\n');
-			while (newline != npos) {
-				if (!newline) {
-					newlined.add("");
-					remainder.erase(0);
-					newline = remainder.findFirstChar('\n');
-				}
-				else {
-					newlined.add(remainder.substr(0, newline - 1));
-					remainder = remainder.substr(newline + 1);
-					newline = remainder.findFirstChar('\n');
-				}
+	//we split string by newlines and put them into here 
+	//maybe make this into its own function
+	array<string> newlined;
+	
+	u32 newline = text.findFirstChar('\n');
+	if (newline != npos && newline != text.count - 1) {
+		string remainder = text.substr(newline + 1);
+		newlined.add(text.substr(0, newline - 1));
+		newline = remainder.findFirstChar('\n');
+		while (newline != npos) {
+			if (!newline) {
+				newlined.add("");
+				remainder.erase(0);
+				newline = remainder.findFirstChar('\n');
 			}
-			newlined.add(remainder);
+			else {
+				newlined.add(remainder.substr(0, newline - 1));
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.findFirstChar('\n');
+			}
 		}
-		else {
-			newlined.add(text);
-		}
+		newlined.add(remainder);
+	}
+	else {
+		newlined.add(text);
+	}
+
+	if (!nowrap) {
+		
 		vec2 workcur = vec2{ 0,0 };
 		
 		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
@@ -1595,8 +1620,10 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		else                      item->size = UI::CalcTextSize(in);
 		
 		NextItemSize = vec2{ -1, 0 };
-		
-		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		int i = 0;
+		for(string& s : newlined){
+			TextCall(s.str, vec2{ 0,i++*style.fontHeight + style.itemSpacing.y}, style.colors[UIStyleCol_Text], item);
+		}
 	}
 	
 	AdvanceCursor(item, move_cursor);

@@ -1698,6 +1698,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
 	
 	//current ranges:
+	// Control             0 - 31   ~  31 chars
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
 	// Cyrillic         1024 - 1279 ~ 256 chars
@@ -1709,16 +1710,17 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	// and maybe more to come eventually.
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
+	u32 num_ranges = 8;
+	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(num_ranges*sizeof(*ranges));
 	
-	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(7*sizeof(*ranges));
-	
-	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
-	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
-	ranges[2].num_chars = 255;  ranges[2].first_unicode_codepoint_in_range = 1024;
-	ranges[3].num_chars = 44;   ranges[3].first_unicode_codepoint_in_range = 8304;
-	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
-	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
-	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
+	ranges[0].num_chars = 31;   ranges[0].first_unicode_codepoint_in_range = 0;
+	ranges[1].num_chars = 94;   ranges[1].first_unicode_codepoint_in_range = 32;
+	ranges[2].num_chars = 143;  ranges[2].first_unicode_codepoint_in_range = 880;
+	ranges[3].num_chars = 255;  ranges[3].first_unicode_codepoint_in_range = 1024;
+	ranges[4].num_chars = 44;   ranges[4].first_unicode_codepoint_in_range = 8304;
+	ranges[5].num_chars = 32;   ranges[5].first_unicode_codepoint_in_range = 8352;
+	ranges[6].num_chars = 111;  ranges[6].first_unicode_codepoint_in_range = 8592;
+	ranges[7].num_chars = 255;  ranges[7].first_unicode_codepoint_in_range = 8704;
 	
 	ranges[0].font_size = (f32)size; 
 	ranges[1].font_size = (f32)size; 
@@ -1727,6 +1729,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	ranges[4].font_size = (f32)size; 
 	ranges[5].font_size = (f32)size; 
 	ranges[6].font_size = (f32)size;
+	ranges[7].font_size = (f32)size;
 	
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
@@ -1735,10 +1738,11 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
 	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
+	ranges[7].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[7].num_chars*sizeof(stbtt_packedchar));
 	
 	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(*pc));
 	
-	font->num_ranges = 6;
+	font->num_ranges = num_ranges;
 	font->ttf_pack_ranges = (pack_range*)ranges;
 	font->ttf_pack_context = pc;
 	
@@ -1754,6 +1758,8 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	
 	font->max_height = size;
 	font->max_width = u32(f32(widthmax) / f32(heightmax) * size);
+	u32 count = 0;
+	forI(num_ranges) font->count += ranges[i].num_chars;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 
