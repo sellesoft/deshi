@@ -1,6 +1,3 @@
-local b32   io_crash_on_error = false;
-local Arena file_data_arena;
-
 FileReader init_reader(char* data, u32 datasize) {
 	FileReader fr;
 	fr.raw.str = data;

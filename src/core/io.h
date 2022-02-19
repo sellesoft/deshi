@@ -24,11 +24,11 @@ struct File{
 	FileAccessFlags flags;
 	
 	u32 path_length  = 0;
-	u32 name_length  = 0;
-	u32 short_length = 0;
-	u32 ext_length   = 0;
-	char path[MAX_FILEPATH_SIZE] = {};
-	char name[MAX_FILENAME_SIZE] = {};
+	u32 name_length  = 0; //filename, dot, and extension
+	u32 short_length = 0; //filename without extension and dot
+	u32 ext_length   = 0; //extension length (without the dot)
+	char path[MAX_FILEPATH_SIZE] = {}; //C:/directory/filename.ext
+	char name[MAX_FILENAME_SIZE] = {}; //filename.ext
 };
 
 FORCE_INLINE cstring get_file_name(const File& file)      { return cstring{ (char*)file.name, file.name_length }; }
@@ -67,9 +67,12 @@ void       goto_char(FileReader& reader, u32 charnum);
 void       goto_line(FileReader& reader, u32 linenum);
 void       reset_reader(FileReader& reader);
 
+//opens a file if it already exists or creates a new one if it doesnt
+//this does not load any data, you must use FileReader to do that!
 File open_file(const char* path, FileAccessFlags flags);
 
 //returns a temporary array of the files in the target directory
+//TODO return carray instead of array
 array<File> get_directory_files(const char* directory);
 FORCE_INLINE array<File> get_directory_files(cstring directory){ return get_directory_files(directory.str); }
 FORCE_INLINE array<File> get_directory_files(File* directory){ return (directory->is_directory) ? get_directory_files(directory->path) : array<File>();}
