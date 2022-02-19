@@ -807,6 +807,8 @@ namespace UI {
 	//// text ////
 	
 	//wraps by default
+	void Text(const cstring& text, UITextFlags flags = 0);
+	void Text(const cstring& text, vec2 pos, UITextFlags flags = 0);
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const wchar* text, UITextFlags flags = 0);

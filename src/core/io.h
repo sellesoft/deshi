@@ -14,6 +14,7 @@ enum FileAccessFlags_ {
 
 #define MAX_FILEPATH_SIZE 1024
 #define MAX_FILENAME_SIZE 256
+//TODO maybe implement a callback function feature that allows defining a function to call when a file has been changed externally
 struct File{
 	void* handle = 0;
 	u64 time_creation = 0;
@@ -72,6 +73,8 @@ struct FileReader{
 FileReader init_reader(const File& file);
 //initializes a new FileReader from locally allocated data. read starts at the beginning of the data
 FileReader init_reader(char* data, u32 datasize);
+//instructs a reader to refresh it's file's contents
+void       reread_file(FileReader& reader);
 //moves read to the next character and sets it's size to 1
 b32        next_char(FileReader& reader);
 //moves read to the beginning of the next line and sets it's size to the length of it
@@ -101,6 +104,7 @@ void       reset_reader(FileReader& reader);
 //opens a file if it already exists or creates a new one if it doesnt
 //this does not load any data, you must use FileReader to do that!
 File open_file(const char* path, FileAccessFlags flags);
+
 
 //returns a temporary array of the files in the target directory
 //TODO return carray instead of array

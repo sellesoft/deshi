@@ -1464,9 +1464,9 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {DPZo
 
 
 //internal function for actually making and adding the drawCmd
-local void TextCall(char* text, vec2 pos, color color, UIItem* item) {DPZoneScoped;
+local void TextCall(const cstring& text, vec2 pos, color color, UIItem* item) {DPZoneScoped;
 	UIDrawCmd drawCmd;
-	MakeText(drawCmd, cstring{ text, strlen(text) }, pos, color, GetTextScale());
+	MakeText(drawCmd, text, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
 
@@ -1479,39 +1479,37 @@ local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {DPZoneSco
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
-local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
+local void TextW(const cstring& in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
 	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
-	
-	string text = in;
 		
 	//we split string by newlines and put them into here 
 	//maybe make this into its own function
-	array<string> newlined;
+	array<cstring> newlined;
 	
-	u32 newline = text.findFirstChar('\n');
-	if (newline != npos && newline != text.count - 1) {
-		string remainder = text.substr(newline + 1);
-		newlined.add(text.substr(0, newline - 1));
-		newline = remainder.findFirstChar('\n');
+	u32 newline = find_first_char(in, '\n');
+	if (newline != npos && newline != in.count - 1) {
+		cstring remainder = substr(in, newline + 1);
+		newlined.add(substr(in, 0, newline - 1));
+		newline = find_first_char(remainder, '\n');
 		while (newline != npos) {
 			if (!newline) {
-				newlined.add("");
-				remainder.erase(0);
-				newline = remainder.findFirstChar('\n');
+				newlined.add(cstr_lit(""));
+				advance(&remainder);
+				newline = find_first_char(remainder, '\n');
 			}
 			else {
-				newlined.add(remainder.substr(0, newline - 1));
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
+				newlined.add(substr(remainder, 0, newline - 1));
+				remainder = substr(remainder, newline + 1);
+				newline = find_first_char(remainder, '\n');
 			}
 		}
 		newlined.add(remainder);
 	}
 	else {
-		newlined.add(text);
+		newlined.add(in);
 	}
 
 	if (!nowrap) {
@@ -1528,20 +1526,20 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 				f32 maxw = MarginedRight() - item->position.x;
 				f32 currlinew = 0;
 				
-				for (string& t : newlined) {
+				for (cstring& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
 						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
 						
 						if (currlinew >= maxw) {
 							
 							//find closest space to split by, if none we just split the word
-							u32 lastspc = t.findLastChar(' ', i);
-							string nustr = t.substr(0, (lastspc == npos) ? i - 1 : lastspc);
-							TextCall(nustr.str, workcur, color, item);
+							u32 lastspc = find_last_char(t, ' ', i);
+							cstring nustr = substr(t, 0, (lastspc == npos) ? i - 1 : lastspc);
+							TextCall(nustr, workcur, color, item);
 							
 							if (nustr.count == t.count) continue;
 							
-							t = t.substr(nustr.count);
+							t = substr(t, nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							item->size.x = Max(item->size.x, currlinew);
 							
@@ -1551,7 +1549,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 					}
 					//place last bit of text that didn't need wrapped
 					if (currlinew) {
-						TextCall(t.str, workcur, color, item);
+						TextCall(t, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
 					
@@ -1566,41 +1564,41 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 				if (!maxChars) maxChars++;
 				
 				//wrap each string in newline array
-				for (string& t : newlined) {
+				for (cstring& t : newlined) {
 					//we need to see if the string goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
 						item->size.x = Max(item->size.x, maxChars * (f32)style.font->max_width);
 						
 						//find closest space to split by
-						u32 splitat = t.findLastChar(' ', maxChars);
-						string nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
-						TextCall(nustr.str, workcur, color, item);
+						u32 splitat = find_last_char(t, ' ', maxChars);
+						cstring nustr = substr(t, 0, (splitat == npos) ? maxChars - 1 : splitat);
+						TextCall(nustr, workcur, color, item);
 						
 						if (nustr.count == t.count) continue;
 						
-						t = t.substr(nustr.count);
+						t = substr(t, nustr.count);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 						
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
-							splitat = t.findLastChar(' ', maxChars);
-							nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
-							TextCall(nustr.str, workcur, color, item);
+							splitat = find_last_char(t, ' ', maxChars);
+							nustr = substr(t, 0, (splitat == npos) ? maxChars - 1 : splitat);
+							TextCall(nustr, workcur, color, item);
 							
 							if (nustr.count == t.count) break;
 							
-							t = t.substr(nustr.count);
+							t = substr(t, nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							
 							if (!strlen(t.str)) break;
 						}
 						//write last bit of text
-						TextCall(t.str, workcur, color, item);
+						TextCall(t, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
 					else {
-						TextCall(t.str, workcur, color, item);
+						TextCall(t, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 						item->size.x = Max(item->size.x, t.count * (f32)style.font->max_width);
 					}
@@ -1628,8 +1626,8 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		
 		NextItemSize = vec2{ -1, 0 };
 		int i = 0;
-		for(string& s : newlined){
-			TextCall(s.str, vec2{ 0,i++*style.fontHeight + style.itemSpacing.y}, style.colors[UIStyleCol_Text], item);
+		for(cstring& s : newlined){
+			TextCall(s, vec2{ 0,i++*style.fontHeight + style.itemSpacing.y}, style.colors[UIStyleCol_Text], item);
 		}
 	}
 	
@@ -1637,7 +1635,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 }
 
 //second function for wrapping, using unicode
-//these can probably be merged into one but i dont feel like doing that rn
+//TODO merge these functions as the separation causes changes made to the ascii version to never be applied to the unicode version, causing bugs later
 local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
 	
 	using namespace UI;
@@ -1782,20 +1780,30 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 		
 		NextItemSize = vec2{ -1, 0 };
 		
-		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		TextCall((wchar*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 	}
 	
 	AdvanceCursor(item, move_cursor);
 }
 
-void UI::Text(const char* text, UITextFlags flags) {DPZoneScoped;
+void UI::Text(const cstring& text, UITextFlags flags){
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
+void UI::Text(const cstring& text, vec2 pos, UITextFlags flags){
+	GetDefaultItemFlags(UIItemType_Text, flags);
+	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
+}
+
+void UI::Text(const char* text, UITextFlags flags) {DPZoneScoped;
+	GetDefaultItemFlags(UIItemType_Text, flags);
+	TextW(cstring{(char*)text,strlen(text)}, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
+}
+
 void UI::Text(const char* text, vec2 pos, UITextFlags flags) {DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_Text, flags);
-	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
+	TextW(cstring{(char*)text,strlen(text)}, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
 void UI::Text(const wchar* text, UITextFlags flags){DPZoneScoped;
@@ -1818,7 +1826,7 @@ void UI::TextF(const char* fmt, ...) {DPZoneScoped;
 	s.space = s.count+1;
 	vsnprintf(s.str, s.count+1, fmt, argptr);
 	va_end(argptr);
-	TextW(s.str, PositionForNewItem(), style.colors[UIStyleCol_Text], false);
+	TextW(cstring{s.str, s.count}, PositionForNewItem(), style.colors[UIStyleCol_Text], false);
 }
 
 //@Button
