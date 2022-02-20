@@ -104,6 +104,7 @@ enum UIStateFlags_ {
 	UISNextItemSizeSet        = 1 << 6,
 	UISNextItemActive         = 1 << 7,
 	UISNextItemMinSizeIgnored = 1 << 8,
+	UISContinuingWindow       = 1 << 9,
 }; typedef u32 UIStateFlags;
 
 //global ui input state
@@ -487,16 +488,16 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
 			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x - rightIndent;
-		else size.x = defaultSize.x;
+				size.x = MarginedRight() - itemPos.x - rightIndent;
+			else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
+				size.y = MarginedBottom() - itemPos.y;
+			else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
 		
 		if (NextItemSize.x == -2) size.x = size.y;
@@ -568,6 +569,15 @@ vec2 UI::GetWinCursor() {DPZoneScoped;
 u32 UI::GetCenterLayer() {DPZoneScoped;
 	return UI_CENTER_LAYER;
 }
+
+u32 UI::GetCurrentLayer(){DPZoneScoped;
+	return currlayer;
+}
+
+u32 UI::GetTopMostLayer(){DPZoneScoped;
+	return UI_LAYERS;
+}
+
 
 f32 UI::GetBorderedRight()                {DPZoneScoped; return BorderedRight(); }
 f32 UI::GetBorderedLeft()                 {DPZoneScoped; return BorderedLeft(); }
@@ -1376,7 +1386,7 @@ b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32
 			TIMER_RESET(throttle);
 		}
 	}
-	return false;
+	return DeshInput->charCount;
 }
 
 
@@ -2499,7 +2509,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 			callback(&data);
 		}
 		
-		
+		//actual text input behavoir occurs here ---------------------------------------------------------
 		if (TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
 			bufferChanged = 1;
 			TIMER_RESET(state->timeSinceTyped);
@@ -2567,8 +2577,6 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	if (unicode) lineoffset = UI::CalcTextSize(wcstring{ (wchar*)buff, state->cursor }).x;
 	else lineoffset = UI::CalcTextSize(cstring{ (char*)buff, state->cursor }).x;
 	
-	
-	
 	if (active) {//cursor
 		UIDrawCmd drawCmd;
 		vec2  start = textStart +  vec2(lineoffset, 0);//vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
@@ -2584,7 +2592,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressed(Key::ENTER) || DeshInput->KeyPressed(Key::NUMPADENTER)) {
 		return true;
 	}
-	else if (flags & UIInputTextFlags_AnyChangeReturnsTrue && bufferChanged) {
+	else if ((flags & UIInputTextFlags_AnyChangeReturnsTrue) && bufferChanged) {
 		return true;
 	}
 	
@@ -3136,7 +3144,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 //begins a window with a name, position, and dimensions along with some optional flags
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
-TIMER_START(wincreate);
+TIMER_START(wincreate); //TODO move this onto the window and add to it when the user uses Continue
 void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWindowType type) {DPZoneScoped;
 	Assert(type != UIWindowType_Normal || !StateHasFlag(UISRowBegan), "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
 	TIMER_RESET(wincreate);
@@ -3184,12 +3192,12 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				if (NextWinSize.x != -1 || NextWinSize.y != 0) {
 					if (NextWinSize.x == MAX_F32)
 						item->size.x = MarginedRight() - item->position.x - rightIndent;
-					else if (NextWinSize.x == -1) {}
+					else if (NextWinSize.x == -1);
 					else item->size.x = NextWinSize.x;
 					
 					if (NextWinSize.y == MAX_F32)
 						item->size.y = MarginedBottom() - item->position.y;
-					else if (NextWinSize.y == -1) {}
+					else if (NextWinSize.y == -1);
 					else item->size.y = NextWinSize.y;
 				}
 				
@@ -3559,6 +3567,38 @@ void UI::EndPopOut() {DPZoneScoped;
 	EndCall();
 	PopLeftIndent();
 	PopRightIndent();
+}
+
+void UI::Continue(const char* name){
+	StateAddFlag(UISContinuingWindow);
+	array<cstring> chunks = chunkstr(name, '/');
+	if(chunks.count==1){
+		string name = chunks[0];
+		Assert(windows.has(name.str), "Tried to continue a non existant window, or a window that is a child without specifying it's parent first");
+		windowStack.add(curwin);
+		curwin=windows[name.str];
+	}else if(chunks.count){
+		string name = chunks[0];
+		Assert(windows.has(name.str), "Tried to continue a non existant window, or a window that is a child without specifying it's parent first");
+		UIWindow* next = windows[name.str];
+		forI(chunks.count-1){
+			name=chunks[i+1];
+			Assert(next->children.has(name.str), "Tried to continue a nonexistant window");
+			next=next->children[name.str];
+		}
+		windowStack.add(curwin);
+		curwin=next;
+	}
+	else{
+		Assert(0, "empty string passed, maybe?");
+	}
+}
+
+void UI::EndContinue(){
+	Assert(StateHasFlag(UISContinuingWindow), "attempted to end Continue without Continuing a window first");
+	StateRemoveFlag(UISContinuingWindow);
+	curwin = *windowStack.last;
+	windowStack.pop();
 }
 
 void UI::SetNextWindowPos(vec2 pos) {DPZoneScoped;

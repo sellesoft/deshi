@@ -183,6 +183,7 @@ ____maybe even removing certain labels from them
 [02/01/22,EASY,Tweak] remove commit/decommit from defines.h
 */
 
+#define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
 
 #include "kigu/common.h"
 #include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator

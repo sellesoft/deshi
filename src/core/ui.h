@@ -696,6 +696,8 @@ namespace UI {
 	//returns where ui will automatically place the next item.
 	vec2      GetWinCursor();
 	u32       GetCenterLayer();
+	u32       GetCurrentLayer();
+	u32       GetTopMostLayer();
 	//returns the x coordinate (in window space) of the right side of the window, taking into account the borders
 	f32       GetBorderedRight();
 	//returns the x coordinate (in window space) of the left side of the window, taking into account the borders 
@@ -738,7 +740,8 @@ namespace UI {
 	//after the next item is placed the cursor goes back to default placement behavoir, this means that it will return to the MarginedLeft part of the window, below the y level of the last placed item
 	//TODO better name than SetWinCursor that doesnt conflict with win32's SetCursor
 	void SetWinCursor(vec2 pos);
-	//dont know why this doesnt work void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
+	//dont know why this doesnt work 
+	//void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
 	
 	//manually set the cursor's X position
 	void SetWinCursorX(f32 x);
@@ -927,10 +930,16 @@ namespace UI {
 	void End();
 	void EndChild();
 	void EndPopOut();
+	//continues a given window. to access child windows use '/'
+	//for example: 
+	//parent/child
+	//parent/child/childofchild 
+	void Continue(const char* name);
+	void EndContinue();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(f32 x, f32 y);
-	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
-	void SetNextWindowSize(f32 x, f32 y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	void SetNextWindowSize(vec2 size);	 
+	void SetNextWindowSize(f32 x, f32 y);  
 	void SetWindowName(const char* name);
 	b32 IsWinHovered();
 	b32 AnyWinHovered();
