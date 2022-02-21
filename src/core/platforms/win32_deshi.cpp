@@ -767,6 +767,10 @@ FileReader init_reader(const File& file) {
 	return fr;
 }
 
+void end_reader(FileReader& reader){
+	memzfree(reader.raw.str);
+}
+
 
 File open_file(const char* path, FileAccessFlags flags){
 	Assert(flags, "attempt to open_file without specifing access flags");

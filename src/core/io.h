@@ -73,8 +73,8 @@ struct FileReader{
 FileReader init_reader(const File& file);
 //initializes a new FileReader from locally allocated data. read starts at the beginning of the data
 FileReader init_reader(char* data, u32 datasize);
-//instructs a reader to refresh it's file's contents
-void       reread_file(FileReader& reader);
+//ends the reader, freeing any allocated data
+void       end_reader(FileReader& reader);
 //moves read to the next character and sets it's size to 1
 b32        next_char(FileReader& reader);
 //moves read to the beginning of the next line and sets it's size to the length of it
@@ -102,10 +102,11 @@ void       goto_line(FileReader& reader, u32 linenum);
 void       reset_reader(FileReader& reader);
 
 //opens a file if it already exists or creates a new one if it doesnt
-//this does not load any data, you must use FileReader to do that!
+//this does not load any data, you must use FileReader or read_file to do that
 File open_file(const char* path, FileAccessFlags flags);
-
-
+//reads a file into a char buffer. this allocates a buffer for it and its the user's responsibility to free it
+//TODO decide if its necessary to implement this. for ex cases where you dont need to use a FileReader
+void read_file(const File& file, char* out);
 //returns a temporary array of the files in the target directory
 //TODO return carray instead of array
 array<File> get_directory_files(const char* directory);

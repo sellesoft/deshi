@@ -353,6 +353,11 @@ enum UIHeaderFlags_ {
 	UIHeaderFlags_NoBorder      = 1 << 2,
 }; typedef u32 UIHeaderFlags;
 
+struct UIHeader{
+	b32 open = false;
+	UIHeaderFlags flags;
+};
+
 enum UIMenuFlags_ {
 	UIMenuFlags_NONE                   = 0,
 	UIMenuFlags_AppearAtMouse          = 1 << 0, //makes the menu's initial position where the mouse is when called
