@@ -1780,8 +1780,9 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	
 	stbtt_PackEnd(pc);
 	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
-											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy,
+											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+											   TextureAddressMode_ClampToWhite, false, false).second;
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;
@@ -1793,6 +1794,19 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	return result;
 }
 
+pair<u32,Font*> Storage::
+CreateFontFromFile(const char* filename, u32 height){DPZoneScoped;
+	if(str_ends_with(filename, strlen(filename), ".bdf", 4)){
+		return CreateFontFromFileBDF(filename);
+	}
+	
+	if(str_ends_with(filename, strlen(filename), ".ttf", 4)){
+		return CreateFontFromFileTTF(filename, height);
+	}
+	
+	LogE("storage","Failed to load font with name ",filename);
+	return {};
+}
 
 void Storage::
 DeleteFont(Font* font){DPZoneScoped; //!Incomplete

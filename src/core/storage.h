@@ -103,15 +103,40 @@ namespace Storage{
 	///////////////
 	//// @font ////
 	///////////////
+	//returns index and pointer to the created `Font` object from a BDF file named `filename` with `height` in pixels from the `data/fonts` folder
 	pair<u32,Font*> CreateFontFromFileBDF(const char* filename);
+	FORCE_INLINE pair<u32,Font*> CreateFontFromFileBDF(cstring filename){ return CreateFontFromFileBDF(filename.str); }
+	FORCE_INLINE pair<u32,Font*> CreateFontFromFileBDF(const string& filename){ return CreateFontFromFileBDF(filename.str); }
+	
+	//returns index and pointer to the created `Font` object from a TTF file named `filename` with `height` in pixels from the `data/fonts` folder
 	pair<u32,Font*> CreateFontFromFileTTF(const char* filename, u32 height);
+	FORCE_INLINE pair<u32,Font*> CreateFontFromFileTTF(cstring filename, u32 height){ return CreateFontFromFileTTF(filename.str, height); }
+	FORCE_INLINE pair<u32,Font*> CreateFontFromFileTTF(const string& filename, u32 height){ return CreateFontFromFileTTF(filename.str, height); }
+	
+	//returns index and pointer to the created `Font` object from a TTF or BDF file named `filename` with `height` in pixels from the `data/fonts` folder
+	//NOTE loading a BDF font ignores the height variable
+	pair<u32,Font*> CreateFontFromFile(const char* filename, u32 height);
+	FORCE_INLINE pair<u32,Font*> CreateFontFromFile(cstring filename, u32 height){ return CreateFontFromFile(filename.str, height); }
+	FORCE_INLINE pair<u32,Font*> CreateFontFromFile(const string& filename, u32 height){ return CreateFontFromFile(filename.str, height); }
+	
+	//TODO implementation and description 
 	void            DeleteFont(Font* font);
 	
+	//returns a pointer to the `Font` object for `null_font` which is created when `Init()` is called
 	inline Font*    NullFont(){ return DeshStorage->null_font; };
+	
+	//returns the number of loaded `Font` objects in `Storage`
 	inline u32      FontCount(){ return DeshStorage->fonts.count; };
-	inline Font*    FontAt(u32 fontIdx){ return DeshStorage->fonts[fontIdx]; };
+	
+	//returns a pointer to the loaded `Font` object at `index` in `Storage`
+	inline Font*    FontAt(u32 index){ return DeshStorage->fonts[index]; };
+	
+	//returns the index of the loaded `Font` object at the `font` pointer in `Storage` if it exists; -1 if not
 	inline u32      FontIndex(Font* font){ forI(DeshStorage->fonts.count){ if(font == DeshStorage->fonts[i]) return i; } return -1; };
-	inline char*    FontName(u32 fontIdx){ return DeshStorage->fonts[fontIdx]->name; };
+	
+	//returns a `c-string` pointer name of the loaded `Font` object at `index` in `Storage`
+	//TODO change the return type to cstring
+	inline char*    FontName(u32 index){ return DeshStorage->fonts[index]->name; };
 };
 
 #endif //DESHI_STORAGE_H
