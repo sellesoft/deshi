@@ -41,10 +41,10 @@ void Storage::
 Init(){DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to load Storage without loading Memory first");
 	deshiStage |= DS_STORAGE;
-	
 	TIMER_START(t_s);
 	
 	stbi_set_flip_vertically_on_load(true);
+	
 	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
 	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", 64);
 	//DeshStorage->null_texture  = CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA),second;
@@ -62,9 +62,7 @@ Init(){DPZoneScoped;
 	NullFont()->count = 1;
 	cpystr(NullFont()->name,"null",64);
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
-	
-	
+	Texture* nf_tex = CreateTextureFromMemory(white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(nf_tex); //!Incomplete
 	
 	LogS("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
@@ -482,7 +480,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
@@ -532,11 +530,6 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 	}
 	
 	Render::LoadTexture(texture);
-	if(!keepLoaded){
-		memory_zfree(data);
-		data = 0;
-		texture->pixels = 0;
-	}
 	
 	result.first  = texture->idx;
 	result.second = texture;
@@ -583,7 +576,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 }
 
 pair<u32,Material*> Storage::
-CreateMaterialFromFile(const char* filename, b32 warnMissing){DPZoneScoped;
+CreateMaterialFromFile(const char* filename){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -1658,7 +1651,7 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 	}
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
-											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
+											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(texture);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
@@ -1782,7 +1775,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy,
 											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
-											   TextureAddressMode_ClampToWhite, false, false).second;
+											   TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;
@@ -1804,7 +1797,7 @@ CreateFontFromFile(const char* filename, u32 height){DPZoneScoped;
 		return CreateFontFromFileTTF(filename, height);
 	}
 	
-	LogE("storage","Failed to load font with name ",filename);
+	LogE("storage","Failed to load font with name '",filename,"'");
 	return {};
 }
 

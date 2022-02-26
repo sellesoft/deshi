@@ -126,6 +126,11 @@ runtime pipeline creation/specialization
 [12/18/21,EASY,Tweak] remove usage of STL
 [12/18/21,EASY,Tweak] replace allocator with temp_allocator in relevant places
 [01/04/22,EASY,Tweak] figure out how to use custom allocators with opengl3 and get opengl3 to use deshi memory
+[02/26/22,MEDI,Feature] add texture/material/mesh unloading
+[02/26/22,EASY,Feature] OpenGL debug groups
+[02/26/22,MEDI,Feature] OpenGL pipelines/materials
+[02/26/22,MEDI,Feature] OpenGL shadows (and test/fix Vulkan shadows)
+[02/26/22,HARD,Feature] OpenGL render/video settings
 
 `Sound`
 -------
@@ -145,6 +150,7 @@ alternatively, we can store those specific assets in the source control
 [10/20/21,MEDI,Feature] add MTL parsing
 [12/31/21,MEDI,Tweak] data streaming to prevent loading freeze
 [01/12/22,EASY,Feature] make an interface for updating textures that have already been created
+[02/26/22,MEDI,Feature] replace the arrays with arenas and remove item indexing
 
 `Time`
 ------
