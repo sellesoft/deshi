@@ -153,6 +153,11 @@ mag() const{
 	return sqrt(x * x + y * y);
 }
 
+inline f32 vec2::
+magSq() const{
+	return x*x + y*y;
+}
+
 inline void vec2::
 normalize() {
 	if (*this != vec2::ZERO) {
