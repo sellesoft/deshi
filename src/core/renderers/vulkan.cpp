@@ -144,7 +144,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_SURFACES 2
 
 //arbitray limits, change if needed
-#define MAX_TWOD_VERTICES  0xFFFFF //max u16: 65535
+#define MAX_TWOD_VERTICES  0xFFFF //max u16: 65535
 #define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
 #define MAX_TWOD_CMDS      1000
 #define TWOD_LAYERS        11
@@ -2900,6 +2900,12 @@ ResetCommands(){DPZoneScoped;
 			twodCmdArrays[active_swapchain][i][0].descriptorSet = textures[1].descriptorSet;
 			twodCmdCounts[active_swapchain][i] = 1;
 		}
+		//Log("vertex count", twodVertexCount);
+		//Log("index count", twodIndexCount);
+
+		twodVertexCount = 0;
+		twodIndexCount = 0;
+
 	}
 	
 	{//temp commands
@@ -3333,6 +3339,10 @@ u32  prevLayer = 0;
 
 void Check2DCmdArrays(u32& layer, Texture* tex, b32 textured, vec2& scissorOffset, vec2& scissorExtent){DPZoneScoped;
 	if (layer == -1) layer = prevLayer;
+	//DPTracyPlot("cmd count", s64(twodCmdCounts[active_swapchain][layer]));
+	//DPTracyPlot("vertex count", s64(twodVertexCount));
+	//DPTracyPlot("index count", s64(twodIndexCount));
+
 	if (scissorOffset == vec2::ONE * MAX_F32) scissorOffset = prevScissorOffset;
 	if (scissorExtent == vec2::ONE * MAX_F32) scissorExtent = prevScissorExtent;
 	if((twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer] - 1].textured != textured)
@@ -3348,6 +3358,9 @@ void Check2DCmdArrays(u32& layer, Texture* tex, b32 textured, vec2& scissorOffse
 		twodCmdArrays[active_swapchain][layer][twodCmdCounts[active_swapchain][layer]].scissorExtent = scissorExtent;
 		twodCmdCounts[active_swapchain][layer]++;
 	}
+	//Log("vertex",twodVertexCount);
+	//Log("index",twodIndexCount);
+
 	Assert(twodCmdCounts[active_swapchain][layer] <= MAX_TWOD_CMDS);
 	Assert(twodVertexCount <= MAX_TWOD_VERTICES);
 	Assert(twodIndexCount <= MAX_TWOD_INDICES);
@@ -4855,8 +4868,7 @@ Update(){DPZoneScoped;
 		SetupOffscreenRendering();
 		_remakeOffscreen = false;
 	}
-	twodVertexCount = 0;
-	twodIndexCount = 0;
+
 	active_swapchain = 0;
 	DeshTime->renderTime = TIMER_END(t_d);
 	
