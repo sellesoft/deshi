@@ -353,6 +353,11 @@ enum UIHeaderFlags_ {
 	UIHeaderFlags_NoBorder      = 1 << 2,
 }; typedef u32 UIHeaderFlags;
 
+struct UIHeader{
+	b32 open = false;
+	UIHeaderFlags flags;
+};
+
 enum UIMenuFlags_ {
 	UIMenuFlags_NONE                   = 0,
 	UIMenuFlags_AppearAtMouse          = 1 << 0, //makes the menu's initial position where the mouse is when called
@@ -676,6 +681,9 @@ namespace UI {
 	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
 	FORCE_INLINE vec2 CalcTextSize(const wchar* text)   { return CalcTextSize(wcstring{(wchar*)text,u64(wcslen(text)) }); }
+	//calculates where a char in a string will appear relative to the topleft corner of the text item it places
+	//TODO overloads for text whose size is already calculated. maybe make a struct that allows application caching of text with information useful to ui about it
+	vec2 CalcCharPosition(cstring text, u64 idx);
 	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
 	UIStyle&  GetStyle();
 	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)
@@ -693,6 +701,8 @@ namespace UI {
 	//returns where ui will automatically place the next item.
 	vec2      GetWinCursor();
 	u32       GetCenterLayer();
+	u32       GetCurrentLayer();
+	u32       GetTopMostLayer();
 	//returns the x coordinate (in window space) of the right side of the window, taking into account the borders
 	f32       GetBorderedRight();
 	//returns the x coordinate (in window space) of the left side of the window, taking into account the borders 
@@ -735,7 +745,8 @@ namespace UI {
 	//after the next item is placed the cursor goes back to default placement behavoir, this means that it will return to the MarginedLeft part of the window, below the y level of the last placed item
 	//TODO better name than SetWinCursor that doesnt conflict with win32's SetCursor
 	void SetWinCursor(vec2 pos);
-	//dont know why this doesnt work void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
+	//dont know why this doesnt work 
+	//void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
 	
 	//manually set the cursor's X position
 	void SetWinCursorX(f32 x);
@@ -804,6 +815,8 @@ namespace UI {
 	//// text ////
 	
 	//wraps by default
+	void Text(const cstring& text, UITextFlags flags = 0);
+	void Text(const cstring& text, vec2 pos, UITextFlags flags = 0);
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const wchar* text, UITextFlags flags = 0);
@@ -922,10 +935,16 @@ namespace UI {
 	void End();
 	void EndChild();
 	void EndPopOut();
+	//continues a given window. to access child windows use '/'
+	//for example: 
+	//parent/child
+	//parent/child/childofchild 
+	void Continue(const char* name);
+	void EndContinue();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(f32 x, f32 y);
-	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
-	void SetNextWindowSize(f32 x, f32 y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	void SetNextWindowSize(vec2 size);	 
+	void SetNextWindowSize(f32 x, f32 y);  
 	void SetWindowName(const char* name);
 	b32 IsWinHovered();
 	b32 AnyWinHovered();

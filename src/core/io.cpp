@@ -194,10 +194,9 @@ void chunk_line(FileReader& reader, u32 line, char begin_delimiter, char end_del
 	}
 }
 
-//void goto_line(FileReader& reader, u32 linenum) {
-//TODO goto_line
-//TODO maybe count lines on file load
-//}
+void goto_line(FileReader& reader, u32 linenum) {
+	reader.read = reader.lines[linenum];
+}
 
 void goto_char(FileReader& reader, u32 charnum) {
 	Assert(charnum < reader.file->bytes_size);

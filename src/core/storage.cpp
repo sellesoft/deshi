@@ -41,10 +41,10 @@ void Storage::
 Init(){DPZoneScoped;
 	AssertDS(DS_MEMORY, "Attempt to load Storage without loading Memory first");
 	deshiStage |= DS_STORAGE;
-	
 	TIMER_START(t_s);
 	
 	stbi_set_flip_vertically_on_load(true);
+	
 	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
 	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", 64);
 	//DeshStorage->null_texture  = CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA),second;
@@ -62,9 +62,7 @@ Init(){DPZoneScoped;
 	NullFont()->count = 1;
 	cpystr(NullFont()->name,"null",64);
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
-	
-	
+	Texture* nf_tex = CreateTextureFromMemory(white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(nf_tex); //!Incomplete
 	
 	LogS("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
@@ -482,7 +480,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
@@ -532,11 +530,6 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 	}
 	
 	Render::LoadTexture(texture);
-	if(!keepLoaded){
-		memory_zfree(data);
-		data = 0;
-		texture->pixels = 0;
-	}
 	
 	result.first  = texture->idx;
 	result.second = texture;
@@ -583,7 +576,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 }
 
 pair<u32,Material*> Storage::
-CreateMaterialFromFile(const char* filename, b32 warnMissing){DPZoneScoped;
+CreateMaterialFromFile(const char* filename){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -1658,7 +1651,7 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 	}
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
-											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
+											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(texture);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
@@ -1698,6 +1691,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
 	
 	//current ranges:
+	// Control             0 - 31   ~  31 chars
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
 	// Cyrillic         1024 - 1279 ~ 256 chars
@@ -1709,16 +1703,17 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	// and maybe more to come eventually.
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
+	u32 num_ranges = 8;
+	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(num_ranges*sizeof(*ranges));
 	
-	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(7*sizeof(*ranges));
-	
-	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
-	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
-	ranges[2].num_chars = 255;  ranges[2].first_unicode_codepoint_in_range = 1024;
-	ranges[3].num_chars = 44;   ranges[3].first_unicode_codepoint_in_range = 8304;
-	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
-	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
-	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
+	ranges[0].num_chars = 31;   ranges[0].first_unicode_codepoint_in_range = 0;
+	ranges[1].num_chars = 94;   ranges[1].first_unicode_codepoint_in_range = 32;
+	ranges[2].num_chars = 143;  ranges[2].first_unicode_codepoint_in_range = 880;
+	ranges[3].num_chars = 255;  ranges[3].first_unicode_codepoint_in_range = 1024;
+	ranges[4].num_chars = 44;   ranges[4].first_unicode_codepoint_in_range = 8304;
+	ranges[5].num_chars = 32;   ranges[5].first_unicode_codepoint_in_range = 8352;
+	ranges[6].num_chars = 111;  ranges[6].first_unicode_codepoint_in_range = 8592;
+	ranges[7].num_chars = 255;  ranges[7].first_unicode_codepoint_in_range = 8704;
 	
 	ranges[0].font_size = (f32)size; 
 	ranges[1].font_size = (f32)size; 
@@ -1727,6 +1722,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	ranges[4].font_size = (f32)size; 
 	ranges[5].font_size = (f32)size; 
 	ranges[6].font_size = (f32)size;
+	ranges[7].font_size = (f32)size;
 	
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
@@ -1735,10 +1731,11 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
 	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
+	ranges[7].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[7].num_chars*sizeof(stbtt_packedchar));
 	
 	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(*pc));
 	
-	font->num_ranges = 6;
+	font->num_ranges = num_ranges;
 	font->ttf_pack_ranges = (pack_range*)ranges;
 	font->ttf_pack_context = pc;
 	
@@ -1754,6 +1751,8 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	
 	font->max_height = size;
 	font->max_width = u32(f32(widthmax) / f32(heightmax) * size);
+	u32 count = 0;
+	forI(num_ranges) font->count += ranges[i].num_chars;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 
@@ -1774,8 +1773,9 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	
 	stbtt_PackEnd(pc);
 	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
-											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false, false).second;
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy,
+											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+											   TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;
@@ -1787,6 +1787,19 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	return result;
 }
 
+pair<u32,Font*> Storage::
+CreateFontFromFile(const char* filename, u32 height){DPZoneScoped;
+	if(str_ends_with(filename, strlen(filename), ".bdf", 4)){
+		return CreateFontFromFileBDF(filename);
+	}
+	
+	if(str_ends_with(filename, strlen(filename), ".ttf", 4)){
+		return CreateFontFromFileTTF(filename, height);
+	}
+	
+	LogE("storage","Failed to load font with name '",filename,"'");
+	return {};
+}
 
 void Storage::
 DeleteFont(Font* font){DPZoneScoped; //!Incomplete

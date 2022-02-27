@@ -67,15 +67,16 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
-local map<const char*, UIWindow*>        windows;   
+local map<const char*, UIWindow*>        windows;    //TODO convert this to actaully store the windows
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local map<const char*, UIHeader>         headers;     //stores known headers
 local map<const char*, UITabBar>         tabBars;     //stores known tab bars
 local map<const char*, UIMenu>           menus;       //stores known menus
 local map<const char*, UIRow>            rows;        //stores known Rows
 local map<const char*, b32>              combos;      //stores known combos and if they are open or not
 local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
-local map<const char*, b32>              headers;     //stores whether a header is open or not
 local array<UIWindow*>                   windowStack; 
+local array<UIHeader*>                   headerStack;
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
 local array<vec2>                        scaleStack;  //global scales
@@ -104,6 +105,7 @@ enum UIStateFlags_ {
 	UISNextItemSizeSet        = 1 << 6,
 	UISNextItemActive         = 1 << 7,
 	UISNextItemMinSizeIgnored = 1 << 8,
+	UISContinuingWindow       = 1 << 9,
 }; typedef u32 UIStateFlags;
 
 //global ui input state
@@ -129,8 +131,8 @@ local u32 currlayer = UI_CENTER_LAYER;
 local u32 winlayer  = UI_CENTER_LAYER;
 local u32 activeId  = -1; //the id of an active item eg. input text
 
-local UIRow*    row;    //row being worked with
-local UITabBar* tabBar; //tab bar being worked with
+local UIRow*    curRow;    //row being worked with
+local UITabBar* curTabBar; //tab bar being worked with
 
 local vec2 NextWinSize   = vec2(-1, 0);
 local vec2 NextWinPos    = vec2(-1, 0);
@@ -314,6 +316,29 @@ vec2 UI::CalcTextSize(wcstring text) {DPZoneScoped;
 	return result;
 }
 
+vec2 UI::CalcCharPosition(cstring text, u64 idx){
+	vec2 pos;
+	forI(idx){
+		switch (style.font->type) {
+			case FontType_BDF: case FontType_NONE: {
+				pos.x += style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
+			}break;
+			case FontType_TTF: {
+				pos.x += style.font->GetPackedChar(text[i])->xadvance * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
+
+		if(text[i]=='\n'){
+			pos.x=0;
+			pos.y+=style.fontHeight;
+		}
+	}
+	
+
+	return pos;
+}
+
 inline b32 isItemHovered(UIItem* item) {DPZoneScoped;
 	return Math::PointInRectangle(DeshInput->mousePos, item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
@@ -324,6 +349,12 @@ inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {DPZoneScoped;
 
 inline b32 isItemActive(UIItem* item) {DPZoneScoped;
 	return WinHovered(curwin) && CanTakeInput && isItemHovered(item);
+}
+
+inline u32 delimitLabel(const char* label){
+	u32 len = strlen(label);
+	u32 idx = find_first_string(label, len, "##", 2);
+	return (idx==npos?len:idx);
 }
 
 //internal master cursor controller
@@ -340,12 +371,12 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {DPZoneScoped;
 	if (StateHasFlag(UISRowBegan)) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
-			UIColumn& col = row->columns[row->item_count % row->columns.count];
-			row->item_count++;
+			UIColumn& col = curRow->columns[curRow->item_count % curRow->columns.count];
+			curRow->item_count++;
 			
 			col.items.add(itemmade);
 			
-			f32 height = row->height;
+			f32 height = curRow->height;
 			f32 width;
 			//determine if the width is relative to the size of the item or not
 			if (col.relative_width)
@@ -359,18 +390,18 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {DPZoneScoped;
 			else
 				align = itemmade->style.rowItemAlign;
 			
-			itemmade->position.y = row->position.y + (height - itemmade->size.y) * align.y + row->yoffset;
-			itemmade->position.x = row->position.x + row->xoffset + (width - itemmade->size.x) * align.x;
+			itemmade->position.y = curRow->position.y + (height - itemmade->size.y) * align.y + curRow->yoffset;
+			itemmade->position.x = curRow->position.x + curRow->xoffset + (width - itemmade->size.x) * align.x;
 			
-			row->xoffset += width;
+			curRow->xoffset += width;
 			if (col.max_width < itemmade->size.x) { col.reeval_width = true; col.max_width = itemmade->size.x; }
-			if (row->max_height < itemmade->size.y) { row->reeval_height = true; row->max_height = itemmade->size.y; }
-			row->max_height_frame = Max(row->max_height_frame, itemmade->size.y);
+			if (curRow->max_height < itemmade->size.y) { curRow->reeval_height = true; curRow->max_height = itemmade->size.y; }
+			curRow->max_height_frame = Max(curRow->max_height_frame, itemmade->size.y);
 			
 			//if we have finished a row, set xoffset to 0 and offset y for another row
-			if (row->item_count % row->columns.count == 0) {
-				row->xoffset = 0;
-				row->yoffset += row->height;
+			if (curRow->item_count % curRow->columns.count == 0) {
+				curRow->xoffset = 0;
+				curRow->yoffset += curRow->height;
 			}
 			
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
@@ -464,16 +495,16 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
 			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x - rightIndent;
-		else size.x = defaultSize.x;
+				size.x = MarginedRight() - itemPos.x - rightIndent;
+			else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
+				size.y = MarginedBottom() - itemPos.y;
+			else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
 		
 		if (NextItemSize.x == -2) size.x = size.y;
@@ -545,6 +576,15 @@ vec2 UI::GetWinCursor() {DPZoneScoped;
 u32 UI::GetCenterLayer() {DPZoneScoped;
 	return UI_CENTER_LAYER;
 }
+
+u32 UI::GetCurrentLayer(){DPZoneScoped;
+	return currlayer;
+}
+
+u32 UI::GetTopMostLayer(){DPZoneScoped;
+	return UI_LAYERS;
+}
+
 
 f32 UI::GetBorderedRight()                {DPZoneScoped; return BorderedRight(); }
 f32 UI::GetBorderedLeft()                 {DPZoneScoped; return BorderedLeft(); }
@@ -1166,67 +1206,67 @@ void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flag
 	Assert(!StateHasFlag(UISRowBegan), "Attempted to start a new Row without finishing one already in progress!");
 	if (!rows.has(label)) { 
 		rows.add(label); 
-		row = rows.at(label);
-		row->columns.resize(columns);
-		row->flags = flags;
-		row->height = rowHeight;
-		row->label = label;
-		forI(columns) row->columns[i] = { 0.f,false };
+		curRow = rows.at(label);
+		curRow->columns.resize(columns);
+		curRow->flags = flags;
+		curRow->height = rowHeight;
+		curRow->label = label;
+		forI(columns) curRow->columns[i] = { 0.f,false };
 	}
 	
 	
-	row = rows.at(label);
-	row->position = PositionForNewItem();
-	row->yoffset = 0;
-	row->xoffset = 0;
+	curRow = rows.at(label);
+	curRow->position = PositionForNewItem();
+	curRow->yoffset = 0;
+	curRow->xoffset = 0;
 	StateAddFlag(UISRowBegan);
 }
 
 void UI::EndRow() {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to a end a row without calling BeginRow() first!");
-	Assert(row->item_count % row->columns.count == 0, "Attempted to end a Row without giving the correct amount of items!");
+	Assert(curRow->item_count % curRow->columns.count == 0, "Attempted to end a Row without giving the correct amount of items!");
 	
-	if (HasFlag(row->flags, UIRowFlags_AutoSize)) {
-		if (row->reeval_height) row->height = row->max_height;
-		for (UIColumn& col : row->columns)
+	if (HasFlag(curRow->flags, UIRowFlags_AutoSize)) {
+		if (curRow->reeval_height) curRow->height = curRow->max_height;
+		for (UIColumn& col : curRow->columns)
 			if (col.reeval_width) col.width = col.max_width;
 		
-		if (row->max_height_frame < row->max_height) row->max_height = row->max_height_frame;
+		if (curRow->max_height_frame < curRow->max_height) curRow->max_height = curRow->max_height_frame;
 		
 	}
 	
-	if (HasFlag(row->flags, UIRowFlags_FitWidthOfArea)) {
+	if (HasFlag(curRow->flags, UIRowFlags_FitWidthOfArea)) {
 		//TODO set up Row fitting relative to given edges
 	}
 	
-	row->max_height_frame = 0;
-	curwin->cursor = vec2{ 0, row->position.y + row->yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+	curRow->max_height_frame = 0;
+	curwin->cursor = vec2{ 0, curRow->position.y + curRow->yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
 	StateRemoveFlag(UISRowBegan);
 }
 
 //this function sets up a static column width for a specified column that does not respect the size of the object
 void UI::RowSetupColumnWidth(u32 column, f32 width) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
-	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
-		row->columns[column] = { width, false };
+	Assert(column <= curRow->columns.count, "Attempted to set a column who doesn't exists width!");
+	if(!HasFlag(curRow->flags, UIRowFlags_AutoSize))
+		curRow->columns[column] = { width, false };
 }
 
 //this function sets up static column widths that do not respect the size of the item at all
 void UI::RowSetupColumnWidths(array<f32> widths) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
-	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
-		forI(row->columns.count)
-		row->columns[i] = { widths[i], false };
+	Assert(widths.count == curRow->columns.count, "Passed in the wrong amount of column widths for in progress Row");
+	if(!HasFlag(curRow->flags, UIRowFlags_AutoSize))
+		forI(curRow->columns.count)
+		curRow->columns[i] = { widths[i], false };
 }
 
 //see the function below for what this does
 void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to set a column's width with no Row in progress!");
-	Assert(column <= row->columns.count, "Attempted to set a column who doesn't exists width!");
-	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
-		row->columns[column] = { width, true };
+	Assert(column <= curRow->columns.count, "Attempted to set a column who doesn't exists width!");
+	if(!HasFlag(curRow->flags, UIRowFlags_AutoSize))
+		curRow->columns[column] = { width, true };
 }
 
 //this function sets it so that column widths are relative to the size of the item the cell holds
@@ -1234,22 +1274,22 @@ void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {DPZoneScoped;
 //1.2 * width of the item
 void UI::RowSetupRelativeColumnWidths(array<f32> widths) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(widths.count == row->columns.count, "Passed in the wrong amount of column widths for in progress Row");
-	if(!HasFlag(row->flags, UIRowFlags_AutoSize))
-		forI(row->columns.count)
-		row->columns[i] = { widths[i], true };
+	Assert(widths.count == curRow->columns.count, "Passed in the wrong amount of column widths for in progress Row");
+	if(!HasFlag(curRow->flags, UIRowFlags_AutoSize))
+		forI(curRow->columns.count)
+		curRow->columns[i] = { widths[i], true };
 }
 
 void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(ratios.count == row->columns.count);
-	AddFlag(row->flags, UIRowFlags_FitWidthOfArea);
-	row->left_edge = left_edge;
-	row->right_edge = right_edge;
+	Assert(ratios.count == curRow->columns.count);
+	AddFlag(curRow->flags, UIRowFlags_FitWidthOfArea);
+	curRow->left_edge = left_edge;
+	curRow->right_edge = right_edge;
 	f32 ratio_sum = 0;
-	forI(row->columns.count) {
+	forI(curRow->columns.count) {
 		ratio_sum += ratios[i];
-		row->columns[i].width = ratios[i];
+		curRow->columns[i].width = ratios[i];
 	}
 	
 	Assert(1 - ratio_sum < 0.999998888f, "ratios given do not add up to one!");
@@ -1257,9 +1297,9 @@ void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {D
 
 void UI::RowSetupColumnAlignments(array<vec2> alignments) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
-	Assert(alignments.count == row->columns.count);
-	forI(row->columns.count)
-		row->columns[i].alignment = alignments[i];
+	Assert(alignments.count == curRow->columns.count);
+	forI(curRow->columns.count)
+		curRow->columns[i].alignment = alignments[i];
 }
 
 //@Behavoir functions
@@ -1353,7 +1393,7 @@ b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32
 			TIMER_RESET(throttle);
 		}
 	}
-	return false;
+	return DeshInput->charCount;
 }
 
 
@@ -1441,9 +1481,9 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {DPZo
 
 
 //internal function for actually making and adding the drawCmd
-local void TextCall(char* text, vec2 pos, color color, UIItem* item) {DPZoneScoped;
+local void TextCall(const cstring& text, vec2 pos, color color, UIItem* item) {DPZoneScoped;
 	UIDrawCmd drawCmd;
-	MakeText(drawCmd, cstring{ text, strlen(text) }, pos, color, GetTextScale());
+	MakeText(drawCmd, text, pos, color, GetTextScale());
 	AddDrawCmd(item, drawCmd);
 }
 
@@ -1456,41 +1496,41 @@ local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {DPZoneSco
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
-local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
+local void TextW(const cstring& in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
 	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
+		
+	//we split string by newlines and put them into here 
+	//maybe make this into its own function
+	array<cstring> newlined;
 	
-	if (!nowrap) {
-		string text = in;
-		
-		//we split string by newlines and put them into here 
-		//maybe make this into its own function
-		array<string> newlined;
-		
-		u32 newline = text.findFirstChar('\n');
-		if (newline != npos && newline != text.count - 1) {
-			string remainder = text.substr(newline + 1);
-			newlined.add(text.substr(0, newline - 1));
-			newline = remainder.findFirstChar('\n');
-			while (newline != npos) {
-				if (!newline) {
-					newlined.add("");
-					remainder.erase(0);
-					newline = remainder.findFirstChar('\n');
-				}
-				else {
-					newlined.add(remainder.substr(0, newline - 1));
-					remainder = remainder.substr(newline + 1);
-					newline = remainder.findFirstChar('\n');
-				}
+	u32 newline = find_first_char(in, '\n');
+	if (newline != npos && newline != in.count - 1) {
+		cstring remainder = substr(in, newline + 1);
+		newlined.add(substr(in, 0, newline - 1));
+		newline = find_first_char(remainder, '\n');
+		while (newline != npos) {
+			if (!newline) {
+				newlined.add(cstr_lit(""));
+				advance(&remainder);
+				newline = find_first_char(remainder, '\n');
 			}
-			newlined.add(remainder);
+			else {
+				newlined.add(substr(remainder, 0, newline - 1));
+				remainder = substr(remainder, newline + 1);
+				newline = find_first_char(remainder, '\n');
+			}
 		}
-		else {
-			newlined.add(text);
-		}
+		newlined.add(remainder);
+	}
+	else {
+		newlined.add(in);
+	}
+
+	if (!nowrap) {
+		
 		vec2 workcur = vec2{ 0,0 };
 		
 		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
@@ -1503,20 +1543,20 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 				f32 maxw = MarginedRight() - item->position.x;
 				f32 currlinew = 0;
 				
-				for (string& t : newlined) {
+				for (cstring& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
 						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
 						
 						if (currlinew >= maxw) {
 							
 							//find closest space to split by, if none we just split the word
-							u32 lastspc = t.findLastChar(' ', i);
-							string nustr = t.substr(0, (lastspc == npos) ? i - 1 : lastspc);
-							TextCall(nustr.str, workcur, color, item);
+							u32 lastspc = find_last_char(t, ' ', i);
+							cstring nustr = substr(t, 0, (lastspc == npos) ? i - 1 : lastspc);
+							TextCall(nustr, workcur, color, item);
 							
 							if (nustr.count == t.count) continue;
 							
-							t = t.substr(nustr.count);
+							t = substr(t, nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							item->size.x = Max(item->size.x, currlinew);
 							
@@ -1526,7 +1566,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 					}
 					//place last bit of text that didn't need wrapped
 					if (currlinew) {
-						TextCall(t.str, workcur, color, item);
+						TextCall(t, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
 					
@@ -1541,41 +1581,41 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 				if (!maxChars) maxChars++;
 				
 				//wrap each string in newline array
-				for (string& t : newlined) {
+				for (cstring& t : newlined) {
 					//we need to see if the string goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
 						item->size.x = Max(item->size.x, maxChars * (f32)style.font->max_width);
 						
 						//find closest space to split by
-						u32 splitat = t.findLastChar(' ', maxChars);
-						string nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
-						TextCall(nustr.str, workcur, color, item);
+						u32 splitat = find_last_char(t, ' ', maxChars);
+						cstring nustr = substr(t, 0, (splitat == npos) ? maxChars - 1 : splitat);
+						TextCall(nustr, workcur, color, item);
 						
 						if (nustr.count == t.count) continue;
 						
-						t = t.substr(nustr.count);
+						t = substr(t, nustr.count);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 						
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
-							splitat = t.findLastChar(' ', maxChars);
-							nustr = t.substr(0, (splitat == npos) ? maxChars - 1 : splitat);
-							TextCall(nustr.str, workcur, color, item);
+							splitat = find_last_char(t, ' ', maxChars);
+							nustr = substr(t, 0, (splitat == npos) ? maxChars - 1 : splitat);
+							TextCall(nustr, workcur, color, item);
 							
 							if (nustr.count == t.count) break;
 							
-							t = t.substr(nustr.count);
+							t = substr(t, nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							
 							if (!strlen(t.str)) break;
 						}
 						//write last bit of text
-						TextCall(t.str, workcur, color, item);
+						TextCall(t, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
 					else {
-						TextCall(t.str, workcur, color, item);
+						TextCall(t, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 						item->size.x = Max(item->size.x, t.count * (f32)style.font->max_width);
 					}
@@ -1602,15 +1642,17 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		else                      item->size = UI::CalcTextSize(in);
 		
 		NextItemSize = vec2{ -1, 0 };
-		
-		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		int i = 0;
+		for(cstring& s : newlined){
+			TextCall(s, vec2{ 0,i++*style.fontHeight + style.itemSpacing.y}, style.colors[UIStyleCol_Text], item);
+		}
 	}
 	
 	AdvanceCursor(item, move_cursor);
 }
 
 //second function for wrapping, using unicode
-//these can probably be merged into one but i dont feel like doing that rn
+//TODO merge these functions as the separation causes changes made to the ascii version to never be applied to the unicode version, causing bugs later
 local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped;
 	
 	using namespace UI;
@@ -1755,20 +1797,30 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 		
 		NextItemSize = vec2{ -1, 0 };
 		
-		TextCall((char*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		TextCall((wchar*)in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 	}
 	
 	AdvanceCursor(item, move_cursor);
 }
 
-void UI::Text(const char* text, UITextFlags flags) {DPZoneScoped;
+void UI::Text(const cstring& text, UITextFlags flags){
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
+void UI::Text(const cstring& text, vec2 pos, UITextFlags flags){
+	GetDefaultItemFlags(UIItemType_Text, flags);
+	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
+}
+
+void UI::Text(const char* text, UITextFlags flags) {DPZoneScoped;
+	GetDefaultItemFlags(UIItemType_Text, flags);
+	TextW(cstring{(char*)text,strlen(text)}, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
+}
+
 void UI::Text(const char* text, vec2 pos, UITextFlags flags) {DPZoneScoped;
 	GetDefaultItemFlags(UIItemType_Text, flags);
-	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
+	TextW(cstring{(char*)text,strlen(text)}, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
 void UI::Text(const wchar* text, UITextFlags flags){DPZoneScoped;
@@ -1791,7 +1843,7 @@ void UI::TextF(const char* fmt, ...) {DPZoneScoped;
 	s.space = s.count+1;
 	vsnprintf(s.str, s.count+1, fmt, argptr);
 	va_end(argptr);
-	TextW(s.str, PositionForNewItem(), style.colors[UIStyleCol_Text], false);
+	TextW(cstring{s.str, s.count}, PositionForNewItem(), style.colors[UIStyleCol_Text], false);
 }
 
 //@Button
@@ -2053,9 +2105,11 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 	b32* open = 0;
 	if (!headers.has(label)) {
 		headers.add(label);
-		headers[label] = false;
+		headers[label].open = false;
 	}
-	open = &headers[label];
+	headerStack.add(&headers[label]);
+	(*headerStack.last)->flags = flags;
+	open = &headers[label].open;
 	
 	item->position = PositionForNewItem();
 	item->size = DecideItemSize(vec2(MAX_F32, style.fontHeight * style.headerHeightRelToFont), item->position);
@@ -2122,7 +2176,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowPadding.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x + 3,
 				 ((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
 		color col = style.colors[UIStyleCol_Text];
-		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
+		MakeText(drawCmd, cstring{ (char*)label, delimitLabel(label) }, position, col, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2140,8 +2194,10 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 }
 
 void UI::EndHeader() {DPZoneScoped;
-	PopLeftIndent();
-	PopRightIndent();
+	Assert(headerStack.count, "attempt to end a header that doesnt exist");
+	if(!HasFlag((*headerStack.last)->flags, UIHeaderFlags_NoIndentLeft)) PopLeftIndent();
+	if(!HasFlag((*headerStack.last)->flags, UIHeaderFlags_NoIndentRight)) PopRightIndent();
+	headerStack.pop();
 }
 
 //@BeginTabBar
@@ -2150,9 +2206,9 @@ void UI::BeginTabBar(const char* label, UITabBarFlags flags){DPZoneScoped;
 	Assert(!StateHasFlag(UISTabBarBegan), "attempt to start a new tab bar without finishing one");
 	StateAddFlag(UISTabBarBegan);
 	if (!tabBars.has(label)) tabBars.add(label);
-	tabBar = tabBars.at(label);
+	curTabBar = tabBars.at(label);
 	GetDefaultItemFlags(UIItemType_TabBar, flags);
-	tabBar->flags = flags;
+	curTabBar->flags = flags;
 	
 	UIItem* item = BeginItem(UIItemType_TabBar);
 	item->position = PositionForNewItem();
@@ -2161,14 +2217,14 @@ void UI::BeginTabBar(const char* label, UITabBarFlags flags){DPZoneScoped;
 	
 	item->size = DecideItemSize(vec2(MAX_F32, style.tabHeightRelToFont * style.fontHeight + tabBarLineHeight), item->position);
 	
-	tabBar->tabHeight = style.tabHeightRelToFont * style.fontHeight;
-	tabBar->item = item;
+	curTabBar->tabHeight = style.tabHeightRelToFont * style.fontHeight;
+	curTabBar->item = item;
 	
 	AdvanceCursor(item);
 	
 	{//bar
 		UIDrawCmd drawCmd;
-		vec2  position = vec2(0, tabBar->tabHeight);
+		vec2  position = vec2(0, curTabBar->tabHeight);
 		vec2  dimensions = vec2(item->size.x, tabBarLineHeight);
 		color col = style.colors[UIStyleCol_TabBar];
 		MakeFilledRect(drawCmd, position, dimensions, col);
@@ -2180,27 +2236,27 @@ b32 UI::BeginTab(const char* label){DPZoneScoped;
 	Assert(StateHasFlag(UISTabBarBegan), "attempt to begin a tab without beginning a tab bar first");
 	
 	UITab* tab = 0;
-	if (!tabBar->tabs.has(label)) { 
-		tabBar->tabs.add(label);
-		tab = tabBar->tabs.at(label);
+	if (!curTabBar->tabs.has(label)) { 
+		curTabBar->tabs.add(label);
+		tab = curTabBar->tabs.at(label);
 		tab->height = style.tabHeightRelToFont * style.fontHeight;
 		tab->width = CalcTextSize(label).x * 1.2;
 	}
-	tab = tabBar->tabs.at(label);
-	//UITab& tab = tabBar->tabs[label];
+	tab = curTabBar->tabs.at(label);
+	//UITab& tab = curtabBar->tabs[label];
 	
 	UIItem* item = BeginItem(UIItemType_Tab);
 	
-	item->position = vec2(tabBar->item->position.x + tabBar->xoffset, tabBar->item->position.y);
+	item->position = vec2(curTabBar->item->position.x + curTabBar->xoffset, curTabBar->item->position.y);
 	item->size = vec2(tab->width, tab->height);
 	
 	tab->item = item;
 	
-	b32 selected = tab == tabBar->tabs.atIdx(tabBar->selected);
+	b32 selected = tab == curTabBar->tabs.atIdx(curTabBar->selected);
 	
 	b32 active = isItemActive(item) || selected;
 	
-	tabBar->xoffset += tab->width + style.tabSpacing;
+	curTabBar->xoffset += tab->width + style.tabSpacing;
 	
 	{//background
 		UIDrawCmd drawCmd;
@@ -2220,7 +2276,7 @@ b32 UI::BeginTab(const char* label){DPZoneScoped;
 			vec2((item->size.x - UI::CalcTextSize(label).x) * style.tabTextAlign.x,
 				 ((style.fontHeight * style.tabHeightRelToFont - style.fontHeight) * style.tabTextAlign.y));
 		color col = style.colors[UIStyleCol_Text];
-		MakeText(drawCmd, cstring{ (char*)label, strlen(label) }, position, col, GetTextScale());
+		MakeText(drawCmd, cstring{ (char*)label, delimitLabel(label)}, position, col, GetTextScale());
 		AddDrawCmd(item, drawCmd);
 	}
 	
@@ -2235,8 +2291,8 @@ b32 UI::BeginTab(const char* label){DPZoneScoped;
 	
 	if (selected) {
 		StateAddFlag(UISTabBegan);
-		if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PushLeftIndent(style.indentAmount + leftIndent);
-		if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PushRightIndent(style.indentAmount + rightIndent);
+		if (!HasFlag(curTabBar->flags, UITabBarFlags_NoLeftIndent)) PushLeftIndent(style.indentAmount + leftIndent);
+		if (!HasFlag(curTabBar->flags, UITabBarFlags_NoRightIndent))PushRightIndent(style.indentAmount + rightIndent);
 	}
 	
 	return selected;
@@ -2245,8 +2301,8 @@ b32 UI::BeginTab(const char* label){DPZoneScoped;
 void UI::EndTab() {DPZoneScoped;
 	Assert(StateHasFlag(UISTabBegan), "attempt to end a tab without beginning one first");
 	StateRemoveFlag(UISTabBegan);
-	if (!HasFlag(tabBar->flags, UITabBarFlags_NoLeftIndent)) PopLeftIndent();
-	if (!HasFlag(tabBar->flags, UITabBarFlags_NoRightIndent))PopRightIndent();
+	if (!HasFlag(curTabBar->flags, UITabBarFlags_NoLeftIndent)) PopLeftIndent();
+	if (!HasFlag(curTabBar->flags, UITabBarFlags_NoRightIndent))PopRightIndent();
 }
 
 void UI::EndTabBar(){DPZoneScoped;
@@ -2254,11 +2310,11 @@ void UI::EndTabBar(){DPZoneScoped;
 	Assert(StateHasFlag(UISTabBarBegan), "attempt to end a tab bar without beginning one first");
 	StateRemoveFlag(UISTabBarBegan);
 	
-	tabBar->xoffset = 0;
-	forI(tabBar->tabs.count) {
-		UIItem* item = tabBar->tabs.atIdx(i)->item;
+	curTabBar->xoffset = 0;
+	forI(curTabBar->tabs.count) {
+		UIItem* item = curTabBar->tabs.atIdx(i)->item;
 		if (WinHovered(curwin) && LeftMousePressed && MouseInWinArea(item->position, item->size)) {
-			tabBar->selected = i;
+			curTabBar->selected = i;
 		}
 	}
 	
@@ -2464,7 +2520,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 			callback(&data);
 		}
 		
-		
+		//actual text input behavoir occurs here ---------------------------------------------------------
 		if (TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
 			bufferChanged = 1;
 			TIMER_RESET(state->timeSinceTyped);
@@ -2532,8 +2588,6 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	if (unicode) lineoffset = UI::CalcTextSize(wcstring{ (wchar*)buff, state->cursor }).x;
 	else lineoffset = UI::CalcTextSize(cstring{ (char*)buff, state->cursor }).x;
 	
-	
-	
 	if (active) {//cursor
 		UIDrawCmd drawCmd;
 		vec2  start = textStart +  vec2(lineoffset, 0);//vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
@@ -2549,7 +2603,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressed(Key::ENTER) || DeshInput->KeyPressed(Key::NUMPADENTER)) {
 		return true;
 	}
-	else if (flags & UIInputTextFlags_AnyChangeReturnsTrue && bufferChanged) {
+	else if ((flags & UIInputTextFlags_AnyChangeReturnsTrue) && bufferChanged) {
 		return true;
 	}
 	
@@ -3101,7 +3155,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 //begins a window with a name, position, and dimensions along with some optional flags
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
-TIMER_START(wincreate);
+TIMER_START(wincreate); //TODO move this onto the window and add to it when the user uses Continue
 void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWindowType type) {DPZoneScoped;
 	Assert(type != UIWindowType_Normal || !StateHasFlag(UISRowBegan), "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
 	TIMER_RESET(wincreate);
@@ -3149,12 +3203,12 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				if (NextWinSize.x != -1 || NextWinSize.y != 0) {
 					if (NextWinSize.x == MAX_F32)
 						item->size.x = MarginedRight() - item->position.x - rightIndent;
-					else if (NextWinSize.x == -1) {}
+					else if (NextWinSize.x == -1);
 					else item->size.x = NextWinSize.x;
 					
 					if (NextWinSize.y == MAX_F32)
 						item->size.y = MarginedBottom() - item->position.y;
-					else if (NextWinSize.y == -1) {}
+					else if (NextWinSize.y == -1);
 					else item->size.y = NextWinSize.y;
 				}
 				
@@ -3524,6 +3578,38 @@ void UI::EndPopOut() {DPZoneScoped;
 	EndCall();
 	PopLeftIndent();
 	PopRightIndent();
+}
+
+void UI::Continue(const char* name){
+	StateAddFlag(UISContinuingWindow);
+	array<cstring> chunks = chunkstr(name, '/');
+	if(chunks.count==1){
+		string name = chunks[0];
+		Assert(windows.has(name.str), "Tried to continue a non existant window, or a window that is a child without specifying it's parent first");
+		windowStack.add(curwin);
+		curwin=windows[name.str];
+	}else if(chunks.count){
+		string name = chunks[0];
+		Assert(windows.has(name.str), "Tried to continue a non existant window, or a window that is a child without specifying it's parent first");
+		UIWindow* next = windows[name.str];
+		forI(chunks.count-1){
+			name=chunks[i+1];
+			Assert(next->children.has(name.str), "Tried to continue a nonexistant window");
+			next=next->children[name.str];
+		}
+		windowStack.add(curwin);
+		curwin=next;
+	}
+	else{
+		Assert(0, "empty string passed, maybe?");
+	}
+}
+
+void UI::EndContinue(){
+	Assert(StateHasFlag(UISContinuingWindow), "attempted to end Continue without Continuing a window first");
+	StateRemoveFlag(UISContinuingWindow);
+	curwin = *windowStack.last;
+	windowStack.pop();
 }
 
 void UI::SetNextWindowPos(vec2 pos) {DPZoneScoped;
