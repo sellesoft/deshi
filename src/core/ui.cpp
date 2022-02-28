@@ -4536,8 +4536,6 @@ void UI::DemoWindow() {DPZoneScoped;
 		
 		Separator(7);
 		
-		
-		
 		Text("Rows also allow you to use either persist or relative column widths");
 		
 		Separator(7);
@@ -4936,7 +4934,9 @@ void UI::Update() {DPZoneScoped;
 	Assert(leftIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	Assert(rightIndentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	Assert(drawTargetStack.count == 1, "Forgot to pop a draw target!");
-	
+	Assert(!StateHasFlag(UISTabBegan), "Forgot to call EndTab for a BeginTab");
+	Assert(!StateHasFlag(UISTabBarBegan), "Forgot to call EndTabBar for a BeginTabBar");
+
 	forI(UIItemType_COUNT)
 		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");
 	
