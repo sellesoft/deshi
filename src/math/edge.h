@@ -3,7 +3,7 @@
 #define DESHI_EDGE_H
 
 #include "../math/Math.h"
-#include "../utils/color.h"
+//#include "../utils/color.h"
 
 struct Entity;
 

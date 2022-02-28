@@ -223,6 +223,7 @@ struct UIStyle {
 	color colors[UIStyleCol_COUNT];
 };
 
+//TODO implement this or remove it 
 struct UIContextInfo {
 	UIWindow* hovered_window = 0;
 	UIWindow* focused_window = 0;

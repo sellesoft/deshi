@@ -63,6 +63,7 @@ struct vec2 {
 	f32  dot(const vec2& rhs) const;
 	vec2 perp() const;
 	f32  mag()  const;
+	f32  magSq()  const;
 	void normalize();
 	vec2 normalized() const;
 	void clampMag(f32 min, f32 max);

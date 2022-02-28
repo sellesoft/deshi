@@ -174,6 +174,7 @@ maybe even removing certain labels from them
 [02/12/22,HARD,Feature] context menu
 [02/12/22,Easy,Feature] text input mouse click to place cursor
 [02/12/22,HARD,System] text selection (and clipboard)
+[02/20/22,EASY,Tweak,ProjectWide] move all of the structs and enums in ui.h to be under the UI namesapce and remove the UI prefix from them
 
 `Window`
 --------
