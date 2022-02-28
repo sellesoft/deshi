@@ -495,16 +495,16 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
 			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x - rightIndent;
-		else size.x = defaultSize.x;
+				size.x = MarginedRight() - itemPos.x - rightIndent;
+			else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
+				size.y = MarginedBottom() - itemPos.y;
+			else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
 		
 		if (NextItemSize.x == -2) size.x = size.y;
