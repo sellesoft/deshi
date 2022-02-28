@@ -30,12 +30,6 @@
 
 be careful of pushing vars before creating child windows for the window internals, as it will also affect the window itself
 
-delle's Annoyances:
-better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
-pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
-buttons dont work with UIWindowFlags_FitAllElements since they depend on eachother (buttons shrink to fit rather than get cut off)
-popout windows pass thru inputs to their parent window
-
 metrics window: (partially in order, since some later ones remove the need for previous ones)
 move window debug visual header with the other headers rather than with window vars
 combine window items and children then move them under windows header (so moving thru windows/items is seamless)
@@ -627,7 +621,7 @@ struct UIWindow {
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
-	UIRowFlags_FitWidthOfArea         = 1 << 0,  
+	//TODO UIRowFlags_FitWidthOfArea         = 1 << 0,  
 	//TODO UIRowFlags_DrawCellBackground     = 1 << 1,
 	UIRowFlags_AutoSize               = 1 << 2, 
 	//TODO UIRowFlags_CellBorderTop          = 1 << 3,
@@ -737,6 +731,9 @@ namespace UI {
 	//returns a pair of vec2s, the first being the position in window space and second the area. 
 	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	pair<vec2, vec2> GetClientArea();
+	
+	f32 GetRightIndent();
+	f32 GetLeftIndent();
 	
 	//// control functions ////
 	
@@ -892,8 +889,8 @@ namespace UI {
 	void BeginMenu(vec2 pos, UIMenuFlags flags); //default autosize overload
 	void BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags);
 	void EndMenu();
-
-
+	
+	
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
 	

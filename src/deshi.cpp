@@ -177,6 +177,21 @@ maybe even removing certain labels from them
 [02/20/22,EASY,Tweak,ProjectWide] move all of the structs and enums in ui.h to be under the UI namesapce and remove the UI prefix from them
 [02/27/22,EASY,Feature] add displaying a window's flags to metrics
 
+better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
+pushvar type mismatch: if ui funcs were macros, we could use compiler counters to compile-time check for push/pop mismatches, begin/end mismatches, and pushvar type mismatches
+buttons dont work with UIWindowFlags_FitAllElements since they depend on eachother (buttons shrink to fit rather than get cut off)
+popout windows pass thru inputs to their parent window
+floating point accumulation in placement
+row isnt a good name for a table behaviouring item
+setting the size of a row
+get max space for next item (after sameline)
+i expected UI::RowSetupRelativeColumnWidths({1,1,1}) to be default behaviour
+2d funcs in render are bloated with UI stuff
+scrollbar isnt draggable if the window is moveable
+rows arent nestable
+tab bar buttons pass their input thru to the window (for dragging)
+
+
 `Window`
 --------
 [08/07/21,HARD,Feature] add the ability to limit framerate
@@ -189,6 +204,7 @@ maybe even removing certain labels from them
 [12/31/21,HARD,System] remove GLFW and add platform layers
 [01/06/22,MEDI,Tweak] move config saving/loading to its own core file
 [02/01/22,EASY,Tweak] remove commit/decommit from defines.h
+[02/26/22,EASY,Tweak] refactor usages of Assert() so the expression is not used
 */
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
