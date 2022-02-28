@@ -601,6 +601,8 @@ f32 UI::GetClientBottom()            	  {DPZoneScoped; return ClientBottom(); }
 pair<vec2, vec2> UI::GetBorderedArea()    {DPZoneScoped; return BorderedArea(); }
 pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; return MarginedArea(); }
 pair<vec2, vec2> UI::GetClientArea() {DPZoneScoped; return ScrollBaredArea(); }
+f32 UI::GetRightIndent(){ return rightIndent; }
+f32 UI::GetLeftIndent(){ return leftIndent; }
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
