@@ -328,14 +328,14 @@ vec2 UI::CalcCharPosition(cstring text, u64 idx){
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
-
+		
 		if(text[i]=='\n'){
 			pos.x=0;
 			pos.y+=style.fontHeight;
 		}
 	}
 	
-
+	
 	return pos;
 }
 
@@ -495,16 +495,16 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
 			size.x = MarginedRight() - itemPos.x - rightIndent;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-				size.x = MarginedRight() - itemPos.x - rightIndent;
-			else size.x = defaultSize.x;
+			size.x = MarginedRight() - itemPos.x - rightIndent;
+		else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
 		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-				size.y = MarginedBottom() - itemPos.y;
-			else size.y = defaultSize.y;
+			size.y = MarginedBottom() - itemPos.y;
+		else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
 		
 		if (NextItemSize.x == -2) size.x = size.y;
@@ -1235,9 +1235,9 @@ void UI::EndRow() {DPZoneScoped;
 		
 	}
 	
-	if (HasFlag(curRow->flags, UIRowFlags_FitWidthOfArea)) {
-		//TODO set up Row fitting relative to given edges
-	}
+	//if (HasFlag(curRow->flags, UIRowFlags_FitWidthOfArea)) {
+	//TODO set up Row fitting relative to given edges
+	//}
 	
 	curRow->max_height_frame = 0;
 	curwin->cursor = vec2{ 0, curRow->position.y + curRow->yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
@@ -1283,7 +1283,7 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {DPZoneScoped;
 void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge) {DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(ratios.count == curRow->columns.count);
-	AddFlag(curRow->flags, UIRowFlags_FitWidthOfArea);
+	//AddFlag(curRow->flags, UIRowFlags_FitWidthOfArea);
 	curRow->left_edge = left_edge;
 	curRow->right_edge = right_edge;
 	f32 ratio_sum = 0;
@@ -1501,7 +1501,7 @@ local void TextW(const cstring& in, vec2 pos, color color, b32 nowrap, b32 move_
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
-		
+	
 	//we split string by newlines and put them into here 
 	//maybe make this into its own function
 	array<cstring> newlined;
@@ -1528,7 +1528,7 @@ local void TextW(const cstring& in, vec2 pos, color color, b32 nowrap, b32 move_
 	else {
 		newlined.add(in);
 	}
-
+	
 	if (!nowrap) {
 		
 		vec2 workcur = vec2{ 0,0 };
@@ -2655,7 +2655,7 @@ void UI::BeginMenu(vec2 pos, UIMenuFlags flags){
 }
 
 void UI::EndMenu(){
-
+	
 }
 
 

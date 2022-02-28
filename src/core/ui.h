@@ -626,7 +626,7 @@ struct UIWindow {
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
-	UIRowFlags_FitWidthOfArea         = 1 << 0,  
+	//TODO UIRowFlags_FitWidthOfArea         = 1 << 0,  
 	//TODO UIRowFlags_DrawCellBackground     = 1 << 1,
 	UIRowFlags_AutoSize               = 1 << 2, 
 	//TODO UIRowFlags_CellBorderTop          = 1 << 3,
@@ -891,8 +891,8 @@ namespace UI {
 	void BeginMenu(vec2 pos, UIMenuFlags flags); //default autosize overload
 	void BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags);
 	void EndMenu();
-
-
+	
+	
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
 	

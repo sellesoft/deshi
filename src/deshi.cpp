@@ -187,6 +187,7 @@ maybe even removing certain labels from them
 [12/31/21,HARD,System] remove GLFW and add platform layers
 [01/06/22,MEDI,Tweak] move config saving/loading to its own core file
 [02/01/22,EASY,Tweak] remove commit/decommit from defines.h
+[02/26/22,EASY,Tweak] refactor usages of Assert() so the expression is not used
 */
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
