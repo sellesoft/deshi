@@ -205,6 +205,7 @@ tab bar buttons pass their input thru to the window (for dragging)
 [01/06/22,MEDI,Tweak] move config saving/loading to its own core file
 [02/01/22,EASY,Tweak] remove commit/decommit from defines.h
 [02/26/22,EASY,Tweak] refactor usages of Assert() so the expression is not used
+[03/02/22,EASY,Tweak] check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date
 */
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
