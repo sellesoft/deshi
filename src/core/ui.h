@@ -679,58 +679,101 @@ namespace UI {
 	//calculates where a char in a string will appear relative to the topleft corner of the text item it places
 	//TODO overloads for text whose size is already calculated. maybe make a struct that allows application caching of text with information useful to ui about it
 	vec2 CalcCharPosition(cstring text, u64 idx);
+
 	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
 	UIStyle&  GetStyle();
+
 	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)
 	UIWindow* GetWindow();
+
 	//returns a pointer to the last placed item
 	UIItem*   GetLastItem(u32 layeroffset = 0);
+
 	//returns the position of the last placed item
 	vec2      GetLastItemPos();
+
 	//returns the size of the last placed item
 	vec2      GetLastItemSize();
+
 	//returns the position of the last placed item in screen space
 	vec2      GetLastItemScreenPos();
+
 	//returns the remaining space left in a window. TODO test this function
 	vec2      GetWindowRemainingSpace();
+
 	//returns where ui will automatically place the next item.
 	vec2      GetWinCursor();
+	
+	//returns the center layer between 0 and UI_LAYERS
 	u32       GetCenterLayer();
+
+	//returns the current working layer
 	u32       GetCurrentLayer();
+
+	//returns UI_LAYERS, the highest layer something may be on
 	u32       GetTopMostLayer();
+
 	//returns the x coordinate (in window space) of the right side of the window, taking into account the borders
+	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
 	f32       GetBorderedRight();
+
 	//returns the x coordinate (in window space) of the left side of the window, taking into account the borders 
+	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
 	f32       GetBorderedLeft();  
+	
 	//returns the y coordinate (in window space) of the top of the window, taking into account the borders
+	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
 	f32       GetBorderedTop();   
+
 	//returns the y coordinate (in window space) of the bottom of the window, taking into account the borders
+	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
 	f32       GetBorderedBottom();
+
 	//returns the x coordinate (in window space) of the right side of the window, taking into account the margin
+	//margined area is the area inside the window that items automatically align themselves within. 
 	f32       GetMarginedRight();
+
 	//returns the x coordinate (in window space) of the left side of the window, taking into account the margin
+	//margined area is the area inside the window that items automatically align themselves within. 
 	f32       GetMarginedLeft();
+
 	//returns the y coordinate (in window space) of the top of the window, taking into account the margin
+	//margined area is the area inside the window that items automatically align themselves within. 
 	f32       GetMarginedTop();
+
 	//returns the y coordinate (in window space) of the bottom of the window, taking into account the margin
+	//margined area is the area inside the window that items automatically align themselves within. 
 	f32       GetMarginedBottom();
+
 	//returns the x coordinate (in window space) of the right side of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	f32       GetClientRight();
+
 	//returns the x coordinate (in window space) of the left side of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	f32       GetClientLeft();
+
 	//returns the y coordinate (in window space) of the top of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	f32       GetClientTop();
+
 	//returns the y coordinate (in window space) of the bottom of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
+	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	f32       GetClientBottom();
+
 	//returns a pair of vec2s, the first being the position in window space and second the area. 
 	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
 	pair<vec2, vec2> GetBorderedArea();
+
 	//returns a pair of vec2s, the first being the position in window space and second the area. 
-	//margined area is the area inside the window that items automatically align themselves within. its size is controlled by the style var UIStyleVar_WindowMargins.
+	//margined area is the area inside the window that items automatically align themselves within. 
+	//its size is controlled by the style var UIStyleVar_WindowMargins.
 	pair<vec2, vec2> GetMarginedArea();
+
 	//returns a pair of vec2s, the first being the position in window space and second the area. 
 	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	pair<vec2, vec2> GetClientArea();
+
 	
 	f32 GetRightIndent();
 	f32 GetLeftIndent();
@@ -739,6 +782,7 @@ namespace UI {
 	
 	//positions the window's cursor to be on the same level as the last placed item. if you wish to have more advanced functionality with this see BeginRow
 	void SameLine();
+	
 	//manaully set the windows cursor to a specified position. 
 	//after the next item is placed the cursor goes back to default placement behavoir, this means that it will return to the MarginedLeft part of the window, below the y level of the last placed item
 	//TODO better name than SetWinCursor that doesnt conflict with win32's SetCursor
