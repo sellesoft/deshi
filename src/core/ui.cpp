@@ -490,35 +490,28 @@ FORCE_INLINE b32 MouseInWinArea(vec2 pos, vec2 size) {DPZoneScoped;
 
 inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
 	vec2 size;
-	if (NextItemSize.x != -1) {
-		if (NextItemSize.x == MAX_F32)
+	if(NextItemSize.x != -1 || NextItemSize.y != -1){
+		if(NextItemSize.x == MAX_F32){
 			size.x = MarginedRight() - itemPos.x - rightIndent;
-		else if (NextItemSize.x == 0)
-			if (defaultSize.x == MAX_F32)
-				size.x = MarginedRight() - itemPos.x - rightIndent;
-			else size.x = defaultSize.x;
-		else size.x = NextItemSize.x;
+		}else if(NextItemSize.x == 0){
+			size.x = (defaultSize.x == MAX_F32) ? MarginedRight()  - itemPos.x - rightIndent : defaultSize.x;
+		}else{
+			size.x = NextItemSize.x;
+		}
 		
-		if (NextItemSize.y == MAX_F32)
+		if(NextItemSize.y == MAX_F32){
 			size.y = MarginedBottom() - itemPos.y;
-		else if (NextItemSize.y == 0)
-			if(defaultSize.y == MAX_F32)
-				size.y = MarginedBottom() - itemPos.y;
-			else size.y = defaultSize.y;
-		else size.y = NextItemSize.y;
+		}else if(NextItemSize.y == 0){
+			size.y = (defaultSize.y == MAX_F32) ? MarginedBottom() - itemPos.y : defaultSize.y;
+		}else{
+			size.y = NextItemSize.y;
+		}
 		
-		if (NextItemSize.x == -2) size.x = size.y;
-		if (NextItemSize.y == -2) size.y = size.x;
-		
-	}
-	else {
-		if (defaultSize.x == MAX_F32)
-			size.x = MarginedRight() - itemPos.x - rightIndent;
-		else size.x = defaultSize.x;
-		
-		if (defaultSize.y == MAX_F32)
-			size.y = MarginedBottom() - itemPos.y;
-		else size.y = defaultSize.y;
+		if(NextItemSize.x == -2) size.x = size.y;
+		if(NextItemSize.y == -2) size.y = size.x;
+	}else{
+		size.x = (defaultSize.x == MAX_F32) ? MarginedRight()  - itemPos.x - rightIndent : defaultSize.x;
+		size.y = (defaultSize.y == MAX_F32) ? MarginedBottom() - itemPos.y               : defaultSize.y;
 	}
 	
 	NextItemSize.x = -1;
@@ -645,6 +638,14 @@ void UI::SetNextItemActive() {DPZoneScoped;
 
 void UI::SetNextItemSize(vec2 size) {DPZoneScoped;
 	NextItemSize = size;
+}
+
+void UI::SetNextItemWidth(f32 width) {DPZoneScoped;
+	NextItemSize.x = width;
+}
+
+void UI::SetNextItemHeight(f32 height) {DPZoneScoped;
+	NextItemSize.y = height;
 }
 
 void UI::SetMarginPositionOffset(vec2 offset) {DPZoneScoped;
@@ -4938,7 +4939,7 @@ void UI::Update() {DPZoneScoped;
 	Assert(drawTargetStack.count == 1, "Forgot to pop a draw target!");
 	Assert(!StateHasFlag(UISTabBegan), "Forgot to call EndTab for a BeginTab");
 	Assert(!StateHasFlag(UISTabBarBegan), "Forgot to call EndTabBar for a BeginTabBar");
-
+	
 	forI(UIItemType_COUNT)
 		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");
 	
