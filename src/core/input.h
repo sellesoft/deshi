@@ -148,18 +148,31 @@ struct Input{
 		memcpy(&oldKeyState, &newKeyState,  sizeof(b32) * MAX_KEYBOARD_KEYS);
 		memcpy(&newKeyState, &realKeyState, sizeof(b32) * MAX_KEYBOARD_KEYS);
 		
-		if (!memcmp(newKeyState, zero, MAX_KEYBOARD_KEYS)) {
+		if(!memcmp(newKeyState, zero, MAX_KEYBOARD_KEYS)){
 			TIMER_RESET(input__time_since_key_hold);
 			newKeyState[0] = 1;
 			anyKeyDown = 0;
-		}
-		else {
+		}else{
 			time_key_held = TIMER_END(input__time_since_key_hold);
 			anyKeyDown = 1;
 		}
 		
-		if (!realCharCount) TIMER_RESET(input__time_since_char_hold);
-		else time_char_held = TIMER_END(input__time_since_char_hold);
+		if(!realCharCount){
+			TIMER_RESET(input__time_since_char_hold);
+		}else{
+			time_char_held = TIMER_END(input__time_since_char_hold);
+		}
+		
+		if(realScrollY > 0){
+			newKeyState[Key::MBSCROLLUP]   = true;
+			newKeyState[Key::MBSCROLLDOWN] = false;
+		}else if(realScrollY < 0){
+			newKeyState[Key::MBSCROLLUP]   = false;
+			newKeyState[Key::MBSCROLLDOWN] = true;
+		}else{
+			newKeyState[Key::MBSCROLLUP]   = false;
+			newKeyState[Key::MBSCROLLDOWN] = false;
+		}
 		
 		mousePos.x = mouseX = realMouseX; mousePos.y = mouseY = realMouseY;
 		screenMouseX = realScreenMouseX; screenMouseY = realScreenMouseY;
@@ -167,6 +180,7 @@ struct Input{
 		realScrollY = 0;
 		charCount = realCharCount;
 		realCharCount = 0;
+		
 		DeshTime->inputTime = TIMER_END(t_d);
 	}
 	
