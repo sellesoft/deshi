@@ -617,16 +617,16 @@ void Render::FillCircle2D(vec2 pos, f32 radius, u32 subdivisions_int, color colo
 	}
 }
 
-//TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
-//when drawing them straight
+//TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal when drawing them straight
+//TODO maybe scissorOffset should default to zero?
 void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
-	u32       col = color.rgba;
-	Vertex2*   vp = twodVertexArray + twodVertexCount;
+	u32         col = color.rgba;
+	Vertex2*     vp = twodVertexArray + twodVertexCount;
 	TwodIndexGl* ip = twodIndexArray + twodIndexCount;
 	
 	vec2 ott = end - start;
@@ -1983,6 +1983,8 @@ Update(){DPZoneScoped;
 	glUseProgram(programs.null.handle);
 	glUniform1i(glGetUniformLocation(programs.null.handle,"nullSampler"),0);
 	forI(modelCmdCount){ //TODO(delle) materials/textures
+		if(modelCmdArray[i].idxCount == 0) continue;
+		
 		glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &modelCmdArray[i].matrix);
 		glPolygonMode(GL_FRONT_AND_BACK, (settings.wireframeOnly) ? GL_LINE : GL_FILL);
@@ -2032,6 +2034,8 @@ Update(){DPZoneScoped;
 		//     for each layer here, if its worse tell me and ill fix it.
 		forX(layer, TWOD_LAYERS){
 			forX(cmd_idx, twodCmdCounts[layer]){
+				if(twodCmdArrays[layer][cmd_idx].indexCount == 0) continue;
+				
 				glScissor(GLint(twodCmdArrays[layer][cmd_idx].scissorOffset.x),
 						  GLint((height - twodCmdArrays[layer][cmd_idx].scissorOffset.y) - twodCmdArrays[layer][cmd_idx].scissorExtent.y),
 						  GLsizei(twodCmdArrays[layer][cmd_idx].scissorExtent.x),
