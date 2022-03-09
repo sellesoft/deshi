@@ -32,14 +32,16 @@ struct File{
 	char name[MAX_FILENAME_SIZE] = {}; //filename.ext
 };
 
+//filename.ext -> filename.ext
 FORCE_INLINE cstring get_file_name(const File& file)      { return cstring{ (char*)file.name, file.name_length }; }
+//filename.ext -> filename
 FORCE_INLINE cstring get_file_short(const File& file)     { return cstring{ (char*)file.name, file.short_length }; }
+//filename.ext -> ext
 FORCE_INLINE cstring get_file_extension(const File& file) { return cstring{ (char*)file.name + file.short_length+1, file.ext_length }; }
+//filename.ext -> C:/path/to/file/filename.ext
 FORCE_INLINE cstring get_file_path(const File& file)      { return cstring{ (char*)file.path, file.path_length }; }
 
 //a helper for reading data from a file or locally stored data.
-//  this struct doesn't actually store any of the data, just points to it so it's 
-//  up to you to make sure the data stays alive.
 //
 //          raw - cstring that points to the entire buffer of data
 //         read - cstring that points to things inside the buffer such as chunks, lines, etc.

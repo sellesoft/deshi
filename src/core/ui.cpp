@@ -351,6 +351,9 @@ inline b32 isItemActive(UIItem* item) {DPZoneScoped; KPFuncStart;
 	return WinHovered(curwin) && CanTakeInput && isItemHovered(item); KPFuncEnd;
 }
 
+//we use ## in labels to cutoff what UI actually shows the user when 
+//using an item that displays it. this is just a helper to find where it is
+//if it exists
 inline u32 delimitLabel(const char* label){
 	u32 len = strlen(label);
 	u32 idx = find_first_string(label, len, "##", 2);
