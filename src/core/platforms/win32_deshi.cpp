@@ -1018,6 +1018,27 @@ file_info(const char* _filepath){
 	return result;
 }
 
+cstring
+read_entire_file(const char* filepath){
+	File file = open_file(filepath, FileAccess_Read);
+	if(!file.handle) return cstring{};
+	
+	cstring result{};
+	result.str   = (char*)memory_talloc(file.bytes_size);
+	result.count = file.bytes_size;
+	
+	u32 bytes_read = 0;
+	if(!ReadFile(file.handle, result.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+		Win32LogLastError("ReadFile", io__crash_on_error);
+		return cstring{};
+	}
+	if(bytes_read != file.bytes_size){
+		LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name(file), "'.\n"
+			 "File's size is ",file.bytes_size,", but ",bytes_read," were read");
+	}
+	
+	return result;
+}
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////

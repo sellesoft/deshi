@@ -135,4 +135,8 @@ FORCE_INLINE cstring absolute_path(File* file){ return absolute_path(file->path)
 File* file_info(const char* filepath);
 FORCE_INLINE File* file_info(cstring filepath){ return file_info(filepath.str); }
 
+//returns a temporary cstring containing the entire file's contents
+//TODO update this to support Unicode, only ASCII atm
+cstring read_entire_file(const char* filepath);
+
 #endif //DESHI_IO_H
