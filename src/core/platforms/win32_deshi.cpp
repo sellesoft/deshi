@@ -769,6 +769,7 @@ FileReader init_reader(const File& file) {
 
 void end_reader(FileReader& reader){
 	memzfree(reader.raw.str);
+	defer{ CloseHandle(reader.file->handle); };
 }
 
 
@@ -817,6 +818,10 @@ File open_file(const char* path, FileAccessFlags flags){
 	file.short_length = pathstr.findFirstChar('.');
 	file.ext_length = pathstr.count - file.short_length - 1;
 	return file;
+}
+
+void close_file(File* file){
+	CloseHandle(file->handle);
 }
 
 //TODO(delle) search filters
@@ -1022,6 +1027,7 @@ cstring
 read_entire_file(const char* filepath){
 	File file = open_file(filepath, FileAccess_Read);
 	if(!file.handle) return cstring{};
+	defer{ close_file(&file); };
 	
 	cstring result{};
 	result.str   = (char*)memory_talloc(file.bytes_size);

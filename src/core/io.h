@@ -106,9 +106,14 @@ void       reset_reader(FileReader& reader);
 //opens a file if it already exists or creates a new one if it doesnt
 //this does not load any data, you must use FileReader or read_file to do that
 File open_file(const char* path, FileAccessFlags flags);
+
+//closes an opened file
+void close_file(File* file);
+
 //reads a file into a char buffer. this allocates a buffer for it and its the user's responsibility to free it
 //TODO decide if its necessary to implement this. for ex cases where you dont need to use a FileReader
 void read_file(const File& file, char* out);
+
 //returns a temporary array of the files in the target directory
 //TODO return carray instead of array
 array<File> get_directory_files(const char* directory);
