@@ -155,6 +155,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			else                                   in->realKeyState[Key::LMETA]  = false;
 			if (GetKeyState(VK_RWIN) & 0x8000)     in->realKeyState[Key::RMETA]  = true;
 			else                                   in->realKeyState[Key::RMETA]  = false;
+			DeshInput->capsLock   = (GetKeyState(VK_CAPITAL) & 0x8000);
+			DeshInput->numLock    = (GetKeyState(VK_NUMLOCK) & 0x8000);
+			DeshInput->scrollLock = (GetKeyState(VK_SCROLL ) & 0x8000);
 			
 			//get key from vcode
 			Key::Key* key = vkToKey.at(vcode);
@@ -287,11 +290,14 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
 	dc = GetDC((HWND)handle);
 	
-	//// get mouse coords ////
+	//// get initial input values ////
 	POINT mp = { 0 };
 	GetCursorPos(&mp);
 	DeshInput->realMouseX = mp.x - x;
 	DeshInput->realMouseY = mp.y - y;
+	DeshInput->capsLock   = (GetKeyState(VK_CAPITAL) & 0x8000);
+	DeshInput->numLock    = (GetKeyState(VK_NUMLOCK) & 0x8000);
+	DeshInput->scrollLock = (GetKeyState(VK_SCROLL ) & 0x8000);
 	
 	//// setup raw input ////
 	RAWINPUTDEVICE rid;
@@ -481,7 +487,6 @@ void Window::Update() {DPZoneScoped;
 	
 	resized = false;
 	
-	
 	//iterate through all window messages 
 	MSG msg;
 	while (PeekMessageA(&msg, (HWND)handle, 0, 0, PM_REMOVE)) {
@@ -500,6 +505,7 @@ void Window::Update() {DPZoneScoped;
 	
 	hittest = HitTestNone;
 	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY /*+ titlebarheight*/);
+	
 	DeshTime->windowTime = TIMER_END(t_d);
 }
 

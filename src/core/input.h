@@ -119,6 +119,8 @@ struct Input{
 	b32 anyKeyDown = 0;
 	
 	b32 capsLock = false;
+	b32 numLock = false;
+	b32 scrollLock = false;
 	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding

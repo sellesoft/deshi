@@ -131,6 +131,7 @@ runtime pipeline creation/specialization
 [02/26/22,MEDI,Feature] OpenGL pipelines/materials
 [02/26/22,MEDI,Feature] OpenGL shadows (and test/fix Vulkan shadows)
 [02/26/22,HARD,Feature] OpenGL render/video settings
+[03/07/22,EASY,Bug] vulkan doesnt generate a pipeline cache file
 
 `Sound`
 -------
@@ -148,7 +149,7 @@ alternatively, we can store those specific assets in the source control
 [10/20/21,EASY,Tweak] merge mesh faces with <10 degree normal difference (for physics)
 [10/20/21,MEDI,Tweak] add edges and hulls to meshes, remove unused vars
 [10/20/21,MEDI,Feature] add MTL parsing
-[12/31/21,MEDI,Tweak] data streaming to prevent loading freeze
+[12/31/21,MEDI,Feature] data streaming to prevent loading freeze
 [01/12/22,EASY,Feature] make an interface for updating textures that have already been created
 [02/26/22,MEDI,Feature] replace the arrays with arenas and remove item indexing
 
@@ -206,6 +207,7 @@ tab bar buttons pass their input thru to the window (for dragging)
 [02/01/22,EASY,Tweak] remove commit/decommit from defines.h
 [02/26/22,EASY,Tweak] refactor usages of Assert() so the expression is not used
 [03/02/22,EASY,Tweak] check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
+[03/02/22,EASY,Tweak] each module should create its own data folder rather than Assets::enforceDirectories()
 */
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
