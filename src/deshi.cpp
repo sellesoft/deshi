@@ -176,6 +176,7 @@ maybe even removing certain labels from them
 [02/12/22,Easy,Feature] text input mouse click to place cursor
 [02/12/22,HARD,System] text selection (and clipboard)
 [02/20/22,EASY,Tweak,ProjectWide] move all of the structs and enums in ui.h to be under the UI namesapce and remove the UI prefix from them
+UI::Window would conflict with our current Window, so either rename Window to OSWindow or put it in some kind of namespace
 [02/27/22,EASY,Feature] add displaying a window's flags to metrics
 
 better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
@@ -201,13 +202,15 @@ tab bar buttons pass their input thru to the window (for dragging)
 `Ungrouped`
 -----------
 [07/19/21,MEDI,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-[08/03/21,EASY,Tweak] convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
-[12/31/21,HARD,System] remove GLFW and add platform layers
-[01/06/22,MEDI,Tweak] move config saving/loading to its own core file
-[02/01/22,EASY,Tweak] remove commit/decommit from defines.h
-[02/26/22,EASY,Tweak] refactor usages of Assert() so the expression is not used
-[03/02/22,EASY,Tweak] check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
-[03/02/22,EASY,Tweak] each module should create its own data folder rather than Assets::enforceDirectories()
+[08/03/21,EASY,Tweak]   convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
+[12/31/21,HARD,System]  remove GLFW and add platform layers
+[01/06/22,MEDI,Tweak]   move config saving/loading to its own core file
+[02/01/22,EASY,Tweak]   remove commit/decommit from defines.h
+[02/26/22,EASY,Tweak]   refactor usages of Assert() so the expression is not used
+[03/02/22,EASY,Tweak]   check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
+[03/02/22,EASY,Tweak]   each module should create its own data folder rather than Assets::enforceDirectories()
+[03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
+this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings().
 */
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
