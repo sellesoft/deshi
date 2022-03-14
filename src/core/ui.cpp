@@ -1502,9 +1502,14 @@ local void TextCall(wchar* text, vec2 pos, color color, UIItem* item) {DPZoneSco
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
-local void TextW(const cstring& in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped; KPFuncStart;
-	
+local void TextW(cstring in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped; KPFuncStart;
 	using namespace UI;
+	
+	if(!in){
+		LogW("ui","Text() was passed an empty string.");
+		return;
+	}
+	
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
 	
@@ -1660,13 +1665,19 @@ local void TextW(const cstring& in, vec2 pos, color color, b32 nowrap, b32 move_
 //second function for wrapping, using unicode
 //TODO merge these functions as the separation causes changes made to the ascii version to never be applied to the unicode version, causing bugs later
 local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {DPZoneScoped; KPFuncStart;
-	
 	using namespace UI;
+	
+	upt in_length = wcslen(in);
+	if(in == 0 || in_length == 0){
+		LogW("ui","Text() was passed an empty string.");
+		return;
+	}
+	
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = pos;
 	
 	if (!nowrap) {
-		wstring text = in;
+		wstring text(in, in_length);
 		
 		//we split wstring by newlines and put them into here 
 		//maybe make this into its own function
