@@ -441,6 +441,38 @@ namespace Math {
 					f32(s32(a.y * multiple + .5f)) / multiple,
 					f32(s32(a.z * multiple + .5f)) / multiple);
 	}
+
+	global_ s32 order_of_magnitude(f32 in){
+		if(in==0) return 0;
+		if(floor(in)==1) return 1;
+		f32 absin = in;
+		if(absin<0) absin=-absin;
+		s32 order = 0;
+		if(absin > 1){
+			while(ceil(absin/10)!=1) order++, absin/=10;
+			return order;
+		}
+		else{
+			while(floor(absin*10)!=1) order--, absin*=10;
+			return order - 1;
+		}
+	}
+
+	global_ s32 order_of_magnitude(f64 in){
+		if(in==0) return 0;
+		if(floor(in)==1) return 1;
+		f64 absin = in;
+		if(absin<0) absin=-absin;
+		s32 order = 0;
+		if(absin > 1){
+			while(absin > 1) order++, absin/=10;
+			return order - 1;
+		}
+		else{
+			while(absin < 1) order--, absin*=10;
+			return order;
+		}
+	}
 	
 	template<class FWIt> static float average(FWIt a, const FWIt b, int size){ return std::accumulate(a, b, 0.0) / size; }
 	template<class T> static f64 average(const T& container, int size){ return average(std::begin(container), std::end(container), size); }
