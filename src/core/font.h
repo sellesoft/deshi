@@ -4,6 +4,7 @@
 
 #include "texture.h"
 #include "kigu/common.h"
+#include "math/Math.h"
 
 //note, to calculate the width of a char from a specified height do
 //   height / aspect_ratio / max_width
