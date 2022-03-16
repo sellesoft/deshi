@@ -7,6 +7,7 @@
 #include "math/math.h"
 #include "kigu/common.h"
 #include "kigu/color.h"
+#include "kigu/profiling.h"
 
 
 
@@ -75,13 +76,12 @@ struct Graph{
 
 // draws a given Graph at position with the given dimensions
 // this doesn't draw any decorations, such as a border.
-void draw_graph(const Graph& g, vec2 dimensions){
+void draw_graph(const Graph& g, vec2 dimensions){DPZoneScoped;
     using namespace UI;
-
+   
     //graph space
     vec2      cpos = g.cameraPosition;
     scalar_t czoom = g.cameraZoom;
-
     
     scalar_t view_width = czoom*2; 
     scalar_t aspect_ratio = dimensions.y/dimensions.x;
@@ -101,15 +101,20 @@ void draw_graph(const Graph& g, vec2 dimensions){
     vec2 tl = cpos - czoom*vec2::ONE;
     //represets the bottom and right edge of the camera
     vec2 br = cpos + czoom*vec2::ONE;
-    vec2 oom = vec2(Math::order_of_magnitude(tl.x), Math::order_of_magnitude(tl.y));
+    vec2 oom = vec2(Math::order_of_magnitude(czoom), Math::order_of_magnitude(czoom));
     //round left edge to nearest order of magnitude multiplied by increment 
     //TODO set this up to only happen when zoom or position change
     vec2 tentooom = vec2(pow(10, oom.x), pow(10, oom.y));
     vec2 ledgernd = 
-    vec2(floor(tl.x / tentooom.x) * tentooom.x * g.xMajorLinesIncrement, floor(tl.y / tentooom.y) * tentooom.y * g.yMajorLinesIncrement); 
+    vec2(floor(tl.x / tentooom.x) * tentooom.x, floor(tl.y / tentooom.y) * tentooom.y); 
+    UI::Text(toStr("tl   ", tl).str);
+    UI::Text(toStr("br   ", br).str);
+    UI::Text(toStr("oom  ", oom).str);
+    UI::Text(toStr("tlrnd", ledgernd).str);
 
     {//draw axes
         if(g.xShowMajorLines){
+            //TODO just start at 0 and draw major/minor lines starting from there
             while(ledgernd.x < br.x){
                 if(ledgernd.x!=0) //don't draw where the main axis is //TODO decide if this shouldnt happen when main axis drawing is disabled 
                     Line(vec2((ledgernd.x-tl.x)*dimspul.x, 0), vec2((ledgernd.x-tl.x)*dimspul.x, dimensions.y), 1, g.xMajorGridlineColor);
@@ -123,7 +128,9 @@ void draw_graph(const Graph& g, vec2 dimensions){
         if(g.yShowMajorLines){
             while(ledgernd.y < br.y){
                 if(ledgernd.y!=0) //dont draw where main axis is
-                    Line(vec2(0, (ledgernd.y-tl.y)*dimspul.y), vec2(dimensions.x, (ledgernd.y-tl.y)*dimspul.y), 1, g.yMajorGridlineColor);
+                    Line(vec2(0, (ledgernd.y)*dimspul.y), vec2(dimensions.x, (ledgernd.y)*dimspul.y), 1, g.yMajorGridlineColor);
+                    Line(vec2(0, (ledgernd.y)*dimspul.y), vec2(dimensions.x, (ledgernd.y)*dimspul.y), 1, g.yMajorGridlineColor);
+
                 ledgernd.y += g.yMajorLinesIncrement * pow(10, oom.y);
             }
         }

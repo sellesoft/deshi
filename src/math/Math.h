@@ -442,9 +442,10 @@ namespace Math {
 					f32(s32(a.z * multiple + .5f)) / multiple);
 	}
 
-	global_ s32 order_of_magnitude(f32 in){
+	global_ s32 order_of_magnitude(f32 in){DPZoneScoped;
 		if(in==0) return 0;
-		if(floor(in)==1) return 1;
+		if(floor(abs(in))==1) return 0;
+		if(ceil(abs(in))==1) return -1;
 		f32 absin = in;
 		if(absin<0) absin=-absin;
 		s32 order = 0;
@@ -458,9 +459,11 @@ namespace Math {
 		}
 	}
 
-	global_ s32 order_of_magnitude(f64 in){
+	global_ s32 order_of_magnitude(f64 in){DPZoneScoped;
 		if(in==0) return 0;
-		if(floor(in)==1) return 1;
+		if(floor(in)==1) return 0;
+		if(floor(in)==-1) return -1;
+		if(ceil(in)==1) return -1;
 		f64 absin = in;
 		if(absin<0) absin=-absin;
 		s32 order = 0;
