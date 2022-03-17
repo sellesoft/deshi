@@ -185,7 +185,7 @@ enum UIStyleCol : u32 {
 };
 
 struct UIStyle {
-	vec2 windowPadding;
+	vec2 windowMargins;
 	vec2 itemSpacing;
 	f32  windowBorderSize;
 	f32  buttonBorderSize;
@@ -429,11 +429,16 @@ struct UIDrawCmd {
 	UIItem* parent = 0;
 };
 
+//attempt to uniquely hash a UIDrawCmd for debug purposes
 template<>
 struct hash<UIDrawCmd> {
 	inline u32 operator()(const UIDrawCmd& s) {
 		u32 seed = 2166134;
-		seed ^= (u32)s.vertices | (u32)s.indices << (u32)s.counts.x | (u32)s.counts.y;
+		forI(s.counts.x){
+			seed ^= u32(s.vertices[i].pos.x) << u32(s.vertices[i].pos.y); 
+		}
+		seed ^= (u32)s.counts.x | (u32)s.counts.y << (u32)s.tex | (u32)s.useWindowScissor | (u32)s.parent
+		<<u32(s.scissorOffset.x)|u32(s.scissorExtent.x) << u32(s.scissorOffset.y)|u32(s.scissorExtent.y);
 		return seed;
 	}
 };
@@ -940,11 +945,14 @@ namespace UI {
 	//TODO void EndMenu();
 
 	//API for making custom items externally
+	//TODO decide if it would be better to just expose the internal functions instead
 	//TODO reformat this eventually since im currently making it to suit a specific purpose and am not considering polishing it atm
-	//some knowledge about how UI works internally is somewhat required to work this
 	//TODO write up examples/a guide on how to use this
+	//some knowledge about how UI works internally is somewhat required to work this
 	UIItem* BeginCustomItem();
+	void    CustomItem_AdvanceCursor(UIItem* item, b32 move_cursor = 1);
 	void    EndCustomItem();
+
 	//TODO decide if we should just expose the internal drawing commands 
 	void CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color);
 	void CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color);

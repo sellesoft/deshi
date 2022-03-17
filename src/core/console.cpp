@@ -67,10 +67,10 @@ local ConsoleState state = ConsoleState_Closed;
 
 local b32 show_autocomplete = 0;
 local b32 scroll_to_bottom = 0;
-local b32 tag_show = 1;
-local b32 tag_highlighting = 1;
-local b32 tag_outlines = 1;
-local b32 line_highlighing = 1;
+local b32 tag_show = 0;
+local b32 tag_highlighting = 0;
+local b32 tag_outlines = 0;
+local b32 line_highlighing = 0;
 
 local UIWindow* conmain = 0; //the main console window
 local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
@@ -452,7 +452,7 @@ void Console::Update(){
 		conmain = GetWindow(); //TODO(sushi) try to get this only once
 		
 		SetNextWindowSize(vec2(MAX_F32, GetMarginedBottom() - (uistyle->fontHeight * uistyle->inputTextHeightRelToFont + uistyle->itemSpacing.y) * 3));
-		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
+		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowMargins).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
 		
 		//draw text for the dictionary
 		PushVar(UIStyleVar_WindowMargins, vec2(5, 0));

@@ -193,6 +193,12 @@ namespace Render{
 	void Update();
 	void Reset();
 	void Cleanup();
+
+
+	//displays render stats into a UI Window
+	//this does NOT make it's own window
+	//implemented in core_ui.cpp
+	void DisplayRenderStats();
 	
 }; //namespace Render
 

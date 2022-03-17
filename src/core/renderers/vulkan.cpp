@@ -144,7 +144,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_SURFACES 2
 
 //arbitray limits, change if needed
-#define MAX_TWOD_VERTICES  0xFFFF //max u16: 65535
+#define MAX_TWOD_VERTICES  0xFFFFFF //max u16: 65535
 #define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
 #define MAX_TWOD_CMDS      1000
 #define TWOD_LAYERS        11
@@ -156,6 +156,10 @@ local TwodIndexVk twodIndexArray [MAX_TWOD_INDICES];
 local TwodIndexVk twodCmdCounts[MAX_SURFACES][TWOD_LAYERS+1]; //these always start with 1
 local TwodCmdVk   twodCmdArrays[MAX_SURFACES][TWOD_LAYERS+1][MAX_TWOD_CMDS]; //different UI cmd per texture
 //3d array baybe!!
+//local Arena twodVertices;
+//local Arena twodIndices;
+//local Arena twodCmdCounts;
+
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES

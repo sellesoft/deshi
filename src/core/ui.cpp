@@ -35,7 +35,7 @@ struct UIStyleVarType {
 };
 
 local const UIStyleVarType uiStyleVarTypes[] = {
-	{2, offsetof(UIStyle, windowPadding)},
+	{2, offsetof(UIStyle, windowMargins)},
 	{2, offsetof(UIStyle, itemSpacing)},
 	{1, offsetof(UIStyle, windowBorderSize)},
 	{1, offsetof(UIStyle, buttonBorderSize)},
@@ -362,11 +362,6 @@ inline u32 delimitLabel(const char* label){
 }
 
 //internal master cursor controller
-//  this is an attempt to centralize what happens at the end of each item function
-// 
-//  i expect this to fall through at some point, as not all items are created equal and may need to
-//  have different things happen after its creation, which could be handled as special cases within
-//  the function itself.
 inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {DPZoneScoped; KPFuncStart;
 	
 	//if a row is in progress, we must reposition the item to conform to row style variables
@@ -411,7 +406,7 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {DPZoneScoped; K
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
 		}
 	}
-	else if (moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y - style.windowPadding.y + curwin->scy - style.windowBorderSize } ; KPFuncEnd;
+	else if (moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y - style.windowMargins.y + curwin->scy - style.windowBorderSize } ; KPFuncEnd;
 }
 
 //returns if the window can scroll over x
@@ -426,7 +421,7 @@ inline b32 CanScrollY(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart;
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
 inline vec2 PositionForNewItem(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart;
-	vec2 pos = window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
+	vec2 pos = window->cursor + (style.windowMargins + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
 	if(NextCursorPos.x!=-1)pos.x=NextCursorPos.x;
@@ -446,7 +441,7 @@ inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin) {DPZoneScoped; K
 
 //same as the bordered area, but also takes into account the margins
 inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart;
-	vec2 f = vec2::ONE * style.windowBorderSize + vec2::ONE * style.windowPadding;
+	vec2 f = vec2::ONE * style.windowBorderSize + vec2::ONE * style.windowMargins;
 	vec2 s = window->dimensions - 2 * f - MarginSizeOffset;
 	s.x -= (CanScrollY() ? style.scrollBarYWidth : 0);
 	//s.y -= (CanScrollX() ? style.scrollBarXHeight : 0);
@@ -469,10 +464,10 @@ FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   {DPZoneScoped; KPFunc
 FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    {DPZoneScoped; KPFuncStart; return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); KPFuncEnd; }
 FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart; return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); KPFuncEnd; }
 
-FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  {DPZoneScoped; KPFuncStart; f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; KPFuncEnd; }
-FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   {DPZoneScoped; KPFuncStart; return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; KPFuncEnd; }
-FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    {DPZoneScoped; KPFuncStart; return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; KPFuncEnd; }
-FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart; f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; KPFuncEnd; }
+FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  {DPZoneScoped; KPFuncStart; f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowMargins.x : window->style.windowBorderSize + window->style.windowMargins.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; KPFuncEnd; }
+FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   {DPZoneScoped; KPFuncStart; return (window == curwin ? style.windowBorderSize + style.windowMargins.x : window->style.windowBorderSize + window->style.windowMargins.x) ; KPFuncEnd; }
+FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    {DPZoneScoped; KPFuncStart; return (window == curwin ? style.windowBorderSize + style.windowMargins.y : window->style.windowBorderSize + window->style.windowMargins.y) ; KPFuncEnd; }
+FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart; f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowMargins.y : window->style.windowBorderSize + window->style.windowMargins.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; KPFuncEnd; }
 
 FORCE_INLINE f32 ClientRight(UIWindow* window = curwin)  {DPZoneScoped; KPFuncStart; return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); KPFuncEnd; }
 FORCE_INLINE f32 ClientLeft(UIWindow* window = curwin)   {DPZoneScoped; KPFuncStart; return BorderedLeft(window); KPFuncEnd; }
@@ -562,7 +557,7 @@ vec2 UI::GetWindowRemainingSpace() {DPZoneScoped; KPFuncStart;
 
 //NOTE this should match PositionForNewItem(), just without resetting NextCursorPos
 vec2 UI::GetWinCursor() {DPZoneScoped; KPFuncStart;
-	vec2 pos = curwin->cursor + (style.windowPadding + MarginPositionOffset - curwin->scroll) + vec2(leftIndent, 0)
+	vec2 pos = curwin->cursor + (style.windowMargins + MarginPositionOffset - curwin->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(curwin->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
 	if(NextCursorPos.x!=-1)pos.x=NextCursorPos.x;
@@ -717,8 +712,7 @@ inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0
 
 inline void EndItem(UIItem* item) {DPZoneScoped; KPFuncStart; KPFuncEnd;}
 
-//this is for debugging debug cmds, all it does extra is hash the drawCmd
-//so we can break on it later
+
 inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {DPZoneScoped; KPFuncStart;
 	if (!drawCmd.tex) drawCmd.tex = style.font->tex;
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
@@ -727,20 +721,18 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {DPZoneScoped; KPFuncSt
 	ui_stats.draw_cmds++;
 	ui_stats.vertices += drawCmd.counts.x;
 	ui_stats.indices += drawCmd.counts.y;
-	Assert(drawCmd.counts.x < UIDRAWCMD_MAX_VERTICES);
-	Assert(drawCmd.counts.y < UIDRAWCMD_MAX_INDICES);
-	BreakOnDrawCmdCreation; KPFuncEnd;
+	BreakOnDrawCmdCreation;
 }
 
 //4 verts, 6 indices
 FORCE_INLINE vec2
-MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {DPZoneScoped; KPFuncStart;
+MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color) {DPZoneScoped;
 	Assert(putverts && putindices);
 	if (color.a == 0) return vec2::ZERO;
 	
 	u32     col = color.rgba;
 	Vertex2* vp = putverts + (u32)offsets.x;
-	u32* ip = putindices + (u32)offsets.y;
+	u32*     ip = putindices + (u32)offsets.y;
 	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -757,7 +749,7 @@ MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end,
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
 	
-	return vec2(4, 6); KPFuncEnd;
+	return vec2(4, 6); 
 }
 
 FORCE_INLINE void
@@ -1246,7 +1238,7 @@ void UI::EndRow() {DPZoneScoped; KPFuncStart;
 	//}
 	
 	curRow->max_height_frame = 0;
-	curwin->cursor = vec2{ 0, curRow->position.y + curRow->yoffset + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+	curwin->cursor = vec2{ 0, curRow->position.y + curRow->yoffset + style.itemSpacing.y - style.windowMargins.y + curwin->scroll.y };
 	StateRemoveFlag(UISRowBegan); KPFuncEnd;
 }
 
@@ -2190,7 +2182,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped; KPFun
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
 		vec2 position = 
-			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowPadding.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x + 3,
+			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowMargins.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x + 3,
 				 ((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
 		color col = style.colors[UIStyleCol_Text];
 		MakeText(drawCmd, cstring{ (char*)label, delimitLabel(label) }, position, col, GetTextScale());
@@ -2474,7 +2466,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 		else dim = UI::CalcTextSize((char*)buff);
 	}
 	else {
-		dim = DecideItemSize(vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
+		dim = DecideItemSize(vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowMargins.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
 	
 	item->size = dim;
@@ -2681,22 +2673,59 @@ UIItem* UI::BeginCustomItem(){
 	StateAddFlag(UISCustomItemBegan);
 	return item;
 }
+void UI::CustomItem_AdvanceCursor(UIItem* item, b32 move_cursor){
+	AdvanceCursor(item, move_cursor);
+}
+
 void UI::EndCustomItem(){
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to end a custom item without begining one first");
 	StateRemoveFlag(UISCustomItemBegan);
 }
 //TODO decide if we should just expose the internal drawing commands 
-void UI::CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){MakeLine( drawCmd, start, end, thickness, color);}
-void UI::CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){MakeFilledTriangle( drawCmd, p1, p2, p3, color);}
-void UI::CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){MakeTriangle( drawCmd, p1, p2, p3, thickness, color);}
-void UI::CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){MakeFilledRect( drawCmd, pos, size, color);}
-void UI::CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){MakeRect( drawCmd, pos, size, thickness, color);}
-void UI::CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){MakeCircle( drawCmd, pos, radius, subdivisions, thickness, color);}
-void UI::CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle(putverts, putindices, offsets, pos, radius, subdivisions_int, color);}
-void UI::CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle( drawCmd, pos, radius, subdivisions_int, color);}
-void UI::CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale){MakeText( drawCmd, text, pos, color, scale);}
-void UI::CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy){MakeTexture(putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy);}
-void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {AddDrawCmd(item, drawCmd);}
+void UI::CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeLine( drawCmd, start, end, thickness, color);
+}
+void UI::CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeFilledTriangle( drawCmd, p1, p2, p3, color);
+}
+void UI::CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeTriangle( drawCmd, p1, p2, p3, thickness, color);
+}
+void UI::CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeFilledRect( drawCmd, pos, size, color);
+}
+void UI::CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeRect( drawCmd, pos, size, thickness, color);
+}
+void UI::CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeCircle( drawCmd, pos, radius, subdivisions, thickness, color);
+}
+void UI::CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeFilledCircle(putverts, putindices, offsets, pos, radius, subdivisions_int, color);
+}
+void UI::CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeFilledCircle( drawCmd, pos, radius, subdivisions_int, color);
+}
+void UI::CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeText( drawCmd, text, pos, color, scale);
+}
+void UI::CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	MakeTexture(putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy);
+}
+void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
+	AddDrawCmd(item, drawCmd);
+}
 
 
 b32 UI::IsLastItemHovered(){DPZoneScoped; KPFuncStart; //TODO handle layers
@@ -2915,7 +2944,7 @@ b32 CheckForHoveredChildWindow(UIWindow* parent, UIWindow* child) {DPZoneScoped;
 	return child_hovered; KPFuncEnd;
 }
 
-void CheckForHoveredWindow(UIWindow* window = 0) {DPZoneScoped; KPFuncStart;
+void CheckForHoveredWindow(UIWindow* window = 0) {DPZoneScoped;
 	b32 hovered_found = 0;
 	for (int i = windows.count - 1; i > 0; i--) {
 		UIWindow* w = windows[i];
@@ -3383,7 +3412,7 @@ vec2 CalcWindowMinSize() {DPZoneScoped; KPFuncStart;
 			//}
 		}
 	}
-	return max + style.windowPadding + vec2::ONE * style.windowBorderSize; KPFuncEnd;
+	return max + style.windowMargins + vec2::ONE * style.windowBorderSize; KPFuncEnd;
 }
 
 //Old titlebar code for when i reimplement it as its own call
@@ -3695,7 +3724,7 @@ inline UIWindow* MetricsDebugItemFindHoveredWindow(UIWindow* window = 0) {DPZone
 	} KPFuncEnd;
 }
 
-inline void MetricsDebugItem() {DPZoneScoped; KPFuncStart;
+inline void MetricsDebugItem() {DPZoneScoped;
 	using namespace UI;
 	
 	enum DebugItemState {
@@ -3800,7 +3829,7 @@ inline void MetricsDebugItem() {DPZoneScoped; KPFuncStart;
 			
 			PushVar(UIStyleVar_WindowMargins, vec2(3, 3));
 			//PushColor(UIStyleCol_WindowBg, color(50, 50, 50));
-			BeginPopOut("MetricsDebugItemPopOut", mplatch - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoInteract);
+			BeginPopOut("MetricsDebugItemPopOut", mplatch - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements);
 			
 			Text(UIItemTypeStrs[iteml.type], UITextFlags_NoWrap);
 			Text(toStr("DrawCmds: ", iteml.drawCmds.count).str, UITextFlags_NoWrap);
@@ -3815,23 +3844,12 @@ inline void MetricsDebugItem() {DPZoneScoped; KPFuncStart;
 				Text(toStr(UIDrawTypeStrs[dc.type]).str, UITextFlags_NoWrap);
 				
 				if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
-					switch (dc.type) {
-						//case UIDrawType_Image:
-						//case UIDrawType_Rectangle:
-						//case UIDrawType_FilledRectangle: {
-						//	DebugRect(dc.position, dc.dimensions);
-						//}break;
-						//case UIDrawType_Circle:
-						//case UIDrawType_FilledCircle: {
-						//	DebugCircle(dc.position, dc.thickness);
-						//}break;
-						//case UIDrawType_Line: {
-						//	vec2 up = Min(dc.position, dc.position2);
-						//	DebugRect(up, Max(dc.position, dc.position2) - up);
-						//}break;
-						//case UIDrawType_Text: {
-						//	DebugRect(dc.position, CalcTextSize(dc.text));
-						//}break;
+					for (u32 tri = 0; tri < dc.counts.y; tri += 3) {
+						vec2 
+						p0 = ipos + dc.vertices[dc.indices[tri]].pos,
+						p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
+						p2 = ipos + dc.vertices[dc.indices[tri+2]].pos;
+						DebugTriangle(p0, p1, p2, color(255, 0,0, 70));
 					}
 				}
 				
@@ -3845,8 +3863,12 @@ inline void MetricsDebugItem() {DPZoneScoped; KPFuncStart;
 				WinUnSetHovered(curwin);
 			}
 			EndRow();
-			
 			EndChild();
+			
+			if(hovered!=curwin && DeshInput->LMousePressed()){
+				state=InspectingWindowItems;
+			}
+
 			EndPopOut();
 			PopColor();
 			PopVar();
@@ -3855,7 +3877,7 @@ inline void MetricsDebugItem() {DPZoneScoped; KPFuncStart;
 	}
 	
 	if (distate) PreventInputs;
-	else AllowInputs; KPFuncEnd;
+	else AllowInputs;
 }
 
 inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {DPZoneScoped; KPFuncStart;
@@ -3921,14 +3943,14 @@ inline void MetricsBreaking() {DPZoneScoped; KPFuncStart;
 					for (UIDrawCmd& dc : item.drawCmds) {
 						for (u32 tri = 0; tri < dc.counts.y; tri += 3) {
 							vec2 
-								p0 = ipos + dc.vertices[dc.indices[tri]].pos,
+							p0 = ipos + dc.vertices[dc.indices[tri]].pos,
 							p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
 							p2 = ipos + dc.vertices[dc.indices[tri+2]].pos;
 							DebugTriangle(p0, p1, p2, color(255, 0,0, 70));
 							if (Math::PointInTriangle(DeshInput->mousePos, p0, p1, p2)) {
 								DebugTriangle(p0, p1, p2);
 								if (DeshInput->LMousePressed()) {
-									
+									break_drawCmd_create_hash = dc.hash;
 								}
 							}
 						}
@@ -4157,6 +4179,8 @@ UIWindow* DisplayMetrics() {DPZoneScoped; KPFuncStart;
 		WinUnSetHovered(curwin);
 		EndChild();
 		
+		Text(toStr("Hovered: ", (hovered?hovered->name:"None")).str);
+
 		
 		EndHeader();
 	}
@@ -4297,7 +4321,7 @@ UIWindow* DisplayMetrics() {DPZoneScoped; KPFuncStart;
 					{
 						//UIDrawCmd dc;
 						//dc.color = Color_Green;
-						//dc.position = debugee->position + item.initialCurPos + item.style.windowPadding - vec2::ONE * 3 / 2.f;
+						//dc.position = debugee->position + item.initialCurPos + item.style.windowMargins - vec2::ONE * 3 / 2.f;
 						//dc.dimensions = vec2::ONE * 3;
 						//debugCmds.add(dc);
 					}
@@ -4684,9 +4708,9 @@ void UI::DemoWindow() {DPZoneScoped; KPFuncStart;
 		Separator(7);
 		
 		Text("Window Padding (vec2)");
-		Slider("demo_wpx", &style.windowPadding.x, 0, 100);
+		Slider("demo_wpx", &style.windowMargins.x, 0, 100);
 		SameLine();
-		Slider("demo_wpy", &style.windowPadding.y, 0, 100);
+		Slider("demo_wpy", &style.windowMargins.y, 0, 100);
 		
 		Text("Item Spacing (vec2)");
 		Slider("demo_isx", &style.itemSpacing.x, 0, 100);
@@ -4833,11 +4857,10 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped; KPFuncStart;
 	
 	vec2 itempos = window->position + item.position * item.style.globalScale;
 	vec2 itemsiz = item.size;
-	
+	int i = 0;
 	UIDrawCmd* lastdc = 0;
 	for (UIDrawCmd& drawCmd : item.drawCmds) {
 		BreakOnDrawCmdDraw;
-		
 		//NOTE this expects vertex positions to be in item space
 		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale +itempos));
 		
@@ -4872,9 +4895,20 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped; KPFuncStart;
 			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
 		Render::AddTwodVertices(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
+		//if((DeshInput->mousePos - drawCmd.vertices[0].pos).mag() < 4){
+		//	DebugCircle(drawCmd.vertices[0].pos, 4, Color_Green);
+		//	if(DeshInput->LMousePressed()){
+		//		break_drawCmd_create_hash=drawCmd.hash;
+		//	}
+		//}
+		//else{
+		//	DebugCircle(drawCmd.vertices[0].pos, 4);
+		//}
+
 		drawCmd.scissorExtent = dcse;
 		drawCmd.scissorOffset = dcso;
 		lastdc = &drawCmd;
+		i++;
 	}
 	
 	Render::SetSurfaceDrawTargetByIdx(0); KPFuncEnd;
@@ -4952,7 +4986,6 @@ void CleanUpWindow(UIWindow* window) {DPZoneScoped; KPFuncStart;
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {DPZoneScoped; KPFuncStart;
-	
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
 		   "Frame ended with hanging windows in the stack, make sure you call End() if you call Begin()!");
@@ -4980,11 +5013,7 @@ void UI::Update() {DPZoneScoped; KPFuncStart;
 	forI(UIItemType_COUNT)
 		Assert(itemFlags[i] == 0, "Forgot to clear an item's default flags!");
 	
-	hovered = 0;
-	StateRemoveFlag(UISGlobalHovered);
-	MarginPositionOffset = vec2::ZERO;
-	MarginSizeOffset = vec2::ZERO;
-	
+
 #ifdef BUILD_INTERNAL
 	//clear break vars in debug mode
 	break_window_item = 0;
@@ -5004,6 +5033,12 @@ void UI::Update() {DPZoneScoped; KPFuncStart;
 		DisplayMetrics();
 		show_metrics = 0;
 	}
+
+	hovered = 0;
+	StateRemoveFlag(UISGlobalHovered);
+	MarginPositionOffset = vec2::ZERO;
+	MarginSizeOffset = vec2::ZERO;
+	
 	
 	//windows input checking functions
 	CheckWindowsForFocusInputs();

@@ -386,6 +386,7 @@ local Flags deshiStage = DS_NONE;
 #include "core/storage.cpp"
 #include "core/ui.cpp"
 #include "core/commands.cpp"
+#include "core/core_ui.cpp"
 
 local Time          deshi_time;           Time*          g_time     = &deshi_time;
 local Window        deshi_window;         Window*        g_window   = &deshi_window;
