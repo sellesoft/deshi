@@ -931,18 +931,36 @@ namespace UI {
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-	
+
 	//begins a menu, which is just a wrapper around BeginPopOut
 	//its purpose is to provide an easy way to have lists of options such as in a context menu as well
 	//as provide a way to autosize the popout
-	void BeginMenu(vec2 pos, UIMenuFlags flags); //default autosize overload
-	void BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags);
-	void EndMenu();
-	
-	
+	//TODO void BeginMenu(vec2 pos, UIMenuFlags flags); //default autosize overload
+	//TODO void BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags);
+	//TODO void EndMenu();
+
+	//API for making custom items externally
+	//TODO reformat this eventually since im currently making it to suit a specific purpose and am not considering polishing it atm
+	//some knowledge about how UI works internally is somewhat required to work this
+	//TODO write up examples/a guide on how to use this
+	UIItem* BeginCustomItem();
+	void    EndCustomItem();
+	//TODO decide if we should just expose the internal drawing commands 
+	void CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color);
+	void CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color);
+	void CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color);
+	void CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color);
+	void CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color)
+	void CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color)
+	void CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
+	void CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color);
+	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale);
+	void CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0);
+	void CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd);
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
-	
+
+
 	//allows adding flags to an item so you dont have to keep specifying them everytime you make one.
 	//you are required to either remove all the added flags or reset a modified items flags by the time UI::Update is called
 	void AddItemFlags(UIItemType type, Flags flags);

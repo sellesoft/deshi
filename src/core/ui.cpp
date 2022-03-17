@@ -101,11 +101,12 @@ enum UIStateFlags_ {
 	UISComboBegan             = 1 << 2,
 	UISTabBarBegan            = 1 << 3,
 	UISTabBegan               = 1 << 4,
-	UISCursorSet              = 1 << 5,
-	UISNextItemSizeSet        = 1 << 6,
-	UISNextItemActive         = 1 << 7,
-	UISNextItemMinSizeIgnored = 1 << 8,
-	UISContinuingWindow       = 1 << 9,
+	UISCustomItemBegan        = 1 << 5,
+	UISCursorSet              = 1 << 6,
+	UISNextItemSizeSet        = 1 << 7,
+	UISNextItemActive         = 1 << 8,
+	UISNextItemMinSizeIgnored = 1 << 9,
+	UISContinuingWindow       = 1 << 10,
 }; typedef u32 UIStateFlags;
 
 //global ui input state
@@ -622,7 +623,7 @@ void UI::SetWinCursorY(f32 y){
 	NextCursorPos.y=y;
 }	
 
-
+//TODO investigate why this doesn't actually scroll to the very bottom
 void UI::SetScroll(vec2 scroll) {DPZoneScoped; KPFuncStart;
 	if (scroll.x == MAX_F32)
 		curwin->scx = curwin->maxScroll.x;
@@ -678,10 +679,9 @@ FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {DPZoneScoped; KPFuncStart
 	return curwin->items[currlayer + layeroffset].last; KPFuncEnd;
 }
 
-//helper for making any new UIItem, since now we must work with item pointers internally
-//this function also decides if we are working with a new item or continuing to work on a previous
+//helper for making any new UIItem
 inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0) {DPZoneScoped; KPFuncStart;
-	
+	Assert(!StateHasFlag(UISCustomItemBegan), "attempt to start an item while a custom item is in progress");
 	if (type == UIItemType_PreItems) {
 		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
 		return curwin->preItems.last;
@@ -2659,21 +2659,44 @@ b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIIn
 	return InputTextCall(label, buffer, buffSize, 1, pos, preview, callback, flags, 0); KPFuncEnd;
 }
 
-void BeginMenuCall(vec2 pos, vec2 size, UIMenuFlags flags){
-	UIItem* item = BeginItem(UIItemType_Menu, flags);
-}
+//void BeginMenuCall(vec2 pos, vec2 size, UIMenuFlags flags){
+//	UIItem* item = BeginItem(UIItemType_Menu, flags);
+//}
+//
+//void UI::BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags){
+//	BeginMenuCall(pos, size, flags);
+//}
+//
+//void UI::BeginMenu(vec2 pos, UIMenuFlags flags){
+//	BeginMenuCall(pos, vec2(MAX_F32,MAX_F32), flags);
+//}
+//
+//void UI::EndMenu(){
+//	
+//}
 
-void UI::BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags){
-	BeginMenuCall(pos, size, flags);
-}
 
-void UI::BeginMenu(vec2 pos, UIMenuFlags flags){
-	BeginMenuCall(pos, vec2(MAX_F32,MAX_F32), flags);
+UIItem* UI::BeginCustomItem(){
+	UIItem* item = BeginItem(UIItemType_Custom);
+	StateSetFlag(UISCustomItemBegan);
+	return item;
 }
-
-void UI::EndMenu(){
-	
+void UI::EndCustomItem(){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to end a custom item without begining one first");
+	StateRemoveFlag(UISCustomItemBegan);
 }
+//TODO decide if we should just expose the internal drawing commands 
+void UI::CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){MakeLine( drawCmd, start, end, thickness, color));}
+void UI::CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){MakeFilledTriangle( drawCmd, p1, p2, p3, color));}
+void UI::CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){MakeTriangle( drawCmd, p1, p2, p3, thickness, color));}
+void UI::CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){MakeFilledRect( drawCmd, pos, size, color));}
+void UI::CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){MakeRect( drawCmd, pos, size, thickness, color));}
+void UI::CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){MakeCircle( drawCmd, pos, radius, subdivisions, thickness, color));}
+void UI::CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle(Vertex2* putverts, putindices, offsets, pos, radius, subdivisions_int, color));}
+void UI::CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle( drawCmd, pos, radius, subdivisions_int, color));}
+void UI::CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale){MakeText( drawCmd, text, pos, color, scale));}
+void UI::CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy){MakeTexture(Vertex2* putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy));}
+void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {AddDrawCmd(item, drawCmd);}
 
 
 b32 UI::IsLastItemHovered(){DPZoneScoped; KPFuncStart; //TODO handle layers

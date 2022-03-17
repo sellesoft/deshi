@@ -4,11 +4,11 @@
 #endif
 
 #include "ui.h"
+#include "window.h"
 #include "math/math.h"
-#include "kigu/common.h"
 #include "kigu/color.h"
+#include "kigu/common.h"
 #include "kigu/profiling.h"
-
 
 
 //TODOs
@@ -74,6 +74,18 @@ struct Graph{
 
 };
 
+//local vec2 
+//GraphToScreen(vec2 point){
+//	point -= camera_pos;
+//	point /= camera_zoom;
+//	point.y *= -scalar_t(DeshWindow->width) / scalar_t(DeshWindow->height);
+//	point += vec2{1.0, 1.0};
+//	point.x *= scalar_t(DeshWindow->dimensions.x); point.y *= scalar_t(DeshWindow->dimensions.y);
+//	point /= 2.0;
+//	return vec2(point.x, point.y);
+//}FORCE_INLINE vec2 ToScreen(scalar_t x, scalar_t y){ return ToScreen({x,y}); }
+//
+
 // draws a given Graph at position with the given dimensions
 // this doesn't draw any decorations, such as a border.
 void draw_graph(const Graph& g, vec2 dimensions){DPZoneScoped;
@@ -115,6 +127,16 @@ void draw_graph(const Graph& g, vec2 dimensions){DPZoneScoped;
     {//draw axes
         if(g.xShowMajorLines){
             //TODO just start at 0 and draw major/minor lines starting from there
+            //scalar_t ledge = tl.x, toledge = 0;
+            //scalar_t redge = br.x, toredge = 0;
+            //while(toledge < ledge || toredge < redge){
+            //    if(toledge < ledge){
+//
+            //    }
+            //    if(toredge < redge){
+//
+            //    }
+            //}
             while(ledgernd.x < br.x){
                 if(ledgernd.x!=0) //don't draw where the main axis is //TODO decide if this shouldnt happen when main axis drawing is disabled 
                     Line(vec2((ledgernd.x-tl.x)*dimspul.x, 0), vec2((ledgernd.x-tl.x)*dimspul.x, dimensions.y), 1, g.xMajorGridlineColor);
