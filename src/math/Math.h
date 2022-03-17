@@ -525,11 +525,11 @@ namespace Math {
 		vec2 p12 = p2 - p1;
 		vec2 p20 = p0 - p2;
 		
-		
-		return
-		(point - p0).dot(-vec2(p01.y, -p01.x)) < 0 &&
-		(point - p1).dot(-vec2(p12.y, -p12.x)) < 0 &&
-		(point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
+		b32 b0 = (point - p0).dot(-vec2(p01.y, -p01.x)) < 0;
+		b32 b1 = (point - p1).dot(-vec2(p12.y, -p12.x)) < 0;
+		b32 b2 = (point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
+
+		return b0==b1 && b1==b2;
 	}
 	
 #define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)
