@@ -2678,7 +2678,7 @@ b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIIn
 
 UIItem* UI::BeginCustomItem(){
 	UIItem* item = BeginItem(UIItemType_Custom);
-	StateSetFlag(UISCustomItemBegan);
+	StateAddFlag(UISCustomItemBegan);
 	return item;
 }
 void UI::EndCustomItem(){
@@ -2686,16 +2686,16 @@ void UI::EndCustomItem(){
 	StateRemoveFlag(UISCustomItemBegan);
 }
 //TODO decide if we should just expose the internal drawing commands 
-void UI::CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){MakeLine( drawCmd, start, end, thickness, color));}
-void UI::CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){MakeFilledTriangle( drawCmd, p1, p2, p3, color));}
-void UI::CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){MakeTriangle( drawCmd, p1, p2, p3, thickness, color));}
-void UI::CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){MakeFilledRect( drawCmd, pos, size, color));}
-void UI::CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){MakeRect( drawCmd, pos, size, thickness, color));}
-void UI::CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){MakeCircle( drawCmd, pos, radius, subdivisions, thickness, color));}
-void UI::CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle(Vertex2* putverts, putindices, offsets, pos, radius, subdivisions_int, color));}
-void UI::CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle( drawCmd, pos, radius, subdivisions_int, color));}
-void UI::CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale){MakeText( drawCmd, text, pos, color, scale));}
-void UI::CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy){MakeTexture(Vertex2* putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy));}
+void UI::CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){MakeLine( drawCmd, start, end, thickness, color);}
+void UI::CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){MakeFilledTriangle( drawCmd, p1, p2, p3, color);}
+void UI::CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){MakeTriangle( drawCmd, p1, p2, p3, thickness, color);}
+void UI::CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){MakeFilledRect( drawCmd, pos, size, color);}
+void UI::CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){MakeRect( drawCmd, pos, size, thickness, color);}
+void UI::CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){MakeCircle( drawCmd, pos, radius, subdivisions, thickness, color);}
+void UI::CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle(putverts, putindices, offsets, pos, radius, subdivisions_int, color);}
+void UI::CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){MakeFilledCircle( drawCmd, pos, radius, subdivisions_int, color);}
+void UI::CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale){MakeText( drawCmd, text, pos, color, scale);}
+void UI::CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy){MakeTexture(putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy);}
 void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {AddDrawCmd(item, drawCmd);}
 
 

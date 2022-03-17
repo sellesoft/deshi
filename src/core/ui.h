@@ -950,8 +950,8 @@ namespace UI {
 	void CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color);
 	void CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color);
 	void CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color);
-	void CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color)
-	void CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color)
+	void CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color);
+	void CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color);
 	void CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 	void CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale);
