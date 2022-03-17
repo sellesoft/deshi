@@ -14,6 +14,11 @@
 //TODOs
 // clamp axes to edge of camera (when out of frame or always)
 
+enum GraphAxesLabelStyle : u32{
+    GraphAxesLabelStyle_OnAxes,       //draws the axes labels next to their respective axes
+    //TODO GraphAxesLabelStyle_OnGraphEdges, //draws the axes labels at the edges of the graph
+};
+
 //TODO nicely split into 
 struct Graph{
     //TODO this should be vec2f64 (vec2d)
@@ -26,31 +31,28 @@ struct Graph{
     b32 xShowAxis = true;
     b32 yShowAxis = true;
     //labels per axis
-    char* xAxisLabel = "";
-    char* yAxisLabel = "";
+    cstring xAxisLabel;
+    cstring yAxisLabel;
     //colors per axis
     //bulk set using set_axes_colors()
     color xAxisColor=Color_White;
     color yAxisColor=Color_White;
     //colos per major gridline
+    //bulk set using set_major_gridlines_color() 
     color xMajorGridlineColor=color(70,70,70);
     color yMajorGridlineColor=color(70,70,70);
-    //TODO scalar_t xAxisScale = 1
-	scalar_t gridZoomFit               = 5.0;
-	scalar_t gridZoomFitIncrements[3]  = {2.0, 2.5, 2.0};
-	u32      gridZoomFitIncrementIndex = 0;
-    //bright "major" gridlines
-    //bulk set using set_major_gridlines_count()
-	u32      xMajorLinesCount       = 12;
-	u32      yMajorLinesCount       = 12;
+    //whether ot not to show major gridline coordinates
+    //bulk set using set_major_gridline_coords_visible()
+    b32 xShowMajorCoords = true;
+    b32 yShowMajorCoords = true;
+    //colors per minor gridline
+    //bulk set using set_minor_gridlines_color() 
+    color xMinorGridlineColor=color(40,40,40);
+    color yMinorGridlineColor=color(40,40,40);
     //the separation between major gridlines
     //bulk set using set_major_gridlines_increment()
 	scalar_t xMajorLinesIncrement   = 1.0;
 	scalar_t yMajorLinesIncrement   = 1.0;
-    //dim minor gridlines
-    //bulk set using set_minor_gridlines_count()
-	u32      xMinorLinesCount       = 4;
-	u32      yMinorLinesCount       = 4;
     //the separation between minor gridlines
     //bulk set using set_minor_gridlines_increment()
 	scalar_t xMinorLinesIncrement   = 0.2;
@@ -67,30 +69,29 @@ struct Graph{
     //bulk set using set_axes_coords_visible()
 	b32      xShowAxisCoords     = true;
 	b32      yShowAxisCoords     = true;
-   
+    //determines where on the graph axes labels will appear
+    GraphAxesLabelStyle axesLabelStyle = GraphAxesLabelStyle_OnAxes;
+    //TODO axes label alignemnt options
 
     //Graph data
 
+    //misc graph properties that may be useful outside of draw_graph
+    //these are calculated in draw_graph_final
+    vec2 dimensions_per_unit_length;
 
 };
 
-//local vec2 
-//GraphToScreen(vec2 point){
-//	point -= camera_pos;
-//	point /= camera_zoom;
-//	point.y *= -scalar_t(DeshWindow->width) / scalar_t(DeshWindow->height);
-//	point += vec2{1.0, 1.0};
-//	point.x *= scalar_t(DeshWindow->dimensions.x); point.y *= scalar_t(DeshWindow->dimensions.y);
-//	point /= 2.0;
-//	return vec2(point.x, point.y);
-//}FORCE_INLINE vec2 ToScreen(scalar_t x, scalar_t y){ return ToScreen({x,y}); }
-//
-
-// draws a given Graph at position with the given dimensions
-// this doesn't draw any decorations, such as a border.
-void draw_graph(const Graph& g, vec2 dimensions){DPZoneScoped;
+void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor){
     using namespace UI;
-   
+    UIItem* item = BeginCustomItem();
+    item->position = GetWinCursor();
+    item->size = dimensions;
+    CustomItem_AdvanceCursor(item, move_cursor);
+
+    color textcol = GetStyle().colors[UIStyleCol_Text];
+    color winbgcol = GetStyle().colors[UIStyleCol_WindowBg];
+
+
     //graph space
     vec2      cpos = g.cameraPosition;
     scalar_t czoom = g.cameraZoom;
@@ -100,69 +101,232 @@ void draw_graph(const Graph& g, vec2 dimensions){DPZoneScoped;
     //dimensions per unit length
     //gives how far along in screen space 1 unit in graph space is
     vec2 dimspul = vec2(dimensions.x/view_width, dimensions.x/view_width*aspect_ratio);
-
-    //camera position in ui window space
-    //vec2 cposwin = 
+    g.dimensions_per_unit_length = dimspul;
 
     //TODO get exponent directly from the exponent of float's bits
     //s32 oom = (1 & 0x1 ? 
     //yep & 0x)
 
     //TODO all of these vec2s need to somehow represent the same type as scalar_t
-    //represets the top and left edge of the camera
-    vec2 tl = cpos - czoom*vec2::ONE;
-    //represets the bottom and right edge of the camera
-    vec2 br = cpos + czoom*vec2::ONE;
-    vec2 oom = vec2(Math::order_of_magnitude(czoom), Math::order_of_magnitude(czoom));
+    vec2 tl = cpos - czoom*vec2::ONE; //represets the top and left edge of the camera
+    vec2 br = cpos + czoom*vec2::ONE;  //represets the bottom and right edge of the camera
+    b32 xAxisVisible = g.xShowAxis && tl.x < 0 && br.x > 0;
+    b32 yAxisVisible = g.yShowAxis && tl.y < 0 && br.y > 0;
+    
     //round left edge to nearest order of magnitude multiplied by increment 
     //TODO set this up to only happen when zoom or position change
+    vec2 oom = vec2(Math::order_of_magnitude(czoom), Math::order_of_magnitude(czoom));
     vec2 tentooom = vec2(pow(10, oom.x), pow(10, oom.y));
     vec2 ledgernd = 
     vec2(floor(tl.x / tentooom.x) * tentooom.x, floor(tl.y / tentooom.y) * tentooom.y); 
-    UI::Text(toStr("tl   ", tl).str);
-    UI::Text(toStr("br   ", br).str);
-    UI::Text(toStr("oom  ", oom).str);
-    UI::Text(toStr("tlrnd", ledgernd).str);
 
-    {//draw axes
-        if(g.xShowMajorLines){
-            //TODO just start at 0 and draw major/minor lines starting from there
-            //scalar_t ledge = tl.x, toledge = 0;
-            //scalar_t redge = br.x, toredge = 0;
-            //while(toledge < ledge || toredge < redge){
-            //    if(toledge < ledge){
-//
-            //    }
-            //    if(toredge < redge){
-//
-            //    }
-            //}
-            while(ledgernd.x < br.x){
-                if(ledgernd.x!=0) //don't draw where the main axis is //TODO decide if this shouldnt happen when main axis drawing is disabled 
-                    Line(vec2((ledgernd.x-tl.x)*dimspul.x, 0), vec2((ledgernd.x-tl.x)*dimspul.x, dimensions.y), 1, g.xMajorGridlineColor);
-                ledgernd.x += g.xMajorLinesIncrement * pow(10, oom.x);
+    vec2 itemspacecenter = dimensions / 2; //positions of the center of our item
+    vec2 itemspaceorigin = itemspacecenter - dimspul*cpos; //position of the center of the origin in item space
+
+    {//draw minor gridlines
+        //TODO prevent minor lines from unecessarily drawing where major lines draw when they're enabled
+        if(g.xShowMinorLines){
+            scalar_t ledge = tl.x, toledge = Clamp(0,tl.x,br.x); //to left edge 
+            scalar_t redge = br.x, toredge = Clamp(0,tl.x,br.x); //to right edge
+            //Log("", toledge, " ", toredge);
+            scalar_t inc = g.xMinorLinesIncrement*pow(10,oom.x);
+            while(toledge > ledge || toredge < redge){
+                toledge-=inc;
+                toredge+=inc;
+                if(toledge > ledge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(itemspaceorigin.x + toledge*dimspul.x, 0),
+                        vec2(itemspaceorigin.x + toledge*dimspul.x, dimensions.y),
+                        1, g.xMinorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                }
+                if(toredge < redge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(itemspaceorigin.x + toredge*dimspul.x, 0),
+                        vec2(itemspaceorigin.x + toredge*dimspul.x, dimensions.y),
+                        1, g.xMinorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                }
             }
         }
-        if(g.xShowAxis && tl.x < 0 && br.x > 0){
-            Line(vec2(-tl.x*dimspul.x,0),vec2(-tl.x*dimspul.x,dimensions.y), 1, g.xAxisColor);
-            //TODO label
-        }
-        if(g.yShowMajorLines){
-            while(ledgernd.y < br.y){
-                if(ledgernd.y!=0) //dont draw where main axis is
-                    Line(vec2(0, (ledgernd.y)*dimspul.y), vec2(dimensions.x, (ledgernd.y)*dimspul.y), 1, g.yMajorGridlineColor);
-                    Line(vec2(0, (ledgernd.y)*dimspul.y), vec2(dimensions.x, (ledgernd.y)*dimspul.y), 1, g.yMajorGridlineColor);
-
-                ledgernd.y += g.yMajorLinesIncrement * pow(10, oom.y);
+        if(g.yShowMinorLines){
+            scalar_t tedge = tl.y, totedge = Clamp(0,tl.y,br.y); //to top edge 
+            scalar_t bedge = br.y, tobedge = Clamp(0,tl.y,br.y); //to bottom edge
+            scalar_t inc = g.yMinorLinesIncrement*pow(10,oom.x);
+            while(totedge > tedge || tobedge < bedge){
+                totedge-=inc;
+                tobedge+=inc;
+                if(totedge > tedge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(0, itemspaceorigin.y + totedge*dimspul.y),
+                        vec2(dimensions.x, itemspaceorigin.y + totedge*dimspul.y),
+                        1, g.xMinorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                }
+                if(tobedge < bedge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(0, itemspaceorigin.y + tobedge*dimspul.y),
+                        vec2(dimensions.x,itemspaceorigin.y + tobedge*dimspul.y),
+                        1, g.xMinorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                }
             }
         }
-        if(g.yShowAxis && tl.y < 0 && br.y > 0){
-            Line(vec2(0,-tl.y*dimspul.y),vec2(dimensions.x,-tl.y*dimspul.y), 1, g.yAxisColor);
-            //TODO label
-        }
-        //TODO z axis
     }
 
+    {//draw major gridlines and their coord labels
+        if(g.xShowMajorLines){
+            //this starts at the origin and draws major gridlines until reaching the edge of the graph
+            scalar_t ledge = tl.x, toledge = Clamp(0, tl.x, br.x); //to left edge 
+            scalar_t redge = br.x, toredge = Clamp(0, tl.x, br.x); //to right edge
+            while(toledge > ledge || toredge < redge){
+                toledge-=g.xMajorLinesIncrement*pow(10,oom.x);
+                toredge+=g.xMajorLinesIncrement*pow(10,oom.x);
+                if(toledge > ledge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(itemspaceorigin.x + toledge*dimspul.x, 0),
+                        vec2(itemspaceorigin.x + toledge*dimspul.x, dimensions.y),
+                        1, g.xMajorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                    //NOTE i dont know if i really like doing this like this, using a layer i mean
+                    //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
+                    if(g.xShowMajorCoords){
+                        PushLayer(GetCurrentLayer()+1);
+                        //TODO find a way around allocating a string
+                        string text = to_string(toledge);
+                        vec2 textsize = CalcTextSize(text);
+                        vec2 pos = vec2(itemspaceorigin.x+toledge*dimspul.x-textsize.x/2, itemspaceorigin.y-textsize.y-1);
+                        //CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2::ONE); 
+                        CustomItem_AddDrawCmd(item, drawCmd);
+                        PopLayer();
+                    }
+                }
+                if(toredge < redge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(itemspaceorigin.x + toredge*dimspul.x, 0),
+                        vec2(itemspaceorigin.x + toredge*dimspul.x, dimensions.y),
+                        1, g.xMajorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                    if(g.xShowMajorCoords){
+                        PushLayer(GetCurrentLayer()+1);
+                        //TODO find a way around allocating a string
+                        string text = to_string(toredge);
+                        vec2 textsize = CalcTextSize(text);
+                        vec2 pos = vec2(itemspaceorigin.x+toredge*dimspul.x-textsize.x/2, itemspaceorigin.y-textsize.y-1);
+                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeText(drawCmd,{text.str,text.count},pos,textcol, vec2::ONE); 
+                        CustomItem_AddDrawCmd(item, drawCmd);
+                        PopLayer();
+                    }
+                }
+                
+            }
+        }
+        if(g.yShowMajorLines){
+            scalar_t tedge = tl.y, totedge = Clamp(0,tl.y,br.y); //to top edge 
+            scalar_t bedge = br.y, tobedge = Clamp(0,tl.y,br.y); //to bottom edge
+            while(totedge > tedge || tobedge < bedge){
+                totedge-=g.yMajorLinesIncrement*pow(10,oom.x);
+                tobedge+=g.yMajorLinesIncrement*pow(10,oom.x);
+                if(totedge > tedge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(0, itemspaceorigin.y + totedge*dimspul.y),
+                        vec2(dimensions.x, itemspaceorigin.y + totedge*dimspul.y),
+                        1, g.xMajorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                }
+                if(tobedge < bedge){
+                    UIDrawCmd drawCmd;
+                    CustomItem_DCMakeLine(drawCmd, 
+                        vec2(0, itemspaceorigin.y + tobedge*dimspul.y),
+                        vec2(dimensions.x,itemspaceorigin.y + tobedge*dimspul.y),
+                        1, g.xMajorGridlineColor
+                    ); CustomItem_AddDrawCmd(item, drawCmd);
+                }
+            }
+        }
+    }//major gridlines
 
+    {//draw axes
+        if(xAxisVisible){
+            UIDrawCmd drawCmd;
+            vec2  start = vec2(-tl.x*dimspul.x,0);
+            vec2    end = vec2(-tl.x*dimspul.x,dimensions.y);
+            color   col = g.xAxisColor;
+            CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
+            CustomItem_AddDrawCmd(item, drawCmd);
+        }
+        if(yAxisVisible){
+            UIDrawCmd drawCmd;
+            vec2 start = vec2(0,-tl.y*dimspul.y);
+            vec2   end = vec2(dimensions.x,-tl.y*dimspul.y);
+            color  col = g.yAxisColor;
+            CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
+            CustomItem_AddDrawCmd(item, drawCmd);
+        }
+    }//axes
 
+    {//draw axes labels
+        switch(g.axesLabelStyle){
+            case GraphAxesLabelStyle_OnAxes:{
+                if(g.xAxisLabel.count){
+                    vec2 textsize = CalcTextSize(g.xAxisLabel);
+                    vec2 pos = vec2(
+                        itemspacecenter.x+(dimensions.x/2-textsize.x), 
+                        Clamp(scalar_t(itemspaceorigin.y+1), scalar_t(0), scalar_t(itemspacecenter.y+(dimensions.y/2-textsize.y)))  
+                    );
+                    UIDrawCmd drawCmd;
+                    //TODO setup the color for this to be more dynamic or something
+                    //     probably just make a graph background color parameter and use that
+                    drawCmd.scissorOffset=pos;
+                    drawCmd.scissorExtent=Min(textsize, dimensions/2);
+                    drawCmd.useWindowScissor=false;
+                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, GetStyle().colors[UIStyleCol_WindowBg]);
+                    CustomItem_DCMakeText(drawCmd, g.xAxisLabel, pos,
+                      GetStyle().colors[UIStyleCol_Text], vec2::ONE); //TODO make a label color parameter maybe
+                    CustomItem_AddDrawCmd(item, drawCmd);
+                }
+                if(g.yAxisLabel.count){
+                    vec2 textsize = CalcTextSize(g.yAxisLabel);
+                    vec2 pos = vec2( //label follows yaxis but is clamped to edges of the screen
+                        Clamp(scalar_t(itemspaceorigin.x+1), scalar_t(0),  scalar_t(itemspacecenter.x+(dimensions.x/2-textsize.x))),
+                        itemspacecenter.y-dimensions.y/2
+                    );
+                    UIDrawCmd drawCmd;
+                    //TODO setup the color for this to be more dynamic or something
+                    //     probably just make a graph background color parameter and use that
+                    drawCmd.scissorOffset=pos;
+                    drawCmd.scissorExtent=Max(textsize, dimensions/2);
+                    drawCmd.useWindowScissor=false;
+                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, GetStyle().colors[UIStyleCol_WindowBg]);
+                    CustomItem_DCMakeText(drawCmd, g.yAxisLabel, pos,
+                      GetStyle().colors[UIStyleCol_Text], vec2::ONE); //TODO make a label color parameter maybe
+                    CustomItem_AddDrawCmd(item, drawCmd);
+                }
+            }
+        }
+
+    }//axes labels
+
+    EndCustomItem();
+}
+
+// draws a given Graph in a UI Window with given dimensions
+// this doesn't draw any decorations, such as a border.
+void draw_graph(Graph& g, vec2 dimensions){DPZoneScoped;
+    draw_graph_final(g,UI::GetWinCursor(),dimensions,1);
+}
+
+// draws a given Graph in a UI Window with given position and  dimensions
+// this doesn't draw any decorations, such as a border.
+void draw_graph(Graph& g, vec2 position, vec2 dimensions){
+    draw_graph_final(g,position,dimensions,0);
 }
