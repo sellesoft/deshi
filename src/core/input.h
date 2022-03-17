@@ -127,7 +127,7 @@ struct Input{
 	std::vector<pair<std::string, Key::Key>> binds; //TODO remove/move this and make it array
 	b32 checkbinds = false; //needed bc glfw callbacks would call the function too early
 	
-	//real values are updated through OS input callbacks
+	//real values updated through OS input callbacks
 	b32 realKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	f64 realMouseX,       realMouseY;
 	f64 realScreenMouseX, realScreenMouseY;
@@ -135,14 +135,13 @@ struct Input{
 	u32 realCharCount = 0;
 	b32 keyFocus, mouseFocus;
 	
-	b32 logInput = true;
+	b32 logInput = false;
 	
 	f64 time_key_held = 0;
 	f64 time_char_held = 0;
 	
 	TIMER_START(input__time_since_key_hold);
 	TIMER_START(input__time_since_char_hold);
-	
 	
 	//caches values so they are consistent thru the frame
 	void Update(){

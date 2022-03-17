@@ -74,6 +74,10 @@ struct Graph{
     //TODO axes label alignemnt options
 
     //Graph data
+    carray<scalar_t> xAxisData;
+    carray<scalar_t> yAxisData;
+
+
 
     //misc graph properties that may be useful outside of draw_graph
     //these are calculated in draw_graph_final
@@ -242,6 +246,17 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
                         vec2(dimensions.x, itemspaceorigin.y + totedge*dimspul.y),
                         1, g.xMajorGridlineColor
                     ); CustomItem_AddDrawCmd(item, drawCmd);
+                    if(g.yShowMajorCoords){
+                        PushLayer(GetCurrentLayer()+1);
+                        //TODO find a way around allocating a string
+                        string text = to_string(-totedge);
+                        vec2 textsize = CalcTextSize(text);
+                        vec2 pos = vec2(itemspaceorigin.x-textsize.x-1,itemspaceorigin.y+totedge*dimspul.y-textsize.y/2);
+                        //CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2::ONE); 
+                        CustomItem_AddDrawCmd(item, drawCmd);
+                        PopLayer();
+                    }
                 }
                 if(tobedge < bedge){
                     UIDrawCmd drawCmd;
@@ -250,6 +265,17 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
                         vec2(dimensions.x,itemspaceorigin.y + tobedge*dimspul.y),
                         1, g.xMajorGridlineColor
                     ); CustomItem_AddDrawCmd(item, drawCmd);
+                    if(g.yShowMajorCoords){
+                        PushLayer(GetCurrentLayer()+1);
+                        //TODO find a way around allocating a string
+                        string text = to_string(-tobedge);
+                        vec2 textsize = CalcTextSize(text);
+                        vec2 pos = vec2(itemspaceorigin.x-textsize.x-1,itemspaceorigin.y+tobedge*dimspul.y-textsize.y/2);
+                        //CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2::ONE); 
+                        CustomItem_AddDrawCmd(item, drawCmd);
+                        PopLayer();
+                    }
                 }
             }
         }
@@ -315,6 +341,25 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
         }
 
     }//axes labels
+
+    {//draw data
+        Assert(g.xAxisData.count == g.yAxisData.count, "data counts mismatch. make sure the amount of x and y data you provide is the same!");
+        carray<scalar_t> xad = g.xAxisData;
+        carray<scalar_t> yad = g.yAxisData;
+
+        forI(xad.count){
+            vec2 point = vec2(xad[i],yad[i]);
+            if(Math::PointInRectangle(point, cpos-vec2::ONE*czoom, vec2(view_width,view_width*aspect_ratio))){
+                UIDrawCmd drawCmd;
+                CustomItem_DCMakeFilledCircle(drawCmd, 
+                    itemspacecenter+(point-cpos)*dimspul,
+                    1,
+                    20,
+                    Color_Red
+                ); CustomItem_AddDrawCmd(item, drawCmd);
+            } 
+        }
+    }
 
     EndCustomItem();
 }
