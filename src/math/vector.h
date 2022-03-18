@@ -4,6 +4,7 @@
 
 #include "math_utils.h"
 
+struct vec2g; //graphing's vec2
 struct vec2;
 struct vec3;
 struct vec4;
@@ -86,6 +87,7 @@ struct vec2 {
 	//vector interactions
 	vec2(const vec3& v);
 	vec2(const vec4& v);
+	vec2(const vec2g& v);
 	vec3 toVec3() const;
 	vec4 toVec4() const;
 };

@@ -22,6 +22,8 @@ vec2(f32* ptr){
 	x = *ptr; y = *(ptr+1);
 }
 
+
+
 ///////////////////
 //// constants ////
 ///////////////////
@@ -51,7 +53,7 @@ operator*(f32 rhs) const{
 
 inline void vec2::
 operator*=(f32 rhs) {
-	this->x *= rhs; this->y *= rhs; ;
+	this->x *= rhs; this->y *= rhs;
 }
 
 inline vec2 vec2::
@@ -76,32 +78,32 @@ operator+=(const vec2& rhs) {
 
 inline vec2 vec2::
 operator-(const vec2& rhs) const{
-	return vec2(this->x - rhs.x, this->y - rhs.y) ;
+	return vec2(this->x - rhs.x, this->y - rhs.y);
 }
 
 inline void vec2::
 operator-=(const vec2& rhs) {
-	this->x -= rhs.x; this->y -= rhs.y; ;
+	this->x -= rhs.x; this->y -= rhs.y;
 }
 
 inline vec2 vec2::
 operator*(const vec2& rhs) const{
-	return vec2(this->x * rhs.x, this->y * rhs.y) ;
+	return vec2(this->x * rhs.x, this->y * rhs.y);
 }
 
 inline void vec2::
 operator*=(const vec2& rhs) {
-	this->x *= rhs.x; this->y *= rhs.y; ;
+	this->x *= rhs.x; this->y *= rhs.y;
 }
 
 inline vec2 vec2::
 operator/(const vec2& rhs) const{
-	return vec2(this->x / rhs.x, this->y / rhs.y) ;
+	return vec2(this->x / rhs.x, this->y / rhs.y);
 }
 
 inline void vec2::
 operator/=(const vec2& rhs) {
-	this->x /= rhs.x; this->y /= rhs.y; ;
+	this->x /= rhs.x; this->y /= rhs.y;
 }
 
 inline vec2 vec2::
