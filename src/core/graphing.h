@@ -24,7 +24,7 @@ struct Graph{
     //TODO this should be vec2f64 (vec2d)
     vec2      cameraPosition{0,0}; //in graph space, center of 'camera'
 	scalar_t  cameraZoom = 5.0; //represets half of the width the camera can see, so if this is 5 and posiiton is 0,0 then you see from -5 to 5
-
+    vec2    cameraView{5.0,5.0}; //represents how much over the x and y axes we can see
     //Graph properties
     //wether or not to show main axes
     //bulk set using set_axes_visible()
@@ -51,8 +51,8 @@ struct Graph{
     color yMinorGridlineColor=color(40,40,40);
     //the separation between major gridlines
     //bulk set using set_major_gridlines_increment()
-	scalar_t xMajorLinesIncrement   = 1.0;
-	scalar_t yMajorLinesIncrement   = 1.0;
+	scalar_t xMajorLinesIncrement   = 1;
+	scalar_t yMajorLinesIncrement   = 1;
     //the separation between minor gridlines
     //bulk set using set_minor_gridlines_increment()
 	scalar_t xMinorLinesIncrement   = 0.2;
@@ -82,6 +82,7 @@ struct Graph{
     //misc graph properties that may be useful outside of draw_graph
     //these are calculated in draw_graph_final
     vec2 dimensions_per_unit_length;
+    scalar_t aspect_ratio;
 
 };
 
@@ -102,9 +103,10 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
     
     scalar_t view_width = czoom*2; 
     scalar_t aspect_ratio = dimensions.y/dimensions.x;
+    g.aspect_ratio = aspect_ratio;
     //dimensions per unit length
     //gives how far along in screen space 1 unit in graph space is
-    vec2 dimspul = vec2(dimensions.x/view_width, dimensions.x/view_width*aspect_ratio);
+    vec2 dimspul = vec2(dimensions.x/view_width, dimensions.x/view_width);
     g.dimensions_per_unit_length = dimspul;
 
     //TODO get exponent directly from the exponent of float's bits
@@ -120,12 +122,13 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
     //round left edge to nearest order of magnitude multiplied by increment 
     //TODO set this up to only happen when zoom or position change
     vec2 oom = vec2(Math::order_of_magnitude(czoom), Math::order_of_magnitude(czoom));
-    vec2 tentooom = vec2(pow(10, oom.x), pow(10, oom.y));
+    vec2 tentooom = oom;
     vec2 ledgernd = 
     vec2(floor(tl.x / tentooom.x) * tentooom.x, floor(tl.y / tentooom.y) * tentooom.y); 
 
     vec2 itemspacecenter = dimensions / 2; //positions of the center of our item
-    vec2 itemspaceorigin = itemspacecenter - dimspul*cpos; //position of the center of the origin in item space
+
+    vec2 itemspaceorigin = itemspacecenter - vec2(dimspul.x, dimspul.y*aspect_ratio)*cpos; //position of the center of the origin in item space
 
     {//draw minor gridlines
         //TODO prevent minor lines from unecessarily drawing where major lines draw when they're enabled
@@ -133,7 +136,7 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
             scalar_t ledge = tl.x, toledge = Clamp(0,tl.x,br.x); //to left edge 
             scalar_t redge = br.x, toredge = Clamp(0,tl.x,br.x); //to right edge
             //Log("", toledge, " ", toredge);
-            scalar_t inc = g.xMinorLinesIncrement*pow(10,oom.x);
+            scalar_t inc = floor((g.xMinorLinesIncrement*czoom)*10)/10;
             while(toledge > ledge || toredge < redge){
                 toledge-=inc;
                 toredge+=inc;
@@ -188,8 +191,8 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
             scalar_t ledge = tl.x, toledge = Clamp(0, tl.x, br.x); //to left edge 
             scalar_t redge = br.x, toredge = Clamp(0, tl.x, br.x); //to right edge
             while(toledge > ledge || toredge < redge){
-                toledge-=g.xMajorLinesIncrement*pow(10,oom.x);
-                toredge+=g.xMajorLinesIncrement*pow(10,oom.x);
+                toledge-= floor((g.xMinorLinesIncrement*czoom)*10)/10;
+                toredge+= floor((g.xMinorLinesIncrement*czoom)*10)/10;
                 if(toledge > ledge){
                     UIDrawCmd drawCmd;
                     CustomItem_DCMakeLine(drawCmd, 
@@ -205,7 +208,7 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
                         string text = to_string(toledge);
                         vec2 textsize = CalcTextSize(text);
                         vec2 pos = vec2(itemspaceorigin.x+toledge*dimspul.x-textsize.x/2, itemspaceorigin.y-textsize.y-1);
-                        //CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
                         CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2::ONE); 
                         CustomItem_AddDrawCmd(item, drawCmd);
                         PopLayer();
@@ -252,7 +255,7 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
                         string text = to_string(-totedge);
                         vec2 textsize = CalcTextSize(text);
                         vec2 pos = vec2(itemspaceorigin.x-textsize.x-1,itemspaceorigin.y+totedge*dimspul.y-textsize.y/2);
-                        //CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
                         CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2::ONE); 
                         CustomItem_AddDrawCmd(item, drawCmd);
                         PopLayer();
@@ -271,7 +274,7 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
                         string text = to_string(-tobedge);
                         vec2 textsize = CalcTextSize(text);
                         vec2 pos = vec2(itemspaceorigin.x-textsize.x-1,itemspaceorigin.y+tobedge*dimspul.y-textsize.y/2);
-                        //CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
                         CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2::ONE); 
                         CustomItem_AddDrawCmd(item, drawCmd);
                         PopLayer();
@@ -284,17 +287,17 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
     {//draw axes
         if(xAxisVisible){
             UIDrawCmd drawCmd;
-            vec2  start = vec2(-tl.x*dimspul.x,0);
-            vec2    end = vec2(-tl.x*dimspul.x,dimensions.y);
-            color   col = g.xAxisColor;
+            vec2 start = vec2(0,-tl.y*dimspul.y*aspect_ratio);
+            vec2   end = vec2(dimensions.x,-tl.y*dimspul.y*aspect_ratio);
+            color  col = g.yAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
         if(yAxisVisible){
             UIDrawCmd drawCmd;
-            vec2 start = vec2(0,-tl.y*dimspul.y);
-            vec2   end = vec2(dimensions.x,-tl.y*dimspul.y);
-            color  col = g.yAxisColor;
+            vec2  start = vec2(-tl.x*dimspul.x,0);
+            vec2    end = vec2(-tl.x*dimspul.x,dimensions.y);
+            color   col = g.xAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
@@ -349,10 +352,10 @@ void draw_graph_final(Graph& g, vec2 position, vec2 dimensions, b32 move_cursor)
 
         forI(xad.count){
             vec2 point = vec2(xad[i],yad[i]);
-            if(Math::PointInRectangle(point, cpos-vec2::ONE*czoom, vec2(view_width,view_width*aspect_ratio))){
+            if(Math::PointInRectangle(point, cpos-vec2::ONE*czoom, vec2(view_width,view_width))){
                 UIDrawCmd drawCmd;
                 CustomItem_DCMakeFilledCircle(drawCmd, 
-                    itemspacecenter+(point-cpos)*dimspul,
+                    itemspacecenter+(point-cpos)*vec2(dimspul.x, dimspul.y*aspect_ratio),
                     1,
                     20,
                     Color_Red
