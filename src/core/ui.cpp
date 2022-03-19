@@ -544,8 +544,8 @@ vec2 UI::GetLastItemScreenPos() {DPZoneScoped; KPFuncStart;
 	return curwin->position + curwin->items[currlayer].last->position; KPFuncEnd;
 }
 
-vec2 UI::GetWindowRemainingSpace() {DPZoneScoped; KPFuncStart;
-	return vec2(MarginedRight() - curwin->curx, MarginedBottom() - curwin->cury); KPFuncEnd;
+vec2 UI::GetWindowRemainingSpace() {DPZoneScoped;
+	return vec2(MarginedRight(), MarginedBottom()) - PositionForNewItem();
 }
 
 //NOTE this should match PositionForNewItem(), just without resetting NextCursorPos
