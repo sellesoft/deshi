@@ -144,7 +144,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_SURFACES 2
 
 //arbitray limits, change if needed
-#define MAX_TWOD_VERTICES  0xFFFFFF //max u16: 65535
+#define MAX_TWOD_VERTICES  0xFFFF //max u16: 65535
 #define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
 #define MAX_TWOD_CMDS      1000
 #define TWOD_LAYERS        11

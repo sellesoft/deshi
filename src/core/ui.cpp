@@ -4893,7 +4893,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped; KPFuncStart;
 		//if((DeshInput->mousePos - drawCmd.vertices[0].pos).mag() < 4){
 		//	DebugCircle(drawCmd.vertices[0].pos, 4, Color_Green);
 		//	if(DeshInput->LMousePressed()){
-		//		break_drawCmd_create_hash=drawCmd.hash;
+		//		break_drawCmd_draw_hash=drawCmd.hash;
 		//	}
 		//}
 		//else{
