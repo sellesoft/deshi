@@ -144,14 +144,7 @@ local vec2 NextCursorPos = vec2(-1,-1);
 local vec2 MarginPositionOffset = vec2::ZERO;
 local vec2 MarginSizeOffset     = vec2::ZERO;
 
-struct {
-	u32 vertices  = 0;
-	u32 indices   = 0;
-	
-	u32 draw_cmds = 0;
-	u32 items     = 0;
-	u32 windows   = 0;
-}ui_stats;
+UIStats ui_stats;
 
 //helper defines
 #define StateHasFlag(flag)    ((stateFlags) & (flag))
@@ -595,6 +588,8 @@ pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; KPFuncStart; return Mar
 pair<vec2, vec2> UI::GetClientArea() {DPZoneScoped; KPFuncStart; return ScrollBaredArea(); KPFuncEnd; }
 f32 UI::GetRightIndent(){ return rightIndent; }
 f32 UI::GetLeftIndent(){ return leftIndent; }
+
+UIStats UI::GetStats() {return ui_stats;}
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
@@ -2728,8 +2723,8 @@ void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd) {
 }
 
 
-b32 UI::IsLastItemHovered(){DPZoneScoped; KPFuncStart; //TODO handle layers
-	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize()); KPFuncEnd;
+b32 UI::IsLastItemHovered(){DPZoneScoped; 
+	return WinHovered(curwin) && MouseInArea(GetLastItemScreenPos(), GetLastItemSize()); 
 }
 
 void UI::AddItemFlags(UIItemType type, Flags flags){DPZoneScoped; KPFuncStart;
@@ -5025,15 +5020,12 @@ void UI::Update() {DPZoneScoped; KPFuncStart;
 	break_drawCmd_draw_hash = -1;
 #endif
 	
-	
-	
-	ui_stats = { 0 };
-	
 	if (show_metrics) {
 		DisplayMetrics();
 		show_metrics = 0;
 	}
 
+	ui_stats = { 0 };
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);
 	MarginPositionOffset = vec2::ZERO;

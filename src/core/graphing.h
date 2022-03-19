@@ -156,7 +156,7 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
 
 
     //graph space
-    vec2g      cpos = g.cameraPosition;
+    vec2g     cpos = g.cameraPosition;
     scalar_t czoom = g.cameraZoom;
     
     scalar_t view_width = czoom*2; 
@@ -173,28 +173,43 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
 
     //TODO all of these vec2s need to somehow represent the same type as scalar_t
     vec2g tl = cpos - czoom*vec2g::ONE; //represets the top and left edge of the camera
-    vec2g br = cpos + czoom*vec2g::ONE;  //represets the bottom and right edge of the camera
-    b32 xAxisVisible = g.xShowAxis && tl.x < 0 && br.x > 0;
-    b32 yAxisVisible = g.yShowAxis && tl.y < 0 && br.y > 0;
+    vec2g br = cpos + czoom*vec2g::ONE*aspect_ratio;  //represets the bottom and right edge of the camera
+    b32 xAxisVisible = g.xShowAxis && tl.y < 0 && br.y > 0;
+    b32 yAxisVisible = g.yShowAxis && tl.x < 0 && br.x > 0;
     
     //round left edge to nearest order of magnitude multiplied by increment 
     //TODO set this up to only happen when zoom or position change
-    vec2g oom = vec2g(Math::order_of_magnitude(czoom), Math::order_of_magnitude(czoom));
-    vec2g tentooom = oom;
-    vec2g ledgernd = 
-    vec2g(floor(tl.x / tentooom.x) * tentooom.x, floor(tl.y / tentooom.y) * tentooom.y); 
+    scalar_t oom = Math::order_of_magnitude(czoom);
+    scalar_t tentooom = pow(10,oom);
+
+    //round each edge to the closest order of magnitude
+    vec2g tl_oom_rnd = floor(tl/tentooom)*tentooom;
+    vec2g br_oom_rnd = floor(tl/tentooom)*tentooom;
 
     vec2g itemspacecenter = dimensions / 2; //positions of the center of our item
 
     vec2g itemspaceorigin = itemspacecenter - vec2g(dimspul.x, dimspul.y*aspect_ratio)*cpos; //position of the center of the origin in item space
+ 
+
+    persist u32 incmod = 1;
+    if(DeshInput->KeyPressed(Key::I)) incmod++;
+    if(DeshInput->KeyPressed(Key::K)) incmod = Max(incmod-1, u32(1));
+
+    auto increment = [&](scalar_t x){
+        UIDrawCmd dc;
+        string out = toStr(czoom, " ", oom, " ", pow(10,oom));
+        CustomItem_DCMakeText(dc, {out.str, out.count}, vec2::ZERO, Color_White, vec2::ONE);
+        CustomItem_AddDrawCmd(item, dc);
+
+        return x*pow(10,oom);
+    };
 
     {//draw minor gridlines
         //TODO prevent minor lines from unecessarily drawing where major lines draw when they're enabled
         if(g.xShowMinorLines){
-            scalar_t ledge = tl.x, toledge = Clamp(0,tl.x,br.x); //to left edge 
-            scalar_t redge = br.x, toredge = Clamp(0,tl.x,br.x); //to right edge
-            //Log("", toledge, " ", toredge);
-            scalar_t inc = floor((g.xMinorLinesIncrement*czoom)*10)/10;
+            scalar_t ledge = tl.x, toledge = Clamp(0,tl_oom_rnd.x,br_oom_rnd.x); //to left edge 
+            scalar_t redge = br.x, toredge = Clamp(0,tl_oom_rnd.x,br_oom_rnd.x); //to right edge
+            scalar_t inc = increment(g.xMinorLinesIncrement);
             while(toledge > ledge || toredge < redge){
                 toledge-=inc;
                 toredge+=inc;
@@ -217,9 +232,9 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             }
         }
         if(g.yShowMinorLines){
-            scalar_t tedge = tl.y, totedge = Clamp(0,tl.y,br.y); //to top edge 
-            scalar_t bedge = br.y, tobedge = Clamp(0,tl.y,br.y); //to bottom edge
-            scalar_t inc = g.yMinorLinesIncrement*pow(10,oom.x);
+            scalar_t tedge = tl.y, totedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to top edge 
+            scalar_t bedge = br.y, tobedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to bottom edge
+            scalar_t inc = increment(g.yMinorLinesIncrement);
             while(totedge > tedge || tobedge < bedge){
                 totedge-=inc;
                 tobedge+=inc;
@@ -246,12 +261,12 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     {//draw major gridlines and their coord labels
         if(g.xShowMajorLines){
             //this starts at the origin and draws major gridlines until reaching the edge of the graph
-            scalar_t ledge = tl.x, toledge = Clamp(0, tl.x, br.x); //to left edge 
-            scalar_t redge = br.x, toredge = Clamp(0, tl.x, br.x); //to right edge
+            scalar_t ledge = tl.x, toledge = Clamp(0, tl_oom_rnd.x, br_oom_rnd.x); //to left edge 
+            scalar_t redge = br.x, toredge = Clamp(0, tl_oom_rnd.x, br_oom_rnd.x); //to right edge
+            scalar_t inc = increment(g.xMajorLinesIncrement);
             while(toledge > ledge || toredge < redge){
-                toledge-= floor((g.xMinorLinesIncrement*czoom)*10)/10;
-                toredge+= floor((g.xMinorLinesIncrement*czoom)*10)/10;
                 if(toledge > ledge){
+                    toledge-=inc;
                     UIDrawCmd drawCmd;
                     CustomItem_DCMakeLine(drawCmd, 
                         vec2g(itemspaceorigin.x + toledge*dimspul.x, 0),
@@ -273,6 +288,7 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
                     }
                 }
                 if(toredge < redge){
+                    toredge+=inc;
                     UIDrawCmd drawCmd;
                     CustomItem_DCMakeLine(drawCmd, 
                         vec2g(itemspaceorigin.x + toredge*dimspul.x, 0),
@@ -295,12 +311,12 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             }
         }
         if(g.yShowMajorLines){
-            scalar_t tedge = tl.y, totedge = Clamp(0,tl.y,br.y); //to top edge 
-            scalar_t bedge = br.y, tobedge = Clamp(0,tl.y,br.y); //to bottom edge
+            scalar_t inc = increment(g.yMajorLinesIncrement);
+            scalar_t tedge = tl.y, totedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to top edge 
+            scalar_t bedge = br.y, tobedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to bottom edge
             while(totedge > tedge || tobedge < bedge){
-                totedge-=g.yMajorLinesIncrement*pow(10,oom.x);
-                tobedge+=g.yMajorLinesIncrement*pow(10,oom.x);
-                if(totedge > tedge){
+                if(totedge > tedge){ //increment to top edge
+                    totedge-=inc;
                     UIDrawCmd drawCmd;
                     CustomItem_DCMakeLine(drawCmd, 
                         vec2g(0, itemspaceorigin.y + totedge*dimspul.y),
@@ -320,6 +336,7 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
                     }
                 }
                 if(tobedge < bedge){
+                    tobedge+=inc;
                     UIDrawCmd drawCmd;
                     CustomItem_DCMakeLine(drawCmd, 
                         vec2g(0, itemspaceorigin.y + tobedge*dimspul.y),
@@ -406,12 +423,13 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     {//draw data
         carray<vec2g> data = g.data;
         forI(data.count){
-            if(Math::PointInRectangle(data[i], cpos-vec2g::ONE*czoom, vec2g(view_width,view_width))){
+            //TODO figure out if negating the y here is safe
+            vec2g point = vec2g(data[i].x, -data[i].y);
+            if(Math::PointInRectangle(point, cpos-vec2g::ONE*czoom, vec2g(view_width,view_width))){
                 UIDrawCmd drawCmd;
-                CustomItem_DCMakeFilledCircle(drawCmd, 
-                    itemspacecenter+(data[i]-cpos)*vec2g(dimspul.x, dimspul.y*aspect_ratio),
-                    1,
-                    20,
+                CustomItem_DCMakeFilledRect(drawCmd,
+                    floor(itemspacecenter+(point-cpos)*dimspul),
+                    vec2::ONE,
                     Color_Red
                 ); CustomItem_AddDrawCmd(item, drawCmd);
             } 

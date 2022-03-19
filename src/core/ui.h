@@ -671,6 +671,15 @@ struct UIRow {
 	array<UIColumn> columns;
 };
 
+struct UIStats {
+	u32 vertices  = 0;
+	u32 indices   = 0;
+	
+	u32 draw_cmds = 0;
+	u32 items     = 0;
+	u32 windows   = 0;
+};
+
 namespace UI {
 	
 	//// helpers ////
@@ -779,6 +788,9 @@ namespace UI {
 	//returns a pair of vec2s, the first being the position in window space and second the area. 
 	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
 	pair<vec2, vec2> GetClientArea();
+
+	//returns a UIStats object containing information about UI
+	UIStats GetStats();
 
 	
 	f32 GetRightIndent();
