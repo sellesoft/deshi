@@ -143,8 +143,9 @@ struct Graph{
 
 };
 
+
 //TODO this works, but at non 1:1 aspect ratios cameraPosition no longer actually represents the center
-//     of the 
+//     of the graph the user visually sees
 void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_cursor){
     using namespace UI;
     UIItem* item = BeginCustomItem();
@@ -392,11 +393,6 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             } 
         }
     }
-
-    debug_text(toStr("  tl_oom_rnd: ", tl_oom_rnd));
-    debug_text(toStr("  br_oom_rnd: ", br_oom_rnd));
-    debug_text(toStr("cpos_oom_rnd: ", cpos_oom_rnd));
-
     EndCustomItem();
 }
 
