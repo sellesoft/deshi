@@ -143,7 +143,8 @@ struct Graph{
 
 };
 
-
+//TODO this works, but at non 1:1 aspect ratios cameraPosition no longer actually represents the center
+//     of the 
 void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_cursor){
     using namespace UI;
     UIItem* item = BeginCustomItem();
@@ -154,6 +155,15 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     color textcol = GetStyle().colors[UIStyleCol_Text];
     color winbgcol = GetStyle().colors[UIStyleCol_WindowBg];
 
+    //DEBUG 
+    u32 text_count = 0;
+    auto debug_text = [&](string& out){
+        UIDrawCmd dc;
+        CustomItem_DCMakeText(dc, {out.str, out.count}, vec2(0,text_count*13), Color_White, vec2::ONE);
+        CustomItem_AddDrawCmd(item, dc);
+        text_count++;
+    };
+    //DEBUG 
 
     //graph space
     vec2g     cpos = g.cameraPosition;
@@ -173,9 +183,14 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
 
     //TODO all of these vec2s need to somehow represent the same type as scalar_t
     vec2g tl = cpos - czoom*vec2g::ONE; //represets the top and left edge of the camera
-    vec2g br = cpos + czoom*vec2g::ONE*aspect_ratio;  //represets the bottom and right edge of the camera
+    vec2g br = cpos + czoom*vec2g::ONE;  //represets the bottom and right edge of the camera
+    tl.y *= aspect_ratio;
+    br.y *= aspect_ratio;    
+
+    
     b32 xAxisVisible = g.xShowAxis && tl.y < 0 && br.y > 0;
     b32 yAxisVisible = g.yShowAxis && tl.x < 0 && br.x > 0;
+
     
     //round left edge to nearest order of magnitude multiplied by increment 
     //TODO set this up to only happen when zoom or position change
@@ -184,11 +199,11 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
 
     //round each edge to the closest order of magnitude
     vec2g tl_oom_rnd = floor(tl/tentooom)*tentooom;
-    vec2g br_oom_rnd = floor(tl/tentooom)*tentooom;
+    vec2g br_oom_rnd = floor(br/tentooom)*tentooom;
+    vec2g cpos_oom_rnd = floor(cpos/tentooom)*tentooom;
 
     vec2g itemspacecenter = dimensions / 2; //positions of the center of our item
-
-    vec2g itemspaceorigin = itemspacecenter - vec2g(dimspul.x, dimspul.y*aspect_ratio)*cpos; //position of the center of the origin in item space
+    vec2g itemspaceorigin = itemspacecenter - cpos*vec2g(dimspul.x, dimspul.y*aspect_ratio); //position of the center of the origin in item space
  
 
     persist u32 incmod = 1;
@@ -199,56 +214,44 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
         return x*pow(10,oom);
     };
 
+
+    scalar_t minor_left_edge_rounded = ceil(tl.x / (g.xMinorLinesIncrement * tentooom)) * g.xMinorLinesIncrement * tentooom;
+    scalar_t minor_top_edge_rounded  = ceil(tl.y / (g.yMinorLinesIncrement * tentooom)) * g.yMinorLinesIncrement * tentooom;
+    scalar_t major_left_edge_rounded = ceil(tl.x / (g.xMajorLinesIncrement * tentooom)) * g.xMajorLinesIncrement * tentooom;
+    scalar_t major_top_edge_rounded  = ceil(tl.y / (g.yMajorLinesIncrement * tentooom)) * g.yMajorLinesIncrement * tentooom;
+    
+
     {//draw minor gridlines
         //TODO prevent minor lines from unecessarily drawing where major lines draw when they're enabled
         if(g.xShowMinorLines){
-            scalar_t ledge = tl.x, toledge = Clamp(0,tl_oom_rnd.x,br_oom_rnd.x); //to left edge 
-            scalar_t redge = br.x, toredge = Clamp(0,tl_oom_rnd.x,br_oom_rnd.x); //to right edge
-            scalar_t inc = increment(g.xMinorLinesIncrement);
+            //this starts at the left edge of the graph, rounded by order of magnitude and increment
+            //and keeps drawing lines until it reaches the right edge of the graph
             UIDrawCmd drawCmd;
-            while(toledge > ledge || toredge < redge){
-                toledge-=inc;
-                toredge+=inc;
-                if(toledge > ledge){
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(itemspaceorigin.x + toledge*dimspul.x, 0),
-                        vec2g(itemspaceorigin.x + toledge*dimspul.x, dimensions.y),
-                        1, g.xMinorGridlineColor
-                    ); 
-                }
-                if(toredge < redge){
-                    UIDrawCmd drawCmd;
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(itemspaceorigin.x + toredge*dimspul.x, 0),
-                        vec2g(itemspaceorigin.x + toredge*dimspul.x, dimensions.y),
-                        1, g.xMinorGridlineColor
-                    ); 
-                }
+            scalar_t inc = increment(g.xMinorLinesIncrement);
+            scalar_t edgeinc = minor_left_edge_rounded;
+            while(edgeinc < br.x){
+                scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
+                CustomItem_DCMakeLine(drawCmd,
+                    vec2g(xloc, 0),
+                    vec2g(xloc, dimensions.y),
+                    1, g.xMinorGridlineColor
+                );
+                edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
         }
         if(g.yShowMinorLines){
-            scalar_t tedge = tl.y, totedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to top edge 
-            scalar_t bedge = br.y, tobedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to bottom edge
-            scalar_t inc = increment(g.yMinorLinesIncrement);
             UIDrawCmd drawCmd;
-            while(totedge > tedge || tobedge < bedge){
-                totedge-=inc;
-                tobedge+=inc;
-                if(totedge > tedge){
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(0, itemspaceorigin.y + totedge*dimspul.y),
-                        vec2g(dimensions.x, itemspaceorigin.y + totedge*dimspul.y),
-                        1, g.xMinorGridlineColor
-                    ); 
-                }
-                if(tobedge < bedge){
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(0, itemspaceorigin.y + tobedge*dimspul.y),
-                        vec2g(dimensions.x,itemspaceorigin.y + tobedge*dimspul.y),
-                        1, g.xMinorGridlineColor
-                    );
-                }
+            scalar_t inc = increment(g.yMinorLinesIncrement);
+            scalar_t edgeinc = minor_top_edge_rounded;
+            while(edgeinc < br.y){
+                scalar_t yloc = (edgeinc - tl.y) * dimspul.y;
+                CustomItem_DCMakeLine(drawCmd,
+                    vec2g(0,            yloc),
+                    vec2g(dimensions.x, yloc),
+                    1, g.yMinorGridlineColor
+                );
+                edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
         }
@@ -256,104 +259,58 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
 
     {//draw major gridlines and their coord labels
         if(g.xShowMajorLines){
-            //this starts at the origin and draws major gridlines until reaching the edge of the graph
-            scalar_t ledge = tl.x, toledge = Clamp(0, tl_oom_rnd.x, br_oom_rnd.x); //to left edge 
-            scalar_t redge = br.x, toredge = Clamp(0, tl_oom_rnd.x, br_oom_rnd.x); //to right edge
-            scalar_t inc = increment(g.xMajorLinesIncrement);
-            UIDrawCmd dc;
-            string out = toStr(
-                "ledge:   ", ledge, "\n",
-                "toledge: ", toledge, "\n",
-                "redge:   ", redge, "\n",
-                "toredge: ", toredge, "\n");
-            CustomItem_DCMakeText(dc, {out.str, out.count}, vec2::ZERO, Color_White, vec2::ONE);
-            CustomItem_AddDrawCmd(item, dc);
+            //this starts at the left edge of the graph, rounded by order of magnitude and increment
+            //and keeps drawing lines until it reaches the right edge of the graph
             UIDrawCmd drawCmd;
-            while(toledge > ledge || toredge < redge){
-                if(toledge > ledge){
-                    toledge-=inc;
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(itemspaceorigin.x + toledge*dimspul.x, 0),
-                        vec2g(itemspaceorigin.x + toledge*dimspul.x, dimensions.y),
-                        1, g.xMajorGridlineColor
-                    ); 
-                    //NOTE i dont know if i really like doing this like this, using a layer i mean
-                    //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
-                    if(g.xShowMajorCoords){
-                        PushLayer(GetCurrentLayer()+1);
-                        //TODO find a way around allocating a string
-                        string text = to_string(toledge);
-                        vec2g textsize = CalcTextSize(text);
-                        vec2g pos = vec2g(itemspaceorigin.x+toledge*dimspul.x-textsize.x/2, itemspaceorigin.y-textsize.y-1);
-                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                        CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
-                        PopLayer();
-                    }
+            scalar_t inc = increment(g.xMajorLinesIncrement);
+            scalar_t edgeinc = major_left_edge_rounded;
+            while(edgeinc < br.x){
+                scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
+                CustomItem_DCMakeLine(drawCmd,
+                    vec2g(xloc, 0),
+                    vec2g(xloc, dimensions.y),
+                    1, g.xMajorGridlineColor
+                );
+                //NOTE i dont know if i really like doing this like this, using a layer i mean
+                //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
+                if(g.xShowMajorCoords){
+                    PushLayer(GetCurrentLayer()+1);
+                    //TODO find a way around allocating a string
+                    string text = to_string(edgeinc);
+                    vec2g textsize = CalcTextSize(text);
+                    vec2g pos = vec2g(xloc-textsize.x/2, itemspaceorigin.y-textsize.y-1);
+                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                    CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
+                    PopLayer();
                 }
-                if(toredge < redge){
-                    toredge+=inc;
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(itemspaceorigin.x + toredge*dimspul.x, 0),
-                        vec2g(itemspaceorigin.x + toredge*dimspul.x, dimensions.y),
-                        1, g.xMajorGridlineColor
-                    ); 
-                    if(g.xShowMajorCoords){
-                        PushLayer(GetCurrentLayer()+1);
-                        //TODO find a way around allocating a string
-                        string text = to_string(toredge);
-                        vec2g textsize = CalcTextSize(text);
-                        vec2g pos = vec2g(itemspaceorigin.x+toredge*dimspul.x-textsize.x/2, itemspaceorigin.y-textsize.y-1);
-                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                        CustomItem_DCMakeText(drawCmd,{text.str,text.count},pos,textcol, vec2g::ONE); 
-                        PopLayer();
-                    }
-                }
-                
+                edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
         }
         if(g.yShowMajorLines){
-            scalar_t inc = increment(g.yMajorLinesIncrement);
-            scalar_t tedge = tl.y, totedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to top edge 
-            scalar_t bedge = br.y, tobedge = Clamp(0,tl_oom_rnd.y,br_oom_rnd.y); //to bottom edge
             UIDrawCmd drawCmd;
-            while(totedge > tedge || tobedge < bedge){
-                if(totedge > tedge){ //increment to top edge
-                    totedge-=inc;
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(0, itemspaceorigin.y + totedge*dimspul.y),
-                        vec2g(dimensions.x, itemspaceorigin.y + totedge*dimspul.y),
-                        1, g.xMajorGridlineColor
-                    ); 
-                    if(g.yShowMajorCoords){
-                        PushLayer(GetCurrentLayer()+1);
-                        //TODO find a way around allocating a string
-                        string text = to_string(-totedge);
-                        vec2g textsize = CalcTextSize(text);
-                        vec2g pos = vec2g(itemspaceorigin.x-textsize.x-1,itemspaceorigin.y+totedge*dimspul.y-textsize.y/2);
-                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                        CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
-                        PopLayer();
-                    }
+            scalar_t inc = increment(g.yMajorLinesIncrement);
+            scalar_t edgeinc = major_top_edge_rounded;
+            while(edgeinc < br.y){
+                scalar_t yloc = (edgeinc - tl.y) * dimspul.y;
+                CustomItem_DCMakeLine(drawCmd,
+                    vec2g(0,            yloc),
+                    vec2g(dimensions.x, yloc),
+                    1, g.yMajorGridlineColor
+                );
+                //NOTE i dont know if i really like doing this like this, using a layer i mean
+                //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
+                if(g.yShowMajorCoords){
+                    PushLayer(GetCurrentLayer()+1);
+                    //TODO find a way around allocating a string
+                    string    text = to_string(edgeinc);
+                    vec2g textsize = CalcTextSize(text);
+                    vec2g      pos = vec2g(itemspaceorigin.x-textsize.x-1, yloc-textsize.y/2);
+                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
+                    CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
+                    PopLayer();
                 }
-                if(tobedge < bedge){
-                    tobedge+=inc;
-                    CustomItem_DCMakeLine(drawCmd, 
-                        vec2g(0, itemspaceorigin.y + tobedge*dimspul.y),
-                        vec2g(dimensions.x,itemspaceorigin.y + tobedge*dimspul.y),
-                        1, g.xMajorGridlineColor
-                    );
-                    if(g.yShowMajorCoords){
-                        PushLayer(GetCurrentLayer()+1);
-                        //TODO find a way around allocating a string
-                        string text = to_string(-tobedge);
-                        vec2g textsize = CalcTextSize(text);
-                        vec2g pos = vec2g(itemspaceorigin.x-textsize.x-1,itemspaceorigin.y+tobedge*dimspul.y-textsize.y/2);
-                        CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                        CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
-                        PopLayer();
-                    }
-                }
+                edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
         }
@@ -362,16 +319,16 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     {//draw axes
         if(xAxisVisible){
             UIDrawCmd drawCmd;
-            vec2g start = vec2g(0,-tl.y*dimspul.y*aspect_ratio);
-            vec2g   end = vec2g(dimensions.x,-tl.y*dimspul.y*aspect_ratio);
-            color  col = g.yAxisColor;
+            vec2g start = vec2g(0,           itemspaceorigin.y);
+            vec2g   end = vec2g(dimensions.x,itemspaceorigin.y);
+            color   col = g.yAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
         if(yAxisVisible){
             UIDrawCmd drawCmd;
-            vec2g  start = vec2g(-tl.x*dimspul.x,0);
-            vec2g    end = vec2g(-tl.x*dimspul.x,dimensions.y);
+            vec2g start = vec2g(-tl.x*dimspul.x, 0);
+            vec2g   end = vec2g(-tl.x*dimspul.x, dimensions.y);
             color   col = g.xAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
@@ -428,13 +385,17 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             if(Math::PointInRectangle(point, cpos-vec2g::ONE*czoom, vec2g(view_width,view_width))){
                 UIDrawCmd drawCmd;
                 CustomItem_DCMakeFilledRect(drawCmd,
-                    floor(itemspacecenter+(point-cpos)*dimspul),
+                    floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y)),
                     vec2::ONE,
                     Color_Red
                 ); CustomItem_AddDrawCmd(item, drawCmd);
             } 
         }
     }
+
+    debug_text(toStr("  tl_oom_rnd: ", tl_oom_rnd));
+    debug_text(toStr("  br_oom_rnd: ", br_oom_rnd));
+    debug_text(toStr("cpos_oom_rnd: ", cpos_oom_rnd));
 
     EndCustomItem();
 }
