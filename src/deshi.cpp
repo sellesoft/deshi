@@ -74,7 +74,7 @@ see commands.cpp 'test' command
 --------
 [12/31/21,EASY,Tweak] make a local Assert macro that logs the message before stopping
 [12/31/21,EASY,Tweak] make the most recent logging file be named log.txt, while the rest have a date
-[01/06/22,EASY,Tweak] can probably optimize by using a single buffer instead of strings in Log() and LogA()
+[01/06/22,EASY,Tweak] can probably optimize by using a single buffer instead of strings in Log() and LogA() (or use temp allocation)
 [01/06/22,MEDI,Tweak] look into https://github.com/fmtlib/fmt for fast formatting
 
 `Math`
@@ -210,7 +210,8 @@ tab bar buttons pass their input thru to the window (for dragging)
 [03/02/22,EASY,Tweak]   check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
 [03/02/22,EASY,Tweak]   each module should create its own data folder rather than Assets::enforceDirectories()
 [03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
-this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings().
+this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
+[03/22/22,EASY,TWEAK]   check all usages of cstring/wcstring to ensure that the functions don't simply convert them to char* and pass to c-string functions, since they might not have the trailing '\0' that c-strings require
 */
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
