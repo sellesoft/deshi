@@ -138,7 +138,7 @@ struct Graph{
 
     //misc graph properties that may be useful outside of draw_graph
     //these are calculated in draw_graph_final
-    vec2 dimensions_per_unit_length;
+    vec2g dimensions_per_unit_length;
     scalar_t aspect_ratio;
 
 };
@@ -146,7 +146,7 @@ struct Graph{
 
 //TODO this works, but at non 1:1 aspect ratios cameraPosition no longer actually represents the center
 //     of the graph the user visually sees
-void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_cursor){
+void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_cursor){
     using namespace UI;
     UIItem* item = BeginCustomItem();
     item->position = GetWinCursor();
@@ -167,16 +167,16 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     //DEBUG 
 
     //graph space
-    vec2g     cpos = g.cameraPosition;
-    scalar_t czoom = g.cameraZoom;
+    vec2g     cpos = g->cameraPosition;
+    scalar_t czoom = g->cameraZoom;
     
     scalar_t view_width = czoom*2; 
     scalar_t aspect_ratio = dimensions.y/dimensions.x;
-    g.aspect_ratio = aspect_ratio;
+    g->aspect_ratio = aspect_ratio;
     //dimensions per unit length
     //gives how far along in screen space 1 unit in graph space is
     vec2g dimspul = vec2g(dimensions.x/view_width, dimensions.x/view_width);
-    g.dimensions_per_unit_length = dimspul;
+    g->dimensions_per_unit_length = dimspul;
 
     //TODO get exponent directly from the exponent of float's bits
     //s32 oom = (1 & 0x1 ? 
@@ -189,8 +189,8 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     br.y *= aspect_ratio;    
 
     
-    b32 xAxisVisible = g.xShowAxis && tl.y < 0 && br.y > 0;
-    b32 yAxisVisible = g.yShowAxis && tl.x < 0 && br.x > 0;
+    b32 xAxisVisible = g->xShowAxis && tl.y < 0 && br.y > 0;
+    b32 yAxisVisible = g->yShowAxis && tl.x < 0 && br.x > 0;
 
     
     //round left edge to nearest order of magnitude multiplied by increment 
@@ -216,41 +216,41 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     };
 
 
-    scalar_t minor_left_edge_rounded = ceil(tl.x / (g.xMinorLinesIncrement * tentooom)) * g.xMinorLinesIncrement * tentooom;
-    scalar_t minor_top_edge_rounded  = ceil(tl.y / (g.yMinorLinesIncrement * tentooom)) * g.yMinorLinesIncrement * tentooom;
-    scalar_t major_left_edge_rounded = ceil(tl.x / (g.xMajorLinesIncrement * tentooom)) * g.xMajorLinesIncrement * tentooom;
-    scalar_t major_top_edge_rounded  = ceil(tl.y / (g.yMajorLinesIncrement * tentooom)) * g.yMajorLinesIncrement * tentooom;
+    scalar_t minor_left_edge_rounded = ceil(tl.x / (g->xMinorLinesIncrement * tentooom)) * g->xMinorLinesIncrement * tentooom;
+    scalar_t minor_top_edge_rounded  = ceil(tl.y / (g->yMinorLinesIncrement * tentooom)) * g->yMinorLinesIncrement * tentooom;
+    scalar_t major_left_edge_rounded = ceil(tl.x / (g->xMajorLinesIncrement * tentooom)) * g->xMajorLinesIncrement * tentooom;
+    scalar_t major_top_edge_rounded  = ceil(tl.y / (g->yMajorLinesIncrement * tentooom)) * g->yMajorLinesIncrement * tentooom;
     
 
     {//draw minor gridlines
         //TODO prevent minor lines from unecessarily drawing where major lines draw when they're enabled
-        if(g.xShowMinorLines){
+        if(g->xShowMinorLines){
             //this starts at the left edge of the graph, rounded by order of magnitude and increment
             //and keeps drawing lines until it reaches the right edge of the graph
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g.xMinorLinesIncrement);
+            scalar_t inc = increment(g->xMinorLinesIncrement);
             scalar_t edgeinc = minor_left_edge_rounded;
             while(edgeinc < br.x){
                 scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
                 CustomItem_DCMakeLine(drawCmd,
                     vec2g(xloc, 0),
                     vec2g(xloc, dimensions.y),
-                    1, g.xMinorGridlineColor
+                    1, g->xMinorGridlineColor
                 );
                 edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
         }
-        if(g.yShowMinorLines){
+        if(g->yShowMinorLines){
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g.yMinorLinesIncrement);
+            scalar_t inc = increment(g->yMinorLinesIncrement);
             scalar_t edgeinc = minor_top_edge_rounded;
             while(edgeinc < br.y){
                 scalar_t yloc = (edgeinc - tl.y) * dimspul.y;
                 CustomItem_DCMakeLine(drawCmd,
                     vec2g(0,            yloc),
                     vec2g(dimensions.x, yloc),
-                    1, g.yMinorGridlineColor
+                    1, g->yMinorGridlineColor
                 );
                 edgeinc += inc;
             }
@@ -259,22 +259,22 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     }
 
     {//draw major gridlines and their coord labels
-        if(g.xShowMajorLines){
+        if(g->xShowMajorLines){
             //this starts at the left edge of the graph, rounded by order of magnitude and increment
             //and keeps drawing lines until it reaches the right edge of the graph
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g.xMajorLinesIncrement);
+            scalar_t inc = increment(g->xMajorLinesIncrement);
             scalar_t edgeinc = major_left_edge_rounded;
             while(edgeinc < br.x){
                 scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
                 CustomItem_DCMakeLine(drawCmd,
                     vec2g(xloc, 0),
                     vec2g(xloc, dimensions.y),
-                    1, g.xMajorGridlineColor
+                    1, g->xMajorGridlineColor
                 );
                 //NOTE i dont know if i really like doing this like this, using a layer i mean
                 //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
-                if(g.xShowMajorCoords){
+                if(g->xShowMajorCoords){
                     PushLayer(GetCurrentLayer()+1);
                     //TODO find a way around allocating a string
                     string text = to_string(edgeinc);
@@ -288,20 +288,20 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             }
             CustomItem_AddDrawCmd(item, drawCmd);
         }
-        if(g.yShowMajorLines){
+        if(g->yShowMajorLines){
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g.yMajorLinesIncrement);
+            scalar_t inc = increment(g->yMajorLinesIncrement);
             scalar_t edgeinc = major_top_edge_rounded;
             while(edgeinc < br.y){
                 scalar_t yloc = (edgeinc - tl.y) * dimspul.y;
                 CustomItem_DCMakeLine(drawCmd,
                     vec2g(0,            yloc),
                     vec2g(dimensions.x, yloc),
-                    1, g.yMajorGridlineColor
+                    1, g->yMajorGridlineColor
                 );
                 //NOTE i dont know if i really like doing this like this, using a layer i mean
                 //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
-                if(g.yShowMajorCoords){
+                if(g->yShowMajorCoords){
                     PushLayer(GetCurrentLayer()+1);
                     //TODO find a way around allocating a string
                     string    text = to_string(edgeinc);
@@ -322,7 +322,7 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             UIDrawCmd drawCmd;
             vec2g start = vec2g(0,           itemspaceorigin.y);
             vec2g   end = vec2g(dimensions.x,itemspaceorigin.y);
-            color   col = g.yAxisColor;
+            color   col = g->yAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
@@ -330,17 +330,17 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
             UIDrawCmd drawCmd;
             vec2g start = vec2g(-tl.x*dimspul.x, 0);
             vec2g   end = vec2g(-tl.x*dimspul.x, dimensions.y);
-            color   col = g.xAxisColor;
+            color   col = g->xAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
     }//axes
 
     {//draw axes labels
-        switch(g.axesLabelStyle){
+        switch(g->axesLabelStyle){
             case GraphAxesLabelStyle_OnAxes:{
-                if(g.xAxisLabel.count){
-                    vec2g textsize = CalcTextSize(g.xAxisLabel);
+                if(g->xAxisLabel.count){
+                    vec2g textsize = CalcTextSize(g->xAxisLabel);
                     vec2g pos = vec2g(
                         itemspacecenter.x+(dimensions.x/2-textsize.x), 
                         Clamp(scalar_t(itemspaceorigin.y+1), scalar_t(0), scalar_t(itemspacecenter.y+(dimensions.y/2-textsize.y)))  
@@ -352,12 +352,12 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
                     drawCmd.scissorExtent=Min(textsize, dimensions/2);
                     drawCmd.useWindowScissor=false;
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, GetStyle().colors[UIStyleCol_WindowBg]);
-                    CustomItem_DCMakeText(drawCmd, g.xAxisLabel, pos,
+                    CustomItem_DCMakeText(drawCmd, g->xAxisLabel, pos,
                       GetStyle().colors[UIStyleCol_Text], vec2g::ONE); //TODO make a label color parameter maybe
                     CustomItem_AddDrawCmd(item, drawCmd);
                 }
-                if(g.yAxisLabel.count){
-                    vec2g textsize = CalcTextSize(g.yAxisLabel);
+                if(g->yAxisLabel.count){
+                    vec2g textsize = CalcTextSize(g->yAxisLabel);
                     vec2g pos = vec2g( //label follows yaxis but is clamped to edges of the screen
                         Clamp(scalar_t(itemspaceorigin.x+1), scalar_t(0),  scalar_t(itemspacecenter.x+(dimensions.x/2-textsize.x))),
                         itemspacecenter.y-dimensions.y/2
@@ -369,7 +369,7 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
                     drawCmd.scissorExtent=Max(textsize, dimensions/2);
                     drawCmd.useWindowScissor=false;
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, GetStyle().colors[UIStyleCol_WindowBg]);
-                    CustomItem_DCMakeText(drawCmd, g.yAxisLabel, pos,
+                    CustomItem_DCMakeText(drawCmd, g->yAxisLabel, pos,
                       GetStyle().colors[UIStyleCol_Text], vec2g::ONE); //TODO make a label color parameter maybe
                     CustomItem_AddDrawCmd(item, drawCmd);
                 }
@@ -379,7 +379,7 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
     }//axes labels
 
     {//draw data
-        carray<vec2g> data = g.data;
+        carray<vec2g> data = g->data;
         forI(data.count){
             //TODO figure out if negating the y here is safe
             vec2g point = vec2g(data[i].x, -data[i].y);
@@ -398,12 +398,12 @@ void draw_graph_final(Graph& g, vec2g position, vec2g dimensions, b32 move_curso
 
 // draws a given Graph in a UI Window with given dimensions
 // this doesn't draw any decorations, such as a border.
-void draw_graph(Graph& g, vec2g dimensions){DPZoneScoped;
+void draw_graph(Graph* g, vec2g dimensions){DPZoneScoped;
     draw_graph_final(g,UI::GetWinCursor(),dimensions,1);
 }
 
 // draws a given Graph in a UI Window with given position and  dimensions
 // this doesn't draw any decorations, such as a border.
-void draw_graph(Graph& g, vec2g position, vec2g dimensions){
+void draw_graph(Graph* g, vec2g position, vec2g dimensions){
     draw_graph_final(g,position,dimensions,0);
 }
