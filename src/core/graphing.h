@@ -167,7 +167,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //DEBUG 
 	
     //graph space
-    vec2g     cpos = g->cameraPosition;
+    vec2g     cpos = vec2g{g->cameraPosition.x, -g->cameraPosition.y};
     scalar_t czoom = g->cameraZoom;
     
     scalar_t view_width = czoom*2; 
@@ -245,7 +245,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             scalar_t inc = increment(g->yMinorLinesIncrement);
             scalar_t edgeinc = minor_top_edge_rounded;
             while(edgeinc < br.y){
-                scalar_t yloc = (edgeinc - tl.y) * dimspul.y;
+                scalar_t yloc = dimensions.y - (edgeinc - tl.y) * dimspul.y;
                 CustomItem_DCMakeLine(drawCmd,
                     vec2g(0,            yloc),
                     vec2g(dimensions.x, yloc),
@@ -279,7 +279,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                     //TODO find a way around allocating a string
                     string text = to_string(edgeinc);
                     vec2g textsize = CalcTextSize(text);
-                    vec2g pos = vec2g(xloc-textsize.x/2, itemspaceorigin.y-textsize.y-1);
+                    vec2g pos = vec2g(xloc-textsize.x/2, dimensions.y-itemspaceorigin.y-textsize.y-1);
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
                     CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
                     PopLayer();
@@ -293,7 +293,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             scalar_t inc = increment(g->yMajorLinesIncrement);
             scalar_t edgeinc = major_top_edge_rounded;
             while(edgeinc < br.y){
-                scalar_t yloc = (edgeinc - tl.y) * dimspul.y;
+                scalar_t yloc = dimensions.y-(edgeinc - tl.y) * dimspul.y;
                 CustomItem_DCMakeLine(drawCmd,
                     vec2g(0,            yloc),
                     vec2g(dimensions.x, yloc),
@@ -320,8 +320,8 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     {//draw axes
         if(xAxisVisible){
             UIDrawCmd drawCmd;
-            vec2g start = vec2g(0,           itemspaceorigin.y);
-            vec2g   end = vec2g(dimensions.x,itemspaceorigin.y);
+            vec2g start = vec2g(0,           dimensions.y-itemspaceorigin.y);
+            vec2g   end = vec2g(dimensions.x,dimensions.y-itemspaceorigin.y);
             color   col = g->yAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
@@ -343,7 +343,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                     vec2g textsize = CalcTextSize(g->xAxisLabel);
                     vec2g pos = vec2g(
 						itemspacecenter.x+(dimensions.x/2-textsize.x), 
-						Clamp(scalar_t(itemspaceorigin.y+1), scalar_t(0), scalar_t(itemspacecenter.y+(dimensions.y/2-textsize.y)))  
+						dimensions.y-Clamp(scalar_t(itemspaceorigin.y+1), scalar_t(0), scalar_t(itemspacecenter.y+(dimensions.y/2-textsize.y)))  
 					);
                     UIDrawCmd drawCmd;
                     //TODO setup the color for this to be more dynamic or something
@@ -360,7 +360,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                     vec2g textsize = CalcTextSize(g->yAxisLabel);
                     vec2g pos = vec2g( //label follows yaxis but is clamped to edges of the screen
 						Clamp(scalar_t(itemspaceorigin.x+1), scalar_t(0),  scalar_t(itemspacecenter.x+(dimensions.x/2-textsize.x))),
-						itemspacecenter.y-dimensions.y/2
+						dimensions.y-(itemspacecenter.y-dimensions.y/2)
 					);
                     UIDrawCmd drawCmd;
                     //TODO setup the color for this to be more dynamic or something
@@ -383,11 +383,13 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         carray<vec2g> data = g->data;
         forI(data.count){
             //TODO figure out if negating the y here is safe
-            vec2g point = vec2g(data[i].x, -data[i].y);
+            vec2g point = vec2g(data[i].x, data[i].y);
             if(Math::PointInRectangle(point, cpos-vec2g::ONE*czoom, vec2g(view_width,view_width))){
                 UIDrawCmd drawCmd;
+                vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
+                vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
                 CustomItem_DCMakeFilledRect(drawCmd,
-					floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y)),
+					poscorrected,
 					vec2::ONE,
 					Color_Red
 				); CustomItem_AddDrawCmd(item, drawCmd);
