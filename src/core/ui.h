@@ -886,6 +886,12 @@ namespace UI {
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const wchar* text, UITextFlags flags = 0);
 	void Text(const wchar* text, vec2 pos, UITextFlags flags = 0);
+	
+	FORCE_INLINE void Text(const string& text, UITextFlags flags = 0){ Text(cstring{text.str,text.count}, flags); }
+	FORCE_INLINE void Text(const string& text, vec2 pos, UITextFlags flags = 0){ Text(cstring{text.str,text.count}, pos, flags); }
+	FORCE_INLINE void Text(const wstring& text, UITextFlags flags = 0){ Text(text.str, flags); }
+	FORCE_INLINE void Text(const wstring& text, vec2 pos, UITextFlags flags = 0){ Text(text.str, pos, flags); }
+	
 	void TextF(const char* fmt, ...);
 	
 	
