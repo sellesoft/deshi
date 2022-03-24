@@ -336,6 +336,51 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         }
     }//axes
 	
+
+	
+    {//draw data
+        carray<vec2g> data = g->data;
+        
+        UIDrawCmd drawCmd;
+        forI(data.count){
+            if(drawCmd.counts.x + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.y + 6 > UIDRAWCMD_MAX_INDICES){
+                CustomItem_AddDrawCmd(item, drawCmd);
+                drawCmd = UIDrawCmd();
+            }
+            vec2g point = vec2g(data[i].x, data[i].y);
+            if(Math::PointInRectangle(point, cpos-vec2g{czoom, czoom}, vec2g(view_width,view_width))){
+                vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
+                vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
+                CustomItem_DCMakeFilledRect(drawCmd,
+					poscorrected,
+					vec2::ONE,
+					Color_Red
+				); 
+            } 
+            else{
+                UIDrawCmd drawCmd;
+                vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
+                vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
+                CustomItem_DCMakeFilledRect(drawCmd,
+					poscorrected,
+					vec2::ONE,
+					Color_Green
+				); 
+            }
+        }
+        if(drawCmd.counts.x + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.y + 6 > UIDRAWCMD_MAX_INDICES){
+                CustomItem_AddDrawCmd(item, drawCmd);
+                drawCmd = UIDrawCmd();
+            }
+        //CustomItem_DCMakeRect(drawCmd,
+        //    itemspacecenter-vec2g{czoom, czoom}*dimspul,
+        //    vec2g{view_width,view_width},
+        //    20,
+        //    Color_Blue
+        //);
+        CustomItem_AddDrawCmd(item, drawCmd);
+    }
+
     {//draw axes labels
         switch(g->axesLabelStyle){
             case GraphAxesLabelStyle_OnAxes:{
@@ -378,24 +423,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         }
 		
     }//axes labels
-	
-    {//draw data
-        carray<vec2g> data = g->data;
-        forI(data.count){
-            //TODO figure out if negating the y here is safe
-            vec2g point = vec2g(data[i].x, data[i].y);
-            if(Math::PointInRectangle(point, cpos-vec2g::ONE*czoom, vec2g(view_width,view_width))){
-                UIDrawCmd drawCmd;
-                vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
-                vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
-                CustomItem_DCMakeFilledRect(drawCmd,
-					poscorrected,
-					vec2::ONE,
-					Color_Red
-				); CustomItem_AddDrawCmd(item, drawCmd);
-            } 
-        }
-    }
+
     EndCustomItem();
 }
 

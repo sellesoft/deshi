@@ -413,7 +413,7 @@ inline b32 CanScrollY(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart;
 
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions
-inline vec2 PositionForNewItem(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart;
+inline vec2 DecideItemPos(UIWindow* window = curwin) {DPZoneScoped; KPFuncStart;
 	vec2 pos = window->cursor + (style.windowMargins + MarginPositionOffset - window->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(window->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
 	MarginPositionOffset = vec2::ZERO;
@@ -545,10 +545,10 @@ vec2 UI::GetLastItemScreenPos() {DPZoneScoped; KPFuncStart;
 }
 
 vec2 UI::GetWindowRemainingSpace() {DPZoneScoped;
-	return vec2(MarginedRight(), MarginedBottom()) - PositionForNewItem();
+	return vec2(MarginedRight(), MarginedBottom()) - DecideItemPos();
 }
 
-//NOTE this should match PositionForNewItem(), just without resetting NextCursorPos
+//NOTE this should match DecideItemPos(), just without resetting NextCursorPos
 vec2 UI::GetWinCursor() {DPZoneScoped; KPFuncStart;
 	vec2 pos = curwin->cursor + (style.windowMargins + MarginPositionOffset - curwin->scroll) + vec2(leftIndent, 0)
 		+ vec2::ONE * ((HasFlag(curwin->flags, UIWindowFlags_NoBorder)) ? 0 : style.windowBorderSize);
@@ -845,6 +845,7 @@ MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 
 	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
+
 	return vec2(4, 6); KPFuncEnd;
 }
 
@@ -1209,7 +1210,7 @@ void UI::BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flag
 	
 	
 	curRow = rows.at(label);
-	curRow->position = PositionForNewItem();
+	curRow->position = DecideItemPos();
 	curRow->yoffset = 0;
 	curRow->xoffset = 0;
 	StateAddFlag(UISRowBegan); KPFuncEnd;
@@ -1809,7 +1810,7 @@ local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cu
 
 void UI::Text(const cstring& text, UITextFlags flags){
 	GetDefaultItemFlags(UIItemType_Text, flags);
-	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
+	TextW(text, DecideItemPos(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
 void UI::Text(const cstring& text, vec2 pos, UITextFlags flags){
@@ -1819,7 +1820,7 @@ void UI::Text(const cstring& text, vec2 pos, UITextFlags flags){
 
 void UI::Text(const char* text, UITextFlags flags) {DPZoneScoped; KPFuncStart;
 	GetDefaultItemFlags(UIItemType_Text, flags);
-	TextW(cstring{(char*)text,strlen(text)}, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap)); KPFuncEnd;
+	TextW(cstring{(char*)text,strlen(text)}, DecideItemPos(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap)); KPFuncEnd;
 }
 
 void UI::Text(const char* text, vec2 pos, UITextFlags flags) {DPZoneScoped; KPFuncStart;
@@ -1829,7 +1830,7 @@ void UI::Text(const char* text, vec2 pos, UITextFlags flags) {DPZoneScoped; KPFu
 
 void UI::Text(const wchar* text, UITextFlags flags){DPZoneScoped; KPFuncStart;
 	GetDefaultItemFlags(UIItemType_Text, flags);
-	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap)); KPFuncEnd;
+	TextW(text, DecideItemPos(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap)); KPFuncEnd;
 }
 
 void UI::Text(const wchar* text, vec2 pos, UITextFlags flags){DPZoneScoped; KPFuncStart;
@@ -1847,7 +1848,7 @@ void UI::TextF(const char* fmt, ...) {DPZoneScoped; KPFuncStart;
 	s.space = s.count+1;
 	vsnprintf(s.str, s.count+1, fmt, argptr);
 	va_end(argptr);
-	TextW(cstring{s.str, s.count}, PositionForNewItem(), style.colors[UIStyleCol_Text], false); KPFuncEnd;
+	TextW(cstring{s.str, s.count}, DecideItemPos(), style.colors[UIStyleCol_Text], false); KPFuncEnd;
 }
 
 //@Button
@@ -1905,7 +1906,7 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {DPZoneScoped; K
 }
 
 b32 UI::Button(const char* text, UIButtonFlags flags) {DPZoneScoped; KPFuncStart;
-	return Button(text, PositionForNewItem(), flags); KPFuncEnd;
+	return Button(text, DecideItemPos(), flags); KPFuncEnd;
 }
 
 //@Checkbox
@@ -1913,7 +1914,7 @@ b32 UI::Button(const char* text, UIButtonFlags flags) {DPZoneScoped; KPFuncStart
 void UI::Checkbox(string label, b32* b) {DPZoneScoped; KPFuncStart;
 	UIItem* item = BeginItem(UIItemType_Checkbox);
 	
-	vec2 boxpos = PositionForNewItem();
+	vec2 boxpos = DecideItemPos();
 	vec2 boxsiz = vec2::ONE * style.checkboxHeightRelToFont * style.fontHeight;
 	
 	item->position = boxpos;
@@ -2031,7 +2032,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {DPZoneSco
 }
 
 b32 UI::BeginCombo(const char* label, const char* prev_val) {DPZoneScoped; KPFuncStart;
-	return BeginCombo(label, prev_val, PositionForNewItem()); KPFuncEnd;
+	return BeginCombo(label, prev_val, DecideItemPos()); KPFuncEnd;
 }
 
 
@@ -2098,7 +2099,7 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {DPZoneScoped; KPF
 }
 
 b32 UI::Selectable(const char* label, b32 selected) {DPZoneScoped; KPFuncStart;
-	return SelectableCall(label, PositionForNewItem(), selected); KPFuncEnd;
+	return SelectableCall(label, DecideItemPos(), selected); KPFuncEnd;
 }
 
 //@Header
@@ -2115,7 +2116,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped; KPFun
 	(*headerStack.last)->flags = flags;
 	open = &headers[label].open;
 	
-	item->position = PositionForNewItem();
+	item->position = DecideItemPos();
 	item->size = DecideItemSize(vec2(MAX_F32, style.fontHeight * style.headerHeightRelToFont), item->position);
 	
 	AdvanceCursor(item);
@@ -2215,7 +2216,7 @@ void UI::BeginTabBar(const char* label, UITabBarFlags flags){DPZoneScoped; KPFun
 	curTabBar->flags = flags;
 	
 	UIItem* item = BeginItem(UIItemType_TabBar);
-	item->position = PositionForNewItem();
+	item->position = DecideItemPos();
 	
 	f32 tabBarLineHeight = 3;
 	
@@ -2340,7 +2341,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		being_moved = sliders[label];
 	}
 	
-	item->position = PositionForNewItem();
+	item->position = DecideItemPos();
 	item->size = DecideItemSize(vec2{ curwin->width * M_ONETHIRD, 10 }, item->position);
 	
 	AdvanceCursor(item);
@@ -2419,13 +2420,13 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {DPZoneS
 }
 
 void UI::Image(Texture* image, f32 alpha, UIImageFlags flags) {DPZoneScoped; KPFuncStart;
-	Image(image, PositionForNewItem(), alpha, flags); KPFuncEnd;
+	Image(image, DecideItemPos(), alpha, flags); KPFuncEnd;
 }
 
 
 void UI::Separator(f32 height) {DPZoneScoped; KPFuncStart;
 	UIItem* item = BeginItem(UIItemType_Separator);
-	item->position = PositionForNewItem();
+	item->position = DecideItemPos();
 	item->size = vec2(MarginedRight() - item->position.x, height);
 	
 	AdvanceCursor(item);
@@ -2615,11 +2616,11 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {DPZoneScoped; KPFuncStart;
-	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, nullptr, flags, 1); KPFuncEnd;
+	return InputTextCall(label, buffer, buffSize, 0, DecideItemPos(), preview, nullptr, flags, 1); KPFuncEnd;
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {DPZoneScoped; KPFuncStart;
-	return InputTextCall(label, buffer, buffSize, 0, PositionForNewItem(), preview, callback, flags, 1); KPFuncEnd;
+	return InputTextCall(label, buffer, buffSize, 0, DecideItemPos(), preview, callback, flags, 1); KPFuncEnd;
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {DPZoneScoped; KPFuncStart;
@@ -2631,11 +2632,11 @@ b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInp
 }
 
 b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {DPZoneScoped; KPFuncStart;
-	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, nullptr, flags, 1); KPFuncEnd;
+	return InputTextCall(label, buffer, buffSize, 1, DecideItemPos(), preview, nullptr, flags, 1); KPFuncEnd;
 }
 
 b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {DPZoneScoped; KPFuncStart;
-	return InputTextCall(label, buffer, buffSize, 1, PositionForNewItem(), preview, callback, flags, 1); KPFuncEnd;
+	return InputTextCall(label, buffer, buffSize, 1, DecideItemPos(), preview, callback, flags, 1); KPFuncEnd;
 }
 
 b32 UI::InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {DPZoneScoped; KPFuncStart;
@@ -3288,7 +3289,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				item->size = dimensions;
 				AdvanceCursor(item);
 				
-				vec2 parentNewPos = PositionForNewItem();
+				vec2 parentNewPos = DecideItemPos();
 				curwin = new UIWindow();
 				
 				curwin->scroll = vec2(0, 0);
@@ -3340,7 +3341,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 				item->size = dimensions;
 				AdvanceCursor(item, 0);
 				
-				vec2 parentNewPos = PositionForNewItem();
+				vec2 parentNewPos = DecideItemPos();
 				curwin = new UIWindow();
 				
 				curwin->scroll = vec2(0, 0);
@@ -3376,7 +3377,7 @@ void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags)
 }
 
 void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {DPZoneScoped; KPFuncStart;
-	BeginCall(name, PositionForNewItem(), dimensions, flags, UIWindowType_Child); KPFuncEnd;
+	BeginCall(name, DecideItemPos(), dimensions, flags, UIWindowType_Child); KPFuncEnd;
 }
 
 void UI::BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {DPZoneScoped; KPFuncStart;
