@@ -336,9 +336,10 @@ enum UIImageFlags_ {
 
 enum UIButtonFlags_ {
 	UIButtonFlags_NONE = 0,
-	UIButtonFlags_ReturnTrueOnHold    = 1 << 0,
-	UIButtonFlags_ReturnTrueOnRelease = 1 << 1,
-	UIButtonFlags_NoBorder            = 1 << 2,
+	UIButtonFlags_ReturnTrueOnHold    	       = 1 << 0,
+	UIButtonFlags_ReturnTrueOnRelease 	       = 1 << 1,
+	UIButtonFlags_ReturnTrueOnReleaseIfHovered = 1 << 2,
+	UIButtonFlags_NoBorder            	       = 1 << 3,
 	
 }; typedef u32 UIButtonFlags;
 

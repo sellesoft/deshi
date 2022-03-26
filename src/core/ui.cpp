@@ -215,6 +215,8 @@ UIStats ui_stats;
 
 #define GetDefaultItemFlags(type, var) var |= itemFlags[type]
 
+#define DefaultVec2 vec2(-MAX_F32, -MAX_F32)
+
 //for breaking on a window's begin or end
 UIWindow* break_window_begin = 0;
 UIWindow* break_window_end = 0;
@@ -1302,10 +1304,12 @@ void UI::RowSetupColumnAlignments(array<vec2> alignments) {DPZoneScoped; KPFuncS
 enum ButtonType_ {
 	ButtonType_TrueOnHold,
 	ButtonType_TrueOnRelease,
+	ButtonType_TrueOnReleaseIfHovered,
 	ButtonType_TrueOnPressed,
 }; typedef u32 ButtonType;
 
-b32 ButtonBehavoir(ButtonType type) {DPZoneScoped; KPFuncStart;
+//pos and size are expected to be screen space
+b32 ButtonBehavoir(ButtonType type, vec2 pos = DefaultVec2, vec2 size = DefaultVec2) {DPZoneScoped; KPFuncStart;
 	switch (type) {
 		case ButtonType_TrueOnHold: {
 			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
@@ -1319,6 +1323,15 @@ b32 ButtonBehavoir(ButtonType type) {DPZoneScoped; KPFuncStart;
 		case ButtonType_TrueOnPressed: {
 			if (DeshInput->LMousePressed()) {
 				PreventInputs;
+				return true;
+			}
+		}break;
+		case ButtonType_TrueOnReleaseIfHovered: {
+			Assert(pos != DefaultVec2 && size != DefaultVec2, "attempt to use buttontype TrueOnReleaseIfHovered without passing information about where to check for hover");
+			if(DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, pos, size)){
+				PreventInputs;
+			}
+			if(DeshInput->LMouseReleased() && Math::PointInRectangle(DeshInput->mousePos, pos, size)){
 				return true;
 			}
 		}break;
@@ -1896,13 +1909,16 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {DPZoneScoped; K
 	}
 	
 	if (active) {
+		//TODO just pass the flags to the behavoir function and just let it figure it out 
 		if (HasFlag(item->flags, UIButtonFlags_ReturnTrueOnHold))
 			return ButtonBehavoir(ButtonType_TrueOnHold);
+		if (HasFlag(item->flags, ButtonType_TrueOnPressed))
+			return ButtonBehavoir(ButtonType_TrueOnRelease);
 		if (HasFlag(item->flags, UIButtonFlags_ReturnTrueOnRelease))
 			return ButtonBehavoir(ButtonType_TrueOnRelease);
-		return ButtonBehavoir(ButtonType_TrueOnPressed);
+		return ButtonBehavoir(ButtonType_TrueOnReleaseIfHovered, curwin->position + item->position, item->size);
 	}
-	return false; KPFuncEnd;
+	return false;
 }
 
 b32 UI::Button(const char* text, UIButtonFlags flags) {DPZoneScoped; KPFuncStart;
