@@ -13,6 +13,8 @@
 
 //TODOs
 // clamp axes to edge of camera (when out of frame or always)
+// replace our to_string with a local version to allow for switching to scientific notation at high zoom
+// cleanup the massive amount of repetition throughout the code
 
 enum GraphAxesLabelStyle : u32{
     GraphAxesLabelStyle_OnAxes,       //draws the axes labels next to their respective axes
@@ -81,8 +83,8 @@ template<> FORCE_INLINE vec2g Nudge(vec2g value, vec2g target, vec2g delta) { re
 
 
 struct Graph{
-    //TODO this should be vec2f64 (vec2d)
-    vec2g     cameraPosition{0,0}; //in graph space, center of 'camera'
+    //in graph space, center of 'camera'
+    vec2g     cameraPosition{0,0}; 
 	scalar_t  cameraZoom = 5.0; //represets half of the width the camera can see, so if this is 5 and posiiton is 0,0 then you see from -5 to 5
     vec2g     cameraView{5.0,5.0}; //represents how much over the x and y axes we can see
     //Graph properties
@@ -146,7 +148,8 @@ struct Graph{
 
 //TODO this works, but at non 1:1 aspect ratios cameraPosition no longer actually represents the center
 //     of the graph the user visually sees
-void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_cursor){
+void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_cursor){DPZoneScoped;
+    //NOTE the graph is built y down and rendered y up
     using namespace UI;
     UIItem* item = BeginCustomItem();
     item->position = position;
@@ -155,8 +158,18 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
 	
     color textcol = GetStyle().colors[UIStyleCol_Text];
     color winbgcol = GetStyle().colors[UIStyleCol_WindowBg];
+
 	
     //DEBUG 
+    persist f64 xscale = 1;
+    persist f64 yscale = 1;
+    if(DeshInput->KeyPressed(Key::UP))    yscale += 0.1;
+    if(DeshInput->KeyPressed(Key::DOWN))  yscale -= 0.1;
+    if(DeshInput->KeyPressed(Key::LEFT))  xscale += 0.1;
+    if(DeshInput->KeyPressed(Key::RIGHT)) xscale -= 0.1;
+
+
+
     u32 text_count = 0;
     auto debug_text = [&](string& out){
         UIDrawCmd dc;
@@ -182,13 +195,11 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //s32 oom = (1 & 0x1 ? 
     //yep & 0x)
 	
-    //TODO all of these vec2s need to somehow represent the same type as scalar_t
     vec2g tl = cpos - czoom*vec2g::ONE; //represets the top and left edge of the camera
-    vec2g br = cpos + czoom*vec2g::ONE;  //represets the bottom and right edge of the camera
+    vec2g br = cpos + czoom*vec2g::ONE; //represets the bottom and right edge of the camera
     tl.y *= aspect_ratio;
     br.y *= aspect_ratio;    
-	
-    
+
     b32 xAxisVisible = g->xShowAxis && tl.y < 0 && br.y > 0;
     b32 yAxisVisible = g->yShowAxis && tl.x < 0 && br.x > 0;
 
@@ -204,25 +215,19 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
 	
     vec2g itemspacecenter = dimensions / 2; //positions of the center of our item
     vec2g itemspaceorigin = itemspacecenter - cpos*vec2g(dimspul.x, dimspul.y*aspect_ratio); //position of the center of the origin in item space
-	
-	
-    persist u32 incmod = 1;
-    if(DeshInput->KeyPressed(Key::I)) incmod++;
-    if(DeshInput->KeyPressed(Key::K)) incmod = Max(incmod-1, u32(1));
-	
-    auto increment = [&](scalar_t x){
-        return x*pow(10,oom);
-    };
-
 
     scalar_t minor_left_edge_rounded = ceil(tl.x / (g->xMinorLinesIncrement * tentooom)) * g->xMinorLinesIncrement * tentooom;
     scalar_t minor_top_edge_rounded  = ceil(tl.y / (g->yMinorLinesIncrement * tentooom)) * g->yMinorLinesIncrement * tentooom;
     scalar_t major_left_edge_rounded = ceil(tl.x / (g->xMajorLinesIncrement * tentooom)) * g->xMajorLinesIncrement * tentooom;
     scalar_t major_top_edge_rounded  = ceil(tl.y / (g->yMajorLinesIncrement * tentooom)) * g->yMajorLinesIncrement * tentooom;
-    
+
+    auto increment = [&](scalar_t x){
+        return x*pow(10,oom);
+    };
 	
     {//draw minor gridlines
         //TODO prevent minor lines from unecessarily drawing where major lines draw when they're enabled
+        //TODO just combine the gridline drawing routines into one
         if(g->xShowMinorLines){
             //this starts at the left edge of the graph, rounded by order of magnitude and increment
             //and keeps drawing lines until it reaches the right edge of the graph
@@ -271,18 +276,13 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                     vec2g(xloc, dimensions.y),
                     1, g->xMajorGridlineColor
                 );
-
-                //NOTE i dont know if i really like doing this like this, using a layer i mean
-                //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
                 if(g->xShowMajorCoords){
-                    PushLayer(GetCurrentLayer()+1);
                     //TODO find a way around allocating a string
-                    string text = to_string(edgeinc);
+                    string    text = to_string(edgeinc);
                     vec2g textsize = CalcTextSize(text);
-                    vec2g pos = vec2g(xloc-textsize.x/2, dimensions.y-itemspaceorigin.y-textsize.y-1);
+                    vec2g      pos = vec2g(xloc-textsize.x/2, dimensions.y-itemspaceorigin.y-textsize.y-1);
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
                     CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
-                    PopLayer();
                 }
                 edgeinc += inc;
             }
@@ -299,17 +299,13 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                     vec2g(dimensions.x, yloc),
                     1, g->yMajorGridlineColor
                 );
-                //NOTE i dont know if i really like doing this like this, using a layer i mean
-                //     it's probably best to just do this afterwards, but i dont want to recalculate these positions so maybe make an array that holds them
                 if(g->yShowMajorCoords){
-                    PushLayer(GetCurrentLayer()+1);
                     //TODO find a way around allocating a string
                     string    text = to_string(edgeinc);
                     vec2g textsize = CalcTextSize(text);
                     vec2g      pos = vec2g(itemspaceorigin.x-textsize.x-1, yloc-textsize.y/2);
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
                     CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
-                    PopLayer();
                 }
                 edgeinc += inc;
             }
@@ -336,8 +332,6 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         }
     }//axes
 	
-
-	
     {//draw data
         carray<vec2g> data = g->data;
         
@@ -348,7 +342,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                 drawCmd = UIDrawCmd();
             }
             vec2g point = vec2g(data[i].x, data[i].y);
-            if(Math::PointInRectangle(point, cpos-vec2g{czoom, czoom}, vec2g(view_width,view_width))){
+            if(Math::PointInRectangle(point, tl, vec2g(view_width,view_width*aspect_ratio))){
                 vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
                 vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
                 CustomItem_DCMakeFilledRect(drawCmd,
@@ -369,15 +363,9 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             }
         }
         if(drawCmd.counts.x + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.y + 6 > UIDRAWCMD_MAX_INDICES){
-                CustomItem_AddDrawCmd(item, drawCmd);
-                drawCmd = UIDrawCmd();
-            }
-        //CustomItem_DCMakeRect(drawCmd,
-        //    itemspacecenter-vec2g{czoom, czoom}*dimspul,
-        //    vec2g{view_width,view_width},
-        //    20,
-        //    Color_Blue
-        //);
+            CustomItem_AddDrawCmd(item, drawCmd);
+            drawCmd = UIDrawCmd();
+        }
         CustomItem_AddDrawCmd(item, drawCmd);
     }
 
@@ -433,8 +421,8 @@ void draw_graph(Graph* g, vec2g dimensions){DPZoneScoped;
     draw_graph_final(g,UI::GetWinCursor(),dimensions,1);
 }
 
-// draws a given Graph in a UI Window with given position and  dimensions
+// draws a given Graph in a UI Window with given position and dimensions
 // this doesn't draw any decorations, such as a border.
-void draw_graph(Graph* g, vec2g position, vec2g dimensions){
+void draw_graph(Graph* g, vec2g position, vec2g dimensions){DPZoneScoped;
     draw_graph_final(g,position,dimensions,0);
 }
