@@ -7,29 +7,49 @@
 #include "kigu/map.h"
 #include "kigu/string.h"
 #include "kigu/unicode.h"
+#include "kigu/ring_array.h"
 
 const u32 max_threads = 3;
 
+//used for thread syncronization.
+// when a thread is to use a resource that is not atmoic it locks it using a mutex
+// when another thread attempts to lock the same mutex it must wait until the locking thread
+// releases the lock before waking back up
 struct mutex{
     void* handle = 0;
     b32 is_locked = 0;
     mutex();
     ~mutex();
-    void lock();
+    // locks this mutex from the calling thread 
+    void lock(); 
+    // attempts to lock this mutex from the calling thread, if it fails the function returns false
     b32  try_lock();
+    // attempts to lock this mutex from the calling thread for a specified amount of time (milliseconds)
+    // if it fails the function returns false
     b32  try_lock_for(u64 milliseconds);
+    // unlocks this mutex
     void unlock();
 };
 
+//used for thread syncronization
+// this struct allows for making threads go to sleep until notified.
+// a thread calls wait() on a condition variable and doesn't wake up until 
+// another thread calls notify on the same condition variable
 struct condition_variable{
     void* cvhandle = 0; //win32: CONDITION_VARIABLE
     void* cshandle = 0; //win32: CRITICAL_SECTION
 	
     condition_variable();
     ~condition_variable();
+    //notifies one of the threads waiting on this condition_variable
     void notify_one();
+    //notifies all threads waiting on this condition variable
     void notify_all();
+    //causes a thread to sleep on this condition_variable until some other thread calls
+    //one of the notify functions
     void wait();
+    //causes a thread to sleep on this condition_variable for a specified amount of time
+    //or until another thread calls one of the notify functions.
     void wait_for(u64 milliseconds);
 };
 typedef condition_variable condvar;
@@ -45,89 +65,45 @@ struct scopedlock{//locks a mutex and unlocks it when it goes out of scope
     }
 };
 
-enum ThreadState{
-    ThreadState_NotInitialized,
-    ThreadState_Initializing,
-	ThreadState_Close,
-	ThreadState_Sleep,
-	ThreadState_CallFunction,
+// a job that a thread attempts to take upon waking up.
+//TODO job priorities
+struct ThreadJob{
+    void (*ThreadFunction)(void*); //job function pointer
+    void* data;
 };
 
-//TODO rename this to persistent thread and make a Thread that starts running the function immediately and closes when finished
 struct Thread{
-    void* handle = 0;
-    void* tuple_handle = 0; //when using win32, we must allocate a tuple to pass as arguments to the function
-    ThreadState state;
-    string comment = "";
-	
-    condvar calling_thread_cv;
-    condvar thread_cv;
-    mutex state_mutex;
-	
-    template<typename FuncToRun, typename... FuncArgs>
-		void threadfunc(FuncToRun f, FuncArgs... args);
-	
-    //sets the function that the thread calls 
-    //TODO maybe theres a way around closing and reopening the thread? probably not with templating
-	template<typename FuncToRun, typename... FuncArgs>
-		void SetFunction(FuncToRun f, FuncArgs...args);
-	
-    //sets the function that the thread calls and waits until its done initializing
-	template<typename FuncToRun, typename... FuncArgs>
-		void SetFunctionAndWait(FuncToRun f, FuncArgs...args);
-	
-	void WakeUp();
-	
-	void ChangeState(ThreadState ts);
-	
-	//this funciton locks the caller mutex and waits until CallingThreadCondition receieves
-	//a signal to unblock
-	b32 Wait(u64 timeout = 0);
-	
-    //attempts to run the threads function immediately, but returns early if it can't
-	void Run(int count = 1);
-	
-    //waits until the the thread finishes executing before telling it to run again
-    void WaitToRun(int count = 1);
-	
-	//pauses the calling thread until this one has finished executing
-	void RunAndWait(int count = 1);
-	
-    void WaitToRunAndWait(int count = 1);
-	
-    //causes the thread to return
-	void Close();
-	
-	//waits for the thread to return, this means you must know the thread is active to begin with!
-	void CloseAndJoin();
-	
-    void SetName(str16 name);
-	
-	~Thread();
-	
-	
+    void* handle;
+    b32 running = 0; //this is only set by the worker
+    b32 close = 0; //this is only set by the thread manager
+    string name = ""; //for debugging. 
 };
 
 struct ThreadManager{
-    set<Thread*> threads;
-    Arena*       thread_arena;
-	condvar      waitcv;
-	mutex        waitm;
-	mutex        return_callback_lock;
-	Thread*      last_returned = 0;
-	b32          waiting_for_thread = 0;
-	
-    Thread* MakeNewThread(const string& comment = "");
-    void    StopAndDeleteThread(Thread* thread);
-    void    StopAndDeleteThreadAndWait(Thread* thread);
-    void    StopAndDeleteAllThreads();
-    void    StopAndDeleteAllThreadsAndWait();
-    void    DeleteThread(Thread* thread);
-	void    CloseAllThreads();
-    void    WaitForAllThreadsToFinish(u64 timeout = 0);
-	Thread* GetNextAvaliableThread();
-	Thread* WaitForFirstAvaliableThread();
-    ~ThreadManager();
+	mutex job_ring_lock;
+    condvar idle; //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
+    ring_array<ThreadJob> job_ring; 
+    array<Thread*> threads; //TODO arena threads instead of using memalloc
+
+    //initializes the thread manager
+    //this must be done after loading memory
+    void init(u32 max_jobs = 255);
+
+    //spawns a new thread 
+    void spawn_thread(); 
+    //closes all threads
+    void close_all_threads(); 
+
+    //adds a new ThreadJob to the job ring.
+    void add_job(ThreadJob job); 
+    //adds a collection of jobs to the job ring.
+    void add_jobs(carray<ThreadJob> jobs); 
+    //removes all jobs from the job ring
+    void cancel_all_jobs(); 
+
+    //wakes up a specified amount of threads
+    //if count == 0 then we wake all idle threads
+    void wake_threads(u32 count = 0);
 };
 
 //global ThreadManager

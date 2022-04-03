@@ -254,7 +254,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 #define DESHI_WND_CLASSNAME_A "_DESHI_"
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode) {DPZoneScoped;
-	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
+	AssertDS(DS_MEMORY, "Attempt to init Window without loading Memory first");
 	deshiStage |= DS_WINDOW;
 	TIMER_START(t_s);
 	
@@ -1087,13 +1087,6 @@ platform_get_module_symbol(void* module, str16 symbol_name){
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Threading
 
-void manager_return_callback(Thread* t){
-	DeshThreadManager->return_callback_lock.lock();
-	DeshThreadManager->last_returned = t;
-	DeshThreadManager->waitcv.notify_all();
-	DeshThreadManager->return_callback_lock.unlock();
-}
-
 mutex::
 mutex(){DPZoneScoped;
 	if(handle = CreateMutex(NULL, FALSE, NULL); !handle)
@@ -1101,7 +1094,7 @@ mutex(){DPZoneScoped;
 }
 
 mutex::
-~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedmutex for this
+~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedlock for this
 	CloseHandle(handle);
 }
 
@@ -1186,7 +1179,9 @@ notify_all() {DPZoneScoped;
 void condition_variable::
 wait() {DPZoneScoped;
 	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
-	SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE);
+	if(!SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
+		Win32LogLastError("SleepConditionVariableCS");
+	}
 	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
 }
 
@@ -1197,161 +1192,127 @@ wait_for(u64 milliseconds) {DPZoneScoped;
 	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
 }
 
-template<typename FuncToRun, typename... FuncArgs>
-DWORD WINAPI threadfunc_stub(LPVOID in){DPZoneScoped;
-	upt o = 2;
-	tuple<Thread*, FuncToRun, FuncArgs...>* intup = (tuple<Thread*, FuncToRun, FuncArgs...>*)in;
-	intup->get<0>()->threadfunc<FuncToRun, FuncArgs...>(intup->get<1>(), (*((FuncArgs*)&intup->raw[intup->offsets[o++]]), ...));
-	return 0;
-}
+// template<typename FuncToRun, typename... FuncArgs>
+// DWORD WINAPI threadfunc_stub(LPVOID in){DPZoneScoped;
+// 	upt o = 2;
+// 	tuple<Thread*, FuncToRun, FuncArgs...>* intup = (tuple<Thread*, FuncToRun, FuncArgs...>*)in;
+// 	intup->get<0>()->threadfunc<FuncToRun, FuncArgs...>(intup->get<1>(), (*((FuncArgs*)&intup->raw[intup->offsets[o++]]), ...));
+// 	return 0;
+// }
 
-template<typename FuncToRun, typename... FuncArgs>
-void Thread::threadfunc(FuncToRun f, FuncArgs... args){DPZoneScoped;
-	SetName(str16_from_str8(comment.str));
-	while(state!=ThreadState_Close){
-		if(state==ThreadState_CallFunction){
-			while(functioncalls--){f(deref_if_ptr(args)...);}
+// template<typename FuncToRun, typename... FuncArgs>
+// void Thread::threadfunc(FuncToRun f, FuncArgs... args){DPZoneScoped;
+// 	SetName(str16_from_str8(comment.str));
+// 	while(state!=ThreadState_Close){
+// 		if(state==ThreadState_CallFunction){
+// 			while(functioncalls--){f(deref_if_ptr(args)...);}
+// 		}
+// 		manager_return_callback(this);
+// 		ChangeState(ThreadState_Sleep);
+// 		calling_thread_cv.notify_all();
+// 		if(state==ThreadState_Sleep) thread_cv.wait();
+// 	}
+// 	calling_thread_cv.notify_all();
+// }
+
+// template<typename FuncToRun, typename... FuncArgs>
+// void Thread::SetFunction(FuncToRun f, FuncArgs...args){DPZoneScoped;
+//     using tup = tuple<Thread*, FuncToRun, FuncArgs...>;
+// 	memfree(tuple_handle);
+// 	CloseAndJoin(); ChangeState(ThreadState_Initializing);
+// 	tuple_handle = memalloc(sizeof(tup));
+// 	(*(tup*)tuple_handle) = tup(this, f, args...); 
+// 	CreateThread(0, 0, threadfunc_stub<FuncToRun, FuncArgs...>, tuple_handle, 0, 0);
+// }
+
+
+// void Thread::SetName(str16 name){
+// 	if(FAILED(SetThreadDescription(handle, (LPCWSTR)name.str))){
+// 		//TODO handle whatever errors this may throw
+// 	}
+// }
+
+#ifdef BUILD_SLOW
+#define WorkerLog(message) Log("thread", "worker ", me, ": ", message)
+#elif
+#define WorkerLog(message)
+#endif
+//infinite loop worker thread
+// all this does is check for a job from ThreadManager's job_ring and if it finds one it runs it immediately
+// after running the job it continues looking for more jobs
+// if it can't find any jobs to run it just goes to sleep
+void deshi__thread_worker(Thread* me){DPZoneScoped;
+	ThreadManager* man = DeshThreadManager;
+	WorkerLog("spawned");
+	while(!me->close){
+		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
+			WorkerLog("looking to take a job from job ring");
+			ThreadJob tj;
+			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
+			{scopedlock jrl(man->job_ring_lock);
+				//check once more that there are jobs since the locking thread could have taken the last one
+				//im sure theres a better way to do this
+				if(!man->job_ring.count) break; 
+				WorkerLog("locked job ring and taking a job");
+				//take the job and remove it from the ring
+				tj = man->job_ring[0];
+				man->job_ring.remove(1);
+			}
+			//run the function
+			WorkerLog("running job");
+			me->running = true;
+			tj.ThreadFunction(tj.data);
+			me->running = false;
+			WorkerLog("finished running job");
 		}
-		manager_return_callback(this);
-		ChangeState(ThreadState_Sleep);
-		calling_thread_cv.notify_all();
-		if(state==ThreadState_Sleep) thread_cv.wait();
+		//when there are no more jobs go to sleep until notified again by thread manager
+		//NOTE this may hang!
+		WorkerLog("going to sleep");
+		man->idle.wait();
+		WorkerLog("woke up");
 	}
-	calling_thread_cv.notify_all();
+	WorkerLog("closing");
+	DebugBreakpoint;
 }
 
-template<typename FuncToRun, typename... FuncArgs>
-void Thread::SetFunction(FuncToRun f, FuncArgs...args){DPZoneScoped;
-    using tup = tuple<Thread*, FuncToRun, FuncArgs...>;
-	memfree(tuple_handle);
-	CloseAndJoin(); ChangeState(ThreadState_Initializing);
-	tuple_handle = memalloc(sizeof(tup));
-	(*(tup*)tuple_handle) = tup(this, f, args...); 
-	CreateThread(0, 0, threadfunc_stub<FuncToRun, FuncArgs...>, tuple_handle, 0, 0);
-}
-
-template<typename FuncToRun, typename... FuncArgs>
-void Thread::SetFunctionAndWait(FuncToRun f, FuncArgs...args){DPZoneScoped;
-	SetFunction(f, args...);
-	Wait();
-}
-
-
-void Thread::WakeUp(){DPZoneScoped;
-	thread_cv.notify_all();
-}
-
-void Thread::ChangeState(ThreadState ts){DPZoneScoped;
-	scopedlock lock(state_mutex);
-	state = ts;
-}
-
-
-b32 Thread::Wait(u64 timeout){DPZoneScoped;
+DWORD WINAPI deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
+	deshi__thread_worker((Thread*)in);
 	return 0;
 }
 
-
-void Thread::Run(int count){DPZoneScoped;
-	
+void ThreadManager::init(u32 max_jobs){
+	AssertDS(DS_MEMORY, "Attempt to init ThreadManager without loading Memory first");
+	job_ring.init(max_jobs, deshi_allocator);
 }
 
-
-void Thread::WaitToRun(int count){DPZoneScoped;
-	
+void ThreadManager::spawn_thread(){DPZoneScoped;
+	Thread* t = (Thread*)memalloc(sizeof(Thread));
+	threads.add(t);
+	CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
 }
 
-
-void Thread::RunAndWait(int count){DPZoneScoped;
-	
-}
-
-
-void Thread::WaitToRunAndWait(int count){DPZoneScoped;
-	
-}
-
-
-void Thread::Close(){DPZoneScoped;
-	
-}
-
-
-void Thread::CloseAndJoin(){DPZoneScoped;
-	
-}
-
-void Thread::SetName(str16 name){
-	if(FAILED(SetThreadDescription(handle, (LPCWSTR)name.str))){
-		//TODO handle whatever errors this may throw
-	}
-}
-
-Thread::~Thread(){
-	
-}
-
-
-Thread* ThreadManager::MakeNewThread(const string& comment){DPZoneScoped;
-    if(!thread_arena) thread_arena = memory_create_arena(sizeof(Thread)*max_threads);
-    if(threads.count >= max_threads) return 0;
-    Thread* nu = memory_arena_add_new<Thread>(thread_arena);
-    if(comment.count) nu->comment = comment;
-    threads.add(nu,nu);
-    return nu;
-}
-
-void ThreadManager::StopAndDeleteThread(Thread* thread){DPZoneScoped;
-    if(Thread** tcheck = threads.at(thread); !tcheck) return; //maybe assert here?
-    thread->Close();
-    threads.remove(thread);
-}
-
-
-void ThreadManager::StopAndDeleteThreadAndWait(Thread* thread){DPZoneScoped;
-    if(Thread** tcheck = threads.at(thread); !tcheck) return; //maybe assert here?
-    thread->CloseAndJoin();
-    threads.remove(thread);
-}
-
-void ThreadManager::StopAndDeleteAllThreads(){DPZoneScoped;
-    for(Thread* t : threads)
-    	t->Close();
+void ThreadManager::close_all_threads(){
+	forI(threads.count) threads[i]->close = true;
+	wake_threads(0);
 	threads.clear();
 }
 
-
-void ThreadManager::StopAndDeleteAllThreadsAndWait(){DPZoneScoped;
-	for(Thread* t : threads)
-    	t->CloseAndJoin();
-	threads.clear();
+void ThreadManager::add_job(ThreadJob job){
+	job_ring.add(job);
 }
 
-
-void ThreadManager::DeleteThread(Thread* thread){DPZoneScoped;
-    threads.remove(thread); //no need to check if it exists here
+void ThreadManager::add_jobs(carray<ThreadJob> jobs){
+	forI(jobs.count) job_ring.add(jobs[i]);
 }
 
-void ThreadManager::CloseAllThreads(){DPZoneScoped;
-	for(Thread* t : threads) t->Close();
-}
+void ThreadManager::cancel_all_jobs(){
+	job_ring.clear();
+} 
 
-void ThreadManager::WaitForAllThreadsToFinish(u64 timeout){DPZoneScoped;
-    for(Thread* t : threads) t->Wait(timeout);
-}
-
-Thread* ThreadManager::GetNextAvaliableThread() {DPZoneScoped;
-	for(Thread* t : threads)
-    	if(match_any(t->state, ThreadState_Sleep, ThreadState_NotInitialized)) return t;
-    return 0;
-}
-
-Thread* ThreadManager::WaitForFirstAvaliableThread() {DPZoneScoped;
-	if(Thread* early = GetNextAvaliableThread(); early) return early;
-	waitcv.wait();	
-	return last_returned;
-}
-
-ThreadManager::~ThreadManager(){
-    
+ void ThreadManager::wake_threads(u32 count){
+	 if(!threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
+	 else if(!count) idle.notify_all(); 
+	 else{
+		 forI(count) idle.notify_one();
+	 }
 }

@@ -136,7 +136,7 @@ struct Graph{
     //TODO axes label alignemnt options
 	
     //Graph data
-    carray<vec2g> data;
+    carray<vec2g> data{0,0};
 	
     //misc graph properties that may be useful outside of draw_graph
     //these are calculated in draw_graph_final
@@ -165,8 +165,8 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     persist f64 yscale = 1;
     if(DeshInput->KeyPressed(Key::UP))    yscale += 0.1;
     if(DeshInput->KeyPressed(Key::DOWN))  yscale -= 0.1;
-    if(DeshInput->KeyPressed(Key::LEFT))  xscale += 0.1;
-    if(DeshInput->KeyPressed(Key::RIGHT)) xscale -= 0.1;
+    if(DeshInput->KeyPressed(Key::LEFT))  xscale -= 0.1;
+    if(DeshInput->KeyPressed(Key::RIGHT)) xscale += 0.1;
 
 
 
@@ -232,7 +232,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             //this starts at the left edge of the graph, rounded by order of magnitude and increment
             //and keeps drawing lines until it reaches the right edge of the graph
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g->xMinorLinesIncrement);
+            scalar_t inc = increment(g->xMinorLinesIncrement) * xscale;
             scalar_t edgeinc = minor_left_edge_rounded;
             while(edgeinc < br.x){
                 scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
@@ -247,7 +247,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         }
         if(g->yShowMinorLines){
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g->yMinorLinesIncrement);
+            scalar_t inc = increment(g->yMinorLinesIncrement) * yscale;
             scalar_t edgeinc = minor_top_edge_rounded;
             while(edgeinc < br.y){
                 scalar_t yloc = dimensions.y - (edgeinc - tl.y) * dimspul.y;
@@ -267,7 +267,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             //this starts at the left edge of the graph, rounded by order of magnitude and increment
             //and keeps drawing lines until it reaches the right edge of the graph
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g->xMajorLinesIncrement);
+            scalar_t inc = increment(g->xMajorLinesIncrement) * xscale;
             scalar_t edgeinc = major_left_edge_rounded;
             while(edgeinc < br.x){
                 scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
@@ -290,7 +290,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         }
         if(g->yShowMajorLines){
             UIDrawCmd drawCmd;
-            scalar_t inc = increment(g->yMajorLinesIncrement);
+            scalar_t inc = increment(g->yMajorLinesIncrement) * yscale;
             scalar_t edgeinc = major_top_edge_rounded;
             while(edgeinc < br.y){
                 scalar_t yloc = dimensions.y-(edgeinc - tl.y) * dimspul.y;
