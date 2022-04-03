@@ -62,6 +62,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, indentAmount)},
 	{1, offsetof(UIStyle, tabSpacing)},
 	{1, offsetof(UIStyle, fontHeight)},
+	{2, offsetof(UIStyle, windowSnappingTolerance)},
 };
 
 
@@ -3223,6 +3224,39 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 		}
 		if (WinBeingDragged(window)) {
 			window->position = DeshInput->mousePos + mouseOffset;
+			//TODO clean up this code
+			if(HasFlag(window->flags, UIWindowFlags_SnapToOtherWindows)){
+				for(UIWindow* win : windows){
+					if(win != window && win->name != "Base"){
+						f32 stx = style.windowSnappingTolerance.x;
+						f32 sty = style.windowSnappingTolerance.y;
+						Log("", "right edge", (window->x - (win->x + win->width)));
+						Log("", "left  edge", ((window->x + window->width) - win->x));
+						if(window->y >= win->y && window->y <= (win->y + win->height) || 
+						   win->y >= window->y && win->y <= (window->y + window->height)){
+							if(fabs(window->x - (win->x + win->width)) < stx) //left vs right
+								window->x = win->x + win->width;
+							else if(fabs((window->x + window->width) - win->x) < stx) //right vs left
+								window->x = (win->x - window->width);
+							else if(fabs(window->x - win->x) < stx) //left vs left
+								window->x = win->x;
+							else if(fabs((window->x+window->width) - (win->x+win->width)) < stx) //right vs right
+								window->x = win->x + win->width - window->width;
+						}
+						if(window->x >= win->x && window->x <= (win->x + win->width) || 
+						   win->x >= window->x && win->x <= (window->x + window->width)){
+							if(fabs(window->y - (win->y + win->height)) < sty) //top vs bottom
+								window->y = win->y + win->height;
+							else if(fabs((window->y + window->height) - win->y) < sty) //bottom vs top
+								window->y = (win->y - window->height);
+							else if(fabs(window->y - win->y) < sty) //top vs top
+								window->y = win->y;
+							else if(fabs((window->y+window->height) - (win->y+win->height)) < stx) //bottom vs bottom
+								window->y = win->y + win->height - window->height;
+						}
+					}
+				}
+			}
 		}
 		if (DeshInput->KeyReleased(MouseButton::LEFT)) {
 			WinUnSetBeingDragged(window);
@@ -4757,7 +4791,7 @@ void UI::Init() {DPZoneScoped; KPFuncStart;
 	
 	//push default color scheme
 	//this is never meant to be popped
-	PushColor(UIStyleCol_Border,    0x000000ff);
+	PushColor(UIStyleCol_Border,    0xaaaaaaff);
 	PushColor(UIStyleCol_WindowBg,  0x111111ff);
 	PushColor(UIStyleCol_Text,      Color_White);
 	PushColor(UIStyleCol_Separator, color(64, 64, 64));
@@ -4844,6 +4878,8 @@ void UI::Init() {DPZoneScoped; KPFuncStart;
 	PushVar(UIStyleVar_IndentAmount,              12);
 	PushVar(UIStyleVar_TabSpacing,                5);
 	PushVar(UIStyleVar_FontHeight,                (f32)style.font->max_height);
+	PushVar(UIStyleVar_WindowSnappingTolerance,   vec2(15,15));                
+
 	
 	PushScale(vec2(1, 1));
 	

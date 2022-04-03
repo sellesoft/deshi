@@ -83,6 +83,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_IndentAmount,              // default 8
 	UIStyleVar_TabSpacing,                // default 5                 the spacing between tabs
 	UIStyleVar_FontHeight,                // default font->height      height of font in pixels
+	UIStyleVar_WindowSnappingTolerance,   // default vec2(5, 5)        how close a window has to be to another window's edge to snap to it.
 	UIStyleVar_Font,                      // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
@@ -213,6 +214,7 @@ struct UIStyle {
 	f32  indentAmount;
 	f32  tabSpacing;
 	f32  fontHeight;
+	vec2 windowSnappingTolerance;
 	//special vars that have special push/pop functions
 	vec2  globalScale;
 	Font* font;
@@ -250,6 +252,7 @@ enum UIWindowFlags_ {
 	//TODO UIWindowFlags_NoMinimizeButton       = 1 << 12,
 	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 13,
 	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
+	UIWindowFlags_SnapToOtherWindows     = 1 << 15, //makes this window snap to the edges of other windows
 	
 	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
 	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus //| UIWindowFlags_NoTitleBar
