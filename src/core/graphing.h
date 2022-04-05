@@ -163,10 +163,10 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //DEBUG 
     persist f64 xscale = 1;
     persist f64 yscale = 1;
-    if(DeshInput->KeyPressed(Key::UP))    yscale += 0.1;
-    if(DeshInput->KeyPressed(Key::DOWN))  yscale -= 0.1;
-    if(DeshInput->KeyPressed(Key::LEFT))  xscale -= 0.1;
-    if(DeshInput->KeyPressed(Key::RIGHT)) xscale += 0.1;
+    //if(DeshInput->KeyPressed(Key::UP))    yscale += 0.1;
+    //if(DeshInput->KeyPressed(Key::DOWN))  yscale -= 0.1;
+    //if(DeshInput->KeyPressed(Key::LEFT))  xscale -= 0.1;
+    //if(DeshInput->KeyPressed(Key::RIGHT)) xscale += 0.1;
 
 
 
