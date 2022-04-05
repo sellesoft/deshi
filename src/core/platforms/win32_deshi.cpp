@@ -757,16 +757,16 @@ FileReader init_reader(const File& file) {
 	//gather lines
 	//TODO maybe make a way to disable this
 	//maybe make a function gather_lines or something and only cache lines when thats called
-	char* start = fr.raw.str, end = 0;
-	cstring raw = fr.raw;
-	forI(bytes_read + 1) {
-		if (raw[0] == '\n' || raw[0] == '\0') {
-			fr.lines.add({ start, u32(raw.str - start) });
-			start = raw.str + 1;
-		}
-		advance(&raw);
-	}
-	if (!fr.lines.count) fr.lines.add(fr.raw);
+	//char* start = fr.raw.str, end = 0;
+	//cstring raw = fr.raw;
+	//forI(bytes_read + 1) {
+	//	if (raw[0] == '\n' || raw[0] == '\0') {
+	//		fr.lines.add({ start, u32(raw.str - start) });
+	//		start = raw.str + 1;
+	//	}
+	//	advance(&raw);
+	//}
+	//if (!fr.lines.count) fr.lines.add(fr.raw);
 	
 	fr.file = &file;
 	fr.read = { fr.raw.str, 0 };

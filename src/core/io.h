@@ -93,6 +93,8 @@ void       read_value_from_key(FileReader& reader, cstring& out, const char* key
 void       chunk_file(FileReader& reader, char delimiter, b32 stop_on_newline = false);
 //tells the reader to chunk the entire file based on a given start and end delimiter. this will only create a chunk if it ends and begins with the given delimiters
 void       chunk_file(FileReader& reader, char begin_delimiter, char end_delimiter, b32 stop_on_newline = false);
+//tells the reader to chunk the entire file by lines and put it in it's lines array
+void       chunk_file_by_lines(FileReader& reader);
 //tells the reader to chunk the entire current line base on a given delimiter. chunks are placed into the reader's chunks array
 void       chunk_line(FileReader& reader, u32 line, char delimiter);
 //tells the reader to chunk the entire current line based on a given start and end delimiter. chunks are placed into the reader's chunks array 

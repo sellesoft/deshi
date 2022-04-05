@@ -3230,8 +3230,6 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 					if(win != window && win->name != "Base"){
 						f32 stx = style.windowSnappingTolerance.x;
 						f32 sty = style.windowSnappingTolerance.y;
-						Log("", "right edge", (window->x - (win->x + win->width)));
-						Log("", "left  edge", ((window->x + window->width) - win->x));
 						if(window->y >= win->y && window->y <= (win->y + win->height) || 
 						   win->y >= window->y && win->y <= (window->y + window->height)){
 							if(fabs(window->x - (win->x + win->width)) < stx) //left vs right
@@ -3262,7 +3260,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 			WinUnSetBeingDragged(window);
 			AllowInputs;
 		}
-	} KPFuncEnd;
+	}
 }
 
 //@Begin
