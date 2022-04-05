@@ -3,6 +3,18 @@ FileReader init_reader(char* data, u32 datasize) {
 	fr.raw.str = data;
 	fr.raw.count = datasize;
 	fr.read.str = fr.raw.str;
+	
+	//char* start = fr.raw.str, end = 0;
+	//cstring raw = fr.raw;
+	//forI(datasize + 1) {
+	//	if (raw[0] == '\n' || raw[0] == '\0') {
+	//		fr.lines.add({ start, u32(raw.str - start) });
+	//		start = raw.str + 1;
+	//	}
+	//	advance(&raw);
+	//}
+	//if (!fr.lines.count) fr.lines.add(fr.raw);
+	
 	return fr;
 }
 
@@ -14,12 +26,42 @@ b32 next_char(FileReader& reader) {
 }
 
 b32 next_line(FileReader& reader) {
-	if (!reader.lines.count) {
-		LogW("IO", "attempt to use next_line on a FileReader without chunking the File by lines first (chunk_file_by_lines())");
-		return false;
+	//if (!reader.lines.count) {
+	//	LogW("IO", "attempt to use next_line on a FileReader without chunking the File by lines first (chunk_file_by_lines())");
+	//	return false;
+	//}
+	//if (reader.line_number >= reader.lines.count) return false;
+	//reader.read = reader.lines[reader.line_number];
+	//reader.line_number++;
+	//return true;
+	
+	
+	//old code for reading lines incase we dont want to cache it, or if we want to be able to disable caching
+	char*& readstr = reader.read.str;
+	upt& readcount = reader.read.count;
+	char*   rawstr = reader.raw.str;
+	upt   rawcount = reader.raw.count;
+	//ensure that for the first line read points to starts at the beginnng of the file 
+	//and we dont skip the first line
+	if (!reader.line_number) {
+		readstr = rawstr;
+		readcount = rawcount;
+		u32 idx = find_first_char(reader.read, '\n');
+		if (idx != npos) {
+			readcount = idx;
+			if (readstr[readcount - 1] == '\r') readcount--;
+		}
 	}
-	if (reader.line_number >= reader.lines.count) return false;
-	reader.read = reader.lines[reader.line_number];
+	else {
+		readstr += readcount;
+		if (*readstr == '\r') readstr += 2;
+		else readstr++;
+		if (readstr >= rawstr + rawcount) return false;
+		u32 index = find_first_char(readstr, rawcount - (readstr - rawstr), '\n');
+		if (index == npos) readcount = rawcount - (readstr - rawstr);
+		else readcount = index;
+		if (reader.read[readcount - 1] == '\r') readcount--;
+	}
 	reader.line_number++;
 	return true;
 }
@@ -123,16 +165,7 @@ void chunk_file(FileReader& reader, char begin_delimiter, char end_delimiter, b3
 }
 
 void chunk_file_by_lines(FileReader& reader){
-    char* start = reader.raw.str, end = 0;
-	cstring raw = reader.raw;
-	forI(reader.raw.count) {
-		if (raw[0] == '\n' || raw[0] == '\0') {
-			reader.lines.add({ start, u32(raw.str - start) });
-			start = raw.str + 1;
-		}
-		advance(&raw);
-	}
-	if (!reader.lines.count) reader.lines.add(reader.raw);
+
 }
 
 void chunk_line(FileReader& reader, u32 line, char delimiter){

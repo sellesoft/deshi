@@ -4,6 +4,7 @@
 
 #include "kigu/array.h"
 #include "kigu/string.h"
+#include "kigu/unicode.h"
 #include "kigu/string_utils.h"
 
 enum FileAccessFlags_ {
@@ -114,7 +115,7 @@ void close_file(File* file);
 
 //reads a file into a char buffer. this allocates a buffer for it and its the user's responsibility to free it
 //TODO decide if its necessary to implement this. for ex cases where you dont need to use a FileReader
-void read_file(const File& file, char* out);
+cstring read_file(const File& file);
 
 //returns a temporary array of the files in the target directory
 //TODO return carray instead of array

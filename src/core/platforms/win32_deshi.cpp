@@ -738,6 +738,23 @@ void Window::SwapBuffers(){
 local b32 io__crash_on_error = false;
 //TODO maybe use a common buffer for string filename operations
 
+cstring read_file(const File& file){
+	if (!file.handle) { LogE("IO", "attempted to read a file that's not initialized"); return {0,0}; }
+	cstring out;
+	out.str = (char*)memalloc(file.bytes_size);
+	out.count = file.bytes_size;
+	
+	u32 bytes_read = 0;
+	if (!ReadFile(file.handle, out.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+		Win32LogLastError("ReadFile", io__crash_on_error);
+		return {0,0};
+	}
+
+	if (bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
+
+	return out;
+}
+
 //TODO binary file loading when needed
 //initializes a FileReader for a given File
 FileReader init_reader(const File& file) {
