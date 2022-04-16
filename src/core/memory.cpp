@@ -452,11 +452,11 @@ deshi__memory_arena_clear(Arena* arena, cstring file, upt line){
 
 void
 deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
-	DEBUG_CheckHeap(deshi__arena_heap);
-	DEBUG_CheckArenaHeapArenas();
-	
 	if(deshi__cleanup_happened) return;
 	if(arena == 0) return;
+	
+	DEBUG_CheckHeap(deshi__arena_heap);
+	DEBUG_CheckArenaHeapArenas();
 	Assert(deshi__arena_heap && deshi__arena_heap->initialized, "Attempted to delete an arena before memory_init() has been called");
 	
 	AllocInfo info = deshi__memory_allocinfo_get(arena);
@@ -720,11 +720,11 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 
 void*
 deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, upt line){
-	DEBUG_CheckHeap(deshi__generic_heap);
-	
 	if(deshi__cleanup_happened) return 0;
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
+	
+	DEBUG_CheckHeap(deshi__generic_heap);
 	Assert(deshi__generic_heap && deshi__generic_heap->initialized, "Attempted to allocate before memory_init() has been called");
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
@@ -951,12 +951,10 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 
 void
 deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
-	DEBUG_CheckHeap(deshi__generic_heap);
-	
-	
 	if(deshi__cleanup_happened) return;
 	if(ptr == 0) return;
 	
+	DEBUG_CheckHeap(deshi__generic_heap);
 	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	MemChunk* chunk = MemoryToChunk(ptr);
 	Assert(chunk->size > 0, "A chunk must always have a size");
