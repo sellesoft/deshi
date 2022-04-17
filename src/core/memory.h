@@ -3,6 +3,7 @@
 #define DESHI_MEMORY_H
 
 #include "kigu/common.h"
+#include "kigu/node.h"
 
 struct Arena{
 	u8* start;
