@@ -693,7 +693,6 @@ namespace UI {
 	vec2              CalcTextSize(cstring text);
 	vec2              CalcTextSize(wcstring text);
 	FORCE_INLINE vec2 CalcTextSize(const string& text)  { return CalcTextSize(cstring {text.str,u64(text.count)}); }
-	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
 	FORCE_INLINE vec2 CalcTextSize(const wchar* text)   { return CalcTextSize(wcstring{(wchar*)text,u64(wcslen(text)) }); }
 	//calculates where a char in a string will appear relative to the topleft corner of the text item it places
@@ -893,8 +892,6 @@ namespace UI {
 	
 	FORCE_INLINE void Text(const string& text, UITextFlags flags = 0){ Text(cstring{text.str,text.count}, flags); }
 	FORCE_INLINE void Text(const string& text, vec2 pos, UITextFlags flags = 0){ Text(cstring{text.str,text.count}, pos, flags); }
-	FORCE_INLINE void Text(const wstring& text, UITextFlags flags = 0){ Text(text.str, flags); }
-	FORCE_INLINE void Text(const wstring& text, vec2 pos, UITextFlags flags = 0){ Text(text.str, pos, flags); }
 	
 	void TextF(const char* fmt, ...);
 	
