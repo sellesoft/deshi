@@ -181,7 +181,7 @@ void cmd_init(){
 		array<File> files = get_directory_files(temp_str8_cstr(args[0]));
 		char time_str[1024];
 		if(files.count){
-			Loga("","Directory of '$':",temp_str8_cstr(args[0]));
+			Logf("cmd","Directory of '%s':",temp_str8_cstr(args[0]));
 			forE(files){
 				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->time_last_write));
 				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),

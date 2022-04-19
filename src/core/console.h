@@ -17,20 +17,22 @@
 //
 //  will still color the message yellow also,
 //
-//  some text before formatting {{.a} some formatted text at the end
+//  some text before formatting {{a} some formatted text at the end
 //
 //  will not format the first part, and format the rest
 //
 //modifiers
 // 
-//  .a     - (alert)        flashes the background of the message with modifier color (default red)
-//  .e     - (error)        these messages are red
-//  .w     - (warning)      these messages are yellow
-//  .t=... - (tag)          these messages have a tag they can be filtered by
-//  .c=... - (color)        sets the color of the wrapped message
+//  a     - (alert)        flashes the background of the message with modifier color (default red)
+//  e     - (error)        these messages are red
+//  w     - (warning)      these messages are yellow
+//  s     - (success)      these messages are green
+//  t=... - (tag)          these messages have a tag they can be filtered by
+//  c=... - (color)        sets the color of the wrapped message
 
 #include "kigu/common.h"
 #include "kigu/string.h"
+#include "kigu/unicode.h"
 
 enum ConsoleState_ {
 	ConsoleState_Closed,
@@ -44,13 +46,13 @@ struct Console{
 	b32  IsOpen();
 	void ChangeState(ConsoleState new_state);
 	void AddLog(string input);
-	void LoggerMirror(string in, u32 charstart);
+	void LoggerMirror(str8 in, u32 charstart);
 	
 	void Init();
 	void Update();
 };
 
-//global_ console pointer
+//global console pointer
 extern Console* g_console;
 #define DeshConsole g_console
 

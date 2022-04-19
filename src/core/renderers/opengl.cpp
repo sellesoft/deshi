@@ -1581,7 +1581,7 @@ Init(){DPZoneScoped;
 	
 	TIMER_START(t_s);
 	Log("opengl","Starting opengl renderer initialization");
-	Logger::PushIndent();
+	logger_push_indent();
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// load render settings
@@ -1831,7 +1831,7 @@ Init(){DPZoneScoped;
 	forI(TWOD_LAYERS) twodCmdCounts[i] = 1;
 	
 	initialized = true;
-	Logger::PopIndent();
+	logger_pop_indent();
 	Log("deshi","Finished opengl renderer initialization in ",TIMER_END(t_s),"ms");
 }
 

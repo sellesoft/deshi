@@ -1,98 +1,77 @@
 #pragma once
-#ifndef DESHI_LOGGING_H
-#define DESHI_LOGGING_H
+#ifndef DESHI_LOGGER_H
+#define DESHI_LOGGER_H
 
 #include "kigu/common.h"
-#include "kigu/string.h"
-#include "kigu/cstring.h"
-#include "kigu/string_utils.h"
+#include "kigu/unicode.h"
+#include "memory.h"
 
-////////////////////
-//// @interface ////
-////////////////////
-#define Log(tag,...)       Logger::Log_(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
-#define LogE(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
-#define LogW(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
-#define LogS(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-success"),__VA_ARGS__)
-#define Logf(tag,fmt,...)  Logger::LogF_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
-#define LogfE(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
-#define LogfW(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
-#define LogfS(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-success"),fmt,__VA_ARGS__)
-#define Loga(tag,fmt,...)  Logger::LogA_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
-#define LogaE(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
-#define LogaW(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
-#define LogaS(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-success"),fmt,__VA_ARGS__)
-
-#define EnableLogging  Logger::SetIsLogging(1);
-#define DisableLogging Logger::SetIsLogging(0);
-
-namespace Logger{
-	template<typename... T> void Log_(const char* filepath, upt line_number, const char* tag, T... args);
-	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...);
-	template<typename... T> void LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args);
-	
-	void LogInternal(const string& tag, const string& msg);
-	void LogFromConsole(const string& in);
-	
-	void PushIndent(u32 count = 1);
-	void PopIndent(u32 count = 1);
-	
-	FILE* GetFilePtr();
-	cstring LastMessage();
-	void SetIsLogging(b32 thebooleanforthisfunction);
-	void SetMirrorToConsole(b32 mirrorToConsole);
-	
-	void Init(u32 log_count = 5, b32 mirror = true);
-	void Update();
-	void Cleanup();
+#define LOGGER_BUFFER_SIZE 4096
+struct Logger{
+	FILE* file = 0; //TODO use deshi File
+	u8   last_message[LOGGER_BUFFER_SIZE] = {0};
+	s64  last_message_length = 0;
+	b32  active = false;
+	b32  mirror_to_stdout = true;
+	b32  mirror_to_console = false;
+	b32  ignore_tags = false;
+	b32  auto_newline = true;
+	b32  track_caller = false;
+	s32  indent_level = 0;
+	s32  indent_spaces = 2;
 };
 
-/////////////////////////
-//// @implementation ////
-/////////////////////////
-template<typename... T> inline void Logger::
-Log_(const char* filepath, upt line_number, const char* tag, T... args){
-	string tag_str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
-	
-	string msg;
+enum{
+	LogType_Normal,
+	LogType_Error,
+	LogType_Warning,
+	LogType_Success,
+};
+
+//comma style:  Log("float: ",12.5,", int: ",0xff)
+#define Log(tag,...)       logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Normal ,__VA_ARGS__)
+#define LogE(tag,...)      logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Error  ,__VA_ARGS__)
+#define LogW(tag,...)      logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Warning,__VA_ARGS__)
+#define LogS(tag,...)      logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Success,__VA_ARGS__)
+
+//printf style: Logf("float: %f, int: %d",12.5f,0xff)
+#define Logf(tag,fmt,...)  logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Normal ,str8_lit(fmt),__VA_ARGS__)
+#define LogfE(tag,fmt,...) logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Error  ,str8_lit(fmt),__VA_ARGS__)
+#define LogfW(tag,fmt,...) logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Warning,str8_lit(fmt),__VA_ARGS__)
+#define LogfS(tag,fmt,...) logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Success,str8_lit(fmt),__VA_ARGS__)
+
+//creates a new `Logger.file`, limits the number of logs to `log_count`, and sets `Logger.mirror_to_stdout`/`Logger.mirror_to_console` to `mirror`
+void logger_init(u32 log_count = 5, b32 mirror = true);
+
+//flushes the `Logger.file`
+void logger_update();
+
+//closes the `Logger.file`
+void logger_cleanup();
+
+//returns the internal `Logger` object
+FORCE_INLINE Logger* logger_expose();
+
+//increments `Logger.indent_level` by `count`
+FORCE_INLINE void logger_push_indent(s32 count = 1);
+
+//decrements `Logger.indent_level` by `count`, if `count` is negative, set `Logger.indent_level` to zero
+FORCE_INLINE void logger_pop_indent(s32 count = 1);
+
+//returns a `str8` of the last message logged
+FORCE_INLINE str8 logger_last_message();
+
+//logs a message in printf style using `fmt`
+void logger_format_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, str8 fmt, ...);
+
+void logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_type, string* arr, u32 arr_count);
+
+//logs a message in comma style using `args`
+template<typename... T> inline void
+logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T... args){
 	constexpr auto arg_count{sizeof...(T)};
-	string arr[arg_count] = {to_string(std::forward<T>(args))...};
-	forI(arg_count) msg += arr[i];
-	
-	LogInternal(tag_str, msg);
+	string arr[arg_count] = {to_string(args)...}; //TODO use temp allocation
+	logger_comma_log_internal(caller_file, caller_line, tag, log_type, arr, arg_count);
 }
 
-template<typename... T> inline void Logger::
-LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args){
-	string tag_str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
-	
-	string msg;
-	constexpr auto arg_count{sizeof...(T)};
-	string arr[arg_count] = {to_string(std::forward<T>(args))...};
-	
-	const char* sub_start = fmt;
-	const char* cursor = fmt;
-	u32 special_count = 0;
-	while(*cursor != '\0'){
-		if(*cursor == '$'){
-			if(*(cursor+1) != '$'){
-				msg += string(sub_start,cursor-sub_start);
-				Assert(special_count < arg_count, "more $ than args");
-				msg += to_string(arr[special_count]);
-				sub_start = cursor+1;
-			}else{
-				msg += "$";
-				sub_start = cursor+2;
-				cursor++;
-			}
-			special_count++;
-		}
-		cursor++;
-	}
-	msg += string(sub_start,cursor-sub_start);
-	
-	if(special_count != arg_count) Log("logging","More arguments passed to loga() than $ characters in the format string");
-	LogInternal(tag_str, msg);
-}
-
-#endif //DESHI_LOGGING_H
+#endif //DESHI_LOGGER_H

@@ -37,7 +37,7 @@ core:
 [04/15/21,MEDI,Feature] popout console state (require extra window creation)
 [06/16/21,EASY,Feature] tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 [12/23/21,MEDI,Bug] if the console fills up too much, it crashes
-you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
+    you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 [12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed
 [01/10/22,EASY,Bug] color formatting does not work thru Log() (see commands.cpp 'test' command)
 [01/13/22,EASY,Feature] config variable modification
@@ -71,17 +71,14 @@ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 
 `Logger`
 --------
-[12/31/21,EASY,Tweak] make a local Assert macro that logs the message before stopping
-[12/31/21,EASY,Tweak] make the most recent logging file be named log.txt, while the rest have a date
-[01/06/22,EASY,Tweak] can probably optimize by using a single buffer instead of strings in Log() and LogA() (or use temp allocation)
-[01/06/22,MEDI,Tweak] look into https://github.com/fmtlib/fmt for fast formatting
+[01/06/22,EASY,Tweak] optimize by using a single buffer or temp allocation instead of strings in logger_comma_log
 
 `Math`
 ------
 [03/13/21,MEDI,Feature] add quaternions and converions between them and other linear algebra primitives
 [05/03/21,MEDI,Feature] add functions and members similar to what glsl/glm has where you can do stuff like
-v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
-you probably just need to add a vec2/3 for each permutation of each vector
+    v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
+    you probably just need to add a vec2/3 for each permutation of each vector
 glm/detail/_swizzle.hpp
 [10/20/21,EASY,Tweak] move geometry funcs out of math.h 
 
@@ -89,7 +86,7 @@ glm/detail/_swizzle.hpp
 --------
 [12/22/21,HARD,Feature] consider multiple thread contexts
 [12/22/21,HARD,Feature] add fast generic bins
-ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
+    ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
 [01/09/22,EASY,Tweak] maybe temp memory should not default to zero?
 [01/16/22,MEDIUM,Bug] memory system sometimes fails to alloc memory from OS (might only be during debugging)
 [02/06/22,MEDI,Tweak] add a way to disable this and set deshi_allocator to libc
@@ -101,9 +98,9 @@ ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657
 [04/06/21,MEDI,Tweak] fix texture transparency
 [04/30/21,MEDI,Feature] upload extra mesh info to an SSBO
 [05/13/21,HARD,Feature] look into getting info from shaders, or setting up compute shaders
-ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
-the primary reason being that we need to optimize outlining objects, which will
-involve clipping triangles and stuff
+    ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
+    the primary reason being that we need to optimize outlining objects, which will
+    involve clipping triangles and stuff
 [06/16/21,MEDI,Feature] SSBOs in shaders so we can pass variable length arrays to it
 [06/17/21,EASY,Feature] add standard render/video settings
 [07/06/21,MEDI,Feature] add omnidirectional shadow mapping
@@ -111,9 +108,9 @@ involve clipping triangles and stuff
 [07/06/21,MEDI,Feature] add front-to-back sorting for perf gain and transparency?
 [07/06/21,EASY,Tweak] delete shader .spv if failed to compile it after printing error messages
 [07/06/21,HARD,System] setup more generalized material/pipeline creation
-specialization constants
-uber shaders
-runtime pipeline creation/specialization
+    specialization constants
+    uber shaders
+    runtime pipeline creation/specialization
 [07/09/21,MEDI,System] rework lights
 [07/10/21,HARD,Bug] fix directional shadow mapping's (projection?) errors
 [08/07/21,MEDI,Feature] add texture/material recreation without restart
@@ -139,8 +136,8 @@ runtime pipeline creation/specialization
 `Storage`
 ---------
 [07/10/21,EASY,Bug] the program crashes if default asset files are not present
-maybe store the text in the actual source and create the file from the code, like keybinds.cfg
-alternatively, we can store those specific assets in the source control
+    maybe store the text in the actual source and create the file from the code, like keybinds.cfg
+    alternatively, we can store those specific assets in the source control
 [08/07/21,MEDI,Tweak] speedup OBJ parsing and face generation
 [08/22/21,EASY,Tweak] store null128.png and null shader in code
 [08/22/21,EASY,Tweak] add versioning to Mesh since its saved in a binary format
@@ -161,7 +158,7 @@ alternatively, we can store those specific assets in the source control
 `UI`
 ----
 [08/05/21,MEDI,Feature] add functionality for resetting certain maps like windows and inputtexts
-maybe even removing certain labels from them
+    maybe even removing certain labels from them
 [08/09/21,MEDI,Feature] vertical tabs
 [08/15/21,MEDI,Feature] add some markup to text like underlining, bold, etc.
 [01/09/22,EASY,Tweak] specify Separator() parameters and add one for line height
@@ -175,7 +172,7 @@ maybe even removing certain labels from them
 [02/12/22,Easy,Feature] text input mouse click to place cursor
 [02/12/22,HARD,System] text selection (and clipboard)
 [02/20/22,EASY,Tweak,ProjectWide] move all of the structs and enums in ui.h to be under the UI namesapce and remove the UI prefix from them
-UI::Window would conflict with our current Window, so either rename Window to OSWindow or put it in some kind of namespace
+    UI::Window would conflict with our current Window, so either rename Window to OSWindow or put it in some kind of namespace
 [02/27/22,EASY,Feature] add displaying a window's flags to metrics
 
 better flag descriptions on how they interact with other flags (no scroll vs no scroll bar, no focus vs focus on hover, what is NoMinimize?)
@@ -191,7 +188,6 @@ i expected UI::RowSetupRelativeColumnWidths({1,1,1}) to be default behaviour
 scrollbar isnt draggable if the window is moveable
 rows arent nestable
 tab bar buttons pass their input thru to the window (for dragging)
-
 
 `Window`
 --------
@@ -209,7 +205,7 @@ tab bar buttons pass their input thru to the window (for dragging)
 [03/02/22,EASY,Tweak]   check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
 [03/02/22,EASY,Tweak]   each module should create its own data folder rather than Assets::enforceDirectories()
 [03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
-this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
+    this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
 [03/22/22,EASY,TWEAK]   check all usages of cstring/wcstring to ensure that the functions don't simply convert them to char* and pass to c-string functions, since they might not have the trailing '\0' that c-strings require
 */
 
@@ -255,6 +251,8 @@ this could also be separated into individual functions for each module as well, 
 #include <vector>
 #include <set>
 #include <unordered_map>
+#include <io.h>
+#include <fcntl.h>
 
 enum DeshiStage{
 	DS_NONE    = 0,
@@ -318,20 +316,27 @@ local Flags deshiStage = DS_NONE;
 #endif //DESHI_WINDOWS
 
 //// external for core ////
-#define STB_IMAGE_IMPLEMENTATION
-//#define STB_TRUETYPE_IMPLEMENTATION
 #define STBI_MALLOC(sz) memory_alloc(sz)
 #define STBI_REALLOC(p,newsz) memory_realloc(p,newsz)
 #define STBI_FREE(p) memory_zfree(p)
 #define STBI_FAILURE_USERMSG
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-//#include <stb/stb_truetype.h> //included by imgui
-#include <imgui/imgui.cpp>
-#include <imgui/imgui_demo.cpp>
-#include <imgui/imgui_draw.cpp>
-#include <imgui/imgui_tables.cpp>
-#include <imgui/imgui_widgets.cpp>
-
+#ifndef DESHI_DISABLE_IMGUI
+//<stb/stb_truetype.h> included by imgui
+//<stb/stb_sprintf.h> included by imgui
+#  define IMGUI_USE_STB_SPRINTF
+#  include <imgui/imgui.cpp>
+#  include <imgui/imgui_demo.cpp>
+#  include <imgui/imgui_draw.cpp>
+#  include <imgui/imgui_tables.cpp>
+#  include <imgui/imgui_widgets.cpp>
+#else
+#  define STB_TRUETYPE_IMPLEMENTATION
+#  include <stb/stb_truetype.h>
+#  define STB_SPRINTF_IMPLEMENTATION
+#  include <stb/stb_sprintf.h>
+#endif
 
 //// platform ////
 #if DESHI_WINDOWS
@@ -399,7 +404,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_s);
 	Assets::enforceDirectories();
 	memory_init(Gigabytes(1), Gigabytes(1));
-	Logger::Init(5);
+	logger_init();
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	deshi_console.Init();
 #endif
@@ -421,7 +426,7 @@ void deshi::cleanup(){
 	if(DeshiModuleLoaded(DS_IMGUI)) DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
-	Logger::Cleanup();
+	logger_cleanup();
 	memory_cleanup();
 }
 

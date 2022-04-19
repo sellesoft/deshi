@@ -1688,11 +1688,11 @@ void UI::TextF(const char* fmt, ...) {DPZoneScoped; KPFuncStart;
 	string s;
 	va_list argptr;
 	va_start(argptr, fmt);
-	s.count  = vsnprintf(nullptr, 0, fmt, argptr);
+	s.count = stbsp_vsnprintf(nullptr, 0, fmt, argptr);
 	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
 	s.allocator->commit(s.str, s.count+1);
 	s.space = s.count+1;
-	vsnprintf(s.str, s.count+1, fmt, argptr);
+	stbsp_vsnprintf(s.str, s.count+1, fmt, argptr);
 	va_end(argptr);
 	TextW(cstring{s.str, s.count}, DecideItemPos(), style.colors[UIStyleCol_Text], false); KPFuncEnd;
 }

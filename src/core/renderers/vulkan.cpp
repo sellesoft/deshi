@@ -4664,7 +4664,7 @@ Init(){DPZoneScoped;
 	
 	TIMER_START(t_s);
 	Log("vulkan","Starting vulkan renderer initialization");
-	Logger::PushIndent();
+	logger_push_indent();
 	
 	//// load RenderSettings ////
 	LoadSettings();
@@ -4736,7 +4736,7 @@ Init(){DPZoneScoped;
 	}
 	initialized = true;
 	
-	Logger::PopIndent();
+	logger_pop_indent();
 	LogS("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");
 }
 

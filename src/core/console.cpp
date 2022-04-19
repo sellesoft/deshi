@@ -25,7 +25,7 @@ struct ConsoleDictionary{
 	ring_array<Chunk> dict;
 	u32& count = dict.count;
 	
-	void add(string to_logger, Chunk chunk){
+	void add(const string& to_logger, Chunk chunk){
 		if(chunk.strsize){
 			dict.add(chunk);
 			
@@ -33,7 +33,20 @@ struct ConsoleDictionary{
 			chunk.message = to_logger;
 #endif
 			
-			Logger::LogFromConsole(to_logger);
+			Logger* logger = logger_expose();
+			b32 restore_mirror  = logger->mirror_to_console;
+			b32 restore_tag     = logger->ignore_tags;
+			b32 restore_newline = logger->auto_newline;
+			b32 restore_track   = logger->track_caller;
+			logger->mirror_to_console = false;
+			logger->ignore_tags       = true;
+			logger->auto_newline      = false;
+			logger->track_caller      = false;
+			Log("",to_logger);
+			logger->track_caller      = restore_track;
+			logger->auto_newline      = restore_newline;
+			logger->ignore_tags       = restore_tag;
+			logger->mirror_to_console = restore_mirror;
 		}
 	}
 	
@@ -48,6 +61,7 @@ struct ConsoleDictionary{
 };
 
 //// terminal ////
+local Logger* logger;
 local FILE* buffer; //this is always from Logger
 local b32 intercepting_inputs = 0;
 local b32 open_console_pressed = 0;
@@ -320,8 +334,8 @@ void Console::AddLog(string input){
 	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input);
 }
 
-void Console::LoggerMirror(string input, u32 charstart){
-	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input, charstart);
+void Console::LoggerMirror(str8 input, u32 charstart){
+	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(to_string(input), charstart);
 }
 
 void Console::ChangeState(ConsoleState new_state){
@@ -375,7 +389,8 @@ void Console::Init(){
 	deshiStage |= DS_CONSOLE;
 	
 	TIMER_START(t_s);
-	buffer = Logger::GetFilePtr();
+	logger = logger_expose();
+	buffer = logger->file;
 	
 	dictionary.dict.init(CONSOLE_DICTIONARY_SIZE, deshi_allocator);
 	input_history.init(max_input_history, deshi_allocator);
@@ -385,7 +400,7 @@ void Console::Init(){
 	console_pos = vec2::ZERO;
 	console_dim = vec2(f32(DeshWindow->width), f32(DeshWindow->height) * open_max_percent);
 	
-	Logger::SetMirrorToConsole(true);
+	logger->mirror_to_console = true;
 	LogS("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
 }
 
