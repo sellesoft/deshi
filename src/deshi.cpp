@@ -20,16 +20,15 @@ core:
 //Format: [MM/DD/YY,DIFFICULTY,Tags...] description
 //        continued description
 //Assumed Difficulties: EASY, MEDI, HARD
-//Common Tags: Feature, Tweak, Bug
+//Common Tags: Feature, Tweak, Bug, System
 
 `Command`
 ---------
 [04/12/21,EASY,Feature] command to print all avaliable keys for binding
 [04/12/21,EASY,Feature] command to print all keybinds, with (maybe) an option for printing only contextual keybinds
-[04/15/21,EASY,Feature] make binds and aliases check if one already exists for a key or a command (if a key already exists, probably just overwrite it?)
 [06/09/21,EASY,Feature] add device_info command (graphics card, sound device, monitor res, etc)
 [08/07/21,EASY,Feature] implement command chaining
-[01/10/22,EASY,Tweak] change Run()'s input from string to cstring
+[04/18/22,EASY,Feature] support running commands with nested aliases
 
 `Console`
 ---------
@@ -40,10 +39,10 @@ core:
 [12/23/21,MEDI,Bug] if the console fills up too much, it crashes
 you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 [12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed
-[01/10/22,EASY,Bug] color formatting does not work thru Log()
-see commands.cpp 'test' command
+[01/10/22,EASY,Bug] color formatting does not work thru Log() (see commands.cpp 'test' command)
 [01/13/22,EASY,Feature] config variable modification
 [01/13/22,EASY,Feature] simple terminal emulation
+[04/18/22,EASY,Tweak] draw \t correctly
 
 `File`
 ------
@@ -412,15 +411,14 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	DeshiImGui::Init();
 #endif
 	UI::Init();
-	Cmd::Init();
+	cmd_init();
 	DeshWindow->ShowWindow();
 	Render::UseDefaultViewProjMatrix();
 	LogS("deshi","Finished deshi initialization in ",TIMER_END(t_s),"ms");
 }
 
 void deshi::cleanup(){
-	if(DeshiModuleLoaded(DS_IMGUI))
-		DeshiImGui::Cleanup();
+	if(DeshiModuleLoaded(DS_IMGUI)) DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
 	Logger::Cleanup();

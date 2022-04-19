@@ -26,18 +26,22 @@ struct ConsoleDictionary{
 	u32& count = dict.count;
 	
 	void add(string to_logger, Chunk chunk){
-		dict.add(chunk);
-		
+		if(chunk.strsize){
+			dict.add(chunk);
+			
 #ifdef BUILD_INTERNAL
-		chunk.message = to_logger;
+			chunk.message = to_logger;
 #endif
-		
-		Logger::LogFromConsole(to_logger);
+			
+			Logger::LogFromConsole(to_logger);
+		}
 	}
 	
 	//for chunks that have already been logged
 	void add(Chunk chunk){
-		dict.add(chunk);
+		if(chunk.strsize){
+			dict.add(chunk);
+		}
 	}
 	
 	Chunk& operator[](u32 idx){ return *dict.at(idx); }
@@ -594,7 +598,7 @@ void Console::Update(){
 					input_history.add({start_chunk,end_chunk});
 				}
 				
-				Cmd::Run(input);
+				cmd_run(str8{(u8*)input.str, input.count});
 				ZeroMemory(inputBuf, CONSOLE_INPUT_BUFFER_SIZE);
 			}
 		}
