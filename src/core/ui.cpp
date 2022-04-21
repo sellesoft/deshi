@@ -14,7 +14,7 @@ UIStyle style;
 //for color stack, saves what element was changed and what it's old color was 
 struct ColorMod {
 	UIStyleCol element;
-	color oldCol;
+	color       oldCol;
 };
 
 #define UI_LAYERS 11
@@ -22,7 +22,7 @@ static const u32 UI_CENTER_LAYER = (u32)floor((f32)UI_LAYERS / 2.f);
 
 //for style variable stack
 struct VarMod {
-	UIStyleVar var;
+	UIStyleVar  var;
 	f32 oldFloat[2];
 	VarMod(UIStyleVar var, f32 old)  { this->var = var; oldFloat[0] = old; }
 	VarMod(UIStyleVar var, vec2 old) { this->var = var; oldFloat[0] = old.x; oldFloat[1] = old.y; }
@@ -35,34 +35,34 @@ struct UIStyleVarType {
 };
 
 local const UIStyleVarType uiStyleVarTypes[] = {
-	{2, offsetof(UIStyle, windowMargins)},
-	{2, offsetof(UIStyle, itemSpacing)},
-	{1, offsetof(UIStyle, windowBorderSize)},
-	{1, offsetof(UIStyle, buttonBorderSize)},
-	{1, offsetof(UIStyle, titleBarHeight)},
-	{2, offsetof(UIStyle, titleTextAlign)},
-	{2, offsetof(UIStyle, scrollAmount)},
-	{2, offsetof(UIStyle, checkboxSize)},
-	{1, offsetof(UIStyle, checkboxFillPadding)},
-	{2, offsetof(UIStyle, inputTextTextAlign)},
-	{2, offsetof(UIStyle, buttonTextAlign)},
-	{2, offsetof(UIStyle, headerTextAlign)},
-	{2, offsetof(UIStyle, selectableTextAlign)},
-	{2, offsetof(UIStyle, tabTextAlign)},
-	{1, offsetof(UIStyle, buttonHeightRelToFont)},
-	{1, offsetof(UIStyle, headerHeightRelToFont)},
-	{1, offsetof(UIStyle, inputTextHeightRelToFont)},
-	{1, offsetof(UIStyle, checkboxHeightRelToFont)},
+	{2, offsetof(UIStyle,             windowMargins)},
+	{2, offsetof(UIStyle,               itemSpacing)},
+	{1, offsetof(UIStyle,          windowBorderSize)},
+	{1, offsetof(UIStyle,          buttonBorderSize)},
+	{1, offsetof(UIStyle,            titleBarHeight)},
+	{2, offsetof(UIStyle,            titleTextAlign)},
+	{2, offsetof(UIStyle,              scrollAmount)},
+	{2, offsetof(UIStyle,              checkboxSize)},
+	{1, offsetof(UIStyle,       checkboxFillPadding)},
+	{2, offsetof(UIStyle,        inputTextTextAlign)},
+	{2, offsetof(UIStyle,           buttonTextAlign)},
+	{2, offsetof(UIStyle,           headerTextAlign)},
+	{2, offsetof(UIStyle,       selectableTextAlign)},
+	{2, offsetof(UIStyle,              tabTextAlign)},
+	{1, offsetof(UIStyle,     buttonHeightRelToFont)},
+	{1, offsetof(UIStyle,     headerHeightRelToFont)},
+	{1, offsetof(UIStyle,  inputTextHeightRelToFont)},
+	{1, offsetof(UIStyle,   checkboxHeightRelToFont)},
 	{1, offsetof(UIStyle, selectableHeightRelToFont)},
-	{1, offsetof(UIStyle, tabHeightRelToFont)},
-	{2, offsetof(UIStyle, rowItemAlign)},
-	{2, offsetof(UIStyle, rowCellPadding)},
-	{1, offsetof(UIStyle, scrollBarYWidth)},
-	{1, offsetof(UIStyle, scrollBarXHeight)},
-	{1, offsetof(UIStyle, indentAmount)},
-	{1, offsetof(UIStyle, tabSpacing)},
-	{1, offsetof(UIStyle, fontHeight)},
-	{2, offsetof(UIStyle, windowSnappingTolerance)},
+	{1, offsetof(UIStyle,        tabHeightRelToFont)},
+	{2, offsetof(UIStyle,              rowItemAlign)},
+	{2, offsetof(UIStyle,            rowCellPadding)},
+	{1, offsetof(UIStyle,           scrollBarYWidth)},
+	{1, offsetof(UIStyle,          scrollBarXHeight)},
+	{1, offsetof(UIStyle,              indentAmount)},
+	{1, offsetof(UIStyle,                tabSpacing)},
+	{1, offsetof(UIStyle,                fontHeight)},
+	{2, offsetof(UIStyle,   windowSnappingTolerance)},
 };
 
 
@@ -455,20 +455,32 @@ inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin) {DPZoneScoped
 
 //TODO(sushi) eventually change these to always use curwin instead of checking everytime
 // probably just separate them into 2 overloaded functions each instead
-FORCE_INLINE f32 BorderedRight(UIWindow* window = curwin)  {DPZoneScoped; return window->dimensions.x - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-FORCE_INLINE f32 BorderedLeft(UIWindow* window = curwin)   {DPZoneScoped; return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-FORCE_INLINE f32 BorderedTop(UIWindow* window = curwin)    {DPZoneScoped; return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
-FORCE_INLINE f32 BorderedBottom(UIWindow* window = curwin) {DPZoneScoped; return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
+FORCE_INLINE f32 BorderedRight()                  {DPZoneScoped; return curwin->dimensions.x - style.windowBorderSize; }
+FORCE_INLINE f32 BorderedLeft()                   {DPZoneScoped; return style.windowBorderSize; }
+FORCE_INLINE f32 BorderedTop()                    {DPZoneScoped; return style.windowBorderSize; }
+FORCE_INLINE f32 BorderedBottom()                 {DPZoneScoped; return curwin->dimensions.y - style.windowBorderSize; }
+FORCE_INLINE f32 BorderedRight(UIWindow* window)  {DPZoneScoped; return window->dimensions.x - window->style.windowBorderSize; }
+FORCE_INLINE f32 BorderedLeft(UIWindow* window)   {DPZoneScoped; return window->style.windowBorderSize; }
+FORCE_INLINE f32 BorderedTop(UIWindow* window)    {DPZoneScoped; return window->style.windowBorderSize; }
+FORCE_INLINE f32 BorderedBottom(UIWindow* window) {DPZoneScoped; return window->dimensions.y - window->style.windowBorderSize; }
 
-FORCE_INLINE f32 MarginedRight(UIWindow* window = curwin)  {DPZoneScoped; f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowMargins.x : window->style.windowBorderSize + window->style.windowMargins.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
-FORCE_INLINE f32 MarginedLeft(UIWindow* window = curwin)   {DPZoneScoped; return (window == curwin ? style.windowBorderSize + style.windowMargins.x : window->style.windowBorderSize + window->style.windowMargins.x) ; }
-FORCE_INLINE f32 MarginedTop(UIWindow* window = curwin)    {DPZoneScoped; return (window == curwin ? style.windowBorderSize + style.windowMargins.y : window->style.windowBorderSize + window->style.windowMargins.y) ; }
-FORCE_INLINE f32 MarginedBottom(UIWindow* window = curwin) {DPZoneScoped; f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowMargins.y : window->style.windowBorderSize + window->style.windowMargins.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
+FORCE_INLINE f32 MarginedRight()                  {DPZoneScoped; f32 ret = curwin->dimensions.x - (style.windowBorderSize + style.windowMargins.x) - (CanScrollY(curwin) ? style.scrollBarYWidth : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
+FORCE_INLINE f32 MarginedLeft()                   {DPZoneScoped; return style.windowBorderSize + style.windowMargins.x; }
+FORCE_INLINE f32 MarginedTop()                    {DPZoneScoped; return style.windowBorderSize + style.windowMargins.y; }
+FORCE_INLINE f32 MarginedBottom()                 {DPZoneScoped; f32 ret = curwin->dimensions.y -  (style.windowBorderSize + style.windowMargins.y) - (CanScrollX(curwin) ? style.scrollBarXHeight : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
+FORCE_INLINE f32 MarginedRight(UIWindow* window)  {DPZoneScoped; f32 ret = window->dimensions.x - (window->style.windowBorderSize + window->style.windowMargins.x) - (CanScrollY(window) ? window->style.scrollBarYWidth : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
+FORCE_INLINE f32 MarginedLeft(UIWindow* window)   {DPZoneScoped; return window->style.windowBorderSize + window->style.windowMargins.x; }
+FORCE_INLINE f32 MarginedTop(UIWindow* window)    {DPZoneScoped; return window->style.windowBorderSize + window->style.windowMargins.y; }
+FORCE_INLINE f32 MarginedBottom(UIWindow* window) {DPZoneScoped; f32 ret = window->dimensions.y - (window->style.windowBorderSize + window->style.windowMargins.y) - (CanScrollX(window) ? window->style.scrollBarXHeight : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
 
-FORCE_INLINE f32 ClientRight(UIWindow* window = curwin)  {DPZoneScoped; return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
-FORCE_INLINE f32 ClientLeft(UIWindow* window = curwin)   {DPZoneScoped; return BorderedLeft(window); }
-FORCE_INLINE f32 ClientTop(UIWindow* window = curwin)    {DPZoneScoped; return BorderedTop(window); }
-FORCE_INLINE f32 ClientBottom(UIWindow* window = curwin) {DPZoneScoped; return BorderedBottom(window) - (CanScrollX() ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0); }
+FORCE_INLINE f32 ClientRight()                    {DPZoneScoped; return BorderedRight() - (CanScrollY() ? style.scrollBarYWidth : 0); }
+FORCE_INLINE f32 ClientLeft()                     {DPZoneScoped; return BorderedLeft(); }
+FORCE_INLINE f32 ClientTop()                      {DPZoneScoped; return BorderedTop(); }
+FORCE_INLINE f32 ClientBottom()                   {DPZoneScoped; return BorderedBottom() - (CanScrollX() ? style.scrollBarXHeight : 0); }
+FORCE_INLINE f32 ClientRight(UIWindow* window)    {DPZoneScoped; return BorderedRight(window) - (CanScrollY() ? window->style.scrollBarYWidth : 0); }
+FORCE_INLINE f32 ClientLeft(UIWindow* window)     {DPZoneScoped; return BorderedLeft(window); }
+FORCE_INLINE f32 ClientTop(UIWindow* window)      {DPZoneScoped; return BorderedTop(window); }
+FORCE_INLINE f32 ClientBottom(UIWindow* window)   {DPZoneScoped; return BorderedBottom(window) - (CanScrollX() ? window->style.scrollBarXHeight : 0); }
 
 //return the maximum width an item can be in a non-scrolled state
 FORCE_INLINE f32 MaxItemWidth(UIWindow* window = curwin) {DPZoneScoped;
@@ -588,9 +600,9 @@ f32 UI::GetClientTop()               	  {DPZoneScoped; return ClientTop(); }
 f32 UI::GetClientBottom()            	  {DPZoneScoped; return ClientBottom(); }
 pair<vec2, vec2> UI::GetBorderedArea()    {DPZoneScoped; return BorderedArea(); }
 pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; return MarginedArea(); }
-pair<vec2, vec2> UI::GetClientArea() {DPZoneScoped; return ScrollBaredArea(); }
-f32 UI::GetRightIndent(){ return rightIndent; }
-f32 UI::GetLeftIndent(){ return leftIndent; }
+pair<vec2, vec2> UI::GetClientArea()      {DPZoneScoped; return ScrollBaredArea(); }
+f32 UI::GetRightIndent()                  {DPZoneScoped; return rightIndent; }
+f32 UI::GetLeftIndent()                   {DPZoneScoped; return leftIndent; }
 
 UIStats UI::GetStats() {return ui_stats;}
 
@@ -1089,7 +1101,7 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, wcstring text, vec2 p
 			forI(text.count) {
 				u32     col = color.rgba;
 				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
-				u32* ip = putindices + (u32)offsets.y + 6 * i;
+				u32*     ip = putindices + (u32)offsets.y + 6 * i;
 				
 				aligned_quad q = style.font->GetPackedQuad(text[i], &pos, scale);
 				
@@ -3701,7 +3713,6 @@ inline void MetricsDebugItem() {DPZoneScoped;
 		}break;
 		case InspectingItem: {
 			vec2 ipos = iteml.position + debugee->position;
-			
 			
 			PushVar(UIStyleVar_WindowMargins, vec2(3, 3));
 			//PushColor(UIStyleCol_WindowBg, color(50, 50, 50));
