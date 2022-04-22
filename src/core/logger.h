@@ -4,22 +4,6 @@
 
 #include "kigu/common.h"
 #include "kigu/unicode.h"
-#include "memory.h"
-
-#define LOGGER_BUFFER_SIZE 4096
-struct Logger{
-	FILE* file = 0; //TODO use deshi File
-	u8   last_message[LOGGER_BUFFER_SIZE] = {0};
-	s64  last_message_length = 0;
-	b32  active = false;
-	b32  mirror_to_stdout = true;
-	b32  mirror_to_console = false;
-	b32  ignore_tags = false;
-	b32  auto_newline = true;
-	b32  track_caller = false;
-	s32  indent_level = 0;
-	s32  indent_spaces = 2;
-};
 
 enum{
 	LogType_Normal,
@@ -28,13 +12,31 @@ enum{
 	LogType_Success,
 };
 
-//comma style:  Log("float: ",12.5,", int: ",0xff)
+struct Logger{
+	FILE* file = 0; //TODO use deshi File
+	
+#define LOGGER_BUFFER_SIZE 4096
+	u8   last_message[LOGGER_BUFFER_SIZE] = {0};
+	s64  last_message_length = 0;
+	
+	b32  mirror_to_stdout = true;
+	b32  mirror_to_console = false;
+	
+	b32  ignore_tags = false;
+	b32  auto_newline = true;
+	b32  track_caller = false;
+	
+	s32  indent_level = 0;
+	s32  indent_spaces = 2;
+};
+
+//comma style:  Log("float: ",12.5f," int: ",0xff)
 #define Log(tag,...)       logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Normal ,__VA_ARGS__)
 #define LogE(tag,...)      logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Error  ,__VA_ARGS__)
 #define LogW(tag,...)      logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Warning,__VA_ARGS__)
 #define LogS(tag,...)      logger_comma_log (str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Success,__VA_ARGS__)
 
-//printf style: Logf("float: %f, int: %d",12.5f,0xff)
+//printf style: Logf("float: %f int: %d",12.5f,0xff)
 #define Logf(tag,fmt,...)  logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Normal ,str8_lit(fmt),__VA_ARGS__)
 #define LogfE(tag,fmt,...) logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Error  ,str8_lit(fmt),__VA_ARGS__)
 #define LogfW(tag,fmt,...) logger_format_log(str8_lit(__FILE__),__LINE__,str8_lit(tag),LogType_Warning,str8_lit(fmt),__VA_ARGS__)

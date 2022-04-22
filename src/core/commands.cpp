@@ -173,15 +173,14 @@ void cmd_init(){
 	TIMER_START(t_s);
 	
 	DESHI_CMD_START(test, "testing sandbox"){
-		Log("cmd", "{{c=magen}blah blah"); //TODO figure out why color formatting doesnt work thru Log()
-		//console_log("{{t=CMD,c=magen}blah blah");
+		console_log("{{c=magen}blah blah");
 	}DESHI_CMD_END_NO_ARGS(test);
 	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
 		array<File> files = get_directory_files(temp_str8_cstr(args[0]));
 		char time_str[1024];
 		if(files.count){
-			Logf("cmd","Directory of '%s':",temp_str8_cstr(args[0]));
+			Logf("cmd","Directory of '%s':",args[0].str);
 			forE(files){
 				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->time_last_write));
 				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),
@@ -441,7 +440,6 @@ void cmd_init(){
 		s32 id = atoi((const char*)args[0].str);
 		if(id == -1){
 			Render::ReloadAllShaders();
-			//Log("cmd", "{{c=magen} Reloaded all shaders"); //TODO use Log() when formatting is fixed
 			console_log("{{t=CMD,c=magen}Reloaded all shaders");
 		}else if(id < Shader_COUNT){
 			Render::ReloadShader(id);
@@ -467,8 +465,6 @@ void cmd_init(){
 	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_S32|CmdArgument_OPTIONAL);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
-		DeshConsole->AddLog(toStr("Texture List:"
-								  "\nName\tWidth\tHeight\tDepth\tMipmaps\tType"));
 		Log("cmd", "Texture List:\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
 		forI(Storage::TextureCount()){
 			Texture* tex = Storage::TextureAt(i);

@@ -3753,7 +3753,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 			EndChild();
 
 			if(hovered!=curwin && DeshInput->LMousePressed()){
-				state=InspectingWindowItems;
+				distate=InspectingWindowItems;
 			}
 
 			EndPopOut();

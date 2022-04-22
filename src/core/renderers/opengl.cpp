@@ -428,7 +428,7 @@ Init(){
 #endif
 	ImGui_ImplOpenGL3_Init();
 	
-	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
 }
 
 void DeshiImGui::
@@ -1832,7 +1832,7 @@ Init(){DPZoneScoped;
 	
 	initialized = true;
 	logger_pop_indent();
-	Log("deshi","Finished opengl renderer initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished opengl renderer initialization in ",TIMER_END(t_s),"ms");
 }
 
 

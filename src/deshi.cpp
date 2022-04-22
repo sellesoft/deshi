@@ -396,7 +396,6 @@ local Flags deshiStage = DS_NONE;
 local Time          deshi_time;           Time*          g_time     = &deshi_time;
 local Window        deshi_window;         Window*        g_window   = &deshi_window;
 local Input         deshi_input{};        Input*         g_input    = &deshi_input;
-local Console       deshi_console;        Console*       g_console  = &deshi_console;
 local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_storage;
 local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
 
@@ -406,7 +405,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	memory_init(Gigabytes(1), Gigabytes(1));
 	logger_init();
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
-	deshi_console.Init();
+	console_init();
 #endif
 	deshi_time.Init();
 	deshi_window.Init("deshi", winWidth, winHeight);
