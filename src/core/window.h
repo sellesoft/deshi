@@ -7,9 +7,9 @@
 #include "math/vector.h"
 
 #ifdef DESHI_PROFILE_WINDOW
-#define DPWinFrameMark DPFrameMark
-#define DPWinZoneScoped DPZoneScoped
-#define DPWinZoneScopedN(name) DPZoneScopedN(name)
+#  define DPWinFrameMark DPFrameMark
+#  define DPWinZoneScoped DPZoneScoped
+#  define DPWinZoneScopedN(name) DPZoneScopedN(name)
 //TODO continue this idea for this and other modules 
 #endif
 
@@ -18,14 +18,14 @@ struct GLFWwindow;
 struct GLFWmonitor;
 struct GLFWcursor;
 
-enum DisplayMode_{
+typedef Type DisplayMode; enum{
 	DisplayMode_Windowed, 
 	DisplayMode_Borderless, 
 	DisplayMode_BorderlessFullscreen,
 	DisplayMode_Fullscreen
-}; typedef u32 DisplayMode;
+};
 
-enum Decoration_ {
+typedef Type Decoration; enum{
 	Decoration_Titlebar          = 1 << 0, // full titlebar
 	Decoration_TitlebarClose     = 1 << 1, // close button	  
 	Decoration_TitlebarMaximize  = 1 << 2, // maxmize button  
@@ -36,9 +36,9 @@ enum Decoration_ {
 	Decoration_Borders           = 1 << 6,
 	Decoration_MouseBorders      = 1 << 7, // only displays borders when the mouse gets close to them for resizing
 	Decoration_SystemDecorations = 0xFFFFFFFF
-}; typedef u32 Decoration;
+};
 
-enum HitTest : u32 {
+typedef Type HitTest; enum{
 	HitTestNone,
 	HitTestTop,
 	HitTestBottom,
@@ -52,13 +52,13 @@ enum HitTest : u32 {
 	HitTestClient
 };
 
-enum CursorMode_{
+typedef Type CursorMode; enum{
 	CursorMode_Default, 
 	CursorMode_FirstPerson, 
 	CursorMode_Hidden,
-}; typedef u32 CursorMode;
+};
 
-enum CursorType_ {
+typedef Type CursorType; enum{
 	CursorType_Arrow,
 	CursorType_HResize,
 	CursorType_VResize,
@@ -67,7 +67,7 @@ enum CursorType_ {
 	CursorType_Hand,
 	CursorType_IBeam,
 	CursorType_Hidden,
-}; typedef u32 CursorType;
+};
 
 constexpr u32 max_child_windows = 2;
 struct Window{
@@ -295,4 +295,5 @@ extern Window* g_window2;
 #define DeshWindow2 g_window2 //make better names later
 #define DeshWinSize g_window->dimensions
 #define DeshWin2Size g_window2->dimensions
+
 #endif //DESHI_WINDOW_H

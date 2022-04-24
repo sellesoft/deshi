@@ -206,9 +206,9 @@ UIStats ui_stats;
 #define WinDragging       inputState == ISDragging
 #define WinScrolling      inputState == ISScrolling
 
-#define LeftMousePressed   DeshInput->LMousePressed()
-#define LeftMouseDown      DeshInput->LMouseDown()
-#define LeftMouseReleased  DeshInput->LMouseReleased()
+#define LeftMousePressed   input_lmouse_pressed()
+#define LeftMouseDown      input_lmouse_down()
+#define LeftMouseReleased  input_lmouse_released()
 
 #define RightMousePressed  DeshInput->RMousePressed()
 #define RightMouseDown     DeshInput->RMouseDown()
@@ -337,11 +337,11 @@ vec2 UI::CalcCharPosition(cstring text, u64 idx){
 }
 
 inline b32 isItemHovered(UIItem* item) {DPZoneScoped;
-	return Math::PointInRectangle(DeshInput->mousePos, item->position * style.globalScale + curwin->position, item->size * style.globalScale);
+	return Math::PointInRectangle(input_mouse_position(), item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
 
 inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {DPZoneScoped;
-	return Math::PointInRectangle(DeshInput->mousePos, pos + item->position + curwin->position, size);
+	return Math::PointInRectangle(input_mouse_position(), pos + item->position + curwin->position, size);
 }
 
 inline b32 isItemActive(UIItem* item) {DPZoneScoped;
@@ -488,11 +488,11 @@ FORCE_INLINE f32 MaxItemWidth(UIWindow* window = curwin) {DPZoneScoped;
 }
 
 FORCE_INLINE b32 MouseInArea(vec2 pos, vec2 size) {DPZoneScoped;
-	return Math::PointInRectangle(DeshInput->mousePos, pos, size);
+	return Math::PointInRectangle(input_mouse_position(), pos, size);
 }
 
 FORCE_INLINE b32 MouseInWinArea(vec2 pos, vec2 size) {DPZoneScoped;
-	return Math::PointInRectangle(DeshInput->mousePos - curwin->position, pos, size);
+	return Math::PointInRectangle(input_mouse_position() - curwin->position, pos, size);
 }
 
 inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {DPZoneScoped;
@@ -1325,26 +1325,26 @@ enum ButtonType_ {
 b32 ButtonBehavoir(ButtonType type, vec2 pos = DefaultVec2, vec2 size = DefaultVec2) {DPZoneScoped;
 	switch (type) {
 		case ButtonType_TrueOnHold: {
-			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
+			if (input_lmouse_down()) { PreventInputs; return true; }
 			else return false;
 		}break;
 		case ButtonType_TrueOnRelease: {
 			PreventInputs;
-			if (DeshInput->LMouseReleased()) return true;
+			if (input_lmouse_released()) return true;
 			else return false;
 		}break;
 		case ButtonType_TrueOnPressed: {
-			if (DeshInput->LMousePressed()) {
+			if (input_lmouse_pressed()) {
 				PreventInputs;
 				return true;
 			}
 		}break;
 		case ButtonType_TrueOnReleaseIfHovered: {
 			Assert(pos != DefaultVec2 && size != DefaultVec2, "attempt to use buttontype TrueOnReleaseIfHovered without passing information about where to check for hover");
-			if(DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, pos, size)){
+			if(input_lmouse_pressed() && Math::PointInRectangle(input_mouse_position(), pos, size)){
 				PreventInputs;
 			}
-			if(DeshInput->LMouseReleased() && Math::PointInRectangle(DeshInput->mousePos, pos, size)){
+			if(input_lmouse_released() && Math::PointInRectangle(input_mouse_position(), pos, size)){
 				return true;
 			}
 		}break;
@@ -1354,7 +1354,7 @@ b32 ButtonBehavoir(ButtonType type, vec2 pos = DefaultVec2, vec2 size = DefaultV
 
 //returns true if buffer was changed
 b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32& cursor) {DPZoneScoped;
-	persist TIMER_START(throttle);
+	persist Stopwatch throttle = start_stopwatch();
 	
 	auto insert = [&](char c, u32 idx) {
 		memmove((char*)buff + idx + 1, (char*)buff + idx, (buffSize - idx) * u8size);
@@ -1388,29 +1388,29 @@ b32 TextInputBehavoir(void* buff, u32 buffSize, b32 unicode, upt& charCount, u32
 	
 	if (charCount) {
 		if (DeshInput->time_key_held < 500) {
-			if (DeshInput->KeyPressed(Key::BACKSPACE) && cursor != 0) {
+			if (key_pressed(Key_BACKSPACE) && cursor != 0) {
 				if (unicode) werase(--cursor);
 				else erase(--cursor);
 				return true;
 			}
-			else if (DeshInput->KeyPressed(Key::DELETE) && cursor != charCount) {
+			else if (key_pressed(Key_DELETE) && cursor != charCount) {
 				if (unicode) werase(cursor);
 				else erase(cursor);
 				return true;
 			}
 		}
-		else if (TIMER_END(throttle) > 25) {
-			if (DeshInput->KeyDown(Key::BACKSPACE) && cursor != 0) {
+		else if (peek_stopwatch(throttle) > 25) {
+			if (key_down(Key_BACKSPACE) && cursor != 0) {
 				if (unicode) werase(--cursor);
 				else erase(--cursor);
 				return true;
 			}
-			else if (DeshInput->KeyDown(Key::DELETE) && cursor != charCount) {
+			else if (key_down(Key_DELETE) && cursor != charCount) {
 				if (unicode) werase(cursor);
 				else erase(cursor);
 				return true;
 			}
-			TIMER_RESET(throttle);
+			reset_stopwatch(&throttle);
 		}
 	}
 	return DeshInput->charCount;
@@ -1724,7 +1724,7 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {DPZoneScoped;
 		UIDrawCmd drawCmd;
 		vec2  bgpos = vec2::ZERO;
 		vec2  bgdim = item->size;
-		color bgcol = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_ButtonBgActive : UIStyleCol_ButtonBgHovered) : UIStyleCol_ButtonBg)];
+		color bgcol = style.colors[(active ? (input_lmouse_down() ? UIStyleCol_ButtonBgActive : UIStyleCol_ButtonBgHovered) : UIStyleCol_ButtonBg)];
 		MakeFilledRect(drawCmd, bgpos, bgdim, bgcol);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -1795,7 +1795,7 @@ void UI::Checkbox(string label, b32* b) {DPZoneScoped;
 		UIDrawCmd drawCmd;
 		vec2  position = vec2{ 0,0 };
 		vec2  dimensions = boxsiz;
-		color col = style.colors[(bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)];
+		color col = style.colors[(bgactive ? (input_lmouse_down() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)];
 		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -1827,7 +1827,7 @@ void UI::Checkbox(string label, b32* b) {DPZoneScoped;
 		AddDrawCmd(item, drawCmd);
 	}
 	
-	if (DeshInput->LMousePressed() && bgactive) {
+	if (input_lmouse_pressed() && bgactive) {
 		*b = !*b;
 		PreventInputs;
 	}
@@ -1851,7 +1851,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {DPZoneSco
 	b32& open = combos[label];
 	
 	b32 active = isItemActive(item);
-	if (active && DeshInput->LMousePressed()) { 
+	if (active && input_lmouse_pressed()) { 
 		open = !open; 
 		PreventInputs;
 	}
@@ -1860,7 +1860,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {DPZoneSco
 		UIDrawCmd drawCmd;
 		vec2  position = vec2::ZERO;
 		vec2  dimensions = item->size;
-		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+		color col = style.colors[(active ? (input_lmouse_down() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -1923,8 +1923,8 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 	
 	AdvanceCursor(item, move_cursor);
 	
-	b32 active = isItemActive(item);//ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
-	if (active && DeshInput->LMousePressed()) {
+	b32 active = isItemActive(item);//ItemCanTakeInput && Math::PointInRectangle(input_mouse_position(), curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
+	if (active && input_lmouse_pressed()) {
 		clicked = true;
 		PreventInputs;
 	}
@@ -1934,8 +1934,8 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 		vec2  position = vec2::ZERO;
 		vec2  dimensions = item->size;
 		color col;
-		if (selected) col = style.colors[(active && DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
-		else          col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+		if (selected) col = style.colors[(active && input_lmouse_down() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
+		else          col = style.colors[(active ? (input_lmouse_down() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -1984,7 +1984,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 	
 	b32 active = isItemActive(item);
 	
-	if (active && DeshInput->LMousePressed()) { 
+	if (active && input_lmouse_pressed()) { 
 		*open = !*open; 
 		PreventInputs;
 	}
@@ -2005,7 +2005,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 		UIDrawCmd drawCmd;
 		vec2 position = bgpos;
 		vec2 dimensions = bgdim;
-		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		color col = style.colors[(active ? (input_lmouse_down() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
 		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -2014,7 +2014,7 @@ b32 UI::BeginHeader(const char* label, UIHeaderFlags flags) {DPZoneScoped;
 		UIDrawCmd drawCmd;
 		vec2  position = vec2{ item->size.y / 4, item->size.y / 2 };
 		f32   radius = item->size.y / 4;
-		color col = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		color col = style.colors[(active ? (input_lmouse_down() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
 		
 		
 		//TODO(sushi) this is ugly please fix it 
@@ -2209,15 +2209,15 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	
 	b32 active = isItemActive(item);
 	
-	if (active && DeshInput->LMousePressed()) {
+	if (active && input_lmouse_pressed()) {
 		sliders[label] = 1;
 		PreventInputs;
 	}
-	if (being_moved && DeshInput->LMouseDown()) {
-		f32 ratio = (DeshInput->mousePos.x - item->position.x - curwin->position.x) / item->size.x;
+	if (being_moved && input_lmouse_down()) {
+		f32 ratio = (input_mouse_position().x - item->position.x - curwin->position.x) / item->size.x;
 		*val = ratio * (val_max - val_min) + val_min;
 	}
-	if (DeshInput->LMouseReleased()) {
+	if (input_lmouse_released()) {
 		sliders[label] = 0;
 		AllowInputs;
 	}
@@ -2240,7 +2240,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		UIDrawCmd drawCmd;
 		vec2  position = draggerpos;
 		vec2  dimensions = draggersiz;
-		color col = style.colors[((active || being_moved) ? (DeshInput->LMouseDown() ? UIStyleCol_SliderBarActive : UIStyleCol_SliderBarHovered) : UIStyleCol_SliderBar)];
+		color col = style.colors[((active || being_moved) ? (input_lmouse_down() ? UIStyleCol_SliderBarActive : UIStyleCol_SliderBarHovered) : UIStyleCol_SliderBar)];
 		MakeFilledRect(drawCmd, position, dimensions, col);
 		AddDrawCmd(item, drawCmd);
 	}
@@ -2345,7 +2345,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	}
 	
 	b32 active = CanTakeInput && (activeId == state->id);
-	if (NextActive || DeshInput->KeyPressed(MouseButton::LEFT)) {
+	if (NextActive || key_pressed(Mouse_LEFT)) {
 		if (NextActive || hovered) {
 			activeId = state->id;
 			StateRemoveFlag(UISNextItemActive);
@@ -2367,29 +2367,29 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 	data.selectionEnd = state->selectEnd;
 	b32 bufferChanged = 0;
 	if (active) {
-		if (DeshInput->KeyPressed(Key::RIGHT) && state->cursor < charCount) state->cursor++;
-		if (DeshInput->KeyPressed(Key::LEFT) && state->cursor > 0) state->cursor--;
-		if (DeshInput->KeyPressed(Key::HOME)) state->cursor = 0;
-		if (DeshInput->KeyPressed(Key::END)) state->cursor = charCount;
+		if (key_pressed(Key_RIGHT) && state->cursor < charCount) state->cursor++;
+		if (key_pressed(Key_LEFT) && state->cursor > 0) state->cursor--;
+		if (key_pressed(Key_HOME)) state->cursor = 0;
+		if (key_pressed(Key_END)) state->cursor = charCount;
 		
 		data.cursorPos = state->cursor;
 		
 		//check if the user used up/down keys
-		if (DeshInput->KeyPressed(Key::UP) && (flags & UIInputTextFlags_CallbackUpDown)) {
+		if (key_pressed(Key_UP) && (flags & UIInputTextFlags_CallbackUpDown)) {
 			data.eventFlag = UIInputTextFlags_CallbackUpDown;
-			data.eventKey = Key::UP;
+			data.eventKey = Key_UP;
 			callback(&data);
 		}
-		if (DeshInput->KeyPressed(Key::DOWN) && (flags & UIInputTextFlags_CallbackUpDown)) {
+		if (key_pressed(Key_DOWN) && (flags & UIInputTextFlags_CallbackUpDown)) {
 			data.eventFlag = UIInputTextFlags_CallbackUpDown;
-			data.eventKey = Key::DOWN;
+			data.eventKey = Key_DOWN;
 			callback(&data);
 		}
 		
 		//actual text input behavoir occurs here ---------------------------------------------------------
 		if (TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
 			bufferChanged = 1;
-			TIMER_RESET(state->timeSinceTyped);
+			state->timeSinceTyped = start_stopwatch();
 		}
 	}
 	
@@ -2458,15 +2458,16 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 		UIDrawCmd drawCmd;
 		vec2  start = textStart +  vec2(lineoffset, 0);//vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
 		vec2  end = textStart + vec2(lineoffset, style.fontHeight - 1);
+		f64 stopwatch = peek_stopwatch(state->timeSinceTyped);
 		color col = 
 			color(255, 255, 255, 
-				  u8(255 * (cos(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 
-								- sin(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2));
+				  u8(255 * (cos(M_2PI / (state->cursorBlinkTime / 2) * stopwatch / 1000 
+										 - sin(M_2PI / (state->cursorBlinkTime / 2) * stopwatch / 1000)) + 1) / 2));
 		MakeLine(drawCmd, start, end, 1, col);
 		AddDrawCmd(item, drawCmd);
 	}
 	
-	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressed(Key::ENTER) || DeshInput->KeyPressed(Key::NUMPADENTER)) {
+	if (flags & UIInputTextFlags_EnterReturnsTrue && key_pressed(Key_ENTER)) {
 		return true;
 	}
 	else if ((flags & UIInputTextFlags_AnyChangeReturnsTrue) && bufferChanged) {
@@ -2844,7 +2845,7 @@ void CheckWindowsForFocusInputs() {DPZoneScoped;
 				WinSetFocused(w);
 				break;
 			}
-			else if ((WinHovered(w) || WinChildHovered(w)) && ((w->flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->LMousePressed())) {
+			else if ((WinHovered(w) || WinChildHovered(w)) && ((w->flags & UIWindowFlags_FocusOnHover) ? 1 : input_lmouse_pressed())) {
 				WinUnSetFocused((*windows.data.last));
 				WinSetFocused(w);
 				for (int move = i; move < windows.count - 1; move++)
@@ -2859,15 +2860,15 @@ void CheckWindowsForFocusInputs() {DPZoneScoped;
 void CheckWindowForResizingInputs(UIWindow* window) {DPZoneScoped;
 	//check for edge resizing
 	if (!(window->flags & UIWindowFlags_NoResize) && (CanTakeInput || WinResizing)) {
-		vec2 mp = DeshInput->mousePos;
+		vec2 mp = input_mouse_position();
 		
 		b32 latch = WinLatched(window);
 		static vec2 mouse, wdims, wpos;
 		
 		
-		b32 mpres = DeshInput->LMousePressed();
-		b32 mdown = DeshInput->LMouseDown();
-		b32 mrele = DeshInput->LMouseReleased();
+		b32 mpres = input_lmouse_pressed();
+		b32 mdown = input_lmouse_down();
+		b32 mrele = input_lmouse_released();
 		
 		//get which side is active
 		WinActiveSide& activeSide = window->win_state.active_side;
@@ -2979,8 +2980,8 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneS
 		f32 scrollBarYw = style.scrollBarYWidth;
 		f32 scrollBarXh = style.scrollBarXHeight;
 		
-		b32 mdown = DeshInput->LMouseDown();
-		b32 mrele = DeshInput->LMouseReleased();
+		b32 mdown = input_lmouse_down();
+		b32 mrele = input_lmouse_released();
 		
 		if (!hscroll && !HasFlag(flags, UIWindowFlags_NoScrollY)) {
 			f32 scrollbarheight = ClientBottom(window) - ClientTop(window);
@@ -2990,22 +2991,22 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneS
 			b32 scbgactive = MouseInWinArea(vec2(ClientRight(window), BorderedTop(window)), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 			
-			if (scdractive && DeshInput->LMouseDown() || !initial) {
+			if (scdractive && input_lmouse_down() || !initial) {
 				if (initial) {
-					offset = draggerpos - DeshInput->mousePos;
+					offset = draggerpos - input_mouse_position();
 					initial = false;
 					SetFocusedWindow(window);
 					SetScrollingInput;
 					vscroll = 1;
 				}
 				
-				draggerpos.y = DeshInput->mousePos.y + offset.y;
+				draggerpos.y = input_mouse_position().y + offset.y;
 				draggerpos.y = Clamp(draggerpos.y, 0, scrollbarheight - draggerheight);
 				
 				window->scy = draggerpos.y * window->maxScroll.y / (scrollbarheight - draggerheight);
 				window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
 			}
-			if (DeshInput->LMouseReleased()) {
+			if (input_lmouse_released()) {
 				initial = true;
 				vscroll = 0;
 				inputupon = 0;
@@ -3022,22 +3023,22 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {DPZoneS
 			b32 scbgactive = MouseInWinArea(vec2(ClientBottom(window), BorderedLeft(window)), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 			
-			if (scdractive && DeshInput->LMouseDown() || !initial) {
+			if (scdractive && input_lmouse_down() || !initial) {
 				if (initial) {
-					offset = draggerpos - DeshInput->mousePos;
+					offset = draggerpos - input_mouse_position();
 					initial = false;
 					SetFocusedWindow(window);
 					hscroll = 1;
 					SetScrollingInput;
 				}
 				
-				draggerpos.x = DeshInput->mousePos.x + offset.x;
+				draggerpos.x = input_mouse_position().x + offset.x;
 				draggerpos.x = Clamp(draggerpos.x, 0, scrollbarwidth - draggerwidth);
 				
 				window->scx = draggerpos.x * window->maxScroll.x / (scrollbarwidth - draggerwidth);
 				window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
 			}
-			if (DeshInput->LMouseReleased()) {
+			if (input_lmouse_released()) {
 				initial = true;
 				hscroll = 0;
 				WinUnSetBeingScrolled(window);
@@ -3060,14 +3061,14 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 		if (
 			!(window->flags & UIWindowFlags_NoMove) &&
 			(WinHovered(window) || fromChild) &&
-			DeshInput->KeyPressed(MouseButton::LEFT)) {
+			key_pressed(Mouse_LEFT)) {
 			SetDraggingInput;
 			WinSetBeingDragged(window);
-			mouseOffset = window->position - DeshInput->mousePos;
+			mouseOffset = window->position - input_mouse_position();
 			SetFocusedWindow(window);
 		}
 		if (WinBeingDragged(window)) {
-			window->position = DeshInput->mousePos + mouseOffset;
+			window->position = input_mouse_position() + mouseOffset;
 			//TODO clean up this code
 			if(HasFlag(window->flags, UIWindowFlags_SnapToOtherWindows)){
 				for(UIWindow* win : windows){
@@ -3100,7 +3101,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 				}
 			}
 		}
-		if (DeshInput->KeyReleased(MouseButton::LEFT)) {
+		if (key_released(Mouse_LEFT)) {
 			WinUnSetBeingDragged(window);
 			AllowInputs;
 		}
@@ -3112,10 +3113,10 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {DPZoneScoped
 //begins a window with a name, position, and dimensions along with some optional flags
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
-TIMER_START(wincreate); //TODO move this onto the window and add to it when the user uses Continue
+Stopwatch wincreate; //TODO move this onto the window and add to it when the user uses Continue
 void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWindowType type) {DPZoneScoped;
 	Assert(type != UIWindowType_Normal || !StateHasFlag(UISRowBegan), "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
-	TIMER_RESET(wincreate);
+	wincreate = start_stopwatch();
 	//save previous window on stack
 	windowStack.add(curwin);
 	ui_stats.windows++;
@@ -3348,7 +3349,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {DPZoneScoped;
 			
 			if (Math::PointInRectangle(mp, drawCmd.position, drawCmd.dimensions)) {
 				drawCmd.color = style.colors[UIStyleCol_TitleBg] * 0.7;
-				if (DeshInput->KeyPressed(MouseButton::LEFT)) {
+				if (key_pressed(Mouse_LEFT)) {
 					curwin->minimized = !curwin->minimized;
 				}
 			}
@@ -3377,7 +3378,7 @@ void EndCall() {DPZoneScoped;
 	postitem->size = curwin->dimensions;
 	
 	
-	vec2 mp = DeshInput->mousePos;
+	vec2 mp = input_mouse_position();
 	
 	curwin->minSizeForFit = CalcWindowMinSize();
 	vec2 minSizeForFit = curwin->minSizeForFit;
@@ -3421,7 +3422,7 @@ void EndCall() {DPZoneScoped;
 				UIDrawCmd drawCmd;
 				vec2  position = draggerpos;
 				vec2  dimensions = vec2(style.scrollBarYWidth, draggerheight);
-				color col = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+				color col = style.colors[(scdractive ? ((input_lmouse_down()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
 				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
@@ -3464,7 +3465,7 @@ void EndCall() {DPZoneScoped;
 				UIDrawCmd drawCmd;
 				vec2  position = draggerpos;
 				vec2  dimensions = vec2(draggerwidth, style.scrollBarXHeight);
-				color col = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+				color col = style.colors[(scdractive ? ((input_lmouse_down()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
 				MakeFilledRect(drawCmd, position, dimensions, col);
 				AddDrawCmd(postitem, drawCmd);
 			}
@@ -3500,7 +3501,7 @@ void EndCall() {DPZoneScoped;
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	curwin->style = style;
 	
-	curwin->creation_time = TIMER_END(wincreate);
+	curwin->creation_time = peek_stopwatch(wincreate);
 	
 	//update stored window with new window state
 	curwin = *windowStack.last;
@@ -3636,11 +3637,11 @@ inline void MetricsDebugItem() {DPZoneScoped;
 		Text("S: Select Items");
 		Text("D: Select Post Items");
 		
-		if (DeshInput->KeyPressed(Key::A)) distate = InspectingWindowPreItems;
-		if (DeshInput->KeyPressed(Key::S)) distate = InspectingWindowItems;
-		if (DeshInput->KeyPressed(Key::D)) distate = InspectingWindowPostItems;
+		if (key_pressed(Key_A)) distate = InspectingWindowPreItems;
+		if (key_pressed(Key_S)) distate = InspectingWindowItems;
+		if (key_pressed(Key_D)) distate = InspectingWindowPostItems;
 		
-		if (DeshInput->KeyPressed(Key::ESCAPE)) distate = None;
+		if (key_pressed(Key_ESCAPE)) distate = None;
 	}
 	
 	auto check_item = [&](UIItem& item) {
@@ -3657,7 +3658,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 			EndPopOut();
 			PopVar();
 			
-			if (DeshInput->LMousePressed()) {
+			if (input_lmouse_pressed()) {
 				mplatch = ipos.xAdd(item.size.x);
 				iteml = item;
 				distate = InspectingItem;
@@ -3671,7 +3672,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 	switch (distate) {
 		case None: {
 			if (Button("Debug Item with Cursor") ||
-				DeshInput->KeyPressed(Key::D) && DeshInput->LShiftDown() && DeshInput->LCtrlDown()) {
+				key_pressed(Key_D | InputMod_LctrlLshift)) {
 				distate = InspectingWindowItems;
 			}
 		}break;
@@ -3752,7 +3753,7 @@ inline void MetricsDebugItem() {DPZoneScoped;
 			EndRow();
 			EndChild();
 
-			if(hovered!=curwin && DeshInput->LMousePressed()){
+			if(hovered!=curwin && input_lmouse_pressed()){
 				distate=InspectingWindowItems;
 			}
 
@@ -3777,7 +3778,7 @@ inline b32 MetricsCheckWindowBreaks(UIWindow* window, b32 winbegin) {DPZoneScope
 	}
 	else if (WinHovered(window)) {
 		DebugRect(window->position, window->dimensions);
-		if (DeshInput->LMousePressed()) {
+		if (input_lmouse_pressed()) {
 			if (winbegin) break_window_begin = window;
 			else break_window_end = window;
 			return true;
@@ -3805,7 +3806,7 @@ inline void MetricsBreaking() {DPZoneScoped;
 			for (UIItem& item : win->items[i]) {
 				if (MouseInArea(win->position + item.position, item.size)) {
 					DebugRect(win->position + item.position, item.size);
-					if (DeshInput->LMousePressed()) {
+					if (input_lmouse_pressed()) {
 						break_window_item = win;
 						item_idx = item.item_idx;
 						item_layer = item.item_layer;
@@ -3834,9 +3835,9 @@ inline void MetricsBreaking() {DPZoneScoped;
 							p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
 							p2 = ipos + dc.vertices[dc.indices[tri+2]].pos;
 							DebugTriangle(p0, p1, p2, color(255, 0,0, 70));
-							if (Math::PointInTriangle(DeshInput->mousePos, p0, p1, p2)) {
+							if (Math::PointInTriangle(input_mouse_position(), p0, p1, p2)) {
 								DebugTriangle(p0, p1, p2);
-								if (DeshInput->LMousePressed()) {
+								if (input_lmouse_pressed()) {
 									break_drawCmd_create_hash = dc.hash;
 								}
 							}
@@ -3854,18 +3855,18 @@ inline void MetricsBreaking() {DPZoneScoped;
 	
 	if (breakstate) {
 		Text("Press ESC to cancel");
-		if (DeshInput->KeyPressed(Key::ESCAPE))
+		if (key_pressed(Key_ESCAPE))
 			breakstate = BreakNone;
 	}
 	
 	switch (breakstate) {
 		case BreakNone: {
 			if (Button("Break Item on Cursor") ||
-				DeshInput->KeyPressed(Key::B) && DeshInput->LShiftDown() && DeshInput->LCtrlDown()) {
+				key_pressed(Key_B | InputMod_LctrlLshift)) {
 				breakstate = BreakItem;
 			}
 			if (Button("Break DrawCmd on Cursor") ||
-				DeshInput->KeyPressed(Key::D) && DeshInput->LShiftDown() && DeshInput->LCtrlDown()) {
+				key_pressed(Key_D | InputMod_LctrlLshift)) {
 				breakstate = BreakDrawCmd;
 			}
 			if (Button("Break on Window Begin")) {
@@ -3932,7 +3933,7 @@ inline void MetricsBreaking() {DPZoneScoped;
 			}
 		}
 		Text("Press ESC to cancel");
-		if (DeshInput->KeyPressed(Key::ESCAPE)) break_on_cursor = 0;
+		if (key_pressed(Key_ESCAPE)) break_on_cursor = 0;
 		PreventInputs;
 	}
 	if (break_on_cursor) {
@@ -4614,12 +4615,7 @@ void UI::DemoWindow() {DPZoneScoped;
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
 void UI::Init() {DPZoneScoped;
-	AssertDS(DS_MEMORY,  "Attempt to load UI without loading Memory first");
-	AssertDS(DS_WINDOW,  "Attempt to load UI without loading Window first");
-	AssertDS(DS_STORAGE, "Attempt to load UI without loading Storage first");
-	deshiStage |= DS_UI;
-	
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_UI, DS_STORAGE, "Attempted to initialize UI module before initializing Storage module");
 	
 	curwin = new UIWindow();
 	curwin->name = "Base";
@@ -4730,7 +4726,7 @@ void UI::Init() {DPZoneScoped;
 	windows.add("base", curwin);
 	//windowStack.add(curwin);
 	
-	LogS("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_UI);
 }
 
 //in our final draw system, this is the function that primarily does the work
@@ -4784,9 +4780,9 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
 		Render::AddTwodVertices(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
-		//if((DeshInput->mousePos - drawCmd.vertices[0].pos).mag() < 4){
+		//if((input_mouse_position() - drawCmd.vertices[0].pos).mag() < 4){
 		//	DebugCircle(drawCmd.vertices[0].pos, 4, Color_Green);
-		//	if(DeshInput->LMousePressed()){
+		//	if(input_lmouse_pressed()){
 		//		break_drawCmd_draw_hash=drawCmd.hash;
 		//	}
 		//}
@@ -4804,7 +4800,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 }
 
 inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {DPZoneScoped;
-	TIMER_START(winren);
+	Stopwatch winren = start_stopwatch();
 	
 	if (WinHovered(p) && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 		StateAddFlag(UISGlobalHovered);
@@ -4840,7 +4836,7 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {DPZoneScoped;
 		WinUnSetBegan(item.child);
 	}
 	
-	p->render_time = TIMER_END(winren);
+	p->render_time = peek_stopwatch(winren);
 	
 	//when compiling for debug we defer this to after the metrics window
 #ifndef BUILD_INTERNAL
@@ -4850,7 +4846,7 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {DPZoneScoped;
 		p->items[i].clear();
 	}
 #else
-	p->render_time = TIMER_END(winren);
+	p->render_time = peek_stopwatch(winren);
 	p->items_count = 0;
 	forI(UI_WINDOW_ITEM_LAYERS) {
 		p->items_count += p->items[i].count;
@@ -4954,7 +4950,7 @@ void UI::Update() {DPZoneScoped;
 	
 	
 	//it should be safe to do this any time the mouse is released
-	if (DeshInput->LMouseReleased()) { AllowInputs; }
+	if (input_lmouse_released()) { AllowInputs; }
 	
 	
 	//we defer window item clearing to after the metrics window is drawn

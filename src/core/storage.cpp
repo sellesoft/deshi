@@ -39,9 +39,7 @@ namespace Storage{
 ///////////////
 void Storage::
 Init(){DPZoneScoped;
-	AssertDS(DS_MEMORY, "Attempt to load Storage without loading Memory first");
-	deshiStage |= DS_STORAGE;
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_STORAGE, DS_RENDER, "Attempted to initialize Logger module before initializing Render module");
 	
 	stbi_set_flip_vertically_on_load(true);
 	
@@ -65,7 +63,7 @@ Init(){DPZoneScoped;
 	Texture* nf_tex = CreateTextureFromMemory(white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(nf_tex); //!Incomplete
 	
-	LogS("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_STORAGE);
 }
 
 void Storage::
@@ -726,7 +724,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 	pair<u32,Model*> result(0, NullModel());
 	if(strcmp(filename, "null") == 0) return result;
 	
-	TIMER_START(t_m);
+	Stopwatch model_stopwatch = start_stopwatch();
 	b32 has_extension;
 	std::string filepath = Assets::dirModels() + filename;
 	string fullname(filename);
@@ -794,7 +792,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		b32 non_tri_warning = false;
 		b32 fatal_error     = false;
 		
-		TIMER_START(t_l);
+		Stopwatch load_stopwatch = start_stopwatch();
 		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
 		if(!buffer){  return result; }
 		defer{ delete[] buffer; };
@@ -852,7 +850,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// face ////
 				case 'f':{
-					TIMER_START(t_f);
+					Stopwatch face_stopwatch = start_stopwatch();
 					if(*(line_start+1) != ' '){ ParseError("No space after 'f'"); return result; }
 					if(vArray.count == 0){ ParseError("Specifier 'f' before any 'v'"); return result; }
 					
@@ -947,9 +945,10 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 						}
 					}
 					triangles[cti].neighborCount = triNeighbors[cti].count;
-					if(((u64)(TIMER_END(t_l) / 1000.0) % 10 == 0) && ((u64)(TIMER_END(t_l) / 1000.0) != 0)){
+					f64 load_watch = peek_stopwatch(load_stopwatch);
+					if(((u64)(load_watch / 1000.0) % 10 == 0) && ((u64)(load_watch / 1000.0) != 0)){
 						PRINTLN(TOSTDSTRING(filename," face ",faces.count," on line ",line_number,
-											"finished creation in ",TIMER_END(t_f),"ms"));
+													"finished creation in ",peek_stopwatch(face_stopwatch),"ms"));
 					}
 				}continue;
 				
@@ -1183,15 +1182,15 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		
 		Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
 		meshes.add(mesh);
-		Log("storage","Parsing and loading OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+		Log("storage","Parsing and loading OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		
 		//parse MTL files
 		if(mtllib_found){
-			TIMER_RESET(t_l);
+			load_stopwatch = start_stopwatch();
 			
 			//!Incomplete
 			
-			Log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+			Log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
 		model = AllocateModel(mArray.count);
@@ -1226,7 +1225,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		b32 mtllib_found = false;
 		u32 index_count = 0;
 		
-		TIMER_START(t_l);
+		Stopwatch load_stopwatch = start_stopwatch();
 		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
 		if(!buffer){  return result; }
 		defer{ delete[] buffer; };
@@ -1284,11 +1283,11 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		
 		//parse MTL files
 		if(mtllib_found){
-			TIMER_RESET(t_l);
+			load_stopwatch = start_stopwatch();
 			
 			//!Incomplete
 			
-			Log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+			Log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
 		model = AllocateModel(mArray.count);
@@ -1411,7 +1410,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 	result.first  = model->idx;
 	result.second = model;
 	models.add(model);
-	Log("storage","Finished loading model '",filename,"' in ",TIMER_END(t_m),"ms");
+	Log("storage","Finished loading model '",filename,"' in ",peek_stopwatch(model_stopwatch),"ms");
 	return result;
 }
 
@@ -1909,7 +1908,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 		persist vec2 imageposlatch;
 		persist UIImageFlags flags;
 		
-		vec2 mp = DeshInput->mousePos;
+		vec2 mp = input_mouse_position();
 		
 		if (Button("Flip x")) 
 			ToggleFlag(flags, UIImageFlags_FlipX);
@@ -1938,11 +1937,11 @@ void DrawTexturesWindow() {DPZoneScoped;
 				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
 				//imagepos -= imtomp.normalized() * val * 4;
 			}
-			if (DeshInput->LMousePressed()) {
+			if (input_lmouse_pressed()) {
 				mpl = mp;
 				imageposlatch = imagepos;
 			}
-			if (DeshInput->LMouseDown()) {
+			if (input_lmouse_down()) {
 				imagepos = imageposlatch - (mpl - mp);
 			}
 			

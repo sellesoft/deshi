@@ -405,8 +405,7 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){
-	AddFlag(deshiStage, DS_IMGUI);
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
 	
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
@@ -428,7 +427,7 @@ Init(){
 #endif
 	ImGui_ImplOpenGL3_Init();
 	
-	LogS("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_IMGUI);
 }
 
 void DeshiImGui::
@@ -1575,11 +1574,7 @@ GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_
 
 void Render::
 Init(){DPZoneScoped;
-	AssertDS(DS_MEMORY, "Attempt to load OpenGL without loading Memory first");
-	AssertDS(DS_WINDOW, "Attempt to load OpenGL without loading Window first");
-	deshiStage |= DS_RENDER;
-	
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize OpenGL module before initializing Memory/Window modules");
 	Log("opengl","Starting opengl renderer initialization");
 	logger_push_indent();
 	
@@ -1832,7 +1827,7 @@ Init(){DPZoneScoped;
 	
 	initialized = true;
 	logger_pop_indent();
-	LogS("deshi","Finished opengl renderer initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_RENDER);
 }
 
 
@@ -1840,8 +1835,7 @@ Init(){DPZoneScoped;
 //// @update
 void Render::
 Update(){DPZoneScoped;
-	TIMER_START(t_d);
-	
+	Stopwatch update_stopwatch = start_stopwatch();
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// handle widow resize
 	if(DeshWindow->resized || remake_window){
@@ -1855,8 +1849,8 @@ Update(){DPZoneScoped;
 	//// update uniform buffers
 	{
 		uboVS.values.screen     = vec2((f32)width, (f32)height);
-		uboVS.values.mousepos   = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
-		uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
+		uboVS.values.mousepos   = input_mouse_position();
+		uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
 		uboVS.values.time       = DeshTime->totalTime;
 		uboVS.values.enablePCF  = settings.shadowPCF;
 		
@@ -2082,7 +2076,7 @@ Update(){DPZoneScoped;
 		modelCmdCount = 0;
 	}
 	
-	DeshTime->renderTime = TIMER_END(t_d);
+	DeshTime->renderTime = peek_stopwatch(update_stopwatch);
 }
 
 

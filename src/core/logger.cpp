@@ -90,12 +90,10 @@ int logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
 void logger_init(u32 log_count, b32 mirror){DPZoneScoped;
-	AssertDS(DS_MEMORY, "Attempted to initialize Logger module before initializing Memory module");
-	deshiStage |= DS_LOGGER;
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_LOGGER, DS_MEMORY, "Attempted to initialize Logger module before initializing Memory module");
 	
 	deshi__logger.mirror_to_stdout  = mirror;
-	deshi__logger.mirror_to_console = false; //NOTE this gets set to true when Console is init
+	deshi__logger.mirror_to_console = false; //NOTE(delle) this gets set to true when Console is init
 	
 	char path_buffer[MAX_FILEPATH_SIZE];
 	log_count = ClampMin(log_count, 1);
@@ -138,13 +136,14 @@ void logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	strftime(path_buffer, MAX_FILEPATH_SIZE, "%c", localtime(&rawtime));
 	fprintf(deshi__logger.file, "%s\n\n", path_buffer);
 	
-#if BUILD_SLOW //NOTE write immediately when debugging so that a Log() right before Assert() still writes
+#if BUILD_SLOW //NOTE(delle) write immediately when debugging so that a Log() right before Assert() still writes
 	setvbuf(deshi__logger.file,0,_IONBF,0);
-#endif //BUILD_SLOW
+#endif
 	
-	fflush(stdout); _setmode(_fileno(stdout), _O_U16TEXT); //NOTE enable Unicode printing to stdout on Windows
+	fflush(stdout); _setmode(_fileno(stdout), _O_U16TEXT); //NOTE(delle) enable Unicode printing to stdout on Windows
 	setlocale(LC_ALL, ".utf8");
-	LogS("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
+	
+	DeshiStageInitEnd(DS_LOGGER);
 }
 
 void logger_update(){DPZoneScoped;
@@ -155,7 +154,7 @@ void logger_update(){DPZoneScoped;
 
 void logger_cleanup(){DPZoneScoped;
 	fclose(deshi__logger.file);
-	fflush(stdout); _setmode(_fileno(stdout), _O_TEXT); //NOTE disable Unicode printing to stdout on Windows
+	fflush(stdout); _setmode(_fileno(stdout), _O_TEXT); //NOTE(delle) disable Unicode printing to stdout on Windows
 	deshi__logger.file = 0;
 }
 

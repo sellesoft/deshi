@@ -1271,7 +1271,7 @@ deshi__memory_draw(){
 						UI::TextF("0x%p", deshi__alloc_infos[i].address);
 						if(UI::IsLastItemHovered()){
 							UI::PushColor(UIStyleCol_WindowBg, color(32,0,0,255));
-							UI::BeginPopOut("deshi_memory_generic_hovered", DeshInput->mousePos - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
+							UI::BeginPopOut("deshi_memory_generic_hovered", input_mouse_position - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
 								UI::TextF("Trigger: %s:%u", deshi__alloc_infos[i].trigger.file.str, deshi__alloc_infos[i].trigger.line);
 								UI::TextF("Name: %s", deshi__alloc_infos[i].name.str);
 								UI::TextF("Type: %u", deshi__alloc_infos[i].type);
@@ -1353,9 +1353,9 @@ deshi__memory_bytes_draw() {
 		
 		vec2 pos = vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
 		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
-		if (Math::PointInRectangle(DeshInput->mousePos, GetLastItemScreenPos(), GetLastItemSize())) {
+		if (Math::PointInRectangle(input_mouse_position(), GetLastItemScreenPos(), GetLastItemSize())) {
 			PushLayer(GetCenterLayer() + 1);
-			vec2 mp = (DeshInput->mousePos - GetWindow()->position);
+			vec2 mp = (input_mouse_position() - GetWindow()->position);
 			RectFilled(mp + vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(toStr(mem + i)), Color_VeryDarkGrey);
 			Text(toStr(mem + i).str, mp + vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
 			RectFilled(mp + vec2(0, -GetStyle().fontHeight), CalcTextSize(toStr(val)), Color_VeryDarkGrey);

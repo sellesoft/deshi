@@ -40,18 +40,17 @@ namespace deshi {
 #define deshi_cleanup() deshi::cleanup()
 
 #define deshi_loop_start() \
-TIMER_START(t_f); \
+Stopwatch frame_stopwatch = start_stopwatch(); \
 while(!DeshWindow->ShouldClose()){ \
 DeshWindow->Update(); \
 DeshiImGui::NewFrame(); \
-DeshInput->Update();
 
 #define deshi_loop_end() \
-DeshConsole->Update(); \
+console_update(); \
 UI::Update(); \
 Render::Update(); \
 memory_clear_temp(); \
-DeshTime->frameTime = TIMER_END(t_f); TIMER_RESET(t_f); \
+DeshTime->frameTime = reset_stopwatch(&frame_stopwatch); \
 }
 
 #endif //DESHI_H

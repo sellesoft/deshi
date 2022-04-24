@@ -279,7 +279,7 @@ struct UIInputTextCallbackData {
 	void* userData;             //custom user data
 	
 	u8       character;         //character that was input  | r
-	Key::Key eventKey;          //key pressed on callback   | r
+	KeyCode  eventKey;          //key pressed on callback   | r
 	char*    buffer;            //buffer pointer            | r/w
 	wchar*   wbuffer;           //unicode buffer pointer    | r/w
 	size_t   bufferSize;        //                          | r
@@ -297,7 +297,7 @@ struct UIInputTextState {
 	u32 selectStart;              //beginning of text selection
 	u32 selectEnd;                //end of text selection
 	UIInputTextCallback callback;
-	TIMER_START(timeSinceTyped);  //timer to time how long its been since typing, for cursor
+	Stopwatch timeSinceTyped;     //timer to time how long its been since typing, for cursor
 };
 
 

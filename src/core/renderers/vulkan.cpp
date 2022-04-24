@@ -1614,8 +1614,8 @@ UpdateUniformBuffers(){DPZoneScoped;
 		uboVS.values.time = DeshTime->totalTime;
 		std::copy(vkLights, vkLights+10, uboVS.values.lights);
 		uboVS.values.screen = vec2((f32)activeSwapchain.extent.width, (f32)activeSwapchain.extent.height);
-		uboVS.values.mousepos = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
-		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
+		uboVS.values.mousepos = input_mouse_position();
+		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
 		uboVS.values.enablePCF = settings.shadowPCF;
 		uboVS.values.lightVP = uboVSoffscreen.values.lightVP;
 		
@@ -2476,14 +2476,14 @@ CreatePipelines(){DPZoneScoped;
 		PrintVk(3, "Compiling shaders");
 		TIMER_START(t_s);
 		CompileAllShaders(settings.optimizeShaders);
-		PrintVk(3, "Finished compiling shaders in ", TIMER_END(t_s), "ms");
+		PrintVk(3, "Finished compiling shaders in ", peek_stopwatch(t_s), "ms");
 	}else{
 		std::vector<std::string> uncompiled = GetUncompiledShaders();
 		if(uncompiled.size()){
 			PrintVk(3, "Compiling shaders");
 			TIMER_START(t_s);
 			for(auto& s : uncompiled){ CompileShader(s, settings.optimizeShaders); }
-			PrintVk(3, "Finished compiling shaders in ", TIMER_END(t_s), "ms");
+			PrintVk(3, "Finished compiling shaders in ", peek_stopwatch(t_s), "ms");
 		}
 	}
 	
@@ -3245,8 +3245,7 @@ local void imguiCheckVkResult(VkResult err){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){DPZoneScoped;
-	AddFlag(deshiStage, DS_IMGUI);
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
 	
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
@@ -3302,7 +3301,7 @@ Init(){DPZoneScoped;
 	AssertVk(vkDeviceWaitIdle(device));
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 	
-	LogS("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_IMGUI);
 }
 
 void DeshiImGui::
@@ -4657,12 +4656,7 @@ SetSurfaceDrawTargetByWindow(Window* window){DPZoneScoped;
 ///////////////
 void Render::
 Init(){DPZoneScoped;
-	AssertDS(DS_MEMORY, "Attempt to init Vulkan without loading Memory first");
-	AssertDS(DS_LOGGER, "Attempt to init Vulkan without loading Logger first");
-	AssertDS(DS_WINDOW, "Attempt to init Vulkan without loading Window first");
-	deshiStage |= DS_RENDER;
-	
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize Vulkan module before initializing Memory/Window modules");
 	Log("vulkan","Starting vulkan renderer initialization");
 	logger_push_indent();
 	
@@ -4677,9 +4671,9 @@ Init(){DPZoneScoped;
 	//// setup Vulkan instance ////
 	SetupAllocator();
 	CreateInstance();
-	PrintVk(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating instance in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupDebugMessenger();
-	PrintVk(3, "Finished setting up debug messenger in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished setting up debug messenger in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// grab Vulkan extension functions ////
 #if BUILD_INTERNAL
@@ -4691,11 +4685,11 @@ Init(){DPZoneScoped;
 	
 	//// setup Vulkan-OperatingSystem interactions ////
 	CreateSurface();
-	PrintVk(3, "Finished creating surface in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating surface in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	PickPhysicalDevice();
-	PrintVk(3, "Finished picking physical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished picking physical device in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateLogicalDevice();
-	PrintVk(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating logical device in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// limit RenderSettings to device capabilties ////
 	msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? maxMsaaSamples : 1 << settings.msaaSamples);
@@ -4703,33 +4697,33 @@ Init(){DPZoneScoped;
 	
 	//// setup unchanging Vulkan objects ////
 	CreateCommandPool();
-	PrintVk(3, "Finished creating command pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating command pool in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateUniformBuffers();
-	PrintVk(3, "Finished creating uniform buffer in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating uniform buffer in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateLayouts();
-	PrintVk(3, "Finished creating layouts in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating layouts in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateDescriptorPool();
-	PrintVk(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating descriptor pool in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupOffscreenRendering();
-	PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished setting up offscreen rendering in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// setup window-specific Vulkan objects ////
 	CreateSwapchain();
-	PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating swap chain in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateRenderpasses();
-	PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating render pass in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateFrames();
-	PrintVk(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating frames in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateSyncObjects();
-	PrintVk(3, "Finished creating sync objects in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating sync objects in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateDescriptorSets();
-	PrintVk(3, "Finished creating descriptor sets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating descriptor sets in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreatePipelineCache();
-	PrintVk(3, "Finished creating pipeline cache in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating pipeline cache in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupPipelineCreation();
-	PrintVk(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished setting up pipeline creation in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	CreatePipelines();
-	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating pipelines in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	forI(TWOD_LAYERS+1){ 
 		twodCmdCounts[active_swapchain][i] = 1; 
@@ -4737,7 +4731,7 @@ Init(){DPZoneScoped;
 	initialized = true;
 	
 	logger_pop_indent();
-	LogS("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_RENDER);
 }
 
 
@@ -4746,20 +4740,20 @@ Init(){DPZoneScoped;
 /////////////////
 void Render::
 Update(){DPZoneScoped;
-	TIMER_START(t_d);
+	Stopwatch update_stopwatch = start_stopwatch();
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
 	
 	//TODO this is definitely not the best way to do this, especially if we ever want to have more than 2 windows 
 	//     implement a count of how many surfaces have been made instead, maybe even use array 
-	TIMER_START(t_r);
+	Stopwatch render_stopwatch = start_stopwatch();
 	forI(MAX_SURFACES) {
-		if (!swapchains[i].swapchain) continue;
+		if(!swapchains[i].swapchain) continue;
 		active_swapchain = i;
 		Window* scwin = activeSwapchain.window;
 		
-		if (scwin->resized) remakeWindow = true;
-		if (remakeWindow) {
+		if(scwin->resized) remakeWindow = true;
+		if(remakeWindow){
 			scwin->GetClientSize(activeSwapchain.width, activeSwapchain.height);
 			if (activeSwapchain.width <= 0 || activeSwapchain.height <= 0) { ImGui::EndFrame(); return; }
 			vkDeviceWaitIdle(device);
@@ -4775,31 +4769,30 @@ Update(){DPZoneScoped;
 		//get next image from surface
 		u32 imageIndex;
 		VkResult result = vkAcquireNextImageKHR(device, activeSwapchainKHR, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		if(result == VK_ERROR_OUT_OF_DATE_KHR){
 			remakeWindow = true;
 			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
 			Assert(!"failed to acquire swap chain image");
 		}
 		
 		//render stuff
-		if (settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
-		if (DeshiModuleLoaded(DS_IMGUI)) {
+		if(settings.lightFrustrums){
+			DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
+		}
+		if(DeshiModuleLoaded(DS_IMGUI)){
 			ImGui::Render();
 		}
 		UpdateUniformBuffers();
 		
 		TIMER_START(cmd);
 		SetupCommands();
-		DeshTime->miscDebugTime1 = TIMER_END(cmd);
+		DeshTime->miscDebugTime1 = peek_stopwatch(cmd);
 		TIMER_RESET(cmd);
 		
 		//execute draw commands
 		BuildCommands();
-		DeshTime->miscDebugTime2 = TIMER_END(cmd);
 		
-		TIMER_RESET(cmd);
 		//submit the command buffer to the queue
 		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
@@ -4811,12 +4804,11 @@ Update(){DPZoneScoped;
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
 		AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
-		DeshTime->miscDebugTime3 = TIMER_END(cmd);
 		
+		if(remakeWindow){
+			return;
+		}
 		
-		if (remakeWindow) { return; }
-		
-		TIMER_RESET(cmd);
 		//present the image
 		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		presentInfo.waitSemaphoreCount = 1;
@@ -4826,19 +4818,16 @@ Update(){DPZoneScoped;
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = 0;
 		result = vkQueuePresentKHR(presentQueue, &presentInfo);
-		DeshTime->miscDebugTime4 = TIMER_END(cmd);
 		
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {  //!Cleanup remakeWindow is already checked
+		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){  //!Cleanup remakeWindow is already checked
 			vkDeviceWaitIdle(device);
 			CreateSwapchain(scwin, i);
 			CreateFrames();
 			remakeWindow = false;
-		}
-		else if (result != VK_SUCCESS) {
+		}else if (result != VK_SUCCESS){
 			Assert(!"failed to present swap chain image");
 		}
 		
-		TIMER_RESET(cmd);
 		//iterate the frame index
 		activeSwapchain.frameIndex = (activeSwapchain.frameIndex + 1) % activeSwapchain.minImageCount; //loops back to zero after reaching minImageCount
 		result = vkQueueWaitIdle(graphicsQueue);
@@ -4848,11 +4837,8 @@ Update(){DPZoneScoped;
 			case VK_ERROR_DEVICE_LOST:          LogE("vulkan", "DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
 			case VK_SUCCESS:default: break;
 		}
-		DeshTime->miscDebugTime5 = TIMER_END(cmd);
-		
 		
 		ResetCommands();
-		
 	}
 	
 	//update stats
@@ -4860,21 +4846,21 @@ Update(){DPZoneScoped;
 	//stats.totalVertices  += (u32)vertexBuffer.size() + twodVertexCount + tempWireframeVertexCount;
 	//stats.totalIndices   += (u32)indexBuffer.size()  + twodIndexCount  + tempWireframeIndexCount; //!Incomplete
 	stats.totalTriangles += stats.totalIndices / 3;
-	stats.renderTimeMS = TIMER_END(t_r);
+	stats.renderTimeMS = peek_stopwatch(render_stopwatch);
 	
 	
-	if (remakePipelines) {
+	if(remakePipelines){
 		CreatePipelines();
 		UpdateMaterialPipelines();
 		remakePipelines = false;
 	}
-	if (_remakeOffscreen) {
+	if(_remakeOffscreen){
 		SetupOffscreenRendering();
 		_remakeOffscreen = false;
 	}
 
 	active_swapchain = 0;
-	DeshTime->renderTime = TIMER_END(t_d);
+	DeshTime->renderTime = peek_stopwatch(update_stopwatch);
 	
 }
 

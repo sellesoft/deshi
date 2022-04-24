@@ -168,9 +168,7 @@ void cmd_run(str8 input){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@init
 void cmd_init(){
-	AssertDS(DS_MEMORY, "Attempt to load Cmd without loading Memory first");
-	deshiStage |= DS_CMD;
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
 	
 	DESHI_CMD_START(test, "testing sandbox"){
 		console_log("{{c=magen}blah blah");
@@ -209,12 +207,16 @@ void cmd_init(){
 	}DESHI_CMD_END(add, CmdArgument_S32, CmdArgument_S32);
 	
 	DESHI_CMD_START(daytime, "Logs the time in day-time format"){
-		Log("cmd", DeshTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}").c_str());
+		u8 time_buffer[512];
+		time_t rawtime = time(0);
+		strftime((char*)time_buffer, 512, "%c", localtime(&rawtime));
+		Log("cmd",(const char*)time_buffer);
 	}DESHI_CMD_END_NO_ARGS(daytime);
 	
 	DESHI_CMD_START(time_engine, "Logs deshi engine times"){
-		Log("cmd", DeshTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
-											"Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms").c_str());
+		Logf("cmd","Time:%fms Window:%fms Input:%fms Console:%fms Render:%fms Frame:%fms Delta:%fms",
+			 DeshTime->timeTime, DeshTime->windowTime, DeshTime->inputTime, DeshTime->consoleTime, 
+			 DeshTime->renderTime, DeshTime->frameTime, DeshTime->deltaTime);
 	}DESHI_CMD_END_NO_ARGS(time_engine);
 	
 	DESHI_CMD_START(list, "Lists available commands"){
@@ -457,11 +459,11 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(shader_list);
 	
 	DESHI_CMD_START(texture_load, "Loads a specific texture"){
-		TIMER_START(t_l);
+		Stopwatch load_stopwatch = start_stopwatch();
 		TextureType type = TextureType_2D;
 		if(arg_count == 2) type = (TextureType)atoi(temp_str8_cstr(args[1]));
 		Storage::CreateTextureFromFile(temp_str8_cstr(args[0]), ImageFormat_RGBA, type);
-		Log("cmd", "Loaded texture '",temp_str8_cstr(args[0]),"' in ",TIMER_END(t_l),"ms");
+		Log("cmd", "Loaded texture '",temp_str8_cstr(args[0]),"' in ",peek_stopwatch(load_stopwatch),"ms");
 	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_S32|CmdArgument_OPTIONAL);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
@@ -476,8 +478,7 @@ void cmd_init(){
 		DeshWindow->Close();
 	}DESHI_CMD_END_NO_ARGS(quit);
 	
-	
-	LogS("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_CMD);
 }
 
 #undef DESHI_CMD_START

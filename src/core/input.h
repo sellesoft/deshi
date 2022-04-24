@@ -4,69 +4,44 @@
 
 #include "time.h"
 #include "kigu/common.h"
-#include "kigu/pair.h"
 #include "math/vector.h"
 
-#include <map>
-#include <vector>
-
-//constants
+#define LOG_INPUTS false
 #define MAX_KEYBOARD_KEYS 256
 #define MAX_MOUSE_BUTTONS 7
 
-namespace Key {
-	enum Key_{
-		Key_NONE,
-		A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-		K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
-		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-		UP, DOWN, LEFT, RIGHT,
-		ESCAPE, TILDE, TAB, CAPSLOCK, LSHIFT, LCTRL, LALT,
-		BACKSPACE, ENTER, RSHIFT, RCTRL, RALT, MINUS, EQUALS, LBRACKET, RBRACKET,
-		SLASH, SEMICOLON, APOSTROPHE, COMMA, PERIOD, BACKSLASH, SPACE,
-		INSERT, DELETE, HOME, END, PAGEUP, PAGEDOWN, PAUSE, SCROLL,
-		NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
-		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK,
-		LMETA, RMETA,
-		MBLEFT, MBRIGHT, MBMIDDLE, MBFOUR, MBFIVE, MBSIX, MBSEVEN, MBEIGHT, MBSCROLLDOWN, MBSCROLLUP,
-		Key_COUNT
-	}; typedef u32 Key;
+typedef Type KeyCode; enum{
+	Key_NONE,
+	Key_A, Key_B, Key_C, Key_D, Key_E, Key_F, Key_G, Key_H, Key_I, Key_J, Key_K, Key_L, Key_M,
+	Key_N, Key_O, Key_P, Key_Q, Key_R, Key_S, Key_T, Key_U, Key_V, Key_W, Key_X, Key_Y, Key_Z,
+	Key_0, Key_1, Key_2, Key_3, Key_4, Key_5, Key_6, Key_7, Key_8, Key_9,
+	Key_F1, Key_F2, Key_F3, Key_F4, Key_F5, Key_F6, Key_F7, Key_F8, Key_F9, Key_F10, Key_F11, Key_F12,
+	Key_UP, Key_DOWN, Key_LEFT, Key_RIGHT,
+	Key_ESCAPE, Key_TILDE, Key_TAB, Key_CAPSLOCK, Key_MINUS, Key_EQUALS, Key_BACKSPACE, Key_LBRACKET, Key_RBRACKET,
+	Key_BACKSLASH, Key_SEMICOLON, Key_APOSTROPHE, Key_ENTER, Key_COMMA, Key_PERIOD, Key_FORWARDSLASH, Key_SPACE,
+	Key_LSHIFT, Key_RSHIFT, Key_LCTRL, Key_RCTRL, Key_LMETA, Key_RMETA, Key_LALT, Key_RALT, Key_APPS,
+	Key_INSERT, Key_DELETE, Key_HOME, Key_END, Key_PAGEUP, Key_PAGEDOWN, Key_PRINTSCREEN, Key_SCROLLLOCK, Key_PAUSEBREAK,
+	Key_NP0, Key_NP1, Key_NP2, Key_NP3, Key_NP4, Key_NP5, Key_NP6, Key_NP7, Key_NP8, Key_NP9,
+	Key_NPMULTIPLY, Key_NPDIVIDE, Key_NPPLUS, Key_NPMINUS, Key_NPPERIOD, Key_NUMLOCK,
+	Mouse_LEFT, Mouse_RIGHT, Mouse_MIDDLE, Mouse_4, Mouse_5, Mouse_6, Mouse_7, Mouse_8,
 };
-global_ const char* KeyStrings[] = {
+global_ const char* KeyCodeStrings[] = {
 	"NONE",
 	"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
 	"K0","K1","K2","K3","K4","K5","K6","K7","K8","K9",
 	"F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12",
-	"UP","DOWN","LEFT","RIGHT",
-	"ESCAPE","TILDE","TAB","CAPSLOCK","LSHIFT","LCTRL","LALT",
-	"BACKSPACE","ENTER","RSHIFT","RCTRL","RALT","MINUS","EQUALS","LBRACKET","RBRACKET",
-	"SLASH","SEMICOLON","APOSTROPHE","COMMA","PERIOD","BACKSLASH","SPACE",
-	"INSERT","DELETE","HOME","END","PAGEUP","PAGEDOWN","PAUSE","SCROLL",
-	"NUMPAD0","NUMPAD1","NUMPAD2","NUMPAD3","NUMPAD4","NUMPAD5","NUMPAD6","NUMPAD7","NUMPAD8","NUMPAD9",
-	"NUMPADMULTIPLY","NUMPADDIVIDE","NUMPADPLUS","NUMPADMINUS","NUMPADPERIOD","NUMPADENTER","NUMLOCK",
-	"LMETA", "RMETA",
-	"MBLEFT","MBRIGHT","MBMIDDLE","MBFOUR","MBFIVE","MBSIX","MBSEVEN","MBEIGHT","MBSCROLLDOWN","MBSCROLLUP"
+	"Up Arrow","Down Arrow","Left Arrow","Right Arrow",
+	"Escape","Tilde","Tab","Caps Lock","Minus","Equals","Backspace","Left Bracket","Right Bracket",
+	"Backslash","Semicolon","Apostrophe","Enter","Comma","Period","Forward Slash","Space",
+	"Left Shift","Right Shift","Left Control","Right Control","Left Windows","Right Windows","Left Alt","Right Alt","Apps",
+	"Insert","Delete","Home","End","Page Up","Page Down","Print Screen","Scroll Lock","Pause Break",
+	"Numpad 0","Numpad 1","Numpad 2","Numpad 3","Numpad 4","Numpad 5","Numpad 6","Numpad 7","Numpad 8","Numpad 9",
+	"Numpad Multiply","Numpad Divide","Numpad Plus","Numpad Minus","Numpad Period","Num Lock",
+	"Mouse Left","Mouse Right","Mouse Middle","Mouse 4","Mouse 5","Mouse 6","Mouse 7","Mouse 8",
 };
 
-#if DESHI_WINDOWS
-
-#elif DESHI_LINUX
-#elif DESHI_MAC
-#endif
-
-
-namespace MouseButton{
-	enum MouseButton_{
-		LEFT  = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
-		FOUR  = Key::MBFOUR, FIVE  = Key::MBFIVE, 
-		SIX   = Key::MBSIX,  SEVEN = Key::MBSEVEN, 
-		EIGHT = Key::MBEIGHT,
-		SCROLLDOWN = Key::MBSCROLLDOWN, SCROLLUP = Key::MBSCROLLUP
-	}; typedef u32 MouseButton;
-}
-
-//NOTE the first 8bits of a keymod are reserved for the Key enum
-enum InputMod_{
+//NOTE(delle) the first 8bits of a keymod are reserved for the Key enum
+typedef Type InputMod; enum{
 	InputMod_Any    = 0,
 	InputMod_None   = 1 << 8,
 	InputMod_Lctrl  = 1 << 9,
@@ -98,186 +73,135 @@ enum InputMod_{
 	InputMod_RctrlLshiftRalt = InputMod_Rctrl  | InputMod_Lshift | InputMod_Ralt,
 	InputMod_RctrlRshiftLalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Lalt,
 	InputMod_RctrlRshiftRalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Ralt,
-}; typedef u32 InputMod;
+};
 
 struct Input{
-	std::map<size_t, u8> mapKeys;
-	std::map<size_t, u8> mapMouse;
-	
-	b32 oldKeyState[MAX_KEYBOARD_KEYS] = {0};
-	b32 newKeyState[MAX_KEYBOARD_KEYS] = {0};
+	b32 oldKeyState[MAX_KEYBOARD_KEYS];
+	b32 newKeyState[MAX_KEYBOARD_KEYS];
+	b32 zero[MAX_KEYBOARD_KEYS];
 	
 	f64 mouseX,       mouseY; //window space
 	f64 screenMouseX, screenMouseY;
 	f64 scrollX,      scrollY;
-	vec2 mousePos;
-	u32 charIn[127] = { 0 };
-	u32 charCount = 0;
+	u32 charIn[127];
+	u32 charCount;
+	b32 anyKeyDown;
 	
-	b32 zero[MAX_KEYBOARD_KEYS] = {0};
-	
-	b32 anyKeyDown = 0;
-	
-	b32 capsLock = false;
-	b32 numLock = false;
-	b32 scrollLock = false;
-	
-	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
-	//for console command binding
-	std::vector<pair<std::string, Key::Key>> binds; //TODO remove/move this and make it array
-	b32 checkbinds = false; //needed bc glfw callbacks would call the function too early
+	b32 capsLock;
+	b32 numLock;
+	b32 scrollLock;
 	
 	//real values updated through OS input callbacks
-	b32 realKeyState[MAX_KEYBOARD_KEYS]   = {0};
+	b32 realKeyState[MAX_KEYBOARD_KEYS];
 	f64 realMouseX,       realMouseY;
 	f64 realScreenMouseX, realScreenMouseY;
 	f64 realScrollX,      realScrollY;
-	u32 realCharCount = 0;
-	b32 keyFocus, mouseFocus;
+	u32 realCharCount;
 	
-	b32 logInput = false;
-	
-	f64 time_key_held = 0;
-	f64 time_char_held = 0;
-	
-	TIMER_START(input__time_since_key_hold);
-	TIMER_START(input__time_since_char_hold);
-	
-	//caches values so they are consistent thru the frame
-	void Update(){
-		TIMER_START(t_d);
-		memcpy(&oldKeyState, &newKeyState,  sizeof(b32) * MAX_KEYBOARD_KEYS);
-		memcpy(&newKeyState, &realKeyState, sizeof(b32) * MAX_KEYBOARD_KEYS);
-		
-		if(!memcmp(newKeyState, zero, MAX_KEYBOARD_KEYS)){
-			TIMER_RESET(input__time_since_key_hold);
-			newKeyState[0] = 1;
-			anyKeyDown = 0;
-		}else{
-			time_key_held = TIMER_END(input__time_since_key_hold);
-			anyKeyDown = 1;
-		}
-		
-		if(!realCharCount){
-			TIMER_RESET(input__time_since_char_hold);
-		}else{
-			time_char_held = TIMER_END(input__time_since_char_hold);
-		}
-		
-		if(realScrollY > 0){
-			newKeyState[Key::MBSCROLLUP]   = true;
-			newKeyState[Key::MBSCROLLDOWN] = false;
-		}else if(realScrollY < 0){
-			newKeyState[Key::MBSCROLLUP]   = false;
-			newKeyState[Key::MBSCROLLDOWN] = true;
-		}else{
-			newKeyState[Key::MBSCROLLUP]   = false;
-			newKeyState[Key::MBSCROLLDOWN] = false;
-		}
-		
-		mousePos.x = mouseX = realMouseX; mousePos.y = mouseY = realMouseY;
-		screenMouseX = realScreenMouseX; screenMouseY = realScreenMouseY;
-		scrollY = realScrollY;
-		realScrollY = 0;
-		charCount = realCharCount;
-		realCharCount = 0;
-		
-		DeshTime->inputTime = TIMER_END(t_d);
-	}
-	
-	/////////////////////////////////
-	//// input helper functions /////
-	/////////////////////////////////
-	
-	inline b32 LCtrlDown() { return newKeyState[Key::LCTRL]; }
-	inline b32 RCtrlDown() { return newKeyState[Key::RCTRL]; }
-	inline b32 LShiftDown(){ return newKeyState[Key::LSHIFT]; }
-	inline b32 RShiftDown(){ return newKeyState[Key::RSHIFT]; }
-	inline b32 LAltDown()  { return newKeyState[Key::LALT]; }
-	inline b32 RAltDown()  { return newKeyState[Key::RALT]; }
-	inline b32 CtrlDown()  { return newKeyState[Key::RCTRL] || newKeyState[Key::LCTRL]; }
-	inline b32 ShiftDown() { return newKeyState[Key::RSHIFT] || newKeyState[Key::LSHIFT]; }
-	inline b32 AltDown()   { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
-	
-	//make options for, or just make it so these dont take into account mods
-	inline b32 AnyKeyPressed()   { return KeyReleased(Key::Key_NONE); }
-	inline b32 AnyKeyDown()      { return !KeyDown(Key::Key_NONE); }
-	inline b32 AllKeysReleased() { return KeyPressed(Key::Key_NONE); }
-	
-	inline b32 LMouseDown()     { return  newKeyState[MouseButton::LEFT]; }
-	inline b32 RMouseDown()     { return  newKeyState[MouseButton::RIGHT]; }
-	inline b32 LMousePressed()  { return  newKeyState[MouseButton::LEFT]       && !oldKeyState[MouseButton::LEFT]; }
-	inline b32 RMousePressed()  { return  newKeyState[MouseButton::RIGHT]      && !oldKeyState[MouseButton::RIGHT]; }
-	inline b32 LMouseReleased() { return !newKeyState[MouseButton::LEFT]       &&  oldKeyState[MouseButton::LEFT]; }
-	inline b32 RMouseReleased() { return !newKeyState[MouseButton::RIGHT]      &&  oldKeyState[MouseButton::RIGHT]; }
-	
-	b32 ModsDown(u32 mods){
-		switch(mods){
-			case(InputMod_Any):            return true;
-			case(InputMod_None):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_Lctrl):          return  LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_Rctrl):          return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_Lshift):         return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_Rshift):         return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_Lalt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_Ralt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_AnyShift):       return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() ||  RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_AnyAlt):		   return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() ||  RAltDown();
-			case(InputMod_AnyCtrl):		   return  LCtrlDown() ||  RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_LctrlLshift):    return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_LctrlRshift):    return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_RctrlLshift):    return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_RctrlRshift):    return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
-			case(InputMod_LctrlLalt):      return  LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_LctrlRalt):      return  LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_RctrlLalt):      return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_RctrlRalt):      return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_LshiftLalt):     return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_LshiftRalt):     return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_RshiftLalt):     return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_RshiftRalt):     return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_LctrlLshiftLalt):return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_LctrlLshiftRalt):return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_LctrlRshiftLalt):return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_LctrlRshiftRalt):return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_RctrlLshiftLalt):return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_RctrlLshiftRalt):return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
-			case(InputMod_RctrlRshiftLalt):return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();
-			case(InputMod_RctrlRshiftRalt):return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() &&  RAltDown();
-			default: return false;
-		} 
-	}
-	
-	/////////////////////////////
-	//// keyboard keys input ////
-	/////////////////////////////
-	
-	//mod_key & 0x000000FF extract the key
-	//mod_key & 0xFFFFFF00 extract the mods
-	
-	inline b32 KeyDown(u32 mod_key = InputMod_Any){ 
-		return  newKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00); 
-	}
-	
-	inline b32 KeyUp(u32 mod_key = InputMod_Any){
-		return !newKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
-	}
-	
-	inline b32 KeyPressed(u32 mod_key = InputMod_Any){
-		return  newKeyState[mod_key & 0x000000FF] && !oldKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
-	}
-	
-	inline b32 KeyReleased(u32 mod_key = InputMod_Any){
-		return !newKeyState[mod_key & 0x000000FF] && oldKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
-	}
-	
-	inline void SimulateKeyPress(u32 key){
-		newKeyState[key] = true;
-	}
+	f64 time_key_held;
+	f64 time_char_held;
+	Stopwatch time_since_key_hold;
+	Stopwatch time_since_char_hold;
 };
 
 //global input pointer
 extern Input* g_input;
 #define DeshInput g_input
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @input_mouse_states
+FORCE_INLINE b32 input_lmouse_down()    { return  DeshInput->newKeyState[Mouse_LEFT]; }
+FORCE_INLINE b32 input_rmouse_down()    { return  DeshInput->newKeyState[Mouse_RIGHT]; }
+FORCE_INLINE b32 input_lmouse_pressed() { return  DeshInput->newKeyState[Mouse_LEFT]  && !DeshInput->oldKeyState[Mouse_LEFT]; }
+FORCE_INLINE b32 input_rmouse_pressed() { return  DeshInput->newKeyState[Mouse_RIGHT] && !DeshInput->oldKeyState[Mouse_RIGHT]; }
+FORCE_INLINE b32 input_lmouse_released(){ return !DeshInput->newKeyState[Mouse_LEFT]  &&  DeshInput->oldKeyState[Mouse_LEFT]; }
+FORCE_INLINE b32 input_rmouse_released(){ return !DeshInput->newKeyState[Mouse_RIGHT] &&  DeshInput->oldKeyState[Mouse_RIGHT]; }
+
+FORCE_INLINE vec2 input_mouse_position(){ return vec2{(f32)DeshInput->mouseX, (f32)DeshInput->mouseY}; }
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @input_modifier_states
+FORCE_INLINE b32 input_lctrl_down() { return DeshInput->newKeyState[Key_LCTRL]; }
+FORCE_INLINE b32 input_rctrl_down() { return DeshInput->newKeyState[Key_RCTRL]; }
+FORCE_INLINE b32 input_lshift_down(){ return DeshInput->newKeyState[Key_LSHIFT]; }
+FORCE_INLINE b32 input_rshift_down(){ return DeshInput->newKeyState[Key_RSHIFT]; }
+FORCE_INLINE b32 input_lalt_down()  { return DeshInput->newKeyState[Key_LALT]; }
+FORCE_INLINE b32 input_ralt_down()  { return DeshInput->newKeyState[Key_RALT]; }
+FORCE_INLINE b32 input_ctrl_down()  { return DeshInput->newKeyState[Key_RCTRL]  || DeshInput->newKeyState[Key_LCTRL]; }
+FORCE_INLINE b32 input_shift_down() { return DeshInput->newKeyState[Key_RSHIFT] || DeshInput->newKeyState[Key_LSHIFT]; }
+FORCE_INLINE b32 input_alt_down()   { return DeshInput->newKeyState[Key_RALT]   || DeshInput->newKeyState[Key_LALT]; }
+
+global_ b32
+input_mods_down(u32 mods){
+	switch(mods){
+		case(InputMod_Any):            return true;
+		case(InputMod_None):           return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_Lctrl):          return  input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_Rctrl):          return !input_lctrl_down() &&  input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_Lshift):         return !input_lctrl_down() && !input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_Rshift):         return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_Lalt):           return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_Ralt):           return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_AnyShift):       return !input_lctrl_down() && !input_rctrl_down() && (input_lshift_down() ||  input_rshift_down())&& !input_lalt_down() && !input_ralt_down();
+		case(InputMod_AnyAlt):         return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && (input_lalt_down() ||  input_ralt_down());
+		case(InputMod_AnyCtrl):        return (input_lctrl_down() ||  input_rctrl_down())&& !input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_LctrlLshift):    return  input_lctrl_down() && !input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_LctrlRshift):    return  input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_RctrlLshift):    return !input_lctrl_down() &&  input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_RctrlRshift):    return !input_lctrl_down() &&  input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() && !input_lalt_down() && !input_ralt_down();
+		case(InputMod_LctrlLalt):      return  input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_LctrlRalt):      return  input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_RctrlLalt):      return !input_lctrl_down() &&  input_rctrl_down() && !input_lshift_down() && !input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_RctrlRalt):      return !input_lctrl_down() &&  input_rctrl_down() && !input_lshift_down() && !input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_LshiftLalt):     return !input_lctrl_down() && !input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_LshiftRalt):     return !input_lctrl_down() && !input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_RshiftLalt):     return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_RshiftRalt):     return !input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_LctrlLshiftLalt):return  input_lctrl_down() && !input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_LctrlLshiftRalt):return  input_lctrl_down() && !input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_LctrlRshiftLalt):return  input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_LctrlRshiftRalt):return  input_lctrl_down() && !input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_RctrlLshiftLalt):return !input_lctrl_down() &&  input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_RctrlLshiftRalt):return !input_lctrl_down() &&  input_rctrl_down() &&  input_lshift_down() && !input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		case(InputMod_RctrlRshiftLalt):return !input_lctrl_down() &&  input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() &&  input_lalt_down() && !input_ralt_down();
+		case(InputMod_RctrlRshiftRalt):return !input_lctrl_down() &&  input_rctrl_down() && !input_lshift_down() &&  input_rshift_down() && !input_lalt_down() &&  input_ralt_down();
+		default: return false;
+	} 
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @input_key_states
+#define INPUT_KEY_MASK 0x000000FF //mod_key & 0x000000FF extract the key
+#define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
+FORCE_INLINE b32
+key_down(u32 mod_key){ 
+	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK]&& input_mods_down(mod_key & INPUT_MOD_MASK);
+}
+
+FORCE_INLINE b32
+key_up(u32 mod_key){
+	return !DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
+}
+
+FORCE_INLINE b32
+key_pressed(u32 mod_key){
+	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] && !DeshInput->oldKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
+}
+
+FORCE_INLINE b32
+key_released(u32 mod_key){
+	return !DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] &&  DeshInput->oldKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
+}
+
+FORCE_INLINE void
+simulate_key_press(u32 key){
+	DeshInput->newKeyState[key] = true;
+}
+
+FORCE_INLINE b32 any_key_pressed() { return  key_released(Key_NONE); }
+FORCE_INLINE b32 any_key_down()    { return !key_down(Key_NONE); }
+FORCE_INLINE b32 any_key_released(){ return  key_pressed(Key_NONE); }
 
 #endif //DESHI_INPUT_H

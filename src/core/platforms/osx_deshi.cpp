@@ -134,85 +134,85 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 
 	//keyboard mappings
-	DeshInput->mapKeys[0x00] = Key::Key_NONE;
-	DeshInput->mapKeys['A'] = Key::A; DeshInput->mapKeys['B'] = Key::B; DeshInput->mapKeys['C'] = Key::C;
-	DeshInput->mapKeys['D'] = Key::D; DeshInput->mapKeys['E'] = Key::E; DeshInput->mapKeys['F'] = Key::F;
-	DeshInput->mapKeys['G'] = Key::G; DeshInput->mapKeys['H'] = Key::H; DeshInput->mapKeys['I'] = Key::I;
-	DeshInput->mapKeys['J'] = Key::J; DeshInput->mapKeys['K'] = Key::K; DeshInput->mapKeys['L'] = Key::L;
-	DeshInput->mapKeys['M'] = Key::M; DeshInput->mapKeys['N'] = Key::N; DeshInput->mapKeys['O'] = Key::O;
-	DeshInput->mapKeys['P'] = Key::P; DeshInput->mapKeys['Q'] = Key::Q; DeshInput->mapKeys['R'] = Key::R;
-	DeshInput->mapKeys['S'] = Key::S; DeshInput->mapKeys['T'] = Key::T; DeshInput->mapKeys['U'] = Key::U;
-	DeshInput->mapKeys['V'] = Key::V; DeshInput->mapKeys['W'] = Key::W; DeshInput->mapKeys['X'] = Key::X;
-	DeshInput->mapKeys['Y'] = Key::Y; DeshInput->mapKeys['Z'] = Key::Z;
+	DeshInput->mapKeys[0x00] = KeyCode_NONE;
+	DeshInput->mapKeys['A'] = Key_A; DeshInput->mapKeys['B'] = Key_B; DeshInput->mapKeys['C'] = Key_C;
+	DeshInput->mapKeys['D'] = Key_D; DeshInput->mapKeys['E'] = Key_E; DeshInput->mapKeys['F'] = Key_F;
+	DeshInput->mapKeys['G'] = Key_G; DeshInput->mapKeys['H'] = Key_H; DeshInput->mapKeys['I'] = Key_I;
+	DeshInput->mapKeys['J'] = Key_J; DeshInput->mapKeys['K'] = Key_K; DeshInput->mapKeys['L'] = Key_L;
+	DeshInput->mapKeys['M'] = Key_M; DeshInput->mapKeys['N'] = Key_N; DeshInput->mapKeys['O'] = Key_O;
+	DeshInput->mapKeys['P'] = Key_P; DeshInput->mapKeys['Q'] = Key_Q; DeshInput->mapKeys['R'] = Key_R;
+	DeshInput->mapKeys['S'] = Key_S; DeshInput->mapKeys['T'] = Key_T; DeshInput->mapKeys['U'] = Key_U;
+	DeshInput->mapKeys['V'] = Key_V; DeshInput->mapKeys['W'] = Key_W; DeshInput->mapKeys['X'] = Key_X;
+	DeshInput->mapKeys['Y'] = Key_Y; DeshInput->mapKeys['Z'] = Key_Z;
 
-	DeshInput->mapKeys[GLFW_KEY_0] = Key::K0; DeshInput->mapKeys[GLFW_KEY_1] = Key::K1;
-	DeshInput->mapKeys[GLFW_KEY_2] = Key::K2; DeshInput->mapKeys[GLFW_KEY_3] = Key::K3;
-	DeshInput->mapKeys[GLFW_KEY_4] = Key::K4; DeshInput->mapKeys[GLFW_KEY_5] = Key::K5;
-	DeshInput->mapKeys[GLFW_KEY_6] = Key::K6; DeshInput->mapKeys[GLFW_KEY_7] = Key::K7;
-	DeshInput->mapKeys[GLFW_KEY_8] = Key::K8; DeshInput->mapKeys[GLFW_KEY_9] = Key::K9;
+	DeshInput->mapKeys[GLFW_KEY_0] = Key_K0; DeshInput->mapKeys[GLFW_KEY_1] = Key_K1;
+	DeshInput->mapKeys[GLFW_KEY_2] = Key_K2; DeshInput->mapKeys[GLFW_KEY_3] = Key_K3;
+	DeshInput->mapKeys[GLFW_KEY_4] = Key_K4; DeshInput->mapKeys[GLFW_KEY_5] = Key_K5;
+	DeshInput->mapKeys[GLFW_KEY_6] = Key_K6; DeshInput->mapKeys[GLFW_KEY_7] = Key_K7;
+	DeshInput->mapKeys[GLFW_KEY_8] = Key_K8; DeshInput->mapKeys[GLFW_KEY_9] = Key_K9;
 
-	DeshInput->mapKeys[GLFW_KEY_F1]  = Key::F1;  DeshInput->mapKeys[GLFW_KEY_F2]  = Key::F2;
-	DeshInput->mapKeys[GLFW_KEY_F3]  = Key::F3;  DeshInput->mapKeys[GLFW_KEY_F4]  = Key::F4;
-	DeshInput->mapKeys[GLFW_KEY_F5]  = Key::F5;  DeshInput->mapKeys[GLFW_KEY_F6]  = Key::F6;
-	DeshInput->mapKeys[GLFW_KEY_F7]  = Key::F7;  DeshInput->mapKeys[GLFW_KEY_F8]  = Key::F8;
-	DeshInput->mapKeys[GLFW_KEY_F9]  = Key::F9;  DeshInput->mapKeys[GLFW_KEY_F10] = Key::F10;
-	DeshInput->mapKeys[GLFW_KEY_F11] = Key::F11; DeshInput->mapKeys[GLFW_KEY_F12] = Key::F12;
+	DeshInput->mapKeys[GLFW_KEY_F1]  = Key_F1;  DeshInput->mapKeys[GLFW_KEY_F2]  = Key_F2;
+	DeshInput->mapKeys[GLFW_KEY_F3]  = Key_F3;  DeshInput->mapKeys[GLFW_KEY_F4]  = Key_F4;
+	DeshInput->mapKeys[GLFW_KEY_F5]  = Key_F5;  DeshInput->mapKeys[GLFW_KEY_F6]  = Key_F6;
+	DeshInput->mapKeys[GLFW_KEY_F7]  = Key_F7;  DeshInput->mapKeys[GLFW_KEY_F8]  = Key_F8;
+	DeshInput->mapKeys[GLFW_KEY_F9]  = Key_F9;  DeshInput->mapKeys[GLFW_KEY_F10] = Key_F10;
+	DeshInput->mapKeys[GLFW_KEY_F11] = Key_F11; DeshInput->mapKeys[GLFW_KEY_F12] = Key_F12;
 
-	DeshInput->mapKeys[GLFW_KEY_DOWN] = Key::DOWN; DeshInput->mapKeys[GLFW_KEY_UP]    = Key::UP;
-	DeshInput->mapKeys[GLFW_KEY_LEFT] = Key::LEFT; DeshInput->mapKeys[GLFW_KEY_RIGHT] = Key::RIGHT;
+	DeshInput->mapKeys[GLFW_KEY_DOWN] = Key_DOWN; DeshInput->mapKeys[GLFW_KEY_UP]    = Key_UP;
+	DeshInput->mapKeys[GLFW_KEY_LEFT] = Key_LEFT; DeshInput->mapKeys[GLFW_KEY_RIGHT] = Key_RIGHT;
 
-	DeshInput->mapKeys[GLFW_KEY_ESCAPE]        = Key::ESCAPE;
-	DeshInput->mapKeys[GLFW_KEY_GRAVE_ACCENT]  = Key::TILDE;
-	DeshInput->mapKeys[GLFW_KEY_TAB]           = Key::TAB;
-	DeshInput->mapKeys[GLFW_KEY_CAPS_LOCK]     = Key::CAPSLOCK;
-	DeshInput->mapKeys[GLFW_KEY_LEFT_SHIFT]    = Key::LSHIFT;
-	DeshInput->mapKeys[GLFW_KEY_RIGHT_SHIFT]   = Key::RSHIFT;
-	DeshInput->mapKeys[GLFW_KEY_LEFT_CONTROL]  = Key::LCTRL;
-	DeshInput->mapKeys[GLFW_KEY_RIGHT_CONTROL] = Key::RCTRL;
-	DeshInput->mapKeys[GLFW_KEY_LEFT_ALT]      = Key::LALT;
-	DeshInput->mapKeys[GLFW_KEY_RIGHT_ALT]     = Key::RALT;
-	DeshInput->mapKeys[GLFW_KEY_BACKSPACE]     = Key::BACKSPACE;
-	DeshInput->mapKeys[GLFW_KEY_ENTER]         = Key::ENTER;
-	DeshInput->mapKeys[GLFW_KEY_MINUS]         = Key::MINUS;
-	DeshInput->mapKeys[GLFW_KEY_EQUAL]         = Key::EQUALS;
-	DeshInput->mapKeys[GLFW_KEY_LEFT_BRACKET]  = Key::LBRACKET;
-	DeshInput->mapKeys[GLFW_KEY_RIGHT_BRACKET] = Key::RBRACKET;
-	DeshInput->mapKeys[GLFW_KEY_SLASH]         = Key::SLASH;
-	DeshInput->mapKeys[GLFW_KEY_SEMICOLON]     = Key::SEMICOLON;
-	DeshInput->mapKeys[GLFW_KEY_APOSTROPHE]    = Key::APOSTROPHE;
-	DeshInput->mapKeys[GLFW_KEY_COMMA]         = Key::COMMA;
-	DeshInput->mapKeys[GLFW_KEY_PERIOD]        = Key::PERIOD;
-	DeshInput->mapKeys[GLFW_KEY_BACKSLASH]     = Key::BACKSLASH;
-	DeshInput->mapKeys[GLFW_KEY_SPACE]         = Key::SPACE;
+	DeshInput->mapKeys[GLFW_KEY_ESCAPE]        = Key_ESCAPE;
+	DeshInput->mapKeys[GLFW_KEY_GRAVE_ACCENT]  = Key_TILDE;
+	DeshInput->mapKeys[GLFW_KEY_TAB]           = Key_TAB;
+	DeshInput->mapKeys[GLFW_KEY_CAPS_LOCK]     = Key_CAPSLOCK;
+	DeshInput->mapKeys[GLFW_KEY_LEFT_SHIFT]    = Key_LSHIFT;
+	DeshInput->mapKeys[GLFW_KEY_RIGHT_SHIFT]   = Key_RSHIFT;
+	DeshInput->mapKeys[GLFW_KEY_LEFT_CONTROL]  = Key_LCTRL;
+	DeshInput->mapKeys[GLFW_KEY_RIGHT_CONTROL] = Key_RCTRL;
+	DeshInput->mapKeys[GLFW_KEY_LEFT_ALT]      = Key_LALT;
+	DeshInput->mapKeys[GLFW_KEY_RIGHT_ALT]     = Key_RALT;
+	DeshInput->mapKeys[GLFW_KEY_BACKSPACE]     = Key_BACKSPACE;
+	DeshInput->mapKeys[GLFW_KEY_ENTER]         = Key_ENTER;
+	DeshInput->mapKeys[GLFW_KEY_MINUS]         = Key_MINUS;
+	DeshInput->mapKeys[GLFW_KEY_EQUAL]         = Key_EQUALS;
+	DeshInput->mapKeys[GLFW_KEY_LEFT_BRACKET]  = Key_LBRACKET;
+	DeshInput->mapKeys[GLFW_KEY_RIGHT_BRACKET] = Key_RBRACKET;
+	DeshInput->mapKeys[GLFW_KEY_SLASH]         = Key_SLASH;
+	DeshInput->mapKeys[GLFW_KEY_SEMICOLON]     = Key_SEMICOLON;
+	DeshInput->mapKeys[GLFW_KEY_APOSTROPHE]    = Key_APOSTROPHE;
+	DeshInput->mapKeys[GLFW_KEY_COMMA]         = Key_COMMA;
+	DeshInput->mapKeys[GLFW_KEY_PERIOD]        = Key_PERIOD;
+	DeshInput->mapKeys[GLFW_KEY_BACKSLASH]     = Key_BACKSLASH;
+	DeshInput->mapKeys[GLFW_KEY_SPACE]         = Key_SPACE;
 
-	DeshInput->mapKeys[GLFW_KEY_INSERT]  = Key::INSERT; DeshInput->mapKeys[GLFW_KEY_DELETE]      = Key::DELETE;
-	DeshInput->mapKeys[GLFW_KEY_HOME]    = Key::HOME;   DeshInput->mapKeys[GLFW_KEY_END]         = Key::END;
-	DeshInput->mapKeys[GLFW_KEY_PAGE_UP] = Key::PAGEUP; DeshInput->mapKeys[GLFW_KEY_PAGE_DOWN]   = Key::PAGEDOWN;
-	DeshInput->mapKeys[GLFW_KEY_PAUSE]   = Key::PAUSE;  DeshInput->mapKeys[GLFW_KEY_SCROLL_LOCK] = Key::SCROLL;
+	DeshInput->mapKeys[GLFW_KEY_INSERT]  = Key_INSERT; DeshInput->mapKeys[GLFW_KEY_DELETE]      = Key_DELETE;
+	DeshInput->mapKeys[GLFW_KEY_HOME]    = Key_HOME;   DeshInput->mapKeys[GLFW_KEY_END]         = Key_END;
+	DeshInput->mapKeys[GLFW_KEY_PAGE_UP] = Key_PAGEUP; DeshInput->mapKeys[GLFW_KEY_PAGE_DOWN]   = Key_PAGEDOWN;
+	DeshInput->mapKeys[GLFW_KEY_PAUSE]   = Key_PAUSE;  DeshInput->mapKeys[GLFW_KEY_SCROLL_LOCK] = Key_SCROLL;
 
-	DeshInput->mapKeys[GLFW_KEY_KP_0] = Key::NUMPAD0; DeshInput->mapKeys[GLFW_KEY_KP_1] = Key::NUMPAD1;
-	DeshInput->mapKeys[GLFW_KEY_KP_2] = Key::NUMPAD2; DeshInput->mapKeys[GLFW_KEY_KP_3] = Key::NUMPAD3;
-	DeshInput->mapKeys[GLFW_KEY_KP_4] = Key::NUMPAD4; DeshInput->mapKeys[GLFW_KEY_KP_5] = Key::NUMPAD5;
-	DeshInput->mapKeys[GLFW_KEY_KP_6] = Key::NUMPAD6; DeshInput->mapKeys[GLFW_KEY_KP_7] = Key::NUMPAD7;
-	DeshInput->mapKeys[GLFW_KEY_KP_8] = Key::NUMPAD8; DeshInput->mapKeys[GLFW_KEY_KP_9] = Key::NUMPAD9;
+	DeshInput->mapKeys[GLFW_KEY_KP_0] = Key_NUMPAD0; DeshInput->mapKeys[GLFW_KEY_KP_1] = Key_NUMPAD1;
+	DeshInput->mapKeys[GLFW_KEY_KP_2] = Key_NUMPAD2; DeshInput->mapKeys[GLFW_KEY_KP_3] = Key_NUMPAD3;
+	DeshInput->mapKeys[GLFW_KEY_KP_4] = Key_NUMPAD4; DeshInput->mapKeys[GLFW_KEY_KP_5] = Key_NUMPAD5;
+	DeshInput->mapKeys[GLFW_KEY_KP_6] = Key_NUMPAD6; DeshInput->mapKeys[GLFW_KEY_KP_7] = Key_NUMPAD7;
+	DeshInput->mapKeys[GLFW_KEY_KP_8] = Key_NUMPAD8; DeshInput->mapKeys[GLFW_KEY_KP_9] = Key_NUMPAD9;
 
-	DeshInput->mapKeys[GLFW_KEY_KP_MULTIPLY] = Key::NUMPADMULTIPLY;
-	DeshInput->mapKeys[GLFW_KEY_KP_DIVIDE]   = Key::NUMPADDIVIDE;
-	DeshInput->mapKeys[GLFW_KEY_KP_ADD]      = Key::NUMPADPLUS;
-	DeshInput->mapKeys[GLFW_KEY_KP_SUBTRACT] = Key::NUMPADMINUS;
-	DeshInput->mapKeys[GLFW_KEY_KP_DECIMAL]  = Key::NUMPADPERIOD;
-	DeshInput->mapKeys[GLFW_KEY_KP_ENTER]    = Key::NUMPADENTER;
-	DeshInput->mapKeys[GLFW_KEY_NUM_LOCK]    = Key::NUMLOCK;
+	DeshInput->mapKeys[GLFW_KEY_KP_MULTIPLY] = Key_NUMPADMULTIPLY;
+	DeshInput->mapKeys[GLFW_KEY_KP_DIVIDE]   = Key_NUMPADDIVIDE;
+	DeshInput->mapKeys[GLFW_KEY_KP_ADD]      = Key_NUMPADPLUS;
+	DeshInput->mapKeys[GLFW_KEY_KP_SUBTRACT] = Key_NUMPADMINUS;
+	DeshInput->mapKeys[GLFW_KEY_KP_DECIMAL]  = Key_NUMPADPERIOD;
+	DeshInput->mapKeys[GLFW_KEY_KP_ENTER]    = Key_NUMPADENTER;
+	DeshInput->mapKeys[GLFW_KEY_NUM_LOCK]    = Key_NUMLOCK;
 
 	//mouse mappings
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_1] = MouseButton::LEFT;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_2] = MouseButton::RIGHT;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MIDDLE;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::FOUR;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::FIVE;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_6] = MouseButton::SIX;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_7] = MouseButton::SEVEN;
-	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_8] = MouseButton::EIGHT;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_1] = Mouse_LEFT;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_2] = Mouse_RIGHT;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_3] = Mouse_MIDDLE;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_4] = Mouse_FOUR;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_5] = Mouse_FIVE;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_6] = Mouse_SIX;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_7] = Mouse_SEVEN;
+	DeshInput->mapMouse[GLFW_MOUSE_BUTTON_8] = Mouse_EIGHT;
 
 	//event callbacks
 	//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -223,7 +223,9 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 									   if(action == GLFW_PRESS){
 										   DeshInput->realKeyState[it->second] = true;
 										   DeshInput->checkbinds = true;
-										   if(DeshInput->logInput) { Log("input","{m", it->second, "|", mods,"}"); }
+#if LOG_INPUTS
+										   Log("input","{m", it->second, "|", mods,"}");
+										   #endif
 									   }else if(action == GLFW_RELEASE){
 										   DeshInput->realKeyState[it->second] = false;
 									   }
@@ -237,7 +239,6 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 								 GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 								 int x, y, width, height;
 								 glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
-								 DeshInput->mouseFocus = true;
 								 DeshInput->realMouseX = xpos - (double)x;
 								 DeshInput->realMouseY = ypos - (double)y;
 								 DeshInput->realScreenMouseX = xpos;
@@ -254,7 +255,9 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 							   if(action == GLFW_PRESS){
 								   DeshInput->realKeyState[it->second] = true;
 								   DeshInput->checkbinds = true;
-								   if(DeshInput->logInput) { Log("input","{k", it->second, "|", mods,"}"); }
+#if LOG_INPUTS
+								   Log("input","{k", it->second, "|", mods,"}");
+								   #endif
 							   }else if(action == GLFW_RELEASE){
 								   DeshInput->realKeyState[it->second] = false;
 							   }
@@ -292,7 +295,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	// //void windo
 	//
 
-	LogS("deshi","Finished window initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished window initialization in ",peek_stopwatch(t_s),"ms");
 } //Init()
 
 void Window::Update() {
@@ -321,7 +324,7 @@ void Window::Update() {
 	if(!block_mouse_pos_change)
 		glfwGetCursorPos(window, &DeshInput->mouseX, &DeshInput->mouseY);
 	if(cursorMode == CursorMode_FirstPerson){ glfwSetCursorPos(window, width/2, height/2); }
-	DeshTime->windowTime = TIMER_END(t_d);
+	DeshTime->windowTime = peek_stopwatch(t_d);
 }
 
 void Window::Cleanup(){

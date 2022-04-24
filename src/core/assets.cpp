@@ -373,8 +373,8 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 				out << '\"' << *(std::string*)config.third << '\"';
 			}break;
 			case ConfigValueType_Key:{
-				u32 keymod = *(Key::Key*)config.third;
-				out << KeyStrings[keymod & 0x000000FF];
+				u32 keymod = *(KeyCode*)config.third;
+				out << KeyCodeStrings[keymod & 0x000000FF];
 				switch(keymod & 0xFFFFFF00){
 					case(InputMod_Any):            break; //do nothing
 					case(InputMod_None):           out << ",None"; break;
@@ -512,14 +512,14 @@ loadConfig(const char* filename, ConfigMap configMap){
 						//TODO(delle,OpAs) improve perf by not using std::string
 						//    just do a pseudo binary split against all mod cases at once after
 						//    extracting the key, kinda like how im doing already but without a loop
-						Key::Key* keybind = (Key::Key*)config.third;
+						KeyCode* keybind = (KeyCode*)config.third;
 						
 						//parse key
 						auto keys = Utils::characterDelimit(std::string(value_start, value_end-value_start), ',');
 						u32 key_number = -1; //stored for Any edge-case where we want to override other mods
-						forI(ArrayCount(KeyStrings)){
-							if(strcmp(KeyStrings[i], keys[0].c_str()) == 0){
-								*keybind = (Key::Key)i;
+						forI(ArrayCount(KeyCodeStrings)){
+							if(strcmp(KeyCodeStrings[i], keys[0].c_str()) == 0){
+								*keybind = (KeyCode)i;
 								key_number = i;
 								break;
 							}
@@ -554,7 +554,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 									}
 								}else if(keys[i] == "Any"){
 									//overwrite and ignore other mods with Any
-									*keybind = (Key::Key)(key_number | InputMod_Any);
+									*keybind = (key_number | InputMod_Any);
 									break;
 								}else{
 									LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);

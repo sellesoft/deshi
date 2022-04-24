@@ -153,7 +153,7 @@ PrintDx(u32 level, Args... args){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){ //!Incomplete
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
 	
 	//Setup Dear ImGui context
 	
@@ -162,7 +162,7 @@ Init(){ //!Incomplete
 	//Setup Platform/Renderer backends
 	
 	
-	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_IMGUI);
 }
 
 void DeshiImGui::
@@ -869,10 +869,7 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 
 void Render::
 Init(){ //!Incomplete
-	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
-	
-	TIMER_START(t_s);
-	
+	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize DirectX module before initializing Memory/Window modules");
 	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
@@ -921,8 +918,7 @@ Init(){ //!Incomplete
 	
 	
 	initialized = true;
-	
-	Log("deshi","Finished directx renderer initialization in ",TIMER_END(t_s),"ms");
+	DeshiStageInitEnd(DS_RENDER);
 }
 
 local void Resize(u32 _width, u32 _height) {
@@ -958,7 +954,7 @@ local void Resize(u32 _width, u32 _height) {
 /////////////////
 void Render::
 Update(){ //!Incomplete
-	TIMER_START(t_u);
+	Stopwatch update_stopwatch = start_stopwatch();
 	
 	//reset the command allocator and command list to its initial state
 	auto commandAllocator = commandAllocators[currentBackBufferIdx];
@@ -1024,7 +1020,7 @@ Update(){ //!Incomplete
 	//reset stuff
 	
 	
-	DeshTime->renderTime = TIMER_END(t_u);
+	DeshTime->renderTime = peek_stopwatch(update_stopwatch);
 }
 
 ////////////////

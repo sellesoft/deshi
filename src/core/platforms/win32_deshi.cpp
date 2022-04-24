@@ -1,56 +1,96 @@
-﻿//~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @Windows Utils
+﻿/*Index:
+@win32_vars
+@win32_helpers
+@win32_init_time
+@win32_init_window
+@win32_update_window
+@win32_update_time
+@win32_update_input
+@win32_stopwatch
+@win32_io
+@win32_module
+@win32_clipboard
+@win32_threading
+*/
 
-local int _width, _height, _x, _y;
-local b32 _resized = false;
-local b32 block_mouse_pos_change = false;
-local RECT winrect = { 0 };
 
-#undef DELETE
-map<s32, Key::Key> vkToKey{
-	{ 'A', Key::A},{'B', Key::B},{'C', Key::C},{'D', Key::D},{'E', Key::E},{'F', Key::F},{'G', Key::G},{'H', Key::H},{'I', Key::I},{'J', Key::J},{'K', Key::K},{'L', Key::L},{'M', Key::M},{'N', Key::N},{'O', Key::O},{'P', Key::P},{'Q', Key::Q},{'R', Key::R},{'S', Key::S},{'T', Key::T},{'U', Key::U},{'V', Key::V},{'W', Key::W},{'X', Key::X},{'Y', Key::Y},{'Z', Key::Z},
-	{'0', Key::K0},{'1', Key::K1},{'2', Key::K2},{'3', Key::K3},{'4', Key::K4},{'5', Key::K5},{'6', Key::K6},{'7', Key::K7},{'8', Key::K8},{ '9', Key::K9 },
-	{ VK_F1, Key::F1 },{VK_F2, Key::F2},{VK_F3, Key::F3},{VK_F4, Key::F4},{VK_F5, Key::F5} ,{VK_F6, Key::F6},{VK_F7, Key::F7},{VK_F8, Key::F8},{VK_F9, Key::F9},{VK_F10, Key::F10},{VK_F11, Key::F11},{VK_F12, Key::F12},
-	{VK_UP, Key::UP},{VK_DOWN, Key::DOWN},{VK_LEFT, Key::LEFT},{VK_RIGHT, Key::RIGHT},
-	{ VK_ESCAPE, Key::ESCAPE },{ VK_OEM_3, Key::TILDE },{ VK_TAB, Key::TAB },{ VK_CAPITAL, Key::CAPSLOCK },{ VK_LSHIFT, Key::LSHIFT },{ VK_LCONTROL, Key::LCTRL },{ VK_LMENU, Key::LALT },
-	{ VK_BACK, Key::BACKSPACE },{ VK_RETURN, Key::ENTER },{ VK_RSHIFT, Key::RSHIFT },{ VK_RCONTROL, Key::RCTRL },{ VK_RMENU, Key::RALT },{ VK_OEM_MINUS, Key::MINUS },{ VK_OEM_PLUS, Key::EQUALS },{ VK_OEM_4, Key::LBRACKET },{ VK_OEM_5, Key::RBRACKET },
-	{ VK_OEM_2, Key::SLASH },{ VK_OEM_1, Key::SEMICOLON },{ VK_OEM_7, Key::APOSTROPHE },{ VK_OEM_COMMA, Key::COMMA },{ VK_OEM_PERIOD, Key::PERIOD },{ VK_OEM_5, Key::BACKSLASH },{ VK_SPACE, Key::SPACE },
-	{ VK_INSERT, Key::INSERT },{ VK_DELETE, Key::DELETE },{ VK_HOME, Key::HOME },{ VK_END, Key::END },{ VK_PRIOR, Key::PAGEUP },{ VK_NEXT, Key::PAGEDOWN },{ VK_PAUSE, Key::PAUSE },{ VK_SCROLL, Key::SCROLL },
-	{VK_NUMPAD0, Key::NUMPAD0},{VK_NUMPAD1, Key::NUMPAD1},{VK_NUMPAD2, Key::NUMPAD2},{VK_NUMPAD3, Key::NUMPAD3},{VK_NUMPAD4, Key::NUMPAD4},{VK_NUMPAD5, Key::NUMPAD5},{VK_NUMPAD6, Key::NUMPAD6},{VK_NUMPAD7, Key::NUMPAD7},{VK_NUMPAD8, Key::NUMPAD8},{VK_NUMPAD9, Key::NUMPAD9},
-	{ VK_MULTIPLY, Key::NUMPADMULTIPLY },{ VK_DIVIDE, Key::NUMPADDIVIDE },{ VK_ADD, Key::NUMPADPLUS },{ VK_SUBTRACT, Key::NUMPADMINUS },{ VK_DECIMAL, Key::NUMPADPERIOD },{ VK_RETURN, Key::NUMPADENTER },{ VK_NUMLOCK, Key::NUMLOCK },
-	{ VK_LWIN, Key::LMETA },{ VK_RWIN, Key::RMETA },
-};
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_vars
+local s64 deshi__win32_perf_count_frequency;
 
-void Win32LogLastError(const char* func_name, b32 crash_on_error = false, const char* custom = "") {DPZoneScoped;
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_helpers
+//NOTE(delle) ideally we'd do this with a static C array, but C++ doesn't support out of order array init
+FORCE_INLINE KeyCode win32_vkcode_to_key(s32 vk){
+	switch(vk){
+		case 'A': return Key_A; case 'B': return Key_B; case 'C': return Key_C; case 'D': return Key_D; case 'E': return Key_E;
+		case 'F': return Key_F; case 'G': return Key_G; case 'H': return Key_H; case 'I': return Key_I; case 'J': return Key_J;
+		case 'K': return Key_K; case 'L': return Key_L; case 'M': return Key_M; case 'N': return Key_N; case 'O': return Key_O;
+		case 'P': return Key_P; case 'Q': return Key_Q; case 'R': return Key_R; case 'S': return Key_S; case 'T': return Key_T;
+		case 'U': return Key_U; case 'V': return Key_V; case 'W': return Key_W; case 'X': return Key_X; case 'Y': return Key_Y;
+		case 'Z': return Key_Z;
+		case '0': return Key_0; case '1': return Key_1; case '2': return Key_2; case '3': return Key_3; case '4': return Key_4;
+		case '5': return Key_5; case '6': return Key_6; case '7': return Key_7; case '8': return Key_8; case '9': return Key_9;
+		case VK_F1: return Key_F1; case VK_F2:  return Key_F2;  case VK_F3:  return Key_F3;  case VK_F4:  return Key_F4;
+		case VK_F5: return Key_F5; case VK_F6:  return Key_F6;  case VK_F7:  return Key_F7;  case VK_F8:  return Key_F8;
+		case VK_F9: return Key_F9; case VK_F10: return Key_F10; case VK_F11: return Key_F11; case VK_F12: return Key_F12;
+		case VK_UP: return Key_UP; case VK_DOWN: return Key_DOWN; case VK_LEFT: return Key_LEFT; case VK_RIGHT: return Key_RIGHT;
+		case VK_ESCAPE:    return Key_ESCAPE;     case VK_OEM_3:     return Key_TILDE;        case VK_TAB:        return Key_TAB;
+		case VK_CAPITAL:   return Key_CAPSLOCK;   case VK_LSHIFT:    return Key_LSHIFT;       case VK_LCONTROL:   return Key_LCTRL;
+		case VK_LMENU:     return Key_LALT;       case VK_BACK:      return Key_BACKSPACE;    case VK_RETURN:     return Key_ENTER;
+		case VK_RSHIFT:    return Key_RSHIFT;     case VK_RCONTROL:  return Key_RCTRL;        case VK_RMENU:      return Key_RALT;
+		case VK_OEM_MINUS: return Key_MINUS;      case VK_OEM_PLUS:  return Key_EQUALS;       case VK_OEM_4:      return Key_LBRACKET;
+		case VK_OEM_6:     return Key_RBRACKET;   case VK_OEM_2:     return Key_FORWARDSLASH; case VK_OEM_1:      return Key_SEMICOLON;
+		case VK_OEM_7:     return Key_APOSTROPHE; case VK_OEM_COMMA: return Key_COMMA;        case VK_OEM_PERIOD: return Key_PERIOD;
+		case VK_OEM_5:     return Key_BACKSLASH;  case VK_SPACE:     return Key_SPACE;        case VK_INSERT:     return Key_INSERT;
+		case VK_DELETE:    return Key_DELETE;     case VK_HOME:      return Key_HOME;         case VK_END:        return Key_END;
+		case VK_PRIOR:     return Key_PAGEUP;     case VK_NEXT:      return Key_PAGEDOWN;     case VK_PAUSE:      return Key_PAUSEBREAK;
+		case VK_SCROLL:    return Key_SCROLLLOCK; case VK_LWIN:      return Key_LMETA;        case VK_RWIN:       return Key_RMETA;
+		case VK_SNAPSHOT:  return Key_PRINTSCREEN;
+		case VK_NUMPAD0: return Key_NP0; case VK_NUMPAD1: return Key_NP1; case VK_NUMPAD2: return Key_NP2;
+		case VK_NUMPAD3: return Key_NP3; case VK_NUMPAD4: return Key_NP4; case VK_NUMPAD5: return Key_NP5;
+		case VK_NUMPAD6: return Key_NP6; case VK_NUMPAD7: return Key_NP7; case VK_NUMPAD8: return Key_NP8;
+		case VK_NUMPAD9: return Key_NP9;
+		case VK_MULTIPLY: return Key_NPMULTIPLY; case VK_DIVIDE:  return Key_NPDIVIDE; case VK_ADD:     return Key_NPPLUS;
+		case VK_SUBTRACT: return Key_NPMINUS;    case VK_DECIMAL: return Key_NPPERIOD; case VK_NUMLOCK: return Key_NUMLOCK;
+		default: return Key_NONE;
+	}
+}
+
+void Win32LogLastError(const char* func_name, b32 crash_on_error = false, const char* custom = ""){DPZoneScoped;
 	LPVOID msg_buffer;
-	DWORD error = GetLastError();
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+	DWORD error = ::GetLastError();
+	::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
 				  0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
 	LogfE("win32", "%s failed with error %d: %s. %s", func_name, (u32)error, (const char*)msg_buffer, custom);
-	LocalFree(msg_buffer);
+	::LocalFree(msg_buffer);
 	if(crash_on_error){
 		Assert(!"assert before exit so we can stack trace in debug mode");
-		ExitProcess(error);
+		::ExitProcess(error);
 	}
 }
 
 //@Resize
-void WinResized(Window* win, s32 width, s32 height, b32 minimized) {DPZoneScoped;
-	win->width = width; win->height = height;
-	win->cwidth = width; win->cheight = height - win->titlebarheight;
-	win->centerX = win->width/2; win->centerY = win->height/2;
+void WinResized(Window* win, s32 width, s32 height, b32 minimized){DPZoneScoped;
+	win->width = width;
+	win->height = height;
+	win->cwidth = width;
+	win->cheight = height - win->titlebarheight;
+	win->centerX = win->width/2;
+	win->centerY = win->height/2;
 	win->dimensions = vec2(win->cwidth, win->cheight);
-	win->cx = win->borderthickness; win->cy = win->borderthickness + win->titlebarheight;
-	if (minimized) win->minimized = true;
-	else win->minimized = false;
+	win->cx = win->borderthickness;
+	win->cy = win->borderthickness + win->titlebarheight;
+	win->minimized = minimized;
 	win->resized = true;
 }
 
 void Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int* working_x = 0, int* working_y = 0, int* working_w = 0, int* working_h = 0){
-	HMONITOR monitor = MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
+	HMONITOR monitor = ::MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
 	if(monitor){
 		MONITORINFO monitor_info = {sizeof(MONITORINFO)};
-		if(GetMonitorInfo(monitor, &monitor_info)){
+		if(::GetMonitorInfo(monitor, &monitor_info)){
 			if(screen_w) *screen_w = monitor_info.rcMonitor.right  - monitor_info.rcMonitor.left;
 			if(screen_h) *screen_h = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
 			if(working_x) *working_x = monitor_info.rcWork.left;
@@ -74,12 +114,11 @@ enum HitTest_ : s32 {
 };
 
 //win32's callback function 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZoneScoped;
-	Window* win = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-	Input* in = DeshInput;
-	switch (msg) {
-		case WM_CREATE: {		}break;
-		case WM_SIZE: { if(win) WinResized(win, LOWORD(lParam), HIWORD(lParam), wParam == SIZE_MINIMIZED); }break;
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
+	Window* win = (Window*)::GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	switch (msg){
+		case WM_CREATE:{ }break;
+		case WM_SIZE:{ if(win) WinResized(win, LOWORD(lParam), HIWORD(lParam), wParam == SIZE_MINIMIZED); }break;
 		case WM_CLOSE:
 		case WM_DESTROY:
 		case WM_QUIT:{
@@ -88,45 +127,46 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 				return 0;
 			}
 		}break;
-		case WM_MOVE: { ////////////////////////////////////////////////////////////// Window Moved
+		case WM_MOVE:{ ////////////////////////////////////////////////////////////// Window Moved
 			const s32 x = LOWORD(lParam);
 			const s32 y = HIWORD(lParam);
-			if (win) { win->x = x; win->y = y; }
+			if(win){ win->x = x; win->y = y; }
 		}break;
-		case WM_MOUSEMOVE: { ///////////////////////////////////////////////////////// Mouse Moved
+		case WM_MOUSEMOVE:{ ///////////////////////////////////////////////////////// Mouse Moved
 			const s32 xPos = GET_X_LPARAM(lParam);
 			const s32 yPos = GET_Y_LPARAM(lParam);
-			in->realMouseX = xPos - f64(win->borderthickness);
-			in->realMouseY = yPos - f64(win->titlebarheight + win->titlebarheight);
+			DeshInput->realMouseX = xPos - f64(win->borderthickness);
+			DeshInput->realMouseY = yPos - f64(win->titlebarheight + win->titlebarheight);
 			POINT p = { xPos, yPos };
-			ClientToScreen((HWND)win->handle, &p);
-			in->realScreenMouseX = p.x; in->realScreenMouseY = p.y;
+			::ClientToScreen((HWND)win->handle, &p);
+			DeshInput->realScreenMouseX = p.x;
+			DeshInput->realScreenMouseY = p.y;
 		}break;
-		case WM_MOUSEHOVER: { //////////////////////////////////////////////////////// Mouse Hovers
+		case WM_MOUSEHOVER:{ //////////////////////////////////////////////////////// Mouse Hovers
 			//TODO
 		}break;
-		case WM_MOUSEWHEEL: { //////////////////////////////////////////////////////// Mouse Scrolled
+		case WM_MOUSEWHEEL:{ //////////////////////////////////////////////////////// Mouse Scrolled
 			const s32 zDelta = GET_WHEEL_DELTA_WPARAM(wParam) / (f64)WHEEL_DELTA;
-			in->realScrollY = zDelta;
+			DeshInput->realScrollY = zDelta;
 		}break;
-		case WM_MOUSEHWHEEL: { /////////////////////////////////////////////////////// Mouse H Scrolled
+		case WM_MOUSEHWHEEL:{ /////////////////////////////////////////////////////// Mouse H Scrolled
 			const s32 zDelta = GET_WHEEL_DELTA_WPARAM(wParam) / (f64)WHEEL_DELTA;
-			in->realScrollY = zDelta;
+			DeshInput->realScrollY = zDelta;
 		}break;
 		/////////////////////////////////////////////////////// Mouse Button Down
-		case WM_LBUTTONDOWN: { in->realKeyState[Key::MBLEFT]   = true; SetCapture((HWND)win->handle); }break;
-		case WM_RBUTTONDOWN: { in->realKeyState[Key::MBRIGHT]  = true; SetCapture((HWND)win->handle); }break;
-		case WM_MBUTTONDOWN: { in->realKeyState[Key::MBMIDDLE] = true; SetCapture((HWND)win->handle); }break;
-		case WM_XBUTTONDOWN: { in->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Key::MBFOUR : Key::MBFIVE)] = true; return true; }break;
+		case WM_LBUTTONDOWN:{ DeshInput->realKeyState[Mouse_LEFT]   = true; ::SetCapture((HWND)win->handle); }break;
+		case WM_RBUTTONDOWN:{ DeshInput->realKeyState[Mouse_RIGHT]  = true; ::SetCapture((HWND)win->handle); }break;
+		case WM_MBUTTONDOWN:{ DeshInput->realKeyState[Mouse_MIDDLE] = true; ::SetCapture((HWND)win->handle); }break;
+		case WM_XBUTTONDOWN:{ DeshInput->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Mouse_4 : Mouse_5)] = true; return true; }break;
 		/////////////////////////////////////////////////////// Mouse Button Up
-		case WM_LBUTTONUP:   { in->realKeyState[Key::MBLEFT]   = false; ReleaseCapture(); }break;
-		case WM_RBUTTONUP:   { in->realKeyState[Key::MBRIGHT]  = false; ReleaseCapture(); }break;
-		case WM_MBUTTONUP:   { in->realKeyState[Key::MBMIDDLE] = false; ReleaseCapture(); }break;
-		case WM_XBUTTONUP:   { in->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Key::MBFOUR : Key::MBFIVE)] = false; return true; }break;
+		case WM_LBUTTONUP:  { DeshInput->realKeyState[Mouse_LEFT]   = false; ::ReleaseCapture(); }break;
+		case WM_RBUTTONUP:  { DeshInput->realKeyState[Mouse_RIGHT]  = false; ::ReleaseCapture(); }break;
+		case WM_MBUTTONUP:  { DeshInput->realKeyState[Mouse_MIDDLE] = false; ::ReleaseCapture(); }break;
+		case WM_XBUTTONUP:  { DeshInput->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Mouse_4 : Mouse_5)] = false; return true; }break;
 		case WM_KEYUP:        //////////////////////////////////////////////////////// Key Down/Up
 		case WM_SYSKEYUP: 
 		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN: { 
+		case WM_SYSKEYDOWN:{ 
 			u16 vcode = LOWORD(wParam);
 			u16 scancode = (HIWORD(lParam) & (KF_EXTENDED | 0xff));
 			b32 upFlag = (HIWORD(lParam) & KF_UP) == KF_UP;              // transition-state flag, 1 on keyup
@@ -134,88 +174,75 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			u16 repeatCount = LOWORD(lParam);
 			
 			//these are probably unused for now
-			b32 altDownFlag  = (HIWORD(lParam) & KF_ALTDOWN) == KF_ALTDOWN;    // ALT key was pressed
-			b32 dlgModeFlag  = (HIWORD(lParam) & KF_DLGMODE) == KF_DLGMODE;    // dialog box is active
+			b32 altDownFlag  = (HIWORD(lParam) & KF_ALTDOWN)  == KF_ALTDOWN;   // ALT key was pressed
+			b32 dlgModeFlag  = (HIWORD(lParam) & KF_DLGMODE)  == KF_DLGMODE;   // dialog box is active
 			b32 menuModeFlag = (HIWORD(lParam) & KF_MENUMODE) == KF_MENUMODE;  // menu is active
 			
-			//check modifier keys
-			if (GetKeyState(VK_LSHIFT) & 0x8000)   in->realKeyState[Key::LSHIFT] = true;
-			else                                   in->realKeyState[Key::LSHIFT] = false;
-			if (GetKeyState(VK_RSHIFT) & 0x8000)   in->realKeyState[Key::RSHIFT] = true;
-			else                                   in->realKeyState[Key::RSHIFT] = false;
-			if (GetKeyState(VK_LCONTROL) & 0x8000) in->realKeyState[Key::LCTRL]  = true;
-			else                                   in->realKeyState[Key::LCTRL]  = false;
-			if (GetKeyState(VK_RCONTROL) & 0x8000) in->realKeyState[Key::RCTRL]  = true;
-			else                                   in->realKeyState[Key::RCTRL]  = false;
-			if (GetKeyState(VK_LMENU) & 0x8000)    in->realKeyState[Key::LALT]   = true;
-			else                                   in->realKeyState[Key::LALT]   = false;
-			if (GetKeyState(VK_RMENU) & 0x8000)    in->realKeyState[Key::RALT]   = true;
-			else                                   in->realKeyState[Key::RALT]   = false;
-			if(GetKeyState(VK_LWIN) & 0x8000)      in->realKeyState[Key::LMETA]  = true;
-			else                                   in->realKeyState[Key::LMETA]  = false;
-			if (GetKeyState(VK_RWIN) & 0x8000)     in->realKeyState[Key::RMETA]  = true;
-			else                                   in->realKeyState[Key::RMETA]  = false;
-			DeshInput->capsLock   = (GetKeyState(VK_CAPITAL) & 0x8000);
-			DeshInput->numLock    = (GetKeyState(VK_NUMLOCK) & 0x8000);
-			DeshInput->scrollLock = (GetKeyState(VK_SCROLL ) & 0x8000);
+			//check modifier keys //TODO(delle) check if this is needed considering win32_vkcode_to_key
+			DeshInput->realKeyState[Key_LSHIFT] = ::GetKeyState(VK_LSHIFT) & 0x8000;
+			DeshInput->realKeyState[Key_RSHIFT] = ::GetKeyState(VK_RSHIFT) & 0x8000;
+			DeshInput->realKeyState[Key_LCTRL]  = ::GetKeyState(VK_LCONTROL) & 0x8000;
+			DeshInput->realKeyState[Key_RCTRL]  = ::GetKeyState(VK_RCONTROL) & 0x8000;
+			DeshInput->realKeyState[Key_LALT]   = ::GetKeyState(VK_LMENU) & 0x8000;
+			DeshInput->realKeyState[Key_RALT]   = ::GetKeyState(VK_RMENU) & 0x8000;
+			DeshInput->realKeyState[Key_LMETA]  = ::GetKeyState(VK_LWIN) & 0x8000;
+			DeshInput->realKeyState[Key_RMETA]  = ::GetKeyState(VK_RWIN) & 0x8000;
+			DeshInput->capsLock   = (::GetKeyState(VK_CAPITAL) & 0x8000);
+			DeshInput->numLock    = (::GetKeyState(VK_NUMLOCK) & 0x8000);
+			DeshInput->scrollLock = (::GetKeyState(VK_SCROLL ) & 0x8000);
 			
 			//get key from vcode
-			Key::Key* key = vkToKey.at(vcode);
-			
-			if (key) {
-				if (upFlag) in->realKeyState[*key] = false;
-				else        in->realKeyState[*key] = true;
+			KeyCode key = win32_vkcode_to_key(vcode);
+			if(key != Key_NONE){
+				DeshInput->realKeyState[key] = upFlag;
 				
-				if (in->logInput) { 
-					string out = toStr(KeyStrings[*key], (upFlag ? " released" : " pressed"));
-					if(in->realKeyState[Key::LSHIFT]) {out += " + LSHIFT";}
-					if(in->realKeyState[Key::RSHIFT]) {out += " + RSHIFT";}
-					if(in->realKeyState[Key::LCTRL])  {out += " + LCTRL";}
-					if(in->realKeyState[Key::RCTRL])  {out += " + RCTRL";}
-					if(in->realKeyState[Key::LALT])   {out += " + LALT";}
-					if(in->realKeyState[Key::RALT])   {out += " + RALT";}
-#if 0
+#if LOG_INPUTS
+					string out = toStr(KeyCodeStrings[key], (upFlag ? " released" : " pressed"));
+					if(DeshInput->realKeyState[Key_LSHIFT]){out += " + LSHIFT";}
+					if(DeshInput->realKeyState[Key_RSHIFT]){out += " + RSHIFT";}
+					if(DeshInput->realKeyState[Key_LCTRL]) {out += " + LCTRL";}
+					if(DeshInput->realKeyState[Key_RCTRL]) {out += " + RCTRL";}
+					if(DeshInput->realKeyState[Key_LALT])  {out += " + LALT";}
+					if(DeshInput->realKeyState[Key_RALT])  {out += " + RALT";}
 					Log("input", out); 
 #endif
-				}
 			}
 		}break;
-		case WM_CHAR: { ////////////////////////////////////////////////////////////// Char From Key 
+		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key 
 			if(!iscntrl(LOWORD(wParam))){ //NOTE skip control characters
 				DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
 			}
 		}break;
-		case WM_INPUT: { ///////////////////////////////////////////////////////////// Raw Input
+		case WM_INPUT:{ ///////////////////////////////////////////////////////////// Raw Input
 			UINT size = 0;
 			HRAWINPUT ri = (HRAWINPUT)lParam;
 			RAWINPUT* data = NULL;
 			//get size of rawinput
-			GetRawInputData(ri, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
-			data = (RAWINPUT*)memtalloc(size);
+			::GetRawInputData(ri, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
+			data = (RAWINPUT*)memory_talloc(size);
 			
-			if (GetRawInputData(ri, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER)) == (u32)-1) {
+			if(::GetRawInputData(ri, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER)) == (u32)-1){
 				//LogE("WINDOW-WIN32", "failed to retrieve raw input data in WndProc case WM_INPUT");
 				break;
 			}
 			
 			RAWMOUSE mdata = data->data.mouse;
 			s32 dx, dy;
-			if (HasFlag(mdata.usFlags, MOUSE_MOVE_ABSOLUTE)) {
-				dx = mdata.lLastX - in->realMouseX;  dy = mdata.lLastY - in->realMouseY;
-			}
-			else {
-				dx = mdata.lLastX; dy = mdata.lLastY;
+			if(HasFlag(mdata.usFlags, MOUSE_MOVE_ABSOLUTE)){
+				dx = mdata.lLastX - DeshInput->realMouseX;
+				dy = mdata.lLastY - DeshInput->realMouseY;
+			}else{
+				dx = mdata.lLastX;
+				dy = mdata.lLastY;
 			}
 			
-			in->realMouseX += dx; in->realMouseY += dy;
+			DeshInput->realMouseX += dx; DeshInput->realMouseY += dy;
 			
 			//TODO maybe implement raw key inputs from this
 			RAWKEYBOARD kdata = data->data.keyboard;
 			RAWHID      hdata = data->data.hid; //TODO human interface device input
-			
-			
 		}break;
-		case WM_NCHITTEST: {
+		case WM_NCHITTEST:{
 			s32  xPos = GET_X_LPARAM(lParam);
 			s32  yPos = GET_Y_LPARAM(lParam);
 			s32  x = win->x, y = win->y;
@@ -224,26 +251,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 			s32  cwidth = win->cwidth, cheight = win->cheight;
 			s32  tbh = win->titlebarheight;
 			s32  bt = win->borderthickness;
-			vec2 mp = DeshInput->mousePos + vec2(bt, tbh+bt*2);
+			vec2 mp = input_mouse_position() + vec2(bt, tbh+bt*2);
 			u32  decor = win->decorations;
 			b32  hitset = 0;
-			if (Math::PointInRectangle(mp, vec2(cx, cy),                  vec2(cwidth, cheight)))                   return HTCLIENT;  
-			if (Math::PointInRectangle(mp, vec2(bt, bt),                  vec2(width - 2*bt, win->titlebarheight))) return HTCAPTION;  
-			if (Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, bt)))                            return HTTOPLEFT;	  
-			if (Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(bt, bt)))                            return HTBOTTOMLEFT;  
-			if (Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, bt)))                            return HTTOPRIGHT;	  
-			if (Math::PointInRectangle(mp, vec2(width - bt, height - bt), vec2(bt, bt)))                            return HTBOTTOMRIGHT; 
-			if (Math::PointInRectangle(mp, vec2::ZERO,                    vec2(width, bt)))                         return HTTOP;		  
-			if (Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(width, bt)))                         return HTBOTTOM;       
-			if (Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, height)))                        return HTLEFT;		  
-			if (Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, height)))                        return HTRIGHT;		  
+			if(Math::PointInRectangle(mp, vec2(cx, cy),                  vec2(cwidth, cheight)))                   return HTCLIENT;  
+			if(Math::PointInRectangle(mp, vec2(bt, bt),                  vec2(width - 2*bt, win->titlebarheight))) return HTCAPTION;  
+			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, bt)))                            return HTTOPLEFT;	  
+			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(bt, bt)))                            return HTBOTTOMLEFT;  
+			if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, bt)))                            return HTTOPRIGHT;	  
+			if(Math::PointInRectangle(mp, vec2(width - bt, height - bt), vec2(bt, bt)))                            return HTBOTTOMRIGHT; 
+			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(width, bt)))                         return HTTOP;		  
+			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(width, bt)))                         return HTBOTTOM;       
+			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, height)))                        return HTLEFT;		  
+			if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, height)))                        return HTRIGHT;		  
 		}
 	}
-	if (win) {
-		if (GetForegroundWindow() == (HWND)win->handle) win->active = true;
-		else win->active = false;
+	if(win){
+		win->active = (::GetForegroundWindow() == (HWND)win->handle);
 	}
-	return DefWindowProcA(hwnd, msg, wParam, lParam);
+	return ::DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
 
@@ -252,13 +278,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {DPZ
 //// @Window API
 #define DESHI_WND_CLASSNAME_A "_DESHI_"
 
-void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode) {DPZoneScoped;
-	AssertDS(DS_MEMORY, "Attempt to init Window without loading Memory first");
-	deshiStage |= DS_WINDOW;
-	TIMER_START(t_s);
+void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){DPZoneScoped;
+	//-///////////////////////////////////////////////////////////////////////////////////////////////
+	//// @win32_init_time
+	DeshiStageInitStart(DS_TIME, DS_MEMORY, "Attempted to initialize Time module before initializing Memory module");
+	
+	//get the perf counter frequency for timers
+	LARGE_INTEGER perf_count_frequency_result;
+	::QueryPerformanceFrequency(&perf_count_frequency_result);
+	deshi__win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
+	
+	DeshiStageInitEnd(DS_TIME);
+	//-///////////////////////////////////////////////////////////////////////////////////////////////
+	//// @win32_init_window
+	DeshiStageInitStart(DS_WINDOW, DS_MEMORY, "Attempted to initialize Window module before initializing Memory module");
 	
 	//get console's handle
-	instance = GetModuleHandle(NULL);
+	instance = ::GetModuleHandle(NULL);
 	
 	//TODO load and set icon
 	//HICON icon = LoadImageA(NULL, "data/textures/deshi_icon.png", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_DEFAULTCOLOR);;
@@ -275,19 +311,19 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
 	wc.lpszClassName = DESHI_WND_CLASSNAME_A;
-	if (!RegisterClassA(&wc)) Win32LogLastError("RegisterClassA", true); 
+	if(::RegisterClassA(&wc) == NULL) Win32LogLastError("RegisterClassA", true); 
 	
 	//// create window ////
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 #if DESHI_OPENGL
-	handle = CreateWindowA(DESHI_WND_CLASSNAME_A, _name, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+	handle = ::CreateWindowA(DESHI_WND_CLASSNAME_A, _name, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
 #else
-	handle = CreateWindowA(DESHI_WND_CLASSNAME_A, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+	handle = ::CreateWindowA(DESHI_WND_CLASSNAME_A, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
 #endif
-	if (!handle) Win32LogLastError("CreateWindowA", true);
+	if(handle == NULL) Win32LogLastError("CreateWindowA", true);
 	//set WndProc user data to be a pointer to this window
-	SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
-	dc = GetDC((HWND)handle);
+	::SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
+	dc = ::GetDC((HWND)handle);
 	
 	//// get initial input values ////
 	POINT mp = { 0 };
@@ -305,7 +341,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	rid.    dwFlags = 0; //set this to RIDEV_INPUTSINK to update mouse pos even when window isnt focused
 	rid. hwndTarget = NULL;
 	
-	if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) Win32LogLastError("RegisterRawInputDevices");
+	if(::RegisterRawInputDevices(&rid, 1, sizeof(rid)) == NULL) Win32LogLastError("RegisterRawInputDevices");
 	
 	//// get monitor info ////
 	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
@@ -323,25 +359,25 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	//titlebarheight = 5;
 	UpdateDecorations(Decoration_SystemDecorations);
 	titlebarheight = 0;
-	SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
+	::SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
 	name = _name;
 	renderer_surface_index = 0; ///main win is always first surface
 	
-	LogS("deshi", "Finished window initialization in ", TIMER_END(t_s), "ms");
+	DeshiStageInitEnd(DS_WINDOW);
 }
 
 //returns nullptr if the function fails to make the child;
-Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y) {DPZoneScoped;
+Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y){DPZoneScoped;
 	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
-	if (child_count == max_child_windows) { LogE("WINDOW-WIN32", "Window failed to make a child window: max child windows reached."); return 0; }
-	TIMER_START(t_s);
+	if(child_count == max_child_windows){ LogE("WINDOW-WIN32", "Window failed to make a child window: max child windows reached."); return 0; }
+	Stopwatch t_s = start_stopwatch();
 	
 	//TODO make global window counter
 	
 	Window* child = (Window*)memalloc(sizeof(Window));
 	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
 	
-	child->instance = GetModuleHandle(NULL);
+	child->instance = ::GetModuleHandle(NULL);
 	
 	//make and register window class //TODO reuse above window class to not pollute atom table
 	WNDCLASSA wc;
@@ -350,13 +386,13 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
 	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
 	wc.    hInstance = (HINSTANCE)child->instance;
-	wc.        hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
+	wc.        hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
+	wc.      hCursor = ::LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
 	wc.lpszClassName = _name;
 	
-	if (!RegisterClassA(&wc)) { 
+	if(::RegisterClassA(&wc) == NULL){ 
 		LogE("WINDOW-WIN32", "Window failed to register WNDCLASS for child window");
 		Win32LogLastError("RegisterClassA"); 
 		memzfree(child);
@@ -365,16 +401,16 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	
 	//create window
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	child->handle = CreateWindowA(_name, _name,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
-	if (!child->handle) {
+	child->handle = ::CreateWindowA(_name, _name,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
+	if(child->handle == NULL){
 		LogE("WINDOW-WIN32", "Windows failed to create child window");
 		Win32LogLastError("CreateWindowA", true);
 		memzfree(child);
 		return 0;
 	}
 	//set WndProc user data to be a pointer to this window
-	SetWindowLongPtr((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
-	child->dc = GetDC((HWND)child->handle);
+	::SetWindowLongPtr((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
+	child->dc = ::GetDC((HWND)child->handle);
 	
 	//// get monitor info ////
 	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
@@ -393,12 +429,12 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	child->titlebarheight = 5;
 	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
 	
-	LogS("deshi", "Finished child window initialization in ", TIMER_END(t_s), "ms");
+	LogS("deshi", "Finished child window initialization in ", peek_stopwatch(t_s), "ms");
 	return child;
 }
 
 //TODO options for decoration colors
-void DrawDecorations(Window* win) {DPZoneScoped;
+void DrawDecorations(Window* win){DPZoneScoped;
 	using namespace Render;
 	s32 x=win->x, y=win->y;
 	s32 width = win->width, height = win->height;
@@ -409,26 +445,25 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 	SetSurfaceDrawTargetByWindow(win);
 	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, vec2(width, height));
 	
-	if(Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
+	if(Math::PointInRectangle(input_mouse_position(), vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
 	
 	//minimal titlebar takes precedence over all other title bar flags
-	if (HasFlag(decor, Decoration_MinimalTitlebar)) {
+	if(HasFlag(decor, Decoration_MinimalTitlebar)){
 		win->titlebarheight = 5;
 		FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
-		if (Math::PointInRectangle(DeshInput->mousePos, vec2::ZERO, vec2(width, win->titlebarheight))) { win->hittest = HitTestTitle; hitset = 1; }
-	}
-	else {
-		if (HasFlag(decor, Decoration_Titlebar)) {
+		if(Math::PointInRectangle(input_mouse_position(), vec2::ZERO, vec2(width, win->titlebarheight))){ win->hittest = HitTestTitle; hitset = 1; }
+	}else{
+		if(HasFlag(decor, Decoration_Titlebar)){
 			win->titlebarheight = 20;
 			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
 		}
-		if (HasFlag(decor, Decoration_TitlebarTitle)) {
+		if(HasFlag(decor, Decoration_TitlebarTitle)){
 			//!Incomplete
 		}
 	}
 	
-	if (HasFlag(decor, Decoration_MouseBorders)) {
-		vec2 mp = DeshInput->mousePos;
+	if(HasFlag(decor, Decoration_MouseBorders)){
+		vec2 mp = input_mouse_position();
 		f32 distToAppear = 7;
 		f32 borderSize = 1;
 		vec2 
@@ -443,15 +478,14 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		rcol = color(255,255,255, Remap(Clamp(mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize))),
 		lcol = color(255,255,255, Remap(Clamp(cwidth - mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize)));
 		
-		if (!hitset && Math::PointInRectangle(mp, lbpos, lbsiz)) {win->hittest = HitTestLeft;   hitset = 1;}
-		else if (Math::PointInRectangle(mp, rbpos, rbsiz))       {win->hittest = HitTestRight;  hitset = 1;}
-		else if (Math::PointInRectangle(mp, bbpos, bbsiz))       {win->hittest = HitTestBottom; hitset = 1;}
+		if(!hitset && Math::PointInRectangle(mp, lbpos, lbsiz)){win->hittest = HitTestLeft;   hitset = 1;}
+		else if(Math::PointInRectangle(mp, rbpos, rbsiz))      {win->hittest = HitTestRight;  hitset = 1;}
+		else if(Math::PointInRectangle(mp, bbpos, bbsiz))      {win->hittest = HitTestBottom; hitset = 1;}
 		
 		FillRect2D(vec2::ZERO, vec2(borderSize, height), lcol);
 		FillRect2D(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
 		FillRect2D(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
-	}
-	else if (HasFlag(decor, Decoration_Borders)) {
+	}else if(HasFlag(decor, Decoration_Borders)){
 		win->borderthickness = 2;
 		f32 borderSize = win->borderthickness;
 		vec2 
@@ -473,42 +507,81 @@ void DrawDecorations(Window* win) {DPZoneScoped;
 		FillRect2D(rbpos, rbsiz, rcol);
 		FillRect2D(bbpos, bbsiz, bcol);
 		FillRect2D(tbpos, tbsiz, tcol);
-		
 	}
-	
-#if 0
+#if LOG_INPUTS
 	Log("", win->hittest);
 #endif
 }
 
-void Window::Update() {DPZoneScoped;
-	TIMER_START(t_d);
+void Window::Update(){DPZoneScoped;
+	//-/////////////////////////////////////////////
+	//// @update_window
+	Stopwatch update_stopwatch = start_stopwatch();
 	
 	resized = false;
 	
 	//iterate through all window messages 
 	MSG msg;
-	while (PeekMessageA(&msg, (HWND)handle, 0, 0, PM_REMOVE)) {
-		if (msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY) { closeWindow = true; }
-		else {
-			TranslateMessage(&msg);
-			DispatchMessageA(&msg);
+	while(::PeekMessageA(&msg, (HWND)handle, 0, 0, PM_REMOVE)){
+		if(msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY){
+			closeWindow = true;
+		}else{
+			::TranslateMessage(&msg);
+			::DispatchMessageA(&msg);
 		}
 	}
 	
 	//update children (this should maybe be done by whoever creates it instead of the parent)
 	forI(child_count) children[i]->Update();
 	
-	if(decorations != Decoration_SystemDecorations)
-		DrawDecorations(this);
-	
+	if(decorations != Decoration_SystemDecorations) DrawDecorations(this);
 	hittest = HitTestNone;
 	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY /*+ titlebarheight*/);
 	
-	DeshTime->windowTime = TIMER_END(t_d);
+	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
+	//-/////////////////////////////////////////////
+	//// @update_time
+	DeshTime->prevDeltaTime = DeshTime->deltaTime;
+	DeshTime->deltaTime = start_stopwatch() - peek_stopwatch(DeshTime->stopwatch);
+	DeshTime->stopwatch = start_stopwatch();
+	DeshTime->totalTime += DeshTime->deltaTime;
+	DeshTime->frame++;
+	
+	DeshTime->timeTime = reset_stopwatch(&update_stopwatch);
+	//-/////////////////////////////////////////////
+	//// @update_input
+	//caches input values so they are consistent thru the frame
+	memcpy(&DeshInput->oldKeyState, &DeshInput->newKeyState,  sizeof(b32)*MAX_KEYBOARD_KEYS);
+	memcpy(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
+	
+	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+		reset_stopwatch(&DeshInput->time_since_key_hold);
+		DeshInput->newKeyState[0] = 1;
+		DeshInput->anyKeyDown = 0;
+	}else{
+		DeshInput->time_key_held = peek_stopwatch(DeshInput->time_since_key_hold);
+		DeshInput->anyKeyDown = 1;
+	}
+	
+	if(!DeshInput->realCharCount){
+		reset_stopwatch(&DeshInput->time_since_char_hold);
+	}else{
+		DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
+	}
+	
+	DeshInput->mouseX = DeshInput->realMouseX;
+	DeshInput->mouseY = DeshInput->realMouseY;
+	DeshInput->screenMouseX = DeshInput->realScreenMouseX;
+	DeshInput->screenMouseY = DeshInput->realScreenMouseY;
+	DeshInput->scrollY = DeshInput->realScrollY;
+	DeshInput->realScrollY = 0;
+	DeshInput->charCount = DeshInput->realCharCount;
+	DeshInput->realCharCount = 0;
+	
+	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
 }
 
-b32 Window::ShouldClose() {DPZoneScoped;
+b32 Window::ShouldClose(){DPZoneScoped;
 	DPFrameMark;
 	return closeWindow;
 }
@@ -517,52 +590,52 @@ void Window::Close(){DPZoneScoped;
 	closeWindow = true;
 }
 
-void Window::Cleanup() {DPZoneScoped;
-	DestroyWindow((HWND)handle);
+void Window::Cleanup(){DPZoneScoped;
+	::DestroyWindow((HWND)handle);
 }
 
-void Window::UpdateDisplayMode(DisplayMode dm) {DPZoneScoped;
-	switch (dm) {
-		case DisplayMode_Windowed: {
-			if (displayMode != DisplayMode_Windowed) {
+void Window::UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
+	switch (dm){
+		case DisplayMode_Windowed:{
+			if(displayMode != DisplayMode_Windowed){
 				HWND hwnd = (HWND)handle;
-				u32 style = GetWindowLongA(hwnd, GWL_STYLE);
-				SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
-				SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
+				::SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
+				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				resized = true;
 			}
 			displayMode = dm;
 		}break;
-		case DisplayMode_Fullscreen: {
-			if (displayMode != DisplayMode_Fullscreen) {
+		case DisplayMode_Fullscreen:{
+			if(displayMode != DisplayMode_Fullscreen){
 				restoreX = x;
 				restoreY = y;
 				restoreW = width;
 				restoreH = height;
 				HWND hwnd = (HWND)handle;
-				u32 style = GetWindowLongA(hwnd, GWL_STYLE);
+				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
 				MONITORINFO mi = { sizeof(MONITORINFO) };
 				WINDOWPLACEMENT wp = { 0 };
 				//TODO add a way to choose what monitor the window is fullscreened to
 				b32 failed = false;
-				if (!GetWindowPlacement(hwnd, &wp)) { Win32LogLastError("GetWindowPlacement"); failed = true; }
-				if (!GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)) { Win32LogLastError("GetMonitorInfo"); failed = true; }
+				if(!GetWindowPlacement(hwnd, &wp)){ Win32LogLastError("GetWindowPlacement"); failed = true; }
+				if(!GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){ Win32LogLastError("GetMonitorInfo"); failed = true; }
 				
-				if (!failed) {
-					SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
+				if(!failed){
+					::SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
 					RECT mr = mi.rcMonitor;
-					SetWindowPos(hwnd, HWND_TOP, mr.left, mr.top, mr.right - mr.left, mr.bottom - mr.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+					::SetWindowPos(hwnd, HWND_TOP, mr.left, mr.top, mr.right - mr.left, mr.bottom - mr.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				}
 				resized = true;
 			}
 			displayMode = dm;
 		}break;
-		case DisplayMode_Borderless: {
-			if (displayMode != DisplayMode_Borderless) {
+		case DisplayMode_Borderless:{
+			if(displayMode != DisplayMode_Borderless){
 				HWND hwnd = (HWND)handle;
-				u32 style = GetWindowLongA(hwnd, GWL_STYLE);
-				SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
-				SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
+				::SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
+				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				resized = true;
 			}
 			displayMode = dm;
@@ -570,14 +643,14 @@ void Window::UpdateDisplayMode(DisplayMode dm) {DPZoneScoped;
 	}
 }
 
-void Window::UpdateCursorMode(CursorMode mode) {DPZoneScoped;
+void Window::UpdateCursorMode(CursorMode mode){DPZoneScoped;
 	if(mode == this->cursorMode){return;}
 	cursorMode = mode;
 	
 	switch(mode){
 		case(CursorMode_Default):default:{
 			SetCursor(CursorType_Arrow); //TODO setup a restore cursor?
-			ClipCursor(0);
+			::ClipCursor(0);
 		}break;
 		case(CursorMode_FirstPerson):{
 			//set cursor to middle of screen
@@ -588,14 +661,14 @@ void Window::UpdateCursorMode(CursorMode mode) {DPZoneScoped;
 			
 			//restrict cursor to client rect
 			RECT clip_rect;
-			GetClientRect((HWND)handle, &clip_rect);
-			ClientToScreen((HWND)handle, (POINT*)&clip_rect.left); //NOTE transforms .top as well
-			ClientToScreen((HWND)handle, (POINT*)&clip_rect.right);
-			ClipCursor(&clip_rect);
+			::GetClientRect((HWND)handle, &clip_rect);
+			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.left); //NOTE transforms .top as well
+			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.right);
+			::ClipCursor(&clip_rect);
 		}break;
 		case(CursorMode_Hidden):{
 			SetCursor(CursorType_Hidden);
-			ClipCursor(0);
+			::ClipCursor(0);
 		}break;
 	}
 #if 0
@@ -603,35 +676,34 @@ void Window::UpdateCursorMode(CursorMode mode) {DPZoneScoped;
 #endif
 }
 
-void Window::UpdateDecorations(Decoration _decorations) {DPZoneScoped;
+void Window::UpdateDecorations(Decoration _decorations){DPZoneScoped;
 	decorations = _decorations;
 	HWND hwnd = (HWND)handle;
-	u32 style = GetWindowLongA(hwnd, GWL_STYLE);
-	if (decorations == Decoration_SystemDecorations) {
-		SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
+	u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
+	if(decorations == Decoration_SystemDecorations){
+		::SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
 		titlebarheight = 0;
 		borderthickness = 0;
+	}else{
+		::SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
 	}
-	else {
-		SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
-	}
-	SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
+	::SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
 }
 
-void Window::SetCursorPos(f64 _x, f64 _y) {DPZoneScoped;
+void Window::SetCursorPos(f64 _x, f64 _y){DPZoneScoped;
 #if 0
 	Logf("window", "SetCursorPos old(%f,%f) new(%f,%f)", DeshInput->mouseX, DeshInput->mouseY, _x, _y);
 #endif
 	
 	POINT p = {LONG(_x), LONG(_y + 2.f*titlebarheight)};
-	ClientToScreen((HWND)handle, &p);
+	::ClientToScreen((HWND)handle, &p);
 	::SetCursorPos(p.x, p.y);
 	
 	DeshInput->mouseX = _x;
 	DeshInput->mouseY = _y;
 }
 
-void Window::SetCursorPosScreen(f64 _x, f64 _y) {
+void Window::SetCursorPosScreen(f64 _x, f64 _y){
 #if 0
 	Logf("window", "SetCursorPosScreen old(%f,%f) new(%f,%f)", DeshInput->screenMouseX, DeshInput->screenMouseY, _x, _y);
 #endif
@@ -641,8 +713,8 @@ void Window::SetCursorPosScreen(f64 _x, f64 _y) {
 	DeshInput->screenMouseY = _y;
 }
 
-void Window::SetCursor(CursorType curtype) {
-	switch(curtype){
+void Window::SetCursor(CursorType cursor_type){
+	switch(cursor_type){
 		case CursorType_Arrow:{
 			::SetCursor(LoadCursor(0, IDC_ARROW));
 		}break;
@@ -668,35 +740,34 @@ void Window::SetCursor(CursorType curtype) {
 			::SetCursor(0);
 		}break;
 		default:{
-			Log("window","Unknown cursor type: ", curtype);
+			LogE("window","Unknown cursor type: ", cursor_type);
 			::SetCursor(LoadCursor(0, IDC_ARROW));
 		}break;
 	}
 #if 0
-	Log("window", "Setting cursor type to ", curtype);
+	Log("window", "Setting cursor type to ", cursor_type);
 #endif
 }
 
-void Window::UpdateRawInput(b32 rawInput) {DPZoneScoped;
+void Window::UpdateRawInput(b32 rawInput){DPZoneScoped;
 	WarnFuncNotImplemented("");
 }
 
-void Window::UpdateResizable(b32 resizable) {DPZoneScoped;
+void Window::UpdateResizable(b32 resizable){DPZoneScoped;
 	WarnFuncNotImplemented("");
 }
 
-void Window::GetScreenSize(s32& _width, s32& _height) {DPZoneScoped;
+void Window::GetScreenSize(s32& _width, s32& _height){DPZoneScoped;
 	_width = screenWidth; _height = screenHeight;
 }
 
-void Window::GetWindowSize(s32& _width, s32& _height) {DPZoneScoped;
+void Window::GetWindowSize(s32& _width, s32& _height){DPZoneScoped;
 	_width = width; _height = height;	
 }
 
-void Window::GetClientSize(s32& _width, s32& _height) {DPZoneScoped;
+void Window::GetClientSize(s32& _width, s32& _height){DPZoneScoped;
 	_width = cwidth; _height = cheight;
 }
-
 
 vec2 Window::GetClientAreaPosition(){DPZoneScoped;
 	return vec2(0, titlebarheight);
@@ -706,24 +777,29 @@ vec2 Window::GetClientAreaDimensions(){DPZoneScoped;
 	return vec2(width, height - titlebarheight);
 }
 
-
-void Window::UpdateTitle(const char* title) {DPZoneScoped;
-	SetWindowTextA((HWND)handle, title);
+void Window::UpdateTitle(const char* title){DPZoneScoped;
+	::SetWindowTextA((HWND)handle, title);
 }
 
-void Window::ShowWindow(u32 child) {DPZoneScoped;
-	if (child != npos) { ::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL); }
-	else ::ShowWindow((HWND)handle, SW_SHOWNORMAL);
+void Window::ShowWindow(u32 child){DPZoneScoped;
+	if(child != npos){
+		::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL);
+	}else{
+		::ShowWindow((HWND)handle, SW_SHOWNORMAL);
+	}
 }
 
-void Window::HideWindow(u32 child) {DPZoneScoped;
-	if (child != npos) {::ShowWindow((HWND)children[child]->handle, SW_HIDE);}
-	else ::ShowWindow((HWND)handle, SW_HIDE);
+void Window::HideWindow(u32 child){DPZoneScoped;
+	if(child != npos){
+		::ShowWindow((HWND)children[child]->handle, SW_HIDE);
+	}else{
+		::ShowWindow((HWND)handle, SW_HIDE);
+	}
 }
 
-void Window::CloseConsole() {DPZoneScoped;
+void Window::CloseConsole(){DPZoneScoped;
 	//TODO funciton for making a new console 
-	FreeConsole();
+	::FreeConsole();
 }
 
 void Window::SwapBuffers(){
@@ -731,58 +807,72 @@ void Window::SwapBuffers(){
 }
 
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_stopwatch
+Stopwatch
+start_stopwatch(){
+	LARGE_INTEGER current;
+	QueryPerformanceCounter(&current);
+	return current.QuadPart;
+}
+
+f64
+peek_stopwatch(Stopwatch watch){
+	return 1000.0 * ((f64)(start_stopwatch() - watch) / (f64)deshi__win32_perf_count_frequency);
+}
+
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @File @IO API
+//// @win32_io
 local b32 io__crash_on_error = false;
 //TODO maybe use a common buffer for string filename operations
 
 cstring read_file(const File& file){
-	if (!file.handle) { LogE("IO", "attempted to read a file that's not initialized"); return {0,0}; }
+	if(!file.handle){ LogE("IO", "attempted to read a file that's not initialized"); return {0,0}; }
 	cstring out;
 	out.str = (char*)memalloc(file.bytes_size);
 	out.count = file.bytes_size;
 	
 	u32 bytes_read = 0;
-	if (!ReadFile(file.handle, out.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+	if(!ReadFile(file.handle, out.str, file.bytes_size, (LPDWORD)&bytes_read, 0)){
 		Win32LogLastError("ReadFile", io__crash_on_error);
 		return {0,0};
 	}
 
-	if (bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
+	if(bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
 
 	return out;
 }
 
 //TODO binary file loading when needed
 //initializes a FileReader for a given File
-FileReader init_reader(const File& file) {
+FileReader init_reader(const File& file){
 	FileReader fr;
-	if (!file.handle) { LogE("IO", "attempted to initalize a FileReader on a file that's not initialized"); fr.failed = true; return fr; }
-	if (!HasFlag(file.flags, FileAccess_Read)) { LogE("IO", "attempted to initialize a FileReader on a file that doesn't have read access"); fr.failed = true; return fr; }
+	if(!file.handle){ LogE("IO", "attempted to initalize a FileReader on a file that's not initialized"); fr.failed = true; return fr; }
+	if(!HasFlag(file.flags, FileAccess_Read)){ LogE("IO", "attempted to initialize a FileReader on a file that doesn't have read access"); fr.failed = true; return fr; }
 	fr.raw.str = (char*)memalloc(file.bytes_size); //TODO eventually arena file data allocations
 	fr.raw.count = file.bytes_size;
 	
 	u32 bytes_read = 0;
-	if (!ReadFile(file.handle, fr.raw.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+	if(!ReadFile(file.handle, fr.raw.str, file.bytes_size, (LPDWORD)&bytes_read, 0)){
 		Win32LogLastError("ReadFile", io__crash_on_error);
 		fr.failed = true; return fr;
 	}
-	if (bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
+	if(bytes_read != file.bytes_size) LogW("IO-WIN32", "ReadFile failed to read the entire file '", get_file_name((File)file), "' \nfile's size is ", file.bytes_size, " but ", bytes_read, " were read");
 	
 	//gather lines
 	//TODO maybe make a way to disable this
 	//maybe make a function gather_lines or something and only cache lines when thats called
 	//char* start = fr.raw.str, end = 0;
 	//cstring raw = fr.raw;
-	//forI(bytes_read + 1) {
-	//	if (raw[0] == '\n' || raw[0] == '\0') {
+	//forI(bytes_read + 1){
+	//	if(raw[0] == '\n' || raw[0] == '\0'){
 	//		fr.lines.add({ start, u32(raw.str - start) });
 	//		start = raw.str + 1;
 	//	}
 	//	advance(&raw);
 	//}
-	//if (!fr.lines.count) fr.lines.add(fr.raw);
+	//if(!fr.lines.count) fr.lines.add(fr.raw);
 	
 	fr.file = &file;
 	fr.read = { fr.raw.str, 0 };
@@ -793,7 +883,6 @@ void end_reader(FileReader& reader){
 	memzfree(reader.raw.str);
 	defer{ CloseHandle(reader.file->handle); };
 }
-
 
 File open_file(const char* path, FileAccessFlags flags){
 	Assert(flags, "attempt to open_file without specifing access flags");
@@ -848,7 +937,7 @@ void close_file(File* file){
 
 //TODO(delle) search filters
 array<File>
-get_directory_files(const char* directory) {
+get_directory_files(const char* directory){
 	array<File> result(deshi_temp_allocator);
 	if(directory == 0) return result;
 	if(directory[0] == '\0') return result;
@@ -859,7 +948,7 @@ get_directory_files(const char* directory) {
 	ULARGE_INTEGER size;   ULARGE_INTEGER time;
 	
 	next = FindFirstFileA(pattern.str, &data);
-	if(next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+	if(next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)){
 		Win32LogLastError("FindFirstFileA", io__crash_on_error, directory);
 		FindClose(next);
 		return result;
@@ -1056,7 +1145,7 @@ read_entire_file(const char* filepath){
 	result.count = file.bytes_size;
 	
 	u32 bytes_read = 0;
-	if(!ReadFile(file.handle, result.str, file.bytes_size, (LPDWORD)&bytes_read, 0)) {
+	if(!ReadFile(file.handle, result.str, file.bytes_size, (LPDWORD)&bytes_read, 0)){
 		Win32LogLastError("ReadFile", io__crash_on_error);
 		return cstring{};
 	}
@@ -1070,16 +1159,10 @@ read_entire_file(const char* filepath){
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @Module API
-
+//// @win32_module
 void*
 platform_load_module(const char* module_path){
 	return LoadLibraryA(module_path);
-}
-
-void*
-platform_load_module(str16 module_path){
-	return LoadLibraryW((LPCWSTR)module_path.str);
 }
 
 void
@@ -1092,17 +1175,68 @@ platform_get_module_symbol(void* module, const char* symbol_name){
 	return (platform_symbol)GetProcAddress((HMODULE)module, symbol_name);
 }
 
-platform_symbol
-platform_get_module_symbol(void* module, str16 symbol_name){
-	str8 utf8 = str8_from_str16(symbol_name, stl_allocator);
-	defer{ free(utf8.str); };
-	return (platform_symbol)GetProcAddress((HMODULE)module, (char*)utf8.str);
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_clipboard
+//!ref: Dear ImGui imgui.cpp@GetClipboardTextFn_DefaultImpl
+str8
+platform_get_clipboard(){
+	str8 result{};
+	
+	if(::OpenClipboard(NULL) == NULL){
+		Win32LogLastError("OpenClipboard");
+		return result;
+	}
+	
+	HANDLE wchar_buffer_handle = ::GetClipboardData(CF_UNICODETEXT);
+	if(wchar_buffer_handle == NULL){
+		Win32LogLastError("GetClipboardData");
+		::CloseClipboard();
+		return result;
+	}
+	
+	if(const WCHAR* wchar_buffer = (const WCHAR*)::GlobalLock(wchar_buffer_handle)){
+		result.count = (s64)::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, NULL, 0, NULL, NULL);
+		result.str   = (u8*)memory_talloc(result.count);
+		::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, (LPSTR)result.str, (int)result.count, NULL, NULL);
+	}else{
+		Win32LogLastError("GlobalLock");
+	}
+	::GlobalUnlock(wchar_buffer_handle);
+    ::CloseClipboard();
+	return result;
+}
+
+//!ref: Dear ImGui imgui.cpp@SetClipboardTextFn_DefaultImpl
+void
+platform_set_clipboard(str8 text){
+	if(::OpenClipboard(NULL) == NULL){
+		Win32LogLastError("OpenClipboard");
+		return;
+	}
+	
+	int wchar_buffer_length = ::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), NULL, 0);
+	HGLOBAL wchar_buffer_handle = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wchar_buffer_length*sizeof(WCHAR));
+	if(wchar_buffer_handle == NULL){
+		Win32LogLastError("GlobalAlloc");
+		::CloseClipboard();
+		return;
+	}
+	
+	WCHAR* wchar_buffer = (WCHAR*)::GlobalLock(wchar_buffer_handle);
+    ::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), wchar_buffer, wchar_buffer_length);
+    ::GlobalUnlock(wchar_buffer_handle);
+    ::EmptyClipboard();
+    if(::SetClipboardData(CF_UNICODETEXT, wchar_buffer_handle) == NULL){
+		Win32LogLastError("SetClipboardData");
+        ::GlobalFree(wchar_buffer_handle);
+	}
+    ::CloseClipboard();
 }
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @Threading
-
+//// @win32_threading
 mutex::
 mutex(){DPZoneScoped;
 	if(handle = CreateMutex(NULL, FALSE, NULL); !handle)
@@ -1166,7 +1300,7 @@ try_lock_for(u64 milliseconds){DPZoneScoped;
 
 void mutex::
 unlock(){DPZoneScoped;
-	if(!ReleaseMutex(handle)) { Win32LogLastError("ReleaseMutex"); Assert(0); }
+	if(!ReleaseMutex(handle)){ Win32LogLastError("ReleaseMutex"); Assert(0); }
 }
 
 
@@ -1183,17 +1317,17 @@ condition_variable::~condition_variable(){DPZoneScoped;
 }
 
 void condition_variable::
-notify_one() {DPZoneScoped;
+notify_one(){DPZoneScoped;
 	WakeConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
 void condition_variable::
-notify_all() {DPZoneScoped;
+notify_all(){DPZoneScoped;
 	WakeAllConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
 void condition_variable::
-wait() {DPZoneScoped;
+wait(){DPZoneScoped;
 	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
 	if(!SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
 		Win32LogLastError("SleepConditionVariableCS");
@@ -1202,7 +1336,7 @@ wait() {DPZoneScoped;
 }
 
 void condition_variable::
-wait_for(u64 milliseconds) {DPZoneScoped;
+wait_for(u64 milliseconds){DPZoneScoped;
 	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
 	SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, milliseconds);
 	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
@@ -1250,7 +1384,7 @@ wait_for(u64 milliseconds) {DPZoneScoped;
 
 #ifdef BUILD_SLOW
 #define WorkerLog(message) Log("thread", "worker ", me, ": ", message)
-#elif
+#else
 #define WorkerLog(message)
 #endif
 //infinite loop worker thread

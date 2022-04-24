@@ -39,7 +39,6 @@ core:
 [12/23/21,MEDI,Bug] if the console fills up too much, it crashes
     you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 [12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed
-[01/10/22,EASY,Bug] color formatting does not work thru Log() (see commands.cpp 'test' command)
 [01/13/22,EASY,Feature] config variable modification
 [01/13/22,EASY,Feature] simple terminal emulation
 [04/18/22,EASY,Tweak] draw \t correctly
@@ -87,7 +86,6 @@ glm/detail/_swizzle.hpp
 [12/22/21,HARD,Feature] consider multiple thread contexts
 [12/22/21,HARD,Feature] add fast generic bins
     ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
-[01/09/22,EASY,Tweak] maybe temp memory should not default to zero?
 [01/16/22,MEDIUM,Bug] memory system sometimes fails to alloc memory from OS (might only be during debugging)
 [02/06/22,MEDI,Tweak] add a way to disable this and set deshi_allocator to libc
 
@@ -151,9 +149,7 @@ glm/detail/_swizzle.hpp
 
 `Time`
 ------
-[09/16/21,MEDI,Feature] make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
 [12/31/21,EASY,Tweak] remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
-[01/08/22,EASY,Tweak] rename 'updateCount' to 'frame'
 
 `UI`
 ----
@@ -209,16 +205,46 @@ tab bar buttons pass their input thru to the window (for dragging)
 [03/22/22,EASY,TWEAK]   check all usages of cstring/wcstring to ensure that the functions don't simply convert them to char* and pass to c-string functions, since they might not have the trailing '\0' that c-strings require
 */
 
+
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
 
 #include "kigu/common.h"
-#include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
+#include "core/memory.h" //NOTE(delle) this is included above everything so things can reference deshi_allocator
 
+
+//// deshi stages ////
+typedef Flags DeshiStage; enum{
+	DS_NONE    = 0,
+	DS_MEMORY  = 1 << 0,
+	DS_LOGGER  = 1 << 1,
+	DS_CONSOLE = 1 << 2,
+	DS_TIME    = 1 << 3,
+	DS_WINDOW  = 1 << 4,
+	DS_RENDER  = 1 << 5,
+	DS_IMGUI   = 1 << 6,
+	DS_STORAGE = 1 << 7,
+	DS_UI      = 1 << 8,
+	DS_CMD     = 1 << 9,
+};
+local DeshiStage deshiStage = DS_NONE;
+
+#define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
+
+#define DeshiStageInitStart(stage,dependencies,...) \
+Assert((deshiStage & (dependencies)) == (dependencies)); \
+deshiStage |= stage; \
+Stopwatch stopwatch##stage = start_stopwatch()
+
+#define DeshiStageInitEnd(stage) \
+LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stopwatch##stage),"ms")
+
+#define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
+
+
+//// tracy ////
 #ifdef TRACY_ENABLE
-#include "TracyClient.cpp"
-#include "Tracy.hpp"
-#undef ERROR
-#undef DELETE
+#  include "TracyClient.cpp"
+#  include "Tracy.hpp"
 #endif
 
 
@@ -241,36 +267,16 @@ tab bar buttons pass their input thru to the window (for dragging)
 #include "kigu/utils.h"
 #include "math/math.h"
 
+
 //// libcpp for core ////
 #include <iostream>
-#include <iomanip>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <regex>
 #include <vector>
-#include <set>
-#include <unordered_map>
 #include <io.h>
 #include <fcntl.h>
 
-enum DeshiStage{
-	DS_NONE    = 0,
-	DS_MEMORY  = 1 << 0,
-	DS_LOGGER  = 1 << 1,
-	DS_CONSOLE = 1 << 2,
-	DS_TIME    = 1 << 3,
-	DS_WINDOW  = 1 << 4,
-	DS_RENDER  = 1 << 5,
-	DS_IMGUI   = 1 << 6,
-	DS_STORAGE = 1 << 7,
-	DS_UI      = 1 << 8,
-	DS_CMD     = 1 << 9,
-};
-local Flags deshiStage = DS_NONE;
-
-#define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
-#define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
 
 //// core headers ////
 #include "deshi.h"
@@ -305,8 +311,6 @@ local Flags deshiStage = DS_NONE;
 #  include <windows.h>
 #  include <windowsx.h>
 #  include "core/platforms/win32_deshi.cpp"
-#  undef ERROR
-#  undef DELETE
 #elif DESHI_LINUX //DESHI_WINDOWS
 #  include "core/platforms/linux_deshi.cpp"
 #elif DESHI_MAC   //DESHI_LINUX
@@ -395,19 +399,18 @@ local Flags deshiStage = DS_NONE;
 
 local Time          deshi_time;           Time*          g_time     = &deshi_time;
 local Window        deshi_window;         Window*        g_window   = &deshi_window;
-local Input         deshi_input{};        Input*         g_input    = &deshi_input;
+local Input         deshi_input;          Input*         g_input    = &deshi_input;
 local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_storage;
 local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
 
 void deshi::init(u32 winWidth, u32 winHeight){
-	TIMER_START(t_s);
+	Stopwatch stopwatch = start_stopwatch();
 	Assets::enforceDirectories();
 	memory_init(Gigabytes(1), Gigabytes(1));
 	logger_init();
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	console_init();
 #endif
-	deshi_time.Init();
 	deshi_window.Init("deshi", winWidth, winHeight);
 	Render::Init();
 	Storage::Init();
@@ -418,7 +421,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	cmd_init();
 	DeshWindow->ShowWindow();
 	Render::UseDefaultViewProjMatrix();
-	LogS("deshi","Finished deshi initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished deshi initialization in ",peek_stopwatch(stopwatch),"ms");
 }
 
 void deshi::cleanup(){

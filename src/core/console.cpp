@@ -6,7 +6,7 @@ local b32 deshi__console_open_pressed = false;
 local UIWindow* deshi__console_window;
 local UIWindowFlags deshi__console_window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 local b32 deshi__console_scroll_to_bottom = false;
-local TIMER_START(deshi__console_open_timer);
+local Stopwatch deshi__console_open_timer;
 local Arena* deshi__console_chunk_render_arena;
 
 color console_string_to_color(str8 s){
@@ -244,10 +244,7 @@ void console_parse_message(str8 message){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
 void console_init(){
-	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
-	AssertDS(DS_LOGGER, "Attempt to load Console without loading Logger first");
-	deshiStage |= DS_CONSOLE;
-	TIMER_START(t_s);
+	DeshiStageInitStart(DS_CONSOLE, DS_MEMORY | DS_LOGGER, "Attempted to initialize Console module before initializing Memory and Logger modules");
 	
 	deshi__console_logger = logger_expose();
 	deshi__console.dictionary.init(512, deshi_allocator);
@@ -258,15 +255,16 @@ void console_init(){
 	deshi__console_chunk_render_arena = memory_create_arena(512);
 	
 	deshi__console_logger->mirror_to_console = true;
-	LogS("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
+	
+	DeshiStageInitEnd(DS_CONSOLE);
 }
 
 void console_update(){
 	//check for console state changing inputs
-	if(DeshInput->KeyPressed(Key::TILDE)){
-		if      (DeshInput->ShiftDown()){
+	if(key_pressed(Key_TILDE)){
+		if      (input_shift_down()){
 			console_change_state(ConsoleState_OpenBig);
-		}else if(DeshInput->CtrlDown()){
+		}else if(input_ctrl_down()){
 			console_change_state(ConsoleState_Popout);
 		}else{
 			console_change_state(ConsoleState_OpenSmall);
@@ -275,18 +273,18 @@ void console_update(){
 	
 	//check for history inputs
 	b32 change_input = false;
-	if(DeshInput->KeyPressed(Key::UP)){
+	if(key_pressed(Key_UP)){
 		change_input = true;
 		deshi__console.input_history_index--;
 		if(deshi__console.input_history_index == -2) deshi__console.input_history_index = deshi__console.input_history.count-1;
 	}
-	if(DeshInput->KeyPressed(Key::DOWN)){
+	if(key_pressed(Key_DOWN)){
 		change_input = true;
 		deshi__console.input_history_index++;
 		if(deshi__console.input_history_index >= deshi__console.input_history.count) deshi__console.input_history_index = -1;
 	}
 	if(change_input){
-		DeshInput->SimulateKeyPress(Key::END);
+		simulate_key_press(Key_END);
 		ZeroMemory(deshi__console.input_buffer, CONSOLE_INPUT_BUFFER_SIZE);
 		if(deshi__console.input_history_index != -1){
 			u32 cursor = 0;
@@ -313,7 +311,7 @@ void console_update(){
 	//console openness
 	if(deshi__console.open_target != deshi__console.open_amount){
 		deshi__console.console_dim.y = Math::lerp(deshi__console.open_amount, deshi__console.open_target, //TODO(sushi) change this to Nudge
-												  Min((f32)TIMER_END(deshi__console_open_timer) / deshi__console.open_dt, 1.f));
+												  Min((f32)peek_stopwatch(deshi__console_open_timer) / deshi__console.open_dt, 1.f));
 		if(deshi__console.console_dim.y == deshi__console.open_target){
 			deshi__console.open_amount = deshi__console.open_target;
 		}
@@ -352,7 +350,7 @@ void console_update(){
 				}
 			}
 		}
-		if(DeshInput->KeyPressed(Key::ENTER) && deshi__console.input_length){
+		if(key_pressed(Key_ENTER) && deshi__console.input_length){
 			//append a \n to the input
 			deshi__console.input_buffer[deshi__console.input_length  ] = '\n';
 			deshi__console.input_buffer[deshi__console.input_length+1] = '\0';
@@ -522,7 +520,6 @@ void console_change_state(ConsoleState new_state){
 			}
 			deshi__console.open_target = 0;
 			deshi__console.open_amount = deshi__console.console_dim.y;
-			TIMER_RESET(deshi__console_open_timer);
 		}break;
 		case ConsoleState_OpenSmall:{
 			deshi__console.open_target = (f32)DeshWindow->height * deshi__console.open_small_percent;
@@ -531,7 +528,6 @@ void console_change_state(ConsoleState new_state){
 			deshi__console.console_dim.x = (f32)DeshWindow->width;
 			deshi__console_window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 			deshi__console_open_pressed = 1;
-			TIMER_RESET(deshi__console_open_timer);
 		}break;
 		case ConsoleState_OpenBig:{
 			deshi__console.open_target = (f32)DeshWindow->height * deshi__console.open_max_percent;
@@ -540,15 +536,14 @@ void console_change_state(ConsoleState new_state){
 			deshi__console.console_dim.x = (f32)DeshWindow->width;
 			deshi__console_window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 			deshi__console_open_pressed = 1;
-			TIMER_RESET(deshi__console_open_timer);
 		}break;
 		case ConsoleState_Popout:{
 			deshi__console.open_target = deshi__console.console_dim.y;
 			deshi__console.open_amount = 0;
 			deshi__console_window_flags = 0;
 			deshi__console_open_pressed = 1;
-			TIMER_RESET(deshi__console_open_timer);
 		}break;
 	}
+	deshi__console_open_timer = start_stopwatch();
 	deshi__console.state = new_state;
 }
