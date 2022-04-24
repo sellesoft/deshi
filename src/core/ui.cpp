@@ -606,6 +606,10 @@ f32 UI::GetLeftIndent()                   {DPZoneScoped; return leftIndent; }
 
 UIStats UI::GetStats() {return ui_stats;}
 
+UIInputTextState* UI::GetInputTextState(const char* label){
+	return &inputTexts[label];
+}
+
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
 void UI::SameLine() {DPZoneScoped;
@@ -1047,10 +1051,10 @@ MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, cstring text, vec2 po
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + style.font->uvOffset }; vp[1].color = col;
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + style.font->uvOffset }; vp[2].color = col;
 				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + style.font->uvOffset }; vp[3].color = col;
-				
-			}break;
-			default: Assert(!"unhandled font type"); break;
-		}
+
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
 	}
 	
 	return vec2(4, 6) * text.count;
@@ -2387,7 +2391,7 @@ b32 InputTextCall(const char* label, void* buff, u32 buffSize, b32 unicode, vec2
 		}
 		
 		//actual text input behavoir occurs here ---------------------------------------------------------
-		if (TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
+		if (!HasFlag(flags, UIInputTextFlags_NoEdit) && TextInputBehavoir(buff, buffSize, unicode, charCount, state->cursor)) {
 			bufferChanged = 1;
 			state->timeSinceTyped = start_stopwatch();
 		}
@@ -2532,6 +2536,7 @@ UIItem* UI::BeginCustomItem(){
 	return item;
 }
 void UI::CustomItem_AdvanceCursor(UIItem* item, b32 move_cursor){
+	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
 	AdvanceCursor(item, move_cursor);
 }
 
@@ -3295,8 +3300,8 @@ vec2 CalcWindowMinSize() {DPZoneScoped;
 		for (UIItem& item : curwin->items[i]) {
 			//if (item.type == UIItemType_Window && item.child->type != UIWindowType_PopOut){
 			if (item.trackedForMinSize) {
-				max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
-				max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
+				max.x = Max(max.x, item.position.x + curwin->scx + item.size.x);
+				max.y = Max(max.y, item.position.y + curwin->scy + item.size.y);
 			}
 			//}
 		}

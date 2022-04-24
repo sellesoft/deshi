@@ -262,14 +262,15 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_NONE                  = 0,
 	UIInputTextFlags_EnterReturnsTrue      = 1 << 0,
 	UIInputTextFlags_AnyChangeReturnsTrue  = 1 << 1,
-	UIInputTextFlags_CallbackTab           = 1 << 2, //calls the given callback function when tab is pressed
-	UIInputTextFlags_CallbackEnter         = 1 << 3, //calls the given callback function when enter is pressed
-	UIInputTextFlags_CallbackAlways        = 1 << 4, //calls the given callback function when any key is pressed
-	UIInputTextFlags_CallbackUpDown        = 1 << 5, //calls the given callback function when up or down are pressed
-	UIInputTextFlags_NoBackground          = 1 << 6, 
-	UIInputTextFlags_FitSizeToText         = 1 << 7,
-	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
-	UIInputTextFlags_Numerical             = 1 << 9, //only allows input of [0-9|.]
+	UIInputTextFlags_CallbackTab           = 1 << 2,  //calls the given callback function when tab is pressed
+	UIInputTextFlags_CallbackEnter         = 1 << 3,  //calls the given callback function when enter is pressed
+	UIInputTextFlags_CallbackAlways        = 1 << 4,  //calls the given callback function when any key is pressed
+	UIInputTextFlags_CallbackUpDown        = 1 << 5,  //calls the given callback function when up or down are pressed
+	UIInputTextFlags_NoBackground          = 1 << 6,  
+	UIInputTextFlags_FitSizeToText         = 1 << 7, 
+	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8, 
+	UIInputTextFlags_Numerical             = 1 << 9,  //only allows input of [0-9|.]
+	UIInputTextFlags_NoEdit                = 1 << 10, //prevents editing of the buffer
 	
 }; typedef u32 UIInputTextFlags;
 
@@ -795,6 +796,9 @@ namespace UI {
 
 	//returns a UIStats object containing information about UI
 	UIStats GetStats();
+
+	//returns a pointer to an InputText's state by label
+	UIInputTextState* GetInputTextState(const char* label);
 
 	
 	f32 GetRightIndent();
