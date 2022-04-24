@@ -276,7 +276,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include <vector>
 #include <io.h>
 #include <fcntl.h>
-
+#include <set> //vulkan.cpp
 
 //// core headers ////
 #include "deshi.h"

@@ -976,20 +976,21 @@ CreateInstance(){DPZoneScoped;
 #if DESHI_WINDOWS
 	u32 extensionCount = 2;
 	array<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
-	if (settings.debugging) extensions.add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #elif DESHI_LINUX
 	u32 extensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 	array<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-	if (settings.debugging) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #elif DESHI_MAC
 	u32 extensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 	array<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-	if (settings.debugging) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+	
+#if BUILD_INTERNAL
+	extensions.add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	#endif
 	
 	//setup instance debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
@@ -1935,7 +1936,7 @@ CreateLayouts(){DPZoneScoped;
 							 "2D pipeline layout");
 	}
 	
-	{//create geometry shader pipeline layout
+	if(enabledFeatures.geometryShader){//create geometry shader pipeline layout
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
 		pushConstantRange.offset     = 0;
@@ -2474,14 +2475,14 @@ CreatePipelines(){DPZoneScoped;
 	//compile uncompiled shaders
 	if(settings.recompileAllShaders){
 		PrintVk(3, "Compiling shaders");
-		TIMER_START(t_s);
+		Stopwatch t_s = start_stopwatch();
 		CompileAllShaders(settings.optimizeShaders);
 		PrintVk(3, "Finished compiling shaders in ", peek_stopwatch(t_s), "ms");
 	}else{
 		std::vector<std::string> uncompiled = GetUncompiledShaders();
 		if(uncompiled.size()){
 			PrintVk(3, "Compiling shaders");
-			TIMER_START(t_s);
+			Stopwatch t_s = start_stopwatch();
 			for(auto& s : uncompiled){ CompileShader(s, settings.optimizeShaders); }
 			PrintVk(3, "Finished compiling shaders in ", peek_stopwatch(t_s), "ms");
 		}
@@ -4667,13 +4668,13 @@ Init(){DPZoneScoped;
 		settings.loggingLevel = 4;
 	}
 	
-	TIMER_START(t_temp);
+	Stopwatch t_temp = start_stopwatch();
 	//// setup Vulkan instance ////
 	SetupAllocator();
 	CreateInstance();
-	PrintVk(3, "Finished creating instance in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating instance in ",reset_stopwatch(&t_temp),"ms");
 	SetupDebugMessenger();
-	PrintVk(3, "Finished setting up debug messenger in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished setting up debug messenger in ",reset_stopwatch(&t_temp),"ms");
 	
 	//// grab Vulkan extension functions ////
 #if BUILD_INTERNAL
@@ -4685,11 +4686,11 @@ Init(){DPZoneScoped;
 	
 	//// setup Vulkan-OperatingSystem interactions ////
 	CreateSurface();
-	PrintVk(3, "Finished creating surface in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating surface in ", reset_stopwatch(&t_temp), "ms");
 	PickPhysicalDevice();
-	PrintVk(3, "Finished picking physical device in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished picking physical device in ", reset_stopwatch(&t_temp), "ms");
 	CreateLogicalDevice();
-	PrintVk(3, "Finished creating logical device in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating logical device in ", reset_stopwatch(&t_temp), "ms");
 	
 	//// limit RenderSettings to device capabilties ////
 	msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? maxMsaaSamples : 1 << settings.msaaSamples);
@@ -4697,33 +4698,33 @@ Init(){DPZoneScoped;
 	
 	//// setup unchanging Vulkan objects ////
 	CreateCommandPool();
-	PrintVk(3, "Finished creating command pool in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating command pool in ", reset_stopwatch(&t_temp), "ms");
 	CreateUniformBuffers();
-	PrintVk(3, "Finished creating uniform buffer in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating uniform buffer in ", reset_stopwatch(&t_temp), "ms");
 	CreateLayouts();
-	PrintVk(3, "Finished creating layouts in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating layouts in ", reset_stopwatch(&t_temp), "ms");
 	CreateDescriptorPool();
-	PrintVk(3, "Finished creating descriptor pool in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating descriptor pool in ", reset_stopwatch(&t_temp), "ms");
 	SetupOffscreenRendering();
-	PrintVk(3, "Finished setting up offscreen rendering in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished setting up offscreen rendering in ", reset_stopwatch(&t_temp), "ms");
 	
 	//// setup window-specific Vulkan objects ////
 	CreateSwapchain();
-	PrintVk(3, "Finished creating swap chain in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating swap chain in ", reset_stopwatch(&t_temp), "ms");
 	CreateRenderpasses();
-	PrintVk(3, "Finished creating render pass in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating render pass in ", reset_stopwatch(&t_temp), "ms");
 	CreateFrames();
-	PrintVk(3, "Finished creating frames in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating frames in ", reset_stopwatch(&t_temp), "ms");
 	CreateSyncObjects();
-	PrintVk(3, "Finished creating sync objects in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating sync objects in ", reset_stopwatch(&t_temp), "ms");
 	CreateDescriptorSets();
-	PrintVk(3, "Finished creating descriptor sets in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating descriptor sets in ", reset_stopwatch(&t_temp), "ms");
 	CreatePipelineCache();
-	PrintVk(3, "Finished creating pipeline cache in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating pipeline cache in ", reset_stopwatch(&t_temp), "ms");
 	SetupPipelineCreation();
-	PrintVk(3, "Finished setting up pipeline creation in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished setting up pipeline creation in ", reset_stopwatch(&t_temp), "ms");
 	CreatePipelines();
-	PrintVk(3, "Finished creating pipelines in ", peek_stopwatch(t_temp), "ms");TIMER_RESET(t_temp);
+	PrintVk(3, "Finished creating pipelines in ", reset_stopwatch(&t_temp), "ms");
 	
 	forI(TWOD_LAYERS+1){ 
 		twodCmdCounts[active_swapchain][i] = 1; 
@@ -4785,10 +4786,7 @@ Update(){DPZoneScoped;
 		}
 		UpdateUniformBuffers();
 		
-		TIMER_START(cmd);
 		SetupCommands();
-		DeshTime->miscDebugTime1 = peek_stopwatch(cmd);
-		TIMER_RESET(cmd);
 		
 		//execute draw commands
 		BuildCommands();
