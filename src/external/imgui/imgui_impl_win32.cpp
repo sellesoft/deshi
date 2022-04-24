@@ -396,22 +396,22 @@ static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
         case VK_NUMLOCK: return ImGuiKey_NumLock;
         case VK_SNAPSHOT: return ImGuiKey_PrintScreen;
         case VK_PAUSE: return ImGuiKey_Pause;
-        case VK_NUMPAD0: return ImGuiKeyCodepad0;
-        case VK_NUMPAD1: return ImGuiKeyCodepad1;
-        case VK_NUMPAD2: return ImGuiKeyCodepad2;
-        case VK_NUMPAD3: return ImGuiKeyCodepad3;
-        case VK_NUMPAD4: return ImGuiKeyCodepad4;
-        case VK_NUMPAD5: return ImGuiKeyCodepad5;
-        case VK_NUMPAD6: return ImGuiKeyCodepad6;
-        case VK_NUMPAD7: return ImGuiKeyCodepad7;
-        case VK_NUMPAD8: return ImGuiKeyCodepad8;
-        case VK_NUMPAD9: return ImGuiKeyCodepad9;
-        case VK_DECIMAL: return ImGuiKeyCodepadDecimal;
-        case VK_DIVIDE: return ImGuiKeyCodepadDivide;
-        case VK_MULTIPLY: return ImGuiKeyCodepadMultiply;
-        case VK_SUBTRACT: return ImGuiKeyCodepadSubtract;
-        case VK_ADD: return ImGuiKeyCodepadAdd;
-        case IM_VK_KEYPAD_ENTER: return ImGuiKeyCodepadEnter;
+        case VK_NUMPAD0: return ImGuiKey_Keypad0;
+        case VK_NUMPAD1: return ImGuiKey_Keypad1;
+        case VK_NUMPAD2: return ImGuiKey_Keypad2;
+        case VK_NUMPAD3: return ImGuiKey_Keypad3;
+        case VK_NUMPAD4: return ImGuiKey_Keypad4;
+        case VK_NUMPAD5: return ImGuiKey_Keypad5;
+        case VK_NUMPAD6: return ImGuiKey_Keypad6;
+        case VK_NUMPAD7: return ImGuiKey_Keypad7;
+        case VK_NUMPAD8: return ImGuiKey_Keypad8;
+        case VK_NUMPAD9: return ImGuiKey_Keypad9;
+        case VK_DECIMAL: return ImGuiKey_KeypadDecimal;
+        case VK_DIVIDE: return ImGuiKey_KeypadDivide;
+        case VK_MULTIPLY: return ImGuiKey_KeypadMultiply;
+        case VK_SUBTRACT: return ImGuiKey_KeypadSubtract;
+        case VK_ADD: return ImGuiKey_KeypadAdd;
+        case IM_VK_KEYPAD_ENTER: return ImGuiKey_KeypadEnter;
         case VK_LSHIFT: return ImGuiKey_LeftShift;
         case VK_LCONTROL: return ImGuiKey_LeftControl;
         case VK_LMENU: return ImGuiKey_LeftAlt;
@@ -568,7 +568,7 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
         if (wParam < 256)
         {
             // Obtain virtual key code
-            // (keypad enter doesn't have its own... VK_RETURN with KF_EXTENDED flag means keypad enter, see IM_VK_KEYPAD_ENTER definition for details, it is mapped to ImGuiKeyCodePadEnter.)
+            // (keypad enter doesn't have its own... VK_RETURN with KF_EXTENDED flag means keypad enter, see IM_VK_KEYPAD_ENTER definition for details, it is mapped to ImGuiKey_KeyPadEnter.)
             int vk = (int)wParam;
             if ((wParam == VK_RETURN) && (HIWORD(lParam) & KF_EXTENDED))
                 vk = IM_VK_KEYPAD_ENTER;

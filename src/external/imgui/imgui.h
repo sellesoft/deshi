@@ -1387,23 +1387,23 @@ enum ImGuiKey_
     ImGuiKey_NumLock,
     ImGuiKey_PrintScreen,
     ImGuiKey_Pause,
-    ImGuiKeyCodepad0,
-    ImGuiKeyCodepad1,
-    ImGuiKeyCodepad2,
-    ImGuiKeyCodepad3,
-    ImGuiKeyCodepad4,
-    ImGuiKeyCodepad5,
-    ImGuiKeyCodepad6,
-    ImGuiKeyCodepad7,
-    ImGuiKeyCodepad8,
-    ImGuiKeyCodepad9,
-    ImGuiKeyCodepadDecimal,
-    ImGuiKeyCodepadDivide,
-    ImGuiKeyCodepadMultiply,
-    ImGuiKeyCodepadSubtract,
-    ImGuiKeyCodepadAdd,
-    ImGuiKeyCodepadEnter,
-    ImGuiKeyCodepadEqual,
+    ImGuiKey_Keypad0,
+    ImGuiKey_Keypad1,
+    ImGuiKey_Keypad2,
+    ImGuiKey_Keypad3,
+    ImGuiKey_Keypad4,
+    ImGuiKey_Keypad5,
+    ImGuiKey_Keypad6,
+    ImGuiKey_Keypad7,
+    ImGuiKey_Keypad8,
+    ImGuiKey_Keypad9,
+    ImGuiKey_KeypadDecimal,
+    ImGuiKey_KeypadDivide,
+    ImGuiKey_KeypadMultiply,
+    ImGuiKey_KeypadSubtract,
+    ImGuiKey_KeypadAdd,
+    ImGuiKey_KeypadEnter,
+    ImGuiKey_KeypadEqual,
     ImGuiKey_LeftShift,
     ImGuiKey_LeftControl,
     ImGuiKey_LeftAlt,
@@ -1471,15 +1471,15 @@ enum ImGuiKey_
     ImGuiKey_NamedKey_END           = ImGuiKey_COUNT,
     ImGuiKey_NamedKey_COUNT         = ImGuiKey_NamedKey_END - ImGuiKey_NamedKey_BEGIN,
 #ifdef IMGUI_DISABLE_OBSOLETE_KEYIO
-    ImGuiKeyCodesData_SIZE = ImGuiKey_NamedKey_COUNT,           // Size of KeysData[]: only hold named keys
-    ImGuiKeyCodesData_OFFSET = ImGuiKey_NamedKey_BEGIN          // First key stored in KeysData[0]
+    ImGuiKey_KeysData_SIZE = ImGuiKey_NamedKey_COUNT,           // Size of KeysData[]: only hold named keys
+    ImGuiKey_KeysData_OFFSET = ImGuiKey_NamedKey_BEGIN          // First key stored in KeysData[0]
 #else
-    ImGuiKeyCodesData_SIZE = ImGuiKey_COUNT,                    // Size of KeysData[]: hold legacy 0..512 keycodes + named keys
-    ImGuiKeyCodesData_OFFSET = ImGuiKey_LegacyNativeKey_BEGIN   // First key stored in KeysData[0]
+    ImGuiKey_KeysData_SIZE = ImGuiKey_COUNT,                    // Size of KeysData[]: hold legacy 0..512 keycodes + named keys
+    ImGuiKey_KeysData_OFFSET = ImGuiKey_LegacyNativeKey_BEGIN   // First key stored in KeysData[0]
 #endif
 
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    , ImGuiKeyCodePadEnter = ImGuiKeyCodepadEnter   // Renamed in 1.87
+    , ImGuiKey_KeyPadEnter = ImGuiKey_KeypadEnter   // Renamed in 1.87
 #endif
 };
 
@@ -2049,7 +2049,7 @@ struct ImGuiIO
 
     ImGuiKeyModFlags KeyMods;                       // Key mods flags (same as io.KeyCtrl/KeyShift/KeyAlt/KeySuper but merged into flags), updated by NewFrame()
     ImGuiKeyModFlags KeyModsPrev;                   // Key mods flags (from previous frame)
-    ImGuiKeyData KeysData[ImGuiKeyCodesData_SIZE];  // Key state for all known keys. Use IsKeyXXX() functions to access this.
+    ImGuiKeyData KeysData[ImGuiKey_KeysData_SIZE];  // Key state for all known keys. Use IsKeyXXX() functions to access this.
 
     bool        WantCaptureMouseUnlessPopupClose;   // Alternative to WantCaptureMouse: (WantCaptureMouse == true && WantCaptureMouseUnlessPopupClose == false) when a click over void is expected to close a popup.
     ImVec2      MousePosPrev;                       // Previous mouse position (note that MouseDelta is not necessary == MousePos-MousePosPrev, in case either position is invalid)

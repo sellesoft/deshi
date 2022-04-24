@@ -25,7 +25,7 @@
 //  2020-01-17: Inputs: Disable error callback while assigning mouse cursors because some X11 setup don't have them and it generates errors.
 //  2019-12-05: Inputs: Added support for new mouse cursors added in GLFW 3.4+ (resizing cursors, not allowed cursor).
 //  2019-10-18: Misc: Previously installed user callbacks are now restored on shutdown.
-//  2019-07-21: Inputs: Added mapping for ImGuiKeyCodePadEnter.
+//  2019-07-21: Inputs: Added mapping for ImGuiKey_KeyPadEnter.
 //  2019-05-11: Inputs: Don't filter value from character callback before calling AddInputCharacter().
 //  2019-03-12: Misc: Preserve DisplayFramebufferScale when main window is minimized.
 //  2018-11-30: Misc: Setting up io.BackendPlatformName so it can be displayed in the About Window.
@@ -160,23 +160,23 @@ static ImGuiKey ImGui_ImplGlfw_KeyToImGuiKey(int key)
         case GLFW_KEY_NUM_LOCK: return ImGuiKey_NumLock;
         case GLFW_KEY_PRINT_SCREEN: return ImGuiKey_PrintScreen;
         case GLFW_KEY_PAUSE: return ImGuiKey_Pause;
-        case GLFW_KEY_KP_0: return ImGuiKeyCodepad0;
-        case GLFW_KEY_KP_1: return ImGuiKeyCodepad1;
-        case GLFW_KEY_KP_2: return ImGuiKeyCodepad2;
-        case GLFW_KEY_KP_3: return ImGuiKeyCodepad3;
-        case GLFW_KEY_KP_4: return ImGuiKeyCodepad4;
-        case GLFW_KEY_KP_5: return ImGuiKeyCodepad5;
-        case GLFW_KEY_KP_6: return ImGuiKeyCodepad6;
-        case GLFW_KEY_KP_7: return ImGuiKeyCodepad7;
-        case GLFW_KEY_KP_8: return ImGuiKeyCodepad8;
-        case GLFW_KEY_KP_9: return ImGuiKeyCodepad9;
-        case GLFW_KEY_KP_DECIMAL: return ImGuiKeyCodepadDecimal;
-        case GLFW_KEY_KP_DIVIDE: return ImGuiKeyCodepadDivide;
-        case GLFW_KEY_KP_MULTIPLY: return ImGuiKeyCodepadMultiply;
-        case GLFW_KEY_KP_SUBTRACT: return ImGuiKeyCodepadSubtract;
-        case GLFW_KEY_KP_ADD: return ImGuiKeyCodepadAdd;
-        case GLFW_KEY_KP_ENTER: return ImGuiKeyCodepadEnter;
-        case GLFW_KEY_KP_EQUAL: return ImGuiKeyCodepadEqual;
+        case GLFW_KEY_KP_0: return ImGuiKey_Keypad0;
+        case GLFW_KEY_KP_1: return ImGuiKey_Keypad1;
+        case GLFW_KEY_KP_2: return ImGuiKey_Keypad2;
+        case GLFW_KEY_KP_3: return ImGuiKey_Keypad3;
+        case GLFW_KEY_KP_4: return ImGuiKey_Keypad4;
+        case GLFW_KEY_KP_5: return ImGuiKey_Keypad5;
+        case GLFW_KEY_KP_6: return ImGuiKey_Keypad6;
+        case GLFW_KEY_KP_7: return ImGuiKey_Keypad7;
+        case GLFW_KEY_KP_8: return ImGuiKey_Keypad8;
+        case GLFW_KEY_KP_9: return ImGuiKey_Keypad9;
+        case GLFW_KEY_KP_DECIMAL: return ImGuiKey_KeypadDecimal;
+        case GLFW_KEY_KP_DIVIDE: return ImGuiKey_KeypadDivide;
+        case GLFW_KEY_KP_MULTIPLY: return ImGuiKey_KeypadMultiply;
+        case GLFW_KEY_KP_SUBTRACT: return ImGuiKey_KeypadSubtract;
+        case GLFW_KEY_KP_ADD: return ImGuiKey_KeypadAdd;
+        case GLFW_KEY_KP_ENTER: return ImGuiKey_KeypadEnter;
+        case GLFW_KEY_KP_EQUAL: return ImGuiKey_KeypadEqual;
         case GLFW_KEY_LEFT_SHIFT: return ImGuiKey_LeftShift;
         case GLFW_KEY_LEFT_CONTROL: return ImGuiKey_LeftControl;
         case GLFW_KEY_LEFT_ALT: return ImGuiKey_LeftAlt;

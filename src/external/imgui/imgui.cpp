@@ -391,7 +391,7 @@ CODE
                         - IsKeyPressed(GetKeyIndex(ImGuiKey_XXX))      -> use IsKeyPressed(ImGuiKey_XXX)
                         - Backend writing to io.KeyMap[],io.KeysDown[] -> backend should call io.AddKeyEvent()
                      - inputs: added io.AddKeyModsEvent() instead of writing directly to io.KeyCtrl, io.KeyShift, io.KeyAlt, io.KeySuper.
- - 2022/01/05 (1.87) - inputs: renamed ImGuiKeyCodePadEnter to ImGuiKeyCodepadEnter to align with new symbols. Kept redirection enum.
+ - 2022/01/05 (1.87) - inputs: renamed ImGuiKey_KeyPadEnter to ImGuiKey_KeypadEnter to align with new symbols. Kept redirection enum.
  - 2022/01/05 (1.87) - removed io.ImeSetInputScreenPosFn() in favor of more flexible io.SetPlatformImeDataFn(). Removed 'void* io.ImeWindowHandle' in favor of writing to 'void* ImGuiViewport::PlatformHandleRaw'.
  - 2022/01/01 (1.87) - commented out redirecting functions/enums names that were marked obsolete in 1.69, 1.70, 1.71, 1.72 (March-July 2019)
                         - ImGui::SetNextTreeNodeOpen()        -> use ImGui::SetNextItemOpen()
@@ -1257,7 +1257,7 @@ void ImGuiIO::AddKeyEvent(ImGuiKey key, bool down)
     BackendUsingLegacyKeyArrays = 0;
 
     // Write key
-    const int keydata_index = (key - ImGuiKeyCodesData_OFFSET);
+    const int keydata_index = (key - ImGuiKey_KeysData_OFFSET);
     KeysData[keydata_index].Down = down;
 }
 
