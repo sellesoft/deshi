@@ -21,11 +21,11 @@ struct ColorMod {
 static const u32 UI_CENTER_LAYER = (u32)floor((f32)UI_LAYERS / 2.f);
 
 //for style variable stack
-struct VarMod {
+struct UIVarMod {
 	UIStyleVar  var;
 	f32 oldFloat[2];
-	VarMod(UIStyleVar var, f32 old)  { this->var = var; oldFloat[0] = old; }
-	VarMod(UIStyleVar var, vec2 old) { this->var = var; oldFloat[0] = old.x; oldFloat[1] = old.y; }
+	UIVarMod(UIStyleVar var, f32 old)  { this->var = var; oldFloat[0] = old; }
+	UIVarMod(UIStyleVar var, vec2 old) { this->var = var; oldFloat[0] = old.x; oldFloat[1] = old.y; }
 };
 
 //number of vars that are req for variable then offset of that var in UIStyle
@@ -79,7 +79,7 @@ local map<const char*, b32>              sliders;     //stores whether a slider 
 local array<UIWindow*>                   windowStack; 
 local array<UIHeader*>                   headerStack;
 local array<ColorMod>                    colorStack; 
-local array<VarMod>                      varStack; 
+local array<UIVarMod>                      varStack; 
 local array<vec2>                        scaleStack;  //global scales
 local array<Font*>                       fontStack;
 local array<u32>                         layerStack;
@@ -196,15 +196,15 @@ UIStats ui_stats;
 #define leftIndent *leftIndentStack.last
 #define rightIndent *rightIndentStack.last
 
-#define CanTakeInput      inputState == ISNone
+#define CanTakeInput      (inputState == ISNone)
 #define PreventInputs     inputState = ISPreventInputs
 #define AllowInputs       inputState = ISNone;      inputupon = 0;
 #define SetResizingInput  inputState = ISResizing;  inputupon = window;
 #define SetDraggingInput  inputState = ISDragging;  inputupon = window;
 #define SetScrollingInput inputState = ISScrolling; inputupon = window; WinSetBeingScrolled(window);
-#define WinResizing       inputState == ISResizing
-#define WinDragging       inputState == ISDragging
-#define WinScrolling      inputState == ISScrolling
+#define WinResizing       (inputState == ISResizing)
+#define WinDragging       (inputState == ISDragging)
+#define WinScrolling      (inputState == ISScrolling)
 
 #define LeftMousePressed   input_lmouse_pressed()
 #define LeftMouseDown      input_lmouse_down()
@@ -684,7 +684,7 @@ void UI::SetAllowInputs() {DPZoneScoped;
 
 
 //internal last item getter, returns nullptr if there are none
-FORCE_INLINE UIItem* UI::GetLastItem(u32 layeroffset) {DPZoneScoped;
+UIItem* UI::GetLastItem(u32 layeroffset) {DPZoneScoped;
 	return curwin->items[currlayer + layeroffset].last;
 }
 
@@ -2623,14 +2623,14 @@ void UI::PushColor(UIStyleCol idx, color color) {DPZoneScoped;
 void UI::PushVar(UIStyleVar idx, f32 nuStyle) {DPZoneScoped;
 	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a f32 on a vec2 style variable!");
 	f32* p = (f32*)((u8*)&style + uiStyleVarTypes[idx].offset);
-	varStack.add(VarMod(idx, *p));
+	varStack.add(UIVarMod(idx, *p));
 	*p = nuStyle;
 }
 
 void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {DPZoneScoped;
 	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a f32 on a vec2 style variable!");
 	vec2* p = (vec2*)((u8*)&style + uiStyleVarTypes[idx].offset);
-	varStack.add(VarMod(idx, *p));
+	varStack.add(UIVarMod(idx, *p));
 	*p = nuStyle;
 }
 
@@ -3616,6 +3616,7 @@ inline UIWindow* MetricsDebugItemFindHoveredWindow(UIWindow* window = 0) {DPZone
 		}
 		return found;
 	}
+	return 0;
 }
 
 inline void MetricsDebugItem() {DPZoneScoped;

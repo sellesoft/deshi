@@ -128,11 +128,11 @@ void logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	}
 	
 	//create log file named as current time
-	time_t rawtime = time(0);
-	stbsp_snprintf(path_buffer, MAX_FILEPATH_SIZE, "data/logs/log.txt", (u64)rawtime);
+	stbsp_snprintf(path_buffer, MAX_FILEPATH_SIZE, "data/logs/log.txt");
 	deshi__logger.file = fopen(path_buffer,"ab+"); Assert(deshi__logger.file, "logger failed to open file");
 	
 	//write date at top of file
+	time_t rawtime = time(0);
 	strftime(path_buffer, MAX_FILEPATH_SIZE, "%c", localtime(&rawtime));
 	fprintf(deshi__logger.file, "%s\n\n", path_buffer);
 	

@@ -443,7 +443,7 @@ struct hash<UIDrawCmd> {
 		forI(s.counts.x){
 			seed ^= u32(s.vertices[i].pos.x) << u32(s.vertices[i].pos.y); 
 		}
-		seed ^= (u32)s.counts.x | (u32)s.counts.y << (u32)s.tex | (u32)s.useWindowScissor | (u32)s.parent
+		seed ^= (u32)s.counts.x | (u32)s.counts.y << (u32)(u64)s.tex | (u32)s.useWindowScissor | (u32)(u64)s.parent
 		<<u32(s.scissorOffset.x)|u32(s.scissorExtent.x) << u32(s.scissorOffset.y)|u32(s.scissorExtent.y);
 		return seed;
 	}

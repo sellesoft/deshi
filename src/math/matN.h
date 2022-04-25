@@ -631,8 +631,8 @@ inline matN matN::
 RotationMatrixX(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r);  f64 s = sinf(r);
-	matN newMatrix(4,4, { 1,  0, 0,	0,
-					   0,  c, s,	0,
+	return matN(4,4, { 1,  0, 0, 0,
+					   0,  c, s, 0,
 					   0, -s, c, 0,
 					   0,  0, 0, 1});
 }
@@ -643,7 +643,7 @@ inline matN matN::
 RotationMatrixY(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r); f64 s = sinf(r);
-	matN newMatrix(4,4, { c, 0, -s, 0,
+	return matN(4,4, { c, 0, -s, 0,
 					   0, 1,  0, 0,
 					   s, 0,  c, 0,
 					   0, 0,  0, 1});
@@ -655,7 +655,7 @@ inline matN matN::
 RotationMatrixZ(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r); f64 s = sinf(r);
-	matN newMatrix(4,4,{ c, s, 0, 0,
+	return matN(4,4,{ c, s, 0, 0,
 					   -s, c, 0, 0,
 					   0, 0, 1, 0,
 					   0, 0, 0, 1});
@@ -677,6 +677,7 @@ ScaleMatrix(vec3 scale) {
 	newMatrix(0, 0) = scale.x;
 	newMatrix(1, 1) = scale.y;
 	newMatrix(2, 2) = scale.z;
+	return newMatrix;
 }
 
 inline matN matN::

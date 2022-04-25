@@ -1614,7 +1614,7 @@ Init(){DPZoneScoped;
 		PIXELFORMATDESCRIPTOR temp_pfd{sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER};
 		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8; temp_pfd.iLayerType = PFD_MAIN_PLANE;
 		int temp_format = ChoosePixelFormat(temp_dc, &temp_pfd);
-		if(!SetPixelFormat(temp_dc, temp_format, &temp_pfd));
+		if(!SetPixelFormat(temp_dc, temp_format, &temp_pfd)){ Win32LogLastError("SetPixelFormat", settings.crashOnError); return; }
 		
 		//create and enable dummy render context
 		HGLRC temp_context = wglCreateContext(temp_dc);
