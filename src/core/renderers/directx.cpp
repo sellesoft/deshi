@@ -20,47 +20,47 @@ struct UICmdDx{
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE VARIABLES
 local RenderSettings settings;
-local ConfigMap configMap = {
-	{"#render settings config file",0,0},
+local ConfigMapItem configMap[] = {
+	{str8_lit("#render settings config file"),0,0},
 	
-	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
-	{"debugging",            ConfigValueType_Bool, &settings.debugging},
-	{"printf",               ConfigValueType_Bool, &settings.printf},
-	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering},
-	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering},
-	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
-	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
+	{str8_lit("\n#    //// REQUIRES RESTART ////"),  ConfigValueType_PADSECTION,(void*)21},
+	{str8_lit("debugging"),            ConfigValueType_Bool, &settings.debugging},
+	{str8_lit("printf"),               ConfigValueType_Bool, &settings.printf},
+	{str8_lit("texture_filtering"),    ConfigValueType_Bool, &settings.textureFiltering},
+	{str8_lit("anistropic_filtering"), ConfigValueType_Bool, &settings.anistropicFiltering},
+	{str8_lit("msaa_level"),           ConfigValueType_U32,  &settings.msaaSamples},
+	{str8_lit("recompile_all_shaders"),ConfigValueType_Bool, &settings.recompileAllShaders},
 	
-	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
-	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
-	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
+	{str8_lit("\n#    //// RUNTIME VARIABLES ////"), ConfigValueType_PADSECTION,(void*)15},
+	{str8_lit("logging_level"),  ConfigValueType_U32,  &settings.loggingLevel},
+	{str8_lit("crash_on_error"), ConfigValueType_Bool, &settings.crashOnError},
+	{str8_lit("vsync_type"),     ConfigValueType_U32,  &settings.vsync},
 	
-	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
+	{str8_lit("\n#shaders"),                         ConfigValueType_PADSECTION,(void*)17},
+	{str8_lit("optimize_shaders"), ConfigValueType_Bool, &settings.optimizeShaders},
 	
-	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF},
-	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution},
-	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ},
-	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ},
-	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant},
-	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope},
-	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap},
+	{str8_lit("\n#shadows"),                         ConfigValueType_PADSECTION,(void*)20},
+	{str8_lit("shadow_pcf"),          ConfigValueType_Bool, &settings.shadowPCF},
+	{str8_lit("shadow_resolution"),   ConfigValueType_U32,  &settings.shadowResolution},
+	{str8_lit("shadow_nearz"),        ConfigValueType_F32,  &settings.shadowNearZ},
+	{str8_lit("shadow_farz"),         ConfigValueType_F32,  &settings.shadowFarZ},
+	{str8_lit("depth_bias_constant"), ConfigValueType_F32,  &settings.depthBiasConstant},
+	{str8_lit("depth_bias_slope"),    ConfigValueType_F32,  &settings.depthBiasSlope},
+	{str8_lit("show_shadow_map"),     ConfigValueType_Bool, &settings.showShadowMap},
 	
-	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
-	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
-	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
-	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
+	{str8_lit("\n#colors"),                          ConfigValueType_PADSECTION,(void*)15},
+	{str8_lit("clear_color"),    ConfigValueType_FV4, &settings.clearColor},
+	{str8_lit("selected_color"), ConfigValueType_FV4, &settings.selectedColor},
+	{str8_lit("collider_color"), ConfigValueType_FV4, &settings.colliderColor},
 	
-	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
-	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
+	{str8_lit("\n#filters"),                         ConfigValueType_PADSECTION,(void*)15},
+	{str8_lit("wireframe_only"), ConfigValueType_Bool, &settings.wireframeOnly},
 	
-	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
-	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
-	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals},
-	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums},
-	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop},
+	{str8_lit("\n#overlays"),                        ConfigValueType_PADSECTION,(void*)17},
+	{str8_lit("mesh_wireframes"),  ConfigValueType_Bool, &settings.meshWireframes},
+	{str8_lit("mesh_normals"),     ConfigValueType_Bool, &settings.meshNormals},
+	{str8_lit("light_frustrums"),  ConfigValueType_Bool, &settings.lightFrustrums},
+	{str8_lit("temp_mesh_on_top"), ConfigValueType_Bool, &settings.tempMeshOnTop},
 };
 
 local RenderStats   stats{};
@@ -309,13 +309,13 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 //// @settings ////
 ///////////////////
 void Render::
-SaveSettings(){
-	Assets::saveConfig("render.cfg", configMap);
+SaveSettings(){DPZoneScoped;
+	config_save(str8_lit("data/cfg/render.cfg"), configMap, ArrayCount(configMap));
 }
 
 void Render::
-LoadSettings(){
-	Assets::loadConfig("render.cfg", configMap);
+LoadSettings(){DPZoneScoped;
+	config_load(str8_lit("data/cfg/render.cfg"), configMap, ArrayCount(configMap));
 }
 
 RenderSettings* Render::
@@ -870,6 +870,10 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 void Render::
 Init(){ //!Incomplete
 	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize DirectX module before initializing Memory/Window modules");
+	
+	//create the shaders directory if it doesn't exist already
+	file_create(str8_lit("data/shaders/"));
+	
 	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;

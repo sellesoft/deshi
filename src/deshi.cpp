@@ -46,17 +46,13 @@ core:
 `File`
 ------
 [09/16/21,MEDI,Feature] data folder specified on launch
-[10/20/21,EASY,Tweak] safety checks for IO operations
-[10/20/21,EASY,Feature] add search filters to get_directory_files
-[10/20/21,HARD,System] linux/mac file IO
-[12/28/21,EASY,Feature] add file reading (simple and smart)
-[12/28/21,EASY,Feature] add file writing (simple and smart)
-[12/28/21,EASY,Feature] add file/dir creation
-[12/28/21,EASY,Feature] add file/dir renaming
+[10/20/21,EASY,Feature] add search filters to file_search_directory
+[10/20/21,HARD,System]  linux/mac file IO
 [12/28/21,EASY,Feature] add file locking and determination
 [12/28/21,EASY,Feature] add hard/symbolic link creation/deletion
 [12/28/21,EASY,Feature] add file hard/symbolic link determination
 [12/28/21,EASY,Feature] add drive statistics
+[04/28/22,EASY,Optimization] maybe wrap error checking in #if debug clauses?
 
 `Fun`
 -----
@@ -88,6 +84,7 @@ glm/detail/_swizzle.hpp
     ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
 [01/16/22,MEDIUM,Bug] memory system sometimes fails to alloc memory from OS (might only be during debugging)
 [02/06/22,MEDI,Tweak] add a way to disable this and set deshi_allocator to libc
+[04/26/22,EASY,Feature] create an interface for creating/using Heap
 
 `Render`
 --------
@@ -203,6 +200,7 @@ tab bar buttons pass their input thru to the window (for dragging)
 [03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
     this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
 [03/22/22,EASY,TWEAK]   check all usages of cstring/wcstring to ensure that the functions don't simply convert them to char* and pass to c-string functions, since they might not have the trailing '\0' that c-strings require
+[04/27/22,EASY,Feature] add a platform_log_last_error() function to platform.h
 */
 
 
@@ -279,10 +277,11 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include <set> //vulkan.cpp
 
 //// core headers ////
+#define DESHI_IMPLEMENTATION
 #include "deshi.h"
-#include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"
+#include "core/config.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
 #endif //DESHI_DISABLE_CONSOLE
@@ -292,7 +291,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include "core/imgui.h"
 #endif //DESHI_DISABLE_IMGUI
 #include "core/input.h"
-#include "core/io.h"
+#include "core/file.h"
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"
@@ -356,16 +355,18 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <vulkan/vulkan.h>
 #  include <shaderc/shaderc.h>
 #  include <imgui/imgui_impl_vulkan.cpp>
+#
 #  include "core/renderers/vulkan.cpp"
-#elif DESHI_OPENGL //DESHI_VULKAN
-#define GLAD_WGL_IMPLEMENTATION
-#include <glad/wgl.h>
-#define GLAD_GL_IMPLEMENTATION
-#include <glad/gl.h>
-#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#include <imgui/imgui_impl_opengl3.cpp>
-#include "core/renderers/opengl.cpp"
-#elif DESHI_DIRECTX12 //DESHI_OPENGL
+#elif DESHI_OPENGL
+#  define GLAD_WGL_IMPLEMENTATION
+#  include <glad/wgl.h>
+#  define GLAD_GL_IMPLEMENTATION
+#  include <glad/gl.h>
+#  define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#  include <imgui/imgui_impl_opengl3.cpp>
+#
+#  include "core/renderers/opengl.cpp"
+#elif DESHI_DIRECTX12
 #  include <GLFW/glfw3.h>
 #  define GLFW_EXPOSE_NATIVE_WIN32
 #  include <GLFW/glfw3native.h>
@@ -376,26 +377,24 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 //#  include <d3dcompiler.h> this is for compiling HLSL shaders at runtime, which ideally we wont do, but ill keep it just incase
 // if we do, dont forget to link against d3dcompiler.lib and copy D3dcompiler_47.dll to the same file as our exe
 #  include <DirectXMath.h>
+#
 #  include "core/renderers/directx.cpp"
-#else  //DESHI_DIRECTX12
+#else
 #  error "no renderer selected"
 #endif
 
 #undef DeleteFont
 
 
-
-
 //// core cpp ////
-#include "core/io.cpp"
 #include "core/memory.cpp"
 #include "core/logger.cpp"
-#include "core/assets.cpp"
 #include "core/console.cpp"
 #include "core/storage.cpp"
 #include "core/ui.cpp"
 #include "core/commands.cpp"
 #include "core/core_ui.cpp"
+
 
 local Time          deshi_time;           Time*          g_time     = &deshi_time;
 local Window        deshi_window;         Window*        g_window   = &deshi_window;
@@ -405,7 +404,6 @@ local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thr
 
 void deshi::init(u32 winWidth, u32 winHeight){
 	Stopwatch stopwatch = start_stopwatch();
-	Assets::enforceDirectories();
 	memory_init(Gigabytes(1), Gigabytes(1));
 	logger_init();
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh

@@ -59,9 +59,12 @@ int logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 	}
 	deshi__logger.last_message_length = cursor;
 	
-	//write to log file
 	u32 log_file_offset = ftell(deshi__logger.file);
-	fputs((char*)deshi__logger.last_message, deshi__logger.file);
+	
+	//write to log file
+	if(deshi__logger.mirror_to_file){
+		fputs((char*)deshi__logger.last_message, deshi__logger.file);
+	}
 	
 	//write to console
 	if(deshi__logger.mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)){
@@ -92,19 +95,23 @@ int logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 void logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	DeshiStageInitStart(DS_LOGGER, DS_MEMORY, "Attempted to initialize Logger module before initializing Memory module");
 	
+	//create the logs directory if it doesn't exist already
+	file_create(str8_lit("data/logs/"));
+	
+	deshi__logger.mirror_to_file    = true;
 	deshi__logger.mirror_to_stdout  = mirror;
 	deshi__logger.mirror_to_console = false; //NOTE(delle) this gets set to true when Console is init
 	
-	char path_buffer[MAX_FILEPATH_SIZE];
+	u8 path_buffer[256];
 	log_count = ClampMin(log_count, 1);
-	array<File> log_files = get_directory_files("data/logs");
+	carray<File> log_files = file_search_directory(str8_lit("data/logs/"));
 	
 	//rename previous log.txt
 	forE(log_files){
-		if(strcmp(it->name, "log.txt") == 0){
-			int len = stbsp_snprintf(path_buffer, MAX_FILEPATH_SIZE, "data/logs/log_%lld.txt", it->time_last_write);
-			rename_file(it->path, path_buffer);
-			memcpy(it->path, path_buffer, len*sizeof(char));
+		if(str8_equal(it->name, str8_lit("log.txt"))){
+			int len = stbsp_snprintf((char*)path_buffer, ArrayCount(path_buffer), "data/logs/log_%lld.txt", it->last_write_time);
+			file_rename(it->path, (str8{path_buffer, (s64)len}));
+			it->path = str8{path_buffer, (s64)len}; //NOTE(delle) correcting path on temp memory so it's valid for deletion
 		}
 	}
 	
@@ -115,7 +122,7 @@ void logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 		forX(i,log_count){
 			swapped = false;
 			forX(j,log_files.count-1-i){
-				if(log_files[j].time_last_write > log_files[j+1].time_last_write){
+				if(log_files[j].last_write_time > log_files[j+1].last_write_time){
 					Swap(log_files[j], log_files[j+1]);
 					swapped = true;
 				}
@@ -124,23 +131,23 @@ void logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 		}
 		
 		//delete logs
-		forI((log_files.count-log_count)+1) delete_file(&log_files[i]);
+		forI((log_files.count-log_count)+1) file_delete(log_files[i].path);
 	}
 	
 	//create log file named as current time
-	stbsp_snprintf(path_buffer, MAX_FILEPATH_SIZE, "data/logs/log.txt");
-	deshi__logger.file = fopen(path_buffer,"ab+"); Assert(deshi__logger.file, "logger failed to open file");
+	stbsp_snprintf((char*)path_buffer, ArrayCount(path_buffer), "data/logs/log.txt");
+	deshi__logger.file = fopen((const char*)path_buffer,"ab+"); Assert(deshi__logger.file, "logger failed to open file");
 	
 	//write date at top of file
 	time_t rawtime = time(0);
-	strftime(path_buffer, MAX_FILEPATH_SIZE, "%c", localtime(&rawtime));
+	strftime((char*)path_buffer, ArrayCount(path_buffer), "%c", localtime(&rawtime));
 	fprintf(deshi__logger.file, "%s\n\n", path_buffer);
 	
 #if BUILD_SLOW //NOTE(delle) write immediately when debugging so that a Log() right before Assert() still writes
 	setvbuf(deshi__logger.file,0,_IONBF,0);
 #endif
 	
-	fflush(stdout); _setmode(_fileno(stdout), _O_U16TEXT); //NOTE(delle) enable Unicode printing to stdout on Windows
+	fflush(stdout); _setmode(_fileno(stdout), _O_U16TEXT); //NOTE(delle) enables Unicode printing to stdout on Windows
 	setlocale(LC_ALL, ".utf8");
 	
 	DeshiStageInitEnd(DS_LOGGER);

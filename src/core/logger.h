@@ -19,6 +19,7 @@ struct Logger{
 	u8   last_message[LOGGER_BUFFER_SIZE] = {0};
 	s64  last_message_length = 0;
 	
+	b32  mirror_to_file = true;
 	b32  mirror_to_stdout = true;
 	b32  mirror_to_console = false;
 	

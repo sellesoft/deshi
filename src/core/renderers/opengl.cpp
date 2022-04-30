@@ -55,47 +55,47 @@ struct MaterialGl{
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE VARIABLES
 local RenderSettings settings;
-local ConfigMap configMap = {
-	{"#render settings config file",0,0},
+local ConfigMapItem configMap[] = {
+	{str8_lit("#render settings config file"),0,0},
 	
-	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
-	{"debugging",            ConfigValueType_Bool, &settings.debugging}, //!Incomplete
-	{"printf",               ConfigValueType_Bool, &settings.printf}, //!Incomplete
-	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering}, //!Incomplete
-	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering}, //!Incomplete
-	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples}, //!Incomplete
-	{"recompile_all_shaders",ConfigValueType_Bool, &settings.recompileAllShaders}, //!Incomplete
+	{str8_lit("\n#    //// REQUIRES RESTART ////"),  ConfigValueType_PADSECTION,(void*)21},
+	{str8_lit("debugging"),            ConfigValueType_Bool, &settings.debugging},
+	{str8_lit("printf"),               ConfigValueType_Bool, &settings.printf},
+	{str8_lit("texture_filtering"),    ConfigValueType_Bool, &settings.textureFiltering},
+	{str8_lit("anistropic_filtering"), ConfigValueType_Bool, &settings.anistropicFiltering},
+	{str8_lit("msaa_level"),           ConfigValueType_U32,  &settings.msaaSamples},
+	{str8_lit("recompile_all_shaders"),ConfigValueType_Bool, &settings.recompileAllShaders},
 	
-	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
-	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
-	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32,  &settings.vsync}, //!Incomplete
+	{str8_lit("\n#    //// RUNTIME VARIABLES ////"), ConfigValueType_PADSECTION,(void*)15},
+	{str8_lit("logging_level"),  ConfigValueType_U32,  &settings.loggingLevel},
+	{str8_lit("crash_on_error"), ConfigValueType_Bool, &settings.crashOnError},
+	{str8_lit("vsync_type"),     ConfigValueType_U32,  &settings.vsync},
 	
-	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders}, //!Incomplete
+	{str8_lit("\n#shaders"),                         ConfigValueType_PADSECTION,(void*)17},
+	{str8_lit("optimize_shaders"), ConfigValueType_Bool, &settings.optimizeShaders},
 	
-	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF}, //!Incomplete
-	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution}, //!Incomplete
-	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ}, //!Incomplete
-	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ}, //!Incomplete
-	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant}, //!Incomplete
-	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope}, //!Incomplete
-	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap}, //!Incomplete
+	{str8_lit("\n#shadows"),                         ConfigValueType_PADSECTION,(void*)20},
+	{str8_lit("shadow_pcf"),          ConfigValueType_Bool, &settings.shadowPCF},
+	{str8_lit("shadow_resolution"),   ConfigValueType_U32,  &settings.shadowResolution},
+	{str8_lit("shadow_nearz"),        ConfigValueType_F32,  &settings.shadowNearZ},
+	{str8_lit("shadow_farz"),         ConfigValueType_F32,  &settings.shadowFarZ},
+	{str8_lit("depth_bias_constant"), ConfigValueType_F32,  &settings.depthBiasConstant},
+	{str8_lit("depth_bias_slope"),    ConfigValueType_F32,  &settings.depthBiasSlope},
+	{str8_lit("show_shadow_map"),     ConfigValueType_Bool, &settings.showShadowMap},
 	
-	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
-	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
-	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
-	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
+	{str8_lit("\n#colors"),                          ConfigValueType_PADSECTION,(void*)15},
+	{str8_lit("clear_color"),    ConfigValueType_FV4, &settings.clearColor},
+	{str8_lit("selected_color"), ConfigValueType_FV4, &settings.selectedColor},
+	{str8_lit("collider_color"), ConfigValueType_FV4, &settings.colliderColor},
 	
-	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
-	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
+	{str8_lit("\n#filters"),                         ConfigValueType_PADSECTION,(void*)15},
+	{str8_lit("wireframe_only"), ConfigValueType_Bool, &settings.wireframeOnly},
 	
-	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
-	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
-	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!Incomplete
-	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!Incomplete
-	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop},
+	{str8_lit("\n#overlays"),                        ConfigValueType_PADSECTION,(void*)17},
+	{str8_lit("mesh_wireframes"),  ConfigValueType_Bool, &settings.meshWireframes},
+	{str8_lit("mesh_normals"),     ConfigValueType_Bool, &settings.meshNormals},
+	{str8_lit("light_frustrums"),  ConfigValueType_Bool, &settings.lightFrustrums},
+	{str8_lit("temp_mesh_on_top"), ConfigValueType_Bool, &settings.tempMeshOnTop},
 };
 
 local RenderStats   stats{};
@@ -292,7 +292,11 @@ CompileAndLoadShader(const char* filename, ShaderStage stage){
 	Assert(stage > ShaderStage_NONE && stage < ShaderStage_COUNT);
 	
 	//check if already loaded
-	forE(glShaders){ if(strcmp(it->filename, filename) == 0){ return u32(it-it_begin); } }
+	forE(glShaders){
+		if(strcmp(it->filename, filename) == 0){
+			return u32(it-it_begin);
+		}
+	}
 	
 	ShaderGl sgl{};
 	cpystr(sgl.filename, filename, 64);
@@ -307,9 +311,12 @@ CompileAndLoadShader(const char* filename, ShaderStage stage){
 		case ShaderStage_Fragment: sgl.handle = glCreateShader(GL_FRAGMENT_SHADER); break;
 		case ShaderStage_Compute:  Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 	}
-	char* filebuff = Assets::readFileAsciiToArray(Assets::dirShaders()+filename);
-	if(!filebuff) Assert(!"Failed to load shader");
-	glShaderSource(sgl.handle, 1, &filebuff, 0);
+	
+	str8 file_name = str8_concat(str8_lit("data/shaders/"), str8{(u8*)filename, (s64)strlen(filename)}, deshi_temp_allocator);
+	str8 contents = file_read_simple(file_name, deshi_temp_allocator);
+	if(!contents) Assert(!"Failed to load shader");
+	const char* str = (const char*)contents.str; int len = (int)contents.count;
+	glShaderSource(sgl.handle, 1, &str, &len);
 	glCompileShader(sgl.handle);
 	
 	//check for errors
@@ -410,7 +417,7 @@ Init(){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, (Assets::dirConfig() + "imgui.ini").c_str(), 256);
+	cpystr(iniFilepath, "data/config/imgui.ini", 256);
 	io.IniFilename = iniFilepath;
 	
 	//Setup Dear ImGui style
@@ -960,12 +967,12 @@ GetZZeroLayerIndex(){
 ///////////////////
 void Render::
 SaveSettings(){
-	Assets::saveConfig("render.cfg", configMap);
+	config_save(str8_lit("data/cfg/render.cfg"), configMap, ArrayCount(configMap));
 }
 
 void Render::
 LoadSettings(){
-	Assets::loadConfig("render.cfg", configMap);
+	config_load(str8_lit("data/cfg/render.cfg"), configMap, ArrayCount(configMap));
 }
 
 RenderSettings* Render::
@@ -1577,6 +1584,9 @@ Init(){DPZoneScoped;
 	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize OpenGL module before initializing Memory/Window modules");
 	Log("opengl","Starting opengl renderer initialization");
 	logger_push_indent();
+	
+	//create the shaders directory if it doesn't exist already
+	file_create(str8_lit("data/shaders/"));
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// load render settings

@@ -57,29 +57,29 @@ struct RenderStats{
 
 struct RenderSettings{
 	//// requires restart ////
-	bool debugging = true;
-	bool printf    = false;
-	bool recompileAllShaders = false;
-	u32  msaaSamples = 0;
-	bool textureFiltering = false;
-	bool anistropicFiltering = false;
+	b32 debugging = true;
+	b32 printf    = false;
+	b32 recompileAllShaders = false;
+	u32 msaaSamples = 0;
+	b32 textureFiltering = false;
+	b32 anistropicFiltering = false;
 	
 	//// runtime changeable ////
-	u32  loggingLevel = 1; //if printf is true in the config file, this will be set to 4
-	bool crashOnError = false;
+	u32 loggingLevel = 1; //if printf is true in the config file, this will be set to 4
+	b32 crashOnError = false;
 	VSyncType vsync   = VSyncType_Immediate;
 	
 	//shaders
-	bool optimizeShaders = false;
+	b32 optimizeShaders = false;
 	
 	//shadows
-	bool shadowPCF         = false;
-	u32  shadowResolution  = 2048;
-	f32  shadowNearZ       = 1.f;
-	f32  shadowFarZ        = 70.f;
-	f32  depthBiasConstant = 1.25f;
-	f32  depthBiasSlope    = 1.75f;
-	bool showShadowMap     = false;
+	b32 shadowPCF         = false;
+	u32 shadowResolution  = 2048;
+	f32 shadowNearZ       = 1.f;
+	f32 shadowFarZ        = 70.f;
+	f32 depthBiasConstant = 1.25f;
+	f32 depthBiasSlope    = 1.75f;
+	b32 showShadowMap     = false;
 	
 	//colors
 	vec4 clearColor   {0.02f,0.02f,0.02f,1.00f};

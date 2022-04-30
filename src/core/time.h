@@ -24,10 +24,10 @@ extern Time* g_time;
 #define DeshTotalTime g_time->totalTime
 
 //Returns a `Stopwatch` representing the start time
-Stopwatch start_stopwatch();
+inline Stopwatch start_stopwatch();
 
 //Returns the time since `watch` was started in milliseconds
-f64 peek_stopwatch(Stopwatch watch);
+inline f64 peek_stopwatch(Stopwatch watch);
 
 //Resets the `watch` and returns the time since it was started in milliseconds
 inline f64 reset_stopwatch(Stopwatch* watch){

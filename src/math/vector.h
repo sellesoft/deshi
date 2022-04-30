@@ -484,7 +484,7 @@ struct hash<vec4>{
 #include "kigu/string.h"
 
 global_ string 
-to_string(const vec2& x, bool trunc = true){
+to_string(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	string s;
 	if(trunc){
 		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
@@ -503,7 +503,7 @@ to_string(const vec2& x, bool trunc = true){
 }
 
 global_ string 
-to_string(const vec3& x, bool trunc = true){
+to_string(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	string s;
 	if(trunc){
 		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
@@ -522,7 +522,7 @@ to_string(const vec3& x, bool trunc = true){
 }
 
 global_ string 
-to_string(const vec4& x, bool trunc = true){
+to_string(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	string s;
 	if(trunc){
 		s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
