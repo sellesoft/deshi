@@ -46,7 +46,6 @@ core:
 `File`
 ------
 [09/16/21,MEDI,Feature] data folder specified on launch
-[10/20/21,EASY,Feature] add search filters to file_search_directory
 [10/20/21,HARD,System]  linux/mac file IO
 [12/28/21,EASY,Feature] add file locking and determination
 [12/28/21,EASY,Feature] add hard/symbolic link creation/deletion
