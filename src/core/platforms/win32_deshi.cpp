@@ -411,6 +411,9 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	name = _name;
 	renderer_surface_index = 0; ///main win is always first surface
 	
+	DeshTime->stopwatch = start_stopwatch();
+
+
 	DeshiStageInitEnd(DS_WINDOW);
 }
 
@@ -590,7 +593,7 @@ void Window::Update(){DPZoneScoped;
 	//-/////////////////////////////////////////////
 	//// @win32_update_time
 	DeshTime->prevDeltaTime = DeshTime->deltaTime;
-	DeshTime->deltaTime = start_stopwatch() - peek_stopwatch(DeshTime->stopwatch);
+	DeshTime->deltaTime = reset_stopwatch(&DeshTime->stopwatch);
 	DeshTime->stopwatch = start_stopwatch();
 	DeshTime->totalTime += DeshTime->deltaTime;
 	DeshTime->frame++;
