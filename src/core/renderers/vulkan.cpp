@@ -2083,12 +2083,12 @@ CreatePipelineCache(){DPZoneScoped;
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
 	
 	//try to read pipeline cache file if exists
-	std::vector<char> data = Assets::readFileBinary(Assets::dirData()+"pipelines.cache", 0, false);
-	if(data.size()){
-		pipelineCacheCreateInfo.initialDataSize = data.size();
-		pipelineCacheCreateInfo.pInitialData    = data.data();
-		AssertVk(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
+	if(file_exists(str8_lit("data/pipelines.cache"))){
+	str8 data = file_read_simple(str8_lit("data/pipelines.cache"), deshi_temp_allocator);
+		pipelineCacheCreateInfo.initialDataSize = data.count;
+		pipelineCacheCreateInfo.pInitialData    = data.str;
 	}
+		AssertVk(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 }
 
 local void 
@@ -2227,63 +2227,50 @@ SetupPipelineCreation(){DPZoneScoped;
 //////////////////
 //// @shaders ////
 //////////////////
-//TODO(delle,ReCl) clean this up
-local std::vector<std::string> 
-GetUncompiledShaders(){DPZoneScoped;
-	std::vector<std::string> compiled;
-	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
-		if(entry.path().extension() == ".spv"){
-			compiled.push_back(entry.path().stem().string());
-		}
+local void
+compile_shader(str8 path, str8 name, str8 front, str8 ext){
+	PrintVk(4, "Compiling shader: ",path);
+	Stopwatch t_s = start_stopwatch();
+	//setup shader compiler //TODO(delle) keep the shader compiler alive the entire program
+	shaderc_compiler_t        compiler = shaderc_compiler_initialize();
+	shaderc_compile_options_t options  = shaderc_compile_options_initialize();
+	if(settings.optimizeShaders) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+	
+	//load GLSL source code
+	str8 source = file_read_simple(path, deshi_temp_allocator);
+	if(!source) return;
+	
+	//try to compile from GLSL to SPIR-V binary
+	shaderc_compilation_result_t result;
+	if      (str8_equal_lazy(ext, str8_lit("vert"))){
+		result = shaderc_compile_into_spv(compiler, (const char*)source.str, source.count,
+										  shaderc_glsl_vertex_shader,   (const char*)name.str, "main", options);
+	}else if(str8_equal_lazy(ext, str8_lit("frag"))){
+		result = shaderc_compile_into_spv(compiler, (const char*)source.str, source.count,
+										  shaderc_glsl_fragment_shader, (const char*)name.str, "main", options);
+	}else if(str8_equal_lazy(ext, str8_lit("geom"))){
+		result = shaderc_compile_into_spv(compiler, (const char*)source.str, source.count,
+										  shaderc_glsl_geometry_shader, (const char*)name.str, "main", options);
+	}else{ return; }
+	defer{ shaderc_result_release(result); };
+	
+	//check for errors
+	if(!result){ 
+		LogE("vulkan",name,": Shader compiler returned a null result"); return; 
+	}
+	if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
+		LogE("vulkan",shaderc_result_get_error_message(result)); 
+		return;
 	}
 	
-	std::vector<std::string> files;
-	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
-		if(entry.path().extension() == ".vert" ||
-		   entry.path().extension() == ".frag" ||
-		   entry.path().extension() == ".geom"){
-			bool good = true;
-			for(auto& s : compiled){
-				if(entry.path().filename().string().compare(s) == 0){ good = false; break; }
-			}
-			if(good) files.push_back(entry.path().filename().string());
-		}
-	}
-	return files;
-}
-
-//creates a pipeline shader stage from the shader bytecode
-local VkPipelineShaderStageCreateInfo 
-loadShader(std::string filename, VkShaderStageFlagBits stage){DPZoneScoped;
-	PrintVk(3, "Loading shader: ", filename);
-	//setup shader stage create info
-	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-	shaderStage.stage = stage;
-	shaderStage.pName = "main";
+	//create or overwrite .spv files
+	file_write_simple(str8_concat3(str8_lit("data/shaders/"),front,str8_lit(".spv"), deshi_temp_allocator),
+					  (void*)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
 	
-	//check if shader has already been created
-	for(auto& module : shaderModules){ //!FixMe this loop doesnt actually prevent recreation
-		if(filename == module.first){
-			shaderStage.module = module.second;
-			break;
-		}
-	}
-	
-	//create shader module
-	std::vector<char> code = Assets::readFileBinary(Assets::dirShaders() + filename);
-	Assert(code.size(), "Unable to read shader file");
-	
-	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-	moduleInfo.codeSize = code.size();
-	moduleInfo.pCode    = (u32*)code.data();
-	
-	VkShaderModule shaderModule{};
-	AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, TOSTDSTRING("Shader ", filename).c_str());
-	
-	shaderStage.module = shaderModule;
-	shaderModules.push_back(pair<std::string,VkShaderModule>(filename, shaderStage.module));
-	return shaderStage;
+	//cleanup shader compiler and options
+	shaderc_compile_options_release(options);
+	shaderc_compiler_release(compiler);
+	PrintVk(5, "Finished compiling shader '",path,"' in ",peek_stopwatch(t_s),"ms");
 }
 
 //TODO(delle,Re) maybe dont crash on failed shader compile?
@@ -2291,7 +2278,7 @@ local VkPipelineShaderStageCreateInfo
 CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false){DPZoneScoped;
 	PrintVk(3, "Compiling and loading shader: ", filename);
 	//check if file exists
-	std::filesystem::path entry(Assets::dirShaders() + filename);
+	std::filesystem::path entry("data/shaders/" + filename);
 	if(std::filesystem::exists(entry)){
 		std::string ext      = entry.extension().string();
 		std::string filename = entry.filename().string();
@@ -2301,19 +2288,19 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		shaderc_compile_options_t options = shaderc_compile_options_initialize();
 		if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 		
-		std::vector<char> code = Assets::readFileBinary(Assets::dirShaders() + filename); //read shader code
-		Assert(code.size(), "Unable to read shader file");
+		str8 source = file_read_simple(str8_concat(str8_lit("data/shaders/"),str8{(u8*)filename.c_str(),(s64)filename.size()},deshi_temp_allocator), deshi_temp_allocator);
+		if(!source) return VkPipelineShaderStageCreateInfo{};
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result = 0;
 		if(ext.compare(".vert") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
+			result = shaderc_compile_into_spv(compiler, (const char*)source.str, source.count, shaderc_glsl_vertex_shader, 
 											  filename.c_str(), "main", options);
 		}else if(ext.compare(".frag") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_fragment_shader, 
+			result = shaderc_compile_into_spv(compiler, (const char*)source.str, source.count, shaderc_glsl_fragment_shader, 
 											  filename.c_str(), "main", options);
 		}else if(ext.compare(".geom") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
+			result = shaderc_compile_into_spv(compiler, (const char*)source.str, source.count, shaderc_glsl_geometry_shader, 
 											  filename.c_str(), "main", options);
 		}else{ Assert(!"unsupported shader"); }
 		defer{ shaderc_result_release(result); };
@@ -2350,107 +2337,6 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 }
 
 
-local void 
-CompileAllShaders(bool optimize = false){DPZoneScoped;
-	//setup shader compiler
-	shaderc_compiler_t compiler       = shaderc_compiler_initialize();
-	shaderc_compile_options_t options = shaderc_compile_options_initialize();
-	if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
-	
-	//loop thru all files in the shaders dir, compile the shaders, write them to .spv files
-	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
-		std::string ext      = entry.path().extension().string();
-		std::string filename = entry.path().filename().string();
-		
-		if(ext.compare(".spv") == 0) continue; //early out if .spv
-		std::vector<char> code = Assets::readFileBinary(entry.path().string()); //read shader code
-		Assert(code.size(), "Unable to read shader file");
-		PrintVk(4, "Compiling shader: ", filename);
-		
-		//try compile from GLSL to SPIR-V binary
-		shaderc_compilation_result_t result;
-		if(ext.compare(".vert") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
-											  filename.c_str(), "main", options);
-		}else if(ext.compare(".frag") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_fragment_shader, 
-											  filename.c_str(), "main", options);
-		}else if(ext.compare(".geom") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
-											  filename.c_str(), "main", options);
-		}else{ continue; }
-		defer{ shaderc_result_release(result); };
-		
-		//check for errors
-		if(!result){ 
-			LogE("vulkan",filename,": Shader compiler returned a null result"); continue; 
-		}
-		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			LogE("vulkan",shaderc_result_get_error_message(result)); 
-			continue;
-		}
-		
-		//create or overwrite .spv files
-		std::ofstream outFile(entry.path().string() + ".spv", std::ios::out | std::ios::binary | std::ios::trunc);
-		Assert(outFile.is_open(), "failed to open file");
-		defer{ outFile.close(); };
-		outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
-	}
-	
-	//cleanup shader compiler and options
-	shaderc_compile_options_release(options);
-	shaderc_compiler_release(compiler);
-}
-
-local void
-CompileShader(std::string& filename, bool optimize){DPZoneScoped;
-	PrintVk(3, "Compiling shader: ", filename);
-	std::filesystem::path entry(Assets::dirShaders() + filename);
-	if(std::filesystem::exists(entry)){
-		std::string ext      = entry.extension().string();
-		std::string filename = entry.filename().string();
-		
-		//setup shader compiler
-		shaderc_compiler_t compiler       = shaderc_compiler_initialize();
-		shaderc_compile_options_t options = shaderc_compile_options_initialize();
-		if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
-		
-		std::vector<char> code = Assets::readFileBinary(Assets::dirShaders() + filename); //read shader code
-		Assert(code.size(), "Unable to read shader file");
-		
-		//try compile from GLSL to SPIR-V binary
-		shaderc_compilation_result_t result;
-		if(ext.compare(".vert") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
-											  filename.c_str(), "main", options);
-		}else if(ext.compare(".frag") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_fragment_shader, 
-											  filename.c_str(), "main", options);
-		}else if(ext.compare(".geom") == 0){
-			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
-											  filename.c_str(), "main", options);
-		}else{ return; }
-		defer{ shaderc_result_release(result); };
-		
-		//check for errors
-		if(!result){ 
-			LogE("vulkan",filename,": Shader compiler returned a null result");
-		}
-		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			LogE("vulkan",shaderc_result_get_error_message(result)); 
-		}
-		
-		//create or overwrite .spv files
-		std::ofstream outFile(entry.string() + ".spv", std::ios::out | std::ios::binary | std::ios::trunc);
-		Assert(outFile.is_open(), "failed to open file");
-		defer{ outFile.close(); };
-		outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
-	}else{
-		LogE("vulkan","failed to open file: ", filename);
-	}
-}
-
-
 /////////////////////////////
 //// @pipelines creation ////
 /////////////////////////////
@@ -2471,22 +2357,6 @@ CreatePipelines(){DPZoneScoped;
 		vkDestroyShaderModule(device, pair.second, allocator);
 	}
 	shaderModules.clear(); shaderModules.reserve(oldCount);
-	
-	//compile uncompiled shaders
-	if(settings.recompileAllShaders){
-		PrintVk(3, "Compiling shaders");
-		Stopwatch t_s = start_stopwatch();
-		CompileAllShaders(settings.optimizeShaders);
-		PrintVk(3, "Finished compiling shaders in ", peek_stopwatch(t_s), "ms");
-	}else{
-		std::vector<std::string> uncompiled = GetUncompiledShaders();
-		if(uncompiled.size()){
-			PrintVk(3, "Compiling shaders");
-			Stopwatch t_s = start_stopwatch();
-			for(auto& s : uncompiled){ CompileShader(s, settings.optimizeShaders); }
-			PrintVk(3, "Finished compiling shaders in ", peek_stopwatch(t_s), "ms");
-		}
-	}
 	
 	//setup specialization constants
 	/*
@@ -2510,8 +2380,8 @@ specializationInfo.mapEntryCount = 1;
 		pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineCreateInfo.basePipelineIndex  = -1;
 		
-		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("base.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("base.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.base));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.base, "Base pipeline");
@@ -2536,8 +2406,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//null pipeline
-		shaderStages[0] = loadShader("null.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("null.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("null.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("null.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.null));
@@ -2545,8 +2415,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//flat pipeline
-		shaderStages[0] = loadShader("flat.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("flat.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("flat.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.flat));
@@ -2554,8 +2424,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//phong
-		shaderStages[0] = loadShader("phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("phong.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("phong.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.phong));
@@ -2569,16 +2439,16 @@ specializationInfo.mapEntryCount = 1;
 		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		depthStencilState.depthTestEnable = VK_FALSE;
 		
-		shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("twod.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("twod.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.twod));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.twod, "2D pipeline");
 		
 		{//ui
-			shaderStages[0] = loadShader("ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = loadShader("ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[0] = CompileAndLoadShader("ui.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("ui.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 			shaderStages[1].pSpecializationInfo = &specializationInfo;
 			pipelineCreateInfo.stageCount = 2;
 			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.ui));
@@ -2593,8 +2463,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//pbr
-		shaderStages[0] = loadShader("pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("pbr.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("pbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.pbr));
@@ -2608,8 +2478,8 @@ specializationInfo.mapEntryCount = 1;
 		rasterizationState.cullMode    = VK_CULL_MODE_NONE;
 		depthStencilState.depthTestEnable = VK_FALSE;
 		
-		shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("wireframe.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("wireframe.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.wireframe));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.wireframe, "Wireframe pipeline");
@@ -2652,8 +2522,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//lavalamp
-		shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("lavalamp.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("lavalamp.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.lavalamp));
@@ -2671,7 +2541,7 @@ specializationInfo.mapEntryCount = 1;
 		dynamicState.pDynamicStates    = dynamicStates.data();      //it can be changed at runtime
 		pipelineCreateInfo.renderPass = offscreen.renderpass;
 		
-		shaderStages[0] = loadShader("offscreen.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[0] = CompileAndLoadShader("offscreen.vert", VK_SHADER_STAGE_VERTEX_BIT);
 		pipelineCreateInfo.stageCount = 1;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.offscreen));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.offscreen, "Offscreen pipeline");
@@ -2689,8 +2559,8 @@ specializationInfo.mapEntryCount = 1;
 	
 	//NOTE(delle) testing/debug shaders should be removed on release
 	{//testing0
-		shaderStages[0] = loadShader("testing0.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("testing0.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("testing0.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.testing0));
@@ -2698,8 +2568,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//testing1
-		shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("testing1.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("testing1.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.testing1));
@@ -2710,9 +2580,9 @@ specializationInfo.mapEntryCount = 1;
 	if(enabledFeatures.geometryShader){
 		pipelineCreateInfo.layout = pipelineLayouts.geometry;
 		
-		shaderStages[0] = loadShader("nothing.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("nothing.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-		shaderStages[2] = loadShader("normaldebug.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT);
+		shaderStages[0] = CompileAndLoadShader("nothing.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("nothing.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[2] = CompileAndLoadShader("normaldebug.geom", VK_SHADER_STAGE_GEOMETRY_BIT);
 		pipelineCreateInfo.stageCount = 3;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.normals_debug));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.normals_debug, "DEBUG Mesh normals pipeline");
@@ -2725,8 +2595,8 @@ specializationInfo.mapEntryCount = 1;
 		VkPipelineVertexInputStateCreateInfo emptyVertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
 		pipelineCreateInfo.pVertexInputState = &emptyVertexInputState;
 		
-		shaderStages[0] = loadShader("shadowmapDEBUG.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("shadowmapDEBUG.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = CompileAndLoadShader("shadowmapDEBUG.vert", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader("shadowmapDEBUG.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.shadowmap_debug));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.shadowmap_debug, "DEBUG Shadowmap pipeline");
@@ -3243,7 +3113,7 @@ local void imguiCheckVkResult(VkResult err){
 	AssertVk(err, "imgui vulkan error");
 }
 
-local char iniFilepath[256] = {};
+local const char* iniFilepath = "data/cfg/imgui.ini";
 void DeshiImGui::
 Init(){DPZoneScoped;
 	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
@@ -3251,7 +3121,6 @@ Init(){DPZoneScoped;
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, (Assets::dirConfig() + "imgui.ini").c_str(), 256);
 	io.IniFilename = iniFilepath;
 	
 	//Setup Dear ImGui style
@@ -4592,8 +4461,13 @@ ReloadShader(u32 shader){DPZoneScoped;
 
 void Render::
 ReloadAllShaders(){DPZoneScoped;
-	CompileAllShaders();
 	remakePipelines = true;
+	carray<File> shaders = file_search_directory(str8_lit("data/shaders/"));
+	forE(shaders){
+		if(!str8_equal_lazy(it->ext, str8_lit("spv"))){
+			compile_shader(it->path, it->name, it->front, it->ext);
+		}
+	}
 }
 
 ////////////////
@@ -4889,11 +4763,12 @@ Cleanup(){DPZoneScoped;
 	Render::SaveSettings();
 	//save pipeline cache to disk
 	if(pipelineCache != VK_NULL_HANDLE){
-		size_t size{};
-		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
-		std::vector<char> data(size);
-		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
-		Assets::writeFileBinary(Assets::dirData() + "pipelines.cache", data);
+		VkResult result;
+		size_t size = 0;
+		result = vkGetPipelineCacheData(device, pipelineCache, &size,    0); AssertVk(result, "failed to get pipeline cache data size");
+		void* data = memory_talloc(size);
+		result = vkGetPipelineCacheData(device, pipelineCache, &size, data); AssertVk(result, "failed to get pipeline cache data");
+		file_write_simple(str8_lit("data/pipelines.cache"), data, size);
 	}
 	
 	vkDeviceWaitIdle(device);
