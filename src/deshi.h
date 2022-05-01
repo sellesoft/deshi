@@ -4,7 +4,6 @@
 
 //// core headers ////
 #include "kigu/common.h"
-#include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"
 #ifndef DESHI_DISABLE_CONSOLE
@@ -16,7 +15,7 @@
 #  include "core/imgui.h"
 #endif //DESHI_DISABLE_IMGUI
 #include "core/input.h"
-#include "core/io.h"
+#include "core/file.h"
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"

@@ -25,19 +25,20 @@ typedef Type KeyCode; enum{
 	Key_NPMULTIPLY, Key_NPDIVIDE, Key_NPPLUS, Key_NPMINUS, Key_NPPERIOD, Key_NUMLOCK,
 	Mouse_LEFT, Mouse_RIGHT, Mouse_MIDDLE, Mouse_4, Mouse_5, Mouse_6, Mouse_7, Mouse_8,
 };
-global_ const char* KeyCodeStrings[] = {
-	"NONE",
-	"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
-	"K0","K1","K2","K3","K4","K5","K6","K7","K8","K9",
-	"F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12",
-	"Up Arrow","Down Arrow","Left Arrow","Right Arrow",
-	"Escape","Tilde","Tab","Caps Lock","Minus","Equals","Backspace","Left Bracket","Right Bracket",
-	"Backslash","Semicolon","Apostrophe","Enter","Comma","Period","Forward Slash","Space",
-	"Left Shift","Right Shift","Left Control","Right Control","Left Windows","Right Windows","Left Alt","Right Alt","Apps",
-	"Insert","Delete","Home","End","Page Up","Page Down","Print Screen","Scroll Lock","Pause Break",
-	"Numpad 0","Numpad 1","Numpad 2","Numpad 3","Numpad 4","Numpad 5","Numpad 6","Numpad 7","Numpad 8","Numpad 9",
-	"Numpad Multiply","Numpad Divide","Numpad Plus","Numpad Minus","Numpad Period","Num Lock",
-	"Mouse Left","Mouse Right","Mouse Middle","Mouse 4","Mouse 5","Mouse 6","Mouse 7","Mouse 8",
+global_ str8 KeyCodeStrings[] = { //NOTE(delle) gotta love uncounted string literals :)
+	str8_lit("NONE"),
+	str8_lit("A"),str8_lit("B"),str8_lit("C"),str8_lit("D"),str8_lit("E"),str8_lit("F"),str8_lit("G"),str8_lit("H"),str8_lit("I"),str8_lit("J"),str8_lit("K"),str8_lit("L"),str8_lit("M"),
+	str8_lit("N"),str8_lit("O"),str8_lit("P"),str8_lit("Q"),str8_lit("R"),str8_lit("S"),str8_lit("T"),str8_lit("U"),str8_lit("V"),str8_lit("W"),str8_lit("X"),str8_lit("Y"),str8_lit("Z"),
+	str8_lit("K0"),str8_lit("K1"),str8_lit("K2"),str8_lit("K3"),str8_lit("K4"),str8_lit("K5"),str8_lit("K6"),str8_lit("K7"),str8_lit("K8"),str8_lit("K9"),
+	str8_lit("F1"),str8_lit("F2"),str8_lit("F3"),str8_lit("F4"),str8_lit("F5"),str8_lit("F6"),str8_lit("F7"),str8_lit("F8"),str8_lit("F9"),str8_lit("F10"),str8_lit("F11"),str8_lit("F12"),
+	str8_lit("Up Arrow"),str8_lit("Down Arrow"),str8_lit("Left Arrow"),str8_lit("Right Arrow"),
+	str8_lit("Escape"),str8_lit("Tilde"),str8_lit("Tab"),str8_lit("Caps Lock"),str8_lit("Minus"),str8_lit("Equals"),str8_lit("Backspace"),str8_lit("Left Bracket"),str8_lit("Right Bracket"),
+	str8_lit("Backslash"),str8_lit("Semicolon"),str8_lit("Apostrophe"),str8_lit("Enter"),str8_lit("Comma"),str8_lit("Period"),str8_lit("Forward Slash"),str8_lit("Space"),
+	str8_lit("Left Shift"),str8_lit("Right Shift"),str8_lit("Left Control"),str8_lit("Right Control"),str8_lit("Left Windows"),str8_lit("Right Windows"),str8_lit("Left Alt"),str8_lit("Right Alt"),str8_lit("Apps"),
+	str8_lit("Insert"),str8_lit("Delete"),str8_lit("Home"),str8_lit("End"),str8_lit("Page Up"),str8_lit("Page Down"),str8_lit("Print Screen"),str8_lit("Scroll Lock"),str8_lit("Pause Break"),
+	str8_lit("Numpad 0"),str8_lit("Numpad 1"),str8_lit("Numpad 2"),str8_lit("Numpad 3"),str8_lit("Numpad 4"),str8_lit("Numpad 5"),str8_lit("Numpad 6"),str8_lit("Numpad 7"),str8_lit("Numpad 8"),str8_lit("Numpad 9"),
+	str8_lit("Numpad Multiply"),str8_lit("Numpad Divide"),str8_lit("Numpad Plus"),str8_lit("Numpad Minus"),str8_lit("Numpad Period"),str8_lit("Num Lock"),
+	str8_lit("Mouse Left"),str8_lit("Mouse Right"),str8_lit("Mouse Middle"),str8_lit("Mouse 4"),str8_lit("Mouse 5"),str8_lit("Mouse 6"),str8_lit("Mouse 7"),str8_lit("Mouse 8"),
 };
 
 //NOTE(delle) the first 8bits of a keymod are reserved for the Key enum

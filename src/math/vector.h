@@ -484,8 +484,8 @@ struct hash<vec4>{
 #include "kigu/string.h"
 
 global_ string 
-to_string(const vec2& x, bool trunc = true){
-	string s;
+to_string(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	string s(a);
 	if(trunc){
 		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
@@ -503,8 +503,8 @@ to_string(const vec2& x, bool trunc = true){
 }
 
 global_ string 
-to_string(const vec3& x, bool trunc = true){
-	string s;
+to_string(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	string s(a);
 	if(trunc){
 		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
@@ -522,8 +522,8 @@ to_string(const vec3& x, bool trunc = true){
 }
 
 global_ string 
-to_string(const vec4& x, bool trunc = true){
-	string s;
+to_string(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	string s(a);
 	if(trunc){
 		s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");

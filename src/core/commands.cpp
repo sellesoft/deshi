@@ -175,28 +175,28 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(test);
 	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
-		array<File> files = get_directory_files(temp_str8_cstr(args[0]));
+		array<File> files = file_search_directory(args[0]);
 		char time_str[1024];
 		if(files.count){
-			Logf("cmd","Directory of '%s':",args[0].str);
+			Log("cmd","Directory of '",args[0],"':");
 			forE(files){
-				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->time_last_write));
+				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->last_write_time));
 				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),
-					 it->name,it->bytes_size);
+					 (const char*)it->name.str,it->bytes);
 			}
 		}
 	}DESHI_CMD_END(dir, CmdArgument_String);
 	
 	DESHI_CMD_START(rm, "Remove a file"){
-		delete_file(temp_str8_cstr(args[0]));
+		file_delete(args[0]);
 	}DESHI_CMD_END(rm, CmdArgument_String);
 	
 	DESHI_CMD_START(file_exists, "Checks if a file exists"){
-		Log("cmd","File '",temp_str8_cstr(args[0]),"' ",(file_exists(temp_str8_cstr(args[0]))) ? "exists." : "does not exist.");
+		Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
 	}DESHI_CMD_END(file_exists, CmdArgument_String);
 	
 	DESHI_CMD_START(rename, "Renames a file"){
-		rename_file(temp_str8_cstr(args[0]), temp_str8_cstr(args[1]));
+		file_rename(args[0], args[1]);
 	}DESHI_CMD_END(rename, CmdArgument_String, CmdArgument_String);
 	
 	DESHI_CMD_START(add, "Adds two numbers together"){

@@ -1,4 +1,4 @@
-﻿#define ParseError(...) LogE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
+﻿#define ParseError(path,...) LogE("storage","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 namespace Storage{
 	local u8 null128_png[] = { //TODO(delle) fix this
@@ -40,6 +40,11 @@ namespace Storage{
 void Storage::
 Init(){DPZoneScoped;
 	DeshiStageInitStart(DS_STORAGE, DS_RENDER, "Attempted to initialize Logger module before initializing Render module");
+	
+	//create the storage directories if they don't exist already
+	file_create(str8_lit("data/fonts/"));
+	file_create(str8_lit("data/models/"));
+	file_create(str8_lit("data/textures/"));
 	
 	stbi_set_flip_vertically_on_load(true);
 	
@@ -319,37 +324,35 @@ CreateMeshFromFile(const char* filename){DPZoneScoped;
 	pair<u32,Mesh*> result(0, NullMesh());
 	if(strcmp(filename, "null") == 0) return result;
 	
-	//split filename into name and extension
-	std::string filepath = Assets::dirModels()+filename;
-	string fullname(filename);
-	string name, extension;
-	b32 has_extension;
-	u32 dot_idx = fullname.findLastChar('.');
-	if(dot_idx != -1){
-		has_extension = true;
-		name = fullname.substr(0, dot_idx-1);
-		extension = fullname.substr(dot_idx+1);
-	}else{
-		has_extension = false;
-		name = fullname;
-	}
-	if(!has_extension){
-		filepath += ".mesh";
+	//append extension if not provided
+	str8 directory = str8_lit("data/models/");
+	s64 filename_len = strlen(filename);
+	str8 filepath{
+		(u8*)memory_talloc((directory.count+filename_len+6)*sizeof(u8)), //NOTE(delle) +6 for ".mesh\0"
+		directory.count+filename_len
+	};
+	CopyMemory(filepath.str,                 directory.str, directory.count*sizeof(u8));
+	CopyMemory(filepath.str+directory.count, filename,      filename_len*sizeof(u8));
+	
+	str8 front = str8_eat_until_last(filepath, '.');
+	if(filepath.count == front.count){
+		str8 mesh_ext = str8_lit(".mesh");
+		CopyMemory(filepath.str+filepath.count, mesh_ext.str, mesh_ext.count);
+		filepath.count += mesh_ext.count;
 	}
 	
 	//check if mesh is already loaded
 	forX(mi, meshes.count){
-		if((strcmp(meshes[mi]->name, name.str) == 0)){
+		if(strcmp(meshes[mi]->name, (const char*)front.str) == 0){
 			return pair<u32,Mesh*>(mi,meshes[mi]);
 		}
 	}
 	
 	//load .mesh file
-	char* buffer = Assets::readFileBinaryToArray(filepath, 0, true);
-	if(!buffer){  return result; }
-	defer{ delete[] buffer; };
+	str8 contents = file_read_simple(filepath, deshi_temp_allocator);
+	if(!contents) return result;
 	
-	return CreateMeshFromMemory(buffer);
+	return CreateMeshFromMemory(contents.str);
 }
 
 pair<u32,Mesh*> Storage::
@@ -417,8 +420,9 @@ CreateMeshFromMemory(void* data){DPZoneScoped;
 
 void Storage::
 SaveMesh(Mesh* mesh){DPZoneScoped;
-	Assets::writeFileBinary(Assets::dirModels()+std::string(mesh->name)+".mesh", mesh, mesh->bytes);
-	Log("storage","Successfully created ",mesh->name,".mesh");
+	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(mesh->name),str8_lit(".mesh"), deshi_temp_allocator);
+	file_write_simple(path, mesh, mesh->bytes);
+	Log("storage","Successfully created ",path);
 }
 
 void Storage::
@@ -448,6 +452,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 		}
 	}
 	
+	str8 path = str8_concat(str8_lit("data/textures/"),str8_from_cstr(filename), deshi_temp_allocator);
 	Texture* texture = AllocateTexture();
 	cpystr(texture->name, filename, 64);
 	texture->idx = textures.size();
@@ -455,11 +460,10 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->type    = type;
 	texture->filter  = filter;
 	texture->uvMode  = uvMode;
-	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, 
-								 &texture->depth, STBI_rgb_alpha);
+	texture->pixels  = stbi_load((const char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	texture->loaded  = true;
 	if(texture->pixels == 0){ 
-		LogE("storage","Failed to create texture '",filename,"': ",stbi_failure_reason()); 
+		LogE("storage","Failed to create texture '",path,"': ",stbi_failure_reason()); 
 		memory_zfree(texture);
 		return result; 
 	}
@@ -578,26 +582,29 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	if(strcmp(filename, "null") == 0) return result;
 	
-	//split filename into name and extension
-	std::string filepath = Assets::dirModels()+filename;
-	string fullname(filename);
-	string name, extension;
-	b32 has_extension;
-	u32 dot_idx = fullname.findLastChar('.');
-	if(dot_idx != -1){
-		has_extension = true;
-		name = fullname.substr(0, dot_idx-1);
-		extension = fullname.substr(dot_idx+1);
-	}else{
-		has_extension = false;
-		name = fullname;
-	}
-	if(!has_extension){
-		filepath += ".mat";
+	//append extension if not provided
+	str8 directory = str8_lit("data/models/");
+	s64 filename_len = strlen(filename);
+	str8 filepath{
+		(u8*)memory_talloc((directory.count+filename_len+5)*sizeof(u8)), //NOTE(delle) +5 for ".mat\0"
+		directory.count+filename_len
+	};
+	CopyMemory(filepath.str,                 directory.str, directory.count*sizeof(u8));
+	CopyMemory(filepath.str+directory.count, filename,      filename_len*sizeof(u8));
+	
+	str8 front = str8_eat_until_last(filepath, '.');
+	if(filepath.count == front.count){
+		str8 mesh_ext = str8_lit(".mat");
+		CopyMemory(filepath.str+filepath.count, mesh_ext.str, mesh_ext.count);
+		filepath.count += mesh_ext.count;
 	}
 	
 	//check if created already
-	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name.str) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
+	forX(mi, materials.count){
+		if(strcmp(materials[mi]->name, (const char*)front.str) == 0){
+			return pair<u32,Material*>(mi,materials[mi]);
+		}
+	}
 	
 	//material storage
 	string mat_name;
@@ -605,15 +612,15 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 	MaterialFlags mat_flags;
 	array<string> mat_textures;
 	
-	//parse .mat file
+	//parse .mat file //TODO(delle) complex file reader
 	enum MaterialHeader{ MATERIAL, TEXTURES, INVALID, };
 	persist const char* MaterialHeaderStrings[] = { "MATERIAL", "TEXTURES", "INVALID", };
 	u32 header = MaterialHeader::INVALID;
 	
-	char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
-	if(!buffer){ return result; }
-	defer{ delete[] buffer; };
-	char* line_start;  char* line_end = buffer-1;
+	str8 contents = file_read_simple(filepath, deshi_temp_allocator);
+	if(!contents) return result;
+	
+	char* line_start;  char* line_end = (char*)contents.str-1;
 	char* info_start;  char* info_end;
 	char* key_start;   char* key_end;
 	char* value_start; char* value_end;
@@ -635,19 +642,19 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 		if(*info_start == '>'){
 			if     (equals(info, cstr_lit(">material"))){ header = MaterialHeader::MATERIAL; }
 			else if(equals(info, cstr_lit(">textures"))){ header = MaterialHeader::TEXTURES; }
-			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",info,"'"); }
+			else{ header = MaterialHeader::INVALID; ParseError(filepath,"Uknown header '",info,"'"); }
 			continue;
 		}
 		
 		//parse the key-value pair
-		if(header == MaterialHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
+		if(header == MaterialHeader::INVALID) { ParseError(filepath,"Invalid header; skipping line"); continue; }
 		
 		if(header == MaterialHeader::MATERIAL){
 			//split the key-value pair
 			key_start = info_start;
 			key_end   = key_start;
 			while(key_end != info_end && *key_end++ != ' ');
-			if(key_end == info_end){ ParseError("No key passed."); continue; }
+			if(key_end == info_end){ ParseError(filepath,"No key passed."); continue; }
 			key_end -= 1;
 			cstring key{key_start, u64(key_end-key_start)};
 			
@@ -655,7 +662,7 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 			value_start = key_end;
 			while(*value_start++ == ' ');
 			value_start -= 1;
-			if(value_end == value_start){ ParseError("No value passed."); continue; }
+			if(value_end == value_start){ ParseError(filepath,"No value passed."); continue; }
 			cstring value{value_start, u64(value_end-value_start)};
 			
 			if      (equals(key, cstr_lit("name"))){
@@ -665,7 +672,7 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 			}else if(equals(key, cstr_lit("shader"))){
 				string s = to_string(value);
 				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], s.str) == 0){ mat_shader = i; break; } }
-			}else{ ParseError("Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
+			}else{ ParseError(filepath,"Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
 		}else{
 			mat_textures.add(string(info_start+1, info_end-info_start-2));
 		}
@@ -688,18 +695,20 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 
 void Storage::
 SaveMaterial(Material* material){DPZoneScoped;
-	std::string mat_text = TOSTDSTRING(">material"
+	string mat_text = ToString(">material"
 									   "\nname   \"", material->name,"\""
 									   "\nshader ", ShaderStrings[material->shader],
 									   "\nflags  ", material->flags,
 									   "\n"
 									   "\n>textures");
 	forI(material->textures.count){
-		mat_text.append(TOSTDSTRING("\n\"",textures[material->textures[i]]->name,"\""));
+		mat_text += ToString("\n\"",textures[material->textures[i]]->name,"\"");
 	}
-	mat_text.append("\n");
-	Assets::writeFile(Assets::dirModels()+std::string(material->name)+".mat", mat_text.c_str(), mat_text.size());
-	Log("storage","Successfully created ",material->name,".mat");
+	mat_text += "\n";
+	
+	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(material->name),str8_lit(".mat"), deshi_temp_allocator);
+	file_write_simple(path, mat_text.str, mat_text.count*sizeof(char));
+	Log("storage","Successfully created ",path);
 }
 
 void Storage::
@@ -725,38 +734,42 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 	if(strcmp(filename, "null") == 0) return result;
 	
 	Stopwatch model_stopwatch = start_stopwatch();
-	b32 has_extension;
-	std::string filepath = Assets::dirModels() + filename;
-	string fullname(filename);
-	string name;
-	string extension;
-	u32 dot_idx = fullname.findLastChar('.');
-	if(dot_idx != -1){
-		has_extension = true;
-		name = fullname.substr(0, dot_idx-1);
-		extension = fullname.substr(dot_idx+1);
-	}else{
-		has_extension = false;
-		name = fullname;
+	
+	//append extension if not provided
+	str8 directory = str8_lit("data/models/");
+	s64 filename_len = strlen(filename);
+	str8 model_path{
+		(u8*)memory_talloc((directory.count+filename_len+6)*sizeof(u8)), //NOTE(delle) +7 for ".model\0"
+		directory.count+filename_len
+	};
+	CopyMemory(model_path.str,                 directory.str, directory.count*sizeof(u8));
+	CopyMemory(model_path.str+directory.count, filename,      filename_len*sizeof(u8));
+	
+	str8 front = str8_eat_until_last(model_path, '.');
+	if(model_path.count == front.count){
+		str8 mesh_ext = str8_lit(".model");
+		CopyMemory(model_path.str+model_path.count, mesh_ext.str, mesh_ext.count);
+		model_path.count += mesh_ext.count;
 	}
-	std::string obj_name   = std::string(name.str)+".obj";
-	std::string mesh_name  = std::string(name.str)+".mesh";
-	std::string model_name = std::string(name.str)+".model";
+	
+	str8 obj_path  = str8_concat(front, str8_lit(".obj"),  deshi_temp_allocator);
+	str8 mesh_path = str8_concat(front, str8_lit(".mesh"), deshi_temp_allocator);
 	
 	//check if model is already loaded
-	forX(mi, models.count){ if((strcmp(models[mi]->name, name.str) == 0)){ return pair<u32,Model*>(mi,models[mi]); } }
+	forX(mi, models.count){
+		if((strcmp(models[mi]->name, (const char*)front.str) == 0)){
+			return pair<u32,Model*>(mi,models[mi]);
+		}
+	}
 	
 	b32 parse_obj_mesh  = true;
 	b32 parse_obj_model = true;
 	if(!forceLoadOBJ){
-		std::vector<std::string> files = Assets::iterateDirectory_(Assets::dirModels());
-		for(std::string& file : files){
-			if(parse_obj_mesh && file == mesh_name){
-				parse_obj_mesh = false;
-			}
-			if(parse_obj_model && file == model_name){
-				parse_obj_model = false;
-			}
+		carray<File> files = file_search_directory(directory);
+		forE(files){
+			if(file_path_equal(it->path, mesh_path))  parse_obj_mesh  = false;
+			if(file_path_equal(it->path, model_path)) parse_obj_model = false;
+			if(!parse_obj_mesh && !parse_obj_model) break;
 		}
 	}
 	
@@ -793,11 +806,10 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		b32 fatal_error     = false;
 		
 		Stopwatch load_stopwatch = start_stopwatch();
-		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
-		if(!buffer){  return result; }
-		defer{ delete[] buffer; };
+		str8 contents = file_read_simple(obj_path, deshi_temp_allocator);
+		if(!contents) return result;
 		char* line_start;
-		char* line_end = buffer - 1;
+		char* line_end = (char*)contents.str-1;
 		b32 has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
@@ -825,7 +837,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 						
 						//// uv ////
 						case 't':{
-							if(*(line_start+2) != ' '){ ParseError("No space after 'vt'"); return result; }
+							if(*(line_start+2) != ' '){ ParseError(obj_path,"No space after 'vt'"); return result; }
 							char* next = 0;
 							f32 x = strtof(line_start+2, &next);
 							f32 y = strtof(next, 0);
@@ -834,7 +846,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 						
 						//// normal ////
 						case 'n':{
-							if(*(line_start+2) != ' '){ ParseError("No space after 'vn'"); return result; }
+							if(*(line_start+2) != ' '){ ParseError(obj_path,"No space after 'vn'"); return result; }
 							char* next = 0;
 							f32 x = strtof(line_start+2, &next);
 							f32 y = strtof(next, &next);
@@ -843,7 +855,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 							vnArray.add(vnUnique.add(vec, vec));
 						}continue;
 						default:{
-							ParseError("Invalid character after 'v': '",*(line_start+1),"'");
+							ParseError(obj_path,"Invalid character after 'v': '",*(line_start+1),"'");
 						}return result;
 					}
 				}continue;
@@ -851,8 +863,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				//// face ////
 				case 'f':{
 					Stopwatch face_stopwatch = start_stopwatch();
-					if(*(line_start+1) != ' '){ ParseError("No space after 'f'"); return result; }
-					if(vArray.count == 0){ ParseError("Specifier 'f' before any 'v'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
+					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return result; }
 					
 					char* next = line_start+1;
 					u32 v0=strtol(next,&next,10)-1; u32 vt0=strtol(next+1,&next,10)-1; u32 vn0=strtol(next+1,&next,10)-1;
@@ -954,18 +966,18 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// use material ////
 				case 'u':{
-					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError("Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
 					if(mtllib_found){
 						pair<u32,string> usemtl(indexes.count, string(line_start+7, line_end-(line_start+7)));
 						uArray.add(uUnique.add(usemtl,usemtl));
 					}else{
-						ParseError("Specifier 'usemtl' used before 'mtllib' specifier");
+						ParseError(obj_path,"Specifier 'usemtl' used before 'mtllib' specifier");
 					}
 				}continue;
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp(line_start, "mtllib ", 7) != 0){ ParseError("Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					if(strncmp(line_start, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
 					mtllib_found = true;
 					pair<u32,string> mtllib(indexes.count, string(line_start+7, line_end-(line_start+7)));
 					mArray.add(mUnique.add(mtllib,mtllib));
@@ -973,25 +985,25 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// group (batch) ////
 				case 'g':{
-					if(*(line_start+1) != ' '){ ParseError("No space after 'g'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
 					pair<u32,string> group(indexes.count, string(line_start+2, line_end-(line_start+2)));
 					gArray.add(gUnique.add(group,group));
 				}continue;
 				
 				//// object ////
 				case 'o':{
-					if(*(line_start+1) != ' '){ ParseError("No space after 'o'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
 					pair<u32,string> object(indexes.count, string(line_start+2, line_end-(line_start+2)));
 					oArray.add(oUnique.add(object,object));
 				}continue;
 				
 				//// smoothing ////
 				case 's':{
-					if(*(line_start+1) != ' '){ ParseError("No space after 's'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 's'"); return result; }
 					s_warning = true;
 				}continue;
 				default:{
-					ParseError("Invalid starting character: '",*line_start,"'");
+					ParseError(obj_path,"Invalid starting character: '",*line_start,"'");
 				}return result;
 			}
 		}
@@ -1102,7 +1114,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		Mesh* mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
 								  totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
-		cpystr(mesh->name, name.str, 64);
+		cpystr(mesh->name, (const char*)front.str, 64);
 		mesh->idx = meshes.count;
 		mesh->aabbMin  = aabb_min;
 		mesh->aabbMax  = aabb_max;
@@ -1194,7 +1206,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		}
 		
 		model = AllocateModel(mArray.count);
-		cpystr(model->name,name.str, 64);
+		cpystr(model->name, (const char*)front.str, 64);
 		model->idx = models.count;
 		model->flags = flags;
 		model->mesh     = mesh;
@@ -1218,7 +1230,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 	}
 	//// load .obj (batch info only), .mtl, and .mesh ////
 	else if(parse_obj_model){
-		Mesh* mesh = CreateMeshFromFile(mesh_name.c_str()).second;
+		Mesh* mesh = CreateMeshFromFile((const char*)front.str).second;
 		
 		set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
 		array<u32> oArray, gArray,  uArray,  mArray; //index in unique array
@@ -1226,10 +1238,9 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		u32 index_count = 0;
 		
 		Stopwatch load_stopwatch = start_stopwatch();
-		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
-		if(!buffer){  return result; }
-		defer{ delete[] buffer; };
-		char* line_start; char* line_end = buffer - 1;
+		str8 contents = file_read_simple(obj_path, deshi_temp_allocator);
+		if(!contents) return result;
+		char* line_start; char* line_end = (char*)contents.str-1;
 		b32 has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
@@ -1240,13 +1251,13 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			switch(*line_start){
 				//// face ////
 				case 'f':{
-					if(*(line_start+1) != ' '){ ParseError("No space after 'f'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
 					index_count += 3;
 				}
 				
 				//// use material ////
 				case 'u':{ //use material
-					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError("Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
 					if(mtllib_found){
 						pair<u32,string> usemtl(index_count, string(line_start+7, line_end-(line_start+7)));
 						uArray.add(uUnique.add(usemtl,usemtl));
@@ -1257,7 +1268,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp(line_start, "mtllib ", 7) != 0){ ParseError("Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					if(strncmp(line_start, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
 					mtllib_found = true;
 					pair<u32,string> mtllib(index_count, string(line_start+7, line_end-(line_start+7)));
 					mArray.add(mUnique.add(mtllib,mtllib));
@@ -1265,14 +1276,14 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// group (batch) ////
 				case 'g':{
-					if(*(line_start+1) != ' '){ ParseError("No space after 'g'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
 					pair<u32,string> group(index_count, string(line_start+2, line_end-(line_start+2)));
 					gArray.add(gUnique.add(group,group));
 				}continue;
 				
 				//// object ////
 				case 'o':{
-					if(*(line_start+1) != ' '){ ParseError("No space after 'o'"); return result; }
+					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
 					pair<u32,string> object(index_count, string(line_start+2, line_end-(line_start+2)));
 					oArray.add(oUnique.add(object,object));
 				}continue;
@@ -1291,7 +1302,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		}
 		
 		model = AllocateModel(mArray.count);
-		cpystr(model->name,name.str, 64);
+		cpystr(model->name, (const char*)front.str, 64);
 		model->idx = models.count;
 		model->flags = flags;
 		model->mesh     = mesh;
@@ -1325,10 +1336,9 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		persist const char* ModelHeaderStrings[] = { "MODEL", "BATCHES", "INVALID", };
 		u32 header = ModelHeader::INVALID;
 		
-		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
-		if(!buffer){  return result; }
-		defer{ delete[] buffer; };
-		char* line_start;  char* line_end = buffer-1;
+		str8 contents = file_read_simple(model_path, deshi_temp_allocator);
+		if(!contents) return result;
+		char* line_start;  char* line_end = (char*)contents.str-1;
 		char* info_start;  char* info_end;
 		char* key_start;   char* key_end;
 		char* value_start; char* value_end;
@@ -1350,7 +1360,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			if(*info_start == '>'){
 				if     (equals(info, cstr_lit(">model"))){ header = ModelHeader::MODEL; }
 				else if(equals(info, cstr_lit(">batches"))){ header = ModelHeader::BATCHES; }
-				else{ header = ModelHeader::INVALID; ParseError("Uknown header '",info,"'"); }
+				else{ header = ModelHeader::INVALID; ParseError(model_path,"Uknown header '",info,"'"); }
 				continue;
 			}
 			
@@ -1358,7 +1368,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			key_start = info_start;
 			key_end   = key_start;
 			while(key_end != info_end && *key_end++ != ' ');
-			if(key_end == info_end){ ParseError("No key passed."); continue; }
+			if(key_end == info_end){ ParseError(model_path,"No key passed."); continue; }
 			key_end -= 1;
 			cstring key{key_start, u64(key_end-key_start)};
 			
@@ -1366,11 +1376,11 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			value_start = key_end;
 			while(*value_start++ == ' ');
 			value_start -= 1;
-			if(value_end == value_start){ ParseError("No value passed."); continue; }
+			if(value_end == value_start){ ParseError(model_path,"No value passed."); continue; }
 			cstring value{value_start, u64(value_end-value_start)};
 			
 			//parse the key-value pair
-			if(header == ModelHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
+			if(header == ModelHeader::INVALID) { ParseError(model_path,"Invalid header; skipping line"); continue; }
 			
 			if(header == ModelHeader::MODEL){
 				if      (equals(key, cstr_lit("name"))){
@@ -1381,7 +1391,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 					model_load_mesh = string(value_start+1, value_end-value_start-2);
 				}else if(equals(key, cstr_lit("armature"))){
 					//NOTE currently nothing
-				}else{ ParseError("Invalid key '",key,"' for header '",ModelHeaderStrings[header],"'"); continue; }
+				}else{ ParseError(model_path,"Invalid key '",key,"' for header '",ModelHeaderStrings[header],"'"); continue; }
 			}else{
 				cstring s = value;
 				u32 i0 = (u32)b10tou64(s,&s);
@@ -1466,7 +1476,7 @@ CopyModel(Model* _model){DPZoneScoped;
 void Storage::
 SaveModel(Model* model){DPZoneScoped;
 	SaveMesh(model->mesh);
-	std::string model_save = TOSTDSTRING(">model"
+	string model_save = ToString(">model"
 										 "\nname     \"",model->name,"\""
 										 "\nflags    ", model->flags,
 										 "\nmesh     \"", model->mesh->name,"\""
@@ -1475,12 +1485,14 @@ SaveModel(Model* model){DPZoneScoped;
 										 "\n>batches");
 	forI(model->batches.count){
 		SaveMaterial(materials[model->batches[i].material]);
-		model_save.append(TOSTDSTRING("\n\"",materials[model->batches[i].material]->name,"\" ",
-									  model->batches[i].indexOffset," ",model->batches[i].indexCount));
+		model_save += ToString("\n\"",materials[model->batches[i].material]->name,"\" ",
+									  model->batches[i].indexOffset," ",model->batches[i].indexCount);
 	}
-	model_save.append("\n");
-	Assets::writeFile(Assets::dirModels()+std::string(model->name)+".model", model_save.c_str(), model_save.size());
-	Log("storage","Successfully created ",model->name,".model");
+	model_save += "\n";
+	
+	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(model->name),str8_lit(".model"), deshi_temp_allocator);
+	file_write_simple(path, model_save.str, model_save.count*sizeof(char));
+	Log("storage","Successfully created ",path);
 }
 
 void Storage::
@@ -1511,11 +1523,11 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 		}
 	}
 	
-	char* buffer = Assets::readFileAsciiToArray(Assets::dirFonts() + filename);
-	if(!buffer){ return result; }
-	defer{ delete[] buffer; };
+	str8 path = str8_concat(str8_lit("data/fonts/"),str8_from_cstr(filename), deshi_temp_allocator);
+	str8 contents = file_read_simple(path, deshi_temp_allocator);
+	if(!contents) return result;
 	
-	Assert(strncmp("STARTFONT", buffer, 9) == 0); //TODO(delle) error handling: incorrect file
+	Assert(strncmp("STARTFONT", (const char*)contents.str, 9) == 0); //TODO(delle) error handling: incorrect file
 	Font* font = AllocateFont(FontType_BDF);
 	
 	b32 in_char   = false;
@@ -1531,7 +1543,7 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 	u16* encodings = 0;
 	u8*  pixels = 0;
 	
-	char* line_start;  char* line_end = buffer-1;
+	char* line_start;  char* line_end = (char*)contents.str-1;
 	char* info_start;  char* info_end;
 	char* key_start;   char* key_end;
 	char* value_start; char* value_end;
@@ -1676,17 +1688,17 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 		}
 	}
 	
-	char* buffer = Assets::readFileBinaryToArray(Assets::dirFonts()+filename);
-	if(!buffer){ return result; }
-	defer{ delete[] buffer; };
+	str8 path = str8_concat(str8_lit("data/fonts/"),str8_from_cstr(filename), deshi_temp_allocator);
+	str8 contents = file_read_simple(path, deshi_temp_allocator);
+	if(!contents) return result;
 	
 	Font* font = AllocateFont(FontType_TTF); 
 	
 	int x0, y0, x1, y1;
 	
 	stbtt_fontinfo info;
-	stbtt_InitFont(&info, (unsigned char*)buffer, 0);
-	stbtt_GetScaledFontVMetrics((u8*)buffer, 0, (f32)size, &font->ascent, &font->decent, &font->line_gap);
+	stbtt_InitFont(&info, contents.str, 0);
+	stbtt_GetScaledFontVMetrics(contents.str, 0, (f32)size, &font->ascent, &font->decent, &font->line_gap);
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
 	
 	//current ranges:
@@ -1768,7 +1780,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	stbtt_PackSetSkipMissingCodepoints(pc, true);
 	
 	//pack our ranges
-	stbtt_PackFontRanges(pc, (u8*)buffer, 0, ranges, 6);
+	stbtt_PackFontRanges(pc, contents.str, 0, ranges, 6);
 	
 	stbtt_PackEnd(pc);
 	
