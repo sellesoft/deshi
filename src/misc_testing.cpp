@@ -240,41 +240,42 @@ void vector_field() {
 }
 
 void electric_field() {
-	//array<charge> pcharges{
-	//	{{ 1.,  0.}, 1.},
-	//	{{ 1.,  1.},-1.},
-	//	{{ 0.,  1.}, 1.},
-	//	{{-1.,  1.},-1.},
-	//	{{-1.,  0.}, 1.},
-	//	{{-1., -1.},-1.},
-	//	{{ 0., -1.}, 1.},
-	//	{{ 1., -1.},-1.},
-	//};
-	//f32 scale = 30;
-	//Render::StartNewTwodCmd(0, 0, vec2::ZERO, DeshWinSize);
-	//vec2 coff = DeshWinSize/2;
-	//
-	//u32 res = 10;
-	//f64 ar = DeshWinSize.y/DeshWinSize.x;
-	//for(u32 i = 0; i < res; i++){
-	//	for(u32 j = 0; j < res; j++){
-	//		vec2 pos = vec2((i/f32(res)+1/(2*f32(res)))*DeshWinSize.x, (j/f32(res)+1/(2*f32(res)))*DeshWinSize.y);
-	//		vec2 e;
-	//		for(charge c : pcharges){
-	//			e+=1000*c.q/((pos-c.r).magSq())*(pos-c.r).normalized();
-	//		}
-//
-	//		Render::DrawLine2D(pos, pos+e, 1, Color_White, 0, vec2(0,0), DeshWinSize);
-	//	}
-	//}
-	//
-	//
-	//
-	//for(charge c : pcharges){
-	//	vec2 pos = c.r * scale + coff;
-	//	color col = color(155, 155 * Remap(c.q, 0., 1., -1., 1.), 0); 
-	//	Render::FillCircle2D(pos, 4, 30, col, 0);
-	//}
+	struct charge{
+		vec2 r;
+		f64 q;
+	};
+	array<charge> pcharges{
+		{{ 1.,  0.}, 1.},
+		{{ 1.,  1.},-1.},
+		{{ 0.,  1.}, 1.},
+		{{-1.,  1.},-1.},
+		{{-1.,  0.}, 1.},
+		{{-1., -1.},-1.},
+		{{ 0., -1.}, 1.},
+		{{ 1., -1.},-1.},
+	};
+	f32 scale = 30;
+	Render::StartNewTwodCmd(5, 0, vec2::ZERO, DeshWinSize);
+	vec2 coff = DeshWinSize/2;
+	
+	u32 res = 10;
+	f64 ar = DeshWinSize.y/DeshWinSize.x;
+	for(u32 i = 0; i < res; i++){
+		for(u32 j = 0; j < res; j++){
+			vec2 pos = vec2((i/f32(res)+1/(2*f32(res)))*DeshWinSize.x, (j/f32(res)+1/(2*f32(res)))*DeshWinSize.y);
+			vec2 e;
+			for(charge c : pcharges){
+				e+=1000*c.q/((pos-c.r).magSq())*(pos-c.r).normalized();
+			}
+			Render::DrawLine2D(pos, pos+e, 1, Color_White, 5, vec2(0,0), DeshWinSize);
+		}
+	}
+	
+	for(charge c : pcharges){
+		vec2 pos = c.r * scale + coff;
+		color col = color(155, 155 * Remap(c.q, 0., 1., -1., 1.), 0); 
+		Render::FillCircle2D(pos, 4, 30, col, 0);
+	}
 			
 }
 
@@ -309,14 +310,67 @@ void sim_pixels(){DPZoneScoped;
 
 }
 
-void grow_pixels(){DPZoneScoped;
-	Render::StartNewTwodCmd(0,0,vec2::ZERO, DeshWinSize);
-	
-
-	
-}
-
 u64 rngseed = 0xa0a0a0a0a0;
-void rng(){
-
+u64 rng(){
+	static u64 x = rngseed;
+	x = (56 - rngseed * x) % (x * x + 2 * x + 1);
+	return x;
 }
+
+void repulsion(){DPZoneScoped;
+	Render::StartNewTwodCmd(0,0,vec2::ZERO, DeshWinSize);
+	const u32 nparticles = 100;
+	struct particle{
+		vec2 pos;
+		vec2 vel;
+		vec2 acc;
+	};
+	static particle particles[nparticles];
+	static b32 init = 0;
+	if(!init){
+		forI(nparticles){
+			particles[i].pos = vec2(sin(rng()), cos(rng()));
+			particles[i].vel = vec2::ZERO;
+		}
+		init = true;
+	}
+	//calc forces
+
+	for(u32 i = 0; i < nparticles; i++){
+		particle* a = &particles[i];
+		for(u32 j = 0; j < nparticles; j++){
+			if(j==i) continue;
+			particle* b = &particles[j];
+			a->acc = 0.001/(a->pos - b->pos).magSq() * (a->pos - b->pos).normalized(); 
+			//a->acc = 0.005*vec2(a->pos.y, a->pos.x);
+			//a->acc = a->acc.compOn(vec2(a->pos.y, -a->pos.x));
+			//b->acc = 0.001 / ((b->pos - a->pos).magSq()) * (b->pos - a->pos).normalized(); 
+			//b->acc = 0.005*vec2(b->pos.y, b->pos.x);
+			//b->acc = b->acc.compOn(vec2(b->pos.y, -b->pos.x));
+		}
+	}
+
+	forI(nparticles){
+		particle* p = &particles[i];
+		f64 steps = 1000;
+		p->vel += p->acc * DeshTime->deltaTime;
+		forI(steps){
+			p->vel = p->vel.compOn(vec2(p->pos.y, -p->pos.x)).normalized() * p->vel.mag();
+			p->pos += p->vel * DeshTime->deltaTime / steps;
+		}
+		//p->pos.normalize();
+		p->acc = vec2::ZERO;
+		p->vel *= 0.1;
+		Render::FillCircle2D(p->pos * 100 + DeshWinSize / 2, 5, 20, color(50, 80, f32(i) / nparticles * 170));
+	}
+
+	if(key_pressed(Key_SPACE)){
+		init = false;
+	}
+
+	
+
+
+	
+}
+

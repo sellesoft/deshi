@@ -134,6 +134,7 @@ struct Graph{
     //determines where on the graph axes labels will appear
     GraphAxesLabelStyle axesLabelStyle = GraphAxesLabelStyle_OnAxes;
     //TODO axes label alignemnt options
+    u64 dotsize = 1; //size of the dots on the graph
 	
     //Graph data
     carray<vec2g> data{0,0};
@@ -346,12 +347,12 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                 vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
                 vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
                 CustomItem_DCMakeFilledRect(drawCmd,
-					poscorrected,
-					vec2::ONE,
+					poscorrected - vec2::ONE * g->dotsize / 2,
+					vec2::ONE*g->dotsize,
 					Color_Red
 				); 
             } 
-            else{
+            else{//debug
                 UIDrawCmd drawCmd;
                 vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
                 vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
