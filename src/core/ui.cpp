@@ -634,6 +634,7 @@ void UI::SetWinCursorY(f32 y){
 
 //TODO investigate why this doesn't actually scroll to the very bottom
 void UI::SetScroll(vec2 scroll) {DPZoneScoped;
+    if(WinScrolling) return; //TODO(sushi) add an option for this
 	if (scroll.x == MAX_F32)
 		curwin->scx = curwin->maxScroll.x;
 	else
@@ -644,6 +645,23 @@ void UI::SetScroll(vec2 scroll) {DPZoneScoped;
 	else
 		curwin->scy = scroll.y;
 }
+
+void SetScrollX(f32 scroll){
+	if(WinScrolling) return; //TODO(sushi) add an option for this
+	if (scroll == MAX_F32)
+		curwin->scx = curwin->maxScroll.x;
+	else
+		curwin->scx = scroll;
+} 
+
+void SetScrollY(f32 scroll){
+	if(WinScrolling) return; //TODO(sushi) add an option for this
+	if (scroll == MAX_F32)
+		curwin->scy = curwin->maxScroll.y;
+	else
+		curwin->scy = scroll;
+} 
+
 
 void UI::SetNextItemActive() {DPZoneScoped;
 	StateAddFlag(UISNextItemActive);

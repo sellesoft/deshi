@@ -823,12 +823,12 @@ namespace UI {
 	//sets the window's scroll values
 	//use MAX_F32 to set it to max scroll
 	void SetScroll(vec2 scroll); 
-	//TODO sets the window's X scroll
+	//sets the window's X scroll
 	//use MAX_F32 to set it to max X scroll
-	void SetScrollX(vec2 scroll); 
-	//TODO sets the window's Y scroll
+	void SetScrollX(f32 scroll); 
+	//sets the window's Y scroll
 	//use MAX_F32 to set it to max Y scroll
-	void SetScrollY(vec2 scroll); 
+	void SetScrollY(f32 scroll); 
 	//sets the next item to be 'active'
 	//TODO I think I need to make this work with things other than InputText
 	//InputText: sets keyboard focus (maybe make this its own function?)

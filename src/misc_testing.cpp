@@ -367,10 +367,63 @@ void repulsion(){DPZoneScoped;
 	if(key_pressed(Key_SPACE)){
 		init = false;
 	}
+}
 
+void spring(){
+	Render::StartNewTwodCmd(0,0,vec2::ZERO, DeshWinSize);
+	struct particle{
+		vec2 pos;
+		vec2 vel;
+		vec2 acc;
+		f64 mass;
+	};
+
+	static f32 k = 0.00002; //spring constant
+	static f32 g = 0.5;
+	static f32 d = 1;
+	persist f32 B = 3;
+	persist f32 w = 5;
+	f32 h = 0.1;
+	persist particle p{{0,500},{0,0},{0,0},1};
+	persist particle last = p;
+	if(isnan(p.vel.y)) p.vel = vec2::ZERO;
+	if(isnan(p.pos.y)) p.pos = vec2::ZERO;
+	f32 pos = p.pos.y;
+	f32 posl = last.pos.y;
+	f32 denom = 1 / (1 + 2*h*B);
+	//p.pos.y = denom*(pos*(2+h*B-h*h*w*w)-posl); //damping
+	//p.pos.y = pos*(2-h*h*w*w)-posl;
+	if(!input_lmouse_down()){
+		p.acc = -2*B*p.vel-w*w*p.pos-g*100*vec2(0,1);
+		p.vel += p.acc * DeshTime->deltaTime / 1000;
+		p.pos += p.vel * DeshTime->deltaTime / 1000;
+	}
+	using namespace UI;
+	SetNextWindowPos(vec2::ZERO);
+	SetNextWindowSize(DeshWinSize);
+	Begin("springwin", UIWindowFlags_NoScroll | UIWindowFlags_NoInteract);{
+#define Sldr(var, min, max) Slider(STRINGIZE(var), &var, min, max); SameLine(); Text(STRINGIZE(var));
+		Sldr(B, 0, 5);
+		Sldr(w, 0, 5);
+		Sldr(g, 0, 10);
+		SetNextWindowSize(MAX_F32, MAX_F32);
+		BeginChild("springwinchld", vec2::ZERO, UIWindowFlags_NoInteract);{
+			if(IsWinHovered() && input_lmouse_down()){
+				p.pos = ((input_mouse_position()- GetWindow()->dimensions/2)*10).yInvert();
+			
+			}
+			vec2 sp = p.pos.yInvert() / 10 + GetWindow()->dimensions / 2;
+			Line(GetWindow()->dimensions/2,sp, 2, Color_Cyan);
+			CircleFilled(sp, 10);
+			Log("", sp, " ", p.pos);  
+		}EndChild();
+	}End();
+	if(key_pressed(Key_SPACE)){
+		p.pos = vec2(0,1000);
+		p.vel = vec2::ZERO;
+	}
 	
-
-
+	last = p;
 	
 }
 
