@@ -42,8 +42,8 @@ struct Push2DVk{
 
 struct TwodCmdVk{
 	VkDescriptorSet descriptorSet;
-	u16  indexOffset;
-	u16  indexCount;
+	u64  indexOffset;
+	u64  indexCount;
 	vec2 scissorOffset;
 	vec2 scissorExtent;
 	b32  textured;
