@@ -441,10 +441,10 @@ void cmd_init(){
 	DESHI_CMD_START(shader_reload, "Reloads specified shader"){
 		s32 id = atoi((const char*)args[0].str);
 		if(id == -1){
-			Render::ReloadAllShaders();
+			render_reload_all_shaders();
 			console_log("{{t=CMD,c=magen}Reloaded all shaders");
 		}else if(id < Shader_COUNT){
-			Render::ReloadShader(id);
+			render_reload_shader(id);
 			console_log("{{t=CMD,c=magen}Reloaded '",ShaderStrings[id]);
 		}else{
 			LogE("cmd", "There is no shader with id: ",id);

@@ -43,7 +43,7 @@ simulate hovered/clicked/toggled on items
 
 #include "font.h"
 #include "input.h"
-#include "renderer.h"
+#include "render.h"
 #include "memory.h"
 #include "kigu/color.h"
 #include "kigu/common.h"

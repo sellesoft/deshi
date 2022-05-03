@@ -19,7 +19,7 @@
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"
-#include "core/renderer.h"
+#include "core/render.h"
 #include "core/storage.h"
 #include "core/time.h"
 #include "core/ui.h"
@@ -47,7 +47,7 @@ DeshiImGui::NewFrame(); \
 #define deshi_loop_end() \
 console_update(); \
 UI::Update(); \
-Render::Update(); \
+render_update(); \
 memory_clear_temp(); \
 DeshTime->frameTime = reset_stopwatch(&frame_stopwatch); \
 }

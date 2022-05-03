@@ -2681,7 +2681,7 @@ void UI::PushRightIndent(f32 indent){DPZoneScoped;
 }
 
 void UI::PushDrawTarget(u32 idx){DPZoneScoped;
-	Assert(idx < Render::GetMaxSurfaces());
+	Assert(idx < render_max_surface_count());
 	drawTargetStack.add(idx);
 }
 
@@ -4797,12 +4797,12 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		dcse = ClampMin(dcse, vec2::ZERO);
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
-		Render::SetSurfaceDrawTargetByIdx(drawCmd.render_surface_target_idx);
+		render_set_active_surface_idx(drawCmd.render_surface_target_idx);
 		
 		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
 		if(!lastdc || dcse != lastdc->scissorExtent || dcso != lastdc->scissorOffset || drawCmd.tex != lastdc->tex) 
-			Render::StartNewTwodCmd(window->layer, drawCmd.tex, dcso, dcse);
-		Render::AddTwodVertices(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
+			render_start_cmd2(window->layer, drawCmd.tex, dcso, dcse);
+		render_add_vertices2(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
 		//if((input_mouse_position() - drawCmd.vertices[0].pos).mag() < 4){
 		//	DebugCircle(drawCmd.vertices[0].pos, 4, Color_Green);
@@ -4820,7 +4820,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		i++;
 	}
 	
-	Render::SetSurfaceDrawTargetByIdx(0);
+	render_set_active_surface_idx(0);
 }
 
 inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {DPZoneScoped;
@@ -4987,8 +4987,8 @@ void UI::Update() {DPZoneScoped;
 	
 	//draw all debug commands if there are any
 	for (UIDrawCmd& drawCmd : debugCmds) {
-		Render::StartNewTwodCmd(Render::GetZZeroLayerIndex(), drawCmd.tex, vec2::ZERO, DeshWinSize);
-		Render::AddTwodVertices(Render::GetZZeroLayerIndex(), drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
+		render_start_cmd2(render_decoration_layer_index(), drawCmd.tex, vec2::ZERO, DeshWinSize);
+		render_add_vertices2(render_decoration_layer_index(), drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 	}
 	debugCmds.clear();
 }

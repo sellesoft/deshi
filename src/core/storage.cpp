@@ -311,7 +311,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	fa[4].faceNeighbors[0]=0; fa[4].faceNeighbors[1]=1; fa[4].faceNeighbors[2]=3; fa[4].faceNeighbors[3]=5;
 	fa[5].faceNeighbors[0]=0; fa[5].faceNeighbors[1]=2; fa[5].faceNeighbors[2]=3; fa[5].faceNeighbors[3]=4;
 	
-	Render::LoadMesh(mesh);
+	render_load_mesh(mesh);
 	
 	result.first  = mesh->idx;
 	result.second = mesh;
@@ -410,7 +410,7 @@ CreateMeshFromMemory(void* data){DPZoneScoped;
 		mesh->faces[fi].faceNeighbors     = {mesh->faces[fi].neighborFaceArray,     mesh->faces[fi].neighborFaceCount};
 	}
 	
-	Render::LoadMesh(mesh);
+	render_load_mesh(mesh);
 	
 	result.first  = mesh->idx;
 	result.second = mesh;
@@ -469,7 +469,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	}
 	texture->mipmaps = (generateMipmaps) ? (s32)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
-	Render::LoadTexture(texture);
+	render_load_texture(texture);
 	if(!keepLoaded){
 		stbi_image_free(texture->pixels); 
 		texture->pixels = 0;
@@ -531,7 +531,7 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 		texture->pixels = (u8*)data;
 	}
 	
-	Render::LoadTexture(texture);
+	render_load_texture(texture);
 	
 	result.first  = texture->idx;
 	result.second = texture;
@@ -569,7 +569,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	material->flags  = flags;
 	forI(mat_textures.count) material->textures.add(mat_textures[i]);
 	
-	Render::LoadMaterial(material);
+	render_load_material(material);
 	
 	result.first  = material->idx;
 	result.second = material;
@@ -685,7 +685,7 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 	material->flags = mat_flags;
 	forI(mat_textures.count) material->textures.add(CreateTextureFromFile(mat_textures[i].str).first);
 	
-	Render::LoadMaterial(material);
+	render_load_material(material);
 	
 	result.first  = material->idx;
 	result.second = material;
@@ -1192,7 +1192,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			}
 		}
 		
-		Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
+		render_load_mesh(mesh); //TODO(delle) check if mesh already loaded
 		meshes.add(mesh);
 		Log("storage","Parsing and loading OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		
@@ -1776,7 +1776,8 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	pixels[tsx+1] = 255;
 	
 	//begin a font pack
-	Assert(stbtt_PackBegin(pc, pixels + 2 * tsx, tsx, tsy - 4, 0, 1, nullptr));
+	int success = stbtt_PackBegin(pc, pixels + 2 * tsx, tsx, tsy - 4, 0, 1, nullptr);
+	Assert(success);
 	stbtt_PackSetSkipMissingCodepoints(pc, true);
 	
 	//pack our ranges

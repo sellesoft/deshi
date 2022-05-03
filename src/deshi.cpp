@@ -1,26 +1,11 @@
 /* deshi
 
-Style Guidelines
-----------------
-utlity: (headers only)
-  lower_underscore_structs
-  lowerCamelMemberVars
-  lowerCamelMemberFuncs
-core:
-  UpperCamelStructs
-  UpperCamelNamespaces
-  lowerCamelMemberVars
-  UpperCamelMemberFuncs
-  lower_underscore_unscoped_vars (.cpp only)
-  DowhateverLocal_vars (usually lowerCamel or lower_underscore)
-  g_global_vars (defined in deshi.cpp only, declared in specific header)
-*/
-
-/* `TODO`
-//Format: [MM/DD/YY,DIFFICULTY,Tags...] description
-//        continued description
-//Assumed Difficulties: EASY, MEDI, HARD
-//Common Tags: Feature, Tweak, Bug, System
+`TODO`
+Format:
+[MM/DD/YY,DIFFICULTY,Tags...] description
+    continued description
+Assumed Difficulties: EASY, MEDI, HARD
+Common Tags: Feature, Tweak, Bug, System
 
 `Command`
 ---------
@@ -36,27 +21,29 @@ core:
 [04/15/21,EASY,Feature] implement filtering console buffer by tags
 [04/15/21,MEDI,Feature] popout console state (require extra window creation)
 [06/16/21,EASY,Feature] tabbing so we can sort different kinds of info into each tab like Errors and Warnings
-[12/23/21,MEDI,Bug] if the console fills up too much, it crashes
+[12/23/21,MEDI,Bug]     if the console fills up too much, it crashes
     you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 [12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed
 [01/13/22,EASY,Feature] config variable modification
 [01/13/22,EASY,Feature] simple terminal emulation
-[04/18/22,EASY,Tweak] draw \t correctly
+[04/18/22,EASY,Tweak]   draw \t correctly
+[05/02/22,MEDI,Feature] clipping so we only consider chunks that would be on screen
+[05/02/22,MEDI,Bug]     fix scrolling to bottom on new log
 
 `File`
 ------
-[09/16/21,MEDI,Feature] data folder specified on launch
-[10/20/21,HARD,System]  linux/mac file IO
-[12/28/21,EASY,Feature] add file locking and determination
-[12/28/21,EASY,Feature] add hard/symbolic link creation/deletion
-[12/28/21,EASY,Feature] add file hard/symbolic link determination
-[12/28/21,EASY,Feature] add drive statistics
-[04/28/22,EASY,Optimization] maybe wrap error checking in #if debug clauses?
+[09/16/21,MEDI,Feature]  data folder specified on launch
+[10/20/21,HARD,System]   linux/mac file IO
+[12/28/21,EASY,Feature]  add file locking and determination
+[12/28/21,EASY,Feature]  add hard/symbolic link creation/deletion
+[12/28/21,EASY,Feature]  add file hard/symbolic link determination
+[12/28/21,EASY,Feature]  add drive statistics
+[04/28/22,EASY,Optimize] maybe wrap error checking in #if debug clauses?
 
 `Fun`
 -----
-[04/12/21,HARD,System] look into implementing Lua (or finish su and make it an embeddable language!)
-[06/09/21,HARD,System] write a preprocessing/postprocessing compiler that makes serialization easier
+[04/12/21,HARD,System]  look into implementing Lua (or finish su and make it an embeddable language!)
+[06/09/21,HARD,System]  write a preprocessing/postprocessing compiler that makes serialization easier
 [07/26/21,HARD,Feature] hotloadable UI
 
 `Input`
@@ -72,24 +59,23 @@ core:
 [03/13/21,MEDI,Feature] add quaternions and converions between them and other linear algebra primitives
 [05/03/21,MEDI,Feature] add functions and members similar to what glsl/glm has where you can do stuff like
     v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
-    you probably just need to add a vec2/3 for each permutation of each vector
-glm/detail/_swizzle.hpp
-[10/20/21,EASY,Tweak] move geometry funcs out of math.h 
+    you probably just need to add a vec2/3 for each permutation of each vector (!ref: glm/detail/_swizzle.hpp)
+[10/20/21,EASY,Tweak]   move geometry funcs out of math.h 
 
 `Memory`
 --------
 [12/22/21,HARD,Feature] consider multiple thread contexts
 [12/22/21,HARD,Feature] add fast generic bins
     ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
-[01/16/22,MEDIUM,Bug] memory system sometimes fails to alloc memory from OS (might only be during debugging)
-[02/06/22,MEDI,Tweak] add a way to disable this and set deshi_allocator to libc
+[01/16/22,MEDI,Bug]     memory system sometimes fails to alloc memory from OS (might only be during debugging)
+[02/06/22,MEDI,Tweak]   add a way to disable Memory module and set deshi_allocator to libc
 [04/26/22,EASY,Feature] create an interface for creating/using Heap
 
 `Render`
 --------
 [03/22/21,HARD,Feature] multi-threaded command buffers, shader loading, image loading
 [04/04/21,EASY,Feature] add instancing
-[04/06/21,MEDI,Tweak] fix texture transparency
+[04/06/21,MEDI,Tweak]   fix texture transparency
 [04/30/21,MEDI,Feature] upload extra mesh info to an SSBO
 [05/13/21,HARD,Feature] look into getting info from shaders, or setting up compute shaders
     ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
@@ -100,28 +86,25 @@ glm/detail/_swizzle.hpp
 [07/06/21,MEDI,Feature] add omnidirectional shadow mapping
 [07/06/21,EASY,Feature] add not-on-screen object culling thru mesh AABBs (if they dont cast shadow)
 [07/06/21,MEDI,Feature] add front-to-back sorting for perf gain and transparency?
-[07/06/21,EASY,Tweak] delete shader .spv if failed to compile it after printing error messages
-[07/06/21,HARD,System] setup more generalized material/pipeline creation
+[07/06/21,HARD,System]  setup more generalized material/pipeline creation
     specialization constants
     uber shaders
     runtime pipeline creation/specialization
-[07/09/21,MEDI,System] rework lights
-[07/10/21,HARD,Bug] fix directional shadow mapping's (projection?) errors
+[07/09/21,MEDI,System]  rework lights
+[07/10/21,HARD,Bug]     fix directional shadow mapping's (projection?) errors
 [08/07/21,MEDI,Feature] add texture/material recreation without restart
 [08/07/21,EASY,Feature] vulkan auto-cleanup so that it frees the unused parts of memory every now and then
-[08/07/21,EASY,Tweak] revert phong shader so it is like it used to be, but keeps the shadows
-[09/26/21,MEDI,Tweak] give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
-[09/26/21,EASY,Tweak] find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
-[11/26/21,EASY,Tweak] rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
-[12/18/21,EASY,Tweak] remove usage of STL
-[12/18/21,EASY,Tweak] replace allocator with temp_allocator in relevant places
-[01/04/22,EASY,Tweak] figure out how to use custom allocators with opengl3 and get opengl3 to use deshi memory
+[08/07/21,EASY,Tweak]   revert phong shader so it is like it used to be, but keeps the shadows
+[09/26/21,MEDI,Tweak]   give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
+[09/26/21,EASY,Tweak]   find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
+[11/26/21,EASY,Tweak]   rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
+[12/18/21,EASY,Tweak]   replace allocator with temp_allocator in relevant places
+[01/04/22,EASY,Tweak]   figure out how to use custom allocators with opengl3 and get opengl3 to use deshi memory
 [02/26/22,MEDI,Feature] add texture/material/mesh unloading
 [02/26/22,EASY,Feature] OpenGL debug groups
 [02/26/22,MEDI,Feature] OpenGL pipelines/materials
 [02/26/22,MEDI,Feature] OpenGL shadows (and test/fix Vulkan shadows)
 [02/26/22,HARD,Feature] OpenGL render/video settings
-[03/07/22,EASY,Bug] vulkan doesnt generate a pipeline cache file
 
 `Sound`
 -------
@@ -129,16 +112,16 @@ glm/detail/_swizzle.hpp
 
 `Storage`
 ---------
-[07/10/21,EASY,Bug] the program crashes if default asset files are not present
+[07/10/21,EASY,Bug]     the program crashes if default asset files are not present
     maybe store the text in the actual source and create the file from the code, like keybinds.cfg
     alternatively, we can store those specific assets in the source control
-[08/07/21,MEDI,Tweak] speedup OBJ parsing and face generation
-[08/22/21,EASY,Tweak] store null128.png and null shader in code
-[08/22/21,EASY,Tweak] add versioning to Mesh since its saved in a binary format
-[10/20/21,EASY,Tweak] separate physics mesh info from regular mesh info
-[10/20/21,EASY,Tweak] merge mesh faces with <10 degree normal difference (for physics)
-[10/20/21,MEDI,Tweak] add edges and hulls to meshes, remove unused vars
-[10/20/21,MEDI,Feature] add MTL parsing
+[08/07/21,MEDI,Tweak]   speedup OBJ parsing and face generation
+[08/22/21,EASY,Tweak]   store null128.png and null shader in code
+[08/22/21,EASY,Tweak]   add versioning to Mesh since its saved in a binary format
+[10/20/21,EASY,Tweak]   separate physics mesh info from regular mesh info
+[10/20/21,EASY,Tweak]   merge mesh faces with <10 degree normal difference (for physics)
+[10/20/21,MEDI,Tweak]   add edges and hulls to meshes, remove unused vars
+[10/20/21,MEDI,Feature] add OBJ MTL parsing
 [12/31/21,MEDI,Feature] data streaming to prevent loading freeze
 [01/12/22,EASY,Feature] make an interface for updating textures that have already been created
 [02/26/22,MEDI,Feature] replace the arrays with arenas and remove item indexing
@@ -153,16 +136,16 @@ glm/detail/_swizzle.hpp
     maybe even removing certain labels from them
 [08/09/21,MEDI,Feature] vertical tabs
 [08/15/21,MEDI,Feature] add some markup to text like underlining, bold, etc.
-[01/09/22,EASY,Tweak] specify Separator() parameters and add one for line height
-[02/12/22,EASY,Tweak] add PAGEUP and PAGEDOWN scrolling keybinds (CTRL for max scroll up/down)
+[01/09/22,EASY,Tweak]   specify Separator() parameters and add one for line height
+[02/12/22,EASY,Tweak]   add PAGEUP and PAGEDOWN scrolling keybinds (CTRL for max scroll up/down)
 [02/12/22,MEDI,Feature] window snapping (to borders, to other windows, window tabifying when dropped onto another window)
 [02/12/22,MEDI,Feature] menus that open on hover (the direction they open is flag controlled, down vs right)(ImGui::BeginMenu)
-[02/12/22,EASY,Tweak] add button flag: return true on hover
+[02/12/22,EASY,Tweak]   add button flag: return true on hover
 [02/12/22,EASY,Feature] begintab()/button() for images
-[02/12/22,EASY,Tweak] window flags for no margin and no padding
+[02/12/22,EASY,Tweak]   window flags for no margin and no padding
 [02/12/22,HARD,Feature] context menu
 [02/12/22,Easy,Feature] text input mouse click to place cursor
-[02/12/22,HARD,System] text selection (and clipboard)
+[02/12/22,HARD,System]  text selection (and clipboard)
 [02/20/22,EASY,Tweak,ProjectWide] move all of the structs and enums in ui.h to be under the UI namesapce and remove the UI prefix from them
     UI::Window would conflict with our current Window, so either rename Window to OSWindow or put it in some kind of namespace
 [02/27/22,EASY,Feature] add displaying a window's flags to metrics
@@ -191,11 +174,8 @@ tab bar buttons pass their input thru to the window (for dragging)
 [07/19/21,MEDI,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 [08/03/21,EASY,Tweak]   convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
 [12/31/21,HARD,System]  remove GLFW and add platform layers
-[01/06/22,MEDI,Tweak]   move config saving/loading to its own core file
 [02/01/22,EASY,Tweak]   remove commit/decommit from defines.h
-[02/26/22,EASY,Tweak]   refactor usages of Assert() so the expression is not used
 [03/02/22,EASY,Tweak]   check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
-[03/02/22,EASY,Tweak]   each module should create its own data folder rather than Assets::enforceDirectories()
 [03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
     this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
 [03/22/22,EASY,TWEAK]   check all usages of cstring/wcstring to ensure that the functions don't simply convert them to char* and pass to c-string functions, since they might not have the trailing '\0' that c-strings require
@@ -295,7 +275,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "core/memory.h"
 #include "core/model.h"
 #include "core/platform.h"
-#include "core/renderer.h"
+#include "core/render.h"
 #include "core/storage.h"
 #include "core/threading.h"
 #include "core/time.h"
@@ -392,7 +372,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "core/storage.cpp"
 #include "core/ui.cpp"
 #include "core/commands.cpp"
-#include "core/core_ui.cpp"
 
 
 local Time          deshi_time;           Time*          g_time     = &deshi_time;
@@ -402,14 +381,14 @@ local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_sto
 local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
 
 void deshi::init(u32 winWidth, u32 winHeight){
-	Stopwatch stopwatch = start_stopwatch();
+	Stopwatch deshi_watch = start_stopwatch();
 	memory_init(Gigabytes(1), Gigabytes(1));
 	logger_init();
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	console_init();
 #endif
 	deshi_window.Init("deshi", winWidth, winHeight);
-	Render::Init();
+	render_init();
 	Storage::Init();
 #ifndef DESHI_DISABLE_IMGUI
 	DeshiImGui::Init();
@@ -417,13 +396,13 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	UI::Init();
 	cmd_init();
 	DeshWindow->ShowWindow();
-	Render::UseDefaultViewProjMatrix();
-	LogS("deshi","Finished deshi initialization in ",peek_stopwatch(stopwatch),"ms");
+	render_use_default_camera();
+	LogS("deshi","Finished deshi initialization in ",peek_stopwatch(deshi_watch),"ms");
 }
 
 void deshi::cleanup(){
 	if(DeshiModuleLoaded(DS_IMGUI)) DeshiImGui::Cleanup();
-	Render::Cleanup();
+	render_cleanup();
 	deshi_window.Cleanup();
 	logger_cleanup();
 	memory_cleanup();

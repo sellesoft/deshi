@@ -1,5 +1,5 @@
 #include "kigu/common.h"
-#include "core/renderer.h"
+#include "core/render.h"
 #include "core/window.h"
 #include "kigu/array.h"
 #include "math/edge.h"
@@ -24,7 +24,7 @@ void random_draw(u32 count) {
 		}
 	}
 	else {
-		Render::StartNewTwodCmd(4, 0, vec2::ZERO, DeshWinSize);
+		render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
 		
 		for (RandDrawObj& rdo : rdobjs) {
 			vec2& pos = rdo.pos;
@@ -59,7 +59,7 @@ void random_draw(u32 count) {
 			
 			if (hist.count) {
 				for (int i = 0; i < hist.count - 1; i++) {
-					Render::DrawLine2D(hist[i].first, hist[i + 1].first, 2, hist[i].second, 4, vec2::ZERO, DeshWinSize);
+					render_line_thick2(hist[i].first, hist[i + 1].first, 2, hist[i].second);
 				}
 			}
 		}
@@ -97,7 +97,7 @@ void random_walk_avoid() {
 		rwa.hist.add({ rwa.pos, randcolor });
 	}
 	else {
-		Render::StartNewTwodCmd(4, 0, vec2::ZERO, DeshWinSize);
+		render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
 		
 		vec2& pos = rwa.pos;
 		vec2& target = rwa.target;
@@ -156,7 +156,7 @@ void random_walk_avoid() {
 		
 		if (hist.count) {
 			for (int i = 0; i < hist.count - 1; i++) {
-				Render::DrawLine2D(hist[i].first, hist[i + 1].first, 2, hist[i].second, 4, vec2::ZERO, DeshWinSize);
+				render_line_thick2(hist[i].first, hist[i + 1].first, 2, hist[i].second);
 			}
 		}
 		
@@ -207,7 +207,7 @@ void vector_field() {
 	
 	static f32 maxmag = 0;
 	
-	Render::StartNewTwodCmd(4, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
 	for (u32 i = 0; i < precision; i++) {
 		
 		for (u32 o = 0; o < precision; o++) {
@@ -217,10 +217,8 @@ void vector_field() {
 			
 			maxmag = Max(maxmag, s.mag());
 			
-			//Render::DrawCircle2D(pos, 4, 10, Color_Red, 4, vec2::ZERO, DeshWinSize);
-			Render::DrawLine2D(pos, pos2, 2, color(25,  Clamp(255 * s.mag() / maxmag, 0.f, 255.f), 125), 4, vec2::ZERO, DeshWinSize);
-			
-			
+			//render_circle2(pos, 0, 4, 10, Color_Red);
+			render_line_thick2(pos, pos2, 2, color(25,  Clamp(255 * s.mag() / maxmag, 0.f, 255.f), 125));
 		}
 	}
 	
@@ -232,7 +230,7 @@ void vector_field() {
 			hist.add(postrack);
 		}
 		for (int i = 0; i < hist.count - 1; i++) {
-			Render::DrawLine2D(hist[i], hist[i + 1], 2, Color_Red, 4, vec2::ZERO, DeshWinSize);
+			render_line_thick2(hist[i], hist[i + 1], 2, Color_Red);
 		}
 	}
 	
@@ -255,7 +253,7 @@ void electric_field() {
 		{{ 1., -1.},-1.},
 	};
 	f32 scale = 30;
-	Render::StartNewTwodCmd(5, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(5, 0, vec2::ZERO, DeshWinSize);
 	vec2 coff = DeshWinSize/2;
 	
 	u32 res = 10;
@@ -267,20 +265,20 @@ void electric_field() {
 			for(charge c : pcharges){
 				e+=1000*c.q/((pos-c.r).magSq())*(pos-c.r).normalized();
 			}
-			Render::DrawLine2D(pos, pos+e, 1, Color_White, 5, vec2(0,0), DeshWinSize);
+			render_line2(pos, pos+e, Color_White);
 		}
 	}
 	
+	render_start_cmd2(0, 0, vec2::ZERO, DeshWinSize);
 	for(charge c : pcharges){
 		vec2 pos = c.r * scale + coff;
 		color col = color(155, 155 * Remap(c.q, 0., 1., -1., 1.), 0); 
-		Render::FillCircle2D(pos, 4, 30, col, 0);
+		render_circle_filled2(pos, 0, 4, 30, col);
 	}
-			
 }
 
 void draw_pixels(){DPZoneScoped;
-	Render::StartNewTwodCmd(0, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0, 0, vec2::ZERO, DeshWinSize);
 	u32 size = 4;
 	static u64 frames = 0;
 	static s64 chance = 1;
@@ -294,14 +292,14 @@ void draw_pixels(){DPZoneScoped;
 
 
 			if(lhs < rhs){
-				Render::FillRect2D(vec2(i*size,j*size), vec2::ONE*size, color(100,75,14));
+				render_quad_filled2(vec2(i*size,j*size), vec2::ONE*size, color(100,75,14));
 			}
 		}
 	}
 }
 
 void sim_pixels(){DPZoneScoped;
-	Render::StartNewTwodCmd(0, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0, 0, vec2::ZERO, DeshWinSize);
 	u32 size = 4;
 	static u64 frames = 0;
 	static s64 chance = 1;
@@ -318,7 +316,7 @@ u64 rng(){
 }
 
 void repulsion(){DPZoneScoped;
-	Render::StartNewTwodCmd(0,0,vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0,0,vec2::ZERO, DeshWinSize);
 	const u32 nparticles = 100;
 	struct particle{
 		vec2 pos;
@@ -361,7 +359,7 @@ void repulsion(){DPZoneScoped;
 		//p->pos.normalize();
 		p->acc = vec2::ZERO;
 		p->vel *= 0.1;
-		Render::FillCircle2D(p->pos * 100 + DeshWinSize / 2, 5, 20, color(50, 80, f32(i) / nparticles * 170));
+		render_circle_filled2(p->pos * 100 + DeshWinSize / 2, 0, 5, 20, color(50, 80, f32(i) / nparticles * 170));
 	}
 
 	if(key_pressed(Key_SPACE)){
@@ -370,7 +368,7 @@ void repulsion(){DPZoneScoped;
 }
 
 void spring(){
-	Render::StartNewTwodCmd(0,0,vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0,0,vec2::ZERO, DeshWinSize);
 	struct particle{
 		vec2 pos;
 		vec2 vel;

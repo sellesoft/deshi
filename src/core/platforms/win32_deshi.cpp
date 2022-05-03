@@ -486,27 +486,26 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 
 //TODO options for decoration colors
 void DrawDecorations(Window* win){DPZoneScoped;
-	using namespace Render;
 	s32 x=win->x, y=win->y;
 	s32 width = win->width, height = win->height;
 	s32 cwidth = win->cwidth, cheight = win->cheight;
 	u32 decor = win->decorations;
 	b32 hitset = 0;
 	persist Font* decorfont = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
-	SetSurfaceDrawTargetByWindow(win);
-	StartNewTwodCmd(GetZZeroLayerIndex(), 0, vec2::ZERO, vec2(width, height));
+	render_set_active_surface(win);
+	render_start_cmd2(render_decoration_layer_index(), 0, vec2::ZERO, vec2(width, height));
 	
 	if(Math::PointInRectangle(input_mouse_position(), vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
 	
 	//minimal titlebar takes precedence over all other title bar flags
 	if(HasFlag(decor, Decoration_MinimalTitlebar)){
 		win->titlebarheight = 5;
-		FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
+		render_quad_filled2(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
 		if(Math::PointInRectangle(input_mouse_position(), vec2::ZERO, vec2(width, win->titlebarheight))){ win->hittest = HitTestTitle; hitset = 1; }
 	}else{
 		if(HasFlag(decor, Decoration_Titlebar)){
 			win->titlebarheight = 20;
-			FillRect2D(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
+			render_quad_filled2(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
 		}
 		if(HasFlag(decor, Decoration_TitlebarTitle)){
 			//!Incomplete
@@ -533,9 +532,9 @@ void DrawDecorations(Window* win){DPZoneScoped;
 		else if(Math::PointInRectangle(mp, rbpos, rbsiz))      {win->hittest = HitTestRight;  hitset = 1;}
 		else if(Math::PointInRectangle(mp, bbpos, bbsiz))      {win->hittest = HitTestBottom; hitset = 1;}
 		
-		FillRect2D(vec2::ZERO, vec2(borderSize, height), lcol);
-		FillRect2D(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
-		FillRect2D(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
+		render_quad_filled2(vec2::ZERO, vec2(borderSize, height), lcol);
+		render_quad_filled2(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
+		render_quad_filled2(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
 	}else if(HasFlag(decor, Decoration_Borders)){
 		win->borderthickness = 2;
 		f32 borderSize = win->borderthickness;
@@ -554,10 +553,10 @@ void DrawDecorations(Window* win){DPZoneScoped;
 		rcol = color(133,133,133),
 		lcol = color(133,133,133);
 		
-		FillRect2D(lbpos, lbsiz, lcol);
-		FillRect2D(rbpos, rbsiz, rcol);
-		FillRect2D(bbpos, bbsiz, bcol);
-		FillRect2D(tbpos, tbsiz, tcol);
+		render_quad_filled2(lbpos, lbsiz, lcol);
+		render_quad_filled2(rbpos, rbsiz, rcol);
+		render_quad_filled2(bbpos, bbsiz, bcol);
+		render_quad_filled2(tbpos, tbsiz, tcol);
 	}
 #if LOG_INPUTS
 	Log("", win->hittest);
