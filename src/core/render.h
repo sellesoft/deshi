@@ -836,7 +836,7 @@ render_debug_line3(vec3 start, vec3 end, color c){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_draw_2d
-#define MAX_TWOD_VERTICES  0xFFFF //max u16: 65535
+#define MAX_TWOD_VERTICES  0xFFFFFF // 16 777 215
 #define MAX_TWOD_INDICES   3*MAX_TWOD_VERTICES
 #define MAX_TWOD_CMDS      1000
 #define TWOD_LAYERS        11

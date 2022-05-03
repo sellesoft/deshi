@@ -4,6 +4,18 @@
 #include "kigu/array.h"
 #include "math/edge.h"
 
+u64 rngseed = 0xa0a0a0a0a0;
+u64 rng(){
+	static u64 x = rngseed;
+	x = 
+	((0x00000000FF & x) % 50  + 
+	(0x000000FF00 & x) % 100 +
+	(0x0000FF0000 & x) % 150 +
+	(0x00FF000000 & x) % 200 +
+	(0xFF00000000 & x) % 250);
+	return x;
+}
+
 struct RandDrawObj {
 	vec2 pos;
 	vec2 target;
@@ -166,15 +178,11 @@ void random_walk_avoid() {
 void vector_field() {
 	f32 precision = 100;
 	static f32 zoom = 1;
-	//if (DeshInput->ScrollDown()) zoom += 0.1;
-	//if (DeshInput->ScrollUp()) zoom -= 0.1;
-	
-	
+	zoom += 10 / zoom * DeshInput->scrollY;
 	static vec2 postrack(0, 0);
 	static array<vec2> hist;
 	static vec2 mpl(0,0);
 	static Stopwatch vft = start_stopwatch();
-	
 	
 	vec2 mp = input_mouse_position();
 	
@@ -189,7 +197,7 @@ void vector_field() {
 		hist.clear();
 	}
 	
-	f32 time = DeshTotalTime;
+	f32 time = DeshTotalTime/1000;
 	
 	static vec2 target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
 	
@@ -197,7 +205,12 @@ void vector_field() {
 		vec2 tc = (DeshWinSize / 2 - pos) * zoom;
 		f32 x = tc.x, y = tc.y;
 		//vec2 tm = mp - pos;// - ;
-		return vec2(sin(x), sin(x)*cos(y + time));
+		Log("", rng());
+		if(x>0)
+			return vec2(rng()%50-25,rng()%50-25);
+		else
+			return vec2(rand()%50-25,rand()%50-25);
+
 	};
 	
 	if (peek_stopwatch(vft) > 1000) {
@@ -209,7 +222,6 @@ void vector_field() {
 	
 	render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
 	for (u32 i = 0; i < precision; i++) {
-		
 		for (u32 o = 0; o < precision; o++) {
 			vec2 pos(i / precision * DeshWinSize.x+precision/DeshWinSize.x , o / precision * DeshWinSize.y+precision/ DeshWinSize.y);
 			vec2 s = step(pos);
@@ -221,9 +233,7 @@ void vector_field() {
 			render_line_thick2(pos, pos2, 2, color(25,  Clamp(255 * s.mag() / maxmag, 0.f, 255.f), 125));
 		}
 	}
-	
-	
-	
+
 	if (tracking) {
 		if (Math::PointInRectangle(postrack, vec2::ZERO, DeshWinSize)) {
 			postrack += step(postrack);
@@ -308,12 +318,7 @@ void sim_pixels(){DPZoneScoped;
 
 }
 
-u64 rngseed = 0xa0a0a0a0a0;
-u64 rng(){
-	static u64 x = rngseed;
-	x = (56 - rngseed * x) % (x * x + 2 * x + 1);
-	return x;
-}
+
 
 void repulsion(){DPZoneScoped;
 	render_start_cmd2(0,0,vec2::ZERO, DeshWinSize);
