@@ -423,7 +423,6 @@ void
 render_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize OpenGL module before initializing Memory/Window modules");
 	Log("opengl","Starting opengl renderer initialization");
-	logger_push_indent();
 	
 	//create the shaders directory if it doesn't exist already
 	file_create(str8_lit("data/shaders/"));
@@ -671,12 +670,7 @@ render_init(){DPZoneScoped;
 		}
 	}
 	
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// setup commands
-	forI(TWOD_LAYERS) renderTwodCmdCounts[renderActiveSurface][i] = 1;
-	
 	initialized = true;
-	logger_pop_indent();
 	DeshiStageInitEnd(DS_RENDER);
 }
 
@@ -885,7 +879,9 @@ render_update(){DPZoneScoped;
 								- (renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y)),
 						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x),
 						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y));
-				glBindTexture(glTextures[(u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].type, glTextures[(u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].handle);
+				
+				glBindTexture(glTextures[(u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].type,
+							  glTextures[(u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
 				glDrawElementsBaseVertex(GL_TRIANGLES, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, INDEX_TYPE_GL_TWOD,
 										 (void*)(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset * sizeof(RenderTwodIndex)), 0);
@@ -910,12 +906,12 @@ render_update(){DPZoneScoped;
 	//// reset commands
 	{
 		//// twod commands ////
-		renderTwodVertexCount = 0;
-		renderTwodIndexCount = 0;
-		forX(layer, 9){
-			memset(&renderTwodCmdArrays[renderActiveSurface][layer][0], 0, sizeof(RenderTwodCmd) * renderTwodCmdCounts[renderActiveSurface][layer]);
-			renderTwodCmdCounts[renderActiveSurface][layer] = 1;
+		forI(TWOD_LAYERS+1){
+			ZeroMemory(renderTwodCmdArrays[renderActiveSurface][i], renderTwodCmdCounts[renderActiveSurface][i]*sizeof(RenderTwodCmd));
+			renderTwodCmdCounts[renderActiveSurface][i] = 0;
 		}
+		renderTwodVertexCount = 0;
+		renderTwodIndexCount  = 0;
 		
 		//// temp commands ////
 		renderTempWireframeVertexCount = 0;
@@ -1177,14 +1173,21 @@ render_model_wireframe(Model* model, mat4 matrix, color color){DPZoneScoped;
 void
 render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
-	RenderTwodCmd& prevCmd = renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1];
-	if(   ((u32)prevCmd.handle != texture->idx)
-	   || (prevCmd.scissorOffset != scissorOffset)
-	   || (prevCmd.scissorExtent != scissorExtent)){
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = (void*)(u64)texture->idx;
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
+	
+	RenderTwodCmd* prevCmd;
+	if(renderTwodCmdCounts[renderActiveSurface][layer]){
+		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1];
+	}else{
+		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][0];
+	}
+	
+	if(   (prevCmd->handle        != (void*)((texture) ? (u64)texture->idx : 1))
+	   || (prevCmd->scissorOffset != scissorOffset)
+	   || (prevCmd->scissorExtent != scissorExtent)){
+		prevCmd->handle        = (void*)((texture) ? (u64)texture->idx : 1);
+		prevCmd->indexOffset   = renderTwodIndexCount;
+		prevCmd->scissorOffset = scissorOffset;
+		prevCmd->scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
 }

@@ -861,7 +861,7 @@ render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32
 	
 	renderTwodVertexCount += vCount;
 	renderTwodIndexCount  += iCount;
-	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += iCount;
+	renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1].indexCount += iCount;
 }
 
 u32
@@ -876,22 +876,7 @@ render_decoration_layer_index(){
 
 void
 render_line2(vec2 start, vec2 end, color c){DPZoneScoped;
-	if(c.a == 0) return;
-	
-	u32           color = c.rgba;
-	Vertex2*         vp = renderTwodVertexArray + renderTwodVertexCount;
-	RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
-	
-	ip[0] = renderTwodVertexCount; ip[1] = renderTwodVertexCount + 1; ip[2] = renderTwodVertexCount + 2;
-	ip[3] = renderTwodVertexCount; ip[4] = renderTwodVertexCount + 2; ip[5] = renderTwodVertexCount + 3;
-	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = color;
-	vp[1].pos = { end.x,  end.y   }; vp[1].uv = { 0,0 }; vp[1].color = color;
-	vp[2].pos = { end.x,  end.y   }; vp[2].uv = { 0,0 }; vp[2].color = color;
-	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = color;
-	
-	renderTwodVertexCount += 4;
-	renderTwodIndexCount  += 6;
-	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+	render_line_thick2(start, end, 1, c);
 }
 
 void

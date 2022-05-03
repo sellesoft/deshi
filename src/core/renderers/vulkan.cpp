@@ -118,8 +118,7 @@ local bool remakePipelines  = false;
 local bool _remakeOffscreen = false;
 
 local VkSampleCountFlagBits msaaSamples{};
-
-VkResult resultVk;
+local VkResult resultVk;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1713,8 +1712,8 @@ SetupOffscreenRendering(){DPZoneScoped;
 //// @vk_funcs_shaders
 local void
 SetupShaderCompiler(){
-	 shader_compiler         = shaderc_compiler_initialize();
-	 shader_compiler_options = shaderc_compile_options_initialize();
+	shader_compiler         = shaderc_compiler_initialize();
+	shader_compiler_options = shaderc_compile_options_initialize();
 	if(renderSettings.optimizeShaders){
 		shaderc_compile_options_set_optimization_level(shader_compiler_options, shaderc_optimization_level_performance);
 	}
@@ -1827,21 +1826,21 @@ CompileAndLoadShader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext);
 	if(!compiled) return VkPipelineShaderStageCreateInfo{};
 	defer{ shaderc_result_release(compiled); };
-		
-		//create shader module
-		VkShaderModule shaderModule{};
-		VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-		moduleInfo.codeSize = shaderc_result_get_length(compiled);
+	
+	//create shader module
+	VkShaderModule shaderModule{};
+	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+	moduleInfo.codeSize = shaderc_result_get_length(compiled);
 	moduleInfo.pCode    = (u32*)shaderc_result_get_bytes(compiled);
-		resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ", name).str);
-		
-		//setup shader stage create info
-		VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-		shaderStage.stage  = stage;
-		shaderStage.pName  = "main";
-		shaderStage.module = shaderModule;
-		return shaderStage;
+	resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ", name).str);
+	
+	//setup shader stage create info
+	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+	shaderStage.stage  = stage;
+	shaderStage.pName  = "main";
+	shaderStage.module = shaderModule;
+	return shaderStage;
 }
 
 
@@ -2700,15 +2699,11 @@ local void
 ResetCommands(){DPZoneScoped;
 	{//2D commands
 		forI(TWOD_LAYERS+1){
-			ZeroMemory(&renderTwodCmdArrays[renderActiveSurface][i][0], renderTwodCmdCounts[renderActiveSurface][i]*sizeof(RenderTwodCmd));
-			renderTwodCmdArrays[renderActiveSurface][i][0].handle = textures[1].descriptorSet;
-			renderTwodCmdCounts[renderActiveSurface][i] = 1;
+			ZeroMemory(renderTwodCmdArrays[renderActiveSurface][i], renderTwodCmdCounts[renderActiveSurface][i]*sizeof(RenderTwodCmd));
+			renderTwodCmdCounts[renderActiveSurface][i] = 0;
 		}
-		//Log("vertex count", twodVertexCount);
-		//Log("index count", twodIndexCount);
-		
 		renderTwodVertexCount = 0;
-		renderTwodIndexCount = 0;
+		renderTwodIndexCount  = 0;
 	}
 	
 	{//temp commands
@@ -2930,18 +2925,20 @@ BuildCommands(){DPZoneScoped;
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(layer, TWOD_LAYERS){
-					if(renderTwodCmdCounts[renderActiveSurface][layer] > 1){
-						forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
-							scissor.offset.x = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.x;
-							scissor.offset.y = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.y;
-							scissor.extent.width = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x;
-							scissor.extent.height = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y;
-							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-							
-							if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle){
-								vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &(VkDescriptorSet)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle, 0, 0);
-								vkCmdDrawIndexed(cmdBuffer, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, 1, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset, 0, 0);
-							}
+					forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
+						if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount == 0) continue;
+						
+						scissor.offset.x = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.x;
+						scissor.offset.y = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.y;
+						scissor.extent.width  = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x;
+						scissor.extent.height = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y;
+						vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+						
+						if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle){
+							vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1,
+													&(VkDescriptorSet)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle, 0, 0);
+							vkCmdDrawIndexed(cmdBuffer, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, 1,
+											 renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset, 0, 0);
 						}
 					}
 				}
@@ -3201,11 +3198,7 @@ render_init(){DPZoneScoped;
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ",reset_stopwatch(&t_temp),"ms");
 	
-	forI(TWOD_LAYERS+1){ 
-		renderTwodCmdCounts[renderActiveSurface][i] = 1; 
-	}
 	initialized = true;
-	
 	DeshiStageInitEnd(DS_RENDER);
 }
 
@@ -3376,11 +3369,11 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	AssertRS(RSVK_LOGICALDEVICE, "LoadMesh called before CreateLogicalDevice");
 	RenderMesh mvk{};
 	mvk.base = mesh;
-	mvk.vtxCount = mesh->vertexCount;
-	mvk.idxCount = mesh->indexCount;
+	mvk.vertexCount = mesh->vertexCount;
+	mvk.indexCount = mesh->indexCount;
 	if(vkMeshes.count){
-		mvk.vtxOffset = vkMeshes.last->vtxOffset + vkMeshes.last->vtxCount;
-		mvk.idxOffset = vkMeshes.last->idxOffset + vkMeshes.last->idxCount;
+		mvk.vertexOffset = vkMeshes.last->vertexOffset + vkMeshes.last->vertexCount;
+		mvk.indexOffset = vkMeshes.last->indexOffset + vkMeshes.last->indexCount;
 	}
 	
 	u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
@@ -3729,8 +3722,8 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 	RenderModelCmd* cmd = renderModelCmdArray + renderModelCmdCount;
 	forI(model->batches.size()){
 		if(!model->batches[i].indexCount) continue;
-		cmd[i].vertexOffset = vkMeshes[model->mesh->idx].vtxOffset;
-		cmd[i].indexOffset  = vkMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
+		cmd[i].vertexOffset = vkMeshes[model->mesh->idx].vertexOffset;
+		cmd[i].indexOffset  = vkMeshes[model->mesh->idx].indexOffset + model->batches[i].indexOffset;
 		cmd[i].indexCount   = model->batches[i].indexCount;
 		cmd[i].material     = model->batches[i].material;
 		cmd[i].name         = model->name;
@@ -3745,14 +3738,21 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 void
 render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
-	RenderTwodCmd& prevCmd = renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1];
-	if(   (prevCmd.handle != textures[(texture) ? texture->idx : 1].descriptorSet)
-	   || (prevCmd.scissorOffset != scissorOffset)
-	   || (prevCmd.scissorExtent != scissorExtent)){
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle = textures[(texture) ? texture->idx : 1].descriptorSet;
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset = renderTwodIndexCount;
+	
+	RenderTwodCmd* prevCmd;
+	if(renderTwodCmdCounts[renderActiveSurface][layer]){
+		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1];
+	}else{
+		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][0];
+	}
+	
+	if(   (prevCmd->handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
+	   || (prevCmd->scissorOffset != scissorOffset)
+	   || (prevCmd->scissorExtent != scissorExtent)){
+		prevCmd->handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
+		prevCmd->indexOffset   = renderTwodIndexCount;
+		prevCmd->scissorOffset = scissorOffset;
+		prevCmd->scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
 }
@@ -3911,61 +3911,61 @@ void
 render_reload_all_shaders(){DPZoneScoped;
 	remakePipelines = true;
 	
-		vkDestroyPipeline(device, pipelines.null, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("null.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("null.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.null); AssertVk(resultVk);
+	vkDestroyPipeline(device, pipelines.null, 0);
+	shaderStages[0] = CompileAndLoadShader(str8_lit("null.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("null.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.null); AssertVk(resultVk);
 	
 	vkDestroyPipeline(device, pipelines.flat, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("flat.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("flat.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.flat); AssertVk(resultVk, "failed to create flat graphics pipeline");
+	shaderStages[0] = CompileAndLoadShader(str8_lit("flat.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("flat.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.flat); AssertVk(resultVk, "failed to create flat graphics pipeline");
 	
 	if(deviceFeatures.fillModeNonSolid){
-			vkDestroyPipeline(device, pipelines.wireframe, 0);
-			rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
-			rasterizationState.cullMode = VK_CULL_MODE_NONE;
-			depthStencilState.depthTestEnable = VK_FALSE;
-			shaderStages[0] = CompileAndLoadShader(str8_lit("wireframe.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("wireframe.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-			pipelineCreateInfo.stageCount = 2;
-			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.wireframe); AssertVk(resultVk, "failed to create wireframe graphics pipeline");
-			rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-			rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-			depthStencilState.depthTestEnable = VK_TRUE;
-		}
+		vkDestroyPipeline(device, pipelines.wireframe, 0);
+		rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		depthStencilState.depthTestEnable = VK_FALSE;
+		shaderStages[0] = CompileAndLoadShader(str8_lit("wireframe.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = CompileAndLoadShader(str8_lit("wireframe.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		pipelineCreateInfo.stageCount = 2;
+		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.wireframe); AssertVk(resultVk, "failed to create wireframe graphics pipeline");
+		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+		depthStencilState.depthTestEnable = VK_TRUE;
+	}
 	
 	vkDestroyPipeline(device, pipelines.phong, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("phong.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("phong.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.phong); AssertVk(resultVk, "failed to create phong graphics pipeline");
+	shaderStages[0] = CompileAndLoadShader(str8_lit("phong.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("phong.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.phong); AssertVk(resultVk, "failed to create phong graphics pipeline");
 	
 	vkDestroyPipeline(device, pipelines.pbr, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("pbr.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("pbr.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.pbr); AssertVk(resultVk, "failed to create pbr graphics pipeline");
+	shaderStages[0] = CompileAndLoadShader(str8_lit("pbr.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("pbr.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.pbr); AssertVk(resultVk, "failed to create pbr graphics pipeline");
 	
 	vkDestroyPipeline(device, pipelines.lavalamp, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("lavalamp.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("lavalamp.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.lavalamp); AssertVk(resultVk, "failed to create lavalamp graphics pipeline");
+	shaderStages[0] = CompileAndLoadShader(str8_lit("lavalamp.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("lavalamp.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.lavalamp); AssertVk(resultVk, "failed to create lavalamp graphics pipeline");
 	
 	vkDestroyPipeline(device, pipelines.testing0, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("testing0.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("testing0.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing0); AssertVk(resultVk, "failed to create testing0 graphics pipeline");
+	shaderStages[0] = CompileAndLoadShader(str8_lit("testing0.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("testing0.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing0); AssertVk(resultVk, "failed to create testing0 graphics pipeline");
 	
 	vkDestroyPipeline(device, pipelines.testing1, 0);
-		shaderStages[0] = CompileAndLoadShader(str8_lit("testing1.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("testing1.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing1); AssertVk(resultVk, "failed to create testing1 graphics pipeline");
+	shaderStages[0] = CompileAndLoadShader(str8_lit("testing1.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = CompileAndLoadShader(str8_lit("testing1.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	pipelineCreateInfo.stageCount = 2;
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing1); AssertVk(resultVk, "failed to create testing1 graphics pipeline");
 	
 	UpdateMaterialPipelines();
 }

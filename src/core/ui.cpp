@@ -4798,9 +4798,6 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
 		render_set_active_surface_idx(drawCmd.render_surface_target_idx);
-		
-		//compare current stuff to last draw cmd to determine if we need to start a new twodCmd
-		if(!lastdc || dcse != lastdc->scissorExtent || dcso != lastdc->scissorOffset || drawCmd.tex != lastdc->tex) 
 			render_start_cmd2(window->layer, drawCmd.tex, dcso, dcse);
 		render_add_vertices2(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		

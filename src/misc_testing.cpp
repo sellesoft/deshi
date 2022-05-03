@@ -349,17 +349,17 @@ void repulsion(){DPZoneScoped;
 	}
 
 	forI(nparticles){
-		particle* p = &particles[i];
+		particle* p0 = &particles[i];
 		f64 steps = 1000;
-		p->vel += p->acc * DeshTime->deltaTime;
+		p0->vel += p0->acc * DeshTime->deltaTime;
 		forI(steps){
-			p->vel = p->vel.compOn(vec2(p->pos.y, -p->pos.x)).normalized() * p->vel.mag();
-			p->pos += p->vel * DeshTime->deltaTime / steps;
+			p0->vel = p0->vel.compOn(vec2(p0->pos.y, -p0->pos.x)).normalized() * p0->vel.mag();
+			p0->pos += p0->vel * DeshTime->deltaTime / steps;
 		}
-		//p->pos.normalize();
-		p->acc = vec2::ZERO;
-		p->vel *= 0.1;
-		render_circle_filled2(p->pos * 100 + DeshWinSize / 2, 0, 5, 20, color(50, 80, f32(i) / nparticles * 170));
+		//p0->pos.normalize();
+		p0->acc = vec2::ZERO;
+		p0->vel *= 0.1;
+		render_circle_filled2(p0->pos * 100 + DeshWinSize / 2, 0, 5, 20, color(50, 80, f32(i) / nparticles * 170));
 	}
 
 	if(key_pressed(Key_SPACE)){
@@ -368,6 +368,7 @@ void repulsion(){DPZoneScoped;
 }
 
 void spring(){
+	using namespace UI;
 	render_start_cmd2(0,0,vec2::ZERO, DeshWinSize);
 	struct particle{
 		vec2 pos;
@@ -376,27 +377,25 @@ void spring(){
 		f64 mass;
 	};
 
-	static f32 k = 0.00002; //spring constant
+	static f32 k = 0.2; //spring constant
 	static f32 g = 0.5;
-	static f32 d = 1;
-	persist f32 B = 3;
-	persist f32 w = 5;
+	persist f32 B=1;
+	persist f32 w=1;
 	f32 h = 0.1;
-	persist particle p{{0,500},{0,0},{0,0},1};
-	persist particle last = p;
-	if(isnan(p.vel.y)) p.vel = vec2::ZERO;
-	if(isnan(p.pos.y)) p.pos = vec2::ZERO;
-	f32 pos = p.pos.y;
-	f32 posl = last.pos.y;
+	persist particle p0{{0,0},{0,0},{0,0},1};
+	persist particle p1{{0,0},{0,0},{0,0},1};
+	if(isnan(p0.vel.y)) p0.vel = vec2::ZERO;
+	if(isnan(p0.pos.y)) p0.pos = vec2::ZERO;
 	f32 denom = 1 / (1 + 2*h*B);
-	//p.pos.y = denom*(pos*(2+h*B-h*h*w*w)-posl); //damping
-	//p.pos.y = pos*(2-h*h*w*w)-posl;
+	f64 t = DeshTotalTime;
+	f64 d = 5; //distance of second spring from origin
+	f64 split = 1 - w*w;
 	if(!input_lmouse_down()){
-		p.acc = -2*B*p.vel-w*w*p.pos-g*100*vec2(0,1);
-		p.vel += p.acc * DeshTime->deltaTime / 1000;
-		p.pos += p.vel * DeshTime->deltaTime / 1000;
+		p0.acc = -2*B*p0.vel-(25-w*w)*(p0.pos-vec2(0,100))-(w*w)*(p0.pos-vec2(100,0))-g*100*vec2(0,1); //damped single spring with gravity
+		//p0.acc = -k*(p0.pos-vec2(0,10)); //double spring 
+		p0.vel += p0.acc * DeshTime->deltaTime / 1000;
+		p0.pos += p0.vel * DeshTime->deltaTime / 1000;
 	}
-	using namespace UI;
 	SetNextWindowPos(vec2::ZERO);
 	SetNextWindowSize(DeshWinSize);
 	Begin("springwin", UIWindowFlags_NoScroll | UIWindowFlags_NoInteract);{
@@ -404,24 +403,24 @@ void spring(){
 		Sldr(B, 0, 5);
 		Sldr(w, 0, 5);
 		Sldr(g, 0, 10);
+		Sldr(k, 0, 3);
 		SetNextWindowSize(MAX_F32, MAX_F32);
 		BeginChild("springwinchld", vec2::ZERO, UIWindowFlags_NoInteract);{
 			if(IsWinHovered() && input_lmouse_down()){
-				p.pos = ((input_mouse_position()- GetWindow()->dimensions/2)*10).yInvert();
+				p0.pos = ((input_mouse_position()- GetWindow()->dimensions/2)).yInvert();
 			
 			}
-			vec2 sp = p.pos.yInvert() / 10 + GetWindow()->dimensions / 2;
-			Line(GetWindow()->dimensions/2,sp, 2, Color_Cyan);
+			vec2 sp = p0.pos.yInvert() + GetWindow()->dimensions / 2;
+			Line(GetWindow()->dimensions/2 + vec2(0,-100),sp, 2, Color_Cyan);
+			Line(GetWindow()->dimensions/2 + vec2(100,0),sp, 2, Color_Cyan);
+
 			CircleFilled(sp, 10);
-			Log("", sp, " ", p.pos);  
+			Log("", sp, " ", p0.pos);  
 		}EndChild();
 	}End();
 	if(key_pressed(Key_SPACE)){
-		p.pos = vec2(0,1000);
-		p.vel = vec2::ZERO;
+		p0.pos = vec2(0,1000);
+		p0.vel = vec2::ZERO;
 	}
-	
-	last = p;
-	
 }
 
