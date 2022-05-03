@@ -1763,24 +1763,26 @@ load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	str8 path = str8_concat(str8_lit("data/shaders/"), name, deshi_temp_allocator);
 	
 	//load from .spv if previously compiled and create shader module
-	str8 spv  = str8_concat(path, str8_lit(".spv"), deshi_temp_allocator);
-	File* spv_file = file_init_if_exists(spv, FileAccess_Read);
-	if(spv_file){
-		defer{ file_deinit(spv_file); };
-		str8 spv_raw = file_read(spv_file, memory_talloc(spv_file->bytes), spv_file->bytes);
-		if(spv_raw){
-			VkShaderModule shaderModule;
-			VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-			moduleInfo.codeSize = spv_raw.count;
-			moduleInfo.pCode    = (u32*)spv_raw.str;
-			resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
-			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ",name).str);
-			
-			VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-			shaderStage.stage  = stage;
-			shaderStage.pName  = "main";
-			shaderStage.module = shaderModule;
-			return shaderStage;
+	if(!renderSettings.recompileAllShaders){
+		str8 spv  = str8_concat(path, str8_lit(".spv"), deshi_temp_allocator);
+		File* spv_file = file_init_if_exists(spv, FileAccess_Read);
+		if(spv_file){
+			defer{ file_deinit(spv_file); };
+			str8 spv_raw = file_read(spv_file, memory_talloc(spv_file->bytes), spv_file->bytes);
+			if(spv_raw){
+				VkShaderModule shaderModule;
+				VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+				moduleInfo.codeSize = spv_raw.count;
+				moduleInfo.pCode    = (u32*)spv_raw.str;
+				resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
+				DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ",name).str);
+				
+				VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+				shaderStage.stage  = stage;
+				shaderStage.pName  = "main";
+				shaderStage.module = shaderModule;
+				return shaderStage;
+			}
 		}
 	}
 	
@@ -3738,21 +3740,14 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 void
 render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
-	
-	RenderTwodCmd* prevCmd;
-	if(renderTwodCmdCounts[renderActiveSurface][layer]){
-		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1];
-	}else{
-		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][0];
-	}
-	
-	if(   (prevCmd->handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
-	   || (prevCmd->scissorOffset != scissorOffset)
-	   || (prevCmd->scissorExtent != scissorExtent)){
-		prevCmd->handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
-		prevCmd->indexOffset   = renderTwodIndexCount;
-		prevCmd->scissorOffset = scissorOffset;
-		prevCmd->scissorExtent = scissorExtent;
+	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorOffset != scissorOffset)
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorExtent != scissorExtent)){
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
 }

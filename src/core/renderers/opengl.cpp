@@ -952,7 +952,7 @@ render_cleanup(){DPZoneScoped;
 //TODO(delle) one large vertex/index array maybe
 void
 render_load_mesh(Mesh* mesh){DPZoneScoped;
-	 RenderMesh mgl{};
+	RenderMesh mgl{};
 	mgl.base = mesh;
 	mgl.vertexCount = mesh->vertexCount;
 	mgl.indexCount  = mesh->indexCount;
@@ -1173,21 +1173,14 @@ render_model_wireframe(Model* model, mat4 matrix, color color){DPZoneScoped;
 void
 render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
-	
-	RenderTwodCmd* prevCmd;
-	if(renderTwodCmdCounts[renderActiveSurface][layer]){
-		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1];
-	}else{
-		prevCmd = &renderTwodCmdArrays[renderActiveSurface][layer][0];
-	}
-	
-	if(   (prevCmd->handle        != (void*)((texture) ? (u64)texture->idx : 1))
-	   || (prevCmd->scissorOffset != scissorOffset)
-	   || (prevCmd->scissorExtent != scissorExtent)){
-		prevCmd->handle        = (void*)((texture) ? (u64)texture->idx : 1);
-		prevCmd->indexOffset   = renderTwodIndexCount;
-		prevCmd->scissorOffset = scissorOffset;
-		prevCmd->scissorExtent = scissorExtent;
+	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != (void*)((texture) ? (u64)texture->idx : 1))
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorOffset != scissorOffset)
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorExtent != scissorExtent)){
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = (void*)((texture) ? (u64)texture->idx : 1);
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
 }

@@ -4798,7 +4798,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {DPZoneScoped;
 		dcso = ClampMin(dcso, vec2::ZERO);
 		
 		render_set_active_surface_idx(drawCmd.render_surface_target_idx);
-			render_start_cmd2(window->layer, drawCmd.tex, dcso, dcse);
+		render_start_cmd2(window->layer, drawCmd.tex, dcso, dcse);
 		render_add_vertices2(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
 		//if((input_mouse_position() - drawCmd.vertices[0].pos).mag() < 4){
