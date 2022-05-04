@@ -389,18 +389,72 @@ void spring(){
 	f32 h = 0.1;
 	persist particle p0{{0,0},{0,0},{0,0},1};
 	persist particle p1{{0,0},{0,0},{0,0},1};
+	persist particle p2{{0,0},{0,0},{0,0},1};
+	persist particle p3{{0,0},{0,0},{0,0},1};
+	persist particle p4{{0,0},{0,0},{0,0},1};
 	if(isnan(p0.vel.y)) p0.vel = vec2::ZERO;
 	if(isnan(p0.pos.y)) p0.pos = vec2::ZERO;
 	f32 denom = 1 / (1 + 2*h*B);
 	f64 t = DeshTotalTime;
 	f64 d = 5; //distance of second spring from origin
 	f64 split = 1 - w*w;
-	if(!input_lmouse_down()){
-		p0.acc = -2*B*p0.vel-(25-w*w)*(p0.pos-vec2(0,100))-(w*w)*(p0.pos-vec2(100,0))-g*100*vec2(0,1); //damped single spring with gravity
+	//if(!input_lmouse_down()){
+		//p0.acc = -2*B*p0.vel-(25-w*w)*(p0.pos-vec2(0,100))-(w*w)*(p0.pos-vec2(100,0))-g*100*vec2(0,1); //damped single spring with gravity
 		//p0.acc = -k*(p0.pos-vec2(0,10)); //double spring 
+		//p0.acc = -2*B*p0.vel-w*w*(p0.pos-vec2(0,-100))-g*100*vec2(0,1);
+		
+		//spring dampening
+		p0.acc = -2*B*p0.vel;
+		p1.acc = -2*B*p1.vel;
+		p2.acc = -2*B*p2.vel;
+		p3.acc = -2*B*p3.vel;
+		p4.acc = -2*B*p4.vel;
+
+		//spring
+		p0.acc += -w*w*(p0.pos-vec2(0,-10)) - w*w*(p0.pos - p1.pos);
+		p1.acc += -w*w*(p1.pos-p0.pos-vec2(0,-10)) - w*w*(p1.pos - p2.pos);
+		p2.acc += -w*w*(p2.pos-p1.pos-vec2(0,-10)) - w*w*(p2.pos - p3.pos);
+		p3.acc += -w*w*(p3.pos-p2.pos-vec2(0,-10)) - w*w*(p3.pos - p4.pos);
+		p4.acc += -w*w*(p4.pos-p3.pos-vec2(0,-10));
+
+		//gravity
+		p0.acc += -g*100*vec2(0,1);
+		p1.acc += -g*100*vec2(0,1);
+		p2.acc += -g*100*vec2(0,1);
+		p3.acc += -g*100*vec2(0,1);
+		p4.acc += -g*100*vec2(0,1);
+
 		p0.vel += p0.acc * DeshTime->deltaTime / 1000;
+		p1.vel += p1.acc * DeshTime->deltaTime / 1000;
+		p2.vel += p2.acc * DeshTime->deltaTime / 1000;
+		p3.vel += p3.acc * DeshTime->deltaTime / 1000;
+		p4.vel += p4.acc * DeshTime->deltaTime / 1000;
+
 		p0.pos += p0.vel * DeshTime->deltaTime / 1000;
-	}
+		p1.pos += p1.vel * DeshTime->deltaTime / 1000;
+		p2.pos += p2.vel * DeshTime->deltaTime / 1000;
+		p3.pos += p3.vel * DeshTime->deltaTime / 1000;
+		if(!input_lmouse_down()){
+			p4.pos += p4.vel * DeshTime->deltaTime / 1000;
+		} 
+		else{
+			p4.vel = vec2::ZERO;
+		}
+
+	//}
+
+	persist array<vec2> ppos0;
+	persist array<vec2> ppos1;
+	persist array<vec2> ppos2;
+	persist array<vec2> ppos3;
+	persist array<vec2> ppos4;
+	ppos0.add(p0.pos);
+	ppos1.add(p1.pos);
+	ppos2.add(p2.pos);
+	ppos3.add(p3.pos);
+	ppos4.add(p4.pos);
+	if(input_lmouse_pressed()) ppos0.clear(), ppos1.clear(), ppos2.clear(), ppos3.clear(), ppos4.clear();
+
 	SetNextWindowPos(vec2::ZERO);
 	SetNextWindowSize(DeshWinSize);
 	Begin("springwin", UIWindowFlags_NoScroll | UIWindowFlags_NoInteract);{
@@ -412,20 +466,54 @@ void spring(){
 		SetNextWindowSize(MAX_F32, MAX_F32);
 		BeginChild("springwinchld", vec2::ZERO, UIWindowFlags_NoInteract);{
 			if(IsWinHovered() && input_lmouse_down()){
-				p0.pos = ((input_mouse_position()- GetWindow()->dimensions/2)).yInvert();
+				p4.pos = ((input_mouse_position()- vec2(GetWindow()->dimensions.x/2,0))).yInvert();
 			
 			}
-			vec2 sp = p0.pos.yInvert() + GetWindow()->dimensions / 2;
-			Line(GetWindow()->dimensions/2 + vec2(0,-100),sp, 2, Color_Cyan);
-			Line(GetWindow()->dimensions/2 + vec2(100,0),sp, 2, Color_Cyan);
+			forI(ppos0.count){
+				if(i>0){
+					Line(ppos0[i-1].yInvert()+vec2(GetWindow()->dimensions.x/2,0), ppos0[i].yInvert()+vec2(GetWindow()->dimensions.x/2,0),2,color(50,70,51));
+					Line(ppos1[i-1].yInvert()+vec2(GetWindow()->dimensions.x/2,0), ppos1[i].yInvert()+vec2(GetWindow()->dimensions.x/2,0),2,color(50,70,102));
+					Line(ppos2[i-1].yInvert()+vec2(GetWindow()->dimensions.x/2,0), ppos2[i].yInvert()+vec2(GetWindow()->dimensions.x/2,0),2,color(50,70,153));
+					Line(ppos3[i-1].yInvert()+vec2(GetWindow()->dimensions.x/2,0), ppos3[i].yInvert()+vec2(GetWindow()->dimensions.x/2,0),2,color(50,70,204));
+					Line(ppos4[i-1].yInvert()+vec2(GetWindow()->dimensions.x/2,0), ppos4[i].yInvert()+vec2(GetWindow()->dimensions.x/2,0),2,color(50,70,255));
+				}
+			}
+			
+			vec2 sp0 = p0.pos.yInvert() + vec2(GetWindow()->dimensions.x / 2, 0);
+			vec2 sp1 = p1.pos.yInvert() + vec2(GetWindow()->dimensions.x / 2, 0);
+			vec2 sp2 = p2.pos.yInvert() + vec2(GetWindow()->dimensions.x / 2, 0);
+			vec2 sp3 = p3.pos.yInvert() + vec2(GetWindow()->dimensions.x / 2, 0);
+			vec2 sp4 = p4.pos.yInvert() + vec2(GetWindow()->dimensions.x / 2, 0);
+			
+			//Line(GetWindow()->dimensions/2 + vec2(0,-100),sp, 2, Color_Cyan);
+			//Line(GetWindow()->dimensions/2 + vec2(100,0),sp, 2, Color_Cyan);
+			Line(vec2(GetWindow()->dimensions.x / 2, 0),sp0,2, Color_Cyan);
+			Line(sp0,sp1,2,Color_Cyan);
+			Line(sp1,sp2,2,Color_Cyan);
+			Line(sp2,sp3,2,Color_Cyan);
+			Line(sp3,sp4,2,Color_Cyan);
 
-			CircleFilled(sp, 10);
-			Log("", sp, " ", p0.pos);  
+			CircleFilled(sp0, 5);
+			CircleFilled(sp1, 5);
+			CircleFilled(sp2, 5);
+			CircleFilled(sp3, 5);
+			CircleFilled(sp4, 5);
+
+
+			//Log("", sp, " ", p0.pos);  
 		}EndChild();
 	}End();
 	if(key_pressed(Key_SPACE)){
-		p0.pos = vec2(0,1000);
-		p0.vel = vec2::ZERO;
+		p0.pos = vec2(100*sin(2*M_PI*0/6),100*cos(2*M_PI*0/6));
+		p1.pos = vec2(100*sin(2*M_PI*1/6),100*cos(2*M_PI*1/6));
+		p2.pos = vec2(100*sin(2*M_PI*2/6),100*cos(2*M_PI*2/6));
+		p3.pos = vec2(100*sin(2*M_PI*3/6),100*cos(2*M_PI*3/6));
+		p4.pos = vec2(100*sin(2*M_PI*4/6),100*cos(2*M_PI*4/6));
+		p0.vel=vec2::ZERO;
+		p1.vel=vec2::ZERO;
+		p2.vel=vec2::ZERO;
+		p3.vel=vec2::ZERO;
+		p4.vel=vec2::ZERO;
 	}
 }
 
