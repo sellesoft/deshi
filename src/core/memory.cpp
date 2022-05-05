@@ -102,7 +102,7 @@ local b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return 
 
 #if MEMORY_TRACK_ALLOCS
 local AllocInfo*
-DEBUG_AllocInfo_Creation(void* address, cstring file, upt line){
+DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){
 	spt middle = 0;
 	upt index = -1;
 	if(deshi__alloc_infos_active.count > 0){
@@ -183,7 +183,7 @@ CreateArenaLibc(upt aligned_size){ //NOTE expects pre-aligned size with arena ov
 }
 
 Arena*
-deshi__memory_arena_create(upt requested_size, cstring file, upt line){
+deshi__memory_arena_create(upt requested_size, str8 file, upt line){
 	DEBUG_CheckHeap(deshi__arena_heap);
 	
 	if(deshi__cleanup_happened) return 0;
@@ -290,7 +290,7 @@ deshi__memory_arena_create(upt requested_size, cstring file, upt line){
 }
 
 Arena*
-deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
+deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){
 	DEBUG_CheckHeap(deshi__arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	
@@ -437,7 +437,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line){
 }
 
 void
-deshi__memory_arena_clear(Arena* arena, cstring file, upt line){
+deshi__memory_arena_clear(Arena* arena, str8 file, upt line){
 	if(deshi__cleanup_happened) return;
 	
 #if MEMORY_PRINT_ARENA_ACTIONS
@@ -451,7 +451,7 @@ deshi__memory_arena_clear(Arena* arena, cstring file, upt line){
 }
 
 void
-deshi__memory_arena_delete(Arena* arena, cstring file, upt line){
+deshi__memory_arena_delete(Arena* arena, str8 file, upt line){
 	if(deshi__cleanup_happened) return;
 	if(arena == 0) return;
 	
@@ -600,7 +600,7 @@ FreeLibc(void* ptr){
 #define DPAllocMessage toStr(file, " on line ", line).str
 
 void*
-deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
+deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){
 	DEBUG_CheckHeap(deshi__generic_heap);
 	
 	if(deshi__cleanup_happened) return 0;
@@ -719,7 +719,7 @@ deshi__memory_generic_allocate(upt requested_size, cstring file, upt line){
 }
 
 void*
-deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, upt line){
+deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt line){
 	if(deshi__cleanup_happened) return 0;
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
@@ -950,7 +950,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, cstring file, up
 }
 
 void
-deshi__memory_generic_zero_free(void* ptr, cstring file, upt line){
+deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){
 	if(deshi__cleanup_happened) return;
 	if(ptr == 0) return;
 	
@@ -1063,7 +1063,7 @@ local Arena deshi__temp_arena_;
 local Arena* deshi__temp_arena = &deshi__temp_arena_;
 
 void*
-deshi__memory_temp_allocate(upt size, cstring file, upt line){
+deshi__memory_temp_allocate(upt size, str8 file, upt line){
 	if(deshi__cleanup_happened) return 0;
 	if(size == 0) return 0;
 	Assert(deshi__temp_arena, "Attempted to temp allocate before memory_init() has been called");
@@ -1089,7 +1089,7 @@ deshi__memory_temp_allocate(upt size, cstring file, upt line){
 }
 
 void*
-deshi__memory_temp_reallocate(void* ptr, upt size, cstring file, upt line){
+deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){
 	if(deshi__cleanup_happened) return 0;
 	if(size == 0) return 0;
 	if(ptr == 0) return 0;
@@ -1144,7 +1144,7 @@ deshi__memory_temp_expose(){
 //// @debug ////
 ////////////////
 void
-deshi__memory_allocinfo_set(void* address, cstring name, Type type){
+deshi__memory_allocinfo_set(void* address, str8 name, Type type){
 #if MEMORY_TRACK_ALLOCS
 	if(deshi__cleanup_happened) return;
 	if(address == 0) return;
@@ -1415,7 +1415,7 @@ deshi__memory_init(upt main_size, upt temp_size){
 	deshi__arena_heap->last_chunk = 0;
 	deshi__arena_heap->initialized = true;
 	DEBUG_CheckHeap(deshi__arena_heap);
-	deshi__memory_allocinfo_set(deshi__arena_heap, cstring_lit("Arena Heap"), Type_Heap);
+	deshi__memory_allocinfo_set(deshi__arena_heap, str8_lit("Arena Heap"), Type_Heap);
 	
 	deshi__generic_arena = memory_create_arena(Megabytes(64)+sizeof(Heap));
 	deshi__generic_heap = (Heap*)deshi__generic_arena->start;
@@ -1427,13 +1427,13 @@ deshi__memory_init(upt main_size, upt temp_size){
 	deshi__generic_heap->last_chunk = 0;
 	deshi__generic_heap->initialized = true;
 	DEBUG_CheckHeap(deshi__generic_heap);
-	deshi__memory_allocinfo_set(deshi__generic_heap, cstring_lit("Generic Heap"), Type_Heap);
+	deshi__memory_allocinfo_set(deshi__generic_heap, str8_lit("Generic Heap"), Type_Heap);
 	
 	deshi__temp_arena->start  = deshi__arena_heap->start + deshi__arena_heap->size;
 	deshi__temp_arena->cursor = deshi__temp_arena->start;
 	deshi__temp_arena->size   = temp_size;
 	deshi__temp_arena->used   = 0;
-	deshi__memory_allocinfo_set(deshi__temp_arena, cstring_lit("Temp Arena"), Type_Arena);
+	deshi__memory_allocinfo_set(deshi__temp_arena, str8_lit("Temp Arena"), Type_Arena);
 	
 	deshiStage |= DS_MEMORY;
 }

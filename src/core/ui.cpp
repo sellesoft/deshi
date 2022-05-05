@@ -4574,7 +4574,7 @@ void UI::DemoWindow() {DPZoneScoped;
 		
 		Separator(7);
 		
-		persist Texture* tex = Storage::CreateTextureFromFile("lcdpix.png").second;
+		persist Texture* tex = Storage::CreateTextureFromFile(str8_lit("lcdpix.png")).second;
 		
 		Text("heres a image in the child window:");
 		Image(tex);
@@ -4647,7 +4647,7 @@ void UI::Init() {DPZoneScoped;
 	curwin->dimensions = DeshWindow->dimensions;
 	
 	//load font
-	style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
+	style.font = Storage::CreateFontFromFileBDF(str8_lit("gohufont-11.bdf")).second;
 	Assert(style.font != Storage::NullFont());
 	
 	//push default color scheme

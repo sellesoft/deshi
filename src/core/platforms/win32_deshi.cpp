@@ -491,7 +491,7 @@ void DrawDecorations(Window* win){DPZoneScoped;
 	s32 cwidth = win->cwidth, cheight = win->cheight;
 	u32 decor = win->decorations;
 	b32 hitset = 0;
-	persist Font* decorfont = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
+	persist Font* decorfont = Storage::CreateFontFromFileBDF(str8_lit("gohufont-11.bdf")).second;
 	render_set_active_surface(win);
 	render_start_cmd2(render_decoration_layer_index(), 0, vec2::ZERO, vec2(width, height));
 	

@@ -4,18 +4,22 @@ Index:
   ConfigMapItem
   config_save(str8 path, ConfigMapItem* config_map, u64 config_count) -> void
   config_load(str8 path, ConfigMapItem* config_map, u64 config_count) -> void
+
+TODOs:
+change PADSECTION to a generic section type that can be checked for context based keys
+add a KEYONLY type/flag for line separated lists
 */
 
 #pragma once
 #ifndef DESHI_CONFIG_H
 #define DESHI_CONFIG_H
+#include "kigu/common.h"
+#include "kigu/unicode.h"
 
-#include "kigu/common.h"
-#include "kigu/common.h"
 
 typedef Type ConfigValueType; enum{
 	ConfigValueType_NONE, //can be used for comments
-	ConfigValueType_Bool,
+	ConfigValueType_B32,
 	ConfigValueType_S32,
 	ConfigValueType_U8,
 	ConfigValueType_U32,
@@ -52,8 +56,10 @@ global_ void config_save(str8 path, ConfigMapItem* config_map, u64 config_count)
 //Loads the `config_map` from the `path`
 global_ void config_load(str8 path, ConfigMapItem* config_map, u64 config_count);
 
+
 #endif //DESHI_CONFIG_H
 #ifdef DESHI_IMPLEMENTATION
+
 
 void
 config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
@@ -80,7 +86,7 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 			case ConfigValueType_PADSECTION:{
 				pad_amount = (config_map[i].var) ? ClampMax((s64)config_map[i].var, ArrayCount(padding_buffer)-1) : 1;
 			}break;
-			case ConfigValueType_Bool:{
+			case ConfigValueType_B32:{
 				if(*(b32*)config_map[i].var){
 					file_write(file, "true",  4);
 				}else{
@@ -198,13 +204,12 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 	ConfigMapItem* configs = (ConfigMapItem*)memory_talloc(config_count*sizeof(ConfigMapItem));
 	CopyMemory(configs, config_map, config_count*sizeof(ConfigMapItem));
 	
-	str8 line;
 	u32 line_number = 0;
 	while(file->cursor < file->bytes){
 		line_number += 1;
 		
 		//next line
-		line = file_read_line_alloc(file, &load_allocator);
+		str8 line = file_read_line_alloc(file, &load_allocator);
 		if(!line) continue;
 		
 		//skip leading whitespace
@@ -212,9 +217,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 		if(!line) continue;
 		
 		//early out if comment is first character
-		if(decoded_codepoint_from_utf8(line.str, 4).codepoint == '#'){
-			continue;
-		}
+		if(decoded_codepoint_from_utf8(line.str, 4).codepoint == '#') continue;
 		
 		//parse key
 		str8 key = str8_eat_until(line, ' ');
@@ -239,7 +242,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 			if(!str8_equal_lazy(key, configs[i].key)) continue;
 			
 			switch(configs[i].type){
-				case ConfigValueType_Bool:{
+				case ConfigValueType_B32:{
 					b32* b = (b32*)configs[i].var;
 					if     (str8_nequal(str8_lit("true"),  line, 4)) *b = true;
 					else if(str8_nequal(str8_lit("false"), line, 5)) *b = false;

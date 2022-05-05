@@ -4,6 +4,7 @@
 
 #include "kigu/common.h"
 #include "kigu/node.h"
+#include "kigu/unicode.h"
 
 struct Arena{
 	u8* start;
@@ -90,22 +91,22 @@ struct AllocInfo{
 //// @arena ////
 ////////////////
 //creates an arena AT LEAST 'size' in bytes with all memory zeroed
-Arena* deshi__memory_arena_create(upt size, cstring file, upt line);
-#define memory_create_arena(size) deshi__memory_arena_create(size, cstr_lit(__FILE__), __LINE__)
+Arena* deshi__memory_arena_create(upt size, str8 file, upt line);
+#define memory_create_arena(size) deshi__memory_arena_create(size, str8_lit(__FILE__), __LINE__)
 
 //grows the arena by AT LEAST 'size' in bytes
 //  returns a different pointer than was passed if the memory was moved
 //  if its memory was moved, pointers to its memory are no longer valid
-Arena* deshi__memory_arena_grow(Arena* arena, upt size, cstring file, upt line);
-#define memory_grow_arena(arena, size) deshi__memory_arena_grow(arena, size, cstr_lit(__FILE__), __LINE__)
+Arena* deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line);
+#define memory_grow_arena(arena, size) deshi__memory_arena_grow(arena, size, str8_lit(__FILE__), __LINE__)
 
 //zeros the arena's memory and resets used amount to zero
-void deshi__memory_arena_clear(Arena* arena, cstring file, upt line);
-#define memory_clear_arena(arena) deshi__memory_arena_clear(arena, cstr_lit(__FILE__), __LINE__)
+void deshi__memory_arena_clear(Arena* arena, str8 file, upt line);
+#define memory_clear_arena(arena) deshi__memory_arena_clear(arena, str8_lit(__FILE__), __LINE__)
 
 //deletes the arena and zeros its memory
-void deshi__memory_arena_delete(Arena* arena, cstring file, upt line);
-#define memory_delete_arena(arena) deshi__memory_arena_delete(arena, cstr_lit(__FILE__), __LINE__)
+void deshi__memory_arena_delete(Arena* arena, str8 file, upt line);
+#define memory_delete_arena(arena) deshi__memory_arena_delete(arena, str8_lit(__FILE__), __LINE__)
 
 //exposes the internal arena heap
 Heap* deshi__memory_arena_expose();
@@ -123,21 +124,21 @@ T* memory_arena_add_new(Arena* arena);
 //// @generic ////
 //////////////////
 //allocates AT LEAST 'size' in bytes with all memory zeroed
-void* deshi__memory_generic_allocate(upt size, cstring file, upt line);
-#define memory_alloc(size) deshi__memory_generic_allocate(size, cstr_lit(__FILE__), __LINE__)
+void* deshi__memory_generic_allocate(upt size, str8 file, upt line);
+#define memory_alloc(size) deshi__memory_generic_allocate(size, str8_lit(__FILE__), __LINE__)
 #define memalloc(size) memory_alloc(size)
 
 //resizes the allocation to AT LEAST 'new_size' in bytes
 //  returns a different pointer than was passed if the memory was moved
 //  if its memory was moved, pointers to its memory are no longer valid
 //  if 'new_size' is zero, calls ZeroFree on 'ptr' and returns 0
-void* deshi__memory_generic_reallocate(void* ptr, upt new_size, cstring file, upt line);
-#define memory_realloc(ptr, new_size) deshi__memory_generic_reallocate(ptr, new_size, cstr_lit(__FILE__), __LINE__)
+void* deshi__memory_generic_reallocate(void* ptr, upt new_size, str8 file, upt line);
+#define memory_realloc(ptr, new_size) deshi__memory_generic_reallocate(ptr, new_size, str8_lit(__FILE__), __LINE__)
 #define memrealloc(ptr, new_size) memory_realloc(ptr, new_size)
 
 //frees allocated memory and zeros it
-void deshi__memory_generic_zero_free(void* ptr, cstring file, upt line);
-#define memory_zfree(ptr) deshi__memory_generic_zero_free(ptr, cstr_lit(__FILE__), __LINE__)
+void deshi__memory_generic_zero_free(void* ptr, str8 file, upt line);
+#define memory_zfree(ptr) deshi__memory_generic_zero_free(ptr, str8_lit(__FILE__), __LINE__)
 #define memzfree(ptr) memory_zfree(ptr)
 
 //exposes the internal generic heap
@@ -149,13 +150,13 @@ Heap* deshi__memory_generic_expose();
 //// @temporary ////
 ////////////////////
 //allocates 'size' in bytes with all memory zeroed
-void* deshi__memory_temp_allocate(upt size, cstring file, upt line);
-#define memory_talloc(size) deshi__memory_temp_allocate(size, cstr_lit(__FILE__), __LINE__)
+void* deshi__memory_temp_allocate(upt size, str8 file, upt line);
+#define memory_talloc(size) deshi__memory_temp_allocate(size, str8_lit(__FILE__), __LINE__)
 #define memtalloc(size) memory_talloc(size)
 
 //allocates 'size' in bytes and copies the memory to the new location
-void* deshi__memory_temp_reallocate(void* ptr, upt size, cstring file, upt line);
-#define memory_trealloc(ptr, size) deshi__memory_temp_reallocate(ptr, size, cstr_lit(__FILE__), __LINE__)
+void* deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line);
+#define memory_trealloc(ptr, size) deshi__memory_temp_reallocate(ptr, size, str8_lit(__FILE__), __LINE__)
 #define memtrealloc(ptr, size) memory_trealloc(ptr, size)
 
 //clears and resets the temp arena
@@ -171,7 +172,7 @@ Arena* deshi__memory_temp_expose();
 //// @debug ////
 ////////////////
 //attaches a name and type to an address (previously allocated or not)
-void deshi__memory_allocinfo_set(void* address, cstring name, Type type);
+void deshi__memory_allocinfo_set(void* address, str8 name, Type type);
 
 //gets the allocation info of an address (previously allocated or not)
 AllocInfo deshi__memory_allocinfo_get(void* address);
@@ -199,9 +200,9 @@ void deshi__memory_cleanup();
 ////////////////////
 //// @allocator ////
 ////////////////////
-FORCE_INLINE void* deshi__memory_generic_allocate_allocator(upt size){return deshi__memory_generic_allocate(size, cstr_lit("deshi_allocator"), 0);}
-FORCE_INLINE void* deshi__memory_generic_reallocate_allocator(void* ptr, upt new_size){return deshi__memory_generic_reallocate(ptr, new_size, cstr_lit("deshi_allocator"), 0);}
-FORCE_INLINE void deshi__memory_generic_zero_free_allocator(void* ptr){return deshi__memory_generic_zero_free(ptr, cstr_lit("deshi_allocator"), 0);}
+FORCE_INLINE void* deshi__memory_generic_allocate_allocator(upt size){return deshi__memory_generic_allocate(size, str8_lit("deshi_allocator"), 0);}
+FORCE_INLINE void* deshi__memory_generic_reallocate_allocator(void* ptr, upt new_size){return deshi__memory_generic_reallocate(ptr, new_size, str8_lit("deshi_allocator"), 0);}
+FORCE_INLINE void deshi__memory_generic_zero_free_allocator(void* ptr){return deshi__memory_generic_zero_free(ptr, str8_lit("deshi_allocator"), 0);}
 global_ Allocator deshi_allocator_{
 	deshi__memory_generic_allocate_allocator,
 	Allocator_ChangeMemory_Noop,
@@ -211,8 +212,8 @@ global_ Allocator deshi_allocator_{
 };
 global_ Allocator* deshi_allocator = &deshi_allocator_;
 
-FORCE_INLINE void* deshi__memory_temp_allocate_allocator(upt size){return deshi__memory_temp_allocate(size, cstr_lit("deshi_allocator"), 0);}
-FORCE_INLINE void* deshi__memory_temp_reallocate_allocator(void* ptr, upt size){return deshi__memory_temp_reallocate(ptr, size, cstr_lit("deshi_allocator"), 0);}
+FORCE_INLINE void* deshi__memory_temp_allocate_allocator(upt size){return deshi__memory_temp_allocate(size, str8_lit("deshi_allocator"), 0);}
+FORCE_INLINE void* deshi__memory_temp_reallocate_allocator(void* ptr, upt size){return deshi__memory_temp_reallocate(ptr, size, str8_lit("deshi_allocator"), 0);}
 global_ Allocator deshi_temp_allocator_{
 	deshi__memory_temp_allocate_allocator,
 	Allocator_ChangeMemory_Noop,

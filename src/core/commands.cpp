@@ -146,21 +146,21 @@ void cmd_run(str8 input){
 			if(str8_equal(args[0], it->name)){
 				if(it->func){
 					if(args_count < it->min_args){
-						LogE("cmd", "Command '",temp_str8_cstr(args[0]),"' requires at least ",it->min_args," arguments");
+						LogE("cmd", "Command '",args[0],"' requires at least ",it->min_args," arguments");
 					}else if(args_count > it->max_args){
-						LogE("cmd", "Command '",temp_str8_cstr(args[0]),"' requires at most  ",it->max_args," arguments");
+						LogE("cmd", "Command '",args[0],"' requires at most  ",it->max_args," arguments");
 					}else{
 						it->func(args.data+1, args_count);
 					}
 				}else{
-					LogE("cmd", "Command '",temp_str8_cstr(args[0]),"' has no registered function");
+					LogE("cmd", "Command '",args[0],"' has no registered function");
 				}
 				found = true;
 				break;
 			}
 		}
 		if(!found){
-			LogE("cmd", "Unknown command '",temp_str8_cstr(args[0]),"'");
+			LogE("cmd", "Unknown command '",args[0],"'");
 		}
 	}
 }
@@ -242,7 +242,7 @@ void cmd_init(){
 					break;
 				}
 			}
-			if(!found) LogE("cmd", "Command '",temp_str8_cstr(args[0]),"' not found");
+			if(!found) LogE("cmd", "Command '",args[0],"' not found");
 		}else{
 			Log("cmd", "Use 'help <command>' to get a description and usage of the command");
 			Log("cmd", "Use 'list' to get a list of all available commands");
@@ -413,26 +413,26 @@ void cmd_init(){
 			str8_builder builder;
 			str8_builder_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
 			str8_builder_append(&builder, str8_lit("\t"));
-			str8_builder_append(&builder, str8{(u8*)ShaderStrings[mat->shader], (s64)strlen(ShaderStrings[mat->shader])});
+			str8_builder_append(&builder, ShaderStrings[mat->shader]);
 			str8_builder_append(&builder, str8_lit("\t"));
 			forI(mat->textures.count){
 				str8_builder_append(&builder, str8_lit(" "));
-				str8_builder_append(&builder, str8{(u8*)Storage::TextureName(mat->textures[i]), (s64)strlen(Storage::TextureName(mat->textures[i]))});
+				str8_builder_append(&builder, Storage::TextureName(mat->textures[i]));
 			}
 			Log("cmd", (const char*)builder.str);
 		}
 	}DESHI_CMD_END_NO_ARGS(mat_list);
 	
 	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
-		s32 matID = atoi(temp_str8_cstr(args[0]));
+		s32 matID   = atoi(temp_str8_cstr(args[0]));
 		s32 texSlot = atoi(temp_str8_cstr(args[1]));
-		s32 texID = atoi(temp_str8_cstr(args[2]));
+		s32 texID   = atoi(temp_str8_cstr(args[2]));
 		Storage::MaterialAt(matID)->textures[texSlot] = texID;
 		Log("cmd", "Updated material ",Storage::MaterialName(matID),"'s texture",texSlot," to ",Storage::TextureName(texID));
 	}DESHI_CMD_END(mat_texture, CmdArgument_S32, CmdArgument_S32, CmdArgument_S32);
 	
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
-		s32 matID = atoi(temp_str8_cstr(args[0]));
+		s32 matID  = atoi(temp_str8_cstr(args[0]));
 		s32 shader = atoi(temp_str8_cstr(args[1]));
 		Storage::MaterialAt(matID)->shader = (Shader)shader;
 		Log("cmd", "Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]);
@@ -462,8 +462,8 @@ void cmd_init(){
 		Stopwatch load_stopwatch = start_stopwatch();
 		TextureType type = TextureType_2D;
 		if(arg_count == 2) type = (TextureType)atoi(temp_str8_cstr(args[1]));
-		Storage::CreateTextureFromFile(temp_str8_cstr(args[0]), ImageFormat_RGBA, type);
-		Log("cmd", "Loaded texture '",temp_str8_cstr(args[0]),"' in ",peek_stopwatch(load_stopwatch),"ms");
+		Storage::CreateTextureFromFile(args[0], ImageFormat_RGBA, type);
+		Log("cmd", "Loaded texture '",args[0],"' in ",peek_stopwatch(load_stopwatch),"ms");
 	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_S32|CmdArgument_OPTIONAL);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){

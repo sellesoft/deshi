@@ -52,7 +52,7 @@ global_ const char* TextureTypeStrings[] = {
 };
 
 struct Texture{
-	char name[64];
+	char name[64]; //NOTE(delle) includes the extension
 	u32  idx;
 	int  width;
 	int  height;

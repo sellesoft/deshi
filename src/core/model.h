@@ -18,8 +18,8 @@ enum Shader_{
 	Shader_Testing1,
 	Shader_COUNT,
 }; typedef u32 Shader;
-global_ const char* ShaderStrings[] = {
-	"NULL", "Flat", "Phong", "PBR", "Wireframe", "Lavalamp", "Testing0", "Testing1"
+global_ str8 ShaderStrings[] = {
+	str8_lit("NULL"), str8_lit("Flat"), str8_lit("Phong"), str8_lit("PBR"), str8_lit("Wireframe"), str8_lit("Lavalamp"), str8_lit("Testing0"), str8_lit("Testing1")
 };
 
 enum MaterialFlags_{

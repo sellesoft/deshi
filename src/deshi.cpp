@@ -230,7 +230,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "kigu/array.h"
 #include "kigu/array_utils.h"
 #include "kigu/carray.h"
-#include "kigu/cstring.h"
 #include "kigu/color.h"
 #include "kigu/debug.h"
 #include "kigu/hash.h"
@@ -238,10 +237,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "kigu/optional.h"
 #include "kigu/pair.h"
 #include "kigu/ring_array.h"
-#include "kigu/string.h"
-#include "kigu/string_utils.h"
 #include "kigu/unicode.h"
-#include "kigu/utils.h"
 #include "math/math.h"
 
 

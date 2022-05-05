@@ -1,5 +1,3 @@
-﻿#define ParseError(path,...) LogE("storage","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
-
 namespace Storage{
 	local u8 null128_png[] = { //TODO(delle) fix this
 		0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,
@@ -51,8 +49,8 @@ Init(){DPZoneScoped;
 	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
 	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", 64);
 	//DeshStorage->null_texture  = CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA),second;
-	DeshStorage->null_texture  = CreateTextureFromFile("null128.png").second;
-	DeshStorage->null_material = CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0}).second;
+	DeshStorage->null_texture  = CreateTextureFromFile(str8_lit("null128.png")).second;
+	DeshStorage->null_material = CreateMaterial(str8_lit("null"), Shader_NULL, MaterialFlags_NONE, {0}).second;
 	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", 64);
 	
 	//create null font (white square)
@@ -65,20 +63,10 @@ Init(){DPZoneScoped;
 	NullFont()->count = 1;
 	cpystr(NullFont()->name,"null",64);
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = CreateTextureFromMemory(white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
+	Texture* nf_tex = CreateTextureFromMemory(white_pixels, str8_lit("null_font"), 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(nf_tex); //!Incomplete
 	
 	DeshiStageInitEnd(DS_STORAGE);
-}
-
-void Storage::
-Reset(){DPZoneScoped;
-	for(s32 i=meshes.size()-1;    i>0; --i){ DeleteMesh(meshes[i]);        meshes.pop(); } 
-	for(s32 i=materials.size()-1; i>0; --i){ DeleteMaterial(materials[i]); materials.pop(); } 
-	for(s32 i=textures.size()-1;  i>0; --i){ DeleteTexture(textures[i]);   textures.pop(); } 
-	for(s32 i=models.size()-1;    i>0; --i){ DeleteModel(models[i]);       models.pop(); } 
-	for(s32 i=fonts.size()-1;     i>0; --i){ DeleteFont(fonts[i]);         fonts.pop(); } 
-	lights.clear();
 }
 
 
@@ -320,36 +308,27 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 }
 
 pair<u32,Mesh*> Storage::
-CreateMeshFromFile(const char* filename){DPZoneScoped;
+CreateMeshFromFile(str8 filename){DPZoneScoped;
 	pair<u32,Mesh*> result(0, NullMesh());
-	if(strcmp(filename, "null") == 0) return result;
+	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
+	
+	str8_builder builder;
+	str8_builder_init(&builder, str8_lit("data/models/"), deshi_temp_allocator);
+	str8_builder_append(&builder, filename);
 	
 	//append extension if not provided
-	str8 directory = str8_lit("data/models/");
-	s64 filename_len = strlen(filename);
-	str8 filepath{
-		(u8*)memory_talloc((directory.count+filename_len+6)*sizeof(u8)), //NOTE(delle) +6 for ".mesh\0"
-		directory.count+filename_len
-	};
-	CopyMemory(filepath.str,                 directory.str, directory.count*sizeof(u8));
-	CopyMemory(filepath.str+directory.count, filename,      filename_len*sizeof(u8));
-	
-	str8 front = str8_eat_until_last(filepath, '.');
-	if(filepath.count == front.count){
-		str8 mesh_ext = str8_lit(".mesh");
-		CopyMemory(filepath.str+filepath.count, mesh_ext.str, mesh_ext.count);
-		filepath.count += mesh_ext.count;
-	}
+	str8 front = str8_eat_until_last(filename, '.');
+	if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".mesh"));
 	
 	//check if mesh is already loaded
-	forX(mi, meshes.count){
-		if(strcmp(meshes[mi]->name, (const char*)front.str) == 0){
-			return pair<u32,Mesh*>(mi,meshes[mi]);
+	forI(meshes.count){
+		if(strncmp(meshes[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
+			return pair<u32,Mesh*>(i, meshes[i]);
 		}
 	}
 	
 	//load .mesh file
-	str8 contents = file_read_simple(filepath, deshi_temp_allocator);
+	str8 contents = file_read_simple(str8_builder_peek(&builder), deshi_temp_allocator);
 	if(!contents) return result;
 	
 	return CreateMeshFromMemory(contents.str);
@@ -422,12 +401,7 @@ void Storage::
 SaveMesh(Mesh* mesh){DPZoneScoped;
 	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(mesh->name),str8_lit(".mesh"), deshi_temp_allocator);
 	file_write_simple(path, mesh, mesh->bytes);
-	Log("storage","Successfully created ",path);
-}
-
-void Storage::
-DeleteMesh(Mesh* mesh){DPZoneScoped; //!Incomplete
-	NotImplemented;
+	Log("storage","Successfully saved mesh: ",path);
 }
 
 
@@ -441,21 +415,21 @@ AllocateTexture(){DPZoneScoped;
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+CreateTextureFromFile(str8 filename, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	pair<u32,Texture*> result(0, NullTexture());
-	if(strcmp(filename, "null") == 0) return result;
+	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
 	
-	//check if created already
-	forI(textures.size()){
-		if(strcmp(textures[i]->name, filename) == 0){
-			return pair<u32,Texture*>(i,textures[i]);
+	//check if texture is already loaded
+	forI(textures.count){
+		if(strncmp(textures[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
+			return pair<u32,Texture*>(i, textures[i]);
 		}
 	}
 	
-	str8 path = str8_concat(str8_lit("data/textures/"),str8_from_cstr(filename), deshi_temp_allocator);
+	str8 path = str8_concat(str8_lit("data/textures/"),filename, deshi_temp_allocator);
 	Texture* texture = AllocateTexture();
-	cpystr(texture->name, filename, 64);
-	texture->idx = textures.size();
+	CopyMemory(texture->name, filename.str, ClampMax(filename.count, 63));
+	texture->idx     = textures.count;
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
@@ -482,18 +456,19 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
+CreateTextureFromMemory(void* data, str8 name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
-	//check if created already
-	forI(textures.size()){ if(strcmp(textures[i]->name, name) == 0){
-			return pair<u32,Texture*>(i,textures[i]);
+	//check if texture is already loaded (with that name)
+	forI(textures.count){
+		if(strncmp(textures[i]->name, (const char*)name.str, ClampMax(name.count, 63)) == 0){
+			return pair<u32,Texture*>(i, textures[i]);
 		}
 	}
 	
 	Texture* texture = AllocateTexture();
-	cpystr(texture->name, name, 64);
+	CopyMemory(texture->name, name.str, ClampMax(name.count, 63));
 	texture->idx     = textures.count;
 	texture->format  = format;
 	texture->type    = type;
@@ -519,12 +494,10 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 				}
 			}break;
 			case ImageFormat_BWA:{
-				//!Incomplete
-				Assert(!"not setup yet");
+				NotImplemented; //!Incomplete
 			}break;
 			case ImageFormat_RGB:{
-				//!Incomplete
-				Assert(!"not setup yet");
+				NotImplemented; //!Incomplete
 			}break;
 		}
 	}else{
@@ -539,11 +512,6 @@ CreateTextureFromMemory(void* data, const char* name, s32 width, s32 height, Ima
 	return result;
 }
 
-void Storage::
-DeleteTexture(Texture* texture){DPZoneScoped; //!Incomplete
-	NotImplemented;
-}
-
 
 ///////////////////
 //// @material ////
@@ -556,15 +524,19 @@ AllocateMaterial(u32 textureCount){DPZoneScoped;
 }
 
 pair<u32,Material*> Storage::
-CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> mat_textures){DPZoneScoped;
+CreateMaterial(str8 name, Shader shader, MaterialFlags flags, array<u32> mat_textures){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	
-	//check if created already
-	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
+	//check if material is already loaded
+	forI(materials.count){
+		if(strncmp(materials[i]->name, (const char*)name.str, ClampMax(name.count, 63)) == 0){
+			return pair<u32,Material*>(i, materials[i]);
+		}
+	}
 	
 	Material* material = AllocateMaterial(mat_textures.count);
-	cpystr(material->name, name, 64);
-	material->idx = materials.count;
+	CopyMemory(material->name, name.str, ClampMax(name.count, 63));
+	material->idx    = materials.count;
 	material->shader = shader;
 	material->flags  = flags;
 	forI(mat_textures.count) material->textures.add(mat_textures[i]);
@@ -578,112 +550,138 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 }
 
 pair<u32,Material*> Storage::
-CreateMaterialFromFile(const char* filename){DPZoneScoped;
+CreateMaterialFromFile(str8 filename){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
-	if(strcmp(filename, "null") == 0) return result;
+	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
 	
-	//append extension if not provided
-	str8 directory = str8_lit("data/models/");
-	s64 filename_len = strlen(filename);
-	str8 filepath{
-		(u8*)memory_talloc((directory.count+filename_len+5)*sizeof(u8)), //NOTE(delle) +5 for ".mat\0"
-		directory.count+filename_len
-	};
-	CopyMemory(filepath.str,                 directory.str, directory.count*sizeof(u8));
-	CopyMemory(filepath.str+directory.count, filename,      filename_len*sizeof(u8));
-	
-	str8 front = str8_eat_until_last(filepath, '.');
-	if(filepath.count == front.count){
-		str8 mesh_ext = str8_lit(".mat");
-		CopyMemory(filepath.str+filepath.count, mesh_ext.str, mesh_ext.count);
-		filepath.count += mesh_ext.count;
-	}
-	
-	//check if created already
-	forX(mi, materials.count){
-		if(strcmp(materials[mi]->name, (const char*)front.str) == 0){
-			return pair<u32,Material*>(mi,materials[mi]);
-		}
-	}
-	
-	//material storage
-	string mat_name;
-	Shader mat_shader;
-	MaterialFlags mat_flags;
-	array<string> mat_textures;
-	
-	//parse .mat file //TODO(delle) complex file reader
-	enum MaterialHeader{ MATERIAL, TEXTURES, INVALID, };
-	persist const char* MaterialHeaderStrings[] = { "MATERIAL", "TEXTURES", "INVALID", };
-	u32 header = MaterialHeader::INVALID;
-	
-	str8 contents = file_read_simple(filepath, deshi_temp_allocator);
-	if(!contents) return result;
-	
-	char* line_start;  char* line_end = (char*)contents.str-1;
-	char* info_start;  char* info_end;
-	char* key_start;   char* key_end;
-	char* value_start; char* value_end;
-	b32 has_cr = false;
-	for(u32 line_number = 1; ;line_number++){
-		//get the next line
-		line_start = (has_cr) ? line_end+2 : line_end+1;
-		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-		if(has_cr || *(line_end-1) == '\r'){ has_cr = true; line_end -= 1; }
-		if(line_start == line_end) continue;
+		str8_builder builder;
+		str8_builder_init(&builder, str8_lit("data/models/"), deshi_temp_allocator);
+		str8_builder_append(&builder, filename);
 		
-		//format the line
-		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
-		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
-		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
-		cstring info{info_start, u64(info_end-info_start)};
+		//append extension if not provided
+		str8 front = str8_eat_until_last(filename, '.');
+		if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".mat"));
 		
-		//check for headers
-		if(*info_start == '>'){
-			if     (equals(info, cstr_lit(">material"))){ header = MaterialHeader::MATERIAL; }
-			else if(equals(info, cstr_lit(">textures"))){ header = MaterialHeader::TEXTURES; }
-			else{ header = MaterialHeader::INVALID; ParseError(filepath,"Uknown header '",info,"'"); }
-			continue;
+		//check if material is already loaded
+		forI(materials.count){
+		if(strncmp(materials[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
+			return {(u32)i, materials[i]};
+			}
 		}
 		
-		//parse the key-value pair
-		if(header == MaterialHeader::INVALID) { ParseError(filepath,"Invalid header; skipping line"); continue; }
+		//load .mat file
+		File* file = file_init(str8_builder_peek(&builder), FileAccess_Read);
+		if(!file) return result;
+		defer{ file_deinit(file); };
 		
-		if(header == MaterialHeader::MATERIAL){
-			//split the key-value pair
-			key_start = info_start;
-			key_end   = key_start;
-			while(key_end != info_end && *key_end++ != ' ');
-			if(key_end == info_end){ ParseError(filepath,"No key passed."); continue; }
-			key_end -= 1;
-			cstring key{key_start, u64(key_end-key_start)};
+		//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
+		persist u8 line_buffer[256];
+		persist Allocator load_allocator{
+			[](upt bytes){
+				if(bytes > 256){
+					return memory_talloc(bytes);
+				}else{
+					line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+					return (void*)line_buffer;
+				}
+			},
+			Allocator_ChangeMemory_Noop,
+			Allocator_ChangeMemory_Noop,
+			Allocator_ReleaseMemory_Noop,
+			Allocator_ResizeMemory_Noop
+		};
+		
+		//parse .mat file
+		str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
+		Shader mat_shader = 0;
+		MaterialFlags mat_flags = 0;
+		array<str8> mat_textures(deshi_temp_allocator);
+		enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
+		
+		u32 line_number = 0;
+		while(file->cursor < file->bytes){
+			line_number += 1;
 			
-			value_end   = info_end;
-			value_start = key_end;
-			while(*value_start++ == ' ');
-			value_start -= 1;
-			if(value_end == value_start){ ParseError(filepath,"No value passed."); continue; }
-			cstring value{value_start, u64(value_end-value_start)};
+			//next line
+			str8 line = file_read_line_alloc(file, &load_allocator);
+			if(!line) continue;
 			
-			if      (equals(key, cstr_lit("name"))){
-				mat_name = string(value_start+1, value_end-value_start-2);
-			}else if(equals(key, cstr_lit("flags"))){
-				mat_flags = (ModelFlags)b10tou64(value); 
-			}else if(equals(key, cstr_lit("shader"))){
-				string s = to_string(value);
-				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], s.str) == 0){ mat_shader = i; break; } }
-			}else{ ParseError(filepath,"Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
-		}else{
-			mat_textures.add(string(info_start+1, info_end-info_start-2));
+			//skip leading whitespace
+			str8_advance_while(&line, ' ');
+			if(!line) continue;
+			
+		//early out if comment is first character
+		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+			if(decoded.codepoint == '#') continue;
+			
+			//check for header
+		if(decoded.codepoint == '>'){
+				if     (str8_begins_with(line, str8_lit(">material"))) header = HEADER_MATERIAL;
+				else if(str8_begins_with(line, str8_lit(">textures"))) header = HEADER_TEXTURES;
+				else{ header = HEADER_INVALID; LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header: ",line); };
+				continue;
+			}
+			
+			//early out invalid header
+			if(header == HEADER_INVALID){
+				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header; skipping line");
+				continue;
+			}
+			
+			if(header == HEADER_MATERIAL){
+				//parse key
+				str8 key = str8_eat_until(line, ' ');
+				str8_increment(&line, key.count);
+				
+				//skip separating whitespace
+				str8_advance_while(&line, ' ');
+				if(!line){
+					LogE("config","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
+					continue;
+				}
+				
+			//early out if comment is first value character
+			decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint == '#'){
+					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
+					continue;
+				}
+				
+				if      (str8_equal_lazy(key, str8_lit("name"))){
+					if(decoded.codepoint != '\"'){
+						LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Names must be wrapped in double quotes.");
+						continue;
+					}
+					mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				}else if(str8_equal_lazy(key, str8_lit("flags"))){
+					mat_flags = (ModelFlags)atoi((const char*)line.str);
+				}else if(str8_equal_lazy(key, str8_lit("shader"))){
+					forI(Shader_COUNT){
+						if(str8_equal_lazy(line, ShaderStrings[i])){
+							mat_shader = i;
+							break;
+						}
+					}
+				}else{
+					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
+					continue;
+				}
+			}else{
+				if(decoded.codepoint != '\"'){
+					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Textures must be wrapped in double quotes.");
+					continue;
+				}
+				
+				mat_textures.add(str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator));
+			}
 		}
-	}
 	
 	Material* material = AllocateMaterial(mat_textures.count);
-	cpystr(material->name, mat_name.str, 64);
-	material->idx = materials.count;
+	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
+	material->idx    = materials.count;
 	material->shader = mat_shader;
-	material->flags = mat_flags;
-	forI(mat_textures.count) material->textures.add(CreateTextureFromFile(mat_textures[i].str).first);
+	material->flags  = mat_flags;
+	forI(mat_textures.count) material->textures.add(CreateTextureFromFile(mat_textures[i]).first);
 	
 	render_load_material(material);
 	
@@ -696,30 +694,25 @@ CreateMaterialFromFile(const char* filename){DPZoneScoped;
 void Storage::
 SaveMaterial(Material* material){DPZoneScoped;
 	string mat_text = ToString(">material"
-									   "\nname   \"", material->name,"\""
-									   "\nshader ", ShaderStrings[material->shader],
-									   "\nflags  ", material->flags,
+									   "\nname   \"",material->name,"\""
+									   "\nshader ",ShaderStrings[material->shader],
+									   "\nflags  ",material->flags,
 									   "\n"
 									   "\n>textures");
-	forI(material->textures.count){
-		mat_text += ToString("\n\"",textures[material->textures[i]]->name,"\"");
-	}
+	forI(material->textures.count) mat_text += ToString("\n\"",textures[material->textures[i]]->name,"\"");
 	mat_text += "\n";
 	
 	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(material->name),str8_lit(".mat"), deshi_temp_allocator);
 	file_write_simple(path, mat_text.str, mat_text.count*sizeof(char));
-	Log("storage","Successfully created ",path);
-}
-
-void Storage::
-DeleteMaterial(Material* material){DPZoneScoped; //!Incomplete
-	NotImplemented;
+	Log("storage","Successfully saved material: ",path);
 }
 
 
 ////////////////
 //// @model ////
 ////////////////
+#define ParseError(path,...) LogE("storage","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
+
 local Model* 
 AllocateModel(u32 batchCount){DPZoneScoped;
 	Model* model = (Model*)memory_alloc(sizeof(Model));
@@ -729,69 +722,82 @@ AllocateModel(u32 batchCount){DPZoneScoped;
 }
 
 pair<u32,Model*> Storage::
-CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
+CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
 	pair<u32,Model*> result(0, NullModel());
-	if(strcmp(filename, "null") == 0) return result;
+	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
 	
 	Stopwatch model_stopwatch = start_stopwatch();
 	
-	//append extension if not provided
 	str8 directory = str8_lit("data/models/");
-	s64 filename_len = strlen(filename);
-	str8 model_path{
-		(u8*)memory_talloc((directory.count+filename_len+6)*sizeof(u8)), //NOTE(delle) +7 for ".model\0"
-		directory.count+filename_len
-	};
-	CopyMemory(model_path.str,                 directory.str, directory.count*sizeof(u8));
-	CopyMemory(model_path.str+directory.count, filename,      filename_len*sizeof(u8));
+	str8_builder builder;
+	str8_builder_init(&builder, directory, deshi_temp_allocator);
+	str8_builder_append(&builder, filename);
 	
-	str8 front = str8_eat_until_last(model_path, '.');
-	if(model_path.count == front.count){
-		str8 mesh_ext = str8_lit(".model");
-		CopyMemory(model_path.str+model_path.count, mesh_ext.str, mesh_ext.count);
-		model_path.count += mesh_ext.count;
-	}
-	
-	str8 obj_path  = str8_concat(front, str8_lit(".obj"),  deshi_temp_allocator);
-	str8 mesh_path = str8_concat(front, str8_lit(".mesh"), deshi_temp_allocator);
+	//append extension if not provided
+	str8 front = str8_eat_until_last(filename, '.');
+	if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".model"));
 	
 	//check if model is already loaded
-	forX(mi, models.count){
-		if((strcmp(models[mi]->name, (const char*)front.str) == 0)){
-			return pair<u32,Model*>(mi,models[mi]);
+	forI(models.count){
+		if(strncmp(models[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
+			return {(u32)i, models[i]};
 		}
 	}
 	
+	str8 model_path = str8_builder_peek(&builder);
+	str8 obj_path  = str8_concat3(directory, front, str8_lit(".obj"),  deshi_temp_allocator);
+	str8 mesh_path = str8_concat3(directory, front, str8_lit(".mesh"), deshi_temp_allocator);
 	b32 parse_obj_mesh  = true;
 	b32 parse_obj_model = true;
 	if(!forceLoadOBJ){
-		carray<File> files = file_search_directory(directory);
-		forE(files){
-			if(file_path_equal(it->path, mesh_path))  parse_obj_mesh  = false;
-			if(file_path_equal(it->path, model_path)) parse_obj_model = false;
-			if(!parse_obj_mesh && !parse_obj_model) break;
-		}
+		if(file_exists(mesh_path))  parse_obj_mesh  = false;
+		if(file_exists(model_path)) parse_obj_model = false;
 	}
 	
-	Model* model = NullModel();
+	//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
+	persist u8 line_buffer[256];
+	persist Allocator load_allocator{
+		[](upt bytes){
+			if(bytes > 256){
+				return memory_talloc(bytes);
+			}else{
+				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+				return (void*)line_buffer;
+			}
+		},
+		Allocator_ChangeMemory_Noop,
+		Allocator_ChangeMemory_Noop,
+		Allocator_ReleaseMemory_Noop,
+		Allocator_ResizeMemory_Noop
+	};
 	
 	//// load .obj and .mtl ////
+	Model* model = NullModel();
 	if(parse_obj_model && parse_obj_mesh){
-		map<vec3,Mesh::Vertex> vUnique;
-		set<vec3> vnUnique;
-		set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
-		set<pair<u32,vec3>> appliedUniqueNormals; //vertex applied on, normal
-		array<vec2> vtArray; //NOTE UV vertices arent expected to be unique
-		array<u32> vArray, vnArray, oArray, gArray,  uArray,  mArray; //index in unique array
-		array<Mesh::Index>    indexes;
-		array<Mesh::Triangle> triangles;
-		array<Mesh::Face>     faces;
-		array<array<pair<u32,u8>>> triNeighbors;
-		array<array<u32>> faceTriangles;
-		array<set<u32>>   faceVertexes;
-		array<array<u32>> faceOuterVertexes;
-		array<array<u32>> faceTriNeighbors;
-		array<array<u32>> faceFaceNeighbors;
+		//TODO(delle) use deshi allocators here
+		map<vec3,Mesh::Vertex> vUnique(deshi_temp_allocator);
+		set<vec3> vnUnique(deshi_temp_allocator);
+		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
+		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
+		set<pair<u32,str8>> uUnique(deshi_temp_allocator);
+		set<pair<u32,str8>> mUnique(deshi_temp_allocator);
+		set<pair<u32,vec3>> appliedUniqueNormals(deshi_temp_allocator); //vertex applied on, normal
+		array<vec2> vtArray(deshi_temp_allocator); //NOTE UV vertices arent expected to be unique
+		array<u32> vArray(deshi_temp_allocator); //index in unique array
+		array<u32> vnArray(deshi_temp_allocator);
+		array<u32> oArray(deshi_temp_allocator);
+		array<u32> gArray(deshi_temp_allocator);
+		array<u32> uArray(deshi_temp_allocator);
+		array<u32> mArray(deshi_temp_allocator);
+		array<Mesh::Index>    indexes(deshi_temp_allocator);
+		array<Mesh::Triangle> triangles(deshi_temp_allocator);
+		array<Mesh::Face>     faces(deshi_temp_allocator);
+		array<array<pair<u32,u8>>> triNeighbors(deshi_temp_allocator);
+		array<array<u32>> faceTriangles(deshi_temp_allocator);
+		array<set<u32>>   faceVertexes(deshi_temp_allocator);
+		array<array<u32>> faceOuterVertexes(deshi_temp_allocator);
+		array<array<u32>> faceTriNeighbors(deshi_temp_allocator);
+		array<array<u32>> faceFaceNeighbors(deshi_temp_allocator);
 		u32 totalTriNeighbors      = 0;
 		u32 totalFaceVertexes      = 0;
 		u32 totalFaceOuterVertexes = 0;
@@ -806,29 +812,42 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		b32 fatal_error     = false;
 		
 		Stopwatch load_stopwatch = start_stopwatch();
-		str8 contents = file_read_simple(obj_path, deshi_temp_allocator);
-		if(!contents) return result;
-		char* line_start;
-		char* line_end = (char*)contents.str-1;
-		b32 has_cr = false;
-		for(u32 line_number = 1; ;line_number++){
-			//get the next line
-			line_start = (has_cr) ? line_end+2 : line_end+1;
-			if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-			if(has_cr || *(line_end-1) == '\r') { has_cr = true; line_end -= 1; }
+		File* file = file_init(obj_path, FileAccess_Read);
+		if(!file) return result;
+		defer{ file_deinit(file); };
+		
+		u32 line_number = 0;
+		while(file->cursor < file->bytes){
+			line_number += 1;
+			
+			//next line
+			str8 line = file_read_line_alloc(file, &load_allocator);
+			if(!line) continue;
+			
+			//skip leading whitespace
+			str8_advance_while(&line, ' ');
+			if(!line) continue;
+			
+			//early out if comment is first character
+			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+			if(decoded.codepoint == '#') continue;
 			
 			//TODO(delle) add parsing safety checks to strtof and strol
 			//TODO(delle) handle non-triangle faces (maybe)
-			switch(*line_start){
+			switch(decoded.codepoint){
 				case '\0': case '\n': case '\r': case '#': case ' ': continue; //skip empty and comment lines
 				//// vertex, normal, or uv ////
 				case 'v':{
-					switch(*(line_start+1)){
-						
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					
+					switch(decoded.codepoint){
 						//// vertex ////
 						case ' ':{
-							char* next = 0;
-							f32 x = strtof(line_start+2, &next);
+							str8_increment(&line, decoded.advance);
+							
+							char* next = (char*)line.str;
+							f32 x = strtof(next, &next);
 							f32 y = strtof(next, &next);
 							f32 z = strtof(next, 0);
 							vec3 vec{x,y,z};
@@ -837,25 +856,33 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 						
 						//// uv ////
 						case 't':{
-							if(*(line_start+2) != ' '){ ParseError(obj_path,"No space after 'vt'"); return result; }
-							char* next = 0;
-							f32 x = strtof(line_start+2, &next);
+							str8_increment(&line, decoded.advance);
+							decoded = decoded_codepoint_from_utf8(line.str, 4);
+							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return result; }
+							str8_increment(&line, decoded.advance);
+							
+							char* next = (char*)line.str;
+							f32 x = strtof(next, &next);
 							f32 y = strtof(next, 0);
 							vtArray.add(vec2{x,y});
 						}continue;
 						
 						//// normal ////
 						case 'n':{
-							if(*(line_start+2) != ' '){ ParseError(obj_path,"No space after 'vn'"); return result; }
-							char* next = 0;
-							f32 x = strtof(line_start+2, &next);
+							str8_increment(&line, decoded.advance);
+							decoded = decoded_codepoint_from_utf8(line.str, 4);
+							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return result; }
+							str8_increment(&line, decoded.advance);
+							
+							char* next = (char*)line.str;
+							f32 x = strtof(next, &next);
 							f32 y = strtof(next, &next);
 							f32 z = strtof(next, 0);
 							vec3 vec{x,y,z};
 							vnArray.add(vnUnique.add(vec, vec));
 						}continue;
 						default:{
-							ParseError(obj_path,"Invalid character after 'v': '",*(line_start+1),"'");
+							ParseError(obj_path,"Invalid character after 'v': '",(char)decoded.codepoint,"'");
 						}return result;
 					}
 				}continue;
@@ -863,10 +890,14 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				//// face ////
 				case 'f':{
 					Stopwatch face_stopwatch = start_stopwatch();
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
+					
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
 					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return result; }
 					
-					char* next = line_start+1;
+					str8_increment(&line, decoded.advance);
+					char* next = (char*)line.str;
 					u32 v0=strtol(next,&next,10)-1; u32 vt0=strtol(next+1,&next,10)-1; u32 vn0=strtol(next+1,&next,10)-1;
 					u32 v1=strtol(next,&next,10)-1; u32 vt1=strtol(next+1,&next,10)-1; u32 vn1=strtol(next+1,&next,10)-1;
 					u32 v2=strtol(next,&next,10)-1; u32 vt2=strtol(next+1,&next,10)-1; u32 vn2=strtol(next+1,&next,10)-1;
@@ -904,14 +935,17 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 					
 					//triangle
 					u32 cti = triangles.count;
-					triangles.add(Mesh::Triangle{
-									  (vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v1]].pos)
-										  .cross(vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v2]].pos).normalized(),
-									  vUnique.data[vArray[v0]].pos, vUnique.data[vArray[v1]].pos, vUnique.data[vArray[v2]].pos,
-									  vArray[v0], vArray[v1], vArray[v2],
-									  0, (u32)-1
-								  });
-					triNeighbors.add(array<pair<u32,u8>>());
+					Mesh::Triangle triangle{};
+					triangle.p[0] = vUnique.data[vArray[v0]].pos;
+					triangle.p[1] = vUnique.data[vArray[v1]].pos;
+					triangle.p[2] = vUnique.data[vArray[v2]].pos;
+					triangle.v[0] = vArray[v0];
+					triangle.v[1] = vArray[v1];
+					triangle.v[2] = vArray[v2];
+					triangle.face = (u32)-1;
+					triangle.normal = (triangle.p[0] - triangle.p[1]).cross(triangle.p[0] - triangle.p[2]).normalized();
+					triangles.add(triangle);
+					triNeighbors.add(array<pair<u32,u8>>{});
 					
 					//triangle neighbors
 					for(u32 oti=0; oti<triangles.count-1; ++oti){
@@ -959,16 +993,17 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 					triangles[cti].neighborCount = triNeighbors[cti].count;
 					f64 load_watch = peek_stopwatch(load_stopwatch);
 					if(((u64)(load_watch / 1000.0) % 10 == 0) && ((u64)(load_watch / 1000.0) != 0)){
-						PRINTLN(TOSTDSTRING(filename," face ",faces.count," on line ",line_number,
-													"finished creation in ",peek_stopwatch(face_stopwatch),"ms"));
+						Log("storage",obj_path," face ",faces.count," on line ",line_number," finished creation in ",peek_stopwatch(face_stopwatch),"ms");
 					}
 				}continue;
 				
 				//// use material ////
 				case 'u':{
-					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					
 					if(mtllib_found){
-						pair<u32,string> usemtl(indexes.count, string(line_start+7, line_end-(line_start+7)));
+						str8_increment(&line, 7);
+						pair<u32,str8> usemtl(indexes.count, str8_copy(line, deshi_temp_allocator));
 						uArray.add(uUnique.add(usemtl,usemtl));
 					}else{
 						ParseError(obj_path,"Specifier 'usemtl' used before 'mtllib' specifier");
@@ -977,33 +1012,47 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp(line_start, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					
 					mtllib_found = true;
-					pair<u32,string> mtllib(indexes.count, string(line_start+7, line_end-(line_start+7)));
+					str8_increment(&line, 7);
+					pair<u32,str8> mtllib(indexes.count, str8_copy(line, deshi_temp_allocator));
 					mArray.add(mUnique.add(mtllib,mtllib));
 				}continue;
 				
 				//// group (batch) ////
 				case 'g':{
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
-					pair<u32,string> group(indexes.count, string(line_start+2, line_end-(line_start+2)));
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
+					str8_increment(&line, decoded.advance);
+					
+					pair<u32,str8> group(indexes.count, str8_copy(line, deshi_temp_allocator));
 					gArray.add(gUnique.add(group,group));
 				}continue;
 				
 				//// object ////
 				case 'o':{
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
-					pair<u32,string> object(indexes.count, string(line_start+2, line_end-(line_start+2)));
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
+					str8_increment(&line, decoded.advance);
+					
+					pair<u32,str8> object(indexes.count, str8_copy(line, deshi_temp_allocator));
 					oArray.add(oUnique.add(object,object));
 				}continue;
 				
 				//// smoothing ////
 				case 's':{
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 's'"); return result; }
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return result; }
+					str8_increment(&line, decoded.advance);
+					
 					s_warning = true;
 				}continue;
 				default:{
-					ParseError(obj_path,"Invalid starting character: '",*line_start,"'");
+					ParseError(obj_path,"Invalid starting character: '",(char)decoded.codepoint,"'");
 				}return result;
 			}
 		}
@@ -1015,11 +1064,11 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			//create face and add base triange to it
 			u32 cfi = faces.count;
 			faces.add(Mesh::Face{});
-			faceTriangles.add(array<u32>());
-			faceVertexes.add(set<u32>());
-			faceOuterVertexes.add(array<u32>());
-			faceTriNeighbors.add(array<u32>());
-			faceFaceNeighbors.add(array<u32>());
+			faceTriangles.add(array<u32>(deshi_temp_allocator));
+			faceVertexes.add(set<u32>(deshi_temp_allocator));
+			faceOuterVertexes.add(array<u32>(deshi_temp_allocator));
+			faceTriNeighbors.add(array<u32>(deshi_temp_allocator));
+			faceFaceNeighbors.add(array<u32>(deshi_temp_allocator));
 			faces[cfi].normal = triangles[bti].normal;
 			triangles[bti].face = cfi;
 			faceTriangles[cfi].add(bti);
@@ -1103,12 +1152,12 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		
 		//// parsing warnings/errors ////
 		if(non_tri_warning)   LogW("storage","The mesh was not triangulated before parsing; Expect missing triangles!");
-		if(s_warning)         LogW("storage","There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
-		if(!vtArray.count){   LogW("storage","No vertex UVs 'vt' were parsed in ",filename); }
-		if(!vnArray.count){   LogW("storage","No vertex normals 'vn' were parsed in ",filename); }
-		if(fatal_error){      LogE("storage","OBJ parsing encountered a fatal error in ",filename); return result; }
-		if(!vArray.count){    LogE("storage","No vertex positions 'v' were parsed in ",filename); return result; }
-		if(!triangles.count){ LogE("storage","No faces 'f' were parsed in ",filename); return result; }
+		if(s_warning)         LogW("storage","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
+		if(!vtArray.count){   LogW("storage","No vertex UVs 'vt' were parsed in ",obj_path); }
+		if(!vnArray.count){   LogW("storage","No vertex normals 'vn' were parsed in ",obj_path); }
+		if(fatal_error){      LogE("storage","OBJ parsing encountered a fatal error in ",obj_path); return result; }
+		if(!vArray.count){    LogE("storage","No vertex positions 'v' were parsed in ",obj_path); return result; }
+		if(!triangles.count){ LogE("storage","No faces 'f' were parsed in ",obj_path); return result; }
 		
 		//// create mesh ////
 		Mesh* mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
@@ -1194,7 +1243,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 		
 		render_load_mesh(mesh); //TODO(delle) check if mesh already loaded
 		meshes.add(mesh);
-		Log("storage","Parsing and loading OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
+		Log("storage","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		
 		//parse MTL files
 		if(mtllib_found){
@@ -1202,7 +1251,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			
 			//!Incomplete
 			
-			Log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
+			Log("storage","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
 		model = AllocateModel(mArray.count);
@@ -1230,36 +1279,57 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 	}
 	//// load .obj (batch info only), .mtl, and .mesh ////
 	else if(parse_obj_model){
-		Mesh* mesh = CreateMeshFromFile((const char*)front.str).second;
+		Mesh* mesh = CreateMeshFromFile(front).second;
 		
-		set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
-		array<u32> oArray, gArray,  uArray,  mArray; //index in unique array
+		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
+		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
+		set<pair<u32,str8>> uUnique(deshi_temp_allocator);
+		set<pair<u32,str8>> mUnique(deshi_temp_allocator);
+		array<u32> oArray(deshi_temp_allocator); //index in unique array
+		array<u32> gArray(deshi_temp_allocator);
+		array<u32> uArray(deshi_temp_allocator);
+		array<u32> mArray(deshi_temp_allocator);
 		b32 mtllib_found = false;
 		u32 index_count = 0;
 		
 		Stopwatch load_stopwatch = start_stopwatch();
-		str8 contents = file_read_simple(obj_path, deshi_temp_allocator);
-		if(!contents) return result;
-		char* line_start; char* line_end = (char*)contents.str-1;
-		b32 has_cr = false;
-		for(u32 line_number = 1; ;line_number++){
-			//get the next line
-			line_start = (has_cr) ? line_end+2 : line_end+1;
-			if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-			if(has_cr || *(line_end-1) == '\r') { has_cr = true; line_end -= 1; }
+		File* file = file_init(obj_path, FileAccess_Read);
+		if(!file) return result;
+		defer{ file_deinit(file); };
+		
+		u32 line_number = 0;
+		while(file->cursor < file->bytes){
+			line_number += 1;
 			
-			switch(*line_start){
+			//next line
+			str8 line = file_read_line_alloc(file, &load_allocator);
+			if(!line) continue;
+			
+			//skip leading whitespace
+			str8_advance_while(&line, ' ');
+			if(!line) continue;
+			
+			//early out if comment is first character
+			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+			if(decoded.codepoint == '#') continue;
+			
+			switch(decoded.codepoint){
 				//// face ////
 				case 'f':{
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
 					index_count += 3;
 				}
 				
 				//// use material ////
 				case 'u':{ //use material
-					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					
 					if(mtllib_found){
-						pair<u32,string> usemtl(index_count, string(line_start+7, line_end-(line_start+7)));
+						str8_increment(&line, 7);
+						pair<u32,str8> usemtl(index_count, str8_copy(line, deshi_temp_allocator));
 						uArray.add(uUnique.add(usemtl,usemtl));
 					}else{
 						ParseError("Specifier 'usemtl' used before 'mtllib' specifier");
@@ -1268,23 +1338,33 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp(line_start, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					
 					mtllib_found = true;
-					pair<u32,string> mtllib(index_count, string(line_start+7, line_end-(line_start+7)));
+					str8_increment(&line, 7);
+					pair<u32,str8> mtllib(index_count, str8_copy(line, deshi_temp_allocator));
 					mArray.add(mUnique.add(mtllib,mtllib));
 				}continue;
 				
 				//// group (batch) ////
 				case 'g':{
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
-					pair<u32,string> group(index_count, string(line_start+2, line_end-(line_start+2)));
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
+					str8_increment(&line, decoded.advance);
+					
+					pair<u32,str8> group(index_count, str8_copy(line, deshi_temp_allocator));
 					gArray.add(gUnique.add(group,group));
 				}continue;
 				
 				//// object ////
 				case 'o':{
-					if(*(line_start+1) != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
-					pair<u32,string> object(index_count, string(line_start+2, line_end-(line_start+2)));
+					str8_increment(&line, decoded.advance);
+					decoded = decoded_codepoint_from_utf8(line.str, 4);
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
+					str8_increment(&line, decoded.advance);
+					
+					pair<u32,str8> object(index_count, str8_copy(line, deshi_temp_allocator));
 					oArray.add(oUnique.add(object,object));
 				}continue;
 				
@@ -1298,7 +1378,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 			
 			//!Incomplete
 			
-			Log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",peek_stopwatch(load_stopwatch),"ms");
+			Log("storage","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
 		model = AllocateModel(mArray.count);
@@ -1327,94 +1407,121 @@ CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){DP
 	//// load .model and .mesh ////
 	else{
 		//model storage
-		string model_load_name;
-		string model_load_mesh;
-		ModelFlags model_load_flags;
-		array<pair<string,u32,u32>> model_load_batches;
+		str8 model_name;
+		str8 model_mesh;
+		ModelFlags model_flags;
+		array<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
+		enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
 		
-		enum ModelHeader{ MODEL, BATCHES, INVALID, };
-		persist const char* ModelHeaderStrings[] = { "MODEL", "BATCHES", "INVALID", };
-		u32 header = ModelHeader::INVALID;
+		File* file = file_init(model_path, FileAccess_Read);
+		if(!file) return result;
+		defer{ file_deinit(file); };
 		
-		str8 contents = file_read_simple(model_path, deshi_temp_allocator);
-		if(!contents) return result;
-		char* line_start;  char* line_end = (char*)contents.str-1;
-		char* info_start;  char* info_end;
-		char* key_start;   char* key_end;
-		char* value_start; char* value_end;
-		b32 has_cr = false;
-		for(u32 line_number = 1; ;line_number++){
-			//get the next line
-			line_start = (has_cr) ? line_end+2 : line_end+1;
-			if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-			if(has_cr || *(line_end-1) == '\r') { has_cr = true; line_end -= 1; }
-			if(line_start == line_end) continue;
+		u32 line_number = 0;
+		while(file->cursor < file->bytes){
+			line_number += 1;
 			
-			//format the line
-			info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
-			info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
-			info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
-			cstring info{info_start, u64(info_end-info_start)};
+			//next line
+			str8 line = file_read_line_alloc(file, &load_allocator);
+			if(!line) continue;
+			
+			//skip leading whitespace
+			str8_advance_while(&line, ' ');
+			if(!line) continue;
+			
+			//early out if comment is first character
+			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+			if(decoded.codepoint == '#') continue;
 			
 			//check for headers
-			if(*info_start == '>'){
-				if     (equals(info, cstr_lit(">model"))){ header = ModelHeader::MODEL; }
-				else if(equals(info, cstr_lit(">batches"))){ header = ModelHeader::BATCHES; }
-				else{ header = ModelHeader::INVALID; ParseError(model_path,"Uknown header '",info,"'"); }
+			if(decoded.codepoint == '>'){
+				if     (str8_begins_with(line, str8_lit(">model"))) header = HEADER_MODEL;
+				else if(str8_begins_with(line, str8_lit(">batches"))) header = HEADER_BATCHES;
+				else{ header = HEADER_INVALID; LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
 				continue;
 			}
 			
-			//split the key-value pair
-			key_start = info_start;
-			key_end   = key_start;
-			while(key_end != info_end && *key_end++ != ' ');
-			if(key_end == info_end){ ParseError(model_path,"No key passed."); continue; }
-			key_end -= 1;
-			cstring key{key_start, u64(key_end-key_start)};
+			//early out invalid header
+			if(header == HEADER_INVALID){
+				LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
+				continue;
+			}
 			
-			value_end   = info_end;
-			value_start = key_end;
-			while(*value_start++ == ' ');
-			value_start -= 1;
-			if(value_end == value_start){ ParseError(model_path,"No value passed."); continue; }
-			cstring value{value_start, u64(value_end-value_start)};
-			
-			//parse the key-value pair
-			if(header == ModelHeader::INVALID) { ParseError(model_path,"Invalid header; skipping line"); continue; }
-			
-			if(header == ModelHeader::MODEL){
-				if      (equals(key, cstr_lit("name"))){
-					model_load_name = string(value_start+1, value_end-value_start-2);
-				}else if(equals(key, cstr_lit("flags"))){
-					model_load_flags = (ModelFlags)b10tou64(value); 
-				}else if(equals(key, cstr_lit("mesh"))){
-					model_load_mesh = string(value_start+1, value_end-value_start-2);
-				}else if(equals(key, cstr_lit("armature"))){
+			if(header == HEADER_MODEL){
+				//parse key
+				str8 key = str8_eat_until(line, ' ');
+				str8_increment(&line, key.count);
+				
+				//skip separating whitespace
+				str8_advance_while(&line, ' ');
+				if(!line){
+					LogE("config","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
+					continue;
+				}
+				
+				//early out if comment is first value character
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint == '#'){
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
+					continue;
+				}
+				
+				if      (str8_equal_lazy(key, str8_lit("name"))){
+					if(decoded.codepoint != '\"'){
+						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
+						continue;
+					}
+					model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				}else if(str8_equal_lazy(key, str8_lit("flags"))){
+					model_flags = (ModelFlags)atoi((const char*)line.str);
+				}else if(str8_equal_lazy(key, str8_lit("mesh"))){
+					if(decoded.codepoint != '\"'){
+						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
+						continue;
+					}
+					model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				}else if(str8_equal_lazy(key, str8_lit("armature"))){
 					//NOTE currently nothing
-				}else{ ParseError(model_path,"Invalid key '",key,"' for header '",ModelHeaderStrings[header],"'"); continue; }
+				}else{
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
+					continue;
+				}
 			}else{
-				cstring s = value;
-				u32 i0 = (u32)b10tou64(s,&s);
-				u32 i1 = (u32)b10tou64(s);
-				model_load_batches.add({string(key_start+1,key_end-key_start-2), i0, i1});
+				if(decoded.codepoint != '\"'){
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
+					continue;
+				}
+				
+				str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				str8_increment(&line, batch_mat.count+2);
+				if(!line){
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
+					continue;
+				}
+				
+				char* next = (char*)line.str;
+				u32 ioffset = strtol(next,&next,10);
+				u32 icount  = strtol(next,&next,10);
+				
+				model_batches.add({batch_mat, ioffset, icount});
 			}
 		}
 		
-		model = AllocateModel(model_load_batches.count);
-		cpystr(model->name, model_load_name.str, 64);
+		model = AllocateModel(model_batches.count);
+		cpystr(model->name, (const char*)model_name.str, 64);
 		model->idx      = models.count;
-		model->flags    = model_load_flags;
-		model->mesh     = CreateMeshFromFile(model_load_mesh.str).second;
+		model->flags    = model_flags;
+		model->mesh     = CreateMeshFromFile(model_mesh).second;
 		model->armature = 0;
-		forI(model_load_batches.count){
+		forI(model_batches.count){
 			model->batches[i] = Model::Batch{
-				model_load_batches[i].second,
-				model_load_batches[i].third,
-				CreateMaterialFromFile(model_load_batches[i].first.str).first
+				model_batches[i].second,
+				model_batches[i].third,
+				CreateMaterialFromFile(model_batches[i].first).first
 			};
 		}
 		
-		Log("storage","Successfully loaded ",model->name,".model");
+		Log("storage","Successfully loaded model ",model_path);
 	}
 	
 	result.first  = model->idx;
@@ -1428,19 +1535,19 @@ pair<u32,Model*> Storage::
 CreateModelFromMesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	pair<u32,Model*> result(0, NullModel());
 	
-	string model_name(mesh->name);
+	str8 model_name = str8_from_cstr(mesh->name);
 	//check if created already
-	forX(mi, models.size()){
-		if((models[mi]->mesh == mesh) && (string(models[mi]->name) == model_name) && (models[mi]->flags == flags) 
-		   && (models[mi]->batches.size() == 1) && (models[mi]->batches[0].indexOffset == 0)
-		   && (models[mi]->batches[0].indexCount == mesh->indexCount) && (models[mi]->batches[0].material == 0)){
-			return pair<u32,Model*>(mi,models[mi]);
+	forI(models.count){
+		if((models[i]->mesh == mesh) && (strncmp(models[i]->name, (const char*)model_name.str, 64) == 0) && (models[i]->flags == flags) 
+		   && (models[i]->batches.count == 1) && (models[i]->batches[0].indexOffset == 0)
+		   && (models[i]->batches[0].indexCount == mesh->indexCount) && (models[i]->batches[0].material == 0)){
+			return pair<u32,Model*>(i,models[i]);
 		}
 	}
 	
 	Model* model = AllocateModel(1);
-	cpystr(model->name, model_name.str, 64);
-	model->idx = models.size();
+	cpystr(model->name, (const char*)model_name.str, 64);
+	model->idx = models.count;
 	model->mesh = mesh;
 	model->armature = 0;
 	model->batches[0] = {0, mesh->indexCount, 0};
@@ -1457,11 +1564,11 @@ CopyModel(Model* _model){DPZoneScoped;
 	
 	Model* model = AllocateModel(_model->batches.size());
 	cpystr(model->name, _model->name, 64);
-	model->idx      = models.size();
+	model->idx      = models.count;
 	model->flags    = _model->flags;
 	model->mesh     = _model->mesh;
 	model->armature = _model->armature;
-	forI(model->batches.size()){
+	forI(model->batches.count){
 		model->batches[i].indexOffset = _model->batches[i].indexOffset;
 		model->batches[i].indexCount  = _model->batches[i].indexCount;
 		model->batches[i].material    = _model->batches[i].material;
@@ -1492,12 +1599,7 @@ SaveModel(Model* model){DPZoneScoped;
 	
 	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(model->name),str8_lit(".model"), deshi_temp_allocator);
 	file_write_simple(path, model_save.str, model_save.count*sizeof(char));
-	Log("storage","Successfully created ",path);
-}
-
-void Storage::
-DeleteModel(Model* model){DPZoneScoped; //!Incomplete
-	NotImplemented;
+	Log("storage","Successfully saved model: ",path);
 }
 
 
@@ -1513,22 +1615,15 @@ AllocateFont(Type type){DPZoneScoped;
 }
 
 pair<u32,Font*> Storage::
-CreateFontFromFileBDF(const char* filename){DPZoneScoped;
+CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
-	forX(fi, fonts.size()){
-		if(strncmp(filename, fonts[fi]->name, 64) == 0){
-			return pair<u32,Font*>(fi,fonts[fi]);
+	forI(fonts.count){
+		if(strncmp(fonts[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
+			return pair<u32,Font*>(i,fonts[i]);
 		}
 	}
-	
-	str8 path = str8_concat(str8_lit("data/fonts/"),str8_from_cstr(filename), deshi_temp_allocator);
-	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) return result;
-	
-	Assert(strncmp("STARTFONT", (const char*)contents.str, 9) == 0); //TODO(delle) error handling: incorrect file
-	Font* font = AllocateFont(FontType_BDF);
 	
 	b32 in_char   = false;
 	b32 in_bitmap = false;
@@ -1543,34 +1638,57 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 	u16* encodings = 0;
 	u8*  pixels = 0;
 	
-	char* line_start;  char* line_end = (char*)contents.str-1;
-	char* info_start;  char* info_end;
-	char* key_start;   char* key_end;
-	char* value_start; char* value_end;
-	b32 has_cr = false;
-	for(u32 line_number = 1; ;line_number++){
-		//get the next line
-		line_start = (has_cr) ? line_end+2 : line_end+1;
-		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-		if(has_cr || *(line_end-1) == '\r'){ has_cr = true; line_end -= 1; }
-		if(line_start == line_end) continue;
+	//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
+	persist u8 line_buffer[256];
+	persist Allocator load_allocator{
+		[](upt bytes){
+			if(bytes > 256){
+				return memory_talloc(bytes);
+			}else{
+				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+				return (void*)line_buffer;
+			}
+		},
+		Allocator_ChangeMemory_Noop,
+		Allocator_ChangeMemory_Noop,
+		Allocator_ReleaseMemory_Noop,
+		Allocator_ResizeMemory_Noop
+	};
+	
+	//init file
+	str8 path = str8_concat(str8_lit("data/fonts/"), filename, deshi_temp_allocator);
+	File* file = file_init(path, FileAccess_Read);
+	if(!file) return result;
+	defer{ file_deinit(file); };
+	
+	str8 first_line = file_read_line_alloc(file, &load_allocator);
+	if(!str8_begins_with(first_line, str8_lit("STARTFONT"))){
+		LogE("storage","Error parsing BDF '",filename,"' on line 1. The file did not begin with 'STARTFONT'.");
+		return result;
+	}
+	
+	Font* font = AllocateFont(FontType_BDF);
+	u32 line_number = 1;
+	while(file->cursor < file->bytes){
+		line_number += 1;
 		
-		//format the line
-		info_start = line_start + Utils::skipSpacesLeading (line_start, line_end-line_start); if(info_start == line_end) continue;
-		info_end   = info_start + Utils::skipSpacesTrailing(info_start, line_end-info_start); if(info_start == info_end) continue;
+		//next line
+		str8 line = file_read_line_alloc(file, &load_allocator);
+		if(!line) continue;
 		
-		{//split the key-value pair
-			key_start = info_start;
-			key_end   = key_start;
-			while(key_end != info_end && *key_end != ' '){ key_end++; }
-			
-			value_end   = info_end;
-			value_start = key_end;
-			while(*value_start == ' '){ value_start++; }
-		}
+		//skip leading whitespace
+		str8_advance_while(&line, ' ');
+		if(!line) continue;
+		
+		//parse key
+		str8 key = str8_eat_until(line, ' ');
+		str8_increment(&line, key.count);
+		
+		//skip separating whitespace
+		str8_advance_while(&line, ' ');
 		
 		if(in_bitmap){
-			if(strncmp("ENDCHAR", key_start, key_end-key_start) == 0){
+			if(str8_equal_lazy(key, str8_lit("ENDCHAR"))){
 				in_char = false;
 				in_bitmap = false;
 				char_idx++;
@@ -1579,7 +1697,7 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 			}
 			Assert(bitmap_row < current_bbx.y);
 			
-			s32 chars = (s32)(info_end-info_start);
+			s32 chars = (s32)key.count;
 			Assert(chars <= 4); //TODO(delle) error handling: max 16 pixel width
 			u8 scaled[16]{};
 			
@@ -1589,27 +1707,27 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 			//mask0 = 0x0000000f0000000f, mask1 = 0x0003000300030003, mask2 = 0x0101010101010101
 			//shift0 = (1 << 28) + 1, shift1 = (1 << 14) + 1, shift2 = (1 << 7) + 1
 			for(s32 i=0; i<chars; i+=2){
-				u64 reversed = (((b16tou64({info_start+i, 2}) * 0x10000001 & 0x0000000f0000000f) 
+				u64 reversed = (((strtoll((const char*)key.str+i,0,16) * 0x10000001 & 0x0000000f0000000f) 
 								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
 				*(u64*)(scaled+i) = ByteSwap64(reversed);
 			}
-			memcpy(pixels+2*font->max_width+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, upt(current_bbx.x*sizeof(u8)));
+			CopyMemory(pixels+2*font->max_width+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, upt(current_bbx.x*sizeof(u8)));
 			
 			bitmap_row++;
 			continue;
 		}
 		
 		if(in_char){
-			if      (strncmp("ENCODING", key_start, key_end-key_start) == 0){
-				encodings[char_idx] = strtol(value_start, 0, 10);
-			}else if(strncmp("BITMAP", key_start, key_end-key_start) == 0){
+			if      (str8_equal_lazy(key, str8_lit("ENCODING"))){
+				encodings[char_idx] = strtol((const char*)line.str, 0, 10);
+			}else if(str8_equal_lazy(key, str8_lit("BITMAP"))){
 				in_bitmap = true;
-			}else if(strncmp("SWIDTH", key_start, key_end-key_start) == 0){
+			}else if(str8_equal_lazy(key, str8_lit("SWIDTH"))){
 				//unused
-			}else if(strncmp("DWIDTH", key_start, key_end-key_start) == 0){
+			}else if(str8_equal_lazy(key, str8_lit("DWIDTH"))){
 				//unused in monospace fonts
-			}else if(strncmp("BBX", key_start, key_end-key_start) == 0){
-				char* cursor = value_start;
+			}else if(str8_equal_lazy(key, str8_lit("BBX"))){
+				char* cursor = (char*)line.str;
 				current_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
 				current_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
 				current_bbx.z = (f32)strtol(cursor+1, &cursor, 10); //lower-left x
@@ -1628,26 +1746,52 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 			continue;
 		}
 		
-		if      (strncmp("STARTCHAR", key_start, key_end-key_start) == 0){
+		if      (str8_equal_lazy(key, str8_lit("STARTCHAR"))){
 			in_char = true;
-		}else if(strncmp("SIZE", key_start, key_end-key_start) == 0){
-			char* cursor = value_start;
+		}else if(str8_equal_lazy(key, str8_lit("SIZE"))){
+			if(!line){
+				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			char* cursor = (char*)line.str;
 			font_dpi.x = (f32)strtol(cursor+1, &cursor, 10);
 			font_dpi.y = (f32)strtol(cursor+1, &cursor, 10);
-		}else if(strncmp("FONTBOUNDINGBOX", key_start, key_end-key_start) == 0){
-			char* cursor = value_start;
+		}else if(str8_equal_lazy(key, str8_lit("FONTBOUNDINGBOX"))){
+			if(!line){
+				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			char* cursor = (char*)line.str;
 			font_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
 			font_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
 			font_bbx.z = (f32)strtol(cursor+1, &cursor, 10); //lower-left x
 			font_bbx.w = (f32)strtol(cursor+1, &cursor, 10); //lower-left y
 			font->max_width  = (u32)font_bbx.x;
 			font->max_height = (u32)font_bbx.y;
-		}else if(strncmp("FONT_NAME",   key_start, key_end-key_start) == 0){
-			cpystr(font->name,   string(value_start+1, value_end-value_start-2).str,64);
-		}else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
-			cpystr(font->weight, string(value_start+1, value_end-value_start-2).str,64);
-		}else if(strncmp("CHARS",       key_start, key_end-key_start) == 0){
-			font->count = strtol(value_start, 0, 10);
+		}else if(str8_equal_lazy(key, str8_lit("FONT_NAME"))){
+			if(!line){
+				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
+				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". FONT_NAME must be wrapped in double quotes.");
+				continue;
+			}
+			str8 font_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			cpystr(font->name, (const char*)font_name.str, 64);
+		}else if(str8_equal_lazy(key, str8_lit("WEIGHT_NAME"))){
+			if(!line){
+				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
+				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". WEIGHT_NAME must be wrapped in double quotes.");
+				continue;
+			}
+			str8 font_weight = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			cpystr(font->weight, (const char*)font_weight.str, 64);
+		}else if(str8_equal_lazy(key, str8_lit("CHARS"))){
+			font->count = strtol((const char*)line.str, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
 			encodings = (u16*)memory_talloc(font->count*sizeof(u16));
 			pixels = (u8*)memory_talloc(font->count * ((font->max_width*font->max_height + 2*font->max_width) * sizeof(u8)));
@@ -1661,7 +1805,7 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 		}
 	}
 	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
+	Texture* texture = CreateTextureFromMemory(pixels, filename, font->max_width, font->max_height*font->count,
 											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(texture);
 	
@@ -1676,19 +1820,19 @@ CreateFontFromFileBDF(const char* filename){DPZoneScoped;
 
 //TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
 pair<u32,Font*> Storage::
-CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
+CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
 	//TODO look into why if we load the same font w a different size it gets weird
 	//(i took that check out of here for now)
-	forX(fi, fonts.size()) {
-		if ((strncmp(filename, fonts[fi]->name, 64) == 0)) {
-			return pair<u32, Font*>(fi, fonts[fi]);
+	forI(fonts.count){
+		if(strncmp(fonts[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
+			return pair<u32,Font*>(i,fonts[i]);
 		}
 	}
 	
-	str8 path = str8_concat(str8_lit("data/fonts/"),str8_from_cstr(filename), deshi_temp_allocator);
+	str8 path = str8_concat(str8_lit("data/fonts/"),filename, deshi_temp_allocator);
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
 	if(!contents) return result;
 	
@@ -1767,7 +1911,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 
-	cpystr(font->name,filename,64);
+	cpystr(font->name,(const char*)filename.str,64);
 	
 	u8* pixels = (u8*)memory_talloc((tsx * tsy)*sizeof(u8));
 	pixels[0]     = 255;
@@ -1785,7 +1929,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 	
 	stbtt_PackEnd(pc);
 	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy,
+	Texture* texture = CreateTextureFromMemory(pixels, filename, tsx, tsy,
 											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
 											   TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(texture);
@@ -1800,24 +1944,18 @@ CreateFontFromFileTTF(const char* filename, u32 size){DPZoneScoped;
 }
 
 pair<u32,Font*> Storage::
-CreateFontFromFile(const char* filename, u32 height){DPZoneScoped;
-	if(str_ends_with(filename, strlen(filename), ".bdf", 4)){
+CreateFontFromFile(str8 filename, u32 height){DPZoneScoped;
+	if(str8_ends_with(filename, str8_lit(".bdf"))){
 		return CreateFontFromFileBDF(filename);
 	}
 	
-	if(str_ends_with(filename, strlen(filename), ".ttf", 4)){
+	if(str8_ends_with(filename, str8_lit(".ttf"))){
 		return CreateFontFromFileTTF(filename, height);
 	}
 	
-	LogE("storage","Failed to load font with name '",filename,"'");
+	LogE("storage","Failed to load font '",filename,"'. We currently only support loading TTF/OTF and BDF fonts.");
 	return {};
 }
-
-void Storage::
-DeleteFont(Font* font){DPZoneScoped; //!Incomplete
-	NotImplemented;
-}
-
 
 void DrawMeshesWindow() {DPZoneScoped; 
 	using namespace UI;
