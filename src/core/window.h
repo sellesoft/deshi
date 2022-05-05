@@ -71,7 +71,7 @@ typedef Type CursorType; enum{
 
 constexpr u32 max_child_windows = 2;
 struct Window{
-	string name;
+	str8 name;
 	GLFWwindow*  window;
 	GLFWmonitor* monitor;
 	
@@ -115,8 +115,8 @@ struct Window{
 	
 	vec2 dimensions;
 	
-	void    Init(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
-	Window* MakeChild(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF);
+	void    Init(str8 name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
+	Window* MakeChild(str8 name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF);
 	
 	void    Update();
 	void    Cleanup();
@@ -133,7 +133,7 @@ struct Window{
 	vec2    GetClientAreaDimensions();
 	void    ShowWindow(u32 child = -1);
 	void    HideWindow(u32 child = -1);
-	void    UpdateTitle(const char* title);
+	void    UpdateTitle(str8 title);
 	void    CloseConsole();
 	void    SwapBuffers();
 	

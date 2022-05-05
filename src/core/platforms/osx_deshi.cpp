@@ -17,13 +17,13 @@ GLFWcursor* handCursor;
 GLFWcursor* textCursor;
 
 
-void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+void Window::Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	deshiStage |= DS_WINDOW;
 
 	TIMER_START(t_s);
 
-	name = _name;
+	name = str8_copy(_name, deshi_allocator); //!Leak
 	glfwSetErrorCallback(&glfwError);
 	if(!glfwInit()){ LogE("glfw","Failed to init!"); return; }
 
@@ -50,7 +50,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 #endif //DESHI_MAC
 #endif //DESHI_OPENGL
 
-	window = glfwCreateWindow(width, height, _name, NULL, NULL);
+	window = glfwCreateWindow(width, height, (const char*)_name.str, NULL, NULL);
 	if(!window){ LogE("glfw","Failed to create the window!"); glfwTerminate(); return; }
 
 #if DESHI_OPENGL
@@ -66,8 +66,6 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	}else{
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
-
-
 
 	GLFWimage image;
 	image.width = 16;
@@ -412,8 +410,8 @@ void Window::Close(){
 	closeWindow = true;
 }
 
-void Window::UpdateTitle(const char* title){
-	glfwSetWindowTitle(this->window, title);
+void Window::UpdateTitle(str8 title){
+	glfwSetWindowTitle(this->window, title.str);
 }
 
 void Window::ShowWindow(){
@@ -427,33 +425,3 @@ void Window::HideWindow(){
 b32 Window::ShouldClose(){
 	return glfwWindowShouldClose(window) || closeWindow;
 }
-
-FileReader init_reader(const File& file) {
-	WarnFuncNotImplemented("io not implemented for osx platforms");
-}
-
-File open_file(const char* path, FileAccessFlags flags) {
-	WarnFuncNotImplemented("io not implemented for osx platforms");
-}
-
-array<File>
-get_directory_files(const char* directory) {
-	WarnFuncNotImplemented("io not implemented for osx platforms");
-	return array<File>();
-}
-
-void
-delete_file(const char* filepath) {
-	WarnFuncNotImplemented("io not implemented for osx platforms");
-}
-
-b32
-file_exists(const char* filepath) {
-	WarnFuncNotImplemented("io not implemented for osx platforms");
-}
-
-void
-rename_file(const char* old_filepath, const char* new_filepath) {
-	WarnFuncNotImplemented("io not implemented for osx platforms");
-}
-

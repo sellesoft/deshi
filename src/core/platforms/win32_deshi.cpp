@@ -125,7 +125,7 @@ void Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int*
 	HMONITOR monitor = ::MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
 	if(monitor){
 		MONITORINFO monitor_info = {sizeof(MONITORINFO)};
-		if(::GetMonitorInfo(monitor, &monitor_info)){
+		if(::GetMonitorInfoW(monitor, &monitor_info)){
 			if(screen_w) *screen_w = monitor_info.rcMonitor.right  - monitor_info.rcMonitor.left;
 			if(screen_h) *screen_h = monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top;
 			if(working_x) *working_x = monitor_info.rcWork.left;
@@ -133,7 +133,7 @@ void Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int*
 			if(working_w) *working_w = monitor_info.rcWork.right  - monitor_info.rcWork.left;
 			if(working_h) *working_h = monitor_info.rcWork.bottom - monitor_info.rcWork.top;
 		}else{
-			Win32LogLastError("GetMonitorInfo");
+			Win32LogLastError("GetMonitorInfoW");
 		}
 	}else{
 		Win32LogLastError("MonitorFromWindow");
@@ -150,7 +150,7 @@ enum HitTest_ : s32 {
 
 //win32's callback function 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
-	Window* win = (Window*)::GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	Window* win = (Window*)::GetWindowLongPtrW(hwnd, GWLP_USERDATA);
 	switch (msg){
 		case WM_CREATE:{ }break;
 		case WM_SIZE:{ if(win) WinResized(win, LOWORD(lParam), HIWORD(lParam), wParam == SIZE_MINIMIZED); }break;
@@ -243,7 +243,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZo
 #endif
 			}
 		}break;
-		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key 
+		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key (UTF-16)
 			if(!iscntrl(LOWORD(wParam))){ //NOTE skip control characters
 				DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
 			}
@@ -304,16 +304,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZo
 	if(win){
 		win->active = (::GetForegroundWindow() == (HWND)win->handle);
 	}
-	return ::DefWindowProcA(hwnd, msg, wParam, lParam);
+	return ::DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Window API
-#define DESHI_WND_CLASSNAME_A "_DESHI_"
+#define DESHI_WND_CLASSNAME_W L"_DESHI_"
 
-void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){DPZoneScoped;
+void Window::Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// @win32_init_time
 	DeshiStageInitStart(DS_TIME, DS_MEMORY, "Attempted to initialize Time module before initializing Memory module");
@@ -342,13 +342,15 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	DeshiStageInitStart(DS_WINDOW, DS_MEMORY, "Attempted to initialize Window module before initializing Memory module");
 	
 	//get console's handle
-	instance = ::GetModuleHandle(NULL);
+	instance = ::GetModuleHandleW(NULL);
 	
 	//TODO load and set icon
 	//HICON icon = LoadImageA(NULL, "data/textures/deshi_icon.png", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_DEFAULTCOLOR);;
 	
+	wchar_t* wname = wchar_from_str8(_name, 0, deshi_temp_allocator);
+	
 	//// register window class ////
-	WNDCLASSA wc;
+	WNDCLASSW wc;
 	wc.        style = CS_OWNDC; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
 	wc.  lpfnWndProc = WndProc;
 	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
@@ -358,19 +360,19 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
-	wc.lpszClassName = DESHI_WND_CLASSNAME_A;
-	if(::RegisterClassA(&wc) == NULL) Win32LogLastError("RegisterClassA", true); 
+	wc.lpszClassName = DESHI_WND_CLASSNAME_W;
+	if(::RegisterClassW(&wc) == NULL) Win32LogLastError("RegisterClassW", true); 
 	
 	//// create window ////
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
 #if DESHI_OPENGL
-	handle = ::CreateWindowA(DESHI_WND_CLASSNAME_A, _name, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
 #else
-	handle = ::CreateWindowA(DESHI_WND_CLASSNAME_A, _name, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
 #endif
-	if(handle == NULL) Win32LogLastError("CreateWindowA", true);
+	if(handle == NULL) Win32LogLastError("CreateWindowW", true);
 	//set WndProc user data to be a pointer to this window
-	::SetWindowLongPtr((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
+	::SetWindowLongPtrW((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
 	dc = ::GetDC((HWND)handle);
 	
 	//// get initial input values ////
@@ -408,19 +410,19 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	UpdateDecorations(Decoration_SystemDecorations);
 	titlebarheight = 0;
 	::SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
-	name = _name;
+	name = str8_copy(_name, deshi_allocator); //!Leak
 	renderer_surface_index = 0; ///main win is always first surface
 	
 	DeshTime->stopwatch = start_stopwatch();
-
-
+	
+	
 	DeshiStageInitEnd(DS_WINDOW);
 }
 
 //returns nullptr if the function fails to make the child;
-Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y){DPZoneScoped;
+Window* Window::MakeChild(str8 name, s32 width, s32 height, s32 x, s32 y){DPZoneScoped;
 	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
-	if(child_count == max_child_windows){ LogE("WINDOW-WIN32", "Window failed to make a child window: max child windows reached."); return 0; }
+	if(child_count == max_child_windows){ LogE("window-win32", "Window failed to make a child window: max child windows reached."); return 0; }
 	Stopwatch t_s = start_stopwatch();
 	
 	//TODO make global window counter
@@ -428,10 +430,12 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	Window* child = (Window*)memalloc(sizeof(Window));
 	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
 	
-	child->instance = ::GetModuleHandle(NULL);
+	child->instance = ::GetModuleHandleW(NULL);
+	
+	wchar_t* wname = wchar_from_str8(name, 0, deshi_temp_allocator);
 	
 	//make and register window class //TODO reuse above window class to not pollute atom table
-	WNDCLASSA wc;
+	WNDCLASSW wc;
 	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
 	wc.  lpfnWndProc = WndProc;
 	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
@@ -441,26 +445,25 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	wc.      hCursor = ::LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
 	wc.hbrBackground = NULL;
 	wc. lpszMenuName = NULL;
-	wc.lpszClassName = _name;
-	
-	if(::RegisterClassA(&wc) == NULL){ 
-		LogE("WINDOW-WIN32", "Window failed to register WNDCLASS for child window");
-		Win32LogLastError("RegisterClassA"); 
+	wc.lpszClassName = wname;
+	if(::RegisterClassW(&wc) == NULL){ 
+		LogE("window-win32", "Window failed to register WNDCLASS for child window");
+		Win32LogLastError("RegisterClassW"); 
 		memzfree(child);
 		return 0;
 	}
 	
 	//create window
 	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	child->handle = ::CreateWindowA(_name, _name,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
+	child->handle = ::CreateWindowW(wname, wname,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
 	if(child->handle == NULL){
-		LogE("WINDOW-WIN32", "Windows failed to create child window");
-		Win32LogLastError("CreateWindowA", true);
+		LogE("window-win32", "Windows failed to create child window");
+		Win32LogLastError("CreateWindowW", true);
 		memzfree(child);
 		return 0;
 	}
 	//set WndProc user data to be a pointer to this window
-	::SetWindowLongPtr((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
+	::SetWindowLongPtrW((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
 	child->dc = ::GetDC((HWND)child->handle);
 	
 	//// get monitor info ////
@@ -474,7 +477,7 @@ Window* Window::MakeChild(const char* _name, s32 width, s32 height, s32 x, s32 y
 	}
 	
 	children[child_count++] = child;
-	child->name = _name;
+	child->name = name;
 	child->UpdateDisplayMode(displayMode);
 	child->UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
 	child->titlebarheight = 5;
@@ -572,12 +575,12 @@ void Window::Update(){DPZoneScoped;
 	
 	//iterate through all window messages 
 	MSG msg;
-	while(::PeekMessageA(&msg, (HWND)handle, 0, 0, PM_REMOVE)){
+	while(::PeekMessageW(&msg, (HWND)handle, 0, 0, PM_REMOVE)){
 		if(msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY){
 			closeWindow = true;
 		}else{
 			::TranslateMessage(&msg);
-			::DispatchMessageA(&msg);
+			::DispatchMessageW(&msg);
 		}
 	}
 	
@@ -659,7 +662,7 @@ void Window::UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
 			if(displayMode != DisplayMode_Windowed){
 				HWND hwnd = (HWND)handle;
 				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
-				::SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
+				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
 				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				resized = true;
 			}
@@ -672,16 +675,16 @@ void Window::UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
 				restoreW = width;
 				restoreH = height;
 				HWND hwnd = (HWND)handle;
-				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
+				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
 				MONITORINFO mi = { sizeof(MONITORINFO) };
 				WINDOWPLACEMENT wp = { 0 };
 				//TODO add a way to choose what monitor the window is fullscreened to
 				b32 failed = false;
-				if(!GetWindowPlacement(hwnd, &wp)){ Win32LogLastError("GetWindowPlacement"); failed = true; }
-				if(!GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){ Win32LogLastError("GetMonitorInfo"); failed = true; }
+				if(!::GetWindowPlacement(hwnd, &wp)){ Win32LogLastError("GetWindowPlacement"); failed = true; }
+				if(!::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){ Win32LogLastError("GetMonitorInfo"); failed = true; }
 				
 				if(!failed){
-					::SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
+					::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
 					RECT mr = mi.rcMonitor;
 					::SetWindowPos(hwnd, HWND_TOP, mr.left, mr.top, mr.right - mr.left, mr.bottom - mr.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				}
@@ -692,8 +695,8 @@ void Window::UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
 		case DisplayMode_Borderless:{
 			if(displayMode != DisplayMode_Borderless){
 				HWND hwnd = (HWND)handle;
-				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
-				::SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW));
+				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
+				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
 				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 				resized = true;
 			}
@@ -738,13 +741,13 @@ void Window::UpdateCursorMode(CursorMode mode){DPZoneScoped;
 void Window::UpdateDecorations(Decoration _decorations){DPZoneScoped;
 	decorations = _decorations;
 	HWND hwnd = (HWND)handle;
-	u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
+	u32 style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
 	if(decorations == Decoration_SystemDecorations){
-		::SetWindowLongA(hwnd, GWL_STYLE, AddFlag(style, WS_OVERLAPPEDWINDOW));
+		::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
 		titlebarheight = 0;
 		borderthickness = 0;
 	}else{
-		::SetWindowLongA(hwnd, GWL_STYLE, RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
+		::SetWindowLongPtrA(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
 	}
 	::SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
 }
@@ -836,8 +839,9 @@ vec2 Window::GetClientAreaDimensions(){DPZoneScoped;
 	return vec2(width, height - titlebarheight);
 }
 
-void Window::UpdateTitle(const char* title){DPZoneScoped;
-	::SetWindowTextA((HWND)handle, title);
+void Window::UpdateTitle(str8 title){DPZoneScoped;
+	wchar_t* wtitle = wchar_from_str8(title, 0, deshi_temp_allocator);
+	::SetWindowTextW((HWND)handle, wtitle);
 }
 
 void Window::ShowWindow(u32 child){DPZoneScoped;
@@ -1531,8 +1535,9 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_module
 void*
-platform_load_module(const char* module_path){
-	return ::LoadLibraryA(module_path);
+platform_load_module(str8 module_path){
+	wchar_t* wmodule_path = wchar_from_str8(module_path, 0, deshi_temp_allocator);
+	return ::LoadLibraryW(wmodule_path);
 }
 
 void
@@ -1609,18 +1614,18 @@ platform_set_clipboard(str8 text){
 //// @win32_threading
 mutex::
 mutex(){DPZoneScoped;
-	if(handle = CreateMutex(NULL, FALSE, NULL); !handle)
+	if(handle = ::CreateMutex(NULL, FALSE, NULL); !handle)
 		Win32LogLastError("CreateMutex");
 }
 
 mutex::
 ~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedlock for this
-	CloseHandle(handle);
+	::CloseHandle(handle);
 }
 
 void mutex::
 lock(){DPZoneScoped;
-	DWORD waitResult = WaitForSingleObject(handle, INFINITE);
+	DWORD waitResult = ::WaitForSingleObject(handle, INFINITE);
 	switch(waitResult){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1634,7 +1639,7 @@ lock(){DPZoneScoped;
 
 b32 mutex::
 try_lock(){DPZoneScoped;
-	DWORD waitResult = WaitForSingleObject(handle, 0);
+	DWORD waitResult = ::WaitForSingleObject(handle, 0);
 	switch(waitResult){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1652,7 +1657,7 @@ try_lock(){DPZoneScoped;
 
 b32 mutex::
 try_lock_for(u64 milliseconds){DPZoneScoped;
-	DWORD waitResult = WaitForSingleObject(handle, milliseconds);
+	DWORD waitResult = ::WaitForSingleObject(handle, milliseconds);
 	switch(waitResult){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1678,8 +1683,8 @@ condition_variable::condition_variable(){DPZoneScoped;
 	//NOTE i have to use std mem here in the case that condvar is used before memory is initialized (eg. a condvar global var)
 	cvhandle = malloc(sizeof(CONDITION_VARIABLE));
 	cshandle = malloc(sizeof(CRITICAL_SECTION));
-	InitializeCriticalSection((CRITICAL_SECTION*)cshandle);
-	InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
+	::InitializeCriticalSection((CRITICAL_SECTION*)cshandle);
+	::InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
 condition_variable::~condition_variable(){DPZoneScoped;
@@ -1688,28 +1693,28 @@ condition_variable::~condition_variable(){DPZoneScoped;
 
 void condition_variable::
 notify_one(){DPZoneScoped;
-	WakeConditionVariable((CONDITION_VARIABLE*)cvhandle);
+	::WakeConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
 void condition_variable::
 notify_all(){DPZoneScoped;
-	WakeAllConditionVariable((CONDITION_VARIABLE*)cvhandle);
+	::WakeAllConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
 void condition_variable::
 wait(){DPZoneScoped;
-	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
-	if(!SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
+	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
+	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
 		Win32LogLastError("SleepConditionVariableCS");
 	}
-	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
+	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
 }
 
 void condition_variable::
 wait_for(u64 milliseconds){DPZoneScoped;
-	EnterCriticalSection((CRITICAL_SECTION*)cshandle);
-	SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, milliseconds);
-	LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
+	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
+	::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, milliseconds);
+	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
 }
 
 // template<typename FuncToRun, typename... FuncArgs>
@@ -1808,7 +1813,7 @@ void ThreadManager::init(u32 max_jobs){
 void ThreadManager::spawn_thread(){DPZoneScoped;
 	Thread* t = (Thread*)memalloc(sizeof(Thread));
 	threads.add(t);
-	CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
+	::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
 }
 
 void ThreadManager::close_all_threads(){

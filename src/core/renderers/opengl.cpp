@@ -437,9 +437,12 @@ render_init(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup WGL and glad
 	{
-		opengl_module = platform_load_module("opengl32.dll");
+		opengl_module = platform_load_module(str8_lit("opengl32.dll"));
 		if(!opengl_module){
 			LogE("opengl", "Failed to load module opengl32.dll");
+			Assert(false);
+			deshiStage = RemoveFlag(deshiStage, DS_RENDER);
+			return;
 		}
 		
 #if DESHI_WINDOWS

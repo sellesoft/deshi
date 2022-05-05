@@ -17,13 +17,13 @@ GLFWcursor* handCursor;
 GLFWcursor* textCursor;
 
 
-void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+void Window::Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	deshiStage |= DS_WINDOW;
 
 	TIMER_START(t_s);
 
-	name = _name;
+	name = str8_copy(_name, deshi_allocator); //!Leak
 	glfwSetErrorCallback(&glfwError);
 	if(!glfwInit()){ LogE("glfw","Failed to init!"); return; }
 
@@ -50,7 +50,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 #endif //DESHI_MAC
 #endif //DESHI_OPENGL
 
-	window = glfwCreateWindow(width, height, _name, NULL, NULL);
+	window = glfwCreateWindow(width, height, (const char*)_name.str, NULL, NULL);
 	if(!window){ LogE("glfw","Failed to create the window!"); glfwTerminate(); return; }
 
 #if DESHI_OPENGL
@@ -66,144 +66,6 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	}else{
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
-
-	u32 W = 0xffffffff;
-	u32 B = 0xff000000;
-
-	u32 defaultcur[16 * 16] = {
-		B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,B,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,B,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,W,W,B,0,0,0,0,0,0,0,0,
-		B,W,W,B,W,B,B,B,B,0,0,0,0,0,0,0,
-		B,W,B,B,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,B,0,B,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,0,0,0,B,W,B,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,B,B,0,0,0,0,0,0,0,
-
-	};
-
-	u32 hresizecur[16 * 16] = {
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,B,0,0,0,0,0,0,B,0,0,0,0,
-		0,0,0,B,B,0,0,0,0,0,0,B,B,0,0,0,
-		0,0,B,W,B,0,0,0,0,0,0,B,W,B,0,0,
-		0,B,W,W,B,B,B,B,B,B,B,B,W,W,B,0,
-		B,W,W,W,W,W,W,W,W,W,W,W,W,W,W,B,
-		B,W,W,W,W,W,W,W,W,W,W,W,W,W,W,B,
-		0,B,W,W,B,B,B,B,B,B,B,B,W,W,B,0,
-		0,0,B,W,B,0,0,0,0,0,0,B,W,B,0,0,
-		0,0,0,B,B,0,0,0,0,0,0,B,B,0,0,0,
-		0,0,0,0,B,0,0,0,0,0,0,B,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	};
-
-	u32 vresizecur[16 * 16] = {
-		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,B,0,0,0,0,
-		0,0,0,B,B,B,B,W,W,B,B,B,B,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,B,B,B,B,W,W,B,B,B,B,0,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,B,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
-	};
-
-	u32 rightdiagresizecur[16 * 16] = {
-		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,0,B,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,B,W,W,W,B,W,B,
-		0,0,0,0,0,0,0,0,B,W,W,W,B,0,B,B,
-		0,0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,0,
-		B,B,0,B,W,W,W,B,0,0,0,0,0,0,0,0,
-		B,W,B,W,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
-	};
-
-	u32 leftdiagresizecur[16 * 16] = {
-		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,B,W,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,B,0,B,W,W,W,B,0,0,0,0,0,0,0,0,
-		0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,
-		0,0,0,0,0,0,0,0,B,W,W,W,B,0,B,B,
-		0,0,0,0,0,0,0,0,0,B,W,W,W,B,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,0,B,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
-	};
-
-	u32 handcur[16 * 16] = {
-		0,0,0,0,0,0,0,0,0,B,B,0,0,0,0,0,
-		0,0,0,0,0,0,B,B,B,W,W,B,B,0,0,0,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,0,0,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,B,0,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,W,B,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,W,B,
-		0,B,B,B,0,B,W,W,B,W,W,B,W,B,W,B,
-		0,B,W,W,B,B,W,W,B,W,W,B,W,B,W,B,
-		0,B,W,W,W,B,W,W,W,W,W,W,W,W,W,B,
-		0,0,B,W,W,W,W,W,W,W,W,W,W,W,W,B,
-		0,0,B,W,W,W,W,W,W,W,W,W,W,W,B,0,
-		0,0,0,B,W,W,W,W,W,W,W,W,W,W,B,0,
-		0,0,0,B,W,W,W,W,W,W,W,W,W,B,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,W,W,B,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,W,B,0,0,0,
-		0,0,0,0,0,B,B,B,B,B,B,B,0,0,0,0,
-	};
-
-	u32 textcur[16 * 16] = {
-		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
-		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
-		0,0,0,B,B,B,W,W,W,B,B,B,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,B,B,B,W,W,W,B,B,B,0,0,0,0,
-		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
-		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
-	};
-
 
 	GLFWimage image;
 	image.width = 16;
@@ -544,8 +406,8 @@ void Window::Close(){
 	closeWindow = true;
 }
 
-void Window::UpdateTitle(const char* title){
-	glfwSetWindowTitle(this->window, title);
+void Window::UpdateTitle(str8 title){
+	glfwSetWindowTitle(this->window, title.str);
 }
 
 void Window::ShowWindow(){
@@ -558,36 +420,4 @@ void Window::HideWindow(){
 
 b32 Window::ShouldClose(){
 	return glfwWindowShouldClose(window) || closeWindow;
-}
-
-
-//TODO binary file loading when needed
-//initializes a FileReader for a given File
-FileReader init_reader(const File& file) {
-	WarnFuncNotImplemented("io not implemented for linux platforms");
-}
-
-File open_file(const char* path, FileAccessFlags flags) {
-	WarnFuncNotImplemented("io not implemented for linux platforms");
-}
-
-array<File>
-get_directory_files(const char* directory) {
-	WarnFuncNotImplemented("io not implemented for linux platforms");
-	return array<File>();
-}
-
-void
-delete_file(const char* filepath) {
-	WarnFuncNotImplemented("io not implemented for linux platforms");
-}
-
-b32
-file_exists(const char* filepath) {
-	WarnFuncNotImplemented("io not implemented for linux platforms");
-}
-
-void
-rename_file(const char* old_filepath, const char* new_filepath) {
-	WarnFuncNotImplemented("io not implemented for linux platforms");
 }

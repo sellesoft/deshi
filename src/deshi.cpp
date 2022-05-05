@@ -184,6 +184,8 @@ tab bar buttons pass their input thru to the window (for dragging)
 
 
 #define __DESHI__ //for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
+#define UNICODE
+#define _UNICODE
 
 #include "kigu/common.h"
 #include "core/memory.h" //NOTE(delle) this is included above everything so things can reference deshi_allocator
@@ -383,7 +385,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	console_init();
 #endif
-	deshi_window.Init("deshi", winWidth, winHeight);
+	deshi_window.Init(str8_lit("deshi"), winWidth, winHeight);
 	render_init();
 	Storage::Init();
 #ifndef DESHI_DISABLE_IMGUI

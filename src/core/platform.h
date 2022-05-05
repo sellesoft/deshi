@@ -8,10 +8,10 @@
 //// @Module API
 
 //Loads a module from `module_path`
-//  Windows: calls LoadLibrary()
+//  Windows: calls LoadLibraryW()
 //  Linux: TODO
 //  Mac: TODO
-void* platform_load_module(const char* module_path);
+void* platform_load_module(str8 module_path);
 
 //Unloads a previously loaded `module` (load-time or run-time)
 //  Windows: calls FreeLibrary()
