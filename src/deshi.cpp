@@ -12,8 +12,9 @@ Common Tags: Feature, Tweak, Bug, System
 [04/12/21,EASY,Feature] command to print all avaliable keys for binding
 [04/12/21,EASY,Feature] command to print all keybinds, with (maybe) an option for printing only contextual keybinds
 [06/09/21,EASY,Feature] add device_info command (graphics card, sound device, monitor res, etc)
-[08/07/21,EASY,Feature] implement command chaining
+[08/07/21,EASY,Feature] implement command chaining (separated by ';')
 [04/18/22,EASY,Feature] support running commands with nested aliases
+[05/06/22,MEDI,Feature] add 'exec' command which can run commands from a file
 
 `Console`
 ---------
@@ -23,9 +24,9 @@ Common Tags: Feature, Tweak, Bug, System
 [06/16/21,EASY,Feature] tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 [12/23/21,MEDI,Bug]     if the console fills up too much, it crashes
     you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
-[12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed
+[12/27/21,EASY,Feature] showing a command's help if tab is pressed when the command is already typed (or do python style ? thing)
 [01/13/22,EASY,Feature] config variable modification
-[01/13/22,EASY,Feature] simple terminal emulation
+[01/13/22,EASY,Feature] simple terminal emulation (folder nav and filesystem)
 [04/18/22,EASY,Tweak]   draw \t correctly
 [05/02/22,MEDI,Feature] clipping so we only consider chunks that would be on screen
 [05/02/22,MEDI,Bug]     fix scrolling to bottom on new log
@@ -49,6 +50,8 @@ Common Tags: Feature, Tweak, Bug, System
 `Input`
 -------
 [10/28/21,EASY,Feature] add MouseInsideWindow() func to input or window
+[05/06/22,MEDI,Feature] add support for Windows IME input
+[05/06/22,MEDI,Bug]     enabling the Windows IME freezes the program
 
 `Logger`
 --------
@@ -93,7 +96,7 @@ Common Tags: Feature, Tweak, Bug, System
 [07/09/21,MEDI,System]  rework lights
 [07/10/21,HARD,Bug]     fix directional shadow mapping's (projection?) errors
 [08/07/21,MEDI,Feature] add texture/material recreation without restart
-[08/07/21,EASY,Feature] vulkan auto-cleanup so that it frees the unused parts of memory every now and then
+[08/07/21,EASY,Feature] vulkan auto-cleanup so that it frees the unused parts of memory every now and then (chunking, look into vma lib)
 [08/07/21,EASY,Tweak]   revert phong shader so it is like it used to be, but keeps the shadows
 [09/26/21,MEDI,Tweak]   give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
 [09/26/21,EASY,Tweak]   find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
@@ -113,8 +116,7 @@ Common Tags: Feature, Tweak, Bug, System
 `Storage`
 ---------
 [07/10/21,EASY,Bug]     the program crashes if default asset files are not present
-    maybe store the text in the actual source and create the file from the code, like keybinds.cfg
-    alternatively, we can store those specific assets in the source control
+    maybe store the text in the actual source and create the file from the code (null128.png, gohufont-11.bdf)
 [08/07/21,MEDI,Tweak]   speedup OBJ parsing and face generation
 [08/22/21,EASY,Tweak]   store null128.png and null shader in code
 [08/22/21,EASY,Tweak]   add versioning to Mesh since its saved in a binary format
@@ -140,7 +142,7 @@ Common Tags: Feature, Tweak, Bug, System
 [02/12/22,EASY,Tweak]   add PAGEUP and PAGEDOWN scrolling keybinds (CTRL for max scroll up/down)
 [02/12/22,MEDI,Feature] window snapping (to borders, to other windows, window tabifying when dropped onto another window)
 [02/12/22,MEDI,Feature] menus that open on hover (the direction they open is flag controlled, down vs right)(ImGui::BeginMenu)
-[02/12/22,EASY,Tweak]   add button flag: return true on hover
+[02/12/22,EASY,Tweak]   add button flag: return true on hover (also can have the function return what flags triggered the success)
 [02/12/22,EASY,Feature] begintab()/button() for images
 [02/12/22,EASY,Tweak]   window flags for no margin and no padding
 [02/12/22,HARD,Feature] context menu
@@ -159,7 +161,6 @@ row isnt a good name for a table behaviouring item
 setting the size of a row
 get max space for next item (after sameline)
 i expected UI::RowSetupRelativeColumnWidths({1,1,1}) to be default behaviour
-2d funcs in render are bloated with UI stuff
 scrollbar isnt draggable if the window is moveable
 rows arent nestable
 tab bar buttons pass their input thru to the window (for dragging)
@@ -172,14 +173,11 @@ tab bar buttons pass their input thru to the window (for dragging)
 `Ungrouped`
 -----------
 [07/19/21,MEDI,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-[08/03/21,EASY,Tweak]   convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
-[12/31/21,HARD,System]  remove GLFW and add platform layers
+[12/31/21,HARD,System]  remove GLFW and add linux/mac platform specifics
 [02/01/22,EASY,Tweak]   remove commit/decommit from defines.h
 [03/02/22,EASY,Tweak]   check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
 [03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
     this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
-[03/22/22,EASY,TWEAK]   check all usages of cstring/wcstring to ensure that the functions don't simply convert them to char* and pass to c-string functions, since they might not have the trailing '\0' that c-strings require
-[04/27/22,EASY,Feature] add a platform_log_last_error() function to platform.h
 */
 
 
@@ -193,17 +191,18 @@ tab bar buttons pass their input thru to the window (for dragging)
 
 //// deshi stages ////
 typedef Flags DeshiStage; enum{
-	DS_NONE    = 0,
-	DS_MEMORY  = 1 << 0,
-	DS_LOGGER  = 1 << 1,
-	DS_CONSOLE = 1 << 2,
-	DS_TIME    = 1 << 3,
-	DS_WINDOW  = 1 << 4,
-	DS_RENDER  = 1 << 5,
-	DS_IMGUI   = 1 << 6,
-	DS_STORAGE = 1 << 7,
-	DS_UI      = 1 << 8,
-	DS_CMD     = 1 << 9,
+	DS_NONE      = 0,
+	DS_MEMORY    = 1 << 0,
+	DS_PLATFORM  = 1 << 1,
+	DS_LOGGER    = 1 << 2,
+	DS_CONSOLE   = 1 << 3,
+	DS_TIME      = 1 << 4,
+	DS_WINDOW    = 1 << 5,
+	DS_RENDER    = 1 << 6,
+	DS_IMGUI     = 1 << 7,
+	DS_STORAGE   = 1 << 8,
+	DS_UI        = 1 << 9,
+	DS_CMD       = 1 << 10,
 };
 local DeshiStage deshiStage = DS_NONE;
 
@@ -316,6 +315,8 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <stb/stb_truetype.h>
 #  define STB_SPRINTF_IMPLEMENTATION
 #  include <stb/stb_sprintf.h>
+#  define STB_RECT_PACK_IMPLEMENTATION
+#  include <imgui/stb_rectpack.h>
 #endif
 
 //// platform ////
@@ -381,6 +382,7 @@ local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thr
 void deshi::init(u32 winWidth, u32 winHeight){
 	Stopwatch deshi_watch = start_stopwatch();
 	memory_init(Gigabytes(1), Gigabytes(1));
+	platform_init();
 	logger_init();
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	console_init();

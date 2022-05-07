@@ -48,7 +48,6 @@ simulate hovered/clicked/toggled on items
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "kigu/map.h"
-#include "kigu/string.h"
 #include "math/math.h"
 
 struct UIDrawCmd;
@@ -88,36 +87,36 @@ enum UIStyleVar : u32 {
 	UIStyleVar_COUNT
 };
 
-global_ const char* styleVarStr[] = {
-	"WindowPadding",	          
-	"ItemSpacing",               
-	"WindowBorderSize",          
-	"ButtonBorderSize",
-	"TitleBarHeight",	          
-	"TitleTextAlign",            
-	"ScrollAmount",              
-	"CheckboxSize",              
-	"CheckboxFillPadding",       
-	"InputTextTextAlign",        
-	"ButtonTextAlign",           
-	"HeaderTextAlign",           
-	"SelectableTextAlign",
-	"TabTextAlign",
-	"ButtonHeightRelToFont",     
-	"HeaderHeightRelToFont",     
-	"InputTextHeightRelToFont",  
-	"CheckboxHeightRelToFont",   
-	"SelectableHeightRelToFont",
-	"TabHeightRelToFont",
-	"RowItemAlign",              
-	"RowCellPadding",            
-	"ScrollBarYWidth",           
-	"ScrollBarXHeight",          
-	"IndentAmount",     
-	"TabSpacing",
-	"FontHeight",                
-	"Font",			          
-	"COUNT"
+global_ str8 styleVarStr[] = {
+	str8_lit("WindowPadding"),
+	str8_lit("ItemSpacing"),
+	str8_lit("WindowBorderSize"),
+	str8_lit("ButtonBorderSize"),
+	str8_lit("TitleBarHeight"),
+	str8_lit("TitleTextAlign"),
+	str8_lit("ScrollAmount"),
+	str8_lit("CheckboxSize"),
+	str8_lit("CheckboxFillPadding"),
+	str8_lit("InputTextTextAlign"),
+	str8_lit("ButtonTextAlign"),
+	str8_lit("HeaderTextAlign"),
+	str8_lit("SelectableTextAlign"),
+	str8_lit("TabTextAlign"),
+	str8_lit("ButtonHeightRelToFont"),
+	str8_lit("HeaderHeightRelToFont"),
+	str8_lit("InputTextHeightRelToFont"),
+	str8_lit("CheckboxHeightRelToFont"),
+	str8_lit("SelectableHeightRelToFont"),
+	str8_lit("TabHeightRelToFont"),
+	str8_lit("RowItemAlign"),
+	str8_lit("RowCellPadding"),
+	str8_lit("ScrollBarYWidth"),
+	str8_lit("ScrollBarXHeight"),
+	str8_lit("IndentAmount"),
+	str8_lit("TabSpacing"),
+	str8_lit("FontHeight"),
+	str8_lit("Font"),
+	str8_lit("COUNT")
 };
 
 enum UIStyleCol : u32 {
@@ -279,24 +278,23 @@ struct UIInputTextCallbackData {
 	UIInputTextFlags flags;     //the flags that the input text item has
 	void* userData;             //custom user data
 	
-	u8       character;         //character that was input  | r
-	KeyCode  eventKey;          //key pressed on callback   | r
-	char*    buffer;            //buffer pointer            | r/w
-	wchar*   wbuffer;           //unicode buffer pointer    | r/w
-	size_t   bufferSize;        //                          | r
-	u32      cursorPos;         //cursor position		    | r/w
-	u32      selectionStart;    //                          | r/w -- == selection end when no selection
-	u32      selectionEnd;      //                          | r/w
+	u32      character;         //character that was input | r
+	KeyCode  eventKey;          //key pressed on callback  | r
+	u8*      buffer;            //buffer pointer           | r/w
+	size_t   bufferSize;        //                         | r
+	u32      cursorPos;         //cursor position (bytes)  | r/w
+	u32      selectionStart;    //                         | r/w -- == selection end when no selection
+	u32      selectionEnd;      //                         | r/w
 };
 typedef u32 (*UIInputTextCallback)(UIInputTextCallbackData* data);
 
 struct UIInputTextState {
 	u32 id;                       //id the state belongs to
-	u32 cursor = 0;               //what character in the buffer the cursor is infront of, 0 being all the way to the left
+	u32 cursor = 0;               //what character in the buffer the cursor is infront of, 0 being all the way to the left (byte offset)
 	f32 cursorBlinkTime;          //time it takes for the cursor to blink
 	f32 scroll;                   //scroll offset on x
-	u32 selectStart;              //beginning of text selection
-	u32 selectEnd;                //end of text selection
+	u32 selectStart;              //beginning of text selection (byte offset)
+	u32 selectEnd;                //end of text selection (byte offset)
 	UIInputTextCallback callback;
 	Stopwatch timeSinceTyped;     //timer to time how long its been since typing, for cursor
 };
@@ -317,7 +315,7 @@ struct UITab {
 
 struct UITabBar {
 	UITabBarFlags flags;
-	map<const char*, UITab> tabs;
+	map<str8, UITab> tabs;
 	u32  selected = 0;
 	f32 tabHeight = 0;
 	u32   xoffset = 0; //how far along the bar we've placed tabs 
@@ -389,17 +387,17 @@ enum UIDrawType : u32 {
 	UIDrawType_Image,
 };
 
-global_ const char* UIDrawTypeStrs[] = {
-	"Triangle",
-	"FilledTriangle",
-	"Rectangle",
-	"FilledRectangle",
-	"Line",
-	"Circle",
-	"CircleFilled",
-	"Text",
-	"WText",
-	"Image",
+global_ str8 UIDrawTypeStrs[] = {
+	str8_lit("Triangle"),
+	str8_lit("FilledTriangle"),
+	str8_lit("Rectangle"),
+	str8_lit("FilledRectangle"),
+	str8_lit("Line"),
+	str8_lit("Circle"),
+	str8_lit("CircleFilled"),
+	str8_lit("Text"),
+	str8_lit("WText"),
+	str8_lit("Image"),
 };
 
 #define UIDRAWCMD_MAX_VERTICES 0x3FF
@@ -473,26 +471,26 @@ enum UIItemType : u32 {
 	UIItemType_COUNT
 };
 
-global_ const char* UIItemTypeStrs[] = {
-	"PreItems",  
-	"PostItems", 
-	"Custom",    
-	"Abstract",  
-	"ChildWin",  
-	"PopOutWindow",
-	"Text",      
-	"InputText", 
-	"Button",    
-	"Checkbox",  
-	"DropDown",  
-	"Slider",    
-	"Header",    
-	"Selectable",
-	"Combo",     
-	"Image",     
-	"Separator", 
-	"TabBar",
-	"Tab",
+global_ str8 UIItemTypeStrs[] = {
+	str8_lit("PreItems"),
+	str8_lit("PostItems"),
+	str8_lit("Custom"),
+	str8_lit("Abstract"),
+	str8_lit("ChildWin"),
+	str8_lit("PopOutWindow"),
+	str8_lit("Text"),
+	str8_lit("InputText"),
+	str8_lit("Button"),
+	str8_lit("Checkbox"),
+	str8_lit("DropDown"),
+	str8_lit("Slider"),
+	str8_lit("Header"),
+	str8_lit("Selectable"),
+	str8_lit("Combo"),
+	str8_lit("Image"),
+	str8_lit("Separator"),
+	str8_lit("TabBar"),
+	str8_lit("Tab"),
 };
 
 //an item such as a button, checkbox, or input text
@@ -560,7 +558,7 @@ enum UIWindowType_ {
 // item positions are relative to the window's upper left corner.
 // drawcall positions are relative to the item's upper left corner.
 struct UIWindow {
-	string name;
+	 str8 name;
 	UIWindowType type;
 	
 	union {
@@ -605,7 +603,7 @@ struct UIWindow {
 	
 	//a collection of child windows
 	UIWindow* parent = 0;
-	map<const char*, UIWindow*> children;
+	map<str8, UIWindow*> children;
 	pair<UIWindow*, UIItem*> hoveredChild;
 	
 	
@@ -655,7 +653,7 @@ struct UIColumn {
 struct UIRow {
 	UIRowFlags flags = 0;
 	
-	string label;
+	  str8 label;
 	
 	f32 left_edge = 0;
 	f32 right_edge = 0;
@@ -691,14 +689,7 @@ namespace UI {
 	//// helpers ////
 	
 	//calculates the given text size as it would appear onscreen with the current font pointed to by the style var
-	vec2              CalcTextSize(cstring text);
-	vec2              CalcTextSize(wcstring text);
-	FORCE_INLINE vec2 CalcTextSize(const string& text)  { return CalcTextSize(cstring {text.str,u64(text.count)}); }
-	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
-	FORCE_INLINE vec2 CalcTextSize(const wchar* text)   { return CalcTextSize(wcstring{(wchar*)text,u64(wcslen(text)) }); }
-	//calculates where a char in a string will appear relative to the topleft corner of the text item it places
-	//TODO overloads for text whose size is already calculated. maybe make a struct that allows application caching of text with information useful to ui about it
-	vec2 CalcCharPosition(cstring text, u64 idx);
+	vec2      CalcTextSize(str8 text);
 
 	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
 	UIStyle&  GetStyle();
@@ -798,7 +789,7 @@ namespace UI {
 	UIStats GetStats();
 
 	//returns a pointer to an InputText's state by label
-	UIInputTextState* GetInputTextState(const char* label);
+	UIInputTextState* GetInputTextState(str8 label);
 
 	
 	f32 GetRightIndent();
@@ -859,7 +850,7 @@ namespace UI {
 	//  so you are required to define a static height upon calling the function
 	//
 	//  NOTE primitives/abstracts are not considered in rows
-	void BeginRow(const char* label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
+	void BeginRow(str8 label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
 	//takes an array of size equal to the number of columns specified and sets their widths to the specified sizes in pixels
 	void RowSetupColumnWidths(array<f32> widths);
@@ -887,54 +878,46 @@ namespace UI {
 	//// text ////
 	
 	//wraps by default
-	void Text(const cstring& text, UITextFlags flags = 0);
-	void Text(const cstring& text, vec2 pos, UITextFlags flags = 0);
-	void Text(const char* text, UITextFlags flags = 0);
-	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
-	void Text(const wchar* text, UITextFlags flags = 0);
-	void Text(const wchar* text, vec2 pos, UITextFlags flags = 0);
-	
-	FORCE_INLINE void Text(const string& text, UITextFlags flags = 0){ Text(cstring{text.str,text.count}, flags); }
-	FORCE_INLINE void Text(const string& text, vec2 pos, UITextFlags flags = 0){ Text(cstring{text.str,text.count}, pos, flags); }
-	
-	void TextF(const char* fmt, ...);
+	void Text(str8 text, UITextFlags flags = 0);
+	void Text(str8 text, vec2 pos, UITextFlags flags = 0);
+	void TextF(str8 fmt, ...);
 	
 	
 	//// items ////
 	
 	//a simple clickable button. the condition it returns true for depends on the flag given, if no behavoir flag is given it returns true on click by default
-	b32 Button(const char* text, UIButtonFlags flags = 0);
-	b32 Button(const char* text, vec2 pos, UIButtonFlags flags = 0);
+	b32 Button(str8 text, UIButtonFlags flags = 0);
+	b32 Button(str8 text, vec2 pos, UIButtonFlags flags = 0);
 	
 	//a checkbox with a label. you must provide the boolean it changes
-	void Checkbox(string label, b32* b);
+	void Checkbox(str8 label, b32* b);
 	
 	//TODO 
-	b32 BeginCombo(const char* label, const char* preview_val);
-	b32 BeginCombo(const char* label, const char* preview_val, vec2 pos);
+	b32 BeginCombo(str8 label, str8 preview_val);
+	b32 BeginCombo(str8 label, str8 preview_val, vec2 pos);
 	void EndCombo();
 	
 	//a selectable that takes in a boolean that determines if its selected or not. it returns true if it has been clicked on
-	b32 Selectable(const char* label, b32 selected); 
-	b32 Selectable(const char* label, vec2 pos, b32 selected);
+	b32 Selectable(str8 label, b32 selected); 
+	b32 Selectable(str8 label, vec2 pos, b32 selected);
 	
 	//a collapsable header that groups items and lets you hide them. by default it indents the content, but this can be disabled with flags
 	//by default the header spans the whole width of the window
 	//TODO different header styles, including one that is empty and takes a clickable area for custom graphix
-	b32  BeginHeader(const char* label, UIHeaderFlags flags = 0);
+	b32  BeginHeader(str8 label, UIHeaderFlags flags = 0);
 	void EndHeader();
 	
 	//begins the bar a tab sits on. this must be called before BeginTab
-	void BeginTabBar(const char* label, UITabBarFlags flags = 0);
+	void BeginTabBar(str8 label, UITabBarFlags flags = 0);
 	//begins a tab, this must be called after BeginTabBar
-	b32  BeginTab(const char* label);
+	b32  BeginTab(str8 label);
 	//ends a tab, this must be called if BeginTab is called, calling it otherwise will assert
 	void EndTab(); 
 	//this must be called if BeginTabBar is called, calling it otherwise will assert
 	void EndTabBar();
 	
 	//a slider that modifies a given value using the mouse
-	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
+	void Slider(str8 label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 	
 	//displays an image. set the size using SetNextItemSize
 	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
@@ -952,14 +935,10 @@ namespace UI {
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
 	//InputText item. This should only be used if you have a good reason to!
-	b32 InputText(const char* label, char* buffer,  u32 buffSize, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer,  u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer,  u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, char* buffer,  u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, wchar* buffer, u32 buffSize, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, wchar* buffer, u32 buffSize, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
-	b32 InputText(const char* label, wchar* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
+	b32 InputText(str8 label, u8* buffer, u32 buffSize, str8 preview = str8{}, UIInputTextFlags flags = 0);
+	b32 InputText(str8 label, u8* buffer, u32 buffSize, UIInputTextCallback callbackFunc, str8 preview = str8{}, UIInputTextFlags flags = 0);
+	b32 InputText(str8 label, u8* buffer, u32 buffSize, vec2 pos, str8 preview = str8{}, UIInputTextFlags flags = 0);
+	b32 InputText(str8 label, u8* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, str8 preview = str8{}, UIInputTextFlags flags = 0);
 
 	//begins a menu, which is just a wrapper around BeginPopOut
 	//its purpose is to provide an easy way to have lists of options such as in a context menu as well
@@ -986,12 +965,12 @@ namespace UI {
 	void CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color);
 	void CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 	void CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color);
-	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, cstring text, vec2 pos, color color, vec2 scale);
+	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color color, vec2 scale);
 	void CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0);
 	void CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd);
+	
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();
-
 
 	//allows adding flags to an item so you dont have to keep specifying them everytime you make one.
 	//you are required to either remove all the added flags or reset a modified items flags by the time UI::Update is called
@@ -1024,11 +1003,11 @@ namespace UI {
 	void PopDrawTarget(u32 count = 1);
 	
 	//// windows ////
-	void Begin(const char* name, UIWindowFlags flags = 0);
-	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags = 0);
-	void BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void Begin(str8 name, UIWindowFlags flags = 0);
+	void Begin(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void BeginChild(str8 name, vec2 dimensions, UIWindowFlags flags = 0);
+	void BeginChild(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void BeginPopOut(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void End();
 	void EndChild();
 	void EndPopOut();
@@ -1036,13 +1015,13 @@ namespace UI {
 	//for example: 
 	//parent/child
 	//parent/child/childofchild 
-	void Continue(const char* name);
+	void Continue(str8 name);
 	void EndContinue();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(f32 x, f32 y);
 	void SetNextWindowSize(vec2 size);	 
 	void SetNextWindowSize(f32 x, f32 y);  
-	void SetWindowName(const char* name);
+	void SetWindowName(str8 name);
 	b32 IsWinHovered();
 	b32 AnyWinHovered();
 	void ShowMetricsWindow();

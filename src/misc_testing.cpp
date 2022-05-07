@@ -457,14 +457,14 @@ void spring(){
 
 	SetNextWindowPos(vec2::ZERO);
 	SetNextWindowSize(DeshWinSize);
-	Begin("springwin", UIWindowFlags_NoScroll | UIWindowFlags_NoInteract);{
-#define Sldr(var, min, max) Slider(STRINGIZE(var), &var, min, max); SameLine(); Text(STRINGIZE(var));
+	Begin(str8_lit("springwin"), UIWindowFlags_NoScroll | UIWindowFlags_NoInteract);{
+#define Sldr(var, min, max) Slider(str8_lit(STRINGIZE(var)), &var, min, max); SameLine(); Text(str8_lit(STRINGIZE(var)));
 		Sldr(B, 0, 5);
 		Sldr(w, 0, 5);
 		Sldr(g, 0, 10);
 		Sldr(k, 0, 3);
 		SetNextWindowSize(MAX_F32, MAX_F32);
-		BeginChild("springwinchld", vec2::ZERO, UIWindowFlags_NoInteract);{
+		BeginChild(str8_lit("springwinchld"), vec2::ZERO, UIWindowFlags_NoInteract);{
 			if(IsWinHovered() && input_lmouse_down()){
 				p4.pos = ((input_mouse_position()- vec2(GetWindow()->dimensions.x/2,0))).yInvert();
 			

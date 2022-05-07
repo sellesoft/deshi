@@ -1,18 +1,13 @@
 ﻿/*Index:
 @win32_vars
 @win32_helpers
-@win32_init_time
-@win32_init_file
-@win32_init_window
-@win32_update_window
-@win32_update_time
-@win32_update_input
-@win32_update_file
+@win32_platform
 @win32_stopwatch
 @win32_file
 @win32_module
 @win32_clipboard
 @win32_threading
+@win32_window
 */
 
 
@@ -29,7 +24,8 @@ local array<File*> deshi__file_files;
 //// @win32_helpers
 //NOTE(delle) ideally we'd do this with a static C array, but C++ doesn't support out of order array init
 //NOTE(delle) FORCE_INLINE because it's only used in one place
-FORCE_INLINE KeyCode win32_vkcode_to_key(s32 vk){
+FORCE_INLINE KeyCode
+win32_vkcode_to_key(s32 vk){
 	switch(vk){
 		case 'A': return Key_A; case 'B': return Key_B; case 'C': return Key_C; case 'D': return Key_D; case 'E': return Key_E;
 		case 'F': return Key_F; case 'G': return Key_G; case 'H': return Key_H; case 'I': return Key_I; case 'J': return Key_J;
@@ -64,7 +60,8 @@ FORCE_INLINE KeyCode win32_vkcode_to_key(s32 vk){
 	}
 }
 
-void Win32LogLastError(const char* func_name, b32 crash_on_error = false, str8 custom = str8{}){DPZoneScoped;
+void
+Win32LogLastError(const char* func_name, b32 crash_on_error = false, str8 custom = str8{}){DPZoneScoped;
 	LPVOID msg_buffer;
 	DWORD error = ::GetLastError();
 	::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -106,8 +103,8 @@ win32_path_from_str8(str8 path, b32 prefix, s64 extra_chars = 0, DWORD* out_len 
 	return result;
 }
 
-//@Resize
-void WinResized(Window* win, s32 width, s32 height, b32 minimized){DPZoneScoped;
+void
+WinResized(Window* win, s32 width, s32 height, b32 minimized){DPZoneScoped;
 	win->width = width;
 	win->height = height;
 	win->cwidth = width;
@@ -121,7 +118,8 @@ void WinResized(Window* win, s32 width, s32 height, b32 minimized){DPZoneScoped;
 	win->resized = true;
 }
 
-void Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int* working_x = 0, int* working_y = 0, int* working_w = 0, int* working_h = 0){
+void
+Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int* working_x = 0, int* working_y = 0, int* working_w = 0, int* working_h = 0){
 	HMONITOR monitor = ::MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
 	if(monitor){
 		MONITORINFO monitor_info = {sizeof(MONITORINFO)};
@@ -149,7 +147,8 @@ enum HitTest_ : s32 {
 };
 
 //win32's callback function 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
+LRESULT CALLBACK
+WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
 	Window* win = (Window*)::GetWindowLongPtrW(hwnd, GWLP_USERDATA);
 	switch (msg){
 		case WM_CREATE:{ }break;
@@ -229,7 +228,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZo
 			//get key from vcode
 			KeyCode key = win32_vkcode_to_key(vcode);
 			if(key != Key_NONE){
-				DeshInput->realKeyState[key] = upFlag;
+				DeshInput->realKeyState[key] = !upFlag;
 				
 #if LOG_INPUTS
 				string out = toStr(KeyCodeStrings[key], (upFlag ? " released" : " pressed"));
@@ -245,7 +244,32 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZo
 		}break;
 		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key (UTF-16)
 			if(!iscntrl(LOWORD(wParam))){ //NOTE skip control characters
-				DeshInput->charIn[DeshInput->realCharCount++] = LOWORD(wParam);
+				//!ref: https://github.com/cmuratori/refterm/blob/main/refterm_example_terminal.c@ProcessMessages()
+				persist wchar_t inputPrevChar; //used for UTF-16 surrogate pairs
+				wchar_t wch = (wchar_t)wParam;
+				wchar_t chars[2];
+				int char_count = 0;
+				
+				if(IS_HIGH_SURROGATE(wch)){
+					inputPrevChar = wch;
+				}else if(IS_LOW_SURROGATE(wch)){
+					if(IS_SURROGATE_PAIR(inputPrevChar, wch)){
+						chars[0] = inputPrevChar;
+						chars[1] = wch;
+						char_count = 2;
+					}
+					inputPrevChar = 0;
+				}else{
+					chars[0] = wch;
+					char_count = 1;
+				}
+				
+				if(char_count){
+					DeshInput->realCharCount += 
+						WideCharToMultiByte(CP_UTF8, 0, chars, char_count,
+											(LPSTR)(DeshInput->charIn + DeshInput->realCharCount),
+											ArrayCount(DeshInput->charIn) - DeshInput->realCharCount, 0, 0);
+				}
 			}
 		}break;
 		case WM_INPUT:{ ///////////////////////////////////////////////////////////// Raw Input
@@ -305,186 +329,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZo
 		win->active = (::GetForegroundWindow() == (HWND)win->handle);
 	}
 	return ::DefWindowProcW(hwnd, msg, wParam, lParam);
-}
-
-
-
-//~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @Window API
-#define DESHI_WND_CLASSNAME_W L"_DESHI_"
-
-void Window::Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){DPZoneScoped;
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// @win32_init_time
-	DeshiStageInitStart(DS_TIME, DS_MEMORY, "Attempted to initialize Time module before initializing Memory module");
-	
-	//get the perf counter frequency for timers
-	LARGE_INTEGER perf_count_frequency_result;
-	::QueryPerformanceFrequency(&perf_count_frequency_result);
-	deshi__win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
-	
-	DeshiStageInitEnd(DS_TIME);
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// @win32_init_file
-	wchar_t* wpath = win32_path_from_str8(str8_lit("data/"), false, 0, &deshi__file_data_folder_len);
-	deshi__file_data_folder = (wchar_t*)memory_alloc((deshi__file_data_folder_len+1)*sizeof(wchar_t));
-	CopyMemory(deshi__file_data_folder, wpath, deshi__file_data_folder_len*sizeof(wchar_t));
-	
-	deshi__file_files = array<File*>(deshi_allocator);
-	
-	//create data directories
-	file_create(str8_lit("data/"));
-	file_create(str8_lit("data/cfg/"));
-	file_create(str8_lit("data/temp/"));
-	
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// @win32_init_window
-	DeshiStageInitStart(DS_WINDOW, DS_MEMORY, "Attempted to initialize Window module before initializing Memory module");
-	
-	//get console's handle
-	instance = ::GetModuleHandleW(NULL);
-	
-	//TODO load and set icon
-	//HICON icon = LoadImageA(NULL, "data/textures/deshi_icon.png", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_DEFAULTCOLOR);;
-	
-	wchar_t* wname = wchar_from_str8(_name, 0, deshi_temp_allocator);
-	
-	//// register window class ////
-	WNDCLASSW wc;
-	wc.        style = CS_OWNDC; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
-	wc.  lpfnWndProc = WndProc;
-	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
-	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
-	wc.    hInstance = (HINSTANCE)instance;
-	wc.        hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
-	wc.hbrBackground = NULL;
-	wc. lpszMenuName = NULL;
-	wc.lpszClassName = DESHI_WND_CLASSNAME_W;
-	if(::RegisterClassW(&wc) == NULL) Win32LogLastError("RegisterClassW", true); 
-	
-	//// create window ////
-	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-#if DESHI_OPENGL
-	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
-#else
-	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
-#endif
-	if(handle == NULL) Win32LogLastError("CreateWindowW", true);
-	//set WndProc user data to be a pointer to this window
-	::SetWindowLongPtrW((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
-	dc = ::GetDC((HWND)handle);
-	
-	//// get initial input values ////
-	POINT mp = { 0 };
-	GetCursorPos(&mp);
-	DeshInput->realMouseX = mp.x - x;
-	DeshInput->realMouseY = mp.y - y;
-	DeshInput->capsLock   = (GetKeyState(VK_CAPITAL) & 0x8000);
-	DeshInput->numLock    = (GetKeyState(VK_NUMLOCK) & 0x8000);
-	DeshInput->scrollLock = (GetKeyState(VK_SCROLL ) & 0x8000);
-	
-	//// setup raw input ////
-	RAWINPUTDEVICE rid;
-	rid.usUsagePage = 0x01;
-	rid.    usUsage = 0x02;
-	rid.    dwFlags = 0; //set this to RIDEV_INPUTSINK to update mouse pos even when window isnt focused
-	rid. hwndTarget = NULL;
-	
-	if(::RegisterRawInputDevices(&rid, 1, sizeof(rid)) == NULL) Win32LogLastError("RegisterRawInputDevices");
-	
-	//// get monitor info ////
-	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
-	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
-	
-	//// setup default window pos/size ////
-	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
-		x = work_x + ((work_w -  width) / 2);
-		y = work_y + ((work_h - height) / 2);
-	}
-	
-	//// update window to requested properties ////
-	UpdateDisplayMode(displayMode);
-	//UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
-	//titlebarheight = 5;
-	UpdateDecorations(Decoration_SystemDecorations);
-	titlebarheight = 0;
-	::SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
-	name = str8_copy(_name, deshi_allocator); //!Leak
-	renderer_surface_index = 0; ///main win is always first surface
-	
-	DeshTime->stopwatch = start_stopwatch();
-	
-	
-	DeshiStageInitEnd(DS_WINDOW);
-}
-
-//returns nullptr if the function fails to make the child;
-Window* Window::MakeChild(str8 name, s32 width, s32 height, s32 x, s32 y){DPZoneScoped;
-	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
-	if(child_count == max_child_windows){ LogE("window-win32", "Window failed to make a child window: max child windows reached."); return 0; }
-	Stopwatch t_s = start_stopwatch();
-	
-	//TODO make global window counter
-	
-	Window* child = (Window*)memalloc(sizeof(Window));
-	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
-	
-	child->instance = ::GetModuleHandleW(NULL);
-	
-	wchar_t* wname = wchar_from_str8(name, 0, deshi_temp_allocator);
-	
-	//make and register window class //TODO reuse above window class to not pollute atom table
-	WNDCLASSW wc;
-	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
-	wc.  lpfnWndProc = WndProc;
-	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
-	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
-	wc.    hInstance = (HINSTANCE)child->instance;
-	wc.        hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
-	wc.      hCursor = ::LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
-	wc.hbrBackground = NULL;
-	wc. lpszMenuName = NULL;
-	wc.lpszClassName = wname;
-	if(::RegisterClassW(&wc) == NULL){ 
-		LogE("window-win32", "Window failed to register WNDCLASS for child window");
-		Win32LogLastError("RegisterClassW"); 
-		memzfree(child);
-		return 0;
-	}
-	
-	//create window
-	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	child->handle = ::CreateWindowW(wname, wname,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
-	if(child->handle == NULL){
-		LogE("window-win32", "Windows failed to create child window");
-		Win32LogLastError("CreateWindowW", true);
-		memzfree(child);
-		return 0;
-	}
-	//set WndProc user data to be a pointer to this window
-	::SetWindowLongPtrW((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
-	child->dc = ::GetDC((HWND)child->handle);
-	
-	//// get monitor info ////
-	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
-	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
-	
-	//// setup default window pos/size ////
-	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
-		x = work_x + ((work_w -  width) / 2);
-		y = work_y + ((work_h - height) / 2);
-	}
-	
-	children[child_count++] = child;
-	child->name = name;
-	child->UpdateDisplayMode(displayMode);
-	child->UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
-	child->titlebarheight = 5;
-	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
-	
-	LogS("deshi", "Finished child window initialization in ", peek_stopwatch(t_s), "ms");
-	return child;
 }
 
 //TODO options for decoration colors
@@ -566,32 +410,40 @@ void DrawDecorations(Window* win){DPZoneScoped;
 #endif
 }
 
-void Window::Update(){DPZoneScoped;
-	//-/////////////////////////////////////////////
-	//// @win32_update_window
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_platform
+#define DESHI_WND_CLASSNAME_W L"_DESHI_"
+void
+platform_init(){DPZoneScoped;
+	DeshiStageInitStart(DS_PLATFORM, DS_MEMORY, "Attempted to initialize Platform module before initializing the Memory module");
+	//-///////////////////////////////////////////////////////////////////////////////////////////////
+	//// @win32_init_time
+	//get the perf counter frequency for timers
+	LARGE_INTEGER perf_count_frequency_result;
+	::QueryPerformanceFrequency(&perf_count_frequency_result);
+	deshi__win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
+	
+	//-///////////////////////////////////////////////////////////////////////////////////////////////
+	//// @win32_init_file
+	wchar_t* wpath = win32_path_from_str8(str8_lit("data/"), false, 0, &deshi__file_data_folder_len);
+	deshi__file_data_folder = (wchar_t*)memory_alloc((deshi__file_data_folder_len+1)*sizeof(wchar_t));
+	CopyMemory(deshi__file_data_folder, wpath, deshi__file_data_folder_len*sizeof(wchar_t));
+	
+	deshi__file_files = array<File*>(deshi_allocator);
+	
+	//create data directories
+	file_create(str8_lit("data/"));
+	file_create(str8_lit("data/cfg/"));
+	file_create(str8_lit("data/temp/"));
+	
+	DeshiStageInitEnd(DS_PLATFORM);
+}
+
+void
+platform_update(){DPZoneScoped;
 	Stopwatch update_stopwatch = start_stopwatch();
 	
-	resized = false;
-	
-	//iterate through all window messages 
-	MSG msg;
-	while(::PeekMessageW(&msg, (HWND)handle, 0, 0, PM_REMOVE)){
-		if(msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY){
-			closeWindow = true;
-		}else{
-			::TranslateMessage(&msg);
-			::DispatchMessageW(&msg);
-		}
-	}
-	
-	//update children (this should maybe be done by whoever creates it instead of the parent)
-	forI(child_count) children[i]->Update();
-	
-	if(decorations != Decoration_SystemDecorations) DrawDecorations(this);
-	hittest = HitTestNone;
-	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY /*+ titlebarheight*/);
-	
-	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
 	//-/////////////////////////////////////////////
 	//// @win32_update_time
 	DeshTime->prevDeltaTime = DeshTime->deltaTime;
@@ -599,8 +451,8 @@ void Window::Update(){DPZoneScoped;
 	DeshTime->stopwatch = start_stopwatch();
 	DeshTime->totalTime += DeshTime->deltaTime;
 	DeshTime->frame++;
-	
 	DeshTime->timeTime = reset_stopwatch(&update_stopwatch);
+	
 	//-/////////////////////////////////////////////
 	//// @win32_update_input
 	//caches input values so they are consistent thru the frame
@@ -630,257 +482,31 @@ void Window::Update(){DPZoneScoped;
 	DeshInput->realScrollY = 0;
 	DeshInput->charCount = DeshInput->realCharCount;
 	DeshInput->realCharCount = 0;
-	
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
+	
 	//-/////////////////////////////////////////////
 	//// @win32_update_file
 	/* //TODO(delle) initted file change tracking thru ReadDirectoryChanges
-File file_file{};
+	File file_file{};
 	ULARGE_INTEGER file_size, file_time;
 	for(File* file : deshi__file_files){
 		
 	}
-*/
-}
-
-b32 Window::ShouldClose(){DPZoneScoped;
-	DPFrameMark;
-	return closeWindow;
-}
-
-void Window::Close(){DPZoneScoped;
-	closeWindow = true;
-}
-
-void Window::Cleanup(){DPZoneScoped;
-	::DestroyWindow((HWND)handle);
-}
-
-void Window::UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
-	switch (dm){
-		case DisplayMode_Windowed:{
-			if(displayMode != DisplayMode_Windowed){
-				HWND hwnd = (HWND)handle;
-				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
-				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
-				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-				resized = true;
-			}
-			displayMode = dm;
-		}break;
-		case DisplayMode_Fullscreen:{
-			if(displayMode != DisplayMode_Fullscreen){
-				restoreX = x;
-				restoreY = y;
-				restoreW = width;
-				restoreH = height;
-				HWND hwnd = (HWND)handle;
-				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
-				MONITORINFO mi = { sizeof(MONITORINFO) };
-				WINDOWPLACEMENT wp = { 0 };
-				//TODO add a way to choose what monitor the window is fullscreened to
-				b32 failed = false;
-				if(!::GetWindowPlacement(hwnd, &wp)){ Win32LogLastError("GetWindowPlacement"); failed = true; }
-				if(!::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){ Win32LogLastError("GetMonitorInfo"); failed = true; }
-				
-				if(!failed){
-					::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
-					RECT mr = mi.rcMonitor;
-					::SetWindowPos(hwnd, HWND_TOP, mr.left, mr.top, mr.right - mr.left, mr.bottom - mr.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-				}
-				resized = true;
-			}
-			displayMode = dm;
-		}break;
-		case DisplayMode_Borderless:{
-			if(displayMode != DisplayMode_Borderless){
-				HWND hwnd = (HWND)handle;
-				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
-				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
-				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-				resized = true;
-			}
-			displayMode = dm;
-		}break;
-	}
-}
-
-void Window::UpdateCursorMode(CursorMode mode){DPZoneScoped;
-	if(mode == this->cursorMode){return;}
-	cursorMode = mode;
-	
-	switch(mode){
-		case(CursorMode_Default):default:{
-			SetCursor(CursorType_Arrow); //TODO setup a restore cursor?
-			::ClipCursor(0);
-		}break;
-		case(CursorMode_FirstPerson):{
-			//set cursor to middle of screen
-			SetCursorPos(centerX, centerY /*+ titlebarheight*/);
-			
-			//hide cursor
-			SetCursor(CursorType_Hidden);
-			
-			//restrict cursor to client rect
-			RECT clip_rect;
-			::GetClientRect((HWND)handle, &clip_rect);
-			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.left); //NOTE transforms .top as well
-			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.right);
-			::ClipCursor(&clip_rect);
-		}break;
-		case(CursorMode_Hidden):{
-			SetCursor(CursorType_Hidden);
-			::ClipCursor(0);
-		}break;
-	}
-#if 0
-	Log("window", "Setting cursor mode to ", mode);
-#endif
-}
-
-void Window::UpdateDecorations(Decoration _decorations){DPZoneScoped;
-	decorations = _decorations;
-	HWND hwnd = (HWND)handle;
-	u32 style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
-	if(decorations == Decoration_SystemDecorations){
-		::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
-		titlebarheight = 0;
-		borderthickness = 0;
-	}else{
-		::SetWindowLongPtrA(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
-	}
-	::SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
-}
-
-void Window::SetCursorPos(f64 _x, f64 _y){DPZoneScoped;
-#if 0
-	Logf("window", "SetCursorPos old(%f,%f) new(%f,%f)", DeshInput->mouseX, DeshInput->mouseY, _x, _y);
-#endif
-	
-	POINT p = {LONG(_x), LONG(_y + 2.f*titlebarheight)};
-	::ClientToScreen((HWND)handle, &p);
-	::SetCursorPos(p.x, p.y);
-	
-	DeshInput->mouseX = _x;
-	DeshInput->mouseY = _y;
-}
-
-void Window::SetCursorPosScreen(f64 _x, f64 _y){
-#if 0
-	Logf("window", "SetCursorPosScreen old(%f,%f) new(%f,%f)", DeshInput->screenMouseX, DeshInput->screenMouseY, _x, _y);
-#endif
-	
-	::SetCursorPos(_x, _y);
-	DeshInput->screenMouseX = _x;
-	DeshInput->screenMouseY = _y;
-}
-
-void Window::SetCursor(CursorType cursor_type){
-	switch(cursor_type){
-		case CursorType_Arrow:{
-			::SetCursor(LoadCursor(0, IDC_ARROW));
-		}break;
-		case CursorType_HResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZEWE));
-		}break;
-		case CursorType_VResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZENS));
-		}break;
-		case CursorType_RightDiagResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZENESW));
-		}break;
-		case CursorType_LeftDiagResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZENWSE));
-		}break;
-		case CursorType_Hand:{
-			::SetCursor(LoadCursor(0, IDC_HAND));
-		}break;
-		case CursorType_IBeam:{
-			::SetCursor(LoadCursor(0, IDC_IBEAM));
-		}break;
-		case CursorType_Hidden:{
-			::SetCursor(0);
-		}break;
-		default:{
-			LogE("window","Unknown cursor type: ", cursor_type);
-			::SetCursor(LoadCursor(0, IDC_ARROW));
-		}break;
-	}
-#if 0
-	Log("window", "Setting cursor type to ", cursor_type);
-#endif
-}
-
-void Window::UpdateRawInput(b32 rawInput){DPZoneScoped;
-	WarnFuncNotImplemented("");
-}
-
-void Window::UpdateResizable(b32 resizable){DPZoneScoped;
-	WarnFuncNotImplemented("");
-}
-
-void Window::GetScreenSize(s32& _width, s32& _height){DPZoneScoped;
-	_width = screenWidth; _height = screenHeight;
-}
-
-void Window::GetWindowSize(s32& _width, s32& _height){DPZoneScoped;
-	_width = width; _height = height;	
-}
-
-void Window::GetClientSize(s32& _width, s32& _height){DPZoneScoped;
-	_width = cwidth; _height = cheight;
-}
-
-vec2 Window::GetClientAreaPosition(){DPZoneScoped;
-	return vec2(0, titlebarheight);
-}
-
-vec2 Window::GetClientAreaDimensions(){DPZoneScoped;
-	return vec2(width, height - titlebarheight);
-}
-
-void Window::UpdateTitle(str8 title){DPZoneScoped;
-	wchar_t* wtitle = wchar_from_str8(title, 0, deshi_temp_allocator);
-	::SetWindowTextW((HWND)handle, wtitle);
-}
-
-void Window::ShowWindow(u32 child){DPZoneScoped;
-	if(child != npos){
-		::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL);
-	}else{
-		::ShowWindow((HWND)handle, SW_SHOWNORMAL);
-	}
-}
-
-void Window::HideWindow(u32 child){DPZoneScoped;
-	if(child != npos){
-		::ShowWindow((HWND)children[child]->handle, SW_HIDE);
-	}else{
-		::ShowWindow((HWND)handle, SW_HIDE);
-	}
-}
-
-void Window::CloseConsole(){DPZoneScoped;
-	//TODO funciton for making a new console 
-	::FreeConsole();
-}
-
-void Window::SwapBuffers(){
-	::SwapBuffers((HDC)dc);
+	*/
 }
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_stopwatch
 Stopwatch
-start_stopwatch(){
+start_stopwatch(){DPZoneScoped;
 	LARGE_INTEGER current;
 	::QueryPerformanceCounter(&current);
 	return current.QuadPart;
 }
 
 f64
-peek_stopwatch(Stopwatch watch){
+peek_stopwatch(Stopwatch watch){DPZoneScoped;
 	LARGE_INTEGER current;
 	::QueryPerformanceCounter(&current);
 	return 1000.0 * ((f64)((s64)current.QuadPart - watch) / (f64)deshi__win32_perf_count_frequency);
@@ -890,7 +516,7 @@ peek_stopwatch(Stopwatch watch){
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_file
 b32
-deshi__file_exists(str8 caller_file, upt caller_line, str8 path){
+deshi__file_exists(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_exists() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return false;
@@ -912,7 +538,7 @@ deshi__file_exists(str8 caller_file, upt caller_line, str8 path){
 }
 
 void
-deshi__file_create(str8 caller_file, upt caller_line, str8 path){
+deshi__file_create(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_create() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return;
@@ -945,7 +571,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path){
 }
 
 void
-deshi__file_delete(str8 caller_file, upt caller_line, str8 path){
+deshi__file_delete(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return;
@@ -990,7 +616,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path){
 }
 
 void
-deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path){
+deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path){DPZoneScoped;
 	if(!old_path || *old_path.str == 0){
 		LogE("file","file_rename() was passed an empty `old_path` at ",caller_file,"(",caller_line,")");
 		return;
@@ -1027,7 +653,7 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 }
 
 File
-deshi__file_info(str8 caller_file, upt caller_line, str8 path){
+deshi__file_info(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_info() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return File{};
@@ -1083,7 +709,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path){
 }
 
 carray<File>
-deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
+deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){DPZoneScoped;
 	if(!directory || *directory.str == 0){
 		LogE("file","file_search_directory() was passed an empty `directory` at ",caller_file,"(",caller_line,")");
 		return carray<File>{};
@@ -1168,7 +794,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 }
 
 str8
-deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path){
+deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_path_absolute() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return str8{};
@@ -1197,7 +823,7 @@ deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path){
 }
 
 b32
-deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2){
+deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2){DPZoneScoped;
 	if(!path1 || *path1.str == 0){
 		LogE("file","file_path_equal() was passed an empty `path1` at ",caller_file,"(",caller_line,")");
 		return false;
@@ -1228,7 +854,7 @@ deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2
 }
 
 File*
-deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags, b32 ignore_nonexistence){
+deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags, b32 ignore_nonexistence){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_init() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return 0;
@@ -1373,7 +999,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 }
 
 void
-deshi__file_deinit(str8 caller_file, upt caller_line, File* file){
+deshi__file_deinit(str8 caller_file, upt caller_line, File* file){DPZoneScoped;
 	if(file == 0){
 		LogE("file","file_deinit() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 		return;
@@ -1393,7 +1019,7 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file){
 }
 
 void
-deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess flags){
+deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess flags){DPZoneScoped;
 	if(file == 0){
 		LogE("file","file_change_access() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 		return;
@@ -1434,12 +1060,12 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 }
 
 carray<File*>
-file_initted_files(){
+file_initted_files(){DPZoneScoped;
 	return carray<File*>{deshi__file_files.data, deshi__file_files.count};
 }
 
 str8
-deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator){
+deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_read_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return str8{};
@@ -1473,7 +1099,7 @@ deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator*
 }
 
 u64
-deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes){
+deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_write_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return 0;
@@ -1500,7 +1126,7 @@ deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* dat
 }
 
 u64
-deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes){
+deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes){DPZoneScoped;
 	if(!path || *path.str == 0){
 		LogE("file","file_append_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return 0;
@@ -1535,18 +1161,18 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_module
 void*
-platform_load_module(str8 module_path){
+platform_load_module(str8 module_path){DPZoneScoped;
 	wchar_t* wmodule_path = wchar_from_str8(module_path, 0, deshi_temp_allocator);
 	return ::LoadLibraryW(wmodule_path);
 }
 
 void
-platform_free_module(void* module){
+platform_free_module(void* module){DPZoneScoped;
 	::FreeLibrary((HMODULE)module);
 }
 
 platform_symbol
-platform_get_module_symbol(void* module, const char* symbol_name){
+platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
 	return (platform_symbol)::GetProcAddress((HMODULE)module, symbol_name);
 }
 
@@ -1555,7 +1181,7 @@ platform_get_module_symbol(void* module, const char* symbol_name){
 //// @win32_clipboard
 //!ref: Dear ImGui imgui.cpp@GetClipboardTextFn_DefaultImpl
 str8
-platform_get_clipboard(){
+platform_get_clipboard(){DPZoneScoped;
 	str8 result{};
 	
 	if(::OpenClipboard(NULL) == NULL){
@@ -1584,7 +1210,7 @@ platform_get_clipboard(){
 
 //!ref: Dear ImGui imgui.cpp@SetClipboardTextFn_DefaultImpl
 void
-platform_set_clipboard(str8 text){
+platform_set_clipboard(str8 text){DPZoneScoped;
 	if(::OpenClipboard(NULL) == NULL){
 		Win32LogLastError("OpenClipboard");
 		return;
@@ -1679,7 +1305,8 @@ unlock(){DPZoneScoped;
 }
 
 
-condition_variable::condition_variable(){DPZoneScoped;
+condition_variable::
+condition_variable(){DPZoneScoped;
 	//NOTE i have to use std mem here in the case that condvar is used before memory is initialized (eg. a condvar global var)
 	cvhandle = malloc(sizeof(CONDITION_VARIABLE));
 	cshandle = malloc(sizeof(CRITICAL_SECTION));
@@ -1687,7 +1314,8 @@ condition_variable::condition_variable(){DPZoneScoped;
 	::InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
-condition_variable::~condition_variable(){DPZoneScoped;
+condition_variable::
+~condition_variable(){DPZoneScoped;
 	free(cvhandle); free(cshandle);
 }
 
@@ -1766,7 +1394,8 @@ wait_for(u64 milliseconds){DPZoneScoped;
 // all this does is check for a job from ThreadManager's job_ring and if it finds one it runs it immediately
 // after running the job it continues looking for more jobs
 // if it can't find any jobs to run it just goes to sleep
-void deshi__thread_worker(Thread* me){DPZoneScoped;
+void
+deshi__thread_worker(Thread* me){DPZoneScoped;
 	ThreadManager* man = DeshThreadManager;
 	WorkerLog("spawned");
 	while(!me->close){
@@ -1800,44 +1429,477 @@ void deshi__thread_worker(Thread* me){DPZoneScoped;
 	DebugBreakpoint;
 }
 
-DWORD WINAPI deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
+DWORD WINAPI
+deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
 	deshi__thread_worker((Thread*)in);
 	return 0;
 }
 
-void ThreadManager::init(u32 max_jobs){
+void ThreadManager::
+init(u32 max_jobs){
 	AssertDS(DS_MEMORY, "Attempt to init ThreadManager without loading Memory first");
 	job_ring.init(max_jobs, deshi_allocator);
 }
 
-void ThreadManager::spawn_thread(){DPZoneScoped;
+void ThreadManager::
+spawn_thread(){DPZoneScoped;
 	Thread* t = (Thread*)memalloc(sizeof(Thread));
 	threads.add(t);
 	::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
 }
 
-void ThreadManager::close_all_threads(){
+void ThreadManager::
+close_all_threads(){
 	forI(threads.count) threads[i]->close = true;
 	wake_threads(0);
 	threads.clear();
 }
 
-void ThreadManager::add_job(ThreadJob job){
+void ThreadManager::
+add_job(ThreadJob job){
 	job_ring.add(job);
 }
 
-void ThreadManager::add_jobs(carray<ThreadJob> jobs){
+void ThreadManager::
+add_jobs(carray<ThreadJob> jobs){
 	forI(jobs.count) job_ring.add(jobs[i]);
 }
 
-void ThreadManager::cancel_all_jobs(){
+void ThreadManager::
+cancel_all_jobs(){
 	job_ring.clear();
 } 
 
-void ThreadManager::wake_threads(u32 count){
+void ThreadManager::
+wake_threads(u32 count){
 	if(!threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
 	else if(!count) idle.notify_all(); 
 	else{
 		forI(count) idle.notify_one();
 	}
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_window
+void Window::
+Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){DPZoneScoped;
+	DeshiStageInitStart(DS_WINDOW, DS_MEMORY, "Attempted to initialize Window module before initializing Memory module");
+	
+	//get console's handle
+	instance = ::GetModuleHandleW(NULL);
+	
+	//TODO load and set icon
+	//HICON icon = LoadImageA(NULL, "data/textures/deshi_icon.png", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_DEFAULTCOLOR);;
+	
+	wchar_t* wname = wchar_from_str8(_name, 0, deshi_temp_allocator);
+	
+	//// register window class ////
+	WNDCLASSW wc;
+	wc.        style = CS_OWNDC; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
+	wc.  lpfnWndProc = WndProc;
+	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
+	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
+	wc.    hInstance = (HINSTANCE)instance;
+	wc.        hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
+	wc.hbrBackground = NULL;
+	wc. lpszMenuName = NULL;
+	wc.lpszClassName = DESHI_WND_CLASSNAME_W;
+	if(::RegisterClassW(&wc) == NULL) Win32LogLastError("RegisterClassW", true); 
+	
+	//// create window ////
+	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+#if DESHI_OPENGL
+	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+#else
+	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
+#endif
+	if(handle == NULL) Win32LogLastError("CreateWindowW", true);
+	//set WndProc user data to be a pointer to this window
+	::SetWindowLongPtrW((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
+	dc = ::GetDC((HWND)handle);
+	
+	//// get initial input values ////
+	POINT mp = { 0 };
+	GetCursorPos(&mp);
+	DeshInput->realMouseX = mp.x - x;
+	DeshInput->realMouseY = mp.y - y;
+	DeshInput->capsLock   = (GetKeyState(VK_CAPITAL) & 0x8000);
+	DeshInput->numLock    = (GetKeyState(VK_NUMLOCK) & 0x8000);
+	DeshInput->scrollLock = (GetKeyState(VK_SCROLL ) & 0x8000);
+	
+	//// setup raw input ////
+	RAWINPUTDEVICE rid;
+	rid.usUsagePage = 0x01;
+	rid.    usUsage = 0x02;
+	rid.    dwFlags = 0; //set this to RIDEV_INPUTSINK to update mouse pos even when window isnt focused
+	rid. hwndTarget = NULL;
+	
+	if(::RegisterRawInputDevices(&rid, 1, sizeof(rid)) == NULL) Win32LogLastError("RegisterRawInputDevices");
+	
+	//// get monitor info ////
+	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
+	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
+	
+	//// setup default window pos/size ////
+	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
+		x = work_x + ((work_w -  width) / 2);
+		y = work_y + ((work_h - height) / 2);
+	}
+	
+	//// update window to requested properties ////
+	UpdateDisplayMode(displayMode);
+	//UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
+	//titlebarheight = 5;
+	UpdateDecorations(Decoration_SystemDecorations);
+	titlebarheight = 0;
+	::SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
+	name = str8_copy(_name, deshi_allocator); //!Leak
+	renderer_surface_index = 0; ///main win is always first surface
+	
+	DeshiStageInitEnd(DS_WINDOW);
+}
+
+//returns nullptr if the function fails to make the child;
+Window* Window::
+MakeChild(str8 name, s32 width, s32 height, s32 x, s32 y){DPZoneScoped;
+	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
+	if(child_count == max_child_windows){ LogE("window-win32", "Window failed to make a child window: max child windows reached."); return 0; }
+	Stopwatch t_s = start_stopwatch();
+	
+	//TODO make global window counter
+	
+	Window* child = (Window*)memalloc(sizeof(Window));
+	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
+	
+	child->instance = ::GetModuleHandleW(NULL);
+	
+	wchar_t* wname = wchar_from_str8(name, 0, deshi_temp_allocator);
+	
+	//make and register window class //TODO reuse above window class to not pollute atom table
+	WNDCLASSW wc;
+	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
+	wc.  lpfnWndProc = WndProc;
+	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
+	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
+	wc.    hInstance = (HINSTANCE)child->instance;
+	wc.        hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
+	wc.      hCursor = ::LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
+	wc.hbrBackground = NULL;
+	wc. lpszMenuName = NULL;
+	wc.lpszClassName = wname;
+	if(::RegisterClassW(&wc) == NULL){ 
+		LogE("window-win32", "Window failed to register WNDCLASS for child window");
+		Win32LogLastError("RegisterClassW"); 
+		memzfree(child);
+		return 0;
+	}
+	
+	//create window
+	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+	child->handle = ::CreateWindowW(wname, wname,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
+	if(child->handle == NULL){
+		LogE("window-win32", "Windows failed to create child window");
+		Win32LogLastError("CreateWindowW", true);
+		memzfree(child);
+		return 0;
+	}
+	//set WndProc user data to be a pointer to this window
+	::SetWindowLongPtrW((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
+	child->dc = ::GetDC((HWND)child->handle);
+	
+	//// get monitor info ////
+	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
+	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
+	
+	//// setup default window pos/size ////
+	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
+		x = work_x + ((work_w -  width) / 2);
+		y = work_y + ((work_h - height) / 2);
+	}
+	
+	children[child_count++] = child;
+	child->name = name;
+	child->UpdateDisplayMode(displayMode);
+	child->UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
+	child->titlebarheight = 5;
+	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
+	
+	LogS("deshi", "Finished child window initialization in ", peek_stopwatch(t_s), "ms");
+	return child;
+}
+
+void Window::
+Update(){DPZoneScoped;
+	Stopwatch update_stopwatch = start_stopwatch();
+	
+	resized = false;
+	
+	//iterate through all window messages 
+	MSG msg;
+	while(::PeekMessageW(&msg, (HWND)handle, 0, 0, PM_REMOVE)){
+		if(msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY){
+			closeWindow = true;
+		}else{
+			::TranslateMessage(&msg);
+			::DispatchMessageW(&msg);
+		}
+	}
+	
+	//update children (this should maybe be done by whoever creates it instead of the parent)
+	forI(child_count) children[i]->Update();
+	
+	if(decorations != Decoration_SystemDecorations) DrawDecorations(this);
+	hittest = HitTestNone;
+	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY /*+ titlebarheight*/);
+	
+	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
+}
+
+b32 Window::
+ShouldClose(){DPZoneScoped;
+	DPFrameMark;
+	return closeWindow;
+}
+
+void Window::
+Close(){DPZoneScoped;
+	closeWindow = true;
+}
+
+void Window::
+Cleanup(){DPZoneScoped;
+	::DestroyWindow((HWND)handle);
+}
+
+void Window::
+UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
+	switch (dm){
+		case DisplayMode_Windowed:{
+			if(displayMode != DisplayMode_Windowed){
+				HWND hwnd = (HWND)handle;
+				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
+				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
+				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				resized = true;
+			}
+			displayMode = dm;
+		}break;
+		case DisplayMode_Fullscreen:{
+			if(displayMode != DisplayMode_Fullscreen){
+				restoreX = x;
+				restoreY = y;
+				restoreW = width;
+				restoreH = height;
+				HWND hwnd = (HWND)handle;
+				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
+				MONITORINFO mi = { sizeof(MONITORINFO) };
+				WINDOWPLACEMENT wp = { 0 };
+				//TODO add a way to choose what monitor the window is fullscreened to
+				b32 failed = false;
+				if(!::GetWindowPlacement(hwnd, &wp)){ Win32LogLastError("GetWindowPlacement"); failed = true; }
+				if(!::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){ Win32LogLastError("GetMonitorInfo"); failed = true; }
+				
+				if(!failed){
+					::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
+					RECT mr = mi.rcMonitor;
+					::SetWindowPos(hwnd, HWND_TOP, mr.left, mr.top, mr.right - mr.left, mr.bottom - mr.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				}
+				resized = true;
+			}
+			displayMode = dm;
+		}break;
+		case DisplayMode_Borderless:{
+			if(displayMode != DisplayMode_Borderless){
+				HWND hwnd = (HWND)handle;
+				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
+				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
+				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+				resized = true;
+			}
+			displayMode = dm;
+		}break;
+	}
+}
+
+void Window::
+UpdateCursorMode(CursorMode mode){DPZoneScoped;
+	if(mode == this->cursorMode){return;}
+	cursorMode = mode;
+	
+	switch(mode){
+		case(CursorMode_Default):default:{
+			SetCursor(CursorType_Arrow); //TODO setup a restore cursor?
+			::ClipCursor(0);
+		}break;
+		case(CursorMode_FirstPerson):{
+			//set cursor to middle of screen
+			SetCursorPos(centerX, centerY /*+ titlebarheight*/);
+			
+			//hide cursor
+			SetCursor(CursorType_Hidden);
+			
+			//restrict cursor to client rect
+			RECT clip_rect;
+			::GetClientRect((HWND)handle, &clip_rect);
+			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.left); //NOTE transforms .top as well
+			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.right);
+			::ClipCursor(&clip_rect);
+		}break;
+		case(CursorMode_Hidden):{
+			SetCursor(CursorType_Hidden);
+			::ClipCursor(0);
+		}break;
+	}
+#if 0
+	Log("window", "Setting cursor mode to ", mode);
+#endif
+}
+
+void Window::
+UpdateDecorations(Decoration _decorations){DPZoneScoped;
+	decorations = _decorations;
+	HWND hwnd = (HWND)handle;
+	u32 style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
+	if(decorations == Decoration_SystemDecorations){
+		::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
+		titlebarheight = 0;
+		borderthickness = 0;
+	}else{
+		::SetWindowLongPtrA(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
+	}
+	::SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
+}
+
+void Window::
+SetCursorPos(f64 _x, f64 _y){DPZoneScoped;
+#if 0
+	Logf("window", "SetCursorPos old(%f,%f) new(%f,%f)", DeshInput->mouseX, DeshInput->mouseY, _x, _y);
+#endif
+	
+	POINT p = {LONG(_x), LONG(_y + 2.f*titlebarheight)};
+	::ClientToScreen((HWND)handle, &p);
+	::SetCursorPos(p.x, p.y);
+	
+	DeshInput->mouseX = _x;
+	DeshInput->mouseY = _y;
+}
+
+void Window::
+SetCursorPosScreen(f64 _x, f64 _y){
+#if 0
+	Logf("window", "SetCursorPosScreen old(%f,%f) new(%f,%f)", DeshInput->screenMouseX, DeshInput->screenMouseY, _x, _y);
+#endif
+	
+	::SetCursorPos(_x, _y);
+	DeshInput->screenMouseX = _x;
+	DeshInput->screenMouseY = _y;
+}
+
+void Window::
+SetCursor(CursorType cursor_type){
+	switch(cursor_type){
+		case CursorType_Arrow:{
+			::SetCursor(LoadCursor(0, IDC_ARROW));
+		}break;
+		case CursorType_HResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZEWE));
+		}break;
+		case CursorType_VResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZENS));
+		}break;
+		case CursorType_RightDiagResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZENESW));
+		}break;
+		case CursorType_LeftDiagResize:{
+			::SetCursor(LoadCursor(0, IDC_SIZENWSE));
+		}break;
+		case CursorType_Hand:{
+			::SetCursor(LoadCursor(0, IDC_HAND));
+		}break;
+		case CursorType_IBeam:{
+			::SetCursor(LoadCursor(0, IDC_IBEAM));
+		}break;
+		case CursorType_Hidden:{
+			::SetCursor(0);
+		}break;
+		default:{
+			LogE("window","Unknown cursor type: ", cursor_type);
+			::SetCursor(LoadCursor(0, IDC_ARROW));
+		}break;
+	}
+#if 0
+	Log("window", "Setting cursor type to ", cursor_type);
+#endif
+}
+
+void Window::
+UpdateRawInput(b32 rawInput){DPZoneScoped;
+	WarnFuncNotImplemented("");
+}
+
+void Window::
+UpdateResizable(b32 resizable){DPZoneScoped;
+	WarnFuncNotImplemented("");
+}
+
+void Window::
+GetScreenSize(s32& _width, s32& _height){DPZoneScoped;
+	_width = screenWidth; _height = screenHeight;
+}
+
+void Window::
+GetWindowSize(s32& _width, s32& _height){DPZoneScoped;
+	_width = width; _height = height;	
+}
+
+void Window::
+GetClientSize(s32& _width, s32& _height){DPZoneScoped;
+	_width = cwidth; _height = cheight;
+}
+
+vec2 Window::
+GetClientAreaPosition(){DPZoneScoped;
+	return vec2(0, titlebarheight);
+}
+
+vec2 Window::
+GetClientAreaDimensions(){DPZoneScoped;
+	return vec2(width, height - titlebarheight);
+}
+
+void Window::
+UpdateTitle(str8 title){DPZoneScoped;
+	wchar_t* wtitle = wchar_from_str8(title, 0, deshi_temp_allocator);
+	::SetWindowTextW((HWND)handle, wtitle);
+}
+
+void Window::
+ShowWindow(u32 child){DPZoneScoped;
+	if(child != npos){
+		::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL);
+	}else{
+		::ShowWindow((HWND)handle, SW_SHOWNORMAL);
+	}
+}
+
+void Window::
+HideWindow(u32 child){DPZoneScoped;
+	if(child != npos){
+		::ShowWindow((HWND)children[child]->handle, SW_HIDE);
+	}else{
+		::ShowWindow((HWND)handle, SW_HIDE);
+	}
+}
+
+void Window::
+CloseConsole(){DPZoneScoped;
+	//TODO funciton for making a new console 
+	::FreeConsole();
+}
+
+void Window::
+SwapBuffers(){
+	::SwapBuffers((HDC)dc);
 }

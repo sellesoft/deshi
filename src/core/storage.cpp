@@ -554,127 +554,127 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 	pair<u32,Material*> result(0, NullMaterial());
 	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
 	
-		str8_builder builder;
-		str8_builder_init(&builder, str8_lit("data/models/"), deshi_temp_allocator);
-		str8_builder_append(&builder, filename);
-		
-		//append extension if not provided
-		str8 front = str8_eat_until_last(filename, '.');
-		if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".mat"));
-		
-		//check if material is already loaded
-		forI(materials.count){
+	str8_builder builder;
+	str8_builder_init(&builder, str8_lit("data/models/"), deshi_temp_allocator);
+	str8_builder_append(&builder, filename);
+	
+	//append extension if not provided
+	str8 front = str8_eat_until_last(filename, '.');
+	if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".mat"));
+	
+	//check if material is already loaded
+	forI(materials.count){
 		if(strncmp(materials[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
 			return {(u32)i, materials[i]};
-			}
 		}
+	}
+	
+	//load .mat file
+	File* file = file_init(str8_builder_peek(&builder), FileAccess_Read);
+	if(!file) return result;
+	defer{ file_deinit(file); };
+	
+	//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
+	persist u8 line_buffer[256];
+	persist Allocator load_allocator{
+		[](upt bytes){
+			if(bytes > 256){
+				return memory_talloc(bytes);
+			}else{
+				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+				return (void*)line_buffer;
+			}
+		},
+		Allocator_ChangeMemory_Noop,
+		Allocator_ChangeMemory_Noop,
+		Allocator_ReleaseMemory_Noop,
+		Allocator_ResizeMemory_Noop
+	};
+	
+	//parse .mat file
+	str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
+	Shader mat_shader = 0;
+	MaterialFlags mat_flags = 0;
+	array<str8> mat_textures(deshi_temp_allocator);
+	enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
+	
+	u32 line_number = 0;
+	while(file->cursor < file->bytes){
+		line_number += 1;
 		
-		//load .mat file
-		File* file = file_init(str8_builder_peek(&builder), FileAccess_Read);
-		if(!file) return result;
-		defer{ file_deinit(file); };
+		//next line
+		str8 line = file_read_line_alloc(file, &load_allocator);
+		if(!line) continue;
 		
-		//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
-		persist u8 line_buffer[256];
-		persist Allocator load_allocator{
-			[](upt bytes){
-				if(bytes > 256){
-					return memory_talloc(bytes);
-				}else{
-					line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
-					return (void*)line_buffer;
-				}
-			},
-			Allocator_ChangeMemory_Noop,
-			Allocator_ChangeMemory_Noop,
-			Allocator_ReleaseMemory_Noop,
-			Allocator_ResizeMemory_Noop
-		};
+		//skip leading whitespace
+		str8_advance_while(&line, ' ');
+		if(!line) continue;
 		
-		//parse .mat file
-		str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
-		Shader mat_shader = 0;
-		MaterialFlags mat_flags = 0;
-		array<str8> mat_textures(deshi_temp_allocator);
-		enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
-		
-		u32 line_number = 0;
-		while(file->cursor < file->bytes){
-			line_number += 1;
-			
-			//next line
-			str8 line = file_read_line_alloc(file, &load_allocator);
-			if(!line) continue;
-			
-			//skip leading whitespace
-			str8_advance_while(&line, ' ');
-			if(!line) continue;
-			
 		//early out if comment is first character
 		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-			if(decoded.codepoint == '#') continue;
-			
-			//check for header
+		if(decoded.codepoint == '#') continue;
+		
+		//check for header
 		if(decoded.codepoint == '>'){
-				if     (str8_begins_with(line, str8_lit(">material"))) header = HEADER_MATERIAL;
-				else if(str8_begins_with(line, str8_lit(">textures"))) header = HEADER_TEXTURES;
-				else{ header = HEADER_INVALID; LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header: ",line); };
+			if     (str8_begins_with(line, str8_lit(">material"))) header = HEADER_MATERIAL;
+			else if(str8_begins_with(line, str8_lit(">textures"))) header = HEADER_TEXTURES;
+			else{ header = HEADER_INVALID; LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header: ",line); };
+			continue;
+		}
+		
+		//early out invalid header
+		if(header == HEADER_INVALID){
+			LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header; skipping line");
+			continue;
+		}
+		
+		if(header == HEADER_MATERIAL){
+			//parse key
+			str8 key = str8_eat_until(line, ' ');
+			str8_increment(&line, key.count);
+			
+			//skip separating whitespace
+			str8_advance_while(&line, ' ');
+			if(!line){
+				LogE("config","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			
-			//early out invalid header
-			if(header == HEADER_INVALID){
-				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header; skipping line");
-				continue;
-			}
-			
-			if(header == HEADER_MATERIAL){
-				//parse key
-				str8 key = str8_eat_until(line, ' ');
-				str8_increment(&line, key.count);
-				
-				//skip separating whitespace
-				str8_advance_while(&line, ' ');
-				if(!line){
-					LogE("config","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
-					continue;
-				}
-				
 			//early out if comment is first value character
 			decoded = decoded_codepoint_from_utf8(line.str, 4);
-				if(decoded.codepoint == '#'){
-					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
+			if(decoded.codepoint == '#'){
+				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			
+			if      (str8_equal_lazy(key, str8_lit("name"))){
+				if(decoded.codepoint != '\"'){
+					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Names must be wrapped in double quotes.");
 					continue;
 				}
-				
-				if      (str8_equal_lazy(key, str8_lit("name"))){
-					if(decoded.codepoint != '\"'){
-						LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Names must be wrapped in double quotes.");
-						continue;
+				mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			}else if(str8_equal_lazy(key, str8_lit("flags"))){
+				mat_flags = (ModelFlags)atoi((const char*)line.str);
+			}else if(str8_equal_lazy(key, str8_lit("shader"))){
+				forI(Shader_COUNT){
+					if(str8_equal_lazy(line, ShaderStrings[i])){
+						mat_shader = i;
+						break;
 					}
-					mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				}else if(str8_equal_lazy(key, str8_lit("flags"))){
-					mat_flags = (ModelFlags)atoi((const char*)line.str);
-				}else if(str8_equal_lazy(key, str8_lit("shader"))){
-					forI(Shader_COUNT){
-						if(str8_equal_lazy(line, ShaderStrings[i])){
-							mat_shader = i;
-							break;
-						}
-					}
-				}else{
-					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
-					continue;
 				}
 			}else{
-				if(decoded.codepoint != '\"'){
-					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Textures must be wrapped in double quotes.");
-					continue;
-				}
-				
-				mat_textures.add(str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator));
+				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
+				continue;
 			}
+		}else{
+			if(decoded.codepoint != '\"'){
+				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Textures must be wrapped in double quotes.");
+				continue;
+			}
+			
+			mat_textures.add(str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator));
 		}
+	}
 	
 	Material* material = AllocateMaterial(mat_textures.count);
 	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
@@ -694,11 +694,11 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 void Storage::
 SaveMaterial(Material* material){DPZoneScoped;
 	string mat_text = ToString(">material"
-									   "\nname   \"",material->name,"\""
-									   "\nshader ",ShaderStrings[material->shader],
-									   "\nflags  ",material->flags,
-									   "\n"
-									   "\n>textures");
+							   "\nname   \"",material->name,"\""
+							   "\nshader ",ShaderStrings[material->shader],
+							   "\nflags  ",material->flags,
+							   "\n"
+							   "\n>textures");
 	forI(material->textures.count) mat_text += ToString("\n\"",textures[material->textures[i]]->name,"\"");
 	mat_text += "\n";
 	
@@ -1584,16 +1584,16 @@ void Storage::
 SaveModel(Model* model){DPZoneScoped;
 	SaveMesh(model->mesh);
 	string model_save = ToString(">model"
-										 "\nname     \"",model->name,"\""
-										 "\nflags    ", model->flags,
-										 "\nmesh     \"", model->mesh->name,"\""
-										 "\narmature ", 0,
-										 "\n"
-										 "\n>batches");
+								 "\nname     \"",model->name,"\""
+								 "\nflags    ", model->flags,
+								 "\nmesh     \"", model->mesh->name,"\""
+								 "\narmature ", 0,
+								 "\n"
+								 "\n>batches");
 	forI(model->batches.count){
 		SaveMaterial(materials[model->batches[i].material]);
 		model_save += ToString("\n\"",materials[model->batches[i].material]->name,"\" ",
-									  model->batches[i].indexOffset," ",model->batches[i].indexCount);
+							   model->batches[i].indexOffset," ",model->batches[i].indexCount);
 	}
 	model_save += "\n";
 	
@@ -1799,7 +1799,7 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 			pixels[1] = 255;
 			pixels[font->max_width] = 255;
 			pixels[font->max_width + 1] = 255;
-			font->uvOffset = 2.f / (font->max_height * font->count + 2);
+			font->uv_yoffset = 2.f / (font->max_height * font->count + 2);
 		}else{
 			continue;
 		}
@@ -1824,8 +1824,7 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
-	//TODO look into why if we load the same font w a different size it gets weird
-	//(i took that check out of here for now)
+	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
 	forI(fonts.count){
 		if(strncmp(fonts[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
 			return pair<u32,Font*>(i,fonts[i]);
@@ -1836,17 +1835,7 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
 	if(!contents) return result;
 	
-	Font* font = AllocateFont(FontType_TTF); 
-	
-	int x0, y0, x1, y1;
-	
-	stbtt_fontinfo info;
-	stbtt_InitFont(&info, contents.str, 0);
-	stbtt_GetScaledFontVMetrics(contents.str, 0, (f32)size, &font->ascent, &font->decent, &font->line_gap);
-	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
-	
-	//current ranges:
-	// Control             0 - 31   ~  31 chars
+	//Codepoint Ranges to Load:
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
 	// Cyrillic         1024 - 1279 ~ 256 chars
@@ -1854,31 +1843,18 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	// Currency Symbols 8352 - 8384 ~  32 chars
 	// Arrows           8592 - 8703 ~ 111 chars
 	// Math Symbols     8704 - 8959 ~ 255 chars
-	// 
-	// and maybe more to come eventually.
-	// 
-	//TODO(sushi) maybe implement taking in ranges 
-	u32 num_ranges = 8;
+	// ...and maybe more to come in the future.
+	
+	//TODO(sushi) maybe implement taking in ranges
+	u32 num_ranges = 7;
 	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(num_ranges*sizeof(*ranges));
-	
-	ranges[0].num_chars = 31;   ranges[0].first_unicode_codepoint_in_range = 0;
-	ranges[1].num_chars = 94;   ranges[1].first_unicode_codepoint_in_range = 32;
-	ranges[2].num_chars = 143;  ranges[2].first_unicode_codepoint_in_range = 880;
-	ranges[3].num_chars = 255;  ranges[3].first_unicode_codepoint_in_range = 1024;
-	ranges[4].num_chars = 44;   ranges[4].first_unicode_codepoint_in_range = 8304;
-	ranges[5].num_chars = 32;   ranges[5].first_unicode_codepoint_in_range = 8352;
-	ranges[6].num_chars = 111;  ranges[6].first_unicode_codepoint_in_range = 8592;
-	ranges[7].num_chars = 255;  ranges[7].first_unicode_codepoint_in_range = 8704;
-	
-	ranges[0].font_size = (f32)size; 
-	ranges[1].font_size = (f32)size; 
-	ranges[2].font_size = (f32)size; 
-	ranges[3].font_size = (f32)size; 
-	ranges[4].font_size = (f32)size; 
-	ranges[5].font_size = (f32)size; 
-	ranges[6].font_size = (f32)size;
-	ranges[7].font_size = (f32)size;
-	
+	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
+	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
+	ranges[2].num_chars = 255;  ranges[2].first_unicode_codepoint_in_range = 1024;
+	ranges[3].num_chars = 44;   ranges[3].first_unicode_codepoint_in_range = 8304;
+	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
+	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
+	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
 	ranges[2].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[2].num_chars*sizeof(stbtt_packedchar));
@@ -1886,56 +1862,111 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
 	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
-	ranges[7].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[7].num_chars*sizeof(stbtt_packedchar));
+	ranges[0].font_size = (f32)size;
+	ranges[1].font_size = (f32)size;
+	ranges[2].font_size = (f32)size;
+	ranges[3].font_size = (f32)size;
+	ranges[4].font_size = (f32)size;
+	ranges[5].font_size = (f32)size;
+	ranges[6].font_size = (f32)size;
 	
-	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(*pc));
-	
-	font->num_ranges = num_ranges;
-	font->ttf_pack_ranges = (pack_range*)ranges;
-	font->ttf_pack_context = pc;
-	
-	u32 widthmax = x1 - x0, heightmax = y1 - y0;
-	font->aspect_ratio = (f32)heightmax / widthmax;
-	
+	/*
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together
 	//i believe this makes it into the smallest square it could be w/o knowing how stbtt packs them together
 	//also just doesnt really work well with non-monospaced fonts
 	//TODO figure out a better way to do this.
-	u32 tsy = (u32)ceil(size * sqrtf(679) / font->aspect_ratio);
-	u32 tsx = (u32)ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
+	int x0, y0, x1, y1;
+	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
+	f32 widthmax = x1 - x0, heightmax = y1 - y0;
+	f32 aspect_ratio = (f32)heightmax / (f32)widthmax;
+	u32 tsy = (u32)roundUpToPow2(ceil(size * sqrtf(679) / aspect_ratio));
+	u32 tsx = (u32)roundUpToPow2(ceil(widthmax * size /  heightmax * sqrtf(679)) + 2); //add two rows to make room for 4 white pixels to optimize uicmds
+	if(tsy > tsx) tsx = tsy;
+	if(tsx > tsy) tsy = tsx;
+	*/
 	
-	font->max_height = size;
-	font->max_width = u32(f32(widthmax) / f32(heightmax) * size);
-	u32 count = 0;
-	forI(num_ranges) font->count += ranges[i].num_chars;
-	font->count = 679;
-	font->ttf_size[0] = tsx;
-	font->ttf_size[1] = tsy; 
-	cpystr(font->name,(const char*)filename.str,64);
+	//init the font info
+	int success;
+	stbtt_fontinfo info;
+	success = stbtt_InitFont(&info, contents.str, 0); Assert(success);
 	
-	u8* pixels = (u8*)memory_talloc((tsx * tsy)*sizeof(u8));
-	pixels[0]     = 255;
-	pixels[1]     = 255;
-	pixels[tsx]   = 255;
-	pixels[tsx+1] = 255;
+	//determine surface area of loadable codepoints  !ref:imgui_draw.cpp@ImFontAtlasBuildWithStbTruetype()
+	//TODO(delle) maybe use this info to index into the final texture for rendering
+	f32 glyph_scale = stbtt_ScaleForPixelHeight(&info, (f32)size);
+	u32 glyph_count = 0;
+	int glyph_padding = 1;
+	int total_surface = 0;
+	forX(range, num_ranges){
+		for(u32 codepoint = ranges[range].first_unicode_codepoint_in_range;
+			codepoint < ranges[range].first_unicode_codepoint_in_range + ranges[range].num_chars;
+			++codepoint)
+		{
+			int glyph_index_in_font = stbtt_FindGlyphIndex(&info, codepoint);
+			if(glyph_index_in_font == 0) continue; //skip any glyphs not in the font
+			
+			int x0, y0, x1, y1;
+			stbtt_GetGlyphBitmapBoxSubpixel(&info, glyph_index_in_font, glyph_scale*1, glyph_scale*1, 0, 0, &x0, &y0, &x1, &y1);
+			total_surface += ((x1 - x0) + glyph_padding) * ((y1 - y0) + glyph_padding);
+		}
+	}
 	
-	//begin a font pack
-	int success = stbtt_PackBegin(pc, pixels + 2 * tsx, tsx, tsy - 4, 0, 1, nullptr);
-	Assert(success);
+	//determine texture size
+	//NOTE(delle) texture width is capped due to size limitations on width for GPUs
+	int surface_sqrt = (int)sqrt((f32)total_surface) + 1;
+	u32 texture_size_x = (surface_sqrt >= 4096 * 0.7f) ? 4096 : (surface_sqrt >= 2048 * 0.7f) ? 2048 : (surface_sqrt >= 1024 * 0.7f) ? 1024 : 512;
+	u32 texture_size_y = texture_size_x; //TODO(delle) find accurate height based on packing
+	Assert(surface_sqrt <= 4096, "we don't yet handle when the height should be greater than width, see ImGui reference for solution");
+	
+	//place 4 white pixels in the top-left corner for other UI usage without having to swap textures
+	u8* pixels = (u8*)memory_talloc((texture_size_x * texture_size_y)*sizeof(u8));
+	pixels[0] = 255; pixels[1] = 255; pixels[texture_size_x] = 255; pixels[texture_size_x+1] = 255;
+	
+	//perform the font packing
+	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(stbtt_pack_context));
+	success = stbtt_PackBegin(pc, pixels + 2*texture_size_x, texture_size_x, texture_size_y-2, 0, glyph_padding, 0); Assert(success);
 	stbtt_PackSetSkipMissingCodepoints(pc, true);
-	
-	//pack our ranges
-	stbtt_PackFontRanges(pc, contents.str, 0, ranges, 6);
-	
+	success = stbtt_PackFontRanges(pc, contents.str, 0, ranges, num_ranges); //NOTE(delle) this will return 0 if there are any missing codepoints
 	stbtt_PackEnd(pc);
 	
-	Texture* texture = CreateTextureFromMemory(pixels, filename, tsx, tsy,
+	/*
+	//normalize and offset the UVs
+	forX(range, num_ranges){
+		for(u32 codepoint = ranges[range].first_unicode_codepoint_in_range;
+			codepoint < ranges[range].first_unicode_codepoint_in_range + ranges[range].num_chars;
+			++codepoint)
+		{
+			
+		}
+	}
+	*/
+	
+	//get extra font rendering info
+	f32 ascent, descent, lineGap;
+	stbtt_GetScaledFontVMetrics(contents.str, 0, (f32)size, &ascent, &descent, &lineGap);
+	int x0, y0, x1, y1;
+	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
+	int max_width = x1 - x0, max_height = y1 - y0;
+	f32 aspect_ratio = (f32)max_height / (f32)max_width;
+	
+	Texture* texture = CreateTextureFromMemory(pixels, filename, texture_size_x, texture_size_y,
 											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
 											   TextureAddressMode_ClampToWhite, false).second;
-	//DeleteTexture(texture);
 	
-	font->uvOffset = 2.f / tsy;
-	font->tex = texture;
+	Font* font = AllocateFont(FontType_TTF);
+	cpystr(font->name,(const char*)filename.str,64);
+	font->max_width    = (u32)((f32)max_width / (f32)max_height * (f32)size);
+	font->max_height   = size;
+	font->count        = glyph_count;
+	font->ttf_size[0]  = texture_size_x;
+	font->ttf_size[1]  = texture_size_y;
+	font->num_ranges   = num_ranges;
+	font->uv_yoffset   = 2.0f / (f32)texture_size_y;
+	font->ascent       = ascent;
+	font->descent      = descent;
+	font->line_gap     = lineGap;
+	font->aspect_ratio = aspect_ratio;
+	font->tex          = texture;
+	font->ranges       = (pack_range*)ranges;
 	
 	fonts.add(font);
 	result.first  = font->idx;
@@ -1949,19 +1980,19 @@ CreateFontFromFile(str8 filename, u32 height){DPZoneScoped;
 		return CreateFontFromFileBDF(filename);
 	}
 	
-	if(str8_ends_with(filename, str8_lit(".ttf"))){
+	if(str8_ends_with(filename, str8_lit(".ttf")) || str8_ends_with(filename, str8_lit(".otf"))){
 		return CreateFontFromFileTTF(filename, height);
 	}
 	
-	LogE("storage","Failed to load font '",filename,"'. We currently only support loading TTF/OTF and BDF fonts.");
+	LogE("storage","Failed to load font '",filename,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
 	return {};
 }
 
 void DrawMeshesWindow() {DPZoneScoped; 
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUIMeshes", vec2(MAX_F32, MAX_F32));
-	Text("TODO");
+	BeginChild(str8_lit("StorageBrowserUIMeshes"), vec2(MAX_F32, MAX_F32));
+	Text(str8_lit("TODO"));
 	EndChild();
 }
 
@@ -1991,19 +2022,19 @@ void DrawTexturesWindow() {DPZoneScoped;
 	
 	
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUI_Textures", vec2::ZERO, UIWindowFlags_NoBorder);
+	BeginChild(str8_lit("StorageBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
 	
-	BeginRow("StorageBrowserUI_Row1",2, 0, UIRowFlags_AutoSize);
+	BeginRow(str8_lit("StorageBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 	
-	Text("Textures Loaded: "); Text(toStr(st->textures.count).str);
-	Text("Memory Occupied: "); Text(toStr(texture_bytes / bytesDivisor(texture_bytes), " ", bytesUnit(texture_bytes), "b").str);
+	TextF(str8_lit("Textures Loaded: %d"),       st->textures.count);
+	TextF(str8_lit("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
 	
 	EndRow();
 	
-	if (BeginCombo("StorageBrowserUI_Texture_Selection_Combo", (selected ? selected->name : "select texture"))) {
+	if (BeginCombo(str8_lit("StorageBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : str8_lit("select texture")))) {
 		for (Texture* t : st->textures) {
-			if (Selectable(t->name, t == selected)) {
+			if (Selectable(str8_from_cstr(t->name), t == selected)) {
 				selected = t;
 				new_selected = 1;
 			}
@@ -2013,15 +2044,15 @@ void DrawTexturesWindow() {DPZoneScoped;
 	
 	Separator(9);
 	
-	if (BeginHeader("Stats")) {
-		BeginRow("StorageBrowserUI_Row2", 3, 0, UIRowFlags_AutoSize);
+	if (BeginHeader(str8_lit("Stats"))) {
+		BeginRow(str8_lit("StorageBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
 		
-		Text("Largest Texture: "); Text(largest->name); 
-		if (Button("select")) { selected = largest; new_selected = 1;}
+		TextF(str8_lit("Largest Texture: %s"), largest->name);
+		if (Button(str8_lit("select"))) { selected = largest; new_selected = 1;}
 		
-		Text("Smallest Texture: "); Text(smallest->name);
-		if (Button("select")) { selected = smallest; new_selected = 1; }
+		TextF(str8_lit("Smallest Texture: %s"), smallest->name);
+		if (Button(str8_lit("select"))) { selected = smallest; new_selected = 1; }
 		
 		EndRow();
 		
@@ -2031,28 +2062,28 @@ void DrawTexturesWindow() {DPZoneScoped;
 	Separator(9);
 	
 	if (selected) {
-		BeginRow("StorageBrowserUI_Texture_Selected", 2, 0, UIRowFlags_AutoSize);
+		BeginRow(str8_lit("StorageBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 		
 		u32 texbytes = selected->width * selected->height * u8size;
 		
-		Text("Name:");         Text(selected->name);
-		Text("Index: ");       Text(toStr(selected->idx).str);
-		Text("Width: ");       Text(toStr(selected->width).str);
-		Text("Height: ");      Text(toStr(selected->height).str);
-		Text("Depth: ");       Text(toStr(selected->depth).str);
-		Text("MipMaps: ");     Text(toStr(selected->mipmaps).str);
-		Text("Format: ");      Text(ImageFormatStrings[selected->format - 1]);
-		Text("Type: ");        Text(TextureTypeStrings[selected->type]);
-		Text("Filter: ");      Text(TextureFilterStrings[selected->filter]);
-		Text("UV Mode: ");     Text(TextureAddressModeStrings[selected->uvMode]);
-		Text("Memory Used: "); Text(toStr(texbytes / bytesDivisor(texbytes), " ", bytesUnit(texbytes), "b").str);
+		TextF(str8_lit("Name: %s"), selected->name);
+		TextF(str8_lit("Index: %d"), selected->idx);
+		TextF(str8_lit("Width: %d"), selected->width);
+		TextF(str8_lit("Height: %d"), selected->height);
+		TextF(str8_lit("Depth: %d"), selected->depth);
+		TextF(str8_lit("MipMaps: %d"), selected->mipmaps);
+		TextF(str8_lit("Format: %s"), ImageFormatStrings[selected->format - 1].str);
+		TextF(str8_lit("Type: %s"), TextureTypeStrings[selected->type].str);
+		TextF(str8_lit("Filter: %s"), TextureFilterStrings[selected->filter].str);
+		TextF(str8_lit("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
+		TextF(str8_lit("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
 		
 		EndRow();
 		PushColor(UIStyleCol_WindowBg, 0x073030ff);
 		
 		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-		BeginChild("StorageBrowserUI_Texture_ImageInspector", vec2::ZERO, UIWindowFlags_NoInteract);
+		BeginChild(str8_lit("StorageBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
 		persist f32  zoom = 300;
 		persist vec2 mpl;
 		persist vec2 imagepos;
@@ -2061,10 +2092,10 @@ void DrawTexturesWindow() {DPZoneScoped;
 		
 		vec2 mp = input_mouse_position();
 		
-		if (Button("Flip x")) 
+		if (Button(str8_lit("Flip x"))) 
 			ToggleFlag(flags, UIImageFlags_FlipX);
 		SameLine();
-		if (Button("Flip y")) 
+		if (Button(str8_lit("Flip y"))) 
 			ToggleFlag(flags, UIImageFlags_FlipY);
 		
 		if (new_selected) {
@@ -2076,7 +2107,8 @@ void DrawTexturesWindow() {DPZoneScoped;
 			imagepos = vec2::ZERO;
 		}
 		
-		Text(toStr(zoom).str);
+		string z = toStr(zoom);
+		Text(str8{(u8*)z.str, (s64)z.count});
 		
 		if (IsWinHovered()) {
 			SetPreventInputs();
@@ -2116,18 +2148,19 @@ void DrawMaterialsWindow(){DPZoneScoped;
 	
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUI_Materials", vec2::ZERO, UIWindowFlags_NoBorder);
+	BeginChild(str8_lit("StorageBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
 	
 	Separator(5);
 	
 	SetNextWindowSize(vec2(MAX_F32, 200));
-	BeginChild("StorageBrowserUI_Materials_List", vec2::ZERO, UIWindowFlags_NoInteract); {
-		BeginRow("StorageBrowserUI_Materials_List", 2, 0, UIRowFlags_AutoSize);
+	BeginChild(str8_lit("StorageBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
+		BeginRow(str8_lit("StorageBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
 		forI(st->materials.count) {
-			Text(toStr(i, "  ").str);
-			Text(st->materials[i]->name);
+			string s = toStr(i, "  ");
+			Text(str8{(u8*)s.str, (s64)s.count});
+			Text(str8_from_cstr(st->materials[i]->name));
 		}
 		
 		EndRow();
@@ -2142,16 +2175,16 @@ void DrawMaterialsWindow(){DPZoneScoped;
 void DrawModelsWindow(){DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUIModels", vec2(MAX_F32, MAX_F32));
-	Text("TODO");
+	BeginChild(str8_lit("StorageBrowserUIModels"), vec2(MAX_F32, MAX_F32));
+	Text(str8_lit("TODO"));
 	EndChild();
 }
 
 void DrawFontsWindow(){DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild("StorageBrowserUIFonts", vec2(MAX_F32, MAX_F32));
-	Text("TODO");
+	BeginChild(str8_lit("StorageBrowserUIFonts"), vec2(MAX_F32, MAX_F32));
+	Text(str8_lit("TODO"));
 	EndChild();
 }
 
@@ -2161,10 +2194,10 @@ StorageBrowserUI() {DPZoneScoped;
 	using namespace UI;
 	PushColor(UIStyleCol_Border, Color_Grey);
 	PushColor(UIStyleCol_Separator, Color_Grey);
-	Begin("StorageBrowserUI", vec2::ONE * 200, vec2(400, 600));
+	Begin(str8_lit("StorageBrowserUI"), vec2::ONE * 200, vec2(400, 600));
 	
 	
-	BeginTabBar("StorageBrowserUITabBar", UITabBarFlags_NoIndent);
+	BeginTabBar(str8_lit("StorageBrowserUITabBar"), UITabBarFlags_NoIndent);
 	Separator(9);
 	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
 	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
@@ -2175,11 +2208,11 @@ StorageBrowserUI() {DPZoneScoped;
 	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
 	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
 	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
-	if(BeginTab("Meshes"))   {DrawMeshesWindow();    EndTab();}
-	if(BeginTab("Textures")) {DrawTexturesWindow();  EndTab();}
-	if(BeginTab("Materials")){DrawMaterialsWindow(); EndTab();}
-	if(BeginTab("Models"))   {DrawModelsWindow();    EndTab();}
-	if(BeginTab("Fonts"))    {DrawFontsWindow();     EndTab();}
+	if(BeginTab(str8_lit("Meshes")))   {DrawMeshesWindow();    EndTab();}
+	if(BeginTab(str8_lit("Textures"))) {DrawTexturesWindow();  EndTab();}
+	if(BeginTab(str8_lit("Materials"))){DrawMaterialsWindow(); EndTab();}
+	if(BeginTab(str8_lit("Models")))   {DrawModelsWindow();    EndTab();}
+	if(BeginTab(str8_lit("Fonts")))    {DrawFontsWindow();     EndTab();}
 	EndTabBar();
 	
 	End();

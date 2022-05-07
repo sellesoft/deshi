@@ -37,7 +37,7 @@ struct AllocInfo{
 	u64 deletion_frame;
 	
 	//user defined
-	cstring name;
+	str8 name;
 	Type type;
 };
 

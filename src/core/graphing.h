@@ -93,8 +93,8 @@ struct Graph{
     b32 xShowAxis = true;
     b32 yShowAxis = true;
     //labels per axis
-    cstring xAxisLabel;
-    cstring yAxisLabel;
+     str8 xAxisLabel;
+    str8 yAxisLabel;
     //colors per axis
     //bulk set using set_axes_colors()
     color xAxisColor=Color_White;
@@ -172,9 +172,9 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
 
 
     u32 text_count = 0;
-    auto debug_text = [&](string& out){
+    auto debug_text = [&](str8 out){
         UIDrawCmd dc;
-        CustomItem_DCMakeText(dc, {out.str, out.count}, vec2(0,text_count*13), Color_White, vec2::ONE);
+        CustomItem_DCMakeText(dc, out, vec2(0,text_count*13), Color_White, vec2::ONE);
         CustomItem_AddDrawCmd(item, dc);
         text_count++;
     };
@@ -280,10 +280,10 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                 if(g->xShowMajorCoords){
                     //TODO find a way around allocating a string
                     string    text = to_string(edgeinc);
-                    vec2g textsize = CalcTextSize(text);
+                    vec2g textsize = CalcTextSize(str8{(u8*)text.str, (s64)text.count});
                     vec2g      pos = vec2g(xloc-textsize.x/2, dimensions.y-itemspaceorigin.y-textsize.y-1);
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                    CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
+                    CustomItem_DCMakeText(drawCmd, str8{(u8*)text.str,(s64)text.count}, pos, textcol, vec2g::ONE); 
                 }
                 edgeinc += inc;
             }
@@ -303,10 +303,10 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                 if(g->yShowMajorCoords){
                     //TODO find a way around allocating a string
                     string    text = to_string(edgeinc);
-                    vec2g textsize = CalcTextSize(text);
+                    vec2g textsize = CalcTextSize(str8{(u8*)text.str,(s64)text.count});
                     vec2g      pos = vec2g(itemspaceorigin.x-textsize.x-1, yloc-textsize.y/2);
                     CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                    CustomItem_DCMakeText(drawCmd, {text.str,text.count}, pos, textcol, vec2g::ONE); 
+                    CustomItem_DCMakeText(drawCmd, str8{(u8*)text.str,(s64)text.count}, pos, textcol, vec2g::ONE); 
                 }
                 edgeinc += inc;
             }

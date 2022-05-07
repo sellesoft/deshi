@@ -1144,15 +1144,15 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				f32 dy = 1.f / (f32)font->count;
 				
 				f32 idx    = (f32)(decoded.codepoint - 32);
-				f32 topoff = idx * dy;
+				f32 topoff = (idx * dy) + font->uv_yoffset;
 				f32 botoff = topoff + dy;
 				
 				ip[0] = renderTwodVertexCount; ip[1] = renderTwodVertexCount + 1; ip[2] = renderTwodVertexCount + 2;
 				ip[3] = renderTwodVertexCount; ip[4] = renderTwodVertexCount + 2; ip[5] = renderTwodVertexCount + 3;
-				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff + font->uvOffset }; vp[0].color = color;
-				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff + font->uvOffset }; vp[1].color = color;
-				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff + font->uvOffset }; vp[2].color = color;
-				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff + font->uvOffset }; vp[3].color = color;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = color; //top left
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = color; //top right
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = color; //bot right
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = color; //bot left
 				
 				renderTwodVertexCount += 4;
 				renderTwodIndexCount  += 6;
@@ -1170,15 +1170,14 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				u32           color = c.rgba;
 				Vertex2*         vp = renderTwodVertexArray + renderTwodVertexCount;
 				RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
-				
-				aligned_quad q = font->GetPackedQuad(decoded.codepoint, &pos, scale);
+				aligned_quad q = font_aligned_quad(font, decoded.codepoint, &pos, scale);
 				
 				ip[0] = renderTwodVertexCount; ip[1] = renderTwodVertexCount + 1; ip[2] = renderTwodVertexCount + 2;
 				ip[3] = renderTwodVertexCount; ip[4] = renderTwodVertexCount + 2; ip[5] = renderTwodVertexCount + 3;
-				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.s0,q.t0 + font->uvOffset }; vp[0].color = color;
-				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.s1,q.t0 + font->uvOffset }; vp[1].color = color;
-				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.s1,q.t1 + font->uvOffset }; vp[2].color = color;
-				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.s0,q.t1 + font->uvOffset }; vp[3].color = color;
+				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.u0,q.v0 }; vp[0].color = color; //top left
+				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.u1,q.v0 }; vp[1].color = color; //top right
+				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.u1,q.v1 }; vp[2].color = color; //bot right
+				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.u0,q.v1 }; vp[3].color = color; //bot left
 				
 				renderTwodVertexCount += 4;
 				renderTwodIndexCount  += 6;
@@ -1238,14 +1237,14 @@ render_texture_rotated2(Texture* texture, vec2 center, vec2 dimensions, f32 rota
 void
 render_display_stats(){
     using namespace UI;
-    BeginRow("renderstatsaligned", 2, 0, UIRowFlags_AutoSize);{
+    BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
         RowSetupColumnAlignments({{0,0.5},{1,0.5}});
-        Text("total triangles: "); Text(toStr(renderStats.totalTriangles).str);
-        Text("total vertices: ");  Text(toStr(renderStats.totalVertices).str);
-        Text("total indices: ");   Text(toStr(renderStats.totalIndices).str);
-        Text("drawn triangles: "); Text(toStr(renderStats.drawnTriangles).str);
-        Text("drawn indicies: ");  Text(toStr(renderStats.drawnIndices).str);
-        Text("render time: ");     Text(toStr(renderStats.renderTimeMS).str);
+        TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
+        TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
+        TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
+        TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
+        TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
+        TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
     }EndRow();
 }
 

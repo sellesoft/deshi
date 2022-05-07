@@ -2,6 +2,7 @@
 #ifndef DESHI_LOGGER_H
 #define DESHI_LOGGER_H
 
+#include "file.h"
 #include "kigu/common.h"
 #include "kigu/unicode.h"
 
@@ -13,7 +14,7 @@ enum{
 };
 
 struct Logger{
-	FILE* file = 0; //TODO use deshi File
+	File* file = 0;
 	
 #define LOGGER_BUFFER_SIZE 4096
 	u8   last_message[LOGGER_BUFFER_SIZE] = {0};

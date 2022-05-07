@@ -80,13 +80,14 @@ struct Input{
 	b32 oldKeyState[MAX_KEYBOARD_KEYS];
 	b32 newKeyState[MAX_KEYBOARD_KEYS];
 	b32 zero[MAX_KEYBOARD_KEYS];
+	b32 anyKeyDown;
 	
 	f64 mouseX,       mouseY; //window space
 	f64 screenMouseX, screenMouseY;
 	f64 scrollX,      scrollY;
-	u32 charIn[127];
-	u32 charCount;
-	b32 anyKeyDown;
+	
+	u8 charIn[256];
+	u8 charCount;
 	
 	b32 capsLock;
 	b32 numLock;
