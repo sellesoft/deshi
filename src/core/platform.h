@@ -12,6 +12,12 @@ void platform_init();
 //Updates the platform required for other modules
 void platform_update();
 
+//Sleep for `time` milliseconds
+// Windows: calls Sleep()
+//  Linux: TODO
+//  Mac: TODO
+void platform_sleep(u32 time);
+
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Module API
@@ -41,7 +47,7 @@ platform_symbol platform_get_module_symbol(void* module, const char* symbol_name
 //  Windows: calls OpenClipboard(), GetClipboardData(), CloseClipboard()
 //  Linux: TODO
 //  Mac: TODO
- str8 platform_get_clipboard();
+str8 platform_get_clipboard();
 
 //Sets the clipboard to the utf8 string `text`
 //  Windows: calls OpenClipboard(), EmptyClipboard(), SetClipboardData(), CloseClipboard()
