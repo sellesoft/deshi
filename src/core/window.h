@@ -115,7 +115,7 @@ struct Window{
 	
 	vec2 dimensions;
 	
-	void    Init(str8 name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
+	void    Init(str8 name, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
 	Window* MakeChild(str8 name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF);
 	
 	void    Update();
