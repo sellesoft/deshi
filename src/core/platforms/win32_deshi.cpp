@@ -1543,10 +1543,10 @@ Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){D
 	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
 	
 	//// setup default window pos/size ////
-	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
-		x = work_x + ((work_w -  width) / 2);
-		y = work_y + ((work_h - height) / 2);
-	}
+	if(width  == 0xFFFFFFFF) width  = work_w / 2;
+	if(height == 0xFFFFFFFF) height = work_h / 2;
+	if(x == 0xFFFFFFFF) x = work_x + (width  / 2);
+	if(y == 0xFFFFFFFF) y = work_y + (height / 2);
 	
 	//// update window to requested properties ////
 	UpdateDisplayMode(displayMode);
