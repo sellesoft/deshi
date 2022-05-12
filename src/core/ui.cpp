@@ -2857,6 +2857,9 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 			}else{
 				curwin = new UIWindow();
 				curwin->name = name;
+				curwin->position   = (NextWinPos.x != -1) ? NextWinPos + DeshWindow->GetClientAreaPosition() : pos + DeshWindow->GetClientAreaPosition();
+				curwin->dimensions.x = dimensions.x;
+				curwin->dimensions.y = dimensions.y;
 				windows.add(name, curwin);
 			}
 			curwin->type   = UIWindowType_Normal;
@@ -2864,13 +2867,10 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 			curwin->scroll = vec2(0, 0);
 			curwin->cursor = vec2(0, 0);
 			curwin->flags  = flags;
-			curwin->position   = (NextWinPos.x != -1) ? NextWinPos + DeshWindow->GetClientAreaPosition() : pos + DeshWindow->GetClientAreaPosition();
 			if(NextWinSize.x == MAX_F32) curwin->dimensions.x = DeshWindow->GetClientAreaDimensions().x;
 			else if(NextWinSize.x != -1) curwin->dimensions.x = NextWinSize.x;
-			else                         curwin->dimensions.x = dimensions.x;
 			if(NextWinSize.y == MAX_F32) curwin->dimensions.y = DeshWindow->GetClientAreaDimensions().y;
 			else if(NextWinSize.y != -1) curwin->dimensions.y = NextWinSize.y;
-			else                         curwin->dimensions.y = dimensions.y;
 		}break;
 		case UIWindowType_Child:{ ///////////////////////////////////////////////////////////////////////
 			UIWindow* parent = curwin;
