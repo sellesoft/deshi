@@ -276,7 +276,7 @@ CompileAndLoadShader(str8 filename, ShaderStage stage){
 	glGetShaderiv(sgl.handle, GL_COMPILE_STATUS, &opengl_success);
 	if(opengl_success != GL_TRUE){
 		glGetShaderInfoLog(sgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-		PrintGl(0, "Failed to compile shader '",filename,"':\n",opengl_infolog);
+		PrintGl(0, "Failed to compile shader '",(char*)filename.str,"':\n",opengl_infolog);
 		glDeleteShader(sgl.handle);
 		return 0;
 	}
@@ -313,7 +313,7 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 	glGetProgramiv(pgl.handle, GL_LINK_STATUS, &opengl_success);
 	if(opengl_success != GL_TRUE){
 		glGetProgramInfoLog(pgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-		PrintGl(0,"Failed to link program '",prog_shaders.str,"':\n",opengl_infolog);
+		PrintGl(0,"Failed to link program '",(char*)prog_shaders.str,"':\n",opengl_infolog);
 		
 		//delete broken program
 		glDeleteProgram(pgl.handle);
