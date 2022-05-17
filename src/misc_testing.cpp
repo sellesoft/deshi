@@ -4,8 +4,8 @@
 #include "kigu/array.h"
 #include "math/edge.h"
 
-u64 rngseed = 0xa0a0a0a0a0;
 u64 rng(){
+persist u64 rngseed = 0xa0a0a0a0a0;
 	static u64 x = rngseed;
 	x = 
 	((0x00000000FF & x) % 50  + 
@@ -22,10 +22,10 @@ struct RandDrawObj {
 	array<pair<vec2, color>> hist;
 };
 
-b32 init = 0;
-array<RandDrawObj> rdobjs;
-Stopwatch walk = start_stopwatch();
 void random_draw(u32 count) {
+persist array<RandDrawObj> rdobjs;
+persist b32 init = 0;
+persist Stopwatch walk = start_stopwatch();
 	if (!init) {
 		init = 1;
 		forI(count) {
@@ -95,11 +95,11 @@ void random_draw(u32 count) {
 
 
 //line that interacts with itself
-b32 rwainit = 0;
-RandDrawObj rwa;
-Stopwatch rwawalk = start_stopwatch();
-Stopwatch histreset = start_stopwatch();
 void random_walk_avoid() {
+	persist b32 rwainit = 0;
+	persist RandDrawObj rwa;
+	persist Stopwatch rwawalk = start_stopwatch();
+	persist Stopwatch histreset = start_stopwatch();
 	
 	if (!rwainit) {
 		srand(time(0));
