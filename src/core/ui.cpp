@@ -2867,6 +2867,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 			curwin->scroll = vec2(0, 0);
 			curwin->cursor = vec2(0, 0);
 			curwin->flags  = flags;
+			if(NextWinPos.x != -1) curwin->position = NextWinPos + DeshWindow->GetClientAreaPosition();
 			if(NextWinSize.x == MAX_F32) curwin->dimensions.x = DeshWindow->GetClientAreaDimensions().x;
 			else if(NextWinSize.x != -1) curwin->dimensions.x = NextWinSize.x;
 			if(NextWinSize.y == MAX_F32) curwin->dimensions.y = DeshWindow->GetClientAreaDimensions().y;
