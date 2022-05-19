@@ -701,65 +701,65 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd){DPZoneScoped;
 
 FORCE_INLINE void
 MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += render_make_line_counts(); 
 	render_make_line(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
+	drawCmd.counts += render_make_line_counts(); 
 	drawCmd.type = UIDrawType_Line;
 }
 
 FORCE_INLINE void
 MakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
-	drawCmd.counts += render_make_filledtriangle_counts(); 
 	render_make_filledtriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, color);
+	drawCmd.counts += render_make_filledtriangle_counts(); 
 	drawCmd.type = UIDrawType_FilledTriangle;
 }
 
 FORCE_INLINE void
 MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += render_make_triangle_counts();
 	render_make_triangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, thickness, color);
+	drawCmd.counts += render_make_triangle_counts();
 	drawCmd.type = UIDrawType_Triangle;
 }
 
 FORCE_INLINE void
 MakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){DPZoneScoped;
-	drawCmd.counts += render_make_filledrect_counts();
 	render_make_filledrect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, color);
+	drawCmd.counts += render_make_filledrect_counts();
 	drawCmd.type = UIDrawType_FilledRectangle;
 }
 
 FORCE_INLINE void
 MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += render_make_rect_counts();
 	render_make_rect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
+	drawCmd.counts += render_make_rect_counts();
 	drawCmd.type = UIDrawType_Rectangle;
 }
 
 FORCE_INLINE void
 MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += render_make_circle_counts(subdivisions);
 	render_make_circle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, thickness, color);
+	drawCmd.counts += render_make_circle_counts(subdivisions);
 	drawCmd.type = UIDrawType_Circle;
 }
 
 FORCE_INLINE void
 MakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
-	drawCmd.counts += render_make_filledcircle_counts(subdivisions_int);
 	render_make_filledcircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions_int, color);
+	drawCmd.counts += render_make_filledcircle_counts(subdivisions_int);
 	drawCmd.type = UIDrawType_FilledCircle;
 }
 
 FORCE_INLINE void
 MakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color color, vec2 scale){DPZoneScoped;
-	drawCmd.counts += render_make_text_counts(str8_length(text));
 	render_make_text(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, style.font, pos, color, scale);
+	drawCmd.counts += render_make_text_counts(str8_length(text));
 	drawCmd.tex = style.font->tex;
 	drawCmd.type = UIDrawType_Text;
 }
 
 FORCE_INLINE void
 MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
-	drawCmd.counts += render_make_texture_counts();
 	render_make_texture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha, flipx, flipy);
+	drawCmd.counts += render_make_texture_counts();
 	drawCmd.type = UIDrawType_Image;
 	drawCmd.tex = texture;
 }

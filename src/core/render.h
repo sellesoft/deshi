@@ -100,6 +100,7 @@ Index:
 @render_shared_draw_3d
 @render_shared_draw_2d
 @render_shared_other
+@render_shared_make
 */
 
 #pragma once
@@ -473,9 +474,9 @@ external void render_reload_shader(u32 shader_type);
 //TODO only reload loaded shaders
 external void render_reload_all_shaders();
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_make
-
  vec2 render_make_line_counts();
  vec2 render_make_filledtriangle_counts();
  vec2 render_make_triangle_counts();
@@ -495,6 +496,7 @@ external void render_make_circle(Vertex2* putverts, u32* putindices, vec2 offset
 external void render_make_filledcircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 external void render_make_text(Vertex2* putverts, u32* putindices, vec2 offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
 external void render_make_texture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_other
@@ -1277,10 +1279,9 @@ render_display_stats(){
     }EndRow();
 }
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_make
 
-//4 verts, 6 indices
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_shared_make
 vec2 render_make_line_counts()                   {return { 4, 6};};
 vec2 render_make_filledtriangle_counts()         {return { 3, 3};};
 vec2 render_make_triangle_counts()               {return {12,18};};
@@ -1291,6 +1292,7 @@ vec2 render_make_filledcircle_counts(u32 subdiv) {return {1+(f32)subdiv,3.f*subd
 vec2 render_make_text_counts(u32 charcount)      {return {4.f*charcount,6.f*charcount};};
 vec2 render_make_texture_counts()                {return { 8,24};};
 
+//4 verts, 6 indices
 void
 render_make_line(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
