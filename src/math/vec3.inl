@@ -26,6 +26,11 @@ vec3(f32* ptr){
 	x = *ptr; y = *(ptr+1); z = *(ptr+2);
 }
 
+inline vec3::
+vec3(vec3i v){ 
+	x = (f32)v.x; y = (f32)v.y; z = (f32)v.z;
+}
+
 ///////////////////
 //// constants ////
 ///////////////////

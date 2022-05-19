@@ -22,6 +22,10 @@ vec2(f32* ptr){
 	x = *ptr; y = *(ptr+1);
 }
 
+inline vec2::
+vec2(vec2i v){ 
+	x = (f32)v.x; y = (f32)v.y;
+}
 
 
 ///////////////////

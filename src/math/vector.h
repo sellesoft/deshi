@@ -16,6 +16,10 @@ struct quat;
 //////////////////////
 //// declarations ////
 //////////////////////
+union vec2i{
+	s32 arr[2] = {};
+	struct{ s32 x, y; };
+};
 
 struct vec2 {
 	union{
@@ -30,6 +34,7 @@ struct vec2 {
 	vec2(f32 inX, f32 inY);
 	vec2(const vec2& v);
 	vec2(f32* ptr);
+	vec2(vec2i v);
 	
 	static const vec2 ZERO;
 	static const vec2 ONE;
@@ -93,6 +98,15 @@ struct vec2 {
 };
 #include "vec2.inl"
 
+
+union vec3i{
+	s32 arr[3] = {};
+	struct { s32 x, y, z; };
+	struct { s32 r, g, b; };
+	struct { vec2i xy; s32 _unusedZ0; };
+	struct { s32 _unusedX0; vec2i yz; };
+};
+
 struct vec3 {
 	union {
 		f32 arr[3] = {};
@@ -107,6 +121,7 @@ struct vec3 {
 	vec3(f32 inX, f32 inY);
 	vec3(const vec3& v);
 	vec3(f32* ptr);
+	vec3(vec3i v);
 	
 	static const vec3 ZERO;
 	static const vec3 ONE;
@@ -176,7 +191,7 @@ struct vec3 {
 	vec2 toVec2() const;
 	vec4 toVec4() const;
 	
-	//matrix u32eractions
+	//matrix interactions
 	vec3 operator* (const mat3& rhs) const;
 	void operator*=(const mat3& rhs);
 	vec3 operator* (const mat4& rhs) const;
@@ -188,6 +203,43 @@ struct vec3 {
 	vec3 operator* (const quat& rhs) const;
 };
 #include "vec3.inl"
+
+
+union vec4i{
+	s32 arr[4] = {};
+	struct{ 
+		union{
+			vec3i xyz;
+			struct{ s32 x, y, z; };
+		};
+		s32 w;
+	};
+	struct{ 
+		union{
+			vec3i rgb;
+			struct{ s32 r, g, b; };
+		};
+		s32 a;
+	};
+	struct{ 
+		vec2i xy;
+		s32 _unusedZ0;
+		s32 _unusedW0;
+	};
+	struct{ 
+		s32 _unusedX0;
+		vec2i yz;
+		s32 _unusedW1;
+	};
+	struct{ 
+		s32 _unusedX1;
+		s32 _unusedY0;
+		vec2i zw;
+	};
+#ifdef DESHI_USE_SSE
+	__m128 sse;
+#endif
+};
 
 struct vec4{
 	union{
@@ -230,6 +282,7 @@ struct vec4{
 	vec4(f32 inX, f32 inY, f32 inZ, f32 inW);
 	vec4(const vec4& v);
 	vec4(f32* ptr);
+	vec4(vec4i v);
 	
 	static const vec4 ZERO;
 	static const vec4 ONE;
@@ -276,11 +329,12 @@ struct vec4{
 	vec3 toVec3() const;
 	void takeVec3(const vec3& v);
 	
-	//matrix u32eractions
+	//matrix interactions
 	vec4 operator* (const mat4& rhs) const;
 	void operator*=(const mat4& rhs);
 };
 #include "vec4.inl"
+
 
 //////////////////////
 //// interactions ////

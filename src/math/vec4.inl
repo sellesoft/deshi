@@ -43,6 +43,14 @@ vec4(f32* ptr){
 #endif
 }
 
+inline vec4::
+vec4(vec4i v){ 
+	x = (f32)v.x; 
+	y = (f32)v.y; 
+	z = (f32)v.z; 
+	w = (f32)v.w;
+}
+
 ///////////////////
 //// constants ////
 ///////////////////
