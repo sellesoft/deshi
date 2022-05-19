@@ -196,8 +196,6 @@ typedef Flags DeshiStage; enum{
 	DS_PLATFORM  = 1 << 1,
 	DS_LOGGER    = 1 << 2,
 	DS_CONSOLE   = 1 << 3,
-	DS_TIME      = 1 << 4,
-	DS_WINDOW    = 1 << 5,
 	DS_RENDER    = 1 << 6,
 	DS_IMGUI     = 1 << 7,
 	DS_STORAGE   = 1 << 8,
@@ -242,16 +240,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "math/math.h"
 
 
-//// libcpp for core ////
-#include <iostream>
-#include <filesystem>
-#include <fstream>
-#include <regex>
-#include <vector>
-#include <io.h>
-#include <fcntl.h>
-#include <set> //vulkan.cpp
-
 //// core headers ////
 #define DESHI_IMPLEMENTATION
 #include "deshi.h"
@@ -294,6 +282,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  error "unknown platform"
 #endif //DESHI_WINDOWS
 
+
 //// external for core ////
 #define STBI_MALLOC(sz) memory_alloc(sz)
 #define STBI_REALLOC(p,newsz) memory_realloc(p,newsz)
@@ -319,6 +308,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <imgui/stb_rectpack.h>
 #endif
 
+
 //// platform ////
 #if DESHI_WINDOWS
 #  define VK_USE_PLATFORM_WIN32_KHR
@@ -327,6 +317,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <GLFW/glfw3.h>
 #  include <imgui/imgui_impl_glfw.cpp>
 #endif
+
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
@@ -345,9 +336,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #
 #  include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12
-#  include <GLFW/glfw3.h>
-#  define GLFW_EXPOSE_NATIVE_WIN32
-#  include <GLFW/glfw3native.h>
 #  include "d3dx12/d3dx12.h"
 #  include <d3d12.h>
 #  include <wrl/client.h> //ComPtr
@@ -361,8 +349,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  error "no renderer selected"
 #endif
 
-#undef DeleteFont
-
 
 //// core cpp ////
 #include "core/memory.cpp"
@@ -374,41 +360,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 
 
 local Time          deshi_time;           Time*          g_time     = &deshi_time;
-local Window        deshi_window;         Window*        g_window   = &deshi_window;
 local Input         deshi_input;          Input*         g_input    = &deshi_input;
 local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_storage;
 local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
-
-void deshi::init(u32 winWidth, u32 winHeight){
-	Stopwatch deshi_watch = start_stopwatch();
-	memory_init(Gigabytes(1), Gigabytes(1));
-	platform_init();
-	logger_init();
-#ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
-	console_init();
-#endif
-	deshi_window.Init(str8_lit("deshi"), winWidth, winHeight);
-	render_init();
-	Storage::Init();
-#ifndef DESHI_DISABLE_IMGUI
-	DeshiImGui::Init();
-#endif
-	UI::Init();
-	cmd_init();
-	DeshWindow->ShowWindow();
-	render_use_default_camera();
-	LogS("deshi","Finished deshi initialization in ",peek_stopwatch(deshi_watch),"ms");
-}
-
-void deshi::cleanup(){
-	if(DeshiModuleLoaded(DS_IMGUI)) DeshiImGui::Cleanup();
-	render_cleanup();
-	deshi_window.Cleanup();
-	logger_cleanup();
-	memory_cleanup();
-}
-
-b32 deshi::shouldClose(){
-	//glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
-	return deshi_window.closeWindow;
-}
+Window* g_window = 0;

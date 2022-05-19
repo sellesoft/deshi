@@ -381,9 +381,9 @@ Init(){
 #if DESHI_WINDOWS
 	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
 #elif DESHI_LINUX
-	ImGui_ImplGlfw_InitForopenGl(DeshWindow->window, true);
+	ImGui_ImplGlfw_InitForopenGl(DeshWindow->glfw_window, true);
 #elif DESHI_MAC
-	ImGui_ImplGlfw_InitForopenGl(DeshWindow->window, true);
+	ImGui_ImplGlfw_InitForopenGl(DeshWindow->glfw_window, true);
 #endif
 	ImGui_ImplOpenGL3_Init();
 	
@@ -421,7 +421,7 @@ NewFrame(){
 //// @render_init
 void
 render_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize OpenGL module before initializing Memory/Window modules");
+	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to initialize OpenGL module before initializing Platform module");
 	Log("opengl","Starting opengl renderer initialization");
 	
 	//create the shaders directory if it doesn't exist already
@@ -432,7 +432,8 @@ render_init(){DPZoneScoped;
 	render_load_settings();
 	if(renderSettings.debugging && renderSettings.printf) renderSettings.loggingLevel = 4;
 	
-	DeshWindow->GetWindowSize(width, height);
+	width  = DeshWindow->width;
+	 height = DeshWindow->height;
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup WGL and glad
@@ -450,41 +451,27 @@ render_init(){DPZoneScoped;
 		HDC   prev_dc = wglGetCurrentDC();
 		HGLRC prev_rc = wglGetCurrentContext();
 		
-		//create dummy window to load extensions
-		WNDCLASSW wc{CS_OWNDC, WndProc, 0,0, (HINSTANCE)DeshWindow->instance, 0,0,0,0, L"deshi temp"};
-		if(!RegisterClassW(&wc)){ Win32LogLastError("RegisterClassW", renderSettings.crashOnError); return; }
-		
-		HWND temp_wnd = CreateWindowExW(WS_EX_OVERLAPPEDWINDOW, L"deshi temp", L"deshi opengl init window",
-										WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0,0, 1,1, 0, 0, (HINSTANCE)DeshWindow->instance, 0);
-		if(!temp_wnd){ Win32LogLastError("CreateWindowW", renderSettings.crashOnError); return; }
-		HDC temp_dc = GetDC(temp_wnd);
-		ShowWindow(temp_wnd, SW_HIDE);
-		MSG msg;
-		while(PeekMessageW(&msg, temp_wnd, 0, 0, PM_REMOVE)){ TranslateMessage(&msg); DispatchMessageW(&msg); }
-		
 		//setup pixel format for dummy device context
 		PIXELFORMATDESCRIPTOR temp_pfd{sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER};
 		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8; temp_pfd.iLayerType = PFD_MAIN_PLANE;
-		int temp_format = ChoosePixelFormat(temp_dc, &temp_pfd);
-		if(!SetPixelFormat(temp_dc, temp_format, &temp_pfd)){ Win32LogLastError("SetPixelFormat", renderSettings.crashOnError); return; }
+		int temp_format = ChoosePixelFormat((HDC)window_helper.dc, &temp_pfd);
+		if(!SetPixelFormat((HDC)window_helper.dc, temp_format, &temp_pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
 		//create and enable dummy render context
-		HGLRC temp_context = wglCreateContext(temp_dc);
-		if(!temp_context){ Win32LogLastError("wglCreateContext", renderSettings.crashOnError); return; }
-		wglMakeCurrent(temp_dc, temp_context);
+		HGLRC temp_context = wglCreateContext((HDC)window_helper.dc);
+		if(!temp_context){ win32_log_last_error("wglCreateContext", renderSettings.crashOnError); return; }
+		wglMakeCurrent((HDC)window_helper.dc, temp_context);
 		
 		//load wgl extensions
-		wgl_version = gladLoaderLoadWGL(temp_dc);
+		wgl_version = gladLoaderLoadWGL((HDC)window_helper.dc);
 		if(wgl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
 		Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(wgl_version), GLAD_VERSION_MINOR(wgl_version));
 		gladInstallWGLDebug();
 		gladSetWGLPostCallback(WGLDebugPostCallback);
 		
-		//delete dummy window and context
+		//delete dummy context
 		wglMakeCurrent(prev_dc, prev_rc);
 		wglDeleteContext(temp_context);
-		DestroyWindow(temp_wnd);
-		UnregisterClassW(L"deshi temp", (HINSTANCE)DeshWindow->instance);
 		
 		//set pixel format for device context
 		int format = 0;
@@ -502,9 +489,9 @@ render_init(){DPZoneScoped;
 			0
 		};
 		wglChoosePixelFormatARB((HDC)DeshWindow->dc, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
-		if(!DescribePixelFormat((HDC)DeshWindow->dc, format, sizeof(pfd), &pfd)){  Win32LogLastError("DescribePixelFormat", renderSettings.crashOnError); return;  }
-		if(format == 0){ Win32LogLastError("ChoosePixelFormatARB", renderSettings.crashOnError); return; }
-		if(!SetPixelFormat((HDC)DeshWindow->dc, format, &pfd)){ Win32LogLastError("SetPixelFormat", renderSettings.crashOnError); return; }
+		if(!DescribePixelFormat((HDC)DeshWindow->dc, format, sizeof(pfd), &pfd)){  win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
+		if(format == 0){ win32_log_last_error("ChoosePixelFormatARB", renderSettings.crashOnError); return; }
+		if(!SetPixelFormat((HDC)DeshWindow->dc, format, &pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
 		//set the desired OpenGL version and render context settings
 		int context_attributes[] = {
@@ -521,7 +508,7 @@ render_init(){DPZoneScoped;
 		
 		//create actual render context and delete temporary one
 		opengl_context = wglCreateContextAttribsARB((HDC)DeshWindow->dc, 0, context_attributes); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt
-		if(!opengl_context){ Win32LogLastError("wglCreateContextAttribsARB", renderSettings.crashOnError); return; }
+		if(!opengl_context){ win32_log_last_error("wglCreateContextAttribsARB", renderSettings.crashOnError); return; }
 		wglMakeCurrent((HDC)DeshWindow->dc, (HGLRC)opengl_context);
 		
 		//load glad extensions
@@ -686,7 +673,8 @@ render_update(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// handle widow resize
 	if(DeshWindow->resized || remake_window){
-		DeshWindow->GetWindowSize(width, height);
+		width  = DeshWindow->width;
+		 height = DeshWindow->height;
 		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
 		glViewport(0,0,width,height);
 		remake_window = false;
@@ -902,7 +890,7 @@ render_update(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// present frame
 	{
-		DeshWindow->SwapBuffers();
+		window_swap_buffers(DeshWindow);
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
@@ -1192,16 +1180,16 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_surface
 void 
-render_register_surface(u32 idx, Window* window){DPZoneScoped;
+render_register_surface(Window* window){DPZoneScoped;
 	AssertDS(DS_RENDER, "Attempted to register a surface for a window without initializaing Render module first");
-	Assert(idx < MAX_SURFACES);
+	Assert(window->index < MAX_SURFACES);
 	NotImplemented; //!Incomplete
 }
 
 void
 render_set_active_surface(Window* window){DPZoneScoped;
-	Assert(window->renderer_surface_index != -1, "Attempt to set draw target to a window who hasnt been registered to the renderer");
-	renderActiveSurface = window->renderer_surface_index;
+	Assert(window->index != -1, "Attempt to set draw target to a window who hasnt been registered to the renderer");
+	renderActiveSurface = window->index;
 }
 
 void

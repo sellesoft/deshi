@@ -863,7 +863,7 @@ CreateInstance(){DPZoneScoped;
 	
 	//set instance's application info
 	VkApplicationInfo appInfo{VK_STRUCTURE_TYPE_APPLICATION_INFO};
-	appInfo.pApplicationName   = (const char*)DeshWindow->name.str;
+	appInfo.pApplicationName   = (const char*)DeshWindow->title.str;
 	appInfo.applicationVersion = VK_MAKE_VERSION(1,0,0);
 	appInfo.pEngineName        = "deshi";
 	appInfo.engineVersion      = VK_MAKE_VERSION(1,0,0);
@@ -959,7 +959,7 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	PrintVk(2, "Creating Win32-Vulkan surface");
 	VkWin32SurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
 	info.hwnd = (HWND)win->handle;
-	info.hinstance = (HINSTANCE)win->instance;
+	info.hinstance = (HINSTANCE)win32_console_instance;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating glfw-Vulkan surface");
@@ -1130,7 +1130,8 @@ CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 	vkDeviceWaitIdle(device);
 	
 	//update width and height
-	win->GetClientSize(activeSwapchain.width, activeSwapchain.height);
+	activeSwapchain.width  = win->width;
+	activeSwapchain.height = win->height;
 	
 	{//check GPU's features/capabilities for the new swapchain
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surfaces[renderActiveSurface], &activeSwapchain.supportDetails.capabilities);
@@ -2805,7 +2806,7 @@ BuildCommands(){DPZoneScoped;
 			renderPassInfo.renderArea.offset = {0, 0};
 			renderPassInfo.renderArea.extent = activeSwapchain.extent;
 			viewport.x        = 0;
-			viewport.y        = activeSwapchain.window->titlebarheight;
+			viewport.y        = 0;
 			viewport.width    = (f32)activeSwapchain.width;
 			viewport.height   = (f32)activeSwapchain.height;
 			viewport.minDepth = 0.f;
@@ -3127,7 +3128,7 @@ NewFrame(){DPZoneScoped;
 //// @render_init
 void
 render_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize Vulkan module before initializing Memory/Window modules");
+	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to initialize Vulkan module before initializing Platform module");
 	Log("vulkan","Starting vulkan renderer initialization");
 	
 	//create the shaders directory if it doesn't exist already
@@ -3223,7 +3224,8 @@ render_update(){DPZoneScoped;
 		
 		if(scwin->resized) remakeWindow = true;
 		if(remakeWindow){
-			scwin->GetClientSize(activeSwapchain.width, activeSwapchain.height);
+			activeSwapchain.width  = scwin->width;
+			activeSwapchain.height = scwin->height;
 			if(activeSwapchain.width <= 0 || activeSwapchain.height <= 0){ ImGui::EndFrame(); return; }
 			vkDeviceWaitIdle(device);
 			CreateSwapchain(scwin, i);
@@ -3756,35 +3758,32 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_surface
 void 
-render_register_surface(u32 idx, Window* window){DPZoneScoped;
+render_register_surface(Window* window){DPZoneScoped;
 	AssertDS(DS_RENDER, "Attempted to register a surface for a window without initializaing Render module first");
-	Assert(idx < MAX_SURFACES);
-	CreateSurface(window, idx);
+	Assert(window->index < MAX_SURFACES);
+	CreateSurface(window, window->index);
 	
 	u32 formatCount;
 	u32 presentModeCount;
 	VkBool32 presentSupport = false;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[idx], &formatCount, 0);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surfaces[idx], &presentModeCount, 0);
-	vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, physicalQueueFamilies.presentFamily.value, surfaces[idx], &presentSupport);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surfaces[window->index], &formatCount, 0);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surfaces[window->index], &presentModeCount, 0);
+	vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, physicalQueueFamilies.presentFamily.value, surfaces[window->index], &presentSupport);
 	
-	if(!formatCount || !presentModeCount || !presentSupport)  {
-		LogE("VULKAN", "Vulkan failed to init a new surface on the current physical device for window ", window->name);
-		surfaces[idx] = VK_NULL_HANDLE;
+	if(!formatCount || !presentModeCount || !presentSupport){
+		LogE("VULKAN", "Vulkan failed to init a new surface on the current physical device for window: ", window->title);
+		surfaces[window->index] = VK_NULL_HANDLE;
 		return;
 	}
 	
-	CreateSwapchain(window, idx);
+	CreateSwapchain(window, window->index);
 	CreateFrames();
-	
-	//TODO automatic indexing
-	window->renderer_surface_index = idx; 
 }
 
 void
 render_set_active_surface(Window* window){DPZoneScoped;
-	Assert(window->renderer_surface_index != -1, "Attempt to set draw target to a window who hasnt been registered to the renderer");
-	renderActiveSurface = window->renderer_surface_index;
+	Assert(window->index != -1, "Attempt to set draw target to a window who hasnt been registered to the renderer");
+	renderActiveSurface = window->index;
 }
 
 void

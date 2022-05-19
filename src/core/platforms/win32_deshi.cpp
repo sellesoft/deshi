@@ -1,10 +1,12 @@
-﻿/*Index:
+/* deshi Win32 Platform Backend
+Index:
 @win32_vars
 @win32_helpers
+@win32_callback
 @win32_platform
 @win32_stopwatch
 @win32_file
-@win32_module
+@win32_modules
 @win32_clipboard
 @win32_threading
 @win32_window
@@ -13,11 +15,10 @@
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_vars
-local s64 deshi__win32_perf_count_frequency;
-local b32 deshi__file_crash_on_error = false;
-local DWORD deshi__file_data_folder_len;
-local wchar_t* deshi__file_data_folder;
-local array<File*> deshi__file_files;
+local s64 win32_perf_count_frequency;
+local wchar_t* win32_file_data_folder;
+local s32 win32_file_data_folder_len;
+local HINSTANCE win32_console_instance;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,8 +61,8 @@ win32_vkcode_to_key(s32 vk){
 	}
 }
 
-void
-Win32LogLastError(const char* func_name, b32 crash_on_error = false, str8 custom = str8{}){DPZoneScoped;
+local void
+win32_log_last_error(const char* func_name, b32 crash_on_error = false, str8 custom = str8{}){DPZoneScoped;
 	LPVOID msg_buffer;
 	DWORD error = ::GetLastError();
 	::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -75,14 +76,14 @@ Win32LogLastError(const char* func_name, b32 crash_on_error = false, str8 custom
 }
 
 //makes the path absolute, does not strip trailing slash, converts forwardslashes to backslashes
-wchar_t*
-win32_path_from_str8(str8 path, b32 prefix, s64 extra_chars = 0, DWORD* out_len = 0){
+local wchar_t*
+win32_path_from_str8(str8 path, b32 prefix, s64 extra_chars = 0, s32* out_len = 0){
 	wchar_t* wpath = wchar_from_str8(path, 0, deshi_temp_allocator);
 	
 	s64 full_wpath_length = (s64)::GetFullPathNameW((LPCWSTR)wpath, 0, 0, 0);
 	if(full_wpath_length == 0){
-		Win32LogLastError("GetFullPathNameW", deshi__file_crash_on_error, path);
-		if(deshi__file_crash_on_error){
+		win32_log_last_error("GetFullPathNameW", file_crash_on_error, path);
+		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
@@ -103,23 +104,8 @@ win32_path_from_str8(str8 path, b32 prefix, s64 extra_chars = 0, DWORD* out_len 
 	return result;
 }
 
-void
-WinResized(Window* win, s32 width, s32 height, b32 minimized){DPZoneScoped;
-	win->width = width;
-	win->height = height;
-	win->cwidth = width;
-	win->cheight = height - win->titlebarheight;
-	win->centerX = win->width/2;
-	win->centerY = win->height/2;
-	win->dimensions = vec2(win->cwidth, win->cheight);
-	win->cx = win->borderthickness;
-	win->cy = win->borderthickness + win->titlebarheight;
-	win->minimized = minimized;
-	win->resized = true;
-}
-
-void
-Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int* working_x = 0, int* working_y = 0, int* working_w = 0, int* working_h = 0){
+local void
+win32_monitor_info(HWND handle, int* screen_w = 0, int* screen_h = 0, int* working_x = 0, int* working_y = 0, int* working_w = 0, int* working_h = 0){
 	HMONITOR monitor = ::MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST);
 	if(monitor){
 		MONITORINFO monitor_info = {sizeof(MONITORINFO)};
@@ -131,76 +117,144 @@ Win32GetMonitorInfo(HWND handle, int* screen_w = 0, int* screen_h = 0, int* work
 			if(working_w) *working_w = monitor_info.rcWork.right  - monitor_info.rcWork.left;
 			if(working_h) *working_h = monitor_info.rcWork.bottom - monitor_info.rcWork.top;
 		}else{
-			Win32LogLastError("GetMonitorInfoW");
+			win32_log_last_error("GetMonitorInfoW");
 		}
 	}else{
-		Win32LogLastError("MonitorFromWindow");
+		win32_log_last_error("MonitorFromWindow");
 	}
 }
 
-enum HitTest_ : s32 {
-	HitTest_TBorder,
-	HitTest_BBorder,
-	HitTest_RBorder,
-	HitTest_LBorder,
-	HitTest_Titlebar,
-};
 
-//win32's callback function 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @win32_callback
 LRESULT CALLBACK
-WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
-	Window* win = (Window*)::GetWindowLongPtrW(hwnd, GWLP_USERDATA);
-	switch (msg){
-		case WM_CREATE:{ }break;
-		case WM_SIZE:{ if(win) WinResized(win, LOWORD(lParam), HIWORD(lParam), wParam == SIZE_MINIMIZED); }break;
-		case WM_CLOSE:
-		case WM_DESTROY:
-		case WM_QUIT:{
-			if(win){
-				win->closeWindow = true;
-				return 0;
-			}
+win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
+	Window* window = (Window*)::GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	switch(msg){
+		case WM_SIZE:{ ////////////////////////////////////////////////////////////// Window Resized
+			if(window){
+				window->dimensions.x = LOWORD(lParam);
+				window->dimensions.y = HIWORD(lParam);// - window->titlebar_height;
+				window->dimensions_decorated.x = LOWORD(lParam);
+				window->dimensions_decorated.y = HIWORD(lParam);
+				window->center    = vec2i{(s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2};
+				window->minimized = (wParam == SIZE_MINIMIZED);
+				window->resized   = true;
+			}else{ Assert(!"WM_SIZE passed to win32 HWND that does not have matching deshi Window"); }
 		}break;
+		
 		case WM_MOVE:{ ////////////////////////////////////////////////////////////// Window Moved
-			const s32 x = LOWORD(lParam);
-			const s32 y = HIWORD(lParam);
-			if(win){ win->x = x; win->y = y; }
+			if(window){
+				window->x = LOWORD(lParam);
+				window->y = HIWORD(lParam);
+				
+				RECT rect;
+				::GetWindowRect((HWND)window->handle, &rect);
+				window->position_decorated.x = rect.left;
+				window->position_decorated.y = rect.top;
+				window->dimensions_decorated.x = rect.right  - rect.left;
+				window->dimensions_decorated.y = rect.bottom - rect.top;
+			}else{ Assert(!"WM_MOVE passed to win32 HWND that does not have matching deshi Window"); }
 		}break;
+		
+		case WM_CLOSE:{ ///////////////////////////////////////////////////////////// Close Window (signal to destroy window)
+			if(window){
+				window->close_window += 1;
+				if(platform_fast_exit || window->close_window > 1){
+					::DestroyWindow(hwnd);
+				}else{
+					return 0;
+				}
+			}else{ Assert(!"WM_CLOSE passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		case WM_DESTROY:{ /////////////////////////////////////////////////////////// Destroy Window
+			if(window){
+				Assert(window != &window_helper, "WM_DESTROY should not be called on helper_window");
+				
+				forI(window_windows.count){
+					if(window == window_windows[i]){
+						memory_zfree(window);
+						window_windows.remove_unordered(i);
+						if(window_windows.count){
+							window_windows[i]->index = i;
+							break;
+						}else{
+							return 0;
+						}
+					}
+				}
+			}else{ Assert(!"WM_DESTROY passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		/*
+		case WM_NCHITTEST:{ ///////////////////////////////////////////////////////// Window Decoration Clicked
+			if(window){
+			s32  xPos = GET_X_LPARAM(lParam);
+			s32  yPos = GET_Y_LPARAM(lParam);
+			s32  x = window->x, y = window->y;
+			s32  width = window->width, height = window->height;
+			s32  cx = window->cx, cy = window->cy;
+			s32  cwidth = window->cwidth, cheight = window->cheight;
+			s32  tbh = window->titlebarheight;
+			s32  bt = window->borderthickness;
+			vec2 mp = input_mouse_position() + vec2(bt, tbh+bt*2);
+			u32  decor = window->decorations;
+			b32  hitset = 0;
+			if(Math::PointInRectangle(mp, vec2(cx, cy),                  vec2(cwidth, cheight)))                   return HTCLIENT;
+			if(Math::PointInRectangle(mp, vec2(bt, bt),                  vec2(width - 2*bt, window->titlebarheight))) return HTCAPTION;
+			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, bt)))                            return HTTOPLEFT;
+			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(bt, bt)))                            return HTBOTTOMLEFT;
+			if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, bt)))                            return HTTOPRIGHT;
+			if(Math::PointInRectangle(mp, vec2(width - bt, height - bt), vec2(bt, bt)))                            return HTBOTTOMRIGHT;
+			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(width, bt)))                         return HTTOP;
+			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(width, bt)))                         return HTBOTTOM;
+			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, height)))                        return HTLEFT;
+				if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, height)))                        return HTRIGHT;
+			}else{ Assert(!"WM_NCHITTEST passed to win32 HWND that does not have matching deshi Window"); }
+		}
+		*/
+		
 		case WM_MOUSEMOVE:{ ///////////////////////////////////////////////////////// Mouse Moved
-			const s32 xPos = GET_X_LPARAM(lParam);
-			const s32 yPos = GET_Y_LPARAM(lParam);
-			DeshInput->realMouseX = xPos - f64(win->borderthickness);
-			DeshInput->realMouseY = yPos - f64(win->titlebarheight + win->titlebarheight);
-			POINT p = { xPos, yPos };
-			::ClientToScreen((HWND)win->handle, &p);
-			DeshInput->realScreenMouseX = p.x;
-			DeshInput->realScreenMouseY = p.y;
+			if(window){
+				const s32 xPos = GET_X_LPARAM(lParam);
+				const s32 yPos = GET_Y_LPARAM(lParam);
+				DeshInput->realMouseX = xPos;// - f64(window->borderthickness);
+				DeshInput->realMouseY = yPos;// - f64(window->titlebarheight + window->titlebarheight);
+				POINT p = { xPos, yPos };
+				::ClientToScreen((HWND)window->handle, &p);
+				DeshInput->realScreenMouseX = p.x;
+				DeshInput->realScreenMouseY = p.y;
+			}else{ Assert(!"WM_NCHITTEST passed to win32 HWND that does not have matching deshi Window"); }
 		}break;
-		case WM_MOUSEHOVER:{ //////////////////////////////////////////////////////// Mouse Hovers
-			//TODO
-		}break;
+		
 		case WM_MOUSEWHEEL:{ //////////////////////////////////////////////////////// Mouse Scrolled
 			const s32 zDelta = GET_WHEEL_DELTA_WPARAM(wParam) / (f64)WHEEL_DELTA;
 			DeshInput->realScrollY = zDelta;
 		}break;
+		
 		case WM_MOUSEHWHEEL:{ /////////////////////////////////////////////////////// Mouse H Scrolled
 			const s32 zDelta = GET_WHEEL_DELTA_WPARAM(wParam) / (f64)WHEEL_DELTA;
 			DeshInput->realScrollY = zDelta;
 		}break;
-		/////////////////////////////////////////////////////// Mouse Button Down
-		case WM_LBUTTONDOWN:{ DeshInput->realKeyState[Mouse_LEFT]   = true; ::SetCapture((HWND)win->handle); }break;
-		case WM_RBUTTONDOWN:{ DeshInput->realKeyState[Mouse_RIGHT]  = true; ::SetCapture((HWND)win->handle); }break;
-		case WM_MBUTTONDOWN:{ DeshInput->realKeyState[Mouse_MIDDLE] = true; ::SetCapture((HWND)win->handle); }break;
+		
+		///////////////////////////////////////////////////////////////////////////// Mouse Button Down
+		case WM_LBUTTONDOWN:{ DeshInput->realKeyState[Mouse_LEFT]   = true;  if(window) ::SetCapture((HWND)window->handle); }break;
+		case WM_RBUTTONDOWN:{ DeshInput->realKeyState[Mouse_RIGHT]  = true;  if(window) ::SetCapture((HWND)window->handle); }break;
+		case WM_MBUTTONDOWN:{ DeshInput->realKeyState[Mouse_MIDDLE] = true;  if(window) ::SetCapture((HWND)window->handle); }break;
 		case WM_XBUTTONDOWN:{ DeshInput->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Mouse_4 : Mouse_5)] = true; return true; }break;
-		/////////////////////////////////////////////////////// Mouse Button Up
-		case WM_LBUTTONUP:  { DeshInput->realKeyState[Mouse_LEFT]   = false; ::ReleaseCapture(); }break;
-		case WM_RBUTTONUP:  { DeshInput->realKeyState[Mouse_RIGHT]  = false; ::ReleaseCapture(); }break;
-		case WM_MBUTTONUP:  { DeshInput->realKeyState[Mouse_MIDDLE] = false; ::ReleaseCapture(); }break;
+		
+		///////////////////////////////////////////////////////////////////////////// Mouse Button Up
+		case WM_LBUTTONUP:  { DeshInput->realKeyState[Mouse_LEFT]   = false; if(window) ::ReleaseCapture(); }break;
+		case WM_RBUTTONUP:  { DeshInput->realKeyState[Mouse_RIGHT]  = false; if(window) ::ReleaseCapture(); }break;
+		case WM_MBUTTONUP:  { DeshInput->realKeyState[Mouse_MIDDLE] = false; if(window) ::ReleaseCapture(); }break;
 		case WM_XBUTTONUP:  { DeshInput->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Mouse_4 : Mouse_5)] = false; return true; }break;
-		case WM_KEYUP:        //////////////////////////////////////////////////////// Key Down/Up
-		case WM_SYSKEYUP: 
+		
+		///////////////////////////////////////////////////////////////////////////// Key Down/Up
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
 		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN:{ 
+		case WM_SYSKEYDOWN:{
 			u16 vcode = LOWORD(wParam);
 			u16 scancode = (HIWORD(lParam) & (KF_EXTENDED | 0xff));
 			b32 upFlag = (HIWORD(lParam) & KF_UP) == KF_UP;              // transition-state flag, 1 on keyup
@@ -221,9 +275,9 @@ WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
 			DeshInput->realKeyState[Key_RALT]   = ::GetKeyState(VK_RMENU) & 0x8000;
 			DeshInput->realKeyState[Key_LMETA]  = ::GetKeyState(VK_LWIN) & 0x8000;
 			DeshInput->realKeyState[Key_RMETA]  = ::GetKeyState(VK_RWIN) & 0x8000;
-			DeshInput->capsLock   = (::GetKeyState(VK_CAPITAL) & 0x8000);
-			DeshInput->numLock    = (::GetKeyState(VK_NUMLOCK) & 0x8000);
-			DeshInput->scrollLock = (::GetKeyState(VK_SCROLL ) & 0x8000);
+			DeshInput->capsLock   = ::GetKeyState(VK_CAPITAL) & 0x8000;
+			DeshInput->numLock    = ::GetKeyState(VK_NUMLOCK) & 0x8000;
+			DeshInput->scrollLock = ::GetKeyState(VK_SCROLL ) & 0x8000;
 			
 			//get key from vcode
 			KeyCode key = win32_vkcode_to_key(vcode);
@@ -231,17 +285,19 @@ WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
 				DeshInput->realKeyState[key] = !upFlag;
 				
 #if LOG_INPUTS
-				string out = toStr(KeyCodeStrings[key], (upFlag ? " released" : " pressed"));
-				if(DeshInput->realKeyState[Key_LSHIFT]){out += " + LSHIFT";}
-				if(DeshInput->realKeyState[Key_RSHIFT]){out += " + RSHIFT";}
-				if(DeshInput->realKeyState[Key_LCTRL]) {out += " + LCTRL";}
-				if(DeshInput->realKeyState[Key_RCTRL]) {out += " + RCTRL";}
-				if(DeshInput->realKeyState[Key_LALT])  {out += " + LALT";}
-				if(DeshInput->realKeyState[Key_RALT])  {out += " + RALT";}
-				Log("input", out); 
+				str8_builder s; str8_builder_init(&s, KeyCodeStrings[key], deshi_temp_allocator);
+				str8_builder_append(&s, (upFlag) ? str8l(" released") : str8l(" pressed"));
+				if(DeshInput->realKeyState[Key_LSHIFT]) str8_builder_append(&s, str8l(" + LSHIFT"));
+				if(DeshInput->realKeyState[Key_RSHIFT]) str8_builder_append(&s, str8l(" + RSHIFT"));
+				if(DeshInput->realKeyState[Key_LCTRL])  str8_builder_append(&s, str8l(" + LCTRL"));
+				if(DeshInput->realKeyState[Key_RCTRL])  str8_builder_append(&s, str8l(" + RCTRL"));
+				if(DeshInput->realKeyState[Key_LALT])   str8_builder_append(&s, str8l(" + LALT"));
+				if(DeshInput->realKeyState[Key_RALT])   str8_builder_append(&s, str8l(" + RALT"));
+				Log("input", str8_builder_peek(&s)); 
 #endif
 			}
 		}break;
+		
 		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key (UTF-16)
 			if(!iscntrl(LOWORD(wParam))){ //NOTE skip control characters
 				//!ref: https://github.com/cmuratori/refterm/blob/main/refterm_example_terminal.c@ProcessMessages()
@@ -272,189 +328,120 @@ WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
 				}
 			}
 		}break;
+		
 		case WM_INPUT:{ ///////////////////////////////////////////////////////////// Raw Input
-			UINT size = 0;
-			HRAWINPUT ri = (HRAWINPUT)lParam;
-			RAWINPUT* data = NULL;
-			//get size of rawinput
-			::GetRawInputData(ri, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
-			data = (RAWINPUT*)memory_talloc(size);
-			
-			if(::GetRawInputData(ri, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER)) == (u32)-1){
-				//LogE("WINDOW-WIN32", "failed to retrieve raw input data in WndProc case WM_INPUT");
-				break;
-			}
-			
-			RAWMOUSE mdata = data->data.mouse;
-			s32 dx, dy;
-			if(HasFlag(mdata.usFlags, MOUSE_MOVE_ABSOLUTE)){
-				dx = mdata.lLastX - DeshInput->realMouseX;
-				dy = mdata.lLastY - DeshInput->realMouseY;
-			}else{
-				dx = mdata.lLastX;
-				dy = mdata.lLastY;
-			}
-			
-			DeshInput->realMouseX += dx; DeshInput->realMouseY += dy;
-			
-			//TODO maybe implement raw key inputs from this
-			RAWKEYBOARD kdata = data->data.keyboard;
-			RAWHID      hdata = data->data.hid; //TODO human interface device input
+			//TODO(delle) raw input
 		}break;
-		case WM_NCHITTEST:{
-			s32  xPos = GET_X_LPARAM(lParam);
-			s32  yPos = GET_Y_LPARAM(lParam);
-			s32  x = win->x, y = win->y;
-			s32  width = win->width, height = win->height;
-			s32  cx = win->cx, cy = win->cy;
-			s32  cwidth = win->cwidth, cheight = win->cheight;
-			s32  tbh = win->titlebarheight;
-			s32  bt = win->borderthickness;
-			vec2 mp = input_mouse_position() + vec2(bt, tbh+bt*2);
-			u32  decor = win->decorations;
-			b32  hitset = 0;
-			if(Math::PointInRectangle(mp, vec2(cx, cy),                  vec2(cwidth, cheight)))                   return HTCLIENT;  
-			if(Math::PointInRectangle(mp, vec2(bt, bt),                  vec2(width - 2*bt, win->titlebarheight))) return HTCAPTION;  
-			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, bt)))                            return HTTOPLEFT;	  
-			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(bt, bt)))                            return HTBOTTOMLEFT;  
-			if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, bt)))                            return HTTOPRIGHT;	  
-			if(Math::PointInRectangle(mp, vec2(width - bt, height - bt), vec2(bt, bt)))                            return HTBOTTOMRIGHT; 
-			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(width, bt)))                         return HTTOP;		  
-			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(width, bt)))                         return HTBOTTOM;       
-			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, height)))                        return HTLEFT;		  
-			if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, height)))                        return HTRIGHT;		  
-		}
 	}
-	if(win){
-		win->active = (::GetForegroundWindow() == (HWND)win->handle);
+	if(window && ::GetForegroundWindow() == (HWND)window->handle){
+		window_active = window;
 	}
 	return ::DefWindowProcW(hwnd, msg, wParam, lParam);
-}
-
-//TODO options for decoration colors
-void DrawDecorations(Window* win){DPZoneScoped;
-	s32 x=win->x, y=win->y;
-	s32 width = win->width, height = win->height;
-	s32 cwidth = win->cwidth, cheight = win->cheight;
-	u32 decor = win->decorations;
-	b32 hitset = 0;
-	persist Font* decorfont = Storage::CreateFontFromFileBDF(str8_lit("gohufont-11.bdf")).second;
-	render_set_active_surface(win);
-	render_start_cmd2(render_decoration_layer_index(), 0, vec2::ZERO, vec2(width, height));
-	
-	if(Math::PointInRectangle(input_mouse_position(), vec2::ZERO, vec2(width, height))) win->hittest = HitTestClient;
-	
-	//minimal titlebar takes precedence over all other title bar flags
-	if(HasFlag(decor, Decoration_MinimalTitlebar)){
-		win->titlebarheight = 5;
-		render_quad_filled2(vec2::ZERO, vec2(width, win->titlebarheight), Color_White);
-		if(Math::PointInRectangle(input_mouse_position(), vec2::ZERO, vec2(width, win->titlebarheight))){ win->hittest = HitTestTitle; hitset = 1; }
-	}else{
-		if(HasFlag(decor, Decoration_Titlebar)){
-			win->titlebarheight = 20;
-			render_quad_filled2(vec2::ZERO, vec2(width, win->titlebarheight), color(60,60,60));
-		}
-		if(HasFlag(decor, Decoration_TitlebarTitle)){
-			//!Incomplete
-		}
-	}
-	
-	if(HasFlag(decor, Decoration_MouseBorders)){
-		vec2 mp = input_mouse_position();
-		f32 distToAppear = 7;
-		f32 borderSize = 1;
-		vec2 
-			lbpos = vec2::ZERO,
-		rbpos = vec2(width - borderSize, 0),
-		bbpos = vec2(0, height - borderSize),
-		lbsiz = vec2(borderSize, height),
-		rbsiz = vec2(borderSize, height),
-		bbsiz = vec2(width, borderSize);
-		color //TODO make these not show if the mouse goes beyond the window
-			bcol = color(255,255,255, Remap(Clamp(mp.y, f32(cheight - distToAppear), f32(cheight - borderSize)), 0.f, 255.f, f32(cheight - distToAppear), f32(cheight - borderSize))),
-		rcol = color(255,255,255, Remap(Clamp(mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize))),
-		lcol = color(255,255,255, Remap(Clamp(cwidth - mp.x, f32(cwidth - distToAppear), f32(cwidth - borderSize)), 0.f, 255.f, f32(cwidth - distToAppear), f32(cwidth - borderSize)));
-		
-		if(!hitset && Math::PointInRectangle(mp, lbpos, lbsiz)){win->hittest = HitTestLeft;   hitset = 1;}
-		else if(Math::PointInRectangle(mp, rbpos, rbsiz))      {win->hittest = HitTestRight;  hitset = 1;}
-		else if(Math::PointInRectangle(mp, bbpos, bbsiz))      {win->hittest = HitTestBottom; hitset = 1;}
-		
-		render_quad_filled2(vec2::ZERO, vec2(borderSize, height), lcol);
-		render_quad_filled2(vec2(width - borderSize, 0), vec2(borderSize, height), rcol);
-		render_quad_filled2(vec2(0, height - borderSize), vec2(width, borderSize), bcol);
-	}else if(HasFlag(decor, Decoration_Borders)){
-		win->borderthickness = 2;
-		f32 borderSize = win->borderthickness;
-		vec2 
-			tbpos = vec2::ZERO,
-		lbpos = vec2::ZERO,
-		rbpos = vec2(width - borderSize, 0),
-		bbpos = vec2(0, height - borderSize),
-		tbsiz = vec2(width, borderSize),
-		lbsiz = vec2(borderSize, height),
-		rbsiz = vec2(borderSize, height),
-		bbsiz = vec2(width, borderSize);
-		color 
-			tcol = color(133,133,133),
-		bcol = color(133,133,133),
-		rcol = color(133,133,133),
-		lcol = color(133,133,133);
-		
-		render_quad_filled2(lbpos, lbsiz, lcol);
-		render_quad_filled2(rbpos, rbsiz, rcol);
-		render_quad_filled2(bbpos, bbsiz, bcol);
-		render_quad_filled2(tbpos, tbsiz, tcol);
-	}
-#if LOG_INPUTS
-	Log("", win->hittest);
-#endif
 }
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_platform
-#define DESHI_WND_CLASSNAME_W L"_DESHI_"
+#define DESHI_HELPER_WNDCLASSNAME L"_DESHI_HELPER_WINDOW_"
+#define DESHI_RENDER_WNDCLASSNAME L"_DESHI_RENDER_WINDOW_"
 void
 platform_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_PLATFORM, DS_MEMORY, "Attempted to initialize Platform module before initializing the Memory module");
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// @win32_init_time
+	
+	//// init time ////
 	//get the perf counter frequency for timers
 	LARGE_INTEGER perf_count_frequency_result;
 	::QueryPerformanceFrequency(&perf_count_frequency_result);
-	deshi__win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
+	win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
+	DeshTime->stopwatch = start_stopwatch();
 	
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// @win32_init_file
-	wchar_t* wpath = win32_path_from_str8(str8_lit("data/"), false, 0, &deshi__file_data_folder_len);
-	deshi__file_data_folder = (wchar_t*)memory_alloc((deshi__file_data_folder_len+1)*sizeof(wchar_t));
-	CopyMemory(deshi__file_data_folder, wpath, deshi__file_data_folder_len*sizeof(wchar_t));
+	//// init file ////
+	wchar_t* wpath = win32_path_from_str8(str8_lit("data/"), false, 0, &win32_file_data_folder_len);
+	win32_file_data_folder = (wchar_t*)memory_alloc((win32_file_data_folder_len+1)*sizeof(wchar_t));
+	CopyMemory(win32_file_data_folder, wpath, win32_file_data_folder_len*sizeof(wchar_t));
 	
-	deshi__file_files = array<File*>(deshi_allocator);
+	file_files = array<File*>(deshi_allocator);
 	
 	//create data directories
 	file_create(str8_lit("data/"));
 	file_create(str8_lit("data/cfg/"));
 	file_create(str8_lit("data/temp/"));
 	
+	
+	//// init window ////
+	//get console's handle made from libc main()
+	win32_console_instance = ::GetModuleHandleW(0);
+	
+	//register helper window class
+	WNDCLASSEXW helper_window_class{};
+	helper_window_class.cbSize        = sizeof(WNDCLASSEXW);
+	helper_window_class.style         = CS_OWNDC;
+	helper_window_class.lpfnWndProc   = win32_window_callback;
+	helper_window_class.hInstance     = win32_console_instance;
+	helper_window_class.lpszClassName = DESHI_HELPER_WNDCLASSNAME;
+	if(!::RegisterClassExW(&helper_window_class)) win32_log_last_error("RegisterClassExW", true);
+	
+	//register render window class
+	WNDCLASSEXW render_window_class{sizeof(WNDCLASSEXW)};
+	render_window_class.cbSize        = sizeof(WNDCLASSEXW);
+	render_window_class.style         = CS_OWNDC;
+	render_window_class.lpfnWndProc   = win32_window_callback;
+	render_window_class.hInstance     = win32_console_instance;
+	render_window_class.hIcon         = ::LoadIcon(0, IDI_APPLICATION);
+	render_window_class.hCursor       = ::LoadCursor(0, IDC_ARROW);
+	render_window_class.lpszClassName = DESHI_RENDER_WNDCLASSNAME;
+	if(!::RegisterClassExW(&render_window_class)) win32_log_last_error("RegisterClassExW", true);
+	
+	//create helper window
+	window_helper.handle = ::CreateWindowExW(WS_EX_OVERLAPPEDWINDOW|WS_EX_NOACTIVATE, DESHI_HELPER_WNDCLASSNAME,
+											 L"_deshi_helper_window_", WS_CLIPSIBLINGS|WS_CLIPCHILDREN,
+											 0,0, 1,1, 0, 0, win32_console_instance, 0);
+	if(!window_helper.handle) win32_log_last_error("CreateWindowExW", true);
+	window_helper.dc = GetDC((HWND)window_helper.handle);
+	::ShowWindow((HWND)window_helper.handle, SW_HIDE);
+	MSG msg; while(::PeekMessageW(&msg, (HWND)window_helper.handle, 0, 0, PM_REMOVE)){ ::TranslateMessage(&msg); ::DispatchMessageW(&msg); }
+	
+	
+	//// init input ////
+	//TODO(delle) setup raw input
+	
 	DeshiStageInitEnd(DS_PLATFORM);
 }
 
-void
-platform_update(){DPZoneScoped;
+b32
+platform_update(){DPZoneScoped; DPFrameMark;
 	Stopwatch update_stopwatch = start_stopwatch();
 	
-	//-/////////////////////////////////////////////
-	//// @win32_update_time
+	//// update time ////
 	DeshTime->prevDeltaTime = DeshTime->deltaTime;
-	DeshTime->deltaTime = reset_stopwatch(&DeshTime->stopwatch);
-	DeshTime->stopwatch = start_stopwatch();
-	DeshTime->totalTime += DeshTime->deltaTime;
-	DeshTime->frame++;
+	DeshTime->deltaTime     = reset_stopwatch(&DeshTime->stopwatch);
+	DeshTime->totalTime    += DeshTime->deltaTime;
+	DeshTime->frame        += 1;
 	DeshTime->timeTime = reset_stopwatch(&update_stopwatch);
 	
-	//-/////////////////////////////////////////////
-	//// @win32_update_input
+	
+	//// update window ////
+	MSG msg;
+	while(::PeekMessageW(&msg, (HWND)window_helper.handle, 0, 0, PM_REMOVE)){
+		::TranslateMessage(&msg);
+		::DispatchMessageW(&msg);
+	}
+	
+	forI(window_windows.count){
+		window_windows[i]->resized = false;
+		while(::PeekMessageW(&msg, (HWND)window_windows[i]->handle, 0, 0, PM_REMOVE)){
+			::TranslateMessage(&msg);
+			::DispatchMessageW(&msg);
+			if(window_windows.count == 0) return false;
+		}
+		//if(window_windows[i]->decorations != Decoration_SystemDecorations) DrawDecorations(window_windows[i]);
+		//window_windows[i].hit_test = HitTestNone;
+		if(window_windows[i]->cursor_mode == CursorMode_FirstPerson) window_cursor_position(window_windows[i], window_windows[i]->center);
+	}
+	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
+	
+	
+	//// update input ////
 	//caches input values so they are consistent thru the frame
 	memcpy(&DeshInput->oldKeyState, &DeshInput->newKeyState,  sizeof(b32)*MAX_KEYBOARD_KEYS);
 	memcpy(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
@@ -474,30 +461,41 @@ platform_update(){DPZoneScoped;
 		DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
 	}
 	
-	DeshInput->mouseX = DeshInput->realMouseX;
-	DeshInput->mouseY = DeshInput->realMouseY;
-	DeshInput->screenMouseX = DeshInput->realScreenMouseX;
-	DeshInput->screenMouseY = DeshInput->realScreenMouseY;
-	DeshInput->scrollY = DeshInput->realScrollY;
-	DeshInput->realScrollY = 0;
-	DeshInput->charCount = DeshInput->realCharCount;
+	DeshInput->mouseX        = DeshInput->realMouseX;
+	DeshInput->mouseY        = DeshInput->realMouseY;
+	DeshInput->screenMouseX  = DeshInput->realScreenMouseX;
+	DeshInput->screenMouseY  = DeshInput->realScreenMouseY;
+	DeshInput->scrollY       = DeshInput->realScrollY;
+	DeshInput->realScrollY   = 0;
+	DeshInput->charCount     = DeshInput->realCharCount;
 	DeshInput->realCharCount = 0;
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
 	
-	//-/////////////////////////////////////////////
-	//// @win32_update_file
+	
+	//// update file ////
 	/* //TODO(delle) initted file change tracking thru ReadDirectoryChanges
 	File file_file{};
 	ULARGE_INTEGER file_size, file_time;
-	for(File* file : deshi__file_files){
+	for(File* file : file_files){
 		
 	}
 	*/
+	
+	return !platform_exit_application;
 }
 
 void
-platform_sleep(u32 time){
+platform_sleep(u32 time){DPZoneScoped;
 	::Sleep((DWORD)time);
+}
+
+void
+platform_cursor_position(s32 x, s32 y){DPZoneScoped;
+	::SetCursorPos(x, y);
+	DeshInput->mouseX = x - window_active->position.x;
+	DeshInput->mouseY = y - window_active->position.y;
+	DeshInput->screenMouseX = x;
+	DeshInput->screenMouseY = y;
 }
 
 
@@ -514,7 +512,7 @@ f64
 peek_stopwatch(Stopwatch watch){DPZoneScoped;
 	LARGE_INTEGER current;
 	::QueryPerformanceCounter(&current);
-	return 1000.0 * ((f64)((s64)current.QuadPart - watch) / (f64)deshi__win32_perf_count_frequency);
+	return 1000.0 * ((f64)((s64)current.QuadPart - watch) / (f64)win32_perf_count_frequency);
 }
 
 
@@ -527,7 +525,7 @@ deshi__file_exists(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 		return false;
 	}
 	
-	DWORD wpath_len;
+	s32 wpath_len;
 	wchar_t* wpath = win32_path_from_str8(path, true, 0, &wpath_len);
 	
 	//strip trailing slash
@@ -558,7 +556,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 		if(part.count < path.count){
 			Assert(part.str[part.count] == '\\' || part.str[part.count] == '/');
 			if((::CreateDirectoryW(wpath, 0) == 0) && (::GetLastError() != ERROR_ALREADY_EXISTS)){
-				Win32LogLastError("CreateDirectoryW", deshi__file_crash_on_error, str8_from_wchar(wpath+4,deshi_temp_allocator)); //NOTE(delle) +4 b/c of "\\?\"
+				win32_log_last_error("CreateDirectoryW", file_crash_on_error, str8_from_wchar(wpath+4,deshi_temp_allocator)); //NOTE(delle) +4 b/c of "\\?\"
 				return;
 			}
 			str8_increment(&path, part.count+1);
@@ -566,7 +564,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 		}else{
 			HANDLE handle = ::CreateFileW(wpath, GENERIC_READ|GENERIC_WRITE, 0,0, CREATE_NEW, 0,0);
 			if((handle == INVALID_HANDLE_VALUE) && (::GetLastError() != ERROR_FILE_EXISTS)){
-				Win32LogLastError("CreateFileW", deshi__file_crash_on_error, str8_from_wchar(wpath+4,deshi_temp_allocator)); //NOTE(delle) +4 b/c of "\\?\"
+				win32_log_last_error("CreateFileW", file_crash_on_error, str8_from_wchar(wpath+4,deshi_temp_allocator)); //NOTE(delle) +4 b/c of "\\?\"
 				return;
 			}
 			::CloseHandle(handle);
@@ -582,16 +580,16 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 		return;
 	}
 	
-	DWORD wpath_len;
+	s32 wpath_len;
 	wchar_t* wpath = win32_path_from_str8(path, true, 0, &wpath_len);
 	if(wpath[wpath_len-1] == L'\\'){
 		wpath[wpath_len-1] = L'\0';
 		wpath_len -= 1;
 	}
 	
-	if(memcmp(wpath+4, deshi__file_data_folder, deshi__file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	if(memcmp(wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
 		LogE("file","File deletion can only occur within the data folder. Input path: ",path);
-		if(deshi__file_crash_on_error){
+		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
@@ -601,22 +599,22 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		Win32LogLastError("FindFirstFileW", deshi__file_crash_on_error, path);
+		win32_log_last_error("FindFirstFileW", file_crash_on_error, path);
 		return;
 	}
 	defer{ ::FindClose(handle); };
 	
-	//TODO(delle) check if initted in deshi__file_files to update
+	//TODO(delle) check if initted in file_files to update
 	
 	//if directory, recursively delete all files and directories
 	if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
 		carray<File> dir_files = file_search_directory(path);
 		forE(dir_files) file_delete(it->path);
 		BOOL success = ::RemoveDirectoryW(wpath);
-		if(!success) Win32LogLastError("RemoveDirectoryW", deshi__file_crash_on_error, path);
+		if(!success) win32_log_last_error("RemoveDirectoryW", file_crash_on_error, path);
 	}else{
 		BOOL success = ::DeleteFileW(wpath);
-		if(!success) Win32LogLastError("DeleteFileW", deshi__file_crash_on_error, path);
+		if(!success) win32_log_last_error("DeleteFileW", file_crash_on_error, path);
 	}
 }
 
@@ -632,9 +630,9 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 	}
 	
 	wchar_t* old_wpath = win32_path_from_str8(old_path, true);
-	if(memcmp(old_wpath+4, deshi__file_data_folder, deshi__file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	if(memcmp(old_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
 		LogE("file","File renaming can only occur within the data folder. Input old path: ",old_path);
-		if(deshi__file_crash_on_error){
+		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
@@ -642,19 +640,19 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 	}
 	
 	wchar_t* new_wpath = win32_path_from_str8(new_path, true);
-	if(memcmp(new_wpath+4, deshi__file_data_folder, deshi__file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	if(memcmp(new_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
 		LogE("file","File renaming can only occur within the data folder. Input new path: ",new_path);
-		if(deshi__file_crash_on_error){
+		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
 		return;
 	}
 	
-	//TODO(delle) check if initted in deshi__file_files to update
+	//TODO(delle) check if initted in file_files to update
 	
 	BOOL success = ::MoveFileW(old_wpath, new_wpath);
-	if(!success) Win32LogLastError("MoveFileW", deshi__file_crash_on_error, str8_concat3(old_path,str8_lit("\n"),new_path, deshi_temp_allocator));
+	if(!success) win32_log_last_error("MoveFileW", file_crash_on_error, str8_concat3(old_path,str8_lit("\n"),new_path, deshi_temp_allocator));
 }
 
 File
@@ -664,7 +662,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 		return File{};
 	}
 	
-	DWORD wpath_len;
+	s32 wpath_len;
 	wchar_t* wpath = win32_path_from_str8(path, true, 0, &wpath_len);
 	if(wpath[wpath_len-1] == L'\\'){
 		wpath[wpath_len-1] = L'\0';
@@ -674,7 +672,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		Win32LogLastError("FindFirstFileW", deshi__file_crash_on_error, path);
+		win32_log_last_error("FindFirstFileW", file_crash_on_error, path);
 		return File{};
 	}
 	defer{ ::FindClose(handle); };
@@ -721,7 +719,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 	}
 	
 	//reformat the string so parent/folder/ becomes parent/folder*
-	DWORD wpath_len;
+	s32 wpath_len;
 	wchar_t* wpath = win32_path_from_str8(directory, true, 2, &wpath_len);
 	b32 ends_with_slash = true;
 	if(wpath[wpath_len-1] != L'\\'){
@@ -734,7 +732,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 	WIN32_FIND_DATAW data;
 	HANDLE next = ::FindFirstFileW(wpath, &data);
 	if(next == INVALID_HANDLE_VALUE){
-		Win32LogLastError("FindFirstFileW", deshi__file_crash_on_error, directory);
+		win32_log_last_error("FindFirstFileW", file_crash_on_error, directory);
 		return carray<File>{};
 	}
 	defer{ ::FindClose(next); };
@@ -792,7 +790,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 	}
 	DWORD error = ::GetLastError();
 	if(error != ERROR_NO_MORE_FILES){
-		Win32LogLastError("FindNextFileW", deshi__file_crash_on_error, directory);
+		win32_log_last_error("FindNextFileW", file_crash_on_error, directory);
 	}
 	
 	return carray<File>{result.data, result.count};
@@ -805,7 +803,7 @@ deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path){DPZoneSc
 		return str8{};
 	}
 	
-	DWORD wpath_len;
+	s32 wpath_len;
 	wchar_t* wpath = win32_path_from_str8(path, true, 1, &wpath_len);
 	if(wpath[wpath_len-1] == L'\\'){
 		wpath[wpath_len-1] = L'\0';
@@ -815,7 +813,7 @@ deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path){DPZoneSc
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		Win32LogLastError("FindFirstFileW", deshi__file_crash_on_error, path);
+		win32_log_last_error("FindFirstFileW", file_crash_on_error, path);
 		return str8{};
 	}
 	defer{ ::FindClose(handle); };
@@ -838,9 +836,9 @@ deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2
 		return false;
 	}
 	
-	DWORD wpath1_len;
+	s32 wpath1_len;
 	wchar_t* wpath1 = win32_path_from_str8(path1, false, 0, &wpath1_len);
-	DWORD wpath2_len;
+	s32 wpath2_len;
 	wchar_t* wpath2 = win32_path_from_str8(path2, false, 0, &wpath2_len);
 	
 	//strip trailing slashes for comparison
@@ -866,7 +864,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 	}
 	
 	//change access and return the file if it's already init
-	for(File* f : deshi__file_files){
+	for(File* f : file_files){
 		if(file_path_equal(path, f->path)){
 			file_change_access(f, flags);
 			return f;
@@ -874,7 +872,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 	}
 	
 	File* result = 0;
-	DWORD wpath_len;
+	s32 wpath_len;
 	wchar_t* wpath = win32_path_from_str8(path, true, 1, &wpath_len);
 	if(wpath[wpath_len-1] == L'\\'){
 		wpath[wpath_len-1] = L'\0';
@@ -922,14 +920,14 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 			//the file doesn't exist, so create it then gather information with LPBY_HANDLE_FILE_INFORMATION
 			handle = ::CreateFileW(wpath, 0,0,0, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, 0);
 			if(handle == INVALID_HANDLE_VALUE){
-				Win32LogLastError("CreateFileW", deshi__file_crash_on_error, path);
+				win32_log_last_error("CreateFileW", file_crash_on_error, path);
 				return 0;
 			}
 			defer{ ::CloseHandle(handle); };
 			
 			BY_HANDLE_FILE_INFORMATION info;
 			if(::GetFileInformationByHandle(handle, &info) == 0){
-				Win32LogLastError("GetFileInformationByHandle", deshi__file_crash_on_error, path);
+				win32_log_last_error("GetFileInformationByHandle", file_crash_on_error, path);
 				return 0;
 			}
 			
@@ -964,7 +962,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 			}
 		}else{
 			//the file doesn't exist, and we don't have a creation flag so error out
-			if(!ignore_nonexistence) Win32LogLastError("FindFirstFileW", deshi__file_crash_on_error, path);
+			if(!ignore_nonexistence) win32_log_last_error("FindFirstFileW", file_crash_on_error, path);
 			return 0;
 		}
 	}
@@ -986,7 +984,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 		result->handle = _wfopen(wpath+4, open_mode); //NOTE(delle) +4 b/c of "\\?\"
 		if(result->handle == 0){
 			LogE("file", "fopen() failed to open file '",result->path,"' with mode '",str8_from_wchar(open_mode,deshi_temp_allocator),"'");
-			Win32LogLastError("fopen",deshi__file_crash_on_error);
+			win32_log_last_error("fopen",file_crash_on_error);
 			memory_zfree(result->path.str);
 			memory_zfree(result);
 			return 0;
@@ -999,7 +997,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 	}
 	
 	result->access = flags & ~(FileAccess_Append|FileAccess_Create|FileAccess_Truncate);
-	deshi__file_files.add(result);
+	file_files.add(result);
 	return result;
 }
 
@@ -1012,9 +1010,9 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file){DPZoneScoped;
 	
 	fclose(file->handle);
 	
-	forI(deshi__file_files.count){
-		if(deshi__file_files[i] == file){
-			deshi__file_files.remove_unordered(i);
+	forI(file_files.count){
+		if(file_files[i] == file){
+			file_files.remove_unordered(i);
 			break;
 		}
 	}
@@ -1048,7 +1046,7 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 		file->handle = _wfopen(wpath, open_mode);
 		if(file->handle == 0){
 			LogE("file", "fopen() failed to open file '",file->path,"' with mode '",str8_from_wchar(open_mode,deshi_temp_allocator),"'");
-			Win32LogLastError("fopen",deshi__file_crash_on_error);
+			win32_log_last_error("fopen",file_crash_on_error);
 			return;
 		}
 	}else if(file->handle != 0 && !HasFlag(flags, FileAccess_ReadWrite)){
@@ -1066,7 +1064,7 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 
 carray<File*>
 file_initted_files(){DPZoneScoped;
-	return carray<File*>{deshi__file_files.data, deshi__file_files.count};
+	return carray<File*>{file_files.data, file_files.count};
 }
 
 str8
@@ -1083,20 +1081,20 @@ deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator*
 	wchar_t* wpath = win32_path_from_str8(path, true);
 	HANDLE handle = ::CreateFileW(wpath, GENERIC_READ, 0,0, OPEN_EXISTING, 0,0);
 	if(handle == INVALID_HANDLE_VALUE){
-		Win32LogLastError("CreateFileW", deshi__file_crash_on_error, path);
+		win32_log_last_error("CreateFileW", file_crash_on_error, path);
 		return str8{};
 	}
 	defer{ ::CloseHandle(handle); };
 	
 	LARGE_INTEGER size;
 	if(::GetFileSizeEx(handle, &size) == 0){
-		Win32LogLastError("GetFileSizeEx", deshi__file_crash_on_error, path);
+		win32_log_last_error("GetFileSizeEx", file_crash_on_error, path);
 		return str8{};
 	}
 	
 	str8 result{(u8*)allocator->reserve(size.QuadPart+1), size.QuadPart};
 	if(::ReadFile(handle, result.str, size.QuadPart, 0,0) == 0){
-		Win32LogLastError("ReadFile", deshi__file_crash_on_error, path);
+		win32_log_last_error("ReadFile", file_crash_on_error, path);
 		return str8{};
 	}
 	
@@ -1117,14 +1115,14 @@ deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* dat
 	wchar_t* wpath = win32_path_from_str8(path, true);
 	HANDLE handle = ::CreateFileW(wpath, GENERIC_WRITE, 0,0, CREATE_ALWAYS, 0,0);
 	if(handle == INVALID_HANDLE_VALUE){
-		Win32LogLastError("CreateFileW", deshi__file_crash_on_error, path);
+		win32_log_last_error("CreateFileW", file_crash_on_error, path);
 		return 0;
 	}
 	defer{ ::CloseHandle(handle); };
 	
 	DWORD bytes_written = 0;
 	if(::WriteFile(handle, data, bytes, &bytes_written, 0) == 0){
-		Win32LogLastError("WriteFile", deshi__file_crash_on_error, path);
+		win32_log_last_error("WriteFile", file_crash_on_error, path);
 		return (u64)bytes_written;
 	}
 	return (u64)bytes_written;
@@ -1144,19 +1142,19 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 	wchar_t* wpath = win32_path_from_str8(path, true);
 	HANDLE handle = ::CreateFileW(wpath, GENERIC_WRITE, 0,0, OPEN_ALWAYS, 0,0);
 	if(handle == INVALID_HANDLE_VALUE){
-		Win32LogLastError("CreateFileW", deshi__file_crash_on_error, path);
+		win32_log_last_error("CreateFileW", file_crash_on_error, path);
 		return 0;
 	}
 	defer{ ::CloseHandle(handle); };
 	
 	if(::SetFilePointerEx(handle, LARGE_INTEGER{0}, 0, SEEK_END) == 0){
-		Win32LogLastError("SetFilePointerEx", deshi__file_crash_on_error, path);
+		win32_log_last_error("SetFilePointerEx", file_crash_on_error, path);
 		return 0;
 	}
 	
 	DWORD bytes_written = 0;
 	if(::WriteFile(handle, data, bytes, &bytes_written, 0) == 0){
-		Win32LogLastError("WriteFile", deshi__file_crash_on_error, path);
+		win32_log_last_error("WriteFile", file_crash_on_error, path);
 		return (u64)bytes_written;
 	}
 	return (u64)bytes_written;
@@ -1164,7 +1162,7 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_module
+//// @win32_modules
 void*
 platform_load_module(str8 module_path){DPZoneScoped;
 	wchar_t* wmodule_path = wchar_from_str8(module_path, 0, deshi_temp_allocator);
@@ -1190,13 +1188,13 @@ platform_get_clipboard(){DPZoneScoped;
 	str8 result{};
 	
 	if(::OpenClipboard(NULL) == NULL){
-		Win32LogLastError("OpenClipboard");
+		win32_log_last_error("OpenClipboard");
 		return result;
 	}
 	
 	HANDLE wchar_buffer_handle = ::GetClipboardData(CF_UNICODETEXT);
 	if(wchar_buffer_handle == NULL){
-		Win32LogLastError("GetClipboardData");
+		win32_log_last_error("GetClipboardData");
 		::CloseClipboard();
 		return result;
 	}
@@ -1206,7 +1204,7 @@ platform_get_clipboard(){DPZoneScoped;
 		result.str   = (u8*)memory_talloc(result.count);
 		::WideCharToMultiByte(CP_UTF8, 0, wchar_buffer, -1, (LPSTR)result.str, (int)result.count, NULL, NULL);
 	}else{
-		Win32LogLastError("GlobalLock");
+		win32_log_last_error("GlobalLock");
 	}
 	::GlobalUnlock(wchar_buffer_handle);
     ::CloseClipboard();
@@ -1217,14 +1215,14 @@ platform_get_clipboard(){DPZoneScoped;
 void
 platform_set_clipboard(str8 text){DPZoneScoped;
 	if(::OpenClipboard(NULL) == NULL){
-		Win32LogLastError("OpenClipboard");
+		win32_log_last_error("OpenClipboard");
 		return;
 	}
 	
 	int wchar_buffer_length = ::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), NULL, 0);
 	HGLOBAL wchar_buffer_handle = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wchar_buffer_length*sizeof(WCHAR));
 	if(wchar_buffer_handle == NULL){
-		Win32LogLastError("GlobalAlloc");
+		win32_log_last_error("GlobalAlloc");
 		::CloseClipboard();
 		return;
 	}
@@ -1234,7 +1232,7 @@ platform_set_clipboard(str8 text){DPZoneScoped;
     ::GlobalUnlock(wchar_buffer_handle);
     ::EmptyClipboard();
     if(::SetClipboardData(CF_UNICODETEXT, wchar_buffer_handle) == NULL){
-		Win32LogLastError("SetClipboardData");
+		win32_log_last_error("SetClipboardData");
         ::GlobalFree(wchar_buffer_handle);
 	}
     ::CloseClipboard();
@@ -1246,7 +1244,7 @@ platform_set_clipboard(str8 text){DPZoneScoped;
 mutex::
 mutex(){DPZoneScoped;
 	if(handle = ::CreateMutex(NULL, FALSE, NULL); !handle)
-		Win32LogLastError("CreateMutex");
+		win32_log_last_error("CreateMutex");
 }
 
 mutex::
@@ -1263,7 +1261,7 @@ lock(){DPZoneScoped;
 			LogE("threading-win32", "Attempted to lock an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ Win32LogLastError("CreateMutex"); Assert(0); }break;
+		case WAIT_FAILED:{ win32_log_last_error("CreateMutex"); Assert(0); }break;
 	}
 	is_locked = 1;
 }
@@ -1280,7 +1278,7 @@ try_lock(){DPZoneScoped;
 			return false;
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ Win32LogLastError("CreateMutex"); Assert(0); }break;
+		case WAIT_FAILED:{ win32_log_last_error("CreateMutex"); Assert(0); }break;
 	}
 	is_locked = 1;
 	return true;
@@ -1298,7 +1296,7 @@ try_lock_for(u64 milliseconds){DPZoneScoped;
 			return false;
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ Win32LogLastError("CreateMutex"); Assert(0); }break;
+		case WAIT_FAILED:{ win32_log_last_error("CreateMutex"); Assert(0); }break;
 	}
 	is_locked = 1;
 	return true;
@@ -1306,7 +1304,7 @@ try_lock_for(u64 milliseconds){DPZoneScoped;
 
 void mutex::
 unlock(){DPZoneScoped;
-	if(!ReleaseMutex(handle)){ Win32LogLastError("ReleaseMutex"); Assert(0); }
+	if(!ReleaseMutex(handle)){ win32_log_last_error("ReleaseMutex"); Assert(0); }
 }
 
 
@@ -1338,7 +1336,7 @@ void condition_variable::
 wait(){DPZoneScoped;
 	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
 	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
-		Win32LogLastError("SleepConditionVariableCS");
+		win32_log_last_error("SleepConditionVariableCS");
 	}
 	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
 }
@@ -1487,424 +1485,242 @@ wake_threads(u32 count){
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_window
-void Window::
-Init(str8 _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){DPZoneScoped;
-	DeshiStageInitStart(DS_WINDOW, DS_MEMORY, "Attempted to initialize Window module before initializing Memory module");
+Window*
+window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode, Decoration decorations){DPZoneScoped;
+	AssertDS(DS_PLATFORM, "Called window_create() before initializing Platform module");
 	
-	//get console's handle
-	instance = ::GetModuleHandleW(NULL);
+	//create the window
+	Window* window = (Window*)memory_alloc(sizeof(Window));
+	window->handle = ::CreateWindowExW(0, DESHI_RENDER_WNDCLASSNAME, wchar_from_str8(title, 0, deshi_temp_allocator),
+									 WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0,0, 0,0, 0, 0, win32_console_instance, 0);
+	if(!window->handle){ win32_log_last_error("CreateWindowExW", true); memory_zfree(window); return 0; }
+	//set Win32 window user data to the deshi Window pointer
+	::SetWindowLongPtrW((HWND)window->handle, GWLP_USERDATA, (LONG_PTR)window);
+	window->dc = ::GetDC((HWND)window->handle);
 	
-	//TODO load and set icon
-	//HICON icon = LoadImageA(NULL, "data/textures/deshi_icon.png", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_DEFAULTCOLOR);;
+	//set window decorations
+	window->display_mode = -1;
+	window_display_mode(window, display_mode);
+	//window_decorations(decorations);
+	if(decorations != Decoration_SystemDecorations){
+		//TODO(delle) custom titlebar
+	}
 	
-	wchar_t* wname = wchar_from_str8(_name, 0, deshi_temp_allocator);
+	//set window title
+	window->title = str8_copy(title, deshi_allocator);
 	
-	//// register window class ////
-	WNDCLASSW wc;
-	wc.        style = CS_OWNDC; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
-	wc.  lpfnWndProc = WndProc;
-	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
-	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
-	wc.    hInstance = (HINSTANCE)instance;
-	wc.        hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wc.      hCursor = LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
-	wc.hbrBackground = NULL;
-	wc. lpszMenuName = NULL;
-	wc.lpszClassName = DESHI_WND_CLASSNAME_W;
-	if(::RegisterClassW(&wc) == NULL) Win32LogLastError("RegisterClassW", true); 
-	
-	//// create window ////
-	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-#if DESHI_OPENGL
-	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
-#else
-	handle = ::CreateWindowW(DESHI_WND_CLASSNAME_W, wname, 0, 0, 0, 0, 0, NULL, NULL, (HINSTANCE)instance, NULL);
-#endif
-	if(handle == NULL) Win32LogLastError("CreateWindowW", true);
-	//set WndProc user data to be a pointer to this window
-	::SetWindowLongPtrW((HWND)handle, GWLP_USERDATA, (LONG_PTR)this);
-	dc = ::GetDC((HWND)handle);
-	
-	//// get initial input values ////
-	POINT mp = { 0 };
-	GetCursorPos(&mp);
-	DeshInput->realMouseX = mp.x - x;
-	DeshInput->realMouseY = mp.y - y;
-	DeshInput->capsLock   = (GetKeyState(VK_CAPITAL) & 0x8000);
-	DeshInput->numLock    = (GetKeyState(VK_NUMLOCK) & 0x8000);
-	DeshInput->scrollLock = (GetKeyState(VK_SCROLL ) & 0x8000);
-	
-	//// setup raw input ////
-	RAWINPUTDEVICE rid;
-	rid.usUsagePage = 0x01;
-	rid.    usUsage = 0x02;
-	rid.    dwFlags = 0; //set this to RIDEV_INPUTSINK to update mouse pos even when window isnt focused
-	rid. hwndTarget = NULL;
-	
-	if(::RegisterRawInputDevices(&rid, 1, sizeof(rid)) == NULL) Win32LogLastError("RegisterRawInputDevices");
-	
-	//// get monitor info ////
+	//set window position and size
 	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
-	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
-	
-	//// setup default window pos/size ////
+	win32_monitor_info((HWND)window->handle, 0,0, &work_x,&work_y, &work_w,&work_h);
 	if(width  == 0xFFFFFFFF) width  = work_w / 2;
 	if(height == 0xFFFFFFFF) height = work_h / 2;
 	if(x == 0xFFFFFFFF) x = work_x + (width  / 2);
 	if(y == 0xFFFFFFFF) y = work_y + (height / 2);
+	::SetWindowPos((HWND)window->handle, 0, x,y, width,height, 0);
 	
-	//// update window to requested properties ////
-	UpdateDisplayMode(displayMode);
-	//UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
-	//titlebarheight = 5;
-	UpdateDecorations(Decoration_SystemDecorations);
-	titlebarheight = 0;
-	::SetWindowPos((HWND)handle, 0, x, y, width, height, 0);
-	name = str8_copy(_name, deshi_allocator); //!Leak
-	renderer_surface_index = 0; ///main win is always first surface
+	RECT rect;
+	::GetWindowRect((HWND)window->handle, &rect);
+	window->position_decorated.x = rect.left;
+	window->position_decorated.y = rect.top;
+	window->dimensions_decorated.x = rect.right  - rect.left;
+	window->dimensions_decorated.y = rect.bottom - rect.top;
 	
-	DeshiStageInitEnd(DS_WINDOW);
-}
-
-//returns nullptr if the function fails to make the child;
-Window* Window::
-MakeChild(str8 name, s32 width, s32 height, s32 x, s32 y){DPZoneScoped;
-	AssertDS(DS_WINDOW, "Attempt to make a child window without initializing window first");
-	if(child_count == max_child_windows){ LogE("window-win32", "Window failed to make a child window: max child windows reached."); return 0; }
-	Stopwatch t_s = start_stopwatch();
+	::GetClientRect((HWND)window->handle, &rect);
+	::ClientToScreen((HWND)window->handle, (POINT*)&rect.left);
+	::ClientToScreen((HWND)window->handle, (POINT*)&rect.right);
+	window->position.x = rect.left;
+	window->position.y = rect.top;
+	window->dimensions.x = rect.right  - rect.left;
+	window->dimensions.y = rect.bottom - rect.top;
 	
-	//TODO make global window counter
+	window->center.x = window->dimensions.x / 2;
+	window->center.y = window->dimensions.y / 2;
 	
-	Window* child = (Window*)memalloc(sizeof(Window));
-	//TODO remove all of this code and just call Init on the child when i decide how to handle the main init erroring
-	
-	child->instance = ::GetModuleHandleW(NULL);
-	
-	wchar_t* wname = wchar_from_str8(name, 0, deshi_temp_allocator);
-	
-	//make and register window class //TODO reuse above window class to not pollute atom table
-	WNDCLASSW wc;
-	wc.        style = 0; //https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles
-	wc.  lpfnWndProc = WndProc;
-	wc.   cbClsExtra = 0; // The number of extra bytes to allocate following the window-class structure. The system initializes the bytes to zero.
-	wc.   cbWndExtra = 0; // The number of extra bytes to allocate following the window instance. The system initializes the bytes to zero.
-	wc.    hInstance = (HINSTANCE)child->instance;
-	wc.        hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
-	wc.      hCursor = ::LoadCursor(NULL, IDC_ARROW); //TODO implement custom cursors
-	wc.hbrBackground = NULL;
-	wc. lpszMenuName = NULL;
-	wc.lpszClassName = wname;
-	if(::RegisterClassW(&wc) == NULL){ 
-		LogE("window-win32", "Window failed to register WNDCLASS for child window");
-		Win32LogLastError("RegisterClassW"); 
-		memzfree(child);
-		return 0;
+	//if this is the first window created, it's global
+	if(window_windows.count == 0){
+		DeshWindow = window;
 	}
 	
-	//create window
-	//https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
-	child->handle = ::CreateWindowW(wname, wname,0,0,0,0,0, NULL, NULL, (HINSTANCE)instance, NULL);
-	if(child->handle == NULL){
-		LogE("window-win32", "Windows failed to create child window");
-		Win32LogLastError("CreateWindowW", true);
-		memzfree(child);
-		return 0;
-	}
-	//set WndProc user data to be a pointer to this window
-	::SetWindowLongPtrW((HWND)child->handle, GWLP_USERDATA, (LONG_PTR)child);
-	child->dc = ::GetDC((HWND)child->handle);
-	
-	//// get monitor info ////
-	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
-	Win32GetMonitorInfo((HWND)handle, &screenWidth, &screenHeight, &work_x, &work_y, &work_w, &work_h);
-	
-	//// setup default window pos/size ////
-	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
-		x = work_x + ((work_w -  width) / 2);
-		y = work_y + ((work_h - height) / 2);
-	}
-	
-	children[child_count++] = child;
-	child->name = name;
-	child->UpdateDisplayMode(displayMode);
-	child->UpdateDecorations(Decoration_TitlebarFull | Decoration_Borders);
-	child->titlebarheight = 5;
-	SetWindowPos((HWND)child->handle, 0, x, y, width, height, 0);
-	
-	LogS("deshi", "Finished child window initialization in ", peek_stopwatch(t_s), "ms");
-	return child;
+	window->index = window_windows.count;
+	window_active = window;
+	window_windows.add(window);
+	return window;
 }
 
-void Window::
-Update(){DPZoneScoped;
-	Stopwatch update_stopwatch = start_stopwatch();
+void
+window_close(Window* window){DPZoneScoped;
+	PostMessage((HWND)window->handle, WM_CLOSE, 0, 0);
+}
+
+void
+window_swap_buffers(Window* window){DPZoneScoped;
+	::SwapBuffers((HDC)window->dc);
+}
+
+void
+window_display_mode(Window* window, DisplayMode mode){DPZoneScoped;
+	if(window->display_mode == mode) return;
 	
-	resized = false;
-	
-	//iterate through all window messages 
-	MSG msg;
-	while(::PeekMessageW(&msg, (HWND)handle, 0, 0, PM_REMOVE)){
-		if(msg.message == WM_QUIT || msg.message == WM_CLOSE || msg.message == WM_DESTROY){
-			closeWindow = true;
-		}else{
-			::TranslateMessage(&msg);
-			::DispatchMessageW(&msg);
-		}
+	//if previous mode was Fullscreen, restore the screen settings
+	if(window->display_mode == DisplayMode_Fullscreen){
+		::ChangeDisplaySettingsW(0, CDS_FULLSCREEN);
 	}
 	
-	//update children (this should maybe be done by whoever creates it instead of the parent)
-	forI(child_count) children[i]->Update();
-	
-	if(decorations != Decoration_SystemDecorations) DrawDecorations(this);
-	hittest = HitTestNone;
-	if(cursorMode == CursorMode_FirstPerson) SetCursorPos(centerX, centerY /*+ titlebarheight*/);
-	
-	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
-}
-
-b32 Window::
-ShouldClose(){DPZoneScoped;
-	DPFrameMark;
-	return closeWindow;
-}
-
-void Window::
-Close(){DPZoneScoped;
-	closeWindow = true;
-}
-
-void Window::
-Cleanup(){DPZoneScoped;
-	::DestroyWindow((HWND)handle);
-}
-
-void Window::
-UpdateDisplayMode(DisplayMode dm){DPZoneScoped;
-	switch (dm){
+	HWND hwnd = (HWND)window->handle;
+	switch(mode){
 		case DisplayMode_Windowed:{
-			if(displayMode != DisplayMode_Windowed){
-				HWND hwnd = (HWND)handle;
-				u32 style = ::GetWindowLongA(hwnd, GWL_STYLE);
-				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
-				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-				resized = true;
+			window->resized = true;
+			::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)::GetWindowLongPtrW(hwnd,GWL_STYLE) | WS_OVERLAPPEDWINDOW);
+			if(window->display_mode == DisplayMode_Borderless){
+				window->restore.position   = window->position_decorated;
+				window->restore.dimensions = window->dimensions_decorated;
 			}
-			displayMode = dm;
-		}break;
-		case DisplayMode_Fullscreen:{
-			if(displayMode != DisplayMode_Fullscreen){
-				restoreX = x;
-				restoreY = y;
-				restoreW = width;
-				restoreH = height;
-				HWND hwnd = (HWND)handle;
-				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
-				MONITORINFO mi = { sizeof(MONITORINFO) };
-				WINDOWPLACEMENT wp = { 0 };
-				//TODO add a way to choose what monitor the window is fullscreened to
-				b32 failed = false;
-				if(!::GetWindowPlacement(hwnd, &wp)){ Win32LogLastError("GetWindowPlacement"); failed = true; }
-				if(!::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){ Win32LogLastError("GetMonitorInfo"); failed = true; }
-				
-				if(!failed){
-					::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
-					RECT mr = mi.rcMonitor;
-					::SetWindowPos(hwnd, HWND_TOP, mr.left, mr.top, mr.right - mr.left, mr.bottom - mr.top, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-				}
-				resized = true;
-			}
-			displayMode = dm;
+			::SetWindowPos(hwnd, HWND_TOP, window->restore.x,window->restore.y, window->restore.width,window->restore.height, SWP_NOZORDER|SWP_NOOWNERZORDER|SWP_FRAMECHANGED);
 		}break;
 		case DisplayMode_Borderless:{
-			if(displayMode != DisplayMode_Borderless){
-				HWND hwnd = (HWND)handle;
-				u32 style = (u32)::GetWindowLongPtrW(hwnd, GWL_STYLE);
-				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW));
-				::SetWindowPos(hwnd, HWND_TOP, restoreX, restoreY, restoreW, restoreH, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-				resized = true;
+			window->resized = true;
+			::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)::GetWindowLongPtrW(hwnd,GWL_STYLE) & (~WS_OVERLAPPEDWINDOW));
+			if(window->display_mode == DisplayMode_Windowed){
+				RECT rect;
+				::GetClientRect(hwnd, &rect);
+				::ClientToScreen(hwnd, (POINT*)&rect.left);
+				::ClientToScreen(hwnd, (POINT*)&rect.right);
+				window->restore.x = rect.left;
+				window->restore.y = rect.top;
+				window->restore.width  = rect.right  - rect.left;
+				window->restore.height = rect.bottom - rect.top;
 			}
-			displayMode = dm;
+			::SetWindowPos(hwnd, HWND_TOP, window->restore.x,window->restore.y, window->restore.width,window->restore.height, SWP_NOZORDER|SWP_NOOWNERZORDER|SWP_FRAMECHANGED);
+		}break;
+		case DisplayMode_BorderlessMaximized:{
+			MONITORINFO mi = {sizeof(MONITORINFO)};
+			if(::GetMonitorInfoW(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){
+				window->resized = true;
+				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)::GetWindowLongPtrW(hwnd,GWL_STYLE) & (~WS_OVERLAPPEDWINDOW));
+				window->restore.position   = window->position_decorated;
+				window->restore.dimensions = window->dimensions_decorated;
+				window->x       = mi.rcMonitor.left;
+				window->y       = mi.rcMonitor.top;
+				window->width   = mi.rcMonitor.right  - mi.rcMonitor.left;
+				window->height  = mi.rcMonitor.bottom - mi.rcMonitor.top;
+				::SetWindowPos(hwnd, HWND_TOP, window->x,window->y, window->width,window->height, SWP_NOOWNERZORDER|SWP_FRAMECHANGED);
+			}
+		}break;
+		case DisplayMode_Fullscreen:{
+			//get current screen settings
+			DEVMODEW settings;
+			::EnumDisplaySettingsW(0, ENUM_CURRENT_SETTINGS, &settings);
+			
+			//set desired screen resolution
+			//TODO(delle) screen resolution and refresh rate
+			
+			//apply changed screen settings
+			MONITORINFO mi = {sizeof(MONITORINFO)};
+			if(   ::ChangeDisplaySettingsW(&settings, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL
+			   && ::GetMonitorInfoW(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi)){
+				window->resized = true;
+				::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)::GetWindowLongPtrW(hwnd,GWL_STYLE) & (~WS_OVERLAPPEDWINDOW));
+				window->restore.position   = window->position_decorated;
+				window->restore.dimensions = window->dimensions_decorated;
+				window->x       = mi.rcMonitor.left;
+				window->y       = mi.rcMonitor.top;
+				window->width   = mi.rcMonitor.right  - mi.rcMonitor.left;
+				window->height  = mi.rcMonitor.bottom - mi.rcMonitor.top;
+				::SetWindowPos(hwnd, HWND_TOPMOST, window->x,window->y, window->width,window->height, SWP_NOOWNERZORDER|SWP_FRAMECHANGED);
+			}
 		}break;
 	}
+	window->display_mode = mode;
 }
 
-void Window::
-UpdateCursorMode(CursorMode mode){DPZoneScoped;
-	if(mode == this->cursorMode){return;}
-	cursorMode = mode;
-	
+//void window_decorations(Decoration decorations){DPZoneScoped;}
+
+void
+window_show(Window* window){DPZoneScoped;
+	::ShowWindow((HWND)window->handle, SW_SHOW);
+}
+
+void
+window_hide(Window* window){DPZoneScoped;
+	::ShowWindow((HWND)window->handle, SW_HIDE);
+}
+
+void
+window_title(Window* window, str8 title){DPZoneScoped;
+	::SetWindowTextW((HWND)window->handle, wchar_from_str8(title, 0, deshi_temp_allocator));
+	memory_zfree(window->title.str);
+	window->title = str8_copy(title, deshi_allocator);
+}
+
+void
+window_cursor_mode(Window* window, CursorMode mode){DPZoneScoped;
+	if(window->cursor_mode == mode) return;
 	switch(mode){
-		case(CursorMode_Default):default:{
-			SetCursor(CursorType_Arrow); //TODO setup a restore cursor?
+		case CursorMode_Default: default:{
+			::SetCursor(::LoadCursor(0, IDC_ARROW));
 			::ClipCursor(0);
 		}break;
-		case(CursorMode_FirstPerson):{
-			//set cursor to middle of screen
-			SetCursorPos(centerX, centerY /*+ titlebarheight*/);
+		case CursorMode_FirstPerson:{
+			//set cursor to center of screen
+			POINT p{window->center.x, window->center.y};
+			::ClientToScreen((HWND)window->handle, &p);
+			::SetCursorPos(p.x, p.y);
 			
 			//hide cursor
-			SetCursor(CursorType_Hidden);
+			::SetCursor(0);
 			
-			//restrict cursor to client rect
-			RECT clip_rect;
-			::GetClientRect((HWND)handle, &clip_rect);
-			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.left); //NOTE transforms .top as well
-			::ClientToScreen((HWND)handle, (POINT*)&clip_rect.right);
-			::ClipCursor(&clip_rect);
-		}break;
-		case(CursorMode_Hidden):{
-			SetCursor(CursorType_Hidden);
-			::ClipCursor(0);
+			//restrict cursor to client
+			RECT rect;
+			::GetClientRect((HWND)window->handle, &rect);
+			::ClientToScreen((HWND)window->handle, (POINT*)&rect.left);
+			::ClientToScreen((HWND)window->handle, (POINT*)&rect.right);
+			::ClipCursor(&rect);
 		}break;
 	}
-#if 0
-	Log("window", "Setting cursor mode to ", mode);
-#endif
+	window->cursor_mode = mode;
 }
 
-void Window::
-UpdateDecorations(Decoration _decorations){DPZoneScoped;
-	decorations = _decorations;
-	HWND hwnd = (HWND)handle;
-	u32 style = ::GetWindowLongPtrW(hwnd, GWL_STYLE);
-	if(decorations == Decoration_SystemDecorations){
-		::SetWindowLongPtrW(hwnd, GWL_STYLE, (LONG_PTR)AddFlag(style, WS_OVERLAPPEDWINDOW));
-		titlebarheight = 0;
-		borderthickness = 0;
-	}else{
-		::SetWindowLongPtrA(hwnd, GWL_STYLE, (LONG_PTR)RemoveFlag(style, WS_OVERLAPPEDWINDOW)); 
-	}
-	::SetWindowPos(hwnd, 0, x, y, width, height, SWP_NOMOVE | SWP_NOOWNERZORDER);
-}
-
-void Window::
-SetCursorPos(f64 _x, f64 _y){DPZoneScoped;
-#if 0
-	Logf("window", "SetCursorPos old(%f,%f) new(%f,%f)", DeshInput->mouseX, DeshInput->mouseY, _x, _y);
-#endif
-	
-	POINT p = {LONG(_x), LONG(_y + 2.f*titlebarheight)};
-	::ClientToScreen((HWND)handle, &p);
-	::SetCursorPos(p.x, p.y);
-	
-	DeshInput->mouseX = _x;
-	DeshInput->mouseY = _y;
-}
-
-void Window::
-SetCursorPosScreen(f64 _x, f64 _y){
-#if 0
-	Logf("window", "SetCursorPosScreen old(%f,%f) new(%f,%f)", DeshInput->screenMouseX, DeshInput->screenMouseY, _x, _y);
-#endif
-	
-	::SetCursorPos(_x, _y);
-	DeshInput->screenMouseX = _x;
-	DeshInput->screenMouseY = _y;
-}
-
-void Window::
-SetCursor(CursorType cursor_type){
-	switch(cursor_type){
+void
+window_cursor_type(Window* window, CursorType type){DPZoneScoped;
+	switch(type){
 		case CursorType_Arrow:{
-			::SetCursor(LoadCursor(0, IDC_ARROW));
+			::SetCursor(::LoadCursor(0, IDC_ARROW));
 		}break;
 		case CursorType_HResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZEWE));
+			::SetCursor(::LoadCursor(0, IDC_SIZEWE));
 		}break;
 		case CursorType_VResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZENS));
+			::SetCursor(::LoadCursor(0, IDC_SIZENS));
 		}break;
 		case CursorType_RightDiagResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZENESW));
+			::SetCursor(::LoadCursor(0, IDC_SIZENESW));
 		}break;
 		case CursorType_LeftDiagResize:{
-			::SetCursor(LoadCursor(0, IDC_SIZENWSE));
+			::SetCursor(::LoadCursor(0, IDC_SIZENWSE));
 		}break;
 		case CursorType_Hand:{
-			::SetCursor(LoadCursor(0, IDC_HAND));
+			::SetCursor(::LoadCursor(0, IDC_HAND));
 		}break;
 		case CursorType_IBeam:{
-			::SetCursor(LoadCursor(0, IDC_IBEAM));
+			::SetCursor(::LoadCursor(0, IDC_IBEAM));
 		}break;
 		case CursorType_Hidden:{
 			::SetCursor(0);
 		}break;
 		default:{
-			LogE("window","Unknown cursor type: ", cursor_type);
-			::SetCursor(LoadCursor(0, IDC_ARROW));
+			LogE("window","Unknown cursor type: ", type);
+			::SetCursor(::LoadCursor(0, IDC_ARROW));
 		}break;
 	}
-#if 0
-	Log("window", "Setting cursor type to ", cursor_type);
-#endif
 }
 
-void Window::
-UpdateRawInput(b32 rawInput){DPZoneScoped;
-	WarnFuncNotImplemented("");
-}
-
-void Window::
-UpdateResizable(b32 resizable){DPZoneScoped;
-	WarnFuncNotImplemented("");
-}
-
-void Window::
-GetScreenSize(s32& _width, s32& _height){DPZoneScoped;
-	_width = screenWidth; _height = screenHeight;
-}
-
-void Window::
-GetWindowSize(s32& _width, s32& _height){DPZoneScoped;
-	_width = width; _height = height;	
-}
-
-void Window::
-GetClientSize(s32& _width, s32& _height){DPZoneScoped;
-	_width = cwidth; _height = cheight;
-}
-
-vec2 Window::
-GetClientAreaPosition(){DPZoneScoped;
-	return vec2(0, titlebarheight);
-}
-
-vec2 Window::
-GetClientAreaDimensions(){DPZoneScoped;
-	return vec2(width, height - titlebarheight);
-}
-
-void Window::
-UpdateTitle(str8 title){DPZoneScoped;
-	wchar_t* wtitle = wchar_from_str8(title, 0, deshi_temp_allocator);
-	::SetWindowTextW((HWND)handle, wtitle);
-}
-
-void Window::
-ShowWindow(u32 child){DPZoneScoped;
-	if(child != npos){
-		::ShowWindow((HWND)children[child]->handle, SW_SHOWNORMAL);
-	}else{
-		::ShowWindow((HWND)handle, SW_SHOWNORMAL);
-	}
-}
-
-void Window::
-HideWindow(u32 child){DPZoneScoped;
-	if(child != npos){
-		::ShowWindow((HWND)children[child]->handle, SW_HIDE);
-	}else{
-		::ShowWindow((HWND)handle, SW_HIDE);
-	}
-}
-
-void Window::
-CloseConsole(){DPZoneScoped;
-	//TODO funciton for making a new console 
-	::FreeConsole();
-}
-
-void Window::
-SwapBuffers(){
-	::SwapBuffers((HDC)dc);
+void
+window_cursor_position(Window* window, s32 x, s32 y){DPZoneScoped;
+	POINT p{x, y};
+	::ClientToScreen((HWND)window->handle, &p);
+	::SetCursorPos(p.x, p.y);
+	DeshInput->mouseX = x;
+	DeshInput->mouseY = y;
+	DeshInput->screenMouseX = p.x;
+	DeshInput->screenMouseY = p.y;
 }

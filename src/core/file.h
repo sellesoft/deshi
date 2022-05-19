@@ -38,6 +38,7 @@ Index:
   file_append(File* file, void* data, u64 bytes) -> u64
   file_append_line(File* file, str8 line) -> u64
   file_append_simple(str8 path, void* data, u64 bytes) -> u64
+@file_shared_variables
 @file_tests
 
 TODOs:
@@ -257,6 +258,13 @@ external u64 deshi__file_append_simple(str8 caller_file, upt caller_line, str8 p
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef DESHI_IMPLEMENTATION
 #include "logger.h"
+#include "kigu/array.h"
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @file_shared_variables
+local b32 file_crash_on_error = false;
+local array<File*> file_files;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -581,8 +589,6 @@ deshi__file_append_line(str8 caller_file, upt caller_line, File* file, str8 line
 
 
 void TEST_deshi_file(){
-	TestRequires(DeshWindow->handle != 0);
-	
 	if(file_exists(str8_lit("data/test_deshi_file"))){
 		file_delete(str8_lit("data/test_deshi_file"));
 	}

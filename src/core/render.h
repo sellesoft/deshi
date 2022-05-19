@@ -2,7 +2,7 @@
 Notes:
   All 2D and 3D drawing functions are immediate-mode, except render_debug_line().
   Drawing functions ending in 2 are for 2D, 3 are for 3D, and nothing are implicitly 3D.
-The 2D coordinate system goes from top left as the origin to bottom right.
+  The 2D coordinate system goes from top left as the origin to bottom right.
 
 Index:
 @render_types
@@ -16,6 +16,10 @@ Index:
   RenderTwodCmd
   RenderMesh
 @render_status
+  render_init() -> void
+  render_update() -> void
+  render_reset() -> void
+  render_cleanup() -> void
   render_load_settings() -> void
   render_save_settings() -> void
   render_get_settings() -> RenderSettings*
@@ -275,7 +279,7 @@ external RenderStage* render_get_stage();
 external u32 render_max_surface_count();
 
 //Creates a render surface for `window` with `idx`
-external void render_register_surface(u32 idx, Window* window);
+external void render_register_surface(Window* window);
 
 //Sets the render surface for `window` to the active one
 external void render_set_active_surface(Window* window);
@@ -483,6 +487,7 @@ external void render_display_stats();
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef DESHI_IMPLEMENTATION
 #include "config.h"
+#include "model.h"
 #include "ui.h"
 
 

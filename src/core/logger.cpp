@@ -1,3 +1,7 @@
+//NOTE(delle) these are used in logger_init() for setting Win32 stdout mode to UTF16
+#include <io.h>
+#include <fcntl.h>
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @internal
 local Logger logger;

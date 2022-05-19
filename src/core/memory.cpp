@@ -1238,7 +1238,7 @@ deshi__memory_draw(){
 	
 	UI::PushColor(UIStyleCol_Border,             Color_Grey);
 	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
-	UI::Begin(str8_lit("deshi_memory"), DeshWindow->dimensions/4.f, DeshWindow->dimensions/2.f, UIWindowFlags_NoScroll);{
+	UI::Begin(str8_lit("deshi_memory"), vec2(DeshWindow->dimensions)/4.f, vec2(DeshWindow->dimensions)/2.f, UIWindowFlags_NoScroll);{
 		UIWindow* window = UI::GetWindow();
 		UIStyle& style = UI::GetStyle();
 		char used_char = ' ', size_char = ' ';

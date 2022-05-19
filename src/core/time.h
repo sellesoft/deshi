@@ -14,7 +14,7 @@ struct Time{
 	f64 deltaTime;
 	f64 totalTime;
 	u64 frame;
-	f64 timeTime, windowTime, inputTime, consoleTime, renderTime, frameTime;
+	f64 timeTime, windowTime, inputTime, consoleTime, renderTime;
 	Stopwatch stopwatch;
 };
 

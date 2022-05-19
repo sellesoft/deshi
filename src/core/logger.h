@@ -2,7 +2,6 @@
 #ifndef DESHI_LOGGER_H
 #define DESHI_LOGGER_H
 
-#include "file.h"
 #include "kigu/common.h"
 #include "kigu/unicode.h"
 
@@ -13,6 +12,7 @@ enum{
 	LogType_Success,
 };
 
+struct File;
 struct Logger{
 	File* file = 0;
 	

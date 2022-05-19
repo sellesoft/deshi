@@ -1,10 +1,47 @@
+/* deshi Window Module
+Notes:
+
+Index:
+@window_types
+  DisplayMode
+  Decoration
+  HitTest
+  CursorMode
+  CursorType
+  Window
+@window_management
+  window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode) -> Window*
+  window_update(Window* window) -> void
+  window_close(Window* window) -> void
+  window_swap_buffers(Window* window) -> void
+@window_visuals
+  window_display_mode(Window* window, DisplayMode mode) -> void
+  window_decorations(Window* window, Decoration decorations) -> void
+  window_show(Window* window) -> void
+  window_hide(Window* window) -> void
+  window_title(str8 title) -> void
+@window_cursor
+  window_cursor_mode(Window* window, CursorMode mode) -> void
+  window_cursor_type(Window* window, CursorType type) -> void
+  window_cursor_position(Window* window, s32 x, s32 y) -> void
+@window_shared_variables
+
+TODOs:
+[05/17/22,EASY,Feature] add window icon modification
+[05/17/22,EASY,Feature] add cursor icons modification
+[05/18/22,MEDI,Feature] add custom titlebar and decorations
+[05/18/22,MEDI,Feature] add monitor selection for fullscreen
+[05/18/22,MEDI,Feature] add children windows
+[05/18/22,MEDI,Feature] add custom resolution and refresh rate
+*/
+
 #pragma once
 #ifndef DESHI_WINDOW_H
 #define DESHI_WINDOW_H
-
 #include "kigu/common.h"
-#include "kigu/string.h"
+#include "kigu/unicode.h"
 #include "math/vector.h"
+
 
 #ifdef DESHI_PROFILE_WINDOW
 #  define DPWinFrameMark DPFrameMark
@@ -13,29 +50,26 @@
 //TODO continue this idea for this and other modules 
 #endif
 
-struct Input;
-struct GLFWwindow;
-struct GLFWmonitor;
-struct GLFWcursor;
-
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @window_types
 typedef Type DisplayMode; enum{
-	DisplayMode_Windowed, 
-	DisplayMode_Borderless, 
-	DisplayMode_BorderlessFullscreen,
-	DisplayMode_Fullscreen
+	DisplayMode_Windowed,
+	DisplayMode_Borderless,
+	DisplayMode_BorderlessMaximized,
+	DisplayMode_Fullscreen,
 };
 
-typedef Type Decoration; enum{
-	Decoration_Titlebar          = 1 << 0, // full titlebar
-	Decoration_TitlebarClose     = 1 << 1, // close button	  
-	Decoration_TitlebarMaximize  = 1 << 2, // maxmize button  
-	Decoration_TitlebarMinimize  = 1 << 3, // minimize button 
-	Decoration_TitlebarTitle     = 1 << 4, // title of window in title bar
-	Decoration_TitlebarFull      = Decoration_TitlebarTitle | Decoration_TitlebarMinimize | Decoration_TitlebarMaximize | Decoration_TitlebarClose | Decoration_Titlebar,
-	Decoration_MinimalTitlebar   = 1 << 5, // thin titlebar that just moves the window, it cant have listed above
-	Decoration_Borders           = 1 << 6,
-	Decoration_MouseBorders      = 1 << 7, // only displays borders when the mouse gets close to them for resizing
-	Decoration_SystemDecorations = 0xFFFFFFFF
+typedef Flags Decoration; enum{
+	Decoration_SystemDecorations = 0,
+	//Decoration_Titlebar          = 1 << 0, // full titlebar
+	//Decoration_TitlebarClose     = 1 << 1, // close button
+	//Decoration_TitlebarMaximize  = 1 << 2, // maxmize button
+	//Decoration_TitlebarMinimize  = 1 << 3, // minimize button
+	//Decoration_TitlebarTitle     = 1 << 4, // title of window in title bar
+	//Decoration_MinimalTitlebar   = 1 << 5, // thin titlebar that just moves the window, it cant have listed above
+	//Decoration_Borders           = 1 << 6,
+	//Decoration_MouseBorders      = 1 << 7, // only displays borders when the mouse gets close to them for resizing
+	//Decoration_TitlebarFull      = Decoration_TitlebarTitle | Decoration_TitlebarMinimize | Decoration_TitlebarMaximize | Decoration_TitlebarClose | Decoration_Titlebar,
 };
 
 typedef Type HitTest; enum{
@@ -55,7 +89,6 @@ typedef Type HitTest; enum{
 typedef Type CursorMode; enum{
 	CursorMode_Default, 
 	CursorMode_FirstPerson, 
-	CursorMode_Hidden,
 };
 
 typedef Type CursorType; enum{
@@ -69,231 +102,114 @@ typedef Type CursorType; enum{
 	CursorType_Hidden,
 };
 
-constexpr u32 max_child_windows = 2;
 struct Window{
-	str8 name;
-	GLFWwindow*  window;
-	GLFWmonitor* monitor;
+	u32 index;
+	str8 title;
 	
-	void* handle = 0; //win32: HWND; linux/mac not implemented
-	void* instance = 0; //win32: HINSTANCE; linux/mac not implemented
-	void* dc = 0; //win32: HDC; linux/mac not implemented
+	void* handle; //win32: HWND; linux/mac not implemented
+	void* dc; //win32: HDC; linux/mac not implemented
+	void* glwf_window; //GLFWwindow
+	void* glwf_monitor; //GLFWmonitor
 	
-	Window* children[max_child_windows];
-	u32 child_count = 0;
-	u32 renderer_surface_index = -1;
+	union{
+		vec2i position;
+		struct{ s32 x, y; };
+	};
+	union{
+		vec2i dimensions;
+		struct{ s32 width, height; };
+	};
 	
-	//TODO add support for colored decor
-	Decoration decorations;
+	struct{
+		union{
+			vec2i position;
+			struct{ s32 x, y; };
+		};
+		union{
+			vec2i dimensions;
+			struct{ s32 width, height; };
+		};
+	}restore;
 	
-	//this is only set in the main window, child windows can not set this, and so it is only accessible on the main window's pointer
-	Window* activeWindow = 0;
+	vec2i position_decorated;
+	vec2i dimensions_decorated;
+	vec2i center;
 	
-	HitTest hittest = HitTestNone;
+	DisplayMode display_mode;
+	CursorMode cursor_mode;
 	
-	s32 x, y;
-	s32 width, height;
-	s32 cx, cy;          //position of client area in window's coordinates
-	s32 cwidth, cheight; //size of client area
-	s32 screenWidth, screenHeight;
-	s32 restoreX, restoreY;
-	s32 restoreW, restoreH;
-	s32 centerX, centerY;
-	s32 refreshRate, screenRefreshRate; //TODO(delle,Wi) add selecting the refresh rate
-	DisplayMode displayMode;
-	CursorMode cursorMode;
-	
-	b32 active;
 	b32 resized;
 	b32 minimized;
-	b32 rawInput;
-	b32 resizable;
-	b32 closeWindow;
+	b32 close_window;
 	
-	s32 titlebarheight = 0;
-	s32 borderthickness = 0;
-	
-	vec2 dimensions;
-	
-	void    Init(str8 name, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
-	Window* MakeChild(str8 name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF);
-	
-	void    Update();
-	void    Cleanup();
-	void    Close();
-	b32     ShouldClose();
-	
-	void    UpdateDisplayMode(DisplayMode mode);
-	void    UpdateDecorations(Decoration decorations);
-	void    UpdateResizable(b32 resizable);
-	void    GetScreenSize(s32& width, s32& height);
-	void    GetWindowSize(s32& width, s32& height);
-	void    GetClientSize(s32& width, s32& height);
-	vec2    GetClientAreaPosition();
-	vec2    GetClientAreaDimensions();
-	void    ShowWindow(u32 child = -1);
-	void    HideWindow(u32 child = -1);
-	void    UpdateTitle(str8 title);
-	void    CloseConsole();
-	void    SwapBuffers();
-	
-	// cursor and input
-	void    UpdateRawInput(b32 rawInput);
-	void    UpdateCursorMode(CursorMode mode); 
-	void    SetCursor(CursorType type);
-	void    SetCursorPos(f64 x, f64 y);
-	FORCE_INLINE void SetCursorPos(vec2 pos){ SetCursorPos(pos.x, pos.y); }
-	void    SetCursorPosScreen(f64 x, f64 y);
-	FORCE_INLINE void SetCursorPosScreen(vec2 pos){ SetCursorPosScreen(pos.x, pos.y); }
-	
-	//define custom cursors
-	//maybe could put this somewhere else bc it will make the window struct very large
-	private:
-	u32 W = 0xffffffff;
-	u32 B = 0xff000000;
-	public:
-	u32 defaultcur[16 * 16] = {
-		B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,B,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,B,0,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,W,W,B,0,0,0,0,0,0,0,0,
-		B,W,W,B,W,B,B,B,B,0,0,0,0,0,0,0,
-		B,W,B,B,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,B,0,B,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,0,0,0,B,W,B,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,B,B,0,0,0,0,0,0,0,
-		
-	};
-	
-	u32 hresizecur[16 * 16] = {
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,B,0,0,0,0,0,0,B,0,0,0,0,
-		0,0,0,B,B,0,0,0,0,0,0,B,B,0,0,0,
-		0,0,B,W,B,0,0,0,0,0,0,B,W,B,0,0,
-		0,B,W,W,B,B,B,B,B,B,B,B,W,W,B,0,
-		B,W,W,W,W,W,W,W,W,W,W,W,W,W,W,B,
-		B,W,W,W,W,W,W,W,W,W,W,W,W,W,W,B,
-		0,B,W,W,B,B,B,B,B,B,B,B,W,W,B,0,
-		0,0,B,W,B,0,0,0,0,0,0,B,W,B,0,0,
-		0,0,0,B,B,0,0,0,0,0,0,B,B,0,0,0,
-		0,0,0,0,B,0,0,0,0,0,0,B,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	};
-	
-	u32 vresizecur[16 * 16] = {
-		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,B,0,0,0,0,
-		0,0,0,B,B,B,B,W,W,B,B,B,B,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,B,B,B,B,W,W,B,B,B,B,0,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,B,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,B,B,0,0,0,0,0,0,0,
-	};
-	
-	u32 rightdiagresizecur[16 * 16] = {
-		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,0,B,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,B,W,W,W,B,W,B,
-		0,0,0,0,0,0,0,0,B,W,W,W,B,0,B,B,
-		0,0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,0,
-		B,B,0,B,W,W,W,B,0,0,0,0,0,0,0,0,
-		B,W,B,W,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
-	};
-	
-	u32 leftdiagresizecur[16 * 16] = {
-		B,B,B,B,B,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,B,0,0,0,0,0,0,0,0,0,0,0,
-		B,W,W,W,W,B,0,0,0,0,0,0,0,0,0,0,
-		B,W,B,W,W,W,B,0,0,0,0,0,0,0,0,0,
-		B,B,0,B,W,W,W,B,0,0,0,0,0,0,0,0,
-		0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,0,
-		0,0,0,0,0,0,0,B,W,W,W,B,0,0,0,0,
-		0,0,0,0,0,0,0,0,B,W,W,W,B,0,B,B,
-		0,0,0,0,0,0,0,0,0,B,W,W,W,B,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,0,B,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,W,W,W,W,B,
-		0,0,0,0,0,0,0,0,0,0,B,B,B,B,B,B,
-	};
-	
-	u32 handcur[16 * 16] = {
-		0,0,0,0,0,0,0,0,0,B,B,0,0,0,0,0,
-		0,0,0,0,0,0,B,B,B,W,W,B,B,0,0,0,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,0,0,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,B,0,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,W,B,
-		0,0,0,0,0,B,W,W,B,W,W,B,W,B,W,B,
-		0,B,B,B,0,B,W,W,B,W,W,B,W,B,W,B,
-		0,B,W,W,B,B,W,W,B,W,W,B,W,B,W,B,
-		0,B,W,W,W,B,W,W,W,W,W,W,W,W,W,B,
-		0,0,B,W,W,W,W,W,W,W,W,W,W,W,W,B,
-		0,0,B,W,W,W,W,W,W,W,W,W,W,W,B,0,
-		0,0,0,B,W,W,W,W,W,W,W,W,W,W,B,0,
-		0,0,0,B,W,W,W,W,W,W,W,W,W,B,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,W,W,B,0,0,
-		0,0,0,0,B,W,W,W,W,W,W,W,B,0,0,0,
-		0,0,0,0,0,B,B,B,B,B,B,B,0,0,0,0,
-	};
-	
-	u32 textcur[16 * 16] = {
-		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
-		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
-		0,0,0,B,B,B,W,W,W,B,B,B,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,B,W,B,0,0,0,0,0,0,0,
-		0,0,0,B,B,B,W,W,W,B,B,B,0,0,0,0,
-		0,0,B,W,W,W,W,B,W,W,W,W,B,0,0,0,
-		0,0,0,B,B,B,B,0,B,B,B,B,0,0,0,0,
-	};
-	
+	Decoration decorations;
+	//HitTest hit_test;
+	//s32 titlebar_height;
+	//s32 border_thickness;
 };
 
-//global_ window pointer
+//global window pointer
 extern Window* g_window;
-extern Window* g_window2;
 #define DeshWindow g_window
-#define DeshWindow2 g_window2 //make better names later
-#define DeshWinSize g_window->dimensions
-#define DeshWin2Size g_window2->dimensions
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @window_management
+//Creates an `OS` window with the specified values
+external Window* window_create(str8 title, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode display_mode = DisplayMode_Windowed, Decoration decorations = Decoration_SystemDecorations);
+FORCE_INLINE Window* window_create(const char* title, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode display_mode = DisplayMode_Windowed, Decoration decorations = Decoration_SystemDecorations){ return window_create(str8{(u8*)title,(s64)strlen(title)},width,height,x,y,display_mode,decorations); }
+
+//Closes and deletes the `window` (exits the application if this this is the last open window)
+external void window_close(Window* window);
+
+//Swap the display buffer of `window` (used only in OpenGL)
+external void window_swap_buffers(Window* window);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @window_visuals
+//Updates the `DisplayMode` of `window` to `mode`
+external void window_display_mode(Window* window, DisplayMode mode);
+
+//Updates the `Decoration` of `window` to `decorations`
+//external void window_decorations(Window* window, Decoration decorations);
+
+//Shows the `window` and adds it to the `OS` taskbar
+external void window_show(Window* window);
+
+//Hides the `window` and removes it from the `OS` taskbar
+external void window_hide(Window* window);
+
+//Updates the title of the `window` to `title`
+external void window_title(str8 title);
+FORCE_INLINE void window_title(const char* title){ window_title(str8{(u8*)title, (s64)strlen(title)}); }
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @window_cursor
+//Sets the `CursorMode` of `window` to `mode`
+external void window_cursor_mode(Window* window, CursorMode mode);
+
+//Sets the `CursorType` of `window` to `type`
+external void window_cursor_type(Window* window, CursorType type);
+
+//Sets the cursor position in `Client Space` of `window`
+external void window_cursor_position(Window* window, s32 x, s32 y);
+FORCE_INLINE void window_cursor_position(Window* window, vec2i position){ window_cursor_position(window, position.x, position.y); }
+FORCE_INLINE void window_cursor_position(Window* window, vec2 position){ window_cursor_position(window, (s32)position.x, (s32)position.y); }
+
 
 #endif //DESHI_WINDOW_H
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#ifdef DESHI_IMPLEMENTATION
+#include "kigu/array.h"
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @window_shared_variables
+local Window window_helper{};
+local array<Window*> window_windows;
+local Window* window_active;
+
+
+#endif //DESHI_IMPLEMENTATION

@@ -30,13 +30,13 @@ persist Stopwatch walk = start_stopwatch();
 		init = 1;
 		forI(count) {
 			rdobjs.add(RandDrawObj{
-						   vec2(rand() % (u32)DeshWinSize.x, rand() % (u32)DeshWinSize.y),
-						   vec2(rand() % (u32)DeshWinSize.x, rand() % (u32)DeshWinSize.y) });
+						   vec2(rand() % (u32)DeshWindow->dimensions.x, rand() % (u32)DeshWindow->dimensions.y),
+						   vec2(rand() % (u32)DeshWindow->dimensions.x, rand() % (u32)DeshWindow->dimensions.y) });
 			rdobjs.last->hist.add({ rdobjs.last->pos, randcolor });
 		}
 	}
 	else {
-		render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
+		render_start_cmd2(4, 0, vec2::ZERO, DeshWindow->dimensions);
 		
 		for (RandDrawObj& rdo : rdobjs) {
 			vec2& pos = rdo.pos;
@@ -46,14 +46,14 @@ persist Stopwatch walk = start_stopwatch();
 			
 			//pos += sinf(rand() % 100) * randvec2(10);
 			
-			vec2 tdis = (DeshWinSize / 2 - pos).normalized() * 2;
+			vec2 tdis = (vec2(DeshWindow->dimensions) / 2 - pos).normalized() * 2;
 			//pos += tdis * 2;
 			pos += vec2(tdis.y, -sin(tdis.x)) * 0.5;
 			
 			
 			//pos = Nudge(pos, target, randvec2(10) / 10);
 			
-			//pos = Clamp(pos, vec2::ZERO, DeshWinSize);
+			//pos = Clamp(pos, vec2::ZERO, DeshWindow->dimensions);
 			
 			
 			
@@ -84,7 +84,7 @@ persist Stopwatch walk = start_stopwatch();
 				array<pair<vec2, color>>& hist = rdo.hist;
 				
 				hist.clear();
-				hist.add({ vec2(rand() % (u32)DeshWinSize.x, rand() & (u32)DeshWinSize.y), randcolor });
+				hist.add({ vec2(rand() % (u32)DeshWindow->dimensions.x, rand() & (u32)DeshWindow->dimensions.y), randcolor });
 				
 			}
 			
@@ -104,12 +104,12 @@ void random_walk_avoid() {
 	if (!rwainit) {
 		srand(time(0));
 		rwainit = 1;
-		rwa.pos = vec2(rand() % (u32)DeshWinSize.x, rand() % (u32)DeshWinSize.y);
-		rwa.target = vec2(rand() % (u32)DeshWinSize.x, rand() % (u32)DeshWinSize.y);
+		rwa.pos = vec2(rand() % (u32)DeshWindow->dimensions.x, rand() % (u32)DeshWindow->dimensions.y);
+		rwa.target = vec2(rand() % (u32)DeshWindow->dimensions.x, rand() % (u32)DeshWindow->dimensions.y);
 		rwa.hist.add({ rwa.pos, randcolor });
 	}
 	else {
-		render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
+		render_start_cmd2(4, 0, vec2::ZERO, DeshWindow->dimensions);
 		
 		vec2& pos = rwa.pos;
 		vec2& target = rwa.target;
@@ -139,7 +139,7 @@ void random_walk_avoid() {
 		
 		pos += step;
 		
-		//pos = Clamp(pos, vec2::ZERO, DeshWinSize);
+		//pos = Clamp(pos, vec2::ZERO, DeshWindow->dimensions);
 		
 		if (pos == target) {
 			target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
@@ -202,7 +202,7 @@ void vector_field() {
 	static vec2 target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
 	
 	auto step = [&](vec2 pos) {
-		vec2 tc = (DeshWinSize / 2 - pos) * zoom;
+		vec2 tc = (vec2(DeshWindow->dimensions) / 2 - pos) * zoom;
 		f32 x = tc.x, y = tc.y;
 		//vec2 tm = mp - pos;// - ;
 		Log("", rng());
@@ -220,10 +220,10 @@ void vector_field() {
 	
 	static f32 maxmag = 0;
 	
-	render_start_cmd2(4, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(4, 0, vec2::ZERO, DeshWindow->dimensions);
 	for (u32 i = 0; i < precision; i++) {
 		for (u32 o = 0; o < precision; o++) {
-			vec2 pos(i / precision * DeshWinSize.x+precision/DeshWinSize.x , o / precision * DeshWinSize.y+precision/ DeshWinSize.y);
+			vec2 pos(i / precision * DeshWindow->dimensions.x+precision/DeshWindow->dimensions.x , o / precision * DeshWindow->dimensions.y+precision/ DeshWindow->dimensions.y);
 			vec2 s = step(pos);
 			vec2 pos2 = pos + s.normalized() * 10;
 			
@@ -235,7 +235,7 @@ void vector_field() {
 	}
 
 	if (tracking) {
-		if (Math::PointInRectangle(postrack, vec2::ZERO, DeshWinSize)) {
+		if (Math::PointInRectangle(postrack, vec2::ZERO, DeshWindow->dimensions)) {
 			postrack += step(postrack);
 			hist.add(postrack);
 		}
@@ -263,14 +263,14 @@ void electric_field() {
 		{{ 1., -1.},-1.},
 	};
 	f32 scale = 30;
-	render_start_cmd2(5, 0, vec2::ZERO, DeshWinSize);
-	vec2 coff = DeshWinSize/2;
+	render_start_cmd2(5, 0, vec2::ZERO, DeshWindow->dimensions);
+	vec2 coff = vec2(DeshWindow->dimensions)/2;
 	
 	u32 res = 10;
-	f64 ar = DeshWinSize.y/DeshWinSize.x;
+	f64 ar = DeshWindow->dimensions.y/DeshWindow->dimensions.x;
 	for(u32 i = 0; i < res; i++){
 		for(u32 j = 0; j < res; j++){
-			vec2 pos = vec2((i/f32(res)+1/(2*f32(res)))*DeshWinSize.x, (j/f32(res)+1/(2*f32(res)))*DeshWinSize.y);
+			vec2 pos = vec2((i/f32(res)+1/(2*f32(res)))*DeshWindow->dimensions.x, (j/f32(res)+1/(2*f32(res)))*DeshWindow->dimensions.y);
 			vec2 e;
 			for(charge c : pcharges){
 				e+=1000*c.q/((pos-c.r).magSq())*(pos-c.r).normalized();
@@ -279,7 +279,7 @@ void electric_field() {
 		}
 	}
 	
-	render_start_cmd2(0, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0, 0, vec2::ZERO, DeshWindow->dimensions);
 	for(charge c : pcharges){
 		vec2 pos = c.r * scale + coff;
 		color col = color(155, 155 * Remap(c.q, 0., 1., -1., 1.), 0); 
@@ -288,7 +288,7 @@ void electric_field() {
 }
 
 void draw_pixels(){DPZoneScoped;
-	render_start_cmd2(0, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0, 0, vec2::ZERO, DeshWindow->dimensions);
 	u32 size = 4;
 	static u64 frames = 0;
 	static s64 chance = 1;
@@ -309,7 +309,7 @@ void draw_pixels(){DPZoneScoped;
 }
 
 void sim_pixels(){DPZoneScoped;
-	render_start_cmd2(0, 0, vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0, 0, vec2::ZERO, DeshWindow->dimensions);
 	u32 size = 4;
 	static u64 frames = 0;
 	static s64 chance = 1;
@@ -321,7 +321,7 @@ void sim_pixels(){DPZoneScoped;
 
 
 void repulsion(){DPZoneScoped;
-	render_start_cmd2(0,0,vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0,0,vec2::ZERO, DeshWindow->dimensions);
 	const u32 nparticles = 100;
 	struct particle{
 		vec2 pos;
@@ -364,7 +364,7 @@ void repulsion(){DPZoneScoped;
 		//p0->pos.normalize();
 		p0->acc = vec2::ZERO;
 		p0->vel *= 0.1;
-		render_circle_filled2(p0->pos * 100 + DeshWinSize / 2, 0, 5, 20, color(50, 80, f32(i) / nparticles * 170));
+		render_circle_filled2(p0->pos * 100 + vec2(DeshWindow->dimensions) / 2, 0, 5, 20, color(50, 80, f32(i) / nparticles * 170));
 	}
 
 	if(key_pressed(Key_SPACE)){
@@ -374,7 +374,7 @@ void repulsion(){DPZoneScoped;
 
 void spring(){
 	using namespace UI;
-	render_start_cmd2(0,0,vec2::ZERO, DeshWinSize);
+	render_start_cmd2(0,0,vec2::ZERO, DeshWindow->dimensions);
 	struct particle{
 		vec2 pos;
 		vec2 vel;
@@ -456,7 +456,7 @@ void spring(){
 	if(input_lmouse_pressed()) ppos0.clear(), ppos1.clear(), ppos2.clear(), ppos3.clear(), ppos4.clear();
 
 	SetNextWindowPos(vec2::ZERO);
-	SetNextWindowSize(DeshWinSize);
+	SetNextWindowSize(DeshWindow->dimensions);
 	Begin(str8_lit("springwin"), UIWindowFlags_NoScroll | UIWindowFlags_NoInteract);{
 #define Sldr(var, min, max) Slider(str8_lit(STRINGIZE(var)), &var, min, max); SameLine(); Text(str8_lit(STRINGIZE(var)));
 		Sldr(B, 0, 5);

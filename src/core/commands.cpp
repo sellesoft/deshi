@@ -213,12 +213,6 @@ void cmd_init(){
 		Log("cmd",(const char*)time_buffer);
 	}DESHI_CMD_END_NO_ARGS(daytime);
 	
-	DESHI_CMD_START(time_engine, "Logs deshi engine times"){
-		Logf("cmd","Time:%fms Window:%fms Input:%fms Console:%fms Render:%fms Frame:%fms Delta:%fms",
-			 DeshTime->timeTime, DeshTime->windowTime, DeshTime->inputTime, DeshTime->consoleTime, 
-			 DeshTime->renderTime, DeshTime->frameTime, DeshTime->deltaTime);
-	}DESHI_CMD_END_NO_ARGS(time_engine);
-	
 	DESHI_CMD_START(list, "Lists available commands"){
 		str8_builder builder;
 		str8_builder_init(&builder, {}, deshi_temp_allocator);
@@ -306,53 +300,61 @@ void cmd_init(){
 		s32 mode = atoi((const char*)args[0].str);
 		switch(mode){
 			case 0:{
-				DeshWindow->UpdateDisplayMode(DisplayMode_Windowed);
+				window_display_mode(window_active, DisplayMode_Windowed);
 				Log("cmd", "Window display mode updated to 'windowed'");
 			}break;
 			case 1:{
-				DeshWindow->UpdateDisplayMode(DisplayMode_Borderless);
+				window_display_mode(window_active, DisplayMode_Borderless);
 				Log("cmd", "Window display mode updated to 'borderless'");
 			}break;
 			case 2:{
-				DeshWindow->UpdateDisplayMode(DisplayMode_Fullscreen);
+				window_display_mode(window_active, DisplayMode_BorderlessMaximized);
+				Log("cmd", "Window display mode updated to 'borderless maximized'");
+			}break;
+			case 3:{
+				window_display_mode(window_active, DisplayMode_Fullscreen);
 				Log("cmd", "Window display mode updated to 'fullscreen'");
 			}break;
 			default:{
-				Log("cmd", "Display Modes: 0=Windowed, 1=Borderless, 2=Fullscreen");
+				Log("cmd", "Display Modes: 0=Windowed, 1=Borderless, 2=Borderless Maximized, 3=Fullscreen");
 			}break;
 		}
 	}DESHI_CMD_END(window_display_mode, CmdArgument_S32);
+	
+	DESHI_CMD_START(window_title, "Changes the title of the active window"){
+		window_title(window_active, args[0]);
+		Log("cmd","Updated active window's title to: ",args[0]);
+	}DESHI_CMD_END(window_title, CmdArgument_String);
 	
 	DESHI_CMD_START(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
 		s32 mode = atoi((const char*)args[0].str);
 		switch(mode){
 			case 0:{
-				DeshWindow->UpdateCursorMode(CursorMode_Default);
+				window_cursor_mode(window_active, CursorMode_Default);
 				Log("cmd", "Cursor mode updated to 'default'");
 			}break;
 			case 1:{
-				DeshWindow->UpdateCursorMode(CursorMode_FirstPerson);
+				window_cursor_mode(window_active, CursorMode_FirstPerson);
 				Log("cmd", "Cursor mode updated to 'first person'");
 			}break;
-			case 2:{
-				DeshWindow->UpdateCursorMode(CursorMode_Hidden);
-				Log("cmd", "Cursor mode updated to 'hidden'");
-			}break;
 			default:{
-				Log("cmd", "Cursor Modes: 0=Default, 1=First Person, 2=Hidden");
+				Log("cmd", "Cursor Modes: 0=Default, 1=First Person");
 			}break;
 		}
 	}DESHI_CMD_END(window_cursor_mode, CmdArgument_S32);
 	
 	DESHI_CMD_START(window_raw_input, "Changes whether the window uses raw input"){
+		LogE("cmd","Raw Input not setup yet");
+		return;
+		
 		s32 mode = atoi((const char*)args[0].str);
 		switch(mode){
 			case 0:{
-				DeshWindow->UpdateRawInput(false);
+				//window_active->UpdateRawInput(false);
 				Log("cmd", "Raw input updated to 'false'");
 			}break;
 			case 1:{
-				DeshWindow->UpdateRawInput(true);
+				//window_active->UpdateRawInput(true);
 				Log("cmd", "Raw input updated to 'true'");
 			}break;
 			default:{
@@ -361,49 +363,31 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END(window_raw_input, CmdArgument_S32);
 	
-	DESHI_CMD_START(window_resizable, "Changes whether the window is resizable"){
-		u32 mode = atoi((const char*)args[0].str);
-		switch(mode){
-			case 0:{
-				DeshWindow->UpdateResizable(false);
-				Log("cmd", "Window resizability updated to 'false'");
-			}break;
-			case 1:{
-				DeshWindow->UpdateResizable(true);
-				Log("cmd", "Window resizability updated to 'true'");
-			}break;
-			default:{
-				Log("cmd", "Window resizability: 0=False, 1=True");
-			}break;
-		}
-	}DESHI_CMD_END(window_resizable, CmdArgument_S32);
-	
 	DESHI_CMD_START(window_info, "Lists window's vars"){
 		str8 dispMode;
-		switch(DeshWindow->displayMode){
-			case(DisplayMode_Windowed):  { dispMode = str8_lit("Windowed"); }break;
-			case(DisplayMode_Borderless):{ dispMode = str8_lit("Borderless Windowed"); }break;
-			case(DisplayMode_Fullscreen):{ dispMode = str8_lit("Fullscreen"); }break;
+		switch(window_active->display_mode){
+			case(DisplayMode_Windowed):           { dispMode = str8_lit("Windowed"); }break;
+			case(DisplayMode_Borderless):         { dispMode = str8_lit("Borderless"); }break;
+			case(DisplayMode_BorderlessMaximized):{ dispMode = str8_lit("Borderless Maximized"); }break;
+			case(DisplayMode_Fullscreen):         { dispMode = str8_lit("Fullscreen"); }break;
 		}
 		str8 cursMode;
-		switch(DeshWindow->cursorMode){
+		switch(window_active->cursor_mode){
 			case(CursorMode_Default):    { cursMode = str8_lit("Default"); }break;
 			case(CursorMode_FirstPerson):{ cursMode = str8_lit("First Person"); }break;
-			case(CursorMode_Hidden):     { cursMode = str8_lit("Hidden"); }break;
 		}
 		Log("cmd",
 			"Window Info"
-			"\n    Window Position: ",DeshWindow->x,",",DeshWindow->y,
-			"\n    Window Dimensions: ",DeshWindow->width,"x",DeshWindow->height,
-			"\n    Screen Dimensions: ",DeshWindow->screenWidth,"x",DeshWindow->screenHeight,
-			"\n    Refresh Rate: ",DeshWindow->refreshRate,
-			"\n    Screen Refresh Rate: ",DeshWindow->screenRefreshRate,
-			"\n    Display Mode: ",(const char*)dispMode.str,
-			"\n    Cursor Mode: ",(const char*)cursMode.str,
-			"\n    Raw Input: ",DeshWindow->rawInput,
-			"\n    Resizable: ",DeshWindow->resizable,
-			"\n    Restores: ",DeshWindow->restoreX,",",DeshWindow->restoreY,
-			" ",DeshWindow->restoreW,"x",DeshWindow->restoreH);
+			"\n    Index:          ",window_active->index,
+			"\n    Title:          ",window_active->title,
+			"\n    Client Pos:     ",window_active->x,",",window_active->y,
+			"\n    Client Dims:    ",window_active->width,"x",window_active->height,
+			"\n    Decorated Pos:  ",window_active->position_decorated.x,",",window_active->position_decorated.y,
+			"\n    Decorated Dims: ",window_active->dimensions_decorated.x,"x",window_active->dimensions_decorated.y,
+			"\n    Display Mode:   ",dispMode,
+			"\n    Cursor Mode:    ",cursMode,
+			"\n    Restore Pos:    ",window_active->restore.x,",",window_active->restore.y,
+			"\n    Restore Dims:   ",window_active->restore.width,"x",window_active->restore.height);
 	}DESHI_CMD_END_NO_ARGS(window_info);
 	
 	DESHI_CMD_START(mat_list, "Lists the materials and their info"){
@@ -475,7 +459,7 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
 	DESHI_CMD_START(quit, "Exits the application"){
-		DeshWindow->Close();
+		platform_exit();
 	}DESHI_CMD_END_NO_ARGS(quit);
 	
 	DeshiStageInitEnd(DS_CMD);

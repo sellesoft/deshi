@@ -470,7 +470,7 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos){DPZoneScoped;
 }
 
 FORCE_INLINE void SetWindowCursor(CursorType curtype){DPZoneScoped;
-	DeshWindow->SetCursor(curtype);
+	window_cursor_type(DeshWindow, curtype);
 	StateAddFlag(UISCursorSet);
 }
 
@@ -2394,8 +2394,8 @@ void UI::PushDrawTarget(u32 idx){DPZoneScoped;
 }
 
 void UI::PushDrawTarget(Window* window){DPZoneScoped;
-	Assert(window->renderer_surface_index != -1, "Attempt to push a draw target that has not been registered with the renderer");
-	drawTargetStack.add(window->renderer_surface_index);
+	Assert(window->index != -1, "Attempt to push a draw target that has not been registered with the renderer");
+	drawTargetStack.add(window->index);
 }
 
 //we always leave the current color on top of the stack and the previous gets popped
@@ -2857,7 +2857,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 			}else{
 				curwin = new UIWindow();
 				curwin->name = name;
-				curwin->position   = (NextWinPos.x != -1) ? NextWinPos + DeshWindow->GetClientAreaPosition() : pos + DeshWindow->GetClientAreaPosition();
+				curwin->position   = (NextWinPos.x != -1) ? NextWinPos : pos;
 				curwin->dimensions.x = dimensions.x;
 				curwin->dimensions.y = dimensions.y;
 				windows.add(name, curwin);
@@ -2867,9 +2867,9 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 			curwin->scroll = vec2(0, 0);
 			curwin->cursor = vec2(0, 0);
 			curwin->flags  = flags;
-			if(NextWinSize.x == MAX_F32) curwin->dimensions.x = DeshWindow->GetClientAreaDimensions().x;
+			if(NextWinSize.x == MAX_F32) curwin->dimensions.x = DeshWindow->width;
 			else if(NextWinSize.x != -1) curwin->dimensions.x = NextWinSize.x;
-			if(NextWinSize.y == MAX_F32) curwin->dimensions.y = DeshWindow->GetClientAreaDimensions().y;
+			if(NextWinSize.y == MAX_F32) curwin->dimensions.y = DeshWindow->height;
 			else if(NextWinSize.y != -1) curwin->dimensions.y = NextWinSize.y;
 		}break;
 		case UIWindowType_Child:{ ///////////////////////////////////////////////////////////////////////
@@ -2905,7 +2905,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 				curwin = new UIWindow();
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
-				curwin->position = (NextWinPos.x != -1) ? NextWinPos + DeshWindow->GetClientAreaPosition() : DecideItemPos(parent);
+				curwin->position = (NextWinPos.x != -1) ? NextWinPos : DecideItemPos(parent);
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
@@ -2937,7 +2937,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
-				if(NextWinPos.x != -1) curwin->position = NextWinPos + DeshWindow->GetClientAreaPosition();
+				if(NextWinPos.x != -1) curwin->position = NextWinPos;
 			}else{
 				if(NextWinSize.x == MAX_F32) item->size.x = MarginedRight() - item->position.x;
 				else if(NextWinSize.x != -1) item->size.x = NextWinSize.x;
@@ -2950,7 +2950,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 				curwin = new UIWindow();
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
-				curwin->position   = (NextWinPos.x != -1) ? NextWinPos + DeshWindow->GetClientAreaPosition() : DecideItemPos(parent);
+				curwin->position   = (NextWinPos.x != -1) ? NextWinPos : DecideItemPos(parent);
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
@@ -3667,7 +3667,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 	
 	bubble_sort(winsorted, [](UIWindow* win1, UIWindow* win2){return *win1->name.str > *win2->name.str; });
 	
-	Begin(str8_lit("METRICS"), DeshWindow->dimensions - vec2(300,500), vec2(300, 500));
+	Begin(str8_lit("METRICS"), vec2(DeshWindow->dimensions) - vec2(300,500), vec2(300, 500));
 	myself = curwin;
 	//WinSetHovered(curwin);
 	
@@ -4444,15 +4444,15 @@ inline void DrawItem(UIItem& item, UIWindow* window){DPZoneScoped;
 			case UIWindowType_PopOut:
 			case UIWindowType_Normal:{
 				dcso = Min(winpos + winScissorExtent - dcse, Max(winpos, dcso));
-				dcse += Min(dcso - winpos, vec2::ZERO + DeshWindow->GetClientAreaPosition());
+				dcse += Min(dcso - winpos, vec2::ZERO);
 				if(drawCmd.useWindowScissor)
-					dcse += Min(winpos, vec2::ZERO + DeshWindow->GetClientAreaPosition());
+					dcse += Min(winpos, vec2::ZERO);
 			}break;
 			case UIWindowType_Child:{
 				dcso = Min(winScissorOffset + winScissorExtent - dcse, Max(dcso, winScissorOffset));
-				dcse += Min(dcso - winScissorOffset, vec2::ZERO + DeshWindow->GetClientAreaPosition());
+				dcse += Min(dcso - winScissorOffset, vec2::ZERO);
 				if(drawCmd.useWindowScissor)
-					dcse += Min(winScissorOffset, vec2::ZERO + DeshWindow->GetClientAreaPosition());
+					dcse += Min(winScissorOffset, vec2::ZERO);
 				
 			}break;
 		}
@@ -4620,7 +4620,7 @@ void UI::Update(){DPZoneScoped;
 	//reset cursor to default if no item decided to set it 
 	if(!StateHasFlag(UISCursorSet)){
 		if(StateHasFlag(UISGlobalHovered)){
-			DeshWindow->SetCursor(CursorType_Arrow);
+			window_cursor_type(DeshWindow, CursorType_Arrow);
 		}
 	}else{
 		StateRemoveFlag(UISCursorSet);
@@ -4649,7 +4649,7 @@ void UI::Update(){DPZoneScoped;
 	
 	//draw all debug commands if there are any
 	for(UIDrawCmd& drawCmd : debugCmds){
-		render_start_cmd2(render_decoration_layer_index(), drawCmd.tex, vec2::ZERO, DeshWinSize);
+		render_start_cmd2(render_decoration_layer_index(), drawCmd.tex, vec2::ZERO, DeshWindow->dimensions);
 		render_add_vertices2(render_decoration_layer_index(), drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 	}
 	debugCmds.clear();

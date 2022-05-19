@@ -59,6 +59,7 @@ global_ void config_load(str8 path, ConfigMapItem* config_map, u64 config_count)
 
 #endif //DESHI_CONFIG_H
 #ifdef DESHI_IMPLEMENTATION
+#include "input.h"
 
 
 void

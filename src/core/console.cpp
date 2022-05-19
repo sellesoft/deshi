@@ -244,12 +244,13 @@ void console_parse_message(str8 message){DPZoneScoped;
 //// @interface
 void console_init(){
 	DeshiStageInitStart(DS_CONSOLE, DS_LOGGER, "Attempted to initialize Console module before initializing the Logger module");
+	Assert(window_windows.count > 0, "Attempted to initialize Console module before a window was created");
 	
 	console_logger = logger_expose();
 	console.dictionary.init(512, deshi_allocator);
 	console.input_history.init(256, deshi_allocator);
 	console.console_pos = vec2::ZERO;
-	console.console_dim = vec2(f32(DeshWindow->width), f32(DeshWindow->height) * console.open_max_percent);
+	console.console_dim = vec2(f32(DeshWindow->width), 0);
 	console_scroll_to_bottom = true;
 	console_chunk_render_arena = memory_create_arena(512);
 	
@@ -285,6 +286,8 @@ void console_update(){
 	if(change_input){
 		simulate_key_press(Key_END);
 		ZeroMemory(console.input_buffer, CONSOLE_INPUT_BUFFER_SIZE);
+		console.input_length = 0;
+		
 		if(console.input_history_index != -1){
 			u32 cursor = 0;
 			u32 chunk_idx = console.input_history[console.input_history_index].first;
@@ -296,6 +299,7 @@ void console_update(){
 					? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.size) : chunk.size;
 				file_cursor(console_logger->file, chunk.start);
 				file_read(console_logger->file, console.input_buffer, characters);
+				console.input_length += characters;
 				cursor += characters;
 				
 				if(chunk_idx >= console.input_history[console.input_history_index].second || cursor >= CONSOLE_INPUT_BUFFER_SIZE){
@@ -319,15 +323,9 @@ void console_update(){
 	
 	UIStyle& style = UI::GetStyle();
 	if(console.console_dim.y > 0){
-		if(console.open_target != console.open_amount || console.state != ConsoleState_Popout){
-			UI::SetNextWindowPos(console.console_pos);
-			UI::SetNextWindowSize(console.console_dim);
-			//AddFlag(console_window_flags, UIWindowFlags_NoScrollBarY);
-		}else{
-			//RemoveFlag(console_window_flags, UIWindowFlags_NoScrollBarY);
-		}
-		
-		UI::Begin(str8_lit("deshiConsole"), vec2::ZERO, vec2::ZERO, console_window_flags);
+		UI::SetNextWindowPos(console.console_pos);
+		UI::SetNextWindowSize(vec2(DeshWindow->width, console.console_dim.y));
+		UI::Begin(str8_lit("deshiConsole"), vec2::ZERO, vec2::ZERO, console_window_flags | UIWindowFlags_NoScroll);
 		console_window = UI::GetWindow();
 		
 		//-//////////////////////////////////////////////////////////////////////////////////////////////
