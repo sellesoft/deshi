@@ -699,372 +699,67 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd){DPZoneScoped;
 	BreakOnDrawCmdCreation;
 }
 
-//4 verts, 6 indices
-FORCE_INLINE vec2
-MakeLine(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	vec2 ott = end - start;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
-	
-	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
-	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
-	vp[0].pos += norm * thickness / 2;
-	vp[1].pos += norm * thickness / 2;
-	vp[2].pos -= norm * thickness / 2;
-	vp[3].pos -= norm * thickness / 2;
-	
-	return vec2(4, 6); 
-}
-
 FORCE_INLINE void
 MakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += MakeLine(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
+	drawCmd.counts += render_make_line_counts(); 
+	render_make_line(drawCmd.vertices, drawCmd.indices, drawCmd.counts, start, end, thickness, color);
 	drawCmd.type = UIDrawType_Line;
-}
-
-//3 verts, 3 indices
-FORCE_INLINE vec2 
-MakeFilledTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
-	
-	return vec2(3, 3);
 }
 
 FORCE_INLINE void
 MakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
-	drawCmd.counts += MakeFilledTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, color);
+	drawCmd.counts += render_make_filledtriangle_counts(); 
+	render_make_filledtriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, color);
 	drawCmd.type = UIDrawType_FilledTriangle;
-}
-
-FORCE_INLINE vec2
-MakeTriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	MakeLine(vp, ip, vec2::ZERO,  p0, p1, 1, color);
-	MakeLine(vp, ip, vec2(4, 6),  p1, p2, 1, color);
-	MakeLine(vp, ip, vec2(8, 12), p2, p0, 1, color);
-	
-	return vec2(12, 18);
-	
-	//TODO(sushi) this should be fixed to replace reliance on MakeLine
-	//ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
-	//ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
-	//ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
-	//ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
-	//ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 1;
-	//ip[15] = offsets.x + 4; ip[16] = offsets.x + 1; ip[17] = offsets.x + 0;
-	//
-	//f32 ang1 = Math::AngBetweenVectors(p1 - p0, p2 - p0)/2;
-	//f32 ang2 = Math::AngBetweenVectors(p0 - p1, p2 - p1)/2;
-	//f32 ang3 = Math::AngBetweenVectors(p1 - p2, p0 - p2)/2;
-	//
-	//vec2 p0offset = (Math::vec2RotateByAngle(-ang1, p2 - p0).normalized() * thickness / (2 * sinf(Radians(ang1)))).clampedMag(0, thickness * 2);
-	//vec2 p1offset = (Math::vec2RotateByAngle(-ang2, p2 - p1).normalized() * thickness / (2 * sinf(Radians(ang2)))).clampedMag(0, thickness * 2);
-	//vec2 p2offset = (Math::vec2RotateByAngle(-ang3, p0 - p2).normalized() * thickness / (2 * sinf(Radians(ang3)))).clampedMag(0, thickness * 2);
-	//       
-	//vp[0].pos = p0 - p0offset; vp[0].uv = { 0,0 }; vp[0].color = col;
-	//vp[1].pos = p0 + p0offset; vp[1].uv = { 0,0 }; vp[1].color = col;
-	//vp[2].pos = p1 + p1offset; vp[2].uv = { 0,0 }; vp[2].color = col;
-	//vp[3].pos = p1 - p1offset; vp[3].uv = { 0,0 }; vp[3].color = col;
-	//vp[4].pos = p2 + p2offset; vp[4].uv = { 0,0 }; vp[4].color = col;
-	//vp[5].pos = p2 - p2offset; vp[5].uv = { 0,0 }; vp[5].color = col;
-	
-	//return vec3(6, 18);
 }
 
 FORCE_INLINE void
 MakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += MakeTriangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, thickness, color);
+	drawCmd.counts += render_make_triangle_counts();
+	render_make_triangle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, p1, p2, p3, thickness, color);
 	drawCmd.type = UIDrawType_Triangle;
-}
-
-//4 verts, 6 indices
-FORCE_INLINE vec2
-MakeFilledRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	vec2 tl = pos;
-	vec2 br = pos + size;
-	vec2 bl = pos + vec2(0, size.y);
-	vec2 tr = pos + vec2(size.x, 0);
-	
-	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
-	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
-	return vec2(4, 6);
 }
 
 FORCE_INLINE void
 MakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color){DPZoneScoped;
-	drawCmd.counts += MakeFilledRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, color);
+	drawCmd.counts += render_make_filledrect_counts();
+	render_make_filledrect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, color);
 	drawCmd.type = UIDrawType_FilledRectangle;
-}
-//8 verts, 24 indices
-FORCE_INLINE vec2
-MakeRect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	vec2 tl = pos;
-	vec2 br = pos + size;
-	vec2 bl = pos + vec2(0, size.y);
-	vec2 tr = pos + vec2(size.x, 0);
-	
-	f32 sqt = sqrtf(thickness);
-	vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
-	vec2 bro = sqt * vec2( M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
-	vec2 tro = sqt * vec2( M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
-	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
-	
-	ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
-	ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
-	ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
-	ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
-	ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 7;
-	ip[15] = offsets.x + 4; ip[16] = offsets.x + 7; ip[17] = offsets.x + 6;
-	ip[18] = offsets.x + 6; ip[19] = offsets.x + 7; ip[20] = offsets.x + 1;
-	ip[21] = offsets.x + 6; ip[22] = offsets.x + 1; ip[23] = offsets.x + 0;
-	
-	vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = tr + tro; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = tr + blo; vp[3].uv = { 0,0 }; vp[3].color = col;
-	vp[4].pos = br + bro; vp[4].uv = { 0,0 }; vp[4].color = col;
-	vp[5].pos = br + tlo; vp[5].uv = { 0,0 }; vp[5].color = col;
-	vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
-	vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
-	return vec2(8, 24);
 }
 
 FORCE_INLINE void
 MakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += MakeRect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
+	drawCmd.counts += render_make_rect_counts();
+	render_make_rect(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, size, thickness, color);
 	drawCmd.type = UIDrawType_Rectangle;
-}
-
-FORCE_INLINE vec2
-MakeCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	f32 subdivisions = f32(subdivisions_int);
-	u32 nuindexes = subdivisions * 6;
-	
-	//first and last point
-	vec2 last = pos + vec2(radius, 0);
-	vp[0].pos = last + vec2(-thickness / 2, 0);	vp[0].uv={0,0}; vp[0].color=col;
-	vp[1].pos = last + vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
-	ip[0] = offsets.x + 0; ip[1] = offsets.x + 1; ip[3] = offsets.x + 0;
-	ip[nuindexes - 1] = offsets.x + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.x + 1;
-	
-	for(int i = 1; i < subdivisions_int; i++){
-		f32 a1 = (f32(i) * M_2PI) / subdivisions;
-		vec2 offset(radius * cosf(a1), radius * sinf(a1));
-		vec2 point = pos + offset;
-		
-		u32 idx = i * 2;
-		vp[idx].pos = point - offset.normalized() * thickness / 2; vp[idx].uv = { 0,0 }; vp[idx].color = col;
-		vp[idx + 1].pos = point + offset.normalized() * thickness / 2; vp[idx + 1].uv = { 0,0 }; vp[idx + 1 ].color = col;
-		
-		u32 ipidx1 = 6 * (i - 1) + 2;
-		u32 ipidx2 = 6 * i - 1;
-		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.x + idx + 1;
-		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.x + idx;
-	}
-	
-	return vec2(2 * subdivisions, nuindexes);
 }
 
 FORCE_INLINE void
 MakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color){DPZoneScoped;
-	drawCmd.counts += MakeCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, thickness, color);
+	drawCmd.counts += render_make_circle_counts(subdivisions);
+	render_make_circle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions, thickness, color);
 	drawCmd.type = UIDrawType_Circle;
-}
-
-FORCE_INLINE vec2 
-MakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	u32     col = color.rgba;
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = pos + vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
-	u32 nuindexes = 3 * subdivisions_int;
-	
-	ip[1] = offsets.x + 1;
-	for(int i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
-	
-	ip[nuindexes - 1] = offsets.x + 1;
-	
-	vec2 sum;
-	f32 subdivisions = f32(subdivisions_int);
-	for(u32 i = 1; i < subdivisions_int; i++){
-		f32 a1 = (f32(i) * M_2PI) / subdivisions;
-		vec2 offset(radius * cosf(a1), radius * sinf(a1));
-		vec2 point = pos + offset;
-		
-		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;
-		
-		u32 ipidx = 3 * i - 1;
-		ip[ipidx] = ip[ipidx + 2] = offsets.x + i + 1;
-	}
-	
-	return vec2(subdivisions + 1, nuindexes);
 }
 
 FORCE_INLINE void
 MakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
-	drawCmd.counts += MakeFilledCircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions_int, color);
+	drawCmd.counts += render_make_filledcircle_counts(subdivisions_int);
+	render_make_filledcircle(drawCmd.vertices, drawCmd.indices, drawCmd.counts, pos, radius, subdivisions_int, color);
 	drawCmd.type = UIDrawType_FilledCircle;
-}
-
-FORCE_INLINE vec2
-MakeText(Vertex2* putverts, u32* putindices, vec2 offsets, str8 text, vec2 pos, color color, vec2 scale){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(color.a == 0) return vec2::ZERO;
-	
-	vec2 sum;
-	switch (style.font->type){
-		//// BDF (and NULL) font rendering ////
-		case FontType_BDF: case FontType_NONE:{
-			u32 codepoint;
-			str8 remaining = text;
-			u32 i = 0;
-			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
-				u32     col = color.rgba;
-				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
-				u32*     ip = putindices + (u32)offsets.y + 6 * i;
-				
-				f32 w = style.font->max_width * scale.x;
-				f32 h = style.font->max_height * scale.y;
-				f32 dy = 1.f / (f32)style.font->count;
-				
-				f32 idx = f32(codepoint - 32);
-				f32 topoff = (idx * dy) + style.font->uv_yoffset;
-				f32 botoff = topoff + dy;
-				
-				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
-				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
-				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col; //top left
-				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col; //top right
-				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col; //bot right
-				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col; //bot left
-				
-				pos.x += style.font->max_width * scale.x;
-				i += 1;
-			}
-		}break;
-		//// TTF font rendering ////
-		case FontType_TTF:{
-			u32 codepoint;
-			str8 remaining = text;
-			u32 i = 0;
-			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
-				u32     col = color.rgba;
-				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
-				u32*     ip = putindices + (u32)offsets.y + 6 * i;
-				aligned_quad q = font_aligned_quad(style.font, codepoint, &pos, scale);
-				
-				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
-				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
-				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.u0,q.v0 }; vp[0].color = col; //top left
-				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.u1,q.v0 }; vp[1].color = col; //top right
-				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.u1,q.v1 }; vp[2].color = col; //bot right
-				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.u0,q.v1 }; vp[3].color = col; //bot left
-				i += 1;
-			}
-		}break;
-		default: Assert(!"unhandled font type"); break;
-	}
-	
-	return vec2(4, 6) * text.count;
 }
 
 FORCE_INLINE void
 MakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color color, vec2 scale){DPZoneScoped;
-	drawCmd.counts += MakeText(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, pos, color, scale);
+	drawCmd.counts += render_make_text_counts(str8_length(text));
+	render_make_text(drawCmd.vertices, drawCmd.indices, drawCmd.counts, text, style.font, pos, color, scale);
 	drawCmd.tex = style.font->tex;
 	drawCmd.type = UIDrawType_Text;
 }
 
-FORCE_INLINE vec2 
-MakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
-	Assert(putverts && putindices);
-	if(!alpha) return vec2::ZERO;
-	
-	
-	u32     col = PackColorU32(255,255,255,255.f * alpha);
-	Vertex2* vp = putverts + (u32)offsets.x;
-	u32*     ip = putindices + (u32)offsets.y;
-	
-	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
-	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
-	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
-	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
-	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
-	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
-	if(flipx){
-		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
-		vp[0].uv = u1; vp[1].uv = u0; vp[2].uv = u3; vp[3].uv = u2;
-	}
-	if(flipy){
-		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
-		vp[0].uv = u3; vp[1].uv = u2; vp[2].uv = u1; vp[3].uv = u0;
-	}
-	
-	return vec2(4, 6);
-}
-
 FORCE_INLINE void
 MakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 pos, vec2 size, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
-	drawCmd.counts += MakeTexture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha, flipx, flipy);
+	drawCmd.counts += render_make_texture_counts();
+	render_make_texture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, pos, pos + size.ySet(0), pos + size, pos + size.xSet(0), alpha, flipx, flipy);
 	drawCmd.type = UIDrawType_Image;
 	drawCmd.tex = texture;
 }
@@ -2293,10 +1988,6 @@ void UI::CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 s
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
 	MakeCircle( drawCmd, pos, radius, subdivisions, thickness, color);
 }
-void UI::CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){
-	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
-	MakeFilledCircle(putverts, putindices, offsets, pos, radius, subdivisions_int, color);
-}
 void UI::CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color){
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
 	MakeFilledCircle( drawCmd, pos, radius, subdivisions_int, color);
@@ -2307,7 +1998,7 @@ void UI::CustomItem_DCMakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color co
 }
 void UI::CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy){
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
-	MakeTexture(putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy);
+	render_make_texture(putverts, putindices, offsets, texture, p0, p1, p2, p3, alpha, flipx, flipy);
 }
 void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd){
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");

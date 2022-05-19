@@ -241,7 +241,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "kigu/unicode.h"
 #include "math/math.h"
 
-
 //// libcpp for core ////
 #include <iostream>
 #include <filesystem>

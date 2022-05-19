@@ -4,6 +4,7 @@
 
 #include "../math/math.h"
 #include "../core/model.h"
+#include "../core/render.h" //Vertex2
 
 //NOTE all targets are expected to be in the space of the reference object
 
@@ -197,5 +198,9 @@ global_ b32 SphereRaycast(vec3 ray_start, vec3 ray_direction, vec3 sphere_center
 		return true;
 	}
 }
+
+
+
+
 
 #endif //DESHI_GEOMETRY_H

@@ -469,6 +469,28 @@ external void render_reload_shader(u32 shader_type);
 //TODO only reload loaded shaders
 external void render_reload_all_shaders();
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_make
+
+external vec2 render_make_line_counts();
+external vec2 render_make_filledtriangle_counts();
+external vec2 render_make_triangle_counts();
+external vec2 render_make_filledrect_counts();
+external vec2 render_make_rect_counts();
+external vec2 render_make_circle_counts(u32 subdiv);
+external vec2 render_make_filledcircle_counts(u32 subdiv);
+external vec2 render_make_text_counts(u32 charcount);
+external vec2 render_make_texture_counts();
+
+external void render_make_line(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color);
+external void render_make_filledtriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color);
+external void render_make_triangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color);
+external void render_make_filledrect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color);
+external void render_make_rect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color);
+external void render_make_circle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color);
+external void render_make_filledcircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
+external void render_make_text(Vertex2* putverts, u32* putindices, vec2 offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
+external void render_make_texture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_other
@@ -477,6 +499,8 @@ external void render_remake_offscreen();
 
 //displays render stats into a UI Window, this does NOT make it's own window, implemented in core_ui.cpp
 external void render_display_stats();
+
+
 
 
 #endif //DESHI_RENDER_H
@@ -1248,5 +1272,313 @@ render_display_stats(){
     }EndRow();
 }
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_make
+
+//4 verts, 6 indices
+vec2 render_make_line_counts()                   {return { 4, 6};};
+vec2 render_make_filledtriangle_counts()         {return { 3, 3};};
+vec2 render_make_triangle_counts()               {return {12,18};};
+vec2 render_make_filledrect_counts()             {return { 4, 6};};
+vec2 render_make_rect_counts()                   {return { 8,24};};
+vec2 render_make_circle_counts(u32 subdiv)       {return {2.f*subdiv,6.f*subdiv};};
+vec2 render_make_filledcircle_counts(u32 subdiv) {return {1+(f32)subdiv,3.f*subdiv};};
+vec2 render_make_text_counts(u32 charcount)      {return {4.f*charcount,6.f*charcount};};
+vec2 render_make_texture_counts()                {return { 8,24};};
+
+void
+render_make_line(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	vec2 ott = end - start;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+	
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+	
+	vp[0].pos += norm * thickness / 2;
+	vp[1].pos += norm * thickness / 2;
+	vp[2].pos -= norm * thickness / 2;
+	vp[3].pos -= norm * thickness / 2;
+}
+
+//3 verts, 3 indices
+void 
+render_make_filledtriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
+}
+
+void
+render_make_triangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	render_make_line(vp, ip, vec2::ZERO,  p0, p1, 1, color);
+	render_make_line(vp, ip, vec2(4, 6),  p1, p2, 1, color);
+	render_make_line(vp, ip, vec2(8, 12), p2, p0, 1, color);
+	
+	
+	//TODO(sushi) this should be fixed to replace reliance on MakeLine
+	//ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
+	//ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
+	//ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
+	//ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
+	//ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 1;
+	//ip[15] = offsets.x + 4; ip[16] = offsets.x + 1; ip[17] = offsets.x + 0;
+	//
+	//f32 ang1 = Math::AngBetweenVectors(p1 - p0, p2 - p0)/2;
+	//f32 ang2 = Math::AngBetweenVectors(p0 - p1, p2 - p1)/2;
+	//f32 ang3 = Math::AngBetweenVectors(p1 - p2, p0 - p2)/2;
+	//
+	//vec2 p0offset = (Math::vec2RotateByAngle(-ang1, p2 - p0).normalized() * thickness / (2 * sinf(Radians(ang1)))).clampedMag(0, thickness * 2);
+	//vec2 p1offset = (Math::vec2RotateByAngle(-ang2, p2 - p1).normalized() * thickness / (2 * sinf(Radians(ang2)))).clampedMag(0, thickness * 2);
+	//vec2 p2offset = (Math::vec2RotateByAngle(-ang3, p0 - p2).normalized() * thickness / (2 * sinf(Radians(ang3)))).clampedMag(0, thickness * 2);
+	//       
+	//vp[0].pos = p0 - p0offset; vp[0].uv = { 0,0 }; vp[0].color = col;
+	//vp[1].pos = p0 + p0offset; vp[1].uv = { 0,0 }; vp[1].color = col;
+	//vp[2].pos = p1 + p1offset; vp[2].uv = { 0,0 }; vp[2].color = col;
+	//vp[3].pos = p1 - p1offset; vp[3].uv = { 0,0 }; vp[3].color = col;
+	//vp[4].pos = p2 + p2offset; vp[4].uv = { 0,0 }; vp[4].color = col;
+	//vp[5].pos = p2 - p2offset; vp[5].uv = { 0,0 }; vp[5].color = col;
+	
+	//return vec3(6, 18);
+}
+
+void
+render_make_filledrect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = pos + vec2(0, size.y);
+	vec2 tr = pos + vec2(size.x, 0);
+	
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
+}
+
+void
+render_make_rect(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = pos + vec2(0, size.y);
+	vec2 tr = pos + vec2(size.x, 0);
+	
+	f32 sqt = sqrtf(thickness);
+	vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 bro = sqt * vec2( M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
+	vec2 tro = sqt * vec2( M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
+	
+	ip[0]  = offsets.x + 0; ip[1]  = offsets.x + 1; ip[2]  = offsets.x + 3;
+	ip[3]  = offsets.x + 0; ip[4]  = offsets.x + 3; ip[5]  = offsets.x + 2;
+	ip[6]  = offsets.x + 2; ip[7]  = offsets.x + 3; ip[8]  = offsets.x + 5;
+	ip[9]  = offsets.x + 2; ip[10] = offsets.x + 5; ip[11] = offsets.x + 4;
+	ip[12] = offsets.x + 4; ip[13] = offsets.x + 5; ip[14] = offsets.x + 7;
+	ip[15] = offsets.x + 4; ip[16] = offsets.x + 7; ip[17] = offsets.x + 6;
+	ip[18] = offsets.x + 6; ip[19] = offsets.x + 7; ip[20] = offsets.x + 1;
+	ip[21] = offsets.x + 6; ip[22] = offsets.x + 1; ip[23] = offsets.x + 0;
+	
+	vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = tr + tro; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = tr + blo; vp[3].uv = { 0,0 }; vp[3].color = col;
+	vp[4].pos = br + bro; vp[4].uv = { 0,0 }; vp[4].color = col;
+	vp[5].pos = br + tlo; vp[5].uv = { 0,0 }; vp[5].color = col;
+	vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
+	vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
+}
+
+void
+render_make_circle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	f32 subdivisions = f32(subdivisions_int);
+	u32 nuindexes = subdivisions * 6;
+	
+	//first and last point
+	vec2 last = pos + vec2(radius, 0);
+	vp[0].pos = last + vec2(-thickness / 2, 0);	vp[0].uv={0,0}; vp[0].color=col;
+	vp[1].pos = last + vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
+	ip[0] = offsets.x + 0; ip[1] = offsets.x + 1; ip[3] = offsets.x + 0;
+	ip[nuindexes - 1] = offsets.x + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.x + 1;
+	
+	for(int i = 1; i < subdivisions_int; i++){
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		vec2 offset(radius * cosf(a1), radius * sinf(a1));
+		vec2 point = pos + offset;
+		
+		u32 idx = i * 2;
+		vp[idx].pos = point - offset.normalized() * thickness / 2; vp[idx].uv = { 0,0 }; vp[idx].color = col;
+		vp[idx + 1].pos = point + offset.normalized() * thickness / 2; vp[idx + 1].uv = { 0,0 }; vp[idx + 1 ].color = col;
+		
+		u32 ipidx1 = 6 * (i - 1) + 2;
+		u32 ipidx2 = 6 * i - 1;
+		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.x + idx + 1;
+		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.x + idx;
+	}
+}
+
+void 
+render_make_filledcircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	u32     col = color.rgba;
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = pos + vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
+	u32 nuindexes = 3 * subdivisions_int;
+	
+	ip[1] = offsets.x + 1;
+	for(int i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
+	
+	ip[nuindexes - 1] = offsets.x + 1;
+	
+	vec2 sum;
+	f32 subdivisions = f32(subdivisions_int);
+	for(u32 i = 1; i < subdivisions_int; i++){
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		vec2 offset(radius * cosf(a1), radius * sinf(a1));
+		vec2 point = pos + offset;
+		
+		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;
+		
+		u32 ipidx = 3 * i - 1;
+		ip[ipidx] = ip[ipidx + 2] = offsets.x + i + 1;
+	}
+}
+
+void
+render_make_text(Vertex2* putverts, u32* putindices, vec2 offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(color.a == 0) return;
+	
+	vec2 sum;
+	switch (font->type){
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE:{
+			u32 codepoint;
+			str8 remaining = text;
+			u32 i = 0;
+			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
+				u32     col = color.rgba;
+				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
+				u32*     ip = putindices + (u32)offsets.y + 6 * i;
+				
+				f32 w = font->max_width * scale.x;
+				f32 h = font->max_height * scale.y;
+				f32 dy = 1.f / (f32)font->count;
+				
+				f32 idx = f32(codepoint - 32);
+				f32 topoff = (idx * dy) + font->uv_yoffset;
+				f32 botoff = topoff + dy;
+				
+				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
+				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col; //top left
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col; //top right
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col; //bot right
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col; //bot left
+				
+				pos.x += font->max_width * scale.x;
+				i += 1;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF:{
+			u32 codepoint;
+			str8 remaining = text;
+			u32 i = 0;
+			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
+				u32     col = color.rgba;
+				Vertex2* vp = putverts + (u32)offsets.x + 4 * i;
+				u32*     ip = putindices + (u32)offsets.y + 6 * i;
+				aligned_quad q = font_aligned_quad(font, codepoint, &pos, scale);
+				
+				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
+				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
+				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.u0,q.v0 }; vp[0].color = col; //top left
+				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.u1,q.v0 }; vp[1].color = col; //top right
+				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.u1,q.v1 }; vp[2].color = col; //bot right
+				vp[3].pos = { q.x0,q.y1 }; vp[3].uv = { q.u0,q.v1 }; vp[3].color = col; //bot left
+				i += 1;
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
+	}
+}
+
+void 
+render_make_texture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
+	Assert(putverts && putindices);
+	if(!alpha) return;
+
+	u32     col = PackColorU32(255,255,255,255.f * alpha);
+	Vertex2* vp = putverts + (u32)offsets.x;
+	u32*     ip = putindices + (u32)offsets.y;
+	
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
+	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
+	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
+	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
+	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
+	
+	if(flipx){
+		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
+		vp[0].uv = u1; vp[1].uv = u0; vp[2].uv = u3; vp[3].uv = u2;
+	}
+	if(flipy){
+		vec2 u0 = vp[0].uv, u1 = vp[1].uv, u2 = vp[2].uv, u3 = vp[3].uv;
+		vp[0].uv = u3; vp[1].uv = u2; vp[2].uv = u1; vp[3].uv = u0;
+	}
+}
 
 #endif //DESHI_IMPLEMENTATION
