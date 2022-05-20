@@ -1,9 +1,17 @@
-//NOTE Memory Layout: 
-//|                      Total Size                         |
-//|                Main Heap                  |  Temp Arena |
-//| Generic Heap  |  Heap Arena |  Heap Arena | Item | Item |
-//| Chunk | Chunk | Item | Item | Item | Item |      |      |
+/*Index:
+@memory_vars
+@memory_utils
+@memory_heap
+@memory_arena
+@memory_generic
+@memory_temp
+@memory_debug
+@memory_state
+*/
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_vars
 #define MEMORY_CHECK_HEAPS true
 #define MEMORY_TRACK_ALLOCS false
 #define MEMORY_PRINT_ARENA_CHUNKS false
@@ -17,15 +25,17 @@ local Heap   arena_heap_;
 local Heap*  arena_heap = &arena_heap_;
 local Arena* generic_arena; //generic_heap is stored here; not used otherwise
 local Heap*  generic_heap;
+local Arena  temp_arena_;
+local Arena* temp_arena = &temp_arena_;
 
 #if MEMORY_TRACK_ALLOCS
 local array<AllocInfo> alloc_infos_active(stl_allocator); //uses libc so it is external the system
 local array<AllocInfo> alloc_infos_inactive(stl_allocator);
 #endif //MEMORY_TRACK_ALLOCS
 
-////////////////
-//// @utils ////
-////////////////
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_utils
 #define MEMORY_POINTER_SIZE sizeof(void*)
 #define MEMORY_BYTE_ALIGNMENT (2*MEMORY_POINTER_SIZE)
 #define MEMORY_BYTE_ALIGNMENT_MASK (MEMORY_BYTE_ALIGNMENT-1)
@@ -73,7 +83,7 @@ DEBUG_CheckHeap(Heap* heap){
 #endif //MEMORY_CHECK_HEAPS
 
 local void
-DEBUG_PrintHeapChunks(Heap* heap, char* heap_name){
+DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
 		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
@@ -143,9 +153,39 @@ DEBUG_AllocInfo_Deletion(void* address){
 }
 #endif //MEMORY_TRACK_ALLOCS
 
-////////////////
-//// @arena ////
-////////////////
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_heap
+/*
+Heap*
+memory_heap_init_bytes(upt bytes){
+	
+}
+
+void
+memory_heap_deinit(Heap* heap){
+	
+}
+
+void*
+memory_heap_add_bytes(Heap* heap, void* data, upt bytes){
+	
+}
+
+void
+memory_heap_remove(Heap* heap, void* ptr){
+	
+}
+
+void
+memory_heap_clear(Heap* heap){
+	
+}
+*/
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_arena
 #if MEMORY_CHECK_HEAPS
 local void
 DEBUG_CheckArenaHeapArenas(){
@@ -560,9 +600,9 @@ T* memory_arena_add_new(Arena* arena){
 	return (T*)(arena->cursor-sizeof(T));
 }
 
-//////////////////
-//// @generic ////
-//////////////////
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_generic
 #if MEMORY_PRINT_GENERIC_CHUNKS
 FORCE_INLINE void DEBUG_PrintGenericHeapChunks(){ DEBUG_PrintHeapChunks(generic_heap,"Generic Heap"); }
 #else //MEMORY_PRINT_GENERIC_CHUNKS
@@ -1056,12 +1096,9 @@ deshi__memory_generic_expose(){
 	return generic_heap;
 }
 
-////////////////////
-//// @temporary ////
-////////////////////
-local Arena temp_arena_;
-local Arena* temp_arena = &temp_arena_;
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_temp
 void*
 deshi__memory_temp_allocate(upt size, str8 file, upt line){
 	if(cleanup_happened) return 0;
@@ -1140,9 +1177,8 @@ deshi__memory_temp_expose(){
 }
 
 
-////////////////
-//// @debug ////
-////////////////
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_debug
 void
 deshi__memory_allocinfo_set(void* address, str8 name, Type type){
 #if MEMORY_TRACK_ALLOCS
@@ -1373,9 +1409,8 @@ deshi__memory_bytes_draw() {
 }
 
 
-////////////////
-//// @state ////
-////////////////
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_state
 void
 deshi__memory_init(upt main_size, upt temp_size){
 #if defined(TRACY_ENABLE) && defined(DESHI_WAIT_FOR_TRACY_CONNECTION)
