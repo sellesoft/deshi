@@ -709,7 +709,7 @@ render_poly3(vec3* points, u64 count, color c){DPZoneScoped;
 		return;
 	}
 	
-	for(int i=1; i < count-1; ++i) render_line3(points[i-1], points[i], c);
+	for(s32 i=1; i < count-1; ++i) render_line3(points[i-1], points[i], c);
 	render_line3(points[count-2], points[count-1], c);
 }
 
@@ -721,7 +721,7 @@ render_poly_filled3(vec3* points, u64 count, color c){DPZoneScoped;
 		return;
 	}
 	
-	for(int i=2; i < count-1; ++i) render_triangle_filled3(points[i-2], points[i-1], points[i], c);
+	for(s32 i=2; i < count-1; ++i) render_triangle_filled3(points[i-2], points[i-1], points[i], c);
 	render_triangle_filled3(points[count-3], points[count-2], points[count-1], c);
 }
 
@@ -1454,7 +1454,7 @@ render_make_circle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f
 	ip[0] = offsets.x + 0; ip[1] = offsets.x + 1; ip[3] = offsets.x + 0;
 	ip[nuindexes - 1] = offsets.x + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.x + 1;
 	
-	for(int i = 1; i < subdivisions_int; i++){
+	for(s32 i = 1; i < subdivisions_int; i++){
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
 		vec2 offset(radius * cosf(a1), radius * sinf(a1));
 		vec2 point = pos + offset;
@@ -1484,7 +1484,7 @@ render_make_filledcircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 
 	u32 nuindexes = 3 * subdivisions_int;
 	
 	ip[1] = offsets.x + 1;
-	for(int i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
+	for(s32 i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
 	
 	ip[nuindexes - 1] = offsets.x + 1;
 	

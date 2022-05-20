@@ -4126,7 +4126,7 @@ inline void DrawItem(UIItem& item, UIWindow* window){DPZoneScoped;
 	for(UIDrawCmd& drawCmd : item.drawCmds){
 		BreakOnDrawCmdDraw;
 		//NOTE this expects vertex positions to be in item space
-		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale +itempos));
+		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale + itempos));
 		
 		vec2 dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);
 		vec2 dcso = (drawCmd.useWindowScissor ? winScissorOffset : itempos + drawCmd.scissorOffset);
