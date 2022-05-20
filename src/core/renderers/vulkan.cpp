@@ -3305,7 +3305,6 @@ render_update(){DPZoneScoped;
 			case VK_ERROR_DEVICE_LOST:          LogE("vulkan", "DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
 			case VK_SUCCESS:default: break;
 		}
-		
 		ResetCommands();
 	}
 	
