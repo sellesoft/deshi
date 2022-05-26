@@ -19,6 +19,72 @@ struct quat;
 union vec2i{
 	s32 arr[2] = {};
 	struct{ s32 x, y; };
+
+	vec2i(){};
+	vec2i(s32 inX, s32 inY);
+	vec2i(const vec2i& v);
+	vec2i(s32* ptr);
+	vec2i(vec2 v);
+
+	static const vec2i ZERO;
+	static const vec2i ONE;
+	static const vec2i UP;
+	static const vec2i DOWN;
+	static const vec2i LEFT;
+	static const vec2i RIGHT;
+	static const vec2i UNITX;
+	static const vec2i UNITY;
+	
+	void  operator= (const vec2i& rhs);
+	vec2i operator* (s32 rhs) const;
+	void  operator*=(s32 rhs);
+	vec2i operator/ (s32 rhs) const;
+	void  operator/=(s32 rhs);
+	vec2i operator+ (const vec2i& rhs) const;
+	void  operator+=(const vec2i& rhs);
+	vec2i operator- (const vec2i& rhs) const;
+	void  operator-=(const vec2i& rhs);
+	vec2i operator* (const vec2i& rhs) const;
+	void  operator*=(const vec2i& rhs);
+	vec2i operator/ (const vec2i& rhs) const;
+	void  operator/=(const vec2i& rhs);
+	vec2i operator- () const;
+	bool  operator==(const vec2i& rhs) const;
+	bool  operator!=(const vec2i& rhs) const;
+	friend vec2i operator* (s32 lhs, const vec2i& rhs){ return rhs * lhs; }
+	
+	void  set(s32 x, s32 y);
+	vec2i absV() const;
+	vec2i copy() const;
+	s32   dot(const vec2i& rhs) const;
+	vec2i perp() const;
+	s32   mag()  const;
+	s32   magSq()  const;
+	void  normalize();
+	vec2i normalized() const;
+	void  clampMag(s32 min, s32 max);
+	vec2i clampedMag(s32 min, s32 max) const;
+	s32   distanceTo(const vec2i& rhs)  const;
+	vec2i compOn(const vec2i& rhs)      const;
+	s32   projectOn(const vec2i& rhs)   const;
+	vec2i midpoint(const vec2i& rhs)    const;
+	vec2i xComp() const;
+	vec2i yComp() const;
+	vec2i xInvert() const;
+	vec2i yInvert() const;
+	vec2i xSet(s32 set) const; 
+	vec2i ySet(s32 set) const; 
+	vec2i xAdd(s32 set) const; 
+	vec2i yAdd(s32 set) const; 
+	vec2i ceil() const;
+	vec2i floor() const;
+	
+	//vector interactions
+	vec2i(const vec3& v);
+	vec2i(const vec4& v);
+	vec2i(const vec2g& v);
+	vec3 toVec3() const;
+	vec4 toVec4() const;
 };
 
 struct vec2 {
