@@ -888,7 +888,10 @@ render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32
 	RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
 	
 	CopyMemory(vp, vertices, vCount*sizeof(Vertex2));
-	forI(iCount) ip[i] = renderTwodVertexCount + indices[i];
+	forI(iCount){
+		Assert(indices[i] < vCount, "Index out of range of given number of vertices!\nMake sure your indices weren't overwritten by something.");
+		ip[i] = renderTwodVertexCount + indices[i];
+	} 
 	
 	renderTwodVertexCount += vCount;
 	renderTwodIndexCount  += iCount;
@@ -1282,6 +1285,7 @@ render_display_stats(){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_make
+//// NOTE(sushi): if you change any of the drawing algorithms do not forget to count the verticies and indices and update these functions!!
 vec2 render_make_line_counts()                   {return { 4, 6};};
 vec2 render_make_filledtriangle_counts()         {return { 3, 3};};
 vec2 render_make_triangle_counts()               {return {12,18};};
