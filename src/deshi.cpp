@@ -195,16 +195,17 @@ typedef Flags DeshiStage; enum{
 	DS_MEMORY    = 1 << 0,
 	DS_PLATFORM  = 1 << 1,
 	DS_LOGGER    = 1 << 2,
-	DS_CONSOLE   = 1 << 3,
-	DS_RENDER    = 1 << 6,
-	DS_IMGUI     = 1 << 7,
-	DS_STORAGE   = 1 << 8,
-	DS_UI        = 1 << 9,
-	DS_CMD       = 1 << 10,
+    DS_NETWORK   = 1 << 3,
+    DS_THREAD    = 1 << 4,
+    DS_WINDOW    = 1 << 5,
+	DS_CONSOLE   = 1 << 6,
+	DS_RENDER    = 1 << 7,
+	DS_IMGUI     = 1 << 8,
+	DS_STORAGE   = 1 << 9,
+	DS_UI        = 1 << 10,
+	DS_CMD       = 1 << 11,
 };
 local DeshiStage deshiStage = DS_NONE;
-
-#define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
 
 #define DeshiStageInitStart(stage,dependencies,...) \
 Assert((deshiStage & (dependencies)) == (dependencies)); \
@@ -259,6 +260,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"
+#include "core/networking.h"
 #include "core/platform.h"
 #include "core/render.h"
 #include "core/storage.h"
@@ -273,6 +275,8 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
 #  include <windowsx.h>
+#  include <WinSock2.h>
+#  include <ws2tcpip.h>
 #  include "core/platforms/win32_deshi.cpp"
 #elif DESHI_LINUX //DESHI_WINDOWS
 #  include "core/platforms/linux_deshi.cpp"

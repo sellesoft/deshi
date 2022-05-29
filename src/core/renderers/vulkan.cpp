@@ -3758,7 +3758,7 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 //// @render_surface
 void 
 render_register_surface(Window* window){DPZoneScoped;
-	AssertDS(DS_RENDER, "Attempted to register a surface for a window without initializaing Render module first");
+	Assert(DeshiModuleLoaded(DS_RENDER), "Attempted to register a surface for a window without initializaing Render module first");
 	Assert(window->index < MAX_SURFACES);
 	CreateSurface(window, window->index);
 	

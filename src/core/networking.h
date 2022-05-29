@@ -3,16 +3,28 @@
 Notes:
     Currently everything in this interface deals with UDP. We decided on using UDP over TCP 
     because it's simpler, faster, and allows for determining your own rules with communcating
-    over networks. I (sushi) am not opposed to someone else implementing TCP though.
+    over networks. I (sushi) am not opposed to someone else implementing TCP though. 
+
+    This interface currently only deals with IPv4 address. I (sushi) am also not oppsed to
+    someone else implementing support for IPv6. 
 
     It is highly recommended to use this interface either with multi-threading or asyncronously.
     Sockets have the option to not be blocking to allow for asyncronous operation. (If I'm
     understanding what async stuff is here).
 
+    There is no error returning because error logging is handled internally. Therefore
+    the Logger module must be initialized before using this module.
+        NOTE(sushi) I'm not sure if this is how I'd like this to be, but it will stay
+                    so for now
+    
+    Functions that execute successfully return 0 instead of a non-zero number because I (sushi)
+    prefer being able to do if(function()) to check for error. If this design choice is unpopular
+    I will go through and change it. Exceptions include the send and recv functions as they
+    must return how many bytes were sent or recieved. They instead return -1.
+
 
 Index:
     @net_types
-        netError | enum
         netSocket | struct
         netTCPHeader | struct
         netIPHeader | struct
@@ -28,6 +40,7 @@ Index:
 
 References:
     https://github.com/Smilex/zed_net - interface; some winsock stuff
+    https://beej.us/guide/bgnet/ - info about how sockets and networking works as well as programming them
 
 */
 
@@ -36,17 +49,13 @@ References:
 #define DESHI_NETWORKING_H
 
 #include "kigu/common.h"
-#include "unicode.h"
+#include "kigu/unicode.h"
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @net_types
 
-typedef u64 netError; enum {
-    netError_COUNT,
-};
-
 struct netSocket{
-    void* handle; // handle to OS socket object; win32: SOCKET
+    s32 handle; // handle to OS socket object; win32: SOCKET
     b32 blocking; // determines if the socket blocks when sending/recieving information
     b32 opened;   // indicates if the socket has been opened or not 
 };
@@ -97,11 +106,11 @@ struct netTCPHeader{
 //// @net_state
 
 // initializes the networking module
+// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
 void net_init();
 // deinitializes the networking module
+// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
 void net_deinit();
-// returns the last error that occured
-str8 net_get_last_error();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @net_socket
@@ -110,7 +119,7 @@ str8 net_get_last_error();
 // |   socket: a ptr to a netSocket object to bind to a given port
 // |     port: port to bind socket to; use 0 to bind to random port
 // | blocking: determines if the socket should be blocking or not
-// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
+// returns 0 if successful, non-zero otherwise
 u64 net_socket_open(netSocket* socket, u8 port, b32 blocking);
 
 //closes a previously opened socket
@@ -122,8 +131,8 @@ void net_socket_close(netSocket* socket);
 // | destination: a netAddress that has been initialized using net_get_address()
 // |        data: a ptr to the data to be sent over the network
 // |        size: the size of the data to be sent in bytes
-// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
-u64 net_socket_send(netSocket* socket, netAddress destination, void* data, upt size);
+// returns 0 if successful, non-zero otherwise
+u64 net_socket_send(netSocket* socket, netAddress destination, void* data, s32 size);
 
 //receieves a specified amount of data from sender
 //you do not specify the sender you want to recieve from since this is UDP
@@ -132,8 +141,8 @@ u64 net_socket_send(netSocket* socket, netAddress destination, void* data, upt s
 // | sender: a ptr to a netAddress where info about the sender of the data is stored
 // |   data: an allocated buffer that data recieved is stored in.
 // |   size: the amount of data in bytes expected 
-// returns the amount of data recieved in bytes or -1 if an error occurs (use net_get_last_error())
-u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, upt size);
+// returns the amount of data recieved in bytes, -1 otherwise
+u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, s32 size);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @net_address
@@ -143,13 +152,14 @@ u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, upt size)
 // |    host: a string containing etiher a decimal IP address ("127.0.0.1") or a human readable name
 // |          such as "localhost" or "youtube.com"
 // |    port: the port number
-// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
-u64 net_address_init(netAddress* address, str8 host, u8 port);
+// returns 0 if successful, non-zero otherwise
+u64 net_address_init(netAddress* address, str8 host, str8 port);
 
 //gets a formatted string representing the host address of a netAddress object
-// | host: a netAddress object that has been filled either by net_scoket_recv() or net_get_address()
-// returns a str8 representing the host
-str8 net_address_str(netAddress address);
+// |      host: a netAddress object that has been filled either by net_scoket_recv() or net_get_address()
+// | incl_port: whether or not to include port in output
+// returns an allocated str8 representing the host. it is allocated using temp memory, so it is not necessary to free it unless you dont free temp mem
+str8 net_address_str(netAddress address, b32 incl_port);
 
 
 #endif
