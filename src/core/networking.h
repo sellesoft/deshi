@@ -1,16 +1,33 @@
 /* deshi Networking Module
 
+Notes:
+    Currently everything in this interface deals with UDP. We decided on using UDP over TCP 
+    because it's simpler, faster, and allows for determining your own rules with communcating
+    over networks. I (sushi) am not opposed to someone else implementing TCP though.
+
+    It is highly recommended to use this interface either with multi-threading or asyncronously.
+    Sockets have the option to not be blocking to allow for asyncronous operation. (If I'm
+    understanding what async stuff is here).
+
+
 Index:
     @net_types
         netError | enum
-        netContext | struct
         netSocket | struct
         netTCPHeader | struct
         netIPHeader | struct
     @net_state
         net_init() -> void
         net_deinit() -> void
-        net_get_state() -> netState
+    @net_socket
+        net_socket_open() -> u64
+        net_socket_close() -> void
+    @net_address
+        net_address_init() -> u64
+        net_address_str() -> str8
+
+References:
+    https://github.com/Smilex/zed_net - interface; some winsock stuff
 
 */
 
@@ -19,6 +36,7 @@ Index:
 #define DESHI_NETWORKING_H
 
 #include "kigu/common.h"
+#include "unicode.h"
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @net_types
@@ -27,17 +45,16 @@ typedef u64 netError; enum {
     netError_COUNT,
 };
 
-struct netState{
-    netError last_error;
-
-};
-
 struct netSocket{
-    void* handle;
+    void* handle; // handle to OS socket object; win32: SOCKET
+    b32 blocking; // determines if the socket blocks when sending/recieving information
+    b32 opened;   // indicates if the socket has been opened or not 
 };
 
 struct netAddress{
     void* handle;
+    u32   host;
+    u8    port;
 };
 
 struct netIPHeader{
@@ -83,16 +100,56 @@ struct netTCPHeader{
 void net_init();
 // deinitializes the networking module
 void net_deinit();
-// returns the state of the networking module
-netState net_get_state();
+// returns the last error that occured
+str8 net_get_last_error();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @net_socket
 
-// initializes a socket
-netSocket net_socket_init();
+//initializes a socket and binds it to a port
+// |   socket: a ptr to a netSocket object to bind to a given port
+// |     port: port to bind socket to; use 0 to bind to random port
+// | blocking: determines if the socket should be blocking or not
+// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
+u64 net_socket_open(netSocket* socket, u8 port, b32 blocking);
 
+//closes a previously opened socket
+// socket: a ptr to a netSocket obj. if it has not yet been opened the function does nothing
+void net_socket_close(netSocket* socket);
 
+//sends some data over an opened socket
+// |      socket: a ptr to a netSocket that has been opened using net_socket_open()
+// | destination: a netAddress that has been initialized using net_get_address()
+// |        data: a ptr to the data to be sent over the network
+// |        size: the size of the data to be sent in bytes
+// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
+u64 net_socket_send(netSocket* socket, netAddress destination, void* data, upt size);
+
+//receieves a specified amount of data from sender
+//you do not specify the sender you want to recieve from since this is UDP
+//we just tell you who sent it
+// | socket: a ptr to a netSocket that has been opened with net_socket_open()
+// | sender: a ptr to a netAddress where info about the sender of the data is stored
+// |   data: an allocated buffer that data recieved is stored in.
+// |   size: the amount of data in bytes expected 
+// returns the amount of data recieved in bytes or -1 if an error occurs (use net_get_last_error())
+u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, upt size);
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @net_address
+
+//initializes a netAddress object with information about the given host and port
+// | address: a ptr to a netAddress struct to be filled
+// |    host: a string containing etiher a decimal IP address ("127.0.0.1") or a human readable name
+// |          such as "localhost" or "youtube.com"
+// |    port: the port number
+// returns 0 if successful or -1 if an error occurs (use net_get_last_error()) 
+u64 net_address_init(netAddress* address, str8 host, u8 port);
+
+//gets a formatted string representing the host address of a netAddress object
+// | host: a netAddress object that has been filled either by net_scoket_recv() or net_get_address()
+// returns a str8 representing the host
+str8 net_address_str(netAddress address);
 
 
 #endif
