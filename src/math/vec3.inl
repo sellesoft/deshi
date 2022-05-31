@@ -7,27 +7,27 @@
 //////////////////////
 
 inline vec3::
-vec3(f32 inX, f32 inY, f32 inZ) {
+vec3(f32 inX, f32 inY, f32 inZ) {DPZoneScoped;
 	this->x = inX; this->y = inY; this->z = inZ;
 }
 
 inline vec3::
-vec3(f32 inX, f32 inY) {
+vec3(f32 inX, f32 inY) {DPZoneScoped;
 	this->x = inX; this->y = inY; this->z = 0;
 }
 
 inline vec3::
-vec3(const vec3& v) {
+vec3(const vec3& v) {DPZoneScoped;
 	this->x = v.x; this->y = v.y; this->z = v.z;
 }
 
 inline vec3::
-vec3(f32* ptr){ 
+vec3(f32* ptr){ DPZoneScoped;
 	x = *ptr; y = *(ptr+1); z = *(ptr+2);
 }
 
 inline vec3::
-vec3(vec3i v){ 
+vec3(vec3i v){ DPZoneScoped;
 	x = (f32)v.x; y = (f32)v.y; z = (f32)v.z;
 }
 
@@ -52,88 +52,88 @@ inline const vec3 vec3::UNITZ =   vec3( 0, 0, 1);
 ///////////////////
 
 inline void vec3::
-operator =  (const vec3& rhs) {
+operator =  (const vec3& rhs) {DPZoneScoped;
 	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z;
 }
 
 inline void vec3::
-operator =  (vec3& rhs) {
+operator =  (vec3& rhs) {DPZoneScoped;
 	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z;
 }
 
 inline vec3 vec3::
-operator *  (f32 rhs) const{
+operator *  (f32 rhs) const{DPZoneScoped;
 	return vec3(this->x * rhs, this->y * rhs, this->z * rhs);
 }
 
 inline void vec3::
-operator *= (f32 rhs) {
+operator *= (f32 rhs) {DPZoneScoped;
 	this->x *= rhs; this->y *= rhs; this->z *= rhs;
 }
 
-inline vec3 vec3::operator /  (f32 rhs) const{
+inline vec3 vec3::operator /  (f32 rhs) const{DPZoneScoped;
 	return vec3(this->x / rhs, this->y / rhs, this->z / rhs);
 }
 
 inline void vec3::
-operator /= (f32 rhs) {
+operator /= (f32 rhs) {DPZoneScoped;
 	this->x /= rhs; this->y /= rhs; this->z /= rhs;
 }
 
 inline vec3 vec3::
-operator +  (const vec3& rhs) const{
+operator +  (const vec3& rhs) const{DPZoneScoped;
 	return vec3(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z);
 }
 
 inline void vec3::
-operator += (const vec3& rhs) {
+operator += (const vec3& rhs) {DPZoneScoped;
 	this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
 }
 
 inline vec3 vec3::
-operator -  (const vec3& rhs) const{
+operator -  (const vec3& rhs) const{DPZoneScoped;
 	return vec3(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z);
 }
 
 inline void vec3::
-operator -= (const vec3& rhs) {
+operator -= (const vec3& rhs) {DPZoneScoped;
 	this->x -= rhs.x; this->y -= rhs.y; this->z -= rhs.z;
 }
 
 inline vec3 vec3::
-operator *  (const vec3& rhs) const{
+operator *  (const vec3& rhs) const{DPZoneScoped;
 	return vec3(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z);
 }
 
 inline void vec3::
-operator *= (const vec3& rhs) {
+operator *= (const vec3& rhs) {DPZoneScoped;
 	this->x *= rhs.x; this->y *= rhs.y; this->z *= rhs.z;
 }
 
 inline vec3 vec3::
-operator /  (const vec3& rhs) const{
+operator /  (const vec3& rhs) const{DPZoneScoped;
 	return vec3(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z);
 }
 
 inline void vec3::
-operator /= (const vec3& rhs) {
+operator /= (const vec3& rhs) {DPZoneScoped;
 	this->x /= rhs.x; this->y /= rhs.y; this->z /= rhs.z;
 }
 
 inline vec3 vec3::
-operator -  () const{
+operator -  () const{DPZoneScoped;
 	return vec3( -x, -y, -z );
 }
 
 inline bool vec3::
-operator == (const vec3& rhs) const{
+operator == (const vec3& rhs) const{DPZoneScoped;
 	return abs(this->x - rhs.x) < M_EPSILON 
 		&& abs(this->y - rhs.y) < M_EPSILON 
 		&& abs(this->z - rhs.z) < M_EPSILON;
 }
 
 inline bool vec3::
-operator != (const vec3& rhs) const{
+operator != (const vec3& rhs) const{DPZoneScoped;
 	return !(*this == rhs);
 }
 
@@ -141,39 +141,39 @@ operator != (const vec3& rhs) const{
 //// functions ////
 ///////////////////
 inline void vec3::
-set(f32 _x, f32 _y, f32 _z){
+set(f32 _x, f32 _y, f32 _z){DPZoneScoped;
 	x = _x; y = _y; z = _z;
 }
 
 inline vec3 vec3::
-absV() const{
+absV() const{DPZoneScoped;
 	return vec3(abs(x), abs(y), abs(z));
 }
 
 inline vec3 vec3::
-copy() const{
+copy() const{DPZoneScoped;
 	return vec3(x, y, z);
 }
 
 inline f32 vec3::
-dot(const vec3& rhs) const{
+dot(const vec3& rhs) const{DPZoneScoped;
 	return this->x*rhs.x + this->y*rhs.y + this->z*rhs.z;
 }
 
 //left hand cross product
 inline vec3 vec3::
-cross(const vec3& rhs) const{
+cross(const vec3& rhs) const{DPZoneScoped;
 	return vec3(this->y*rhs.z - this->z*rhs.y, this->z*rhs.x - this->x*rhs.z, this->x*rhs.y - this->y*rhs.x);
 }
 
 inline f32 vec3::
-mag() const{
+mag() const{DPZoneScoped;
 	return sqrt(x*x + y*y + z*z);
 }
 
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
 //inline f32 vec3::
-//mag() const{
+//mag() const{DPZoneScoped;
 //	Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(s32) == 32, "This mag method only works if f32 and s32 are 32bit");
 //	f32 k = x * x + y * y + z * z;
 //	f32 kHalf = .5f * k;
@@ -185,20 +185,20 @@ mag() const{
 //}
 
 inline f32 vec3::
-magSq() const{
+magSq() const{DPZoneScoped;
 	return x*x + y*y + z*z;
 }
 
 inline void vec3::
-normalize(){
+normalize(){DPZoneScoped;
 	if (*this != vec3::ZERO) {
 		*this /= this->mag();
 	}
 }
 
 //inline void vec3::
-//normalize() {
-//	if (*this != vec3(0, 0, 0)) {
+//normalize() {DPZoneScoped;
+//	if (*this != vec3(0, 0, 0)) {DPZoneScoped;
 //		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(s32) == 32, "This mag method only works if f32 and s32 are 32bit");
 //		f32 k = x * x + y * y + z * z;
 //		f32 kHalf = .5f * k;
@@ -211,7 +211,7 @@ normalize(){
 //}
 
 inline vec3 vec3::
-normalized() const{
+normalized() const{DPZoneScoped;
 	if (*this != vec3::ZERO) {
 		return *this / this->mag();
 	}
@@ -219,8 +219,8 @@ normalized() const{
 }
 
 //inline vec3 vec3::
-//normalized() const{
-//	if (*this != vec3(0, 0, 0)) {
+//normalized() const{DPZoneScoped;
+//	if (*this != vec3(0, 0, 0)) {DPZoneScoped;
 //		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(s32) == 32, "This mag method only works if f32 and s32 are 32bit");
 //		f32 k = x * x + y * y + z * z;
 //		f32 kHalf = .5f * k;
@@ -235,7 +235,7 @@ normalized() const{
 
 //clamps all values of a vec3 between two floats
 inline vec3 vec3::
-clamp(f32 lo, f32 hi) const{
+clamp(f32 lo, f32 hi) const{DPZoneScoped;
 	if(lo > hi) f32 temp = lo; lo = hi; hi = lo;
 	return vec3((x < lo) ? lo : (hi < x) ? hi : x,
 				(y < lo) ? lo : (hi < y) ? hi : y,
@@ -243,7 +243,7 @@ clamp(f32 lo, f32 hi) const{
 }
 
 inline void vec3::
-clampMag(f32 min, f32 max){
+clampMag(f32 min, f32 max){DPZoneScoped;
 	f32 mag = this->mag();
 	if (mag < min) {
 		this->normalize();
@@ -255,7 +255,7 @@ clampMag(f32 min, f32 max){
 }
 
 inline vec3 vec3::
-clampedMag(f32 min, f32 max) const{
+clampedMag(f32 min, f32 max) const{DPZoneScoped;
 	f32 mag = this->mag();
 	if (mag < min) {
 		return normalized() * min; 
@@ -268,7 +268,7 @@ clampedMag(f32 min, f32 max) const{
 
 //round to a decimal place
 inline void vec3::
-round(s32 place){
+round(s32 place){DPZoneScoped;
 	x = floorf(x * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
 	y = floorf(y * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
 	z = floorf(z * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
@@ -276,93 +276,93 @@ round(s32 place){
 
 //round to a decimal place
 inline vec3 vec3::
-rounded(s32 place) const{
+rounded(s32 place) const{DPZoneScoped;
 	return vec3(floorf(x * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f),
 				floorf(y * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f),
 				floorf(z * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f));
 }
 
 inline f32 vec3::
-distanceTo(const vec3& rhs) const{
+distanceTo(const vec3& rhs) const{DPZoneScoped;
 	return (*this - rhs).mag();
 }
 
 inline vec3 vec3::
-compOn(const vec3& rhs) const{
+compOn(const vec3& rhs) const{DPZoneScoped;
 	return rhs.normalized() * this->projectOn(rhs);
 }
 
 inline f32 vec3::
-projectOn(const vec3& rhs) const{
+projectOn(const vec3& rhs) const{DPZoneScoped;
 	if (this->mag() != 0) return this->dot(rhs) / rhs.mag();
 	else return 0;
 }
 
 inline vec3 vec3::
-midpoint(const vec3& rhs) const{
+midpoint(const vec3& rhs) const{DPZoneScoped;
 	return vec3((x+rhs.x)/2.f, (y+rhs.y)/2.f, (z+rhs.z)/2.f);
 }
 
 //returns angle in radians
 inline f32 vec3::
-angleBetween(const vec3& rhs) const{
+angleBetween(const vec3& rhs) const{DPZoneScoped;
 	f32 mags = this->mag()*rhs.mag();
 	if(mags == 0) return 0;
 	return acosf(this->dot(rhs) / mags);
 }
 
 inline vec3 vec3::
-xComp() const{
+xComp() const{DPZoneScoped;
 	return vec3(x, 0, 0);
 }
 
 inline vec3 vec3::
-yComp() const{
+yComp() const{DPZoneScoped;
 	return vec3(0, y, 0);
 }
 
 inline vec3 vec3::
-zComp() const{
+zComp() const{DPZoneScoped;
 	return vec3(0, 0, z);
 }
 
 inline vec3 vec3::
-xZero() const{
+xZero() const{DPZoneScoped;
 	return vec3(0, x, y);
 }
 
 inline vec3 vec3::
-yZero() const{
+yZero() const{DPZoneScoped;
 	return vec3(x, 0, z);
 }
 
 inline vec3 vec3::
-zZero() const{
+zZero() const{DPZoneScoped;
 	return vec3(x, y, 0);
 }
 
 inline vec3 vec3::
-xInvert() const{
+xInvert() const{DPZoneScoped;
 	return vec3(-x, y, z);
 }
 
 inline vec3 vec3::
-yInvert() const{
+yInvert() const{DPZoneScoped;
 	return vec3(x, -y, z);
 }
 
 inline vec3 vec3::
-zInvert() const{
+zInvert() const{DPZoneScoped;
 	return vec3(x, y, -z);
 }
 
 inline vec3 vec3::
-ceil() const{
+ceil() const{DPZoneScoped;
 	return vec3(std::ceil(x), std::ceil(y), std::ceil(z));
 };
 
 inline vec3 vec3::
-floor() const{
+floor() const{DPZoneScoped;
 	return vec3(std::floor(x), std::floor(y), std::floor(z));
 };
 
