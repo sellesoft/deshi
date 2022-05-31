@@ -433,7 +433,7 @@ render_init(){DPZoneScoped;
 	if(renderSettings.debugging && renderSettings.printf) renderSettings.loggingLevel = 4;
 	
 	width  = DeshWindow->width;
-	 height = DeshWindow->height;
+	height = DeshWindow->height;
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup WGL and glad
@@ -674,7 +674,7 @@ render_update(){DPZoneScoped;
 	//// handle widow resize
 	if(DeshWindow->resized || remake_window){
 		width  = DeshWindow->width;
-		 height = DeshWindow->height;
+		height = DeshWindow->height;
 		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
 		glViewport(0,0,width,height);
 		remake_window = false;
@@ -1181,7 +1181,7 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 //// @render_surface
 void 
 render_register_surface(Window* window){DPZoneScoped;
-	AssertDS(DS_RENDER, "Attempted to register a surface for a window without initializaing Render module first");
+	Assert(DeshiModuleLoaded(DS_RENDER), "Attempted to register a surface for a window without initializaing Render module first");
 	Assert(window->index < MAX_SURFACES);
 	NotImplemented; //!Incomplete
 }

@@ -277,10 +277,15 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <windowsx.h>
 #  include <WinSock2.h>
 #  include <ws2tcpip.h>
+#
 #  include "core/platforms/win32_deshi.cpp"
 #elif DESHI_LINUX //DESHI_WINDOWS
+#  include <GLFW/glfw3.h>
+#
 #  include "core/platforms/linux_deshi.cpp"
 #elif DESHI_MAC   //DESHI_LINUX
+#  include <GLFW/glfw3.h>
+#
 #  include "core/platforms/osx_deshi.cpp"
 #else             //DESHI_MAC
 #  error "unknown platform"
@@ -303,6 +308,12 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <imgui/imgui_draw.cpp>
 #  include <imgui/imgui_tables.cpp>
 #  include <imgui/imgui_widgets.cpp>
+#  if DESHI_WINDOWS
+#    define VK_USE_PLATFORM_WIN32_KHR
+#    include <imgui/imgui_impl_win32.cpp>
+#  else
+#    include <imgui/imgui_impl_glfw.cpp>
+#  endif
 #else
 #  define STB_TRUETYPE_IMPLEMENTATION
 #  include <stb/stb_truetype.h>
@@ -310,16 +321,6 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <stb/stb_sprintf.h>
 #  define STB_RECT_PACK_IMPLEMENTATION
 #  include <imgui/stb_rectpack.h>
-#endif
-
-
-//// platform ////
-#if DESHI_WINDOWS
-#  define VK_USE_PLATFORM_WIN32_KHR
-#  include <imgui/imgui_impl_win32.cpp>
-#else //DESHI_WINDOWS
-#  include <GLFW/glfw3.h>
-#  include <imgui/imgui_impl_glfw.cpp>
 #endif
 
 
