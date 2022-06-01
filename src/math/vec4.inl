@@ -7,7 +7,7 @@
 //////////////////////
 
 inline vec4::
-vec4(f32 _x, f32 _y, f32 _z, f32 _w) {
+vec4(f32 _x, f32 _y, f32 _z, f32 _w) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = _mm_setr_ps(_x, _y, _z, _w);
 #else
@@ -19,7 +19,7 @@ vec4(f32 _x, f32 _y, f32 _z, f32 _w) {
 }
 
 inline vec4::
-vec4(const vec4& v) {
+vec4(const vec4& v) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = v.sse;
 #else
@@ -32,7 +32,7 @@ vec4(const vec4& v) {
 
 //!TestMe
 inline vec4::
-vec4(f32* ptr){ 
+vec4(f32* ptr){DPZoneScoped; 
 #if DESHI_USE_SSE
 	sse = _mm_loadr_ps(ptr);
 #else
@@ -44,7 +44,7 @@ vec4(f32* ptr){
 }
 
 inline vec4::
-vec4(vec4i v){ 
+vec4(vec4i v){DPZoneScoped; 
 	x = (f32)v.x; 
 	y = (f32)v.y; 
 	z = (f32)v.z; 
@@ -63,7 +63,7 @@ inline const vec4 vec4::ONE  = vec4(1,1,1,1);
 ///////////////////
 
 inline void vec4::
-operator =  (const vec4& rhs) {
+operator =  (const vec4& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = rhs.sse;
 #else
@@ -75,7 +75,7 @@ operator =  (const vec4& rhs) {
 }
 
 inline vec4 vec4::
-operator *  (const f32& rhs) const {
+operator *  (const f32& rhs) const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
@@ -90,7 +90,7 @@ operator *  (const f32& rhs) const {
 }
 
 inline void vec4::
-operator *= (const f32& rhs) {
+operator *= (const f32& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse = _mm_mul_ps(sse, scalar);
@@ -103,7 +103,7 @@ operator *= (const f32& rhs) {
 }
 
 inline vec4 vec4::
-operator /  (const f32& rhs) const {
+operator /  (const f32& rhs) const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
@@ -118,7 +118,7 @@ operator /  (const f32& rhs) const {
 }
 
 inline void vec4::
-operator /= (const f32& rhs) {
+operator /= (const f32& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse = _mm_div_ps(sse, scalar);
@@ -131,7 +131,7 @@ operator /= (const f32& rhs) {
 }
 
 inline vec4 vec4::
-operator +  (const vec4& rhs) const {
+operator +  (const vec4& rhs) const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	result.sse = _mm_add_ps(sse, rhs.sse);
@@ -145,7 +145,7 @@ operator +  (const vec4& rhs) const {
 }
 
 inline void vec4::
-operator += (const vec4& rhs) {
+operator += (const vec4& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = _mm_add_ps(sse, rhs.sse);
 #else
@@ -157,7 +157,7 @@ operator += (const vec4& rhs) {
 }
 
 inline vec4 vec4::
-operator -  (const vec4& rhs) const {
+operator -  (const vec4& rhs) const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	result.sse = _mm_sub_ps(sse, rhs.sse);
@@ -171,7 +171,7 @@ operator -  (const vec4& rhs) const {
 }
 
 inline void vec4::
-operator -= (const vec4& rhs) {
+operator -= (const vec4& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = _mm_sub_ps(sse, rhs.sse);
 #else
@@ -183,7 +183,7 @@ operator -= (const vec4& rhs) {
 }
 
 inline vec4 vec4::
-operator *  (const vec4& rhs) const {
+operator *  (const vec4& rhs) const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	result.sse = _mm_mul_ps(sse, rhs.sse);
@@ -197,7 +197,7 @@ operator *  (const vec4& rhs) const {
 }
 
 inline void vec4::
-operator *= (const vec4& rhs) {
+operator *= (const vec4& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = _mm_mul_ps(sse, rhs.sse);
 #else
@@ -209,7 +209,7 @@ operator *= (const vec4& rhs) {
 }
 
 inline vec4 vec4::
-operator /  (const vec4& rhs) const {
+operator /  (const vec4& rhs) const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	result.sse = _mm_div_ps(sse, rhs.sse);
@@ -223,7 +223,7 @@ operator /  (const vec4& rhs) const {
 }
 
 inline void vec4::
-operator /= (const vec4& rhs) {
+operator /= (const vec4& rhs) {DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = _mm_div_ps(sse, rhs.sse);
 #else
@@ -235,7 +235,7 @@ operator /= (const vec4& rhs) {
 }
 
 inline vec4 vec4::
-operator -  () const {
+operator -  () const {DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	result.sse = NegateSSE(sse);
@@ -249,7 +249,7 @@ operator -  () const {
 }
 
 inline bool vec4::
-operator == (const vec4& rhs) const {
+operator == (const vec4& rhs) const {DPZoneScoped;
 	bool result;
 #if DESHI_USE_SSE
 	result = EpsilonEqualSSE(sse, rhs.sse);
@@ -263,7 +263,7 @@ operator == (const vec4& rhs) const {
 }
 
 inline bool vec4::
-operator != (const vec4& rhs) const {
+operator != (const vec4& rhs) const {DPZoneScoped;
 	return !(*this == rhs);
 }
 
@@ -271,7 +271,7 @@ operator != (const vec4& rhs) const {
 //// functions ////
 ///////////////////
 inline void vec4::
-set(f32 _x, f32 _y, f32 _z, f32 _w){
+set(f32 _x, f32 _y, f32 _z, f32 _w){DPZoneScoped;
 #if DESHI_USE_SSE
 	sse = _mm_setr_ps(_x, _y, _z, _w);
 #else
@@ -283,7 +283,7 @@ set(f32 _x, f32 _y, f32 _z, f32 _w){
 }
 
 inline vec4 vec4::
-absV() const{
+absV() const{DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
 	result.sse = AbsoluteSSE(sse);
@@ -298,12 +298,12 @@ absV() const{
 
 
 inline vec4 vec4::
-copy() const {
+copy() const {DPZoneScoped;
 	return *this;
 }
 
 inline f32 vec4::
-dot(const vec4& rhs) const {
+dot(const vec4& rhs) const {DPZoneScoped;
 	f32 result;
 #if DESHI_USE_SSE
 	__m128 temp0 = _mm_mul_ps(sse, rhs.sse); //multiply together
@@ -319,70 +319,70 @@ dot(const vec4& rhs) const {
 }
 
 inline f32 vec4::
-magSq() const {
+magSq() const {DPZoneScoped;
 	return dot(*this);
 }
 
 inline f32 vec4::
-mag() const {
+mag() const {DPZoneScoped;
 	return Sqrt(magSq());
 }
 
 inline vec4 vec4::
-wnormalized() const {
-	if (w != 0) {
+wnormalized() const {DPZoneScoped;
+	if (w != 0) {DPZoneScoped;
 		return *this / w;
 	}
 	return vec4(*this);
 }
 
 inline vec4 vec4::
-xComp() const {
+xComp() const {DPZoneScoped;
 	return vec4(x, 0, 0, 0);
 }
 
 inline vec4 vec4::
-yComp() const {
+yComp() const {DPZoneScoped;
 	return vec4(0, y, 0, 0);
 }
 
 inline vec4 vec4::
-zComp() const {
+zComp() const {DPZoneScoped;
 	return vec4(0, 0, z, 0);
 }
 
 inline vec4 vec4::
-wComp() const {
+wComp() const {DPZoneScoped;
 	return vec4(0, 0, 0, w);
 }
 
 inline vec4 vec4::
-xInvert() const {
+xInvert() const {DPZoneScoped;
 	return vec4(-x, y, z, w);
 }
 
 inline vec4 vec4::
-yInvert() const {
+yInvert() const {DPZoneScoped;
 	return vec4(x, -y, z, w);
 }
 
 inline vec4 vec4::
-zInvert() const {
+zInvert() const {DPZoneScoped;
 	return vec4(x, y, -z, w);
 }
 
 inline vec4 vec4::
-wInvert() const {
+wInvert() const {DPZoneScoped;
 	return vec4(x, y, z, -w);
 }
 
 inline vec4 vec4::
-ceil() const{
+ceil() const{DPZoneScoped;
 	return vec4(std::ceil(x), std::ceil(y), std::ceil(z), std::ceil(w));
 };
 
 inline vec4 vec4::
-floor() const{
+floor() const{DPZoneScoped;
 	return vec4(std::floor(x), std::floor(y), std::floor(z), std::floor(w));
 };
 
