@@ -499,6 +499,39 @@ platform_cursor_position(s32 x, s32 y){DPZoneScoped;
 	DeshInput->screenMouseY = y;
 }
 
+Process
+platform_get_process_by_name(str8 name){
+	Process p{0};
+
+	PROCESSENTRY32 entry;
+	entry.dwSize = sizeof(PROCESSENTRY32);
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+	while(Process32Next(snapshot, &entry)){
+		str8 pname = str8_from_wchar(entry.szExeFile);
+		
+		if(str8_equal(pname, name)){ 
+			p.handle = OpenProcess(PROCESS_ALL_ACCESS, 0, entry.th32ProcessID);
+			break;
+		}
+	}
+	return p;
+}
+
+u64 
+platform_process_read(Process p, upt address, void* out, upt size){
+	if(ReadProcessMemory(p.handle, (LPCVOID)address, out, size, 0)) return 1;
+	win32_log_last_error("ReadProcessMemory");
+	return 0;
+}
+
+u64 
+platform_process_write(Process p, upt address, void* data, upt size){
+	if(WriteProcessMemory(p.handle, (LPVOID)address, data, size, 0)) return 1;
+	win32_log_last_error("WriteProcessMemory");
+	return 0;
+}
+
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_stopwatch

@@ -151,7 +151,7 @@ external b32 deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path
 //    this call is equivalent to `file_change_access()` if there already is an initialized `File` for `path`
 //    `ignore_nonexistence` just prevents error messages if the file doesn't exist (will still return 0)
 external File* deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access, b32 ignore_nonexistence);
-#define file_init(path,access) deshi__file_init(str8_lit(__FILE__),__LINE__, (path),(access),false)
+#define file_init(path,access) deshi__file_init(str8_lit(__FILE__),__LINE__, path,(access),false)
 #define file_init_if_exists(path,access) deshi__file_init(str8_lit(__FILE__),__LINE__, (path),(access),true)
 
 //Closes a previously init `file` if it has `FileAccess_Read` or `FileAccess_Write` and deletes the internal `File` object

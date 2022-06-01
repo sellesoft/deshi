@@ -4,6 +4,8 @@ Notes:
   The variables at the bottom are shared across all backends.
 
 Index:
+@platform_types
+  Process
 @platform_status
   platform_init() -> void
   platform_update() -> void
@@ -18,6 +20,10 @@ Index:
 @platform_clipboard
   platform_get_clipboard() -> str8
   platform_set_clipboard(str8 text) -> void
+@platform_process
+  platform_get_process_by_name(str8 name) -> Process
+  platform_process_read(Process p, upt address, void* out, upt size) -> u64
+  platform_process_write(Process p, upt address, void* data, upt size) -> u64
 @platform_shared_variables
 @platform_shared_functions
 */
@@ -31,6 +37,12 @@ Index:
 #include "kigu/unicode.h"
 #include "math/vector.h"
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @platform_types
+struct Process{
+	void* handle;
+};
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @platform_status
@@ -43,7 +55,7 @@ external b32 platform_update();
 //Signals to exit the application
 external void platform_exit();
 
-//Toggles whether the application requires 2 exits to be send in order to close the application
+//Sets whether the application requires 2 exits to be send in order to close the application
 //    eg: so you can notify a person to save their work before exiting
 external void platform_fast_application_exit(b32 exit_fast);
 
@@ -99,6 +111,33 @@ external str8 platform_get_clipboard();
 //  Mac: TODO
 external void platform_set_clipboard(str8 text);
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @platform_process
+
+//Gets a process by name
+// Windows: uses CreateToolhelp32Snapshot and iterates it's list of processes; opens with PROCESS_ALL_ACCESS TODO(sushi) options for this
+//   Linux: TODO
+//     Mac: TODO
+//TODO(sushi) error codes
+external Process platform_get_process_by_name(str8 name);
+
+//Reads some data from a process into `out`
+//       p: a process initialized using platform_get_process_by_name
+// address: address in process to read from
+//     out: an allocated buffer to write read data to
+//    size: size to read
+// returns 0 if read failed, non 0 otherwise
+//TODO(sushi) error codes
+external u64 platform_process_read(Process p, upt address, void* out, upt size);
+
+//Writes some data
+//       p: a process initialized using platform_get_process_by_name
+// address: address in process to write to
+//    data: data to be written to the process
+//    size: size of data to be written
+// returns 0 if write failed, non 0 otherwise
+//TODO(sushi) error codes
+external u64 platform_process_write(Process p, upt address, void* data, upt size);
 
 #endif //DESHI_PLATFORM_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,6 +164,9 @@ void
 platform_fast_application_exit(b32 exit_fast){DPZoneScoped;
 	platform_fast_exit = exit_fast;
 }
+
+
+
 
 /*
 //TODO(sushi) options for decoration colors
