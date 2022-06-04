@@ -1164,10 +1164,9 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 	switch(font->type){
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE:{
-			DecodedCodepoint decoded = decoded_codepoint_from_utf8(text.str, 4);
 			while(text){
+				DecodedCodepoint decoded = str8_advance(&text);
 				if(decoded.codepoint == 0) break;
-				str8_increment(&text, decoded.codepoint);
 				
 				u32           color = c.rgba;
 				Vertex2*         vp = renderTwodVertexArray + renderTwodVertexCount;
@@ -1196,10 +1195,9 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 		}break;
 		//// TTF font rendering ////
 		case FontType_TTF:{
-			DecodedCodepoint decoded = decoded_codepoint_from_utf8(text.str, 4);
 			while(text){
+				DecodedCodepoint decoded = str8_advance(&text);
 				if(decoded.codepoint == 0) break;
-				str8_increment(&text, decoded.codepoint);
 				
 				u32           color = c.rgba;
 				Vertex2*         vp = renderTwodVertexArray + renderTwodVertexCount;
