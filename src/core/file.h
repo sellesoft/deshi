@@ -503,6 +503,7 @@ deshi__file_write(str8 caller_file, upt caller_line, File* file, void* data, u64
 	
 	if(file->handle){
 		size_t bytes_written = fwrite(data, 1,bytes, file->handle);
+		fflush(file->handle);
 		file->cursor += bytes_written;
 		if(file->cursor > file->bytes) file->bytes = file->cursor;
 		return bytes_written;
