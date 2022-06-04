@@ -300,33 +300,34 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 		}break;
 		
 		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key (UTF-16)
-			if(!iscntrl(LOWORD(wParam))){ //NOTE skip control characters
-				//!ref: https://github.com/cmuratori/refterm/blob/main/refterm_example_terminal.c@ProcessMessages()
-				persist wchar_t inputPrevChar; //used for UTF-16 surrogate pairs
-				wchar_t wch = (wchar_t)wParam;
-				wchar_t chars[2];
-				int char_count = 0;
-				
-				if(IS_HIGH_SURROGATE(wch)){
-					inputPrevChar = wch;
-				}else if(IS_LOW_SURROGATE(wch)){
-					if(IS_SURROGATE_PAIR(inputPrevChar, wch)){
-						chars[0] = inputPrevChar;
-						chars[1] = wch;
-						char_count = 2;
-					}
-					inputPrevChar = 0;
-				}else{
-					chars[0] = wch;
-					char_count = 1;
+#ifndef DESHI_ALLOW_CHARINPUT_CONTROLCHARS
+			if(iswcntrl(LOWORD(wParam))) break; //NOTE skip control characters
+#endif
+			//!ref: https://github.com/cmuratori/refterm/blob/main/refterm_example_terminal.c@ProcessMessages()
+			persist wchar_t inputPrevChar; //used for UTF-16 surrogate pairs
+			wchar_t wch = (wchar_t)wParam;
+			wchar_t chars[2];
+			int char_count = 0;
+			
+			if(IS_HIGH_SURROGATE(wch)){
+				inputPrevChar = wch;
+			}else if(IS_LOW_SURROGATE(wch)){
+				if(IS_SURROGATE_PAIR(inputPrevChar, wch)){
+					chars[0] = inputPrevChar;
+					chars[1] = wch;
+					char_count = 2;
 				}
-				
-				if(char_count){
-					DeshInput->realCharCount += 
-						WideCharToMultiByte(CP_UTF8, 0, chars, char_count,
-											(LPSTR)(DeshInput->charIn + DeshInput->realCharCount),
-											ArrayCount(DeshInput->charIn) - DeshInput->realCharCount, 0, 0);
-				}
+				inputPrevChar = 0;
+			}else{
+				chars[0] = wch;
+				char_count = 1;
+			}
+			
+			if(char_count){
+				DeshInput->realCharCount += 
+					WideCharToMultiByte(CP_UTF8, 0, chars, char_count,
+										(LPSTR)(DeshInput->charIn + DeshInput->realCharCount),
+										ArrayCount(DeshInput->charIn) - DeshInput->realCharCount, 0, 0);
 			}
 		}break;
 		
