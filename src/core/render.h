@@ -376,6 +376,7 @@ external void render_debug_line3(vec3 p0, vec3 p1,  color c);
 external void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 
 //Adds `vertices` and `indices` to the active `RenderTwodCmd` on `layer`
+//    `indices` values should be local to the addition (start at 0) since they are added to the offset internally
 external void render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
 
 //Returns the top-most layer for 2D rendering
@@ -383,6 +384,9 @@ external u32  render_top_layer_index();
 
 //Returns the window decorations layer for 2D rendering (higher than top-most)
 external u32  render_decoration_layer_index();
+
+//Returns the active layer in 2D rendering
+external u32  render_active_layer();
 
 //Renders a 2D line to the active `RenderTwodCmd` from `start` to `end` with 1 pixel thickness
 external void render_line2(vec2 start, vec2 end, color c);
@@ -477,15 +481,15 @@ external void render_reload_all_shaders();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_make
- vec2 render_make_line_counts();
- vec2 render_make_filledtriangle_counts();
- vec2 render_make_triangle_counts();
- vec2 render_make_filledrect_counts();
- vec2 render_make_rect_counts();
- vec2 render_make_circle_counts(u32 subdiv);
- vec2 render_make_filledcircle_counts(u32 subdiv);
- vec2 render_make_text_counts(u32 charcount);
- vec2 render_make_texture_counts();
+vec2 render_make_line_counts();
+vec2 render_make_filledtriangle_counts();
+vec2 render_make_triangle_counts();
+vec2 render_make_filledrect_counts();
+vec2 render_make_rect_counts();
+vec2 render_make_circle_counts(u32 subdiv);
+vec2 render_make_filledcircle_counts(u32 subdiv);
+vec2 render_make_text_counts(u32 charcount);
+vec2 render_make_texture_counts();
 
 external void render_make_line(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 start, vec2 end, f32 thickness, color color);
 external void render_make_filledtriangle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 p1, vec2 p2, vec2 p3, color color);
@@ -899,13 +903,18 @@ render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32
 }
 
 u32
-render_top_layer_index(){
+render_top_layer_index(){DPZoneScoped;
 	return TWOD_LAYERS-1;
 }
 
 u32
-render_decoration_layer_index(){
+render_decoration_layer_index(){DPZoneScoped;
 	return TWOD_LAYERS;
+}
+
+u32
+render_active_layer(){DPZoneScoped;
+	return renderActiveLayer;
 }
 
 void
@@ -1568,7 +1577,7 @@ void
 render_make_texture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(!alpha) return;
-
+	
 	u32     col = PackColorU32(255,255,255,255.f * alpha);
 	Vertex2* vp = putverts + (u32)offsets.x;
 	u32*     ip = putindices + (u32)offsets.y;
