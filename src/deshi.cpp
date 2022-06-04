@@ -108,6 +108,7 @@ Common Tags: Feature, Tweak, Bug, System
 [02/26/22,MEDI,Feature] OpenGL pipelines/materials
 [02/26/22,MEDI,Feature] OpenGL shadows (and test/fix Vulkan shadows)
 [02/26/22,HARD,Feature] OpenGL render/video settings
+[06/04/22,MEDI,Tweak]   shrink Vertex2 footprint by using s16 for pos and f16 for uv
 
 `Sound`
 -------
