@@ -16,7 +16,6 @@ add a KEYONLY type/flag for line separated lists
 #include "kigu/common.h"
 #include "kigu/unicode.h"
 
-
 typedef Type ConfigValueType; enum{
 	ConfigValueType_NONE, //can be used for comments
 	ConfigValueType_B32,
@@ -28,7 +27,9 @@ typedef Type ConfigValueType; enum{
 	ConfigValueType_FV2, 
 	ConfigValueType_FV3,
 	ConfigValueType_FV4,
+	ConfigValueType_Col,
 	ConfigValueType_Str8, 
+	ConfigValueType_Font,
 	ConfigValueType_KeyMod,
 	
 	//control enums
@@ -51,16 +52,17 @@ struct ConfigMapItem{
 };
 
 //Saves the `config_map` to the `path`
-global_ void config_save(str8 path, ConfigMapItem* config_map, u64 config_count);
+external void config_save(str8 path, ConfigMapItem* config_map, u64 config_count);
 
 //Loads the `config_map` from the `path`
-global_ void config_load(str8 path, ConfigMapItem* config_map, u64 config_count);
+external void config_load(str8 path, ConfigMapItem* config_map, u64 config_count);
 
 
 #endif //DESHI_CONFIG_H
 #ifdef DESHI_IMPLEMENTATION
 #include "input.h"
-
+#include "font.h"
+#include "storage.h"
 
 void
 config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
@@ -126,10 +128,21 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 				conversion = to_string(*(vec4*)config_map[i].var, true, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
+			case ConfigValueType_Col:{
+				conversion = to_string(*(color*)config_map[i].var, deshi_temp_allocator);
+				file_write(file, conversion.str, conversion.count);
+			}break;
 			case ConfigValueType_Str8:{
 				file_write(file, "\"", 1);
 				file_write(file, (*(str8*)config_map[i].var).str, (*(str8*)config_map[i].var).count);
 				file_write(file, "\"", 1);
+			}break;
+			case ConfigValueType_Font:{
+				Font* font = *(Font**)config_map[i].var;
+				file_write(file, font->name.str, font->name.count);
+				file_write(file, ",", 1);
+				conversion = to_string(font->max_height, deshi_temp_allocator);
+				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_KeyMod:{
 				u32 key = (*(KeyCode*)config_map[i].var) & INPUT_KEY_MASK;
@@ -287,6 +300,18 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 					vec->z = strtof(cursor+1,&cursor);
 					vec->w = strtof(cursor+1,0);
 				}break;
+				case ConfigValueType_Col:{
+					color* col = (color*)configs[i].var;
+					char* cursor = (char*)line.str;
+					if(cursor[0] == '0' && cursor[1] == 'x')
+						col->rgba = strtol(cursor+2, 0, 16);
+					else{
+						col->r = strtol(cursor+3,&cursor,10);
+						col->g = strtol(cursor+4,&cursor,10);
+						col->b = strtol(cursor+4,&cursor,10);
+						col->a = strtol(cursor+4,0,10);
+					}
+				}break;
 				case ConfigValueType_Str8:{ //TODO(delle) !Leak can't free if we don't know if str8 is based on a literal (use str8_builder)
 					//if the value starts with a double-quote, parse until next double-quote, else parse until end of line
 					if(decoded_codepoint_from_utf8(line.str,4).codepoint == '\"'){
@@ -295,6 +320,15 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 						*(str8*)configs[i].var = str8_copy(str,  deshi_allocator);
 					}else{
 						*(str8*)configs[i].var = str8_copy(line, deshi_allocator);
+					}
+				}break;
+				case ConfigValueType_Font:{
+					str8 name = str8_eat_until(line, ',');
+					if(name.count == line.count) //no count was given
+						*(Font**)configs[i].var = Storage::CreateFontFromFile(name, 0).second;
+					else{
+						str8_increment(&line, name.count+1);
+						*(Font**)configs[i].var = Storage::CreateFontFromFile(name, strtol((char*)line.str, 0, 0)).second;
 					}
 				}break;
 				case ConfigValueType_KeyMod:{
