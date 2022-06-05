@@ -21,8 +21,8 @@ struct Command{
 	str8 usage;
 	u32 min_args;
 	u32 max_args;
-	 Type* args;
-	 u32 arg_count;
+	Type* args;
+	u32 arg_count;
 };
 
 struct Alias{
