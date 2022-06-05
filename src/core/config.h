@@ -150,33 +150,40 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 				file_write(file, KeyCodeStrings[key].str, KeyCodeStrings[key].count);
 				switch(mod){
 					case(InputMod_Any):            break; //append nothing
-					case(InputMod_None):           file_write(file, "+none", 5); break;
-					case(InputMod_Lctrl):          file_write(file, "+lctrl", 6); break;
-					case(InputMod_Rctrl):          file_write(file, "+rctrl", 6); break;
-					case(InputMod_Lshift):         file_write(file, "+lshift", 7); break;
-					case(InputMod_Rshift):         file_write(file, "+rshift", 7); break;
-					case(InputMod_Lalt):           file_write(file, "+lalt", 5); break;
-					case(InputMod_Ralt):           file_write(file, "+ralt", 5); break;
-					case(InputMod_LctrlLshift):    file_write(file, "+lctrl+lshift", 13); break;
-					case(InputMod_LctrlRshift):    file_write(file, "+lctrl+rshift", 13); break;
-					case(InputMod_RctrlLshift):    file_write(file, "+rctrl+lshift", 13); break;
-					case(InputMod_RctrlRshift):    file_write(file, "+rctrl+rshift", 13); break;
-					case(InputMod_LctrlLalt):      file_write(file, "+lctrl+lalt", 11); break;
-					case(InputMod_LctrlRalt):      file_write(file, "+lctrl+ralt", 11); break;
-					case(InputMod_RctrlLalt):      file_write(file, "+rctrl+lalt", 11); break;
-					case(InputMod_RctrlRalt):      file_write(file, "+rctrl+ralt", 11); break;
-					case(InputMod_LshiftLalt):     file_write(file, "+lshift+lalt", 12); break;
-					case(InputMod_LshiftRalt):     file_write(file, "+lshift+ralt", 12); break;
-					case(InputMod_RshiftLalt):     file_write(file, "+rshift+lalt", 12); break;
-					case(InputMod_RshiftRalt):     file_write(file, "+rshift+ralt", 12); break;
-					case(InputMod_LctrlLshiftLalt):file_write(file, "+lctrl+lshift+lalt", 18); break;
-					case(InputMod_LctrlLshiftRalt):file_write(file, "+lctrl+lshift+ralt", 18); break;
-					case(InputMod_LctrlRshiftLalt):file_write(file, "+lctrl+rshift+lalt", 18); break;
-					case(InputMod_LctrlRshiftRalt):file_write(file, "+lctrl+rshift+ralt", 18); break;
-					case(InputMod_RctrlLshiftLalt):file_write(file, "+rctrl+lshift+lalt", 18); break;
-					case(InputMod_RctrlLshiftRalt):file_write(file, "+rctrl+lshift+ralt", 18); break;
-					case(InputMod_RctrlRshiftLalt):file_write(file, "+rctrl+rshift+lalt", 18); break;
-					case(InputMod_RctrlRshiftRalt):file_write(file, "+rctrl+rshift+ralt", 18); break;
+					case(InputMod_None):                 file_write(file, "+none", 5); break;
+					case(InputMod_Lctrl):                file_write(file, "+lctrl", 6); break;
+					case(InputMod_Rctrl):                file_write(file, "+rctrl", 6); break;
+					case(InputMod_Lshift):               file_write(file, "+lshift", 7); break;
+					case(InputMod_Rshift):               file_write(file, "+rshift", 7); break;
+					case(InputMod_Lalt):                 file_write(file, "+lalt", 5); break;
+					case(InputMod_Ralt):                 file_write(file, "+ralt", 5); break;
+					case(InputMod_LctrlLshift):          file_write(file, "+lctrl+lshift", 13); break;
+					case(InputMod_LctrlRshift):          file_write(file, "+lctrl+rshift", 13); break;
+					case(InputMod_RctrlLshift):          file_write(file, "+rctrl+lshift", 13); break;
+					case(InputMod_RctrlRshift):          file_write(file, "+rctrl+rshift", 13); break;
+					case(InputMod_LctrlLalt):            file_write(file, "+lctrl+lalt", 11); break;
+					case(InputMod_LctrlRalt):            file_write(file, "+lctrl+ralt", 11); break;
+					case(InputMod_RctrlLalt):            file_write(file, "+rctrl+lalt", 11); break;
+					case(InputMod_RctrlRalt):            file_write(file, "+rctrl+ralt", 11); break;
+					case(InputMod_LshiftLalt):           file_write(file, "+lshift+lalt", 12); break;
+					case(InputMod_LshiftRalt):           file_write(file, "+lshift+ralt", 12); break;
+					case(InputMod_RshiftLalt):           file_write(file, "+rshift+lalt", 12); break;
+					case(InputMod_RshiftRalt):           file_write(file, "+rshift+ralt", 12); break;
+					case(InputMod_LctrlLshiftLalt):      file_write(file, "+lctrl+lshift+lalt", 18); break;
+					case(InputMod_LctrlLshiftRalt):      file_write(file, "+lctrl+lshift+ralt", 18); break;
+					case(InputMod_LctrlRshiftLalt):      file_write(file, "+lctrl+rshift+lalt", 18); break;
+					case(InputMod_LctrlRshiftRalt):      file_write(file, "+lctrl+rshift+ralt", 18); break;
+					case(InputMod_RctrlLshiftLalt):      file_write(file, "+rctrl+lshift+lalt", 18); break;
+					case(InputMod_RctrlLshiftRalt):      file_write(file, "+rctrl+lshift+ralt", 18); break;
+					case(InputMod_RctrlRshiftLalt):      file_write(file, "+rctrl+rshift+lalt", 18); break;
+					case(InputMod_RctrlRshiftRalt):      file_write(file, "+rctrl+rshift+ralt", 18); break;
+					case(InputMod_AnyShift):             file_write(file, "+ashift",            7); break;            
+	                case(InputMod_AnyAlt):               file_write(file, "+aalt",              5); break;
+	                case(InputMod_AnyCtrl):              file_write(file, "+actrl",             6); break;
+	                case(InputMod_AnyShiftAnyAlt):       file_write(file, "+ashift+aalt",       12); break;
+	                case(InputMod_AnyAltAnyCtrl):        file_write(file, "+aalt+actrl",        11); break;
+	                case(InputMod_AnyCtrlAnyShift):      file_write(file, "+actrl+ashift",      13); break;
+	                case(InputMod_AnyShiftAnyCtrlAnyAlt):file_write(file, "+actrl+aalt+ashift", 18); break;
 					default: LogE("config","Unknown key-modifier combination '",(*(KeyCode*)config_map[i].var),"' when saving config: ",path);
 				} 
 			}break;
@@ -231,7 +238,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 		if(!line) continue;
 		
 		//early out if comment is first character
-		if(decoded_codepoint_from_utf8(line.str, 4).codepoint == '#') continue;
+		if(str8_index(line, 0).codepoint == '#') continue;
 		
 		//parse key
 		str8 key = str8_eat_until(line, ' ');
@@ -245,7 +252,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 		}
 		
 		//early out if comment is first value character
-		if(decoded_codepoint_from_utf8(line.str, 4).codepoint == '#'){
+		if(str8_index(line, 0).codepoint == '#'){
 			LogE("config","Error parsing '",path,"' on line ",line_number,". No value passed to key: ",key);
 			continue;
 		}
@@ -324,7 +331,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 				}break;
 				case ConfigValueType_Font:{
 					str8 name = str8_eat_until(line, ',');
-					if(name.count == line.count) //no count was given
+					if(name.count == line.count) //no height was given
 						*(Font**)configs[i].var = Storage::CreateFontFromFile(name, 0).second;
 					else{
 						str8_increment(&line, name.count+1);
@@ -365,6 +372,11 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 							if     (*(keybind_mod.str+1) == 'c') *keybind |= InputMod_Rctrl;
 							else if(*(keybind_mod.str+1) == 's') *keybind |= InputMod_Rshift;
 							else if(*(keybind_mod.str+1) == 'a') *keybind |= InputMod_Ralt;
+							else LogE("config","Error parsing '",path,"' on line ",line_number,". Invalid keybind mod: ",keybind_mod);
+						}else if(*keybind_mod.str == 'a'){
+							if     (*(keybind_mod.str+1) == 'c') *keybind |= InputMod_AnyCtrl;
+							else if(*(keybind_mod.str+1) == 's') *keybind |= InputMod_AnyShift;
+							else if(*(keybind_mod.str+1) == 'a') *keybind |= InputMod_AnyAlt;
 							else LogE("config","Error parsing '",path,"' on line ",line_number,". Invalid keybind mod: ",keybind_mod);
 						}else if(*keybind_mod.str == 'n'){
 							//overwrite any other input mods since they aren't compatible

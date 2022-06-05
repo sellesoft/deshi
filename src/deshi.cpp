@@ -40,6 +40,7 @@ Common Tags: Feature, Tweak, Bug, System
 [12/28/21,EASY,Feature]  add file hard/symbolic link determination
 [12/28/21,EASY,Feature]  add drive statistics
 [04/28/22,EASY,Optimize] maybe wrap error checking in #if debug clauses?
+[06/05/22,MEDI,Bug]      config may keep a file locked even after loading it
 
 `Fun`
 -----
@@ -176,9 +177,6 @@ tab bar buttons pass their input thru to the window (for dragging)
 [07/19/21,MEDI,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 [12/31/21,HARD,System]  remove GLFW and add linux/mac platform specifics
 [02/01/22,EASY,Tweak]   remove commit/decommit from defines.h
-[03/02/22,EASY,Tweak]   check that deshi::init, deshi::shouldCLose and deshi::cleanup are all still up to date as well as how deshi.h handles including things from core
-[03/12/22,MEDI,Feature] add deshi::DisplaySettingsWindow() and deshi::DisplaySettings(), global settings for each of deshi's modules
-    this could also be separated into individual functions for each module as well, so you could call deshi::DisplayRenderSettings()
 */
 
 
