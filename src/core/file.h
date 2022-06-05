@@ -5,6 +5,7 @@ Function implementations are either in this file or in the platform backend file
 Functions take in both kind of path separators \\ or /, but only output / as a separator.
 The path variable on file objects for directories will always end with a /.
 Usage of fopen() needs to be in the platform backend because MSVC only accepts ANSI without _wfopen().
+Currently this module shoud be considered NOT thread-safe 
 
 Index:
 @file_types
@@ -38,6 +39,7 @@ Index:
   file_append(File* file, void* data, u64 bytes) -> u64
   file_append_line(File* file, str8 line) -> u64
   file_append_simple(str8 path, void* data, u64 bytes) -> u64
+  TODO file_set_size(File* file, s64 bytes) -> void
 @file_shared_variables
 @file_tests
 
@@ -252,6 +254,10 @@ external u64 deshi__file_append_line(str8 caller_file, upt caller_line, File* fi
 //    this creates the file at `path` if one doesn't exist
 external u64 deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes);
 #define file_append_simple(path,data,bytes) deshi__file_append_simple(str8_lit(__FILE__),__LINE__, (path),(data),(bytes))
+
+//Resizes a file to a specified size
+//external void deshi__file_set_size(str8 caller_file, upt caller_line, File* file, s64 bytes);
+//#define file_set_size(file, bytes) deshi__file_set_size(str8_lit(__FILE__),__LINE__,(file),(bytes));
 
 
 #endif //DESHI_FILE_H

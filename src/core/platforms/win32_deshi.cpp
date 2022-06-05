@@ -1093,6 +1093,15 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 		fseek(file->handle, file->bytes, SEEK_SET);
 		file->cursor = file->bytes;
 	}
+
+	if(file->handle && HasFlag(flags, FileAccess_Truncate)){
+		fclose(file->handle);
+		if     (HasFlag(flags, FileAccess_ReadWrite)) file->handle = _wfopen(wpath, (wchar_t*)L"wb+");
+		else if(HasFlag(flags, FileAccess_Write))     file->handle = _wfopen(wpath, (wchar_t*)L"wb"); 
+		else{//just truncate the file
+			_wfopen(wpath, (wchar_t*)L"wb");
+		}
+	}
 	
 	file->access = flags & ~(FileAccess_Append|FileAccess_Truncate);
 }
@@ -1194,7 +1203,6 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 	}
 	return (u64)bytes_written;
 }
-
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_modules
