@@ -40,7 +40,7 @@ typedef struct{
 struct Font{
 	Type type;
 	u32  idx;
-	char name[64];
+	str8 name;
 	char weight[64];
 	u32  max_width;
 	u32  max_height;

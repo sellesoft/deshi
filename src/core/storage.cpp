@@ -61,7 +61,7 @@ Init(){DPZoneScoped;
 	NullFont()->max_width = 6;
 	NullFont()->max_height = 12;
 	NullFont()->count = 1;
-	cpystr(NullFont()->name,"null",64);
+	NullFont()->name = STR8("null");
 	u8 white_pixels[4] = {255,255,255,255};
 	Texture* nf_tex = CreateTextureFromMemory(white_pixels, str8_lit("null_font"), 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
 	//DeleteTexture(nf_tex); //!Incomplete
@@ -1620,7 +1620,7 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 	
 	//check if created already
 	forI(fonts.count){
-		if(strncmp(fonts[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
+		if(!str8_compare(fonts[i]->name, filename)){
 			return pair<u32,Font*>(i,fonts[i]);
 		}
 	}
@@ -1666,8 +1666,10 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 		LogE("storage","Error parsing BDF '",filename,"' on line 1. The file did not begin with 'STARTFONT'.");
 		return result;
 	}
+
 	
 	Font* font = AllocateFont(FontType_BDF);
+	font->name = filename;
 	u32 line_number = 1;
 	while(file->cursor < file->bytes){
 		line_number += 1;
@@ -1778,7 +1780,7 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 				continue;
 			}
 			str8 font_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-			cpystr(font->name, (const char*)font_name.str, 64);
+			//TODO(sushi) replace name on Font with filename and add a name for this guy right here!
 		}else if(str8_equal_lazy(key, str8_lit("WEIGHT_NAME"))){
 			if(!line){
 				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
@@ -1826,7 +1828,7 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	//check if created already
 	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
 	forI(fonts.count){
-		if(strncmp(fonts[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
+		if(!str8_compare(fonts[i]->name, filename)){
 			return pair<u32,Font*>(i,fonts[i]);
 		}
 	}
@@ -1953,7 +1955,7 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 											   TextureAddressMode_ClampToWhite, false).second;
 	
 	Font* font = AllocateFont(FontType_TTF);
-	cpystr(font->name,(const char*)filename.str,64);
+	font->name         = filename;
 	font->max_width    = (u32)((f32)max_width / (f32)max_height * (f32)size);
 	font->max_height   = size;
 	font->count        = glyph_count;

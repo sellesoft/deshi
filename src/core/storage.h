@@ -235,8 +235,6 @@ namespace Storage{
 	//returns the index of the `Font` object at the `font` pointer in `Storage` if it exists; -1 if not found
 	inline u32      FontIndex(Font* font){ forI(DeshStorage->fonts.count){ if(font == DeshStorage->fonts[i]) return i; } return -1; };
 	
-	//returns the name of the `Font` object at `index` in `Storage`
-	inline str8     FontName(u32 index){ return str8_from_cstr(DeshStorage->fonts[index]->name); };
 };
 
 #endif //DESHI_STORAGE_H
