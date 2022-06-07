@@ -503,11 +503,11 @@ platform_cursor_position(s32 x, s32 y){DPZoneScoped;
 Process
 platform_get_process_by_name(str8 name){
 	Process p{0};
-
+	
 	PROCESSENTRY32 entry;
 	entry.dwSize = sizeof(PROCESSENTRY32);
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-
+	
 	while(Process32Next(snapshot, &entry)){
 		str8 pname = str8_from_wchar(entry.szExeFile);
 		
@@ -1093,7 +1093,7 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 		fseek(file->handle, file->bytes, SEEK_SET);
 		file->cursor = file->bytes;
 	}
-
+	
 	if(file->handle && HasFlag(flags, FileAccess_Truncate)){
 		fclose(file->handle);
 		if     (HasFlag(flags, FileAccess_ReadWrite)) file->handle = _wfopen(wpath, (wchar_t*)L"wb+");
@@ -1217,9 +1217,9 @@ platform_free_module(void* module){DPZoneScoped;
 	::FreeLibrary((HMODULE)module);
 }
 
-platform_symbol
+void*
 platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
-	return (platform_symbol)::GetProcAddress((HMODULE)module, symbol_name);
+	return ::GetProcAddress((HMODULE)module, symbol_name);
 }
 
 
@@ -1497,7 +1497,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	//create the window
 	Window* window = (Window*)memory_alloc(sizeof(Window));
 	window->handle = ::CreateWindowExW(0, DESHI_RENDER_WNDCLASSNAME, wchar_from_str8(title, 0, deshi_temp_allocator),
-									 WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0,0, 0,0, 0, 0, win32_console_instance, 0);
+									   WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0,0, 0,0, 0, 0, win32_console_instance, 0);
 	if(!window->handle){ win32_log_last_error("CreateWindowExW", true); memory_zfree(window); return 0; }
 	//set Win32 window user data to the deshi Window pointer
 	::SetWindowLongPtrW((HWND)window->handle, GWLP_USERDATA, (LONG_PTR)window);
@@ -1859,19 +1859,19 @@ u64 net_socket_open(netSocket* sock, u8 port, b32 non_blocking){
 	//get handle to sock from win32
 	sock->handle = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(sock->handle == INVALID_SOCKET) return WSA_log_error(STR8("net_socket_open()->sock()")), 1;
-
+	
 	//bind sock to port
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port); //htons converts the u8 from host byte order to network byte order
 	addr.sin_addr.s_addr = INADDR_ANY;
 	if(bind(sock->handle, (sockaddr*)&addr, sizeof(sockaddr_in))) return WSA_log_error(STR8("net_socket_open()->bind()")), 1;
-
+	
 	//set sock blocking
 	if(ioctlsocket(sock->handle, FIONBIO, (u_long*)&non_blocking)) return WSA_log_error(STR8("net_socket_open()->ioctlsocket()")), 1;
-
+	
 	sock->blocking = !non_blocking;
-
+	
 	return 0;
 }
 
@@ -1912,7 +1912,7 @@ u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, s32 size)
 		}
 		return WSA_log_error(STR8("net_socket_recv()")), -1;
 	} 
-
+	
 	if(sender){
 		sender->host = from.sin_addr.s_addr;
 		sender->port = ntohs(from.sin_port);

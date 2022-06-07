@@ -89,12 +89,12 @@ external void* platform_load_module(str8 module_path);
 //  Mac: TODO
 external void platform_free_module(void* module);
 
-typedef void (*platform_symbol)(void);
 //Returns a procedure or variable pointer from the `module` with `symbol_name`
 //  Windows: calls GetProcAddress()
 //  Linux: TODO
 //  Mac: TODO
-external platform_symbol platform_get_module_symbol(void* module, const char* symbol_name);
+external void* platform_get_module_symbol(void* module, const char* symbol_name);
+#define platform_get_module_function(module,symbol_name,symbol_sig) (GLUE(symbol_sig,__sig)*) platform_get_module_symbol((module),(symbol_name))
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
