@@ -15,6 +15,7 @@ Index:
   RenderModelCmd
   RenderTwodCmd
   RenderMesh
+  RenderDrawCounts
 @render_status
   render_init() -> void
   render_update() -> void
@@ -86,21 +87,42 @@ Index:
   render_decoration_layer_index() -> u32
 @render_light
   render_update_light(u32 idx, vec3 position, f32 brightness) -> void
+@render_camera
   render_update_camera_position(vec3 position) -> void
   render_update_camera_view(mat4& view_matrix) -> void
   render_update_camera_projection(mat4& projection_matrix) -> void
   render_use_default_camera() -> void
-@render_other
+@render_shaders
   render_reload_shader(u32 shader_type) -> void
   render_reload_all_shaders() -> void
+@render_make_2d
+  render_make_line_counts() -> RenderDrawCounts
+  render_make_filledtriangle_counts() -> RenderDrawCounts
+  render_make_triangle_counts() -> RenderDrawCounts
+  render_make_filledrect_counts() -> RenderDrawCounts
+  render_make_rect_counts() -> RenderDrawCounts
+  render_make_circle_counts(u32 subdiv) -> RenderDrawCounts
+  render_make_filledcircle_counts(u32 subdiv) -> RenderDrawCounts
+  render_make_text_counts(u32 charcount) -> RenderDrawCounts
+  render_make_texture_counts() -> RenderDrawCounts
+  render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 start, vec2 end, f32 thickness, color color) -> RenderDrawCounts
+  render_make_filledtriangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p1, vec2 p2, vec2 p3, color color) -> RenderDrawCounts
+  render_make_triangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color) -> RenderDrawCounts
+  render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, color color) -> RenderDrawCounts
+  render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, f32 thickness, color color) -> RenderDrawCounts
+  render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color) -> RenderDrawCounts
+  render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) -> RenderDrawCounts
+  render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale) -> RenderDrawCounts
+  render_make_texture(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy) -> RenderDrawCounts
+@render_other
   render_remake_offscreen() -> void
   render_display_stats() -> void
 @render_shared_status
 @render_shared_surface
 @render_shared_draw_3d
 @render_shared_draw_2d
+@render_shared_make_2d
 @render_shared_other
-@render_shared_make
 */
 
 #pragma once
@@ -160,7 +182,7 @@ typedef Type ShaderStage; enum{
 	ShaderStage_COUNT,
 };
 
-struct RenderStats{
+external struct RenderStats{
 	u32 totalTriangles;
 	u32 totalVertices;
 	u32 totalIndices;
@@ -169,19 +191,19 @@ struct RenderStats{
 	f32 renderTimeMS;
 };
 
-struct RenderSettings{
+external struct RenderSettings{
 	//// requires restart ////
-	b32 debugging = true;
-	b32 printf    = false;
+	b32 debugging           = true;
+	b32 printf              = false;
 	b32 recompileAllShaders = false;
-	u32 msaaSamples = 0;
-	b32 textureFiltering = false;
+	u32 msaaSamples         = 0;
+	b32 textureFiltering    = false;
 	b32 anistropicFiltering = false;
 	
 	//// runtime changeable ////
 	u32 loggingLevel = 1; //if printf is true in the config file, this will be set to 4
 	b32 crashOnError = false;
-	VSyncType vsync   = VSyncType_Immediate;
+	VSyncType vsync  = VSyncType_Immediate;
 	
 	//shaders
 	b32 optimizeShaders = false;
@@ -204,13 +226,13 @@ struct RenderSettings{
 	bool wireframeOnly = false;
 	
 	//overlays
-	bool meshWireframes  = false;
-	bool meshNormals     = false;
-	bool lightFrustrums  = false;
-	bool tempMeshOnTop   = false;
+	bool meshWireframes = false;
+	bool meshNormals    = false;
+	bool lightFrustrums = false;
+	bool tempMeshOnTop  = false;
 };
 
-struct Vertex2{
+external struct Vertex2{
 	vec2 pos;
 	vec2 uv;
 	u32  color;
@@ -218,7 +240,7 @@ struct Vertex2{
 
 typedef u16 RenderTempIndex;  //NOTE(delle) changing this also requires changing defines in the backend
 typedef u32 RenderModelIndex; //NOTE(delle) changing this also requires changing defines in the backend
-struct RenderModelCmd{
+external struct RenderModelCmd{
 	u32   vertexOffset;
 	u32   indexOffset;
 	u32   indexCount;
@@ -228,7 +250,7 @@ struct RenderModelCmd{
 };
 
 typedef u32 RenderTwodIndex;  //NOTE(delle) changing this also requires changing defines in the backend
-struct RenderTwodCmd{
+external struct RenderTwodCmd{
 	void*    handle; //NOTE(delle) VkDescriptorSet in vulkan, texture index in OpenGl
 	Vertex2* vertexBuffer;
 	u32*     indexBuffer; // pointer to used index buffer
@@ -238,7 +260,7 @@ struct RenderTwodCmd{
 	vec2     scissorExtent;
 };
 
-struct RenderMesh{
+external struct RenderMesh{
 	Mesh* base;
 	u32   vertexOffset;
 	u32   vertexCount;
@@ -249,10 +271,11 @@ struct RenderMesh{
 //NOTE(sushi) simple replacement of vec2i till we make vecs compatible with external
 external struct RenderDrawCounts{
 	u64 vertices, indices;
-	RenderDrawCounts operator*(u64 rhs){return {vertices*rhs,indices*rhs};}
-	RenderDrawCounts operator+(RenderDrawCounts rhs){return {vertices+rhs.vertices,indices+rhs.indices};}
-	void operator+=(RenderDrawCounts rhs){vertices+=rhs.vertices;indices+=rhs.indices;}
+	RenderDrawCounts operator* (u64 rhs){return {vertices*rhs,indices*rhs};}
+	RenderDrawCounts operator+ (RenderDrawCounts rhs){return {vertices+rhs.vertices,indices+rhs.indices};}
+	void             operator+=(RenderDrawCounts rhs){vertices+=rhs.vertices;indices+=rhs.indices;}
 };
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_status
@@ -490,16 +513,17 @@ external void render_reload_all_shaders();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_make
-RenderDrawCounts render_make_line_counts();
-RenderDrawCounts render_make_filledtriangle_counts();
-RenderDrawCounts render_make_triangle_counts();
-RenderDrawCounts render_make_filledrect_counts();
-RenderDrawCounts render_make_rect_counts();
-RenderDrawCounts render_make_circle_counts(u32 subdiv);
-RenderDrawCounts render_make_filledcircle_counts(u32 subdiv);
-RenderDrawCounts render_make_text_counts(u32 charcount);
-RenderDrawCounts render_make_texture_counts();
+//// @render_make_2d
+// NOTE(sushi): if you change any of the drawing algorithms do not forget to count the verticies and indices and update these functions!!
+FORCE_INLINE RenderDrawCounts render_make_line_counts()                  {return { 4, 6};};
+FORCE_INLINE RenderDrawCounts render_make_filledtriangle_counts()        {return { 3, 3};};
+FORCE_INLINE RenderDrawCounts render_make_triangle_counts()              {return {12,18};};
+FORCE_INLINE RenderDrawCounts render_make_filledrect_counts()            {return { 4, 6};};
+FORCE_INLINE RenderDrawCounts render_make_rect_counts()                  {return { 8,24};};
+FORCE_INLINE RenderDrawCounts render_make_circle_counts(u32 subdiv)      {return {2*subdiv,6*subdiv};};
+FORCE_INLINE RenderDrawCounts render_make_filledcircle_counts(u32 subdiv){return {1+subdiv,3*subdiv};};
+FORCE_INLINE RenderDrawCounts render_make_text_counts(u32 charcount)     {return {4*charcount,6*charcount};};
+FORCE_INLINE RenderDrawCounts render_make_texture_counts()               {return { 8,24};};
 
 //TODO(sushi) reformat these to use vec2i for offsets once its compatible with external
 external RenderDrawCounts render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 start, vec2 end, f32 thickness, color color);
@@ -520,8 +544,6 @@ external void render_remake_offscreen();
 
 //displays render stats into a UI Window, this does NOT make it's own window, implemented in core_ui.cpp
 external void render_display_stats();
-
-
 
 
 #endif //DESHI_RENDER_H
@@ -1285,35 +1307,7 @@ render_texture_rotated2(Texture* texture, vec2 center, vec2 dimensions, f32 rota
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_shared_other
-void
-render_display_stats(){
-    using namespace UI;
-    BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
-        RowSetupColumnAlignments({{0,0.5},{1,0.5}});
-        TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
-        TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
-        TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
-        TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
-        TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
-        TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
-    }EndRow();
-}
-
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_shared_make
-//// NOTE(sushi): if you change any of the drawing algorithms do not forget to count the verticies and indices and update these functions!!
-RenderDrawCounts render_make_line_counts()                   {return { 4, 6};};
-RenderDrawCounts render_make_filledtriangle_counts()         {return { 3, 3};};
-RenderDrawCounts render_make_triangle_counts()               {return {12,18};};
-RenderDrawCounts render_make_filledrect_counts()             {return { 4, 6};};
-RenderDrawCounts render_make_rect_counts()                   {return { 8,24};};
-RenderDrawCounts render_make_circle_counts(u32 subdiv)       {return {2*subdiv,6*subdiv};};
-RenderDrawCounts render_make_filledcircle_counts(u32 subdiv) {return {1+subdiv,3*subdiv};};
-RenderDrawCounts render_make_text_counts(u32 charcount)      {return {4*charcount,6*charcount};};
-RenderDrawCounts render_make_texture_counts()                {return { 8,24};};
-
+//// @render_shared_make_2d
 //4 verts, 6 indices
 RenderDrawCounts
 render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
@@ -1327,8 +1321,8 @@ render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
 	
-	ip[0] = offsets.indices; ip[1] = offsets.indices + 1; ip[2] = offsets.indices + 2;
-	ip[3] = offsets.indices; ip[4] = offsets.indices + 2; ip[5] = offsets.indices + 3;
+	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
+	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -1338,7 +1332,7 @@ render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
-
+	
 	return render_make_line_counts();
 }
 
@@ -1352,11 +1346,11 @@ render_make_filledtriangle(Vertex2* putverts, u32* putindices, RenderDrawCounts 
 	Vertex2* vp = putverts + offsets.vertices;
 	u32*     ip = putindices + offsets.indices;
 	
-	ip[0] = offsets.indices; ip[1] = offsets.indices + 1; ip[2] = offsets.indices + 2;
+	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
-
+	
 	return render_make_filledtriangle_counts();
 }
 
@@ -1370,12 +1364,12 @@ render_make_triangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offset
 	u32*     ip = putindices + offsets.indices;
 	
 	RenderDrawCounts sum;
-	sum+=render_make_line(vp, ip, {           0,          0}, p0, p1, 1, color);
-	sum+=render_make_line(vp, ip, {sum.vertices,sum.indices}, p1, p2, 1, color);
-	sum+=render_make_line(vp, ip, {sum.vertices,sum.indices}, p2, p0, 1, color);
+	sum += render_make_line(vp, ip, {           0,          0}, p0, p1, 1, color);
+	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, p1, p2, 1, color);
+	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, p2, p0, 1, color);
 	
 	return sum;
-
+	
 	//TODO(sushi) this should be fixed to replace reliance on MakeLine
 	//ip[0]  = offsets.indices + 0; ip[1]  = offsets.indices + 1; ip[2]  = offsets.indices + 3;
 	//ip[3]  = offsets.indices + 0; ip[4]  = offsets.indices + 3; ip[5]  = offsets.indices + 2;
@@ -1416,13 +1410,13 @@ render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offs
 	vec2 bl = pos + vec2(0, size.y);
 	vec2 tr = pos + vec2(size.x, 0);
 	
-	ip[0] = offsets.indices; ip[1] = offsets.indices + 1; ip[2] = offsets.indices + 2;
-	ip[3] = offsets.indices; ip[4] = offsets.indices + 2; ip[5] = offsets.indices + 3;
+	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
+	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
 	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	return render_make_filledrect_counts();
 }
 
@@ -1441,10 +1435,11 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vec2 tr = pos + vec2(size.x, 0);
 	
 	RenderDrawCounts sum = {0};
-	sum+=render_make_line(vp, ip, {           0,          0}, tl,tr,thickness,color);
-	sum+=render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
-	sum+=render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
-	sum+=render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
+	sum += render_make_line(vp, ip, {           0,          0}, tl,tr,thickness,color);
+	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
+	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
+	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
+	
 	return sum;
 	
 	//TODO(sushi) make this algo respect thickness better
@@ -1487,10 +1482,10 @@ render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets,
 	
 	//first and last point
 	vec2 last = pos + vec2(radius, 0);
-	vp[0].pos = last + vec2(-thickness / 2, 0);	vp[0].uv={0,0}; vp[0].color=col;
+	vp[0].pos = last + vec2(-thickness / 2, 0); vp[0].uv={0,0}; vp[0].color=col;
 	vp[1].pos = last + vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
-	ip[0] = offsets.indices + 0; ip[1] = offsets.indices + 1; ip[3] = offsets.indices + 0;
-	ip[nuindexes - 1] = offsets.indices + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.indices + 1;
+	ip[0] = offsets.vertices + 0; ip[1] = offsets.vertices + 1; ip[3] = offsets.vertices + 0;
+	ip[nuindexes - 1] = offsets.vertices + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.vertices + 1;
 	
 	for(s32 i = 1; i < subdivisions_int; i++){
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
@@ -1503,10 +1498,10 @@ render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets,
 		
 		u32 ipidx1 = 6 * (i - 1) + 2;
 		u32 ipidx2 = 6 * i - 1;
-		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.indices + idx + 1;
-		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.indices + idx;
+		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.vertices + idx + 1;
+		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.vertices + idx;
 	}
-
+	
 	return render_make_circle_counts(subdivisions_int);
 }
 
@@ -1523,10 +1518,10 @@ render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts of
 	vp[1].pos = pos + vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
 	u32 nuindexes = 3 * subdivisions_int;
 	
-	ip[1] = offsets.indices + 1;
-	for(s32 i = 0; i < nuindexes; i += 3) ip[i] = offsets.indices;
+	ip[1] = offsets.vertices + 1;
+	for(s32 i = 0; i < nuindexes; i += 3) ip[i] = offsets.vertices;
 	
-	ip[nuindexes - 1] = offsets.indices + 1;
+	ip[nuindexes - 1] = offsets.vertices + 1;
 	
 	vec2 sum;
 	f32 subdivisions = f32(subdivisions_int);
@@ -1538,9 +1533,9 @@ render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts of
 		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;
 		
 		u32 ipidx = 3 * i - 1;
-		ip[ipidx] = ip[ipidx + 2] = offsets.indices + i + 1;
+		ip[ipidx] = ip[ipidx + 2] = offsets.vertices + i + 1;
 	}
-
+	
 	return render_make_filledcircle_counts(subdivisions_int);
 }
 
@@ -1569,8 +1564,8 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 				f32 topoff = (idx * dy) + font->uv_yoffset;
 				f32 botoff = topoff + dy;
 				
-				ip[0] = offsets.indices+4*i; ip[1] = offsets.indices+4*i + 1; ip[2] = offsets.indices+4*i + 2;
-				ip[3] = offsets.indices+4*i; ip[4] = offsets.indices+4*i + 2; ip[5] = offsets.indices+4*i + 3;
+				ip[0] = offsets.vertices+4*i; ip[1] = offsets.vertices+4*i + 1; ip[2] = offsets.vertices+4*i + 2;
+				ip[3] = offsets.vertices+4*i; ip[4] = offsets.vertices+4*i + 2; ip[5] = offsets.vertices+4*i + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col; //top left
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col; //top right
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col; //bot right
@@ -1592,8 +1587,8 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 				u32*     ip = putindices + offsets.indices + 6 * i;
 				aligned_quad q = font_aligned_quad(font, codepoint, &pos, scale);
 				
-				ip[0] = offsets.indices+4*i; ip[1] = offsets.indices+4*i + 1; ip[2] = offsets.indices+4*i + 2;
-				ip[3] = offsets.indices+4*i; ip[4] = offsets.indices+4*i + 2; ip[5] = offsets.indices+4*i + 3;
+				ip[0] = offsets.vertices+4*i; ip[1] = offsets.vertices+4*i + 1; ip[2] = offsets.vertices+4*i + 2;
+				ip[3] = offsets.vertices+4*i; ip[4] = offsets.vertices+4*i + 2; ip[5] = offsets.vertices+4*i + 3;
 				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.u0,q.v0 }; vp[0].color = col; //top left
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.u1,q.v0 }; vp[1].color = col; //top right
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.u1,q.v1 }; vp[2].color = col; //bot right
@@ -1611,13 +1606,13 @@ RenderDrawCounts
 render_make_texture(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(!alpha) return{0,0};
-
+	
 	u32     col = PackColorU32(255,255,255,255.f * alpha);
 	Vertex2* vp = putverts + offsets.vertices;
 	u32*     ip = putindices + offsets.indices;
 	
-	ip[0] = offsets.indices; ip[1] = offsets.indices + 1; ip[2] = offsets.indices + 2;
-	ip[3] = offsets.indices; ip[4] = offsets.indices + 2; ip[5] = offsets.indices + 3;
+	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
+	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
 	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
 	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
 	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
@@ -1633,5 +1628,23 @@ render_make_texture(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets
 	}
 	return render_make_texture_counts();
 }
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_shared_other
+void
+render_display_stats(){
+    using namespace UI;
+    BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
+        RowSetupColumnAlignments({{0,0.5},{1,0.5}});
+        TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
+        TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
+        TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
+        TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
+        TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
+        TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
+    }EndRow();
+}
+
 
 #endif //DESHI_IMPLEMENTATION
