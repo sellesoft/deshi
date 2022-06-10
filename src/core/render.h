@@ -117,6 +117,7 @@ Index:
 @render_other
   render_remake_offscreen() -> void
   render_display_stats() -> void
+  render_create_external_buffer -> RenderBuffer
 @render_shared_status
 @render_shared_surface
 @render_shared_draw_3d
@@ -276,6 +277,12 @@ external struct RenderDrawCounts{
 	void             operator+=(RenderDrawCounts rhs){vertices+=rhs.vertices;indices+=rhs.indices;}
 };
 
+//holds handles to vertex and index handles
+external struct RenderTwodBuffer{
+	u32 idx;
+	void* vertex_handle;
+	void* index_handle;
+};
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_status
@@ -407,6 +414,16 @@ external void render_debug_line3(vec3 p0, vec3 p1,  color c);
 //// @render_draw_2d
 //Starts a new `RenderTwodCmd` on `layer` with the specified values
 external void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+
+//Starts a new RenderTwodCmd with the specified calues using externally allocated buffers
+//NOTE: these buffers must have been mapped using render_update_external_2d_buffer()
+external void render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, RenderTwodIndex index_count, Vertex2* vertbuff, RenderTwodIndex* indbuff, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+
+//TODO(sushi) a full interface for using external buffers
+//eg. render_get_buffer_size, render_close_buffer, etc.
+//creates an external GPU buffer for 2D drawing information
+external RenderTwodBuffer render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize);
+external void render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount);
 
 //Adds `vertices` and `indices` to the active `RenderTwodCmd` on `layer`
 //    `indices` values should be local to the addition (start at 0) since they are added to the offset internally
@@ -544,6 +561,7 @@ external void render_remake_offscreen();
 
 //displays render stats into a UI Window, this does NOT make it's own window, implemented in core_ui.cpp
 external void render_display_stats();
+
 
 
 #endif //DESHI_RENDER_H
@@ -915,6 +933,11 @@ local RenderTwodIndex renderTwodIndexArray [MAX_TWOD_INDICES];
 local RenderTwodIndex renderTwodCmdCounts[MAX_SURFACES][TWOD_LAYERS+1]; //these always start with 1
 local RenderTwodCmd   renderTwodCmdArrays[MAX_SURFACES][TWOD_LAYERS+1][MAX_TWOD_CMDS]; //different UI cmd per texture
 local u32 renderActiveLayer = 5;
+
+//external buffers
+#define MAX_EXTERNAL_BUFFERS 6
+local RenderTwodIndex renderExternalCmdCounts[MAX_EXTERNAL_BUFFERS];
+local RenderTwodCmd   renderExternalCmdArrays[MAX_EXTERNAL_BUFFERS][MAX_TWOD_CMDS]; 
 
 void
 render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) {DPZoneScoped;

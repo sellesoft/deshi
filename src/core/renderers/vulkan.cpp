@@ -246,6 +246,10 @@ local BufferVk tempVertexBuffer{};
 local BufferVk tempIndexBuffer{};
 local BufferVk debugVertexBuffer{};
 local BufferVk debugIndexBuffer{};
+local u32      externalBufferCount;
+local Arena*   externalVertexBuffers{}; //an arena of BufferVk serving external buffers
+local Arena*   externalIndexBuffers{}; //an arena of BufferVk serving external buffers
+#define MAX_EXTERNAL_BUFFERS 6
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2915,8 +2919,8 @@ BuildCommands(){DPZoneScoped;
 			
 			//draw twod stuff
 			if(renderTwodVertexCount > 0 && renderTwodIndexCount > 0){
-				DebugBeginLabelVk(cmdBuffer, "UI", draw_group_color);
-				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
+				DebugBeginLabelVk(cmdBuffer, "Twod", draw_group_color);
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);//TODO(sushi) should this be twod?
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
 				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, INDEX_TYPE_VK_UI);
@@ -2953,6 +2957,47 @@ BuildCommands(){DPZoneScoped;
 				scissor.extent.height = activeSwapchain.height;
 				
 				DebugEndLabelVk(cmdBuffer);
+			}
+
+			BufferVk* exvbuffs = (BufferVk*)externalVertexBuffers->start;
+			BufferVk* exibuffs = (BufferVk*)externalIndexBuffers->start;
+			forI(externalBufferCount){//draw external buffers
+				DebugBeginLabelVk(cmdBuffer, "External buffers", draw_group_color);
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui); //TODO(sushi) should this be twod?
+				VkDeviceSize offsets[1] = {0};
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &exvbuffs[i].buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, exibuffs[i].buffer, 0, INDEX_TYPE_VK_UI);
+				Push2DVk push{};
+				push.scale.x = 2.0f / (f32)activeSwapchain.width;
+				push.scale.y = 2.0f / (f32)activeSwapchain.height;
+				push.translate.x = -1.0f;
+				push.translate.y = -1.0f;
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
+				
+				forX(cmd, renderExternalCmdCounts[i]){
+					RenderTwodCmd tcmd = renderExternalCmdArrays[i][cmd];
+					if(!tcmd.indexCount) continue;
+					
+					scissor.offset.x = (u32)tcmd.scissorOffset.x;
+					scissor.offset.y = (u32)tcmd.scissorOffset.y;
+					scissor.extent.width  = (u32)tcmd.scissorExtent.x;
+					scissor.extent.height = (u32)tcmd.scissorExtent.y;
+					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+					
+					if(tcmd.handle){
+						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &(VkDescriptorSet)tcmd.handle, 0, 0);
+						vkCmdDrawIndexed(cmdBuffer, tcmd.indexCount, 1, tcmd.indexOffset, 0, 0);
+					}
+				}
+				//renderStats.drawnIndices += renderTwodIndexCount;
+				
+				scissor.offset.x = 0;
+				scissor.offset.y = 0;
+				scissor.extent.width = activeSwapchain.width;
+				scissor.extent.height = activeSwapchain.height;
+				
+				DebugEndLabelVk(cmdBuffer);
+
 			}
 			
 			//draw imgui stuff
@@ -3200,6 +3245,11 @@ render_init(){DPZoneScoped;
 	PrintVk(3, "Finished setting up pipeline creation in ",reset_stopwatch(&t_temp),"ms");
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ",reset_stopwatch(&t_temp),"ms");
+	
+	//init external buffers arena TODO(sushi) find a better place for this
+	externalVertexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
+	externalIndexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
+	externalBufferCount = 0;
 	
 	initialized = true;
 	DeshiStageInitEnd(DS_RENDER);
@@ -3753,6 +3803,27 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 	}
 }
 
+void
+render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, RenderTwodIndex index_count, Vertex2* vertbuff, RenderTwodIndex* indbuff, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){
+	renderActiveLayer = layer;
+	RenderTwodIndex idx = renderExternalCmdCounts[buffer.idx];
+	if((idx==0)
+		|| (renderExternalCmdArrays[buffer.idx][idx-1].vertexBuffer  != vertbuff)
+		|| (renderExternalCmdArrays[buffer.idx][idx-1].indexBuffer   != indbuff)
+		|| (renderExternalCmdArrays[buffer.idx][idx-1].handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
+		|| (renderExternalCmdArrays[buffer.idx][idx-1].scissorOffset != scissorOffset)
+		|| (renderExternalCmdArrays[buffer.idx][idx-1].scissorExtent != scissorExtent)){
+		renderExternalCmdArrays[buffer.idx][idx].vertexBuffer  = vertbuff;
+		renderExternalCmdArrays[buffer.idx][idx].indexBuffer   = indbuff;
+		renderExternalCmdArrays[buffer.idx][idx].handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
+		renderExternalCmdArrays[buffer.idx][idx].indexOffset   = index_offset;
+		renderExternalCmdArrays[buffer.idx][idx].scissorOffset = scissorOffset;
+		renderExternalCmdArrays[buffer.idx][idx].scissorExtent = scissorExtent;
+		renderExternalCmdArrays[buffer.idx][idx].indexCount    = index_count;
+		renderExternalCmdCounts[buffer.idx] += 1;
+		}
+}
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_surface
@@ -3969,4 +4040,55 @@ render_reload_all_shaders(){DPZoneScoped;
 void
 render_remake_offscreen(){DPZoneScoped;
 	_remakeOffscreen = true;
+}
+
+RenderTwodBuffer
+render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize){DPZoneScoped;
+	if(externalBufferCount + 1 > MAX_EXTERNAL_BUFFERS){
+		LogE("render", "Cannot create more than", MAX_EXTERNAL_BUFFERS, " external buffers.\nChange MAX_ETERNAL_BUFFERS define (vulkan.cpp) to increase limit.");
+		return RenderTwodBuffer{0};
+	}
+
+	RenderTwodBuffer buff;
+	buff.vertex_handle = externalVertexBuffers->cursor;
+	externalVertexBuffers->cursor += sizeof(BufferVk);
+	externalVertexBuffers->used += sizeof(BufferVk);
+	buff.index_handle = externalIndexBuffers->cursor;
+	externalIndexBuffers->cursor += sizeof(BufferVk);
+	externalIndexBuffers->used += sizeof(BufferVk);
+	
+	buff.idx = externalBufferCount;
+
+	externalBufferCount++;
+	BufferVk* vkvbuff = (BufferVk*)buff.vertex_handle;
+	BufferVk* vkibuff = (BufferVk*)buff.index_handle;
+	CreateOrResizeBuffer(vkvbuff, vert_buffsize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	CreateOrResizeBuffer(vkibuff, ind_buffsize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+	return buff;
+}
+
+void 
+render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount){
+	BufferVk* vbuff = (BufferVk*)buffer->vertex_handle;
+	BufferVk* ibuff = (BufferVk*)buffer->index_handle;
+
+	void* vb_data; void* ib_data;
+	resultVk = vkMapMemory(device, vbuff->memory, 0, vcount, 0, &vb_data); AssertVk(resultVk);
+	resultVk = vkMapMemory(device, ibuff->memory, 0, icount, 0, &ib_data); AssertVk(resultVk);
+	{
+		CopyMemory(vb_data, vb, vcount);
+		CopyMemory(ib_data, ib, icount);
+		
+		VkMappedMemoryRange range[2] = {};
+		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[0].memory = vbuff->memory;
+		range[0].size   = VK_WHOLE_SIZE;
+		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[1].memory = ibuff->memory;
+		range[1].size   = VK_WHOLE_SIZE;
+		resultVk = vkFlushMappedMemoryRanges(device, 2, range); AssertVk(resultVk);
+	}
+	vkUnmapMemory(device, vbuff->memory);
+	vkUnmapMemory(device, ibuff->memory);
 }
