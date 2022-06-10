@@ -622,14 +622,15 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 		wpath_len -= 1;
 	}
 	
-	if(memcmp(wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	//TODO(delle) restrict file stuff to root folder not data folder
+	/*if(memcmp(wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
 		LogE("file","File deletion can only occur within the data folder. Input path: ",path);
 		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
 		return;
-	}
+	}*/
 	
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
@@ -665,29 +666,135 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 	}
 	
 	wchar_t* old_wpath = win32_path_from_str8(old_path, true);
-	if(memcmp(old_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	//TODO(delle) restrict file stuff to root folder not data folder
+	/*if(memcmp(old_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
 		LogE("file","File renaming can only occur within the data folder. Input old path: ",old_path);
 		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
 		return;
-	}
+	}*/
 	
 	wchar_t* new_wpath = win32_path_from_str8(new_path, true);
-	if(memcmp(new_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	//TODO(delle) restrict file stuff to root folder not data folder
+	/*if(memcmp(new_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
 		LogE("file","File renaming can only occur within the data folder. Input new path: ",new_path);
 		if(file_crash_on_error){
 			Assert(!"assert before exit so we can stack trace in debug mode");
 			::ExitProcess(1);
 		}
 		return;
-	}
+	}*/
 	
 	//TODO(delle) check if initted in file_files to update
 	
 	BOOL success = ::MoveFileW(old_wpath, new_wpath);
 	if(!success) win32_log_last_error("MoveFileW", file_crash_on_error, str8_concat3(old_path,str8_lit("\n"),new_path, deshi_temp_allocator));
+}
+
+void
+deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path){DPZoneScoped;
+	if(!src_path || *src_path.str == 0){
+		LogE("file","file_rename() was passed an empty `src_path` at ",caller_file,"(",caller_line,")");
+		return;
+	}
+	if(!dst_path || *dst_path.str == 0){
+		LogE("file","file_rename() was passed an empty `dst_path` at ",caller_file,"(",caller_line,")");
+		return;
+	}
+	
+	wchar_t* src_wpath = win32_path_from_str8(src_path, true, 1); //NOTE(delle) 1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
+	//TODO(delle) restrict file stuff to root folder not data folder
+	/*if(memcmp(src_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+			LogE("file","File renaming can only occur within the data folder. Input src path: ",src_path);
+			if(file_crash_on_error){
+				Assert(!"assert before exit so we can stack trace in debug mode");
+				::ExitProcess(1);
+			}
+			return;
+		}*/
+	
+	wchar_t* dst_wpath = win32_path_from_str8(dst_path, true, 1); //NOTE(delle) 1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
+	//TODO(delle) restrict file stuff to root folder not data folder
+	/*if(memcmp(dst_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+			LogE("file","File renaming can only occur within the data folder. Input dst path: ",dst_path);
+			if(file_crash_on_error){
+				Assert(!"assert before exit so we can stack trace in debug mode");
+				::ExitProcess(1);
+			}
+			return;
+		}*/
+	
+	//TODO(delle) check if initted in file_files to update
+	
+	
+	WIN32_FIND_DATAW data;
+	HANDLE handle = ::FindFirstFileW(src_wpath, &data);
+	if(handle == INVALID_HANDLE_VALUE){
+		win32_log_last_error("FindFirstFileW", file_crash_on_error, src_path);
+		return;
+	}
+	defer{ ::FindClose(handle); };
+	
+	//if directory, recursively delete all files and directories
+	if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
+		BOOL success = ::CreateDirectoryW(dst_wpath, 0);
+		if(!success) win32_log_last_error("CreateDirectoryW", file_crash_on_error, dst_path);
+		carray<File> dir_files = file_search_directory(src_path);
+		forE(dir_files) file_copy(it->path, str8_concat(dst_path,it->name,deshi_temp_allocator));
+	}else{
+		BOOL success = ::CopyFileW(src_wpath, dst_wpath, true);
+		if(!success) win32_log_last_error("CopyFileW", file_crash_on_error, src_path);
+	}
+	
+	//TODO(delle) get the stuff below working
+	/*
+	SHFILEOPSTRUCTW s = {0};
+	s.wFunc  = FO_COPY;
+	s.pFrom  = src_wpath;
+	s.pTo    = dst_wpath;
+	s.fFlags = FOF_SILENT | FOF_NOCONFIRMMKDIR | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_NO_UI;
+	if(int error = SHFileOperationW(&s)){
+		str8 error_str{};
+		switch(error){
+			case 0x71:    error_str = STR8("The source and destination files are the same file."); break;
+			case 0x72:    error_str = STR8("Multiple file paths were specified in the source buffer, but only one destination file path."); break;
+			case 0x73:    error_str = STR8("Rename operation was specified but the destination path is a different directory. Use the move operation instead."); break;
+			case 0x74:    error_str = STR8("The source is a root directory, which cannot be moved or renamed."); break;
+			case 0x75:    error_str = STR8("The operation was canceled by the user, or silently canceled if the appropriate flags were supplied to SHFileOperation."); break;
+			case 0x76:    error_str = STR8("The destination is a subtree of the source."); break;
+			case 0x78:    error_str = STR8("Security settings denied access to the source."); break;
+			case 0x79:    error_str = STR8("The source or destination path exceeded or would exceed MAX_PATH."); break;
+			case 0x7A:    error_str = STR8("The operation involved multiple destination paths, which can fail in the case of a move operation."); break;
+			case 0x7C:    error_str = STR8("The path in the source or destination or both was invalid."); break;
+			case 0x7D:    error_str = STR8("The source and destination have the same parent folder."); break;
+			case 0x7E:    error_str = STR8("The destination path is an existing file."); break;
+			case 0x80:    error_str = STR8("The destination path is an existing folder."); break;
+			case 0x81:    error_str = STR8("The name of the file exceeds MAX_PATH."); break;
+			case 0x82:    error_str = STR8("The destination is a read-only CD-ROM, possibly unformatted."); break;
+			case 0x83:    error_str = STR8("The destination is a read-only DVD, possibly unformatted."); break;
+			case 0x84:    error_str = STR8("The destination is a writable CD-ROM, possibly unformatted."); break;
+			case 0x85:    error_str = STR8("The file involved in the operation is too large for the destination media or file system."); break;
+			case 0x86:    error_str = STR8("The source is a read-only CD-ROM, possibly unformatted."); break;
+			case 0x87:    error_str = STR8("The source is a read-only DVD, possibly unformatted."); break;
+			case 0x88:    error_str = STR8("The source is a writable CD-ROM, possibly unformatted."); break;
+			case 0xB7:    error_str = STR8("MAX_PATH was exceeded during the operation."); break;
+			case 0x402:   error_str = STR8("An unknown error occurred. This is typically due to an invalid path in the source or destination. This error does not occur on Windows Vista and later."); break;
+			case 0x10000: error_str = STR8("An unspecified error occurred on the destination."); break;
+			case 0x10074: error_str = STR8("Destination is a root directory and cannot be renamed."); break;
+		}
+		
+		LogE("win32","SHFileOperationW failed with error ",error,": ",error_str,
+			 "\n Source:      ",str8_from_wchar(src_wpath+4, deshi_temp_allocator),
+			 "\n Destination: ",str8_from_wchar(dst_wpath+4, deshi_temp_allocator));
+		if(file_crash_on_error){
+			Assert(!"assert before exit so we can stack trace in debug mode");
+			::ExitProcess(error);
+		}
+		return;
+	}
+*/
 }
 
 File

@@ -16,6 +16,7 @@ Index:
   file_create(str8 path) -> void
   file_delete(str8 path) -> void
   file_rename(str8 old_path, str8 new_path) -> void
+file_copy(str8 src_path, str8 dst_path) -> void
   file_info(str8 path) -> File
   file_search_directory(str8 directory) -> carray<File>
   file_path_absolute(str8 path) -> str8
@@ -127,6 +128,11 @@ external void deshi__file_delete(str8 caller_file, upt caller_line, str8 path);
 //Renames the file/directory at `old_path` if it exists to `new_path`
 external void deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path);
 #define file_rename(old_path,new_path) deshi__file_rename(str8_lit(__FILE__),__LINE__, (old_path),(new_path))
+
+//Copies the file/directory at `src_path` to `dst_path`
+//    does not init the destination file if the source is init
+external void deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path);
+#define file_copy(src_path,dst_path) deshi__file_copy(str8_lit(__FILE__),__LINE__, (src_path),(dst_path))
 
 //Returns a temporary `File` containing information about the file/directory at `path` if it exists
 external File deshi__file_info(str8 caller_file, upt caller_line, str8 path);

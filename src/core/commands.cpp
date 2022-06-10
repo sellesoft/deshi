@@ -191,6 +191,10 @@ void cmd_init(){
 		file_delete(args[0]);
 	}DESHI_CMD_END(rm, CmdArgument_String);
 	
+	DESHI_CMD_START(cp, "Copies a file/directory to a new location"){
+		file_copy(args[0], args[1]);
+	}DESHI_CMD_END(cp, CmdArgument_String, CmdArgument_String);
+	
 	DESHI_CMD_START(file_exists, "Checks if a file exists"){
 		Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
 	}DESHI_CMD_END(file_exists, CmdArgument_String);

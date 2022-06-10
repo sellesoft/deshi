@@ -40,6 +40,7 @@
     console_update();    \
     UI::Update();        \
     render_update();     \
+    logger_update();     \
     memory_clear_temp(); \
   }
 
