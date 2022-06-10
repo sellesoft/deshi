@@ -412,7 +412,7 @@ struct UIDrawCmd {
 	//because of how much drawCmds move around, we have to store these things on the heap
 	Vertex2* vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
 	u32*     indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
-	vec2     counts; 
+	RenderDrawCounts counts; 
 	
 	Texture* tex = 0;
 	
@@ -438,10 +438,10 @@ template<>
 struct hash<UIDrawCmd> {
 	inline u32 operator()(const UIDrawCmd& s) {
 		u32 seed = 2166134;
-		forI(s.counts.x){
+		forI(s.counts.vertices){
 			seed ^= u32(s.vertices[i].pos.x) << u32(s.vertices[i].pos.y); 
 		}
-		seed ^= (u32)s.counts.x | (u32)s.counts.y << (u32)(u64)s.tex | (u32)s.useWindowScissor | (u32)(u64)s.parent
+		seed ^= (u32)s.counts.vertices | (u32)s.counts.indices << (u32)(u64)s.tex | (u32)s.useWindowScissor | (u32)(u64)s.parent
 		<<u32(s.scissorOffset.x)|u32(s.scissorExtent.x) << u32(s.scissorOffset.y)|u32(s.scissorExtent.y);
 		return seed;
 	}
@@ -966,7 +966,7 @@ namespace UI {
 	void CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 	void CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color color, vec2 scale);
-	void CustomItem_DCMakeTexture(Vertex2* putverts, u32* putindices, vec2 offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0);
+	void CustomItem_DCMakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
 	void CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd);
 	
 	//returns if the last placed item is hovered or not

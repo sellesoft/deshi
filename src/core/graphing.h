@@ -338,7 +338,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         
         UIDrawCmd drawCmd;
         forI(data.count){
-            if(drawCmd.counts.x + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.y + 6 > UIDRAWCMD_MAX_INDICES){
+            if(drawCmd.counts.vertices + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.indices + 6 > UIDRAWCMD_MAX_INDICES){
                 CustomItem_AddDrawCmd(item, drawCmd);
                 drawCmd = UIDrawCmd();
             }
@@ -363,7 +363,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
 				); 
             }
         }
-        if(drawCmd.counts.x + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.y + 6 > UIDRAWCMD_MAX_INDICES){
+        if(drawCmd.counts.vertices + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.indices + 6 > UIDRAWCMD_MAX_INDICES){
             CustomItem_AddDrawCmd(item, drawCmd);
             drawCmd = UIDrawCmd();
         }
