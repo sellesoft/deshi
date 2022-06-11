@@ -530,7 +530,7 @@ namespace Math {
 		return b0==b1 && b1==b2;
 	}
 	
-#define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)
+#define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime/1000)
 	
 	//oscillates between a given upper and lower value based on a given x value
 	inline global_ float BoundedOscillation(float lower, float upper, float x){

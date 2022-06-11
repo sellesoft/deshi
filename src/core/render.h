@@ -1458,10 +1458,10 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vec2 tr = pos + vec2(size.x, 0);
 	
 	RenderDrawCounts sum = {0};
-	sum += render_make_line(vp, ip, {           0,          0}, tl,tr,thickness,color);
-	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
-	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
-	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, tl,tr,thickness,color);
+	sum += render_make_line(vp, ip, sum, tl,tr,thickness,color);
+	sum += render_make_line(vp, ip, sum, tr,br,thickness,color);
+	sum += render_make_line(vp, ip, sum, br,bl,thickness,color);
+	sum += render_make_line(vp, ip, sum, bl,tl,thickness,color);
 	
 	return sum;
 	
