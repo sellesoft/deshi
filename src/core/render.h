@@ -536,7 +536,7 @@ FORCE_INLINE RenderDrawCounts render_make_line_counts()                  {return
 FORCE_INLINE RenderDrawCounts render_make_filledtriangle_counts()        {return { 3, 3};};
 FORCE_INLINE RenderDrawCounts render_make_triangle_counts()              {return {12,18};};
 FORCE_INLINE RenderDrawCounts render_make_filledrect_counts()            {return { 4, 6};};
-FORCE_INLINE RenderDrawCounts render_make_rect_counts()                  {return { 8,24};};
+FORCE_INLINE RenderDrawCounts render_make_rect_counts()                  {return {16,24};};
 FORCE_INLINE RenderDrawCounts render_make_circle_counts(u32 subdiv)      {return {2*subdiv,6*subdiv};};
 FORCE_INLINE RenderDrawCounts render_make_filledcircle_counts(u32 subdiv){return {1+subdiv,3*subdiv};};
 FORCE_INLINE RenderDrawCounts render_make_text_counts(u32 charcount)     {return {4*charcount,6*charcount};};
