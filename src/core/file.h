@@ -231,7 +231,7 @@ external str8 deshi__file_read_simple(str8 caller_file, upt caller_line, str8 pa
 //// @file_write
 //Writes `bytes` from `data` to `file` (if it's been init) and returns the number of bytes written (which may be less if an error occurred)
 //    starts writing at `File.cursor` and advances the `File.cursor` forward by `bytes`
-external u64 deshi__file_write(str8 caller_file, upt caller_line, File* file, void* data, u64 bytes);
+external u64 deshi__file_write(str8 caller_file, upt caller_line, File* file, const void* data, u64 bytes);
 #define file_write(file,data,bytes) deshi__file_write(str8_lit(__FILE__),__LINE__, (file),(data),(bytes))
 
 //Writes `line` and a newline to `file` (if it's been init) and returns the number of bytes written (which may be less if an error occurred)
