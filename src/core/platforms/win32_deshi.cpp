@@ -1324,10 +1324,17 @@ platform_free_module(void* module){DPZoneScoped;
 	::FreeLibrary((HMODULE)module);
 }
 
+#if COMPILER_CLANG
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wmicrosoft-cast"
+#endif
 void*
 platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
 	return ::GetProcAddress((HMODULE)module, symbol_name);
 }
+#if COMPILER_CLANG
+#  pragma clang diagnostic pop
+#endif
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
