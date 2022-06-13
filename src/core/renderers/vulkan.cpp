@@ -2943,7 +2943,7 @@ BuildCommands(){DPZoneScoped;
 						
 						if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle){
 							vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1,
-													&(VkDescriptorSet)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle, 0, 0);
+													(VkDescriptorSet*)&renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle, 0, 0);
 							vkCmdDrawIndexed(cmdBuffer, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, 1,
 											 renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset, 0, 0);
 						}
@@ -2985,7 +2985,7 @@ BuildCommands(){DPZoneScoped;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 					
 					if(tcmd.handle){
-						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &(VkDescriptorSet)tcmd.handle, 0, 0);
+						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, (VkDescriptorSet*)&tcmd.handle, 0, 0);
 						vkCmdDrawIndexed(cmdBuffer, tcmd.indexCount, 1, tcmd.indexOffset, 0, 0);
 					}
 				}
@@ -3062,7 +3062,7 @@ BuildCommands(){DPZoneScoped;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 					
 					if(renderTwodCmdArrays[renderActiveSurface][TWOD_LAYERS][cmd_idx].handle){
-						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &(VkDescriptorSet)renderTwodCmdArrays[renderActiveSurface][TWOD_LAYERS][cmd_idx].handle, 0, 0);
+						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, (VkDescriptorSet*)&renderTwodCmdArrays[renderActiveSurface][TWOD_LAYERS][cmd_idx].handle, 0, 0);
 						vkCmdDrawIndexed(cmdBuffer, renderTwodCmdArrays[renderActiveSurface][TWOD_LAYERS][cmd_idx].indexCount, 1, renderTwodCmdArrays[renderActiveSurface][TWOD_LAYERS][cmd_idx].indexOffset, 0, 0);
 					}
 				}

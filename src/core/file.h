@@ -503,7 +503,7 @@ deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Alloc
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_write
 u64
-deshi__file_write(str8 caller_file, upt caller_line, File* file, void* data, u64 bytes){
+deshi__file_write(str8 caller_file, upt caller_line, File* file, const void* data, u64 bytes){
 	if(file == 0){
 		LogE("file","file_write() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 		return 0;

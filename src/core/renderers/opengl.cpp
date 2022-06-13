@@ -871,8 +871,8 @@ render_update(){DPZoneScoped;
 						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x),
 						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y));
 				
-				glBindTexture(glTextures[(u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].type,
-							  glTextures[(u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].handle);
+				glBindTexture(glTextures[(u64)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].type,
+							  glTextures[(u64)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
 				glDrawElementsBaseVertex(GL_TRIANGLES, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, INDEX_TYPE_GL_TWOD,
 										 (void*)(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset * sizeof(RenderTwodIndex)), 0);

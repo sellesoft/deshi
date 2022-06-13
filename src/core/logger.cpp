@@ -149,7 +149,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	time_t rawtime = time(0);
 	int len = strftime((char*)path_buffer, ArrayCount(path_buffer), "%c", localtime(&rawtime));
 	file_append(logger.file, path_buffer, len);
-	file_append(logger.file, "\n\n", 2);
+	file_append(logger.file, (void*)"\n\n", 2);
 	
 #if BUILD_SLOW //NOTE(delle) write immediately when debugging so that a Log() right before Assert() still writes
 	setvbuf(logger.file->handle,0,_IONBF,0);

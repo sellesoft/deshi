@@ -1351,10 +1351,10 @@ render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
 	
-	vp[0].pos += norm * thickness / 2;
-	vp[1].pos += norm * thickness / 2;
-	vp[2].pos -= norm * thickness / 2;
-	vp[3].pos -= norm * thickness / 2;
+	vp[0].pos += norm * thickness / 2.f;
+	vp[1].pos += norm * thickness / 2.f;
+	vp[2].pos -= norm * thickness / 2.f;
+	vp[3].pos -= norm * thickness / 2.f;
 	
 	return render_make_line_counts();
 }

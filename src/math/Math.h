@@ -56,7 +56,9 @@ operator* (const mat4& rhs) const{
 #if DESHI_USE_SSE
 	vec4 temp(x, y, z, 0);
 	temp.sse = LinearCombineSSE(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result = temp.xyz;
+	result.x = temp.x;
+	result.y = temp.y;
+	result.z = temp.z;
 #else
 	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
 	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
@@ -71,7 +73,9 @@ operator*=(const mat4& rhs){
 #if DESHI_USE_SSE
 	vec4 temp(x, y, z, 0);
 	temp.sse = LinearCombineSSE(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result = temp.xyz;
+	result.x = temp.x;
+	result.y = temp.y;
+	result.z = temp.z;
 #else
 	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
 	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];

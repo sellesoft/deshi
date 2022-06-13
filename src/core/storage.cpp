@@ -1332,7 +1332,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 						pair<u32,str8> usemtl(index_count, str8_copy(line, deshi_temp_allocator));
 						uArray.add(uUnique.add(usemtl,usemtl));
 					}else{
-						ParseError("Specifier 'usemtl' used before 'mtllib' specifier");
+						ParseError(obj_path, "Specifier 'usemtl' used before 'mtllib' specifier");
 					}
 				}continue;
 				

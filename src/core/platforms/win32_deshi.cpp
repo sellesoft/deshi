@@ -1326,7 +1326,7 @@ platform_free_module(void* module){DPZoneScoped;
 
 void*
 platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
-	return ::GetProcAddress((HMODULE)module, symbol_name);
+	return (void*)::GetProcAddress((HMODULE)module, symbol_name);
 }
 
 
