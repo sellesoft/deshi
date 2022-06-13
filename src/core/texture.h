@@ -3,6 +3,7 @@
 #define DESHI_TEXTURE_H
 
 #include "kigu/common.h"
+#include "kigu/unicode.h"
 
 enum ImageFormat_{ //NOTE value = bytes per pixel
 	ImageFormat_BW   = 1,

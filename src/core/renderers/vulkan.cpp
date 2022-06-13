@@ -2958,7 +2958,7 @@ BuildCommands(){DPZoneScoped;
 				
 				DebugEndLabelVk(cmdBuffer);
 			}
-
+			
 			BufferVk* exvbuffs = (BufferVk*)externalVertexBuffers->start;
 			BufferVk* exibuffs = (BufferVk*)externalIndexBuffers->start;
 			forI(externalBufferCount){//draw external buffers
@@ -2997,7 +2997,7 @@ BuildCommands(){DPZoneScoped;
 				scissor.extent.height = activeSwapchain.height;
 				
 				DebugEndLabelVk(cmdBuffer);
-
+				
 			}
 			
 			//draw imgui stuff
@@ -3808,11 +3808,11 @@ render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, 
 	renderActiveLayer = layer;
 	RenderTwodIndex idx = renderExternalCmdCounts[buffer.idx];
 	if((idx==0)
-		|| (renderExternalCmdArrays[buffer.idx][idx-1].vertexBuffer  != vertbuff)
-		|| (renderExternalCmdArrays[buffer.idx][idx-1].indexBuffer   != indbuff)
-		|| (renderExternalCmdArrays[buffer.idx][idx-1].handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
-		|| (renderExternalCmdArrays[buffer.idx][idx-1].scissorOffset != scissorOffset)
-		|| (renderExternalCmdArrays[buffer.idx][idx-1].scissorExtent != scissorExtent)){
+	   || (renderExternalCmdArrays[buffer.idx][idx-1].vertexBuffer  != vertbuff)
+	   || (renderExternalCmdArrays[buffer.idx][idx-1].indexBuffer   != indbuff)
+	   || (renderExternalCmdArrays[buffer.idx][idx-1].handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
+	   || (renderExternalCmdArrays[buffer.idx][idx-1].scissorOffset != scissorOffset)
+	   || (renderExternalCmdArrays[buffer.idx][idx-1].scissorExtent != scissorExtent)){
 		renderExternalCmdArrays[buffer.idx][idx].vertexBuffer  = vertbuff;
 		renderExternalCmdArrays[buffer.idx][idx].indexBuffer   = indbuff;
 		renderExternalCmdArrays[buffer.idx][idx].handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
@@ -3821,7 +3821,7 @@ render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, 
 		renderExternalCmdArrays[buffer.idx][idx].scissorExtent = scissorExtent;
 		renderExternalCmdArrays[buffer.idx][idx].indexCount    = index_count;
 		renderExternalCmdCounts[buffer.idx] += 1;
-		}
+	}
 }
 
 
@@ -4048,7 +4048,7 @@ render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize){DPZoneScop
 		LogE("render", "Cannot create more than", MAX_EXTERNAL_BUFFERS, " external buffers.\nChange MAX_ETERNAL_BUFFERS define (vulkan.cpp) to increase limit.");
 		return RenderTwodBuffer{0};
 	}
-
+	
 	RenderTwodBuffer buff;
 	buff.vertex_handle = externalVertexBuffers->cursor;
 	externalVertexBuffers->cursor += sizeof(BufferVk);
@@ -4058,13 +4058,13 @@ render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize){DPZoneScop
 	externalIndexBuffers->used += sizeof(BufferVk);
 	
 	buff.idx = externalBufferCount;
-
+	
 	externalBufferCount++;
 	BufferVk* vkvbuff = (BufferVk*)buff.vertex_handle;
 	BufferVk* vkibuff = (BufferVk*)buff.index_handle;
 	CreateOrResizeBuffer(vkvbuff, vert_buffsize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 	CreateOrResizeBuffer(vkibuff, ind_buffsize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
+	
 	return buff;
 }
 
@@ -4072,7 +4072,7 @@ void
 render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount){
 	BufferVk* vbuff = (BufferVk*)buffer->vertex_handle;
 	BufferVk* ibuff = (BufferVk*)buffer->index_handle;
-
+	
 	void* vb_data; void* ib_data;
 	resultVk = vkMapMemory(device, vbuff->memory, 0, vcount, 0, &vb_data); AssertVk(resultVk);
 	resultVk = vkMapMemory(device, ibuff->memory, 0, icount, 0, &ib_data); AssertVk(resultVk);
