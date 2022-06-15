@@ -537,6 +537,10 @@ FORCE_INLINE vec4 floor(vec4 in) { return vec4(floor(in.x), floor(in.y), floor(i
 FORCE_INLINE vec2 ceil(vec2 in)  { return vec2(ceil(in.x), ceil(in.y)); }
 FORCE_INLINE vec3 ceil(vec3 in)  { return vec3(ceil(in.x), ceil(in.y), ceil(in.z)); }
 FORCE_INLINE vec4 ceil(vec4 in)  { return vec4(ceil(in.x), ceil(in.y), ceil(in.z), ceil(in.w)); }
+FORCE_INLINE vec2 round(vec2 in) { return vec2(round(in.x), round(in.y)); }
+FORCE_INLINE vec3 round(vec3 in) { return vec3(round(in.x), round(in.y), round(in.z)); }
+FORCE_INLINE vec4 round(vec4 in) { return vec4(round(in.x), round(in.y), round(in.z), round(in.w)); }
+
 
 template<> FORCE_INLINE vec2 Min(vec2 a, vec2 b)                        { return vec2(Min(a.x, b.x), Min(a.y, b.y));}
 template<> FORCE_INLINE vec2 Max(vec2 a, vec2 b)                        { return vec2(Max(a.x, b.x), Max(a.y, b.y)); }
