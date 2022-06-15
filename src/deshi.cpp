@@ -369,3 +369,4 @@ local Input         deshi_input;          Input*         g_input    = &deshi_inp
 local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_storage;
 local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
 Window* g_window = 0;
+MemoryContext* g_memory = 0;

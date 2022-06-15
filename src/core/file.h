@@ -48,6 +48,7 @@ TODOs:
 track when files are changed (NOTE its not really safe right now to keep a file open for a long time unless you know nothing will change it)
 use CreateFile instead of FindFirstFile to tell if a file exists (b/c FindFirstFile's returned filename sucks)
 replace win32 error messages with our own
+add _if_exists version of file_delete(), file_info()
 
 References:
 https://en.cppreference.com/w/c/io

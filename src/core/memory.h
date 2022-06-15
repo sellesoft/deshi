@@ -76,7 +76,7 @@ Index:
   deshi_temp_allocator
 
 References:
-  https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c
+https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c
 https://github.com/Dion-Systems/metadesk/blob/master/source/md.h
 https://github.com/Dion-Systems/metadesk/blob/master/source/md.c
 https://github.com/nothings/stb/blob/master/stb_ds.h
@@ -91,6 +91,14 @@ https://github.com/nothings/stb/blob/master/stb_ds.h
 #include "kigu/common.h"
 #include "kigu/node.h"
 #include "kigu/unicode.h"
+
+#define MEMORY_CHECK_HEAPS true
+#define MEMORY_TRACK_ALLOCS false
+#define MEMORY_PRINT_ARENA_CHUNKS false
+#define MEMORY_PRINT_ARENA_ACTIONS false
+#define MEMORY_PRINT_GENERIC_CHUNKS false
+#define MEMORY_PRINT_GENERIC_ACTIONS false
+#define MEMORY_PRINT_TEMP_ACTIONS false
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,18 +138,28 @@ external struct AllocInfo{
 	Type type;
 };
 
+external struct MemoryContext{
+	b32    cleanup_happened;
+	Heap   arena_heap;
+	Arena* generic_arena; //generic_heap is stored here; not used otherwise
+	Heap*  generic_heap;
+	Arena  temp_arena;
+};
+//global memory pointer
+extern MemoryContext* g_memory;
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_chunk
 #define MEMORY_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemChunk, node))
 #define ChunkToMemory(chunk)\
-  ((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
 #define ChunkToArena(chunk)\
-  ((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
 #define MemoryToChunk(memory)\
-  ((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
+((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
 #define ArenaToChunk(arena)\
-  ((MemChunk*)((u8*)(arena) - MEMORY_CHUNK_MEMORY_OFFSET))
+((MemChunk*)((u8*)(arena) - MEMORY_CHUNK_MEMORY_OFFSET))
 
 //NOTE  Chunk Flags  !ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1224
 //  Chunk flags are stored in the lower bits of the chunk's size variable, and this doesn't cause problems b/c the size 
@@ -160,19 +178,19 @@ external struct AllocInfo{
 #define MEMORY_EXTRACT_SIZE_BITMASK (~MEMORY_CHUNK_SIZE_BITS)
 
 #define GetChunkSize(chunk_ptr)\
-  ((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
+((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
 #define GetNextOrderChunk(chunk_ptr)\
-  ((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
+((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
 #define GetPrevOrderChunk(chunk_ptr)\
-  ((chunk_ptr)->prev)
+((chunk_ptr)->prev)
 #define GetChunkAtOffset(chunk_ptr,offset)\
-  ((MemChunk*)((u8*)(chunk_ptr) + (offset)))
+((MemChunk*)((u8*)(chunk_ptr) + (offset)))
 #define ChunkIsEmpty(chunk_ptr)\
-  ((chunk_ptr)->size & MEMORY_EMPTY_FLAG)
+((chunk_ptr)->size & MEMORY_EMPTY_FLAG)
 #define ChunkIsArenad(chunk_ptr)\
-  ((chunk_ptr)->size & MEMORY_ARENAD_FLAG)
+((chunk_ptr)->size & MEMORY_ARENAD_FLAG)
 #define ChunkIsLibc(chunk_ptr)\
-  ((chunk_ptr)->size & MEMORY_LIBC_FLAG)
+((chunk_ptr)->size & MEMORY_LIBC_FLAG)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
