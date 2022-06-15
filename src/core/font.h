@@ -89,5 +89,37 @@ font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){
 	return aligned_quad{};
 }
 
+global_ vec2
+font_visual_size(Font* font, str8 text){
+	vec2 result = vec2{0, (f32)font->max_height};
+	f32 line_width = 0;
+	switch(font->type){
+		case FontType_BDF: case FontType_NONE:{
+			u32 codepoint;
+			while(text && (codepoint = str8_advance(&text).codepoint)){
+				if(codepoint == '\n'){
+					result.y += font->max_height;
+					line_width = 0;
+				}
+				line_width += font->max_width * font->max_height / font->aspect_ratio / font->max_width;
+				if(line_width > result.x) result.x = line_width;
+			}
+		}break;
+		case FontType_TTF:{
+			u32 codepoint;
+			while(text && (codepoint = str8_advance(&text).codepoint)){
+				if(codepoint == '\n'){
+					result.y += font->max_height;
+					line_width = 0;
+				}
+				line_width += font_packed_char(font, codepoint)->xadvance * font->max_height / font->aspect_ratio / font->max_width;
+				if(line_width > result.x) result.x = line_width;
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
+	}
+	return result;
+}
+
 
 #endif //DESHI_FONT_H
