@@ -372,7 +372,7 @@ operator==(const mat4& rhs) const{
 	if(!EpsilonEqualSSE(sse_row3, rhs.sse_row3)) return false;
 #else
 	for(s32 i = 0; i < 16; ++i){ 
-		if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; 
+		if(fabs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; 
 	}
 #endif
 	return true;

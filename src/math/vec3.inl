@@ -127,9 +127,9 @@ operator -  () const{DPZoneScoped;
 
 inline bool vec3::
 operator == (const vec3& rhs) const{DPZoneScoped;
-	return abs(this->x - rhs.x) < M_EPSILON 
-		&& abs(this->y - rhs.y) < M_EPSILON 
-		&& abs(this->z - rhs.z) < M_EPSILON;
+	return fabs(this->x - rhs.x) < M_EPSILON 
+		&& fabs(this->y - rhs.y) < M_EPSILON 
+		&& fabs(this->z - rhs.z) < M_EPSILON;
 }
 
 inline bool vec3::
@@ -147,7 +147,7 @@ set(f32 _x, f32 _y, f32 _z){DPZoneScoped;
 
 inline vec3 vec3::
 absV() const{DPZoneScoped;
-	return vec3(abs(x), abs(y), abs(z));
+	return vec3(fabs(x), fabs(y), fabs(z));
 }
 
 inline vec3 vec3::

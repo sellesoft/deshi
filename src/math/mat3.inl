@@ -211,7 +211,7 @@ operator%=(const mat3& rhs){
 
 inline b32 mat3::
 operator==(const mat3& rhs) const{ 
-	for(s32 i = 0; i < 9; ++i){ if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; }
+	for(s32 i = 0; i < 9; ++i){ if(fabs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; }
 	return true;
 }
 

@@ -254,10 +254,10 @@ operator == (const vec4& rhs) const {DPZoneScoped;
 #if DESHI_USE_SSE
 	result = EpsilonEqualSSE(sse, rhs.sse);
 #else
-	result = abs(x - rhs.x) < M_EPSILON 
-		&&   abs(y - rhs.y) < M_EPSILON 
-		&&   abs(z - rhs.z) < M_EPSILON 
-		&&   abs(w - rhs.w) < M_EPSILON;
+	result = fabs(x - rhs.x) < M_EPSILON 
+		&&   fabs(y - rhs.y) < M_EPSILON 
+		&&   fabs(z - rhs.z) < M_EPSILON 
+		&&   fabs(w - rhs.w) < M_EPSILON;
 #endif
 	return result;
 }
@@ -288,10 +288,10 @@ absV() const{DPZoneScoped;
 #if DESHI_USE_SSE
 	result.sse = AbsoluteSSE(sse);
 #else
-	result.x = abs(x);
-	result.y = abs(y);
-	result.z = abs(z);
-	result.w = abs(w);
+	result.x = fabs(x);
+	result.y = fabs(y);
+	result.z = fabs(z);
+	result.w = fabs(w);
 #endif
 	return result;
 }
