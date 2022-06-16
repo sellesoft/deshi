@@ -25,7 +25,7 @@ typedef Type KeyCode; enum{
 	Key_NPMULTIPLY, Key_NPDIVIDE, Key_NPPLUS, Key_NPMINUS, Key_NPPERIOD, Key_NUMLOCK,
 	Mouse_LEFT, Mouse_RIGHT, Mouse_MIDDLE, Mouse_4, Mouse_5, Mouse_6, Mouse_7, Mouse_8,
 };
-global_ str8 KeyCodeStrings[] = { //NOTE(delle) gotta love uncounted string literals :)
+global str8 KeyCodeStrings[] = { //NOTE(delle) gotta love uncounted string literals :)
 	STR8("NONE"),
 	STR8("A"),STR8("B"),STR8("C"),STR8("D"),STR8("E"),STR8("F"),STR8("G"),STR8("H"),STR8("I"),STR8("J"),STR8("K"),STR8("L"),STR8("M"),
 	STR8("N"),STR8("O"),STR8("P"),STR8("Q"),STR8("R"),STR8("S"),STR8("T"),STR8("U"),STR8("V"),STR8("W"),STR8("X"),STR8("Y"),STR8("Z"),
@@ -138,7 +138,7 @@ FORCE_INLINE b32 input_ctrl_down()  { return DeshInput->newKeyState[Key_RCTRL]  
 FORCE_INLINE b32 input_shift_down() { return DeshInput->newKeyState[Key_RSHIFT] || DeshInput->newKeyState[Key_LSHIFT]; }
 FORCE_INLINE b32 input_alt_down()   { return DeshInput->newKeyState[Key_RALT]   || DeshInput->newKeyState[Key_LALT]; }
 
-global_ b32
+global b32
 input_mods_down(u32 mods){
 	switch(mods){
 		case(InputMod_Any):            return true;

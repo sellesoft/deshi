@@ -1605,7 +1605,7 @@ deshi__memory_init(upt main_size, upt temp_size){
 		allocation = (u8*)calloc(1, total_size);
 #endif            //DESHI_MAC
 		retries++;
-		if(!allocation) PRINTLN("[MEMORY-ERROR] Failed to allocate memory from OS. Retrying (" << retries << ")");
+		if(!allocation) printf("[MEMORY-ERROR] Failed to allocate memory from OS. Retrying (%u)", retries);
 	}
 	Assert(allocation, "Failed to allocate memory from the OS");
 	

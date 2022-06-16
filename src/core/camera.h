@@ -9,7 +9,7 @@ enum CameraMode_{
 	CameraMode_Orthographic,
 	CameraMode_COUNT,
 }; typedef u32 CameraMode;
-global_ const char* CameraModeStrings[] = {
+global const char* CameraModeStrings[] = {
 	"Perspective", "Orthographic"
 };
 

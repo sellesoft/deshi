@@ -28,7 +28,7 @@
 #endif //not DESHI_DISABLE_SSE
 
 //// CRT wrappers ////
-global_ inline f32 Sqrt(f32 a){
+global inline f32 Sqrt(f32 a){
 	f32 result;
 #if DESHI_USE_SSE
 	__m128 temp0 = _mm_set_ss(a);
@@ -41,7 +41,7 @@ global_ inline f32 Sqrt(f32 a){
 };
 
 //NOTE this has decently low precision (.0001)
-global_ inline f32 Rsqrt(f32 a){
+global inline f32 Rsqrt(f32 a){
 	f32 result;
 #if DESHI_USE_SSE
 	__m128 temp0 = _mm_set_ss(a);
@@ -75,7 +75,7 @@ FORCE_INLINE b32 EpsilonEqualSSE(__m128 a, __m128 b){
 }
 
 //!ref: https://github.com/HandmadeMath/Handmade-Math/blob/master/HandmadeMath.h
-global_ inline __m128 LinearCombineSSE(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row2, __m128 mat_row3){
+global inline __m128 LinearCombineSSE(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row2, __m128 mat_row3){
 	__m128 result =             _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0,0,0,0)), mat_row0);
 	result = _mm_add_ps(result, _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1,1,1,1)), mat_row1));
 	result = _mm_add_ps(result, _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2,2,2,2)), mat_row2));

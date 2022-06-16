@@ -2478,9 +2478,9 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0){DPZoneScoped;
 		static vec2 mouseOffset = vec2(0, 0);
 		
 		if(
-			!(window->flags & UIWindowFlags_NoMove) &&
-			(WinHovered(window) || fromChild) &&
-			key_pressed(Mouse_LEFT)){
+		   !(window->flags & UIWindowFlags_NoMove) &&
+		   (WinHovered(window) || fromChild) &&
+		   key_pressed(Mouse_LEFT)){
 			SetDraggingInput;
 			WinSetBeingDragged(window);
 			mouseOffset = window->position - input_mouse_position();
@@ -3064,7 +3064,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 	switch (distate){
 		case None:{
 			if(Button(str8_lit("Debug Item with Cursor")) ||
-				key_pressed(Key_D | InputMod_LctrlLshift)){
+			   key_pressed(Key_D | InputMod_LctrlLshift)){
 				distate = InspectingWindowItems;
 			}
 		}break;
@@ -3254,11 +3254,11 @@ inline void MetricsBreaking(){DPZoneScoped;
 	switch (breakstate){
 		case BreakNone:{
 			if(Button(str8_lit("Break Item on Cursor")) ||
-				key_pressed(Key_B | InputMod_LctrlLshift)){
+			   key_pressed(Key_B | InputMod_LctrlLshift)){
 				breakstate = BreakItem;
 			}
 			if(Button(str8_lit("Break DrawCmd on Cursor")) ||
-				key_pressed(Key_D | InputMod_LctrlLshift)){
+			   key_pressed(Key_D | InputMod_LctrlLshift)){
 				breakstate = BreakDrawCmd;
 			}
 			if(Button(str8_lit("Break on Window Begin"))){
@@ -4256,10 +4256,10 @@ void UI::Update(){DPZoneScoped;
 	
 	//TODO(sushi) impl this for other stacks
 	if(varStack.count != initStyleStackSize){
-		PRINTLN("Frame ended with hanging vars in the stack, make sure you pop vars if you push them!\nVars were:\n");
+		printf("Frame ended with hanging vars in the stack, make sure you pop vars if you push them!\nVars were:\n");
 		
 		for(u32 i = varStack.count - 1; i > initStyleStackSize - 1; i--)
-			PRINTLN(styleVarStr[varStack[i].var].str << "\n");
+			printf("%s\n", styleVarStr[varStack[i].var].str);
 		
 		Assert(0);
 	}

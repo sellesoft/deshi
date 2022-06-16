@@ -269,7 +269,7 @@ struct hash<mat4>{
 ///////////////////
 #include "kigu/string.h"
 
-global_ string 
+global string 
 to_string(const mat3& x, bool trunc = true){
 	string s;
 	forI(3){ 
@@ -279,7 +279,7 @@ to_string(const mat3& x, bool trunc = true){
 	return s;
 }
 
-global_ string 
+global string 
 to_string(const mat4& x, bool trunc = true){
 	string s;
 	forI(4){ 

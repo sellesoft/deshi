@@ -87,7 +87,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_COUNT
 };
 
-global_ str8 styleVarStr[] = {
+global str8 styleVarStr[] = {
 	str8_lit("WindowPadding"),
 	str8_lit("ItemSpacing"),
 	str8_lit("WindowBorderSize"),
@@ -387,7 +387,7 @@ enum UIDrawType : u32 {
 	UIDrawType_Image,
 };
 
-global_ str8 UIDrawTypeStrs[] = {
+global str8 UIDrawTypeStrs[] = {
 	str8_lit("Triangle"),
 	str8_lit("FilledTriangle"),
 	str8_lit("Rectangle"),
@@ -471,7 +471,7 @@ enum UIItemType : u32 {
 	UIItemType_COUNT
 };
 
-global_ str8 UIItemTypeStrs[] = {
+global str8 UIItemTypeStrs[] = {
 	str8_lit("PreItems"),
 	str8_lit("PostItems"),
 	str8_lit("Custom"),
