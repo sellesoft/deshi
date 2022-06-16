@@ -638,7 +638,7 @@ deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
 	
-	ZeroMemory(arena->start, arena->size);
+	ZeroMemory(arena->start, arena->used);
 	arena->cursor = arena->start;
 	arena->used   = 0;
 }
@@ -1335,7 +1335,7 @@ deshi__memory_temp_clear(){DPZoneScoped;
 #endif //MEMORY_PRINT_TEMP_ACTIONS
 	g_memory->temp_arena.cursor = g_memory->temp_arena.start;
 	g_memory->temp_arena.used = 0;
-	//memory_clear_arena(&g_memory->temp_arena);
+	memory_clear_arena(&g_memory->temp_arena);
 }
 
 Arena*
