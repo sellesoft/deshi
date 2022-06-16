@@ -11,22 +11,26 @@ logger_message_prefix(int cursor, str8 caller_file, upt caller_line, str8 tag, T
 	//tag
 	if(tag && !logger.ignore_tags){
 		logger.last_message[cursor++] = '[';
+		if     (log_type==LogType_Error)  {memcpy(logger.last_message+cursor, "\x1b[31m", 5); cursor+=5;}
+		else if(log_type==LogType_Success){memcpy(logger.last_message+cursor, "\x1b[32m", 5); cursor+=5;}
+		else if(log_type==LogType_Warning){memcpy(logger.last_message+cursor, "\x1b[33m", 5); cursor+=5;}
+
 		str8 temp = tag;
 		while(temp){
 			cursor += utf8_from_codepoint(logger.last_message + cursor, towupper(str8_advance(&temp).codepoint));
 		}
 		switch(log_type){
-			case LogType_Normal: { memcpy(logger.last_message + cursor, "] "        ,  2*sizeof(u8)); cursor +=  2; }break;
-			case LogType_Error:  { memcpy(logger.last_message + cursor, "-ERROR] "  ,  8*sizeof(u8)); cursor +=  8; }break;
-			case LogType_Warning:{ memcpy(logger.last_message + cursor, "-WARNING] ", 10*sizeof(u8)); cursor += 10; }break;
-			case LogType_Success:{ memcpy(logger.last_message + cursor, "-SUCCESS] ", 10*sizeof(u8)); cursor += 10; }break;
+			case LogType_Normal: { memcpy(logger.last_message + cursor, "\x1b[0m] "        ,  6*sizeof(u8)); cursor +=  7; }break;
+			case LogType_Error:  { memcpy(logger.last_message + cursor, "-ERROR\x1b[0m] "  , 12*sizeof(u8)); cursor += 12; }break;
+			case LogType_Warning:{ memcpy(logger.last_message + cursor, "-WARNING\x1b[0m] ", 14*sizeof(u8)); cursor += 14; }break;
+			case LogType_Success:{ memcpy(logger.last_message + cursor, "-SUCCESS\x1b[0m] ", 14*sizeof(u8)); cursor += 14; }break;
 		}
 	}else if(log_type != LogType_Normal){
 		logger.last_message[cursor++] = '[';
 		switch(log_type){
-			case LogType_Error:  { memcpy(logger.last_message + cursor, "ERROR] "  , 7*sizeof(u8)); cursor += 7; }break;
-			case LogType_Warning:{ memcpy(logger.last_message + cursor, "WARNING] ", 9*sizeof(u8)); cursor += 9; }break;
-			case LogType_Success:{ memcpy(logger.last_message + cursor, "SUCCESS] ", 9*sizeof(u8)); cursor += 9; }break;
+			case LogType_Error:  { memcpy(logger.last_message + cursor, "\x1b[31mERROR\x1b[0m] "  , 16*sizeof(u8)); cursor += 16; }break;
+			case LogType_Success:{ memcpy(logger.last_message + cursor, "\x1b[32mSUCCESS\x1b[0m] ", 18*sizeof(u8)); cursor += 18; }break;
+			case LogType_Warning:{ memcpy(logger.last_message + cursor, "\x1b[33mWARNING\x1b[0m] ", 18*sizeof(u8)); cursor += 18; }break;
 		}
 	}
 	
