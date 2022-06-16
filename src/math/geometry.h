@@ -8,7 +8,7 @@
 //NOTE all targets are expected to be in the space of the reference object
 
 //convert to barycentric coords, clamp the triangle, convert back to cartesian coords
-global_ vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
+global vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
 	vec3 v0p = point - tri0;
 	vec3 v01 = tri1 - tri0;
 	vec3 v02 = tri2 - tri0;
@@ -36,11 +36,11 @@ global_ vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
 	return vec3(u*tri0.x + v*tri1.x + w*tri2.x, u*tri0.y + v*tri1.y + w*tri2.y, u*tri0.z + v*tri1.z + w*tri2.z);
 }
 
-inline global_ vec3 MeshTriangleMidpoint(MeshTriangle* tri){
+inline global vec3 MeshTriangleMidpoint(MeshTriangle* tri){
 	return (tri->p[0] + tri->p[1] + tri->p[2]) / 3.f;
 }
 
-global_ MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
+global MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshFace* closest_face = 0;
 	f32 max_projection = -INFINITY;
 	forE(mesh->faces){
@@ -53,7 +53,7 @@ global_ MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	return closest_face;
 }
 
-global_ vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
+global vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshVertex* closest_vertex = 0;
 	f32 max_projection = -INFINITY;
 	forE(mesh->vertexes){
@@ -66,19 +66,19 @@ global_ vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_norma
 	return closest_vertex->pos;
 }
 
-inline global_ vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
+inline global vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
 	return target + (plane_normal * -Math::DistPointToPlane(target, plane_normal, plane_point));
 }
 
-inline global_ vec3 ClosestPointOnAABB(vec3 halfDims, vec3 target) {
+inline global vec3 ClosestPointOnAABB(vec3 halfDims, vec3 target) {
 	return Clamp(target, -halfDims, halfDims);
 }
 
-inline global_ vec3 ClosestPointOnSphere(float radius, vec3 target) {
+inline global vec3 ClosestPointOnSphere(float radius, vec3 target) {
 	return target.normalized() * radius;
 }
 
-global_ vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
+global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	//find closest face to target based on the face normal
 	vec3 target_normal = target.normalized();
 	vec3 closest_normal = vec3::ZERO;
@@ -123,7 +123,7 @@ global_ vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 }
 
 //TODO fix this
-global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
+global b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
 	f32 tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if(ray_direction.x > 0){
 		tmin = (aabb_min.x - ray_start.x) / ray_direction.x;
@@ -162,13 +162,13 @@ global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 
 	return true;
 }
 
-global_ b32 PlaneRaycast(vec3 ray_start, vec3 ray_direction, vec3 plane_point, vec3 plane_normal, f32* out_t = 0){
+global b32 PlaneRaycast(vec3 ray_start, vec3 ray_direction, vec3 plane_point, vec3 plane_normal, f32* out_t = 0){
 	f32 t = plane_normal.dot(plane_point - ray_start) / plane_normal.dot(ray_direction);
 	if(out_t) *out_t = t;
 	return t > 0.f;
 }
 
-global_ b32 DiskRaycast(vec3 ray_start, vec3 ray_direction, vec3 disk_center, vec3 disk_normal, f32 disk_radius, f32* out_t = 0){
+global b32 DiskRaycast(vec3 ray_start, vec3 ray_direction, vec3 disk_center, vec3 disk_normal, f32 disk_radius, f32* out_t = 0){
 	f32 t = disk_normal.dot(disk_center - ray_start) / disk_normal.dot(ray_direction);
 	if((t > 0) && (disk_center.distanceTo(ray_start + (ray_direction * t)) < disk_radius)){
 		if(out_t) *out_t = t;
@@ -177,7 +177,7 @@ global_ b32 DiskRaycast(vec3 ray_start, vec3 ray_direction, vec3 disk_center, ve
 	return false;
 }
 
-global_ b32 SphereRaycast(vec3 ray_start, vec3 ray_direction, vec3 sphere_center, f32 sphere_radius, f32* out_t = 0){
+global b32 SphereRaycast(vec3 ray_start, vec3 ray_direction, vec3 sphere_center, f32 sphere_radius, f32* out_t = 0){
 	//!ref: https://gdbooks.gitbooks.io/3dcollisions/content/Chapter3/raycast_sphere.html
 	vec3 e = sphere_center - ray_start;
 	f32  eSq = e.magSq();

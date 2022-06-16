@@ -632,9 +632,9 @@ RotationMatrixX(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r);  f64 s = sinf(r);
 	return matN(4,4, { 1,  0, 0, 0,
-					   0,  c, s, 0,
-					   0, -s, c, 0,
-					   0,  0, 0, 1});
+					0,  c, s, 0,
+					0, -s, c, 0,
+					0,  0, 0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -644,9 +644,9 @@ RotationMatrixY(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r); f64 s = sinf(r);
 	return matN(4,4, { c, 0, -s, 0,
-					   0, 1,  0, 0,
-					   s, 0,  c, 0,
-					   0, 0,  0, 1});
+					0, 1,  0, 0,
+					s, 0,  c, 0,
+					0, 0,  0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -656,9 +656,9 @@ RotationMatrixZ(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r); f64 s = sinf(r);
 	return matN(4,4,{ c, s, 0, 0,
-					   -s, c, 0, 0,
-					   0, 0, 1, 0,
-					   0, 0, 0, 1});
+					-s, c, 0, 0,
+					0, 0, 1, 0,
+					0, 0, 0, 1});
 }
 
 //returns a 4x4 translation transformation matrix
@@ -793,7 +793,7 @@ inline matN matN::Diag(const matN& m){
 ///////////////////
 #include "kigu/string_utils.h"
 
-global_ string
+global string
 to_string(const matN& x, bool trunc = true) {
 	if (x.rows == 0 || x.cols == 0) {
 		return "|Zero dimension matrix|";

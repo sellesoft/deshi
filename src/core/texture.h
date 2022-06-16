@@ -11,7 +11,7 @@ enum ImageFormat_{ //NOTE value = bytes per pixel
 	ImageFormat_RGB  = 3,
 	ImageFormat_RGBA = 4,
 }; typedef u32 ImageFormat;
-global_ const str8 ImageFormatStrings[] = {
+global const str8 ImageFormatStrings[] = {
 	STR8("BW"), STR8("BWA"), STR8("RGB"), STR8("RGBA")
 };
 
@@ -21,7 +21,7 @@ enum TextureFilter_{
 	TextureFilter_Cubic,   //combines even more pixels with Catmull-Rom weights
 	TextureFilter_COUNT,
 }; typedef Type TextureFilter;
-global_ const str8 TextureFilterStrings[] = {
+global const str8 TextureFilterStrings[] = {
 	STR8("Nearest"), STR8("Linear"), STR8("Cubic")
 };
 
@@ -34,7 +34,7 @@ enum TextureAddressMode_{ //what happens when uv values are beyond 0..1
 	TextureAddressMode_ClampToTransparent, //uv values are transparent
 	TextureAddressMode_COUNT,
 }; typedef u32 TextureAddressMode;
-global_ const str8 TextureAddressModeStrings[] = {
+global const str8 TextureAddressModeStrings[] = {
 	STR8("Repeat"), STR8("Mirrored Repeat"), STR8("Clamp To Edge"), STR8("Clamp To White"), STR8("Clamp To Black"), STR8("Clamp To Transparent")
 };
 
@@ -48,7 +48,7 @@ enum TextureType_{
 	TextureType_Array_Cube,
 	TextureType_COUNT
 }; typedef u32 TextureType;
-global_ const str8 TextureTypeStrings[] = {
+global const str8 TextureTypeStrings[] = {
 	STR8("1D"), STR8("2D"), STR8("3D"), STR8("Cube"), STR8("1D Array"), STR8("2D Array"), STR8("Cube Array"),
 };
 

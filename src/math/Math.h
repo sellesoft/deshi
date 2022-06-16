@@ -422,7 +422,7 @@ Rotation(){
 //////////////
 namespace Math {
 	
-	constexpr global_ s32 pow(s32 base, u32 exp){
+	constexpr global s32 pow(s32 base, u32 exp){
 		int result = 1;
 		for(;;){
 			if(exp & 1) result *= base;
@@ -434,19 +434,19 @@ namespace Math {
 	}
 	
 	//rounding
-	template<int decimals = 2> inline global_ f32 round(f32 a){
+	template<int decimals = 2> inline global f32 round(f32 a){
 		constexpr f32 multiple = f32(pow(10,decimals));
 		return f32(s32(a * multiple + .5f)) / multiple;
 	}
 	
-	template<int decimals = 2> inline global_ vec3 round(vec3 a){
+	template<int decimals = 2> inline global vec3 round(vec3 a){
 		constexpr f32 multiple = f32(pow(10,decimals));
 		return vec3(f32(s32(a.x * multiple + .5f)) / multiple,
 					f32(s32(a.y * multiple + .5f)) / multiple,
 					f32(s32(a.z * multiple + .5f)) / multiple);
 	}
-
-	global_ s32 order_of_magnitude(f32 in){DPZoneScoped;
+	
+	global s32 order_of_magnitude(f32 in){DPZoneScoped;
 		if(in==0) return 0;
 		if(floor(abs(in))==1) return 0;
 		if(ceil(abs(in))==1) return -1;
@@ -462,8 +462,8 @@ namespace Math {
 			return order - 1;
 		}
 	}
-
-	global_ s32 order_of_magnitude(f64 in){DPZoneScoped;
+	
+	global s32 order_of_magnitude(f64 in){DPZoneScoped;
 		if(in==0) return 0;
 		if(floor(in)==1) return 0;
 		f64 absin = in;
@@ -483,7 +483,7 @@ namespace Math {
 	template<class T> static f64 average(const T& container, int size){ return average(std::begin(container), std::end(container), size); }
 	
 	//interpolating
-	template<typename T> global_ T lerp(T a, T b, f32 t){ return a*(1.f-t) + b*t; }
+	template<typename T> global T lerp(T a, T b, f32 t){ return a*(1.f-t) + b*t; }
 	
 	//returns how far along a polynomial fit for a set of data you are
 	//you are not allowed to have 2 points with the same x value here
@@ -514,7 +514,7 @@ namespace Math {
 		return vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
 	}
 	
-	inline global_ bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims){
+	inline global bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims){
 		return
 			point.x >= rectPos.x &&
 			point.y >= rectPos.y &&
@@ -522,7 +522,7 @@ namespace Math {
 			point.y <= rectPos.y + rectDims.y;
 	}
 	
-	inline global_ b32 PointInTriangle(vec2 point, vec2 p0, vec2 p1, vec2 p2) {
+	inline global b32 PointInTriangle(vec2 point, vec2 p0, vec2 p1, vec2 p2) {
 		vec2 p01 = p1 - p0;
 		vec2 p12 = p2 - p1;
 		vec2 p20 = p0 - p2;
@@ -530,14 +530,14 @@ namespace Math {
 		b32 b0 = (point - p0).dot(-vec2(p01.y, -p01.x)) < 0;
 		b32 b1 = (point - p1).dot(-vec2(p12.y, -p12.x)) < 0;
 		b32 b2 = (point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
-
+		
 		return b0==b1 && b1==b2;
 	}
 	
 #define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime/1000)
 	
 	//oscillates between a given upper and lower value based on a given x value
-	inline global_ float BoundedOscillation(float lower, float upper, float x){
+	inline global float BoundedOscillation(float lower, float upper, float x){
 		Assert(upper > lower);
 		return ((upper - lower) * cosf(x) + (upper + lower)) / 2;
 	}

@@ -57,7 +57,7 @@ struct Font{
 };
 
 //TODO(delle) an overload for specifying range if you know where you're working
-global_ packed_char*
+global packed_char*
 font_packed_char(Font* font, u32 codepoint){
 	forI(font->num_ranges){
 		if(   (codepoint >= font->ranges[i].first_codepoint)
@@ -69,7 +69,7 @@ font_packed_char(Font* font, u32 codepoint){
 	return 0;
 }
 
-global_ aligned_quad
+global aligned_quad
 font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){
 	packed_char* pc = font_packed_char(font, codepoint);
 	if(pc){
@@ -89,7 +89,7 @@ font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){
 	return aligned_quad{};
 }
 
-global_ vec2
+global vec2
 font_visual_size(Font* font, str8 text){
 	vec2 result = vec2{0, (f32)font->max_height};
 	f32 line_width = 0;

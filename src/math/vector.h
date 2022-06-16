@@ -19,13 +19,13 @@ struct quat;
 union vec2i{
 	s32 arr[2] = {};
 	struct{ s32 x, y; };
-
+	
 	vec2i(){};
 	vec2i(s32 inX, s32 inY);
 	vec2i(const vec2i& v);
 	vec2i(s32* ptr);
 	vec2i(vec2 v);
-
+	
 	static const vec2i ZERO;
 	static const vec2i ONE;
 	static const vec2i UP;
@@ -607,7 +607,7 @@ struct hash<vec4>{
 ///////////////////
 #include "kigu/string.h"
 
-global_ string 
+global string 
 to_string(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	string s(a);
 	if(trunc){
@@ -626,7 +626,7 @@ to_string(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR
 	return s;
 }
 
-global_ string 
+global string 
 to_string(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	string s(a);
 	if(trunc){
@@ -645,7 +645,7 @@ to_string(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR
 	return s;
 }
 
-global_ string 
+global string 
 to_string(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	string s(a);
 	if(trunc){
