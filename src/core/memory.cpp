@@ -147,11 +147,11 @@ deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){
 	result->cursor = result->start;
 	result->size   = bytes;
 	result->empty_nodes.next = result->empty_nodes.prev = &result->empty_nodes;
-	heap->last_chunk = 0;
-	heap->initialized = true;
+	result->last_chunk = 0;
+	result->initialized = true;
 	DEBUG_CheckHeap(result);
 #if MEMORY_PRINT_HEAP_ACTIONS
-	Logf("memory","Initted a heap[0x%p] with %zu bytes (triggered at %s:%zu)", heap, bytes, file.str, line);
+	Logf("memory","Initted a heap[0x%p] with %zu bytes (triggered at %s:%zu)", result, bytes, file.str, line);
 #endif //MEMORY_PRINT_HEAP_ACTIONS
 	return result;
 }
@@ -170,7 +170,7 @@ deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){
 
 void*
 deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line){
-	DEBUG_CheckHeap(result);
+	DEBUG_CheckHeap(heap);
 	
 	if(g_memory->cleanup_happened) return 0;
 	if(bytes == 0 || data == 0) return 0;
@@ -245,7 +245,7 @@ deshi__memory_heap_remove(Heap* heap, void* ptr){
 	if(g_memory->cleanup_happened) return;
 	if(ptr == 0 || heap == 0) return;
 	
-	DEBUG_CheckHeap(result);
+	DEBUG_CheckHeap(heap);
 	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	MemChunk* chunk = MemoryToChunk(ptr);
 	Assert(chunk->size > 0, "A chunk must always have a size");
