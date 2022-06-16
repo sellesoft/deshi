@@ -251,7 +251,7 @@ external Arena* deshi__memory_arena_create(upt size, str8 file, upt line);
 external Arena* deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line);
 #define memory_grow_arena(arena, size) deshi__memory_arena_grow(arena, size, str8_lit(__FILE__), __LINE__)
 
-//Zeros the `arena` memory and resets used amount to zero
+//Zeros the used amount of `arena` memory and resets used amount to zero
 external void deshi__memory_arena_clear(Arena* arena, str8 file, upt line);
 #define memory_clear_arena(arena) deshi__memory_arena_clear(arena, str8_lit(__FILE__), __LINE__)
 
