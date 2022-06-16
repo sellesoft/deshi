@@ -1452,43 +1452,41 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	Vertex2* vp = putverts + offsets.vertices;
 	u32*     ip = putindices + offsets.indices;
 	
-	vec2 tl = pos;
-	vec2 br = pos + size;
-	vec2 bl = pos + vec2(0, size.y);
-	vec2 tr = pos + vec2(size.x, 0);
-	
-	RenderDrawCounts sum = {0};
-	sum += render_make_line(vp, ip, sum, tl,tr,thickness,color);
-	sum += render_make_line(vp, ip, sum, tr,br,thickness,color);
-	sum += render_make_line(vp, ip, sum, br,bl,thickness,color);
-	sum += render_make_line(vp, ip, sum, bl,tl,thickness,color);
-	
-	//TODO(sushi) test this
 	// vec2 tl = pos;
 	// vec2 br = pos + size;
-	// vec2 bl = vec2{br.x, tl.y};
-	// vec2 tr = vec2{tl.x, br.y};
-	// u32 t = item->style.border_width;
-	// u32 v = counts.vertices; u32 i = counts.indices;
-	// ip[i+ 0] = v+0; ip[i+ 1] = v+1; ip[i+ 2] = v+3; 
-	// ip[i+ 3] = v+0; ip[i+ 4] = v+3; ip[i+ 5] = v+2; 
-	// ip[i+ 6] = v+2; ip[i+ 7] = v+3; ip[i+ 8] = v+5; 
-	// ip[i+ 9] = v+2; ip[i+10] = v+5; ip[i+11] = v+4; 
-	// ip[i+12] = v+4; ip[i+13] = v+5; ip[i+14] = v+7; 
-	// ip[i+15] = v+4; ip[i+16] = v+7; ip[i+17] = v+6; 
-	// ip[i+18] = v+6; ip[i+19] = v+7; ip[i+20] = v+1; 
-	// ip[i+21] = v+6; ip[i+22] = v+1; ip[i+23] = v+0;
-	// vp[v+0].pos = tl;             vp[v+0].uv = {0,0}; vp[v+0].color = item->style.border_color.rgba;
-	// vp[v+1].pos = tl+vec2( t, t); vp[v+1].uv = {0,0}; vp[v+1].color = item->style.border_color.rgba;
-	// vp[v+2].pos = tr;             vp[v+2].uv = {0,0}; vp[v+2].color = item->style.border_color.rgba;
-	// vp[v+3].pos = tr+vec2(-t, t); vp[v+3].uv = {0,0}; vp[v+3].color = item->style.border_color.rgba;
-	// vp[v+4].pos = br;             vp[v+4].uv = {0,0}; vp[v+4].color = item->style.border_color.rgba;
-	// vp[v+5].pos = br+vec2(-t,-t); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
-	// vp[v+6].pos = bl;             vp[v+6].uv = {0,0}; vp[v+6].color = item->style.border_color.rgba;
-	// vp[v+7].pos = bl+vec2( t,-t); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
-	// counts += {8, 24};
+	// vec2 bl = pos + vec2(0, size.y);
+	// vec2 tr = pos + vec2(size.x, 0);
 	
-	return sum;
+	// RenderDrawCounts sum = {0};
+	// sum += render_make_line(vp, ip, sum, tl,tr,thickness,color);
+	// sum += render_make_line(vp, ip, sum, tr,br,thickness,color);
+	// sum += render_make_line(vp, ip, sum, br,bl,thickness,color);
+	// sum += render_make_line(vp, ip, sum, bl,tl,thickness,color);
+	
+	//TODO(sushi) test this
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = vec2{br.x, tl.y};
+	vec2 tr = vec2{tl.x, br.y};
+	u32 t = thickness; u32 v = offsets.vertices;
+	ip[ 0] = v+0; ip[ 1] = v+1; ip[ 2] = v+3; 
+	ip[ 3] = v+0; ip[ 4] = v+3; ip[ 5] = v+2; 
+	ip[ 6] = v+2; ip[ 7] = v+3; ip[ 8] = v+5; 
+	ip[ 9] = v+2; ip[10] = v+5; ip[11] = v+4; 
+	ip[12] = v+4; ip[13] = v+5; ip[14] = v+7; 
+	ip[15] = v+4; ip[16] = v+7; ip[17] = v+6; 
+	ip[18] = v+6; ip[19] = v+7; ip[20] = v+1; 
+	ip[21] = v+6; ip[22] = v+1; ip[23] = v+0;
+	vp[0].pos = tl;             vp[0].uv = {0,0}; vp[0].color = color.rgba;
+	vp[1].pos = tl+vec2( t, t); vp[1].uv = {0,0}; vp[1].color = color.rgba;
+	vp[2].pos = tr;             vp[2].uv = {0,0}; vp[2].color = color.rgba;
+	vp[3].pos = tr+vec2(-t, t); vp[3].uv = {0,0}; vp[3].color = color.rgba;
+	vp[4].pos = br;             vp[4].uv = {0,0}; vp[4].color = color.rgba;
+	vp[5].pos = br+vec2(-t,-t); vp[5].uv = {0,0}; vp[5].color = color.rgba;
+	vp[6].pos = bl;             vp[6].uv = {0,0}; vp[6].color = color.rgba;
+	vp[7].pos = bl+vec2( t,-t); vp[7].uv = {0,0}; vp[7].color = color.rgba;
+	
+	return render_make_rect_counts();
 }
 
 RenderDrawCounts
