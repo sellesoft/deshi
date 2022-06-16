@@ -236,6 +236,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "kigu/optional.h"
 #include "kigu/pair.h"
 #include "kigu/ring_array.h"
+#include "kigu/string_utils.h" 
 #include "kigu/unicode.h"
 #include "math/math.h"
 

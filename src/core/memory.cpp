@@ -31,7 +31,7 @@ local array<AllocInfo> alloc_infos_inactive(stl_allocator);
 
 #if MEMORY_CHECK_HEAPS
 local void
-DEBUG_CheckHeap(Heap* heap){
+DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
 	Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
 	Assert(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
 	Assert(heap->empty_nodes.next != 0 && heap->empty_nodes.prev != 0, "First heap empty node is invalid");
@@ -67,7 +67,7 @@ DEBUG_CheckHeap(Heap* heap){
 #endif //MEMORY_CHECK_HEAPS
 
 local void
-DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){
+DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){DPZoneScoped;
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
 		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
@@ -96,7 +96,7 @@ local b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return 
 
 #if MEMORY_TRACK_ALLOCS
 local AllocInfo*
-DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){
+DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 	spt middle = 0;
 	upt index = -1;
 	if(alloc_infos_active.count > 0){
@@ -125,7 +125,7 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){
 }
 
 local void
-DEBUG_AllocInfo_Deletion(void* address){
+DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
 	if(address == 0) return;
 	upt index = binary_search(alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
 	if(index != -1){
@@ -141,7 +141,7 @@ DEBUG_AllocInfo_Deletion(void* address){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
 Heap*
-deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){
+deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){DPZoneScoped;
 	Heap* result = (Heap*)deshi__memory_generic_allocate(bytes+sizeof(Heap), file, line);
 	result->start  = (u8*)(result+1);
 	result->cursor = result->start;
@@ -158,7 +158,7 @@ deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){
 
 
 void
-deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){
+deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){DPZoneScoped;
 #if MEMORY_PRINT_HEAP_ACTIONS
 	AllocInfo info = memory_allocinfo_get(heap);
 	Logf("memory","Deinitted a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, arena->size, file.str, line);
@@ -169,7 +169,7 @@ deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){
 
 
 void*
-deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line){
+deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(heap);
 	
 	if(g_memory->cleanup_happened) return 0;
@@ -241,7 +241,7 @@ deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt l
 
 
 void
-deshi__memory_heap_remove(Heap* heap, void* ptr){
+deshi__memory_heap_remove(Heap* heap, void* ptr){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(ptr == 0 || heap == 0) return;
 	
@@ -313,7 +313,7 @@ deshi__memory_heap_remove(Heap* heap, void* ptr){
 
 
 void
-deshi__memory_heap_clear(Heap* heap){
+deshi__memory_heap_clear(Heap* heap){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(heap == 0) return;
 	
@@ -332,7 +332,7 @@ deshi__memory_heap_clear(Heap* heap){
 //// @memory_arena
 #if MEMORY_CHECK_HEAPS
 local void
-DEBUG_CheckArenaHeapArenas(){
+DEBUG_CheckArenaHeapArenas(){DPZoneScoped;
 	if(g_memory->arena_heap.initialized && g_memory->arena_heap.used > 0){
 		for(MemChunk* chunk = (MemChunk*)g_memory->arena_heap.start; chunk != g_memory->arena_heap.last_chunk; ){
 			MemChunk* next = GetNextOrderChunk(chunk);
@@ -355,7 +355,7 @@ FORCE_INLINE void DEBUG_PrintArenaHeapChunks(){ DEBUG_PrintHeapChunks(arena_heap
 #endif //MEMORY_PRINT_ARENA_CHUNKS
 
 local Arena*
-CreateArenaLibc(upt aligned_size){ //NOTE expects pre-aligned size with arena overhead
+CreateArenaLibc(upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size with arena overhead
 	MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
 	Assert(chunk, "libc failed to allocate memory");
 	chunk->size = aligned_size | MEMORY_LIBC_FLAG;
@@ -370,7 +370,7 @@ CreateArenaLibc(upt aligned_size){ //NOTE expects pre-aligned size with arena ov
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena_create
 Arena*
-deshi__memory_arena_create(upt requested_size, str8 file, upt line){
+deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	
 	if(g_memory->cleanup_happened) return 0;
@@ -480,7 +480,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena_grow
 Arena*
-deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){
+deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	
@@ -630,7 +630,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena_clear
 void
-deshi__memory_arena_clear(Arena* arena, str8 file, upt line){
+deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	
 #if MEMORY_PRINT_ARENA_ACTIONS
@@ -647,7 +647,7 @@ deshi__memory_arena_clear(Arena* arena, str8 file, upt line){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena_delete
 void
-deshi__memory_arena_delete(Arena* arena, str8 file, upt line){
+deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(arena == 0) return;
 	
@@ -739,7 +739,7 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena_other
 Heap*
-deshi__memory_arena_expose(){
+deshi__memory_arena_expose(){DPZoneScoped;
 	return &g_memory->arena_heap;
 }
 
@@ -769,7 +769,7 @@ FORCE_INLINE void DEBUG_PrintGenericHeapChunks(){ DEBUG_PrintHeapChunks(generic_
 #endif //MEMORY_PRINT_GENERIC_CHUNKS
 
 local void*
-AllocateLibc(upt aligned_size){ //NOTE expects pre-aligned size with chunk
+AllocateLibc(upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size with chunk
 	MemChunk* new_chunk = (MemChunk*)calloc(1, aligned_size);
 	Assert(new_chunk, "Libc failed to allocate memory");
 	new_chunk->size = aligned_size | MEMORY_LIBC_FLAG;
@@ -777,7 +777,7 @@ AllocateLibc(upt aligned_size){ //NOTE expects pre-aligned size with chunk
 }
 
 local void* 
-ReallocateLibc(void* ptr, upt aligned_size){ //NOTE expects pre-aligned size with chunk
+ReallocateLibc(void* ptr, upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size with chunk
 	MemChunk* chunk = MemoryToChunk(ptr);
 	
 	upt old_size = GetChunkSize(chunk);
@@ -789,7 +789,7 @@ ReallocateLibc(void* ptr, upt aligned_size){ //NOTE expects pre-aligned size wit
 }
 
 local void
-FreeLibc(void* ptr){
+FreeLibc(void* ptr){DPZoneScoped;
 	MemChunk* chunk = MemoryToChunk(ptr);
 	Assert(ChunkIsLibc(chunk), "This was not allocated using libc");
 	free(chunk);
@@ -799,7 +799,7 @@ FreeLibc(void* ptr){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_generic_alloc
 void*
-deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){
+deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	
 	if(g_memory->cleanup_happened) return 0;
@@ -921,7 +921,7 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_generic_realloc
 void*
-deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt line){
+deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return 0;
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
@@ -1155,7 +1155,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_generic_zfree
 void
-deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){
+deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(ptr == 0) return;
 	
@@ -1258,7 +1258,7 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){
 
 
 Heap*
-deshi__memory_generic_expose(){
+deshi__memory_generic_expose(){DPZoneScoped;
 	return g_memory->generic_heap;
 }
 
@@ -1266,7 +1266,7 @@ deshi__memory_generic_expose(){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_temp
 void*
-deshi__memory_temp_allocate(upt size, str8 file, upt line){
+deshi__memory_temp_allocate(upt size, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return 0;
 	if(size == 0) return 0;
 	Assert(g_memory->temp_arena.start, "Attempted to temp allocate before memory_init() has been called");
@@ -1292,13 +1292,13 @@ deshi__memory_temp_allocate(upt size, str8 file, upt line){
 }
 
 void*
-deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){
+deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return 0;
 	if(size == 0) return 0;
 	if(ptr == 0) return 0;
 	
 #if MEMORY_PRINT_TEMP_ACTIONS
-	AllocInfo info = memory_allocinfo_get(ptr);
+	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	Logf("memory","Reallocating a temp ptr[0x%p]%s to %zu bytes (triggered at %s:%zu)", ptr, info.name.str, size, file.str, line);
 #endif //MEMORY_PRINT_TEMP_ACTIONS
 	
@@ -1327,18 +1327,19 @@ deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){
 }
 
 void
-deshi__memory_temp_clear(){
+deshi__memory_temp_clear(){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	
 #if MEMORY_PRINT_TEMP_ACTIONS
-	Logf("memory","Clearing temporary memory which used %zu bytes", temp_arena->used);
+	Logf("memory","Clearing temporary memory which used %zu bytes", g_memory->temp_arena.used);
 #endif //MEMORY_PRINT_TEMP_ACTIONS
-	
-	memory_clear_arena(&g_memory->temp_arena);
+	g_memory->temp_arena.cursor = g_memory->temp_arena.start;
+	g_memory->temp_arena.used = 0;
+	//memory_clear_arena(&g_memory->temp_arena);
 }
 
 Arena*
-deshi__memory_temp_expose(){
+deshi__memory_temp_expose(){DPZoneScoped;
 	return &g_memory->temp_arena;
 }
 
@@ -1346,7 +1347,7 @@ deshi__memory_temp_expose(){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_debug
 void
-deshi__memory_allocinfo_set(void* address, str8 name, Type type){
+deshi__memory_allocinfo_set(void* address, str8 name, Type type){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	if(cleanup_happened) return;
 	if(address == 0) return;
@@ -1384,7 +1385,7 @@ deshi__memory_allocinfo_set(void* address, str8 name, Type type){
 local AllocInfo null_alloc_info{0, {}, 0, upt(-1), str8_lit(""), 0};
 local AllocInfo test_alloc_info{0, {}, 0, upt(-1), str8_lit(""), 0};
 AllocInfo
-deshi__memory_allocinfo_get(void* address){
+deshi__memory_allocinfo_get(void* address){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	if(cleanup_happened) return null_alloc_info;
 	if(address == 0) return null_alloc_info;
@@ -1410,7 +1411,7 @@ deshi__memory_allocinfo_get(void* address){
 }
 
 carray<AllocInfo>
-deshi__memory_allocinfo_active_expose(){
+deshi__memory_allocinfo_active_expose(){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	return carray<AllocInfo>{alloc_infos_active.data, alloc_infos_active.count};
 #else
@@ -1419,7 +1420,7 @@ deshi__memory_allocinfo_active_expose(){
 }
 
 carray<AllocInfo>
-deshi__memory_allocinfo_inactive_expose(){
+deshi__memory_allocinfo_inactive_expose(){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	return carray<AllocInfo>{alloc_infos_inactive.data, alloc_infos_inactive.count};
 #else
@@ -1428,7 +1429,7 @@ deshi__memory_allocinfo_inactive_expose(){
 }
 
 void
-deshi__memory_draw(){
+deshi__memory_draw(){DPZoneScoped;
 	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
 		if(bytes >= Kilobytes(1)){
 			character = 'K'; divisor = Kilobytes(1);
@@ -1578,9 +1579,9 @@ deshi__memory_bytes_draw() {
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_state
 void
-deshi__memory_init(upt main_size, upt temp_size){
+deshi__memory_init(upt main_size, upt temp_size){DPZoneScoped;
 #if defined(TRACY_ENABLE) && defined(DESHI_WAIT_FOR_TRACY_CONNECTION)
-	PRINTLN("TRACY_ENABLE and DESHI_WAIT_FOR_TRACY_CONNECTION both enabled. Waiting for connection...");
+	printf("TRACY_ENABLE and DESHI_WAIT_FOR_TRACY_CONNECTION both enabled. Waiting for connection...");
 	while(!TracyIsConnected){}
 #endif
 	
@@ -1643,6 +1644,6 @@ deshi__memory_init(upt main_size, upt temp_size){
 }
 
 void
-deshi__memory_cleanup(){
+deshi__memory_cleanup(){DPZoneScoped;
 	g_memory->cleanup_happened = true;
 }
