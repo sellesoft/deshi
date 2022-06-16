@@ -1567,7 +1567,7 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
-	RenderDrawCounts sum;
+	RenderDrawCounts sum={0};
 	switch (font->type){
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE:{
