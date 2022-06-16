@@ -664,4 +664,61 @@ to_string(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR
 	return s;
 }
 
+global str8b 
+to_str8(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	str8b s; s.allocator = a;
+	if(trunc){
+		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
+		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf((char*)s.str, s.count+1, "(%g, %g)", x.x, x.y);
+	}else{
+		s.count = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
+		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf((char*)s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
+	}
+	return s;
+}
+
+global str8b 
+to_str8(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	str8b s; s.allocator = a;
+	if(trunc){
+		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
+		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf((char*)s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
+	}else{
+		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
+		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf((char*)s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
+	}
+	return s;
+}
+
+global str8b 
+to_str8(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	str8b s; s.allocator = a;
+	if(trunc){
+		s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf((char*)s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+	}else{
+		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
+		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
+		s.space = s.count+1;
+		snprintf((char*)s.str, s.count+1, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
+	}
+	return s;
+}
+
 #endif //DESHI_VECTOR_H
