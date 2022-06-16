@@ -22,7 +22,7 @@ logger_message_prefix(int cursor, str8 caller_file, upt caller_line, str8 tag, T
 			cursor += utf8_from_codepoint(logger.last_message + cursor, towupper(str8_advance(&temp).codepoint));
 		}
 		switch(log_type){
-			case LogType_Normal: { memcpy(logger.last_message + cursor, "\x1b[0m] "        ,  6*sizeof(u8)); cursor +=  7; }break;
+			case LogType_Normal: { memcpy(logger.last_message + cursor, "] "        ,         2*sizeof(u8)); cursor +=  2; }break;
 			case LogType_Error:  { memcpy(logger.last_message + cursor, "-ERROR\x1b[0m] "  , 12*sizeof(u8)); cursor += 12; }break;
 			case LogType_Warning:{ memcpy(logger.last_message + cursor, "-WARNING\x1b[0m] ", 14*sizeof(u8)); cursor += 14; }break;
 			case LogType_Success:{ memcpy(logger.last_message + cursor, "-SUCCESS\x1b[0m] ", 14*sizeof(u8)); cursor += 14; }break;
