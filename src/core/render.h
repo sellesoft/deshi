@@ -1126,7 +1126,7 @@ render_lines2(vec2* points, u64 count, f32 thickness, color c){DPZoneScoped;
 }
 
 void
-render_triangle3(vec2 p1, vec2 p2, vec2 p3, color c){DPZoneScoped;
+render_triangle2(vec2 p1, vec2 p2, vec2 p3, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
 	render_line2(p1, p2, c);
@@ -1463,32 +1463,32 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	sum += render_make_line(vp, ip, sum, br,bl,thickness,color);
 	sum += render_make_line(vp, ip, sum, bl,tl,thickness,color);
 	
-	return sum;
+	//TODO(sushi) test this
+	// vec2 tl = pos;
+	// vec2 br = pos + size;
+	// vec2 bl = vec2{br.x, tl.y};
+	// vec2 tr = vec2{tl.x, br.y};
+	// u32 t = item->style.border_width;
+	// u32 v = counts.vertices; u32 i = counts.indices;
+	// ip[i+ 0] = v+0; ip[i+ 1] = v+1; ip[i+ 2] = v+3; 
+	// ip[i+ 3] = v+0; ip[i+ 4] = v+3; ip[i+ 5] = v+2; 
+	// ip[i+ 6] = v+2; ip[i+ 7] = v+3; ip[i+ 8] = v+5; 
+	// ip[i+ 9] = v+2; ip[i+10] = v+5; ip[i+11] = v+4; 
+	// ip[i+12] = v+4; ip[i+13] = v+5; ip[i+14] = v+7; 
+	// ip[i+15] = v+4; ip[i+16] = v+7; ip[i+17] = v+6; 
+	// ip[i+18] = v+6; ip[i+19] = v+7; ip[i+20] = v+1; 
+	// ip[i+21] = v+6; ip[i+22] = v+1; ip[i+23] = v+0;
+	// vp[v+0].pos = tl;             vp[v+0].uv = {0,0}; vp[v+0].color = item->style.border_color.rgba;
+	// vp[v+1].pos = tl+vec2( t, t); vp[v+1].uv = {0,0}; vp[v+1].color = item->style.border_color.rgba;
+	// vp[v+2].pos = tr;             vp[v+2].uv = {0,0}; vp[v+2].color = item->style.border_color.rgba;
+	// vp[v+3].pos = tr+vec2(-t, t); vp[v+3].uv = {0,0}; vp[v+3].color = item->style.border_color.rgba;
+	// vp[v+4].pos = br;             vp[v+4].uv = {0,0}; vp[v+4].color = item->style.border_color.rgba;
+	// vp[v+5].pos = br+vec2(-t,-t); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
+	// vp[v+6].pos = bl;             vp[v+6].uv = {0,0}; vp[v+6].color = item->style.border_color.rgba;
+	// vp[v+7].pos = bl+vec2( t,-t); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
+	// counts += {8, 24};
 	
-	//TODO(sushi) make this algo respect thickness better
-	//f32 sqt = sqrtf(thickness);
-	//vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
-	//vec2 bro = sqt * vec2( M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
-	//vec2 tro = sqt * vec2( M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
-	//vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO,  M_HALF_SQRT_TWO);
-	//
-	//ip[0]  = offsets.indices + 0; ip[1]  = offsets.indices + 1; ip[2]  = offsets.indices + 3;
-	//ip[3]  = offsets.indices + 0; ip[4]  = offsets.indices + 3; ip[5]  = offsets.indices + 2;
-	//ip[6]  = offsets.indices + 2; ip[7]  = offsets.indices + 3; ip[8]  = offsets.indices + 5;
-	//ip[9]  = offsets.indices + 2; ip[10] = offsets.indices + 5; ip[11] = offsets.indices + 4;
-	//ip[12] = offsets.indices + 4; ip[13] = offsets.indices + 5; ip[14] = offsets.indices + 7;
-	//ip[15] = offsets.indices + 4; ip[16] = offsets.indices + 7; ip[17] = offsets.indices + 6;
-	//ip[18] = offsets.indices + 6; ip[19] = offsets.indices + 7; ip[20] = offsets.indices + 1;
-	//ip[21] = offsets.indices + 6; ip[22] = offsets.indices + 1; ip[23] = offsets.indices + 0;
-	//
-	//vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
-	//vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
-	//vp[2].pos = tr + tro; vp[2].uv = { 0,0 }; vp[2].color = col;
-	//vp[3].pos = tr + blo; vp[3].uv = { 0,0 }; vp[3].color = col;
-	//vp[4].pos = br + bro; vp[4].uv = { 0,0 }; vp[4].color = col;
-	//vp[5].pos = br + tlo; vp[5].uv = { 0,0 }; vp[5].color = col;
-	//vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
-	//vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
+	return sum;
 }
 
 RenderDrawCounts
