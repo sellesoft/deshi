@@ -140,32 +140,192 @@ DEBUG_AllocInfo_Deletion(void* address){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
-/*
 Heap*
-memory_heap_init_bytes(upt bytes){
-	
+deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){
+	Heap* result = (Heap*)deshi__memory_generic_allocate(bytes+sizeof(Heap), file, line);
+	result->start  = (u8*)(result+1);
+	result->cursor = result->start;
+	result->size   = bytes;
+	result->empty_nodes.next = result->empty_nodes.prev = &result->empty_nodes;
+	heap->last_chunk = 0;
+	heap->initialized = true;
+	DEBUG_CheckHeap(result);
+#if MEMORY_PRINT_HEAP_ACTIONS
+	Logf("memory","Initted a heap[0x%p] with %zu bytes (triggered at %s:%zu)", heap, bytes, file.str, line);
+#endif //MEMORY_PRINT_HEAP_ACTIONS
+	return result;
 }
 
+
 void
-memory_heap_deinit(Heap* heap){
+deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){
+#if MEMORY_PRINT_HEAP_ACTIONS
+	AllocInfo info = memory_allocinfo_get(heap);
+	Logf("memory","Deinitted a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, arena->size, file.str, line);
+#endif //MEMORY_PRINT_HEAP_ACTIONS
 	
+	deshi__memory_generic_zero_free(heap, file, line);
 }
+
 
 void*
-memory_heap_add_bytes(Heap* heap, void* data, upt bytes){
+deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line){
+	DEBUG_CheckHeap(result);
 	
+	if(g_memory->cleanup_happened) return 0;
+	if(bytes == 0 || data == 0) return 0;
+	Assert(heap && heap->initialized, "Attempted to allocate before heap_init() has been called");
+	
+	//include chunk overhead, align to the byte alignment, and clamp the minimum
+	upt aligned_size = ClampMin(RoundUpTo(bytes + MEMORY_CHUNK_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_MIN_CHUNK_SIZE);
+	void* result = 0;
+	
+	//check if there are any empty chunks that can hold the allocation
+	for(Node* node = heap->empty_nodes.next; node != &heap->empty_nodes; node = node->next){
+		MemChunk* chunk = CastFromMember(MemChunk, node, node);
+		upt chunk_size = GetChunkSize(chunk); //NOTE remember that chunk size includes the overhead
+		if(chunk_size >= aligned_size){
+			upt leftover_size = chunk_size - aligned_size;
+			Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
+			MemChunk* next = GetNextOrderChunk(chunk);
+			
+			//make new empty chunk after current chunk if there is enough space for an empty chunk
+			//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
+			if(leftover_size >= MEMORY_MIN_CHUNK_SIZE){
+				NodeRemove(&chunk->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+				chunk->node = {0};
+				
+				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
+				NodeInsertNext(&heap->empty_nodes, &new_chunk->node);
+				new_chunk->prev = chunk;
+				new_chunk->size = leftover_size | MEMORY_EMPTY_FLAG;
+				next->prev = new_chunk;
+				next = new_chunk;
+				heap->used += sizeof(MemChunk);
+			}else{
+				aligned_size += leftover_size;
+				NodeRemove(&chunk->node);
+				chunk->node = {0}; //zero this data since it will be used by the allocation
+			}
+			
+			//convert empty node to order node //NOTE chunk->prev doesnt need to change
+			chunk->size = aligned_size;
+			heap->used += aligned_size - sizeof(MemChunk);
+			result = ChunkToMemory(chunk);
+			
+#if MEMORY_PRINT_HEAP_ACTIONS
+			AllocInfo info = memory_allocinfo_get(heap);
+			Logf("memory","Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", result, heap, info.name.str, aligned_size, file.str, line);
+#endif //MEMORY_PRINT_HEAP_ACTIONS
+			DEBUG_CheckHeap(heap);
+			return result;
+		}
+	}
+	
+	//if we cant replace an empty node, make a new order node for the allocation (if there is space)
+	MemChunk* new_chunk = (MemChunk*)heap->cursor;
+	new_chunk->prev = heap->last_chunk;
+	new_chunk->size = aligned_size;
+	heap->cursor    += aligned_size;
+	heap->used      += aligned_size;
+	heap->last_chunk = new_chunk;
+	result = ChunkToMemory(new_chunk);
+	
+#if MEMORY_PRINT_HEAP_ACTIONS
+	AllocInfo info = memory_allocinfo_get(heap);
+	Logf("memory","Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", result, heap, info.name.str, aligned_size, file.str, line);
+#endif //MEMORY_PRINT_HEAP_ACTIONS
+	DEBUG_CheckHeap(heap);
+	return result;
 }
 
-void
-memory_heap_remove(Heap* heap, void* ptr){
-	
-}
 
 void
-memory_heap_clear(Heap* heap){
+deshi__memory_heap_remove(Heap* heap, void* ptr){
+	if(g_memory->cleanup_happened) return;
+	if(ptr == 0 || heap == 0) return;
 	
+	DEBUG_CheckHeap(result);
+	AllocInfo info = deshi__memory_allocinfo_get(ptr);
+	MemChunk* chunk = MemoryToChunk(ptr);
+	Assert(chunk->size > 0, "A chunk must always have a size");
+	Assert(heap->initialized, "Attempted to remove before heap_init() has been called");
+	
+	upt   chunk_size   = GetChunkSize(chunk);
+	void* zero_pointer = chunk+1;
+	upt   zero_amount  = chunk_size - sizeof(MemChunk);
+	upt   used_amount  = zero_amount;
+	
+	//insert current chunk into heap's empty nodes (as first empty node for locality)
+	NodeInsertNext(&heap->empty_nodes, &chunk->node);
+	chunk->size |= MEMORY_EMPTY_FLAG;
+	
+	//try to merge next empty into current empty
+	MemChunk* next = GetNextOrderChunk(chunk);
+	if((chunk != heap->last_chunk) && ChunkIsEmpty(next)){
+		MemChunk* next_next = GetNextOrderChunk(next);
+		next_next->prev = chunk;
+		NodeRemove(&next->node);
+		chunk->size += GetChunkSize(next);
+		//NOTE zero_pointer doesnt change
+		zero_amount += sizeof(MemChunk); //NOTE next's memory is already zeroed, so only zero the chunk header
+		used_amount += sizeof(MemChunk);
+		next = next_next;
+	}
+	
+	//try to merge current empty into prev empty
+	MemChunk* prev = GetPrevOrderChunk(chunk);
+	if((prev != 0) && ChunkIsEmpty(prev)){
+		if(chunk == heap->last_chunk){
+			heap->last_chunk = prev;
+		}else{
+			next->prev = prev;
+		}
+		NodeRemove(&chunk->node);
+		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
+		NodeInsertNext(&heap->empty_nodes, &prev->node);
+		prev->size += GetChunkSize(chunk);
+		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
+		zero_amount  = GetChunkSize(chunk);
+		used_amount += sizeof(MemChunk);
+		chunk = prev;
+	}
+	
+	//remove the last order chunk if its empty
+	if(chunk == heap->last_chunk){
+		NodeRemove(&chunk->node);
+		heap->last_chunk = chunk->prev;
+		heap->cursor = (u8*)chunk;
+		zero_pointer = chunk;
+		zero_amount  = GetChunkSize(chunk);
+		used_amount += sizeof(MemChunk);
+	}
+	
+	heap->used -= used_amount;
+	ZeroMemory(zero_pointer, zero_amount);
+	
+#if MEMORY_PRINT_HEAP_ACTIONS
+	AllocInfo info2 = memory_allocinfo_get(heap);
+	Logf("memory","Freed an allocation  [0x%p]%s in heap[0x%p]%s (triggered at %s:%zu)", result, info.name.str, heap, info2.name.str, aligned_size, file.str, line);
+#endif //MEMORY_PRINT_HEAP_ACTIONS
+	DEBUG_CheckHeap(heap);
 }
-*/
+
+
+void
+deshi__memory_heap_clear(Heap* heap){
+	if(g_memory->cleanup_happened) return;
+	if(heap == 0) return;
+	
+#if MEMORY_PRINT_HEAP_ACTIONS
+	AllocInfo info = memory_allocinfo_get(heap);
+	Logf("memory","Cleared a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, arena->size, file.str, line);
+#endif //MEMORY_PRINT_ARENA_ACTIONS
+	
+	ZeroMemory(heap->start, heap->size);
+	heap->cursor = heap->start;
+	heap->used   = 0;
+}
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,6 +366,9 @@ CreateArenaLibc(upt aligned_size){ //NOTE expects pre-aligned size with arena ov
 	return arena;
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_arena_create
 Arena*
 deshi__memory_arena_create(upt requested_size, str8 file, upt line){
 	DEBUG_CheckHeap(&g_memory->arena_heap);
@@ -313,6 +476,9 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){
 	return result;
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_arena_grow
 Arena*
 deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){
 	DEBUG_CheckHeap(&g_memory->arena_heap);
@@ -460,6 +626,9 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){
 	return result;
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_arena_clear
 void
 deshi__memory_arena_clear(Arena* arena, str8 file, upt line){
 	if(g_memory->cleanup_happened) return;
@@ -469,11 +638,14 @@ deshi__memory_arena_clear(Arena* arena, str8 file, upt line){
 	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
 	
-	ZeroMemory(arena->start, arena->used);
+	ZeroMemory(arena->start, arena->size);
 	arena->cursor = arena->start;
 	arena->used   = 0;
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_arena_delete
 void
 deshi__memory_arena_delete(Arena* arena, str8 file, upt line){
 	if(g_memory->cleanup_happened) return;
@@ -563,6 +735,9 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){
 	DEBUG_PrintArenaHeapChunks();
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_arena_other
 Heap*
 deshi__memory_arena_expose(){
 	return &g_memory->arena_heap;
@@ -620,9 +795,9 @@ FreeLibc(void* ptr){
 	free(chunk);
 }
 
-//make "" to prevent string allocs
-#define DPAllocMessage toStr(file, " on line ", line).str
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_generic_alloc
 void*
 deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){
 	DEBUG_CheckHeap(g_memory->generic_heap);
@@ -742,6 +917,9 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){
 	return result;
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_generic_realloc
 void*
 deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt line){
 	if(g_memory->cleanup_happened) return 0;
@@ -973,6 +1151,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	return result;
 }
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_generic_zfree
 void
 deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){
 	if(g_memory->cleanup_happened) return;
@@ -1074,6 +1255,7 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	DEBUG_PrintGenericHeapChunks();
 }
+
 
 Heap*
 deshi__memory_generic_expose(){

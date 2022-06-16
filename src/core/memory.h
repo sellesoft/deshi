@@ -96,6 +96,7 @@ https://github.com/nothings/stb/blob/master/stb_ds.h
 #define MEMORY_TRACK_ALLOCS false
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false
+#define MEMORY_PRINT_HEAP_ACTIONS false
 #define MEMORY_PRINT_GENERIC_CHUNKS false
 #define MEMORY_PRINT_GENERIC_ACTIONS false
 #define MEMORY_PRINT_TEMP_ACTIONS false
@@ -195,32 +196,36 @@ extern MemoryContext* g_memory;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
-/*
 //Initializes a heap with an initial `bytes` of memory
-external Heap* memory_heap_init_bytes(upt bytes);
+external Heap* deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line);
+#define memory_heap_init_bytes(bytes) deshi__memory_heap_init_bytes(bytes, str8_lit(__FILE__), __LINE__)
 
 //Initializes a heap with an initial `count` slots of `type`
 #define memory_heap_init(type,count) memory_heap_init_bytes((count)*sizeof(type))
 
 //Deinitializes a `heap` and frees its memory
-external void memory_heap_deinit(Heap* heap);
+external void deshi__memory_heap_deinit(Heap* heap, str8 file, upt line);
+#define memory_heap_deinit(heap) deshi__memory_heap_deinit(heap, str8_lit(__FILE__), __LINE__)
 
 //Finds an empty chunk in `heap` of at least `bytes` in size and copies `bytes` from `data` to that chunk
 //    if the heap is full, it will grow its internal space by a factor of 2
-external void* memory_heap_add_bytes(Heap* heap, void* data, upt bytes);
+external void* deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line);
+#define memory_heap_add_bytes(heap,data,bytes) deshi__memory_heap_add_bytes(heap, data, bytes, str8_lit(__FILE__), __LINE__)
 
 //Adds an `item` to an empty chunk in `heap`
 //    if the heap is full, it will grow its internal space by a factor of 2
 #define memory_heap_add(heap,item) memory_heap_add_bytes(heap, &item, sizeof(item))
 
 //Removes the item at `ptr` from `heap` by turning it into an empty chunk
-external void memory_heap_remove(Heap* heap, void* ptr);
+external void deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line);
+#define memory_heap_remove(heap,ptr) deshi__memory_heap_remove(heap, ptr, str8_lit(__FILE__), __LINE__)
 
 //Removes the item at `index` in `heap` by turning it into an empty chunk
 #define memory_heap_remove_idx(heap,index) memory_heap_remove((heap), ((heap)->start + (index)))
 
 //Resets a `heap` and zeroes its memory
-external void memory_heap_clear(Heap* heap);
+external void deshi__memory_heap_clear(Heap* heap, str8 file, upt line);
+#define memory_heap_clear(heap) deshi__memory_heap_clear(heap, str8_lit(__FILE__), __LINE__)
 
 //Returns a pointer to the item at `index` in `heap`
 //    if the chunk at `index` is empty, returns 0
@@ -228,14 +233,10 @@ external void memory_heap_clear(Heap* heap);
 
 //Returns the a pointer to the last item in `heap`
 //    if `heap` is empty, returns 0
-#define memory_heap_last(heap,type) (((heap)->used) ? (type*)((heap)->cursor)-1 : 0)
-
-//Returns the number of items of `type` in `heap`
-#define memory_heap_count(heap,type) ((heap)->used / sizeof(type))
+#define memory_heap_last(heap,type) (type*)(((heap)->last_chunk) ? ChunkToMemory((heap)->last_chunk) : 0)
 
 //Returns the number of items of `type` that `heap` can hold before growing
 #define memory_heap_space(heap,type) ((heap)->size / sizeof(type))
-*/
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
