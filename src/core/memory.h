@@ -209,8 +209,8 @@ external void deshi__memory_heap_deinit(Heap* heap, str8 file, upt line);
 
 //Finds an empty chunk in `heap` of at least `bytes` in size and copies `bytes` from `data` to that chunk
 //    if the heap is full, it will grow its internal space by a factor of 2
-external void* deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line);
-#define memory_heap_add_bytes(heap,data,bytes) deshi__memory_heap_add_bytes(heap, data, bytes, str8_lit(__FILE__), __LINE__)
+external void* deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line);
+#define memory_heap_add_bytes(heap,bytes) deshi__memory_heap_add_bytes(heap, bytes, str8_lit(__FILE__), __LINE__)
 
 //Adds an `item` to an empty chunk in `heap`
 //    if the heap is full, it will grow its internal space by a factor of 2

@@ -169,11 +169,11 @@ deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){DPZoneScoped;
 
 
 void*
-deshi__memory_heap_add_bytes(Heap* heap, void* data, upt bytes, str8 file, upt line){DPZoneScoped;
+deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(heap);
 	
 	if(g_memory->cleanup_happened) return 0;
-	if(bytes == 0 || data == 0) return 0;
+	if(bytes == 0) return 0;
 	Assert(heap && heap->initialized, "Attempted to allocate before heap_init() has been called");
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
