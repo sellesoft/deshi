@@ -267,6 +267,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
+#include "core/ui2.h"
 #include "core/window.h"
 
 
@@ -362,6 +363,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #include "core/console.cpp"
 #include "core/storage.cpp"
 #include "core/ui.cpp"
+#include "core/ui2.cpp"
 #include "core/commands.cpp"
 
 

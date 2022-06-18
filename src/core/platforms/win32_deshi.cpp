@@ -1507,7 +1507,7 @@ wait_for(u64 milliseconds){DPZoneScoped;
 
 
 #ifdef BUILD_SLOW
-#define WorkerLog(message) Log("thread", "worker ", me, ": ", message)
+#define WorkerLog(message) //Log("thread", "worker ", me, ": ", message)
 #else
 #define WorkerLog(message)
 #endif
