@@ -26,7 +26,6 @@ Notes
 	
 	With the exception of scrolling, dragging, and resizing, nothing in ui's internals or in a widget's internals may edit uiStyle properties. 
 	uiStyle is the user's interface	for deciding how an item looks and so should never be changed without the user's knowledge. 
-	
 
 	The only thing ui's internals know about is the uiItem and uiStyle structs. Style properties defined by widgets 
 	cannot be used by ui's internals to evaluate anything, but the information in uiStyle should be enough already.
@@ -34,6 +33,9 @@ Notes
 	All of ui is interfaced to through uiItem pointers. In order to access data of a widget you must get it
 	through the widget's function for doing so (eg. uiGetSliderData(uiItem*)). This is to keep the interface from using
 	many different types, unless the user explicitly asks for them.
+
+	All items that are not passed a style pointer on creation initialize using ui_inital_style, so if you would like to adjust the
+	the default behavoir of ui, you can change the ui_initial_style pointer at any point.
 
 
 Index
@@ -406,6 +408,15 @@ TODO(sushi) example
 		When using this on an item whose positioning is not fixed or absolute you must remember that
 		it will affect the behavoir of items around it. 
 
+------------------------------------------------------------------------------------------------------------
+*   hidden
+	---
+	Flag that tells ui that this node and all of its children are hidden. This removes the node from being rendered
+	AND being considered in the normal flow. Note that this means that its action function will also not be called.
+
+-   Defaults:
+		Defaults to false.
+
 
 */
 
@@ -542,7 +553,10 @@ external struct uiStyle{
 	f32      border_width;
 	color    text_color;
 	Type     overflow;
-	b32      focus;
+	union{
+		b32 focus : 1;
+		b32 hidden : 1;
+	};
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
@@ -631,6 +645,9 @@ UI_FUNC_API(uiItem*, ui_begin_item, uiStyle* style, str8 file, upt line);
 UI_FUNC_API(void, ui_end_item, str8 file, upt line);
 #define uiItemE() UI_DEF(end_item(STR8(__FILE__),__LINE__))
 
+UI_FUNC_API(void, ui_set_item_layer, uiItem* item, u32 idx, str8 file, upt line);
+#define uiSetLayer(item, idx) UI_DEF(set_item_layer(item, (idx), STR8(__FILE__),__LINE__))
+
 
 inline u32 hash_style(uiItem* item){DPZoneScoped;
 	uiStyle* s = &item->style;
@@ -661,6 +678,9 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= *(u32*)&s->border_width;    seed *= 16777619;
 	seed ^= s->text_color.rgba;         seed *= 16777619;
 	seed ^= s->overflow;                seed *= 16777619;
+	seed ^= s->focus;                   seed *= 16777619;
+	seed ^= s->hidden;                  seed *= 16777619;
+
 	
 	if(item->__hash) { seed ^= item->__hash(item); seed *= 16777619; }
 	

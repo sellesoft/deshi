@@ -63,8 +63,7 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 
 //@Helpers
 #define item_error(item, ...)\
-LogE("ui","Error on item created in ", item->file_created, " on line ", item->line_created, ":\n",\
-          "\t", __VA_ARGS__)
+LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__)
 
 //fills an item struct and make its a child of the current item
 void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -201,6 +200,13 @@ void ui_end_item(str8 file, upt line){
 	}
 	pop_item();
 	
+}
+
+void ui_set_item_layer(uiItem* item, u32 idx, str8 file, upt line){
+	uiItem* base = &g_ui->base;
+	if(base->node.first_child->type != 0xff){
+		
+	}
 }
 
 //-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -567,6 +573,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 	vec2 cursor = item->style.padding - item->style.scroll;
 	for_node(item->node.first_child){
 		uiItem* child = uiItemFromNode(it);
+		if(child->style.hidden) continue;
 		eval_item_branch(child);    
 		switch(child->style.positioning){
 			case pos_static:{
@@ -697,6 +704,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
 	
+
 	if(item->action && item->action_trigger){
 		if(item->action_trigger == action_act_always)
 			item->action(item);
@@ -727,6 +735,9 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		eval_item_branch(sspar);
 		draw_item_branch(sspar);
 	}
+	
+	// -MAX_F32 signals the function that the node is hidden and not to consider it 
+	if(item->style.hidden) return {vec2::ZERO,vec2{-MAX_F32,-MAX_F32}};
 	
 	//render item
 
@@ -770,6 +781,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	vec2 pos = item->spos, siz = item->size;
     for_node(node->first_child){
         auto [cpos, csiz] = ui_recur(it);
+		if(csiz.x == -MAX_F32) continue;
         pos = Min(cpos, item->spos);
         siz = Max((item->spos - pos)+item->size, (cpos-pos)+csiz); 
     }
@@ -781,6 +793,15 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 }
 
 void ui_update(){DPZoneScoped;
+	if(g_ui->item_stack.count > 1){
+		forI(g_ui->item_stack.count-1){
+			if(i==g_ui->item_stack.count-2)
+				item_error(g_ui->item_stack[i+1], "Items are still left on the item stack. Did you forget to call uiItemE? Did you mean to use uiItemM?");
+			else item_error(g_ui->item_stack[i+1]);
+		}
+		Assert(false);
+	}
+
 	//Log("test","ayyyye"); //NOTE(delle) uncomment after reloading .dll for testing
 	g_ui->base.style.width = DeshWindow->width;
 	g_ui->base.style.height = DeshWindow->height;
