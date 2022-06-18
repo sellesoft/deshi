@@ -80,10 +80,6 @@ void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScope
 
 //TODO(sushi) make an option for this to take into account wrapping
 vec2 calc_text_size(uiItem* item){DPZoneScoped;
-	if(item->tag != uiTextTag){
-		item_error(item, "calc_text_size() was called on an item whose tag is not uiTextTag.");
-		return vec2{0,0};
-	}
 	uiStyle* style = &item->style;
 	str8 text = uiGetTextData(item)->text;
 	vec2 result = vec2{0, (f32)style->font_height};
@@ -213,11 +209,6 @@ void ui_set_item_layer(uiItem* item, u32 idx, str8 file, upt line){
 // @Slider
 
 void ui_gen_slider(uiItem* item){DPZoneScoped;
-	if(item->tag != uiSliderTag){
-		item_error(item, "Slider generate function was called on an item whose tag is not uiSliderTag.");
-		return;
-	}
-
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
@@ -240,10 +231,6 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 }
 
 void __ui_slider_callback(uiItem* item){DPZoneScoped;
-	if(item->tag != uiSliderTag){
-		item_error(item, "Slider callback was called on an item whose tag is not uiSliderTag.");
-		return;
-	}
 	uiSliderData* data = uiGetSliderData(item);
 	vec2 mp = input_mouse_position();
 	vec2 lmp = mp - item->spos;
@@ -281,7 +268,6 @@ uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiSliderData));
 	ui_fill_item(item, style, file, line);
 
-	item->tag = uiSliderTag;
 	item->memsize = sizeof(uiItem) + sizeof(uiSliderData);
 	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
 	item->__generate = &ui_gen_slider;
@@ -312,7 +298,6 @@ uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = __ui_make_slider(style, file, line);
 	
-	item->tag = uiSliderTag;
 	item->action = &__ui_slider_callback;
 	uiGetSliderData(item)->minf32 = min;
 	uiGetSliderData(item)->maxf32 = max;
@@ -325,7 +310,6 @@ uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file
 uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = __ui_make_slider(style, file, line);
 
-	item->tag = uiSliderTag;
 	item->action = &__ui_slider_callback;
 	uiGetSliderData(item)->minu32 = min;
 	uiGetSliderData(item)->maxu32 = max;
@@ -338,7 +322,6 @@ uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file
 uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = __ui_make_slider(style, file, line);
 
-	item->tag = uiSliderTag;
 	item->action = &__ui_slider_callback;
 	uiGetSliderData(item)->mins32 = max;
 	uiGetSliderData(item)->maxs32 = max;
@@ -348,40 +331,9 @@ uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file
 	return item;
 }
 
-uiItem* ui_make_window(str8 name, Flags flags, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	//uiBeginItem(uiWindow, win, &g_ui->base, uiItemType_Window, flags, 1, file, line);
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem));
-	NotImplemented;	
-	return 0;
-}
-
-uiItem* ui_begin_window(str8 name, Flags flags, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	ui_make_window(name, flags, style, file, line);
-	NotImplemented;
-	return 0;
-}
-
-uiItem* ui_end_window(){
-	NotImplemented;
-	return 0;
-}
-
-//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// @Button
-
-uiButton* ui_make_button(Action action, void* action_data, Flags flags, str8 file, upt line){DPZoneScoped;
-	NotImplemented;
-	return 0;
-}
-
 //-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // @Text
 void ui_gen_text(uiItem* item){DPZoneScoped;
-	if(item->tag != uiTextTag){
-		item_error(item, "ui_gen_text() was called on an item whose tag is not uiTextTag");
-		return;
-	}
-
 	RenderDrawCounts counts = {0};
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
@@ -418,7 +370,6 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiTextData));
 	ui_fill_item(item, style, file, line);
 	
-	item->tag = uiTextTag;
 	item->memsize = sizeof(uiItem) + sizeof(uiTextData);
 	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
 	item->__generate = &ui_gen_text;
@@ -483,7 +434,6 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->base.style.width = DeshWindow->width;
 	g_ui->base.style.height = DeshWindow->height;
 	g_ui->base.id = STR8("base");
-	g_ui->base.tag = uiItemTag;
 	g_ui->base.style_hash = hash_style(&g_ui->base);
 	push_item(&g_ui->base);
 	
@@ -775,13 +725,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	   scoff.x + scext.x > 0              && scoff.y + scext.y > 0){
 		forI(item->draw_cmd_count){
 			render_set_active_surface_idx(0);
-			Texture* tex = 0;
-			if(item->tag == uiTextTag){
-				tex = item->style.font->tex;
-			}else if(item->style.background_image){
-				tex = item->style.background_image;
-			}
-			render_start_cmd2(5, tex, scoff, scext);
+			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
 			render_add_vertices2(5, 
 				(Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
 				item->drawcmds[i].counts.vertices, 
@@ -864,7 +808,6 @@ void __ui_debug_callback(uiItem* item){
 		"     font_height: ", hov->style.font_height, "\n"
 		"background_color: ", hov->style.background_color, "\n"
 		"background_image: ", (hov->style.background_image?hov->style.background_image->name:"No background"), "\n"
-		"foreground_color: ", hov->style.foreground_color, "\n"
 		"    border_style: ", hov->style.border_style, "\n"
 		"    border_color: ", hov->style.border_color, "\n"
 		"    border_width: ", hov->style.border_width, "\n"

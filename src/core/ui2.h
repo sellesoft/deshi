@@ -613,8 +613,6 @@ struct uiItem{
 	//and for some checks that items are being used properly
 	u64 memsize;
 	
-	//TODO(sushi) I've decided this really isnt necessary anymore so remove it eventually
-	u32 tag;
 	//any extra data that a uiItem can allocate beyond its size
 	//this data is used by special items such as uiText and uiSlider
 	void* trailing_data;
@@ -623,7 +621,6 @@ struct uiItem{
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
 #define uiItemFromNode(x) CastFromMember(uiItem, node, x)
-#define uiItemTag PackU32('i','t','e','m')
 
 UI_FUNC_API(uiItem*, ui_make_item, uiStyle* style, str8 file, upt line);
 #define uiItemM()       UI_DEF(make_item( 0,STR8(__FILE__),__LINE__))
@@ -731,15 +728,11 @@ struct uiSliderData{
 	}style;
 
 };
-#define uiSliderTag PackU32('s','l','d','r')
 #define uiGetSliderData(item) ((uiSliderData*)((item)->trailing_data))
 
 enum{
 	slider_dragger_rect = 0,
 	slider_dragger_round,
-
-	slider_rail_thick = 0,
-	slider_rail_thin,
 };
 
 inline u32 slider_style_hash(uiItem* item){
@@ -776,54 +769,9 @@ struct uiCheckbox{
 		b32 show_text;
 	}style;
 };
-#define uiCheckboxTag PackU32('c','b','o','x')
 #define uiCheckboxData(x) CastFromMember(uiCheckbox, item, x)
 
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_window
-// makes a uiItem that by default can be dragged and has a border
-// eventually make flags for automatically having a title bar and buttons, etc. 
-UI_FUNC_API(uiItem*, ui_make_window, str8 name, Flags flags, uiStyle* style, str8 file, upt line);
-#define uiWindowM(name, flags)         UI_DEF(make_window(STR8(name),(flags),STR8(__FILE__),__LINE__))
-#define uiWindowMS(name, flags, style) UI_DEF(make_window(STR8(name),(flags),STR8(__FILE__),__LINE__))
-
-UI_FUNC_API(uiItem*, ui_begin_window, str8 name, Flags flags, uiStyle* style, str8 file, upt line);
-#define uiWindowB(name,  flags)        UI_DEF(begin_window(STR8(name),(flags),0,STR8(__FILE__),__LINE__))
-#define uiWindowBS(name, flags, style) UI_DEF(begin_window(STR8(name),(flags),(style),STR8(__FILE__),__LINE__))
-
-UI_FUNC_API(uiItem*, ui_end_window);
-#define uiWindowE() UI_DEF(window_end())
-
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_button
-enum {
-	uiButtonFlags_ActOnPressed,  // button performs its action as soon as its clicked
-	uiButtonFlags_ActOnReleased, // button waits for the mouse to be released before performing its action
-	uiButtonFlags_ActOnDown,     // button performs its action for the duration the mouse is held down over it
-};
-
-typedef void (*Action)(void*);
-struct uiButton{
-	uiItem item;
-	Action action;
-	void*  action_data;
-	b32    clicked;
-};
-#define uiButtonFromNode(x) CastFromMember(uiButton, item, CastFromMember(uiItem, node, x))
-
-//      window: uiWindow to emplace the button in
-//        text: text to be displayed in the button
-//      action: function pointer of type Action ( void name(void*) ) that is called when the button is clicked
-//              if 0 is passed, the button will just set it's clicked flag
-// action_data: data passed to the action function 
-//       flags: uiButtonFlags to be given to the button
-UI_FUNC_API(uiButton*, ui_make_button, Action action, void* action_data, Flags flags, str8 file, upt line);
-#define uiMakeButton(window, text, action, action_data, flags) UI_DEF(make_button(STR8(text),(action),(action_data),(flags),STR8(__FILE__),__LINE__))
-
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_text
 
 UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
