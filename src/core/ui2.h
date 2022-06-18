@@ -81,7 +81,9 @@ i've decided not to handle inheritance for now, but later on we may want to impl
 -   Values:
 		pos_static  |  static
 			Default value.
-			The item will be positioned normally. Position values will do nothing.
+			The item will be placed normally and top, bottom, left, and right values dont affect it.
+			The first item placed in this manner will just be positioned at 0,0 plus its margin and borders,
+			then items placed after it are placed below it, as it would be in HTML or ImGui.
 
 		pos_relative  |  relative
 			The position values will position the item relative to where it would have 
@@ -106,7 +108,7 @@ i've decided not to handle inheritance for now, but later on we may want to impl
 			by dragging it with the mouse.
 		
 		pos_draggable_absolute | draggable_relative
-			The item is positioned in the same manner as absolute, but its position may be 
+			The item is positioned the same as absolute, but its position may be 
 			changed by dragging it with the mouse.
 
 		pos_draggable_fixed | draggable_fixed
