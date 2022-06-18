@@ -69,7 +69,7 @@ LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)
 void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* curitem = *g_ui->item_stack.last;
 	
-	insert_last(&curitem->node, &item->node);
+	insert_first(&curitem->node, &item->node);
 	
 	if(style) memcpy(&item->style, style, sizeof(uiStyle));
 	else      memcpy(&item->style, ui_initial_style, sizeof(uiStyle));
@@ -544,6 +544,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				parent_size_padded.y = parent->style.height - (parent->style.padding_bottom==MAX_F32?parent->style.padding_top:parent->style.padding_bottom) - parent->style.padding_top;
                 item->height = item->style.height/100.f * parent_size_padded.y;
             }else{
+				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
                 item_error(item, "Sizing flag 'size_percent_y' was specified, but the item's parent's height is not explicitly sized.");
                 hauto = 1;
             }
@@ -561,6 +562,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				parent_size_padded.x = parent->style.width - (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right) - parent->style.padding_left;
                 item->width = item->style.width/100.f * parent_size_padded.x;
             }else{
+				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
                 item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
                 hauto = 1;
             }
@@ -696,7 +698,7 @@ void drag_item(uiItem* item){DPZoneScoped;
 b32 find_hovered_item(uiItem* item){DPZoneScoped;
     //early out if the mouse is not within the item's known children bbx 
 	if(!Math::PointInRectangle(input_mouse_position(),item->children_bbx_pos,item->children_bbx_size)) return false;
-    for_node(item->node.first_child){
+    for_node_reverse(item->node.last_child){
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
 	if(Math::PointInRectangle(input_mouse_position(), item->spos, item->size)){
@@ -727,7 +729,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	}
 
 	if(g_ui->hovered == item && item->style.focus && input_lmouse_pressed()){
-		move_to_parent_first(&item->node);
+		move_to_parent_last(&item->node);
 		item->dirty = true;
 	}
 
@@ -785,11 +787,11 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	}
 
 	vec2 pos = item->spos, siz = item->size;
-    for_node_reverse(node->last_child){
+    for_node(node->first_child){
         auto [cpos, csiz] = ui_recur(it);
 		if(csiz.x == -MAX_F32) continue;
         pos = Min(cpos, item->spos);
-        siz = Max((item->spos - pos)+item->size, (cpos-pos)+csiz); 
+        siz = Max((item->spos - pos)+siz, (cpos-pos)+csiz); 
     }
 
     item->children_bbx_pos=pos;
@@ -891,6 +893,32 @@ void ui_demo(){
 			titlebar->style.positioning = pos_draggable_fixed;
 			titlebar->style.size = {300,15};
 			titlebar->style.content_align = {0, 0.5};
+			titlebar->style.focus = true;
+			titlebar->id = STR8("titlebar");
+			//make title
+			uiTextML("demo window")->id = STR8("title");
+			
+			uiItem* body = uiItemB();{
+				//set body to be absolutly positioned, allowing us to place it below the titlebar
+				body->id = STR8("body");
+				body->style.positioning = pos_absolute;
+				body->style.tl = {0, 15};
+				body->style.background_color = color(14,14,14);
+				body->style.padding = {10,10};
+				body->style.size = {300, 285};
+				uiTextML("some text in the window body")->id = STR8("bodytext1");
+				uiTextML("some more text in the window body\nthis one is newlined.")->id = STR8("bodytext2");
+			}uiItemE();
+		}uiItemE();
+	}
+
+	{//another window with a title bar to show focusing 
+		uiItem* titlebar = uiItemB();{
+			titlebar->style.background_color = color(50,50,50);
+			titlebar->style.positioning = pos_draggable_fixed;
+			titlebar->style.size = {300,15};
+			titlebar->style.content_align = {0, 0.5};
+			titlebar->style.focus = true;
 			titlebar->id = STR8("titlebar");
 			//make title
 			uiTextML("demo window");

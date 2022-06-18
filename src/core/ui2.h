@@ -120,20 +120,28 @@ i've decided not to handle inheritance for now, but later on we may want to impl
 	properties. For example setting 'size_fill_x | size_percent_x' will tell the renderer to interpret
 	the width as a percentage of the remaining space of the item's parent's width.
 
-	Fill only applies when the 
+	Percent and fill only apply when the parent's size has been explicitly set either by sizing it relative to
+	it's parent. If its parent is not explicitly sized then the item fallsback to automatic sizing and an error 
+	is issued.
 
 -   Values:
 		size_percent_x 
+			Sets the items width as a percentage of its parents width.
 
 		size_percent_y 
+			Sets the items height as a percentage of its parent's height.
 
 		size_percent   
+			Combination of percentx and percenty.
 
 		size_fill_x
+			Fills in the remaining space of the parent over the x axis.
 
 		size_fill_y   
+			Fills in the remaining space of the parent over the y axis.  
 
 		size_fill
+			combination of fillx and filly
 
 		size_square
 			Keeps the item at a 1:1 aspect ratio. This requires that either height or width are set to auto, while
@@ -554,10 +562,8 @@ external struct uiStyle{
 	f32      border_width;
 	color    text_color;
 	Type     overflow;
-	union{
-		b32 focus : 1;
-		b32 hidden : 1;
-	};
+	b32 focus : 1;
+	b32 hidden : 1;
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
