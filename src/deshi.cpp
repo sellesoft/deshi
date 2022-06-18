@@ -371,5 +371,7 @@ local Time          deshi_time;           Time*          g_time     = &deshi_tim
 local Input         deshi_input;          Input*         g_input    = &deshi_input;
 local Storage_      deshi_storage;        Storage_*      g_storage  = &deshi_storage;
 local ThreadManager deshi_thread_manager; ThreadManager* g_tmanager = &deshi_thread_manager;
+local uiContext     deshi_ui{};           uiContext*     g_ui       = &deshi_ui;
+local uiStyle deshi_ui_initial_style{}; uiStyle* ui_initial_style = &deshi_ui_initial_style;
 Window* g_window = 0;
 MemoryContext* g_memory = 0;
