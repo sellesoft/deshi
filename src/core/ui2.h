@@ -123,8 +123,8 @@ i've decided not to handle inheritance for now, but later on we may want to impl
 	the width as a percentage of the remaining space of the item's parent's width.
 
 	Percent and fill only apply when the parent's size has been explicitly set either by sizing it relative to
-	it's parent. If its parent is not explicitly sized then the item fallsback to automatic sizing and an error 
-	is issued.
+	it's parent or giving it size values. If its parent is not explicitly sized then the item fallsback 
+	to automatic sizing and an error is issued.
 
 -   Values:
 		size_percent_x 
@@ -343,18 +343,6 @@ TODO(sushi) example
 	---
 	Determines the background color of a uiItem. Note that this property does not apply to all items.
 
--   Inherited: no
-
--   Defaults:
-		Defaults to (0,0,0,0)
-
-------------------------------------------------------------------------------------------------------------
-*   foreground_color
-	---
-	Determines the color of some premade items elements.
-
--   Inherited: no
-
 -   Defaults:
 		Defaults to (0,0,0,0)
 
@@ -368,7 +356,7 @@ TODO(sushi) example
 ------------------------------------------------------------------------------------------------------------
 *   border_width
 	---
-	Determines the width of border a uiItem has
+	Determines the width of a uiItem's border. This has no affect if border style is not set.
 
 ------------------------------------------------------------------------------------------------------------
 *   text_color
@@ -411,8 +399,8 @@ TODO(sushi) example
 	 	Defaults to false.
 
 -   Catches:
-		When using this on an item whose positioning is not fixed or absolute you must remember that
-		it will affect the behavoir of items around it. 
+		When using this on an item whose positioning is not fixed, absolute you must remember that
+		it will affect the positioing of items around it.
 
 ------------------------------------------------------------------------------------------------------------
 *   hidden
@@ -553,7 +541,6 @@ external struct uiStyle{
 	u32      font_height;
 	color    background_color;
 	Texture* background_image;
-	color    foreground_color;
 	Type     border_style;
 	color    border_color;
 	f32      border_width;
