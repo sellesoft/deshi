@@ -184,16 +184,8 @@ i've decided not to handle inheritance for now, but later on we may want to impl
     This is the size of the area in which items can be placed minus padding. Note that if margins or borders are 
     specified, this increases the total area an item takes up visually.
 
--   Special:
-		There are 2 special values for sizing an item. Negative values are invalid for sizing are so some are
-		reserved to indicate to the renderer how to size the item.
-
-		-1: equivalent to auto
-			this tells the renderer to automatically size the item based on its content.
-			an enum 'size_auto' is specified
-
 -   Defaults:
-		width and height both default to -1. See above for why.
+		width and height both default to size_auto.
 
 -   Example:
 		in code:
