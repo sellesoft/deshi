@@ -423,6 +423,8 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
 	item->__generate = &ui_gen_text;
 	item->trailing_data = item + sizeof(uiItem);
+	
+	uiGetTextData(item)->text = text;
 
 	RenderDrawCounts counts = render_make_text_counts(str8_length(text));
 	
@@ -472,6 +474,7 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	ui_initial_style->      text_color = color{255,255,255,255};
 	ui_initial_style->        overflow = overflow_visible;
 	ui_initial_style->           focus = 0;
+	ui_initial_style->          hidden = 0;
 	
 	g_ui->base = uiItem{0};
 	g_ui->base.style = *ui_initial_style;
@@ -581,6 +584,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
+				cursor.y = child->lpos.y + child->height;
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
@@ -588,6 +592,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
+				cursor.y = child->lpos.y + child->height;
 				child->lpos += child->style.tl;
 			}break;
 			case pos_fixed:
@@ -610,7 +615,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 		item->max_scroll = Max(item->max_scroll, child->lpos - item->style.scroll);
 
         cursor.x = item->style.padding_left;
-        cursor.y = child->lpos.y + child->height;
+        
     }
 
     if(hauto){
@@ -664,6 +669,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
         }
     }
 	item->lpos = round(item->lpos);
+	
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -779,7 +785,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	}
 
 	vec2 pos = item->spos, siz = item->size;
-    for_node(node->first_child){
+    for_node_reverse(node->last_child){
         auto [cpos, csiz] = ui_recur(it);
 		if(csiz.x == -MAX_F32) continue;
         pos = Min(cpos, item->spos);
@@ -875,6 +881,35 @@ void ui_debug(){
 		window->action = &__ui_debug_callback;
 	}
 }
+
+void ui_demo(){
+
+	
+	{//window with a title bar
+		uiItem* titlebar = uiItemB();{
+			titlebar->style.background_color = color(50,50,50);
+			titlebar->style.positioning = pos_draggable_fixed;
+			titlebar->style.size = {300,15};
+			titlebar->style.content_align = {0, 0.5};
+			titlebar->id = STR8("titlebar");
+			//make title
+			uiTextML("demo window");
+			
+			uiItem* body = uiItemB();{
+				//set body to be absolutly positioned, allowing us to place it below the titlebar
+				body->style.positioning = pos_absolute;
+				body->style.tl = {0, 15};
+				body->style.background_color = color(14,14,14);
+				body->style.padding = {10,10};
+				body->style.size = {300, 270};
+				uiTextML("some text in the window body");
+				uiTextML("some more text in the window body\nthis one is newlined.");
+			}uiItemE();
+		}uiItemE();
+	}
+
+}
+
 
 #undef ui_alloc
 #undef ui_realloc

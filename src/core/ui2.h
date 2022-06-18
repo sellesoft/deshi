@@ -35,7 +35,7 @@ Notes
 	many different types, unless the user explicitly asks for them.
 
 	All items that are not passed a style pointer on creation initialize using ui_inital_style, so if you would like to adjust the
-	the default behavoir of ui, you can change the ui_initial_style pointer at any point.
+	the default behavoir of ui, you can change the ui_initial_style pointer AFTER initalizing ui. 
 
 
 Index
@@ -85,7 +85,8 @@ i've decided not to handle inheritance for now, but later on we may want to impl
 
 		pos_relative  |  relative
 			The position values will position the item relative to where it would have 
-			normally been placed. This does not remove the item from the flow.
+			normally been placed. This removes the item from the normal flow, but items
+			added after it will be placed as if the item was where it would have been
 
         pos_absolute  |  absolute
 			The position values will position the item relative to where its parent will
@@ -915,5 +916,6 @@ struct uiContext{
 extern uiContext* g_ui;
 
 void ui_debug();
+void ui_demo();
 
 #endif //DESHI_UI2_H
