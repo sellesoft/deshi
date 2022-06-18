@@ -595,7 +595,12 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
 				cursor.y = child->lpos.y + child->height;
-				child->lpos += child->style.tl;
+				if(child->style.right!=MAX_F32 && !wauto){
+					child->lpos.x = (item->width - child->width) - child->style.right;
+				} else child->lx = child->style.left;
+				if(child->style.bottom!=MAX_F32 && !hauto){
+					child->ly = (item->height - child->height) - child->style.bottom;
+				} else child->ly = child->style.top;
 			}break;
 			case pos_fixed:
 			case pos_draggable_fixed:{
@@ -887,7 +892,7 @@ void ui_debug(){
 void ui_demo(){
 
 	
-	{//window with a title bar
+	if(0){//window with a title bar
 		uiItem* titlebar = uiItemB();{
 			titlebar->style.background_color = color(50,50,50);
 			titlebar->style.positioning = pos_draggable_fixed;
@@ -912,7 +917,7 @@ void ui_demo(){
 		}uiItemE();
 	}
 
-	{//another window with a title bar to show focusing 
+	if(0){//another window with a title bar to show focusing 
 		uiItem* titlebar = uiItemB();{
 			titlebar->style.background_color = color(50,50,50);
 			titlebar->style.positioning = pos_draggable_fixed;
@@ -934,6 +939,26 @@ void ui_demo(){
 				uiTextML("some more text in the window body\nthis one is newlined.");
 			}uiItemE();
 		}uiItemE();
+	}
+
+	if(1){//test bottom and right positioning
+		uiItem* cont = uiItemB();{
+			cont->style.background_color = Color_VeryDarkCyan;
+			cont->style.size = {100,100};
+			cont->style.positioning = pos_draggable_relative;
+			uiItem* in = uiItemB();{
+				in->id=STR8("in");
+				in->style.size = {10,10};
+				in->style.right = 0;
+				in->style.positioning = pos_relative;
+				in->style.background_color = Color_Red;
+				in->action = [](uiItem* item){
+					item->style.right = 100*(sin(DeshTotalTime/1000)+1)/2;
+					item->style.bottom = 100*(cos(DeshTotalTime/1000)+1)/2;
+				}; in->action_trigger = action_act_always;
+			}uiItemE();
+		}uiItemE();
+
 	}
 
 }

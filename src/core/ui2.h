@@ -154,6 +154,9 @@ i've decided not to handle inheritance for now, but later on we may want to impl
 	in string styling, by suffixing the literal with a %. Note that if bottom or right are used, they overrule
 	top or left respectively.
 
+	Note that if an item wants to use bottom or right, their parent's size must not be automatically determined.
+	TODO(sushi) look into a way around this
+
 -   Defaults:
 		top and left default to 0, while bottom and right default to MAX_S32, indicating to use top or left instead.
 
