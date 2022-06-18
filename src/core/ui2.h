@@ -288,12 +288,12 @@ TODO(sushi) examples
 ------------------------------------------------------------------------------------------------------------
 *   content_align
 	---
-	Determines how to align an item's contents over the x axis. 
+	Determines how to align an item's contents over each axis. 
 	This only works on children who's positioning is static or relative.
 	This respects margins and padding, content will only be aligned within their valid space. 
 	Negative values are not valid.
 	Values larger than 1 are not valid.
-	This does not apply when alignment is set to inline.
+	NotImplemented -- This does not apply when alignment is set to inline.
 
 -   Performance:
 		In order to properly do this (as far as I can tell), we must reevaluate all children of an item
@@ -586,8 +586,6 @@ struct uiItem{
 	};
 	vec2 max_scroll;
 
-
-
     //screen position and size of the bounding box containing all of an items
     //children, this is used to optimize things later, such as finding the hovered item
     vec2 children_bbx_pos;
@@ -669,7 +667,6 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= s->focus;                   seed *= 16777619;
 	seed ^= s->hidden;                  seed *= 16777619;
 
-	
 	if(item->__hash) { seed ^= item->__hash(item); seed *= 16777619; }
 	
 	return seed;

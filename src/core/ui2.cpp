@@ -261,6 +261,8 @@ void __ui_slider_callback(uiItem* item){DPZoneScoped;
 			}
 
 		}break;
+		case 1:{NotImplemented;}break;
+		case 2:{NotImplemented;}break;
 	}
 }
 
