@@ -457,6 +457,7 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 // @ui_item
 struct Texture;
 struct uiDrawCmd{
+	Node node;
 	Texture* texture;
 	u32 vertex_offset; 
 	u32 index_offset;
@@ -464,6 +465,7 @@ struct uiDrawCmd{
 	vec2i scissorOffset;
 	vec2i scissorExtent;
 };
+#define uiDrawCmdFromNode(x) CastFromMember(uiDrawCmd, node, x)
 
 enum{
 	pos_static=0,
@@ -596,6 +598,7 @@ struct uiItem{
 	vec2 visible_size; 
 	
 	u64 draw_cmd_count;
+	//TODO(sushi) make this an index into the drawcmds arena
 	uiDrawCmd* drawcmds;
 	
 	//set to manually force the item to regenerate
@@ -631,9 +634,8 @@ UI_FUNC_API(uiItem*, ui_begin_item, uiStyle* style, str8 file, upt line);
 UI_FUNC_API(void, ui_end_item, str8 file, upt line);
 #define uiItemE() UI_DEF(end_item(STR8(__FILE__),__LINE__))
 
-UI_FUNC_API(void, ui_set_item_layer, uiItem* item, u32 idx, str8 file, upt line);
-#define uiSetLayer(item, idx) UI_DEF(set_item_layer(item, (idx), STR8(__FILE__),__LINE__))
-
+UI_FUNC_API(void, ui_remove_item, uiItem* item, str8 file, upt line);
+#define uiItemR(item) UI_DEF(remove_item((item), STR8(__FILE__),__LINE__))
 
 inline u32 hash_style(uiItem* item){DPZoneScoped;
 	uiStyle* s = &item->style;
@@ -666,7 +668,7 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= s->overflow;                seed *= 16777619;
 	seed ^= s->focus;                   seed *= 16777619;
 	seed ^= s->hidden;                  seed *= 16777619;
-
+	
 	if(item->__hash) { seed ^= item->__hash(item); seed *= 16777619; }
 	
 	return seed;
@@ -814,6 +816,13 @@ typedef u32 uiInputState; enum{
 	uiISExternalPreventInputs,
 };
 
+//empty chunk used for managing a memory space whose data is all the same size
+struct uiEmptyChunk{
+	Node node;
+	upt size;
+	upt index;
+};
+#define EmptyChunkFrom
 
 struct uiContext{
 #if DESHI_RELOADABLE_UI
@@ -838,9 +847,10 @@ struct uiContext{
 	uiInputState istate;
 	
 	//// memory ////
-	//TODO(sushi) convert these 2 to Heaps when its implemented
+	b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
 	ArenaList* item_list;
 	ArenaList* drawcmd_list;
+	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
 	Arena* vertex_arena;
 	Arena* index_arena;
 	RenderTwodBuffer render_buffer;

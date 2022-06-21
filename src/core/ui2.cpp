@@ -10,6 +10,14 @@
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_memory
+
+//an empty chunk 
+struct uiMemChunk{
+	Node node;
+	upt size;
+};
+
+
 #define item_arena g_ui->item_list->arena
 #define drawcmd_arena g_ui->drawcmd_list->arena
 
@@ -21,8 +29,7 @@ ArenaList* create_arena_list(ArenaList* old){DPZoneScoped;
 }
 
 void* arena_add(Arena* arena, upt size){DPZoneScoped;
-	if(arena->size < arena->used+size) 
-		g_ui->item_list = create_arena_list(g_ui->item_list);
+	Assert(arena->used + size < arena->size, "Implement arena growing");
 	u8* cursor = arena->cursor;
 	arena->cursor += size;
 	arena->used += size;
@@ -41,20 +48,68 @@ uiItem* pop_item(){DPZoneScoped;
 
 //@uiDrawCmd
 
-//@Item
-
-//@Window
-
+void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
+	NodeInsertPrev(&g_ui->inactive_drawcmds, &drawcmd->node);
+	g_ui->cleanup = 1;
+}
 
 void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
-	if(drawcmd_arena->size < drawcmd_arena->used + counts.vertices * sizeof(Vertex2) + counts.indices * sizeof(u32))
-		g_ui->drawcmd_list = create_arena_list(g_ui->drawcmd_list);
-	drawcmd->vertex_offset = g_ui->vertex_arena->used / sizeof(Vertex2);
-	drawcmd->index_offset = g_ui->index_arena->used / sizeof(u32);
-	g_ui->vertex_arena->cursor += counts.vertices * sizeof(Vertex2);
-	g_ui->vertex_arena->used += counts.vertices * sizeof(Vertex2);
-	g_ui->index_arena->cursor += counts.indices * sizeof(u32);
-	g_ui->index_arena->used += counts.indices * sizeof(u32);
+	//if(drawcmd_arena->size < drawcmd_arena->used + counts.vertices * sizeof(Vertex2) + counts.indices * sizeof(u32))
+	//	g_ui->drawcmd_list = create_arena_list(g_ui->drawcmd_list);
+	
+	u32 v_place_next = -1;
+	u32 i_place_next = -1;	
+	for(Node* n = g_ui->inactive_drawcmds.next; n!=&g_ui->inactive_drawcmds; n = n->next){
+		uiDrawCmd* dc = uiDrawCmdFromNode(n);
+		s64 vremain = dc->counts.vertices - counts.vertices;
+		s64 iremain = dc->counts.indices - counts.indices;
+		
+		if(vremain >= 3){
+			//there are a minimum of 3 vertices needed to make a 2D shape, so if there are more than it
+			//we keep the drawcmd for future passes
+			v_place_next = dc->vertex_offset;
+			dc->vertex_offset += counts.vertices;
+			dc->counts.vertices -= counts.vertices;
+		}else if(vremain >= 0){
+			//otherwise we just take the drawcmd's vertices and make its vertices invalid for future passes
+			v_place_next = dc->vertex_offset;
+			dc->counts.vertices = 0;
+		}
+		
+		if(iremain >= 3){
+			//there are a minimum of 3 indexes to make a 2D shape, so if there is more than this remaining
+			//after claiming, keep the drawcmd around 
+			i_place_next = dc->index_offset;
+			dc->index_offset += counts.indices;
+			dc->counts.indices -= counts.indices;
+		}else if(iremain >= 0){
+			//otherwise we just take the drawcmd's indices and make sure they arent used in future runs
+			i_place_next = dc->index_offset;
+			dc->counts.indices = 0;
+		}
+
+		if(!(dc->counts.vertices || dc->counts.indices)){
+			//if both counts are 0 we can go ahead and remove this drawcmd from the list 
+			//we do not handle actually removing the drawcmd from the arena it lives in, this is handled later
+			//in a cleanup pass
+			NodeRemove(n);
+		}
+
+		if(v_place_next != -1 && i_place_next != -1){
+			break;
+		}
+	}
+	
+	if(v_place_next == -1){
+		//we couldnt find a drawcmd with space for our new verts so we must allocate at the end 
+		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(Vertex2);
+		g_ui->vertex_arena->cursor += counts.vertices * sizeof(Vertex2);
+	} else drawcmd->vertex_offset = v_place_next;
+	if(i_place_next == -1){
+		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
+		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
+		g_ui->index_arena->cursor += counts.indices * sizeof(u32);
+	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts = counts;
 	drawcmd->texture = 0;
 }
@@ -162,7 +217,6 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 	}
 }
 
-
 uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem));
 	ui_fill_item(item, style, file, line);
@@ -198,10 +252,10 @@ void ui_end_item(str8 file, upt line){
 	
 }
 
-void ui_set_item_layer(uiItem* item, u32 idx, str8 file, upt line){
-	uiItem* base = &g_ui->base;
-	if(base->node.first_child->type != 0xff){
-		
+void ui_remove_item(uiItem* item, str8 file, upt line){
+	//TODO(sushi) check for contiguous regions of memory in the drawcmds' vertex and index regions so we can combine drawcmds into one 
+	forI(item->draw_cmd_count){
+		drawcmd_remove(item->drawcmds + i);
 	}
 }
 
@@ -342,10 +396,11 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	uiTextData* data = uiGetTextData(item);
 
-	//temp attempt at dynamic text
-	//TODO(sushi) this needs to be heaped
 	RenderDrawCounts nucounts = render_make_text_counts(data->text.count);
 	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
+	    item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
+		drawcmd_remove(dc);
+		dc = item->drawcmds;
 		drawcmd_alloc(dc, nucounts);
 	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
@@ -394,11 +449,16 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_memory = memctx;
 	g_ui     = uictx;
 #endif
+
+	g_ui->cleanup = 0;
 	
+	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
+	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
+
 	g_ui->item_list    = create_arena_list(0);
 	g_ui->drawcmd_list = create_arena_list(0);
 	g_ui->vertex_arena = memory_create_arena(Megabytes(1));
-	g_ui->index_arena = memory_create_arena(Megabytes(1));
+	g_ui->index_arena  = memory_create_arena(Megabytes(1));
 	
 	ui_initial_style->     positioning = pos_static;
 	ui_initial_style->          sizing = 0;
