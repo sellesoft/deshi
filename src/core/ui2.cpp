@@ -167,8 +167,6 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 	return result;
 }
 
-
-
 //@Functionality
 void ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
@@ -270,7 +268,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	uiSliderData* data = uiGetSliderData(item);
 
 	counts+=render_make_filledrect(vp,ip,counts,
-		vec2(item->spos.x, item->spos.y + item->size.y * data->style.rail_thickness / 2),
+		vec2(item->spos.x, item->spos.y + item->size.y*(1 - data->style.rail_thickness)/2),
 		vec2(item->size.x, item->size.y * data->style.rail_thickness),
 		data->style.colors.rail
 	);
@@ -298,8 +296,6 @@ void __ui_slider_callback(uiItem* item){DPZoneScoped;
 			*var = Clamp(*var, min, max);
 			dragpos = Remap(*var, 0.f, item->width, min, max);
 			dragwidth = item->width/8;
-			data->width = dragwidth;
-			data->pos = dragpos;
 			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, vec2(dragpos,0), vec2(dragwidth, item->height))){
 				data->active = 1;
 				data->mouse_offset = -lmp.x + dragpos;
@@ -308,12 +304,14 @@ void __ui_slider_callback(uiItem* item){DPZoneScoped;
 				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->width-dragwidth), min, max, 0.f, item->width);
 				item->dirty = 1;
 				item->action_trigger = action_act_always;
+				Log("", *var);
 			}
 			if(input_lmouse_released()){
 				data->active = 0;
 				item->action_trigger = action_act_mouse_hover;
 			}
-
+			data->width = dragwidth;
+			data->pos = dragpos;
 		}break;
 		case 1:{NotImplemented;}break;
 		case 2:{NotImplemented;}break;
@@ -396,6 +394,10 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	uiTextData* data = uiGetTextData(item);
 
+	uiItem* parent = uiItemFromNode(item->node.parent);
+
+	dc->texture = parent->style.font->tex;
+
 	RenderDrawCounts nucounts = render_make_text_counts(data->text.count);
 	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
 	    item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
@@ -406,21 +408,95 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	}
 
-	str8 scan = data->text;
-	str8 start = data->text;
-	f32 y = 0;
-	while(scan){
-		u32 cp = str8_advance(&scan).codepoint;
-		if(cp == U'\n' || !scan){
-			counts+=render_make_text(vp, ip, counts, {start.str, start.count-scan.count}, item->style.font, item->spos + vec2{0, y}, item->style.text_color, vec2::ONE * item->style.font_height / item->style.font->max_height);
-			y+=item->style.font_height;
-			start = scan;
+	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+
+	vec2 cursor = item->spos;
+	forI(data->breaks.count-1){
+		auto [mode, idx] = data->breaks[i];
+	
+		if      (mode == 0){ // do nothing
+			
+		}else if(mode == 1){ // newline/wrapping
+			cursor.x = item->spos.x;
+			cursor.y += parent->style.font_height;
+		}else if(mode == 2){ // tabbing
+			cursor.x += space_width * 4;
 		}
+
+		counts+=render_make_text(vp, ip, counts, 
+					{data->text.str+idx, s64(data->breaks[i+1].second - data->breaks[i].second)}, 
+					parent->style.font,
+					cursor, parent->style.text_color,  
+					vec2::ONE * parent->style.font_height / parent->style.font->max_height
+				);
+	
 	}
+
+
+	// str8 scan = data->text;
+	// str8 start = data->text;
+	// f32 y = 0;
+	// while(scan){
+	// 	u32 cp = str8_advance(&scan).codepoint;
+	// 	if(cp == U'\n' || !scan){
+	// 		counts+=render_make_text(vp, ip, counts, {start.str, start.count-scan.count}, item->style.font, item->spos + vec2{0, y}, item->style.text_color, vec2::ONE * item->style.font_height / item->style.font->max_height);
+	// 		y+=item->style.font_height;
+	// 		start = scan;
+	// 	}
+	// }
 
 	//NOTE(sushi) text size is always determined here and NEVER set by the user
 	//TODO(sushi) text sizing should probably be moved to eval_item_branch and made to take into account wrapping
-	item->style.size = calc_text_size(item);
+	//item->style.size = calc_text_size(item);
+}
+
+void ui_eval_text(uiItem* item){
+	uiItem* parent = uiItemFromNode(item->node.parent);
+	
+	b32 do_wrapping = (parent->style.width != size_auto) && (parent->style.text_wrap != text_wrap_none);
+
+	f32 wrapspace = parent->style.width - (parent->style.padding_left + (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right));
+
+	uiTextData* data = uiGetTextData(item);
+	data->breaks.clear();
+	data->breaks.add({0,0});
+
+	str8 last_space = data->text;
+	str8 scan = data->text;
+
+	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+
+	vec2 viscur;
+	while(scan){
+		DecodedCodepoint dc = str8_advance(&scan);
+		vec2 sz = font_visual_size(item->style.font, {scan.str-dc.advance, dc.advance}) * item->style.font_height / item->style.font->max_height;
+		viscur.x += sz.x;
+		item->width = Max(item->width, viscur.x);
+		item->height = viscur.y + parent->style.font_height;
+		if(dc.codepoint==U'\n'){
+			data->breaks.add({1,u64(scan.str-data->text.str)});
+			viscur.y += parent->style.font_height;
+			viscur.x = 0;
+		}else if(do_wrapping && viscur.x > wrapspace){
+			if(parent->style.text_wrap == text_wrap_word){
+				data->breaks.add({1, u64(last_space.str-data->text.str)});
+				viscur.x = 0;
+				viscur.y += parent->style.font_height;
+			}else if(parent->style.text_wrap == text_wrap_char){
+				data->breaks.add({1, u64(scan.str-data->text.str)});
+				viscur.x = 0;
+				viscur.y += parent->style.font_height;
+			}
+		}else if(dc.codepoint==U'\t'){
+			data->breaks.add({2, u64(scan.str-data->text.str)});
+			viscur.x += space_width * 4;
+		}
+		if(dc.codepoint==U' '){
+			last_space = scan;
+		}
+	}
+
+	data->breaks.add({0,u64(data->text.count)});
 }
 
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -430,9 +506,11 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	item->memsize = sizeof(uiItem) + sizeof(uiTextData);
 	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
 	item->__generate = &ui_gen_text;
+	item->__evaluate = &ui_eval_text;
 	item->trailing_data = item + sizeof(uiItem);
 	
 	uiGetTextData(item)->text = text;
+	uiGetTextData(item)->breaks.allocator = deshi_allocator;
 
 	RenderDrawCounts counts = render_make_text_counts(str8_length(text));
 	
@@ -440,6 +518,8 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	drawcmd_alloc(item->drawcmds, counts);
 	return item;
 }
+
+
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -543,8 +623,14 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 	b32 hauto = item->style.height == size_auto;
 	u32 wborder = (item->style.border_style ? item->style.border_width : 0);
 
-	vec2 parent_size_padded;
+	/*-------------------------------------------------------------------------------------------------------
+		at this point we know if the item is to be automatically sized based on its content and what we should consider
+		it's border width
 
+		next we evaluate what the item's size is going to be if it is not automatically sized
+	*/
+
+	vec2 parent_size_padded;
     if(!hauto){
         if(HasFlag(item->style.sizing, size_percent_y)){
             if(item->style.height < 0){
@@ -586,6 +672,21 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 		else if( wauto && !hauto) item->width = item->height;
 		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified" : "specified."));
 	}
+
+	/*-------------------------------------------------------------------------------------------------------
+		at this point we know what the items size is if it is explicitly sized, or if it is to be automatically sized
+		we have set the size to 0.
+
+		next if the item has a custom evaluation function assigned to it we call it.
+	*/
+
+	if(item->__evaluate) item->__evaluate(item);
+
+	/*-------------------------------------------------------------------------------------------------------
+		at this point the item has finished its custom evaluation.
+
+		next we evaluate all of the items children, positioning them based on the current item and child's properties
+	*/
 
 	vec2 cursor = item->style.padding - item->style.scroll;
 	for_node(item->node.first_child){
@@ -633,9 +734,30 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 
 		item->max_scroll = Max(item->max_scroll, child->lpos - item->style.scroll);
 
+		if(item->style.width == size_auto)
+            item->width = Max(item->width, child->lpos.x + child->width);
+        if(item->style.height == size_auto)
+            item->height = Max(item->height, child->lpos.y + child->height);
+        
+        //extend bottom and right margins if they arent explicitly set
+        if(item->style.height == size_auto){
+            if(child->style.margin_bottom == MAX_F32) item->height += child->style.margin_top;
+            else if(child->style.margin_bottom > 0) item->height += child->style.margin_bottom;
+        }
+        if(item->style.width == size_auto){
+            if(child->style.margin_right == MAX_F32) item->width += child->style.margin_left;
+            else if(child->style.margin_right > 0) item->width += child->style.margin_right;
+        }
+
         cursor.x = item->style.padding_left;
         
     }
+
+	/*-------------------------------------------------------------------------------------------------------
+		at this point we have evaluated all of the item's decendents and the item should be sized relative to its children 
+
+		next we evaulate some small adjustments to the items size based on its properties
+	*/
 
     if(hauto){
         if(item->style.padding_bottom == MAX_F32) item->height += item->style.padding_top;
@@ -649,6 +771,11 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
     item->width += (wauto ? 1 : 2) * wborder;
     item->height += (hauto ? 1 : 2) * wborder;
 	
+	/*-------------------------------------------------------------------------------------------------------
+		at this point the items size has been fully evaluated
+
+		next, if the item is set to align its content, we move its children accordingly
+	*/
 
 	//TODO(sushi) I'm pretty sure the x part of this can be moved into the child loop above, so we dont have to do a second
 	//            pass if y isnt set
@@ -687,6 +814,14 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
             }
         }
     }
+
+	/*-------------------------------------------------------------------------------------------------------
+		at this point the item is finished. 
+		
+		we quantize its position since we are working in floating point to avoid some silly fp things
+		this isn't fully tested though
+	*/
+
 	item->lpos = round(item->lpos);
 	
 }

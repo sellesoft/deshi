@@ -494,6 +494,11 @@ enum{
 	overflow_hidden,
 	overflow_visible,
 
+	text_wrap_none = 0,
+	text_wrap_char, 
+	text_wrap_word,
+
+
 	action_act_never = 0,
 	action_act_mouse_hover,    // call action when the mouse is positioned over the item
 	action_act_mouse_pressed,  // call action when the mouse is pressed over the item
@@ -550,6 +555,7 @@ external struct uiStyle{
 	Type     overflow;
 	b32 focus : 1;
 	b32 hidden : 1;
+	Type text_wrap;
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
@@ -605,6 +611,7 @@ struct uiItem{
 	b32 dirty;
 
 	void (*__generate)(uiItem*);
+	void (*__evaluate)(uiItem*);
 	u32  (*__hash)(uiItem*);
 	
 	str8 file_created;
@@ -775,14 +782,20 @@ struct uiCheckbox{
 
 UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
 //NOTE(sushi) does not automatically make a str8, use uiTextML for that.
-#define uiTextM(text)         UI_DEF(make_text((text),       0, STR8(__FILE__),__LINE__))
-#define uiTextMS(text, style) UI_DEF(make_text((text), (style), STR8(__FILE__),__LINE__))
+#define uiTextM(text)  UI_DEF(make_text((text),       0, STR8(__FILE__),__LINE__))
 //NOTE(sushi) this automatically applies STR8() to text, so you can only use literals with this macro
-#define uiTextML(text)        UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
-#define uiTextMLS(text,style) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__),__LINE__))
+#define uiTextML(text) UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
+
 
 struct uiTextData{
 	str8 text;
+	//offsets into the string that determine where we need to break up the rendering
+	//things that cause this include tabs, newlines, and newlines caused by wrapping
+	//the first number indicates what kind of break it is, the second indicates where it occurs
+	//0: start/end of text
+	//1: newline/wrapping
+	//2: tabbing
+	array<pair<u8,u64>> breaks;
 };
 #define uiTextTag PackU32('t','e','x','t')
 //NOTE(sushi) be careful when using this as it does no type checking
