@@ -1443,7 +1443,7 @@ deshi__memory_draw(){DPZoneScoped;
 	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
 	UI::Begin(str8_lit("deshi_memory"), vec2(DeshWindow->dimensions)/4.f, vec2(DeshWindow->dimensions)/2.f, UIWindowFlags_NoScroll);{
 		UIWindow* window = UI::GetWindow();
-		UIStyle& style = UI::GetStyle();
+		UIStyle_old& style = UI::GetStyle();
 		char used_char = ' ', size_char = ' ';
 		f32  used_divisor = 1.f, size_divisor = 1.f;
 		

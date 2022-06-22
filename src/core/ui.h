@@ -185,7 +185,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_COUNT
 };
 
-struct UIStyle {
+struct UIStyle_old {
 	vec2 windowMargins;
 	vec2 itemSpacing;
 	f32  windowBorderSize;
@@ -505,7 +505,7 @@ struct UIWindow;
 struct UIItem {
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
-	UIStyle    style;         //style at the time of making the item
+	UIStyle_old    style;         //style at the time of making the item
 	
 	Flags flags; 
 	
@@ -613,7 +613,7 @@ struct UIWindow {
 	vec2 visibleRegionSize;
 	
 	//the state of style when Begin and End are called
-	UIStyle style;
+	UIStyle_old style;
 	
 	
 	//debug information for use with metrics
@@ -692,7 +692,7 @@ namespace UI {
 	vec2      CalcTextSize(str8 text);
 	
 	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
-	UIStyle&  GetStyle();
+	UIStyle_old&  GetStyle();
 	
 	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)
 	UIWindow* GetWindow();

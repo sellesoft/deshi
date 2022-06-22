@@ -9,7 +9,7 @@ local struct {
 } colors;
 
 //global styling
-UIStyle style;
+UIStyle_old style;
 
 //for color stack, saves what element was changed and what it's old color was 
 struct ColorMod {
@@ -28,41 +28,41 @@ struct UIVarMod {
 	UIVarMod(UIStyleVar var, vec2 old){ this->var = var; oldFloat[0] = old.x; oldFloat[1] = old.y; }
 };
 
-//number of vars that are req for variable then offset of that var in UIStyle
+//number of vars that are req for variable then offset of that var in UIStyle_old
 struct UIStyleVarType {
 	u32 count;
 	u32 offset;
 };
 
 local const UIStyleVarType uiStyleVarTypes[] = {
-	{2, offsetof(UIStyle,             windowMargins)},
-	{2, offsetof(UIStyle,               itemSpacing)},
-	{1, offsetof(UIStyle,          windowBorderSize)},
-	{1, offsetof(UIStyle,          buttonBorderSize)},
-	{1, offsetof(UIStyle,            titleBarHeight)},
-	{2, offsetof(UIStyle,            titleTextAlign)},
-	{2, offsetof(UIStyle,              scrollAmount)},
-	{2, offsetof(UIStyle,              checkboxSize)},
-	{1, offsetof(UIStyle,       checkboxFillPadding)},
-	{2, offsetof(UIStyle,        inputTextTextAlign)},
-	{2, offsetof(UIStyle,           buttonTextAlign)},
-	{2, offsetof(UIStyle,           headerTextAlign)},
-	{2, offsetof(UIStyle,       selectableTextAlign)},
-	{2, offsetof(UIStyle,              tabTextAlign)},
-	{1, offsetof(UIStyle,     buttonHeightRelToFont)},
-	{1, offsetof(UIStyle,     headerHeightRelToFont)},
-	{1, offsetof(UIStyle,  inputTextHeightRelToFont)},
-	{1, offsetof(UIStyle,   checkboxHeightRelToFont)},
-	{1, offsetof(UIStyle, selectableHeightRelToFont)},
-	{1, offsetof(UIStyle,        tabHeightRelToFont)},
-	{2, offsetof(UIStyle,              rowItemAlign)},
-	{2, offsetof(UIStyle,            rowCellPadding)},
-	{1, offsetof(UIStyle,           scrollBarYWidth)},
-	{1, offsetof(UIStyle,          scrollBarXHeight)},
-	{1, offsetof(UIStyle,              indentAmount)},
-	{1, offsetof(UIStyle,                tabSpacing)},
-	{1, offsetof(UIStyle,                fontHeight)},
-	{2, offsetof(UIStyle,   windowSnappingTolerance)},
+	{2, offsetof(UIStyle_old,             windowMargins)},
+	{2, offsetof(UIStyle_old,               itemSpacing)},
+	{1, offsetof(UIStyle_old,          windowBorderSize)},
+	{1, offsetof(UIStyle_old,          buttonBorderSize)},
+	{1, offsetof(UIStyle_old,            titleBarHeight)},
+	{2, offsetof(UIStyle_old,            titleTextAlign)},
+	{2, offsetof(UIStyle_old,              scrollAmount)},
+	{2, offsetof(UIStyle_old,              checkboxSize)},
+	{1, offsetof(UIStyle_old,       checkboxFillPadding)},
+	{2, offsetof(UIStyle_old,        inputTextTextAlign)},
+	{2, offsetof(UIStyle_old,           buttonTextAlign)},
+	{2, offsetof(UIStyle_old,           headerTextAlign)},
+	{2, offsetof(UIStyle_old,       selectableTextAlign)},
+	{2, offsetof(UIStyle_old,              tabTextAlign)},
+	{1, offsetof(UIStyle_old,     buttonHeightRelToFont)},
+	{1, offsetof(UIStyle_old,     headerHeightRelToFont)},
+	{1, offsetof(UIStyle_old,  inputTextHeightRelToFont)},
+	{1, offsetof(UIStyle_old,   checkboxHeightRelToFont)},
+	{1, offsetof(UIStyle_old, selectableHeightRelToFont)},
+	{1, offsetof(UIStyle_old,        tabHeightRelToFont)},
+	{2, offsetof(UIStyle_old,              rowItemAlign)},
+	{2, offsetof(UIStyle_old,            rowCellPadding)},
+	{1, offsetof(UIStyle_old,           scrollBarYWidth)},
+	{1, offsetof(UIStyle_old,          scrollBarXHeight)},
+	{1, offsetof(UIStyle_old,              indentAmount)},
+	{1, offsetof(UIStyle_old,                tabSpacing)},
+	{1, offsetof(UIStyle_old,                fontHeight)},
+	{2, offsetof(UIStyle_old,   windowSnappingTolerance)},
 };
 
 
@@ -479,7 +479,7 @@ FORCE_INLINE vec2 GetTextScale(){DPZoneScoped;
 }
 
 
-UIStyle& UI::GetStyle(){DPZoneScoped;
+UIStyle_old& UI::GetStyle(){DPZoneScoped;
 	return style;
 }
 

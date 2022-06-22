@@ -500,12 +500,9 @@ void ui_eval_text(uiItem* item){
 				xoffset = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
 			}
 		}
-
 		item->width = Max(item->width, xoffset);
 		item->height = yoffset + parent->style.font_height;
-
 	}
-
 	data->breaks.add({data->text.count, {xoffset,yoffset}});
 }
 

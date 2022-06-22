@@ -321,7 +321,7 @@ void console_update(){
 		}
 	}
 	
-	UIStyle& style = UI::GetStyle();
+	UIStyle_old& style = UI::GetStyle();
 	if(console.console_dim.y > 0){
 		UI::SetNextWindowPos(console.console_pos);
 		UI::SetNextWindowSize(vec2(DeshWindow->width, console.console_dim.y));
