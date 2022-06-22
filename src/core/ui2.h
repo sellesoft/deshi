@@ -781,11 +781,16 @@ struct uiCheckbox{
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_text
 
+//uiText is a terminal node meaning it cannot have any children. If you dont pass a style var
+//the text will take on the default style, but will inherit text related properties from its parent
+//TODO(sushi) surely there is a nicer way to handle this?
 UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
 //NOTE(sushi) does not automatically make a str8, use uiTextML for that.
-#define uiTextM(text)  UI_DEF(make_text((text),       0, STR8(__FILE__),__LINE__))
+#define uiTextM(text)          UI_DEF(make_text((text),           0, STR8(__FILE__),__LINE__))
+#define uiTextMS(text, style)  UI_DEF(make_text((text),     (style), STR8(__FILE__),__LINE__))
 //NOTE(sushi) this automatically applies STR8() to text, so you can only use literals with this macro
-#define uiTextML(text) UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
+#define uiTextML(text)         UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
+#define uiTextMSL(text, style) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
 
 
 struct uiTextData{

@@ -508,7 +508,24 @@ void ui_eval_text(uiItem* item){
 
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiTextData));
-	ui_fill_item(item, style, file, line);
+	
+	uiItem* curitem = *g_ui->item_stack.last;
+	
+	insert_first(&curitem->node, &item->node);
+	
+	if(style) memcpy(&item->style, style, sizeof(uiStyle));
+	else{
+		memcpy(&item->style, ui_initial_style, sizeof(uiStyle));
+		uiStyle* pstyle = &curitem->style;
+		item->style.text_color  = pstyle->text_color;
+		item->style.font        = pstyle->font;
+		item->style.font_height = pstyle->font_height;
+		item->style.tab_spaces  = pstyle->tab_spaces;
+		item->style.text_wrap   = pstyle->text_wrap; 
+	}
+	
+	item->file_created = file;
+	item->line_created = line;
 	
 	item->memsize = sizeof(uiItem) + sizeof(uiTextData);
 	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
