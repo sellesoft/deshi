@@ -7,9 +7,56 @@
 #include "core/window.h"
 #include "core/logger.h"
 
+/*
+	Index:
+		@memory
+		   create_arena_list(ArenaList* old) -> ArenaList*
+		   arena_add(Arena* arena, upt size) -> void*
+		   push_item(uiItem* item) -> void
+		   pop_item() -> void
+		@uiDrawCmd
+			drawcmd_remove(uiDrawCmd* drawcmd) -> void
+			drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts) -> void
+		@helpers
+			ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
+			calc_text_size(uiItem* item) -> vec2 
+		@item	
+			ui_gen_item(uiItem* item) -> void 
+			ui_make_item(uiStyle* style, str8 file, upt line) -> uiItem* 
+			ui_begin_item(uiStyle* style, str8 file, upt line) -> uiItem* 
+			ui_end_item(str8 file, upt line) -> void 
+			ui_remove_item(uiItem* item, str8 file, upt line) -> void 
+		@context
+			ui_init(MemoryContext* memctx, uiContext* uictx) -> void 
+			ui_find_static_sized_parent(TNode* node, TNode* child) -> TNode* 
+			draw_item_branch(uiItem* item) -> void 
+			eval_item_branch(uiItem* item) -> void 
+			drag_item(uiItem* item) -> void 
+			find_hovered_item(uiItem* item) -> b32 
+			ui_recur(TNode* node) -> pair<vec2,vec2> 
+			ui_update() -> void 
+		@widgets
+			@text
+				ui_gen_text(uiItem* item) -> void 
+				ui_eval_text(uiItem* item) -> void 
+				ui_make_text(str8 text, uiStyle* style, str8 file, upt line) -> uiItem* 
+			@slider
+				ui_gen_slider(uiItem* item) -> void 
+				__ui_slider_callback(uiItem* item) -> void 
+				__ui_make_slider(uiStyle* style, str8 file, upt line) -> uiItem* 
+				ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
+				ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
+				ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
+		@debug
+			__ui_debug_callback(uiItem* item) -> void 
+			ui_debug() -> void 
+		@demo
+			ui_demo() -> void 
+*/
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_memory
+
+//---------------------------------------------------------------------------------------------------------------------
+// @memory
 
 //an empty chunk 
 struct uiMemChunk{
@@ -114,9 +161,7 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 	drawcmd->texture = 0;
 }
 
-//@Functions
-
-//@Helpers
+//@helpers
 #define item_error(item, ...)\
 LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__)
 
@@ -167,7 +212,7 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 	return result;
 }
 
-//@Functionality
+//@item
 void ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2* vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
@@ -257,297 +302,11 @@ void ui_remove_item(uiItem* item, str8 file, upt line){
 	}
 }
 
-//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// @Slider
-
-void ui_gen_slider(uiItem* item){DPZoneScoped;
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	RenderDrawCounts counts = {0};	
-	uiSliderData* data = uiGetSliderData(item);
-
-	counts+=render_make_filledrect(vp,ip,counts,
-		vec2(item->spos.x, item->spos.y + item->size.y*(1 - data->style.rail_thickness)/2),
-		vec2(item->size.x, item->size.y * data->style.rail_thickness),
-		data->style.colors.rail
-	);
-
-	if(data->style.dragger_shape == slider_dragger_rect){
-		vec2 dragp = vec2(item->spos.x+data->pos, item->spos.y);
-		vec2 drags = vec2(data->width, item->height);
-		counts+=render_make_filledrect(vp,ip,counts,dragp,drags,data->style.colors.dragger);
-	}else if(data->style.dragger_shape == slider_dragger_round){
-		NotImplemented;
-	}
-}
-
-void __ui_slider_callback(uiItem* item){DPZoneScoped;
-	uiSliderData* data = uiGetSliderData(item);
-	vec2 mp = input_mouse_position();
-	vec2 lmp = mp - item->spos;
-	switch(data->type){
-		case 0:{
-			f32 dragpos;
-			f32 dragwidth;
-			f32  min = data->minf32;
-			f32  max = data->maxf32;
-			f32* var = data->varf32;
-			*var = Clamp(*var, min, max);
-			dragwidth = item->width/8;
-			dragpos = Remap(*var, 0.f, item->width-dragwidth, min, max);
-			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, vec2(dragpos,0), vec2(dragwidth, item->height))){
-				data->active = 1;
-				data->mouse_offset = -lmp.x + dragpos;
-			}
-			if(data->active){
-				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->width-dragwidth), min, max, 0.f, item->width-dragwidth);
-				item->dirty = 1;
-				item->action_trigger = action_act_always;
-			}
-			if(input_lmouse_released()){
-				data->active = 0;
-				item->action_trigger = action_act_mouse_hover;
-			}
-			data->width = dragwidth;
-			data->pos = dragpos;
-		}break;
-		case 1:{NotImplemented;}break;
-		case 2:{NotImplemented;}break;
-	}
-}
-
-uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiSliderData));
-	ui_fill_item(item, style, file, line);
-
-	item->memsize = sizeof(uiItem) + sizeof(uiSliderData);
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
-	item->__generate = &ui_gen_slider;
-	item->trailing_data = item+sizeof(uiItem);
-
-	uiSliderData* data = uiGetSliderData(item);
-
-	RenderDrawCounts counts = //reserve enough room for slider rail, dragger, and outline
-		render_make_filledrect_counts()*2+
-		render_make_rect_counts();
-
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
-
-	item->action_trigger = action_act_mouse_hover;
-
-	//setup trailing data 
-
-	data->style.dragger_shape = slider_dragger_rect;
-	data->style.rail_thickness = 1;
-	data->style.colors.rail = color(80,80,80);
-	data->style.colors.dragger = color(14,50,100);
-
-	item->__hash = &slider_style_hash;
-	return item;
-}
-
-uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = __ui_make_slider(style, file, line);
-	
-	item->action = &__ui_slider_callback;
-	uiGetSliderData(item)->minf32 = min;
-	uiGetSliderData(item)->maxf32 = max;
-	uiGetSliderData(item)->varf32 = var;
-	uiGetSliderData(item)->type = 0;
-
-	return item;
-}
-
-uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = __ui_make_slider(style, file, line);
-
-	item->action = &__ui_slider_callback;
-	uiGetSliderData(item)->minu32 = min;
-	uiGetSliderData(item)->maxu32 = max;
-	uiGetSliderData(item)->varu32 = var;
-	uiGetSliderData(item)->type = 1;
-	
-	return item;
-}
-
-uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = __ui_make_slider(style, file, line);
-
-	item->action = &__ui_slider_callback;
-	uiGetSliderData(item)->mins32 = max;
-	uiGetSliderData(item)->maxs32 = max;
-	uiGetSliderData(item)->vars32 = var;
-	uiGetSliderData(item)->type = 2;
-
-	return item;
-}
-
-//-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// @Text
-void ui_gen_text(uiItem* item){DPZoneScoped;
-	RenderDrawCounts counts = {0};
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiTextData* data = uiGetTextData(item);
-
-	uiItem* parent = uiItemFromNode(item->node.parent);
-
-	dc->texture = parent->style.font->tex;
-
-	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text));
-	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
-	    item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
-		drawcmd_remove(dc);
-		dc = item->drawcmds;
-		drawcmd_alloc(dc, nucounts);
-	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	}
-
-	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-
-	vec2 cursor = item->spos;
-	forI(data->breaks.count-1){
-		auto [idx, pos] = data->breaks[i];
-		counts+=render_make_text(vp, ip, counts, 
-					{data->text.str+idx, s64(data->breaks[i+1].first - data->breaks[i].first)}, 
-					parent->style.font,
-					item->spos + pos, parent->style.text_color,  
-					vec2::ONE * parent->style.font_height / parent->style.font->max_height
-				);
-	
-	}
-	// counts+=render_make_text(vp, ip, counts, 
-	// 				data->text,
-	// 				parent->style.font,
-	// 				item->spos, parent->style.text_color,  
-	// 				vec2::ONE * parent->style.font_height / parent->style.font->max_height
-	// 			);
-
-
-	int texdone = 0;
-}
-
-void ui_eval_text(uiItem* item){
-	uiItem* parent = uiItemFromNode(item->node.parent);
-	
-	b32 do_wrapping = (parent->style.width != size_auto) && (parent->style.text_wrap != text_wrap_none);
-
-	f32 wrapspace = parent->style.width - (parent->style.padding_left + (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right));
-
-	uiTextData* data = uiGetTextData(item);
-	data->breaks.clear();
-	data->breaks.add({0,{0,0}});
-
-	str8 last_space_or_tab = data->text;
-	str8 scan = data->text;
-	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-	f32 width_since_last_word = 0;
-	f32 xoffset = 0;
-	f32 yoffset = 0;
-	while(scan){
-		DecodedCodepoint dc = str8_advance(&scan);
-		if(dc.codepoint == U'\n'){
-			width_since_last_word = 0;
-			yoffset+=parent->style.font_height;
-			xoffset=0;
-			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
-		}else if(dc.codepoint == U'\t'){
-			width_since_last_word = 0;
-			xoffset+=parent->style.tab_spaces*space_width;
-			last_space_or_tab = scan;
-			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
-		}else if(dc.codepoint == U' '){
-			width_since_last_word = 0;
-			last_space_or_tab = scan;
-			xoffset += space_width;
-		}else{
-			f32 cwidth = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
-			width_since_last_word += cwidth;
-			xoffset += cwidth;
-		}
-
-		if(do_wrapping && xoffset > wrapspace){
-			if(parent->style.text_wrap == text_wrap_word){
-				xoffset = 0;
-				yoffset += parent->style.font_height;
-				//if we are wrapping where a break already is, we dont need to make another break, just adjust it
-				if(last_space_or_tab.str - data->text.str == data->breaks.last->first){
-					data->breaks.last->second = {xoffset,yoffset};
-				}else if(last_space_or_tab.str - data->text.str > data->breaks.last->first){
-					data->breaks.add({last_space_or_tab.str - data->text.str, {xoffset,yoffset}});
-				}
-				xoffset = width_since_last_word;
-			}else if(parent->style.text_wrap == text_wrap_char){
-				xoffset = 0;
-				yoffset += parent->style.font_height;
-				
-				if(dc.codepoint == '\t'){
-					data->breaks.last->second.y = yoffset;
-					data->breaks.last->second.x = 0;
-				}else{
-					if(scan.str - dc.advance - data->text.str > data->breaks.last->first){
-						data->breaks.add({scan.str-dc.advance-data->text.str, {xoffset,yoffset}});
-					}else if(scan.str - dc.advance - data->text.str == data->breaks.last->first){
-						data->breaks.last->second.y = yoffset;
-						data->breaks.last->second.x = 0;
-					}
-				}
-			
-				xoffset = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
-			}
-		}
-		item->width = Max(item->width, xoffset);
-		item->height = yoffset + parent->style.font_height;
-	}
-	data->breaks.add({data->text.count, {xoffset,yoffset}});
-}
-
-uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiTextData));
-	
-	uiItem* curitem = *g_ui->item_stack.last;
-	
-	insert_first(&curitem->node, &item->node);
-	
-	if(style) memcpy(&item->style, style, sizeof(uiStyle));
-	else{
-		memcpy(&item->style, ui_initial_style, sizeof(uiStyle));
-		uiStyle* pstyle = &curitem->style;
-		item->style.text_color  = pstyle->text_color;
-		item->style.font        = pstyle->font;
-		item->style.font_height = pstyle->font_height;
-		item->style.tab_spaces  = pstyle->tab_spaces;
-		item->style.text_wrap   = pstyle->text_wrap; 
-	}
-	
-	item->file_created = file;
-	item->line_created = line;
-	
-	item->memsize = sizeof(uiItem) + sizeof(uiTextData);
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
-	item->__generate = &ui_gen_text;
-	item->__evaluate = &ui_eval_text;
-	item->trailing_data = item + sizeof(uiItem);
-	
-	uiGetTextData(item)->text = text;
-	uiGetTextData(item)->breaks.allocator = deshi_allocator;
-
-	RenderDrawCounts counts = render_make_text_counts(str8_length(text));
-	
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
-	return item;
-}
 
 
 
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_context
+//---------------------------------------------------------------------------------------------------------------------
+// @context
 void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 #if DESHI_RELOADABLE_UI
 	g_memory = memctx;
@@ -888,7 +647,6 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
-	
 
 	if(item->action && item->action_trigger){
 		if(item->action_trigger == action_act_always)
@@ -1001,6 +759,298 @@ void ui_update(){DPZoneScoped;
 	//}
 }
 
+
+/*---------------------------------------------------------------------------------------------------------------------
+
+	@widgets
+
+*/
+
+//---------------------------------------------------------------------------------------------------------------------
+// @text
+void ui_gen_text(uiItem* item){DPZoneScoped;
+	RenderDrawCounts counts = {0};
+	uiDrawCmd* dc = item->drawcmds;
+	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	uiTextData* data = uiGetTextData(item);
+
+	uiItem* parent = uiItemFromNode(item->node.parent);
+
+	dc->texture = parent->style.font->tex;
+
+	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text));
+	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
+	    item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
+		drawcmd_remove(dc);
+		dc = item->drawcmds;
+		drawcmd_alloc(dc, nucounts);
+	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	}
+
+	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+
+	vec2 cursor = item->spos;
+	forI(data->breaks.count-1){
+		auto [idx, pos] = data->breaks[i];
+		counts+=render_make_text(vp, ip, counts, 
+					{data->text.str+idx, s64(data->breaks[i+1].first - data->breaks[i].first)}, 
+					parent->style.font,
+					item->spos + pos, parent->style.text_color,  
+					vec2::ONE * parent->style.font_height / parent->style.font->max_height
+				);
+	
+	}
+}
+
+void ui_eval_text(uiItem* item){
+	uiItem* parent = uiItemFromNode(item->node.parent);
+	
+	b32 do_wrapping = (parent->style.width != size_auto) && (parent->style.text_wrap != text_wrap_none);
+
+	f32 wrapspace = parent->style.width - (parent->style.padding_left + (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right));
+
+	uiTextData* data = uiGetTextData(item);
+	data->breaks.clear();
+	data->breaks.add({0,{0,0}});
+
+	str8 last_space_or_tab = data->text;
+	str8 scan = data->text;
+	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+	f32 width_since_last_word = 0;
+	f32 xoffset = 0;
+	f32 yoffset = 0;
+	while(scan){
+		DecodedCodepoint dc = str8_advance(&scan);
+		if(dc.codepoint == U'\n'){
+			width_since_last_word = 0;
+			yoffset+=parent->style.font_height;
+			xoffset=0;
+			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
+		}else if(dc.codepoint == U'\t'){
+			width_since_last_word = 0;
+			xoffset+=parent->style.tab_spaces*space_width;
+			last_space_or_tab = scan;
+			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
+		}else if(dc.codepoint == U' '){
+			width_since_last_word = 0;
+			last_space_or_tab = scan;
+			xoffset += space_width;
+		}else{
+			f32 cwidth = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+			width_since_last_word += cwidth;
+			xoffset += cwidth;
+		}
+
+		if(do_wrapping && xoffset > wrapspace){
+			if(parent->style.text_wrap == text_wrap_word){
+				xoffset = 0;
+				yoffset += parent->style.font_height;
+				//if we are wrapping where a break already is, we dont need to make another break, just adjust it
+				if(last_space_or_tab.str - data->text.str == data->breaks.last->first){
+					data->breaks.last->second = {xoffset,yoffset};
+				}else if(last_space_or_tab.str - data->text.str > data->breaks.last->first){
+					data->breaks.add({last_space_or_tab.str - data->text.str, {xoffset,yoffset}});
+				}
+				xoffset = width_since_last_word;
+			}else if(parent->style.text_wrap == text_wrap_char){
+				xoffset = 0;
+				yoffset += parent->style.font_height;
+				
+				if(dc.codepoint == '\t'){
+					data->breaks.last->second.y = yoffset;
+					data->breaks.last->second.x = 0;
+				}else{
+					if(scan.str - dc.advance - data->text.str > data->breaks.last->first){
+						data->breaks.add({scan.str-dc.advance-data->text.str, {xoffset,yoffset}});
+					}else if(scan.str - dc.advance - data->text.str == data->breaks.last->first){
+						data->breaks.last->second.y = yoffset;
+						data->breaks.last->second.x = 0;
+					}
+				}
+			
+				xoffset = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+			}
+		}
+		item->width = Max(item->width, xoffset);
+		item->height = yoffset + parent->style.font_height;
+	}
+	data->breaks.add({data->text.count, {xoffset,yoffset}});
+}
+
+uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiTextData));
+	
+	uiItem* curitem = *g_ui->item_stack.last;
+	
+	insert_first(&curitem->node, &item->node);
+	
+	if(style) memcpy(&item->style, style, sizeof(uiStyle));
+	else{
+		memcpy(&item->style, ui_initial_style, sizeof(uiStyle));
+		uiStyle* pstyle = &curitem->style;
+		item->style.text_color  = pstyle->text_color;
+		item->style.font        = pstyle->font;
+		item->style.font_height = pstyle->font_height;
+		item->style.tab_spaces  = pstyle->tab_spaces;
+		item->style.text_wrap   = pstyle->text_wrap; 
+	}
+	
+	item->file_created = file;
+	item->line_created = line;
+	
+	item->memsize = sizeof(uiItem) + sizeof(uiTextData);
+	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
+	item->__generate = &ui_gen_text;
+	item->__evaluate = &ui_eval_text;
+	item->trailing_data = item + sizeof(uiItem);
+	
+	uiGetTextData(item)->text = text;
+	uiGetTextData(item)->breaks.allocator = deshi_allocator;
+
+	RenderDrawCounts counts = render_make_text_counts(str8_length(text));
+	
+	item->draw_cmd_count = 1;
+	drawcmd_alloc(item->drawcmds, counts);
+	return item;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+// @Slider
+
+void ui_gen_slider(uiItem* item){DPZoneScoped;
+	uiDrawCmd* dc = item->drawcmds;
+	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	RenderDrawCounts counts = {0};	
+	uiSliderData* data = uiGetSliderData(item);
+
+	counts+=render_make_filledrect(vp,ip,counts,
+		vec2(item->spos.x, item->spos.y + item->size.y*(1 - data->style.rail_thickness)/2),
+		vec2(item->size.x, item->size.y * data->style.rail_thickness),
+		data->style.colors.rail
+	);
+
+	if(data->style.dragger_shape == slider_dragger_rect){
+		vec2 dragp = vec2(item->spos.x+data->pos, item->spos.y);
+		vec2 drags = vec2(data->width, item->height);
+		counts+=render_make_filledrect(vp,ip,counts,dragp,drags,data->style.colors.dragger);
+	}else if(data->style.dragger_shape == slider_dragger_round){
+		NotImplemented;
+	}
+}
+
+void __ui_slider_callback(uiItem* item){DPZoneScoped;
+	uiSliderData* data = uiGetSliderData(item);
+	vec2 mp = input_mouse_position();
+	vec2 lmp = mp - item->spos;
+	switch(data->type){
+		case 0:{
+			f32 dragpos;
+			f32 dragwidth;
+			f32  min = data->minf32;
+			f32  max = data->maxf32;
+			f32* var = data->varf32;
+			*var = Clamp(*var, min, max);
+			dragwidth = item->width/8;
+			dragpos = Remap(*var, 0.f, item->width-dragwidth, min, max);
+			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, vec2(dragpos,0), vec2(dragwidth, item->height))){
+				data->active = 1;
+				data->mouse_offset = -lmp.x + dragpos;
+			}
+			if(data->active){
+				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->width-dragwidth), min, max, 0.f, item->width-dragwidth);
+				item->dirty = 1;
+				item->action_trigger = action_act_always;
+			}
+			if(input_lmouse_released()){
+				data->active = 0;
+				item->action_trigger = action_act_mouse_hover;
+			}
+			data->width = dragwidth;
+			data->pos = dragpos;
+		}break;
+		case 1:{NotImplemented;}break;
+		case 2:{NotImplemented;}break;
+	}
+}
+
+uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiSliderData));
+	ui_fill_item(item, style, file, line);
+
+	item->memsize = sizeof(uiItem) + sizeof(uiSliderData);
+	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
+	item->__generate = &ui_gen_slider;
+	item->trailing_data = item+sizeof(uiItem);
+
+	uiSliderData* data = uiGetSliderData(item);
+
+	RenderDrawCounts counts = //reserve enough room for slider rail, dragger, and outline
+		render_make_filledrect_counts()*2+
+		render_make_rect_counts();
+
+	item->draw_cmd_count = 1;
+	drawcmd_alloc(item->drawcmds, counts);
+
+	item->action_trigger = action_act_mouse_hover;
+
+	//setup trailing data 
+
+	data->style.dragger_shape = slider_dragger_rect;
+	data->style.rail_thickness = 1;
+	data->style.colors.rail = color(80,80,80);
+	data->style.colors.dragger = color(14,50,100);
+
+	item->__hash = &slider_style_hash;
+	return item;
+}
+
+uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItem* item = __ui_make_slider(style, file, line);
+	
+	item->action = &__ui_slider_callback;
+	uiGetSliderData(item)->minf32 = min;
+	uiGetSliderData(item)->maxf32 = max;
+	uiGetSliderData(item)->varf32 = var;
+	uiGetSliderData(item)->type = 0;
+
+	return item;
+}
+
+uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItem* item = __ui_make_slider(style, file, line);
+
+	item->action = &__ui_slider_callback;
+	uiGetSliderData(item)->minu32 = min;
+	uiGetSliderData(item)->maxu32 = max;
+	uiGetSliderData(item)->varu32 = var;
+	uiGetSliderData(item)->type = 1;
+	
+	return item;
+}
+
+uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItem* item = __ui_make_slider(style, file, line);
+
+	item->action = &__ui_slider_callback;
+	uiGetSliderData(item)->mins32 = max;
+	uiGetSliderData(item)->maxs32 = max;
+	uiGetSliderData(item)->vars32 = var;
+	uiGetSliderData(item)->type = 2;
+
+	return item;
+}
+
+
+
+/*-----------------------------------------------------------------------------------------------------------------
+
+	@ui_debug
+
+*/
+
 struct __ui_debug_win_info{
 	uiItem* text;
 }__ui_dwi;
@@ -1040,6 +1090,7 @@ void __ui_debug_callback(uiItem* item){
 	item->dirty = 1;
 }
 
+
 void ui_debug(){
 	{uiItem* window = uiItemB();
 		uiStyle* style = &window->style;
@@ -1054,9 +1105,13 @@ void ui_debug(){
 	}
 }
 
-void ui_demo(){
+/*-----------------------------------------------------------------------------------------------------------------
 
-	
+	@ui_demo
+
+*/
+
+void ui_demo(){
 	if(0){//window with a title bar
 		uiItem* titlebar = uiItemB();{
 			titlebar->style.background_color = color(50,50,50);
@@ -1123,9 +1178,7 @@ void ui_demo(){
 				}; in->action_trigger = action_act_always;
 			}uiItemE();
 		}uiItemE();
-
 	}
-
 }
 
 
