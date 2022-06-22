@@ -591,7 +591,7 @@ struct uiItem{
 		struct{ f32 sx, sy; };
 		vec2 spos;
 	};
-	union{ // position that the item's content starts at relative to the screen
+	union{ // position that the item's content starts at relative to the item's position
 		struct{ f32 cx, cy; };
 		vec2 cpos;
 	};

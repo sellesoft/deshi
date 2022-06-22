@@ -156,15 +156,10 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 }
 
 //@helpers
-array<u64> sent_errors;
-#define item_error(item, ...)                                                                                              \
-{u64 errid = __LINE__ << (u64)item << (u64)item->style_hash;                                                               \
-	if(binary_search_low_to_high(sent_errors, errid)==npos){                                                               \
-		sent_errors.add(errid);                                                                                            \
-		bubble_sort_low_to_high(sent_errors);                                                                              \
-		LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);\
-	}                                                                                                                      \
-}
+#define item_error(item, ...)\
+LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);
+                                                                                                                      
+
 
 
 //fills an item struct and make its a child of the current item
@@ -247,9 +242,10 @@ RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts
 			vp[v+5].pos = br+vec2(-t,-t); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
 			vp[v+6].pos = bl;             vp[v+6].uv = {0,0}; vp[v+6].color = item->style.border_color.rgba;
 			vp[v+7].pos = bl+vec2( t,-t); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
+			return {8,24};
 		}break;
 	}
-	return {8,24};
+	return {0,0};
 }
 
 //@item
@@ -285,7 +281,7 @@ uiItem* ui_begin_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	return item;
 }
 
-void ui_end_item(str8 file, upt line){
+void ui_end_item(str8 file, upt line){DPZoneScoped;
 	if(*(g_ui->item_stack.last) == &g_ui->base){
 		LogE("ui", 
 			 "In ", file, " at line ", line, " :\n",
@@ -297,7 +293,7 @@ void ui_end_item(str8 file, upt line){
 	
 }
 
-void ui_remove_item(uiItem* item, str8 file, upt line){
+void ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
 	//TODO(sushi) check for contiguous regions of memory in the drawcmds' vertex and index regions so we can combine drawcmds into one 
 	forI(item->draw_cmd_count){
 		drawcmd_remove(item->drawcmds + i);
@@ -628,11 +624,11 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 		as the item's cpos which indicates where in the item its content starts in screen space
 	*/
 
-	item->lpos = round(item->lpos);
-	item->cx = item->sx + wborder + item->style.padding_left;
-	item->cy = item->sy + wborder + item->style.padding_top;
-	item->content_height = item->height - wborder - (item->style.padding_top + (item->style.padding_bottom==MAX_F32?item->style.padding_top:item->style.padding_bottom));
-	item->content_width = item->width - wborder - (item->style.padding_left + (item->style.padding_right==MAX_F32?item->style.padding_left:item->style.padding_right));
+	item->lpos = floor(item->lpos);
+	item->cx = wborder + item->style.padding_left;
+	item->cy = wborder + item->style.padding_top;
+	item->content_height = item->height - 2*wborder - (item->style.padding_top + item->style.padding_bottom);
+	item->content_width = item->width - 2*wborder - (item->style.padding_left + item->style.padding_right);
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -953,11 +949,10 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	RenderDrawCounts counts = {0};	
 	uiSliderData* data = uiGetSliderData(item);
 	
-	vec2 pos = item->cpos;
+	vec2 pos = item->spos + item->cpos;
 	vec2 size = item->content_size;
 
 	counts+=gen_background(item, vp, ip, counts);
-
 	counts+=gen_border(item, vp, ip, counts);
 
 	counts+=render_make_filledrect(vp,ip,counts,
@@ -966,7 +961,6 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 		data->style.colors.rail
 	);
 
-
 	if(data->style.dragger_shape == slider_dragger_rect){
 		vec2 dragp = vec2(pos.x+data->pos, pos.y);
 		vec2 drags = vec2(data->width, size.y);
@@ -974,6 +968,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	}else if(data->style.dragger_shape == slider_dragger_round){
 		NotImplemented;
 	}
+	dc->counts = counts;
 }
 
 void ui_slider_callback(uiItem* item){DPZoneScoped;
@@ -1088,16 +1083,11 @@ void ui_gen_checkbox(uiItem* item){
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	RenderDrawCounts counts = {0};	
 
-	vec2 fillingpos = item->spos + data->style.fill_padding * vec2::ONE;
-	vec2 fillingsize = item->size - data->style.fill_padding * vec2::ONE * 2;
+	vec2 fillingpos = item->spos + data->style.fill_padding + item->cpos;
+	vec2 fillingsize = item->content_size - data->style.fill_padding * 2;
 
 	counts+=gen_background(item, vp, ip, counts);
-
-	if(item->style.border_style){
-		counts+=gen_border(item, vp, ip, counts);
-		fillingpos += item->style.border_width * vec2::ONE;
-		fillingsize -= item->style.border_width * vec2::ONE * 2;
-	}
+	counts+=gen_border(item, vp, ip, counts);
 
 	if(!data->var){
 		item_error(item, "A checkbox was created but was given no boolean to act on.");
@@ -1108,7 +1098,6 @@ void ui_gen_checkbox(uiItem* item){
 	}
 
 	dc->counts = counts;
-
 }
 
 void ui_checkbox_callback(uiItem* item){
