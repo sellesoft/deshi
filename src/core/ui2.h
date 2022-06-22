@@ -556,6 +556,7 @@ external struct uiStyle{
 	b32 focus : 1;
 	b32 hidden : 1;
 	Type text_wrap;
+	u64 tab_spaces;
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
@@ -789,13 +790,7 @@ UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt lin
 
 struct uiTextData{
 	str8 text;
-	//offsets into the string that determine where we need to break up the rendering
-	//things that cause this include tabs, newlines, and newlines caused by wrapping
-	//the first number indicates what kind of break it is, the second indicates where it occurs
-	//0: start/end of text
-	//1: newline/wrapping
-	//2: tabbing
-	array<pair<u8,u64>> breaks;
+	array<pair<s64,vec2>> breaks;
 };
 #define uiTextTag PackU32('t','e','x','t')
 //NOTE(sushi) be careful when using this as it does no type checking

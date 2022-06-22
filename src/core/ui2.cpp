@@ -294,17 +294,16 @@ void __ui_slider_callback(uiItem* item){DPZoneScoped;
 			f32  max = data->maxf32;
 			f32* var = data->varf32;
 			*var = Clamp(*var, min, max);
-			dragpos = Remap(*var, 0.f, item->width, min, max);
 			dragwidth = item->width/8;
+			dragpos = Remap(*var, 0.f, item->width-dragwidth, min, max);
 			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, vec2(dragpos,0), vec2(dragwidth, item->height))){
 				data->active = 1;
 				data->mouse_offset = -lmp.x + dragpos;
 			}
 			if(data->active){
-				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->width-dragwidth), min, max, 0.f, item->width);
+				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->width-dragwidth), min, max, 0.f, item->width-dragwidth);
 				item->dirty = 1;
 				item->action_trigger = action_act_always;
-				Log("", *var);
 			}
 			if(input_lmouse_released()){
 				data->active = 0;
@@ -398,7 +397,7 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 
 	dc->texture = parent->style.font->tex;
 
-	RenderDrawCounts nucounts = render_make_text_counts(data->text.count);
+	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text));
 	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
 	    item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
 		drawcmd_remove(dc);
@@ -412,42 +411,24 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 
 	vec2 cursor = item->spos;
 	forI(data->breaks.count-1){
-		auto [mode, idx] = data->breaks[i];
-	
-		if      (mode == 0){ // do nothing
-			
-		}else if(mode == 1){ // newline/wrapping
-			cursor.x = item->spos.x;
-			cursor.y += parent->style.font_height;
-		}else if(mode == 2){ // tabbing
-			cursor.x += space_width * 4;
-		}
-
+		auto [idx, pos] = data->breaks[i];
 		counts+=render_make_text(vp, ip, counts, 
-					{data->text.str+idx, s64(data->breaks[i+1].second - data->breaks[i].second)}, 
+					{data->text.str+idx, s64(data->breaks[i+1].first - data->breaks[i].first)}, 
 					parent->style.font,
-					cursor, parent->style.text_color,  
+					item->spos + pos, parent->style.text_color,  
 					vec2::ONE * parent->style.font_height / parent->style.font->max_height
 				);
 	
 	}
+	// counts+=render_make_text(vp, ip, counts, 
+	// 				data->text,
+	// 				parent->style.font,
+	// 				item->spos, parent->style.text_color,  
+	// 				vec2::ONE * parent->style.font_height / parent->style.font->max_height
+	// 			);
 
 
-	// str8 scan = data->text;
-	// str8 start = data->text;
-	// f32 y = 0;
-	// while(scan){
-	// 	u32 cp = str8_advance(&scan).codepoint;
-	// 	if(cp == U'\n' || !scan){
-	// 		counts+=render_make_text(vp, ip, counts, {start.str, start.count-scan.count}, item->style.font, item->spos + vec2{0, y}, item->style.text_color, vec2::ONE * item->style.font_height / item->style.font->max_height);
-	// 		y+=item->style.font_height;
-	// 		start = scan;
-	// 	}
-	// }
-
-	//NOTE(sushi) text size is always determined here and NEVER set by the user
-	//TODO(sushi) text sizing should probably be moved to eval_item_branch and made to take into account wrapping
-	//item->style.size = calc_text_size(item);
+	int texdone = 0;
 }
 
 void ui_eval_text(uiItem* item){
@@ -459,44 +440,73 @@ void ui_eval_text(uiItem* item){
 
 	uiTextData* data = uiGetTextData(item);
 	data->breaks.clear();
-	data->breaks.add({0,0});
+	data->breaks.add({0,{0,0}});
 
-	str8 last_space = data->text;
+	str8 last_space_or_tab = data->text;
 	str8 scan = data->text;
-
 	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-
-	vec2 viscur;
+	f32 width_since_last_word = 0;
+	f32 xoffset = 0;
+	f32 yoffset = 0;
 	while(scan){
 		DecodedCodepoint dc = str8_advance(&scan);
-		vec2 sz = font_visual_size(item->style.font, {scan.str-dc.advance, dc.advance}) * item->style.font_height / item->style.font->max_height;
-		viscur.x += sz.x;
-		item->width = Max(item->width, viscur.x);
-		item->height = viscur.y + parent->style.font_height;
-		if(dc.codepoint==U'\n'){
-			data->breaks.add({1,u64(scan.str-data->text.str)});
-			viscur.y += parent->style.font_height;
-			viscur.x = 0;
-		}else if(do_wrapping && viscur.x > wrapspace){
+		if(dc.codepoint == U'\n'){
+			width_since_last_word = 0;
+			yoffset+=parent->style.font_height;
+			xoffset=0;
+			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
+		}else if(dc.codepoint == U'\t'){
+			width_since_last_word = 0;
+			xoffset+=parent->style.tab_spaces*space_width;
+			last_space_or_tab = scan;
+			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
+		}else if(dc.codepoint == U' '){
+			width_since_last_word = 0;
+			last_space_or_tab = scan;
+			xoffset += space_width;
+		}else{
+			f32 cwidth = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+			width_since_last_word += cwidth;
+			xoffset += cwidth;
+		}
+
+		if(do_wrapping && xoffset > wrapspace){
 			if(parent->style.text_wrap == text_wrap_word){
-				data->breaks.add({1, u64(last_space.str-data->text.str)});
-				viscur.x = 0;
-				viscur.y += parent->style.font_height;
+				xoffset = 0;
+				yoffset += parent->style.font_height;
+				//if we are wrapping where a break already is, we dont need to make another break, just adjust it
+				if(last_space_or_tab.str - data->text.str == data->breaks.last->first){
+					data->breaks.last->second = {xoffset,yoffset};
+				}else if(last_space_or_tab.str - data->text.str > data->breaks.last->first){
+					data->breaks.add({last_space_or_tab.str - data->text.str, {xoffset,yoffset}});
+				}
+				xoffset = width_since_last_word;
 			}else if(parent->style.text_wrap == text_wrap_char){
-				data->breaks.add({1, u64(scan.str-data->text.str)});
-				viscur.x = 0;
-				viscur.y += parent->style.font_height;
+				xoffset = 0;
+				yoffset += parent->style.font_height;
+				
+				if(dc.codepoint == '\t'){
+					data->breaks.last->second.y = yoffset;
+					data->breaks.last->second.x = 0;
+				}else{
+					if(scan.str - dc.advance - data->text.str > data->breaks.last->first){
+						data->breaks.add({scan.str-dc.advance-data->text.str, {xoffset,yoffset}});
+					}else if(scan.str - dc.advance - data->text.str == data->breaks.last->first){
+						data->breaks.last->second.y = yoffset;
+						data->breaks.last->second.x = 0;
+					}
+				}
+			
+				xoffset = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
 			}
-		}else if(dc.codepoint==U'\t'){
-			data->breaks.add({2, u64(scan.str-data->text.str)});
-			viscur.x += space_width * 4;
 		}
-		if(dc.codepoint==U' '){
-			last_space = scan;
-		}
+
+		item->width = Max(item->width, xoffset);
+		item->height = yoffset + parent->style.font_height;
+
 	}
 
-	data->breaks.add({0,u64(data->text.count)});
+	data->breaks.add({data->text.count, {xoffset,yoffset}});
 }
 
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -568,6 +578,7 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	ui_initial_style->        overflow = overflow_visible;
 	ui_initial_style->           focus = 0;
 	ui_initial_style->          hidden = 0;
+	ui_initial_style->      tab_spaces = 4;
 	
 	g_ui->base = uiItem{0};
 	g_ui->base.style = *ui_initial_style;
@@ -923,7 +934,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		forI(item->draw_cmd_count){
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
-			render_add_vertices2(5, 
+			render_add_vertices2(5, 		
 				(Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
 				item->drawcmds[i].counts.vertices, 
 				(u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
