@@ -50,10 +50,7 @@ Index
 
 TODOs
 -----
-move ui2 to deshi
-
-i've decided not to handle inheritance for now, but later on we may want to implement something like that
-
+possibly implement a system for suppressing certain errors on some behavoirs or just for suppressing all errors
 
 */
 
@@ -477,14 +474,21 @@ enum{
 	pos_draggable_absolute,
 	pos_draggable_fixed,
 
-	size_auto = -1,
-    size_percent_x = 1 << 0,
-    size_percent_y = 1 << 1,
+	size_auto_y    = 1 << 0,
+	size_auto_x    = 1 << 1,
+	size_auto      = size_auto_x | size_auto_y,
+    size_percent_x = 1 << 2,
+    size_percent_y = 1 << 3,
     size_percent   = size_percent_x | size_percent_y,
-    size_fill_x    = 1 << 2,
-    size_fill_y    = 1 << 3,
+    size_fill_x    = 1 << 4,
+    size_fill_y    = 1 << 5,
     size_fill      = size_fill_x | size_fill_y,
-	size_square    = 1 << 4,
+	size_square    = 1 << 6,
+
+	anchor_top_left = 0,
+	anchor_top_right,
+	anchor_bottom_right,
+	anchor_bottom_left,
 	
 	border_none = 0,
 	border_solid,
@@ -498,6 +502,8 @@ enum{
 	text_wrap_char, 
 	text_wrap_word,
 
+	display_column = 0,
+	display_row,
 
 	action_act_never = 0,
 	action_act_mouse_hover,    // call action when the mouse is positioned over the item
@@ -511,13 +517,10 @@ struct Font;
 external struct uiStyle{
 	Type positioning;
     Type sizing;
+	Type anchor;
 	union{
-		struct{f32 left, top;};
-		vec2 tl;
-	};
-	union{
-		struct{f32 right, bottom;};
-		vec2 br;
+		struct{f32 x, y;};
+		vec2 pos;
 	};
 	union{
 		struct{f32 width, height;};
@@ -543,24 +546,23 @@ external struct uiStyle{
 		struct{f32 scrx, scry;};
 		vec2 scroll;
 	};
-	vec2     content_align; 
-	Font*    font;
-	u32      font_height;
-	color    background_color;
-	Texture* background_image;
-	Type     border_style;
-	color    border_color;
-	f32      border_width;
-	color    text_color;
-	Type     overflow;
-	b32 focus : 1;
-	b32 hidden : 1;
-	Type text_wrap;
-	u64 tab_spaces;
+	vec2  content_align; 
+	Font* font;
+	u32   font_height;
+	color background_color;
+	Type  border_style;
+	color border_color;
+	f32   border_width;
+	color text_color;
+	Type  overflow;
+	b32   focus : 1;
+	b32   hidden : 1;
+	Type  text_wrap;
+	u64   tab_spaces;
+	Type  display;
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
-extern uiStyle* ui_initial_style;
 
 struct uiItem{
 	TNode node;
@@ -589,9 +591,17 @@ struct uiItem{
 		struct{ f32 sx, sy; };
 		vec2 spos;
 	};
-	union{ 
+	union{ // position that the item's content starts at relative to the screen
+		struct{ f32 cx, cy; };
+		vec2 cpos;
+	};
+	union{ // size that the item visually takes up on the screen
 		struct{ f32 width, height; };
 		vec2 size;
+	};
+	union{ // size that content occupies
+		struct{ f32 content_width, content_height; };
+		vec2 content_size;
 	};
 	vec2 max_scroll;
 
@@ -649,10 +659,10 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	uiStyle* s = &item->style;
 	u32 seed = 2166136261;
 	seed ^= *(u32*)&s->positioning;     seed *= 16777619;
-	seed ^= *(u32*)&s->left;            seed *= 16777619;
-	seed ^= *(u32*)&s->top;             seed *= 16777619;
-	seed ^= *(u32*)&s->right;           seed *= 16777619;
-	seed ^= *(u32*)&s->bottom;          seed *= 16777619;
+	seed ^= *(u32*)&s->sizing;			seed *= 16777619;
+	seed ^= *(u32*)&s->anchor;			seed *= 16777619;
+	seed ^= *(u32*)&s->x;               seed *= 16777619;
+	seed ^= *(u32*)&s->y;               seed *= 16777619;
 	seed ^= *(u32*)&s->width;           seed *= 16777619;
 	seed ^= *(u32*)&s->height;          seed *= 16777619;
 	seed ^= *(u32*)&s->margin_left;     seed *= 16777619;
@@ -668,7 +678,6 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= (u64)s->font;               seed *= 16777619;
 	seed ^= s->font_height;             seed *= 16777619;
 	seed ^= s->background_color.rgba;   seed *= 16777619;
-	seed ^= (u64)s->background_image;   seed *= 16777619;
 	seed ^= s->border_style;            seed *= 16777619;
 	seed ^= s->border_color.rgba;       seed *= 16777619;
 	seed ^= *(u32*)&s->border_width;    seed *= 16777619;
@@ -744,8 +753,8 @@ enum{
 
 inline u32 slider_style_hash(uiItem* item){
 	uiSliderData* data = uiGetSliderData(item);
-	u32 seed = 2166136261;
 	
+	u32 seed = 2166136261;
 	seed ^= data->style.colors.rail.rgba;       seed *= 16777619;
 	seed ^= data->style.colors.dragger.rgba;    seed *= 16777619;
 	seed ^= data->style.dragger_shape;          seed *= 16777619;
@@ -756,6 +765,11 @@ inline u32 slider_style_hash(uiItem* item){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_checkbox
+
+//uiCheckbox is a terminal node, so it cannot hold any children
+UI_FUNC_API(uiItem*, ui_make_checkbox, b32* var, uiStyle* style, str8 file, upt line);
+#define uiCheckboxM(var)         UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
+#define uiCheckboxMS(var, style) UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
 
 enum{
 	checkbox_fill_box = 0,
@@ -769,14 +783,22 @@ struct uiCheckbox{
 
 	struct{
 		struct{
-			color background;
 			color filling;
 		}colors;
 		Type fill_type;
-		b32 show_text;
+		vec2 fill_padding;
 	}style;
 };
-#define uiCheckboxData(x) CastFromMember(uiCheckbox, item, x)
+#define uiGetCheckbox(x) CastFromMember(uiCheckbox, item, x)
+
+inline u32 checkbox_style_hash(uiItem* item){
+	uiCheckbox* data = uiGetCheckbox(item);
+
+	u32 seed = 2166136261;
+	seed ^= data->style.colors.filling.rgba;    seed *= 16777619;
+	seed ^= data->style.fill_type;              seed *= 16777619;
+	return seed;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_text

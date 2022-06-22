@@ -1468,7 +1468,7 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vec2 br = pos + size;
 	vec2 bl = vec2{br.x, tl.y};
 	vec2 tr = vec2{tl.x, br.y};
-	u32 t = thickness; u32 v = offsets.vertices;
+	f32 t = thickness; u32 v = offsets.vertices;
 	ip[ 0] = v+0; ip[ 1] = v+1; ip[ 2] = v+3; 
 	ip[ 3] = v+0; ip[ 4] = v+3; ip[ 5] = v+2; 
 	ip[ 6] = v+2; ip[ 7] = v+3; ip[ 8] = v+5; 

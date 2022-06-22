@@ -1,5 +1,6 @@
 #include "ui2.h"
 #include "kigu/array.h"
+#include "kigu/array_utils.h"
 #include "core/input.h"
 #include "core/memory.h"
 #include "core/render.h"
@@ -42,8 +43,8 @@
 				ui_make_text(str8 text, uiStyle* style, str8 file, upt line) -> uiItem* 
 			@slider
 				ui_gen_slider(uiItem* item) -> void 
-				__ui_slider_callback(uiItem* item) -> void 
-				__ui_make_slider(uiStyle* style, str8 file, upt line) -> uiItem* 
+				ui_slider_callback(uiItem* item) -> void 
+				ui_make_slider(uiStyle* style, str8 file, upt line) -> uiItem* 
 				ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
 				ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
 				ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
@@ -57,13 +58,6 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 // @memory
-
-//an empty chunk 
-struct uiMemChunk{
-	Node node;
-	upt size;
-};
-
 
 #define item_arena g_ui->item_list->arena
 #define drawcmd_arena g_ui->drawcmd_list->arena
@@ -162,8 +156,16 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 }
 
 //@helpers
-#define item_error(item, ...)\
-LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__)
+array<u64> sent_errors;
+#define item_error(item, ...)                                                                                              \
+{u64 errid = __LINE__ << (u64)item << (u64)item->style_hash;                                                               \
+	if(binary_search_low_to_high(sent_errors, errid)==npos){                                                               \
+		sent_errors.add(errid);                                                                                            \
+		bubble_sort_low_to_high(sent_errors);                                                                              \
+		LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);\
+	}                                                                                                                      \
+}
+
 
 //fills an item struct and make its a child of the current item
 void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -172,7 +174,7 @@ void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScope
 	insert_first(&curitem->node, &item->node);
 	
 	if(style) memcpy(&item->style, style, sizeof(uiStyle));
-	else      memcpy(&item->style, ui_initial_style, sizeof(uiStyle));
+	else item->style = {0};
 	
 	item->file_created = file;
 	item->line_created = line;
@@ -212,24 +214,14 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 	return result;
 }
 
-//@item
-void ui_gen_item(uiItem* item){DPZoneScoped;
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2* vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*     ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	RenderDrawCounts counts = {0};
-	if(item->style.background_image){
-		counts+=render_make_texture(vp,ip,counts,item->style.background_image,
-			vec2(item->sx, item->sy),
-			vec2(item->sx+item->width, item->sy),
-			vec2(item->sx+item->width, item->sy+item->height),
-			vec2(item->sx, item->sy+item->height),
-			1,0,0
-		);
-	}
-	else if(item->style.background_color.a){
-		counts+=render_make_filledrect(vp, ip, counts, item->spos, item->size, item->style.background_color);
-	}
+//NOTE(sushi) these are abstracted because widgets may use them as well
+inline
+RenderDrawCounts gen_background(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts counts){
+	return render_make_filledrect(vp, ip, counts, item->spos, item->size, item->style.background_color);
+}
+
+inline
+RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts counts){
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
@@ -237,7 +229,7 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 			vec2 br = ceil(tl+item->size);
 			vec2 tr = vec2{br.x, tl.y};
 			vec2 bl = vec2{tl.x, br.y}; 
-			u32 t = item->style.border_width;
+			f32 t = item->style.border_width;
 			u32 v = counts.vertices; u32 i = counts.indices;
 			ip[i+ 0] = v+0; ip[i+ 1] = v+1; ip[i+ 2] = v+3; 
 			ip[i+ 3] = v+0; ip[i+ 4] = v+3; ip[i+ 5] = v+2; 
@@ -247,17 +239,27 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 			ip[i+15] = v+4; ip[i+16] = v+7; ip[i+17] = v+6; 
 			ip[i+18] = v+6; ip[i+19] = v+7; ip[i+20] = v+1; 
 			ip[i+21] = v+6; ip[i+22] = v+1; ip[i+23] = v+0;
-			vp[v+0].pos = tl;              vp[v+0].uv = {0,0}; vp[v+0].color = item->style.border_color.rgba;
-			vp[v+1].pos = tl+vec2i( t, t); vp[v+1].uv = {0,0}; vp[v+1].color = item->style.border_color.rgba;
-			vp[v+2].pos = tr;              vp[v+2].uv = {0,0}; vp[v+2].color = item->style.border_color.rgba;
-			vp[v+3].pos = tr+vec2i(-t, t); vp[v+3].uv = {0,0}; vp[v+3].color = item->style.border_color.rgba;
-			vp[v+4].pos = br;              vp[v+4].uv = {0,0}; vp[v+4].color = item->style.border_color.rgba;
-			vp[v+5].pos = br+vec2i(-t,-t); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
-			vp[v+6].pos = bl;              vp[v+6].uv = {0,0}; vp[v+6].color = item->style.border_color.rgba;
-			vp[v+7].pos = bl+vec2i( t,-t); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
-			counts += {8, 24};
+			vp[v+0].pos = tl;             vp[v+0].uv = {0,0}; vp[v+0].color = item->style.border_color.rgba;
+			vp[v+1].pos = tl+vec2( t, t); vp[v+1].uv = {0,0}; vp[v+1].color = item->style.border_color.rgba;
+			vp[v+2].pos = tr;             vp[v+2].uv = {0,0}; vp[v+2].color = item->style.border_color.rgba;
+			vp[v+3].pos = tr+vec2(-t, t); vp[v+3].uv = {0,0}; vp[v+3].color = item->style.border_color.rgba;
+			vp[v+4].pos = br;             vp[v+4].uv = {0,0}; vp[v+4].color = item->style.border_color.rgba;
+			vp[v+5].pos = br+vec2(-t,-t); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
+			vp[v+6].pos = bl;             vp[v+6].uv = {0,0}; vp[v+6].color = item->style.border_color.rgba;
+			vp[v+7].pos = bl+vec2( t,-t); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
 		}break;
 	}
+	return {8,24};
+}
+
+//@item
+void ui_gen_item(uiItem* item){DPZoneScoped;
+	uiDrawCmd* dc = item->drawcmds;
+	Vertex2* vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*     ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	RenderDrawCounts counts = {0};
+	counts+=gen_background(item, vp, ip, counts);
+	counts+=gen_border(item, vp, ip, counts);
 }
 
 uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -323,38 +325,7 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->vertex_arena = memory_create_arena(Megabytes(1));
 	g_ui->index_arena  = memory_create_arena(Megabytes(1));
 	
-	ui_initial_style->     positioning = pos_static;
-	ui_initial_style->          sizing = 0;
-	ui_initial_style->            left = 0;
-	ui_initial_style->             top = 0;
-	ui_initial_style->           right = MAX_F32;
-	ui_initial_style->          bottom = MAX_F32;
-	ui_initial_style->           width = size_auto;
-	ui_initial_style->          height = size_auto;
-	ui_initial_style->     margin_left = 0;
-	ui_initial_style->      margin_top = 0;
-	ui_initial_style->    margin_right = MAX_F32;
-	ui_initial_style->   margin_bottom = MAX_F32;
-	ui_initial_style->    padding_left = 0;
-	ui_initial_style->     padding_top = 0;
-	ui_initial_style->   padding_right = MAX_F32;
-	ui_initial_style->  padding_bottom = MAX_F32;
-	ui_initial_style->   content_align = vec2{0,0};
-	ui_initial_style->            font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-	ui_initial_style->     font_height = 11;
-	ui_initial_style->background_color = color{0,0,0,0};
-	ui_initial_style->background_image = 0;
-	ui_initial_style->    border_style = border_none;
-	ui_initial_style->    border_color = color{180,180,180,255};
-	ui_initial_style->    border_width = 1;
-	ui_initial_style->      text_color = color{255,255,255,255};
-	ui_initial_style->        overflow = overflow_visible;
-	ui_initial_style->           focus = 0;
-	ui_initial_style->          hidden = 0;
-	ui_initial_style->      tab_spaces = 4;
-	
 	g_ui->base = uiItem{0};
-	g_ui->base.style = *ui_initial_style;
 	g_ui->base.file_created = STR8(__FILE__);
 	g_ui->base.line_created = __LINE__;
 	g_ui->base.style.width = DeshWindow->width;
@@ -382,7 +353,7 @@ TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
 void draw_item_branch(uiItem* item){DPZoneScoped;
 	if(item != &g_ui->base){
 		if(match_any(item->style.positioning, pos_fixed, pos_draggable_fixed)){
-			item->spos = item->style.tl;
+			item->spos = item->style.pos;
 		}else{
 			item->spos = uiItemFromNode(item->node.parent)->spos + item->lpos;
 		}
@@ -403,8 +374,10 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 void eval_item_branch(uiItem* item){DPZoneScoped;
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	
-	b32 wauto = item->style.width == size_auto;
-	b32 hauto = item->style.height == size_auto;
+	//if the sizing property is 0 the user is requesting automatic sizing for both unless one is set to not be 0
+	//but if a flag is explicitly set then it will always be auto
+	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
+	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	u32 wborder = (item->style.border_style ? item->style.border_width : 0);
 
 	/*-------------------------------------------------------------------------------------------------------
@@ -420,10 +393,10 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
             if(item->style.height < 0){
                 item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
             }else if(HasFlag(parent->style.sizing, size_percent_y)){ //if the parent's sizing is also set to percentage, we know it is already sized
-				parent_size_padded.y = parent->height - (parent->style.padding_bottom==MAX_F32?parent->style.padding_top:parent->style.padding_bottom) - parent->style.padding_top;
+				parent_size_padded.y = parent->height - parent->style.padding_bottom - parent->style.padding_top;
                 item->height = item->style.height/100.f * parent_size_padded.y;
             }else if (parent->style.height >= 0){ 
-				parent_size_padded.y = parent->style.height - (parent->style.padding_bottom==MAX_F32?parent->style.padding_top:parent->style.padding_bottom) - parent->style.padding_top;
+				parent_size_padded.y = parent->style.height - parent->style.padding_bottom - parent->style.padding_top;
                 item->height = item->style.height/100.f * parent_size_padded.y;
             }else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
@@ -438,10 +411,10 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
             if(item->style.width < 0) 
                 item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
             if(HasFlag(parent->style.sizing, size_percent_x)){
-				parent_size_padded.x = parent->width - (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right) - parent->style.padding_left;
+				parent_size_padded.x = parent->width - parent->style.padding_right - parent->style.padding_left;
                 item->width = item->style.width/100.f * parent_size_padded.x;
             }else if (parent->style.width >= 0){
-				parent_size_padded.x = parent->style.width - (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right) - parent->style.padding_left;
+				parent_size_padded.x = parent->style.width - parent->style.padding_right - parent->style.padding_left;
                 item->width = item->style.width/100.f * parent_size_padded.x;
             }else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
@@ -487,17 +460,39 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
-				child->lpos =  child->style.margin;
+				child->lpos = child->style.margin;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
 				cursor.y = child->lpos.y + child->height;
-				if(child->style.right!=MAX_F32 && !wauto){
-					child->lpos.x = (item->width - child->width) - child->style.right;
-				} else child->lx = child->style.left;
-				if(child->style.bottom!=MAX_F32 && !hauto){
-					child->ly = (item->height - child->height) - child->style.bottom;
-				} else child->ly = child->style.top;
+				
+				switch(child->style.anchor){
+					case anchor_top_left:{
+						child->lx += child->style.x;
+						child->ly += child->style.y;
+					}break;
+					case anchor_top_right:{
+						if(!wauto) child->lx += (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
+						
+						child->ly += child->style.y;
+					}break;
+					case anchor_bottom_right:{
+						if(!wauto) child->lx += (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
+
+						if(!hauto) child->lx += (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+					case anchor_bottom_left:{
+						child->lx += child->style.x;
+
+						if(!hauto) child->lx += (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+				}
+				
+				
 			}break;
 			case pos_fixed:
 			case pos_draggable_fixed:{
@@ -505,7 +500,31 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 			}break;
 			case pos_absolute:
 			case pos_draggable_absolute:{
-				child->lpos = child->style.tl;
+				switch(child->style.anchor){
+					case anchor_top_left:{
+						child->lx = child->style.x;
+						child->ly = child->style.y;
+					}break;
+					case anchor_top_right:{
+						if(!wauto) child->lx = (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
+						
+						child->ly = child->style.y;
+					}break;
+					case anchor_bottom_right:{
+						if(!wauto) child->lx = (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
+
+						if(!hauto) child->lx = (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+					case anchor_bottom_left:{
+						child->lx = child->style.x;
+
+						if(!hauto) child->lx = (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+				}
 			}break;
 		}
 
@@ -518,17 +537,17 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 
 		item->max_scroll = Max(item->max_scroll, child->lpos - item->style.scroll);
 
-		if(item->style.width == size_auto)
+		if(wauto)
             item->width = Max(item->width, child->lpos.x + child->width);
-        if(item->style.height == size_auto)
+        if(hauto)
             item->height = Max(item->height, child->lpos.y + child->height);
         
         //extend bottom and right margins if they arent explicitly set
-        if(item->style.height == size_auto){
+        if(wauto){
             if(child->style.margin_bottom == MAX_F32) item->height += child->style.margin_top;
             else if(child->style.margin_bottom > 0) item->height += child->style.margin_bottom;
         }
-        if(item->style.width == size_auto){
+        if(hauto){
             if(child->style.margin_right == MAX_F32) item->width += child->style.margin_left;
             else if(child->style.margin_right > 0) item->width += child->style.margin_right;
         }
@@ -604,10 +623,16 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 		
 		we quantize its position since we are working in floating point to avoid some silly fp things
 		this isn't fully tested though
+
+		we also set the item's content_size, which indicates the area that its content actually occupies inside it, as well
+		as the item's cpos which indicates where in the item its content starts in screen space
 	*/
 
 	item->lpos = round(item->lpos);
-	
+	item->cx = item->sx + wborder + item->style.padding_left;
+	item->cy = item->sy + wborder + item->style.padding_top;
+	item->content_height = item->height - wborder - (item->style.padding_top + (item->style.padding_bottom==MAX_F32?item->style.padding_top:item->style.padding_bottom));
+	item->content_width = item->width - wborder - (item->style.padding_left + (item->style.padding_right==MAX_F32?item->style.padding_left:item->style.padding_right));
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -618,14 +643,14 @@ void drag_item(uiItem* item){DPZoneScoped;
 		persist b32 dragging = false;
 		persist vec2 mp_offset;
 		if(key_pressed(Mouse_LEFT) && Math::PointInRectangle(mp_cur, item->spos, item->size)){
-			mp_offset = item->style.tl - mp_cur;
+			mp_offset = item->style.pos - mp_cur;
 			dragging = true;
 			g_ui->istate = uiISDragging;            
 		}
 		if(key_released(Mouse_LEFT)){ dragging = false;  g_ui->istate = uiISNone; }
 		
 		if(dragging){
-			item->style.tl = input_mouse_position() + mp_offset;
+			item->style.pos = input_mouse_position() + mp_offset;
 		}
 	}
 }
@@ -732,9 +757,12 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 void ui_update(){DPZoneScoped;
 	if(g_ui->item_stack.count > 1){
 		forI(g_ui->item_stack.count-1){
-			if(i==g_ui->item_stack.count-2)
+			if(i==g_ui->item_stack.count-2){
 				item_error(g_ui->item_stack[i+1], "Items are still left on the item stack. Did you forget to call uiItemE? Did you mean to use uiItemM?");
-			else item_error(g_ui->item_stack[i+1]);
+			}
+			else {
+				item_error(g_ui->item_stack[i+1]);
+			}
 		}
 		Assert(false);
 	}
@@ -888,7 +916,6 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	
 	if(style) memcpy(&item->style, style, sizeof(uiStyle));
 	else{
-		memcpy(&item->style, ui_initial_style, sizeof(uiStyle));
 		uiStyle* pstyle = &curitem->style;
 		item->style.text_color  = pstyle->text_color;
 		item->style.font        = pstyle->font;
@@ -917,7 +944,7 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-// @Slider
+// @slider
 
 void ui_gen_slider(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
@@ -925,23 +952,31 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	RenderDrawCounts counts = {0};	
 	uiSliderData* data = uiGetSliderData(item);
+	
+	vec2 pos = item->cpos;
+	vec2 size = item->content_size;
+
+	counts+=gen_background(item, vp, ip, counts);
+
+	counts+=gen_border(item, vp, ip, counts);
 
 	counts+=render_make_filledrect(vp,ip,counts,
-		vec2(item->spos.x, item->spos.y + item->size.y*(1 - data->style.rail_thickness)/2),
-		vec2(item->size.x, item->size.y * data->style.rail_thickness),
+		vec2(pos.x, pos.y + size.y*(1 - data->style.rail_thickness)/2),
+		vec2(size.x, size.y * data->style.rail_thickness),
 		data->style.colors.rail
 	);
 
+
 	if(data->style.dragger_shape == slider_dragger_rect){
-		vec2 dragp = vec2(item->spos.x+data->pos, item->spos.y);
-		vec2 drags = vec2(data->width, item->height);
+		vec2 dragp = vec2(pos.x+data->pos, pos.y);
+		vec2 drags = vec2(data->width, size.y);
 		counts+=render_make_filledrect(vp,ip,counts,dragp,drags,data->style.colors.dragger);
 	}else if(data->style.dragger_shape == slider_dragger_round){
 		NotImplemented;
 	}
 }
 
-void __ui_slider_callback(uiItem* item){DPZoneScoped;
+void ui_slider_callback(uiItem* item){DPZoneScoped;
 	uiSliderData* data = uiGetSliderData(item);
 	vec2 mp = input_mouse_position();
 	vec2 lmp = mp - item->spos;
@@ -976,12 +1011,11 @@ void __ui_slider_callback(uiItem* item){DPZoneScoped;
 	}
 }
 
-uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
+uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiSliderData));
 	ui_fill_item(item, style, file, line);
 
 	item->memsize = sizeof(uiItem) + sizeof(uiSliderData);
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
 	item->__generate = &ui_gen_slider;
 	item->trailing_data = item+sizeof(uiItem);
 
@@ -991,6 +1025,7 @@ uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 		render_make_filledrect_counts()*2+
 		render_make_rect_counts();
 
+	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
 	item->draw_cmd_count = 1;
 	drawcmd_alloc(item->drawcmds, counts);
 
@@ -1008,9 +1043,9 @@ uiItem* __ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 }
 
 uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = __ui_make_slider(style, file, line);
+	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &__ui_slider_callback;
+	item->action = &ui_slider_callback;
 	uiGetSliderData(item)->minf32 = min;
 	uiGetSliderData(item)->maxf32 = max;
 	uiGetSliderData(item)->varf32 = var;
@@ -1020,9 +1055,9 @@ uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file
 }
 
 uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = __ui_make_slider(style, file, line);
+	uiItem* item = ui_make_slider(style, file, line);
 
-	item->action = &__ui_slider_callback;
+	item->action = &ui_slider_callback;
 	uiGetSliderData(item)->minu32 = min;
 	uiGetSliderData(item)->maxu32 = max;
 	uiGetSliderData(item)->varu32 = var;
@@ -1032,9 +1067,9 @@ uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file
 }
 
 uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = __ui_make_slider(style, file, line);
+	uiItem* item = ui_make_slider(style, file, line);
 
-	item->action = &__ui_slider_callback;
+	item->action = &ui_slider_callback;
 	uiGetSliderData(item)->mins32 = max;
 	uiGetSliderData(item)->maxs32 = max;
 	uiGetSliderData(item)->vars32 = var;
@@ -1043,66 +1078,115 @@ uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file
 	return item;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+// @checkbox
 
+void ui_gen_checkbox(uiItem* item){
+	uiCheckbox* data = uiGetCheckbox(item);
+	uiDrawCmd* dc = item->drawcmds;
+	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	RenderDrawCounts counts = {0};	
 
-/*-----------------------------------------------------------------------------------------------------------------
+	vec2 fillingpos = item->spos + data->style.fill_padding * vec2::ONE;
+	vec2 fillingsize = item->size - data->style.fill_padding * vec2::ONE * 2;
+
+	counts+=gen_background(item, vp, ip, counts);
+
+	if(item->style.border_style){
+		counts+=gen_border(item, vp, ip, counts);
+		fillingpos += item->style.border_width * vec2::ONE;
+		fillingsize -= item->style.border_width * vec2::ONE * 2;
+	}
+
+	if(!data->var){
+		item_error(item, "A checkbox was created but was given no boolean to act on.");
+		return;
+	}
+	if(*data->var){
+		counts+=render_make_filledrect(vp,ip,counts,fillingpos,fillingsize,data->style.colors.filling);
+	}
+
+	dc->counts = counts;
+
+}
+
+void ui_checkbox_callback(uiItem* item){
+	uiCheckbox* data = uiGetCheckbox(item);
+	*data->var = !*data->var;
+	item->dirty = 1;
+}
+
+uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
+	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiCheckbox));
+	uiCheckbox* data = uiGetCheckbox(item);
+	ui_fill_item(item, style, file, line);
+
+	item->action = &ui_checkbox_callback;
+	item->__hash = &checkbox_style_hash;
+	item->__generate = *ui_gen_checkbox;
+
+	data->style.colors.filling = color(100,150,200);
+	data->style.fill_type = checkbox_fill_box;
+	data->style.fill_padding = vec2{2,2};
+	data->var = var;
+
+	RenderDrawCounts counts = //reserve enough room for background, box filling, and outline
+		render_make_filledrect_counts()*2+
+		render_make_rect_counts();
+
+	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
+	item->draw_cmd_count = 1;
+	drawcmd_alloc(item->drawcmds, counts);
+	item->action_trigger = action_act_mouse_pressed;
+	
+	return item;
+}
+
+/*---------------------------------------------------------------------------------------------------------------------
 
 	@ui_debug
 
 */
 
-struct __ui_debug_win_info{
-	uiItem* text;
-}__ui_dwi;
+struct ui_debug_win_info{
+	uiItem* selected_item;
 
-void __ui_debug_callback(uiItem* item){
-	uiTextData* text = uiGetTextData(__ui_dwi.text);
-	uiItem* hov = g_ui->hovered;
-	if(!hov) return;
-	str8b s = toStr8(
-		"id:   ", hov->id, "\n"
-		"lpos: ", hov->lpos, "\n"
-		"spos: ", hov->spos, "\n"
-		"size: ", hov->size, "\n"
-		"dcc:  ", hov->draw_cmd_count, "\n"
-		"style:", "\n"
-		"     positioning: ", hov->style.positioning, "\n"
-		"          sizing: ", hov->style.sizing, "\n"
-		"              tl: ", hov->style.tl, "\n"
-		"              br: ", hov->style.br, "\n"
-		"            size: ", hov->style.size, "\n"
-		"        margintl: ", hov->style.margin, "\n"
-		"        marginbr: ", hov->style.marginbr, "\n"
-		"       padding: ", hov->style.padding, "\n"
-		"       paddingbr: ", hov->style.paddingbr, "\n"
-		"   content_align: ", hov->style.content_align,  "\n"
-		"            font: ", (hov->style.font?hov->style.font->name:STR8("No font")), "\n"
-		"     font_height: ", hov->style.font_height, "\n"
-		"background_color: ", hov->style.background_color, "\n"
-		"background_image: ", (hov->style.background_image?hov->style.background_image->name:"No background"), "\n"
-		"    border_style: ", hov->style.border_style, "\n"
-		"    border_color: ", hov->style.border_color, "\n"
-		"    border_width: ", hov->style.border_width, "\n"
-		"      text_color: ", hov->style.text_color, "\n"
-		"        overflow: ", hov->style.overflow, "\n"
-	);
-	text->text = s.fin;
-	item->dirty = 1;
+}ui_dwi;
+
+void ui_debug_callback(uiItem* item){
+	
 }
 
+void ui_debug_panel_callback(uiItem* item){
+
+}
 
 void ui_debug(){
-	{uiItem* window = uiItemB();
-		uiStyle* style = &window->style;
+	uiStyle* style;
+	uiItem* window = uiItemB();{
+		window->id = STR8("_ui_ debug win");
+		window->action = &ui_debug_callback;
+		window->action_trigger = action_act_always;
+		style = &window->style;
 		style->positioning = pos_draggable_relative;
 		style->background_color = color(14,14,14);
 		style->border_style = border_solid;
-		window->id = STR8("_ui_ debug win");
-		__ui_dwi.text = uiTextM((str8{0,0}));
-		__ui_dwi.text->id = STR8("_ui_ debug win text");
-		window->action_trigger = action_act_always;
-		window->action = &__ui_debug_callback;
-	}
+		style->focus = 1;
+
+		uiItem* panel0 = uiItemB();{
+			panel0->id = STR8("_ui_ debug win panel0");
+			panel0->action = &ui_debug_panel_callback;
+			panel0->action_trigger = action_act_always;
+			style = &panel0->style;
+			style.padding = {10,10};
+
+		}uiItemE();
+
+
+
+
+	}uiItemE();
 }
 
 /*-----------------------------------------------------------------------------------------------------------------
@@ -1127,7 +1211,7 @@ void ui_demo(){
 				//set body to be absolutly positioned, allowing us to place it below the titlebar
 				body->id = STR8("body");
 				body->style.positioning = pos_absolute;
-				body->style.tl = {0, 15};
+				body->style.pos = {0, 15};
 				body->style.background_color = color(14,14,14);
 				body->style.padding = {10,10};
 				body->style.size = {300, 285};
@@ -1151,7 +1235,7 @@ void ui_demo(){
 			uiItem* body = uiItemB();{
 				//set body to be absolutly positioned, allowing us to place it below the titlebar
 				body->style.positioning = pos_absolute;
-				body->style.tl = {0, 15};
+				body->style.pos = {0, 15};
 				body->style.background_color = color(14,14,14);
 				body->style.padding = {10,10};
 				body->style.size = {300, 270};
@@ -1169,12 +1253,13 @@ void ui_demo(){
 			uiItem* in = uiItemB();{
 				in->id=STR8("in");
 				in->style.size = {10,10};
-				in->style.right = 0;
+				in->style.anchor = anchor_bottom_right;
+				in->style.x = 0;
 				in->style.positioning = pos_relative;
 				in->style.background_color = Color_Red;
 				in->action = [](uiItem* item){
-					item->style.right = 100*(sin(DeshTotalTime/1000)+1)/2;
-					item->style.bottom = 100*(cos(DeshTotalTime/1000)+1)/2;
+					item->style.x = 100*(sin(DeshTotalTime/1000)+1)/2;
+					item->style.y = 100*(cos(DeshTotalTime/1000)+1)/2;
 				}; in->action_trigger = action_act_always;
 			}uiItemE();
 		}uiItemE();
