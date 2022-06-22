@@ -31,7 +31,7 @@ Notes
 	cannot be used by ui's internals to evaluate anything, but the information in uiStyle should be enough already.
 
 	All of ui is interfaced to through uiItem pointers. In order to access data of a widget you must get it
-	through the widget's function for doing so (eg. uiGetSliderData(uiItem*)). This is to keep the interface from using
+	through the widget's function for doing so (eg. uiGetSlider(uiItem*)). This is to keep the interface from using
 	many different types, unless the user explicitly asks for them.
 
 	All items that are not passed a style pointer on creation initialize using ui_inital_style, so if you would like to adjust the
@@ -600,8 +600,8 @@ struct uiItem{
 		vec2 size;
 	};
 	union{ // size that content occupies
-		struct{ f32 content_width, content_height; };
-		vec2 content_size;
+		struct{ f32 cwidth, cheight; };
+		vec2 csize;
 	};
 	vec2 max_scroll;
 
@@ -707,11 +707,9 @@ UI_FUNC_API(uiItem*, ui_make_slider_s32, s32 min, s32 max, s32* var, uiStyle* st
 
 
 
-//extra slider data
-//access using uiSliderData on a uiItem* that was made as a slider
-//NOTE(sushi) this and other Data structs can probably just be called by the items name
-//            so this would just be uiSlider
-struct uiSliderData{
+struct uiSlider{
+	uiItem item;
+	
 	union{
 		u32 maxu32;
 		s32 maxs32;
@@ -744,7 +742,7 @@ struct uiSliderData{
 	}style;
 
 };
-#define uiGetSliderData(item) ((uiSliderData*)((item)->trailing_data))
+#define uiGetSlider(x) CastFromMember(uiSlider, item, x)
 
 enum{
 	slider_dragger_rect = 0,
@@ -752,7 +750,7 @@ enum{
 };
 
 inline u32 slider_style_hash(uiItem* item){
-	uiSliderData* data = uiGetSliderData(item);
+	uiSlider* data = uiGetSlider(item);
 	
 	u32 seed = 2166136261;
 	seed ^= data->style.colors.rail.rgba;       seed *= 16777619;

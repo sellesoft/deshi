@@ -159,14 +159,11 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 #define item_error(item, ...)\
 LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);
                                                                                                                       
-
-
-
 //fills an item struct and make its a child of the current item
 void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* curitem = *g_ui->item_stack.last;
 	
-	insert_first(&curitem->node, &item->node);
+	insert_last(&curitem->node, &item->node);
 	
 	if(style) memcpy(&item->style, style, sizeof(uiStyle));
 	else item->style = {0};
@@ -452,7 +449,12 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
-				cursor.y = child->lpos.y + child->height;
+				if(item->style.display == display_column){
+					cursor.y = child->lpos.y + child->height;
+					cursor.x = item->style.padding_left;
+				}else if(item->style.display == display_row){
+					cursor.x = child->lpos.x + child->width;
+				}
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
@@ -460,8 +462,12 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
-				cursor.y = child->lpos.y + child->height;
-				
+
+				if(item->style.display == display_column)
+					cursor.y = child->lpos.y + child->height;
+				else if(item->style.display == display_row)
+					cursor.x = child->lpos.x + child->width;
+
 				switch(child->style.anchor){
 					case anchor_top_left:{
 						child->lx += child->style.x;
@@ -548,7 +554,7 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
             else if(child->style.margin_right > 0) item->width += child->style.margin_right;
         }
 
-        cursor.x = item->style.padding_left;
+
         
     }
 
@@ -620,15 +626,15 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 		we quantize its position since we are working in floating point to avoid some silly fp things
 		this isn't fully tested though
 
-		we also set the item's content_size, which indicates the area that its content actually occupies inside it, as well
+		we also set the item's csize, which indicates the area that its content actually occupies inside it, as well
 		as the item's cpos which indicates where in the item its content starts in screen space
 	*/
 
 	item->lpos = floor(item->lpos);
 	item->cx = wborder + item->style.padding_left;
 	item->cy = wborder + item->style.padding_top;
-	item->content_height = item->height - 2*wborder - (item->style.padding_top + item->style.padding_bottom);
-	item->content_width = item->width - 2*wborder - (item->style.padding_left + item->style.padding_right);
+	item->cheight = item->height - 2*wborder - (item->style.padding_top + item->style.padding_bottom);
+	item->cwidth = item->width - 2*wborder - (item->style.padding_left + item->style.padding_right);
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -947,10 +953,10 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	RenderDrawCounts counts = {0};	
-	uiSliderData* data = uiGetSliderData(item);
+	uiSlider* data = uiGetSlider(item);
 	
 	vec2 pos = item->spos + item->cpos;
-	vec2 size = item->content_size;
+	vec2 size = item->csize;
 
 	counts+=gen_background(item, vp, ip, counts);
 	counts+=gen_border(item, vp, ip, counts);
@@ -972,7 +978,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 }
 
 void ui_slider_callback(uiItem* item){DPZoneScoped;
-	uiSliderData* data = uiGetSliderData(item);
+	uiSlider* data = uiGetSlider(item);
 	vec2 mp = input_mouse_position();
 	vec2 lmp = mp - item->spos;
 	switch(data->type){
@@ -984,13 +990,13 @@ void ui_slider_callback(uiItem* item){DPZoneScoped;
 			f32* var = data->varf32;
 			*var = Clamp(*var, min, max);
 			dragwidth = item->width/8;
-			dragpos = Remap(*var, 0.f, item->width-dragwidth, min, max);
-			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, vec2(dragpos,0), vec2(dragwidth, item->height))){
+			dragpos = Remap(*var, 0.f, item->cwidth-dragwidth, min, max);
+			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, vec2(dragpos,0), vec2(dragwidth, item->cheight))){
 				data->active = 1;
 				data->mouse_offset = -lmp.x + dragpos;
 			}
 			if(data->active){
-				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->width-dragwidth), min, max, 0.f, item->width-dragwidth);
+				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->cwidth-dragwidth), min, max, 0.f, item->cwidth-dragwidth);
 				item->dirty = 1;
 				item->action_trigger = action_act_always;
 			}
@@ -1007,14 +1013,12 @@ void ui_slider_callback(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiSliderData));
+	uiSlider* data = (uiSlider*)arena_add(item_arena, sizeof(uiSlider));
+	uiItem* item = &data->item;
 	ui_fill_item(item, style, file, line);
 
-	item->memsize = sizeof(uiItem) + sizeof(uiSliderData);
+	item->memsize = sizeof(uiSlider);
 	item->__generate = &ui_gen_slider;
-	item->trailing_data = item+sizeof(uiItem);
-
-	uiSliderData* data = uiGetSliderData(item);
 
 	RenderDrawCounts counts = //reserve enough room for slider rail, dragger, and outline
 		render_make_filledrect_counts()*2+
@@ -1041,10 +1045,10 @@ uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	uiGetSliderData(item)->minf32 = min;
-	uiGetSliderData(item)->maxf32 = max;
-	uiGetSliderData(item)->varf32 = var;
-	uiGetSliderData(item)->type = 0;
+	uiGetSlider(item)->minf32 = min;
+	uiGetSlider(item)->maxf32 = max;
+	uiGetSlider(item)->varf32 = var;
+	uiGetSlider(item)->type = 0;
 
 	return item;
 }
@@ -1053,10 +1057,10 @@ uiItem* ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file
 	uiItem* item = ui_make_slider(style, file, line);
 
 	item->action = &ui_slider_callback;
-	uiGetSliderData(item)->minu32 = min;
-	uiGetSliderData(item)->maxu32 = max;
-	uiGetSliderData(item)->varu32 = var;
-	uiGetSliderData(item)->type = 1;
+	uiGetSlider(item)->minu32 = min;
+	uiGetSlider(item)->maxu32 = max;
+	uiGetSlider(item)->varu32 = var;
+	uiGetSlider(item)->type = 1;
 	
 	return item;
 }
@@ -1065,10 +1069,10 @@ uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file
 	uiItem* item = ui_make_slider(style, file, line);
 
 	item->action = &ui_slider_callback;
-	uiGetSliderData(item)->mins32 = max;
-	uiGetSliderData(item)->maxs32 = max;
-	uiGetSliderData(item)->vars32 = var;
-	uiGetSliderData(item)->type = 2;
+	uiGetSlider(item)->mins32 = max;
+	uiGetSlider(item)->maxs32 = max;
+	uiGetSlider(item)->vars32 = var;
+	uiGetSlider(item)->type = 2;
 
 	return item;
 }
@@ -1084,7 +1088,7 @@ void ui_gen_checkbox(uiItem* item){
 	RenderDrawCounts counts = {0};	
 
 	vec2 fillingpos = item->spos + data->style.fill_padding + item->cpos;
-	vec2 fillingsize = item->content_size - data->style.fill_padding * 2;
+	vec2 fillingsize = item->csize - data->style.fill_padding * 2;
 
 	counts+=gen_background(item, vp, ip, counts);
 	counts+=gen_border(item, vp, ip, counts);
@@ -1107,8 +1111,8 @@ void ui_checkbox_callback(uiItem* item){
 }
 
 uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiCheckbox));
-	uiCheckbox* data = uiGetCheckbox(item);
+	uiCheckbox* data = (uiCheckbox*)arena_add(item_arena, sizeof(uiCheckbox));
+	uiItem* item = &data->item;
 	ui_fill_item(item, style, file, line);
 
 	item->action = &ui_checkbox_callback;
@@ -1148,7 +1152,12 @@ void ui_debug_callback(uiItem* item){
 }
 
 void ui_debug_panel_callback(uiItem* item){
-
+	if(Math::PointInRectangle(
+		input_mouse_position(),
+		item->spos + item->size.xComp() - vec2(10,0), item->size.yComp() + vec2(10, 0))){
+		Log("", "inrange");
+		
+	}
 }
 
 void ui_debug(){
@@ -1163,14 +1172,25 @@ void ui_debug(){
 		style->border_style = border_solid;
 		style->focus = 1;
 
-		uiItem* panel0 = uiItemB();{
+		uiStyle panel_style{0};
+		style->padding = {3,3};
+		style->paddingbr = {3,3};
+		style->sizing = size_percent_y;
+		style->width = 50;
+
+		uiItem* panel0 = uiItemBS(&panel_style);{
 			panel0->id = STR8("_ui_ debug win panel0");
 			panel0->action = &ui_debug_panel_callback;
 			panel0->action_trigger = action_act_always;
-			style = &panel0->style;
-			style.padding = {10,10};
-
 		}uiItemE();
+
+		uiItem* panel1 = uiItemBS(&panel_style);{
+			panel1->id = STR8("_ui_ debug win panel1");
+			panel1->action = &ui_debug_panel_callback;
+			panel1->action_trigger = action_act_always;
+		}uiItemE();
+
+
 
 
 
