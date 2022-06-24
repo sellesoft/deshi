@@ -866,7 +866,6 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	uiTextData* data = uiGetTextData(item);
 
-
 	dc->texture = item->style.font->tex;
 
 	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text));
@@ -1194,89 +1193,6 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	drawcmd_alloc(item->drawcmds, counts);
 	
 	return item;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-// @sizer
-
-void ui_gen_sizer(uiItem* item){
-
-}
-
-void ui_eval_sizer(uiItem* item){
-	uiSizer* data = uiGetSizer(item);
-
-	if(data->nchildren != item->node.child_count){
-		item_error(item, "A sizer was given a child count of ", data->nchildren, " but the actual child count is ", item->node.child_count);
-		return;
-	}
-
-
-
-	f32 effective_space;
-	if(item->style.display == display_column) effective_space = item->style.height;
-	if(item->style.display == display_row)    effective_space = item->style.width;
-
-	f32 sum = 0;
-	u32 idx = 0;
-	for_node(item->node.first_child){
-		uiItem* child = uiItemFromNode(it);
-		if(data->ratios[idx] == 0){
-			if     (item->style.display == display_column) effective_space -= child->style.height;
-			else if(item->style.display == display_row)    effective_space -= child->style.width;
-		}else sum += data->ratios[idx];
-		idx++;
-	}
-
-	idx = 0;
-
-	for_node(item->node.first_child){
-		uiItem* child = uiItemFromNode(it);
-		if(data->ratios[idx]){
-			if(item->style.display == display_column){
-				child->style.height = data->ratios[idx]/sum * effective_space;
-			}else if(item->style.display == display_row){
-				child->style.width = data->ratios[idx]/sum * effective_space;
-			}
-		}
-		idx++;
-	}
-
-}
-
-
-uiItem* ui_begin_sizer(f32* ratios, u32 nchildren, uiStyle* style, str8 file, upt line){
-	uiSizer* data = (uiSizer*)arena_add(item_arena, sizeof(uiSizer));
-	uiItem* item = &data->item;
-	ui_fill_item(item, style, file, line);
-
-	push_item(item);
-
-	item->memsize = sizeof(uiSizer);
-	item->__evaluate = &ui_eval_sizer;
-	item->__generate = &ui_gen_sizer;
-	
-	data->style.gap = 0;
-	data->nchildren = nchildren;
-	data->ratios = (f32*)memalloc(sizeof(f32)*nchildren);
-	memcpy(data->ratios, ratios, nchildren*sizeof(f32));
-
-	RenderDrawCounts counts = //reserve enough room for background and outline
-		render_make_filledrect_counts()+
-		render_make_rect_counts();
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
-
-
-
-	return item;
-
-}
-
-void ui_end_sizer(str8 file, upt line){
-	uiItem* item = pop_item();
-	
 }
 
 /*---------------------------------------------------------------------------------------------------------------------
