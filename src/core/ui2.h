@@ -124,6 +124,9 @@ possibly implement a system for suppressing certain errors on some behavoirs or 
 	to automatic sizing and an error is issued.
 
 -   Values:
+		size_normal (default)
+			The item's width and height will be set to its style 'size' property.
+	
 		size_percent_x 
 			Sets the items width as a percentage of its parents width.
 
@@ -145,6 +148,10 @@ possibly implement a system for suppressing certain errors on some behavoirs or 
 		size_square
 			Keeps the item at a 1:1 aspect ratio. This requires that either height or width are set to auto, while
 			the other has a specified value. If both values are specified, then this value is ignored
+
+		size_flex
+			Indicates that the item is to be considered in a flex container. This overrides the item's width or height
+			(depending on if display is set to row or column) to be a ratio to other flex items in the container.
 
 ------------------------------------------------------------------------------------------------------------
 *   top,left,bottom,right
@@ -408,7 +415,44 @@ TODO(sushi) example
 -   Defaults:
 		Defaults to false.
 
+------------------------------------------------------------------------------------------------------------
+*   display
+	---
+	Determines how to display an item's children. This is a flagged value, meaning it can take on several
+	different values. For example using 'display_column | display_reverse' will display children in a column
+	but in the reverse order that they were added.
 
+-	Values:
+		display_column (default)
+			Displays children from top to bottom. This is mutually exclusive with display_row.
+		
+		display_row
+			Displays children from left to right. This is mutually exclusive with display_column.
+
+		display_flex 
+			Sets the item to act as a flex container. This makes the container able to manually set the size
+			of its children whose sizing property is set to size_flex.
+			
+			When this flag is set the container will treat its children's width or height value (depending on 
+			if row or column is set) as a ratio of how large it should be relative to other items in the container.
+			For example, if you have 3 children and their ratios are set as 3, 1, 1, then the first child will be 
+			3 times as large as the other two and the last two will be the same size. 
+			You may also use floating point values as ratios.
+
+			Not all items in a flex container have to use size_flex. If an item is not sized in this way
+			flex will size its items around it. (TODO(sushi) flex demo) See the flex demo for examples.
+		    
+		display_reverse
+			Displays the containers items in reverse order, eg with display_column it will display items from 
+			right to left. Not from the right side of the container to the left though, this just specifies to
+			draw items in the reverse order they were added. If you want to draw items from the right side consider using
+			anchors or content align.
+
+-	Technical:
+		Since we require uiStyle's default to be 0, and I dont want to explicitly set display to column
+		every single time I make an item, display_column is equal to 0. This sort of makes it so that the first bit
+		is a boolean determining if we are drawing a row or column. This is beneficial because it enforces
+		row and column being mutually exclusive.
 */
 
 
@@ -451,7 +495,7 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_item
+// @item
 struct Texture;
 struct uiDrawCmd{
 	Node node;
@@ -474,6 +518,12 @@ enum{
 	pos_draggable_absolute,
 	pos_draggable_fixed,
 
+	anchor_top_left = 0,
+	anchor_top_right,
+	anchor_bottom_right,
+	anchor_bottom_left,
+
+	size_normal    = 0,
 	size_auto_y    = 1 << 0,
 	size_auto_x    = 1 << 1,
 	size_auto      = size_auto_x | size_auto_y,
@@ -484,12 +534,8 @@ enum{
     size_fill_y    = 1 << 5,
     size_fill      = size_fill_x | size_fill_y,
 	size_square    = 1 << 6,
+	size_flex      = 1 << 7,
 
-	anchor_top_left = 0,
-	anchor_top_right,
-	anchor_bottom_right,
-	anchor_bottom_left,
-	
 	border_none = 0,
 	border_solid,
 	
@@ -502,8 +548,10 @@ enum{
 	text_wrap_char, 
 	text_wrap_word,
 
-	display_column = 0,
-	display_row,
+	display_column      = 0,
+	display_row         = 1 << 0,
+	display_flex        = 1 << 1,
+	display_reverse     = 1 << 2,
 
 	action_act_never = 0,
 	action_act_mouse_hover,    // call action when the mouse is positioned over the item
@@ -515,9 +563,9 @@ enum{
 
 struct Font;
 external struct uiStyle{
-	Type positioning;
-    Type sizing;
+	Type positioning; 
 	Type anchor;
+    Type sizing;
 	union{
 		struct{f32 x, y;};
 		vec2 pos;
@@ -527,12 +575,20 @@ external struct uiStyle{
 		vec2 size;
 	};
 	union{
-		struct{f32 margin_left, margin_top;};
+		struct{f32 min_width, min_height;};
+		vec2 min_size;
+	};
+	union{
+		struct{f32 max_width, max_height;};
+		vec2 max_size;
+	};
+	union{
+		struct{f32 margin_left, margin_top;};	
 		vec2 margin;
 	};
 	union{
 		struct{f32 margin_bottom, margin_right;};
-		vec2 marginbr;        
+		vec2 marginbr; 
 	};
 	union{
 		struct{f32 padding_left, padding_top;};
@@ -555,8 +611,8 @@ external struct uiStyle{
 	f32   border_width;
 	color text_color;
 	Type  overflow;
-	b32   focus : 1;
-	b32   hidden : 1;
+	b32   focus;
+	b32   hidden;
 	Type  text_wrap;
 	u64   tab_spaces;
 	Type  display;
@@ -572,7 +628,7 @@ struct uiItem{
 	//an items action call back function 
 	//this function is called in situations defined by the flags in the in the uiStyle enum
 	//and is always called before anything happens to the item in ui_update
-	//NOTE(sushi) remember that to actually affect the item, you must change its style NOT the variables below
+	//NOTE(sushi) remember that to actually affect the item, you must change its style NOT the variables below or set it's dirty value to true
 	//NOTE(sushi) some special items (such as buttons, sliders, radios, etc.) reserve this variable
 	//TODO(sushi) maybe store 2 pointers, so that a user can always define an action
 	void (*action)(uiItem*);
@@ -693,7 +749,7 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_slider
+// @slider
 
 UI_FUNC_API(uiItem*, ui_make_slider_f32, f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
 #define uiSliderf32(min,max,var)        UI_DEF(make_slider_f32(min,max,var,0,STR8(__FILE__),__LINE__));
@@ -704,8 +760,6 @@ UI_FUNC_API(uiItem*, ui_make_slider_u32, u32 min, u32 max, u32* var, uiStyle* st
 UI_FUNC_API(uiItem*, ui_make_slider_s32, s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line);
 #define uiSliders32(min,max,var)        UI_DEF(make_slider_s32(min,max,var,0,STR8(__FILE__),__LINE__));
 #define uiSliders32S(min,max,var,style) UI_DEF(make_slider_s32(min,max,var,(style),STR8(__FILE__),__LINE__));
-
-
 
 struct uiSlider{
 	uiItem item;
@@ -762,7 +816,7 @@ inline u32 slider_style_hash(uiItem* item){
 } 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_checkbox
+// @checkbox
 
 //uiCheckbox is a terminal node, so it cannot hold any children
 UI_FUNC_API(uiItem*, ui_make_checkbox, b32* var, uiStyle* style, str8 file, upt line);
@@ -798,8 +852,8 @@ inline u32 checkbox_style_hash(uiItem* item){
 	return seed;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_text
+//---------------------------------------------------------------------------------------------
+// @text
 
 //uiText is a terminal node meaning it cannot have any children. If you dont pass a style var
 //the text will take on the default style, but will inherit text related properties from its parent
@@ -817,13 +871,10 @@ struct uiTextData{
 	str8 text;
 	array<pair<s64,vec2>> breaks;
 };
-#define uiTextTag PackU32('t','e','x','t')
-//NOTE(sushi) be careful when using this as it does no type checking
-//            if you want to check if an item is a slider, use tag
 #define uiGetTextData(item) ((uiTextData*)((item)->trailing_data))
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-// @ui_context
+//-------------------------------------------------------------------------------------------------
+// @context
 struct MemoryContext;
 struct uiContext;
 UI_FUNC_API(void, ui_init, MemoryContext* memctx, uiContext* uictx);

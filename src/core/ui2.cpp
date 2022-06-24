@@ -285,8 +285,7 @@ void ui_end_item(str8 file, upt line){DPZoneScoped;
 			 "\tAttempted to end base item. Did you call uiItemE too many times? Did you use uiItemM instead of uiItemB?"
 		);
 		//TODO(sushi) implement a hint showing what instruction could possibly be wrong 
-	}
-	pop_item();
+	}else pop_item();
 	
 }
 
@@ -363,16 +362,26 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 		}
 }
 
+struct EvalContext{
+	struct{
+		b32 flex_container; //set true if the parent is a flex container
+		b32 disprow; //set true if the parent is displaying items in a row
+		f32 ratio_sum; //sum of flex sized child ratios
+		f32 effective_size; //size that the parent can fit flexed items in
+	}flex;
+};
+
 //reevaluates an entire brach of items
-void eval_item_branch(uiItem* item){DPZoneScoped;
+void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
+	EvalContext contextout = {0};
+	
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	
-	//if the sizing property is 0 the user is requesting automatic sizing for both unless one is set to not be 0
-	//but if a flag is explicitly set then it will always be auto
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	u32 wborder = (item->style.border_style ? item->style.border_width : 0);
-
+	b32 disprow = HasFlag(item->style.display, display_row);
+	
 	/*-------------------------------------------------------------------------------------------------------
 		at this point we know if the item is to be automatically sized based on its content and what we should consider
 		it's border width
@@ -381,41 +390,46 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 	*/
 
 	vec2 parent_size_padded;
-    if(!hauto){
-        if(HasFlag(item->style.sizing, size_percent_y)){
-            if(item->style.height < 0){
-                item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
-            }else if(HasFlag(parent->style.sizing, size_percent_y)){ //if the parent's sizing is also set to percentage, we know it is already sized
+	//TODO(sushi) this can probably be cleaned up 
+	if(!hauto){
+		if(context.flex.flex_container && !context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
+			item->height = item->style.height / context.flex.ratio_sum * context.flex.effective_size;
+		}else if(HasFlag(item->style.sizing, size_percent_y)){
+			if(item->style.height < 0){
+				item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
+			}else if(HasFlag(parent->style.sizing, size_percent_y)){ //if the parent's sizing is also set to percentage, we know it is already sized
 				parent_size_padded.y = parent->height - parent->style.padding_bottom - parent->style.padding_top;
-                item->height = item->style.height/100.f * parent_size_padded.y;
-            }else if (parent->style.height >= 0){ 
+				item->height = item->style.height/100.f * parent_size_padded.y;
+			}else if (parent->style.height >= 0){ 
 				parent_size_padded.y = parent->style.height - parent->style.padding_bottom - parent->style.padding_top;
-                item->height = item->style.height/100.f * parent_size_padded.y;
-            }else{
+				item->height = item->style.height/100.f * parent_size_padded.y;
+			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
-                item_error(item, "Sizing flag 'size_percent_y' was specified, but the item's parent's height is not explicitly sized.");
-                hauto = 1;
-            }
-        }else item->height = item->style.height;
-    }else item->height = 0;
+				item_error(item, "Sizing flag 'size_percent_y' was specified, but the item's parent's height is not explicitly sized.");
+				hauto = 1;
+			}
+		}else item->height = item->style.height;
+	}else item->height = 0;
 
-    if(!wauto){
-        if(HasFlag(item->style.sizing, size_percent_x)){
-            if(item->style.width < 0) 
-                item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
-            if(HasFlag(parent->style.sizing, size_percent_x)){
+	if(!wauto){
+		if(context.flex.flex_container && context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
+			item->width = item->style.width / context.flex.ratio_sum * context.flex.effective_size;
+		}else if(HasFlag(item->style.sizing, size_percent_x)){
+			if(item->style.width < 0) 
+				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
+			if(HasFlag(parent->style.sizing, size_percent_x)){
 				parent_size_padded.x = parent->width - parent->style.padding_right - parent->style.padding_left;
-                item->width = item->style.width/100.f * parent_size_padded.x;
-            }else if (parent->style.width >= 0){
+				item->width = item->style.width/100.f * parent_size_padded.x;
+			}else if (parent->style.width >= 0){
 				parent_size_padded.x = parent->style.width - parent->style.padding_right - parent->style.padding_left;
-                item->width = item->style.width/100.f * parent_size_padded.x;
-            }else{
+				item->width = item->style.width/100.f * parent_size_padded.x;
+			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
-                item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
-                hauto = 1;
-            }
-        }else item->width = item->style.width;
-    }else item->width = 0;
+				item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
+				hauto = 1;
+			}
+		}else item->width = item->style.width;
+	}else item->width = 0;
 
 	if(HasFlag(item->style.sizing, size_square)){
 		if     (!wauto &&  hauto) item->height = item->width;
@@ -423,12 +437,44 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified" : "specified."));
 	}
 
+	
 	/*-------------------------------------------------------------------------------------------------------
 		at this point we know what the items size is if it is explicitly sized, or if it is to be automatically sized
 		we have set the size to 0.
 
 		next if the item has a custom evaluation function assigned to it we call it.
 	*/
+
+	
+	if(HasFlag(item->style.display, display_flex)){
+		contextout.flex.flex_container = 1;
+		contextout.flex.effective_size = 
+			(disprow ? 
+				item->width  - item->style.padding_left - item->style.padding_right : 
+				item->height - item->style.padding_top  - item->style.padding_bottom
+			);
+		contextout.flex.ratio_sum = 0;
+		contextout.flex.disprow = disprow;
+
+		if(disprow && wauto){
+			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_row' were set, but the containers sizing property was set with flag 'size_auto_x'.");
+			return;	
+		}else if(hauto){
+			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_column' were set, but the containers sizing property was set with flag 'size_auto_y'.");
+			return;
+		}
+
+		//first pass to figure out ratios
+		for_node(item->node.first_child){
+			uiItem* child = uiItemFromNode(it);
+			if(HasFlag(child->style.sizing, size_flex)){
+				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
+			}else{
+				contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
+			}
+		}
+	}
+
 
 	if(item->__evaluate) item->__evaluate(item);
 
@@ -439,16 +485,25 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 	*/
 
 	vec2 cursor = item->style.padding - item->style.scroll;
-	for_node(item->node.first_child){
+	
+	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);
+	while(it){
 		uiItem* child = uiItemFromNode(it);
 		if(child->style.hidden) continue;
-		eval_item_branch(child);    
+		eval_item_branch(child, contextout);    
 		switch(child->style.positioning){
 			case pos_static:{
 				child->lpos =  child->style.margin;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
+				if(HasFlag(item->style.display, display_row))
+					cursor.x = child->lpos.x + child->width;
+				else{
+					cursor.y = child->lpos.y + child->height;
+					cursor.x = item->style.padding_left;
+				}
+				
 				if(item->style.display == display_column){
 					cursor.y = child->lpos.y + child->height;
 					cursor.x = item->style.padding_left;
@@ -462,11 +517,11 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 				if(item->style.border_style)
 					child->lpos += floor(item->style.border_width) * vec2::ONE;
 				child->lpos += cursor;
-
-				if(item->style.display == display_column)
-					cursor.y = child->lpos.y + child->height;
-				else if(item->style.display == display_row)
+				
+				if(HasFlag(item->style.display, display_row))
 					cursor.x = child->lpos.x + child->width;
+				else
+					cursor.y = child->lpos.y + child->height;
 
 				switch(child->style.anchor){
 					case anchor_top_left:{
@@ -554,9 +609,8 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
             else if(child->style.margin_right > 0) item->width += child->style.margin_right;
         }
 
-
-        
-    }
+		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
+	}
 
 	/*-------------------------------------------------------------------------------------------------------
 		at this point we have evaluated all of the item's decendents and the item should be sized relative to its children 
@@ -575,7 +629,14 @@ void eval_item_branch(uiItem* item){DPZoneScoped;
 
     item->width += (wauto ? 1 : 2) * wborder;
     item->height += (hauto ? 1 : 2) * wborder;
+
+	if(item->style.max_width)  item->width  = Min(item->style.max_width,  item->width);
+	if(item->style.max_height) item->height = Min(item->style.max_height, item->height);
+	item->width  = Max(item->style.min_width,  item->width);
+	item->height = Max(item->style.min_height, item->height);
+
 	
+
 	/*-------------------------------------------------------------------------------------------------------
 		at this point the items size has been fully evaluated
 
@@ -702,7 +763,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		item->dirty = 0;
 		item->style_hash = nuhash; 
 		uiItem* sspar = uiItemFromNode(ui_find_static_sized_parent(&item->node, 0));
-		eval_item_branch(sspar);
+		eval_item_branch(sspar, {0});
 		draw_item_branch(sspar);
 	}
 	
@@ -805,9 +866,8 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	uiTextData* data = uiGetTextData(item);
 
-	uiItem* parent = uiItemFromNode(item->node.parent);
 
-	dc->texture = parent->style.font->tex;
+	dc->texture = item->style.font->tex;
 
 	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text));
 	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
@@ -819,16 +879,16 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	}
 
-	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 
 	vec2 cursor = item->spos;
 	forI(data->breaks.count-1){
 		auto [idx, pos] = data->breaks[i];
 		counts+=render_make_text(vp, ip, counts, 
 					{data->text.str+idx, s64(data->breaks[i+1].first - data->breaks[i].first)}, 
-					parent->style.font,
-					item->spos + pos, parent->style.text_color,  
-					vec2::ONE * parent->style.font_height / parent->style.font->max_height
+					item->style.font,
+					item->spos + pos, item->style.text_color,  
+					vec2::ONE * item->style.font_height / item->style.font->max_height
 				);
 	
 	}
@@ -836,10 +896,10 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 
 void ui_eval_text(uiItem* item){
 	uiItem* parent = uiItemFromNode(item->node.parent);
-	
-	b32 do_wrapping = (parent->style.width != size_auto) && (parent->style.text_wrap != text_wrap_none);
 
-	f32 wrapspace = parent->style.width - (parent->style.padding_left + (parent->style.padding_right==MAX_F32?parent->style.padding_left:parent->style.padding_right));
+	b32 do_wrapping = (parent->style.width != size_auto) && (item->style.text_wrap != text_wrap_none);
+
+	f32 wrapspace = parent->width - parent->style.padding_left - parent->style.padding_right;
 
 	uiTextData* data = uiGetTextData(item);
 	data->breaks.clear();
@@ -847,7 +907,7 @@ void ui_eval_text(uiItem* item){
 
 	str8 last_space_or_tab = data->text;
 	str8 scan = data->text;
-	f32 space_width = font_visual_size(parent->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	f32 width_since_last_word = 0;
 	f32 xoffset = 0;
 	f32 yoffset = 0;
@@ -855,12 +915,12 @@ void ui_eval_text(uiItem* item){
 		DecodedCodepoint dc = str8_advance(&scan);
 		if(dc.codepoint == U'\n'){
 			width_since_last_word = 0;
-			yoffset+=parent->style.font_height;
+			yoffset+=item->style.font_height;
 			xoffset=0;
 			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
 		}else if(dc.codepoint == U'\t'){
 			width_since_last_word = 0;
-			xoffset+=parent->style.tab_spaces*space_width;
+			xoffset+=item->style.tab_spaces*space_width;
 			last_space_or_tab = scan;
 			data->breaks.add({scan.str-data->text.str, {xoffset,yoffset}});
 		}else if(dc.codepoint == U' '){
@@ -868,15 +928,15 @@ void ui_eval_text(uiItem* item){
 			last_space_or_tab = scan;
 			xoffset += space_width;
 		}else{
-			f32 cwidth = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+			f32 cwidth = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
 			width_since_last_word += cwidth;
 			xoffset += cwidth;
 		}
 
 		if(do_wrapping && xoffset > wrapspace){
-			if(parent->style.text_wrap == text_wrap_word){
+			if(item->style.text_wrap == text_wrap_word){
 				xoffset = 0;
-				yoffset += parent->style.font_height;
+				yoffset += item->style.font_height;
 				//if we are wrapping where a break already is, we dont need to make another break, just adjust it
 				if(last_space_or_tab.str - data->text.str == data->breaks.last->first){
 					data->breaks.last->second = {xoffset,yoffset};
@@ -884,9 +944,9 @@ void ui_eval_text(uiItem* item){
 					data->breaks.add({last_space_or_tab.str - data->text.str, {xoffset,yoffset}});
 				}
 				xoffset = width_since_last_word;
-			}else if(parent->style.text_wrap == text_wrap_char){
+			}else if(item->style.text_wrap == text_wrap_char){
 				xoffset = 0;
-				yoffset += parent->style.font_height;
+				yoffset += item->style.font_height;
 				
 				if(dc.codepoint == '\t'){
 					data->breaks.last->second.y = yoffset;
@@ -900,11 +960,11 @@ void ui_eval_text(uiItem* item){
 					}
 				}
 			
-				xoffset = font_visual_size(parent->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+				xoffset = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
 			}
 		}
 		item->width = Max(item->width, xoffset);
-		item->height = yoffset + parent->style.font_height;
+		item->height = yoffset + item->style.font_height;
 	}
 	data->breaks.add({data->text.count, {xoffset,yoffset}});
 }
@@ -1118,6 +1178,7 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	item->action = &ui_checkbox_callback;
 	item->__hash = &checkbox_style_hash;
 	item->__generate = *ui_gen_checkbox;
+	item->action_trigger = action_act_mouse_pressed;
 
 	data->style.colors.filling = color(100,150,200);
 	data->style.fill_type = checkbox_fill_box;
@@ -1131,9 +1192,91 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
 	item->draw_cmd_count = 1;
 	drawcmd_alloc(item->drawcmds, counts);
-	item->action_trigger = action_act_mouse_pressed;
 	
 	return item;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+// @sizer
+
+void ui_gen_sizer(uiItem* item){
+
+}
+
+void ui_eval_sizer(uiItem* item){
+	uiSizer* data = uiGetSizer(item);
+
+	if(data->nchildren != item->node.child_count){
+		item_error(item, "A sizer was given a child count of ", data->nchildren, " but the actual child count is ", item->node.child_count);
+		return;
+	}
+
+
+
+	f32 effective_space;
+	if(item->style.display == display_column) effective_space = item->style.height;
+	if(item->style.display == display_row)    effective_space = item->style.width;
+
+	f32 sum = 0;
+	u32 idx = 0;
+	for_node(item->node.first_child){
+		uiItem* child = uiItemFromNode(it);
+		if(data->ratios[idx] == 0){
+			if     (item->style.display == display_column) effective_space -= child->style.height;
+			else if(item->style.display == display_row)    effective_space -= child->style.width;
+		}else sum += data->ratios[idx];
+		idx++;
+	}
+
+	idx = 0;
+
+	for_node(item->node.first_child){
+		uiItem* child = uiItemFromNode(it);
+		if(data->ratios[idx]){
+			if(item->style.display == display_column){
+				child->style.height = data->ratios[idx]/sum * effective_space;
+			}else if(item->style.display == display_row){
+				child->style.width = data->ratios[idx]/sum * effective_space;
+			}
+		}
+		idx++;
+	}
+
+}
+
+
+uiItem* ui_begin_sizer(f32* ratios, u32 nchildren, uiStyle* style, str8 file, upt line){
+	uiSizer* data = (uiSizer*)arena_add(item_arena, sizeof(uiSizer));
+	uiItem* item = &data->item;
+	ui_fill_item(item, style, file, line);
+
+	push_item(item);
+
+	item->memsize = sizeof(uiSizer);
+	item->__evaluate = &ui_eval_sizer;
+	item->__generate = &ui_gen_sizer;
+	
+	data->style.gap = 0;
+	data->nchildren = nchildren;
+	data->ratios = (f32*)memalloc(sizeof(f32)*nchildren);
+	memcpy(data->ratios, ratios, nchildren*sizeof(f32));
+
+	RenderDrawCounts counts = //reserve enough room for background and outline
+		render_make_filledrect_counts()+
+		render_make_rect_counts();
+	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
+	item->draw_cmd_count = 1;
+	drawcmd_alloc(item->drawcmds, counts);
+
+
+
+	return item;
+
+}
+
+void ui_end_sizer(str8 file, upt line){
+	uiItem* item = pop_item();
+	
 }
 
 /*---------------------------------------------------------------------------------------------------------------------
@@ -1170,13 +1313,15 @@ void ui_debug(){
 		style->positioning = pos_draggable_relative;
 		style->background_color = color(14,14,14);
 		style->border_style = border_solid;
+		style->border_color = color(188,188,188);
 		style->focus = 1;
+		style->size = {500,500};
 
 		uiStyle panel_style{0};
-		style->padding = {3,3};
-		style->paddingbr = {3,3};
-		style->sizing = size_percent_y;
-		style->width = 50;
+		panel_style.padding = {3,3};
+		panel_style.paddingbr = {3,3};
+		panel_style.sizing = size_percent_y;
+		panel_style.width = 50;
 
 		uiItem* panel0 = uiItemBS(&panel_style);{
 			panel0->id = STR8("_ui_ debug win panel0");
@@ -1189,87 +1334,54 @@ void ui_debug(){
 			panel1->action = &ui_debug_panel_callback;
 			panel1->action_trigger = action_act_always;
 		}uiItemE();
-
-
-
-
-
-
 	}uiItemE();
 }
 
 /*-----------------------------------------------------------------------------------------------------------------
 
-	@ui_demo
+	@demo
 
 */
 
 void ui_demo(){
-	if(0){//window with a title bar
-		uiItem* titlebar = uiItemB();{
-			titlebar->style.background_color = color(50,50,50);
-			titlebar->style.positioning = pos_draggable_fixed;
-			titlebar->style.size = {300,15};
-			titlebar->style.content_align = {0, 0.5};
-			titlebar->style.focus = true;
-			titlebar->id = STR8("titlebar");
-			//make title
-			uiTextML("demo window")->id = STR8("title");
-			
-			uiItem* body = uiItemB();{
-				//set body to be absolutly positioned, allowing us to place it below the titlebar
-				body->id = STR8("body");
-				body->style.positioning = pos_absolute;
-				body->style.pos = {0, 15};
-				body->style.background_color = color(14,14,14);
-				body->style.padding = {10,10};
-				body->style.size = {300, 285};
-				uiTextML("some text in the window body")->id = STR8("bodytext1");
-				uiTextML("some more text in the window body\nthis one is newlined.")->id = STR8("bodytext2");
-			}uiItemE();
-		}uiItemE();
-	}
+	
 
-	if(0){//another window with a title bar to show focusing 
-		uiItem* titlebar = uiItemB();{
-			titlebar->style.background_color = color(50,50,50);
-			titlebar->style.positioning = pos_draggable_fixed;
-			titlebar->style.size = {300,15};
-			titlebar->style.content_align = {0, 0.5};
-			titlebar->style.focus = true;
-			titlebar->id = STR8("titlebar");
-			//make title
-			uiTextML("demo window");
-			
-			uiItem* body = uiItemB();{
-				//set body to be absolutly positioned, allowing us to place it below the titlebar
-				body->style.positioning = pos_absolute;
-				body->style.pos = {0, 15};
-				body->style.background_color = color(14,14,14);
-				body->style.padding = {10,10};
-				body->style.size = {300, 270};
-				uiTextML("some text in the window body");
-				uiTextML("some more text in the window body\nthis one is newlined.");
-			}uiItemE();
-		}uiItemE();
-	}
+	{//test sizer
+		uiItem* container = uiItemB();{
+			container->style.size = {200, 100};
+			container->style.display = display_flex | display_row;
+			container->style.background_color = color(50,60,100);
+			container->style.padding = {10,10};
+			container->style.paddingbr = {10,10};
+			container->id = STR8("container");
 
-	if(1){//test bottom and right positioning
-		uiItem* cont = uiItemB();{
-			cont->style.background_color = Color_VeryDarkCyan;
-			cont->style.size = {100,100};
-			cont->style.positioning = pos_draggable_relative;
-			uiItem* in = uiItemB();{
-				in->id=STR8("in");
-				in->style.size = {10,10};
-				in->style.anchor = anchor_bottom_right;
-				in->style.x = 0;
-				in->style.positioning = pos_relative;
-				in->style.background_color = Color_Red;
-				in->action = [](uiItem* item){
-					item->style.x = 100*(sin(DeshTotalTime/1000)+1)/2;
-					item->style.y = 100*(cos(DeshTotalTime/1000)+1)/2;
-				}; in->action_trigger = action_act_always;
+			uiStyle flex_style={0};
+			flex_style.sizing = size_flex;
+			flex_style.height = 20;
+
+			uiItem* c0 = uiItemBS(&flex_style);{
+				c0->style.background_color = Color_Red;
+				c0->style.width = 3;
+				c0->id = STR8("c0");
+				c0->style.text_wrap = text_wrap_word;
+				c0->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+				c0->style.font_height = 11;
+				c0->style.text_color = color(255,255,255);
+				uiTextML("some text to put in the flexed item ok")->id=STR8("text");
+				c0->action = [](uiItem* item){	
+					item->style.width = BoundTimeOsc(1,3);
+				};
+				c0->action_trigger = action_act_always;
+			}uiItemE();
+			uiItem* c1 = uiItemBS(&flex_style);{
+				c1->style.background_color = Color_Green;
+				c1->style.width = 2;
+				c1->id = STR8("c1");
+			}uiItemE();
+			uiItem* c2 = uiItemBS(&flex_style);{
+				c2->style.background_color = Color_Blue;
+				c2->style.width = 1;
+				c2->id = STR8("c2");
 			}uiItemE();
 		}uiItemE();
 	}
