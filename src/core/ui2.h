@@ -605,24 +605,28 @@ external struct uiStyle{
 	};
 	union{
 		vec4 margin;
-		union{
-			struct{f32 margin_left, margin_top;};	
-			vec2 margintl;
-		};
-		union{
-			struct{f32 margin_bottom, margin_right;};
-			vec2 marginbr; 
+		struct{
+			union{
+				struct{f32 margin_left, margin_top;};	
+				vec2 margintl;
+			};
+			union{
+				struct{f32 margin_bottom, margin_right;};
+				vec2 marginbr; 
+			};
 		};
 	};
 	union{
 		vec4 padding;
-		union{
-			struct{f32 padding_left, padding_top;};
-			vec2 paddingtl;
-		};
-		union{
-			struct{f32 padding_bottom, padding_right;};
-			vec2 paddingbr;        
+		struct{
+			union{
+				struct{f32 padding_left, padding_top;};
+				vec2 paddingtl;
+			};
+			union{
+				struct{f32 padding_bottom, padding_right;};
+				vec2 paddingbr;        
+			};
 		};
 	};
 	union{
@@ -894,11 +898,12 @@ UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt lin
 #define uiTextMSL(text, style) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
 
 
-struct uiTextData{
+struct uiText{
+	uiItem item;
 	str8 text;
 	array<pair<s64,vec2>> breaks;
 };
-#define uiGetTextData(item) ((uiTextData*)((item)->trailing_data))
+#define uiGetText(x) CastFromMember(uiText, item, x)
 
 //-------------------------------------------------------------------------------------------------
 // @context
@@ -958,9 +963,8 @@ struct uiContext{
 	uiInputState istate;
 	
 	//// memory ////
-	b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
-	ArenaList* item_list;
-	ArenaList* drawcmd_list;
+	//b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
+	array<uiItem*> items;
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
 	Arena* vertex_arena;
 	Arena* index_arena;

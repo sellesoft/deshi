@@ -59,22 +59,12 @@
 //---------------------------------------------------------------------------------------------------------------------
 // @memory
 
-#define item_arena g_ui->item_list->arena
-#define drawcmd_arena g_ui->drawcmd_list->arena
-
-ArenaList* create_arena_list(ArenaList* old){DPZoneScoped;
-	ArenaList* nual = (ArenaList*)memory_alloc(sizeof(ArenaList));
-	if(old) NodeInsertNext(&old->node, &nual->node);
-	nual->arena = memory_create_arena(Megabytes(1));
-	return nual;
+void* make_item(upt size){
+	return memalloc(size);
 }
 
-void* arena_add(Arena* arena, upt size){DPZoneScoped;
-	Assert(arena->used + size < arena->size, "Implement arena growing");
-	u8* cursor = arena->cursor;
-	arena->cursor += size;
-	arena->used += size;
-	return cursor;
+uiDrawCmd* make_drawcmd(upt count){
+	return (uiDrawCmd*)memalloc(count*sizeof(uiDrawCmd));
 }
 
 void push_item(uiItem* item){DPZoneScoped;
@@ -91,7 +81,7 @@ uiItem* pop_item(){DPZoneScoped;
 
 void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	NodeInsertPrev(&g_ui->inactive_drawcmds, &drawcmd->node);
-	g_ui->cleanup = 1;
+	//g_ui->cleanup = 1;
 }
 
 void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
@@ -134,6 +124,7 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 			//we do not handle actually removing the drawcmd from the arena it lives in, this is handled later
 			//in a cleanup pass
 			NodeRemove(n);
+			memzfree(dc);
 		}
 
 		if(v_place_next != -1 && i_place_next != -1){
@@ -176,7 +167,7 @@ void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScope
 //TODO(sushi) make an option for this to take into account wrapping
 vec2 calc_text_size(uiItem* item){DPZoneScoped;
 	uiStyle* style = &item->style;
-	str8 text = uiGetTextData(item)->text;
+	str8 text = uiGetText(item)->text;
 	vec2 result = vec2{0, (f32)style->font_height};
 	f32 line_width = 0;
 	switch(style->font->type){
@@ -260,11 +251,12 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem));
+	uiItem* item = (uiItem*)memalloc(sizeof(uiItem));
+	g_ui->items.add(item);
 	ui_fill_item(item, style, file, line);
 	
 	item->memsize = sizeof(uiItem);
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
+	item->drawcmds = make_drawcmd(1);
 	
 	RenderDrawCounts counts = //reserve enough room for a background and border 
 		render_make_filledrect_counts() +
@@ -311,13 +303,11 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui     = uictx;
 #endif
 
-	g_ui->cleanup = 0;
+	//g_ui->cleanup = 0;
 	
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
 
-	g_ui->item_list    = create_arena_list(0);
-	g_ui->drawcmd_list = create_arena_list(0);
 	g_ui->vertex_arena = memory_create_arena(Megabytes(1));
 	g_ui->index_arena  = memory_create_arena(Megabytes(1));
 	
@@ -402,10 +392,8 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			if(item->style.height < 0){
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
 			}else if(HasFlag(parent->style.sizing, size_percent_y)){ //if the parent's sizing is also set to percentage, we know it is already sized
-				parent_size_padded.y = parent->height - parent->style.padding_bottom - parent->style.padding_top - 2*wborder;
 				item->height = item->style.height/100.f * PaddedHeight(parent);
 			}else if (parent->style.height >= 0){ 
-				parent_size_padded.y = parent->style.height - parent->style.padding_bottom - parent->style.padding_top - 2*wborder;
 				item->height = item->style.height/100.f * PaddedStyleHeight(parent);
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
@@ -421,12 +409,10 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		}else if(HasFlag(item->style.sizing, size_percent_x)){
 			if(item->style.width < 0) 
 				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
-			if(HasFlag(parent->style.sizing, size_percent_x)){
-				parent_size_padded.x = parent->width - parent->style.padding_right - parent->style.padding_left - 2*wborder;
-				item->width = item->style.width/100.f * PaddedWidth(item);
+			if(HasFlag(parent->style.sizing, size_percent_x) || HasFlag(parent->style.sizing, size_flex)){
+				item->width = item->style.width/100.f * PaddedWidth(parent);
 			}else if (parent->style.width >= 0){
-				parent_size_padded.x = parent->style.width - parent->style.padding_right - parent->style.padding_left - 2*wborder;
-				item->width = item->style.width/100.f * PaddedStyleWidth(item);
+				item->width = item->style.width/100.f * PaddedStyleWidth(parent);
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
 				item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
@@ -830,13 +816,13 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiTextData* data = uiGetTextData(item);
+	uiText* data = uiGetText(item);
 
 	dc->texture = item->style.font->tex;
 
 	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text));
 	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
-	    item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
+	    item->drawcmds = make_drawcmd(1);
 		drawcmd_remove(dc);
 		dc = item->drawcmds;
 		drawcmd_alloc(dc, nucounts);
@@ -866,7 +852,7 @@ void ui_eval_text(uiItem* item){
 
 	f32 wrapspace = parent->width - parent->style.padding_left - parent->style.padding_right;
 
-	uiTextData* data = uiGetTextData(item);
+	uiText* data = uiGetText(item);
 	data->breaks.clear();
 	data->breaks.add({0,{0,0}});
 
@@ -935,8 +921,9 @@ void ui_eval_text(uiItem* item){
 }
 
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = (uiItem*)arena_add(item_arena, sizeof(uiItem) + sizeof(uiTextData));
-	
+	uiText* data = (uiText*)memalloc(sizeof(uiText));
+	uiItem* item = &data->item;
+	g_ui->items.add(item);
 	uiItem* curitem = *g_ui->item_stack.last;
 	
 	insert_first(&curitem->node, &item->node);
@@ -954,14 +941,13 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	item->file_created = file;
 	item->line_created = line;
 	
-	item->memsize = sizeof(uiItem) + sizeof(uiTextData);
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd)); 
+	item->memsize = sizeof(uiText);
+	item->drawcmds = make_drawcmd(1);
 	item->__generate = &ui_gen_text;
 	item->__evaluate = &ui_eval_text;
-	item->trailing_data = item + sizeof(uiItem);
 	
-	uiGetTextData(item)->text = text;
-	uiGetTextData(item)->breaks.allocator = deshi_allocator;
+	uiGetText(item)->text = text;
+	uiGetText(item)->breaks.allocator = deshi_allocator;
 
 	RenderDrawCounts counts = render_make_text_counts(str8_length(text));
 	
@@ -1038,8 +1024,9 @@ void ui_slider_callback(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiSlider* data = (uiSlider*)arena_add(item_arena, sizeof(uiSlider));
+	uiSlider* data = (uiSlider*)memalloc(sizeof(uiSlider));
 	uiItem* item = &data->item;
+	g_ui->items.add(item);
 	ui_fill_item(item, style, file, line);
 
 	item->memsize = sizeof(uiSlider);
@@ -1049,7 +1036,7 @@ uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 		render_make_filledrect_counts()*2+
 		render_make_rect_counts();
 
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
+	item->drawcmds = make_drawcmd(1);
 	item->draw_cmd_count = 1;
 	drawcmd_alloc(item->drawcmds, counts);
 
@@ -1136,8 +1123,9 @@ void ui_checkbox_callback(uiItem* item){
 }
 
 uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
-	uiCheckbox* data = (uiCheckbox*)arena_add(item_arena, sizeof(uiCheckbox));
+	uiCheckbox* data = (uiCheckbox*)memalloc(sizeof(uiCheckbox));
 	uiItem* item = &data->item;
+	g_ui->items.add(item);
 	ui_fill_item(item, style, file, line);
 
 	item->action = &ui_checkbox_callback;
@@ -1154,7 +1142,7 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 		render_make_filledrect_counts()*2+
 		render_make_rect_counts();
 
-	item->drawcmds = (uiDrawCmd*)arena_add(drawcmd_arena, sizeof(uiDrawCmd));
+	item->drawcmds = make_drawcmd(1);
 	item->draw_cmd_count = 1;
 	drawcmd_alloc(item->drawcmds, counts);
 	
@@ -1169,25 +1157,31 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 
 struct ui_debug_win_info{
 	uiItem* selected_item;
-
+	
+	b32 selecting_item;
 }ui_dwi;
 
 void ui_debug_callback(uiItem* item){
 
 
 	if(g_ui->hovered){
-		render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
-		vec2 ipos = g_ui->hovered->spos;
-		vec2 mpos = ipos + g_ui->hovered->style.margintl;
-		vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
-		vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
 
-		render_quad2(ipos, g_ui->hovered->size, Color_Red);
-		render_quad2(mpos, MarginedArea(g_ui->hovered), Color_Magenta);
-		render_quad2(bpos, BorderedArea(g_ui->hovered), Color_Blue);
-		render_quad2(ppos, PaddedArea(g_ui->hovered), Color_Green);
+
+
+		// render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
+		// vec2 ipos = g_ui->hovered->spos;
+		// vec2 mpos = ipos + g_ui->hovered->style.margintl;
+		// vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
+		// vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
+
+		// render_quad2(ipos, g_ui->hovered->size, Color_Red);
+		// render_quad2(mpos, MarginedArea(g_ui->hovered), Color_Magenta);
+		// render_quad2(bpos, BorderedArea(g_ui->hovered), Color_Blue);
+		// render_quad2(ppos, PaddedArea(g_ui->hovered), Color_Green);
 
 	}
+
+
 
 
 }
@@ -1203,6 +1197,8 @@ void ui_debug_panel_callback(uiItem* item){
 }
 
 void ui_debug(){
+	
+	ui_dwi = {0};
 
 	uiStyle def{0};
 		def.sizing = size_auto;
@@ -1251,14 +1247,27 @@ void ui_debug(){
 		style->display = display_flex | display_row;
 		style->padding = {10,10,10,10};
 
-		{uiItem* panel = uiItemBS(&panel_style);
+		{uiItem* panel = uiItemBS(&panel_style); //selected information
 			panel->id = STR8("_ui_ debug win panel0");
 			panel->action = &ui_debug_panel_callback;
 			panel->action_trigger = action_act_always;
 			panel->style.width = 1;
 			//panel->style.margin_right = 1;
 
-			{uiItem* item_list = uiItemBS(&itemlist_style);
+			{uiItem* internal_info = uiItemB();
+				internal_info->id = STR8("_ui_debug internal info");
+				internal_info->style.sizing = size_percent_x;
+				internal_info->style.width = 100;
+				internal_info->style.height = 100;
+				internal_info->style.background_color = color(14,14,14);
+				internal_info->action = [](uiItem* item){
+					if(!ui_dwi.selected_item){
+					}
+				};
+
+				//uiTextML("No item selected");
+
+
 
 
 			}uiItemE();
@@ -1271,6 +1280,15 @@ void ui_debug(){
 			panel->action = &ui_debug_panel_callback;
 			panel->action_trigger = action_act_always;
 			panel->style.width = 0.5;
+
+			
+			// {uiItem* item_list = uiItemBS(&itemlist_style);
+			// 	for_node(g_ui->base.node.first_child){
+
+			// 	}
+
+			// }uiItemE();
+
 		}uiItemE();
 	}uiItemE();
 }
