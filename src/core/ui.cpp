@@ -371,7 +371,7 @@ inline vec2 DecideItemPos(UIWindow* window = curwin){DPZoneScoped;
 
 //returns a pair representing the area of the window that is bordered
 //first is the position and second is the size
-inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin){DPZoneScoped;
+inline pair<vec2, vec2> BorderedArea_old(UIWindow* window = curwin){DPZoneScoped;
 	return make_pair(
 					 vec2::ONE * style.windowBorderSize,
 					 window->dimensions - vec2::ONE * 2 * style.windowBorderSize
@@ -379,7 +379,7 @@ inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin){DPZoneScoped;
 }
 
 //same as the bordered area, but also takes into account the margins
-inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin){DPZoneScoped;
+inline pair<vec2, vec2> MarginedArea_old(UIWindow* window = curwin){DPZoneScoped;
 	vec2 f = vec2::ONE * style.windowBorderSize + vec2::ONE * style.windowMargins;
 	vec2 s = window->dimensions - 2 * f - MarginSizeOffset;
 	s.x -= (CanScrollY() ? style.scrollBarYWidth : 0);
@@ -389,8 +389,8 @@ inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin){DPZoneScoped;
 }
 
 //the bordered area taking into account the scroll bars
-inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin){DPZoneScoped;
-	auto p = BorderedArea(window);
+inline pair<vec2, vec2> ScrollBaredArea_old(UIWindow* window = curwin){DPZoneScoped;
+	auto p = BorderedArea_old(window);
 	p.second.x -= (CanScrollY(window) ? style.scrollBarYWidth : 0);
 	p.second.y -= (CanScrollX(window) ? style.scrollBarXHeight : 0);
 	return p;
@@ -541,9 +541,9 @@ f32 UI::GetClientRight()             	  {DPZoneScoped; return ClientRight(); }
 f32 UI::GetClientLeft()              	  {DPZoneScoped; return ClientLeft(); }
 f32 UI::GetClientTop()               	  {DPZoneScoped; return ClientTop(); }
 f32 UI::GetClientBottom()            	  {DPZoneScoped; return ClientBottom(); }
-pair<vec2, vec2> UI::GetBorderedArea()    {DPZoneScoped; return BorderedArea(); }
-pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; return MarginedArea(); }
-pair<vec2, vec2> UI::GetClientArea()      {DPZoneScoped; return ScrollBaredArea(); }
+pair<vec2, vec2> UI::GetBorderedArea()    {DPZoneScoped; return BorderedArea_old(); }
+pair<vec2, vec2> UI::GetMarginedArea()    {DPZoneScoped; return MarginedArea_old(); }
+pair<vec2, vec2> UI::GetClientArea()      {DPZoneScoped; return ScrollBaredArea_old(); }
 f32 UI::GetRightIndent()                  {DPZoneScoped; return rightIndent; }
 f32 UI::GetLeftIndent()                   {DPZoneScoped; return leftIndent; }
 
@@ -3699,15 +3699,15 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		}
 		
 		if(showBorderArea){
-			auto b = BorderedArea(debugee);
+			auto b = BorderedArea_old(debugee);
 			DebugRect(b.first + debugee->position, b.second);
 		}
 		if(showMarginArea){
-			auto m = MarginedArea(debugee);
+			auto m = MarginedArea_old(debugee);
 			DebugRect(m.first + debugee->position, m.second);
 		}
 		if(showScrollBarArea){
-			auto s = ScrollBaredArea(debugee);
+			auto s = ScrollBaredArea_old(debugee);
 			DebugRect(s.first + debugee->position, s.second);
 		}
 	}

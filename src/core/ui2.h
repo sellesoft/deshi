@@ -494,6 +494,27 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
+
+#define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
+#define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
+#define MarginedArea(item)        (vec2{MarginedWidth(item), MarginedHeight(item)})
+#define MarginedStyleWidth(item)  ((item)->style.width - (item)->style.margin_left - (item)->style.margin_right)
+#define MarginedStyleHeight(item) ((item)->style.height - (item)->style.margin_top - (item)->style.margin_bottom)
+#define MarginedStyleArea(item)   (vec2{MarginedStyleWidth(item), MarginedStyleHeight(item)})
+#define BorderedWidth(item)       (MarginedWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedHeight(item)      (MarginedHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedArea(item)        (vec2{BorderedWidth(item), BorderedHeight(item)})
+#define BorderedStyleWidth(item)  (MarginedStyleWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedStyleHeight(item) (MarginedStyleHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedStyleArea(item)   (vec2{BorderedStyleWidth(item), BorderedStyleHeight(item)})
+#define PaddedWidth(item)         (BorderedWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
+#define PaddedHeight(item)        (BorderedHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
+#define PaddedArea(item)          (vec2{PaddedWidth(item), PaddedHeight(item)})
+#define PaddedStyleWidth(item)    (BorderedStyleWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
+#define PaddedStyleHeight(item)   (BorderedStyleHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
+#define PaddedStyleArea(item)     (vec2{PaddedStyleWidth(item), PaddedStyleHeight(item)})
+
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @item
 struct Texture;
@@ -583,20 +604,26 @@ external struct uiStyle{
 		vec2 max_size;
 	};
 	union{
-		struct{f32 margin_left, margin_top;};	
-		vec2 margin;
+		vec4 margin;
+		union{
+			struct{f32 margin_left, margin_top;};	
+			vec2 margintl;
+		};
+		union{
+			struct{f32 margin_bottom, margin_right;};
+			vec2 marginbr; 
+		};
 	};
 	union{
-		struct{f32 margin_bottom, margin_right;};
-		vec2 marginbr; 
-	};
-	union{
-		struct{f32 padding_left, padding_top;};
-		vec2 padding;
-	};
-	union{
-		struct{f32 padding_bottom, padding_right;};
-		vec2 paddingbr;        
+		vec4 padding;
+		union{
+			struct{f32 padding_left, padding_top;};
+			vec2 paddingtl;
+		};
+		union{
+			struct{f32 padding_bottom, padding_right;};
+			vec2 paddingbr;        
+		};
 	};
 	union{
 		struct{f32 scrx, scry;};

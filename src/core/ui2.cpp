@@ -158,7 +158,8 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 //@helpers
 #define item_error(item, ...)\
 LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);
-                                                                                                                      
+
+
 //fills an item struct and make its a child of the current item
 void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* curitem = *g_ui->item_stack.last;
@@ -209,7 +210,10 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 //NOTE(sushi) these are abstracted because widgets may use them as well
 inline
 RenderDrawCounts gen_background(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts counts){
-	return render_make_filledrect(vp, ip, counts, item->spos, item->size, item->style.background_color);
+	vec2 bor = (item->style.border_style ? item->style.border_width : 0) * vec2::ONE; 
+	vec2 pos = item->spos + item->style.margintl + bor;
+	vec2 siz = item->size - (item->style.margintl + item->style.marginbr + 2*bor);
+	return render_make_filledrect(vp, ip, counts, pos, siz, item->style.background_color);
 }
 
 inline
@@ -217,8 +221,8 @@ RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
-			vec2 tl = floor(item->spos);
-			vec2 br = ceil(tl+item->size);
+			vec2 tl = item->spos + item->style.margintl;
+			vec2 br = tl+(item->size - (item->style.marginbr+item->style.margintl));
 			vec2 tr = vec2{br.x, tl.y};
 			vec2 bl = vec2{tl.x, br.y}; 
 			f32 t = item->style.border_width;
@@ -248,8 +252,8 @@ RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts
 //@item
 void ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
-	Vertex2* vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*     ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	RenderDrawCounts counts = {0};
 	counts+=gen_background(item, vp, ip, counts);
 	counts+=gen_border(item, vp, ip, counts);
@@ -352,7 +356,7 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 	}
 	
 	if(item->draw_cmd_count){
-		Assert(item->__generate, "item wtih no generate function");
+		Assert(item->__generate, "item with no generate function");
 		item->__generate(item);
 	}
 	
@@ -379,7 +383,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
-	u32 wborder = (item->style.border_style ? item->style.border_width : 0);
+	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_row);
 	
 	/*-------------------------------------------------------------------------------------------------------
@@ -398,17 +402,17 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			if(item->style.height < 0){
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
 			}else if(HasFlag(parent->style.sizing, size_percent_y)){ //if the parent's sizing is also set to percentage, we know it is already sized
-				parent_size_padded.y = parent->height - parent->style.padding_bottom - parent->style.padding_top;
-				item->height = item->style.height/100.f * parent_size_padded.y;
+				parent_size_padded.y = parent->height - parent->style.padding_bottom - parent->style.padding_top - 2*wborder;
+				item->height = item->style.height/100.f * PaddedHeight(parent);
 			}else if (parent->style.height >= 0){ 
-				parent_size_padded.y = parent->style.height - parent->style.padding_bottom - parent->style.padding_top;
-				item->height = item->style.height/100.f * parent_size_padded.y;
+				parent_size_padded.y = parent->style.height - parent->style.padding_bottom - parent->style.padding_top - 2*wborder;
+				item->height = item->style.height/100.f * PaddedStyleHeight(parent);
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the item's parent's height is not explicitly sized.");
 				hauto = 1;
 			}
-		}else item->height = item->style.height;
+		}else item->height = item->style.height + item->style.margin_top + item->style.margin_bottom + 2*wborder;
 	}else item->height = 0;
 
 	if(!wauto){
@@ -418,23 +422,23 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			if(item->style.width < 0) 
 				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
 			if(HasFlag(parent->style.sizing, size_percent_x)){
-				parent_size_padded.x = parent->width - parent->style.padding_right - parent->style.padding_left;
-				item->width = item->style.width/100.f * parent_size_padded.x;
+				parent_size_padded.x = parent->width - parent->style.padding_right - parent->style.padding_left - 2*wborder;
+				item->width = item->style.width/100.f * PaddedWidth(item);
 			}else if (parent->style.width >= 0){
-				parent_size_padded.x = parent->style.width - parent->style.padding_right - parent->style.padding_left;
-				item->width = item->style.width/100.f * parent_size_padded.x;
+				parent_size_padded.x = parent->style.width - parent->style.padding_right - parent->style.padding_left - 2*wborder;
+				item->width = item->style.width/100.f * PaddedStyleWidth(item);
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
 				item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
 				hauto = 1;
 			}
-		}else item->width = item->style.width;
+		}else item->width = item->style.width + item->style.margin_left + item->style.margin_right + 2*wborder;
 	}else item->width = 0;
 
 	if(HasFlag(item->style.sizing, size_square)){
 		if     (!wauto &&  hauto) item->height = item->width;
 		else if( wauto && !hauto) item->width = item->height;
-		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified" : "specified."));
+		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified." : "specified."));
 	}
 
 	
@@ -448,11 +452,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	
 	if(HasFlag(item->style.display, display_flex)){
 		contextout.flex.flex_container = 1;
-		contextout.flex.effective_size = 
-			(disprow ? 
-				item->width  - item->style.padding_left - item->style.padding_right : 
-				item->height - item->style.padding_top  - item->style.padding_bottom
-			);
+		contextout.flex.effective_size = (disprow ? ((((item)->width - (item)->style.margin_left - (item)->style.margin_right) - ((item)->style.border_style ? 2*(item)->style.border_width : 0)) - (item)->style.padding_left - (item)->style.padding_right) : PaddedHeight(item));
 		contextout.flex.ratio_sum = 0;
 		contextout.flex.disprow = disprow;
 
@@ -484,8 +484,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		next we evaluate all of the items children, positioning them based on the current item and child's properties
 	*/
 
-	vec2 cursor = item->style.padding - item->style.scroll;
-	
+	vec2 cursor = item->style.margintl + item->style.paddingtl + vec2{wborder,wborder} - item->style.scroll;
 	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);
 	while(it){
 		uiItem* child = uiItemFromNode(it);
@@ -493,29 +492,22 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		eval_item_branch(child, contextout);    
 		switch(child->style.positioning){
 			case pos_static:{
-				child->lpos =  child->style.margin;
-				if(item->style.border_style)
-					child->lpos += floor(item->style.border_width) * vec2::ONE;
-				child->lpos += cursor;
+				//child->lpos =  child->style.margin;
+				//if(item->style.border_style)
+					//child->lpos += item->style.border_width * vec2::ONE;
+				child->lpos = cursor;
 				if(HasFlag(item->style.display, display_row))
 					cursor.x = child->lpos.x + child->width;
 				else{
 					cursor.y = child->lpos.y + child->height;
 					cursor.x = item->style.padding_left;
 				}
-				
-				if(item->style.display == display_column){
-					cursor.y = child->lpos.y + child->height;
-					cursor.x = item->style.padding_left;
-				}else if(item->style.display == display_row){
-					cursor.x = child->lpos.x + child->width;
-				}
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
-				child->lpos = child->style.margin;
+				child->lpos = child->style.margintl;
 				if(item->style.border_style)
-					child->lpos += floor(item->style.border_width) * vec2::ONE;
+					child->lpos += item->style.border_width * vec2::ONE;
 				child->lpos += cursor;
 				
 				if(HasFlag(item->style.display, display_row))
@@ -594,54 +586,28 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 
 		item->max_scroll = Max(item->max_scroll, child->lpos - item->style.scroll);
 
-		if(wauto)
-            item->width = Max(item->width, child->lpos.x + child->width);
-        if(hauto)
-            item->height = Max(item->height, child->lpos.y + child->height);
+		if(wauto) item->width  = Max(item->width,  child->lpos.x + child->width);
+        if(hauto) item->height = Max(item->height, child->lpos.y + child->height);
         
-        //extend bottom and right margins if they arent explicitly set
-        if(wauto){
-            if(child->style.margin_bottom == MAX_F32) item->height += child->style.margin_top;
-            else if(child->style.margin_bottom > 0) item->height += child->style.margin_bottom;
-        }
-        if(hauto){
-            if(child->style.margin_right == MAX_F32) item->width += child->style.margin_left;
-            else if(child->style.margin_right > 0) item->width += child->style.margin_right;
-        }
 
 		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
 	}
 
-	/*-------------------------------------------------------------------------------------------------------
-		at this point we have evaluated all of the item's decendents and the item should be sized relative to its children 
-
-		next we evaulate some small adjustments to the items size based on its properties
-	*/
-
-    if(hauto){
-        if(item->style.padding_bottom == MAX_F32) item->height += item->style.padding_top;
-        else if(item->style.padding_bottom > 0) item->height += item->style.padding_bottom;
-    }
-    if(wauto){
-        if(item->style.padding_right == MAX_F32) item->width += item->style.padding_left;
-        else if(item->style.padding_right > 0) item->width += item->style.padding_right;
-    }
-
-    item->width += (wauto ? 1 : 2) * wborder;
-    item->height += (hauto ? 1 : 2) * wborder;
+	if(wauto){
+		item->width += item->style.padding_right;
+		item->width += item->style.margin_right;
+		item->width += wborder;
+	} 
+	if(hauto){
+		item->height += item->style.padding_bottom;
+		item->height += item->style.margin_bottom;
+		item->height += wborder;
+	} 
 
 	if(item->style.max_width)  item->width  = Min(item->style.max_width,  item->width);
 	if(item->style.max_height) item->height = Min(item->style.max_height, item->height);
 	item->width  = Max(item->style.min_width,  item->width);
 	item->height = Max(item->style.min_height, item->height);
-
-	
-
-	/*-------------------------------------------------------------------------------------------------------
-		at this point the items size has been fully evaluated
-
-		next, if the item is set to align its content, we move its children accordingly
-	*/
 
 	//TODO(sushi) I'm pretty sure the x part of this can be moved into the child loop above, so we dont have to do a second
 	//            pass if y isnt set
@@ -688,14 +654,14 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		this isn't fully tested though
 
 		we also set the item's csize, which indicates the area that its content actually occupies inside it, as well
-		as the item's cpos which indicates where in the item its content starts in screen space
+		as the item's cpos which indicates where in the item its content starts
 	*/
 
 	item->lpos = floor(item->lpos);
-	item->cx = wborder + item->style.padding_left;
-	item->cy = wborder + item->style.padding_top;
-	item->cheight = item->height - 2*wborder - (item->style.padding_top + item->style.padding_bottom);
-	item->cwidth = item->width - 2*wborder - (item->style.padding_left + item->style.padding_right);
+	item->cx = wborder + item->style.padding_left + item->style.margin_left;
+	item->cy = wborder + item->style.padding_top + item->style.margin_top;
+	item->cheight = item->height - 2*wborder - (item->style.padding_top + item->style.padding_bottom) - (item->style.margin_top + item->style.margin_bottom);
+	item->cwidth = item->width - 2*wborder - (item->style.padding_left + item->style.padding_right) - (item->style.margin_left + item->style.margin_right);
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -1207,7 +1173,23 @@ struct ui_debug_win_info{
 }ui_dwi;
 
 void ui_debug_callback(uiItem* item){
-	
+
+
+	if(g_ui->hovered){
+		render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
+		vec2 ipos = g_ui->hovered->spos;
+		vec2 mpos = ipos + g_ui->hovered->style.margintl;
+		vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
+		vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
+
+		render_quad2(ipos, g_ui->hovered->size, Color_Red);
+		render_quad2(mpos, MarginedArea(g_ui->hovered), Color_Magenta);
+		render_quad2(bpos, BorderedArea(g_ui->hovered), Color_Blue);
+		render_quad2(ppos, PaddedArea(g_ui->hovered), Color_Green);
+
+	}
+
+
 }
 
 void ui_debug_panel_callback(uiItem* item){
@@ -1217,11 +1199,44 @@ void ui_debug_panel_callback(uiItem* item){
 		Log("", "inrange");
 		
 	}
+
 }
 
 void ui_debug(){
+
+	uiStyle def{0};
+		def.sizing = size_auto;
+		def.text_color = Color_White;
+		def.text_wrap = text_wrap_none;
+		def.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+		def.font_height = 11;
+		def.background_color = color(14,14,14);
+		def.tab_spaces = 4;
+		def.border_color = color(188,188,188);
+		def.border_width = 1;
+
+	uiStyle panel_style{0}; panel_style = def;
+		panel_style.paddingtl = {3,3};
+		panel_style.paddingbr = {3,3};
+		panel_style.sizing = size_flex | size_percent_y;
+		panel_style.height = 100;
+	 	panel_style.border_style = border_solid;
+		panel_style.border_color = color(188,188,188);
+		panel_style.border_width = 1;
+		panel_style.background_color = color(50,50,50);
+		panel_style.margintl = {2,2};
+		panel_style.marginbr = {2,2};
+
+
+	uiStyle itemlist_style{0}; itemlist_style = def;
+		itemlist_style.paddingtl = {2,2};
+		itemlist_style.paddingbr = {2,2};
+		itemlist_style.min_height = 100;
+		itemlist_style.sizing = size_percent_x;
+		itemlist_style.width = 100;
+
 	uiStyle* style;
-	uiItem* window = uiItemB();{
+	{uiItem* window = uiItemB();
 		window->id = STR8("_ui_ debug win");
 		window->action = &ui_debug_callback;
 		window->action_trigger = action_act_always;
@@ -1230,25 +1245,32 @@ void ui_debug(){
 		style->background_color = color(14,14,14);
 		style->border_style = border_solid;
 		style->border_color = color(188,188,188);
+		style->border_width = 1;
 		style->focus = 1;
-		style->size = {500,500};
+		style->size = {500,300};
+		style->display = display_flex | display_row;
+		style->padding = {10,10,10,10};
 
-		uiStyle panel_style{0};
-		panel_style.padding = {3,3};
-		panel_style.paddingbr = {3,3};
-		panel_style.sizing = size_percent_y;
-		panel_style.width = 50;
+		{uiItem* panel = uiItemBS(&panel_style);
+			panel->id = STR8("_ui_ debug win panel0");
+			panel->action = &ui_debug_panel_callback;
+			panel->action_trigger = action_act_always;
+			panel->style.width = 1;
+			//panel->style.margin_right = 1;
 
-		uiItem* panel0 = uiItemBS(&panel_style);{
-			panel0->id = STR8("_ui_ debug win panel0");
-			panel0->action = &ui_debug_panel_callback;
-			panel0->action_trigger = action_act_always;
+			{uiItem* item_list = uiItemBS(&itemlist_style);
+
+
+			}uiItemE();
+
+
 		}uiItemE();
 
-		uiItem* panel1 = uiItemBS(&panel_style);{
-			panel1->id = STR8("_ui_ debug win panel1");
-			panel1->action = &ui_debug_panel_callback;
-			panel1->action_trigger = action_act_always;
+		{uiItem* panel = uiItemBS(&panel_style);
+			panel->id = STR8("_ui_ debug win panel1");
+			panel->action = &ui_debug_panel_callback;
+			panel->action_trigger = action_act_always;
+			panel->style.width = 0.5;
 		}uiItemE();
 	}uiItemE();
 }
@@ -1260,14 +1282,12 @@ void ui_debug(){
 */
 
 void ui_demo(){
-	
-
 	{//test sizer
 		uiItem* container = uiItemB();{
 			container->style.size = {200, 100};
 			container->style.display = display_flex | display_row;
 			container->style.background_color = color(50,60,100);
-			container->style.padding = {10,10};
+			container->style.paddingtl = {10,10};
 			container->style.paddingbr = {10,10};
 			container->id = STR8("container");
 
