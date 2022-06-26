@@ -381,7 +381,7 @@ TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
 	if(node == &g_ui->base.node) return node;
 	uiItem* item = uiItemFromNode(node);
 	if(!child) return ui_find_static_sized_parent(item->node.parent, &item->node);
-	if(item->style.width != size_auto && item->style.height != size_auto){
+	if(!HasFlag(item->style.sizing, size_auto|size_flex)){
 		return &item->node;
 	}else{
 		return ui_find_static_sized_parent(item->node.parent, &item->node);
@@ -840,18 +840,14 @@ void ui_update(){DPZoneScoped;
 	g_ui->base.visible_start = vec2::ZERO;
 	g_ui->base.visible_size = DeshWindow->dimensions;
 
-	//in order to prevent the mouse from entering another window during input
-	//this can probably be moved to only be done on mouse input, but maybe left so 
-	//user can get this info at any time OR make a function for that
+	ui_recur(&g_ui->base.node);
+
 	if(g_ui->istate == uiISNone) 
 		find_hovered_item(&g_ui->base);
 	
 	if(g_ui->istate == uiISNone || g_ui->istate == uiISDragging) 
 		drag_item(g_ui->hovered);
 	
-	//if(g_ui->base.node.child_count){
-		ui_recur(&g_ui->base.node);
-	//}
 
 	forI(g_ui->immediate_items.count){
 		uiItemR(g_ui->immediate_items[i]);
@@ -982,7 +978,7 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	uiText* data = (uiText*)datav;
 	uiItem* curitem = *g_ui->item_stack.last;
 	
-	insert_first(&curitem->node, &item->node);
+	insert_last(&curitem->node, &item->node);
 	
 	if(style) memcpy(&item->style, style, sizeof(uiStyle));
 	else{
@@ -1214,31 +1210,64 @@ struct ui_debug_win_info{
 	
 	b32 selecting_item;
 
-
 	uiItem* internal_info;
+	uiItem* panel0;
+	uiItem* panel1;
 
 }ui_dwi;
 
 void ui_debug_callback(uiItem* item){
+	uiImmediateBP(ui_dwi.internal_info);{//fill out internal info box
+		if(ui_dwi.selected_item){
+			
+		}else if(ui_dwi.selecting_item){
+			
+			ui_dwi.internal_info->style.content_align = {0.5,0.5};
+			uiTextML("selecting item...");
+		}else{
+			{uiItem* item = uiItemB();
+				item->id = STR8("button");
+				item->style.background_color = Color_VeryDarkCyan;
+				item->style.sizing = size_auto;
+				item->style.padding = {1,1,1,1};
+				item->style.margin = {1,1,1,1};
+				item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+				item->style.font_height = 11;
+				item->style.text_color = Color_White;
+				item->action = [](uiItem* item) { 
+					ui_dwi.selecting_item = 1; 
+				};
+				item->action_trigger = action_act_mouse_pressed;
+				uiTextML("O");
+			}uiItemE();
+			ui_dwi.internal_info->style.content_align = {0.5,0.5};
+			uiTextML("no item selected.");
+		}
+	}uiImmediateE();
+
+
+	uiImmediateBP(ui_dwi.panel0);{
+		if(g_ui->hovered){
+			uiTextML("hovered");
+		}else{
+			uiTextML("no hovered");
+		}
+	}uiImmediateE();
 
 
 	if(g_ui->hovered){
-		// render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
-		// vec2 ipos = g_ui->hovered->spos;
-		// vec2 mpos = ipos + g_ui->hovered->style.margintl;
-		// vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
-		// vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
+		render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
+		vec2 ipos = g_ui->hovered->spos;
+		vec2 mpos = ipos + g_ui->hovered->style.margintl;
+		vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
+		vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
 
-		// render_quad2(ipos, g_ui->hovered->size, Color_Red);
-		// render_quad2(mpos, MarginedArea(g_ui->hovered), Color_Magenta);
-		// render_quad2(bpos, BorderedArea(g_ui->hovered), Color_Blue);
-		// render_quad2(ppos, PaddedArea(g_ui->hovered), Color_Green);
+		render_quad2(ipos, g_ui->hovered->size, Color_Red);
+		render_quad2(mpos, MarginedArea(g_ui->hovered), Color_Magenta);
+		render_quad2(bpos, BorderedArea(g_ui->hovered), Color_Blue);
+		render_quad2(ppos, PaddedArea(g_ui->hovered), Color_Green);
 
 	}
-
-
-
-
 }
 
 void ui_debug_panel_callback(uiItem* item){
@@ -1287,7 +1316,7 @@ void ui_debug(){
 
 	uiStyle* style;
 	{uiItem* window = uiItemB();
-		window->id = STR8("_ui_ debug win");
+		window->id = STR8("ui_debug win");
 		window->action = &ui_debug_callback;
 		window->action_trigger = action_act_always;
 		style = &window->style;
@@ -1302,30 +1331,30 @@ void ui_debug(){
 		style->padding = {5,5,5,5};
 
 		{uiItem* panel = uiItemBS(&panel_style); //selected information
-			panel->id = STR8("_ui_ debug win panel0");
+			panel->id = STR8("ui_debug win panel0");
 			panel->action = &ui_debug_panel_callback;
 			panel->action_trigger = action_act_always;
 			panel->style.width = 1;
 			//panel->style.margin_right = 1;
 
-			{uiItem* internal_info = uiItemB(); 
-				internal_info->style = def_style;
-				internal_info->id = STR8("_ui_debug internal info");
-				internal_info->style.sizing = size_percent_x;
-				internal_info->style.width = 100;
-				internal_info->style.height = 100;
-				internal_info->style.background_color = color(14,14,14);
-				internal_info->style.content_align = {0.5, 0.5};
+			{ui_dwi.internal_info = uiItemB(); 
+				ui_dwi.internal_info->style = def_style;
+				ui_dwi.internal_info->id = STR8("ui_debug internal info");
+				ui_dwi.internal_info->style.sizing = size_percent_x;
+				ui_dwi.internal_info->style.width = 100;
+				ui_dwi.internal_info->style.height = 100;
+				ui_dwi.internal_info->style.background_color = color(14,14,14);
+				ui_dwi.internal_info->style.content_align = {0.5, 0.5};
 
-
+				
 				uiItemE();
 			}
 
-
+			ui_dwi.panel0 = panel;
 		}uiItemE();
 
 		if(0){uiItem* panel = uiItemBS(&panel_style);
-			panel->id = STR8("_ui_ debug win panel1");
+			panel->id = STR8("ui_debug win panel1");
 			panel->action = &ui_debug_panel_callback;
 			panel->action_trigger = action_act_always;
 			panel->style.width = 0.5;
@@ -1338,6 +1367,7 @@ void ui_debug(){
 
 			// }uiItemE();
 			uiItemE();
+			ui_dwi.panel1 = panel;
 		}
 	}uiItemE();
 }
