@@ -34,9 +34,6 @@ Notes
 	through the widget's function for doing so (eg. uiGetSlider(uiItem*)). This is to keep the interface from using
 	many different types, unless the user explicitly asks for them.
 
-	All items that are not passed a style pointer on creation initialize using ui_inital_style, so if you would like to adjust the
-	the default behavoir of ui, you can change the ui_initial_style pointer AFTER initalizing ui. 
-
 
 Index
 -----
@@ -51,6 +48,11 @@ Index
 TODOs
 -----
 possibly implement a system for suppressing certain errors on some behavoirs or just for suppressing all errors
+
+Implement a system for trimming down how much we have to do to check every item.
+	Currently we have to walk the entire item tree to check every item, but this can be linearized into an array 
+	that stores uiItem*'s in the order we would have walked it. This also reduces the potentially massive amount of
+	recursion that ui can go into.
 
 */
 
@@ -407,15 +409,6 @@ TODO(sushi) example
 		it will affect the positioing of items around it.
 
 ------------------------------------------------------------------------------------------------------------
-*   hidden
-	---
-	Flag that tells ui that this node and all of its children are hidden. This removes the node from being rendered
-	AND being considered in the normal flow. Note that this means that its action function will also not be called.
-
--   Defaults:
-		Defaults to false.
-
-------------------------------------------------------------------------------------------------------------
 *   display
 	---
 	Determines how to display an item's children. This is a flagged value, meaning it can take on several
@@ -447,6 +440,9 @@ TODO(sushi) example
 			right to left. Not from the right side of the container to the left though, this just specifies to
 			draw items in the reverse order they were added. If you want to draw items from the right side consider using
 			anchors or content align.
+
+		display_hidden
+			Doesnt display the parent or its children.
 
 -	Technical:
 		Since we require uiStyle's default to be 0, and I dont want to explicitly set display to column
@@ -573,6 +569,7 @@ enum{
 	display_row         = 1 << 0,
 	display_flex        = 1 << 1,
 	display_reverse     = 1 << 2,
+	display_hidden      = 1 << 3,
 
 	action_act_never = 0,
 	action_act_mouse_hover,    // call action when the mouse is positioned over the item
@@ -643,7 +640,6 @@ external struct uiStyle{
 	color text_color;
 	Type  overflow;
 	b32   focus;
-	b32   hidden;
 	Type  text_wrap;
 	u64   tab_spaces;
 	Type  display;
@@ -715,9 +711,9 @@ struct uiItem{
 	str8 file_created;
 	upt  line_created;
 
-	//size of the item in memory, used for iterating the item arena
-	//and for some checks that items are being used properly
+	//size of the item in memory and the offset of the item member on widgets 
 	u64 memsize;
+	u64 offset;
 	
 	//any extra data that a uiItem can allocate beyond its size
 	//this data is used by special items such as uiText and uiSlider
@@ -771,7 +767,6 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= s->text_color.rgba;         seed *= 16777619;
 	seed ^= s->overflow;                seed *= 16777619;
 	seed ^= s->focus;                   seed *= 16777619;
-	seed ^= s->hidden;                  seed *= 16777619;
 	
 	if(item->__hash) { seed ^= item->__hash(item); seed *= 16777619; }
 	
@@ -968,8 +963,11 @@ struct uiContext{
 		b32  pushed;
 		str8 file;
 		upt  line;
+		map<u64, uiItem*> cache;
 	}immediate;
-	
+
+	b32 updating; //set true while ui_update is running
+
 	//// memory ////
 	//b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
 	array<uiItem*> items;
@@ -979,6 +977,19 @@ struct uiContext{
 	Arena* index_arena;
 	RenderTwodBuffer render_buffer;
 	array<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
+
+	struct{
+		//visible on screen
+		u64 items_visible;
+		u64 drawcmds_visible;
+		u64 vertices_visible; 
+		u64 indices_visible;  
+		//reserved in memory
+		u64 items_reserved;
+		u64 drawcmds_reserved;
+		u64 vertices_reserved; 
+		u64 indices_reserved;  
+	}stats;
 };
 
 //global UI pointer
