@@ -92,7 +92,7 @@ https://github.com/nothings/stb/blob/master/stb_ds.h
 #include "kigu/node.h"
 #include "kigu/unicode.h"
 
-#define MEMORY_CHECK_HEAPS true
+#define MEMORY_CHECK_HEAPS false
 #define MEMORY_TRACK_ALLOCS false
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false

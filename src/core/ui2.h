@@ -778,10 +778,16 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	return seed;
 }
 
+//-------------------------------------------------------------------------------------------------
+// @immediate
+UI_FUNC_API(void, ui_begin_immediate_branch, uiItem* parent, str8 file, upt line);
+UI_FUNC_API(void, ui_end_immediate_branch, str8 file, upt line);
+#define uiImmediateB()        UI_DEF(begin_immediate_branch(       0, STR8(__FILE__),__LINE__))
+#define uiImmediateBP(parent) UI_DEF(begin_immediate_branch((parent), STR8(__FILE__),__LINE__))
+#define uiImmediateE()        UI_DEF(end_immediate_branch(STR8(__FILE__),__LINE__))
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
+//-------------------------------------------------------------------------------------------------
 // @slider
-
 UI_FUNC_API(uiItem*, ui_make_slider_f32, f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
 #define uiSliderf32(min,max,var)        UI_DEF(make_slider_f32(min,max,var,0,STR8(__FILE__),__LINE__));
 #define uiSliderf32S(min,max,var,style) UI_DEF(make_slider_f32(min,max,var,(style),STR8(__FILE__),__LINE__));
@@ -825,7 +831,6 @@ struct uiSlider{
 		Type dragger_shape;
 		f32 rail_thickness; //percentage of full thickness, 0-1
 	}style;
-
 };
 #define uiGetSlider(x) CastFromMember(uiSlider, item, x)
 
@@ -905,6 +910,10 @@ struct uiText{
 };
 #define uiGetText(x) CastFromMember(uiText, item, x)
 
+
+
+
+
 //-------------------------------------------------------------------------------------------------
 // @context
 struct MemoryContext;
@@ -932,14 +941,6 @@ typedef u32 uiInputState; enum{
 	uiISExternalPreventInputs,
 };
 
-//empty chunk used for managing a memory space whose data is all the same size
-struct uiEmptyChunk{
-	Node node;
-	upt size;
-	upt index;
-};
-#define EmptyChunkFrom
-
 struct uiContext{
 #if DESHI_RELOADABLE_UI
 	//// functions ////
@@ -961,10 +962,18 @@ struct uiContext{
 	uiItem base;
 	uiItem* hovered; //item currently hovered by the mouse
 	uiInputState istate;
+
+	struct{
+		b32  active;
+		b32  pushed;
+		str8 file;
+		upt  line;
+	}immediate;
 	
 	//// memory ////
 	//b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
 	array<uiItem*> items;
+	array<uiItem*> immediate_items;
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
 	Arena* vertex_arena;
 	Arena* index_arena;

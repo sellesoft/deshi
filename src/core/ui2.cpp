@@ -59,8 +59,23 @@
 //---------------------------------------------------------------------------------------------------------------------
 // @memory
 
-void* make_item(upt size){
-	return memalloc(size);
+struct miret{
+	uiItem* item;
+	void* data;
+};	
+
+miret make_item(upt size, upt offset){
+	miret ret = {0};
+	ret.data = memalloc(size);
+	ret.item = (uiItem*)((u8*)ret.data+offset);
+
+	if(g_ui->immediate.active){
+		g_ui->immediate_items.add(ret.item);
+	}else{
+		g_ui->items.add(ret.item);
+	}
+
+	return ret;
 }
 
 uiDrawCmd* make_drawcmd(upt count){
@@ -251,8 +266,7 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = (uiItem*)memalloc(sizeof(uiItem));
-	g_ui->items.add(item);
+	auto [item, data] = make_item(sizeof(uiItem), 0);
 	ui_fill_item(item, style, file, line);
 	
 	item->memsize = sizeof(uiItem);
@@ -290,8 +304,43 @@ void ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
 	forI(item->draw_cmd_count){
 		drawcmd_remove(item->drawcmds + i);
 	}
+
+	remove(&item->node);
+	memzfree(item);
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+// @immediate
+void ui_begin_immediate_branch(uiItem* parent, str8 file, upt line){
+	if(g_ui->immediate.active){
+		LogE("ui", "In file ", file, " on line ", line, ": Attempted to start an immediate branch before ending one that was started in file ", g_ui->immediate.file, " on line ", g_ui->immediate.line);
+		return;
+	}
+	
+	g_ui->immediate.active = 1;
+	g_ui->immediate.file = file;
+	g_ui->immediate.line = line;
+
+	if(parent){
+		push_item(parent);
+		g_ui->immediate.pushed = 1;
+	} 
+}
+
+void ui_end_immediate_branch(str8 file, upt line){
+	if(!g_ui->immediate.active){
+		LogE("ui", "In file ", file, " on line ", line, ": Attempted to end an immediate branch before one was ever started");
+		return;
+	}
+	
+	g_ui->immediate.active = 0;
+
+	if(g_ui->immediate.pushed){
+		pop_item();
+		g_ui->immediate.pushed = 0;
+	}
+}
 
 
 
@@ -304,6 +353,9 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 #endif
 
 	//g_ui->cleanup = 0;
+
+	g_ui->immediate.active = 0;
+	g_ui->immediate.pushed = 0;
 	
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
@@ -800,6 +852,11 @@ void ui_update(){DPZoneScoped;
 	//if(g_ui->base.node.child_count){
 		ui_recur(&g_ui->base.node);
 	//}
+
+	forI(g_ui->immediate_items.count){
+		uiItemR(g_ui->immediate_items[i]);
+	}
+	g_ui->immediate_items.clear();
 }
 
 
@@ -921,9 +978,8 @@ void ui_eval_text(uiItem* item){
 }
 
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiText* data = (uiText*)memalloc(sizeof(uiText));
-	uiItem* item = &data->item;
-	g_ui->items.add(item);
+	auto [item, datav] = make_item(sizeof(uiText), offsetof(uiText, item));
+	uiText* data = (uiText*)datav;
 	uiItem* curitem = *g_ui->item_stack.last;
 	
 	insert_first(&curitem->node, &item->node);
@@ -1024,9 +1080,8 @@ void ui_slider_callback(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiSlider* data = (uiSlider*)memalloc(sizeof(uiSlider));
-	uiItem* item = &data->item;
-	g_ui->items.add(item);
+	auto [item, datav] = make_item(sizeof(uiSlider), offsetof(uiSlider, item));
+	uiSlider* data = (uiSlider*)datav;
 	ui_fill_item(item, style, file, line);
 
 	item->memsize = sizeof(uiSlider);
@@ -1123,9 +1178,8 @@ void ui_checkbox_callback(uiItem* item){
 }
 
 uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
-	uiCheckbox* data = (uiCheckbox*)memalloc(sizeof(uiCheckbox));
-	uiItem* item = &data->item;
-	g_ui->items.add(item);
+	auto [item, datav] = make_item(sizeof(uiCheckbox), offsetof(uiCheckbox, item));
+	uiCheckbox* data = (uiCheckbox*)datav;
 	ui_fill_item(item, style, file, line);
 
 	item->action = &ui_checkbox_callback;
@@ -1159,15 +1213,16 @@ struct ui_debug_win_info{
 	uiItem* selected_item;
 	
 	b32 selecting_item;
+
+
+	uiItem* internal_info;
+
 }ui_dwi;
 
 void ui_debug_callback(uiItem* item){
 
 
 	if(g_ui->hovered){
-
-
-
 		// render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
 		// vec2 ipos = g_ui->hovered->spos;
 		// vec2 mpos = ipos + g_ui->hovered->style.margintl;
@@ -1190,7 +1245,6 @@ void ui_debug_panel_callback(uiItem* item){
 	if(Math::PointInRectangle(
 		input_mouse_position(),
 		item->spos + item->size.xComp() - vec2(10,0), item->size.yComp() + vec2(10, 0))){
-		Log("", "inrange");
 		
 	}
 
@@ -1200,23 +1254,23 @@ void ui_debug(){
 	
 	ui_dwi = {0};
 
-	uiStyle def{0};
-		def.sizing = size_auto;
-		def.text_color = Color_White;
-		def.text_wrap = text_wrap_none;
-		def.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-		def.font_height = 11;
-		def.background_color = color(14,14,14);
-		def.tab_spaces = 4;
-		def.border_color = color(188,188,188);
-		def.border_width = 1;
+	uiStyle def_style{0};
+		def_style.sizing = size_auto;
+		def_style.text_color = Color_White;
+		def_style.text_wrap = text_wrap_none;
+		def_style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+		def_style.font_height = 11;
+		def_style.background_color = color(14,14,14);
+		def_style.tab_spaces = 4;
+		def_style.border_color = color(188,188,188);
+		def_style.border_width = 1;
 
-	uiStyle panel_style{0}; panel_style = def;
+	uiStyle panel_style{0}; panel_style = def_style;
 		panel_style.paddingtl = {3,3};
 		panel_style.paddingbr = {3,3};
 		panel_style.sizing = size_flex | size_percent_y;
 		panel_style.height = 100;
-	 	panel_style.border_style = border_solid;
+	 	panel_style.border_style = border_none;
 		panel_style.border_color = color(188,188,188);
 		panel_style.border_width = 1;
 		panel_style.background_color = color(50,50,50);
@@ -1224,7 +1278,7 @@ void ui_debug(){
 		panel_style.marginbr = {2,2};
 
 
-	uiStyle itemlist_style{0}; itemlist_style = def;
+	uiStyle itemlist_style{0}; itemlist_style = def_style;
 		itemlist_style.paddingtl = {2,2};
 		itemlist_style.paddingbr = {2,2};
 		itemlist_style.min_height = 100;
@@ -1245,7 +1299,7 @@ void ui_debug(){
 		style->focus = 1;
 		style->size = {500,300};
 		style->display = display_flex | display_row;
-		style->padding = {10,10,10,10};
+		style->padding = {5,5,5,5};
 
 		{uiItem* panel = uiItemBS(&panel_style); //selected information
 			panel->id = STR8("_ui_ debug win panel0");
@@ -1254,28 +1308,23 @@ void ui_debug(){
 			panel->style.width = 1;
 			//panel->style.margin_right = 1;
 
-			{uiItem* internal_info = uiItemB();
+			{uiItem* internal_info = uiItemB(); 
+				internal_info->style = def_style;
 				internal_info->id = STR8("_ui_debug internal info");
 				internal_info->style.sizing = size_percent_x;
 				internal_info->style.width = 100;
 				internal_info->style.height = 100;
 				internal_info->style.background_color = color(14,14,14);
-				internal_info->action = [](uiItem* item){
-					if(!ui_dwi.selected_item){
-					}
-				};
-
-				//uiTextML("No item selected");
+				internal_info->style.content_align = {0.5, 0.5};
 
 
-
-
-			}uiItemE();
+				uiItemE();
+			}
 
 
 		}uiItemE();
 
-		{uiItem* panel = uiItemBS(&panel_style);
+		if(0){uiItem* panel = uiItemBS(&panel_style);
 			panel->id = STR8("_ui_ debug win panel1");
 			panel->action = &ui_debug_panel_callback;
 			panel->action_trigger = action_act_always;
@@ -1288,8 +1337,8 @@ void ui_debug(){
 			// 	}
 
 			// }uiItemE();
-
-		}uiItemE();
+			uiItemE();
+		}
 	}uiItemE();
 }
 
