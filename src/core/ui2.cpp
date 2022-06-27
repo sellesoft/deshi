@@ -19,7 +19,7 @@
 			drawcmd_remove(uiDrawCmd* drawcmd) -> void
 			drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts) -> void
 		@helpers
-			ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
+			ui_setup_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
 			calc_text_size(uiItem* item) -> vec2 
 		@item	
 			ui_gen_item(uiItem* item) -> void 
@@ -59,36 +59,14 @@
 //---------------------------------------------------------------------------------------------------------------------
 // @memory
 
-struct miret{
-	uiItem* item;
-	void* data;
-};	
 
-miret init_item(upt size, upt offset, str8 file, upt line){
-	miret ret = {0};
-	if(g_ui->immediate.active){
-		u64 hash = str8_hash64(file) ^ line;
-		//load item from immediate cache if it has been made before
-		if(g_ui->immediate.cache.has(hash)){
-			ret.item = *g_ui->immediate.cache.at(hash);
-			ret.data = (u8*)ret.item - offset;
-		}else{
-			ret.data = memalloc(size);
-			ret.item = (uiItem*)((u8*)ret.data+offset);
-			g_ui->immediate.cache.add(hash, ret.item);
-		}
-		g_ui->immediate_items.add(ret.item);
-	}else{
-		ret.data = memalloc(size);
-		ret.item = (uiItem*)((u8*)ret.data+offset);
-		g_ui->items.add(ret.item);
-	}
-	ret.item.memsize = size;
-	ret.item.offset = offset;
-	return ret;
+uiItem* init_item(upt size, str8 file, upt line){
+	
+	return 0;
 }
 
 uiDrawCmd* make_drawcmd(upt count){
+	g_ui->stats.drawcmds_reserved++;
 	return (uiDrawCmd*)memalloc(count*sizeof(uiDrawCmd));
 }
 
@@ -110,9 +88,6 @@ void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 }
 
 void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
-	//if(drawcmd_arena->size < drawcmd_arena->used + counts.vertices * sizeof(Vertex2) + counts.indices * sizeof(u32))
-	//	g_ui->drawcmd_list = create_arena_list(g_ui->drawcmd_list);
-	
 	u32 v_place_next = -1;
 	u32 i_place_next = -1;	
 	for(Node* n = g_ui->inactive_drawcmds.next; n!=&g_ui->inactive_drawcmds; n = n->next){
@@ -148,10 +123,13 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 			//if both counts are 0 we can go ahead and remove this drawcmd from the list 
 			//we do not handle actually removing the drawcmd from the arena it lives in, this is handled later
 			//in a cleanup pass
+			g_ui->stats.drawcmds_reserved--;
 			NodeRemove(n);
 			memzfree(dc);
 		}
-
+		
+		//keep running until we have found room for both vertices and indicies 
+		//or until we run out of drawcmds to consider
 		if(v_place_next != -1 && i_place_next != -1){
 			break;
 		}
@@ -159,35 +137,111 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 	
 	if(v_place_next == -1){
 		//we couldnt find a drawcmd with space for our new verts so we must allocate at the end 
+		g_ui->stats.vertices_reserved += counts.vertices;
 		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(Vertex2);
 		g_ui->vertex_arena->cursor += counts.vertices * sizeof(Vertex2);
 	} else drawcmd->vertex_offset = v_place_next;
 	if(i_place_next == -1){
 		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
+		g_ui->stats.indices_reserved += counts.indices;
 		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
 		g_ui->index_arena->cursor += counts.indices * sizeof(u32);
 	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts = counts;
-	drawcmd->texture = 0;
 }
 
 //@helpers
 #define item_error(item, ...)\
 LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);
 
+struct uiItemSetup{
+	upt size; 
+	uiStyle* style; 
+	str8 file; 
+	upt line; 
+	void (*update)(uiItem*); 
+	Type update_trigger; 
+	void (*generate)(uiItem*); 
+	void (*evaluate)(uiItem*);
+	u32  (*hash)(uiItem*);
 
-//fills an item struct and make its a child of the current item
-void ui_fill_item(uiItem* item, uiStyle* style, str8 file, upt line){DPZoneScoped;
+	RenderDrawCounts* drawinfo_reserve;
+	u32 drawcmd_count;
+};
+
+uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
+	if(g_ui->updating){
+		LogE("ui", 
+			"In file, ", setup.file, " on line ", setup.line, ": ui_setup_item() was called during ui_update().\n",
+			"\tui_update() requires that all items are made outside of it.\n",
+			"\tA possible cause of this is trying to make an item in another item's action, update, generate, or evaluate function."
+		);
+		Assert(0);	
+	}
+
+	//initialize the item in memory or retrieve it from cache if it already exists
+	uiItem* item;
+	b32 retrieved = 0;
+	if(g_ui->immediate.active){
+		u64 hash = str8_hash64(setup.file) ^ setup.line;
+		//load item from immediate cache if it has been made before
+		if(g_ui->immediate.cache.has(hash)){
+			item = *g_ui->immediate.cache.at(hash);
+			retrieved = 1;
+		}else{
+			item = (uiItem*)memalloc(setup.size);
+			g_ui->immediate.cache.add(hash, item);
+		}
+		g_ui->immediate_items.add(item);
+	}else{
+		g_ui->stats.items_reserved++;
+		item = (uiItem*)memalloc(setup.size);
+		g_ui->items.add(item);
+	}
+	item->memsize = setup.size;
+
+	if(retrieved){
+		//at this time, a retrieved item must always be reevaluated and regenerated.
+		item->dirty = 1;
+	}
+	
 	uiItem* curitem = *g_ui->item_stack.last;
 	
 	insert_last(&curitem->node, &item->node);
 	
-	if(style) memcpy(&item->style, style, sizeof(uiStyle));
-	else item->style = {0};
-	
-	item->file_created = file;
-	item->line_created = line;
+	if(!retrieved){
+		if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
+		else item->style = {0};
+	}
+
+	item->file_created = setup.file;
+	item->line_created = setup.line;
+
+	item->__update       = setup.update;
+	item->update_trigger = setup.update_trigger;
+	item->__generate     = setup.generate;
+	item->__evaluate     = setup.evaluate;
+	item->__hash         = setup.hash;
+
+	//for now, a cached items drawcmds are always regenerated
+	//TODO(sushi) eventually we should only do this if we need to, that or we can put a rule on items that their drawcmd count should never
+	//            after initial creation, though this is limiting
+	if(retrieved){
+		forI(item->drawcmd_count){
+			drawcmd_remove(item->drawcmds + i);
+		}
+	}
+
+	item->drawcmd_count = setup.drawcmd_count;
+	g_ui->stats.drawcmds_reserved += item->drawcmd_count;
+	item->drawcmds = (uiDrawCmd*)memalloc(item->drawcmd_count * sizeof(uiDrawCmd));
+	forI(setup.drawcmd_count){
+		drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
+	}
+	return item;
 }
+
+
 
 //TODO(sushi) make an option for this to take into account wrapping
 vec2 calc_text_size(uiItem* item){DPZoneScoped;
@@ -276,27 +330,21 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	auto [item, data] = init_item(sizeof(uiItem), 0, file, line);
-	ui_fill_item(item, style, file, line);
 	
-	if(g_ui->updating){
-		item_error(item, 
-		"\n\tAttempted to make an item during ui_update().\n",
-		  "\tui_update() requires that all items are made outside of it.\n",
-		  "\tDid you try to make an item in another item's action?");
-		Assert(0);	
-	}
-
-	item->memsize = sizeof(uiItem);
-	item->drawcmds = make_drawcmd(1);
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiItem);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = &ui_gen_item;
+	setup.drawcmd_count = 1;
+	RenderDrawCounts counts[1] = {
+		render_make_filledrect_counts() + render_make_rect_counts()
+	};
+	setup.drawinfo_reserve = counts;
 	
-	RenderDrawCounts counts = //reserve enough room for a background and border 
-		render_make_filledrect_counts() +
-		render_make_rect_counts();
+	uiItem* item = ui_setup_item(setup);
 
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
-	item->__generate = &ui_gen_item;
 	return item;
 }
 
@@ -307,7 +355,7 @@ uiItem* ui_begin_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 }
 
 void ui_end_item(str8 file, upt line){DPZoneScoped;
-	if(*(g_ui->item_stack.last) == &g_ui->base){
+	if(g_ui->item_stack.count == 1){
 		LogE("ui", 
 			 "In ", file, " at line ", line, " :\n",
 			 "\tAttempted to end base item. Did you call uiItemE too many times? Did you use uiItemM instead of uiItemB?"
@@ -319,12 +367,12 @@ void ui_end_item(str8 file, upt line){DPZoneScoped;
 
 void ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
 	//TODO(sushi) check for contiguous regions of memory in the drawcmds' vertex and index regions so we can combine drawcmds into one 
-	forI(item->draw_cmd_count){
+	forI(item->drawcmd_count){
 		drawcmd_remove(item->drawcmds + i);
 	}
 
 	remove(&item->node);
-	memzfree(item - item->offset);
+	memzfree(item);
 }
 
 
@@ -427,7 +475,7 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 		}
 	}
 	
-	if(item->draw_cmd_count){
+	if(item->drawcmd_count){
 		Assert(item->__generate, "item with no generate function");
 		item->__generate(item);
 	}
@@ -460,7 +508,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	
 	/*-------------------------------------------------------------------------------------------------------
 		at this point we know if the item is to be automatically sized based on its content and what we should consider
-		it's border width
+		it's border width	
 
 		next we evaluate what the item's size is going to be if it is not automatically sized
 	*/
@@ -492,7 +540,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			if(item->style.width < 0) 
 				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
 			if(HasFlag(parent->style.sizing, size_percent_x) || HasFlag(parent->style.sizing, size_flex)){
-				item->width = item->style.width/100.f * PaddedWidth(parent);
+				item->width = item->style.width/100.f * ((((parent)->width - (parent)->style.margin_left - (parent)->style.margin_right) - ((parent)->style.border_style ? 2*(parent)->style.border_width : 0)) - (parent)->style.padding_left - (parent)->style.padding_right);
 			}else if (parent->style.width >= 0){
 				item->width = item->style.width/100.f * PaddedStyleWidth(parent);
 			}else{
@@ -829,7 +877,11 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	if(scoff.x < DeshWindow->dimensions.x && scoff.y < DeshWindow->dimensions.y &&
 	   scext.x != 0                       && scext.y != 0                       &&
 	   scoff.x + scext.x > 0              && scoff.y + scext.y > 0){
-		forI(item->draw_cmd_count){
+		g_ui->stats.items_visible++;
+		forI(item->drawcmd_count){
+			g_ui->stats.drawcmds_visible++;
+			g_ui->stats.vertices_visible += item->drawcmds[i].counts.vertices;
+			g_ui->stats.indices_visible += item->drawcmds[i].counts.indices;
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
 			render_add_vertices2(5, 		
@@ -857,6 +909,11 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 
 void ui_update(){DPZoneScoped;
 	g_ui->updating = 1;
+	
+	g_ui->stats.drawcmds_visible = 0;
+	g_ui->stats.indices_visible = 0;
+	g_ui->stats.items_visible = 0;
+	g_ui->stats.vertices_visible = 0;
 
 	if(g_ui->item_stack.count > 1){
 		forI(g_ui->item_stack.count-1){
@@ -876,9 +933,6 @@ void ui_update(){DPZoneScoped;
 	if(g_ui->istate == uiISNone || g_ui->istate == uiISDragging) 
 		drag_item(g_ui->hovered);
 	
-
-
-	//Log("test","ayyyye"); //NOTE(delle) uncomment after reloading .dll for testing
 	g_ui->base.style.width = DeshWindow->width;
 	g_ui->base.style.height = DeshWindow->height;
 	g_ui->base.visible_start = vec2::ZERO;
@@ -888,9 +942,9 @@ void ui_update(){DPZoneScoped;
 	
 	forI(g_ui->immediate_items.count){
 		uiItem* item = g_ui->immediate_items[i];
-		forI(item->draw_cmd_count){
-			drawcmd_remove(item->drawcmds + i);
-		}
+		//forI(item->drawcmd_count){
+		//	drawcmd_remove(item->drawcmds + i);
+		//}
 		remove(&item->node);
 	}
 	g_ui->immediate_items.clear();
@@ -942,6 +996,10 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 }
 
 void ui_eval_text(uiItem* item){
+	if(!item->style.font){
+		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on its parent.");
+	}
+	
 	uiItem* parent = uiItemFromNode(item->node.parent);
 
 	b32 do_wrapping = (parent->style.width != size_auto) && (item->style.text_wrap != text_wrap_none);
@@ -1017,45 +1075,36 @@ void ui_eval_text(uiItem* item){
 }
 
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	auto [item, datav] = init_item(sizeof(uiText), offsetof(uiText, item), file, line);
-	uiText* data = (uiText*)datav;
-	uiItem* curitem = *g_ui->item_stack.last;
+	uiItem* parent = *(g_ui->item_stack.last);
+	
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiText);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = &ui_gen_text;
+	setup.evaluate = &ui_eval_text;
+	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(text))};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 1;
 
-	if(g_ui->updating){
-		item_error(item, 
-		"\n\tAttempted to make an item during ui_update().\n",
-		  "\tui_update() requires that all items are made outside of it.\n",
-		  "\tDid you try to make an item in another item's action?");
-		Assert(0);
-	}
-	
-	insert_last(&curitem->node, &item->node);
-	
-	if(style) memcpy(&item->style, style, sizeof(uiStyle));
-	else{
-		uiStyle* pstyle = &curitem->style;
-		item->style.text_color  = pstyle->text_color;
-		item->style.font        = pstyle->font;
-		item->style.font_height = pstyle->font_height;
-		item->style.tab_spaces  = pstyle->tab_spaces;
-		item->style.text_wrap   = pstyle->text_wrap; 
-	}
-	
-	item->file_created = file;
-	item->line_created = line;
-	
-	item->memsize = sizeof(uiText);
-	item->drawcmds = make_drawcmd(1);
-	item->__generate = &ui_gen_text;
-	item->__evaluate = &ui_eval_text;
-	
-	uiGetText(item)->text = text;
-	uiGetText(item)->breaks.allocator = deshi_allocator;
 
-	RenderDrawCounts counts = render_make_text_counts(str8_length(text));
-	
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
+
+	uiItem* item = ui_setup_item(setup);
+	uiText* data = (uiText*)item;
+
+	//inherit containers text properties if we arent explicitly given a style.
+	if(!style){
+		item->style.font        = parent->style.font;
+		item->style.font_height = parent->style.font_height;
+		item->style.text_color  = parent->style.text_color;
+		item->style.text_wrap   = parent->style.text_wrap;
+		item->style.tab_spaces  = parent->style.text_wrap;
+	}
+
+	data->text = text;
+	data->breaks.allocator = deshi_allocator;
+
 	return item;
 }
 
@@ -1127,40 +1176,41 @@ void ui_slider_callback(uiItem* item){DPZoneScoped;
 }
 
 uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	auto [item, datav] = init_item(sizeof(uiSlider), offsetof(uiSlider, item), file, line);
-	uiSlider* data = (uiSlider*)datav;
-	ui_fill_item(item, style, file, line);
+	// auto [item, datav] = init_item(sizeof(uiSlider), offsetof(uiSlider, item), file, line);
+	// uiSlider* data = (uiSlider*)datav;
+	// ui_setup_item(item, style, file, line);
 
-	if(g_ui->updating){
-		item_error(item, 
-		"\n\tAttempted to make an item during ui_update().\n",
-		  "\tui_update() requires that all items are made outside of it.\n",
-		  "\tDid you try to make an item in another item's action?");
-		Assert(0);	
-	}
+	// if(g_ui->updating){
+	// 	item_error(item, 
+	// 	"\n\tAttempted to make an item during ui_update().\n",
+	// 	  "\tui_update() requires that all items are made outside of it.\n",
+	// 	  "\tDid you try to make an item in another item's action?");
+	// 	Assert(0);	
+	// }
 
-	item->memsize = sizeof(uiSlider);
-	item->__generate = &ui_gen_slider;
+	// item->memsize = sizeof(uiSlider);
+	// item->__generate = &ui_gen_slider;
 
-	RenderDrawCounts counts = //reserve enough room for slider rail, dragger, and outline
-		render_make_filledrect_counts()*2+
-		render_make_rect_counts();
+	// RenderDrawCounts counts = //reserve enough room for slider rail, dragger, and outline
+	// 	render_make_filledrect_counts()*2+
+	// 	render_make_rect_counts();
 
-	item->drawcmds = make_drawcmd(1);
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
+	// item->drawcmds = make_drawcmd(1);
+	// item->drawcmd_count = 1;
+	// drawcmd_alloc(item->drawcmds, counts);
 
-	item->action_trigger = action_act_mouse_hover;
+	// item->action_trigger = action_act_mouse_hover;
 
-	//setup trailing data 
+	// //setup trailing data 
 
-	data->style.dragger_shape = slider_dragger_rect;
-	data->style.rail_thickness = 1;
-	data->style.colors.rail = color(80,80,80);
-	data->style.colors.dragger = color(14,50,100);
+	// data->style.dragger_shape = slider_dragger_rect;
+	// data->style.rail_thickness = 1;
+	// data->style.colors.rail = color(80,80,80);
+	// data->style.colors.dragger = color(14,50,100);
 
-	item->__hash = &slider_style_hash;
-	return item;
+	// item->__hash = &slider_style_hash;
+	// return item;
+	return 0;
 }
 
 uiItem* ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -1233,37 +1283,39 @@ void ui_checkbox_callback(uiItem* item){
 }
 
 uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
-	auto [item, datav] = init_item(sizeof(uiCheckbox), offsetof(uiCheckbox, item), file, line);
-	uiCheckbox* data = (uiCheckbox*)datav;
-	ui_fill_item(item, style, file, line);
+	// auto [item, datav] = init_item(sizeof(uiCheckbox), offsetof(uiCheckbox, item), file, line);
+	// uiCheckbox* data = (uiCheckbox*)datav;
+	// ui_setup_item(item, style, file, line);
 
-	if(g_ui->updating){
-		item_error(item, 
-		"\n\tAttempted to make an item during ui_update().\n",
-		  "\tui_update() requires that all items are made outside of it.\n",
-		  "\tDid you try to make an item in another item's action?");
-		Assert(0);	
-	}
+	// if(g_ui->updating){
+	// 	item_error(item, 
+	// 	"\n\tAttempted to make an item during ui_update().\n",
+	// 	  "\tui_update() requires that all items are made outside of it.\n",
+	// 	  "\tDid you try to make an item in another item's action?");
+	// 	Assert(0);	
+	// }
 
-	item->action = &ui_checkbox_callback;
-	item->__hash = &checkbox_style_hash;
-	item->__generate = *ui_gen_checkbox;
-	item->action_trigger = action_act_mouse_pressed;
+	// ui_setup_item(action, action_trigger, hash, generate, evaluate);
 
-	data->style.colors.filling = color(100,150,200);
-	data->style.fill_type = checkbox_fill_box;
-	data->style.fill_padding = vec2{2,2};
-	data->var = var;
+	// item->action = &ui_checkbox_callback;
+	// item->__hash = &checkbox_style_hash;
+	// item->__generate = *ui_gen_checkbox;
+	// item->action_trigger = action_act_mouse_pressed;
 
-	RenderDrawCounts counts = //reserve enough room for background, box filling, and outline
-		render_make_filledrect_counts()*2+
-		render_make_rect_counts();
+	// data->style.colors.filling = color(100,150,200);
+	// data->style.fill_type = checkbox_fill_box;
+	// data->style.fill_padding = vec2{2,2};
+	// data->var = var;
 
-	item->drawcmds = make_drawcmd(1);
-	item->draw_cmd_count = 1;
-	drawcmd_alloc(item->drawcmds, counts);
+	// RenderDrawCounts counts = //reserve enough room for background, box filling, and outline
+	// 	render_make_filledrect_counts()*2+
+	// 	render_make_rect_counts();
+
+	// item->drawcmds = make_drawcmd(1);
+	// item->drawcmd_count = 1;
+	// drawcmd_alloc(item->drawcmds, counts);
 	
-	return item;
+	return 0;
 }
 
 /*---------------------------------------------------------------------------------------------------------------------
@@ -1282,6 +1334,8 @@ struct ui_debug_win_info{
 	uiItem* internal_info;
 	uiItem* panel0;
 	uiItem* panel1;
+
+	uiItem* panel1text;
 
 	uiStyle def_style;
 
@@ -1362,6 +1416,8 @@ void ui_debug(){
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 1;
+				
+				
 				//panel->style.margin_right = 1;
 
 				// {ui_dwi.internal_info = uiItemB(); 
@@ -1380,11 +1436,13 @@ void ui_debug(){
 				ui_dwi.panel0 = panel;
 			}uiItemE();
 
-			if(0){uiItem* panel = uiItemBS(&panel_style);
+			{uiItem* panel = uiItemBS(&panel_style);
 				panel->id = STR8("ui_debug win panel1");
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 0.5;
+
+				ui_dwi.panel1text = uiTextML("stats");
 
 				uiItemE();
 				ui_dwi.panel1 = panel;
@@ -1393,67 +1451,80 @@ void ui_debug(){
 		ui_dwi.init = 1;
 	}
 
-	uiImmediateBP(ui_dwi.panel0);{//make internal info header
-		//header stores an action that toggles its boolean in the data struct
-		{uiItem* header = uiItemBS(&ui_dwi.def_style);
-			header->id = STR8("header");
-			header->style.sizing = size_auto_y | size_percent_x;
-			header->style.width = 100;
-			header->style.padding = {2,2,2,2};
-			header->style.background_color = color(14,14,14);
-			header->action = [](uiItem* item){
-				if(input_lmouse_pressed()){
-					ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
-				}
-			};	
-			header->action_trigger = action_act_mouse_hover;
+	// uiImmediateBP(ui_dwi.panel0);{//make internal info header
+	// 	//header stores an action that toggles its boolean in the data struct
+	// 	{uiItem* header = uiItemBS(&ui_dwi.def_style);
+	// 		header->id = STR8("header");
+	// 		header->style.sizing = size_auto_y | size_percent_x;
+	// 		header->style.width = 100;
+	// 		header->style.padding = {2,2,2,2};
+	// 		header->style.background_color = color(14,14,14);
+	// 		header->action = [](uiItem* item){
+	// 			if(input_lmouse_pressed()){
+	// 				ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
+	// 			}
+	// 		};	
+	// 		header->action_trigger = action_act_mouse_hover;
 
-			uiTextML("internal info");
-		}uiItemE();
+	// 		//uiTextML("internal info")->id = STR8("header text");
+	// 	}uiItemE();
 	
-		if(ui_dwi.internal_info_header){
-			{uiItem* cont = uiItemBS(&ui_dwi.def_style);
-				cont->id = STR8("header cont");
+	// 	if(ui_dwi.internal_info_header){
+	// 		{uiItem* cont = uiItemBS(&ui_dwi.def_style);
+	// 			cont->id = STR8("header cont");
 
-				cont->style.sizing = size_percent_x;
-				cont->style.width = 100;
-				cont->style.height = 100;
+	// 			cont->style.sizing = size_percent_x;
+	// 			cont->style.width = 100;
+	// 			cont->style.height = 100;
 
-				if(ui_dwi.selected_item){
+	// 			if(ui_dwi.selected_item){
 				
-				}else if(ui_dwi.selecting_item){
+	// 			}else if(ui_dwi.selecting_item){
 				
-					ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					uiTextML("selecting item...");
+	// 				ui_dwi.internal_info->style.content_align = {0.5,0.5};
+	// 				uiTextML("selecting item...");
 
-					if(g_ui->hovered && input_lmouse_pressed()){
-						ui_dwi.selected_item = g_ui->hovered;
-					}
+	// 				if(g_ui->hovered && input_lmouse_pressed()){
+	// 					ui_dwi.selected_item = g_ui->hovered;
+	// 				}
 
-				}else{
-					{uiItem* item = uiItemB();
-						item->id = STR8("button");
-						item->style.background_color = Color_VeryDarkCyan;
-						item->style.sizing = size_auto;
-						item->style.padding = {1,1,1,1};
-						item->style.margin = {1,1,1,1};
-						item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-						item->style.font_height = 11;
-						item->style.text_color = Color_White;
-						item->action = [](uiItem* item) { 
-							ui_dwi.selecting_item = 1; 
-						};
-						item->action_trigger = action_act_mouse_pressed;
-						uiTextML("O");
-					}uiItemE();
-					//ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					uiTextML("no item selected.");
-				}
-			}uiItemE();
-		}
-	}uiImmediateE();
+	// 			}else{
+	// 				// {uiItem* item = uiItemB();
+	// 				// 	item->id = STR8("button");
+	// 				// 	item->style.background_color = Color_VeryDarkCyan;
+	// 				// 	item->style.sizing = size_auto;
+	// 				// 	item->style.padding = {1,1,1,1};
+	// 				// 	item->style.margin = {1,1,1,1};
+	// 				// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+	// 				// 	item->style.font_height = 11;
+	// 				// 	item->style.text_color = Color_White;
+	// 				// 	item->action = [](uiItem* item) { 
+	// 				// 		ui_dwi.selecting_item = 1; 
+	// 				// 	};
+	// 				// 	item->action_trigger = action_act_mouse_pressed;
+	// 				// 	uiTextML("O");
+	// 				// }uiItemE();
+	// 				//ui_dwi.internal_info->style.content_align = {0.5,0.5};
+	// 				//uiTextML("no item selected.");
+	// 			}
+	// 		}uiItemE();
+	// 	}
+	// }uiImmediateE();
 
-	
+	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
+	uiGetText(ui_dwi.panel1text)->text = toStr8(
+		"visible: \n",
+		"	   items: ", g_ui->stats.items_visible, "\n",
+		"	drawcmds: ", g_ui->stats.drawcmds_visible, "\n",
+		"	vertices: ", g_ui->stats.vertices_visible, "\n",
+		"	 indices: ", g_ui->stats.indices_visible, "\n",
+		"reserved: \n",
+		"	   items: ", g_ui->stats.items_reserved, "\n",
+		"	drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
+		"	vertices: ", g_ui->stats.vertices_reserved, "\n",
+		"	 indices: ", g_ui->stats.indices_reserved
+	).fin;
+
 	if(g_ui->hovered){
 		render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
 		vec2 ipos = g_ui->hovered->spos;

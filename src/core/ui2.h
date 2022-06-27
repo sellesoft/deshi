@@ -490,6 +490,8 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
+#define UI_CUSTOM_ITEM(struct_name, item_name) StaticAssert(offsetof(struct_name, item_name)==0);
+
 
 #define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
 #define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
@@ -697,13 +699,16 @@ struct uiItem{
 	vec2 visible_start;
 	vec2 visible_size; 
 	
-	u64 draw_cmd_count;
+	u64 drawcmd_count;
 	//TODO(sushi) make this an index into the drawcmds arena
 	uiDrawCmd* drawcmds;
 	
 	//set to manually force the item to regenerate
 	b32 dirty;
 
+	Type update_trigger;
+
+	void (*__update)(uiItem*);
 	void (*__generate)(uiItem*);
 	void (*__evaluate)(uiItem*);
 	u32  (*__hash)(uiItem*);
@@ -713,7 +718,6 @@ struct uiItem{
 
 	//size of the item in memory and the offset of the item member on widgets 
 	u64 memsize;
-	u64 offset;
 	
 	//any extra data that a uiItem can allocate beyond its size
 	//this data is used by special items such as uiText and uiSlider
@@ -892,10 +896,10 @@ inline u32 checkbox_style_hash(uiItem* item){
 UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
 //NOTE(sushi) does not automatically make a str8, use uiTextML for that.
 #define uiTextM(text)          UI_DEF(make_text((text),           0, STR8(__FILE__),__LINE__))
-#define uiTextMS(text, style)  UI_DEF(make_text((text),     (style), STR8(__FILE__),__LINE__))
+#define uiTextMS(style, text)  UI_DEF(make_text((text),     (style), STR8(__FILE__),__LINE__))
 //NOTE(sushi) this automatically applies STR8() to text, so you can only use literals with this macro
 #define uiTextML(text)         UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
-#define uiTextMSL(text, style) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
+#define uiTextMSL(style, text) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
 
 
 struct uiText{
