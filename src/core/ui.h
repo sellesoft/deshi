@@ -410,8 +410,8 @@ struct UIDrawCmd {
 	UIDrawType type;
 	
 	//because of how much drawCmds move around, we have to store these things on the heap
-	Vertex2* vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
-	u32*     indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
+	Vertex2* vertices = 0;
+	u32*     indices = 0;
 	RenderDrawCounts counts{}; 
 	
 	Texture* tex = 0;
@@ -431,6 +431,12 @@ struct UIDrawCmd {
 	u32 hash = 0;
 	
 	UIItem* parent = 0;
+	
+	UIDrawCmd(){
+		vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
+		indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
+	}
+	UIDrawCmd(b32 dontdefaultinitwithdeshistuff){}
 };
 
 //attempt to uniquely hash a UIDrawCmd for debug purposes
