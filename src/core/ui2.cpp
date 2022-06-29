@@ -497,6 +497,12 @@ struct EvalContext{
 
 //reevaluates an entire brach of items
 void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
+	
+	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
+	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically
+	//sized child.
+	array<u32> already_evaluated;
+	
 	EvalContext contextout = {0};
 	
 	uiItem* parent = uiItemFromNode(item->node.parent);
@@ -505,13 +511,6 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_row);
-	
-	/*-------------------------------------------------------------------------------------------------------
-		at this point we know if the item is to be automatically sized based on its content and what we should consider
-		it's border width	
-
-		next we evaluate what the item's size is going to be if it is not automatically sized
-	*/
 
 	vec2 parent_size_padded;
 	//TODO(sushi) this can probably be cleaned up 
@@ -556,15 +555,6 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		else if( wauto && !hauto) item->width = item->height;
 		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified." : "specified."));
 	}
-
-	
-	/*-------------------------------------------------------------------------------------------------------
-		at this point we know what the items size is if it is explicitly sized, or if it is to be automatically sized
-		we have set the size to 0.
-
-		next if the item has a custom evaluation function assigned to it we call it.
-	*/
-
 	
 	if(HasFlag(item->style.display, display_flex)){
 		contextout.flex.flex_container = 1;
@@ -581,37 +571,44 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		}
 
 		//first pass to figure out ratios
+		u32 idx = 0;
 		for_node(item->node.first_child){
 			uiItem* child = uiItemFromNode(it);
 			if(HasFlag(child->style.sizing, size_flex)){
 				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
 			}else{
-				if(disprow && HasFlag(child->style.sizing, size_auto_x)){
-					item_error(child, "Item in flex container with display set to row has sizing flag 'size_auto_x' set.")
-				}else if(HasFlag(child->style.sizing, size_auto_y)){
-
+				if((disprow && HasFlag(child->style.sizing, size_auto_x)) || HasFlag(child->style.sizing, size_auto_y)){
+					//if a child has automatic sizing we can still support using it in flex containers by just evaluating it 
+					//early. if we do this we need to tell the main eval loop later that we dont need to evaluate it again
+					eval_item_branch(child, contextout);
+					contextout.flex.effective_size -= (disprow ? child->width : child->height);
+					already_evaluated.add(idx);
+				}else{
+					contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
 				}
 
-				contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
 			}
+			idx++;
 		}
 	}
 
 
 	if(item->__evaluate) item->__evaluate(item);
 
-	/*-------------------------------------------------------------------------------------------------------
-		at this point the item has finished its custom evaluation.
-
-		next we evaluate all of the items children, positioning them based on the current item and child's properties
-	*/
-
 	vec2 cursor = item->style.margintl + item->style.paddingtl + vec2{wborder,wborder} - item->style.scroll;
 	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);
+	u32 aeidx = 0; //index into the already evaluated array, incremented when we find one thats already been eval'd
+	u32 idx = 0;
 	while(it){
 		uiItem* child = uiItemFromNode(it);
 		if(HasFlag(child->style.display, display_hidden)) continue;
-		eval_item_branch(child, contextout);    
+
+		if(already_evaluated.count < aeidx && already_evaluated[aeidx] == idx){
+			aeidx++;
+		}else{
+			eval_item_branch(child, contextout);    
+		}
+		
 		switch(child->style.positioning){
 			case pos_static:{
 				//child->lpos =  child->style.margin;
@@ -711,7 +708,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		if(wauto) item->width  = Max(item->width,  child->lpos.x + child->width);
         if(hauto) item->height = Max(item->height, child->lpos.y + child->height);
         
-
+		idx++;
 		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
 	}
 
