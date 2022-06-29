@@ -138,15 +138,6 @@ Implement a system for trimming down how much we have to do to check every item.
 		size_percent   
 			Combination of percentx and percenty.
 
-		size_fill_x
-			Fills in the remaining space of the parent over the x axis.
-
-		size_fill_y   
-			Fills in the remaining space of the parent over the y axis.  
-
-		size_fill
-			combination of fillx and filly
-
 		size_square
 			Keeps the item at a 1:1 aspect ratio. This requires that either height or width are set to auto, while
 			the other has a specified value. If both values are specified, then this value is ignored
@@ -549,11 +540,8 @@ enum{
     size_percent_x = 1 << 2,
     size_percent_y = 1 << 3,
     size_percent   = size_percent_x | size_percent_y,
-    size_fill_x    = 1 << 4,
-    size_fill_y    = 1 << 5,
-    size_fill      = size_fill_x | size_fill_y,
-	size_square    = 1 << 6,
-	size_flex      = 1 << 7,
+	size_square    = 1 << 4,
+	size_flex      = 1 << 5,
 
 	border_none = 0,
 	border_solid,

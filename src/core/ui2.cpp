@@ -586,6 +586,12 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			if(HasFlag(child->style.sizing, size_flex)){
 				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
 			}else{
+				if(disprow && HasFlag(child->style.sizing, size_auto_x)){
+					item_error(child, "Item in flex container with display set to row has sizing flag 'size_auto_x' set.")
+				}else if(HasFlag(child->style.sizing, size_auto_y)){
+
+				}
+
 				contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
 			}
 		}
