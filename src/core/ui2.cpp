@@ -495,6 +495,8 @@ struct EvalContext{
 	}flex;
 };
 
+b32 last_flex_floored = 0;
+
 //reevaluates an entire brach of items
 void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	
@@ -517,6 +519,12 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	if(!hauto){
 		if(context.flex.flex_container && !context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
 			item->height = item->style.height / context.flex.ratio_sum * context.flex.effective_size;
+			if(last_flex_floored){
+				item->height = ceil(item->height);
+			}else{
+				item->height = floor(item->height);
+			}
+			last_flex_floored = !last_flex_floored;
 		}else if(HasFlag(item->style.sizing, size_percent_y)){
 			if(item->style.height < 0){
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
@@ -535,11 +543,17 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	if(!wauto){
 		if(context.flex.flex_container && context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
 			item->width = item->style.width / context.flex.ratio_sum * context.flex.effective_size;
+			if(last_flex_floored){
+				item->width = ceil(item->width);
+			}else{
+				item->width = floor(item->width);
+			}
+			last_flex_floored = !last_flex_floored;
 		}else if(HasFlag(item->style.sizing, size_percent_x)){
 			if(item->style.width < 0) 
 				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
 			if(HasFlag(parent->style.sizing, size_percent_x) || HasFlag(parent->style.sizing, size_flex)){
-				item->width = item->style.width/100.f * ((((parent)->width - (parent)->style.margin_left - (parent)->style.margin_right) - ((parent)->style.border_style ? 2*(parent)->style.border_width : 0)) - (parent)->style.padding_left - (parent)->style.padding_right);
+				item->width = item->style.width/100.f * PaddedWidth(parent);
 			}else if (parent->style.width >= 0){
 				item->width = item->style.width/100.f * PaddedStyleWidth(parent);
 			}else{
@@ -591,7 +605,6 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			idx++;
 		}
 	}
-
 
 	if(item->__evaluate) item->__evaluate(item);
 
