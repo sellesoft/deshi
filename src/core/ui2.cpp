@@ -492,13 +492,14 @@ struct EvalContext{
 		b32 disprow; //set true if the parent is displaying items in a row
 		f32 ratio_sum; //sum of flex sized child ratios
 		f32 effective_size; //size that the parent can fit flexed items in
+		u32 n_ceils; //the amount of times a child's size should be ceil'd rather than floored 
 	}flex;
 };
 
-b32 last_flex_floored = 0;
+b32 last_flex_floored = 1;
 
 //reevaluates an entire brach of items
-void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
+void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
 	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically
@@ -507,7 +508,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	
 	EvalContext contextout = {0};
 	
-	uiItem* parent = uiItemFromNode(item->node.parent);
+	uiItem* parent = uiItemFromNode(item->node.parent); 
 	
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
@@ -517,10 +518,11 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	vec2 parent_size_padded;
 	//TODO(sushi) this can probably be cleaned up 
 	if(!hauto){
-		if(context.flex.flex_container && !context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
-			item->height = item->style.height / context.flex.ratio_sum * context.flex.effective_size;
-			if(last_flex_floored){
+		if(context && context->flex.flex_container && !context->flex.disprow && HasFlag(item->style.sizing, size_flex)){
+			item->height = item->style.height / context->flex.ratio_sum * context->flex.effective_size;
+			if(context->flex.n_ceils){
 				item->height = ceil(item->height);
+				context->flex.n_ceils--;
 			}else{
 				item->height = floor(item->height);
 			}
@@ -541,10 +543,11 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	}else item->height = 0;
 
 	if(!wauto){
-		if(context.flex.flex_container && context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
-			item->width = item->style.width / context.flex.ratio_sum * context.flex.effective_size;
-			if(last_flex_floored){
+		if(context && context->flex.flex_container && context->flex.disprow && HasFlag(item->style.sizing, size_flex)){
+			item->width = item->style.width / context->flex.ratio_sum * context->flex.effective_size;
+			if(context->flex.n_ceils){
 				item->width = ceil(item->width);
+				context->flex.n_ceils--;
 			}else{
 				item->width = floor(item->width);
 			}
@@ -586,15 +589,17 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 
 		//first pass to figure out ratios
 		u32 idx = 0;
+		//TODO(sushi) need to eventually move the disprow checks out so we dont do it so much
 		for_node(item->node.first_child){
 			uiItem* child = uiItemFromNode(it);
 			if(HasFlag(child->style.sizing, size_flex)){
 				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
 			}else{
+				
 				if((disprow && HasFlag(child->style.sizing, size_auto_x)) || HasFlag(child->style.sizing, size_auto_y)){
 					//if a child has automatic sizing we can still support using it in flex containers by just evaluating it 
 					//early. if we do this we need to tell the main eval loop later that we dont need to evaluate it again
-					eval_item_branch(child, contextout);
+					eval_item_branch(child, &contextout);
 					contextout.flex.effective_size -= (disprow ? child->width : child->height);
 					already_evaluated.add(idx);
 				}else{
@@ -604,6 +609,14 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 			}
 			idx++;
 		}
+
+		//calc how many item's sizes will need to be ceil'd rather than floored to properly fit inside the container
+		f32 floored_sum = 0;
+		for_node(item->node.first_child){
+			uiItem* child = uiItemFromNode(it);
+			floored_sum += floor((disprow ? child->style.width : child->style.height) / contextout.flex.ratio_sum * contextout.flex.effective_size);
+		}
+		contextout.flex.n_ceils = contextout.flex.effective_size - floored_sum;
 	}
 
 	if(item->__evaluate) item->__evaluate(item);
@@ -619,7 +632,7 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		if(already_evaluated.count < aeidx && already_evaluated[aeidx] == idx){
 			aeidx++;
 		}else{
-			eval_item_branch(child, contextout);    
+			eval_item_branch(child, &contextout);    
 		}
 		
 		switch(child->style.positioning){
