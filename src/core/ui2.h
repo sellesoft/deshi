@@ -367,12 +367,9 @@ TODO(sushi) example
 	---
 	Determines how items that go out of their parent's bounds are displayed.
 
--   Defaults:
-		This value defaults to visible.
-
 -  Values:
 	
-	overflow_scroll | scroll
+	overflow_scroll (default)
 		When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
 	
 	overflow_scroll_hidden | scroll_hidden
