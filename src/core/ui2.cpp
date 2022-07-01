@@ -492,32 +492,41 @@ struct EvalContext{
 		b32 disprow; //set true if the parent is displaying items in a row
 		f32 ratio_sum; //sum of flex sized child ratios
 		f32 effective_size; //size that the parent can fit flexed items in
+		u32 n_ceils; //the amount of times a child's size should be ceil'd rather than floored 
 	}flex;
 };
 
+b32 last_flex_floored = 1;
+
 //reevaluates an entire brach of items
-void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
+void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
+	
+	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
+	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically
+	//sized child.
+	array<u32> already_evaluated;
+	
 	EvalContext contextout = {0};
 	
-	uiItem* parent = uiItemFromNode(item->node.parent);
+	uiItem* parent = uiItemFromNode(item->node.parent); 
 	
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_row);
-	
-	/*-------------------------------------------------------------------------------------------------------
-		at this point we know if the item is to be automatically sized based on its content and what we should consider
-		it's border width	
-
-		next we evaluate what the item's size is going to be if it is not automatically sized
-	*/
 
 	vec2 parent_size_padded;
 	//TODO(sushi) this can probably be cleaned up 
 	if(!hauto){
-		if(context.flex.flex_container && !context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
-			item->height = item->style.height / context.flex.ratio_sum * context.flex.effective_size;
+		if(context && context->flex.flex_container && !context->flex.disprow && HasFlag(item->style.sizing, size_flex)){
+			item->height = item->style.height / context->flex.ratio_sum * context->flex.effective_size;
+			if(context->flex.n_ceils){
+				item->height = ceil(item->height);
+				context->flex.n_ceils--;
+			}else{
+				item->height = floor(item->height);
+			}
+			last_flex_floored = !last_flex_floored;
 		}else if(HasFlag(item->style.sizing, size_percent_y)){
 			if(item->style.height < 0){
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
@@ -534,13 +543,20 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	}else item->height = 0;
 
 	if(!wauto){
-		if(context.flex.flex_container && context.flex.disprow && HasFlag(item->style.sizing, size_flex)){
-			item->width = item->style.width / context.flex.ratio_sum * context.flex.effective_size;
+		if(context && context->flex.flex_container && context->flex.disprow && HasFlag(item->style.sizing, size_flex)){
+			item->width = item->style.width / context->flex.ratio_sum * context->flex.effective_size;
+			if(context->flex.n_ceils){
+				item->width = ceil(item->width);
+				context->flex.n_ceils--;
+			}else{
+				item->width = floor(item->width);
+			}
+			last_flex_floored = !last_flex_floored;
 		}else if(HasFlag(item->style.sizing, size_percent_x)){
 			if(item->style.width < 0) 
 				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
 			if(HasFlag(parent->style.sizing, size_percent_x) || HasFlag(parent->style.sizing, size_flex)){
-				item->width = item->style.width/100.f * ((((parent)->width - (parent)->style.margin_left - (parent)->style.margin_right) - ((parent)->style.border_style ? 2*(parent)->style.border_width : 0)) - (parent)->style.padding_left - (parent)->style.padding_right);
+				item->width = item->style.width/100.f * PaddedWidth(parent);
 			}else if (parent->style.width >= 0){
 				item->width = item->style.width/100.f * PaddedStyleWidth(parent);
 			}else{
@@ -556,15 +572,6 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		else if( wauto && !hauto) item->width = item->height;
 		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified." : "specified."));
 	}
-
-	
-	/*-------------------------------------------------------------------------------------------------------
-		at this point we know what the items size is if it is explicitly sized, or if it is to be automatically sized
-		we have set the size to 0.
-
-		next if the item has a custom evaluation function assigned to it we call it.
-	*/
-
 	
 	if(HasFlag(item->style.display, display_flex)){
 		contextout.flex.flex_container = 1;
@@ -581,31 +588,53 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		}
 
 		//first pass to figure out ratios
+		u32 idx = 0;
+		//TODO(sushi) need to eventually move the disprow checks out so we dont do it so much
 		for_node(item->node.first_child){
 			uiItem* child = uiItemFromNode(it);
 			if(HasFlag(child->style.sizing, size_flex)){
 				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
 			}else{
-				contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
-			}
-		}
-	}
+				
+				if((disprow && HasFlag(child->style.sizing, size_auto_x)) || HasFlag(child->style.sizing, size_auto_y)){
+					//if a child has automatic sizing we can still support using it in flex containers by just evaluating it 
+					//early. if we do this we need to tell the main eval loop later that we dont need to evaluate it again
+					eval_item_branch(child, &contextout);
+					contextout.flex.effective_size -= (disprow ? child->width : child->height);
+					already_evaluated.add(idx);
+				}else{
+					contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
+				}
 
+			}
+			idx++;
+		}
+
+		//calc how many item's sizes will need to be ceil'd rather than floored to properly fit inside the container
+		f32 floored_sum = 0;
+		for_node(item->node.first_child){
+			uiItem* child = uiItemFromNode(it);
+			floored_sum += floor((disprow ? child->style.width : child->style.height) / contextout.flex.ratio_sum * contextout.flex.effective_size);
+		}
+		contextout.flex.n_ceils = contextout.flex.effective_size - floored_sum;
+	}
 
 	if(item->__evaluate) item->__evaluate(item);
 
-	/*-------------------------------------------------------------------------------------------------------
-		at this point the item has finished its custom evaluation.
-
-		next we evaluate all of the items children, positioning them based on the current item and child's properties
-	*/
-
 	vec2 cursor = item->style.margintl + item->style.paddingtl + vec2{wborder,wborder} - item->style.scroll;
 	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);
+	u32 aeidx = 0; //index into the already evaluated array, incremented when we find one thats already been eval'd
+	u32 idx = 0;
 	while(it){
 		uiItem* child = uiItemFromNode(it);
 		if(HasFlag(child->style.display, display_hidden)) continue;
-		eval_item_branch(child, contextout);    
+
+		if(already_evaluated.count < aeidx && already_evaluated[aeidx] == idx){
+			aeidx++;
+		}else{
+			eval_item_branch(child, &contextout);    
+		}
+		
 		switch(child->style.positioning){
 			case pos_static:{
 				//child->lpos =  child->style.margin;
@@ -700,14 +729,14 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 		//TODO(sushi) maybe make a global define for this
 		child->lpos = floor(child->lpos*1)/1;
 
-		item->max_scroll = Max(item->max_scroll, child->lpos - item->style.scroll);
-
 		if(wauto) item->width  = Max(item->width,  child->lpos.x + child->width);
         if(hauto) item->height = Max(item->height, child->lpos.y + child->height);
         
-
+		idx++;
 		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
 	}
+
+	
 
 	if(wauto){
 		item->width += item->style.padding_right;
@@ -724,6 +753,10 @@ void eval_item_branch(uiItem* item, EvalContext context){DPZoneScoped;
 	if(item->style.max_height) item->height = Min(item->style.max_height, item->height);
 	item->width  = Max(item->style.min_width,  item->width);
 	item->height = Max(item->style.min_height, item->height);
+
+	vec2 pa = PaddedArea(item);
+
+	item->max_scroll = Max(vec2{0,0}, cursor - PaddedArea(item));
 
 	//TODO(sushi) I'm pretty sure the x part of this can be moved into the child loop above, so we dont have to do a second
 	//            pass if y isnt set
@@ -862,11 +895,16 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	vec2 scoff;
 	vec2 scext;
 	if(parent && parent->style.overflow != overflow_visible){
+		vec2 cpos = item->spos + item->style.margintl + (item->style.border_style ? item->style.border_width : 0) * vec2::ONE;
+		vec2 csiz = BorderedArea(item);
+
 		scoff = Max(vec2{0,0}, Max(parent->visible_start, Min(item->spos, parent->visible_start+parent->visible_size)));
 		vec2 br = Max(parent->visible_start, Min(item->spos+item->size, parent->visible_start+parent->visible_size));
 		scext = Max(vec2{0,0}, br-scoff);
-		item->visible_start = scoff;
-		item->visible_size = scext; 
+		item->visible_start =  Max(vec2{0,0}, Max(parent->visible_start, Min(cpos, parent->visible_start+parent->visible_size)));
+		br =  Max(parent->visible_start, Min(cpos+csiz, parent->visible_start+parent->visible_size));
+		
+		item->visible_size = br - item->visible_start; 
 	}else{
 		scoff = Max(vec2::ZERO, item->spos); scext = Max(vec2::ZERO, Min(item->spos+item->size, vec2(DeshWindow->dimensions))-scoff);
 		item->visible_size = item->size;
@@ -1451,65 +1489,65 @@ void ui_debug(){
 		ui_dwi.init = 1;
 	}
 
-	// uiImmediateBP(ui_dwi.panel0);{//make internal info header
-	// 	//header stores an action that toggles its boolean in the data struct
-	// 	{uiItem* header = uiItemBS(&ui_dwi.def_style);
-	// 		header->id = STR8("header");
-	// 		header->style.sizing = size_auto_y | size_percent_x;
-	// 		header->style.width = 100;
-	// 		header->style.padding = {2,2,2,2};
-	// 		header->style.background_color = color(14,14,14);
-	// 		header->action = [](uiItem* item){
-	// 			if(input_lmouse_pressed()){
-	// 				ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
-	// 			}
-	// 		};	
-	// 		header->action_trigger = action_act_mouse_hover;
+	uiImmediateBP(ui_dwi.panel0);{//make internal info header
+		//header stores an action that toggles its boolean in the data struct
+		{uiItem* header = uiItemBS(&ui_dwi.def_style);
+			header->id = STR8("header");
+			header->style.sizing = size_auto_y | size_percent_x;
+			header->style.width = 100;
+			header->style.padding = {2,2,2,2};
+			header->style.background_color = color(14,14,14);
+			header->action = [](uiItem* item){
+				if(input_lmouse_pressed()){
+					ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
+				}
+			};	
+			header->action_trigger = action_act_mouse_hover;
 
-	// 		//uiTextML("internal info")->id = STR8("header text");
-	// 	}uiItemE();
+			//uiTextML("internal info")->id = STR8("header text");
+		}uiItemE();
 	
-	// 	if(ui_dwi.internal_info_header){
-	// 		{uiItem* cont = uiItemBS(&ui_dwi.def_style);
-	// 			cont->id = STR8("header cont");
+		if(ui_dwi.internal_info_header){
+			{uiItem* cont = uiItemBS(&ui_dwi.def_style);
+				cont->id = STR8("header cont");
 
-	// 			cont->style.sizing = size_percent_x;
-	// 			cont->style.width = 100;
-	// 			cont->style.height = 100;
+				cont->style.sizing = size_percent_x;
+				cont->style.width = 100;
+				cont->style.height = 100;
 
-	// 			if(ui_dwi.selected_item){
+				if(ui_dwi.selected_item){
 				
-	// 			}else if(ui_dwi.selecting_item){
+				}else if(ui_dwi.selecting_item){
 				
-	// 				ui_dwi.internal_info->style.content_align = {0.5,0.5};
-	// 				uiTextML("selecting item...");
+					ui_dwi.internal_info->style.content_align = {0.5,0.5};
+					uiTextML("selecting item...");
 
-	// 				if(g_ui->hovered && input_lmouse_pressed()){
-	// 					ui_dwi.selected_item = g_ui->hovered;
-	// 				}
+					if(g_ui->hovered && input_lmouse_pressed()){
+						ui_dwi.selected_item = g_ui->hovered;
+					}
 
-	// 			}else{
-	// 				// {uiItem* item = uiItemB();
-	// 				// 	item->id = STR8("button");
-	// 				// 	item->style.background_color = Color_VeryDarkCyan;
-	// 				// 	item->style.sizing = size_auto;
-	// 				// 	item->style.padding = {1,1,1,1};
-	// 				// 	item->style.margin = {1,1,1,1};
-	// 				// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-	// 				// 	item->style.font_height = 11;
-	// 				// 	item->style.text_color = Color_White;
-	// 				// 	item->action = [](uiItem* item) { 
-	// 				// 		ui_dwi.selecting_item = 1; 
-	// 				// 	};
-	// 				// 	item->action_trigger = action_act_mouse_pressed;
-	// 				// 	uiTextML("O");
-	// 				// }uiItemE();
-	// 				//ui_dwi.internal_info->style.content_align = {0.5,0.5};
-	// 				//uiTextML("no item selected.");
-	// 			}
-	// 		}uiItemE();
-	// 	}
-	// }uiImmediateE();
+				}else{
+					// {uiItem* item = uiItemB();
+					// 	item->id = STR8("button");
+					// 	item->style.background_color = Color_VeryDarkCyan;
+					// 	item->style.sizing = size_auto;
+					// 	item->style.padding = {1,1,1,1};
+					// 	item->style.margin = {1,1,1,1};
+					// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+					// 	item->style.font_height = 11;
+					// 	item->style.text_color = Color_White;
+					// 	item->action = [](uiItem* item) { 
+					// 		ui_dwi.selecting_item = 1; 
+					// 	};
+					// 	item->action_trigger = action_act_mouse_pressed;
+					// 	uiTextML("O");
+					// }uiItemE();
+					//ui_dwi.internal_info->style.content_align = {0.5,0.5};
+					//uiTextML("no item selected.");
+				}
+			}uiItemE();
+		}
+	}uiImmediateE();
 
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
 	uiGetText(ui_dwi.panel1text)->text = toStr8(

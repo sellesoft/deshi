@@ -138,15 +138,6 @@ Implement a system for trimming down how much we have to do to check every item.
 		size_percent   
 			Combination of percentx and percenty.
 
-		size_fill_x
-			Fills in the remaining space of the parent over the x axis.
-
-		size_fill_y   
-			Fills in the remaining space of the parent over the y axis.  
-
-		size_fill
-			combination of fillx and filly
-
 		size_square
 			Keeps the item at a 1:1 aspect ratio. This requires that either height or width are set to auto, while
 			the other has a specified value. If both values are specified, then this value is ignored
@@ -376,12 +367,9 @@ TODO(sushi) example
 	---
 	Determines how items that go out of their parent's bounds are displayed.
 
--   Defaults:
-		This value defaults to visible.
-
 -  Values:
 	
-	overflow_scroll | scroll
+	overflow_scroll (default)
 		When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
 	
 	overflow_scroll_hidden | scroll_hidden
@@ -496,20 +484,20 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 #define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
 #define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
 #define MarginedArea(item)        (vec2{MarginedWidth(item), MarginedHeight(item)})
-#define MarginedStyleWidth(item)  ((item)->style.width - (item)->style.margin_left - (item)->style.margin_right)
-#define MarginedStyleHeight(item) ((item)->style.height - (item)->style.margin_top - (item)->style.margin_bottom)
+#define MarginedStyleWidth(item)  ((item)->style.width + (item)->style.margin_left + (item)->style.margin_right)
+#define MarginedStyleHeight(item) ((item)->style.height + (item)->style.margin_top + (item)->style.margin_bottom)
 #define MarginedStyleArea(item)   (vec2{MarginedStyleWidth(item), MarginedStyleHeight(item)})
 #define BorderedWidth(item)       (MarginedWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
 #define BorderedHeight(item)      (MarginedHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
 #define BorderedArea(item)        (vec2{BorderedWidth(item), BorderedHeight(item)})
-#define BorderedStyleWidth(item)  (MarginedStyleWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedStyleHeight(item) (MarginedStyleHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedStyleWidth(item)  ((item)->style.width + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedStyleHeight(item) ((item)->style.height + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
 #define BorderedStyleArea(item)   (vec2{BorderedStyleWidth(item), BorderedStyleHeight(item)})
 #define PaddedWidth(item)         (BorderedWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
 #define PaddedHeight(item)        (BorderedHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
 #define PaddedArea(item)          (vec2{PaddedWidth(item), PaddedHeight(item)})
-#define PaddedStyleWidth(item)    (BorderedStyleWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
-#define PaddedStyleHeight(item)   (BorderedStyleHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
+#define PaddedStyleWidth(item)    ((item)->style.width - (item)->style.padding_left - (item)->style.padding_right)
+#define PaddedStyleHeight(item)   ((item)->style.height - (item)->style.padding_top - (item)->style.padding_bottom)
 #define PaddedStyleArea(item)     (vec2{PaddedStyleWidth(item), PaddedStyleHeight(item)})
 
 
@@ -549,11 +537,8 @@ enum{
     size_percent_x = 1 << 2,
     size_percent_y = 1 << 3,
     size_percent   = size_percent_x | size_percent_y,
-    size_fill_x    = 1 << 4,
-    size_fill_y    = 1 << 5,
-    size_fill      = size_fill_x | size_fill_y,
-	size_square    = 1 << 6,
-	size_flex      = 1 << 7,
+	size_square    = 1 << 4,
+	size_flex      = 1 << 5,
 
 	border_none = 0,
 	border_solid,
