@@ -78,4 +78,73 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 	logger_comma_log_internal(caller_file, caller_line, tag, log_type, arr, arg_count);
 }
 
+#define VTS_Default         "\x1b[0m"
+#define VTS_Bold            "\x1b[1m"
+#define VTS_NoBold          "\x1b[22m"
+#define VTS_Underline       "\x1b[4m"
+#define VTS_NoUnderline     "\x1b[24m"
+#define VTS_Negative        "\x1b[7m"
+#define VTS_Positive        "\x1b[27m"
+#define VTS_BlackFg         "\x1b[30m"
+#define VTS_RedFg           "\x1b[31m"
+#define VTS_GreenFg         "\x1b[32m"
+#define VTS_YellowFg        "\x1b[33m"
+#define VTS_BlueFg          "\x1b[34m"
+#define VTS_MagentaFg       "\x1b[35m"
+#define VTS_CyanFg          "\x1b[36m"
+#define VTS_WhiteFg         "\x1b[37m"
+#define VTS_ExtendedFg      "\x1b[38m"
+#define VTS_DefaultFg       "\x1b[39m"
+#define VTS_BlackBg         "\x1b[40m"
+#define VTS_RedBg           "\x1b[41m"
+#define VTS_GreenBg         "\x1b[42m"
+#define VTS_YellowBg        "\x1b[43m"
+#define VTS_BlueBg          "\x1b[44m"
+#define VTS_MagentaBg       "\x1b[45m"
+#define VTS_CyanBg          "\x1b[46m"
+#define VTS_WhiteBg         "\x1b[47m"
+#define VTS_RGBBg(r,g,b)      "\x1b[48;2;" STRINGIZE(r) ";" STRINGIZE(g) ";" STRINGIZE(b) "m"
+#define VTS_DefaultBg       "\x1b[49m"
+#define VTS_BrightBlackFg   "\x1b[90m"
+#define VTS_BrightRedFg     "\x1b[91m"
+#define VTS_BrightGreenFg   "\x1b[92m"
+#define VTS_BrightYellowFg  "\x1b[93m"
+#define VTS_BrightBlueFg    "\x1b[94m"
+#define VTS_BrightMagentaFg "\x1b[95m"
+#define VTS_BrightCyanFg    "\x1b[96m"
+#define VTS_BrightWhiteFg   "\x1b[97m"
+#define VTS_BrightBlackBg   "\x1b[100m"
+#define VTS_BrightRedBg     "\x1b[101m"
+#define VTS_BrightGreenBg   "\x1b[102m"
+#define VTS_BrightYellowBg  "\x1b[103m"
+#define VTS_BrightBlueBg    "\x1b[104m"
+#define VTS_BrightMagentaBg "\x1b[105m"
+#define VTS_BrightCyanBg    "\x1b[106m"
+#define VTS_BrightWhiteBg   "\x1b[107m"
+
+#define ErrorFormat(str)   (VTS_RedFg    str VTS_Default)
+#define WarningFormat(str) (VTS_YellowFg str VTS_Default)
+#define SuccessFormat(str) (VTS_GreenFg  str VTS_Default)
+
+#define BlackFormat(str)    (VTS_BlackFg    str VTS_Default)          
+#define RedFormat(str)      (VTS_RedFg      str VTS_Default)            
+#define GreenFormat(str)    (VTS_GreenFg    str VTS_Default)          
+#define YellowFormat(str)   (VTS_YellowFg   str VTS_Default)         
+#define BlueFormat(str)     (VTS_BlueFg     str VTS_Default)           
+#define MagentaFormat(str)  (VTS_MagentaFg  str VTS_Default)        
+#define CyanFormat(str)     (VTS_CyanFg     str VTS_Default)           
+#define WhiteFormat(str)    (VTS_WhiteFg    str VTS_Default)          
+#define RGBFormat(r,g,b,str) (VTS_RGBFg(r,g,b) str VTS_Default)       
+#define BlackFormat(str)    (VTS_BlackFg    str VTS_Default)          
+#define RedFormat(str)      (VTS_RedFg      str VTS_Default)            
+#define GreenFormat(str)    (VTS_GreenFg    str VTS_Default)          
+#define YellowFormat(str)   (VTS_YellowFg   str VTS_Default)         
+#define BlueFormat(str)     (VTS_BlueFg     str VTS_Default)           
+#define MagentaFormat(str)  (VTS_MagentaFg  str VTS_Default)        
+#define CyanFormat(str)     (VTS_CyanFg     str VTS_Default)           
+
+
+
+
+
 #endif //DESHI_LOGGER_H
