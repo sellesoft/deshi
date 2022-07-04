@@ -1533,7 +1533,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			ThreadJob tj;
 			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
 			
-			//man->job_ring_lock.lock();
+			man->job_ring_lock.lock();
 			
 			//check once more that there are jobs since the locking thread could have taken the last one
 			//im sure theres a better way to do this
@@ -1543,7 +1543,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj = man->job_ring[0];
 			man->job_ring.remove(1);
 			
-			//man->job_ring_lock.unlock();
+			man->job_ring_lock.unlock();
 			
 			//run the function
 			WorkerLog("running job");
