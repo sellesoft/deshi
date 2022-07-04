@@ -144,6 +144,29 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #define MagentaFormat(str)  (VTS_MagentaFg  str VTS_Default)        
 #define CyanFormat(str)     (VTS_CyanFg     str VTS_Default)           
 
+#define ErrorFormatDyn(str)   toStr8(VTS_RedFg,    str, VTS_Default).fin
+#define WarningFormatDyn(str) toStr8(VTS_YellowFg, str, VTS_Default).fin
+#define SuccessFormatDyn(str) toStr8(VTS_GreenFg,  str, VTS_Default).fin
+
+//TODO(sushi) need better way to do this 
+#define NegativeFormatDyn(str) toStr8(VTS_Negative,   str, VTS_Default).fin
+#define BlackFormatDyn(str)    toStr8(VTS_BlackFg,    str, VTS_Default).fin
+#define RedFormatDyn(str)      toStr8(VTS_RedFg,      str, VTS_Default).fin
+#define GreenFormatDyn(str)    toStr8(VTS_GreenFg,    str, VTS_Default).fin
+#define YellowFormatDyn(str)   toStr8(VTS_YellowFg,   str, VTS_Default).fin
+#define BlueFormatDyn(str)     toStr8(VTS_BlueFg,     str, VTS_Default).fin
+#define MagentaFormatDyn(str)  toStr8(VTS_MagentaFg,  str, VTS_Default).fin
+#define CyanFormatDyn(str)     toStr8(VTS_CyanFg,     str, VTS_Default).fin
+#define WhiteFormatDyn(str)    toStr8(VTS_WhiteFg,    str, VTS_Default).fin
+#define RGBFormatDyn(r,g,b,str) toStr8(VTS_RGBFg(r,g,b), str, VTS_Default).fin
+#define BlackFormatDyn(str)    toStr8(VTS_BlackFg,    str, VTS_Default).fin
+#define RedFormatDyn(str)      toStr8(VTS_RedFg,      str, VTS_Default).fin
+#define GreenFormatDyn(str)    toStr8(VTS_GreenFg,    str, VTS_Default).fin
+#define YellowFormatDyn(str)   toStr8(VTS_YellowFg,   str, VTS_Default).fin
+#define BlueFormatDyn(str)     toStr8(VTS_BlueFg,     str, VTS_Default).fin
+#define MagentaFormatDyn(str)  toStr8(VTS_MagentaFg,  str, VTS_Default).fin
+#define CyanFormatDyn(str)     toStr8(VTS_CyanFg,     str, VTS_Default).fin
+
 
 
 
