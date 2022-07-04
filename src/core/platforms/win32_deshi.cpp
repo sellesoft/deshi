@@ -356,7 +356,7 @@ platform_init(){DPZoneScoped;
 	::QueryPerformanceFrequency(&perf_count_frequency_result);
 	win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
 	DeshTime->stopwatch = start_stopwatch();
-	
+
 	//increase resolution of Sleep() to minimum value
 	TIMECAPS tc;
 	timeGetDevCaps(&tc, sizeof(tc));
@@ -408,7 +408,7 @@ platform_init(){DPZoneScoped;
 	::ShowWindow((HWND)window_helper.handle, SW_HIDE);
 	MSG msg; while(::PeekMessageW(&msg, (HWND)window_helper.handle, 0, 0, PM_REMOVE)){ ::TranslateMessage(&msg); ::DispatchMessageW(&msg); }
 	
-	
+
 	//// init input ////
 	//TODO(delle) setup raw input
 	
@@ -1537,14 +1537,17 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			
 			//check once more that there are jobs since the locking thread could have taken the last one
 			//im sure theres a better way to do this
-			if(!man->job_ring.count) break; 
+			if(!man->job_ring.count){
+				man->job_ring_lock.unlock();
+				break; 
+			} 	
 			WorkerLog("locked job ring and taking a job");
 			//take the job and remove it from the ring
 			tj = man->job_ring[0];
 			man->job_ring.remove(1);
 			
 			man->job_ring_lock.unlock();
-			
+
 			//run the function
 			WorkerLog("running job");
 			me->running = true;
