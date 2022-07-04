@@ -1411,7 +1411,7 @@ mutex(){DPZoneScoped;
 
 mutex::
 ~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedlock for this
-	//::CloseHandle(handle);
+	::CloseHandle(handle);
 }
 
 void mutex::
@@ -1537,7 +1537,10 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			
 			//check once more that there are jobs since the locking thread could have taken the last one
 			//im sure theres a better way to do this
-			if(!man->job_ring.count) break; 
+			if(!man->job_ring.count){
+				man->job_ring_lock.unlock();
+				break; 
+			} 	
 			WorkerLog("locked job ring and taking a job");
 			//take the job and remove it from the ring
 			tj = man->job_ring[0];
