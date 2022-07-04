@@ -280,6 +280,7 @@ LogS("deshi","Finished " #stage " module initialization in ",peek_stopwatch(stop
 #  include <ws2tcpip.h>
 #  include <tlhelp32.h>
 #  include <shellapi.h>
+#  include <timeapi.h>
 #  include "core/platforms/win32_deshi.cpp"
 #elif DESHI_LINUX //DESHI_WINDOWS
 #  include <GLFW/glfw3.h>

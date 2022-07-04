@@ -24,6 +24,7 @@ static const u32 UI_CENTER_LAYER = (u32)floor((f32)UI_LAYERS / 2.f);
 struct UIVarMod {
 	UIStyleVar  var;
 	f32 oldFloat[2];
+	UIVarMod(){}
 	UIVarMod(UIStyleVar var, f32 old)  { this->var = var; oldFloat[0] = old; }
 	UIVarMod(UIStyleVar var, vec2 old){ this->var = var; oldFloat[0] = old.x; oldFloat[1] = old.y; }
 };

@@ -356,6 +356,11 @@ platform_init(){DPZoneScoped;
 	::QueryPerformanceFrequency(&perf_count_frequency_result);
 	win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
 	DeshTime->stopwatch = start_stopwatch();
+
+	//increase resolution of Sleep() to minimum value
+	TIMECAPS tc;
+	timeGetDevCaps(&tc, sizeof(tc));
+	timeBeginPeriod(tc.wPeriodMin);
 	
 	//// init file ////
 	wchar_t* wpath = win32_path_from_str8(str8_lit("data/"), false, 0, &win32_file_data_folder_len);
@@ -403,7 +408,7 @@ platform_init(){DPZoneScoped;
 	::ShowWindow((HWND)window_helper.handle, SW_HIDE);
 	MSG msg; while(::PeekMessageW(&msg, (HWND)window_helper.handle, 0, 0, PM_REMOVE)){ ::TranslateMessage(&msg); ::DispatchMessageW(&msg); }
 	
-	
+
 	//// init input ////
 	//TODO(delle) setup raw input
 	
@@ -1406,7 +1411,7 @@ mutex(){DPZoneScoped;
 
 mutex::
 ~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedlock for this
-	::CloseHandle(handle);
+	//::CloseHandle(handle);
 }
 
 void mutex::
@@ -1465,8 +1470,8 @@ unlock(){DPZoneScoped;
 }
 
 
-condition_variable::
-condition_variable(){DPZoneScoped;
+void condition_variable::
+init(){DPZoneScoped;
 	//NOTE i have to use std mem here in the case that condvar is used before memory is initialized (eg. a condvar global var)
 	cvhandle = malloc(sizeof(CONDITION_VARIABLE));
 	cshandle = malloc(sizeof(CRITICAL_SECTION));
@@ -1474,9 +1479,11 @@ condition_variable(){DPZoneScoped;
 	::InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
-condition_variable::
-~condition_variable(){DPZoneScoped;
-	free(cvhandle); free(cshandle);
+
+void condvar::
+deinit(){DPZoneScoped;
+	free(cvhandle); 
+	free(cshandle);
 }
 
 void condition_variable::
@@ -1507,7 +1514,7 @@ wait_for(u64 milliseconds){DPZoneScoped;
 
 
 #ifdef BUILD_SLOW
-#define WorkerLog(message) //Log("thread", "worker ", me, ": ", message)
+#define WorkerLog(message) DPTracyDynMessage(toStr("worker ", me->idx, " : " message)) //Log("thread", "worker ", me, ": ", message)
 #else
 #define WorkerLog(message)
 #endif
@@ -1519,20 +1526,25 @@ void
 deshi__thread_worker(Thread* me){DPZoneScoped;
 	ThreadManager* man = DeshThreadManager;
 	WorkerLog("spawned");
+	SetThreadDescription(GetCurrentThread(), wchar_from_str8(toStr8("worker ", me->idx).fin, 0, deshi_temp_allocator));
 	while(!me->close){
 		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
 			WorkerLog("looking to take a job from job ring");
 			ThreadJob tj;
 			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
-			{scopedlock jrl(man->job_ring_lock);
-				//check once more that there are jobs since the locking thread could have taken the last one
-				//im sure theres a better way to do this
-				if(!man->job_ring.count) break; 
-				WorkerLog("locked job ring and taking a job");
-				//take the job and remove it from the ring
-				tj = man->job_ring[0];
-				man->job_ring.remove(1);
-			}
+			
+			man->job_ring_lock.lock();
+			
+			//check once more that there are jobs since the locking thread could have taken the last one
+			//im sure theres a better way to do this
+			if(!man->job_ring.count) break; 
+			WorkerLog("locked job ring and taking a job");
+			//take the job and remove it from the ring
+			tj = man->job_ring[0];
+			man->job_ring.remove(1);
+			
+			man->job_ring_lock.unlock();
+
 			//run the function
 			WorkerLog("running job");
 			me->running = true;
@@ -1547,7 +1559,6 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 		WorkerLog("woke up");
 	}
 	WorkerLog("closing");
-	DebugBreakpoint;
 }
 
 DWORD WINAPI
@@ -1557,43 +1568,53 @@ deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
 }
 
 void ThreadManager::
-init(u32 max_jobs){
+init(u32 max_jobs){DPZoneScoped;
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init ThreadManager without loading Memory first");
 	job_ring.init(max_jobs, deshi_allocator);
+	idle.init();
 	DeshiStageInitEnd(DS_THREAD);
 }
 
 void ThreadManager::
-spawn_thread(){DPZoneScoped;
-	Thread* t = (Thread*)memalloc(sizeof(Thread));
-	threads.add(t);
-	::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
+spawn_thread(u32 count){DPZoneScoped;
+	if(max_threads && threads.count + count > max_threads){
+		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", max_threads);
+	}
+	forI(count){
+		Thread* t = (Thread*)memalloc(sizeof(Thread));
+		if(threads.count)
+			t->idx = (*threads.last)->idx + 1;
+		else
+			t->idx = 0;
+		threads.add(t);
+		::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
+	}
 }
 
 void ThreadManager::
-close_all_threads(){
+close_all_threads(){DPZoneScoped;
 	forI(threads.count) threads[i]->close = true;
 	wake_threads(0);
 	threads.clear();
 }
 
 void ThreadManager::
-add_job(ThreadJob job){
+add_job(ThreadJob job){DPZoneScoped;
 	job_ring.add(job);
 }
 
 void ThreadManager::
-add_jobs(carray<ThreadJob> jobs){
+add_jobs(carray<ThreadJob> jobs){DPZoneScoped;
 	forI(jobs.count) job_ring.add(jobs[i]);
 }
 
 void ThreadManager::
-cancel_all_jobs(){
+cancel_all_jobs(){DPZoneScoped;
 	job_ring.clear();
 } 
 
 void ThreadManager::
-wake_threads(u32 count){
+wake_threads(u32 count){DPZoneScoped;
 	if(!threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
 	else if(!count) idle.notify_all(); 
 	else{

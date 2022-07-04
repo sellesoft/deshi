@@ -959,7 +959,7 @@ void ui_update(){DPZoneScoped;
 				item_error(g_ui->item_stack[i+1], "Items are still left on the item stack. Did you forget to call uiItemE? Did you mean to use uiItemM?");
 			}
 			else {
-				item_error(g_ui->item_stack[i+1]);
+				item_error(g_ui->item_stack[i+1], "");
 			}
 		}
 		Assert(false);

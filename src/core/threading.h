@@ -9,7 +9,7 @@
 #include "kigu/unicode.h"
 #include "kigu/ring_array.h"
 
-const u32 max_threads = 3;
+
 
 //used for thread syncronization.
 // when a thread is to use a resource that is not atmoic it locks it using a mutex
@@ -39,8 +39,8 @@ struct condition_variable{
     void* cvhandle = 0; //win32: CONDITION_VARIABLE
     void* cshandle = 0; //win32: CRITICAL_SECTION
 	
-    condition_variable();
-    ~condition_variable();
+    void init();
+    void deinit();
     //notifies one of the threads waiting on this condition_variable
     void notify_one();
     //notifies all threads waiting on this condition variable
@@ -56,11 +56,11 @@ typedef condition_variable condvar;
 
 struct scopedlock{//locks a mutex and unlocks it when it goes out of scope
     mutex* m = 0;
-    scopedlock(mutex& _m){
+    scopedlock(mutex& _m){DPZoneScoped;
         m=&_m;
         m->lock();
     }
-    ~scopedlock(){
+    ~scopedlock(){DPZoneScoped;
         m->unlock();
     }
 };
@@ -77,20 +77,23 @@ struct Thread{
     b32 running = 0; //this is only set by the worker
     b32 close = 0; //this is only set by the thread manager
     string name = ""; //for debugging. 
+    u32 idx;
 };
 
 struct ThreadManager{
-	mutex job_ring_lock;
+	DPTracyLockable(mutex, job_ring_lock);
     condvar idle; //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
     ring_array<ThreadJob> job_ring; 
     array<Thread*> threads; //TODO arena threads instead of using memalloc
+
+    u32 max_threads = 5;
 
     //initializes the thread manager
     //this must be done after loading memory
     void init(u32 max_jobs = 255);
 
     //spawns a new thread 
-    void spawn_thread(); 
+    void spawn_thread(u32 count = 1); 
     //closes all threads
     void close_all_threads(); 
 

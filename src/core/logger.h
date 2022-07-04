@@ -126,6 +126,7 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #define WarningFormat(str) (VTS_YellowFg str VTS_Default)
 #define SuccessFormat(str) (VTS_GreenFg  str VTS_Default)
 
+#define NegativeFormat(str) (VTS_Negative   str VTS_Default)
 #define BlackFormat(str)    (VTS_BlackFg    str VTS_Default)          
 #define RedFormat(str)      (VTS_RedFg      str VTS_Default)            
 #define GreenFormat(str)    (VTS_GreenFg    str VTS_Default)          
