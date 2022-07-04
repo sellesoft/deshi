@@ -1411,7 +1411,7 @@ mutex(){DPZoneScoped;
 
 mutex::
 ~mutex(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedlock for this
-	//::CloseHandle(handle);
+	::CloseHandle(handle);
 }
 
 void mutex::
