@@ -44,65 +44,18 @@ typedef union vec2i{
 	struct{ s32 u, v; };
 	
 #ifdef __cplusplus
-	//// constants ////
-	FORCE_INLINE static vec2i ZERO(){
-		vec2i v;
-		v.x = 0;
-		v.y = 0;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i ONE(){
-		vec2i v;
-		v.x = 1;
-		v.y = 1;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i UP(){
-		vec2i v;
-		v.x = 0;
-		v.y = 1;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i DOWN(){
-		vec2i v;
-		v.x = 0;
-		v.y = -1;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i LEFT(){
-		vec2i v;
-		v.x = -1;
-		v.y = 0;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i RIGHT(){
-		vec2i v;
-		v.x = 1;
-		v.y = 0;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i UNITX(){
-		vec2i v;
-		v.x = 1;
-		v.y = 0;
-		return v;
-	};
-	
-	FORCE_INLINE static vec2i UNITY(){
-		vec2i v;
-		v.x = 0;
-		v.y = 1;
-		return v;
-	};
+	//// member constants ////
+	static const vec2i ZERO;
+	static const vec2i ONE;
+	static const vec2i UP;
+	static const vec2i DOWN;
+	static const vec2i LEFT;
+	static const vec2i RIGHT;
+	static const vec2i UNITX;
+	static const vec2i UNITY;
 	
 	
-	//// operators ////
+	//// member operators ////
 	inline vec2i operator* (s32 rhs)const{DPZoneScoped;
 		vec2i v;
 		v.x = this->x * rhs;
@@ -231,13 +184,13 @@ typedef union vec2i{
 	}
 	
 	inline void  normalize(){DPZoneScoped;
-		if(*this != this->ZERO()){
+		if(*this != vec2i::ZERO){
 			*this /= this->mag();
 		}
 	}
 	
 	inline vec2i normalized()const{DPZoneScoped;
-		if(*this != this->ZERO()){
+		if(*this != vec2i::ZERO){
 			return *this / this->mag();
 		}
 		return *this;
@@ -345,10 +298,21 @@ typedef union vec2i{
 	}
 	
 	//// interactions ////
-	vec3 toVec3() const;
-	vec4 toVec4() const;
+	vec3 toVec3()const;
+	vec4 toVec4()const;
 #endif //#ifdef __cplusplus
 } vec2i;
+
+
+//// member constants ////
+inline const vec2i vec2i::ZERO  = vec2i{ 0, 0};
+inline const vec2i vec2i::ONE   = vec2i{ 1, 1};
+inline const vec2i vec2i::UP    = vec2i{ 0, 1};
+inline const vec2i vec2i::DOWN  = vec2i{ 0,-1};
+inline const vec2i vec2i::LEFT  = vec2i{-1, 0};
+inline const vec2i vec2i::RIGHT = vec2i{ 1, 0};
+inline const vec2i vec2i::UNITX = vec2i{ 1, 0};
+inline const vec2i vec2i::UNITY = vec2i{ 0, 1};
 
 
 //// nonmember constructor ////

@@ -138,7 +138,7 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 				window->dimensions.y = HIWORD(lParam);// - window->titlebar_height;
 				window->dimensions_decorated.x = LOWORD(lParam);
 				window->dimensions_decorated.y = HIWORD(lParam);
-				window->center    = Vec2i((s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2);
+				window->center    = vec2i{(s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2};
 				window->minimized = (wParam == SIZE_MINIMIZED);
 				window->resized   = true;
 			}else{ Assert(!"WM_SIZE passed to win32 HWND that does not have matching deshi Window"); }
