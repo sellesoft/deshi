@@ -56,30 +56,6 @@ typedef union vec2i{
 	
 	
 	//// member operators ////
-	inline vec2i operator* (s32 rhs)const{DPZoneScoped;
-		vec2i v;
-		v.x = this->x * rhs;
-		v.y = this->y * rhs;
-		return v;
-	}
-	
-	inline void  operator*=(s32 rhs){DPZoneScoped;
-		this->x *= rhs;
-		this->y *= rhs;
-	}
-	
-	inline vec2i operator/ (s32 rhs)const{DPZoneScoped;
-		vec2i v;
-		v.x = this->x / rhs;
-		v.y = this->y / rhs;
-		return v;
-	}
-	
-	inline void  operator/=(s32 rhs){DPZoneScoped;
-		this->x /= rhs;
-		this->y /= rhs;
-	}
-	
 	inline vec2i operator+ (const vec2i& rhs)const{DPZoneScoped;
 		vec2i v;
 		v.x = this->x + rhs.x;
@@ -116,6 +92,18 @@ typedef union vec2i{
 		this->y *= rhs.y;
 	}
 	
+	inline vec2i operator* (s32 rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x * rhs;
+		v.y = this->y * rhs;
+		return v;
+	}
+	
+	inline void  operator*=(s32 rhs){DPZoneScoped;
+		this->x *= rhs;
+		this->y *= rhs;
+	}
+	
 	inline vec2i operator/ (const vec2i& rhs)const{DPZoneScoped;
 		vec2i v;
 		v.x = this->x / rhs.x;
@@ -126,6 +114,18 @@ typedef union vec2i{
 	inline void  operator/=(const vec2i& rhs){DPZoneScoped;
 		this->x /= rhs.x;
 		this->y /= rhs.y;
+	}
+	
+	inline vec2i operator/ (s32 rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x / rhs;
+		v.y = this->y / rhs;
+		return v;
+	}
+	
+	inline void  operator/=(s32 rhs){DPZoneScoped;
+		this->x /= rhs;
+		this->y /= rhs;
 	}
 	
 	inline vec2i operator- ()const{DPZoneScoped;
@@ -152,8 +152,8 @@ typedef union vec2i{
 	
 	inline vec2i absV()const{DPZoneScoped;
 		vec2i v;
-		v.x = abs(x);
-		v.y = abs(y);
+		v.x = abs(this->x);
+		v.y = abs(this->y);
 		return v;
 	}
 	
@@ -176,11 +176,11 @@ typedef union vec2i{
 	}
 	
 	inline s32   mag()const{DPZoneScoped;
-		return sqrt(x * x + y * y);
+		return sqrt((this->x * this->x) + (this->y * this->y));
 	}
 	
 	inline s32   magSq()const{DPZoneScoped;
-		return x*x + y*y;
+		return (this->x * this->x) + (this->y * this->y);
 	}
 	
 	inline void  normalize(){DPZoneScoped;
@@ -210,9 +210,9 @@ typedef union vec2i{
 	inline vec2i clampedMag(s32 min, s32 max)const{DPZoneScoped;
 		s32 m = this->mag();
 		if      (m < min){
-			return normalized() * min;
+			return this->normalized() * min;
 		}else if(m > max){
-			return normalized() * max;
+			return this->normalized() * max;
 		}else{
 			return *this;
 		}
@@ -222,16 +222,16 @@ typedef union vec2i{
 		return (*this - rhs).mag();
 	}
 	
-	inline vec2i compOn(const vec2i& rhs)const{DPZoneScoped;
-		return rhs.normalized() * this->projectOn(rhs);
-	}
-	
 	inline s32   projectOn(const vec2i& rhs)const{DPZoneScoped;
 		if(this->mag() > M_EPSILON){
 			return this->dot(rhs) / this->mag();
 		}else{
 			return 0;
 		}
+	}
+	
+	inline vec2i compOn(const vec2i& rhs)const{DPZoneScoped;
+		return rhs.normalized() * this->projectOn(rhs);
 	}
 	
 	inline vec2i midpoint(const vec2i& rhs)const{DPZoneScoped;
@@ -304,6 +304,7 @@ typedef union vec2i{
 } vec2i;
 
 
+#ifdef __cplusplus
 //// member constants ////
 inline const vec2i vec2i::ZERO  = vec2i{ 0, 0};
 inline const vec2i vec2i::ONE   = vec2i{ 1, 1};
@@ -313,188 +314,211 @@ inline const vec2i vec2i::LEFT  = vec2i{-1, 0};
 inline const vec2i vec2i::RIGHT = vec2i{ 1, 0};
 inline const vec2i vec2i::UNITX = vec2i{ 1, 0};
 inline const vec2i vec2i::UNITY = vec2i{ 0, 1};
+#endif //#ifdef __cplusplus
 
 
 //// nonmember constructor ////
-inline vec2i Vec2i(s32 x, s32 y){DPZoneScoped;
-	vec2i v;
-	v.x = x;
-	v.y = y;
-	return v;
+FORCE_INLINE vec2i Vec2i(s32 x, s32 y){
+	return vec2i{x, y};
 }
 
 
 //// nonmember constants ////
-FORCE_INLINE vec2i vec2i_ZERO(){
-	vec2i v;
-	v.x = 0;
-	v.y = 0;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_ONE(){
-	vec2i v;
-	v.x = 1;
-	v.y = 1;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_UP(){
-	vec2i v;
-	v.x = 0;
-	v.y = 1;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_DOWN(){
-	vec2i v;
-	v.x = 0;
-	v.y = -1;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_LEFT(){
-	vec2i v;
-	v.x = -1;
-	v.y = 0;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_RIGHT(){
-	vec2i v;
-	v.x = 1;
-	v.y = 0;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_UNITX(){
-	vec2i v;
-	v.x = 1;
-	v.y = 0;
-	return v;
-};
-
-FORCE_INLINE vec2i vec2i_UNITY(){
-	vec2i v;
-	v.x = 0;
-	v.y = 1;
-	return v;
-};
+FORCE_INLINE vec2i vec2i_ZERO() { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_ONE()  { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_UP()   { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_DOWN() { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_LEFT() { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_RIGHT(){ return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_UNITX(){ return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_UNITY(){ return vec2i{ 0, 0}; }
 
 
 //// nonmember operators ////
+#ifdef __cplusplus
 FORCE_INLINE vec2i operator* (s32 lhs, vec2i rhs){
 	return rhs * lhs;
 }
+#endif //#ifdef __cplusplus
 
 inline vec2i vec2i_add(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs + rhs;
+	vec2i v;
+	v.x = lhs.x + rhs.x;
+	v.y = lhs.y + rhs.y;
+	return v;
 }
 
 inline vec2i vec2i_subtract(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs - rhs;
+	vec2i v;
+	v.x = lhs.x - rhs.x;
+	v.y = lhs.y - rhs.y;
+	return v;
 }
 
-inline vec2i vec2i_multipy(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs * rhs;
+inline vec2i vec2i_multiply(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x * rhs.x;
+	v.y = lhs.y * rhs.y;
+	return v;
 }
 
-inline vec2i vec2i_multipy_constant(vec2i lhs, s32 rhs){DPZoneScoped;
-	return lhs * rhs;
+inline vec2i vec2i_multiply_constant(vec2i lhs, s32 rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x * rhs;
+	v.y = lhs.y * rhs;
+	return v;
 }
 
 inline vec2i vec2i_divide(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs / rhs;
+	vec2i v;
+	v.x = lhs.x / rhs.x;
+	v.y = lhs.y / rhs.y;
+	return v;
 }
 
 inline vec2i vec2i_divide_constant(vec2i lhs, s32 rhs){DPZoneScoped;
-	return lhs / rhs;
+	vec2i v;
+	v.x = lhs.x / rhs;
+	v.y = lhs.y / rhs;
+	return v;
 }
 
 inline vec2i vec2i_negate(vec2i lhs){DPZoneScoped;
-	return -lhs;
+	vec2i v;
+	v.x = -(lhs.x);
+	v.y = -(lhs.y);
+	return v;
 }
 
 inline b32   vec2i_equal(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs == rhs;
+	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
 }
 
 
 //// nonmember functions ////
 inline vec2i vec2i_absV(vec2i lhs){DPZoneScoped;
-	return lhs.absV();
+	vec2i v;
+	v.x = abs(lhs.x);
+	v.y = abs(lhs.y);
+	return v;
 }
 
 inline s32   vec2i_dot(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs.dot(rhs);
+	return (lhs.x * rhs.x) + (lhs.y * rhs.y);
 }
 
 inline vec2i vec2i_perp(vec2i lhs){DPZoneScoped;
-	return lhs.perp();
+	vec2i v;
+	v.x = -(lhs.y);
+	v.y =   lhs.x;
+	return v;
 }
 
 inline s32   vec2i_mag(vec2i lhs){DPZoneScoped;
-	return lhs.mag();
+	return sqrt((lhs.x * lhs.x) + (lhs.y * lhs.y));
 }
 
 inline s32   vec2i_magSq(vec2i lhs){DPZoneScoped;
-	return lhs.magSq();
+	return (lhs.x * lhs.x) + (lhs.y * lhs.y);
 }
 
 inline vec2i vec2i_normalized(vec2i lhs){DPZoneScoped;
-	return lhs.normalized();
+	if(lhs.x != 0 || lhs.y != 0){
+		return vec2i_divide_constant(lhs, vec2i_mag(lhs));
+	}else{
+		return lhs;
+	}
 }
 
 inline vec2i vec2i_clampedMag(vec2i lhs, s32 min, s32 max){DPZoneScoped;
-	return lhs.clampedMag(min, max);
+	s32 m = vec2i_mag(lhs);
+	if      (m < min){
+		return vec2i_multiply_constant(vec2i_normalized(lhs), min);
+	}else if(m > max){
+		return vec2i_multiply_constant(vec2i_normalized(lhs), max);
+	}else{
+		return lhs;
+	}
 }
 
 inline s32   vec2i_distanceTo(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs.distanceTo(rhs);
-}
-
-inline vec2i vec2i_compOn(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs.compOn(rhs);
+	return vec2i_mag(vec2i_subtract(lhs,rhs));
 }
 
 inline s32   vec2i_projectOn(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs.projectOn(rhs);
+	s32 m = vec2i_mag(lhs);
+	if(m > M_EPSILON){
+		return vec2i_dot(lhs,rhs) / m;
+	}else{
+		return 0;
+	}
+}
+
+inline vec2i vec2i_compOn(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return vec2i_multiply_constant(vec2i_normalized(rhs), vec2i_projectOn(lhs,rhs));
 }
 
 inline vec2i vec2i_midpoint(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return lhs.midpoint(rhs);
+	vec2i v;
+	v.x = (lhs.x + rhs.x) / 2;
+	v.y = (lhs.y + rhs.y) / 2;
+	return v;
 }
 
 inline vec2i vec2i_xComp(vec2i lhs){DPZoneScoped;
-	return lhs.xComp();
+	vec2i v;
+	v.x = lhs.x;
+	v.y = 0;
+	return v;
 }
 
 inline vec2i vec2i_yComp(vec2i lhs){DPZoneScoped;
-	return lhs.yComp();
+	vec2i v;
+	v.x = 0;
+	v.y = lhs.y;
+	return v;
 }
 
 inline vec2i vec2i_xInvert(vec2i lhs){DPZoneScoped;
-	return lhs.xInvert();
+	vec2i v;
+	v.x = -(lhs.x);
+	v.y =   lhs.y;
+	return v;
 }
 
 inline vec2i vec2i_yInvert(vec2i lhs){DPZoneScoped;
-	return lhs.yInvert();
+	vec2i v;
+	v.x =   lhs.x;
+	v.y = -(lhs.y);
+	return v;
 }
 
 inline vec2i vec2i_xSet(vec2i lhs, s32 a){DPZoneScoped;
-	return lhs.xSet(a);
+	vec2i v;
+	v.x = a;
+	v.y = lhs.y;
+	return v;
 }
 
 inline vec2i vec2i_ySet(vec2i lhs, s32 a){DPZoneScoped;
-	return lhs.ySet(a);
+	vec2i v;
+	v.x = lhs.x;
+	v.y = a;
+	return v;
 }
 
 inline vec2i vec2i_xAdd(vec2i lhs, s32 a){DPZoneScoped;
-	return lhs.xAdd(a);
+	vec2i v;
+	v.x = lhs.x + a;
+	v.y = lhs.y;
+	return v;
 }
 
 inline vec2i vec2i_yAdd(vec2i lhs, s32 a){DPZoneScoped;
-	return lhs.yAdd(a);
+	vec2i v;
+	v.x = lhs.x;
+	v.y = lhs.y + a;
+	return v;
 }
 
 #ifdef __cplusplus
