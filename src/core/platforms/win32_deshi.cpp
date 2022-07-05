@@ -356,7 +356,7 @@ platform_init(){DPZoneScoped;
 	::QueryPerformanceFrequency(&perf_count_frequency_result);
 	win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
 	DeshTime->stopwatch = start_stopwatch();
-
+	
 	//increase resolution of Sleep() to minimum value
 	TIMECAPS tc;
 	timeGetDevCaps(&tc, sizeof(tc));
@@ -408,7 +408,7 @@ platform_init(){DPZoneScoped;
 	::ShowWindow((HWND)window_helper.handle, SW_HIDE);
 	MSG msg; while(::PeekMessageW(&msg, (HWND)window_helper.handle, 0, 0, PM_REMOVE)){ ::TranslateMessage(&msg); ::DispatchMessageW(&msg); }
 	
-
+	
 	//// init input ////
 	//TODO(delle) setup raw input
 	
@@ -1547,7 +1547,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			man->job_ring.remove(1);
 			
 			man->job_ring_lock.unlock();
-
+			
 			//run the function
 			WorkerLog("running job");
 			me->running = true;

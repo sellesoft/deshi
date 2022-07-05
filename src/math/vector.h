@@ -1,3 +1,19 @@
+/* deshi Vector Math Module
+Index:
+@vec2i
+@vec2
+@vec3i
+@vec3
+@vec4i
+@vec4
+@vec_interactions
+@vec_macros
+@vec_rounding
+@vec_minmax
+@vec_hashing
+@vec_tostring
+*/
+
 #pragma once
 #ifndef DESHI_VECTOR_H
 #define DESHI_VECTOR_H
@@ -13,19 +29,22 @@ struct mat3;
 struct mat4;
 struct quat;
 
-//////////////////////
-//// declarations ////
-//////////////////////
-union vec2i{
-	s32 arr[2] = {};
+#ifdef __cplusplus
+StartLinkageC();
+#endif //#ifdef __cplusplus
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec2i
+typedef union vec2i{
+	//// data ////
+	s32 arr[2] = {0};
 	struct{ s32 x, y; };
+	struct{ s32 r, g; };
+	struct{ s32 w, h; };
+	struct{ s32 u, v; };
 	
-	vec2i(){};
-	vec2i(s32 inX, s32 inY);
-	vec2i(const vec2i& v);
-	vec2i(s32* ptr);
-	vec2i(vec2 v);
-	
+#ifdef __cplusplus
+	//// member constants ////
 	static const vec2i ZERO;
 	static const vec2i ONE;
 	static const vec2i UP;
@@ -35,58 +54,478 @@ union vec2i{
 	static const vec2i UNITX;
 	static const vec2i UNITY;
 	
-	void  operator= (const vec2i& rhs);
-	vec2i operator* (s32 rhs) const;
-	void  operator*=(s32 rhs);
-	vec2i operator/ (s32 rhs) const;
-	void  operator/=(s32 rhs);
-	vec2i operator+ (const vec2i& rhs) const;
-	void  operator+=(const vec2i& rhs);
-	vec2i operator- (const vec2i& rhs) const;
-	void  operator-=(const vec2i& rhs);
-	vec2i operator* (const vec2i& rhs) const;
-	void  operator*=(const vec2i& rhs);
-	vec2i operator/ (const vec2i& rhs) const;
-	void  operator/=(const vec2i& rhs);
-	vec2i operator- () const;
-	bool  operator==(const vec2i& rhs) const;
-	bool  operator!=(const vec2i& rhs) const;
-	friend vec2i operator* (s32 lhs, const vec2i& rhs){ return rhs * lhs; }
 	
-	void  set(s32 x, s32 y);
-	vec2i absV() const;
-	vec2i copy() const;
-	s32   dot(const vec2i& rhs) const;
-	vec2i perp() const;
-	s32   mag()  const;
-	s32   magSq()  const;
-	void  normalize();
-	vec2i normalized() const;
-	void  clampMag(s32 min, s32 max);
-	vec2i clampedMag(s32 min, s32 max) const;
-	s32   distanceTo(const vec2i& rhs)  const;
-	vec2i compOn(const vec2i& rhs)      const;
-	s32   projectOn(const vec2i& rhs)   const;
-	vec2i midpoint(const vec2i& rhs)    const;
-	vec2i xComp() const;
-	vec2i yComp() const;
-	vec2i xInvert() const;
-	vec2i yInvert() const;
-	vec2i xSet(s32 set) const; 
-	vec2i ySet(s32 set) const; 
-	vec2i xAdd(s32 set) const; 
-	vec2i yAdd(s32 set) const; 
-	vec2i ceil() const;
-	vec2i floor() const;
+	//// member operators ////
+	inline vec2i operator+ (const vec2i& rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x + rhs.x;
+		v.y = this->y + rhs.y;
+		return v;
+	}
 	
-	//vector interactions
-	vec2i(const vec3& v);
-	vec2i(const vec4& v);
-	vec2i(const vec2g& v);
-	vec3 toVec3() const;
-	vec4 toVec4() const;
-};
+	inline void  operator+=(const vec2i& rhs){DPZoneScoped;
+		this->x += rhs.x;
+		this->y += rhs.y;
+	}
+	
+	inline vec2i operator- (const vec2i& rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x - rhs.x;
+		v.y = this->y - rhs.y;
+		return v;
+	}
+	
+	inline void  operator-=(const vec2i& rhs){DPZoneScoped;
+		this->x -= rhs.x;
+		this->y -= rhs.y;
+	}
+	
+	inline vec2i operator* (const vec2i& rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x * rhs.x;
+		v.y = this->y * rhs.y;
+		return v;
+	}
+	
+	inline void  operator*=(const vec2i& rhs){DPZoneScoped;
+		this->x *= rhs.x;
+		this->y *= rhs.y;
+	}
+	
+	inline vec2i operator* (s32 rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x * rhs;
+		v.y = this->y * rhs;
+		return v;
+	}
+	
+	inline void  operator*=(s32 rhs){DPZoneScoped;
+		this->x *= rhs;
+		this->y *= rhs;
+	}
+	
+	inline vec2i operator/ (const vec2i& rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x / rhs.x;
+		v.y = this->y / rhs.y;
+		return v;
+	}
+	
+	inline void  operator/=(const vec2i& rhs){DPZoneScoped;
+		this->x /= rhs.x;
+		this->y /= rhs.y;
+	}
+	
+	inline vec2i operator/ (s32 rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x / rhs;
+		v.y = this->y / rhs;
+		return v;
+	}
+	
+	inline void  operator/=(s32 rhs){DPZoneScoped;
+		this->x /= rhs;
+		this->y /= rhs;
+	}
+	
+	inline vec2i operator- ()const{DPZoneScoped;
+		vec2i v;
+		v.x = -(this->x);
+		v.y = -(this->y);
+		return v;
+	}
+	
+	inline b32   operator==(const vec2i& rhs)const{DPZoneScoped;
+		return (this->x == rhs.x) && (this->y == rhs.y);
+	}
+	
+	inline b32   operator!=(const vec2i& rhs)const{DPZoneScoped;
+		return !(*this == rhs);
+	}
+	
+	
+	//// member functions ////
+	inline void  set(s32 x, s32 y){DPZoneScoped;
+		this->x = x;
+		this->y = y;
+	}
+	
+	inline vec2i absV()const{DPZoneScoped;
+		vec2i v;
+		v.x = abs(this->x);
+		v.y = abs(this->y);
+		return v;
+	}
+	
+	inline vec2i copy()const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x;
+		v.y = this->y;
+		return v;
+	}
+	
+	inline s32   dot(const vec2i& rhs)const{DPZoneScoped;
+		return (this->x * rhs.x) + (this->y * rhs.y);
+	}
+	
+	inline vec2i perp()const{DPZoneScoped;
+		vec2i v;
+		v.x = -(this->y);
+		v.y =   this->x;
+		return v;
+	}
+	
+	inline s32   mag()const{DPZoneScoped;
+		return sqrt((this->x * this->x) + (this->y * this->y));
+	}
+	
+	inline s32   magSq()const{DPZoneScoped;
+		return (this->x * this->x) + (this->y * this->y);
+	}
+	
+	inline void  normalize(){DPZoneScoped;
+		if(*this != vec2i::ZERO){
+			*this /= this->mag();
+		}
+	}
+	
+	inline vec2i normalized()const{DPZoneScoped;
+		if(*this != vec2i::ZERO){
+			return *this / this->mag();
+		}
+		return *this;
+	}
+	
+	inline void  clampMag(s32 min, s32 max){DPZoneScoped;
+		s32 m = this->mag();
+		if      (m < min){
+			this->normalize();
+			*this *= min;
+		}else if(m > max){
+			this->normalize();
+			*this *= max;
+		}
+	}
+	
+	inline vec2i clampedMag(s32 min, s32 max)const{DPZoneScoped;
+		s32 m = this->mag();
+		if      (m < min){
+			return this->normalized() * min;
+		}else if(m > max){
+			return this->normalized() * max;
+		}else{
+			return *this;
+		}
+	}
+	
+	inline s32   distanceTo(const vec2i& rhs)const{DPZoneScoped;
+		return (*this - rhs).mag();
+	}
+	
+	inline s32   projectOn(const vec2i& rhs)const{DPZoneScoped;
+		if(this->mag() > M_EPSILON){
+			return this->dot(rhs) / this->mag();
+		}else{
+			return 0;
+		}
+	}
+	
+	inline vec2i compOn(const vec2i& rhs)const{DPZoneScoped;
+		return rhs.normalized() * this->projectOn(rhs);
+	}
+	
+	inline vec2i midpoint(const vec2i& rhs)const{DPZoneScoped;
+		vec2i v;
+		v.x = (this->x + rhs.x) / 2;
+		v.y = (this->y + rhs.y) / 2;
+		return v;
+	}
+	
+	inline vec2i xComp()const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x;
+		v.y = 0;
+		return v;
+	}
+	
+	inline vec2i yComp()const{DPZoneScoped;
+		vec2i v;
+		v.x = 0;
+		v.y = this->y;
+		return v;
+	}
+	
+	inline vec2i xInvert()const{DPZoneScoped;
+		vec2i v;
+		v.x = -(this->x);
+		v.y =   this->y;
+		return v;
+	}
+	
+	inline vec2i yInvert()const{DPZoneScoped;
+		vec2i v;
+		v.x =   this->x;
+		v.y = -(this->y);
+		return v;
+	}
+	
+	inline vec2i xSet(s32 a)const{DPZoneScoped;
+		vec2i v;
+		v.x = a;
+		v.y = this->y;
+		return v;
+	}
+	
+	inline vec2i ySet(s32 a)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x;
+		v.y = a;
+		return v;
+	}
+	
+	inline vec2i xAdd(s32 a)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x + a;
+		v.y = this->y;
+		return v;
+	}
+	
+	inline vec2i yAdd(s32 a)const{DPZoneScoped;
+		vec2i v;
+		v.x = this->x;
+		v.y = this->y + a;
+		return v;
+	}
+	
+	//// interactions ////
+	vec3 toVec3()const;
+	vec4 toVec4()const;
+#endif //#ifdef __cplusplus
+} vec2i;
 
+
+#ifdef __cplusplus
+//// member constants ////
+inline const vec2i vec2i::ZERO  = vec2i{ 0, 0};
+inline const vec2i vec2i::ONE   = vec2i{ 1, 1};
+inline const vec2i vec2i::UP    = vec2i{ 0, 1};
+inline const vec2i vec2i::DOWN  = vec2i{ 0,-1};
+inline const vec2i vec2i::LEFT  = vec2i{-1, 0};
+inline const vec2i vec2i::RIGHT = vec2i{ 1, 0};
+inline const vec2i vec2i::UNITX = vec2i{ 1, 0};
+inline const vec2i vec2i::UNITY = vec2i{ 0, 1};
+#endif //#ifdef __cplusplus
+
+
+//// nonmember constructor ////
+FORCE_INLINE vec2i Vec2i(s32 x, s32 y){
+	return vec2i{x, y};
+}
+
+
+//// nonmember constants ////
+FORCE_INLINE vec2i vec2i_ZERO() { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_ONE()  { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_UP()   { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_DOWN() { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_LEFT() { return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_RIGHT(){ return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_UNITX(){ return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_UNITY(){ return vec2i{ 0, 0}; }
+
+
+//// nonmember operators ////
+#ifdef __cplusplus
+FORCE_INLINE vec2i operator* (s32 lhs, vec2i rhs){
+	return rhs * lhs;
+}
+#endif //#ifdef __cplusplus
+
+inline vec2i vec2i_add(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x + rhs.x;
+	v.y = lhs.y + rhs.y;
+	return v;
+}
+
+inline vec2i vec2i_subtract(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x - rhs.x;
+	v.y = lhs.y - rhs.y;
+	return v;
+}
+
+inline vec2i vec2i_multiply(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x * rhs.x;
+	v.y = lhs.y * rhs.y;
+	return v;
+}
+
+inline vec2i vec2i_multiply_constant(vec2i lhs, s32 rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x * rhs;
+	v.y = lhs.y * rhs;
+	return v;
+}
+
+inline vec2i vec2i_divide(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x / rhs.x;
+	v.y = lhs.y / rhs.y;
+	return v;
+}
+
+inline vec2i vec2i_divide_constant(vec2i lhs, s32 rhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x / rhs;
+	v.y = lhs.y / rhs;
+	return v;
+}
+
+inline vec2i vec2i_negate(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x = -(lhs.x);
+	v.y = -(lhs.y);
+	return v;
+}
+
+inline b32   vec2i_equal(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+}
+
+
+//// nonmember functions ////
+inline vec2i vec2i_absV(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x = abs(lhs.x);
+	v.y = abs(lhs.y);
+	return v;
+}
+
+inline s32   vec2i_dot(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return (lhs.x * rhs.x) + (lhs.y * rhs.y);
+}
+
+inline vec2i vec2i_perp(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x = -(lhs.y);
+	v.y =   lhs.x;
+	return v;
+}
+
+inline s32   vec2i_mag(vec2i lhs){DPZoneScoped;
+	return sqrt((lhs.x * lhs.x) + (lhs.y * lhs.y));
+}
+
+inline s32   vec2i_magSq(vec2i lhs){DPZoneScoped;
+	return (lhs.x * lhs.x) + (lhs.y * lhs.y);
+}
+
+inline vec2i vec2i_normalized(vec2i lhs){DPZoneScoped;
+	if(lhs.x != 0 || lhs.y != 0){
+		return vec2i_divide_constant(lhs, vec2i_mag(lhs));
+	}else{
+		return lhs;
+	}
+}
+
+inline vec2i vec2i_clampedMag(vec2i lhs, s32 min, s32 max){DPZoneScoped;
+	s32 m = vec2i_mag(lhs);
+	if      (m < min){
+		return vec2i_multiply_constant(vec2i_normalized(lhs), min);
+	}else if(m > max){
+		return vec2i_multiply_constant(vec2i_normalized(lhs), max);
+	}else{
+		return lhs;
+	}
+}
+
+inline s32   vec2i_distanceTo(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return vec2i_mag(vec2i_subtract(lhs,rhs));
+}
+
+inline s32   vec2i_projectOn(vec2i lhs, vec2i rhs){DPZoneScoped;
+	s32 m = vec2i_mag(lhs);
+	if(m > M_EPSILON){
+		return vec2i_dot(lhs,rhs) / m;
+	}else{
+		return 0;
+	}
+}
+
+inline vec2i vec2i_compOn(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return vec2i_multiply_constant(vec2i_normalized(rhs), vec2i_projectOn(lhs,rhs));
+}
+
+inline vec2i vec2i_midpoint(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2i v;
+	v.x = (lhs.x + rhs.x) / 2;
+	v.y = (lhs.y + rhs.y) / 2;
+	return v;
+}
+
+inline vec2i vec2i_xComp(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x;
+	v.y = 0;
+	return v;
+}
+
+inline vec2i vec2i_yComp(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x = 0;
+	v.y = lhs.y;
+	return v;
+}
+
+inline vec2i vec2i_xInvert(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x = -(lhs.x);
+	v.y =   lhs.y;
+	return v;
+}
+
+inline vec2i vec2i_yInvert(vec2i lhs){DPZoneScoped;
+	vec2i v;
+	v.x =   lhs.x;
+	v.y = -(lhs.y);
+	return v;
+}
+
+inline vec2i vec2i_xSet(vec2i lhs, s32 a){DPZoneScoped;
+	vec2i v;
+	v.x = a;
+	v.y = lhs.y;
+	return v;
+}
+
+inline vec2i vec2i_ySet(vec2i lhs, s32 a){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x;
+	v.y = a;
+	return v;
+}
+
+inline vec2i vec2i_xAdd(vec2i lhs, s32 a){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x + a;
+	v.y = lhs.y;
+	return v;
+}
+
+inline vec2i vec2i_yAdd(vec2i lhs, s32 a){DPZoneScoped;
+	vec2i v;
+	v.x = lhs.x;
+	v.y = lhs.y + a;
+	return v;
+}
+
+#ifdef __cplusplus
+EndLinkageC();
+#endif //#ifdef __cplusplus
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec2
 struct vec2 {
 	union{
 		f32 arr[2] = {};
@@ -165,21 +604,26 @@ struct vec2 {
 #include "vec2.inl"
 
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec3i
 union vec3i{
 	s32 arr[3] = {};
-	struct { s32 x, y, z; };
-	struct { s32 r, g, b; };
-	struct { vec2i xy; s32 _unusedZ0; };
-	struct { s32 _unusedX0; vec2i yz; };
+	struct{ s32 x, y, z; };
+	struct{ s32 r, g, b; };
+	struct{ vec2i xy; s32 _unusedZ0; };
+	struct{ s32 _unusedX0; vec2i yz; };
 };
 
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec3
 struct vec3 {
 	union {
 		f32 arr[3] = {};
-		struct { f32 x, y, z; };
-		struct { f32 r, g, b; };
-		struct { vec2 xy; f32 _unusedZ0; };
-		struct { f32 _unusedX0; vec2 yz; };
+		struct{ f32 x, y, z; };
+		struct{ f32 r, g, b; };
+		struct{ vec2 xy; f32 _unusedZ0; };
+		struct{ f32 _unusedX0; vec2 yz; };
 	};
 	
 	vec3(){};
@@ -271,6 +715,8 @@ struct vec3 {
 #include "vec3.inl"
 
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec4i
 union vec4i{
 	s32 arr[4] = {};
 	struct{ 
@@ -307,6 +753,9 @@ union vec4i{
 #endif
 };
 
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec4
 struct vec4{
 	union{
 		f32 arr[4] = {};
@@ -402,12 +851,8 @@ struct vec4{
 #include "vec4.inl"
 
 
-//////////////////////
-//// interactions ////
-//////////////////////
-
-//// vec2 ////
-
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec_interations
 inline vec2::
 vec2(const vec3& v){
 	x = v.x; y = v.y;
@@ -428,8 +873,6 @@ toVec4() const {
 	return vec4(x, y, 0, 0);
 }
 
-//// vec3 ////
-
 inline vec3::
 vec3(const vec2& v) {
 	x = v.x; y = v.y; z = 0;
@@ -449,8 +892,6 @@ inline vec4 vec3::
 toVec4() const {
 	return vec4(x, y, z, 1);
 }
-
-//// vec4 ////
 
 inline vec4::
 vec4(const vec2& v, f32 inZ, f32 inW) {
@@ -473,10 +914,9 @@ takeVec3(const vec3& v) {
 	x = v.x; y = v.y; z = v.z;
 }
 
-/////////////////
-//// defines ////
-/////////////////
 
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec_macros
 #define randvec2(a) vec2(rand() % a + 1, rand() % a + 1)
 #define randvec3(a) vec3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
 #define randvec4(a) vec4(rand() % a + 1, rand() % a + 1, rand() % a + 1, rand() % a + 1);
@@ -531,41 +971,54 @@ if(t){ vect[0] = v; return vr; } \
 else return vr; }\
 ())
 
-FORCE_INLINE vec2 floor(vec2 in) { return vec2(floor(in.x), floor(in.y)); }
-FORCE_INLINE vec3 floor(vec3 in) { return vec3(floor(in.x), floor(in.y), floor(in.z)); }
-FORCE_INLINE vec4 floor(vec4 in) { return vec4(floor(in.x), floor(in.y), floor(in.z), floor(in.w)); }
-FORCE_INLINE vec2 ceil(vec2 in)  { return vec2(ceil(in.x), ceil(in.y)); }
-FORCE_INLINE vec3 ceil(vec3 in)  { return vec3(ceil(in.x), ceil(in.y), ceil(in.z)); }
-FORCE_INLINE vec4 ceil(vec4 in)  { return vec4(ceil(in.x), ceil(in.y), ceil(in.z), ceil(in.w)); }
-FORCE_INLINE vec2 round(vec2 in) { return vec2(round(in.x), round(in.y)); }
-FORCE_INLINE vec3 round(vec3 in) { return vec3(round(in.x), round(in.y), round(in.z)); }
-FORCE_INLINE vec4 round(vec4 in) { return vec4(round(in.x), round(in.y), round(in.z), round(in.w)); }
 
 
-template<> FORCE_INLINE vec2 Min(vec2 a, vec2 b)                        { return vec2(Min(a.x, b.x), Min(a.y, b.y));}
-template<> FORCE_INLINE vec2 Max(vec2 a, vec2 b)                        { return vec2(Max(a.x, b.x), Max(a.y, b.y)); }
-template<> FORCE_INLINE vec2 Clamp(vec2 value, vec2 min, vec2 max)      { return vec2(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
-template<> FORCE_INLINE vec2 ClampMin(vec2 value, vec2 min)             { return vec2(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
-template<> FORCE_INLINE vec2 ClampMax(vec2 value,  vec2 max)            { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };
-template<> FORCE_INLINE vec2 Nudge(vec2 value, vec2 target, vec2 delta) { return vec2(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y)); }
-template<> FORCE_INLINE vec3 Min(vec3 a, vec3 b)                        { return vec3(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z)); }
-template<> FORCE_INLINE vec3 Max(vec3 a, vec3 b)                        { return vec3(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z)); }
-template<> FORCE_INLINE vec3 Clamp(vec3 value, vec3 min, vec3 max)      { return vec3(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z)); };
-template<> FORCE_INLINE vec3 ClampMin(vec3 value, vec3 min)             { return vec3(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z)); };
-template<> FORCE_INLINE vec3 ClampMax(vec3 value, vec3 max)             { return vec3(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z)); };
-template<> FORCE_INLINE vec3 Nudge(vec3 value, vec3 target, vec3 delta) { return vec3(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y), Nudge(value.z, target.z, delta.z)); }
-template<> FORCE_INLINE vec4 Min(vec4 a, vec4 b)                        { return vec4(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z), Min(a.w, b.w)); }
-template<> FORCE_INLINE vec4 Max(vec4 a, vec4 b)                        { return vec4(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z), Max(a.w, b.w)); }
-template<> FORCE_INLINE vec4 Clamp(vec4 value, vec4 min, vec4 max)      { return vec4(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z), Clamp(value.w, min.w, max.w)); };
-template<> FORCE_INLINE vec4 ClampMin(vec4 value, vec4 min)             { return vec4(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z), ClampMin(value.w, min.w)); };
-template<> FORCE_INLINE vec4 ClampMax(vec4 value, vec4 max)             { return vec4(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z), ClampMax(value.w, max.w)); };
-template<> FORCE_INLINE vec4 Nudge(vec4 value, vec4 target, vec4 delta) { return vec4(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y), Nudge(value.z, target.z, delta.z), Nudge(value.w, target.w, delta.w)); }
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec_rounding
+FORCE_INLINE vec2 floor(vec2 in){ return vec2(floor(in.x), floor(in.y)); }
+FORCE_INLINE vec3 floor(vec3 in){ return vec3(floor(in.x), floor(in.y), floor(in.z)); }
+FORCE_INLINE vec4 floor(vec4 in){ return vec4(floor(in.x), floor(in.y), floor(in.z), floor(in.w)); }
+FORCE_INLINE vec2 ceil(vec2 in) { return vec2(ceil(in.x), ceil(in.y)); }
+FORCE_INLINE vec3 ceil(vec3 in) { return vec3(ceil(in.x), ceil(in.y), ceil(in.z)); }
+FORCE_INLINE vec4 ceil(vec4 in) { return vec4(ceil(in.x), ceil(in.y), ceil(in.z), ceil(in.w)); }
+FORCE_INLINE vec2 round(vec2 in){ return vec2(round(in.x), round(in.y)); }
+FORCE_INLINE vec3 round(vec3 in){ return vec3(round(in.x), round(in.y), round(in.z)); }
+FORCE_INLINE vec4 round(vec4 in){ return vec4(round(in.x), round(in.y), round(in.z), round(in.w)); }
 
-/////////////////
-//// hashing ////
-/////////////////
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec_minmax
+template<> FORCE_INLINE vec2i Min(vec2i a, vec2i b)                        { return Vec2i(Min(a.x, b.x), Min(a.y, b.y));}
+template<> FORCE_INLINE vec2i Max(vec2i a, vec2i b)                        { return Vec2i(Max(a.x, b.x), Max(a.y, b.y)); }
+template<> FORCE_INLINE vec2i Clamp(vec2i value, vec2i min, vec2i max)     { return Vec2i(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
+template<> FORCE_INLINE vec2i ClampMin(vec2i value, vec2i min)             { return Vec2i(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
+template<> FORCE_INLINE vec2i ClampMax(vec2i value,  vec2i max)            { return Vec2i(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };
+template<> FORCE_INLINE vec2i Nudge(vec2i value, vec2i target, vec2i delta){ return Vec2i(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y)); }
+template<> FORCE_INLINE vec2 Min(vec2 a, vec2 b)                           { return vec2(Min(a.x, b.x), Min(a.y, b.y));}
+template<> FORCE_INLINE vec2 Max(vec2 a, vec2 b)                           { return vec2(Max(a.x, b.x), Max(a.y, b.y)); }
+template<> FORCE_INLINE vec2 Clamp(vec2 value, vec2 min, vec2 max)         { return vec2(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
+template<> FORCE_INLINE vec2 ClampMin(vec2 value, vec2 min)                { return vec2(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
+template<> FORCE_INLINE vec2 ClampMax(vec2 value,  vec2 max)               { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };
+template<> FORCE_INLINE vec2 Nudge(vec2 value, vec2 target, vec2 delta)    { return vec2(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y)); }
+template<> FORCE_INLINE vec3 Min(vec3 a, vec3 b)                           { return vec3(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z)); }
+template<> FORCE_INLINE vec3 Max(vec3 a, vec3 b)                           { return vec3(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z)); }
+template<> FORCE_INLINE vec3 Clamp(vec3 value, vec3 min, vec3 max)         { return vec3(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z)); };
+template<> FORCE_INLINE vec3 ClampMin(vec3 value, vec3 min)                { return vec3(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z)); };
+template<> FORCE_INLINE vec3 ClampMax(vec3 value, vec3 max)                { return vec3(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z)); };
+template<> FORCE_INLINE vec3 Nudge(vec3 value, vec3 target, vec3 delta)    { return vec3(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y), Nudge(value.z, target.z, delta.z)); }
+template<> FORCE_INLINE vec4 Min(vec4 a, vec4 b)                           { return vec4(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z), Min(a.w, b.w)); }
+template<> FORCE_INLINE vec4 Max(vec4 a, vec4 b)                           { return vec4(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z), Max(a.w, b.w)); }
+template<> FORCE_INLINE vec4 Clamp(vec4 value, vec4 min, vec4 max)         { return vec4(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z), Clamp(value.w, min.w, max.w)); };
+template<> FORCE_INLINE vec4 ClampMin(vec4 value, vec4 min)                { return vec4(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z), ClampMin(value.w, min.w)); };
+template<> FORCE_INLINE vec4 ClampMax(vec4 value, vec4 max)                { return vec4(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z), ClampMax(value.w, max.w)); };
+template<> FORCE_INLINE vec4 Nudge(vec4 value, vec4 target, vec4 delta)    { return vec4(Nudge(value.x, target.x, delta.x), Nudge(value.y, target.y, delta.y), Nudge(value.z, target.z, delta.z), Nudge(value.w, target.w, delta.w)); }
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec_hashing
 #include "kigu/hash.h"
 
+//TODO(sushi) always explain your hashing
 template<> 
 struct hash<vec2>{
 	inline size_t operator()(vec2 const& v) const{
@@ -602,9 +1055,9 @@ struct hash<vec4>{
 	}
 };
 
-///////////////////
-//// to_string ////
-///////////////////
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @vec_tostring
 #include "kigu/string.h"
 
 global string 
