@@ -138,7 +138,7 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 				window->dimensions.y = HIWORD(lParam);// - window->titlebar_height;
 				window->dimensions_decorated.x = LOWORD(lParam);
 				window->dimensions_decorated.y = HIWORD(lParam);
-				window->center    = vec2i{(s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2};
+				window->center    = Vec2i((s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2);
 				window->minimized = (wParam == SIZE_MINIMIZED);
 				window->resized   = true;
 			}else{ Assert(!"WM_SIZE passed to win32 HWND that does not have matching deshi Window"); }
@@ -356,7 +356,7 @@ platform_init(){DPZoneScoped;
 	::QueryPerformanceFrequency(&perf_count_frequency_result);
 	win32_perf_count_frequency = perf_count_frequency_result.QuadPart;
 	DeshTime->stopwatch = start_stopwatch();
-
+	
 	//increase resolution of Sleep() to minimum value
 	TIMECAPS tc;
 	timeGetDevCaps(&tc, sizeof(tc));
@@ -408,7 +408,7 @@ platform_init(){DPZoneScoped;
 	::ShowWindow((HWND)window_helper.handle, SW_HIDE);
 	MSG msg; while(::PeekMessageW(&msg, (HWND)window_helper.handle, 0, 0, PM_REMOVE)){ ::TranslateMessage(&msg); ::DispatchMessageW(&msg); }
 	
-
+	
 	//// init input ////
 	//TODO(delle) setup raw input
 	
@@ -1547,7 +1547,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			man->job_ring.remove(1);
 			
 			man->job_ring_lock.unlock();
-
+			
 			//run the function
 			WorkerLog("running job");
 			me->running = true;
