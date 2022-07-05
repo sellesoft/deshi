@@ -86,7 +86,7 @@ struct ThreadManager{
     ring_array<ThreadJob> job_ring; 
     array<Thread*> threads; //TODO arena threads instead of using memalloc
 
-    u32 max_threads = 5;
+    u32 max_threads = 0;
 
     //initializes the thread manager
     //this must be done after loading memory
