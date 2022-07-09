@@ -683,9 +683,9 @@ render_update(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// update uniform buffers
 	{
-		uboVS.values.screen     = vec2((f32)width, (f32)height);
+		uboVS.values.screen     = Vec2((f32)width, (f32)height);
 		uboVS.values.mousepos   = input_mouse_position();
-		uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
+		uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, Vec2(DeshWindow->width,DeshWindow->height));
 		uboVS.values.time       = DeshTime->totalTime;
 		uboVS.values.enablePCF  = renderSettings.shadowPCF;
 		
@@ -1203,7 +1203,7 @@ render_set_active_surface_idx(u32 idx){DPZoneScoped;
 //// @render_light
 void
 render_update_light(u32 idx, vec3 position, f32 brightness){DPZoneScoped;
-	uboVS.values.lights[idx] = vec4(position, brightness);
+	uboVS.values.lights[idx] = Vec4(position.x, position.y, position.z, brightness);
 }
 
 
@@ -1211,7 +1211,7 @@ render_update_light(u32 idx, vec3 position, f32 brightness){DPZoneScoped;
 //// @render_camera
 void
 render_update_camera_position(vec3 position){DPZoneScoped;
-	uboVS.values.viewPos = vec4(position, 1.f);
+	uboVS.values.viewPos = Vec4(position.x, position.y, position.z, 1.f);
 }
 
 void

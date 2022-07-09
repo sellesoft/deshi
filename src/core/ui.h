@@ -652,7 +652,7 @@ struct UIColumn {
 	b32  relative_width = 0;
 	f32  max_width = 0;
 	b32  reeval_width = 0;
-	vec2 alignment = vec2(-1,-1);
+	vec2 alignment = Vec2(-1,-1);
 	array<UIItem*> items;
 };
 

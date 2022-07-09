@@ -250,7 +250,7 @@ void console_init(){
 	console.dictionary.init(512, deshi_allocator);
 	console.input_history.init(256, deshi_allocator);
 	console.console_pos = vec2::ZERO;
-	console.console_dim = vec2(f32(DeshWindow->width), 0);
+	console.console_dim = Vec2(f32(DeshWindow->width), 0);
 	console_scroll_to_bottom = true;
 	console_chunk_render_arena = memory_create_arena(512);
 	
@@ -315,7 +315,7 @@ void console_update(){
 	//console openness
 	if(console.open_target != console.open_amount){
 		console.console_dim.y = Math::lerp(console.open_amount, console.open_target, //TODO(sushi) change this to Nudge
-												  Min((f32)peek_stopwatch(console_open_timer) / console.open_dt, 1.f));
+										   Min((f32)peek_stopwatch(console_open_timer) / console.open_dt, 1.f));
 		if(console.console_dim.y == console.open_target){
 			console.open_amount = console.open_target;
 		}
@@ -324,7 +324,7 @@ void console_update(){
 	UIStyle_old& style = UI::GetStyle();
 	if(console.console_dim.y > 0){
 		UI::SetNextWindowPos(console.console_pos);
-		UI::SetNextWindowSize(vec2(DeshWindow->width, console.console_dim.y));
+		UI::SetNextWindowSize(Vec2(DeshWindow->width, console.console_dim.y));
 		UI::Begin(str8_lit("deshiConsole"), vec2::ZERO, vec2::ZERO, console_window_flags | UIWindowFlags_NoScroll);
 		console_window = UI::GetWindow();
 		
@@ -333,7 +333,7 @@ void console_update(){
 		//NOTE(delle) doing this above the terminal window so inputs are registered managed before visuals
 		if(console_open_pressed) UI::SetNextItemActive();
 		f32 input_box_height = style.inputTextHeightRelToFont * style.fontHeight;
-		UI::SetNextItemSize(vec2(MAX_F32, input_box_height));
+		UI::SetNextItemSize(Vec2(MAX_F32, input_box_height));
 		if(UI::InputText(str8_lit("deshiConsoleInput"), (u8*)console.input_buffer, CONSOLE_INPUT_BUFFER_SIZE-2,
 						 {UI::GetMarginedLeft(), UI::GetMarginedBottom() - input_box_height},
 						 str8_lit("Enter a command..."), UIInputTextFlags_AnyChangeReturnsTrue)){
@@ -380,11 +380,11 @@ void console_update(){
 		
 		//-//////////////////////////////////////////////////////////////////////////////////////////////
 		//terminal output panel
-		UI::SetNextWindowSize(vec2(MAX_F32, UI::GetMarginedBottom() - (style.fontHeight * style.inputTextHeightRelToFont + style.itemSpacing.y) * 3));
+		UI::SetNextWindowSize(Vec2(MAX_F32, UI::GetMarginedBottom() - (style.fontHeight * style.inputTextHeightRelToFont + style.itemSpacing.y) * 3));
 		UI::BeginChild(str8_lit("deshiConsoleTerminal"), (console_window->dimensions - 2*style.windowMargins).yAdd(-(1.3*style.fontHeight + style.itemSpacing.y)), console_window_flags);{
 			//draw text for the dictionary
-			UI::PushVar(UIStyleVar_WindowMargins, vec2(5, 0));
-			UI::PushVar(UIStyleVar_ItemSpacing,   vec2(0, 0));
+			UI::PushVar(UIStyleVar_WindowMargins, Vec2(5, 0));
+			UI::PushVar(UIStyleVar_ItemSpacing,   Vec2(0, 0));
 			
 			forI(console.dictionary.count){
 				//if console_chunk_render_arena isn't large enough, double the space for it
@@ -429,22 +429,22 @@ void console_update(){
 							//draw tag text
 							vec2 restore_cursor = UI::GetWinCursor();
 							UI::PushColor(UIStyleCol_Text, color(150,150,150, 150));
-							UI::Text(console.dictionary[i].tag, vec2(right_edge - tag_size.x - 1, tag_start_y));
+							UI::Text(console.dictionary[i].tag, Vec2(right_edge - tag_size.x - 1, tag_start_y));
 							UI::PopColor();
 							UI::SetWinCursor(restore_cursor);
 							
 							if(console.tag_outlines && tag_end_y - (tag_start_y + tag_size.y) > 4){
 								//draw right line
-								UI::Line(vec2(right_edge-1, tag_start_y+tag_size.y+3),
-										 vec2(right_edge-1, tag_end_y-3),
+								UI::Line(Vec2(right_edge-1, tag_start_y+tag_size.y+3),
+										 Vec2(right_edge-1, tag_end_y-3),
 										 2, color(150,150,150, 150));
 								//draw top line
-								UI::Line(vec2(right_edge-tag_size.x, tag_start_y+tag_size.y+2),
-										 vec2(right_edge,            tag_start_y+tag_size.y+2),
+								UI::Line(Vec2(right_edge-tag_size.x, tag_start_y+tag_size.y+2),
+										 Vec2(right_edge,            tag_start_y+tag_size.y+2),
 										 2, color(150,150,150, 150));
 								//draw bottom line
-								UI::Line(vec2(right_edge-tag_size.x, tag_end_y-2),
-										 vec2(right_edge,            tag_end_y-2),
+								UI::Line(Vec2(right_edge-tag_size.x, tag_end_y-2),
+										 Vec2(right_edge,            tag_end_y-2),
 										 2, color(150,150,150, 150));
 							}
 							
@@ -453,16 +453,16 @@ void console_update(){
 								UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
 								UI::PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
 								UI::PushColor(UIStyleCol_SelectableBgActive,  color(155, 155, 155, 10));
-								UI::SetNextItemSize(vec2(right_edge, tag_end_y - tag_start_y));
+								UI::SetNextItemSize(Vec2(right_edge, tag_end_y - tag_start_y));
 								UI::SetNextItemMinSizeIgnored();
 								
-								UI::Selectable(str8_lit(""), vec2(0,tag_start_y), 0);
+								UI::Selectable(str8_lit(""), Vec2(0,tag_start_y), 0);
 								
 								UI::PopColor(3);
 								UI::PopLayer();
 							}
 							
-							UI::SetMarginSizeOffset(vec2(-tag_size.x, 0));
+							UI::SetMarginSizeOffset(Vec2(-tag_size.x, 0));
 						}
 					}
 				}
@@ -481,10 +481,10 @@ void console_update(){
 					UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
 					UI::PushColor(UIStyleCol_SelectableBgHovered, color(155,155,155, 10));
 					UI::PushColor(UIStyleCol_SelectableBgActive,  color(155,155,155, 10));
-					UI::SetNextItemSize(vec2(UI::GetMarginedRight(), last_text->size.y));
+					UI::SetNextItemSize(Vec2(UI::GetMarginedRight(), last_text->size.y));
 					UI::SetNextItemMinSizeIgnored();
 					
-					UI::Selectable(str8_lit(""), vec2(0, last_text->position.y), 0);
+					UI::Selectable(str8_lit(""), Vec2(0, last_text->position.y), 0);
 					
 					UI::PopColor(3);
 					UI::PopLayer();
@@ -493,7 +493,7 @@ void console_update(){
 			UI::PopVar(2);
 			
 			if(console_scroll_to_bottom){
-				UI::SetScroll(vec2(0, MAX_F32));
+				UI::SetScroll(Vec2(0, MAX_F32));
 				console_scroll_to_bottom = false;
 			}
 		}UI::EndChild();
@@ -525,7 +525,7 @@ void console_change_state(ConsoleState new_state){
 		case ConsoleState_OpenSmall:{
 			console.open_target = (f32)DeshWindow->height * console.open_small_percent;
 			console.open_amount =console. console_dim.y;
-			console.console_pos = vec2(0, -1);
+			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 			console_window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 			console_open_pressed = 1;
@@ -533,7 +533,7 @@ void console_change_state(ConsoleState new_state){
 		case ConsoleState_OpenBig:{
 			console.open_target = (f32)DeshWindow->height * console.open_max_percent;
 			console.open_amount = console.console_dim.y;
-			console.console_pos = vec2(0, -1);
+			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 			console_window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 			console_open_pressed = 1;

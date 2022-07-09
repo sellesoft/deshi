@@ -16,6 +16,7 @@
 #      define DESHI_USE_SSE 1
 #      include <xmmintrin.h>
 #      include <pmmintrin.h>
+#      include <smmintrin.h>
 #    endif 
 #  else//_MSC_VER
 #    ifdef __SSE__ /* non-MSVC usually #define __SSE__ if it's supported */
@@ -23,6 +24,7 @@
 #      define DESHI_USE_SSE 1
 #      include <xmmintrin.h>
 #      include <pmmintrin.h>
+#      include <smmintrin.h>
 #    endif//__SSE__
 #  endif//not _MSC_VER
 #endif //not DESHI_DISABLE_SSE
