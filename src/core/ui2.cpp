@@ -1561,7 +1561,7 @@ void ui_debug(){
 		"	drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
 		"	vertices: ", g_ui->stats.vertices_reserved, "\n",
 		"	 indices: ", g_ui->stats.indices_reserved
-	).fin;
+	);
 
 	if(g_ui->hovered){
 		render_start_cmd2(7, 0, vec2::ZERO, DeshWindow->dimensions);
