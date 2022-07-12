@@ -38,14 +38,14 @@ return nf; \
 //////////////
 inline vec3 vec3::
 operator* (const mat3& rhs) const{
-	return vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6], 
+	return Vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6], 
 				x*rhs.arr[1] + y*rhs.arr[4] + z*rhs.arr[7], 
 				x*rhs.arr[2] + y*rhs.arr[5] + z*rhs.arr[8]);
 }
 
 inline void vec3::
 operator*=(const mat3& rhs){
-	*this = vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6],
+	*this = Vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6],
 				 x*rhs.arr[1] + y*rhs.arr[4] + z*rhs.arr[7],
 				 x*rhs.arr[2] + y*rhs.arr[5] + z*rhs.arr[8]);
 }
@@ -54,7 +54,7 @@ inline vec3 vec3::
 operator* (const mat4& rhs) const{
 	vec3 result;
 #if DESHI_USE_SSE
-	vec4 temp(x, y, z, 0);
+	vec4 temp = Vec4(x, y, z, 0);
 	temp.sse = LinearCombineSSE(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.x = temp.x;
 	result.y = temp.y;
@@ -71,7 +71,7 @@ inline void vec3::
 operator*=(const mat4& rhs){
 	vec3 result;
 #if DESHI_USE_SSE
-	vec4 temp(x, y, z, 0);
+	vec4 temp = Vec4(x, y, z, 0);
 	temp.sse = LinearCombineSSE(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.x = temp.x;
 	result.y = temp.y;
@@ -245,13 +245,13 @@ QuatSlerp(const vec3& fromv, const vec3& tov, float t){
 inline vec3 mat3::
 row(u32 row){
 	Assert(row < 3, "mat3 subscript out of bounds");
-	return vec3(&arr[4*row]);
+	return Vec3(arr[4*row+0], arr[4*row+1], arr[4*row+2]);
 }
 
 inline vec3 mat3::
 col(u32 col){
 	Assert(col < 3, "mat3 subscript out of bounds");
-	return vec3(arr[col], arr[4+col], arr[8+col]);
+	return Vec3(arr[col], arr[4+col], arr[8+col]);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -284,18 +284,18 @@ ScaleMatrix(vec3 scale){
 inline vec4 mat4::
 row(u32 row){
 	Assert(row < 4, "mat4 subscript out of bounds");
-	return vec4(&arr[4*row]);
+	return Vec4(arr[4*row+0], arr[4*row+1], arr[4*row+2], arr[4*row+3]);
 }
 
 inline vec4 mat4::
 col(u32 col){
 	Assert(col < 4, "mat4 subscript out of bounds");
-	return vec4(arr[col], arr[4+col], arr[8+col], arr[12+col]);
+	return Vec4(arr[col], arr[4+col], arr[8+col], arr[12+col]);
 }
 
 inline vec3 mat4::
 Translation(){
-	return vec3(arr[12], arr[13], arr[14]);
+	return Vec3(arr[12], arr[13], arr[14]);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -322,18 +322,18 @@ inline mat4 mat4::
 AxisAngleRotationMatrix(float angle, vec4 axis){
 	angle = Radians(angle); 
 	float mag = axis.mag();
-	axis = vec4(axis.x / mag, axis.y / mag, axis.z / mag, axis.w / mag);
+	axis = Vec4(axis.x / mag, axis.y / mag, axis.z / mag, axis.w / mag);
 	//axis.normalize();
 	float c = cosf(angle); float s = sinf(angle); 
 	
-	vec4 A = vec4(s, c, 1 - c, 0);
+	vec4 A = Vec4(s, c, 1 - c, 0);
 	
-	vec4 C2 = vec4(A.z, A.z, A.z, A.z);
-	vec4 C1 = vec4(A.y, A.y, A.y, A.y);
-	vec4 C0 = vec4(A.x, A.x, A.x, A.x);
+	vec4 C2 = Vec4(A.z, A.z, A.z, A.z);
+	vec4 C1 = Vec4(A.y, A.y, A.y, A.y);
+	vec4 C0 = Vec4(A.x, A.x, A.x, A.x);
 	
-	vec4 N0 = vec4(axis.y, axis.z, axis.x, axis.w);
-	vec4 N1 = vec4(axis.z, axis.x, axis.y, axis.w);
+	vec4 N0 = Vec4(axis.y, axis.z, axis.x, axis.w);
+	vec4 N1 = Vec4(axis.z, axis.x, axis.y, axis.w);
 	
 	vec4 V0 = C2 * N0;
 	V0 *= N1;
@@ -344,9 +344,9 @@ AxisAngleRotationMatrix(float angle, vec4 axis){
 	vec4 R1 = C0 * axis + V0;
 	vec4 R2 = (V0 - C0) * axis;
 	
-	V0 = vec4(R0.x, R0.y, R0.z, A.w);
-	vec4 V1 = vec4(R1.z, R2.y, R2.z, R1.x);
-	vec4 V2 = vec4(R1.y, R2.x, R1.y, R2.x);
+	V0 = Vec4(R0.x, R0.y, R0.z, A.w);
+	vec4 V1 = Vec4(R1.z, R2.y, R2.z, R1.x);
+	vec4 V2 = Vec4(R1.y, R2.x, R1.y, R2.x);
 	
 	return mat4(V0.x, V1.x, V1.y, V0.w,
 				V1.z, V0.y, V1.w, V0.w,
@@ -406,12 +406,12 @@ inline vec3 mat4::
 Rotation(){
 	if((*this)(0,2) < 1){
 		if((*this)(0,2) > -1){
-			return -vec3(Degrees(atan2(-(*this)(1,2), (*this)(2,2))), Degrees(asin((*this)(0,2))), Degrees(atan2(-(*this)(0,1), (*this)(0,0))));
+			return -Vec3(Degrees(atan2(-(*this)(1,2), (*this)(2,2))), Degrees(asin((*this)(0,2))), Degrees(atan2(-(*this)(0,1), (*this)(0,0))));
 		}else{
-			return -vec3(Degrees(-atan2((*this)(1,0), (*this)(1,1))), Degrees(-M_HALFPI), 0);
+			return -Vec3(Degrees(-atan2((*this)(1,0), (*this)(1,1))), Degrees(-M_HALFPI), 0);
 		}
 	}else{
-		return -vec3(Degrees(atan2((*this)(1,0), (*this)(1,1))), Degrees(M_HALFPI), 0);
+		return -Vec3(Degrees(atan2((*this)(1,0), (*this)(1,1))), Degrees(M_HALFPI), 0);
 	}
 	
 	
@@ -511,7 +511,7 @@ namespace Math {
 	static vec2 vec2RotateByAngle(float angle, vec2 v){
 		if (!angle) return v;
 		angle = Radians(angle);
-		return vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
+		return Vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
 	}
 	
 	inline global bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims){
@@ -527,9 +527,9 @@ namespace Math {
 		vec2 p12 = p2 - p1;
 		vec2 p20 = p0 - p2;
 		
-		b32 b0 = (point - p0).dot(-vec2(p01.y, -p01.x)) < 0;
-		b32 b1 = (point - p1).dot(-vec2(p12.y, -p12.x)) < 0;
-		b32 b2 = (point - p2).dot(-vec2(p20.y, -p20.x)) < 0;
+		b32 b0 = (point - p0).dot(-Vec2(p01.y, -p01.x)) < 0;
+		b32 b1 = (point - p1).dot(-Vec2(p12.y, -p12.x)) < 0;
+		b32 b2 = (point - p2).dot(-Vec2(p20.y, -p20.x)) < 0;
 		
 		return b0==b1 && b1==b2;
 	}
@@ -573,7 +573,7 @@ namespace Math {
 	
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
 	static mat4 LookAtMatrix(const vec3& pos, const vec3& target, vec3* out_up = 0){
-		if(pos == target){ return LookAtMatrix(pos, target + vec3(.01f, 0, 0)); }
+		if(pos == target){ return LookAtMatrix(pos, target + Vec3(.01f, 0, 0)); }
 		
 		//get new forward direction
 		vec3 newFor = (target - pos).normalized();
@@ -601,14 +601,14 @@ namespace Math {
 	static vec3 SphericalToRectangularCoords(vec3 v){
 		float y = Radians(v.y);
 		float z = Radians(v.z);
-		return vec3(v.x * sinf(z) * cosf(y), v.x * cosf(z), v.x * sinf(z) * sinf(y));
+		return Vec3(v.x * sinf(z) * cosf(y), v.x * cosf(z), v.x * sinf(z) * sinf(y));
 	}
 	
 	static vec3 RectangularToSphericalCoords(vec3 v){
 		float rho = Radians(sqrt(v.mag()));
 		float theta = Radians(atan(v.y / v.z));
 		float phi = acos(v.z / v.mag()); //maybe use v.y instead of v.z because y is our vertical axis
-		return vec3(rho, theta, phi);
+		return Vec3(rho, theta, phi);
 		
 	}
 	
@@ -664,7 +664,7 @@ namespace Math {
 	//returns true if the line can be rendered after clipping, false otherwise
 	static bool ClipLineToZPlanes(vec3& start, vec3& end, f32 nearZ, f32 farZ){
 		//clip to the near plane
-		vec3 planePoint = vec3(0, 0, nearZ);
+		vec3 planePoint = Vec3(0, 0, nearZ);
 		vec3 planeNormal = vec3::FORWARD;
 		float d = planeNormal.dot(planePoint);
 		bool startBeyondPlane = planeNormal.dot(start) - d < 0;
@@ -679,7 +679,7 @@ namespace Math {
 		}
 		
 		//clip to the far plane
-		planePoint = vec3(0, 0, farZ);
+		planePoint = Vec3(0, 0, farZ);
 		planeNormal = vec3::BACK;
 		d = planeNormal.dot(planePoint);
 		startBeyondPlane = planeNormal.dot(start) - d < 0;
@@ -851,7 +851,7 @@ namespace Math {
 	
 	static vec2 WorldToScreen2(vec3 point, const mat4& ProjMat, const mat4& ViewMat, vec2 screenDimensions){
 		vec3 v = CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
-		return vec2(v.x, v.y);
+		return Vec2(v.x, v.y);
 	}
 	
 	static vec3 ScreenToWorld(vec2 pos, const mat4& ProjMat, const mat4& view, vec2 screenDimensions){

@@ -69,11 +69,6 @@ inline const vec2g vec2g::DOWN =  vec2g( 0,-1);
 inline const vec2g vec2g::UNITX = vec2g( 1, 0);
 inline const vec2g vec2g::UNITY = vec2g( 0, 1);
 
-inline vec2::
-vec2(const vec2g& v){//yeah
-	x=v.x; y=v.y;
-}
-
 template<> FORCE_INLINE vec2g Min(vec2g a, vec2g b)                         { return vec2g(Min(a.x, b.x), Min(a.y, b.y));}
 template<> FORCE_INLINE vec2g Max(vec2g a, vec2g b)                         { return vec2g(Max(a.x, b.x), Max(a.y, b.y)); }
 template<> FORCE_INLINE vec2g Clamp(vec2g value, vec2g min, vec2g max)      { return vec2g(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
@@ -93,7 +88,7 @@ struct Graph{
     b32 xShowAxis = true;
     b32 yShowAxis = true;
     //labels per axis
-     str8 xAxisLabel;
+	str8 xAxisLabel;
     str8 yAxisLabel;
     //colors per axis
     //bulk set using set_axes_colors()
@@ -153,13 +148,13 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //NOTE the graph is built y down and rendered y up
     using namespace UI;
     UIItem* item = BeginCustomItem();
-    item->position = position;
-    item->size = dimensions;
+    item->position = Vec2(position.x, position.y);
+    item->size = Vec2(dimensions.x, dimensions.y);
     CustomItem_AdvanceCursor(item, move_cursor);
 	
     color textcol = GetStyle().colors[UIStyleCol_Text];
     color winbgcol = GetStyle().colors[UIStyleCol_WindowBg];
-
+	
 	
     //DEBUG 
     persist f64 xscale = 1;
@@ -168,13 +163,13 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //if(key_pressed(Key_DOWN))  yscale -= 0.1;
     //if(key_pressed(Key_LEFT))  xscale -= 0.1;
     //if(key_pressed(Key_RIGHT)) xscale += 0.1;
-
-
-
+	
+	
+	
     u32 text_count = 0;
     auto debug_text = [&](str8 out){
         UIDrawCmd dc;
-        CustomItem_DCMakeText(dc, out, vec2(0,text_count*13), Color_White, vec2::ONE);
+        CustomItem_DCMakeText(dc, out, Vec2(0,text_count*13), Color_White, vec2::ONE);
         CustomItem_AddDrawCmd(item, dc);
         text_count++;
     };
@@ -191,7 +186,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //gives how far along in screen space 1 unit in graph space is
     vec2g dimspul = vec2g(dimensions.x/view_width, dimensions.x/view_width);
     g->dimensions_per_unit_length = dimspul;
-
+	
     //TODO get exponent directly from the exponent of float's bits
     //s32 oom = (1 & 0x1 ? 
     //yep & 0x)
@@ -200,28 +195,28 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     vec2g br = cpos + czoom*vec2g::ONE; //represets the bottom and right edge of the camera
     tl.y *= aspect_ratio;
     br.y *= aspect_ratio;    
-
+	
     b32 xAxisVisible = g->xShowAxis && tl.y < 0 && br.y > 0;
     b32 yAxisVisible = g->yShowAxis && tl.x < 0 && br.x > 0;
-
+	
     //round left edge to nearest order of magnitude multiplied by increment 
     //TODO set this up to only happen when zoom or position change
     scalar_t oom = Math::order_of_magnitude(czoom);
     scalar_t tentooom = pow(10,oom);
 	
     //round each edge to the closest order of magnitude
-    vec2g tl_oom_rnd = floor(tl/tentooom)*tentooom;
-    vec2g br_oom_rnd = floor(br/tentooom)*tentooom;
-    vec2g cpos_oom_rnd = floor(cpos/tentooom)*tentooom;
+    vec2g tl_oom_rnd = floor(Vec2(tl.x,tl.y)/tentooom)*tentooom;
+    vec2g br_oom_rnd = floor(Vec2(br.x,br.y)/tentooom)*tentooom;
+    vec2g cpos_oom_rnd = floor(Vec2(cpos.x,cpos.y)/tentooom)*tentooom;
 	
     vec2g itemspacecenter = dimensions / 2; //positions of the center of our item
     vec2g itemspaceorigin = itemspacecenter - cpos*vec2g(dimspul.x, dimspul.y*aspect_ratio); //position of the center of the origin in item space
-
+	
     scalar_t minor_left_edge_rounded = ceil(tl.x / (g->xMinorLinesIncrement * tentooom)) * g->xMinorLinesIncrement * tentooom;
     scalar_t minor_top_edge_rounded  = ceil(tl.y / (g->yMinorLinesIncrement * tentooom)) * g->yMinorLinesIncrement * tentooom;
     scalar_t major_left_edge_rounded = ceil(tl.x / (g->xMajorLinesIncrement * tentooom)) * g->xMajorLinesIncrement * tentooom;
     scalar_t major_top_edge_rounded  = ceil(tl.y / (g->yMajorLinesIncrement * tentooom)) * g->yMajorLinesIncrement * tentooom;
-
+	
     auto increment = [&](scalar_t x){
         return x*pow(10,oom);
     };
@@ -238,10 +233,10 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             while(edgeinc < br.x){
                 scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
                 CustomItem_DCMakeLine(drawCmd,
-                    vec2g(xloc, 0),
-                    vec2g(xloc, dimensions.y),
-                    1, g->xMinorGridlineColor
-                );
+									  Vec2(xloc, 0),
+									  Vec2(xloc, dimensions.y),
+									  1, g->xMinorGridlineColor
+									  );
                 edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
@@ -253,10 +248,10 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             while(edgeinc < br.y){
                 scalar_t yloc = dimensions.y - (edgeinc - tl.y) * dimspul.y;
                 CustomItem_DCMakeLine(drawCmd,
-                    vec2g(0,            yloc),
-                    vec2g(dimensions.x, yloc),
-                    1, g->yMinorGridlineColor
-                );
+									  Vec2(0,            yloc),
+									  Vec2(dimensions.x, yloc),
+									  1, g->yMinorGridlineColor
+									  );
                 edgeinc += inc;
             }
             CustomItem_AddDrawCmd(item, drawCmd);
@@ -273,17 +268,17 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             while(edgeinc < br.x){
                 scalar_t xloc = (edgeinc - tl.x) * dimspul.x;
                 CustomItem_DCMakeLine(drawCmd,
-                    vec2g(xloc, 0),
-                    vec2g(xloc, dimensions.y),
-                    1, g->xMajorGridlineColor
-                );
+									  Vec2(xloc, 0),
+									  Vec2(xloc, dimensions.y),
+									  1, g->xMajorGridlineColor
+									  );
                 if(g->xShowMajorCoords){
                     //TODO find a way around allocating a string
                     string    text = to_string(edgeinc);
                     vec2g textsize = CalcTextSize(str8{(u8*)text.str, (s64)text.count});
                     vec2g      pos = vec2g(xloc-textsize.x/2, dimensions.y-itemspaceorigin.y-textsize.y-1);
-                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                    CustomItem_DCMakeText(drawCmd, str8{(u8*)text.str,(s64)text.count}, pos, textcol, vec2g::ONE); 
+                    CustomItem_DCMakeFilledRect(drawCmd, Vec2(pos.x,pos.y), Vec2(textsize.x,textsize.y), winbgcol);
+                    CustomItem_DCMakeText(drawCmd, str8{(u8*)text.str,(s64)text.count}, Vec2(pos.x,pos.y), textcol, vec2::ONE);
                 }
                 edgeinc += inc;
             }
@@ -296,17 +291,17 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
             while(edgeinc < br.y){
                 scalar_t yloc = dimensions.y-(edgeinc - tl.y) * dimspul.y;
                 CustomItem_DCMakeLine(drawCmd,
-                    vec2g(0,            yloc),
-                    vec2g(dimensions.x, yloc),
-                    1, g->yMajorGridlineColor
-                );
+									  Vec2(0,            yloc),
+									  Vec2(dimensions.x, yloc),
+									  1, g->yMajorGridlineColor
+									  );
                 if(g->yShowMajorCoords){
                     //TODO find a way around allocating a string
                     string    text = to_string(edgeinc);
                     vec2g textsize = CalcTextSize(str8{(u8*)text.str,(s64)text.count});
                     vec2g      pos = vec2g(itemspaceorigin.x-textsize.x-1, yloc-textsize.y/2);
-                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, winbgcol);
-                    CustomItem_DCMakeText(drawCmd, str8{(u8*)text.str,(s64)text.count}, pos, textcol, vec2g::ONE); 
+                    CustomItem_DCMakeFilledRect(drawCmd, Vec2(pos.x,pos.y), Vec2(textsize.x,textsize.y), winbgcol);
+                    CustomItem_DCMakeText(drawCmd, str8{(u8*)text.str,(s64)text.count}, Vec2(pos.x,pos.y), textcol, vec2::ONE); 
                 }
                 edgeinc += inc;
             }
@@ -317,17 +312,17 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     {//draw axes
         if(xAxisVisible){
             UIDrawCmd drawCmd;
-            vec2g start = vec2g(0,           dimensions.y-itemspaceorigin.y);
-            vec2g   end = vec2g(dimensions.x,dimensions.y-itemspaceorigin.y);
-            color   col = g->yAxisColor;
+            vec2 start = Vec2(0,           dimensions.y-itemspaceorigin.y);
+            vec2   end = Vec2(dimensions.x,dimensions.y-itemspaceorigin.y);
+            color  col = g->yAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
         if(yAxisVisible){
             UIDrawCmd drawCmd;
-            vec2g start = vec2g(-tl.x*dimspul.x, 0);
-            vec2g   end = vec2g(-tl.x*dimspul.x, dimensions.y);
-            color   col = g->xAxisColor;
+            vec2 start = Vec2(-tl.x*dimspul.x, 0);
+            vec2   end = Vec2(-tl.x*dimspul.x, dimensions.y);
+            color  col = g->xAxisColor;
             CustomItem_DCMakeLine(drawCmd, start, end, 1, col);
             CustomItem_AddDrawCmd(item, drawCmd);
         }
@@ -343,24 +338,26 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
                 drawCmd = UIDrawCmd();
             }
             vec2g point = vec2g(data[i].x, data[i].y);
-            if(Math::PointInRectangle(point, tl, vec2g(view_width,view_width*aspect_ratio))){
-                vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
-                vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
+            if(Math::PointInRectangle(Vec2(point.x,point.y), Vec2(tl.x,tl.y), Vec2(view_width,view_width*aspect_ratio))){
+				vec2g pos_prefloor = itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y);
+                vec2 pos = floor(Vec2(pos_prefloor.x,pos_prefloor.y));
+                vec2 poscorrected = Vec2(pos.x, dimensions.y-pos.y);
                 CustomItem_DCMakeFilledRect(drawCmd,
-					poscorrected - vec2::ONE * g->dotsize / 2,
-					vec2::ONE*g->dotsize,
-					Color_Red
-				); 
+											poscorrected - vec2::ONE * g->dotsize / 2,
+											vec2::ONE*g->dotsize,
+											Color_Red
+											); 
             } 
             else{//debug
                 UIDrawCmd drawCmd;
-                vec2 pos = floor(itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y));
-                vec2 poscorrected = vec2g(pos.x, dimensions.y-pos.y);
+				vec2g pos_prefloor = itemspacecenter+(point-vec2g(cpos.x, cpos.y*aspect_ratio))*vec2g(dimspul.x,dimspul.y);
+                vec2 pos = floor(Vec2(pos_prefloor.x,pos_prefloor.y));
+                vec2 poscorrected = Vec2(pos.x, dimensions.y-pos.y);
                 CustomItem_DCMakeFilledRect(drawCmd,
-					poscorrected,
-					vec2::ONE,
-					Color_Green
-				); 
+											poscorrected,
+											vec2::ONE,
+											Color_Green
+											); 
             }
         }
         if(drawCmd.counts.vertices + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.indices + 6 > UIDRAWCMD_MAX_INDICES){
@@ -369,50 +366,50 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
         }
         CustomItem_AddDrawCmd(item, drawCmd);
     }
-
+	
     {//draw axes labels
         switch(g->axesLabelStyle){
             case GraphAxesLabelStyle_OnAxes:{
                 if(g->xAxisLabel.count){
                     vec2g textsize = CalcTextSize(g->xAxisLabel);
                     vec2g pos = vec2g(
-						itemspacecenter.x+(dimensions.x/2-textsize.x), 
-						dimensions.y-Clamp(scalar_t(itemspaceorigin.y+1), scalar_t(0), scalar_t(itemspacecenter.y+(dimensions.y/2-textsize.y)))  
-					);
+									  itemspacecenter.x+(dimensions.x/2-textsize.x), 
+									  dimensions.y-Clamp(scalar_t(itemspaceorigin.y+1), scalar_t(0), scalar_t(itemspacecenter.y+(dimensions.y/2-textsize.y)))  
+									  );
                     UIDrawCmd drawCmd;
                     //TODO setup the color for this to be more dynamic or something
                     //     probably just make a graph background color parameter and use that
-                    drawCmd.scissorOffset=pos;
-                    drawCmd.scissorExtent=Min(textsize, dimensions/2);
+                    drawCmd.scissorOffset=Vec2(pos.x,pos.y);
+                    drawCmd.scissorExtent=Min(Vec2(textsize.x,textsize.y), Vec2(dimensions.x,dimensions.y)/2);
                     drawCmd.useWindowScissor=false;
-                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, GetStyle().colors[UIStyleCol_WindowBg]);
-                    CustomItem_DCMakeText(drawCmd, g->xAxisLabel, pos,
-                      GetStyle().colors[UIStyleCol_Text], vec2g::ONE); //TODO make a label color parameter maybe
+                    CustomItem_DCMakeFilledRect(drawCmd, Vec2(pos.x,pos.y), Vec2(textsize.x,textsize.y), GetStyle().colors[UIStyleCol_WindowBg]);
+                    CustomItem_DCMakeText(drawCmd, g->xAxisLabel, Vec2(pos.x,pos.y),
+										  GetStyle().colors[UIStyleCol_Text], vec2::ONE); //TODO make a label color parameter maybe
                     CustomItem_AddDrawCmd(item, drawCmd);
                 }
                 if(g->yAxisLabel.count){
                     vec2g textsize = CalcTextSize(g->yAxisLabel);
                     vec2g pos = vec2g( //label follows yaxis but is clamped to edges of the screen
-						Clamp(scalar_t(itemspaceorigin.x+1), scalar_t(0),  scalar_t(itemspacecenter.x+(dimensions.x/2-textsize.x))),
-						dimensions.y-(itemspacecenter.y-dimensions.y/2)
-					);
+									  Clamp(scalar_t(itemspaceorigin.x+1), scalar_t(0),  scalar_t(itemspacecenter.x+(dimensions.x/2-textsize.x))),
+									  dimensions.y-(itemspacecenter.y-dimensions.y/2)
+									  );
                     UIDrawCmd drawCmd;
                     //TODO setup the color for this to be more dynamic or something
                     //     probably just make a graph background color parameter and use that
-                    drawCmd.scissorOffset=pos;
-                    drawCmd.scissorExtent=Max(textsize, dimensions/2);
+                    drawCmd.scissorOffset=Vec2(pos.x,pos.y);
+                    drawCmd.scissorExtent=Max(Vec2(textsize.x,textsize.y), Vec2(dimensions.x,dimensions.y)/2);
                     drawCmd.useWindowScissor=false;
-                    CustomItem_DCMakeFilledRect(drawCmd, pos, textsize, GetStyle().colors[UIStyleCol_WindowBg]);
-                    CustomItem_DCMakeText(drawCmd, g->yAxisLabel, pos,
-                      GetStyle().colors[UIStyleCol_Text], vec2g::ONE); //TODO make a label color parameter maybe
-
+                    CustomItem_DCMakeFilledRect(drawCmd, Vec2(pos.x,pos.y), Vec2(textsize.x,textsize.y), GetStyle().colors[UIStyleCol_WindowBg]);
+                    CustomItem_DCMakeText(drawCmd, g->yAxisLabel, Vec2(pos.x,pos.y),
+										  GetStyle().colors[UIStyleCol_Text], vec2::ONE); //TODO make a label color parameter maybe
+					
                     CustomItem_AddDrawCmd(item, drawCmd);
                 }
             }
         }
 		
     }//axes labels
-
+	
     EndCustomItem();
 }
 

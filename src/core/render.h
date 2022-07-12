@@ -799,7 +799,7 @@ void
 render_box(mat4* transform, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
-	vec3 p(0.5f, 0.5f, 0.5f);
+	vec3 p{0.5f, 0.5f, 0.5f};
 	vec3 points[8] = {
 		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
 		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
@@ -815,7 +815,7 @@ void
 render_box_filled(mat4* transform, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
-	vec3 p(0.5f, 0.5f, 0.5f);
+	vec3 p{0.5f, 0.5f, 0.5f};
 	vec3 points[8] = {
 		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
 		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
@@ -987,7 +987,7 @@ render_line_thick2(vec2 start, vec2 end, f32 thickness, color c){DPZoneScoped;
 	RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
 	
 	vec2 ott = end - start;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
+	vec2 norm = Vec2(ott.y, -ott.x).normalized();
 	
 	ip[0] = renderTwodVertexCount; ip[1] = renderTwodVertexCount + 1; ip[2] = renderTwodVertexCount + 2;
 	ip[3] = renderTwodVertexCount; ip[4] = renderTwodVertexCount + 2; ip[5] = renderTwodVertexCount + 3;
@@ -1026,7 +1026,7 @@ render_lines2(vec2* points, u64 count, f32 thickness, color c){DPZoneScoped;
 	{// first point
 		
 		vec2 ott = points[1] - points[0];
-		vec2 norm = vec2(ott.y, -ott.x).normalized();
+		vec2 norm = Vec2(ott.y, -ott.x).normalized();
 		
 		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = color;
 		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = color;
@@ -1106,7 +1106,7 @@ render_lines2(vec2* points, u64 count, f32 thickness, color c){DPZoneScoped;
 	
 	{//last point
 		vec2 ott = points[count - 1] - points[count - 2];
-		vec2 norm = vec2(ott.y, -ott.x).normalized() * (f32)flip;
+		vec2 norm = Vec2(ott.y, -ott.x).normalized() * (f32)flip;
 		
 		vp[0].pos = points[count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = color;//PackColorU32(255, 50, 255, 255);
 		vp[1].pos = points[count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = color;//PackColorU32(255, 50, 100, 255);
@@ -1203,7 +1203,7 @@ render_circle2(vec2 pos, f32 rotation, f32 radius, u32 subdivisions_int, color c
 		f32 a1 = (((f32)(i-0) * M_2PI) / subdivisions) + rot_rad;
 		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
 		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
-		render_line2(vec2(x0, y0), vec2(x1, y1), c);
+		render_line2(Vec2(x0, y0), Vec2(x1, y1), c);
 	}
 }
 
@@ -1218,7 +1218,7 @@ render_circle_filled2(vec2 pos, f32 rotation, f32 radius, u32 subdivisions_int, 
 		f32 a1 = (((f32)(i-0) * M_2PI) / subdivisions) + rot_rad;
 		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
 		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
-		render_triangle_filled2(pos, vec2(x0, y0), vec2(x1, y1), c);
+		render_triangle_filled2(pos, Vec2(x0, y0), Vec2(x1, y1), c);
 	}
 }
 
@@ -1342,7 +1342,7 @@ render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	u32*     ip = putindices + offsets.indices;
 	
 	vec2 ott = end - start;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
+	vec2 norm = Vec2(ott.y, -ott.x).normalized();
 	
 	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
 	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
@@ -1430,8 +1430,8 @@ render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offs
 	
 	vec2 tl = pos;
 	vec2 br = pos + size;
-	vec2 bl = pos + vec2(0, size.y);
-	vec2 tr = pos + vec2(size.x, 0);
+	vec2 bl = pos + Vec2(0, size.y);
+	vec2 tr = pos + Vec2(size.x, 0);
 	
 	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
 	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
@@ -1454,8 +1454,8 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	
 	// vec2 tl = pos;
 	// vec2 br = pos + size;
-	// vec2 bl = pos + vec2(0, size.y);
-	// vec2 tr = pos + vec2(size.x, 0);
+	// vec2 bl = pos + Vec2(0, size.y);
+	// vec2 tr = pos + Vec2(size.x, 0);
 	
 	// RenderDrawCounts sum = {0};
 	// sum += render_make_line(vp, ip, sum, tl,tr,thickness,color);
@@ -1478,13 +1478,13 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	ip[18] = v+6; ip[19] = v+7; ip[20] = v+1; 
 	ip[21] = v+6; ip[22] = v+1; ip[23] = v+0;
 	vp[0].pos = tl;             vp[0].uv = {0,0}; vp[0].color = color.rgba;
-	vp[1].pos = tl+vec2( t, t); vp[1].uv = {0,0}; vp[1].color = color.rgba;
+	vp[1].pos = tl+Vec2( t, t); vp[1].uv = {0,0}; vp[1].color = color.rgba;
 	vp[2].pos = tr;             vp[2].uv = {0,0}; vp[2].color = color.rgba;
-	vp[3].pos = tr+vec2(-t, t); vp[3].uv = {0,0}; vp[3].color = color.rgba;
+	vp[3].pos = tr+Vec2(-t, t); vp[3].uv = {0,0}; vp[3].color = color.rgba;
 	vp[4].pos = br;             vp[4].uv = {0,0}; vp[4].color = color.rgba;
-	vp[5].pos = br+vec2(-t,-t); vp[5].uv = {0,0}; vp[5].color = color.rgba;
+	vp[5].pos = br+Vec2(-t,-t); vp[5].uv = {0,0}; vp[5].color = color.rgba;
 	vp[6].pos = bl;             vp[6].uv = {0,0}; vp[6].color = color.rgba;
-	vp[7].pos = bl+vec2( t,-t); vp[7].uv = {0,0}; vp[7].color = color.rgba;
+	vp[7].pos = bl+Vec2( t,-t); vp[7].uv = {0,0}; vp[7].color = color.rgba;
 	
 	return render_make_rect_counts();
 }
@@ -1502,15 +1502,15 @@ render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets,
 	u32 nuindexes = subdivisions * 6;
 	
 	//first and last point
-	vec2 last = pos + vec2(radius, 0);
-	vp[0].pos = last + vec2(-thickness / 2, 0); vp[0].uv={0,0}; vp[0].color=col;
-	vp[1].pos = last + vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
+	vec2 last = pos + Vec2(radius, 0);
+	vp[0].pos = last + Vec2(-thickness / 2, 0); vp[0].uv={0,0}; vp[0].color=col;
+	vp[1].pos = last + Vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
 	ip[0] = offsets.vertices + 0; ip[1] = offsets.vertices + 1; ip[3] = offsets.vertices + 0;
 	ip[nuindexes - 1] = offsets.vertices + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.vertices + 1;
 	
 	for(s32 i = 1; i < subdivisions_int; i++){
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
-		vec2 offset(radius * cosf(a1), radius * sinf(a1));
+		vec2 offset = Vec2(radius * cosf(a1), radius * sinf(a1));
 		vec2 point = pos + offset;
 		
 		u32 idx = i * 2;
@@ -1536,7 +1536,7 @@ render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts of
 	u32*     ip = putindices + offsets.indices;
 	
 	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = pos + vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[1].pos = pos + Vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
 	u32 nuindexes = 3 * subdivisions_int;
 	
 	ip[1] = offsets.vertices + 1;
@@ -1548,7 +1548,7 @@ render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts of
 	f32 subdivisions = f32(subdivisions_int);
 	for(u32 i = 1; i < subdivisions_int; i++){
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
-		vec2 offset(radius * cosf(a1), radius * sinf(a1));
+		vec2 offset = Vec2(radius * cosf(a1), radius * sinf(a1));
 		vec2 point = pos + offset;
 		
 		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;

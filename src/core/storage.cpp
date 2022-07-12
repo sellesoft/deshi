@@ -138,7 +138,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	Mesh::Triangle* ta = mesh->triangleArray;
 	Mesh::Face*     fa = mesh->faceArray;
 	vec3 p{width, height, depth};
-	vec3 uv{0.0f, 0.0f};
+	vec2 uv{0.0f, 0.0f};
 	u32 c = color.rgba;
 	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
 	
@@ -1666,7 +1666,7 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 		LogE("storage","Error parsing BDF '",filename,"' on line 1. The file did not begin with 'STARTFONT'.");
 		return result;
 	}
-
+	
 	
 	Font* font = AllocateFont(FontType_BDF);
 	font->name = filename;
@@ -1992,8 +1992,8 @@ CreateFontFromFile(str8 filename, u32 height){DPZoneScoped;
 
 void DrawMeshesWindow() {DPZoneScoped; 
 	using namespace UI;
-	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUIMeshes"), vec2(MAX_F32, MAX_F32));
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(str8_lit("StorageBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
 	Text(str8_lit("TODO"));
 	EndChild();
 }
@@ -2023,7 +2023,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
 	
 	
-	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	BeginChild(str8_lit("StorageBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
 	
 	BeginRow(str8_lit("StorageBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
@@ -2084,7 +2084,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 		EndRow();
 		PushColor(UIStyleCol_WindowBg, 0x073030ff);
 		
-		SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 		BeginChild(str8_lit("StorageBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
 		persist f32  zoom = 300;
 		persist vec2 mpl;
@@ -2102,7 +2102,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 		
 		if (new_selected) {
 			zoom = f32(GetWindow()->width) / selected->width ;
-			//imagepos = vec2(
+			//imagepos = Vec2(
 			//				(GetWindow()->width - selected->width) / 2,
 			//				(GetWindow()->height - selected->height) / 2
 			//				);
@@ -2133,7 +2133,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 		}
 		else SetAllowInputs();
 		
-		SetNextItemSize(vec2(zoom * selected->width, zoom * selected->height));
+		SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
 		Image(selected, imagepos, 1, flags);
 		
 		EndChild();
@@ -2149,12 +2149,12 @@ void DrawMaterialsWindow(){DPZoneScoped;
 	Storage_* st = DeshStorage;
 	
 	using namespace UI;
-	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	BeginChild(str8_lit("StorageBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
 	
 	Separator(5);
 	
-	SetNextWindowSize(vec2(MAX_F32, 200));
+	SetNextWindowSize(Vec2(MAX_F32, 200));
 	BeginChild(str8_lit("StorageBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
 		BeginRow(str8_lit("StorageBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
@@ -2176,16 +2176,16 @@ void DrawMaterialsWindow(){DPZoneScoped;
 
 void DrawModelsWindow(){DPZoneScoped;
 	using namespace UI;
-	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUIModels"), vec2(MAX_F32, MAX_F32));
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(str8_lit("StorageBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
 	Text(str8_lit("TODO"));
 	EndChild();
 }
 
 void DrawFontsWindow(){DPZoneScoped;
 	using namespace UI;
-	SetNextWindowSize(vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUIFonts"), vec2(MAX_F32, MAX_F32));
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(str8_lit("StorageBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
 	Text(str8_lit("TODO"));
 	EndChild();
 }
@@ -2196,7 +2196,7 @@ StorageBrowserUI() {DPZoneScoped;
 	using namespace UI;
 	PushColor(UIStyleCol_Border, Color_Grey);
 	PushColor(UIStyleCol_Separator, Color_Grey);
-	Begin(str8_lit("StorageBrowserUI"), vec2::ONE * 200, vec2(400, 600));
+	Begin(str8_lit("StorageBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
 	
 	
 	BeginTabBar(str8_lit("StorageBrowserUITabBar"), UITabBarFlags_NoIndent);

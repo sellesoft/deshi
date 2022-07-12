@@ -1441,7 +1441,7 @@ deshi__memory_draw(){DPZoneScoped;
 	
 	UI::PushColor(UIStyleCol_Border,             Color_Grey);
 	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
-	UI::Begin(str8_lit("deshi_memory"), vec2(DeshWindow->dimensions)/4.f, vec2(DeshWindow->dimensions)/2.f, UIWindowFlags_NoScroll);{
+	UI::Begin(str8_lit("deshi_memory"), Vec2(DeshWindow->width,DeshWindow->height)/4.f, Vec2(DeshWindow->width,DeshWindow->height)/2.f, UIWindowFlags_NoScroll);{
 		UIWindow* window = UI::GetWindow();
 		UIStyle_old& style = UI::GetStyle();
 		char used_char = ' ', size_char = ' ';
@@ -1554,17 +1554,17 @@ deshi__memory_bytes_draw() {
 		u8 val = mem[i]; 
 		u32 canfit = winw / scale;
 		
-		vec2 pos = vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
+		vec2 pos = Vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
 		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
 		if (Math::PointInRectangle(input_mouse_position(), GetLastItemScreenPos(), GetLastItemSize())) {
 			PushLayer(GetCenterLayer() + 1);
 			vec2 mp = (input_mouse_position() - GetWindow()->position);
 			string m = toStr(mem + i);
-			RectFilled(mp + vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
-			Text(str8{(u8*)m.str, (s64)m.count}, mp + vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
+			RectFilled(mp + Vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
+			Text(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
 			string v = toStr(val);
-			RectFilled(mp + vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
-			Text(str8{(u8*)v.str, (s64)v.count}, mp + vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
+			RectFilled(mp + Vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
+			Text(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
 			PopLayer();
 		}
 	}

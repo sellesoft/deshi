@@ -110,7 +110,7 @@ struct BufferVk{
 local array<RenderMesh>  vkMeshes(deshi_allocator);
 local array<TextureVk>   textures(deshi_allocator);
 local array<MaterialVk>  vkMaterials(deshi_allocator);
-local vec4 vkLights[10]{ vec4(0,0,0,-1) };
+local vec4 vkLights[10]{ Vec4(0,0,0,-1) };
 
 local bool initialized      = false;
 local bool remakeWindow     = false;
@@ -1531,9 +1531,9 @@ UpdateUniformBuffers(){DPZoneScoped;
 	{//update scene vertex shader ubo
 		uboVS.values.time = DeshTime->totalTime;
 		CopyMemory(uboVS.values.lights, vkLights, 10*sizeof(vec4));
-		uboVS.values.screen = vec2((f32)activeSwapchain.extent.width, (f32)activeSwapchain.extent.height);
+		uboVS.values.screen = Vec2((f32)activeSwapchain.extent.width, (f32)activeSwapchain.extent.height);
 		uboVS.values.mousepos = input_mouse_position();
-		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
+		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, Vec2(DeshWindow->width,DeshWindow->height));
 		uboVS.values.enablePCF = renderSettings.shadowPCF;
 		uboVS.values.lightVP = uboVSoffscreen.values.lightVP;
 		
@@ -2728,9 +2728,9 @@ ResetCommands(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_commands_build
-local vec4 render_pass_color = vec4(0.78f, 0.54f, 0.12f, 1.0f);
-local vec4 draw_group_color  = vec4(0.50f, 0.76f, 0.34f, 1.0f);
-local vec4 draw_cmd_color    = vec4(0.40f, 0.61f, 0.27f, 1.0f);
+local vec4 render_pass_color = Vec4(0.78f, 0.54f, 0.12f, 1.0f);
+local vec4 draw_group_color  = Vec4(0.50f, 0.76f, 0.34f, 1.0f);
+local vec4 draw_cmd_color    = Vec4(0.40f, 0.61f, 0.27f, 1.0f);
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
 local void 
@@ -3867,7 +3867,7 @@ render_set_active_surface_idx(u32 idx){DPZoneScoped;
 //// @render_light
 void
 render_update_light(u32 idx, vec3 position, f32 brightness){DPZoneScoped;
-	vkLights[idx] = vec4(position, brightness);
+	vkLights[idx] = Vec4(position.x, position.y, position.z, brightness);
 }
 
 
@@ -3875,7 +3875,7 @@ render_update_light(u32 idx, vec3 position, f32 brightness){DPZoneScoped;
 //// @render_camera
 void
 render_update_camera_position(vec3 position){DPZoneScoped;
-	uboVS.values.viewPos = vec4(position, 1.f);
+	uboVS.values.viewPos = Vec4(position.x, position.y, position.z, 1.f);
 }
 
 void
