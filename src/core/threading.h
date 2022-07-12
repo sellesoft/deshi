@@ -82,11 +82,18 @@ struct Thread{
 
 struct ThreadManager{
 	DPTracyLockable(mutex, job_ring_lock);
+    DPTracyLockable(mutex, wake_up_lock);
     condvar idle; //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
     ring_array<ThreadJob> job_ring; 
     array<Thread*> threads; //TODO arena threads instead of using memalloc
 
-    u32 max_threads = 0;
+    //queue of threads that are waiting to be woken up 
+    ring_array<condvar*> wake_up_queue;
+
+    u32 max_threads = 0; // a value of 0 indiciates no limit to created threads
+    u32 max_awake_threads = 8; // how many threads are allowed to be awake at one time
+
+    u32 awake_threads = 1; //main thread counts towards awake threads 
 
     //initializes the thread manager
     //this must be done after loading memory
@@ -106,8 +113,28 @@ struct ThreadManager{
 
     //wakes up a specified amount of threads
     //if count == 0 then we wake all idle threads
+    //NOTE(sushi) this will only wake up to (max_awake_threads - awake_threads) threads
     void wake_threads(u32 count = 0);
+
+    //called by a worker thread upon finishing a job to ask the manager if it should continue to take work
+    //when threads are in the wake up queue the manager prioritizes getting them awake so they can finish their job
+    //instead of letting other threads continue to take work 
+    b32 worker_should_continue() {
+        wake_up_lock.lock();
+        if(wake_up_queue.count){
+
+            forI(max_awake_threads - awake_threads){
+                wake_up_queue[0]->notify_one();
+                wake_up_queue.remove(1);
+                if(!wake_up_queue.count) break;
+            } 
+
+        } 
+        wake_up_lock.unlock();
+        return 1;
+    }
 };
+
 
 //global ThreadManager
 extern ThreadManager* g_tmanager;
