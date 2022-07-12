@@ -1499,10 +1499,22 @@ notify_all(){DPZoneScoped;
 void condition_variable::
 wait(){DPZoneScoped;
 	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
+	DeshThreadManager->awake_threads--;
 	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
 		win32_log_last_error("SleepConditionVariableCS");
 	}
 	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
+	//if there are already the max amount of running threads we must wait for the manager
+	//to allow us to run again
+	if(DeshThreadManager->awake_threads >= DeshThreadManager->max_awake_threads){
+		condvar* cv = (condvar*)memalloc(sizeof(condvar));
+		cv->init();
+		DeshThreadManager->wake_up_queue.add(cv);
+		cv->wait();
+		cv->deinit();
+		memzfree(cv);
+	}
+	DeshThreadManager->awake_threads++;
 }
 
 void condition_variable::
@@ -1514,7 +1526,7 @@ wait_for(u64 milliseconds){DPZoneScoped;
 
 
 #ifdef BUILD_SLOW
-#define WorkerLog(message) DPTracyDynMessage(toStr("worker ", me->idx, " : " message)) //Log("thread", "worker ", me, ": ", message)
+#define WorkerLog(message) //DPTracyDynMessage(toStr("worker ", me->idx, " : " message)) //Log("thread", "worker ", me, ": ", message)
 #else
 #define WorkerLog(message)
 #endif
@@ -1526,7 +1538,7 @@ void
 deshi__thread_worker(Thread* me){DPZoneScoped;
 	ThreadManager* man = DeshThreadManager;
 	WorkerLog("spawned");
-	SetThreadDescription(GetCurrentThread(), wchar_from_str8(toStr8("worker ", me->idx).fin, 0, deshi_temp_allocator));
+	SetThreadDescription(GetCurrentThread(), wchar_from_str8(toStr8("worker ", me->idx), 0, deshi_temp_allocator));
 	while(!me->close){
 		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
 			WorkerLog("looking to take a job from job ring");
@@ -1554,6 +1566,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj.ThreadFunction(tj.data);
 			me->running = false;
 			WorkerLog("finished running job");
+			if(!man->worker_should_continue()) break;
 		}
 		//when there are no more jobs go to sleep until notified again by thread manager
 		//NOTE this may hang!
@@ -1574,6 +1587,8 @@ void ThreadManager::
 init(u32 max_jobs){DPZoneScoped;
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init ThreadManager without loading Memory first");
 	job_ring.init(max_jobs, deshi_allocator);
+	//arbitrary number, not sure how to better decide this
+	wake_up_queue.init(255, deshi_allocator);
 	idle.init();
 	DeshiStageInitEnd(DS_THREAD);
 }
@@ -1584,6 +1599,7 @@ spawn_thread(u32 count){DPZoneScoped;
 		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", max_threads);
 	}
 	forI(count){
+		DeshThreadManager->awake_threads++;
 		Thread* t = (Thread*)memalloc(sizeof(Thread));
 		if(threads.count)
 			t->idx = (*threads.last)->idx + 1;
@@ -1619,9 +1635,13 @@ cancel_all_jobs(){DPZoneScoped;
 void ThreadManager::
 wake_threads(u32 count){DPZoneScoped;
 	if(!threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
-	else if(!count) idle.notify_all(); 
+	else if(!count){
+		forI(max_awake_threads-awake_threads){
+			idle.notify_one();
+		}		
+	}  
 	else{
-		forI(count) idle.notify_one();
+		forI(Min(count, max_awake_threads-awake_threads)) idle.notify_one();
 	}
 }
 
