@@ -1423,7 +1423,7 @@ lock(){DPZoneScoped;
 			LogE("threading-win32", "Attempted to lock an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ win32_log_last_error("CreateMutex"); Assert(0); }break;
+		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
 	is_locked = 1;
 }
@@ -1440,7 +1440,7 @@ try_lock(){DPZoneScoped;
 			return false;
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ win32_log_last_error("CreateMutex"); Assert(0); }break;
+		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
 	is_locked = 1;
 	return true;
@@ -1458,7 +1458,7 @@ try_lock_for(u64 milliseconds){DPZoneScoped;
 			return false;
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ win32_log_last_error("CreateMutex"); Assert(0); }break;
+		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
 	is_locked = 1;
 	return true;
@@ -1479,7 +1479,6 @@ init(){DPZoneScoped;
 	::InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
 }
 
-
 void condvar::
 deinit(){DPZoneScoped;
 	free(cvhandle); 
@@ -1498,23 +1497,13 @@ notify_all(){DPZoneScoped;
 
 void condition_variable::
 wait(){DPZoneScoped;
+	DeshThreadManager->going_to_sleep();
 	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
-	DeshThreadManager->awake_threads--;
 	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
 		win32_log_last_error("SleepConditionVariableCS");
 	}
 	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
-	//if there are already the max amount of running threads we must wait for the manager
-	//to allow us to run again
-	if(DeshThreadManager->awake_threads >= DeshThreadManager->max_awake_threads){
-		condvar* cv = (condvar*)memalloc(sizeof(condvar));
-		cv->init();
-		DeshThreadManager->wake_up_queue.add(cv);
-		cv->wait();
-		cv->deinit();
-		memzfree(cv);
-	}
-	DeshThreadManager->awake_threads++;
+	DeshThreadManager->waking_up();
 }
 
 void condition_variable::
@@ -1522,6 +1511,42 @@ wait_for(u64 milliseconds){DPZoneScoped;
 	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
 	::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, milliseconds);
 	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
+}
+
+
+void semaphore::
+init(u64 ival, u64 mval){
+	if(handle = CreateSemaphore(0, mval, ival, 0); !handle){
+		win32_log_last_error("CreateSemaphore");
+	}
+}
+
+void semaphore::
+deinit(){
+	CloseHandle(handle);
+}
+
+void semaphore::
+enter(){
+	DWORD waitres = WaitForSingleObject(handle, INFINITE);
+	switch(waitres){
+		case WAIT_ABANDONED:{
+			//TODO maybe have an option somewhere to suppress this error
+			LogE("threading-win32", "Locking an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
+		}break;
+		//TODO set up our own error reporting once i figure out what error codes are what for this
+		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
+	}
+	//TODO(sushi) need to see if this should be locked!
+	count--;
+}
+
+void semaphore::
+leave(){
+	if(!ReleaseSemaphore(handle, 1, 0)){
+		win32_log_last_error("ReleaseSemaphore");
+	}
+	count++;
 }
 
 
@@ -1566,10 +1591,10 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj.ThreadFunction(tj.data);
 			me->running = false;
 			WorkerLog("finished running job");
-			if(!man->worker_should_continue()) break;
+			if(!man->worker_should_continue()) break; 
+
 		}
 		//when there are no more jobs go to sleep until notified again by thread manager
-		//NOTE this may hang!
 		WorkerLog("going to sleep");
 		man->idle.wait();
 		WorkerLog("woke up");
@@ -1587,8 +1612,8 @@ void ThreadManager::
 init(u32 max_jobs){DPZoneScoped;
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init ThreadManager without loading Memory first");
 	job_ring.init(max_jobs, deshi_allocator);
-	//arbitrary number, not sure how to better decide this
-	wake_up_queue.init(255, deshi_allocator);
+	wake_up_queue.init(max_awake_threads*4);
+	//TODO(sushi) query for max amount of threads 
 	idle.init();
 	DeshiStageInitEnd(DS_THREAD);
 }
@@ -1643,6 +1668,11 @@ wake_threads(u32 count){DPZoneScoped;
 	else{
 		forI(Min(count, max_awake_threads-awake_threads)) idle.notify_one();
 	}
+}
+
+void ThreadManager::
+set_thread_name(str8 name){
+	SetThreadDescription(GetCurrentThread(), wchar_from_str8(name, 0, deshi_temp_allocator));
 }
 
 

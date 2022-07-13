@@ -65,6 +65,19 @@ struct scopedlock{//locks a mutex and unlocks it when it goes out of scope
     }
 };
 
+struct semaphore{
+    void* handle = 0;
+
+    //count that should match the semaphores count but im not sure yet if it accurately does!
+    u64 count;
+
+    void init(u64 initial_val, u64 max_val);
+    void deinit();
+
+    void enter();
+    void leave();
+};
+
 // a job that a thread attempts to take upon waking up.
 //TODO job priorities
 struct ThreadJob{
@@ -82,8 +95,12 @@ struct Thread{
 
 struct ThreadManager{
 	DPTracyLockable(mutex, job_ring_lock);
-    DPTracyLockable(mutex, wake_up_lock);
+    DPTracyLockable(mutex, hypnagogia_lock); //locked when a thread is going to sleep or waking up
+
+    semaphore wake_up_barrier;
     condvar idle; //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
+    u64 idle_count; //count of idling threads. NOTE(sushi) this is a count of threads waiting on the idle condition variable and does not represent how many threads are sleeping overall
+    mutex idle_count_lock; 
     ring_array<ThreadJob> job_ring; 
     array<Thread*> threads; //TODO arena threads instead of using memalloc
 
@@ -116,23 +133,60 @@ struct ThreadManager{
     //NOTE(sushi) this will only wake up to (max_awake_threads - awake_threads) threads
     void wake_threads(u32 count = 0);
 
-    //called by a worker thread upon finishing a job to ask the manager if it should continue to take work
-    //when threads are in the wake up queue the manager prioritizes getting them awake so they can finish their job
-    //instead of letting other threads continue to take work 
-    b32 worker_should_continue() {
-        wake_up_lock.lock();
+    //called when a thread attempts to wake up from a condvar
+    //if there is no room for the thread to start running immediatly,
+    //it must go back to sleep and wait for the manager to wake it up later
+    void waking_up(){
+        hypnagogia_lock.lock();
+        if(awake_threads == max_awake_threads){
+            condvar cv;
+            cv.init();
+            wake_up_queue.add(&cv);
+            hypnagogia_lock.unlock();
+            cv.wait();
+        }else{
+            awake_threads++;
+        }
+        hypnagogia_lock.unlock();
+    }
+
+    //called when a thread is going to sleep
+    //this dispatches threads that wanted to wake up but couldnt due to how many threads were running
+    //if there are no threads waiting in queue, but there are still jobs we dispatch another thread to 
+    //take its place
+    //TODO(sushi) this is deep default/implicit behavoir that should not be implemented when i rewrite this
+    //            instead this should probably run based on a var for telling manager exactly how many threads you
+    //            want to keep automatically running at any time
+    void going_to_sleep(){
+        hypnagogia_lock.lock();
         if(wake_up_queue.count){
+            wake_up_queue[0]->notify_all();
+            wake_up_queue.remove(1);
+        }else if(job_ring.count){
+            idle.notify_one();
+        }else{
+            awake_threads--;
+        }
+        if(!awake_threads){
+            LogE("threader", "the last awake thread is going to sleep.");
+        }
+        hypnagogia_lock.unlock();
+    }
 
-            forI(max_awake_threads - awake_threads){
-                wake_up_queue[0]->notify_one();
-                wake_up_queue.remove(1);
-                if(!wake_up_queue.count) break;
-            } 
-
-        } 
-        wake_up_lock.unlock();
+    //called by all worker threads when they finish a job
+    //the manager prioritizes workers that want to wake up but cant because 
+    //of how many threads are running
+    //NOTE(sushi) waking up waiting threads is handled when this thread goes to sleep when it calls going_to_sleep
+    b32 worker_should_continue() {
+        if(wake_up_queue.count) return 0;
         return 1;
     }
+
+    //sets a name for the thread
+    //this is useful to give a thread a name that indicates what its doing, so in debugging
+    //you dont have to examine the call stack to figure it out
+    //this sets the name of the thread that calls it
+    void set_thread_name(str8 name);
 };
 
 
