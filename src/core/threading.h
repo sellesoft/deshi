@@ -18,8 +18,8 @@
 struct mutex{
     void* handle = 0;
     b32 is_locked = 0;
-    mutex();
-    ~mutex();
+    void init();
+    void deinit();
     // locks this mutex from the calling thread 
     void lock(); 
     // attempts to lock this mutex from the calling thread, if it fails the function returns false
@@ -30,6 +30,12 @@ struct mutex{
     // unlocks this mutex
     void unlock();
 };
+
+global mutex init_mutex(){
+    mutex ret;
+    ret.init();
+    return ret;
+}
 
 //used for thread syncronization
 // this struct allows for making threads go to sleep until notified.
@@ -94,9 +100,8 @@ struct Thread{
 };
 
 struct ThreadManager{
-	DPTracyLockable(mutex, job_ring_lock);
-    DPTracyLockable(mutex, hypnagogia_lock); //locked when a thread is going to sleep or waking up
-
+	mutex job_ring_lock;
+    mutex hypnagogia_lock; //locked when a thread is going to sleep or waking up
     semaphore wake_up_barrier;
     condvar idle; //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
     u64 idle_count; //count of idling threads. NOTE(sushi) this is a count of threads waiting on the idle condition variable and does not represent how many threads are sleeping overall
@@ -136,7 +141,7 @@ struct ThreadManager{
     //called when a thread attempts to wake up from a condvar
     //if there is no room for the thread to start running immediatly,
     //it must go back to sleep and wait for the manager to wake it up later
-    void waking_up(){
+    void waking_up(){DPZoneScoped;
         hypnagogia_lock.lock();
         if(awake_threads == max_awake_threads){
             condvar cv;
@@ -157,7 +162,7 @@ struct ThreadManager{
     //TODO(sushi) this is deep default/implicit behavoir that should not be implemented when i rewrite this
     //            instead this should probably run based on a var for telling manager exactly how many threads you
     //            want to keep automatically running at any time
-    void going_to_sleep(){
+    void going_to_sleep(){DPZoneScoped;
         hypnagogia_lock.lock();
         if(wake_up_queue.count){
             wake_up_queue[0]->notify_all();
