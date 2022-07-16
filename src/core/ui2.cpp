@@ -179,6 +179,8 @@ uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
 		Assert(0);	
 	}
 	
+	uiItem* parent = *(g_ui->item_stack.last);
+
 	//initialize the item in memory or retrieve it from cache if it already exists
 	uiItem* item;
 	b32 retrieved = 0;
@@ -211,7 +213,15 @@ uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
 	
 	if(!retrieved){
 		if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
-		else item->style = {0};
+		else{
+			//set to default 0, but inherit parent's text properties
+			item->style = {0};
+			item->style.font        = parent->style.font;
+			item->style.font_height = parent->style.font_height;
+			item->style.text_color  = parent->style.text_color;
+			item->style.text_wrap   = parent->style.text_wrap;
+			item->style.tab_spaces  = parent->style.text_wrap;
+		} 
 	}
 	
 	item->file_created = setup.file;
@@ -240,8 +250,6 @@ uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
 	}
 	return item;
 }
-
-
 
 //TODO(sushi) make an option for this to take into account wrapping
 vec2 calc_text_size(uiItem* item){DPZoneScoped;
@@ -800,17 +808,11 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		at this point the item is finished. 
 		
 		we quantize its position since we are working in floating point to avoid some silly fp things
-		this isn't fully tested though
-
-		we also set the item's csize, which indicates the area that its content actually occupies inside it, as well
-		as the item's cpos which indicates where in the item its content starts
+		this isn't fully tested though and may not be necessary
+		
 	*/
 	
 	item->lpos = floor(item->lpos);
-	item->cx = wborder + item->style.padding_left + item->style.margin_left;
-	item->cy = wborder + item->style.padding_top + item->style.margin_top;
-	item->cheight = item->height - 2*wborder - (item->style.padding_top + item->style.padding_bottom) - (item->style.margin_top + item->style.margin_bottom);
-	item->cwidth = item->width - 2*wborder - (item->style.padding_left + item->style.padding_right) - (item->style.margin_left + item->style.margin_right);
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -1125,8 +1127,6 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
-	
-	
 	
 	uiItem* item = ui_setup_item(setup);
 	uiText* data = (uiText*)item;
