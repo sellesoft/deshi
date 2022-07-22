@@ -595,7 +595,7 @@ external struct uiStyle{
 				vec2 margintl;
 			};
 			union{
-				struct{f32 margin_bottom, margin_right;};
+				struct{f32 margin_right, margin_bottom;};
 				vec2 marginbr; 
 			};
 		};
@@ -608,7 +608,7 @@ external struct uiStyle{
 				vec2 paddingtl;
 			};
 			union{
-				struct{f32 padding_bottom, padding_right;};
+				struct{f32 padding_right, padding_bottom;};
 				vec2 paddingbr;        
 			};
 		};
