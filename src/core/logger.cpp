@@ -220,7 +220,7 @@ logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_
 	int cursor = logger_message_prefix(0, caller_file, caller_line, tag, log_type);
 	forI(arr_count){
 		if(cursor+arr[i].count >= LOGGER_BUFFER_SIZE){
-			LogW("logger","Attempted to log a message more than 4096 characters long.");
+			LogW("logger","Attempted to log a message more than ", LOGGER_BUFFER_SIZE, " characters long.");
 			break;
 		}
 		memcpy(logger.last_message + cursor, arr[i].str, arr[i].count*sizeof(char));
