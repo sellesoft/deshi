@@ -1612,8 +1612,11 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 		}
 		//when there are no more jobs go to sleep until notified again by thread manager
 		WorkerLog("going to sleep");
+		man->set_thread_name(STR8("sleeping..."));
 		man->idle.wait();
+		man->set_thread_name(STR8("waking up"));
 		WorkerLog("woke up");
+
 	}
 	WorkerLog("closing");
 }

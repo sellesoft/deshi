@@ -142,7 +142,29 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #define BrightYellowFormat(str)   (VTS_BrightYellowFg   str VTS_Default)         
 #define BrightBlueFormat(str)     (VTS_BrightBlueFg     str VTS_Default)           
 #define BrightMagentaFormat(str)  (VTS_BrightMagentaFg  str VTS_Default)        
-#define BrightCyanFormat(str)     (VTS_BrightCyanFg     str VTS_Default)           
+#define BrightCyanFormat(str)     (VTS_BrightCyanFg     str VTS_Default)  
+
+#define ErrorFormatComma(...)   VTS_RedFg,    __VA_ARGS__, VTS_Default
+#define WarningFormatComma(...) VTS_YellowFg, __VA_ARGS__, VTS_Default
+#define SuccessFormatComma(...) VTS_GreenFg,  __VA_ARGS__, VTS_Default
+
+#define NegativeFormatComma(...) VTS_Negative,   __VA_ARGS__, VTS_Default
+#define BlackFormatComma(...)    VTS_BlackFg,    __VA_ARGS__, VTS_Default
+#define RedFormatComma(...)      VTS_RedFg,      __VA_ARGS__, VTS_Default
+#define GreenFormatComma(...)    VTS_GreenFg,    __VA_ARGS__, VTS_Default
+#define YellowFormatComma(...)   VTS_YellowFg,   __VA_ARGS__, VTS_Default
+#define BlueFormatComma(...)     VTS_BlueFg,     __VA_ARGS__, VTS_Default
+#define MagentaFormatComma(...)  VTS_MagentaFg,  __VA_ARGS__, VTS_Default
+#define CyanFormatComma(...)     VTS_CyanFg,     __VA_ARGS__, VTS_Default
+#define WhiteFormatComma(...)    VTS_WhiteFg,    __VA_ARGS__, VTS_Default
+#define RGBFormatComma(r,g,b,...) VTS_RGBFg(r,g,b), __VA_ARGS__, VTS_Default
+#define BrightBlackFormatComma(...)    VTS_BrightBlackFg,    __VA_ARGS__, VTS_Default
+#define BrightRedFormatComma(...)      VTS_BrightRedFg,      __VA_ARGS__, VTS_Default
+#define BrightGreenFormatComma(...)    VTS_BrightGreenFg,    __VA_ARGS__, VTS_Default
+#define BrightYellowFormatComma(...)   VTS_BrightYellowFg,   __VA_ARGS__, VTS_Default
+#define BrightBlueFormatComma(...)     VTS_BrightBlueFg,     __VA_ARGS__, VTS_Default
+#define BrightMagentaFormatComma(...)  VTS_BrightMagentaFg,  __VA_ARGS__, VTS_Default
+#define BrightCyanFormatComma(...)     VTS_BrightCyanFg,     __VA_ARGS__, VTS_Default
 
 #define ErrorFormatDyn(str)   toStr8(VTS_RedFg,    str, VTS_Default)
 #define WarningFormatDyn(str) toStr8(VTS_YellowFg, str, VTS_Default)
