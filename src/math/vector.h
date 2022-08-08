@@ -302,8 +302,9 @@ typedef struct vec2i{
 	}
 	
 	//// member interactions ////
-	vec3 toVec3()const;
-	vec4 toVec4()const;
+	vec2  toVec2()const;
+	vec3  toVec3()const;
+	vec4  toVec4()const;
 #endif //#ifdef __cplusplus
 } vec2i;
 
@@ -322,10 +323,9 @@ inline const vec2i vec2i::UNITY = vec2i{ 0, 1};
 
 
 //// nonmember constructor ////
-FORCE_INLINE vec2i Vec2i(s32 x, s32 y){
+FORCE_INLINE vec2i Vec2i(s32 x, s32 y){DPZoneScoped;
 	return vec2i{x, y};
 }
-
 
 //// nonmember constants ////
 FORCE_INLINE vec2i vec2i_ZERO() { return vec2i{ 0, 0}; }
@@ -820,8 +820,9 @@ typedef struct vec2{
 	}
 	
 	//// member interactions ////
-	vec3 toVec3() const;
-	vec4 toVec4() const;
+	vec2i toVec2i() const;
+	vec3  toVec3() const;
+	vec4  toVec4() const;
 #endif //#ifdef __cplusplus
 } vec2;
 
@@ -2541,6 +2542,16 @@ EndLinkageC();
 #endif //#ifdef __cplusplus
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @vec_interations
+inline vec2 vec2i::
+toVec2()const{
+	return vec2{f32(x), f32(y)};
+}
+
+inline vec2i vec2::
+toVec2i()const{
+	return vec2i{s32(this->x), s32(this->y)};
+}
+
 inline vec3 vec2::
 toVec3()const{
 	return Vec3(this->x, this->y, 0);
