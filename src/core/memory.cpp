@@ -1561,10 +1561,10 @@ deshi__memory_bytes_draw() {
 			vec2 mp = (input_mouse_position() - GetWindow()->position);
 			string m = toStr(mem + i);
 			RectFilled(mp + Vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
-			Text(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
+			TextOld(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
 			string v = toStr(val);
 			RectFilled(mp + Vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
-			Text(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
+			TextOld(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
 			PopLayer();
 		}
 	}

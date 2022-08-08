@@ -450,6 +450,7 @@ TODO(sushi) example
 #include "kigu/unicode.h"
 #include "math/vector.h"
 #include "core/render.h"
+#include "core/text.h"
 #include "kigu/hash.h"
 
 #if DESHI_RELOADABLE_UI
@@ -642,13 +643,9 @@ struct uiItem{
 	//an items action call back function 
 	//this function is called in situations defined by the flags in the in the uiStyle enum
 	//and is always called before anything happens to the item in ui_update
-	//NOTE(sushi) remember that to actually affect the item, you must change its style NOT the variables below or set it's dirty value to true
-	//NOTE(sushi) some special items (such as buttons, sliders, radios, etc.) reserve this variable
-	//TODO(sushi) maybe store 2 pointers, so that a user can always define an action
 	void (*action)(uiItem*);
 	void* action_data; //a pointer to arbitrary data to be accessed in the action callback
 	Type action_trigger; //how the action is triggered
-
 
 	//// INTERNAL ////
 	u32 style_hash;
@@ -694,8 +691,8 @@ struct uiItem{
 	Type update_trigger;
 
 	void (*__update)(uiItem*);
-	void (*__generate)(uiItem*);
 	void (*__evaluate)(uiItem*);
+	void (*__generate)(uiItem*);
 	u32  (*__hash)(uiItem*);
 	
 	str8 file_created;
@@ -890,12 +887,10 @@ UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt lin
 struct uiText{
 	uiItem item;
 	str8 text;
+	Text text0;
 	array<pair<s64,vec2>> breaks;
 };
 #define uiGetText(x) CastFromMember(uiText, item, x)
-
-
-
 
 
 //-------------------------------------------------------------------------------------------------
@@ -945,6 +940,7 @@ struct uiContext{
 	//// state ////
 	uiItem base;
 	uiItem* hovered; //item currently hovered by the mouse
+	uiItem* active;  //item last interacted with
 	uiInputState istate;
 
 	struct{

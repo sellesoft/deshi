@@ -741,10 +741,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
         if(hauto) item->height = Max(item->height, child->lpos.y + child->height);
         
 		idx++;
+		Assert(it!=it->next, "infinite loop.");
 		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
 	}
-	
-	
 	
 	if(wauto){
 		item->width += item->style.padding_right;
@@ -861,6 +860,9 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		move_to_parent_last(&item->node);
 		item->dirty = true;
 	}
+
+	//call the items update function if it exists
+	if(item->__update) item->__update(item);
 	
 	//check if an item's style was modified, if so reevaluate the item,
 	//its children, and every child of its parents until a manually sized parent is found
@@ -1025,7 +1027,7 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	vec2 cursor = item->spos;
 	forI(data->breaks.count-1){
 		auto [idx, pos] = data->breaks[i];
-		counts+=render_make_text(vp, ip, counts, 
+		counts+=render_make_text(vp, ip, counts,
 								 {data->text.str+idx, s64(data->breaks[i+1].first - data->breaks[i].first)}, 
 								 item->style.font,
 								 item->spos + pos, item->style.text_color,  
@@ -1037,14 +1039,14 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 
 void ui_eval_text(uiItem* item){
 	if(!item->style.font){
-		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on its parent.");
+		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on one of its ancestors.");
 	}
 	
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	
-	b32 do_wrapping = (parent->style.width != size_auto) && (item->style.text_wrap != text_wrap_none);
+	b32 do_wrapping = (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto));
 	
-	f32 wrapspace = parent->width - parent->style.padding_left - parent->style.padding_right;
+	f32 wrapspace = PaddedWidth(parent);//parent->width - parent->style.padding_left - parent->style.padding_right;
 	
 	uiText* data = uiGetText(item);
 	data->breaks.clear();
@@ -1054,10 +1056,11 @@ void ui_eval_text(uiItem* item){
 	str8 scan = data->text;
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	f32 width_since_last_word = 0;
-	f32 xoffset = 0;
-	f32 yoffset = 0;
+	f32 xoffset = 0; //horizonal offset from top left corner of item
+	f32 yoffset = 0; //vertical offset from top left corner of item
 	while(scan){
 		DecodedCodepoint dc = str8_advance(&scan);
+		f32 xoffsetold=xoffset,yoffsetold=yoffset;
 		if(dc.codepoint == U'\n'){
 			width_since_last_word = 0;
 			yoffset+=item->style.font_height;
@@ -1114,6 +1117,23 @@ void ui_eval_text(uiItem* item){
 	data->breaks.add({data->text.count, {xoffset,yoffset}});
 }
 
+//performs checks on the text element for things like mouse selection
+//and copy when a selection is active
+void ui_update_text(uiItem* item){DPZoneScoped;
+	uiText* text = uiGetText(item);
+	if(g_ui->hovered == item){
+		if(input_lmouse_pressed()){
+			g_ui->active = item;
+		}
+		//we need to determine what character the mouse just clicked on 
+		forI(text->text0.buffer.count){
+			
+		}
+	}else if(g_ui->active == item){
+
+	}
+}
+
 uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* parent = *(g_ui->item_stack.last);
 	
@@ -1131,16 +1151,8 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	uiItem* item = ui_setup_item(setup);
 	uiText* data = (uiText*)item;
 	
-	//inherit containers text properties if we arent explicitly given a style.
-	if(!style){
-		item->style.font        = parent->style.font;
-		item->style.font_height = parent->style.font_height;
-		item->style.text_color  = parent->style.text_color;
-		item->style.text_wrap   = parent->style.text_wrap;
-		item->style.tab_spaces  = parent->style.text_wrap;
-	}
-	
 	data->text = text;
+	data->text0 = text_init(text);
 	data->breaks.allocator = deshi_allocator;
 	
 	return item;

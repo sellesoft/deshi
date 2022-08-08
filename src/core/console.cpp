@@ -466,7 +466,7 @@ void console_update(){
 	// 						//draw tag text
 	// 						vec2 restore_cursor = UI::GetWinCursor();
 	// 						UI::PushColor(UIStyleCol_Text, color(150,150,150, 150));
-	// 						UI::Text(console.dictionary[i].tag, Vec2(right_edge - tag_size.x - 1, tag_start_y));
+	// 						UI::TextOld(console.dictionary[i].tag, Vec2(right_edge - tag_size.x - 1, tag_start_y));
 	// 						UI::PopColor();
 	// 						UI::SetWinCursor(restore_cursor);
 							
@@ -505,7 +505,7 @@ void console_update(){
 	// 			}
 				
 	// 			UI::PushColor(UIStyleCol_Text, console.dictionary[i].color);
-	// 			UI::Text(str8{(u8*)console_chunk_render_arena->start, (s64)console.dictionary[i].size});
+	// 			UI::TextOld(str8{(u8*)console_chunk_render_arena->start, (s64)console.dictionary[i].size});
 	// 			UI::PopColor();
 				
 	// 			if(console.dictionary[i].newline == false && i != (console.dictionary.count-1)){

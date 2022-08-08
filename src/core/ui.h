@@ -884,8 +884,8 @@ namespace UI {
 	//// text ////
 	
 	//wraps by default
-	void Text(str8 text, UITextFlags flags = 0);
-	void Text(str8 text, vec2 pos, UITextFlags flags = 0);
+	void TextOld(str8 text, UITextFlags flags = 0);
+	void TextOld(str8 text, vec2 pos, UITextFlags flags = 0);
 	void TextF(str8 fmt, ...);
 	
 	

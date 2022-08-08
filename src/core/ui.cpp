@@ -1100,13 +1100,13 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color){DPZon
 ////             ////
 /////////////////////
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @Text
+//// @TextOld
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not
 local void TextW(str8 in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true){DPZoneScoped;
 	using namespace UI;
 	if(!in){
-		LogW("ui","Text() was passed an empty string.");
+		LogW("ui","TextOld() was passed an empty string.");
 		return;
 	}
 	
@@ -1197,12 +1197,12 @@ local void TextW(str8 in, vec2 pos, color color, b32 nowrap, b32 move_cursor = t
 	AdvanceCursor(item, move_cursor);
 }
 
-void UI::Text(str8 text, UITextFlags flags){
+void UI::TextOld(str8 text, UITextFlags flags){
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, DecideItemPos(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
-void UI::Text(str8 text, vec2 pos, UITextFlags flags){
+void UI::TextOld(str8 text, vec2 pos, UITextFlags flags){
 	GetDefaultItemFlags(UIItemType_Text, flags);
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
@@ -3025,10 +3025,10 @@ inline void MetricsDebugItem(){DPZoneScoped;
 	
 	if(distate != None && distate != InspectingItem){
 		AllowInputs;
-		Text(str8_lit("Press ESC to cancel"));
-		Text(str8_lit("A: Select Pre Items"));
-		Text(str8_lit("S: Select Items"));
-		Text(str8_lit("D: Select Post Items"));
+		TextOld(str8_lit("Press ESC to cancel"));
+		TextOld(str8_lit("A: Select Pre Items"));
+		TextOld(str8_lit("S: Select Items"));
+		TextOld(str8_lit("D: Select Post Items"));
 		
 		if(key_pressed(Key_A)) distate = InspectingWindowPreItems;
 		if(key_pressed(Key_S)) distate = InspectingWindowItems;
@@ -3045,7 +3045,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 			PushVar(UIStyleVar_WindowMargins, Vec2(3, 3));
 			BeginPopOut(str8_lit("MetricsDebugItemPopOut"), ipos.xAdd(item.size.x) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
 			
-			Text(UIItemTypeStrs[item.type], UITextFlags_NoWrap);
+			TextOld(UIItemTypeStrs[item.type], UITextFlags_NoWrap);
 			TextF(str8_lit("DrawCmds: %d"), item.drawCmds.count);
 			
 			EndPopOut();
@@ -3091,7 +3091,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 					PushVar(UIStyleVar_WindowMargins, Vec2(3, 3));
 					BeginPopOut(str8_lit("MetricsDebugItemPopOut"), hovered->position.xAdd(hovered->width) - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);
 					string s = toStr("Child Window ", hovered->name);
-					Text(str8{(u8*)s.str, (s64)s.count}, UITextFlags_NoWrap);
+					TextOld(str8{(u8*)s.str, (s64)s.count}, UITextFlags_NoWrap);
 					
 					EndPopOut();
 					PopVar();
@@ -3112,9 +3112,9 @@ inline void MetricsDebugItem(){DPZoneScoped;
 			//PushColor(UIStyleCol_WindowBg, color(50, 50, 50));
 			BeginPopOut(str8_lit("MetricsDebugItemPopOut"), mplatch - curwin->position, vec2::ZERO, UIWindowFlags_FitAllElements);
 			
-			Text(UIItemTypeStrs[iteml.type], UITextFlags_NoWrap);
+			TextOld(UIItemTypeStrs[iteml.type], UITextFlags_NoWrap);
 			TextF(str8_lit("DrawCmds: %d"), iteml.drawCmds.count);
-			Text(str8_lit("Select to break on drawCmd"), UITextFlags_NoWrap);
+			TextOld(str8_lit("Select to break on drawCmd"), UITextFlags_NoWrap);
 			
 			PushColor(UIStyleCol_WindowBg, color(30, 30, 30));
 			BeginChild(str8_lit("MetricsDebugItemPopOutDrawCmdChild"), Vec2(0,0), UIWindowFlags_NoBorder | UIWindowFlags_FitAllElements);
@@ -3122,7 +3122,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 			BeginRow(str8_lit("MetricsItemAlignment"), 3, style.buttonHeightRelToFont* style.fontHeight);
 			RowSetupRelativeColumnWidths({ 1.1f,1.1f,1.1f });
 			for(UIDrawCmd& dc : iteml.drawCmds){
-				Text(UIDrawTypeStrs[dc.type], UITextFlags_NoWrap);
+				TextOld(UIDrawTypeStrs[dc.type], UITextFlags_NoWrap);
 				
 				if(MouseInArea(GetLastItemScreenPos(), GetLastItemSize())){
 					for(u32 tri = 0; tri < dc.counts.indices; tri += 3){
@@ -3247,7 +3247,7 @@ inline void MetricsBreaking(){DPZoneScoped;
 	static u32 break_on_cursor = 0;
 	
 	if(breakstate){
-		Text(str8_lit("Press ESC to cancel"));
+		TextOld(str8_lit("Press ESC to cancel"));
 		if(key_pressed(Key_ESCAPE))
 			breakstate = BreakNone;
 	}
@@ -3325,7 +3325,7 @@ inline void MetricsBreaking(){DPZoneScoped;
 				}
 			}
 		}
-		Text(str8_lit("Press ESC to cancel"));
+		TextOld(str8_lit("Press ESC to cancel"));
 		if(key_pressed(Key_ESCAPE)) break_on_cursor = 0;
 		PreventInputs;
 	}
@@ -3366,7 +3366,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 	
 	BeginRow(str8_lit("Metrics_General_Stats"), 2, 0, UIRowFlags_AutoSize);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-	Text(str8_lit("FPS: "), UITextFlags_NoWrap); TextF(str8_lit("%d"), (int)(1000.0/DeshTime->deltaTime));
+	TextOld(str8_lit("FPS: "), UITextFlags_NoWrap); TextF(str8_lit("%d"), (int)(1000.0/DeshTime->deltaTime));
 	EndRow();
 	
 	if(BeginHeader(str8_lit("UI Stats"))){
@@ -3374,22 +3374,22 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		BeginRow(str8_lit("Metrics_UI_Stats"), 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
-		Text(str8_lit("Windows: "));      TextF(str8_lit("%d"), ui_stats.windows);
-		Text(str8_lit("Items: "));        TextF(str8_lit("%d"), ui_stats.items);
-		Text(str8_lit("DrawCmds: "));     TextF(str8_lit("%d"), ui_stats.draw_cmds);
-		Text(str8_lit("Vertices: "));     TextF(str8_lit("%d"), ui_stats.vertices);
-		Text(str8_lit("Indices: "));      TextF(str8_lit("%d"), ui_stats.indices);
-		Text(str8_lit("Global Hover: ")); Text((StateHasFlag(UISGlobalHovered)) ? str8_lit("true") : str8_lit("false"));
-		Text(str8_lit("input state: "));
+		TextOld(str8_lit("Windows: "));      TextF(str8_lit("%d"), ui_stats.windows);
+		TextOld(str8_lit("Items: "));        TextF(str8_lit("%d"), ui_stats.items);
+		TextOld(str8_lit("DrawCmds: "));     TextF(str8_lit("%d"), ui_stats.draw_cmds);
+		TextOld(str8_lit("Vertices: "));     TextF(str8_lit("%d"), ui_stats.vertices);
+		TextOld(str8_lit("Indices: "));      TextF(str8_lit("%d"), ui_stats.indices);
+		TextOld(str8_lit("Global Hover: ")); TextOld((StateHasFlag(UISGlobalHovered)) ? str8_lit("true") : str8_lit("false"));
+		TextOld(str8_lit("input state: "));
 		switch (inputState){
-			case ISNone:                  Text(str8_lit("None"));                    break;
-			case ISScrolling:             Text(str8_lit("Scrolling"));               break;
-			case ISResizing:              Text(str8_lit("Resizing"));                break;
-			case ISDragging:              Text(str8_lit("Dragging"));                break;
-			case ISPreventInputs:         Text(str8_lit("Prevent Inputs"));          break;
-			case ISExternalPreventInputs: Text(str8_lit("External Prevent Inputs")); break;
+			case ISNone:                  TextOld(str8_lit("None"));                    break;
+			case ISScrolling:             TextOld(str8_lit("Scrolling"));               break;
+			case ISResizing:              TextOld(str8_lit("Resizing"));                break;
+			case ISDragging:              TextOld(str8_lit("Dragging"));                break;
+			case ISPreventInputs:         TextOld(str8_lit("Prevent Inputs"));          break;
+			case ISExternalPreventInputs: TextOld(str8_lit("External Prevent Inputs")); break;
 		}
-		Text(str8_lit("input upon: ")); Text((inputupon) ? inputupon->name : str8_lit("none"));
+		TextOld(str8_lit("input upon: ")); TextOld((inputupon) ? inputupon->name : str8_lit("none"));
 		
 		EndRow();		
 		EndHeader();
@@ -3409,16 +3409,16 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 			BeginRow(str8_lit("MetricsWindowStatsAlignment"), 3, 11, UIRowFlags_AutoSize);
 			RowSetupColumnWidths({ fw, sw, 55 });
 			
-			Text(str8{(u8*)slomotext.str, (s64)slomotext.count});
-			Text(slomo->name);
+			TextOld(str8{(u8*)slomotext.str, (s64)slomotext.count});
+			TextOld(slomo->name);
 			if(Button(str8_lit("select"))) debugee = slomo;
 			
-			Text(str8{(u8*)quicktext.str, (s64)quicktext.count});
-			Text(quick->name);
+			TextOld(str8{(u8*)quicktext.str, (s64)quicktext.count});
+			TextOld(quick->name);
 			if(Button(str8_lit("select"))) debugee = quick;
 			
-			Text(str8{(u8*)mostitext.str, (s64)mostitext.count});
-			Text(mostitems->name);
+			TextOld(str8{(u8*)mostitext.str, (s64)mostitext.count});
+			TextOld(mostitems->name);
 			if(Button(str8_lit("select"))) debugee = mostitems;
 			
 			PopVar();
@@ -3463,7 +3463,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		EndChild();
 		
 		string h = toStr("Hovered: ", (hovered ? hovered->name : str8_lit("None")));
-		Text(str8{(u8*)h.str, (s64)h.count});
+		TextOld(str8{(u8*)h.str, (s64)h.count});
 		
 		EndHeader();
 	}
@@ -3482,7 +3482,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 	Separator(20);
 	
 	string s = toStr("Selected Window: ", (debugee ? debugee->name : str8_lit("none")));
-	Text(str8{(u8*)s.str, (s64)s.count});
+	TextOld(str8{(u8*)s.str, (s64)s.count});
 	
 	
 	if(debugee){
@@ -3493,16 +3493,16 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 			BeginRow(str8_lit("MetricsWindowVarAlignment"), 2, style.fontHeight * 1.2, UIRowFlags_AutoSize);
 			RowSetupColumnWidths({ CalcTextSize(str8_lit("Max Item Width: ")).x , 10 });
 			RowSetupColumnAlignments({{0,0.5},{0,0.5}});
-			Text(str8_lit("Render Time:"), UITextFlags_NoWrap);    TextF(str8_lit("%gms"), debugee->render_time);
-			Text(str8_lit("Creation Time:"), UITextFlags_NoWrap);  TextF(str8_lit("%gms"), debugee->creation_time);
-			Text(str8_lit("Item Count:"), UITextFlags_NoWrap);     TextF(str8_lit("%d"), debugee->items_count);
-			Text(str8_lit("Position:"), UITextFlags_NoWrap);       TextF(str8_lit("(%g,%g)"), debugee->x,debugee->y);
-			Text(str8_lit("Dimensions:"), UITextFlags_NoWrap);     TextF(str8_lit("(%g,%g)"), debugee->width,debugee->height);
-			Text(str8_lit("Scroll:"), UITextFlags_NoWrap);         TextF(str8_lit("(%g,%g)"), debugee->scx,debugee->scy);
-			Text(str8_lit("Max Scroll:"), UITextFlags_NoWrap);     TextF(str8_lit("(%g,%g)"), debugee->maxScroll.x,debugee->maxScroll.y);
-			Text(str8_lit("Hovered:"), UITextFlags_NoWrap);        TextF(str8_lit("%s"), (WinHovered(debugee)) ? "true" : "false");
-			Text(str8_lit("Focused:"), UITextFlags_NoWrap);        TextF(str8_lit("%s"), (WinFocused(debugee)) ? "true" : "false");
-			Text(str8_lit("Max Item Width:"), UITextFlags_NoWrap); TextF(str8_lit("%g"), MaxItemWidth(debugee));
+			TextOld(str8_lit("Render Time:"), UITextFlags_NoWrap);    TextF(str8_lit("%gms"), debugee->render_time);
+			TextOld(str8_lit("Creation Time:"), UITextFlags_NoWrap);  TextF(str8_lit("%gms"), debugee->creation_time);
+			TextOld(str8_lit("Item Count:"), UITextFlags_NoWrap);     TextF(str8_lit("%d"), debugee->items_count);
+			TextOld(str8_lit("Position:"), UITextFlags_NoWrap);       TextF(str8_lit("(%g,%g)"), debugee->x,debugee->y);
+			TextOld(str8_lit("Dimensions:"), UITextFlags_NoWrap);     TextF(str8_lit("(%g,%g)"), debugee->width,debugee->height);
+			TextOld(str8_lit("Scroll:"), UITextFlags_NoWrap);         TextF(str8_lit("(%g,%g)"), debugee->scx,debugee->scy);
+			TextOld(str8_lit("Max Scroll:"), UITextFlags_NoWrap);     TextF(str8_lit("(%g,%g)"), debugee->maxScroll.x,debugee->maxScroll.y);
+			TextOld(str8_lit("Hovered:"), UITextFlags_NoWrap);        TextF(str8_lit("%s"), (WinHovered(debugee)) ? "true" : "false");
+			TextOld(str8_lit("Focused:"), UITextFlags_NoWrap);        TextF(str8_lit("%s"), (WinFocused(debugee)) ? "true" : "false");
+			TextOld(str8_lit("Max Item Width:"), UITextFlags_NoWrap); TextF(str8_lit("%g"), MaxItemWidth(debugee));
 			EndRow();
 			EndHeader();
 		}
@@ -3520,7 +3520,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 							RowSetupColumnWidths({ frs, 50, 40 });
 							
 							for(UIDrawCmd& dc : item.drawCmds){
-								Text(UIDrawTypeStrs[dc.type]);
+								TextOld(UIDrawTypeStrs[dc.type]);
 								if(MouseInArea(GetLastItemScreenPos(), GetLastItemSize())){
 									for(int tri = 0; tri < dc.counts.indices; tri += 3){
 										vec2
@@ -3728,16 +3728,16 @@ void UI::ShowMetricsWindow(){DPZoneScoped;
 void UI::DemoWindow(){DPZoneScoped;
 	Begin(str8_lit("deshiUIDEMO"), vec2::ONE * 300, vec2::ONE * 300);
 	
-	if(BeginHeader(str8_lit("Text"))){
-		Text(str8_lit("heres some text"));
+	if(BeginHeader(str8_lit("TextOld"))){
+		TextOld(str8_lit("heres some text"));
 		
 		Separator(7);
 		
-		Text(str8_lit("heres some long text that should wrap if it reaches the end of the window"));
+		TextOld(str8_lit("heres some long text that should wrap if it reaches the end of the window"));
 		
 		Separator(7);
 		
-		Text(str8_lit("heres some long text that shouldn't wrap when it reaches the end of the window"), UITextFlags_NoWrap);
+		TextOld(str8_lit("heres some long text that shouldn't wrap when it reaches the end of the window"), UITextFlags_NoWrap);
 		
 		EndHeader();
 	}
@@ -3749,7 +3749,7 @@ void UI::DemoWindow(){DPZoneScoped;
 		if(Button(str8_lit("change text"))){
 			str = str8_lit("heres some new text, because you pressed the button");
 		}
-		Text(str);
+		TextOld(str);
 		
 		Separator(7);
 		
@@ -3770,21 +3770,21 @@ void UI::DemoWindow(){DPZoneScoped;
 		if(Button(str8_lit("true on release"), UIButtonFlags_ReturnTrueOnRelease)){
 			str2 = str8_lit("this was changed on release");
 		}
-		Text(str2);
+		TextOld(str2);
 		
 		Separator(7);
 		
-		Text(str8_lit("Style Vars: "));
+		TextOld(str8_lit("Style Vars: "));
 		
 		persist u8 button_border_size_buff[7] = {};
-		Text(str8_lit("Button Border Size (f32): ")); SameLine();
+		TextOld(str8_lit("Button Border Size (f32): ")); SameLine();
 		if(InputText(str8_lit("demo_button_border_size"), button_border_size_buff, 7, str8_lit("1.0"), UIInputTextFlags_Numerical | UIInputTextFlags_AnyChangeReturnsTrue  | UIInputTextFlags_EnterReturnsTrue)){
 			style.buttonBorderSize = strtod((const char*)button_border_size_buff, 0);
 		}
 		
 		persist color button_border_color = style.colors[UIStyleCol_ButtonBorder];
-		Text(str8_lit("Style Colors: "));
-		Text(str8_lit("TODO button colors"));
+		TextOld(str8_lit("Style Colors: "));
+		TextOld(str8_lit("TODO button colors"));
 		
 		EndHeader();
 	}
@@ -3802,7 +3802,7 @@ void UI::DemoWindow(){DPZoneScoped;
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if(BeginHeader(str8_lit("Headers"))){
-		Text(str8_lit(
+		TextOld(str8_lit(
 					  "Headers automatically indent according to UIStyleVar_IndentAmount\n"
 					  "They also automatically adjust their width to the width of the window\n"
 					  "TODO(sushi) make a way to turn these off!"
@@ -3812,9 +3812,9 @@ void UI::DemoWindow(){DPZoneScoped;
 		
 		
 		if(BeginHeader(str8_lit("Header 1"))){
-			Text(str8_lit("some text in header 1"));
+			TextOld(str8_lit("some text in header 1"));
 			if(BeginHeader(str8_lit("Header 2"))){
-				Text(str8_lit("another nested header"));
+				TextOld(str8_lit("another nested header"));
 				EndHeader();
 			}
 			EndHeader();
@@ -3825,7 +3825,7 @@ void UI::DemoWindow(){DPZoneScoped;
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if(BeginHeader(str8_lit("Row"))){
-		Text(str8_lit(
+		TextOld(str8_lit(
 					  "UI::Row() aligns any other item in a row"
 					  ));
 		
@@ -3833,14 +3833,14 @@ void UI::DemoWindow(){DPZoneScoped;
 		
 		BeginRow(str8_lit("Demo_35135"), 3, 15);
 		RowSetupRelativeColumnWidths({ 1,1,1 });
-		Text(str8_lit("some text"));
+		TextOld(str8_lit("some text"));
 		Button(str8_lit("a button"));
 		Button(str8_lit("another button"));
 		EndRow();
 		
 		Separator(7);
 		
-		Text(str8_lit(
+		TextOld(str8_lit(
 					  "Rows aren't restricted to one Row, you can add as many items as you like as long as the amount of items is divisible by the amount of columns you made the Row with"
 					  ));
 		
@@ -3853,13 +3853,13 @@ void UI::DemoWindow(){DPZoneScoped;
 		
 		BeginRow(str8_lit("Demo_3541351"), 2, 30);
 		RowSetupColumnWidths({ 100, 100 });
-		Text(str8_lit("example of")); Text(str8_lit("aligning text"));
-		Text(str8_lit("evenly over")); Text(str8_lit("multiple rows"));
+		TextOld(str8_lit("example of")); TextOld(str8_lit("aligning text"));
+		TextOld(str8_lit("evenly over")); TextOld(str8_lit("multiple rows"));
 		EndRow();
 		
 		Separator(7);
 		
-		Text(str8_lit("you can change how items are aligned within row cells as well"));
+		TextOld(str8_lit("you can change how items are aligned within row cells as well"));
 		Slider(str8_lit("slider1"), &rowxalign, 0, 1); SameLine(); TextF(str8_lit("x align %g"), rowxalign);
 		Slider(str8_lit("slider2"), &rowyalign, 0, 1); SameLine(); TextF(str8_lit("y align %g"), rowyalign);
 		
@@ -3867,7 +3867,7 @@ void UI::DemoWindow(){DPZoneScoped;
 		
 		Separator(7);
 		
-		Text(str8_lit("Rows also allow you to use either persist or relative column widths"));
+		TextOld(str8_lit("Rows also allow you to use either persist or relative column widths"));
 		
 		Separator(7);
 		
@@ -3887,9 +3887,9 @@ void UI::DemoWindow(){DPZoneScoped;
 			case 0:{
 				BeginRow(str8_lit("Demo_1351351"), 3, 16);
 				RowSetupColumnWidths({ scw1, scw2, scw3 });
-				Text(str8_lit("text"));
-				Text(str8_lit("long text"));
-				Text(str8_lit("text"));
+				TextOld(str8_lit("text"));
+				TextOld(str8_lit("long text"));
+				TextOld(str8_lit("text"));
 				EndRow();
 				
 				Slider(str8_lit("demo_scw1"), &scw1, 0, 90); SameLine(); TextF(str8_lit("%g"), scw1);
@@ -3899,9 +3899,9 @@ void UI::DemoWindow(){DPZoneScoped;
 			case 1:{
 				BeginRow(str8_lit("Demo_66462"), 3, 16);
 				RowSetupRelativeColumnWidths({ dcw1, dcw2, dcw3 });
-				Text(str8_lit("text"));
-				Text(str8_lit("long text"));
-				Text(str8_lit("text"));
+				TextOld(str8_lit("text"));
+				TextOld(str8_lit("long text"));
+				TextOld(str8_lit("text"));
 				EndRow();
 				
 				Slider(str8_lit("demo_dcw1"), &dcw1, 1, 5); SameLine(); TextF(str8_lit("%g"), dcw1);
@@ -3917,27 +3917,27 @@ void UI::DemoWindow(){DPZoneScoped;
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if(BeginHeader(str8_lit("Child Windows"))){
-		Text(str8_lit("You can nest windows inside another one by using BeginChild"));
+		TextOld(str8_lit("You can nest windows inside another one by using BeginChild"));
 		
 		BeginChild(str8_lit("demochild"), Vec2(curwin->width - style.indentAmount, 300));
 		
-		Text(str8_lit("Heres some text in the child window"));
+		TextOld(str8_lit("Heres some text in the child window"));
 		
 		Separator(7);
 		
-		Text(str8_lit("Child windows have all the same functionality of base windows, save for a few TODOS"));
+		TextOld(str8_lit("Child windows have all the same functionality of base windows, save for a few TODOS"));
 		
 		Separator(7);
 		
 		persist Texture* tex = Storage::CreateTextureFromFile(str8_lit("lcdpix.png")).second;
 		
-		Text(str8_lit("heres a image in the child window:"));
+		TextOld(str8_lit("heres a image in the child window:"));
 		Image(tex);
 		
 		
 		
 		forI(15){
-			Text(str8_lit("heres a bunch of text in the child window"));
+			TextOld(str8_lit("heres a bunch of text in the child window"));
 		}
 		
 		Button(str8_lit("child window button"));
@@ -3951,7 +3951,7 @@ void UI::DemoWindow(){DPZoneScoped;
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if(BeginHeader(str8_lit("Combos"))){
-		Text(str8_lit("Combos are a huge TODO right now, but heres how they currently look"));
+		TextOld(str8_lit("Combos are a huge TODO right now, but heres how they currently look"));
 		
 		Separator(7);
 		
@@ -3972,15 +3972,15 @@ void UI::DemoWindow(){DPZoneScoped;
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if(BeginHeader(str8_lit("Style Variables"))){
-		Text(str8_lit("Adjusting these will adjust the base style variables of UI"));
+		TextOld(str8_lit("Adjusting these will adjust the base style variables of UI"));
 		Separator(7);
 		
-		Text(str8_lit("Window Padding (vec2)"));
+		TextOld(str8_lit("Window Padding (vec2)"));
 		Slider(str8_lit("demo_wpx"), &style.windowMargins.x, 0, 100);
 		SameLine();
 		Slider(str8_lit("demo_wpy"), &style.windowMargins.y, 0, 100);
 		
-		Text(str8_lit("Item Spacing (vec2)"));
+		TextOld(str8_lit("Item Spacing (vec2)"));
 		Slider(str8_lit("demo_isx"), &style.itemSpacing.x, 0, 100);
 		SameLine();
 		Slider(str8_lit("demo_isy"), &style.itemSpacing.y, 0, 100);

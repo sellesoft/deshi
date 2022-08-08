@@ -1994,7 +1994,7 @@ void DrawMeshesWindow() {DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	BeginChild(str8_lit("StorageBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
-	Text(str8_lit("TODO"));
+	TextOld(str8_lit("TODO"));
 	EndChild();
 }
 
@@ -2110,7 +2110,7 @@ void DrawTexturesWindow() {DPZoneScoped;
 		}
 		
 		string z = toStr(zoom);
-		Text(str8{(u8*)z.str, (s64)z.count});
+		TextOld(str8{(u8*)z.str, (s64)z.count});
 		
 		if (IsWinHovered()) {
 			SetPreventInputs();
@@ -2161,8 +2161,8 @@ void DrawMaterialsWindow(){DPZoneScoped;
 		
 		forI(st->materials.count) {
 			string s = toStr(i, "  ");
-			Text(str8{(u8*)s.str, (s64)s.count});
-			Text(str8_from_cstr(st->materials[i]->name));
+			TextOld(str8{(u8*)s.str, (s64)s.count});
+			TextOld(str8_from_cstr(st->materials[i]->name));
 		}
 		
 		EndRow();
@@ -2178,7 +2178,7 @@ void DrawModelsWindow(){DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	BeginChild(str8_lit("StorageBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
-	Text(str8_lit("TODO"));
+	TextOld(str8_lit("TODO"));
 	EndChild();
 }
 
@@ -2186,7 +2186,7 @@ void DrawFontsWindow(){DPZoneScoped;
 	using namespace UI;
 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	BeginChild(str8_lit("StorageBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
-	Text(str8_lit("TODO"));
+	TextOld(str8_lit("TODO"));
 	EndChild();
 }
 
