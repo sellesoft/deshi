@@ -72,6 +72,7 @@ struct ConsoleChunk{
 
 struct Logger;
 struct uiItem;
+struct Arena;
 struct Console{
 	ring_array<ConsoleChunk> dictionary;
 

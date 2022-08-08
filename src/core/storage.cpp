@@ -37,7 +37,7 @@ namespace Storage{
 ///////////////
 void Storage::
 Init(){DPZoneScoped;
-	DeshiStageInitStart(DS_STORAGE, DS_RENDER, "Attempted to initialize Logger module before initializing Render module");
+	DeshiStageInitStart(DS_STORAGE, DS_RENDER, "Attempted to initialize Storage module before initializing Render module");
 	
 	//create the storage directories if they don't exist already
 	file_create(str8_lit("data/fonts/"));
