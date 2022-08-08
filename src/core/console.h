@@ -42,6 +42,7 @@ non-formatted text {{a,c=blue,t=vulkan}blue text with a flashing background and 
 #include "kigu/ring_array.h"
 #include "kigu/unicode.h"
 #include "math/vector.h"
+#include "time.h"
 
 typedef Type ConsoleState; enum{
 	ConsoleState_Closed,
@@ -69,31 +70,46 @@ struct ConsoleChunk{
 	b32 newline;
 };
 
+struct Logger;
+struct uiItem;
 struct Console{
 	ring_array<ConsoleChunk> dictionary;
+
+	Logger* logger;
 	
 #define CONSOLE_INPUT_BUFFER_SIZE 1024
 	u8  input_buffer[CONSOLE_INPUT_BUFFER_SIZE]{};
 	s64 input_length = 0;
 	u8  prev_input[CONSOLE_INPUT_BUFFER_SIZE]{};
-	 u32 input_history_index = -1;
-	 ring_array<pair<u32,u32>> input_history;
+	u32 input_history_index = -1;
+	ring_array<pair<u32,u32>> input_history;
+
+	Arena* chunk_render_arena;
 	
-	b32 tag_show = true;
-	 b32 tag_highlighting = true;
-	 b32 tag_outlines = true;
+	b32 tag_show         = true;
+	b32 tag_highlighting = true;
+	b32 tag_outlines     = true;
 	b32 line_highlighing = true;
 	b32 automatic_scroll = true;
-	
+
 	ConsoleState state = ConsoleState_Closed;
-	f32 open_small_percent = 0.2f; //percentage of the height of the window to open to in small mode
-	 f32 open_max_percent = 0.7f;   //percentage of the height of the window to open to
-	 f32 open_amount = 0.0f;        //current open amount
-	 f32 open_target = 0.0f;        //target open amount
-	f32 open_dt = 200.0f;          //speed at which it opens
+	f32 open_small_percent = 0.2f;   //percentage of the height of the window to open to in small mode
+	f32 open_max_percent   = 0.7f;   //percentage of the height of the window to open to
+	f32 open_amount        = 0.0f;   //current open amount
+	f32 open_target        = 0.0f;   //target open amount
+	f32 open_dt            = 200.0f; //time it takes to open in ms
+	Stopwatch open_timer;
 	
 	vec2 console_pos;
 	vec2 console_dim;
+	b32 open_pressed     = false;
+	b32 scroll_to_bottom = false;
+
+	struct{
+		uiItem* main;
+		uiItem* buffer;
+		uiItem* input;
+	}ui;
 };
 
 void console_init();
