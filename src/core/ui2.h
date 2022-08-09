@@ -888,6 +888,8 @@ struct uiText{
 	uiItem item;
 	str8 text;
 	Text text0;
+	s64  select_offset; //the offset into the string that the mouse is selecting from
+	b32 selecting; //set true when user is selecting text from this item
 	array<pair<s64,vec2>> breaks;
 };
 #define uiGetText(x) CastFromMember(uiText, item, x)

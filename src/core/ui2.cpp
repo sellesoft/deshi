@@ -327,6 +327,10 @@ RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts
 	return {0,0};
 }
 
+b32 mouse_in_rect(vec2 pos, vec2 size){
+	return Math::PointInRectangle(input_mouse_position(), pos, size);
+}
+
 //@item
 void ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
@@ -1027,13 +1031,32 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	vec2 cursor = item->spos;
 	forI(data->breaks.count-1){
 		auto [idx, pos] = data->breaks[i];
-		counts+=render_make_text(vp, ip, counts,
-								 {data->text.str+idx, s64(data->breaks[i+1].first - data->breaks[i].first)}, 
-								 item->style.font,
-								 item->spos + pos, item->style.text_color,  
-								 vec2::ONE * item->style.font_height / item->style.font->max_height
-								 );
-		
+		cursor = pos+item->spos;
+		forX(j,data->breaks[i+1].first-idx){
+			vec2 csize = font_visual_size(item->style.font, {data->text0.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
+			if(idx+j > Min(data->select_offset, data->select_offset+data->text0.cursor.count) && idx+j < Max(data->select_offset, data->select_offset+data->text0.cursor.count)){
+				//render_make_rect()
+				counts+=render_make_text(vp,ip,counts,
+					{data->text0.buffer.str+idx+j,1}, item->style.font,
+					cursor, Color_Red,
+					vec2::ONE * item->style.font_height / item->style.font->max_height
+				);
+			}else{
+				counts+=render_make_text(vp, ip, counts,
+					{data->text0.buffer.str+idx+j,1}, 
+					item->style.font,
+					cursor, item->style.text_color,  
+					vec2::ONE * item->style.font_height / item->style.font->max_height
+				);
+				// counts+=render_make_text(vp, ip, counts,
+				// 	{data->text.str+idx, s64(data->breaks[j+1].first - data->breaks[i].first)}, 
+				// 	item->style.font,
+				// 	item->spos + pos, item->style.text_color,  
+				// 	vec2::ONE * item->style.font_height / item->style.font->max_height
+				// );
+			}
+			cursor.x += csize.x;
+		}
 	}
 }
 
@@ -1060,7 +1083,6 @@ void ui_eval_text(uiItem* item){
 	f32 yoffset = 0; //vertical offset from top left corner of item
 	while(scan){
 		DecodedCodepoint dc = str8_advance(&scan);
-		f32 xoffsetold=xoffset,yoffsetold=yoffset;
 		if(dc.codepoint == U'\n'){
 			width_since_last_word = 0;
 			yoffset+=item->style.font_height;
@@ -1080,7 +1102,6 @@ void ui_eval_text(uiItem* item){
 			width_since_last_word += cwidth;
 			xoffset += cwidth;
 		}
-		
 		if(do_wrapping && xoffset > wrapspace){
 			if(item->style.text_wrap == text_wrap_word){
 				xoffset = 0;
@@ -1120,17 +1141,65 @@ void ui_eval_text(uiItem* item){
 //performs checks on the text element for things like mouse selection
 //and copy when a selection is active
 void ui_update_text(uiItem* item){DPZoneScoped;
-	uiText* text = uiGetText(item);
+	uiText* data = uiGetText(item);
+	auto get_hovered_offset = [&]()->s32{
+		//we need to determine what character the mouse just clicked on 
+		vec2 mpl = input_mouse_position() - item->spos;
+		forX(i,data->breaks.count){
+			if(i!=data->breaks.count-1 && mpl.y > data->breaks[i].second.y + item->style.font_height) continue;
+			//breaks dont only happen on newlines, they happen for tabs too
+			//so we must make sure that if there is more than 1 break on this line we are inspecting the right one
+			for(int j=i; j<data->breaks.count; j++){
+				if(data->breaks[i].second.y!=data->breaks[j].second.y){
+					//dont want the cursor to go into newline stuff (probably)
+					if(*(data->text0.buffer.str + data->breaks[j].first - 1) == '\n'){
+						if(*(data->text0.buffer.str + data->breaks[j].first - 2) == '\r'){
+							return data->breaks[j].first - 3;
+						}else{
+							return data->breaks[j].first - 2;
+						}
+					}
+					return data->breaks[j].first - 1;
+				}
+				if(j==data->breaks.count-1){
+					//the last break doesnt actually have anything in it and just serves as a boundry
+					//if we reach this then we must have clicked beyond the very end
+					return data->breaks[j].first;
+				}
+				f32 xoffset = 0;
+				forX(k,data->breaks[j+1].first - data->breaks[j].first){
+					str8 c = {data->text0.buffer.str + data->breaks[j].first + k, 1};
+					f32 cw = font_visual_size(item->style.font, c).x * item->style.font_height / item->style.font->max_height;
+					if(data->breaks[j].second.x+xoffset < mpl.x &&  
+						data->breaks[j].second.x+xoffset+cw > mpl.x ){
+						return data->breaks[j].first + k;
+					}
+					xoffset+=cw;
+				}
+			}
+			return -1;
+		}
+		return -1;
+	};
+
 	if(g_ui->hovered == item){
 		if(input_lmouse_pressed()){
 			g_ui->active = item;
-		}
-		//we need to determine what character the mouse just clicked on 
-		forI(text->text0.buffer.count){
+			data->selecting = 1;
 			
+			data->select_offset = get_hovered_offset();
+			item->dirty = 1;
+			earlyout:;
 		}
-	}else if(g_ui->active == item){
-
+	}
+	if(data->selecting){
+		if(input_lmouse_released()){
+			data->selecting = 0;
+		}else{
+			u64 second_offset = get_hovered_offset();
+			data->text0.cursor.count = second_offset - data->select_offset;
+			item->dirty = 1;
+		}
 	}
 }
 
@@ -1142,6 +1211,7 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	setup.style = style;
 	setup.file = file;
 	setup.line = line;
+	setup.update = &ui_update_text;
 	setup.generate = &ui_gen_text;
 	setup.evaluate = &ui_eval_text;
 	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(text))};
@@ -1401,8 +1471,8 @@ void ui_debug_callback(uiItem* item){
 
 void ui_debug_panel_callback(uiItem* item){
 	if(Math::PointInRectangle(
-							  input_mouse_position(),
-							  item->spos + item->size.xComp() - Vec2(10,0), item->size.yComp() + Vec2(10, 0))){
+		input_mouse_position(),
+		item->spos + item->size.xComp() - Vec2(10,0), item->size.yComp() + Vec2(10, 0))){
 		
 	}
 	
