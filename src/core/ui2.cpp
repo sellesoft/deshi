@@ -1464,7 +1464,7 @@ void ui_eval_input_text(uiItem* item){DPZoneScoped;
 }
 
 void ui_update_input_text(uiItem* item){DPZoneScoped;
-
+	
 }
 
 uiItem* ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;

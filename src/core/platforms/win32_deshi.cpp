@@ -261,7 +261,7 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 			b32 upFlag = (HIWORD(lParam) & KF_UP) == KF_UP;              // transition-state flag, 1 on keyup
 			b32 repeatFlag = (HIWORD(lParam) & KF_REPEAT) == KF_REPEAT;  // previous key-state flag, 1 on autorepeat
 			u16 repeatCount = LOWORD(lParam);
-			
+
 			//these are probably unused for now
 			b32 altDownFlag  = (HIWORD(lParam) & KF_ALTDOWN)  == KF_ALTDOWN;   // ALT key was pressed
 			b32 dlgModeFlag  = (HIWORD(lParam) & KF_DLGMODE)  == KF_DLGMODE;   // dialog box is active
