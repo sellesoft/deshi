@@ -872,9 +872,7 @@ inline u32 checkbox_style_hash(uiItem* item){
 //---------------------------------------------------------------------------------------------
 // @text
 
-//uiText is a terminal node meaning it cannot have any children. If you dont pass a style var
-//the text will take on the default style, but will inherit text related properties from its parent
-//TODO(sushi) surely there is a nicer way to handle this?
+//uiText is a terminal node meaning it cannot have any children.
 UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
 //NOTE(sushi) does not automatically make a str8, use uiTextML for that.
 #define uiTextM(text)          UI_DEF(make_text((text),           0, STR8(__FILE__),__LINE__))
@@ -883,17 +881,51 @@ UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt lin
 #define uiTextML(text)         UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
 #define uiTextMSL(style, text) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
 
-
 struct uiText{
 	uiItem item;
-	str8 text;
-	Text text0;
-	s64  select_offset; //the offset into the string that the mouse is selecting from
-	b32 selecting; //set true when user is selecting text from this item
+	Text text;
+	struct{//extra information about the selection useful for rendering
+		b32 active; //set true when a selection is active on this uiText
+		u32 lines; //the amount of lines the selection passes over
+	}selection;
+	
 	array<pair<s64,vec2>> breaks;
 };
 #define uiGetText(x) CastFromMember(uiText, item, x)
 
+
+//---------------------------------------------------------------------------------------------
+// @inputtext
+
+UI_FUNC_API(uiItem*, ui_make_input_text, str8 preview, uiStyle* style, str8 file, upt line);
+#define uiInputTextM()                UI_DEF(make_input_text(    {0},       0, STR8(__FILE__),__LINE__))
+#define uiInputTextMS(style)          UI_DEF(make_input_text(    {0}, (style), STR8(__FILE__),__LINE__))
+#define uiInputTextMP(preview)        UI_DEF(make_input_text(preview,       0, STR8(__FILE__),__LINE__))
+#define uiInputTextMSP(style,preview) UI_DEF(make_input_text(preview, (style), STR8(__FILE__),__LINE__))
+
+enum{
+	input_cursor_line = 0,
+	input_cursor_underline,
+	input_cursor_rect,
+	input_cursor_filled_rect,
+};
+
+struct uiInputText{
+	uiItem item;
+	str8 preview;
+	Text text;
+	array<pair<s64,vec2>> breaks;
+
+	struct{
+		//b32 allow_multiline; TODO
+		struct{
+			color preview;
+			color cursor;
+		}colors;
+		Type cursor;
+	}style;
+};
+#define uiGetInputText(x) CastFromMember(uiInputText, item, x)
 
 //-------------------------------------------------------------------------------------------------
 // @context
