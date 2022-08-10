@@ -54,28 +54,30 @@ text_init(str8 init, Allocator* allocator = deshi_allocator){
 //moves the cursor right by one codepoint
 //returns how many bytes the cursor moved
 global u64
-text_move_cursor_right(Text* te, b32 select = 0){
-    if(te->cursor.pos == te->buffer.count) return 0;
-    DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
-    te->cursor.pos+=dc.advance;
+text_move_cursor_right(Text* t, b32 select = 0){
+    if(t->cursor.pos == t->buffer.count) return 0;
+    DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
+    t->cursor.pos+=dc.advance;
+    if(select) t->cursor.count -= dc.advance;
+    else       t->cursor.count = 0;
     return dc.advance;
 }
 
 //moves the cursor right by one word
 //returns how many bytes the cursor moved 
 global u64 
-text_move_cursor_right_word(Text* te, b32 select = 0){
-    s64 start = te->cursor.pos;
+text_move_cursor_right_word(Text* t, b32 select = 0){
+    s64 start = t->cursor.pos;
     u32 punc_codepoint = 0;
-    DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+    DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
     if(!isalnum(dc.codepoint)) punc_codepoint = dc.codepoint;
     while(1){
-        if(!text_move_cursor_right(te, select)) break;
-        DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+        if(!text_move_cursor_right(t, select)) break;
+        DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
         if     ( punc_codepoint && dc.codepoint != punc_codepoint) break;
         else if(!punc_codepoint && !isalnum(dc.codepoint) && dc.codepoint != U'_') break;
     }
-    return abs(start-te->cursor.pos);
+    return abs(start-t->cursor.pos);
 }
 
 //moves the cursor right by one wordpart
@@ -86,115 +88,175 @@ text_move_cursor_right_word(Text* te, b32 select = 0){
 //            aPPLESoRANGESaNDbANANAS - will stop before each capital that is followed by a lowercase letter
 //                 ^      ^  ^       it will place the cursor before these characters
 global u64
-text_move_cursor_right_wordpart(Text* te, b32 select = 0){
-    s64 start = te->cursor.pos;
+text_move_cursor_right_wordpart(Text* t, b32 select = 0){
+    s64 start = t->cursor.pos;
     u32 punc_codepoint = 0;
     b32 caps = 0;
-    DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+    DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
     if     (!isalnum(dc.codepoint)) punc_codepoint = dc.codepoint;
     else if( isupper(dc.codepoint)) caps = 1; 
     while(1){
-        if(!text_move_cursor_right(te, select)) break;
-        DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+        if(!text_move_cursor_right(t, select)) break;
+        DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
         if     ( punc_codepoint && dc.codepoint != punc_codepoint) break;
         else if(!punc_codepoint && !isalnum(dc.codepoint) && dc.codepoint != U'_') break;
         else if( caps           && !isupper(dc.codepoint)) break;
         else if(!caps           &&  isupper(dc.codepoint)) break;
     }
-    return abs(start-te->cursor.pos);
+    return abs(start-t->cursor.pos);
 }
 
 global u64
-text_move_cursor_left(Text* te, Flags flags = 0){
-    if(!te->cursor.pos) return 0;
-    s64 save = te->cursor.pos;
-    while(utf8_continuation_byte(*(te->buffer.str+te->cursor.pos))) te->cursor.pos--;
-    te->cursor.pos--;
-    return abs(save - te->cursor.pos);
+text_move_cursor_left(Text* t, b32 select = 0){
+    if(!t->cursor.pos) return 0;
+    s64 start = t->cursor.pos;
+    while(utf8_continuation_byte(*(t->buffer.str+t->cursor.pos))) t->cursor.pos--;
+    t->cursor.pos--;
+    if(select) t->cursor.count += abs(start - t->cursor.pos);
+    else       t->cursor.count = 0;
+    return abs(start - t->cursor.pos);
 }
 
 //moves the cursor left by one word
 //returns how many bytes the cursor moved 
 global u64 
-text_move_cursor_left_word(Text* te, b32 select = 0){
-    s64 start = te->cursor.pos;
+text_move_cursor_left_word(Text* t, b32 select = 0){
+    s64 start = t->cursor.pos;
     u32 punc_codepoint = 0;
-    DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+    DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
     if(!isalnum(dc.codepoint)) punc_codepoint = dc.codepoint;
     while(1){
-        if(!text_move_cursor_left(te, select)) break;
-        DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+        if(!text_move_cursor_left(t, select)) break;
+        DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
         if     ( punc_codepoint && dc.codepoint != punc_codepoint) break;
         else if(!punc_codepoint && !isalnum(dc.codepoint) && dc.codepoint != U'_') break;
     }
-    return abs(start-te->cursor.pos);
+    return abs(start-t->cursor.pos);
 }
 
 //moves the cursor left by one wordpart
 //returns how many bytes the cursor moved
 //TODO(sushi) see text_move_cursor_right_wordpart's TODO
 global u64
-text_move_cursor_left_wordpart(Text* te, b32 select = 0){
-    s64 start = te->cursor.pos;
+text_move_cursor_left_wordpart(Text* t, b32 select = 0){
+    s64 start = t->cursor.pos;
     u32 punc_codepoint = 0;
     b32 caps = 0;
-    DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+    DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
     if     (!isalnum(dc.codepoint)) punc_codepoint = dc.codepoint;
     else if( isupper(dc.codepoint)) caps = 1; 
     while(1){
-        if(!text_move_cursor_left(te, select)) break;
-        DecodedCodepoint dc = decoded_codepoint_from_utf8(te->buffer.str+te->cursor.pos, 4);
+        if(!text_move_cursor_left(t, select)) break;
+        DecodedCodepoint dc = decoded_codepoint_from_utf8(t->buffer.str+t->cursor.pos, 4);
         if     ( punc_codepoint && dc.codepoint != punc_codepoint) break;
         else if(!punc_codepoint && !isalnum(dc.codepoint) && dc.codepoint != U'_') break;
         else if( caps           && !isupper(dc.codepoint)) break;
         else if(!caps           &&  isupper(dc.codepoint)) break;
     }
-    return abs(start-te->cursor.pos);
+    return abs(start-t->cursor.pos);
 }
 
 //deletes the selection
 global void
-text_delete_selection(Text* te){
-    if(!te->cursor.count) return;
-    u64 offset = Min(te->cursor.pos, te->cursor.pos + te->cursor.count);
-    while(te->cursor.count){
-        te->cursor.count -= str8_builder_remove_codepoint_at_byteoffset(&te->buffer,offset);
+text_delete_selection(Text* t){
+    if(!t->cursor.count) return;
+    if(t->cursor.count < 0){
+        t->cursor.pos += t->cursor.count;
+        t->cursor.count *= -1;
+    }
+    //u64 offset = Min(t->cursor.pos, t->cursor.pos + t->cursor.count);
+    while(t->cursor.count){
+        t->cursor.count -= str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
     }
 }
 
 //deletes the character to the right of the cursor
 //if there is a selection it will just delete the selection instead
 global void
-text_delete_right(Text* te){
-    if(te->cursor.count) return (void)text_delete_selection(te);
-    if(te->cursor.pos == te->buffer.count) return; 
-    str8_builder_remove_codepoint_at_byteoffset(&te->buffer,te->cursor.pos);
+text_delete_right(Text* t){
+    if(t->cursor.count) return (void)text_delete_selection(t);
+    if(t->cursor.pos == t->buffer.count) return; 
+    str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+}
+
+//deletes the word to the right of the cursor
+//if there is a selection it will just delete the selection instead
+global void
+text_delete_right_word(Text* t){
+    if(t->cursor.count) return (void)text_delete_selection(t);
+    if(t->cursor.pos == t->buffer.count) return; 
+    u64 save = t->cursor.pos;
+    u64 ndel = text_move_cursor_right_word(t);
+    forI(ndel){
+        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,save);
+    }
+    t->cursor.pos = save;
+}
+
+//deletes the wordpart to the right of the cursor
+//if there is a selection it will just delete the selection instead
+global void
+text_delete_right_wordpart(Text* t){
+    if(t->cursor.count) return (void)text_delete_selection(t);
+    if(t->cursor.pos == t->buffer.count) return; 
+    u64 save = t->cursor.pos;
+    u64 ndel = text_move_cursor_right_wordpart(t);
+    forI(ndel){
+        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,save);
+    }
+    t->cursor.pos = save;
 }
 
 //deletes the character to the left of the cursor
 //if there is a selection it will just delete the selection instead
 global void
-text_delete_left(Text* te){
-    if(te->cursor.count) return (void)text_delete_selection(te);
-    if(!te->cursor.pos) return;
-    text_move_cursor_left(te);
-    text_delete_right(te);
+text_delete_left(Text* t){
+    if(t->cursor.count) return (void)text_delete_selection(t);
+    if(!t->cursor.pos) return;
+    text_move_cursor_left(t);
+    text_delete_right(t);
 }
+
+//deletes the character to the left of the cursor
+//if there is a selection it will just delete the selection instead
+global void
+text_delete_left_word(Text* t){
+    if(t->cursor.count) return (void)text_delete_selection(t);
+    if(!t->cursor.pos) return;
+    u64 ndel = text_move_cursor_left_word(t);
+    forI(ndel){
+        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+    }
+}
+
+//deletes the character to the left of the cursor
+//if there is a selection it will just delete the selection instead
+global void
+text_delete_left_wordpart(Text* t){
+    if(t->cursor.count) return (void)text_delete_selection(t);
+    if(!t->cursor.pos) return;
+    u64 ndel = text_move_cursor_left_wordpart(t);
+    forI(ndel){
+        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+    }
+}
+
 
 //inserts the given string 's' at the cursor
 //if there is a selection it overwrites it with 's'
 global void
-text_insert_string(Text* te, str8 s){
-    if(te->cursor.count) text_delete_selection(te);
-    if(te->buffer.count + s.count < te->buffer.space) str8_builder_grow(&te->buffer, s.count);
-    str8_builder_insert_byteoffset(&te->buffer,te->cursor.pos,s);
+text_insert_string(Text* t, str8 s){
+    if(t->cursor.count) text_delete_selection(t);
+    if(t->buffer.count + s.count < t->buffer.space) str8_builder_grow(&t->buffer, s.count);
+    str8_builder_insert_byteoffset(&t->buffer,t->cursor.pos,s);
+    t->cursor.pos += s.count;
 }
 
 //returns a str8 of the Text's selection
 global str8
-text_get_selection(Text* te){
-    u64 offset = Min(te->cursor.pos,te->cursor.pos+te->cursor.count);
-    return str8{te->buffer.str + offset, abs(te->cursor.count)};
+text_get_selection(Text* t){
+    u64 offset = Min(t->cursor.pos,t->cursor.pos+t->cursor.count);
+    return str8{t->buffer.str + offset, abs(t->cursor.count)};
 }
 
 //completely clears the Text's buffer and resets its information
