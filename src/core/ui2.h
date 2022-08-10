@@ -501,6 +501,36 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 #define PaddedStyleHeight(item)   ((item)->style.height - (item)->style.padding_top - (item)->style.padding_bottom)
 #define PaddedStyleArea(item)     (vec2{PaddedStyleWidth(item), PaddedStyleHeight(item)})
 
+// a singleton collection of keybinds for use throughout ui
+struct uiKeybinds{
+	struct{
+		struct{
+			KeyCode left;
+			KeyCode left_word;
+			KeyCode left_wordpart;
+
+			KeyCode right;
+			KeyCode right_word;
+			KeyCode right_wordpart;
+
+			KeyCode up;
+			KeyCode down;
+    		
+			//KeyCode anchor;
+		}cursor, select;
+
+		struct{
+			KeyCode left;
+			KeyCode left_word;
+			KeyCode left_wordpart;
+
+			KeyCode right;
+			KeyCode right_word;
+			KeyCode right_wordpart;
+		}del;
+	}inputtext;
+}global uikeys;
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @item
@@ -618,19 +648,19 @@ external struct uiStyle{
 		struct{f32 scrx, scry;};
 		vec2 scroll;
 	};
-	vec2  content_align; 
-	Font* font;
-	u32   font_height;
 	color background_color;
 	Type  border_style;
 	color border_color;
 	f32   border_width;
-	color text_color;
-	Type  overflow;
-	b32   focus;
+	Font* font;
+	u32   font_height;
 	Type  text_wrap;
+	color text_color;
 	u64   tab_spaces;
+	b32   focus;
 	Type  display;
+	Type  overflow;
+	vec2  content_align; 
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
@@ -701,10 +731,8 @@ struct uiItem{
 	//size of the item in memory and the offset of the item member on widgets 
 	u64 memsize;
 	
-	//any extra data that a uiItem can allocate beyond its size
-	//this data is used by special items such as uiText and uiSlider
-	void* trailing_data;
-	u64 trailing_data_size;
+	//indicates if the item has been initialized or not yet
+	b32 initialized; 
 	
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
@@ -884,11 +912,8 @@ UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt lin
 struct uiText{
 	uiItem item;
 	Text text;
-	struct{//extra information about the selection useful for rendering
-		b32 active; //set true when a selection is active on this uiText
-		u32 lines; //the amount of lines the selection passes over
-	}selection;
-	
+	b32 selecting;
+	//TODO(sushi) get rid of array here
 	array<pair<s64,vec2>> breaks;
 };
 #define uiGetText(x) CastFromMember(uiText, item, x)
@@ -912,8 +937,10 @@ enum{
 
 struct uiInputText{
 	uiItem item;
-	str8 preview;
-	Text text;
+	str8   preview;
+	Text   text;
+	b32    selecting;
+	//TODO(sushi) get rid of array here
 	array<pair<s64,vec2>> breaks;
 
 	struct{

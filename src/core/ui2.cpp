@@ -152,7 +152,7 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 
 //@helpers
 #define item_error(item, ...)\
-LogE("ui","Error on item created in ", (item)->file_created, " on line ", (item)->line_created, ": ", __VA_ARGS__);
+LogE("ui",CyanFormatComma((item)->file_created), ":", (item)->line_created, ":", RedFormatComma("item error"), ": ", __VA_ARGS__);
 
 struct uiItemSetup{
 	upt size; 
@@ -169,7 +169,8 @@ struct uiItemSetup{
 	u32 drawcmd_count;
 };
 
-uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
+//optionally takes a pointer to a boolean to indicate if the item was retrieved from the cache
+uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 	if(g_ui->updating){
 		LogE("ui", 
 			 "In file, ", setup.file, " on line ", setup.line, ": ui_setup_item() was called during ui_update().\n",
@@ -183,13 +184,13 @@ uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
 
 	//initialize the item in memory or retrieve it from cache if it already exists
 	uiItem* item;
-	b32 retrieved = 0;
+	b32 retrieved_ = 0;
 	if(g_ui->immediate.active){
 		u64 hash = str8_hash64(setup.file) ^ setup.line;
 		//load item from immediate cache if it has been made before
 		if(g_ui->immediate.cache.has(hash)){
 			item = *g_ui->immediate.cache.at(hash);
-			retrieved = 1;
+			retrieved_ = 1;
 		}else{
 			item = (uiItem*)memalloc(setup.size);
 			g_ui->immediate.cache.add(hash, item);
@@ -202,16 +203,17 @@ uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
 	}
 	item->memsize = setup.size;
 	
-	if(retrieved){
+	if(retrieved_){
 		//at this time, a retrieved item must always be reevaluated and regenerated.
 		item->dirty = 1;
+		if(retrieved) *retrieved = 1;
 	}
 	
 	uiItem* curitem = *g_ui->item_stack.last;
 	
 	insert_last(&curitem->node, &item->node);
 	
-	if(!retrieved){
+	if(!retrieved_){
 		if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
 		else{
 			//set to default 0, but inherit parent's text properties
@@ -236,7 +238,7 @@ uiItem* ui_setup_item(uiItemSetup setup){DPZoneScoped;
 	//for now, a cached items drawcmds are always regenerated
 	//TODO(sushi) eventually we should only do this if we need to, that or we can put a rule on items that their drawcmd count should never
 	//            after initial creation, though this is limiting
-	if(retrieved){
+	if(retrieved_){
 		forI(item->drawcmd_count){
 			drawcmd_remove(item->drawcmds + i);
 		}
@@ -461,7 +463,34 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->base.id = STR8("base");
 	g_ui->base.style_hash = hash_style(&g_ui->base);
 	push_item(&g_ui->base);
-	
+
+	//setup default keybinds
+	//TODO(sushi) export these to a config file and load them instead
+	uikeys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
+	uikeys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
+	uikeys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
+	uikeys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
+	uikeys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
+	uikeys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
+	uikeys.inputtext.cursor.            up = Key_UP    | InputMod_None;
+	uikeys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
+
+	uikeys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
+	uikeys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
+	uikeys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
+	uikeys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
+	uikeys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
+	uikeys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
+	uikeys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
+	uikeys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
+
+	uikeys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
+	uikeys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
+	uikeys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
+	uikeys.inputtext.del.            right = Key_DELETE    | InputMod_None;
+	uikeys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
+	uikeys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
+
 	//g_ui->render_buffer = render_create_external_2d_buffer(Megabytes(1), Megabytes(1));
 }
 
@@ -931,11 +960,11 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
 			render_add_vertices2(5, 		
-								 (Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
-								 item->drawcmds[i].counts.vertices, 
-								 (u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
-								 item->drawcmds[i].counts.indices
-								 );
+				(Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
+				item->drawcmds[i].counts.vertices, 
+				(u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
+				item->drawcmds[i].counts.indices
+			);
 		}
 	}
 	
@@ -1004,241 +1033,6 @@ void ui_update(){DPZoneScoped;
 	@widgets
 
 */
-
-//---------------------------------------------------------------------------------------------------------------------
-// @text
-void ui_gen_text(uiItem* item){DPZoneScoped;
-	RenderDrawCounts counts = {0};
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiText* data = uiGetText(item);
-	
-	dc->texture = item->style.font->tex;
-	
-	//if there is an active selection we need to figure out how to render the selection boxes
-	//TODO(sushi) this kind of sucks because it means we do this pass twice when a selection is active
-	//            try and find a way to do this by gathering information as update happens 
-	u32 selection_lines = 0;
-	if(data->selection.active){
-		//TODO(sushi) finish implementing this
-		// s32 break_start = -1;
-		// forI(data->breaks.count-1){
-		// 	if(break_start != -1 && data->breaks[i].first > data->text.cursor.pos){
-		// 		break_start = i-1;
-		// 	}else if(data->breaks[i].first > data->selection){
-
-		// 	}		
-
-		// }
-	}
-
-
-	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
-	if(nucounts.vertices > dc->counts.vertices || nucounts.indices > dc->counts.indices){
-	    item->drawcmds = make_drawcmd(1);
-		drawcmd_remove(dc);
-		dc = item->drawcmds;
-		drawcmd_alloc(dc, nucounts);
-	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	}
-
-
-
-	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-	vec2 cursor = item->spos;
-	forI(data->breaks.count-1){
-		auto [idx, pos] = data->breaks[i];
-		cursor = pos+item->spos;
-		forX(j,data->breaks[i+1].first-idx){
-			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
-			if(idx+j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count) && idx+j < Max(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)){
-				//render_make_rect()
-				counts+=render_make_text(vp,ip,counts,
-					{data->text.buffer.str+idx+j,1}, item->style.font,
-					cursor, Color_Red,
-					vec2::ONE * item->style.font_height / item->style.font->max_height
-				);
-			}else{
-				counts+=render_make_text(vp, ip, counts,
-					{data->text.buffer.str+idx+j,1}, 
-					item->style.font,
-					cursor, item->style.text_color,  
-					vec2::ONE * item->style.font_height / item->style.font->max_height
-				);
-			}
-			cursor.x += csize.x;
-		}
-	}
-}
-
-void ui_eval_text(uiItem* item){
-	if(!item->style.font){
-		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on one of its ancestors.");
-	}
-	
-	uiItem* parent = uiItemFromNode(item->node.parent);
-	
-	b32 do_wrapping = (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto));
-	
-	f32 wrapspace = PaddedWidth(parent);//parent->width - parent->style.padding_left - parent->style.padding_right;
-	
-	uiText* data = uiGetText(item);
-	data->breaks.clear();
-	data->breaks.add({0,{0,0}});
-	
-	str8 last_space_or_tab = data->text.buffer.fin;
-	str8 scan = data->text.buffer.fin;
-	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-	f32 width_since_last_word = 0;
-	f32 xoffset = 0; //horizonal offset from top left corner of item
-	f32 yoffset = 0; //vertical offset from top left corner of item
-	while(scan){
-		DecodedCodepoint dc = str8_advance(&scan);
-		if(dc.codepoint == U'\n'){
-			width_since_last_word = 0;
-			yoffset+=item->style.font_height;
-			xoffset=0;
-			data->breaks.add({scan.str-data->text.buffer.str, {xoffset,yoffset}});
-		}else if(dc.codepoint == U'\t'){
-			width_since_last_word = 0;
-			xoffset+=item->style.tab_spaces*space_width;
-			last_space_or_tab = scan;
-			data->breaks.add({scan.str-data->text.buffer.str, {xoffset,yoffset}});
-		}else if(dc.codepoint == U' '){
-			width_since_last_word = 0;
-			last_space_or_tab = scan;
-			xoffset += space_width;
-		}else{
-			f32 cwidth = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
-			width_since_last_word += cwidth;
-			xoffset += cwidth;
-		}
-		if(do_wrapping && xoffset > wrapspace){
-			if(item->style.text_wrap == text_wrap_word){
-				xoffset = 0;
-				yoffset += item->style.font_height;
-				//if we are wrapping where a break already is, we dont need to make another break, just adjust it
-				if(last_space_or_tab.str - data->text.buffer.str == data->breaks.last->first){
-					data->breaks.last->second = {xoffset,yoffset};
-				}else if(last_space_or_tab.str - data->text.buffer.str > data->breaks.last->first){
-					data->breaks.add({last_space_or_tab.str - data->text.buffer.str, {xoffset,yoffset}});
-				}
-				xoffset = width_since_last_word;
-			}else if(item->style.text_wrap == text_wrap_char){
-				xoffset = 0;
-				yoffset += item->style.font_height;
-				
-				if(dc.codepoint == '\t'){
-					data->breaks.last->second.y = yoffset;
-					data->breaks.last->second.x = 0;
-				}else{
-					if(scan.str - dc.advance - data->text.buffer.str > data->breaks.last->first){
-						data->breaks.add({scan.str-dc.advance-data->text.buffer.str, {xoffset,yoffset}});
-					}else if(scan.str - dc.advance - data->text.buffer.str == data->breaks.last->first){
-						data->breaks.last->second.y = yoffset;
-						data->breaks.last->second.x = 0;
-					}
-				}
-				
-				xoffset = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
-			}
-		}
-		item->width = Max(item->width, xoffset);
-		item->height = yoffset + item->style.font_height;
-	}
-	data->breaks.add({data->text.buffer.count, {xoffset,yoffset}});
-}
-
-//performs checks on the text element for things like mouse selection
-//and copy when a selection is active
-void ui_update_text(uiItem* item){DPZoneScoped;
-	uiText* data = uiGetText(item);
-	
-	//finds the offset into the text's buffer that the mouse is hovered over 
-	auto get_hovered_offset = [&]()->s32{
-		if(item->style.font->type == FontType_TTF) {
-			LogW("ui", "ui_update_text() is not tested on non monospace fonts! Selection may not work properly, if it does come delete this please.");
-		}
-		vec2 mpl = input_mouse_position() - item->spos;
-		forX(i,data->breaks.count){
-			if(i!=data->breaks.count-1 && mpl.y > data->breaks[i].second.y + item->style.font_height) continue;
-			//breaks dont only happen on newlines, they happen for tabs too
-			//so we must make sure that if there is more than 1 break on this line we are inspecting the right one
-			for(int j=i; j<data->breaks.count; j++){
-				if(data->breaks[i].second.y!=data->breaks[j].second.y){
-					//dont want the cursor to go into newline stuff (probably)
-					if(*(data->text.buffer.str + data->breaks[j].first - 1) == '\n'){
-						if(*(data->text.buffer.str + data->breaks[j].first - 2) == '\r'){
-							return data->breaks[j].first - 3;
-						}else{
-							return data->breaks[j].first - 2;
-						}
-					}
-					return data->breaks[j].first - 1;
-				}
-				if(j==data->breaks.count-1){
-					//the last break doesnt actually have anything in it and just serves as a boundry
-					//if we reach this then we must have clicked beyond the very end
-					return data->breaks[j].first;
-				}
-				//iterate over individual characters in the break until we're under the mouse 
-				f32 xoffset = 0;
-				forX(k,data->breaks[j+1].first - data->breaks[j].first){
-					str8 c = {data->text.buffer.str + data->breaks[j].first + k, 1};
-					f32 cw = font_visual_size(item->style.font, c).x * item->style.font_height / item->style.font->max_height;
-					if(data->breaks[j].second.x+xoffset < mpl.x &&  
-						data->breaks[j].second.x+xoffset+cw > mpl.x ){
-						return data->breaks[j].first + k;
-					}
-					xoffset+=cw;
-				}
-			}
-			return -1;
-		}
-		return -1;
-	};
-
-	if(g_ui->hovered == item && input_lmouse_pressed()){
-		g_ui->active = item;
-		data->text.cursor.pos = get_hovered_offset();
-		item->dirty = 1;
-	}
-	if(data->selection.active){
-		if(input_lmouse_released()){
-			if(!data->text.cursor.count){
-				data->selection.active = 0;
-			}
-		}else if(input_lmouse_down()){
-			u64 second_offset = get_hovered_offset();
-			data->text.cursor.count = second_offset - data->text.cursor.pos;
-			item->dirty = 1;
-		}
-	}
-}
-
-uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItemSetup setup = {0};
-	setup.size = sizeof(uiText);
-	setup.style = style;
-	setup.file = file;
-	setup.line = line;
-	setup.update = &ui_update_text;
-	setup.generate = &ui_gen_text;
-	setup.evaluate = &ui_eval_text;
-	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(text))};
-	setup.drawinfo_reserve = counts;
-	setup.drawcmd_count = 1;
-	
-	uiItem* item = ui_setup_item(setup);
-	uiText* data = (uiText*)item;
-	
-	data->text = text_init(text);
-	data->breaks.allocator = deshi_allocator;
-	
-	return item;
-}
 
 //---------------------------------------------------------------------------------------------------------------------
 // @slider
@@ -1453,18 +1247,387 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+// @text
+
+//common functionality between uiText and uiInputText
+//NOTE(sushi) I would like to avoid this and instead inherit uiText into uiInputText, so uiInputText can just act as an extension 
+//            of uiText. The way the API is setup right now doesn't really allow for this, at least not in any nice way.
+//            It may be better to keep them separate however.
+
+void find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping){DPZoneScoped;
+	breaks->clear();
+	breaks->add({0,{0,0}});
+	str8 last_space_or_tab = text.buffer.fin;
+	str8 scan = text.buffer.fin;
+	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+	f32 width_since_last_word = 0;
+	f32 xoffset = 0; //horizonal offset from top left corner of item
+	f32 yoffset = 0; //vertical offset from top left corner of item
+	while(scan){
+		DecodedCodepoint dc = str8_advance(&scan);
+		if(dc.codepoint == U'\n'){
+			width_since_last_word = 0;
+			yoffset+=item->style.font_height;
+			xoffset=0;
+			breaks->add({scan.str-text.buffer.str, {xoffset,yoffset}});
+		}else if(dc.codepoint == U'\t'){
+			width_since_last_word = 0;
+			xoffset+=item->style.tab_spaces*space_width;
+			last_space_or_tab = scan;
+			breaks->add({scan.str-text.buffer.str, {xoffset,yoffset}});
+		}else if(dc.codepoint == U' '){
+			width_since_last_word = 0;
+			last_space_or_tab = scan;
+			xoffset += space_width;
+		}else{
+			f32 cwidth = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+			width_since_last_word += cwidth;
+			xoffset += cwidth;
+		}
+		if(do_wrapping && xoffset > wrapspace){
+			if(item->style.text_wrap == text_wrap_word){
+				xoffset = 0;
+				yoffset += item->style.font_height;
+				//if we are wrapping where a break already is, we dont need to make another break, just adjust it
+				if(last_space_or_tab.str - text.buffer.str == breaks->last->first){
+					breaks->last->second = {xoffset,yoffset};
+				}else if(last_space_or_tab.str - text.buffer.str > breaks->last->first){
+					breaks->add({last_space_or_tab.str - text.buffer.str, {xoffset,yoffset}});
+				}
+				xoffset = width_since_last_word;
+			}else if(item->style.text_wrap == text_wrap_char){
+				xoffset = 0;
+				yoffset += item->style.font_height;
+				
+				if(dc.codepoint == '\t'){
+					breaks->last->second.y = yoffset;
+					breaks->last->second.x = 0;
+				}else{
+					if(scan.str - dc.advance - text.buffer.str > breaks->last->first){
+						breaks->add({scan.str-dc.advance-text.buffer.str, {xoffset,yoffset}});
+					}else if(scan.str - dc.advance - text.buffer.str == breaks->last->first){
+						breaks->last->second.y = yoffset;
+						breaks->last->second.x = 0;
+					}
+				}
+				
+				xoffset = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
+			}
+		}
+		item->width = Max(item->width, xoffset);
+		item->height = yoffset + item->style.font_height;
+	}
+	breaks->add({text.buffer.count, {xoffset,yoffset}});
+}
+
+s64 find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){DPZoneScoped;
+	if(item->style.font->type == FontType_TTF) {
+		LogW("ui", "find_hovered_offset() is not tested on non monospace fonts! Selection may not work properly, if it does come delete this please.");
+	}
+	vec2 mpl = input_mouse_position() - item->spos;
+	forX(i,breaks.count){
+		if(i!=breaks.count-1 && mpl.y > breaks[i].second.y + item->style.font_height) continue;
+		//breaks dont only happen on newlines, they happen for tabs too
+		//so we must make sure that if there is more than 1 break on this line we are inspecting the right one
+		for(int j=i; j<breaks.count; j++){
+			if(breaks[i].second.y!=breaks[j].second.y){
+				//dont want the cursor to go into newline stuff (probably)
+				if(*(text.buffer.str + breaks[j].first - 1) == '\n'){
+					if(*(text.buffer.str + breaks[j].first - 2) == '\r'){
+						return breaks[j].first - 3;
+					}else{
+						return breaks[j].first - 2;
+					}
+				}
+				return breaks[j].first - 1;
+			}
+			if(j==breaks.count-1){
+				//the last break doesnt actually have anything in it and just serves as a boundry
+				//if we reach this then we must have clicked beyond the very end
+				return breaks[j].first;
+			}
+			//iterate over individual characters in the break until we're under the mouse 
+			f32 xoffset = 0;
+			forX(k,breaks[j+1].first - breaks[j].first){
+				str8 c = {text.buffer.str + breaks[j].first + k, 1};
+				f32 cw = font_visual_size(item->style.font, c).x * item->style.font_height / item->style.font->max_height;
+				if(breaks[j].second.x+xoffset < mpl.x &&  
+					breaks[j].second.x+xoffset+cw > mpl.x ){
+					return breaks[j].first + k;
+				}
+				xoffset+=cw;
+			}
+		}
+		return -1;
+	}
+	return -1;
+}
+
+RenderDrawCounts render_ui_text(RenderDrawCounts counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks){DPZoneScoped;
+	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+	vec2 cursor = item->spos;
+	forI(breaks.count-1){
+		auto [idx, pos] = breaks[i];
+		cursor = pos+item->spos;
+		forX(j,breaks[i+1].first-idx){
+			vec2 csize = font_visual_size(item->style.font, {text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
+			if(idx+j > Min(text.cursor.pos, text.cursor.pos+text.cursor.count) && idx+j < Max(text.cursor.pos, text.cursor.pos+text.cursor.count)){
+				//render_make_rect()
+				counts+=render_make_text(vp,ip,counts,
+					{text.buffer.str+idx+j,1}, item->style.font,
+					cursor, Color_Red,
+					vec2::ONE * item->style.font_height / item->style.font->max_height
+				);
+			}else{
+				counts+=render_make_text(vp, ip, counts,
+					{text.buffer.str+idx+j,1}, 
+					item->style.font,
+					cursor, item->style.text_color,  
+					vec2::ONE * item->style.font_height / item->style.font->max_height
+				);
+			}
+			cursor.x += csize.x;
+		}
+	}
+	return counts;
+}
+
+
+void ui_gen_text(uiItem* item){DPZoneScoped;
+	RenderDrawCounts counts = {0};
+	uiDrawCmd* dc = item->drawcmds;
+	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	uiText* data = uiGetText(item);
+	
+	dc->texture = item->style.font->tex;
+	
+	//if there is an active selection we need to figure out how to render the selection boxes
+	//TODO(sushi) this kind of sucks because it means we do this pass twice when a selection is active
+	//            try and find a way to do this by gathering information as update happens 
+	u32 selection_lines = 0;
+	if(data->text.cursor.count){
+		//TODO(sushi) finish implementing this
+		// s32 break_start = -1;
+		// forI(data->breaks.count-1){
+		// 	if(break_start != -1 && data->breaks[i].first > data->text.cursor.pos){
+		// 		break_start = i-1;
+		// 	}else if(data->breaks[i].first > data->selection){
+
+		// 	}		
+
+		// }
+	}
+
+	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
+	if(nucounts.vertices != dc->counts.vertices || nucounts.indices != dc->counts.indices){
+	    item->drawcmds = make_drawcmd(1);
+		drawcmd_remove(dc);
+		dc = item->drawcmds;
+		drawcmd_alloc(dc, nucounts);
+		dc->texture = item->style.font->tex;
+	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	}
+
+	counts+=render_ui_text(counts,dc,vp,ip,item,data->text,{data->breaks.data,data->breaks.count});
+}
+
+
+void ui_eval_text(uiItem* item){
+	if(!item->style.font){
+		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on one of its ancestors.");
+		return;
+	}
+	uiItem* parent = uiItemFromNode(item->node.parent);
+	uiText* data = uiGetText(item);
+	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)));
+}
+
+//performs checks on the text element for things like mouse selection
+//and copy when a selection is active
+void ui_update_text(uiItem* item){DPZoneScoped;
+	uiText* data = uiGetText(item);
+	
+	if(g_ui->hovered == item && input_lmouse_pressed()){
+		g_ui->active = item;
+		data->text.cursor.pos = find_hovered_offset({data->breaks.data,data->breaks.count},item,data->text);
+		data->selecting = 1;
+		item->dirty = 1;
+	}
+	if(data->selecting){
+		if(input_lmouse_released()){
+			if(!data->text.cursor.count){
+				data->selecting = 0;
+			}
+		}else if(input_lmouse_down()){
+			u64 second_offset = find_hovered_offset({data->breaks.data,data->breaks.count},item,data->text);
+			data->text.cursor.count = second_offset - data->text.cursor.pos;
+			item->dirty = 1;
+		}
+	}
+}
+
+uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiText);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.update = &ui_update_text;
+	setup.generate = &ui_gen_text;
+	setup.evaluate = &ui_eval_text;
+	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(text))};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 1;
+	
+	b32 retrieved = 0;
+	uiItem* item = ui_setup_item(setup, &retrieved);
+	uiText* data = (uiText*)item;
+	
+	if(!retrieved)
+		data->text = text_init(text);
+	data->breaks.allocator = deshi_allocator;
+	
+	return item;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 // @inputtext
 
 void ui_gen_input_text(uiItem* item){DPZoneScoped;
+	RenderDrawCounts counts = {0};
+	uiDrawCmd* dc = item->drawcmds;
+	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	uiInputText* data = uiGetInputText(item);
+	
+	dc->texture = item->style.font->tex;
 
+	RenderDrawCounts nucounts = 
+		render_make_text_counts(str8_length(data->text.buffer.fin)) +
+		render_make_rect_counts(); //cursor
+	if(nucounts.vertices != dc->counts.vertices || nucounts.indices != dc->counts.indices){
+	    item->drawcmds = make_drawcmd(1);
+		drawcmd_remove(dc);
+		dc = item->drawcmds;
+		drawcmd_alloc(dc, nucounts);
+		dc->texture = item->style.font->tex;
+	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	}
+	
+	counts+=render_ui_text(counts,dc,vp,ip,item,data->text,{data->breaks.data,data->breaks.count});
 }
 
 void ui_eval_input_text(uiItem* item){DPZoneScoped;
-
+	if(!item->style.font){
+		item_error(item, "uiInputText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on one of its ancestors.");
+		return;
+	}
+	uiItem* parent = uiItemFromNode(item->node.parent);
+	uiInputText* data = uiGetInputText(item);
+	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)));
 }
 
 void ui_update_input_text(uiItem* item){DPZoneScoped;
+	uiInputText* data = uiGetInputText(item);
+	if(g_ui->hovered == item && input_lmouse_pressed()){
+		g_ui->active = item;
+	}
+
+	if(g_ui->active != item) return;
+	Text* t = &data->text;
+	//allows input on first press, then allows repeats when the repeat bool is set on input
+	//do action depending on bind pressed
+#define CanDoInput(x) (key_pressed(x) || key_down(x) && DeshInput->repeat)
+	if(CanDoInput(uikeys.inputtext.cursor.left))           text_move_cursor_left(t),             item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.cursor.left_word))      text_move_cursor_left_word(t),        item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.cursor.left_wordpart))  text_move_cursor_left_wordpart(t),    item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.cursor.right))          text_move_cursor_right(t),            item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.cursor.right_word))     text_move_cursor_right_word(t),       item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.cursor.right_wordpart)) text_move_cursor_right_wordpart(t),   item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.select.left))           text_move_cursor_left(t,1),           item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.select.left_word))      text_move_cursor_left_word(t,1),      item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.select.left_wordpart))  text_move_cursor_left_wordpart(t,1),  item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.select.right))          text_move_cursor_right(t,1),          item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.select.right_word))     text_move_cursor_right_word(t,1),     item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.select.right_wordpart)) text_move_cursor_right_wordpart(t,1), item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.del   .right))          text_delete_right(t),                 item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.del   .right_word))     text_delete_right_word(t),            item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.del   .right_wordpart)) text_delete_right_wordpart(t),        item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.del   .left))           text_delete_left(t),                  item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.del   .left_word))      text_delete_left_word(t),             item->dirty = 1;
+	if(CanDoInput(uikeys.inputtext.del   .left_wordpart))  text_delete_left_wordpart(t),         item->dirty = 1;
+#undef CanDoInput
 	
+	//text input
+	if(DeshInput->charCount){
+		text_insert_string(t, {DeshInput->charIn,(s64)DeshInput->charCount});
+		item->dirty = 1;
+	}
+	
+	//finds the offset into the text's buffer that the mouse is hovered over 
+	auto get_hovered_offset = [&]()->s32{
+		if(item->style.font->type == FontType_TTF) {
+			LogW("ui", "ui_update_text() is not tested on non monospace fonts! Selection may not work properly, if it does come delete this please.");
+		}
+		vec2 mpl = input_mouse_position() - item->spos;
+		forX(i,data->breaks.count){
+			if(i!=data->breaks.count-1 && mpl.y > data->breaks[i].second.y + item->style.font_height) continue;
+			//breaks dont only happen on newlines, they happen for tabs too
+			//so we must make sure that if there is more than 1 break on this line we are inspecting the right one
+			for(int j=i; j<data->breaks.count; j++){
+				if(data->breaks[i].second.y!=data->breaks[j].second.y){
+					//dont want the cursor to go into newline stuff (probably)
+					if(*(data->text.buffer.str + data->breaks[j].first - 1) == '\n'){
+						if(*(data->text.buffer.str + data->breaks[j].first - 2) == '\r'){
+							return data->breaks[j].first - 3;
+						}else{
+							return data->breaks[j].first - 2;
+						}
+					}
+					return data->breaks[j].first - 1;
+				}
+				if(j==data->breaks.count-1){
+					//the last break doesnt actually have anything in it and just serves as a boundry
+					//if we reach this then we must have clicked beyond the very end
+					return data->breaks[j].first;
+				}
+				//iterate over individual characters in the break until we're under the mouse 
+				f32 xoffset = 0;
+				forX(k,data->breaks[j+1].first - data->breaks[j].first){
+					str8 c = {data->text.buffer.str + data->breaks[j].first + k, 1};
+					f32 cw = font_visual_size(item->style.font, c).x * item->style.font_height / item->style.font->max_height;
+					if(data->breaks[j].second.x+xoffset < mpl.x &&  
+						data->breaks[j].second.x+xoffset+cw > mpl.x ){
+						return data->breaks[j].first + k;
+					}
+					xoffset+=cw;
+				}
+			}
+			return -1;
+		}
+		return -1;
+	};
+
+	if(g_ui->hovered == item && input_lmouse_pressed()){
+		g_ui->active = item;
+		data->text.cursor.pos = get_hovered_offset();
+		data->selecting = 1;
+		item->dirty = 1;
+	}
+	if(data->selecting){
+		if(input_lmouse_released()){
+			if(!data->text.cursor.count){
+				data->selecting = 0;
+			}
+		}else if(input_lmouse_down()){
+			u64 second_offset = get_hovered_offset();
+			data->text.cursor.count = second_offset - data->text.cursor.pos;
+			item->dirty = 1;
+		}
+	}
 }
 
 uiItem* ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -1480,10 +1643,12 @@ uiItem* ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DP
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 
-	uiItem*      item = ui_setup_item(setup);
+	b32 retrieved = 0;
+	uiItem*      item = ui_setup_item(setup, &retrieved);
 	uiInputText* data = uiGetInputText(item);
 
-	data->text = text_init({0}, deshi_allocator);
+	if(!retrieved)
+		data->text = text_init({0}, deshi_allocator);
 	data->preview = preview;
 	data->breaks.allocator = deshi_allocator;
 	
