@@ -943,6 +943,9 @@ struct uiInputText{
 	//TODO(sushi) get rid of array here
 	array<pair<s64,vec2>> breaks;
 
+	Stopwatch repeat_hold;
+	Stopwatch repeat_throttle;
+
 	struct{
 		//b32 allow_multiline; TODO
 		struct{
@@ -950,6 +953,8 @@ struct uiInputText{
 			color cursor;
 		}colors;
 		Type cursor;
+		f32 hold_time;     //time until repeating starts in ms
+		f32 throttle_time; //time between repeats in ms
 	}style;
 };
 #define uiGetInputText(x) CastFromMember(uiInputText, item, x)

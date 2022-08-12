@@ -907,7 +907,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		eval_item_branch(sspar, {0});
 		draw_item_branch(sspar);
 	}
-	
+
 	if(item->action && item->action_trigger){
 		if(item->action_trigger == action_act_always)
 			item->action(item);
@@ -1004,6 +1004,9 @@ void ui_update(){DPZoneScoped;
 	
 	if(g_ui->istate == uiISNone) 
 		find_hovered_item(&g_ui->base);
+
+	if(input_lmouse_pressed())
+		g_ui->active = g_ui->hovered;
 	
 	if(g_ui->istate == uiISNone || g_ui->istate == uiISDragging) 
 		drag_item(g_ui->hovered);
@@ -1363,6 +1366,7 @@ s64 find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){
 	return -1;
 }
 
+//TODO(sushi) remove this abstraction because they arent the same between inputtext and text
 RenderDrawCounts render_ui_text(RenderDrawCounts counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks){DPZoneScoped;
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	vec2 cursor = item->spos;
@@ -1447,10 +1451,9 @@ void ui_eval_text(uiItem* item){
 //performs checks on the text element for things like mouse selection
 //and copy when a selection is active
 void ui_update_text(uiItem* item){DPZoneScoped;
+	if(g_ui->active != item) return;
 	uiText* data = uiGetText(item);
-	
 	if(g_ui->hovered == item && input_lmouse_pressed()){
-		g_ui->active = item;
 		data->text.cursor.pos = find_hovered_offset({data->breaks.data,data->breaks.count},item,data->text);
 		data->selecting = 1;
 		item->dirty = 1;
@@ -1506,7 +1509,7 @@ void ui_gen_input_text(uiItem* item){DPZoneScoped;
 
 	RenderDrawCounts nucounts = 
 		render_make_text_counts(str8_length(data->text.buffer.fin)) +
-		render_make_rect_counts(); //cursor
+		render_make_filledrect_counts(); //cursor
 	if(nucounts.vertices != dc->counts.vertices || nucounts.indices != dc->counts.indices){
 	    item->drawcmds = make_drawcmd(1);
 		drawcmd_remove(dc);
@@ -1516,8 +1519,43 @@ void ui_gen_input_text(uiItem* item){DPZoneScoped;
 	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	}
-	
-	counts+=render_ui_text(counts,dc,vp,ip,item,data->text,{data->breaks.data,data->breaks.count});
+
+	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
+	vec2 cursor = item->spos;
+	forI(data->breaks.count-1){
+		auto [idx, pos] = data->breaks[i];
+		cursor = pos+item->spos;
+		forX(j,data->breaks[i+1].first-idx){
+			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
+			if(idx+j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count) && idx+j < Max(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)){
+				//render_make_rect()
+				counts+=render_make_text(vp,ip,counts,
+					{data->text.buffer.str+idx+j,1}, item->style.font,
+					cursor, Color_Red,
+					vec2::ONE * item->style.font_height / item->style.font->max_height
+				);
+			}else{
+				counts+=render_make_text(vp, ip, counts,
+					{data->text.buffer.str+idx+j,1}, 
+					item->style.font,
+					cursor, item->style.text_color,  
+					vec2::ONE * item->style.font_height / item->style.font->max_height
+				);
+			}
+			//draw cursor
+			//TODO(sushi) implement different styles of cursors
+			if(idx+j == data->text.cursor.pos){
+				counts+=render_make_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
+			}	
+			cursor.x += csize.x;
+		}
+	}
+	if(data->text.cursor.pos == data->text.buffer.count){
+		//HACK(sushi) to fix the cursor drawing at the end
+		//NOTE(sushi) this happens because of how the very last break represents the last position, but its not iterated above since
+		//            it is used as a boundry instead
+		counts+=render_make_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
+	}
 }
 
 void ui_eval_input_text(uiItem* item){DPZoneScoped;
@@ -1531,16 +1569,28 @@ void ui_eval_input_text(uiItem* item){DPZoneScoped;
 }
 
 void ui_update_input_text(uiItem* item){DPZoneScoped;
+	if(g_ui->active != item) return;
 	uiInputText* data = uiGetInputText(item);
-	if(g_ui->hovered == item && input_lmouse_pressed()){
-		g_ui->active = item;
+	Text* t = &data->text;
+	
+	b32 repeat = 0;
+	if(any_key_pressed() || any_key_released()){
+		reset_stopwatch(&data->repeat_hold);
+	}
+	else if((peek_stopwatch(data->repeat_hold) > data->style.hold_time) && (peek_stopwatch(data->repeat_throttle) > data->style.throttle_time)){
+		reset_stopwatch(&data->repeat_throttle);
+		repeat = 1;
 	}
 
-	if(g_ui->active != item) return;
-	Text* t = &data->text;
+	Log("", "--------------------------------------------------------------------------------");
+	Log("", data->text.cursor.pos, " ", data->text.buffer.fin);
+	Log("", item->drawcmds[0].index_offset, " ", item->drawcmds[0].vertex_offset);
+	Log("", item->drawcmds[0].counts.indices, " ", item->drawcmds[0].counts.vertices);
+
+
 	//allows input on first press, then allows repeats when the repeat bool is set on input
 	//do action depending on bind pressed
-#define CanDoInput(x) (key_pressed(x) || key_down(x) && DeshInput->repeat)
+#define CanDoInput(x) (key_pressed(x) || key_down(x) && repeat)
 	if(CanDoInput(uikeys.inputtext.cursor.left))           text_move_cursor_left(t),             item->dirty = 1;
 	if(CanDoInput(uikeys.inputtext.cursor.left_word))      text_move_cursor_left_word(t),        item->dirty = 1;
 	if(CanDoInput(uikeys.inputtext.cursor.left_wordpart))  text_move_cursor_left_wordpart(t),    item->dirty = 1;
@@ -1567,63 +1617,20 @@ void ui_update_input_text(uiItem* item){DPZoneScoped;
 		item->dirty = 1;
 	}
 	
-	//finds the offset into the text's buffer that the mouse is hovered over 
-	auto get_hovered_offset = [&]()->s32{
-		if(item->style.font->type == FontType_TTF) {
-			LogW("ui", "ui_update_text() is not tested on non monospace fonts! Selection may not work properly, if it does come delete this please.");
-		}
-		vec2 mpl = input_mouse_position() - item->spos;
-		forX(i,data->breaks.count){
-			if(i!=data->breaks.count-1 && mpl.y > data->breaks[i].second.y + item->style.font_height) continue;
-			//breaks dont only happen on newlines, they happen for tabs too
-			//so we must make sure that if there is more than 1 break on this line we are inspecting the right one
-			for(int j=i; j<data->breaks.count; j++){
-				if(data->breaks[i].second.y!=data->breaks[j].second.y){
-					//dont want the cursor to go into newline stuff (probably)
-					if(*(data->text.buffer.str + data->breaks[j].first - 1) == '\n'){
-						if(*(data->text.buffer.str + data->breaks[j].first - 2) == '\r'){
-							return data->breaks[j].first - 3;
-						}else{
-							return data->breaks[j].first - 2;
-						}
-					}
-					return data->breaks[j].first - 1;
-				}
-				if(j==data->breaks.count-1){
-					//the last break doesnt actually have anything in it and just serves as a boundry
-					//if we reach this then we must have clicked beyond the very end
-					return data->breaks[j].first;
-				}
-				//iterate over individual characters in the break until we're under the mouse 
-				f32 xoffset = 0;
-				forX(k,data->breaks[j+1].first - data->breaks[j].first){
-					str8 c = {data->text.buffer.str + data->breaks[j].first + k, 1};
-					f32 cw = font_visual_size(item->style.font, c).x * item->style.font_height / item->style.font->max_height;
-					if(data->breaks[j].second.x+xoffset < mpl.x &&  
-						data->breaks[j].second.x+xoffset+cw > mpl.x ){
-						return data->breaks[j].first + k;
-					}
-					xoffset+=cw;
-				}
-			}
-			return -1;
-		}
-		return -1;
-	};
-
 	if(g_ui->hovered == item && input_lmouse_pressed()){
 		g_ui->active = item;
-		data->text.cursor.pos = get_hovered_offset();
+		data->text.cursor.pos = find_hovered_offset({data->breaks.data,data->breaks.count}, item, data->text);
 		data->selecting = 1;
 		item->dirty = 1;
 	}
+
 	if(data->selecting){
 		if(input_lmouse_released()){
 			if(!data->text.cursor.count){
 				data->selecting = 0;
 			}
 		}else if(input_lmouse_down()){
-			u64 second_offset = get_hovered_offset();
+			u64 second_offset = find_hovered_offset({data->breaks.data,data->breaks.count}, item, data->text);
 			data->text.cursor.count = second_offset - data->text.cursor.pos;
 			item->dirty = 1;
 		}
@@ -1651,6 +1658,9 @@ uiItem* ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DP
 		data->text = text_init({0}, deshi_allocator);
 	data->preview = preview;
 	data->breaks.allocator = deshi_allocator;
+	data->style.colors.cursor = Color_White;
+	data->style.hold_time = 500;
+	data->style.throttle_time = 50;
 	
 	return item;
 }
