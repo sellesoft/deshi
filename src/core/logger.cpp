@@ -85,10 +85,10 @@ logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 		
 		u32 message_offset = tag.count;
 		switch(log_type){
-			case LogType_Normal: { chunk.type = ConsoleChunkType_Normal;  chunk.color = Color_White;  message_offset +=  3; }break; //"[] "
-			case LogType_Error:  { chunk.type = ConsoleChunkType_Error;   chunk.color = Color_Red;    message_offset +=  9; }break; //"[] " and "-ERROR"
-			case LogType_Warning:{ chunk.type = ConsoleChunkType_Warning; chunk.color = Color_Yellow; message_offset += 11; }break; //"[] " and "-WARNING"
-			case LogType_Success:{ chunk.type = ConsoleChunkType_Success; chunk.color = Color_Green;  message_offset += 11; }break; //"[] " and "-SUCCESS"
+			case LogType_Normal: { chunk.type = ConsoleChunkType_Normal;  chunk.color = Color_White;  message_offset += 0; }break; //"[] "
+			case LogType_Error:  { chunk.type = ConsoleChunkType_Error;   chunk.color = Color_Red;    message_offset += 0; }break; //"[] " and "-ERROR"
+			case LogType_Warning:{ chunk.type = ConsoleChunkType_Warning; chunk.color = Color_Yellow; message_offset += 0; }break; //"[] " and "-WARNING"
+			case LogType_Success:{ chunk.type = ConsoleChunkType_Success; chunk.color = Color_Green;  message_offset += 0; }break; //"[] " and "-SUCCESS"
 		}
 		
 		chunk.start   = log_file_offset + message_offset;

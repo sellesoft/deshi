@@ -260,6 +260,7 @@ void console_init(){
 	console.ui.main = uiItemBS(&base);
 		uiItem*  main  = console.ui.main;
 		uiStyle* mains = &main->style;
+		main->id = STR8("console.main");
 		mains-> background_color = color(14,14,14);
 		mains->     border_style = border_solid;
 		mains->     border_width = 1;
@@ -268,10 +269,12 @@ void console_init(){
 		mains->            width = 100;
 		mains->           height = 100 * console.open_max_percent;
 		mains->          padding = {2,2,2,2};
+		mains->      positioning = pos_fixed;
 
 		console.ui.buffer = uiItemBS(&base);
 			uiItem*  buffer  = console.ui.buffer;
 			uiStyle* buffers = &buffer->style;
+			buffer->id = STR8("console.buffer");
 			buffers->           sizing = size_flex | size_percent_x; //fills the space not occupied by input box
 			buffers->           height = 1; //occupy as much vertical space as it can in the container
 			buffers->            width = 100; //100% the width of the container
@@ -279,14 +282,24 @@ void console_init(){
 			buffers->          padding = {2,2,2,2};
 		uiItemE();
 
-		console.ui.input = uiItemBS(&base);
-			uiItem*  input  = console.ui.input;
-			uiStyle* inputs = &input->style;
-			inputs->background_color = Color_VeryDarkGray;
-			inputs->sizing = size_percent_x; //this element's size is static so it doesnt flex
-			inputs->width = 100;
-			inputs->height = inputs->font->max_height;
-			inputs->tab_spaces = 2;
+		console.ui.inputbox = uiItemBS(&base);
+			uiItem*  inputb  = console.ui.inputbox;
+			uiStyle* inputbs = &inputb->style;
+			inputb->id = STR8("console.inputbox");
+			inputbs->background_color = Color_DarkGray;
+			inputbs->sizing = size_percent_x; //this element's size is static so it doesnt flex
+			inputbs->width = 100;
+			inputbs->height = inputbs->font->max_height + 2;
+			inputbs->content_align = {0.5,0.5};
+			inputbs->tab_spaces = 2;
+			inputbs->padding = {2,2,2,2};
+			console.ui.inputtext = uiInputTextM();
+				uiItem* inputt = console.ui.inputtext;
+				uiStyle* inputts = &inputt->style;
+				inputt->id = STR8("console.inputtext");
+				inputts->sizing = size_percent;
+				inputts->size = {100,100};
+				uiInputText* it = uiGetInputText(inputt);	
 		uiItemE();
 	uiItemE();
 
@@ -350,11 +363,140 @@ void console_update(){
 	//console openness
 	if(console.open_target != console.open_amount){
 		console.ui.main->style.height = Math::lerp(console.open_amount, console.open_target, //TODO(sushi) change this to Nudge
-										   Min((f32)peek_stopwatch(console.open_timer) / console.open_dt, 1.f)) * 100;
+										   Min((f32)peek_stopwatch(console.open_timer) / console.open_dt, 1.f));
 		if(console.ui.main->style.height/100 == console.open_target){
 			console.open_amount = console.open_target;
 		}
 	}
+
+	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
+
+	uiImmediateBP(console.ui.buffer);{
+		vec2 cursor = vec2::ZERO;
+		uiItem* line = uiItemB();
+		line->style.display = display_row;
+		line->style.sizing = size_percent_x;
+		line->style.size = {100, f32(console.ui.buffer->style.font_height)};
+		u64 nlines = 0;
+		u64 i = console.scroll;
+		while(nlines < linestofit){
+			if(i==console.dictionary.count) break;
+			//if console_chunk_render_arena isn't large enough, double the space for it
+			if(console.dictionary[i].size >= console.chunk_render_arena->size){
+				console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
+			}
+			
+			//get chunk text from the log file
+			file_cursor(console.logger->file, console.dictionary[i].start);
+			file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
+			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
+			
+			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
+			uiTextM(out);
+
+			if(console.dictionary[i].newline == 1 && i != (console.dictionary.count-1)){
+				uiItemE(); 
+				line = uiItemBS(&line->style);
+				nlines++;
+			}
+
+			//adjust what we're going to print based on formatting
+			if(HasFlag(console.dictionary[i].type, ConsoleChunkType_Alert)){
+				//TODO handle alert flashing
+			}
+
+
+
+			i++;
+			
+			// if(console.tag_show && console.dictionary[i].tag){
+			// 	if(i == 0 || !str8_equal(console.dictionary[i-1].tag, console.dictionary[i].tag)){
+			// 		f32 top_edge    = UI::GetMarginedTop();
+			// 		f32 right_edge  = UI::GetMarginedRight();
+			// 		f32 tag_start_y = UI::GetWinCursor().y;
+			// 		vec2 tag_size   = UI::CalcTextSize(console.dictionary[i].tag);
+					
+			// 		//look ahead for the end of the tag range
+			// 		//dont draw if its not visible
+			// 		f32 tag_end_y = tag_start_y;
+			// 		for(int o = i; o < console.dictionary.count; o++){
+			// 			if(str8_equal_lazy(console.dictionary[o].tag, console.dictionary[i].tag)){
+			// 				tag_end_y += tag_size.y;
+			// 			}else{
+			// 				break;
+			// 			}
+			// 		}
+			// 		if(tag_end_y > top_edge){
+			// 			if(tag_end_y < tag_size.y){
+			// 				tag_start_y = top_edge + (tag_end_y - tag_size.y);
+			// 			}else{
+			// 				tag_start_y = Max(tag_start_y, top_edge);
+			// 			}
+						
+			// 			//draw tag text
+			// 			vec2 restore_cursor = UI::GetWinCursor();
+			// 			UI::PushColor(UIStyleCol_Text, color(150,150,150, 150));
+			// 			UI::TextOld(console.dictionary[i].tag, Vec2(right_edge - tag_size.x - 1, tag_start_y));
+			// 			UI::PopColor();
+			// 			UI::SetWinCursor(restore_cursor);
+						
+			// 			if(console.tag_outlines && tag_end_y - (tag_start_y + tag_size.y) > 4){
+			// 				//draw right line
+			// 				UI::Line(Vec2(right_edge-1, tag_start_y+tag_size.y+3),
+			// 							Vec2(right_edge-1, tag_end_y-3),
+			// 							2, color(150,150,150, 150));
+			// 				//draw top line
+			// 				UI::Line(Vec2(right_edge-tag_size.x, tag_start_y+tag_size.y+2),
+			// 							Vec2(right_edge,            tag_start_y+tag_size.y+2),
+			// 							2, color(150,150,150, 150));
+			// 				//draw bottom line
+			// 				UI::Line(Vec2(right_edge-tag_size.x, tag_end_y-2),
+			// 							Vec2(right_edge,            tag_end_y-2),
+			// 							2, color(150,150,150, 150));
+			// 			}
+						
+			// 			if(console.tag_highlighting){
+			// 				UI::PushLayer(UI::GetCenterLayer()-1); //NOTE(delle) put the highlight on a lower layer than the text
+			// 				UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
+			// 				UI::PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
+			// 				UI::PushColor(UIStyleCol_SelectableBgActive,  color(155, 155, 155, 10));
+			// 				UI::SetNextItemSize(Vec2(right_edge, tag_end_y - tag_start_y));
+			// 				UI::SetNextItemMinSizeIgnored();
+							
+			// 				UI::Selectable(str8_lit(""), Vec2(0,tag_start_y), 0);
+							
+			// 				UI::PopColor(3);
+			// 				UI::PopLayer();
+			// 			}
+						
+			// 			UI::SetMarginSizeOffset(Vec2(-tag_size.x, 0));
+			// 		}
+			// 	}
+			// }
+			
+			// UI::PushColor(UIStyleCol_Text, console.dictionary[i].color);
+			// UI::TextOld(str8{(u8*)console_chunk_render_arena->start, (s64)console.dictionary[i].size});
+			// UI::PopColor();
+			
+			
+			
+			// if(console.line_highlighing){
+			// 	UIItem* last_text = UI::GetLastItem();
+			// 	UI::PushLayer(UI::GetCenterLayer()-1); //NOTE(delle) put the highlight on a lower layer than the text
+			// 	UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
+			// 	UI::PushColor(UIStyleCol_SelectableBgHovered, color(155,155,155, 10));
+			// 	UI::PushColor(UIStyleCol_SelectableBgActive,  color(155,155,155, 10));
+			// 	UI::SetNextItemSize(Vec2(UI::GetMarginedRight(), last_text->size.y));
+			// 	UI::SetNextItemMinSizeIgnored();
+				
+			// 	UI::Selectable(str8_lit(""), Vec2(0, last_text->position.y), 0);
+				
+			// 	UI::PopColor(3);
+			// 	UI::PopLayer();
+			// }
+		}
+		uiItemE();
+	}uiImmediateE();
 	
 	// UIStyle_old& style = UI::GetStyle();
 	// if(console.console_dim.y > 0){
@@ -548,40 +690,30 @@ Console* console_expose(){
 }
 
 void console_change_state(ConsoleState new_state){
-	// if(console.state == new_state) new_state = ConsoleState_Closed;
+	if(console.state == new_state) new_state = ConsoleState_Closed;
 	
-	// switch(new_state){
-	// 	case ConsoleState_Closed:{
-	// 		if(console.state == ConsoleState_Popout){
-	// 			console.console_pos = console.window->position;
-	// 			console.console_dim = console.window->dimensions;
-	// 		}
-	// 		console.open_target = 0;
-	// 		console.open_amount = console.console_dim.y;
-	// 	}break;
-	// 	case ConsoleState_OpenSmall:{
-	// 		console.open_target = (f32)DeshWindow->height * console.open_small_percent;
-	// 		console.open_amount =console. console_dim.y;
-	// 		console.console_pos = Vec2(0, -1);
-	// 		console.console_dim.x = (f32)DeshWindow->width;
-	// 		console.window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
-	// 		console_open_pressed = 1;
-	// 	}break;
-	// 	case ConsoleState_Ope5nBig:{
-	// 		console.open_target = (f32)DeshWindow->height * console.open_max_percent;
-	// 		console.open_amount = console.console_dim.y;
-	// 		console.console_pos = Vec2(0, -1);
-	// 		console.console_dim.x = (f32)DeshWindow->width;
-	// 		console.window_flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
-	// 		console_open_pressed = 1;
-	// 	}break;
-	// 	case ConsoleState_Popout:{
-	// 		console.open_target = console.console_dim.y;
-	// 		console.open_amount = 0;
-	// 		console.window_flags = 0;
-	// 		console_open_pressed = 1;
-	// 	}break;
-	// }
-	// console_open_timer = start_stopwatch();
-	// console.state = new_state;
+	switch(new_state){
+		case ConsoleState_Closed:{
+			console.open_target = 0;
+			console.open_amount = console.console_dim.y;
+		}break;
+		case ConsoleState_OpenSmall:{
+			console.open_target = 100 * console.open_small_percent;
+			console.open_amount = console.console_dim.y;
+			console.console_pos = Vec2(0, -1);
+			console.console_dim.x = (f32)DeshWindow->width;
+		}break;
+		case ConsoleState_OpenBig:{
+			console.open_target = 100 * console.open_max_percent;
+			console.open_amount = console.console_dim.y;
+			console.console_pos = Vec2(0, -1);
+			console.console_dim.x = (f32)DeshWindow->width;
+		}break;
+		// case ConsoleState_Popout:{
+		// 	console.open_target = console.console_dim.y;
+		// 	console.open_amount = 0;
+		// }break;
+	}
+	console.open_timer = start_stopwatch();
+	console.state = new_state;
 }

@@ -106,10 +106,13 @@ struct Console{
 	b32 open_pressed     = false;
 	b32 scroll_to_bottom = false;
 
+	u64 scroll = 0;
+
 	struct{
 		uiItem* main;
 		uiItem* buffer;
-		uiItem* input;
+		uiItem* inputbox; //represents the input decoration box
+		uiItem* inputtext; //represents the actual input text
 	}ui;
 };
 

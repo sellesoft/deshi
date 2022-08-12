@@ -114,6 +114,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,** ,22/02/26,Feature] OpenGL shadows (and test/fix Vulkan shadows)
 [!! ,***,22/02/26,Feature] OpenGL render/video settings
 [!! ,** ,22/06/04,Tweak]   shrink Vertex2 footprint by using s16 for pos and f16 for uv
+[!!!,***,22/08/12,Feature] add support for render taking in external vertex/index buffer to draw from
 
 `Sound`
 -------

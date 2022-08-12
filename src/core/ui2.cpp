@@ -152,7 +152,10 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 
 //@helpers
 #define item_error(item, ...)\
-LogE("ui",CyanFormatComma((item)->file_created), ":", (item)->line_created, ":", RedFormatComma("item error"), ": ", __VA_ARGS__);
+LogE("ui",CyanFormatComma((item)->file_created), ":", (item)->line_created, ":", RedFormatComma("error"), ": ", __VA_ARGS__)
+
+#define gen_error(file,line,...)\
+LogE("ui",CyanFormatComma(file),":",line,":",RedFormatComma("error"),":",__VA_ARGS__)
 
 struct uiItemSetup{
 	upt size; 
@@ -186,7 +189,14 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 	uiItem* item;
 	b32 retrieved_ = 0;
 	if(g_ui->immediate.active){
-		u64 hash = str8_hash64(setup.file) ^ setup.line;
+		//attempt to unique identify items without requiruing the user to provide unique ids
+		//im pretty sure this will fail in some cases 
+		//if its REALLY bad then we should just go with allowing the user to give unique ids
+		u64 hash = str8_hash64(setup.file);
+		hash ^=        setup.line;     hash *= 16777619;
+		hash ^=        setup.size;     hash *= 16777619;
+		hash ^= *(u64*)setup.generate; hash *= 16777619;
+		hash ^= g_ui->immediate.id;
 		//load item from immediate cache if it has been made before
 		if(g_ui->immediate.cache.has(hash)){
 			item = *g_ui->immediate.cache.at(hash);
@@ -196,6 +206,10 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 			g_ui->immediate.cache.add(hash, item);
 		}
 		g_ui->immediate_items.add(item);
+		//increment immediate's internal id
+		//this keeps track of unique function calls in immediate blocks
+		//because otherwise in loops a function will be called from the same file line and number and be mistaken as the same item
+		g_ui->immediate.id++;
 	}else{
 		g_ui->stats.items_reserved++;
 		item = (uiItem*)memalloc(setup.size);
@@ -407,6 +421,7 @@ void ui_begin_immediate_branch(uiItem* parent, str8 file, upt line){
 	g_ui->immediate.active = 1;
 	g_ui->immediate.file = file;
 	g_ui->immediate.line = line;
+	g_ui->immediate.id = 0;
 	
 	if(parent){
 		push_item(parent);
@@ -434,7 +449,14 @@ void ui_end_immediate_branch(str8 file, upt line){
 	}
 }
 
+void ui_push_id(s64 x, str8 file, upt line){
+	//g_ui->immediate.id_stack.add(x);
+}
 
+void ui_pop_id(str8 file, upt line){
+	//if(!g_ui->immediate.id_stack.count) gen_error(file,line,"ui_pop_id was called before any calls to ui_push_id were made");
+	//else g_ui->immediate.id_stack.pop();
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 // @context
@@ -452,8 +474,8 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
 	
-	g_ui->vertex_arena = memory_create_arena(Megabytes(1));
-	g_ui->index_arena  = memory_create_arena(Megabytes(1));
+	g_ui->vertex_arena = memory_create_arena(Megabytes(500));
+	g_ui->index_arena  = memory_create_arena(Megabytes(500));
 	
 	g_ui->base = uiItem{0};
 	g_ui->base.file_created = STR8(__FILE__);
@@ -541,7 +563,6 @@ b32 last_flex_floored = 1;
 
 //reevaluates an entire brach of items
 void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
-	
 	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
 	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically
 	//sized child.
@@ -1451,7 +1472,6 @@ void ui_eval_text(uiItem* item){
 //performs checks on the text element for things like mouse selection
 //and copy when a selection is active
 void ui_update_text(uiItem* item){DPZoneScoped;
-	if(g_ui->active != item) return;
 	uiText* data = uiGetText(item);
 	if(g_ui->hovered == item && input_lmouse_pressed()){
 		data->text.cursor.pos = find_hovered_offset({data->breaks.data,data->breaks.count},item,data->text);
@@ -1706,8 +1726,6 @@ void ui_debug_panel_callback(uiItem* item){
 }
 
 void ui_debug(){
-	
-	
 	if(!ui_dwi.init){
 		ui_dwi = {0};
 		
@@ -1800,62 +1818,62 @@ void ui_debug(){
 	
 	uiImmediateBP(ui_dwi.panel0);{//make internal info header
 		//header stores an action that toggles its boolean in the data struct
-		{uiItem* header = uiItemBS(&ui_dwi.def_style);
-			header->id = STR8("header");
-			header->style.sizing = size_auto_y | size_percent_x;
-			header->style.width = 100;
-			header->style.padding = {2,2,2,2};
-			header->style.background_color = color(14,14,14);
-			header->action = [](uiItem* item){
-				if(input_lmouse_pressed()){
-					ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
-				}
-			};	
-			header->action_trigger = action_act_mouse_hover;
+		// {uiItem* header = uiItemBS(&ui_dwi.def_style);
+		// 	header->id = STR8("header");
+		// 	header->style.sizing = size_auto_y | size_percent_x;
+		// 	header->style.width = 100;
+		// 	header->style.padding = {2,2,2,2};
+		// 	header->style.background_color = color(14,14,14);
+		// 	header->action = [](uiItem* item){
+		// 		if(input_lmouse_pressed()){
+		// 			ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
+		// 		}
+		// 	};	
+		// 	header->action_trigger = action_act_mouse_hover;
 			
-			//uiTextML("internal info")->id = STR8("header text");
-		}uiItemE();
+		// 	//uiTextML("internal info")->id = STR8("header text");
+		// }uiItemE();
 		
-		if(ui_dwi.internal_info_header){
-			{uiItem* cont = uiItemBS(&ui_dwi.def_style);
-				cont->id = STR8("header cont");
+		// if(ui_dwi.internal_info_header){
+		// 	{uiItem* cont = uiItemBS(&ui_dwi.def_style);
+		// 		cont->id = STR8("header cont");
 				
-				cont->style.sizing = size_percent_x;
-				cont->style.width = 100;
-				cont->style.height = 100;
+		// 		cont->style.sizing = size_percent_x;
+		// 		cont->style.width = 100;
+		// 		cont->style.height = 100;
 				
-				if(ui_dwi.selected_item){
+		// 		if(ui_dwi.selected_item){
 					
-				}else if(ui_dwi.selecting_item){
+		// 		}else if(ui_dwi.selecting_item){
 					
-					ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					uiTextML("selecting item...");
+		// 			ui_dwi.internal_info->style.content_align = {0.5,0.5};
+		// 			uiTextML("selecting item...");
 					
-					if(g_ui->hovered && input_lmouse_pressed()){
-						ui_dwi.selected_item = g_ui->hovered;
-					}
+		// 			if(g_ui->hovered && input_lmouse_pressed()){
+		// 				ui_dwi.selected_item = g_ui->hovered;
+		// 			}
 					
-				}else{
-					// {uiItem* item = uiItemB();
-					// 	item->id = STR8("button");
-					// 	item->style.background_color = Color_VeryDarkCyan;
-					// 	item->style.sizing = size_auto;
-					// 	item->style.padding = {1,1,1,1};
-					// 	item->style.margin = {1,1,1,1};
-					// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-					// 	item->style.font_height = 11;
-					// 	item->style.text_color = Color_White;
-					// 	item->action = [](uiItem* item) { 
-					// 		ui_dwi.selecting_item = 1; 
-					// 	};
-					// 	item->action_trigger = action_act_mouse_pressed;
-					// 	uiTextML("O");
-					// }uiItemE();
-					//ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					//uiTextML("no item selected.");
-				}
-			}uiItemE();
-		}
+		// 		}else{
+		// 			// {uiItem* item = uiItemB();
+		// 			// 	item->id = STR8("button");
+		// 			// 	item->style.background_color = Color_VeryDarkCyan;
+		// 			// 	item->style.sizing = size_auto;
+		// 			// 	item->style.padding = {1,1,1,1};
+		// 			// 	item->style.margin = {1,1,1,1};
+		// 			// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+		// 			// 	item->style.font_height = 11;
+		// 			// 	item->style.text_color = Color_White;
+		// 			// 	item->action = [](uiItem* item) { 
+		// 			// 		ui_dwi.selecting_item = 1; 
+		// 			// 	};
+		// 			// 	item->action_trigger = action_act_mouse_pressed;
+		// 			// 	uiTextML("O");
+		// 			// }uiItemE();
+		// 			//ui_dwi.internal_info->style.content_align = {0.5,0.5};
+		// 			//uiTextML("no item selected.");
+		// 		}
+		// 	}uiItemE();
+		// }
 	}uiImmediateE();
 	
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
@@ -1871,6 +1889,7 @@ void ui_debug(){
 		"	vertices: ", g_ui->stats.vertices_reserved, "\n",
 		"	 indices: ", g_ui->stats.indices_reserved
 	));
+	ui_dwi.panel1text->dirty = 1;
 
 	if(g_ui->hovered){
 		render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));

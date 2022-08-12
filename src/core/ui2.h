@@ -479,9 +479,6 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
-#define UI_CUSTOM_ITEM(struct_name, item_name) StaticAssert(offsetof(struct_name, item_name)==0);
-
-
 #define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
 #define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
 #define MarginedArea(item)        (vec2{MarginedWidth(item), MarginedHeight(item)})
@@ -730,9 +727,10 @@ struct uiItem{
 
 	//size of the item in memory and the offset of the item member on widgets 
 	u64 memsize;
-	
-	//indicates if the item has been initialized or not yet
-	b32 initialized; 
+
+	//indicates if the item has been cached or not.
+	//this only applies to immediate mode items 	
+	b32 cached;
 	
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
@@ -791,9 +789,13 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 // @immediate
 UI_FUNC_API(void, ui_begin_immediate_branch, uiItem* parent, str8 file, upt line);
 UI_FUNC_API(void, ui_end_immediate_branch, str8 file, upt line);
+UI_FUNC_API(void, ui_push_id, s64 x, str8 file, upt line);
+UI_FUNC_API(void, ui_pop_id, str8 file, upt line);
 #define uiImmediateB()        UI_DEF(begin_immediate_branch(       0, STR8(__FILE__),__LINE__))
 #define uiImmediateBP(parent) UI_DEF(begin_immediate_branch((parent), STR8(__FILE__),__LINE__))
 #define uiImmediateE()        UI_DEF(end_immediate_branch(STR8(__FILE__),__LINE__))
+#define uiPushID(x)           UI_DEF(push_id(x, STR8(__FILE__),__LINE__))
+#define uiPopID()             UI_DEF(pop_id(STR8(__FILE__),__LINE__))
 
 //-------------------------------------------------------------------------------------------------
 // @slider
@@ -1015,6 +1017,7 @@ struct uiContext{
 		str8 file;
 		upt  line;
 		map<u64, uiItem*> cache;
+		u32 id; 
 	}immediate;
 
 	b32 updating; //set true while ui_update is running
