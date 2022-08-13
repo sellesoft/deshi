@@ -136,7 +136,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `Time`
 ------
-[!,*  ,  21/12/31,Tweak] remove/abstract the manual DeshTime->frameTime timer handling at the end of update loop
 
 `UI`
 ----
@@ -163,7 +162,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 -----------
 [!! ,** ,21/07/19,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 [!!!,***,21/12/31,System]  remove GLFW and add linux/mac platform specifics
-[!  ,*  ,22/02/01,Tweak]   remove commit/decommit from defines.h
+[!  ,*  ,22/02/01,Tweak]   remove commit/decommit from Allocator
 
 */
 
@@ -194,13 +193,13 @@ enum
 };
 local DeshiStage deshiStage = DS_NONE;
 
-#define DeshiStageInitStart(stage, dependencies, ...)        \
-    Assert((deshiStage & (dependencies)) == (dependencies)); \
-    deshiStage |= stage;                                     \
-    Stopwatch stopwatch##stage = start_stopwatch()
+#define DeshiStageInitStart(stage, dependencies, ...)      \
+  Assert((deshiStage & (dependencies)) == (dependencies)); \
+  deshiStage |= stage;                                     \
+  Stopwatch stopwatch##stage = start_stopwatch()
 
 #define DeshiStageInitEnd(stage) \
-    LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
+  LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
 
 #define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
 
