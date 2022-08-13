@@ -377,6 +377,7 @@ void console_update(){
 		line->style.display = display_row;
 		line->style.sizing = size_percent_x;
 		line->style.size = {100, f32(console.ui.buffer->style.font_height)};
+		line->id = STR8("console.line0");
 		u64 nlines = 0;
 		u64 i = console.scroll;
 		while(nlines < linestofit){
@@ -392,12 +393,13 @@ void console_update(){
 			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
 			
 			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
-			uiTextM(out);
+			uiTextM(out)->id = toStr8("console.text",i);
 
 			if(console.dictionary[i].newline == 1 && i != (console.dictionary.count-1)){
 				uiItemE(); 
 				line = uiItemBS(&line->style);
 				nlines++;
+				line->id = toStr8("console.line",nlines);
 			}
 
 			//adjust what we're going to print based on formatting

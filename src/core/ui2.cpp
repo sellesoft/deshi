@@ -92,19 +92,19 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 	u32 i_place_next = -1;	
 	for(Node* n = g_ui->inactive_drawcmds.next; n!=&g_ui->inactive_drawcmds; n = n->next){
 		uiDrawCmd* dc = uiDrawCmdFromNode(n);
-		s64 vremain = dc->counts.vertices - counts.vertices;
-		s64 iremain = dc->counts.indices - counts.indices;
+		s64 vremain = dc->counts_reserved.vertices - counts.vertices;
+		s64 iremain = dc->counts_reserved.indices - counts.indices;
 		
 		if(vremain >= 3){
 			//there are a minimum of 3 vertices needed to make a 2D shape, so if there are more than it
 			//we keep the drawcmd for future passes
 			v_place_next = dc->vertex_offset;
 			dc->vertex_offset += counts.vertices;
-			dc->counts.vertices -= counts.vertices;
+			dc->counts_reserved.vertices -= counts.vertices;
 		}else if(vremain >= 0){
 			//otherwise we just take the drawcmd's vertices and make its vertices invalid for future passes
 			v_place_next = dc->vertex_offset;
-			dc->counts.vertices = 0;
+			dc->counts_reserved.vertices = 0;
 		}
 		
 		if(iremain >= 3){
@@ -112,17 +112,15 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 			//after claiming, keep the drawcmd around 
 			i_place_next = dc->index_offset;
 			dc->index_offset += counts.indices;
-			dc->counts.indices -= counts.indices;
+			dc->counts_reserved.indices -= counts.indices;
 		}else if(iremain >= 0){
 			//otherwise we just take the drawcmd's indices and make sure they arent used in future runs
 			i_place_next = dc->index_offset;
-			dc->counts.indices = 0;
+			dc->counts_reserved.indices = 0;
 		}
 		
-		if(!(dc->counts.vertices || dc->counts.indices)){
-			//if both counts are 0 we can go ahead and remove this drawcmd from the list 
-			//we do not handle actually removing the drawcmd from the arena it lives in, this is handled later
-			//in a cleanup pass
+		if(!(dc->counts_reserved.vertices || dc->counts_reserved.indices)){
+			//if both counts are 0 we can go ahead and delete this drawcmd
 			g_ui->stats.drawcmds_reserved--;
 			NodeRemove(n);
 			memzfree(dc);
@@ -140,14 +138,16 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 		g_ui->stats.vertices_reserved += counts.vertices;
 		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(Vertex2);
 		g_ui->vertex_arena->cursor += counts.vertices * sizeof(Vertex2);
+		g_ui->vertex_arena->used += counts.vertices * sizeof(Vertex2);
 	} else drawcmd->vertex_offset = v_place_next;
 	if(i_place_next == -1){
 		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
 		g_ui->stats.indices_reserved += counts.indices;
 		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
 		g_ui->index_arena->cursor += counts.indices * sizeof(u32);
+		g_ui->index_arena->used += counts.indices * sizeof(u32);
 	} else drawcmd->index_offset = i_place_next;
-	drawcmd->counts = counts;
+	drawcmd->counts_reserved = counts;
 }
 
 //@helpers
@@ -252,6 +252,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 	//for now, a cached items drawcmds are always regenerated
 	//TODO(sushi) eventually we should only do this if we need to, that or we can put a rule on items that their drawcmd count should never
 	//            after initial creation, though this is limiting
+	//TODO(sushi) this wastes a lot of time for items whose drawcmds have not changed
 	if(retrieved_){
 		forI(item->drawcmd_count){
 			drawcmd_remove(item->drawcmds + i);
@@ -264,6 +265,8 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 	forI(setup.drawcmd_count){
 		drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
 	}
+	Log("", item->id, " vo: ", item->drawcmds[0].vertex_offset, "-", item->drawcmds[0].vertex_offset+item->drawcmds[0].counts_reserved.vertices, 
+					  " io: ", item->drawcmds[0].index_offset,  "-", item->drawcmds[0].index_offset+item->drawcmds[0].counts_reserved.indices);
 	return item;
 }
 
@@ -355,6 +358,7 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 	RenderDrawCounts counts = {0};
 	counts+=gen_background(item, vp, ip, counts);
 	counts+=gen_border(item, vp, ip, counts);
+	dc->counts_used = counts;
 }
 
 uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -474,8 +478,8 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
 	
-	g_ui->vertex_arena = memory_create_arena(Megabytes(500));
-	g_ui->index_arena  = memory_create_arena(Megabytes(500));
+	g_ui->vertex_arena = memory_create_arena(Megabytes(100));
+	g_ui->index_arena  = memory_create_arena(Megabytes(100));
 	
 	g_ui->base = uiItem{0};
 	g_ui->base.file_created = STR8(__FILE__);
@@ -976,15 +980,15 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		g_ui->stats.items_visible++;
 		forI(item->drawcmd_count){
 			g_ui->stats.drawcmds_visible++;
-			g_ui->stats.vertices_visible += item->drawcmds[i].counts.vertices;
-			g_ui->stats.indices_visible += item->drawcmds[i].counts.indices;
+			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.vertices;
+			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.indices;
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
 			render_add_vertices2(5, 		
 				(Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
-				item->drawcmds[i].counts.vertices, 
+				item->drawcmds[i].counts_used.vertices, 
 				(u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
-				item->drawcmds[i].counts.indices
+				item->drawcmds[i].counts_used.indices
 			);
 		}
 	}
@@ -1087,7 +1091,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	}else if(data->style.dragger_shape == slider_dragger_round){
 		NotImplemented;
 	}
-	dc->counts = counts;
+	dc->counts_used = counts;
 }
 
 void ui_slider_callback(uiItem* item){DPZoneScoped;
@@ -1224,7 +1228,7 @@ void ui_gen_checkbox(uiItem* item){
 		counts+=render_make_filledrect(vp,ip,counts,fillingpos,fillingsize,data->style.colors.filling);
 	}
 	
-	dc->counts = counts;
+	dc->counts_used = counts;
 }
 
 void ui_checkbox_callback(uiItem* item){
@@ -1445,7 +1449,7 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	}
 
 	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
-	if(nucounts.vertices != dc->counts.vertices || nucounts.indices != dc->counts.indices){
+	if(nucounts.vertices != dc->counts_reserved.vertices || nucounts.indices != dc->counts_reserved.indices){
 	    item->drawcmds = make_drawcmd(1);
 		drawcmd_remove(dc);
 		dc = item->drawcmds;
@@ -1456,6 +1460,8 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 	}
 
 	counts+=render_ui_text(counts,dc,vp,ip,item,data->text,{data->breaks.data,data->breaks.count});
+
+	dc->counts_used = counts;
 }
 
 
@@ -1530,7 +1536,7 @@ void ui_gen_input_text(uiItem* item){DPZoneScoped;
 	RenderDrawCounts nucounts = 
 		render_make_text_counts(str8_length(data->text.buffer.fin)) +
 		render_make_filledrect_counts(); //cursor
-	if(nucounts.vertices != dc->counts.vertices || nucounts.indices != dc->counts.indices){
+	if(nucounts.vertices != dc->counts_reserved.vertices || nucounts.indices != dc->counts_reserved.indices){
 	    item->drawcmds = make_drawcmd(1);
 		drawcmd_remove(dc);
 		dc = item->drawcmds;
@@ -1576,6 +1582,8 @@ void ui_gen_input_text(uiItem* item){DPZoneScoped;
 		//            it is used as a boundry instead
 		counts+=render_make_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
 	}
+
+	dc->counts_used = counts;
 }
 
 void ui_eval_input_text(uiItem* item){DPZoneScoped;
@@ -1605,7 +1613,7 @@ void ui_update_input_text(uiItem* item){DPZoneScoped;
 	Log("", "--------------------------------------------------------------------------------");
 	Log("", data->text.cursor.pos, " ", data->text.buffer.fin);
 	Log("", item->drawcmds[0].index_offset, " ", item->drawcmds[0].vertex_offset);
-	Log("", item->drawcmds[0].counts.indices, " ", item->drawcmds[0].counts.vertices);
+	Log("", item->drawcmds[0].counts_reserved.indices, " ", item->drawcmds[0].counts_reserved.vertices);
 
 
 	//allows input on first press, then allows repeats when the repeat bool is set on input
