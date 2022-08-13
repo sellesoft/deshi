@@ -106,7 +106,7 @@ struct Console{
 	b32 open_pressed     = false;
 	b32 scroll_to_bottom = false;
 
-	u64 scroll = 0;
+	s64 scroll = 0;
 
 	struct{
 		uiItem* main;

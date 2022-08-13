@@ -359,6 +359,13 @@ void console_update(){
 			file_cursor(console.logger->file, restore);
 		}
 	}
+
+	if(ui_item_hovered(console.ui.buffer, 0)){
+		console.scroll += DeshInput->scrollY;
+		console.scroll = Max(0,console.scroll);
+	Log("", DeshInput->scrollY);
+	}
+
 	
 	//console openness
 	if(console.open_target != console.open_amount){
@@ -381,7 +388,7 @@ void console_update(){
 		u64 nlines = 0;
 		u64 i = console.scroll;
 		while(nlines < linestofit){
-			if(i==console.dictionary.count) break;
+			if(i>=console.dictionary.count) break;
 			//if console_chunk_render_arena isn't large enough, double the space for it
 			if(console.dictionary[i].size >= console.chunk_render_arena->size){
 				console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
@@ -393,7 +400,8 @@ void console_update(){
 			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
 			
 			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
-			uiTextM(out)->id = toStr8("console.text",i);
+			uiTextMS(&line->style, out)->id = toStr8("console.text",i);
+			
 
 			if(console.dictionary[i].newline == 1 && i != (console.dictionary.count-1)){
 				uiItemE(); 
