@@ -265,8 +265,6 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 	forI(setup.drawcmd_count){
 		drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
 	}
-	Log("", item->id, " vo: ", item->drawcmds[0].vertex_offset, "-", item->drawcmds[0].vertex_offset+item->drawcmds[0].counts_reserved.vertices, 
-					  " io: ", item->drawcmds[0].index_offset,  "-", item->drawcmds[0].index_offset+item->drawcmds[0].counts_reserved.indices);
 	return item;
 }
 
@@ -348,6 +346,12 @@ RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts
 
 b32 mouse_in_rect(vec2 pos, vec2 size){
 	return Math::PointInRectangle(input_mouse_position(), pos, size);
+}
+
+b32 ui_item_hovered(uiItem* item, b32 strict){
+	if(strict) return g_ui->hovered == item;
+	if(mouse_in_rect(item->spos, item->size)) return true;
+	return false;
 }
 
 //@item
@@ -903,7 +907,9 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
 	if(Math::PointInRectangle(input_mouse_position(), item->spos, item->size)){
-		g_ui->hovered = item;
+		uiItem* cur = item;
+		while(cur->style.hover_passthrough) cur = uiItemFromNode(cur->node.parent);
+		g_ui->hovered = cur;
 		return 1;
 	}
 	return 0;

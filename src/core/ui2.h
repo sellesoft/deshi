@@ -528,6 +528,10 @@ struct uiKeybinds{
 	}inputtext;
 }global uikeys;
 
+//calling this with strict = 1 means it will only return hovered if the mouse is 
+//visibly over it and not blocked by anything else. calling this with strict = 0 
+//just checks if the mouse is within the items bounds
+b32 ui_item_hovered(uiItem* item, b32 strict = 1);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @item
@@ -659,6 +663,7 @@ external struct uiStyle{
 	Type  display;
 	Type  overflow;
 	vec2  content_align; 
+	b32   hover_passthrough;
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
