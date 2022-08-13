@@ -87,10 +87,8 @@ https://github.com/nothings/stb/blob/master/stb_ds.h
 #pragma once
 #ifndef DESHI_MEMORY_H
 #define DESHI_MEMORY_H
-
 #include "kigu/common.h"
 #include "kigu/node.h"
-#include "kigu/unicode.h"
 
 #define MEMORY_CHECK_HEAPS false
 #define MEMORY_TRACK_ALLOCS false
