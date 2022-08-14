@@ -267,6 +267,7 @@ void console_update(){DPZoneScoped;
 				while(console.scroll > 0 && !console.dictionary[console.scroll].newline) console.scroll--;
 			}
 		}
+		console.scroll = Max(0,console.scroll);
 	}
 
 	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
