@@ -65,6 +65,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 `Logger`
 --------
 [!! ,*  ,22/01/06,Tweak] optimize by using a single buffer or temp allocation instead of strings in logger_comma_log
+[!  ,** ,22/08/13,Tweak] remove color formatting from messages before outputting it to the log file (but not before sending it to stdout or console)
 
 `Math`
 ------

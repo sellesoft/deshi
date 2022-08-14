@@ -1,36 +1,31 @@
 /*Console Message Formatting:
-Syntax:
-{{plain_specifier, arg_specifier=arg}text that will be formatted}
+	The console's formatting follows closely to virtual terminal sequences, but contains some custom sequences as well
+	Most VTSs arent supported because they arent really useful in console. All color VTSs are though.
 
-Notes:
-Messages with a formatting starter {{}... will apply that formatting until the end of the string.
+	See this link for information on VTSs and the codes:
+		https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 
-Modifiers:
-a     - (alert)        flashes the background of the message with modifier color (default red)
-e     - (error)        these messages are red
-w     - (warning)      these messages are yellow
-s     - (success)      these messages are green
-t=... - (tag)          these messages have a tag they can be filtered by
-c=... - (color)        sets the color of the wrapped message
+	NOTE in C, ESC is typed out as \x1b
 
-Examples:
-{{c=red}a red message}
-{{a}an alert message}
-{{t=vulkan, c=yellow}a message with multiple modifiers}
-non-formatted text {{a,c=blue,t=vulkan}blue text with a flashing background and the tag "VULKAN"}
+	While we follow the pattern of "ESC [ <n> m" for color sequences, we dont for custom ones. This is to 
+	preserve compatibility with sending console stuff to an actual terminal that uses them, but to make it easier to
+	parse custom terminal sequences will be of the form "ESC <type> [ <argument> ]".
 
-// 
-//  
-//
-//  if a message is formatted and ends without terminating the formatting
-//  its still valid, } only ends the formatting so you can have different formatting per message
-//  for example
-//
-//  {{c=yellow} some message
-//  will still color the message yellow,
-//
-//  some text before formatting {{a} some formatted text at the end
-//  will not format the first part, and format the rest
+	An example of how to write these out in C would be "\x1b[38m", for colors and for our custom messages
+	"\x1bt[console]", which would tag the message with "console"
+
+	List of custom terminal sequences:
+	
+	Tag:     ESC t [ <tag> {, <tag> } ]  -- NOTE this is only considered once, as a message may only define tags once 
+	Alert:   ESC a []
+	Warning: ESC w []
+	Error:   ESC e []
+	Success: ESC s []
+
+TODOs:
+	implement alert, error, warning, and success sequences
+		consider not implementing these as well, because they are generally just set by logger anyways 
+
 */
 
 #pragma once
@@ -64,7 +59,8 @@ typedef Type ConsoleChunkType; enum{
 struct ConsoleChunk{
 	ConsoleChunkType type;
 	str8 tag;
-	color color;
+	color fg;
+	color bg;
 	u64 start;
 	u64 size;
 	b32 newline;
@@ -126,7 +122,7 @@ FORCE_INLINE Console* console_expose();
 void console_change_state(ConsoleState new_state);
 
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
-void console_parse_message(str8 message);
+void console_parse_message(str8 message, str8 tag = STR8(""), Type type = ConsoleChunkType_Normal, b32 from_logger = 0, u32 logger_offset = 0);
 
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
 #define console_log(...) \

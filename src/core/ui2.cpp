@@ -122,7 +122,8 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 		if(!(dc->counts_reserved.vertices || dc->counts_reserved.indices)){
 			//if both counts are 0 we can go ahead and delete this drawcmd
 			g_ui->stats.drawcmds_reserved--;
-			NodeRemove(n);
+			n=n->prev;
+			NodeRemove(n->next);
 			memzfree(dc);
 		}
 		

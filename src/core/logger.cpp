@@ -80,22 +80,12 @@ logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 	
 	//write to console
 	if(logger.mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)){
-		ConsoleChunk chunk;
-		chunk.tag = tag;
-		
-		u32 message_offset = tag.count;
 		switch(log_type){
-			case LogType_Normal: { chunk.type = ConsoleChunkType_Normal;  chunk.color = Color_White;  message_offset += 0; }break; //"[] "
-			case LogType_Error:  { chunk.type = ConsoleChunkType_Error;   chunk.color = Color_Red;    message_offset += 0; }break; //"[] " and "-ERROR"
-			case LogType_Warning:{ chunk.type = ConsoleChunkType_Warning; chunk.color = Color_Yellow; message_offset += 0; }break; //"[] " and "-WARNING"
-			case LogType_Success:{ chunk.type = ConsoleChunkType_Success; chunk.color = Color_Green;  message_offset += 0; }break; //"[] " and "-SUCCESS"
+			case LogType_Normal: {console_parse_message({logger.last_message+tag.count+ 0,logger.last_message_length-(tag.count+ 0)},tag,ConsoleChunkType_Normal ,1,log_file_offset+tag.count+ 0);} break; //"[] "
+			case LogType_Error:  {console_parse_message({logger.last_message+tag.count+18,logger.last_message_length-(tag.count+18)},tag,ConsoleChunkType_Error  ,1,log_file_offset+tag.count+18);} break; //"[] " and "-ERROR"
+			case LogType_Warning:{console_parse_message({logger.last_message+tag.count+20,logger.last_message_length-(tag.count+20)},tag,ConsoleChunkType_Warning,1,log_file_offset+tag.count+20);} break; //"[] " and "-WARNING"
+			case LogType_Success:{console_parse_message({logger.last_message+tag.count+20,logger.last_message_length-(tag.count+20)},tag,ConsoleChunkType_Success,1,log_file_offset+tag.count+20);} break; //"[] " and "-SUCCESS"
 		}
-		
-		chunk.start   = log_file_offset + message_offset;
-		chunk.size    = logger.last_message_length - message_offset;
-		chunk.newline = (logger.last_message[logger.last_message_length-1] == '\n');
-		if(chunk.newline) chunk.size -= 1;
-		console_expose()->dictionary.add(chunk);
 	}
 	
 	return cursor;

@@ -2,236 +2,127 @@
 //// @internal
 local Console console;
 
-color console_string_to_color(str8 s){
-	u64 s_hash = str8_hash64(s);
-	switch(s_hash){
-		case str8_static_hash64("red"    ): return Color_Red;
-		case str8_static_hash64("dred"   ): return Color_DarkRed;
-		case str8_static_hash64("blue"   ): return Color_Blue;
-		case str8_static_hash64("dblue"  ): return Color_DarkBlue;
-		case str8_static_hash64("cyan"   ): return Color_Cyan;
-		case str8_static_hash64("dcyan"  ): return Color_DarkCyan;
-		case str8_static_hash64("grey"   ): return Color_Grey;
-		case str8_static_hash64("dgrey"  ): return Color_DarkGrey;
-		case str8_static_hash64("green"  ): return Color_Green;
-		case str8_static_hash64("dgreen" ): return Color_DarkGreen;
-		case str8_static_hash64("yellow" ): return Color_Yellow;
-		case str8_static_hash64("dyellow"): return Color_DarkYellow;
-		case str8_static_hash64("magen"  ): return Color_Magenta;
-		case str8_static_hash64("dmagen" ): return Color_DarkMagenta;
-		case str8_static_hash64("white"  ): return Color_White;
-		case str8_static_hash64("black"  ): return Color_Black;
-		default:
-		LogW("console","Unknown color in chunk formatting: ", s);
-		return Color_White;
-	}
-}
-
-void console_send_to_logger(str8 message, b32 newline){DPZoneScoped;
-	b32 restore_mirror  = console.logger->mirror_to_console;
-	b32 restore_tag     = console.logger->ignore_tags;
-	b32 restore_newline = console.logger->auto_newline;
-	b32 restore_track   = console.logger->track_caller;
-	console.logger->mirror_to_console = false;
-	console.logger->ignore_tags       = true;
-	console.logger->auto_newline      = newline;
-	console.logger->track_caller      = false;
-	logger_format_log(str8_lit(__FILE__),__LINE__,str8{},LogType_Normal,str8_lit("%.*s"),message.count,message.str);
-	console.logger->mirror_to_console = restore_mirror;
-	console.logger->ignore_tags       = restore_tag;
-	console.logger->auto_newline      = restore_newline;
-	console.logger->track_caller      = restore_track;
-}
-
-void console_parse_message(str8 message){DPZoneScoped;
+void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u32 logger_offset){DPZoneScoped;
 	if(message.count == 0) return;
 	
 	if(console.automatic_scroll){
 		console.scroll_to_bottom = true;
 	}
-	
-	ConsoleChunk chunk{ConsoleChunkType_Normal, {}, Color_White};
-	u64 log_offset = console.logger->file->bytes;
+
+	u64 log_offset = (from_logger?logger_offset:console.logger->file->bytes);
+	ConsoleChunk chunk = {type,tag,Color_White,Color_Blank};
 	u8* chunk_start = message.str;
-	str8 remaining = message;
-	while(remaining){
-		DecodedCodepoint current = str8_advance(&remaining);
-		if(current.codepoint == '\n'){
-			chunk.start   = log_offset;
-			chunk.size    = remaining.str - current.advance - chunk_start;
-			chunk.newline = true;
-			console.dictionary.add(chunk);
-			console_send_to_logger(str8{chunk_start,(s64)chunk.size}, true);
-			log_offset += chunk.size + 1;
-			chunk_start = remaining.str;
-		}
-		
-		if(current.codepoint == '{'){
-			//add current chunk to dictionary and start a new one
-			if(remaining.str - current.advance - chunk_start > 0){
-				chunk.type    = ConsoleChunkType_Normal;
-				chunk.tag     = str8{};
-				chunk.color   = Color_White;
-				chunk.start   = log_offset;
-				chunk.size    = remaining.str - current.advance - chunk_start;
-				chunk.newline = false;
-				console.dictionary.add(chunk); //TODO(delle) maybe append to prev chunk if no difference in formatting
-				console_send_to_logger(str8{chunk_start,(s64)chunk.size}, false);
-				log_offset += chunk.size;
-				chunk_start = remaining.str;
-			}
-			
-			//NOTE(delle) we use decoded_codepoint_from_utf8() instead of advance() so that
-			//we don't have to rollback remaining if the codepoint doesn't match
-			DecodedCodepoint next = decoded_codepoint_from_utf8(remaining.str, 4);
-			if(next.codepoint == '{'){
-				remaining.str += next.advance; remaining.count -= next.advance;
-				
-				another_specifier:;
-				if(!remaining){ //the message ended before finishing specifiers, so treat as a normal chunk
-					chunk.type    = ConsoleChunkType_Normal;
-					chunk.tag     = str8{};
-					chunk.color   = Color_White;
-					chunk.start   = log_offset;
-					chunk.size    = remaining.str - chunk_start;
-					chunk.newline = true;
-					console.dictionary.add(chunk);
-					console_send_to_logger(str8{chunk_start,(s64)chunk.size}, chunk.newline);
-					return;
+	str8 stream = message;
+	while(stream){
+		DecodedCodepoint dc = str8_advance(&stream);
+		switch(dc.codepoint){
+			case '\n':{
+				chunk.start = log_offset;
+				chunk.size = stream.str - dc.advance - chunk_start;
+				chunk.newline = 1;
+				console.dictionary.add(chunk);
+				chunk = {type,tag,chunk.fg,chunk.bg};
+				chunk_start = stream.str;
+			}break;
+
+			case '\x1b':{
+				u8* escstart = stream.str - 1;
+				ConsoleChunk nuchunk = chunk;
+				DecodedCodepoint dcnext = str8_advance(&stream);
+				if(dcnext.codepoint != '[') continue;
+				str8 numstr = str8_eat_int(stream);
+				s32 num = stoi(numstr);
+				str8_increment(&stream, numstr.count);
+				switch(num){
+					case 0:   nuchunk.fg = Color_White, nuchunk.bg = Color_Blank; break;
+					case 1:   NotImplemented; //TODO(sushi) implement bold
+					case 22:  NotImplemented; 
+					case 4:   NotImplemented; //TODO(sushi) implement underline
+					case 24:  NotImplemented;
+					//the following two just do the same thing, as 27 is meant to undo 7, but i dont feel like tracking that
+					case 7:   {color save=nuchunk.fg;nuchunk.fg=nuchunk.bg;nuchunk.bg=save;} break;
+					case 27:  {color save=nuchunk.fg;nuchunk.fg=nuchunk.bg;nuchunk.bg=save;} break;
+					case 30:  nuchunk.fg = Color_Black;        break;
+					case 31:  nuchunk.fg = Color_Red;          break;
+					case 32:  nuchunk.fg = Color_Green;        break;
+					case 33:  nuchunk.fg = Color_Yellow;       break;
+					case 34:  nuchunk.fg = Color_Blue;         break;
+					case 35:  nuchunk.fg = Color_Magenta;      break;
+					case 36:  nuchunk.fg = Color_Cyan;         break;
+					case 37:  nuchunk.fg = Color_White;        break;
+					case 39:  nuchunk.fg = Color_White;        break;
+					case 40:  nuchunk.bg = Color_Black;        break;
+					case 41:  nuchunk.bg = Color_Red;          break;
+					case 42:  nuchunk.bg = Color_Green;        break;
+					case 43:  nuchunk.bg = Color_Yellow;       break;
+					case 44:  nuchunk.bg = Color_Blue;         break;
+					case 45:  nuchunk.bg = Color_Magenta;      break;
+					case 46:  nuchunk.bg = Color_Cyan;         break;
+					case 47:  nuchunk.bg = Color_White;        break;
+					case 49:  nuchunk.bg = Color_White;        break;
+					case 90:  nuchunk.fg = Color_LightGrey;    break;
+					case 91:  nuchunk.fg = Color_LightRed;     break;
+					case 92:  nuchunk.fg = Color_LightGreen;   break;
+					case 93:  nuchunk.fg = Color_LightYellow;  break;
+					case 94:  nuchunk.fg = Color_LightBlue;    break;
+					case 95:  nuchunk.fg = Color_LightMagenta; break;
+					case 96:  nuchunk.fg = Color_LightCyan;    break;
+					case 97:  nuchunk.fg = Color_White;        break;
+					case 100: nuchunk.bg = Color_LightGrey;    break;
+					case 101: nuchunk.bg = Color_LightRed;     break;
+					case 102: nuchunk.bg = Color_LightGreen;   break;
+					case 103: nuchunk.bg = Color_LightYellow;  break;
+					case 104: nuchunk.bg = Color_LightBlue;    break;
+					case 105: nuchunk.bg = Color_LightMagenta; break;
+					case 106: nuchunk.bg = Color_LightCyan;    break;
+					case 107: nuchunk.bg = Color_White;        break;
+					case 38:
+					case 48:{
+						DecodedCodepoint dc = str8_advance(&stream);
+						if(dc.codepoint != ';') continue; //invalid code, just continue
+						dc = str8_advance(&stream);
+						if(dc.codepoint == '2'){
+							dc = str8_advance(&stream);
+							if(dc.codepoint != ';') continue; //invalid code, just continue
+							str8 r = str8_eat_int(stream);
+							str8_increment(&stream,r.count);
+							dc = str8_advance(&stream);
+							if(dc.codepoint != ';') continue; //invalid code, just continue
+							str8 g = str8_eat_int(stream);
+							str8_increment(&stream,g.count);
+							dc = str8_advance(&stream);
+							if(dc.codepoint != ';') continue; //invalid code, just continue
+							str8 b = str8_eat_int(stream);
+							str8_increment(&stream,b.count);
+							dc = str8_advance(&stream);
+							if(dc.codepoint != ';') continue; //invalid code, just continue
+
+							if(num == 38) nuchunk.fg = color(stoi(r),stoi(g),stoi(b));
+							else          nuchunk.bg = color(stoi(r),stoi(g),stoi(b));
+						}else if(dc.codepoint == '5'){
+							NotImplemented; //we dont support color tables
+						}else continue; //invalid code
+					}break; 
 				}
-				
-				next = decoded_codepoint_from_utf8(remaining.str, 4);
-				u32 specifier = next.codepoint;
-				switch(specifier){
-					case 0:{ //error when decoding utf8 in specifiers, so stop parsing and treat as normal chunk
-						chunk.type    = ConsoleChunkType_Normal;
-						chunk.tag     = str8{};
-						chunk.color   = Color_White;
-						chunk.start   = log_offset;
-						chunk.size    = remaining.str - chunk_start;
-						chunk.newline = true;
-						console.dictionary.add(chunk);
-						console_send_to_logger(str8{chunk_start,(s64)chunk.size}, chunk.newline);
-						return;
-					}break;
-					case ' ':{ //skip spaces in the specifier
-						remaining.str += next.advance; remaining.count -= next.advance;
-						goto another_specifier;
-					}break;
-					
-					case 'a':{
-						remaining.str += next.advance; remaining.count -= next.advance;
-						chunk.type |= ConsoleChunkType_Alert;
-					}break;
-					case 'e':{
-						remaining.str += next.advance; remaining.count -= next.advance;
-						chunk.type = HasFlag(chunk.type, ConsoleChunkType_Alert) ? ConsoleChunkType_Error|ConsoleChunkType_Alert : ConsoleChunkType_Error;
-						chunk.color = Color_Red;
-					}break;
-					case 'w':{
-						remaining.str += next.advance; remaining.count -= next.advance;
-						chunk.type = HasFlag(chunk.type, ConsoleChunkType_Alert) ? ConsoleChunkType_Warning|ConsoleChunkType_Alert : ConsoleChunkType_Warning;
-						chunk.color = Color_Yellow;
-					}break;
-					case 's':{
-						remaining.str += next.advance; remaining.count -= next.advance;
-						chunk.type = HasFlag(chunk.type, ConsoleChunkType_Alert) ? ConsoleChunkType_Success|ConsoleChunkType_Alert : ConsoleChunkType_Success;
-						chunk.color = Color_Green;
-					}break;
-					
-					case 'c':
-					case 't':{
-						remaining.str += next.advance; remaining.count -= next.advance;
-						next = decoded_codepoint_from_utf8(remaining.str, 4);
-						if(next.codepoint == '='){
-							remaining.str += next.advance; remaining.count -= next.advance;
-							
-							//loop until } or ,
-							b32 end_formatting = false;
-							str8 arg{remaining.str, 0};
-							while(remaining){
-								DecodedCodepoint decoded = decoded_codepoint_from_utf8(remaining.str, 4);
-								if(decoded.codepoint == '}'){ end_formatting = true; break; }
-								if(decoded.codepoint == ',') break;
-								remaining.str += decoded.advance; remaining.count -= decoded.advance;
-								arg.count += decoded.advance;
-							}
-							
-							//if remaining is empty, there was no } or , in the rest of the message
-							if(remaining){
-								remaining.str += 1; remaining.count -= 1; //NOTE(delle) +1 because we know } or , only take 1 byte
-								if(specifier == 'c'){
-									chunk.color = console_string_to_color(arg);
-								}else{
-									chunk.tag = arg;
-								}
-								
-								if(end_formatting){
-									//loop until } or \n
-									another_chunk:;
-									end_formatting = false; //NOTE(delle) reusing end_formatting to check whether text_chunk ends with } or \n
-									arg.str = remaining.str; arg.count = 0; //same with arg
-									while(remaining){
-										DecodedCodepoint decoded = decoded_codepoint_from_utf8(remaining.str, 4);
-										if(decoded.codepoint == '}'){ end_formatting = true; break; }
-										if(decoded.codepoint == '\n') break;
-										remaining.str += decoded.advance; remaining.count -= decoded.advance;
-										arg.count += decoded.advance;
-									}
-									
-									if(remaining){
-										//add formatted chunk
-										chunk.start   = log_offset;
-										chunk.size    = remaining.str - arg.str;
-										chunk.newline = (end_formatting == false || remaining.count <= 0);
-										console.dictionary.add(chunk);
-										console_send_to_logger(arg, chunk.newline);
-										log_offset += arg.count + ((chunk.newline) ? 1 : 0);
-										
-										remaining.str += 1; remaining.count -= 1; //NOTE(delle) +1 because we know } or \n only takes 1 byte
-										chunk_start = remaining.str;
-										
-										//reset to normal chunk if formatting ended, else keep parsing with current formatting
-										if(end_formatting){
-											chunk.type    = ConsoleChunkType_Normal;
-											chunk.tag     = str8{};
-											chunk.color   = Color_White;
-										}else{
-											goto another_chunk;
-										}
-									}else{
-										//we reached the end of the message without finding a } so stop parsing
-										if(remaining.str - chunk_start){
-											chunk.start   = log_offset;
-											chunk.size    = remaining.str - chunk_start;
-											chunk.newline = true;
-											console.dictionary.add(chunk);
-											console_send_to_logger(str8{chunk_start,(s64)chunk.size}, chunk.newline);
-										}
-										return;
-									}
-								}else{
-									goto another_specifier;
-								}
-							}else{
-								//we reached the end of the message without finding a } so stop parsing
-								if(remaining.str - chunk_start){
-									chunk.start   = log_offset;
-									chunk.size    = remaining.str - chunk_start;
-									chunk.newline = true;
-									console.dictionary.add(chunk);
-									console_send_to_logger(str8{chunk_start,(s64)chunk.size}, chunk.newline);
-								}
-								return;
-							}
-						}
-					}break;
-				}
-			}
+				dc = str8_advance(&stream);
+				if(dc.codepoint != 'm') continue;
+				chunk.start = log_offset;
+				chunk.size = escstart - chunk_start;
+				log_offset += chunk.size + (stream.str - escstart);
+				console.dictionary.add(chunk);
+				chunk = nuchunk; 
+				chunk_start = stream.str;
+			}break;
 		}
 	}
+	if(chunk_start != stream.str){
+		//add the last chunk if it exists
+		chunk.start = log_offset;
+		chunk.size = stream.str - chunk_start;
+		console.dictionary.add(chunk);
+	}
+	if(!from_logger) Log("", message);
 }
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
@@ -363,7 +254,7 @@ void console_update(){
 	if(ui_item_hovered(console.ui.buffer, 0)){
 		console.scroll += DeshInput->scrollY;
 		console.scroll = Max(0,console.scroll);
-	Log("", DeshInput->scrollY);
+		Log("", DeshInput->scrollY);
 	}
 
 	
@@ -402,7 +293,6 @@ void console_update(){
 			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
 			uiTextMS(&line->style, out)->id = toStr8("console.text",i);
 			
-
 			if(console.dictionary[i].newline == 1 && i != (console.dictionary.count-1)){
 				uiItemE(); 
 				line = uiItemBS(&line->style);
