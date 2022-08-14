@@ -239,7 +239,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 			item->style.text_wrap   = parent->style.text_wrap;
 			item->style.tab_spaces  = parent->style.text_wrap;
 		} 
-	}
+	}else if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
 	
 	item->file_created = setup.file;
 	item->line_created = setup.line;
@@ -737,22 +737,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->ly += child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->lx += (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						if(!wauto) child->lx += (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->ly += child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->lx += (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						if(!wauto) child->lx += (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->lx += (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						if(!hauto) child->ly += (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->lx += child->style.x;
 						
-						if(!hauto) child->lx += (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						if(!hauto) child->ly += (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -771,22 +771,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->ly = child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->lx = (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						if(!wauto) child->lx = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->ly = child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->lx = (item->width - 2*wborder - item->style.padding_left - item->style.padding_right) - child->style.x;
+						if(!wauto) child->lx = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->lx = (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						if(!hauto) child->ly = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->lx = child->style.x;
 						
-						if(!hauto) child->lx = (item->height - 2*wborder - item->style.padding_bottom - item->style.padding_top) - child->style.y;
+						if(!hauto) child->ly = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -1059,6 +1059,25 @@ void ui_update(){DPZoneScoped;
 	}
 	g_ui->immediate_items.clear();
 	
+	persist Stopwatch cleanup_timer = start_stopwatch();
+
+	// if(peek_stopwatch(cleanup_timer) > 5000){
+	// 	reset_stopwatch(&cleanup_timer);
+	// 	forI(g_ui->items.count){
+	// 		uiItem* item = g_ui->items[i];
+	// 		memzfree(item->drawcmds);
+	// 		item->dirty = 1;
+	// 	}
+	// 	memory_clear_arena(g_ui->vertex_arena);
+	// 	memory_clear_arena(g_ui->index_arena);
+	// 	for(Node* n = g_ui->inactive_drawcmds.next; n!=&g_ui->inactive_drawcmds; n = n->next){
+	// 		uiDrawCmd* dc = uiDrawCmdFromNode(n);
+	// 		n=n->prev;
+	// 		NodeRemove(n->next);
+	// 		memzfree(dc);
+	// 	}
+	// }
+
 	g_ui->updating = 0;
 }
 
@@ -1289,7 +1308,7 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 //            of uiText. The way the API is setup right now doesn't really allow for this, at least not in any nice way.
 //            It may be better to keep them separate however.
 
-void find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping){DPZoneScoped;
+void find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size = 0){DPZoneScoped;
 	breaks->clear();
 	breaks->add({0,{0,0}});
 	str8 last_space_or_tab = text.buffer.fin;
@@ -1298,6 +1317,7 @@ void find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f3
 	f32 width_since_last_word = 0;
 	f32 xoffset = 0; //horizonal offset from top left corner of item
 	f32 yoffset = 0; //vertical offset from top left corner of item
+	if(reset_size) item->width = 0, item->height = 0;
 	while(scan){
 		DecodedCodepoint dc = str8_advance(&scan);
 		if(dc.codepoint == U'\n'){
@@ -1479,7 +1499,7 @@ void ui_eval_text(uiItem* item){
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	uiText* data = uiGetText(item);
-	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)));
+	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 1);
 }
 
 //performs checks on the text element for things like mouse selection
@@ -1521,8 +1541,11 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	uiItem* item = ui_setup_item(setup, &retrieved);
 	uiText* data = (uiText*)item;
 	
+	//if this item was retrieved we need to update its text
+	//otherwise its possible for it to take on the text of a different item 
 	if(!retrieved)
 		data->text = text_init(text);
+	else text_clear_and_replace(&data->text, text);
 	data->breaks.allocator = deshi_allocator;
 	
 	return item;
@@ -1600,7 +1623,7 @@ void ui_eval_input_text(uiItem* item){DPZoneScoped;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	uiInputText* data = uiGetInputText(item);
-	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)));
+	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 0);
 }
 
 void ui_update_input_text(uiItem* item){DPZoneScoped;
@@ -1616,12 +1639,6 @@ void ui_update_input_text(uiItem* item){DPZoneScoped;
 		reset_stopwatch(&data->repeat_throttle);
 		repeat = 1;
 	}
-
-	Log("", "--------------------------------------------------------------------------------");
-	Log("", data->text.cursor.pos, " ", data->text.buffer.fin);
-	Log("", item->drawcmds[0].index_offset, " ", item->drawcmds[0].vertex_offset);
-	Log("", item->drawcmds[0].counts_reserved.indices, " ", item->drawcmds[0].counts_reserved.vertices);
-
 
 	//allows input on first press, then allows repeats when the repeat bool is set on input
 	//do action depending on bind pressed
@@ -1798,20 +1815,20 @@ void ui_debug(){
 				panel->style.width = 1;
 				
 				
-				//panel->style.margin_right = 1;
+				panel->style.margin_right = 1;
 				
-				// {ui_dwi.internal_info = uiItemB(); 
-				// 	ui_dwi.internal_info->style = def_style;
-				// 	ui_dwi.internal_info->id = STR8("ui_debug internal info");
-				// 	ui_dwi.internal_info->style.sizing = size_percent_x;
-				// 	ui_dwi.internal_info->style.width = 100;
-				// 	ui_dwi.internal_info->style.height = 100;
-				// 	ui_dwi.internal_info->style.background_color = color(14,14,14);
-				// 	ui_dwi.internal_info->style.content_align = {0.5, 0.5};
+				{ui_dwi.internal_info = uiItemB(); 
+					ui_dwi.internal_info->style = def_style;
+					ui_dwi.internal_info->id = STR8("ui_debug internal info");
+					ui_dwi.internal_info->style.sizing = size_percent_x;
+					ui_dwi.internal_info->style.width = 100;
+					ui_dwi.internal_info->style.height = 100;
+					ui_dwi.internal_info->style.background_color = color(14,14,14);
+					ui_dwi.internal_info->style.content_align = {0.5, 0.5};
 				
 				
-				// 	uiItemE();
-				// }
+					uiItemE();
+				}
 				
 				ui_dwi.panel0 = panel;
 			}uiItemE();
@@ -1833,62 +1850,74 @@ void ui_debug(){
 	
 	uiImmediateBP(ui_dwi.panel0);{//make internal info header
 		//header stores an action that toggles its boolean in the data struct
-		// {uiItem* header = uiItemBS(&ui_dwi.def_style);
-		// 	header->id = STR8("header");
-		// 	header->style.sizing = size_auto_y | size_percent_x;
-		// 	header->style.width = 100;
-		// 	header->style.padding = {2,2,2,2};
-		// 	header->style.background_color = color(14,14,14);
-		// 	header->action = [](uiItem* item){
-		// 		if(input_lmouse_pressed()){
-		// 			ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
-		// 		}
-		// 	};	
-		// 	header->action_trigger = action_act_mouse_hover;
+		{uiItem* header = uiItemBS(&ui_dwi.def_style);
+			header->id = STR8("header");
+			header->style.sizing = size_auto_y | size_percent_x;
+			header->style.width = 100;
+			header->style.padding = {2,2,2,2};
+			header->style.background_color = color(14,14,14);
+			header->action = [](uiItem* item){
+				if(input_lmouse_pressed()){
+					ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
+				}
+			};	
+			header->action_trigger = action_act_mouse_hover;
 			
-		// 	//uiTextML("internal info")->id = STR8("header text");
-		// }uiItemE();
+			//uiTextML("internal info")->id = STR8("header text");
+		}uiItemE();
 		
-		// if(ui_dwi.internal_info_header){
-		// 	{uiItem* cont = uiItemBS(&ui_dwi.def_style);
-		// 		cont->id = STR8("header cont");
+		if(ui_dwi.internal_info_header){
+			{uiItem* cont = uiItemBS(&ui_dwi.def_style);
+				cont->id = STR8("header cont");
 				
-		// 		cont->style.sizing = size_percent_x;
-		// 		cont->style.width = 100;
-		// 		cont->style.height = 100;
+				cont->style.sizing = size_percent_x;
+				cont->style.width = 100;
+				cont->style.height = 100;
 				
-		// 		if(ui_dwi.selected_item){
+				if(ui_dwi.selected_item){
 					
-		// 		}else if(ui_dwi.selecting_item){
+				}else if(ui_dwi.selecting_item){
 					
-		// 			ui_dwi.internal_info->style.content_align = {0.5,0.5};
-		// 			uiTextML("selecting item...");
+					ui_dwi.internal_info->style.content_align = {0.5,0.5};
+					uiTextML("selecting item...");
 					
-		// 			if(g_ui->hovered && input_lmouse_pressed()){
-		// 				ui_dwi.selected_item = g_ui->hovered;
-		// 			}
+					if(g_ui->hovered && input_lmouse_pressed()){
+						ui_dwi.selected_item = g_ui->hovered;
+					}
 					
-		// 		}else{
-		// 			// {uiItem* item = uiItemB();
-		// 			// 	item->id = STR8("button");
-		// 			// 	item->style.background_color = Color_VeryDarkCyan;
-		// 			// 	item->style.sizing = size_auto;
-		// 			// 	item->style.padding = {1,1,1,1};
-		// 			// 	item->style.margin = {1,1,1,1};
-		// 			// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-		// 			// 	item->style.font_height = 11;
-		// 			// 	item->style.text_color = Color_White;
-		// 			// 	item->action = [](uiItem* item) { 
-		// 			// 		ui_dwi.selecting_item = 1; 
-		// 			// 	};
-		// 			// 	item->action_trigger = action_act_mouse_pressed;
-		// 			// 	uiTextML("O");
-		// 			// }uiItemE();
-		// 			//ui_dwi.internal_info->style.content_align = {0.5,0.5};
-		// 			//uiTextML("no item selected.");
-		// 		}
-		// 	}uiItemE();
-		// }
+				}else{
+					// {uiItem* item = uiItemB();
+					// 	item->id = STR8("button");
+					// 	item->style.background_color = Color_VeryDarkCyan;
+					// 	item->style.sizing = size_auto;
+					// 	item->style.padding = {1,1,1,1};
+					// 	item->style.margin = {1,1,1,1};
+					// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+					// 	item->style.font_height = 11;
+					// 	item->style.text_color = Color_White;
+					// 	item->action = [](uiItem* item) { 
+					// 		ui_dwi.selecting_item = 1; 
+					// 	};
+					// 	item->action_trigger = action_act_mouse_pressed;
+					// 	uiTextML("O");
+					// }uiItemE();
+					// ui_dwi.internal_info->style.content_align = {0.5,0.5};
+					// uiTextML("no item selected.");
+					if(g_ui->active){
+						uiItem* sel = g_ui->active;
+						uiText* text = 0;
+						if(sel->memsize == sizeof(uiText)) text = uiGetText(sel);
+						uiTextM(toStr8(
+							sel->id,"\n",
+							sel->node.child_count
+						));
+						if(text){
+							uiTextM(text->text.buffer.fin);
+						}
+					}
+				}
+			}uiItemE();
+		}
 	}uiImmediateE();
 	
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;

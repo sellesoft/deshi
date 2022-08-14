@@ -152,7 +152,9 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [0  ,*  ,22/08/09,Feature] add radio widget
 [0  ,***,22/08/09,Feature] add color picker widget
 [!! ,*  ,22/08/09,Tweak]   remove widget stuff from ui.h (ui2.h as of right now) and put it in its own file 
-[!! ,*  ,22/08/02,Tweak]   either finish the hot loading setup for ui or remove it
+[!! ,*  ,22/08/12,Tweak]   either finish the hot loading setup for ui or remove it
+[!!!,** ,22/08/13,Tweak]   ui's memory needs trimmed a LOT. to display little text on screen it takes over 500 bytes due to it being represented by uiItem who uses uiStyle
+
 
 `Window`
 --------
