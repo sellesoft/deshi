@@ -75,8 +75,6 @@ struct Console{
 	Logger* logger;
 	
 #define CONSOLE_INPUT_BUFFER_SIZE 1024
-	u8  input_buffer[CONSOLE_INPUT_BUFFER_SIZE]{};
-	s64 input_length = 0;
 	u8  prev_input[CONSOLE_INPUT_BUFFER_SIZE]{};
 	u32 input_history_index = -1;
 	ring_array<pair<u32,u32>> input_history;

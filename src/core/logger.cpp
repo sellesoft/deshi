@@ -80,12 +80,15 @@ logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 	
 	//write to console
 	if(logger.mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)){
+		u32 message_offset = 0;
+		Type type;
 		switch(log_type){
-			case LogType_Normal: {console_parse_message({logger.last_message+tag.count+ 0,logger.last_message_length-(tag.count+ 0)},tag,ConsoleChunkType_Normal ,1,log_file_offset+tag.count+ 0);} break; //"[] "
-			case LogType_Error:  {console_parse_message({logger.last_message+tag.count+18,logger.last_message_length-(tag.count+18)},tag,ConsoleChunkType_Error  ,1,log_file_offset+tag.count+18);} break; //"[] " and "-ERROR"
-			case LogType_Warning:{console_parse_message({logger.last_message+tag.count+20,logger.last_message_length-(tag.count+20)},tag,ConsoleChunkType_Warning,1,log_file_offset+tag.count+20);} break; //"[] " and "-WARNING"
-			case LogType_Success:{console_parse_message({logger.last_message+tag.count+20,logger.last_message_length-(tag.count+20)},tag,ConsoleChunkType_Success,1,log_file_offset+tag.count+20);} break; //"[] " and "-SUCCESS"
+			case LogType_Normal: { type = ConsoleChunkType_Normal;  message_offset = (tag.count?tag.count+ 3:0); } break;
+			case LogType_Error:  { type = ConsoleChunkType_Error;   message_offset = tag.count+18; } break;
+			case LogType_Warning:{ type = ConsoleChunkType_Warning; message_offset = tag.count+20; } break;
+			case LogType_Success:{ type = ConsoleChunkType_Success; message_offset = tag.count+20; } break;
 		}
+		console_parse_message({logger.last_message+message_offset,logger.last_message_length-message_offset},tag,type,1,log_file_offset+message_offset);
 	}
 	
 	return cursor;

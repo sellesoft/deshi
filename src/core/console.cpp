@@ -11,6 +11,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 
 	u64 log_offset = (from_logger?logger_offset:console.logger->file->bytes);
 	ConsoleChunk chunk = {type,tag,Color_White,Color_Blank};
+	chunk.newline = 1;
 	u8* chunk_start = message.str;
 	str8 stream = message;
 	while(stream){
@@ -19,15 +20,17 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 			case '\n':{
 				chunk.start = log_offset;
 				chunk.size = stream.str - dc.advance - chunk_start;
-				chunk.newline = 1;
 				console.dictionary.add(chunk);
+				log_offset += chunk.size+1;
 				chunk = {type,tag,chunk.fg,chunk.bg};
+				chunk.newline = 1;
 				chunk_start = stream.str;
 			}break;
 
 			case '\x1b':{
 				u8* escstart = stream.str - 1;
 				ConsoleChunk nuchunk = chunk;
+				nuchunk.newline = 0;
 				DecodedCodepoint dcnext = str8_advance(&stream);
 				if(dcnext.codepoint != '[') continue;
 				str8 numstr = str8_eat_int(stream);
@@ -126,7 +129,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
-void console_init(){
+void console_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_CONSOLE, DS_LOGGER, "Attempted to initialize Console module before initializing the Logger module");
 	Assert(window_windows.count > 0, "Attempted to initialize Console module before a window was created");
 	
@@ -138,6 +141,7 @@ void console_init(){
 	console.console_dim = Vec2(f32(DeshWindow->width), 0);
 	console.scroll_to_bottom = true;
 	console.chunk_render_arena = memory_create_arena(512);
+	console.state = ConsoleState_Closed;
 	
 	uiStyle base = {0};
 	base.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
@@ -158,7 +162,7 @@ void console_init(){
 		mains->          display = display_flex;
 		mains->           sizing = size_percent;
 		mains->            width = 100;
-		mains->           height = 100 * console.open_max_percent;
+		mains->           height = 0;
 		mains->          padding = {2,2,2,2};
 		mains->      positioning = pos_fixed;
 
@@ -198,7 +202,8 @@ void console_init(){
 	DeshiStageInitEnd(DS_CONSOLE);
 }
 
-void console_update(){
+void console_update(){DPZoneScoped;
+
 	//check for console state changing inputs
 	if(key_pressed(Key_TILDE)){
 		if      (input_shift_down()){
@@ -212,52 +217,72 @@ void console_update(){
 	
 	//check for history inputs
 	b32 change_input = false;
-	if(key_pressed(Key_UP)){
+	if(g_ui->active == console.ui.inputtext && key_pressed(Key_UP)){
+		LogE("console","input history isnt implemented yet!");
 		change_input = true;
 		console.input_history_index--;
 		if(console.input_history_index == -2) console.input_history_index = console.input_history.count-1;
 	}
-	if(key_pressed(Key_DOWN)){
+	if(g_ui->active == console.ui.inputtext && key_pressed(Key_DOWN)){
+		LogE("console","input history isnt implemented yet!");
 		change_input = true;
 		console.input_history_index++;
 		if(console.input_history_index >= console.input_history.count) console.input_history_index = -1;
 	}
 	if(change_input){
 		simulate_key_press(Key_END);
-		ZeroMemory(console.input_buffer, CONSOLE_INPUT_BUFFER_SIZE);
-		console.input_length = 0;
+		text_clear(&uiGetInputText(console.ui.inputtext)->text);
 		
-		if(console.input_history_index != -1){
-			u32 cursor = 0;
-			u32 chunk_idx = console.input_history[console.input_history_index].first;
-			ConsoleChunk& chunk = console.dictionary[chunk_idx];
+		// if(console.input_history_index != -1){
+		// 	u32 cursor = 0;
+		// 	u32 chunk_idx = console.input_history[console.input_history_index].first;
+		// 	ConsoleChunk& chunk = console.dictionary[chunk_idx];
 			
-			u64 restore = console.logger->file->cursor;
-			for(;;){
-				u32 characters = (cursor + chunk.size > CONSOLE_INPUT_BUFFER_SIZE)
-					? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.size) : chunk.size;
-				file_cursor(console.logger->file, chunk.start);
-				file_read(console.logger->file, console.input_buffer, characters);
-				console.input_length += characters;
-				cursor += characters;
+		// 	u64 restore = console.logger->file->cursor;
+		// 	for(;;){
+		// 		u32 characters = (cursor + chunk.size > CONSOLE_INPUT_BUFFER_SIZE)
+		// 			? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.size) : chunk.size;
+		// 		file_cursor(console.logger->file, chunk.start);
+		// 		file_read(console.logger->file, console.input_buffer, characters);
+		// 		console.input_length += characters;
+		// 		cursor += characters;
 				
-				if(chunk_idx >= console.input_history[console.input_history_index].second || cursor >= CONSOLE_INPUT_BUFFER_SIZE){
-					break;
-				}else{
-					chunk = console.dictionary[++chunk_idx];
-				}
-			}
-			file_cursor(console.logger->file, restore);
-		}
+		// 		if(chunk_idx >= console.input_history[console.input_history_index].second || cursor >= CONSOLE_INPUT_BUFFER_SIZE){
+		// 			break;
+		// 		}else{
+		// 			chunk = console.dictionary[++chunk_idx];
+		// 		}
+		// 	}
+		// 	file_cursor(console.logger->file, restore);
+		// }
 	}
 
 	if(ui_item_hovered(console.ui.buffer, 0)){
-		console.scroll += DeshInput->scrollY;
-		console.scroll = Max(0,console.scroll);
-		Log("", DeshInput->scrollY);
+		if(DeshInput->scrollY < 0 && console.scroll < console.dictionary.count){
+			forI(-DeshInput->scrollY){console.scroll++;
+				while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline) console.scroll++;
+			}
+		}else if(DeshInput->scrollY > 0 && console.scroll){
+			forI(DeshInput->scrollY){console.scroll--;
+				while(console.scroll > 0 && !console.dictionary[console.scroll].newline) console.scroll--;
+			}
+		}
 	}
 
-	
+	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
+
+	if(console.scroll_to_bottom){
+		console.scroll_to_bottom = 0;
+		u32 rem = linestofit;
+		u32 idx = console.dictionary.count-1;
+		while(rem){
+			if(console.dictionary[idx].newline) rem--;
+			idx--;
+			if(!idx) break;
+		}
+		console.scroll = (idx?idx+1:0);
+	}
+
 	//console openness
 	if(console.open_target != console.open_amount){
 		console.ui.main->style.height = Math::lerp(console.open_amount, console.open_target, //TODO(sushi) change this to Nudge
@@ -267,7 +292,6 @@ void console_update(){
 		}
 	}
 
-	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
 
 	uiImmediateBP(console.ui.buffer);{
 		vec2 cursor = vec2::ZERO;
@@ -284,6 +308,12 @@ void console_update(){
 			if(console.dictionary[i].size >= console.chunk_render_arena->size){
 				console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
 			}
+
+			if(console.dictionary[i].newline == 1 && nlines++){
+				uiItemE(); 
+				line = uiItemBS(&line->style);
+				line->id = toStr8("console.line",nlines);
+			}
 			
 			//get chunk text from the log file
 			file_cursor(console.logger->file, console.dictionary[i].start);
@@ -291,321 +321,67 @@ void console_update(){
 			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
 			
 			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
-			uiTextMS(&line->style, out)->id = toStr8("console.text",i);
+			uiItem* text = uiTextMS(&line->style, out);
+			text->id = toStr8("console.text",i);
+			text->style.text_color = console.dictionary[i].fg;
 			
-			if(console.dictionary[i].newline == 1 && i != (console.dictionary.count-1)){
-				uiItemE(); 
-				line = uiItemBS(&line->style);
-				nlines++;
-				line->id = toStr8("console.line",nlines);
-			}
-
-			//adjust what we're going to print based on formatting
-			if(HasFlag(console.dictionary[i].type, ConsoleChunkType_Alert)){
-				//TODO handle alert flashing
-			}
-
-
 
 			i++;
-			
-			// if(console.tag_show && console.dictionary[i].tag){
-			// 	if(i == 0 || !str8_equal(console.dictionary[i-1].tag, console.dictionary[i].tag)){
-			// 		f32 top_edge    = UI::GetMarginedTop();
-			// 		f32 right_edge  = UI::GetMarginedRight();
-			// 		f32 tag_start_y = UI::GetWinCursor().y;
-			// 		vec2 tag_size   = UI::CalcTextSize(console.dictionary[i].tag);
-					
-			// 		//look ahead for the end of the tag range
-			// 		//dont draw if its not visible
-			// 		f32 tag_end_y = tag_start_y;
-			// 		for(int o = i; o < console.dictionary.count; o++){
-			// 			if(str8_equal_lazy(console.dictionary[o].tag, console.dictionary[i].tag)){
-			// 				tag_end_y += tag_size.y;
-			// 			}else{
-			// 				break;
-			// 			}
-			// 		}
-			// 		if(tag_end_y > top_edge){
-			// 			if(tag_end_y < tag_size.y){
-			// 				tag_start_y = top_edge + (tag_end_y - tag_size.y);
-			// 			}else{
-			// 				tag_start_y = Max(tag_start_y, top_edge);
-			// 			}
-						
-			// 			//draw tag text
-			// 			vec2 restore_cursor = UI::GetWinCursor();
-			// 			UI::PushColor(UIStyleCol_Text, color(150,150,150, 150));
-			// 			UI::TextOld(console.dictionary[i].tag, Vec2(right_edge - tag_size.x - 1, tag_start_y));
-			// 			UI::PopColor();
-			// 			UI::SetWinCursor(restore_cursor);
-						
-			// 			if(console.tag_outlines && tag_end_y - (tag_start_y + tag_size.y) > 4){
-			// 				//draw right line
-			// 				UI::Line(Vec2(right_edge-1, tag_start_y+tag_size.y+3),
-			// 							Vec2(right_edge-1, tag_end_y-3),
-			// 							2, color(150,150,150, 150));
-			// 				//draw top line
-			// 				UI::Line(Vec2(right_edge-tag_size.x, tag_start_y+tag_size.y+2),
-			// 							Vec2(right_edge,            tag_start_y+tag_size.y+2),
-			// 							2, color(150,150,150, 150));
-			// 				//draw bottom line
-			// 				UI::Line(Vec2(right_edge-tag_size.x, tag_end_y-2),
-			// 							Vec2(right_edge,            tag_end_y-2),
-			// 							2, color(150,150,150, 150));
-			// 			}
-						
-			// 			if(console.tag_highlighting){
-			// 				UI::PushLayer(UI::GetCenterLayer()-1); //NOTE(delle) put the highlight on a lower layer than the text
-			// 				UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
-			// 				UI::PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
-			// 				UI::PushColor(UIStyleCol_SelectableBgActive,  color(155, 155, 155, 10));
-			// 				UI::SetNextItemSize(Vec2(right_edge, tag_end_y - tag_start_y));
-			// 				UI::SetNextItemMinSizeIgnored();
-							
-			// 				UI::Selectable(str8_lit(""), Vec2(0,tag_start_y), 0);
-							
-			// 				UI::PopColor(3);
-			// 				UI::PopLayer();
-			// 			}
-						
-			// 			UI::SetMarginSizeOffset(Vec2(-tag_size.x, 0));
-			// 		}
-			// 	}
-			// }
-			
-			// UI::PushColor(UIStyleCol_Text, console.dictionary[i].color);
-			// UI::TextOld(str8{(u8*)console_chunk_render_arena->start, (s64)console.dictionary[i].size});
-			// UI::PopColor();
-			
-			
-			
-			// if(console.line_highlighing){
-			// 	UIItem* last_text = UI::GetLastItem();
-			// 	UI::PushLayer(UI::GetCenterLayer()-1); //NOTE(delle) put the highlight on a lower layer than the text
-			// 	UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
-			// 	UI::PushColor(UIStyleCol_SelectableBgHovered, color(155,155,155, 10));
-			// 	UI::PushColor(UIStyleCol_SelectableBgActive,  color(155,155,155, 10));
-			// 	UI::SetNextItemSize(Vec2(UI::GetMarginedRight(), last_text->size.y));
-			// 	UI::SetNextItemMinSizeIgnored();
-				
-			// 	UI::Selectable(str8_lit(""), Vec2(0, last_text->position.y), 0);
-				
-			// 	UI::PopColor(3);
-			// 	UI::PopLayer();
-			// }
 		}
 		uiItemE();
+
+		uiItem* debug = uiItemB();
+			debug->style.positioning = pos_absolute;
+			debug->style.anchor = anchor_bottom_right;
+			debug->style.sizing = size_auto;
+			debug->id = STR8("console.debug");
+			uiTextM(toStr8(
+				"      show tags: ", console.tag_show, "\n",
+				" highlight tags: ", console.tag_highlighting, "\n",
+				"   outline tags: ", console.tag_outlines, "\n",
+				"highlight lines: ", console.line_highlighing, "\n",
+				"    auto scroll: ", console.automatic_scroll, "\n",
+				"          state: ", console.state, "\n",
+				"   small open %: ", console.open_small_percent, "\n",
+				"     max open %: ", console.open_max_percent, "\n",
+				"    open amount: ", console.open_amount, "\n",
+				"    open target: ", console.open_target, "\n",
+				"open delta time: ", console.open_dt, "\n",
+				"         scroll: ", console.scroll
+			));
+		uiItemE();
 	}uiImmediateE();
-	
-	// UIStyle_old& style = UI::GetStyle();
-	// if(console.console_dim.y > 0){
-	// 	UI::SetNextWindowPos(console.console_pos);
-	// 	UI::SetNextWindowSize(Vec2(DeshWindow->width, console.console_dim.y));
-	// 	UI::Begin(str8_lit("deshiConsole"), vec2::ZERO, vec2::ZERO, console.window_flags | UIWindowFlags_NoScroll);
-	// 	console.window = UI::GetWindow();
-		
-	// 	//-//////////////////////////////////////////////////////////////////////////////////////////////
-	// 	//text input panel
-	// 	//NOTE(delle) doing this above the terminal window so inputs are registered managed before visuals
-	// 	if(console_open_pressed) UI::SetNextItemActive();
-	// 	f32 input_box_height = style.inputTextHeightRelToFont * style.fontHeight;
-	// 	UI::SetNextItemSize(Vec2(MAX_F32, input_box_height));
-	// 	if(UI::InputText(str8_lit("deshiConsoleInput"), (u8*)console.input_buffer, CONSOLE_INPUT_BUFFER_SIZE-2,
-	// 					 {UI::GetMarginedLeft(), UI::GetMarginedBottom() - input_box_height},
-	// 					 str8_lit("Enter a command..."), UIInputTextFlags_AnyChangeReturnsTrue)){
-	// 		if(console.input_buffer[console.input_length] != 0){
-	// 			DecodedCodepoint decoded = decoded_codepoint_from_utf8(console.input_buffer+console.input_length, 4);
-	// 			if(decoded.codepoint == '~' || decoded.codepoint == '`'){
-	// 				console.input_buffer[console.input_length] = '\0'; //NOTE(delle) filter out console open/close inputs
-	// 			}else{
-	// 				console.input_length += decoded.advance;
-	// 			}
-	// 		}else{
-	// 			while(   console.input_length
-	// 				  && console.input_buffer[console.input_length-1] == 0){
-	// 				console.input_length -= 1;
-	// 			}
-	// 		}
-	// 	}
-	// 	if(key_pressed(Key_ENTER) && console.input_length){
-	// 		//append a \n to the input
-	// 		console.input_buffer[console.input_length  ] = '\n';
-	// 		console.input_buffer[console.input_length+1] = '\0';
-			
-	// 		//log and chunk the input symbol
-	// 		u64 log_offset = console.logger->file->bytes;
-	// 		console_send_to_logger(str8_lit("/\\ "), false);
-	// 		console.dictionary.add({ConsoleChunkType_Normal, str8{}, Color_Cyan,     log_offset,   1, false});
-	// 		console.dictionary.add({ConsoleChunkType_Normal, str8{}, Color_DarkCyan, log_offset+1, 2, false});
-			
-	// 		//send the input to the message parser
-	// 		u32 start_chunk = console.dictionary.count; //NOTE(delle) checking this here b/c we don't know how many chunks input will create
-	// 		console_parse_message(str8{console.input_buffer, console.input_length+1});
-			
-	// 		//record the input into the history
-	// 		if(strncmp((char*)console.input_buffer, (char*)console.prev_input, CONSOLE_INPUT_BUFFER_SIZE) != 0){
-	// 			CopyMemory(console.prev_input, console.input_buffer, CONSOLE_INPUT_BUFFER_SIZE);
-	// 			console.input_history.add({start_chunk,console.dictionary.count-1});
-	// 		}
-			
-	// 		cmd_run(str8{console.input_buffer, console.input_length});
-	// 		ZeroMemory(console.input_buffer, console.input_length+1);
-	// 		console_scroll_to_bottom = true;
-	// 		console.input_history_index = -1;
-	// 	}
 
-
-		
-	// 	//-//////////////////////////////////////////////////////////////////////////////////////////////
-	// 	//terminal output panel
-	// 	UI::SetNextWindowSize(Vec2(MAX_F32, UI::GetMarginedBottom() - (style.fontHeight * style.inputTextHeightRelToFont + style.itemSpacing.y) * 3));
-	// 	UI::BeginChild(str8_lit("deshiConsoleTerminal"), (console.window->dimensions - 2*style.windowMargins).yAdd(-(1.3*style.fontHeight + style.itemSpacing.y)), console.window_flags);{
-	// 		//draw text for the dictionary
-	// 		UI::PushVar(UIStyleVar_WindowMargins, Vec2(5, 0));
-	// 		UI::PushVar(UIStyleVar_ItemSpacing,   Vec2(0, 0));
-			
-	// 		forI(console.dictionary.count){
-	// 			//if console_chunk_render_arena isn't large enough, double the space for it
-	// 			if(console.dictionary[i].size >= console_chunk_render_arena->size){
-	// 				console_chunk_render_arena = memory_grow_arena(console_chunk_render_arena, console_chunk_render_arena->size);
-	// 			}
-				
-	// 			//get chunk text from the log file
-	// 			file_cursor(console.logger->file, console.dictionary[i].start);
-	// 			file_read(console.logger->file, console_chunk_render_arena->start, console.dictionary[i].size);
-	// 			console_chunk_render_arena->start[console.dictionary[i].size] = '\0';
-				
-	// 			//adjust what we're going to print based on formatting
-	// 			if(HasFlag(console.dictionary[i].type, ConsoleChunkType_Alert)){
-	// 				//TODO handle alert flashing
-	// 			}
-				
-	// 			if(console.tag_show && console.dictionary[i].tag){
-	// 				if(i == 0 || !str8_equal(console.dictionary[i-1].tag, console.dictionary[i].tag)){
-	// 					f32 top_edge    = UI::GetMarginedTop();
-	// 					f32 right_edge  = UI::GetMarginedRight();
-	// 					f32 tag_start_y = UI::GetWinCursor().y;
-	// 					vec2 tag_size   = UI::CalcTextSize(console.dictionary[i].tag);
-						
-	// 					//look ahead for the end of the tag range
-	// 					//dont draw if its not visible
-	// 					f32 tag_end_y = tag_start_y;
-	// 					for(int o = i; o < console.dictionary.count; o++){
-	// 						if(str8_equal_lazy(console.dictionary[o].tag, console.dictionary[i].tag)){
-	// 							tag_end_y += tag_size.y;
-	// 						}else{
-	// 							break;
-	// 						}
-	// 					}
-	// 					if(tag_end_y > top_edge){
-	// 						if(tag_end_y < tag_size.y){
-	// 							tag_start_y = top_edge + (tag_end_y - tag_size.y);
-	// 						}else{
-	// 							tag_start_y = Max(tag_start_y, top_edge);
-	// 						}
-							
-	// 						//draw tag text
-	// 						vec2 restore_cursor = UI::GetWinCursor();
-	// 						UI::PushColor(UIStyleCol_Text, color(150,150,150, 150));
-	// 						UI::TextOld(console.dictionary[i].tag, Vec2(right_edge - tag_size.x - 1, tag_start_y));
-	// 						UI::PopColor();
-	// 						UI::SetWinCursor(restore_cursor);
-							
-	// 						if(console.tag_outlines && tag_end_y - (tag_start_y + tag_size.y) > 4){
-	// 							//draw right line
-	// 							UI::Line(Vec2(right_edge-1, tag_start_y+tag_size.y+3),
-	// 									 Vec2(right_edge-1, tag_end_y-3),
-	// 									 2, color(150,150,150, 150));
-	// 							//draw top line
-	// 							UI::Line(Vec2(right_edge-tag_size.x, tag_start_y+tag_size.y+2),
-	// 									 Vec2(right_edge,            tag_start_y+tag_size.y+2),
-	// 									 2, color(150,150,150, 150));
-	// 							//draw bottom line
-	// 							UI::Line(Vec2(right_edge-tag_size.x, tag_end_y-2),
-	// 									 Vec2(right_edge,            tag_end_y-2),
-	// 									 2, color(150,150,150, 150));
-	// 						}
-							
-	// 						if(console.tag_highlighting){
-	// 							UI::PushLayer(UI::GetCenterLayer()-1); //NOTE(delle) put the highlight on a lower layer than the text
-	// 							UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
-	// 							UI::PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
-	// 							UI::PushColor(UIStyleCol_SelectableBgActive,  color(155, 155, 155, 10));
-	// 							UI::SetNextItemSize(Vec2(right_edge, tag_end_y - tag_start_y));
-	// 							UI::SetNextItemMinSizeIgnored();
-								
-	// 							UI::Selectable(str8_lit(""), Vec2(0,tag_start_y), 0);
-								
-	// 							UI::PopColor(3);
-	// 							UI::PopLayer();
-	// 						}
-							
-	// 						UI::SetMarginSizeOffset(Vec2(-tag_size.x, 0));
-	// 					}
-	// 				}
-	// 			}
-				
-	// 			UI::PushColor(UIStyleCol_Text, console.dictionary[i].color);
-	// 			UI::TextOld(str8{(u8*)console_chunk_render_arena->start, (s64)console.dictionary[i].size});
-	// 			UI::PopColor();
-				
-	// 			if(console.dictionary[i].newline == false && i != (console.dictionary.count-1)){
-	// 				UI::SameLine();
-	// 			}
-				
-	// 			if(console.line_highlighing){
-	// 				UIItem* last_text = UI::GetLastItem();
-	// 				UI::PushLayer(UI::GetCenterLayer()-1); //NOTE(delle) put the highlight on a lower layer than the text
-	// 				UI::PushColor(UIStyleCol_SelectableBg,        Color_Clear);
-	// 				UI::PushColor(UIStyleCol_SelectableBgHovered, color(155,155,155, 10));
-	// 				UI::PushColor(UIStyleCol_SelectableBgActive,  color(155,155,155, 10));
-	// 				UI::SetNextItemSize(Vec2(UI::GetMarginedRight(), last_text->size.y));
-	// 				UI::SetNextItemMinSizeIgnored();
-					
-	// 				UI::Selectable(str8_lit(""), Vec2(0, last_text->position.y), 0);
-					
-	// 				UI::PopColor(3);
-	// 				UI::PopLayer();
-	// 			}
-	// 		}
-	// 		UI::PopVar(2);
-			
-	// 		if(console_scroll_to_bottom){
-	// 			UI::SetScroll(Vec2(0, MAX_F32));
-	// 			console_scroll_to_bottom = false;
-	// 		}
-	// 	}UI::EndChild();
-		
-	// 	UI::PushColor(UIStyleCol_WindowBg, color(0,25,18));
-	// 	UI::End();
-	// 	UI::PopColor();
-	// }
-	
-	// console_open_pressed = false;
+	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
+		str8 command = uiGetInputText(console.ui.inputtext)->text.buffer.fin;
+		Log("", CyanFormat("> "), command);
+		cmd_run(command);
+		text_clear(&uiGetInputText(console.ui.inputtext)->text);
+		console.scroll_to_bottom = 1;
+	}
 }
 
-Console* console_expose(){
+Console* console_expose(){DPZoneScoped;
 	return &console;
 }
 
-void console_change_state(ConsoleState new_state){
+void console_change_state(ConsoleState new_state){DPZoneScoped;
 	if(console.state == new_state) new_state = ConsoleState_Closed;
 	
 	switch(new_state){
 		case ConsoleState_Closed:{
 			console.open_target = 0;
-			console.open_amount = console.console_dim.y;
+			console.open_amount = console.ui.main->style.height;
 		}break;
 		case ConsoleState_OpenSmall:{
 			console.open_target = 100 * console.open_small_percent;
-			console.open_amount = console.console_dim.y;
+			console.open_amount = console.ui.main->style.height;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 		}break;
 		case ConsoleState_OpenBig:{
 			console.open_target = 100 * console.open_max_percent;
-			console.open_amount = console.console_dim.y;
+			console.open_amount = console.ui.main->style.height;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 		}break;
