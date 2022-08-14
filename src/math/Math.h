@@ -245,13 +245,13 @@ QuatSlerp(const vec3& fromv, const vec3& tov, float t){
 inline vec3 mat3::
 row(u32 row){
 	Assert(row < 3, "mat3 subscript out of bounds");
-	return Vec3(arr[4*row+0], arr[4*row+1], arr[4*row+2]);
+	return Vec3(arr[3*row+0], arr[3*row+1], arr[3*row+2]);
 }
 
 inline vec3 mat3::
 col(u32 col){
 	Assert(col < 3, "mat3 subscript out of bounds");
-	return Vec3(arr[col], arr[4+col], arr[8+col]);
+	return Vec3(arr[col], arr[3+col], arr[6+col]);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees

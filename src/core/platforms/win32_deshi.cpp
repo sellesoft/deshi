@@ -1181,7 +1181,7 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 	//open the file if access requests it and it's not already open
 	if(file->handle == 0 && HasFlag(flags, FileAccess_ReadWrite)){
 		Flags open_flags = flags & ~(FileAccess_Append);
-		wchar_t* open_mode;
+		wchar_t* open_mode = 0;
 		switch(open_flags){
 			case FileAccess_Read:              open_mode = (wchar_t*)L"rb";  break;
 			case FileAccess_WriteTruncate:     open_mode = (wchar_t*)L"wb";  file->bytes = 0; break;

@@ -257,7 +257,7 @@ Minor(s32 row, s32 col) const{
 		if(i == row) continue;
 		for(s32 j = 0; j < 3; ++j){
 			if(j == col) continue;
-			arr[index++] = arr[3 * i + j];
+			arr[index++] = this->arr[3 * i + j];
 		}
 	}
 	
