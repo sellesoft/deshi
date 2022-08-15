@@ -230,17 +230,20 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 	
 	if(!retrieved_){
 		if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
-		else{
-			//set to default 0, but inherit parent's text properties
-			item->style = {0};
-			item->style.font        = parent->style.font;
-			item->style.font_height = parent->style.font_height;
-			item->style.text_color  = parent->style.text_color;
-			item->style.text_wrap   = parent->style.text_wrap;
-			item->style.tab_spaces  = parent->style.text_wrap;
-		} 
+		else item->style = {0};
 	}else if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
 	
+	//inherit parent's text properties if they arent set
+	//TODO(sushi) this may be wrong in some cases, such as where a user wants the font_height to start at 0, but we interpret this
+	//            as them not setting it. I'm not sure yet how we can get around this other than just not doing this.
+	//            We dont have anyway to explicitly see what values the user has set right now and anyway I can think of doing 
+	//            this in C/C++ is tedious and/or would hurt performance.
+	if(!item->style.font)         item->style.font        = parent->style.font;
+	if(!item->style.font_height)  item->style.font_height = parent->style.font_height;
+	if(!item->style.text_color.a) item->style.text_color  = parent->style.text_color;
+	if(!item->style.text_wrap)    item->style.text_wrap   = parent->style.text_wrap;
+	if(!item->style.tab_spaces)   item->style.tab_spaces  = parent->style.text_wrap;
+
 	item->file_created = setup.file;
 	item->line_created = setup.line;
 	
@@ -573,8 +576,7 @@ b32 last_flex_floored = 1;
 //reevaluates an entire brach of items
 void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
-	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically
-	//sized child.
+	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically sized child.
 	array<u32> already_evaluated;
 	
 	EvalContext contextout = {0};
@@ -694,11 +696,16 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	vec2 cursor = item->style.margintl + item->style.paddingtl + vec2{wborder,wborder} - item->style.scroll;
 	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);
-	u32 aeidx = 0; //index into the already evaluated array, incremented when we find one thats already been eval'd
+ 	u32 aeidx = 0; //index into the already evaluated array, incremented when we find one thats already been eval'd
 	u32 idx = 0;
 	while(it){
 		uiItem* child = uiItemFromNode(it);
-		if(HasFlag(child->style.display, display_hidden)) continue;
+		if(HasFlag(child->style.display, display_hidden)){
+			idx++;
+			Assert(it!=it->next, "infinite loop.");
+			it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
+			continue;
+		} 
 		
 		if(already_evaluated.count < aeidx && already_evaluated[aeidx] == idx){
 			aeidx++;
