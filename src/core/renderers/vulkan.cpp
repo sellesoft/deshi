@@ -3886,12 +3886,14 @@ render_update_camera_view(mat4* view_matrix){DPZoneScoped;
 void
 render_update_camera_projection(mat4* projection_matrix){DPZoneScoped;
 	uboVS.values.proj = *projection_matrix;
+	uboVS.values.proj.arr[5] *= -1;
 }
 
 void
 render_use_default_camera(){DPZoneScoped;
 	uboVS.values.view = Math::LookAtMatrix(vec3::ZERO, (vec3::FORWARD * mat4::RotationMatrix(vec3::ZERO)).normalized()).Inverse();
 	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix((f32)DeshWindow->width, (f32)DeshWindow->height, 90.f, 1000.f, 0.1f);
+	uboVS.values.proj.arr[5] *= -1;
 }
 
 

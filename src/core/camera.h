@@ -46,9 +46,8 @@ struct Camera  {
 		f32 renderDistance = _farZ - _nearZ;
 		f32 aspectRatio = winHeight / winWidth;
 		f32 fovRad = 1.f / tanf(Radians(_fov * .5f));
-		return mat4( //NOTE setting (1,1) to negative flips the y-axis
-					aspectRatio * fovRad, 0, 0, 0,
-					0, -fovRad, 0, 0,
+		return mat4(aspectRatio * fovRad, 0, 0, 0,
+					0, fovRad, 0, 0,
 					0, 0, _farZ / renderDistance, 1,
 					0, 0, -(_farZ * _nearZ) / renderDistance, 0);
 	}
