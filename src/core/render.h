@@ -726,8 +726,8 @@ render_triangle_filled3(vec3 p0, vec3 p1, vec3 p2, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
 	u32 rgba = c.rgba;
-	Mesh::Vertex*    vp = renderTempWireframeVertexArray + renderTempWireframeVertexCount;
-	RenderTempIndex* ip = renderTempWireframeIndexArray  + renderTempWireframeIndexCount;
+	Mesh::Vertex*    vp = renderTempFilledVertexArray + renderTempFilledVertexCount;
+	RenderTempIndex* ip = renderTempFilledIndexArray  + renderTempFilledIndexCount;
 	
 	ip[0] = renderTempFilledVertexCount; 
 	ip[1] = renderTempFilledVertexCount+1; 

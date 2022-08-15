@@ -2872,7 +2872,8 @@ BuildCommands(){DPZoneScoped;
 			}
 			
 			//draw temporary stuff
-			if(renderTempWireframeVertexCount > 0 && renderTempWireframeIndexCount > 0){
+			if(renderTempWireframeVertexCount && renderTempWireframeIndexCount ||
+			   renderTempFilledVertexCount    && renderTempFilledIndexCount){
 				DebugBeginLabelVk(cmdBuffer, "Temp", draw_group_color);
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
