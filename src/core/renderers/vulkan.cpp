@@ -106,6 +106,9 @@ struct BufferVk{
 #define INDEX_TYPE_VK_UI   VK_INDEX_TYPE_UINT32
 #define INDEX_TYPE_VK_TEMP VK_INDEX_TYPE_UINT32
 #define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
+StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
+StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
+StaticAssertAlways(sizeof(RenderModelIndex) == 4);
 
 local array<RenderMesh>  vkMeshes(deshi_allocator);
 local array<TextureVk>   textures(deshi_allocator);

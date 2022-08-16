@@ -38,8 +38,11 @@ struct MaterialGl{
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @gl_vars
 #define INDEX_TYPE_GL_TWOD GL_UNSIGNED_INT
-#define INDEX_TYPE_GL_TEMP GL_UNSIGNED_SHORT
+#define INDEX_TYPE_GL_TEMP GL_UNSIGNED_INT
 #define INDEX_TYPE_GL_MESH GL_UNSIGNED_INT
+StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
+StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
+StaticAssertAlways(sizeof(RenderModelIndex) == 4);
 
 local array<RenderMesh> glMeshes(deshi_allocator);
 local array<ShaderGl>   glShaders(deshi_allocator);
