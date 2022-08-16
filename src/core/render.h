@@ -239,7 +239,7 @@ external struct Vertex2{
 	u32  color;
 };
 
-typedef u16 RenderTempIndex;  //NOTE(delle) changing this also requires changing defines in the backend
+typedef u32 RenderTempIndex;  //NOTE(delle) changing this also requires changing defines in the backend
 typedef u32 RenderModelIndex; //NOTE(delle) changing this also requires changing defines in the backend
 external struct RenderModelCmd{
 	u32   vertexOffset;
@@ -660,7 +660,7 @@ render_max_surface_count(){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_draw_3d
-#define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
+#define MAX_TEMP_VERTICES 0xFFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
 local RenderTempIndex  renderTempWireframeVertexCount = 0;
 local RenderTempIndex  renderTempWireframeIndexCount  = 0;
@@ -804,7 +804,7 @@ render_box(mat4* transform, color c){DPZoneScoped;
 		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
 		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
 	};
-	forI(8){ points[i] = points[i] * (*transform); }
+	forI(8){ points[i] += vec3::ONE*0.5; points[i] = points[i] * (*transform); }
 	render_line3(points[3], points[1], c); render_line3(points[3], points[2], c); render_line3(points[3], points[7], c);
 	render_line3(points[0], points[1], c); render_line3(points[0], points[2], c); render_line3(points[0], points[4], c);
 	render_line3(points[5], points[1], c); render_line3(points[5], points[4], c); render_line3(points[5], points[7], c);
@@ -820,7 +820,7 @@ render_box_filled(mat4* transform, color c){DPZoneScoped;
 		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
 		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
 	};
-	forI(8){ points[i] = points[i] * (*transform); }
+	forI(8){ points[i] += vec3::ONE*0.5; points[i] = points[i] * (*transform); }
 	render_triangle_filled3(points[4], points[2], points[0], c); render_triangle_filled3(points[4], points[6], points[2], c);
 	render_triangle_filled3(points[2], points[7], points[3], c); render_triangle_filled3(points[2], points[6], points[7], c);
 	render_triangle_filled3(points[6], points[5], points[7], c); render_triangle_filled3(points[6], points[4], points[5], c);
@@ -1254,7 +1254,7 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				
 				renderTwodVertexCount += 4;
 				renderTwodIndexCount  += 6;
-				renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+				renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]].indexCount += 6;
 				pos.x += font->max_width * scale.x;
 			}
 		}break;

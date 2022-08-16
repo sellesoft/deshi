@@ -104,7 +104,7 @@ struct BufferVk{
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_vars
 #define INDEX_TYPE_VK_UI   VK_INDEX_TYPE_UINT32
-#define INDEX_TYPE_VK_TEMP VK_INDEX_TYPE_UINT16
+#define INDEX_TYPE_VK_TEMP VK_INDEX_TYPE_UINT32
 #define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
 
 local array<RenderMesh>  vkMeshes(deshi_allocator);
@@ -2887,7 +2887,7 @@ BuildCommands(){DPZoneScoped;
 				renderStats.drawnIndices += renderTempWireframeIndexCount;
 				
 				//filled
-				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.flat);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
 				vkCmdDrawIndexed(cmdBuffer, renderTempFilledIndexCount, 1, renderTempWireframeIndexCount, renderTempWireframeVertexCount, 0);
 				renderStats.drawnIndices += renderTempFilledIndexCount;

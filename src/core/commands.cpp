@@ -170,10 +170,6 @@ void cmd_run(str8 input){
 void cmd_init(){
 	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
 	
-	DESHI_CMD_START(test, "testing sandbox"){
-		console_log("{{c=magen}blah blah");
-	}DESHI_CMD_END_NO_ARGS(test);
-	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
 		array<File> files = file_search_directory(args[0]);
 		char time_str[1024];

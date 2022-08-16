@@ -2796,7 +2796,7 @@ to_string(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR
 	return s;
 }
 
-global str8b 
+global str8
 to_str8(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	str8b s; s.allocator = a;
 	if(trunc){
@@ -2812,10 +2812,10 @@ to_str8(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 		s.space = s.count+1;
 		snprintf((char*)s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
 	}
-	return s;
+	return s.fin;
 }
 
-global str8b 
+global str8
 to_str8(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	str8b s; s.allocator = a;
 	if(trunc){
@@ -2831,10 +2831,10 @@ to_str8(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 		s.space = s.count+1;
 		snprintf((char*)s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
 	}
-	return s;
+	return s.fin;
 }
 
-global str8b 
+global str8
 to_str8(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	str8b s; s.allocator = a;
 	if(trunc){
@@ -2850,7 +2850,7 @@ to_str8(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 		s.space = s.count+1;
 		snprintf((char*)s.str, s.count+1, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
 	}
-	return s;
+	return s.fin;
 }
 
 #endif //DESHI_VECTOR_H
