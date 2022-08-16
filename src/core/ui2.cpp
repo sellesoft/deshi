@@ -912,6 +912,7 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 	//TODO(sushi) come up with a way around this
 	//if(!Math::PointInRectangle(input_mouse_position(),item->children_bbx_pos,item->children_bbx_size)) return false;
     for_node_reverse(item->node.last_child){
+		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden)) continue;
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
 	if(Math::PointInRectangle(input_mouse_position(), item->spos, item->size)){
