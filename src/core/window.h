@@ -138,6 +138,7 @@ struct Window{
 	DisplayMode display_mode;
 	CursorMode cursor_mode;
 	
+	b32 focused;
 	b32 resized;
 	b32 minimized;
 	b32 close_window;

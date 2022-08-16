@@ -20,6 +20,7 @@ local s64 win32_perf_count_frequency;
 local wchar_t* win32_file_data_folder;
 local s32 win32_file_data_folder_len;
 local HINSTANCE win32_console_instance;
+local b32 win32_delayed_activate;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,6 +124,37 @@ win32_monitor_info(HWND handle, int* screen_w = 0, int* screen_h = 0, int* worki
 	}else{
 		win32_log_last_error("MonitorFromWindow");
 	}
+}
+
+//center, hide, and capture cursor
+//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c@disableCursor()
+local void
+win32_disable_cursor(Window* window){
+	//set cursor to center of screen
+	POINT p{window->center.x, window->center.y};
+	::ClientToScreen((HWND)window->handle, &p);
+	::SetCursorPos(p.x, p.y);
+	
+	//hide cursor
+	::SetCursor(0);
+	
+	//restrict cursor to client
+	RECT rect;
+	::GetClientRect((HWND)window->handle, &rect);
+	::ClientToScreen((HWND)window->handle, (POINT*)&rect.left);
+	::ClientToScreen((HWND)window->handle, (POINT*)&rect.right);
+	::ClipCursor(&rect);
+}
+
+//show cursor and remove restriction
+//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c@enableCursor()
+local void
+win32_enable_cursor(Window* window){
+	//show cursor
+	::SetCursor(::LoadCursorW(0, IDC_ARROW));
+	
+	//unrestrict cursor
+	::ClipCursor(0);
 }
 
 
@@ -261,7 +293,7 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 			b32 upFlag = (HIWORD(lParam) & KF_UP) == KF_UP;              // transition-state flag, 1 on keyup
 			b32 repeatFlag = (HIWORD(lParam) & KF_REPEAT) == KF_REPEAT;  // previous key-state flag, 1 on autorepeat
 			u16 repeatCount = LOWORD(lParam);
-
+			
 			//these are probably unused for now
 			b32 altDownFlag  = (HIWORD(lParam) & KF_ALTDOWN)  == KF_ALTDOWN;   // ALT key was pressed
 			b32 dlgModeFlag  = (HIWORD(lParam) & KF_DLGMODE)  == KF_DLGMODE;   // dialog box is active
@@ -334,7 +366,103 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 		case WM_INPUT:{ ///////////////////////////////////////////////////////////// Raw Input
 			//TODO(delle) raw input
 		}break;
+		
+		case WM_ACTIVATE:{ ////////////////////////////////////////////////////////// Activated/Deactivated
+			if(window){
+				if(wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE){
+					window->focused = true;
+					
+					if(window->cursor_mode == CursorMode_FirstPerson){
+						win32_disable_cursor(window);
+					}
+				}else{
+					window->focused = false;
+					
+					//::SetCursor(::LoadCursorW(0, IDC_ARROW));
+					//::ClipCursor(0);
+				}
+			}else{ Assert(!"WM_ACTIVATE passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		case WM_MOUSEACTIVATE:{ ///////////////////////////////////////////////////// Activated Thru Mouse
+			if(window){
+				//postpone cursor disabling when the window is activated by clicking decorations
+				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+				if(HIWORD(lParam) == WM_LBUTTONDOWN && LOWORD(lParam) != HTCLIENT){
+					win32_delayed_activate = true;
+				}
+			}else{ Assert(!"WM_MOUSEACTIVATE passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		case WM_CAPTURECHANGED:{ //////////////////////////////////////////////////// Lost Mouse Capture
+			if(window){
+				//now we can disable the cursor
+				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+				if(lParam == 0 && win32_delayed_activate){
+					if(window->cursor_mode == CursorMode_FirstPerson){
+						win32_disable_cursor(window);
+					}
+					
+					win32_delayed_activate = false;
+				}
+			}else{ Assert(!"WM_MOUSEACTIVATE passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		case WM_SETFOCUS:{ ////////////////////////////////////////////////////////// Gained Keyboard Focus
+			if(window){
+				//postpone cursor disabling when the window is clicking down on decorations
+				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+				window->focused = true;
+				
+				if(win32_delayed_activate){
+					break;
+				}
+				
+				if(window->cursor_mode == CursorMode_FirstPerson){
+					win32_disable_cursor(window);
+				}
+				
+				return 0;
+			}else{ Assert(!"WM_SETFOCUS passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		case WM_KILLFOCUS:{ ////////////////////////////////////////////////////////// Lost Keyboard Focus
+			if(window){
+				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+				if(window->cursor_mode == CursorMode_FirstPerson){
+					win32_enable_cursor(window);
+				}
+				
+				window->focused = false;
+				return 0;
+			}else{ Assert(!"WM_SETFOCUS passed to win32 HWND that does not have matching deshi Window"); }
+		}break;
+		
+		case WM_ENTERSIZEMOVE:  ///////////////////////////////////////////////////// Start Moving/Resizing
+		case WM_ENTERMENULOOP:{ ///////////////////////////////////////////////////// Popup Modal Tracked
+			//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+			if(win32_delayed_activate){
+				break;
+			}
+			
+			if(window->cursor_mode == CursorMode_FirstPerson){
+				win32_disable_cursor(window);
+			}
+		}break;
+		
+		case WM_EXITSIZEMOVE:  ////////////////////////////////////////////////////// Stop Moving/Resizing
+		case WM_EXITMENULOOP:{ ////////////////////////////////////////////////////// Popup Modal Untracked
+			//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+			if(win32_delayed_activate){
+				break;
+			}
+			
+			if(window->cursor_mode == CursorMode_FirstPerson){
+				win32_disable_cursor(window);
+			}
+		}break;
 	}
+	
 	if(window && ::GetForegroundWindow() == (HWND)window->handle){
 		window_active = window;
 	}
@@ -395,7 +523,7 @@ platform_init(){DPZoneScoped;
 	render_window_class.lpfnWndProc   = win32_window_callback;
 	render_window_class.hInstance     = win32_console_instance;
 	render_window_class.hIcon         = ::LoadIcon(0, IDI_APPLICATION);
-	render_window_class.hCursor       = ::LoadCursor(0, IDC_ARROW);
+	render_window_class.hCursor       = 0;
 	render_window_class.lpszClassName = DESHI_RENDER_WNDCLASSNAME;
 	if(!::RegisterClassExW(&render_window_class)) win32_log_last_error("RegisterClassExW", true);
 	
@@ -443,7 +571,11 @@ platform_update(){DPZoneScoped; DPFrameMark;
 		}
 		//if(window_windows[i]->decorations != Decoration_SystemDecorations) DrawDecorations(window_windows[i]);
 		//window_windows[i].hit_test = HitTestNone;
-		if(window_windows[i]->cursor_mode == CursorMode_FirstPerson) window_cursor_position(window_windows[i], window_windows[i]->center);
+		if(window_windows[i]->focused){
+			if(window_windows[i]->cursor_mode == CursorMode_FirstPerson){
+				window_cursor_position(window_windows[i], window_windows[i]->center);
+			}
+		}
 	}
 	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
 	
@@ -1369,7 +1501,7 @@ platform_get_clipboard(){DPZoneScoped;
 		win32_log_last_error("GlobalLock");
 	}
 	::GlobalUnlock(wchar_buffer_handle);
-    ::CloseClipboard();
+	::CloseClipboard();
 	return result;
 }
 
@@ -1390,14 +1522,14 @@ platform_set_clipboard(str8 text){DPZoneScoped;
 	}
 	
 	WCHAR* wchar_buffer = (WCHAR*)::GlobalLock(wchar_buffer_handle);
-    ::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), wchar_buffer, wchar_buffer_length);
-    ::GlobalUnlock(wchar_buffer_handle);
-    ::EmptyClipboard();
-    if(::SetClipboardData(CF_UNICODETEXT, wchar_buffer_handle) == NULL){
+	::MultiByteToWideChar(CP_UTF8, 0, (const char*)text.str, text.count*sizeof(u8), wchar_buffer, wchar_buffer_length);
+	::GlobalUnlock(wchar_buffer_handle);
+	::EmptyClipboard();
+	if(::SetClipboardData(CF_UNICODETEXT, wchar_buffer_handle) == NULL){
 		win32_log_last_error("SetClipboardData");
-        ::GlobalFree(wchar_buffer_handle);
+		::GlobalFree(wchar_buffer_handle);
 	}
-    ::CloseClipboard();
+	::CloseClipboard();
 }
 
 
@@ -1608,7 +1740,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			me->running = false;
 			WorkerLog("finished running job");
 			if(!man->worker_should_continue()) break; 
-
+			
 		}
 		//when there are no more jobs go to sleep until notified again by thread manager
 		WorkerLog("going to sleep");
@@ -1616,7 +1748,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 		man->idle.wait();
 		man->set_thread_name(STR8("waking up"));
 		WorkerLog("woke up");
-
+		
 	}
 	WorkerLog("closing");
 }
@@ -1724,7 +1856,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	//set window title
 	window->title = str8_copy(title, deshi_allocator);
 	
-	//set window position and size
+	//set window decorated pos/size
 	int work_x = 0, work_y = 0, work_w = 0, work_h = 0;
 	win32_monitor_info((HWND)window->handle, 0,0, &work_x,&work_y, &work_w,&work_h);
 	if(width  == 0xFFFFFFFF) width  = work_w / 2;
@@ -1733,6 +1865,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	if(y == 0xFFFFFFFF) y = work_y + (height / 2);
 	::SetWindowPos((HWND)window->handle, 0, x,y, width,height, 0);
 	
+	//get window decorated pos/size
 	RECT rect;
 	::GetWindowRect((HWND)window->handle, &rect);
 	window->position_decorated.x = rect.left;
@@ -1740,6 +1873,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	window->dimensions_decorated.x = rect.right  - rect.left;
 	window->dimensions_decorated.y = rect.bottom - rect.top;
 	
+	//get window client pos/size 
 	::GetClientRect((HWND)window->handle, &rect);
 	::ClientToScreen((HWND)window->handle, (POINT*)&rect.left);
 	::ClientToScreen((HWND)window->handle, (POINT*)&rect.right);
@@ -1748,8 +1882,12 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	window->dimensions.x = rect.right  - rect.left;
 	window->dimensions.y = rect.bottom - rect.top;
 	
+	//set window center
 	window->center.x = window->dimensions.x / 2;
 	window->center.y = window->dimensions.y / 2;
+	
+	//set window cursor
+	::SetCursor(::LoadCursorW(0, IDC_ARROW));
 	
 	//if this is the first window created, it's global
 	if(window_windows.count == 0){
@@ -1873,7 +2011,7 @@ window_cursor_mode(Window* window, CursorMode mode){DPZoneScoped;
 	if(window->cursor_mode == mode) return;
 	switch(mode){
 		case CursorMode_Default: default:{
-			::SetCursor(::LoadCursor(0, IDC_ARROW));
+			::SetCursor(::LoadCursorW(0, IDC_ARROW));
 			::ClipCursor(0);
 		}break;
 		case CursorMode_FirstPerson:{
@@ -2134,7 +2272,7 @@ u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, s32 size)
 //so from http://beej.us/guide/bgnet/examples/client.c
 void* getinaddr(sockaddr* sa){
 	if (sa->sa_family == AF_INET) return &(((struct sockaddr_in*)sa)->sin_addr);
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
 u64 net_address_init(netAddress* address, str8 host, str8 port){
