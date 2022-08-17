@@ -12,12 +12,8 @@ Memory Layout:  (not to scale)
 | Chunk | Chunk | Item | Item | Item | Item |      |      |
 
 Index:
-@memory_types
-  Arena
-  MemChunk
-  Heap
-  AllocInfo
 @memory_chunk
+  MemChunk
   ChunkToMemory(MemChunk* chunk) -> void*
   ChunkToArena(MemChunk* chunk) -> Arena*
   MemoryToChunk(void* memory) -> MemChunk*
@@ -33,6 +29,7 @@ Index:
   ChunkIsArenad(Chunk* chunk) -> b32
   ChunkIsLibc(Chunk* chunk) -> b32
 @memory_heap
+  Heap
   memory_heap_init_bytes(upt bytes) -> Heap*
   memory_heap_init(type, count) -> Heap*
   memory_heap_deinit(Heap* heap) -> void
@@ -46,11 +43,15 @@ Index:
   memory_heap_count(heap, type) -> upt
   memory_heap_space(heap, type) -> upt
 @memory_arena
+  Arena
   memory_create_arena(upt size) -> Arena*
   memory_grow_arena(Arena* arena, upt size) -> Arena*
   memory_clear_arena(Arena* arena) -> void
   memory_delete_arena(Arena* arena) -> void
   memory_expose_arena_heap() -> Heap*
+@memory_pool
+PoolHeader
+
 @memory_generic
   memory_alloc(upt size) -> void*
   memory_realloc(void* ptr, upt new_size) -> void*
@@ -62,6 +63,7 @@ Index:
   memory_clear() -> void
   memory_expose_temp_arena() -> Arena*
 @memory_debug
+  AllocInfo
   deshi__memory_allocinfo_set(void* address, str8 name, Type type) -> void
   deshi__memory_allocinfo_get(void* address) -> AllocInfo
   deshi__memory_allocinfo_active_expose() -> carray<AllocInfo>
@@ -101,55 +103,13 @@ https://github.com/nothings/stb/blob/master/stb_ds.h
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_types
-external struct Arena{
-	u8* start;
-	u8* cursor;
-	upt size;
-	upt used;
-};
-
+//// @memory_chunk
 external struct MemChunk{
 	MemChunk* prev; //pointer to previous order chunk
 	upt       size; //size of this chunk (including this var and above vars as overhead)(OR'd with flags)
 	Node      node; //user memory starts here when in use; points to free chunks when not
 };
 
-external struct Heap{
-	u8*       start;
-	u8*       cursor;
-	upt       used;
-	upt       size;
-	Node      empty_nodes;
-	MemChunk* last_chunk;
-	b32       initialized;
-};
-
-external struct AllocInfo{
-	//automatic
-	void* address;
-	CodeLocation trigger;
-	u64 creation_frame;
-	u64 deletion_frame;
-	
-	//user defined
-	str8 name;
-	Type type;
-};
-
-external struct MemoryContext{
-	b32    cleanup_happened;
-	Heap   arena_heap;
-	Arena* generic_arena; //generic_heap is stored here; not used otherwise
-	Heap*  generic_heap;
-	Arena  temp_arena;
-};
-//global memory pointer
-extern MemoryContext* g_memory;
-
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_chunk
 #define MEMORY_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemChunk, node))
 #define ChunkToMemory(chunk)\
 ((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
@@ -194,6 +154,16 @@ extern MemoryContext* g_memory;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
+external struct Heap{
+	u8*       start;
+	u8*       cursor;
+	upt       used;
+	upt       size;
+	Node      empty_nodes;
+	MemChunk* last_chunk;
+	b32       initialized;
+};
+
 //Initializes a heap with an initial `bytes` of memory
 external Heap* deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line);
 #define memory_heap_init_bytes(bytes) deshi__memory_heap_init_bytes(bytes, str8_lit(__FILE__), __LINE__)
@@ -225,6 +195,13 @@ external void deshi__memory_heap_clear(Heap* heap, str8 file, upt line);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena
+external struct Arena{
+	u8* start;
+	u8* cursor;
+	upt size;
+	upt used;
+};
+
 //Creates an arena AT LEAST `size` in bytes with all memory zeroed
 external Arena* deshi__memory_arena_create(upt size, str8 file, upt line);
 #define memory_create_arena(size) deshi__memory_arena_create(size, str8_lit(__FILE__), __LINE__)
@@ -253,6 +230,49 @@ T* memory_arena_add(Arena* arena, const T& item);
 
 template<typename T>
 T* memory_arena_add_new(Arena* arena);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_pool
+external struct PoolHeader{
+	u32 chunk_size;
+	u32 chunks_per_block;
+	void* free_chunk;
+	void* next_block;
+};
+
+
+#define memory_pool_header(pool) ((PoolHeader*)(pool) - 1)
+
+#define memory_pool_grow(pool) \
+  do{ \
+  }while(0)
+
+#define memory_pool_maybegrow(pool) ((!(pool) || !memory_pool_header(pool)->free_chunk) ? (memory_pool_grow(pool),0) : 0)
+
+//Creates a pooled arena with `cpb` chunks per block and sets `pool` equal to the first chunk
+#define memory_pool_init(pool,cpb) \
+  do{ \
+    u32 chunk_size = Max(sizeof(*(pool)), sizeof(void*)); \
+    (u8*)(pool) = (u8*)memory_alloc(sizeof(PoolHeader) + (chunk_size * (cpb))) + sizeof(PoolHeader); \
+    memory_pool_header(pool)->chunk_size = sizeof(*(pool)); \
+    memory_pool_header(pool)->chunks_per_block = (cpb); \
+  }while(0)
+
+#define memory_pool_deinit(pool) (((pool) ? memory_zfree(pool) : 0), (pool)=0)
+
+#define memory_pool_add(pool,item) \
+  do{ \
+    PoolHeader* header = memory_pool_header(pool); \
+    memory_pool_maybegrow(pool); \
+    void* next_chunk = header->free_chunk->next; \
+    *header->free_chunk = item; \
+    header->free_chunk = next_chunk; \
+  }while(0)
+
+#define memory_pool_delete(pool,ptr) 0 //TODO(delle) finis this
+
+#define memory_pool_index(pool,index) 0 //TODO(delle) finis this
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -303,6 +323,18 @@ external Arena* deshi__memory_temp_expose();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_debug
+external struct AllocInfo{
+	//automatic
+	void* address;
+	CodeLocation trigger;
+	u64 creation_frame;
+	u64 deletion_frame;
+	
+	//user defined
+	str8 name;
+	Type type;
+};
+
 //Attaches a `name` and `type` to an `address` (previously allocated or not)
 external void deshi__memory_allocinfo_set(void* address, str8 name, Type type);
 
@@ -319,6 +351,15 @@ void deshi__memory_bytes_draw();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_state
+external struct MemoryContext{
+	b32    cleanup_happened;
+	Heap   arena_heap;
+	Arena* generic_arena; //generic_heap is stored here; not used otherwise
+	Heap*  generic_heap;
+	Arena  temp_arena;
+};
+extern MemoryContext* g_memory; //global memory pointer
+
 //Reserves and commits `main_size`+`temp_size` bytes of memory from the OS
 external void deshi__memory_init(upt main_size, upt temp_size);
 #define memory_init(main_size, temp_size) deshi__memory_init(main_size, temp_size)
