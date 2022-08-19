@@ -564,9 +564,8 @@ namespace Math {
 		float renderDistance = farZ - nearZ;
 		float aspectRatio = (f32)height / (f32)width;
 		float fovRad = 1.0f / tanf(Radians(hFOV / 2.0f));
-		return mat4( //NOTE setting (1,1) to negative flips the y-axis so y is up when x is right and z is forward
-					aspectRatio * fovRad, 0,	   0,							  0,
-					0,					-fovRad, 0,							  0,
+		return mat4(aspectRatio * fovRad, 0,	   0,							  0,
+					0,					fovRad,  0,							  0,
 					0,					0,	   farZ / renderDistance,		  1,
 					0,					0,	   -(farZ*nearZ) / renderDistance, 0);
 	}
