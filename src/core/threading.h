@@ -95,8 +95,8 @@ struct Thread{
     void* handle;
     b32 running = 0; //this is only set by the worker
     b32 close = 0; //this is only set by the thread manager
-    string name = ""; //for debugging. 
     u32 idx;
+    str8 name; //for debugging. 
 };
 
 struct ThreadManager{
