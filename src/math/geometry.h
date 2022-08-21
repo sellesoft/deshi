@@ -33,7 +33,7 @@ global vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
 		f32 t = Clamp(dot20 / dot00, 0.0f, 1.0f);
 		u = 1.0f - t; v = t; w = 0.0f;
 	}
-	return vec3(u*tri0.x + v*tri1.x + w*tri2.x, u*tri0.y + v*tri1.y + w*tri2.y, u*tri0.z + v*tri1.z + w*tri2.z);
+	return Vec3(u*tri0.x + v*tri1.x + w*tri2.x, u*tri0.y + v*tri1.y + w*tri2.y, u*tri0.z + v*tri1.z + w*tri2.z);
 }
 
 inline global vec3 MeshTriangleMidpoint(MeshTriangle* tri){
