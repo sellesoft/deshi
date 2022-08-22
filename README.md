@@ -2,14 +2,13 @@
 ===
 A 3D graphics and realtime utilities library, originally [P3DPGE](https://github.com/SushiSalad/P3DPGE).
 
-Being used in physics-puzzle game [atmos](https://github.com/sellesoft/atmos) and math tool [suugu](https://github.com/sellesoft/suugu).
-
 ### [Features](https://github.com/sellesoft/deshi/wiki)
 * Vulkan/OpenGL3 rendering
 * Console and commands
 * UI and math libraries
 * BDF/TTF font loading and rendering
 * Importing and processing OBJ models
+* Win32 platform layer (File I/O, Input, Threading, Windowing)
 
 ### Major TODOs
 * Lighting and shadows
