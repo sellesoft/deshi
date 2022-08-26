@@ -150,6 +150,7 @@ void console_init(){DPZoneScoped;
 	base.text_color = color(255,255,255);
 	base.overflow = overflow_scroll;
 	base.text_wrap = text_wrap_none;
+	base.tab_spaces = 4;
 	base.sizing = size_normal;
 	
 	//initialize ui elements

@@ -54,7 +54,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 -----
 [0  ,***,21/04/12,System] look into implementing Lua (or finish amu and make it an embeddable language!)
 [0  ,***,21/06/09,System] write a preprocessing/postprocessing compiler that makes serialization easier
-[0  ,***,21/07/26,Feature] hotloadable UI
 
 `Input`
 -------
@@ -65,7 +64,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 `Logger`
 --------
 [!! ,*  ,22/01/06,Tweak] optimize by using a single buffer or temp allocation instead of strings in logger_comma_log
-[!  ,** ,22/08/13,Tweak] remove color formatting from messages before outputting it to the log file (but not before sending it to stdout or console)
+[!  ,** ,22/08/26,Tweak] strip the log file of color escape sequences when the program terminates
 
 `Math`
 ------

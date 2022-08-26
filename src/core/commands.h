@@ -9,7 +9,7 @@ enum CmdArgument{
 	CmdArgument_NONE,
 	CmdArgument_S32,
 	CmdArgument_String,
-	
+	CmdArgument_Vec3,
 	CmdArgument_OPTIONAL = (1 << 10),
 };
 

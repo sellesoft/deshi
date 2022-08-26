@@ -1728,8 +1728,9 @@ SetupShaderCompiler(){
 }
 
 //NOTE(delle) this does not free the shaderc_compilation_result_t, use shaderc_result_release() to do so
+//NOTE(sushi) this can probably just take the File* since it contains the majority of info passed
 local shaderc_compilation_result_t
-compile_shader(str8 source, str8 name, str8 front, str8 ext){DPZoneScoped;
+compile_shader(str8 source, str8 name, str8 front, str8 ext, str8 out_path){DPZoneScoped;
 	PrintVk(4, "Compiling shader: ",name);
 	Stopwatch t_s = start_stopwatch();
 	
@@ -1757,7 +1758,7 @@ compile_shader(str8 source, str8 name, str8 front, str8 ext){DPZoneScoped;
 	}
 	
 	//create or overwrite .spv files
-	file_write_simple(str8_concat3(str8_lit("data/shaders/"),name,str8_lit(".spv"), deshi_temp_allocator),
+	file_write_simple(str8_concat3(out_path,name,str8_lit(".spv"), deshi_temp_allocator),
 					  (void*)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
 	PrintVk(5, "Finished compiling shader '",name,"' in ",peek_stopwatch(t_s),"ms");
 	return result;
@@ -1768,8 +1769,12 @@ local VkPipelineShaderStageCreateInfo
 load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	PrintVk(3, "Loading shader: ",name);
 	Stopwatch t_s = start_stopwatch();
-	str8 path = str8_concat(str8_lit("data/shaders/"), name, deshi_temp_allocator);
-	
+	str8 dir = STR8("deshi/src/shaders/");
+	str8 path = str8_concat(dir, name, deshi_temp_allocator);
+	if(!file_exists(path)){
+		dir = STR8("data/shaders/");
+		path = str8_concat(dir, name, deshi_temp_allocator);
+	}
 	//load from .spv if previously compiled and create shader module
 	if(!renderSettings.recompileAllShaders){
 		str8 spv  = str8_concat(path, str8_lit(".spv"), deshi_temp_allocator);
@@ -1801,7 +1806,7 @@ load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	str8 shader_source = file_read_simple(path, deshi_temp_allocator);
 	if(!shader_source) return VkPipelineShaderStageCreateInfo{};
 	
-	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext);
+	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext, dir);
 	if(!compiled) return VkPipelineShaderStageCreateInfo{};
 	defer{ shaderc_result_release(compiled); };
 	
@@ -1823,7 +1828,13 @@ load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 local VkPipelineShaderStageCreateInfo
 CompileAndLoadShader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	PrintVk(3, "Compiling and loading shader: ",name);
-	str8 path = str8_concat(str8_lit("data/shaders/"), name, deshi_temp_allocator);
+	str8 dir = STR8("deshi/src/shaders/");
+	str8 path = str8_concat(dir, name, deshi_temp_allocator);
+	if(!file_exists(path)){
+		dir = STR8("data/shaders/");
+		path = str8_concat(dir, name, deshi_temp_allocator);
+	}
+	
 	
 	//load shader source
 	File shader_file = file_info(path);
@@ -1833,7 +1844,7 @@ CompileAndLoadShader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	if(!shader_source) return VkPipelineShaderStageCreateInfo{};
 	
 	//compile shader source
-	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext);
+	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext, dir);
 	if(!compiled) return VkPipelineShaderStageCreateInfo{};
 	defer{ shaderc_result_release(compiled); };
 	
