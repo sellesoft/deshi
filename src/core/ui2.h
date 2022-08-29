@@ -548,6 +548,8 @@ struct uiDrawCmd{
 };
 #define uiDrawCmdFromNode(x) CastFromMember(uiDrawCmd, node, x)
 
+
+
 enum{
 	pos_static=0,
 	pos_relative,
@@ -1033,6 +1035,9 @@ struct uiContext{
 	array<uiItem*> items;
 	array<uiItem*> immediate_items;
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
+	array<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
+	array<uiDrawCmd*> inactive_drawcmds_index_sorted;
+
 	Arena* vertex_arena;
 	Arena* index_arena;
 	RenderTwodBuffer render_buffer;

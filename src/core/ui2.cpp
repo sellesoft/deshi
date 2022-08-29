@@ -70,6 +70,11 @@ uiDrawCmd* make_drawcmd(upt count){
 	return (uiDrawCmd*)memalloc(count*sizeof(uiDrawCmd));
 }
 
+void drawcmd_delete(uiDrawCmd* dc){
+	memzfree(dc);
+	g_ui->stats.drawcmds_reserved--;
+}
+
 void push_item(uiItem* item){DPZoneScoped;
 	g_ui->item_stack.add(item);
 }
@@ -83,56 +88,239 @@ uiItem* pop_item(){DPZoneScoped;
 //@uiDrawCmd
 
 void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
-	NodeInsertPrev(&g_ui->inactive_drawcmds, &drawcmd->node);
+	//NodeInsertPrev(&g_ui->inactive_drawcmds, &drawcmd->node);
+	// iterate through inactive drawcmds until we find ones that come before and after this one
+	// if we find it, we take the left most drawcmd and just extend its range
+	// TODO(sushi) its possible for this to be binary searched since this will make the inactive drawcmds list
+	//             sorted. just means changing it from a linked list to an array of pointers to drawcmds
+
+	carray<uiDrawCmd*> varr = {g_ui->inactive_drawcmds_vertex_sorted.data, g_ui->inactive_drawcmds_vertex_sorted.count};
+	carray<uiDrawCmd*> iarr = {g_ui->inactive_drawcmds_index_sorted.data, g_ui->inactive_drawcmds_index_sorted.count};
+
+	if(g_ui->inactive_drawcmds_vertex_sorted.count){
+		s32 idx = -1;
+		s32 mid =  0;
+		s32 left = 0;
+		s32 right = varr.count-1;
+		while(left <= right){
+			mid = left + (right-left)/2;
+			//I dont think this should ever happen but tell me if it does
+			Assert(varr[mid]->vertex_offset != drawcmd->vertex_offset);
+			if(varr[mid]->vertex_offset < drawcmd->vertex_offset){
+				left = mid + 1;
+				mid = left+((right-left)/2);
+			}else{
+				right = mid - 1;
+			}
+		}
+
+		g_ui->inactive_drawcmds_vertex_sorted.insert(drawcmd, mid);
+
+		if(mid != g_ui->inactive_drawcmds_vertex_sorted.count-1){
+			uiDrawCmd* right = g_ui->inactive_drawcmds_vertex_sorted[mid+1];
+			if(right->vertex_offset - drawcmd->counts_reserved.vertices == drawcmd->vertex_offset){
+				// in this case we have found a drawcmd on the right side that is aligned with the one we are currently 
+				// deleting, so we can take its vertices and set its count to 0
+				drawcmd->counts_reserved.vertices += right->counts_reserved.vertices;
+				right->counts_reserved.vertices = 0;
+				g_ui->inactive_drawcmds_vertex_sorted.remove(mid+1);
+				if(!right->counts_reserved.indices){
+					drawcmd_delete(right);
+				}
+			}
+		}
+		if(mid){
+			uiDrawCmd* left = g_ui->inactive_drawcmds_vertex_sorted[mid-1];
+			if(left->vertex_offset + left->counts_reserved.vertices == drawcmd->vertex_offset){
+				// in this case we have found a drawcmd on the left side that is aligned with the one we are currently 
+				// deleting, so we can give it it's vertices and set them to 0
+				left->counts_reserved.vertices += drawcmd->counts_reserved.vertices;
+				drawcmd->counts_reserved.vertices = 0; 
+				g_ui->inactive_drawcmds_vertex_sorted.remove(mid);
+				//since this is the drawcmd we are currently working with, its index count shouldn't be zero so we dont check that
+			}
+		}
+	}else{
+		g_ui->inactive_drawcmds_vertex_sorted.add(drawcmd);
+	}
+
+	if(g_ui->inactive_drawcmds_index_sorted.count){
+		s32 idx = -1;
+		s32 mid =  0;
+		s32 left = 0;
+		s32 right = iarr.count-1;
+		while(left <= right){
+			mid = left + (right-left)/2;
+			//I dont think this should ever happen but tell me if it does
+			Assert(iarr[mid]->index_offset != drawcmd->index_offset);
+			if(iarr[mid]->index_offset < drawcmd->index_offset){
+				left = mid + 1;
+				mid = left+((right-left)/2);
+			}else{
+				right = mid - 1;
+			}
+		}
+
+		g_ui->inactive_drawcmds_index_sorted.insert(drawcmd, mid);
+
+		if(mid != g_ui->inactive_drawcmds_index_sorted.count-1){
+			uiDrawCmd* right = g_ui->inactive_drawcmds_index_sorted[mid+1];
+			if(right->index_offset - drawcmd->counts_reserved.indices == drawcmd->index_offset){
+				// in this case we have found a drawcmd on the right side that is aligned with the one we are currently 
+				// deleting, so we can take its vertices and set its count to 0
+				drawcmd->counts_reserved.indices += right->counts_reserved.indices;
+				right->counts_reserved.indices = 0;
+				g_ui->inactive_drawcmds_index_sorted.remove(mid+1);
+				if(!right->counts_reserved.vertices){
+					drawcmd_delete(right);
+				}
+			}
+		}
+		if(mid){
+			uiDrawCmd* left = g_ui->inactive_drawcmds_index_sorted[mid-1];
+			if(left->index_offset + left->counts_reserved.indices == drawcmd->index_offset){
+				// in this case we have found a drawcmd on the left side that is aligned with the one we are currently 
+				// deleting, so we can give it it's vertices and set them to 0
+				left->counts_reserved.indices += drawcmd->counts_reserved.indices;
+				drawcmd->counts_reserved.indices = 0; 
+				g_ui->inactive_drawcmds_index_sorted.remove(mid);
+				if(!drawcmd->counts_reserved.vertices){
+					//this drawcmd has been absorbed by others, so its safe to delete it
+					drawcmd_delete(drawcmd);
+				}
+			}
+		}
+	}else{
+		g_ui->inactive_drawcmds_index_sorted.add(drawcmd);
+	}
+	
+	// Node* left_node = 0; 
+	// for(Node* n = g_ui->inactive_drawcmds.next; n != &g_ui->inactive_drawcmds; n = n->next){
+	// 	uiDrawCmd* dc = uiDrawCmdFromNode(n);
+	// 	uiDrawCmd* next = uiDrawCmdFromNode(n->next);
+	// 	// only do evaluations when we find drawcmds that surround the one we are removing
+	// 	if(dc->vertex_offset < drawcmd->vertex_offset && next->vertex_offset > drawcmd->vertex_offset){
+	// 		if(dc->vertex_offset + dc->counts_reserved.vertices == drawcmd->vertex_offset){
+	// 			// here we have found that the left drawcmd's vertices are aligned with our current drawcmd
+	// 			// so we can let it take them from it
+
+
+	// 		}
+	// 	}
+	// 	if(dc->index_offset < drawcmd->index_offset && next->index_offset > drawcmd->index_offset){
+
+	// 	}
+	// 	if(!(dc->vertex_offset < drawcmd->vertex_offset && next->vertex_offset > drawcmd->vertex_offset)) continue;
+
+	// 	if(dc->vertex_offset + dc->counts_reserved.vertices == drawcmd->vertex_offset){
+	// 		//we've found a left side drawcmd whose vertexes are aligned with the one we're removing
+	// 		//we can let it take on the vertexes of the one we're removing
+	// 		dc->counts_reserved.vertices += drawcmd->counts_reserved.vertices;
+	// 		//next check if the next drawcmd is aligned as well
+	// 		if(drawcmd->vertex_offset + drawcmd->counts_reserved.vertices == next->vertex_offset){
+	// 			//if it is, we can extend the amount of drawcmds again and then remove the next drawcmd from the list
+
+	// 		}
+	// 	}
+	// }
 	//g_ui->cleanup = 1;
 }
 
 void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 	u32 v_place_next = -1;
 	u32 i_place_next = -1;	
-	for(Node* n = g_ui->inactive_drawcmds.next; n!=&g_ui->inactive_drawcmds; n = n->next){
-		uiDrawCmd* dc = uiDrawCmdFromNode(n);
+
+	forI(g_ui->inactive_drawcmds_vertex_sorted.count){
+		uiDrawCmd* dc = g_ui->inactive_drawcmds_vertex_sorted[i];
+		// if(dc == drawcmd){
+		// 	//we are reallocating this drawcmd so we need to remove it from the list 
+		// 	g_ui->inactive_drawcmds_vertex_sorted.remove(i);
+		// 	i--;
+		// }
 		s64 vremain = dc->counts_reserved.vertices - counts.vertices;
-		s64 iremain = dc->counts_reserved.indices - counts.indices;
-		
-		if(vremain >= 3){
-			//there are a minimum of 3 vertices needed to make a 2D shape, so if there are more than it
-			//we keep the drawcmd for future passes
+		if(vremain >= 0){
 			v_place_next = dc->vertex_offset;
-			dc->vertex_offset += counts.vertices;
-			dc->counts_reserved.vertices -= counts.vertices;
-		}else if(vremain >= 0){
-			//otherwise we just take the drawcmd's vertices and make its vertices invalid for future passes
-			v_place_next = dc->vertex_offset;
-			dc->counts_reserved.vertices = 0;
-		}
-		
-		if(iremain >= 3){
-			//there are a minimum of 3 indexes to make a 2D shape, so if there is more than this remaining
-			//after claiming, keep the drawcmd around 
-			i_place_next = dc->index_offset;
-			dc->index_offset += counts.indices;
-			dc->counts_reserved.indices -= counts.indices;
-		}else if(iremain >= 0){
-			//otherwise we just take the drawcmd's indices and make sure they arent used in future runs
-			i_place_next = dc->index_offset;
-			dc->counts_reserved.indices = 0;
-		}
-		
-		if(!(dc->counts_reserved.vertices || dc->counts_reserved.indices)){
-			//if both counts are 0 we can go ahead and delete this drawcmd
-			g_ui->stats.drawcmds_reserved--;
-			n=n->prev;
-			NodeRemove(n->next);
-			memzfree(dc);
-		}
-		
-		//keep running until we have found room for both vertices and indicies 
-		//or until we run out of drawcmds to consider
-		if(v_place_next != -1 && i_place_next != -1){
+			if(!vremain){
+				g_ui->inactive_drawcmds_vertex_sorted.remove(i);
+				dc->counts_reserved.vertices = 0;
+				if(!dc->counts_reserved.indices){
+					drawcmd_delete(dc);
+				}
+			}else{
+				dc->vertex_offset += counts.vertices;
+				dc->counts_reserved.vertices -= counts.vertices;
+			}
 			break;
 		}
 	}
+
+	forI(g_ui->inactive_drawcmds_index_sorted.count){
+		uiDrawCmd* dc = g_ui->inactive_drawcmds_index_sorted[i];
+		// if(dc == drawcmd){
+		// 	//we are reallocating this drawcmd so we need to remove it from the list 
+		// 	g_ui->inactive_drawcmds_index_sorted.remove(i);
+		// 	i--;
+		// }
+		s64 iremain = dc->counts_reserved.indices - counts.indices;
+		if(iremain >= 0){
+			i_place_next = dc->index_offset;
+			if(!iremain){
+				g_ui->inactive_drawcmds_index_sorted.remove(i);
+				dc->counts_reserved.indices = 0;
+				if(!dc->counts_reserved.vertices){
+					drawcmd_delete(dc);
+				}
+			}else{
+				dc->index_offset += counts.indices;
+				dc->counts_reserved.indices -= counts.indices;
+			}
+			break;
+		}
+	}
+
+	// for(Node* n = g_ui->inactive_drawcmds.next; n!=&g_ui->inactive_drawcmds; n = n->next){
+	// 	uiDrawCmd* dc = uiDrawCmdFromNode(n);
+	// 	s64 vremain = dc->counts_reserved.vertices - counts.vertices;
+	// 	s64 iremain = dc->counts_reserved.indices - counts.indices;
+		
+	// 	if(vremain >= 3){
+	// 		//there are a minimum of 3 vertices needed to make a 2D shape, so if there are more than it
+	// 		//we keep the drawcmd for future passes
+	// 		v_place_next = dc->vertex_offset;
+	// 		dc->vertex_offset += counts.vertices;
+	// 		dc->counts_reserved.vertices -= counts.vertices;
+	// 	}else if(vremain >= 0){
+	// 		//otherwise we just take the drawcmd's vertices and make its vertices invalid for future passes
+	// 		v_place_next = dc->vertex_offset;
+	// 		dc->counts_reserved.vertices = 0;
+	// 	}
+		
+	// 	if(iremain >= 3){
+	// 		//there are a minimum of 3 indexes to make a 2D shape, so if there is more than this remaining
+	// 		//after claiming, keep the drawcmd around 
+	// 		i_place_next = dc->index_offset;
+	// 		dc->index_offset += counts.indices;
+	// 		dc->counts_reserved.indices -= counts.indices;
+	// 	}else if(iremain >= 0){
+	// 		//otherwise we just take the drawcmd's indices and make sure they arent used in future runs
+	// 		i_place_next = dc->index_offset;
+	// 		dc->counts_reserved.indices = 0;
+	// 	}
+		
+	// 	if(!(dc->counts_reserved.vertices || dc->counts_reserved.indices)){
+	// 		//if both counts are 0 we can go ahead and delete this drawcmd
+	// 		g_ui->stats.drawcmds_reserved--;
+	// 		n=n->prev;
+	// 		NodeRemove(n->next);
+	// 		memzfree(dc);
+	// 	}
+		
+	// 	//keep running until we have found room for both vertices and indicies 
+	// 	//or until we run out of drawcmds to consider
+	// 	if(v_place_next != -1 && i_place_next != -1){
+	// 		break;
+	// 	}
+	// }
 	
 	if(v_place_next == -1){
 		//we couldnt find a drawcmd with space for our new verts so we must allocate at the end 

@@ -117,9 +117,9 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 		}
 		
 		Assert(index == -1, "There is already an existing active AllocInfo with this address");
-		alloc_infos_active.insert(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")}, middle);
+		alloc_infos_active.insert(AllocInfo{address, CodeLocation{{(char*)file.str, file.count}, u32(line), 0}, DeshTime->totalTime, upt(-1), cstr_lit("")}, middle);
 	}else{
-		alloc_infos_active.add(AllocInfo{address, CodeLocation{file, u32(line), 0}, DeshTime->updateCount, upt(-1), cstr_lit("")});
+		alloc_infos_active.add(AllocInfo{address, CodeLocation{{(char*)file.str, file.count}, u32(line), 0}, DeshTime->totalTime, upt(-1), cstr_lit("")});
 	}
 	return &alloc_infos_active[middle];
 }

@@ -1465,6 +1465,7 @@ typedef struct vec3{
 	vec3 operator* (const quat& rhs)const;
 	vec2 toVec2()const;
 	vec4 toVec4()const;
+	vec3i toVec3i()const;
 #endif //#ifdef __cplusplus
 } vec3;
 
@@ -2578,6 +2579,11 @@ toVec4()const{
 	v.z = this->z;
 	v.w = 1;
 	return v;
+}
+
+inline vec3i vec3::
+toVec3i()const{
+	return {s32(x),s32(y),s32(z)};
 }
 
 inline vec3 vec4::

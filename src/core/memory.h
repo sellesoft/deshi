@@ -94,6 +94,7 @@ https://github.com/nothings/stb/blob/master/stb_ds.h
 
 #define MEMORY_CHECK_HEAPS false
 #define MEMORY_TRACK_ALLOCS false
+
 #define MEMORY_PRINT_ARENA_CHUNKS false
 #define MEMORY_PRINT_ARENA_ACTIONS false
 #define MEMORY_PRINT_HEAP_ACTIONS false
