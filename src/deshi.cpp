@@ -142,7 +142,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,** ,22/08/09,System]  remove the old ui system 
 [!!!,***,22/08/09,PWide]   replace usage of the old ui with new ui or just disable it so it doesnt error
 [!!!,*  ,22/08/09,Tweak]   reimplement slider and checkbox
-[!!!,** ,22/08/09,Feature] add text input widget
 [!!!,** ,22/08/09,Feature] add tabs widget
 [!! ,** ,22/08/09,Feature] add tables widget
 [!  ,*  ,22/08/09,Feature] add combo widget
@@ -153,7 +152,9 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,*  ,22/08/09,Tweak]   remove widget stuff from ui.h (ui2.h as of right now) and put it in its own file 
 [!! ,*  ,22/08/12,Tweak]   either finish the hot loading setup for ui or remove it
 [!!!,** ,22/08/13,Tweak]   ui's memory needs trimmed a LOT. to display little text on screen it takes over 500 bytes due to it being represented by uiItem who uses uiStyle
-
+[!!!,** ,22/09/04,Bug]     there seems to be a bug with drawcmd removal when reallocating text drawinfo. 
+    it triggers the assert that checks that the drawcmd being removed does not have the same offset as one that is already removed
+    this check may just be invalid. this happens when clicking on text sometimes.
 
 `Window`
 --------
