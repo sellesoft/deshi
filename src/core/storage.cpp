@@ -1,88 +1,312 @@
-namespace Storage{
-	local u8 null128_png[] = { //TODO(delle) fix this
-		0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,
-		0x00,0x00,0x00,0x80,0x00,0x00,0x00,0x80,0x08,0x02,0x00,0x00,0x00,0x4C,0x5C,0xF6,
-		0x9C,0x00,0x00,0x00,0x09,0x70,0x48,0x59,0x73,0x00,0x00,0x2E,0x23,0x00,0x00,0x2E,
-		0x23,0x01,0x78,0xA5,0x3F,0x76,0x00,0x00,0x01,0x04,0x49,0x44,0x41,0x54,0x78,0xDA,
-		0xED,0xD5,0xB1,0x11,0xC0,0x20,0x10,0x04,0xB1,0xC5,0x7D,0x51,0x3D,0x85,0xE1,0x8C,
-		0x12,0x20,0xD1,0x46,0x97,0x33,0xBC,0xDA,0xAD,0xDD,0xAA,0x2A,0xFB,0xFE,0xFE,0xD2,
-		0xD3,0xC6,0x79,0x93,0x6A,0x34,0xED,0xCB,0xDB,0x0F,0x78,0x9D,0x5B,0xCC,0x00,0x06,
-		0xB8,0xC5,0x0C,0x60,0x80,0xCD,0x00,0x06,0xB8,0xCB,0x0C,0x60,0x80,0xCD,0x00,0x06,
-		0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,
-		0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,
-		0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,
-		0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,
-		0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,
-		0x80,0xCD,0x00,0x06,0xD8,0x0C,0x60,0x80,0xCD,0x00,0x06,0xD8,0x7E,0x00,0x03,0x18,
-		0x20,0x06,0x30,0x40,0x0C,0x60,0x80,0x18,0xC0,0x00,0x31,0x80,0x01,0x62,0x00,0x03,
-		0xC4,0x00,0x06,0x88,0x01,0x0C,0x10,0x03,0x18,0x20,0x06,0x30,0x40,0x0C,0x60,0x80,
-		0x18,0xC0,0x00,0x31,0x80,0x01,0x62,0x00,0x03,0xC4,0x00,0x06,0x88,0x01,0x0C,0x10,
-		0x03,0x18,0x20,0x06,0x30,0x40,0x0C,0x60,0x80,0x18,0xC0,0x00,0x31,0x80,0x01,0x62,
-		0x00,0x03,0xC4,0x00,0x06,0x88,0x01,0x0C,0x10,0x03,0x18,0x20,0x06,0x30,0x40,0x0C,
-		0x60,0x80,0x18,0xC0,0x00,0x31,0x80,0x01,0x62,0x00,0x03,0x74,0xFA,0x01,0xD7,0x41,
-		0x0A,0x2B,0x59,0xA3,0x46,0xD2,0x00,0x00,0x00,0x00,0x49,0x45,0x4E,0x44,0xAE,0x42,
-		0x60,0x82 
+//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
+	persist u8 storage_line_buffer[256];
+	persist Allocator storage_load_allocator{
+		[](upt bytes){
+			if(bytes > 256){
+				return memory_talloc(bytes);
+			}else{
+				storage_line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+				return (void*)storage_line_buffer;
+			}
+		},
+		Allocator_ChangeMemory_Noop,
+		Allocator_ChangeMemory_Noop,
+		Allocator_ReleaseMemory_Noop,
+		Allocator_ResizeMemory_Noop
 	};
-	
-	local array<Mesh*>&     meshes    = DeshStorage->meshes;
-	local array<Texture*>&  textures  = DeshStorage->textures;
-	local array<Material*>& materials = DeshStorage->materials;
-	local array<Model*>&    models    = DeshStorage->models;
-	local array<Font*>&     fonts     = DeshStorage->fonts;
-	local array<Light*>&    lights    = DeshStorage->lights;
-};
 
-///////////////
-//// @init ////
-///////////////
-void Storage::
-Init(){DPZoneScoped;
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @storage_system
+void
+storage_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_STORAGE, DS_RENDER, "Attempted to initialize Storage module before initializing Render module");
 	
 	//create the storage directories if they don't exist already
-	file_create(str8_lit("data/fonts/"));
-	file_create(str8_lit("data/models/"));
-	file_create(str8_lit("data/textures/"));
+	file_create(STR8("data/fonts/"));
+	file_create(STR8("data/models/"));
+	file_create(STR8("data/textures/"));
 	
+	//setup arrays
+	arrsetcap(DeshStorage->mesh_array,256);
+	arrsetcap(DeshStorage->texture_array,256);
+	arrsetcap(DeshStorage->material_array,256);
+	arrsetcap(DeshStorage->model_array,256);
+	arrsetcap(DeshStorage->font_array,8);
+	
+	//setup stb_image.h
 	stbi_set_flip_vertically_on_load(true);
 	
-	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
-	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", 64);
-	//DeshStorage->null_texture  = CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA),second;
-	DeshStorage->null_texture  = CreateTextureFromFile(str8_lit("null128.png")).second;
-	DeshStorage->null_material = CreateMaterial(str8_lit("null"), Shader_NULL, MaterialFlags_NONE, {0}).second;
-	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", 64);
+	//setup null assets
+	storage_mesh_create_box(1.0f, 1.0f, 1.0f, Color_White.rgba); cpystr(storage_mesh_null()->name, "null", 64);
+	//TODO(delle) get null128_png working
+	//storage_texture_create_from_memory(stbi_load_from_memory_simple(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA);
+	storage_texture_create_from_file_simple(STR8("null128.png"));
+	storage_material_create(STR8("null"), Shader_NULL, MaterialFlags_NONE, DeshStorage->texture_array, 1);
+	storage_model_create_from_mesh(storage_mesh_null(), ModelFlags_NONE); cpystr(storage_model_null()->name, "null", 64);
 	
 	//create null font (white square)
-	DeshStorage->null_font     = (Font*)memory_alloc(sizeof(Font));
-	fonts.add(DeshStorage->null_font);
-	NullFont()->type = FontType_NONE;
-	NullFont()->idx = 0;
-	NullFont()->max_width = 6;
-	NullFont()->max_height = 12;
-	NullFont()->count = 1;
-	NullFont()->name = STR8("null");
+	Font* null_font = arrput(DeshStorage->font_array, (Font*)memory_alloc(sizeof(Font)));
+	null_font->type = FontType_NONE;
+	null_font->max_width = 6;
+	null_font->max_height = 12;
+	null_font->count = 1;
+	null_font->name = STR8("null");
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = CreateTextureFromMemory(white_pixels, str8_lit("null_font"), 2, 2, ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
-	//DeleteTexture(nf_tex); //!Incomplete
+	Texture* nf_tex = storage_texture_create_from_memory(white_pixels, STR8("null_font"), 2, 2, ImageFormat_BW, TextureType_2D,
+														 TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false);
+	storage_texture_delete(nf_tex);
 	
 	DeshiStageInitEnd(DS_STORAGE);
 }
 
 
-///////////////
-//// @mesh ////
-///////////////
-local Mesh* 
-AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){DPZoneScoped;
+void
+storage_reset(){DPZoneScoped;
+	for_array(DeshStorage->mesh_array) storage_mesh_delete(*it);
+	for_array(DeshStorage->texture_array) storage_texture_delete(*it);
+	for_array(DeshStorage->material_array) storage_material_delete(*it);
+	for_array(DeshStorage->model_array) storage_model_delete(*it);
+	for_array(DeshStorage->font_array) storage_font_delete(*it);
+}
+
+
+void
+storage_browser(){DPZoneScoped;
+	using namespace UI;
+	PushColor(UIStyleCol_Border, Color_Grey);
+	PushColor(UIStyleCol_Separator, Color_Grey);
+	Begin(STR8("StorageBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
+	
+	
+	BeginTabBar(STR8("StorageBrowserUITabBar"), UITabBarFlags_NoIndent);
+	Separator(9);
+	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
+	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
+	PushColor(UIStyleCol_WindowBg,                Color_VeryDarkGrey);
+	PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
+	if(BeginTab(STR8("Meshes")))
+	{
+		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("StorageBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
+	TextOld(STR8("TODO"));
+		EndChild();
+		
+		EndTab();
+	}
+	if(BeginTab(STR8("Textures")))
+	{
+	//TODO make all of this stuff get checked only when necessary
+	b32 new_selected = 0;
+	persist Texture* selected = 0;
+	
+	Texture* largest = DeshStorage->texture_array[0];
+	Texture* smallest = DeshStorage->texture_array[0];
+	
+	//gather size of textures in memory
+	upt texture_bytes = 0;
+	
+	
+	for_array(DeshStorage->texture_array){
+			texture_bytes += (*it)->width * (*it)->height * u8size;
+		if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
+		if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
+	}
+	
+	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
+	
+	
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("StorageBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
+	
+	BeginRow(STR8("StorageBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
+	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+	
+		TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshStorage->texture_array));
+	TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
+	
+	EndRow();
+	
+		if(BeginCombo(STR8("StorageBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
+				for_array(DeshStorage->texture_array){
+				if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
+				selected = (*it);
+				new_selected = 1;
+			}
+		}
+		EndCombo();
+	}
+	
+	Separator(9);
+	
+	if(BeginHeader(STR8("Stats"))){
+		BeginRow(STR8("StorageBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
+		
+		TextF(STR8("Largest Texture: %s"), largest->name);
+		if(Button(STR8("select"))){ selected = largest; new_selected = 1;}
+		
+		TextF(STR8("Smallest Texture: %s"), smallest->name);
+		if(Button(STR8("select"))){ selected = smallest; new_selected = 1; }
+		
+		EndRow();
+		
+		EndHeader();
+	}
+	
+	Separator(9);
+	
+	if(selected){
+		BeginRow(STR8("StorageBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
+		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
+		
+		u32 texbytes = selected->width * selected->height * u8size;
+		
+		TextF(STR8("Name: %s"), selected->name);
+		TextF(STR8("Render Index: %d"), selected->render_idx);
+		TextF(STR8("Width: %d"), selected->width);
+		TextF(STR8("Height: %d"), selected->height);
+		TextF(STR8("Depth: %d"), selected->depth);
+		TextF(STR8("MipMaps: %d"), selected->mipmaps);
+		TextF(STR8("Format: %s"), ImageFormatStrings[selected->format - 1].str);
+		TextF(STR8("Type: %s"), TextureTypeStrings[selected->type].str);
+		TextF(STR8("Filter: %s"), TextureFilterStrings[selected->filter].str);
+		TextF(STR8("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
+		TextF(STR8("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
+		
+		EndRow();
+		PushColor(UIStyleCol_WindowBg, 0x073030ff);
+		
+		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+		BeginChild(STR8("StorageBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
+		persist f32  zoom = 300;
+		persist vec2 mpl;
+		persist vec2 imagepos;
+		persist vec2 imageposlatch;
+		persist UIImageFlags flags;
+		
+		vec2 mp = input_mouse_position();
+		
+		if(Button(STR8("Flip x"))) 
+			ToggleFlag(flags, UIImageFlags_FlipX);
+		SameLine();
+		if(Button(STR8("Flip y"))) 
+			ToggleFlag(flags, UIImageFlags_FlipY);
+		
+		if(new_selected){
+			zoom = f32(GetWindow()->width) / selected->width ;
+			//imagepos = Vec2(
+			//				(GetWindow()->width - selected->width) / 2,
+			//				(GetWindow()->height - selected->height) / 2
+			//				);
+			imagepos = vec2::ZERO;
+		}
+		
+		string z = toStr(zoom);
+		TextOld(str8{(u8*)z.str, (s64)z.count});
+		
+		if(IsWinHovered()){
+			SetPreventInputs();
+			
+			if(DeshInput->scrollY){
+				f32 val = 10 * DeshInput->scrollY;
+				zoom += zoom / val;
+				//TODO make it zoom to the mouse 
+				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
+				//imagepos -= imtomp.normalized() * val * 4;
+			}
+			if(input_lmouse_pressed()){
+				mpl = mp;
+				imageposlatch = imagepos;
+			}
+			if(input_lmouse_down()){
+				imagepos = imageposlatch - (mpl - mp);
+			}
+			
+		}
+		else SetAllowInputs();
+		
+		SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
+		Image(selected, imagepos, 1, flags);
+		
+		EndChild();
+		PopColor();
+	}
+	
+	
+	EndChild();
+		ResetItemFlags(UIItemType_Header);
+		
+		EndTab();
+	}
+	if(BeginTab(STR8("Materials")))
+	{
+	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("StorageBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
+	
+	Separator(5);
+	
+	SetNextWindowSize(Vec2(MAX_F32, 200));
+	BeginChild(STR8("StorageBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
+		BeginRow(STR8("StorageBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+		
+			forI(arrlenu(DeshStorage->material_array)){
+			string s = toStr(i, "  ");
+			TextOld(str8{(u8*)s.str, (s64)s.count});
+				TextOld(str8_from_cstr(DeshStorage->material_array[i]->name));
+		}
+		
+		EndRow();
+	}EndChild();
+	
+	Separator(5);
+	
+	
+	EndChild();
+		
+		EndTab();
+	}
+	if(BeginTab(STR8("Models")))
+	{
+		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("StorageBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
+	TextOld(STR8("TODO"));
+		EndChild();
+		
+		EndTab();
+	}
+	if(BeginTab(STR8("Fonts")))
+	{
+		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("StorageBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
+	TextOld(STR8("TODO"));
+		
+		EndTab();
+	}
+	EndTabBar();
+	
+	End();
+	PopColor(11);
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @storage_mesh
+Mesh*
+storage_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){DPZoneScoped;
 	Assert(indexCount && vertexCount && faceCount);
 	
 	u32 triangleCount = indexCount/3;
 	u32 bytes =                    1*sizeof(Mesh)
-		+                vertexCount*sizeof(Mesh::Vertex)
-		+                 indexCount*sizeof(Mesh::Index)
-		+              triangleCount*sizeof(Mesh::Triangle)
-		+                  faceCount*sizeof(Mesh::Face)
+		+                vertexCount*sizeof(MeshVertex)
+		+                 indexCount*sizeof(MeshIndex)
+		+              triangleCount*sizeof(MeshTriangle)
+		+                  faceCount*sizeof(MeshFace)
 		+     trianglesNeighborCount*sizeof(u32) //triangle neighbors
 		+     trianglesNeighborCount*sizeof(u8)  //triangle edges
 		+              triangleCount*sizeof(u32) //face triangles
@@ -91,7 +315,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 		+ facesNeighborTriangleCount*sizeof(u32)
 		+     facesNeighborFaceCount*sizeof(u32);
 	
-	Mesh* mesh = (Mesh*)memory_alloc(bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	Mesh* mesh = (Mesh*)memory_alloc(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	mesh->bytes         = bytes;
 	mesh->indexCount    = indexCount;
 	mesh->vertexCount   = vertexCount;
@@ -102,55 +326,52 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 	mesh->totalFaceOuterVertexCount  = facesOuterVertexCount;
 	mesh->totalFaceTriNeighborCount  = facesNeighborTriangleCount;
 	mesh->totalFaceFaceNeighborCount = facesNeighborFaceCount;
-	mesh->vertexArray   = (Mesh::Vertex*)cursor;   cursor +=   vertexCount*sizeof(Mesh::Vertex);
-	mesh->indexArray    = (Mesh::Index*)cursor;    cursor +=    indexCount*sizeof(Mesh::Index);
-	mesh->triangleArray = (Mesh::Triangle*)cursor; cursor += triangleCount*sizeof(Mesh::Triangle);
-	mesh->faceArray     = (Mesh::Face*)cursor;     cursor +=     faceCount*sizeof(Mesh::Face);
-	mesh->indexes   = {mesh->indexArray,    indexCount};
-	mesh->vertexes  = {mesh->vertexArray,   vertexCount};
-	mesh->triangles = {mesh->triangleArray, triangleCount};
-	mesh->faces     = {mesh->faceArray,     faceCount};
+	mesh->vertexArray   = (MeshVertex*)cursor;    cursor +=   vertexCount*sizeof(MeshVertex);
+	mesh->indexArray    = (MeshIndex*)cursor;     cursor +=    indexCount*sizeof(MeshIndex);
+	mesh->triangleArray = (MeshTriangle*)cursor;  cursor += triangleCount*sizeof(MeshTriangle);
+	mesh->faceArray     = (MeshFace*)cursor;      cursor +=     faceCount*sizeof(MeshFace);
 	return mesh;
 }
 
-//TODO(delle) change this to take in 8 points
-pair<u32,Mesh*> Storage::
-CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
-	width /= 2.f; height /= 2.f; depth /= 2.f;
-	pair<u32,Mesh*> result(0, NullMesh());
+
+Mesh*
+storage_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped;
+	//TODO(delle) change this to take in 8 points
+	
+	width  /= 2.f;
+	height /= 2.f;
+	depth  /= 2.f;
 	
 	//check if created already
-	forI(meshes.size()){
-		if((strcmp(meshes[i]->name, "box_mesh") == 0) && (meshes[i]->aabbMax == vec3{width,height,depth})){
-			return pair<u32,Mesh*>(i, meshes[i]);
+	for_array(DeshStorage->mesh_array){
+		if((strcmp((*it)->name, "box_mesh") == 0) && vec3_equal((*it)->aabbMax, Vec3(width,height,depth))){
+			return *it;
 		}
 	}
 	
-	Mesh* mesh = AllocateMesh(36, 8, 6, 36, 24, 24, 24, 24);
+	Mesh* mesh = storage_mesh_allocate(36, 8, 6, 36, 24, 24, 24, 24);
 	cpystr(mesh->name, "box_mesh", 64);
-	mesh->idx      = meshes.count;
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
 	
-	Mesh::Vertex*   va = mesh->vertexArray;
-	Mesh::Index*    ia = mesh->indexArray;
-	Mesh::Triangle* ta = mesh->triangleArray;
-	Mesh::Face*     fa = mesh->faceArray;
+	MeshVertex*   va = mesh->vertexArray;
+	MeshIndex*    ia = mesh->indexArray;
+	MeshTriangle* ta = mesh->triangleArray;
+	MeshFace*     fa = mesh->faceArray;
 	vec3 p{width, height, depth};
 	vec2 uv{0.0f, 0.0f};
-	u32 c = color.rgba;
 	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
 	
 	//vertex array {pos, uv, color, normal(from center)}
-	va[0]={{-p.x, p.y, p.z}, uv, c, {-ir3, ir3, ir3}}; // -x, y, z  0
-	va[1]={{-p.x,-p.y, p.z}, uv, c, {-ir3,-ir3, ir3}}; // -x,-y, z  1
-	va[2]={{-p.x, p.y,-p.z}, uv, c, {-ir3, ir3,-ir3}}; // -x, y,-z  2
-	va[3]={{-p.x,-p.y,-p.z}, uv, c, {-ir3,-ir3,-ir3}}; // -x,-y,-z  3
-	va[4]={{ p.x, p.y, p.z}, uv, c, { ir3, ir3, ir3}}; //  x, y, z  4
-	va[5]={{ p.x,-p.y, p.z}, uv, c, { ir3,-ir3, ir3}}; //  x,-y, z  5
-	va[6]={{ p.x, p.y,-p.z}, uv, c, { ir3, ir3,-ir3}}; //  x, y,-z  6
-	va[7]={{ p.x,-p.y,-p.z}, uv, c, { ir3,-ir3,-ir3}}; //  x,-y,-z  7
+	va[0]={{-p.x, p.y, p.z}, uv, color, {-ir3, ir3, ir3}}; // -x, y, z  0
+	va[1]={{-p.x,-p.y, p.z}, uv, color, {-ir3,-ir3, ir3}}; // -x,-y, z  1
+	va[2]={{-p.x, p.y,-p.z}, uv, color, {-ir3, ir3,-ir3}}; // -x, y,-z  2
+	va[3]={{-p.x,-p.y,-p.z}, uv, color, {-ir3,-ir3,-ir3}}; // -x,-y,-z  3
+	va[4]={{ p.x, p.y, p.z}, uv, color, { ir3, ir3, ir3}}; //  x, y, z  4
+	va[5]={{ p.x,-p.y, p.z}, uv, color, { ir3,-ir3, ir3}}; //  x,-y, z  5
+	va[6]={{ p.x, p.y,-p.z}, uv, color, { ir3, ir3,-ir3}}; //  x, y,-z  6
+	va[7]={{ p.x,-p.y,-p.z}, uv, color, { ir3,-ir3,-ir3}}; //  x,-y,-z  7
 	
 	//index array
 	ia[ 0]=4; ia[ 1]=2; ia[ 2]=0;    ia[ 3]=4; ia[ 4]=6; ia[ 5]=2; // +y face
@@ -167,7 +388,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	ta[ 6].normal = vec3::DOWN;    ta[ 7].normal = vec3::DOWN;
 	ta[ 8].normal = vec3::LEFT;    ta[ 9].normal = vec3::LEFT;
 	ta[10].normal = vec3::FORWARD; ta[11].normal = vec3::FORWARD;
-	for(s32 i=0; i<12; ++i){
+	for(s32 i = 0; i < 12; ++i){
 		ta[i].p[0] = va[ia[(i*3)+0]].pos;
 		ta[i].p[1] = va[ia[(i*3)+1]].pos;
 		ta[i].p[2] = va[ia[(i*3)+2]].pos;
@@ -181,45 +402,41 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	//triangle array neighbor array offsets
 	ta[0].neighborArray = (u32*)(fa + 6);
 	ta[0].edgeArray     = (u8*)(ta[0].neighborArray + 36);
-	ta[0].neighbors = {ta[0].neighborArray, 3};
-	ta[0].edges     = {ta[0].edgeArray,     3};
-	for(s32 i=1; i<12; ++i){
+	for(s32 i = 1; i < 12; ++i){
 		ta[i].neighborArray = ta[i-1].neighborArray+3;
 		ta[i].edgeArray     = ta[i-1].edgeArray+3;
-		ta[i].neighbors = {ta[i].neighborArray, 3};
-		ta[i].edges     = {ta[i].edgeArray,     3};
 	}
 	
 	//triangle array neighbors array
-	ta[ 0].neighbors[0]= 1; ta[ 0].neighbors[1]=11; ta[ 0].neighbors[2]= 9;
-	ta[ 1].neighbors[0]= 0; ta[ 1].neighbors[1]= 3; ta[ 1].neighbors[2]= 5;
-	ta[ 2].neighbors[0]= 3; ta[ 2].neighbors[1]= 9; ta[ 2].neighbors[2]= 7;
-	ta[ 3].neighbors[0]= 2; ta[ 3].neighbors[1]= 1; ta[ 3].neighbors[2]= 4;
-	ta[ 4].neighbors[0]= 5; ta[ 4].neighbors[1]= 3; ta[ 4].neighbors[2]= 6;
-	ta[ 5].neighbors[0]= 4; ta[ 5].neighbors[1]= 1; ta[ 5].neighbors[2]=10;
-	ta[ 6].neighbors[0]= 7; ta[ 6].neighbors[1]= 4; ta[ 6].neighbors[2]=10;
-	ta[ 7].neighbors[0]= 6; ta[ 7].neighbors[1]= 2; ta[ 7].neighbors[2]= 8;
-	ta[ 8].neighbors[0]= 9; ta[ 8].neighbors[1]=11; ta[ 8].neighbors[2]= 7;
-	ta[ 9].neighbors[0]= 8; ta[ 9].neighbors[1]= 0; ta[ 9].neighbors[2]= 2;
-	ta[10].neighbors[0]=11; ta[10].neighbors[1]= 5; ta[10].neighbors[2]= 6;
-	ta[11].neighbors[0]=10; ta[11].neighbors[1]= 0; ta[11].neighbors[2]= 8;
+	ta[ 0].neighborArray[0]= 1; ta[ 0].neighborArray[1]=11; ta[ 0].neighborArray[2]= 9;
+	ta[ 1].neighborArray[0]= 0; ta[ 1].neighborArray[1]= 3; ta[ 1].neighborArray[2]= 5;
+	ta[ 2].neighborArray[0]= 3; ta[ 2].neighborArray[1]= 9; ta[ 2].neighborArray[2]= 7;
+	ta[ 3].neighborArray[0]= 2; ta[ 3].neighborArray[1]= 1; ta[ 3].neighborArray[2]= 4;
+	ta[ 4].neighborArray[0]= 5; ta[ 4].neighborArray[1]= 3; ta[ 4].neighborArray[2]= 6;
+	ta[ 5].neighborArray[0]= 4; ta[ 5].neighborArray[1]= 1; ta[ 5].neighborArray[2]=10;
+	ta[ 6].neighborArray[0]= 7; ta[ 6].neighborArray[1]= 4; ta[ 6].neighborArray[2]=10;
+	ta[ 7].neighborArray[0]= 6; ta[ 7].neighborArray[1]= 2; ta[ 7].neighborArray[2]= 8;
+	ta[ 8].neighborArray[0]= 9; ta[ 8].neighborArray[1]=11; ta[ 8].neighborArray[2]= 7;
+	ta[ 9].neighborArray[0]= 8; ta[ 9].neighborArray[1]= 0; ta[ 9].neighborArray[2]= 2;
+	ta[10].neighborArray[0]=11; ta[10].neighborArray[1]= 5; ta[10].neighborArray[2]= 6;
+	ta[11].neighborArray[0]=10; ta[11].neighborArray[1]= 0; ta[11].neighborArray[2]= 8;
 	
 	//triangle array edges array
-	ta[ 0].edges[0]=0; ta[ 0].edges[1]=2; ta[ 0].edges[2]=1;
-	ta[ 1].edges[0]=2; ta[ 1].edges[1]=1; ta[ 1].edges[2]=0;
-	ta[ 2].edges[0]=0; ta[ 2].edges[1]=2; ta[ 2].edges[2]=1;
-	ta[ 3].edges[0]=2; ta[ 3].edges[1]=0; ta[ 3].edges[2]=1;
-	ta[ 4].edges[0]=0; ta[ 4].edges[1]=2; ta[ 4].edges[2]=1;
-	ta[ 5].edges[0]=2; ta[ 5].edges[1]=0; ta[ 5].edges[2]=1;
-	ta[ 6].edges[0]=0; ta[ 6].edges[1]=1; ta[ 6].edges[2]=2;
-	ta[ 7].edges[0]=2; ta[ 7].edges[1]=1; ta[ 7].edges[2]=0;
-	ta[ 8].edges[0]=0; ta[ 8].edges[1]=2; ta[ 8].edges[2]=1;
-	ta[ 9].edges[0]=2; ta[ 9].edges[1]=0; ta[ 9].edges[2]=1;
-	ta[10].edges[0]=0; ta[10].edges[1]=2; ta[10].edges[2]=1;
-	ta[11].edges[0]=2; ta[11].edges[1]=0; ta[11].edges[2]=1;
+	ta[ 0].edgeArray[0]=0; ta[ 0].edgeArray[1]=2; ta[ 0].edgeArray[2]=1;
+	ta[ 1].edgeArray[0]=2; ta[ 1].edgeArray[1]=1; ta[ 1].edgeArray[2]=0;
+	ta[ 2].edgeArray[0]=0; ta[ 2].edgeArray[1]=2; ta[ 2].edgeArray[2]=1;
+	ta[ 3].edgeArray[0]=2; ta[ 3].edgeArray[1]=0; ta[ 3].edgeArray[2]=1;
+	ta[ 4].edgeArray[0]=0; ta[ 4].edgeArray[1]=2; ta[ 4].edgeArray[2]=1;
+	ta[ 5].edgeArray[0]=2; ta[ 5].edgeArray[1]=0; ta[ 5].edgeArray[2]=1;
+	ta[ 6].edgeArray[0]=0; ta[ 6].edgeArray[1]=1; ta[ 6].edgeArray[2]=2;
+	ta[ 7].edgeArray[0]=2; ta[ 7].edgeArray[1]=1; ta[ 7].edgeArray[2]=0;
+	ta[ 8].edgeArray[0]=0; ta[ 8].edgeArray[1]=2; ta[ 8].edgeArray[2]=1;
+	ta[ 9].edgeArray[0]=2; ta[ 9].edgeArray[1]=0; ta[ 9].edgeArray[2]=1;
+	ta[10].edgeArray[0]=0; ta[10].edgeArray[1]=2; ta[10].edgeArray[2]=1;
+	ta[11].edgeArray[0]=2; ta[11].edgeArray[1]=0; ta[11].edgeArray[2]=1;
 	
 	//face array  0=up, 1=back, 2=right, 3=down, 4=left, 5=forward
-	for(s32 i=0; i<6; ++i){
+	for(s32 i = 0; i < 6; ++i){
 		fa[i].normal                = ta[i*2].normal;
 		fa[i].center                = ta[i*2].normal * p;
 		fa[i].triangleCount         = 2;
@@ -231,14 +448,12 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	
 	//face array triangle array offsets
 	fa[0].triangleArray = (u32*)(ta[0].edgeArray + 36);
-	fa[0].triangles = {fa[0].triangleArray, 2};
-	for(s32 i=1; i<6; ++i){
+	for(s32 i = 1; i < 6; ++i){
 		fa[i].triangleArray = fa[i-1].triangleArray+2;
-		fa[i].triangles = {fa[i].triangleArray, 2};
 	}
 	
 	//face array triangle arrays
-	for(s32 i=0; i<6; ++i){
+	for(s32 i = 0; i < 6; ++i){
 		fa[i].triangleArray[0]= i*2;
 		fa[i].triangleArray[1]=(i*2)+1;
 	}
@@ -246,13 +461,9 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	//face array vertex array offsets
 	fa[0].vertexArray      = (u32*)(fa[0].triangleArray+12);
 	fa[0].outerVertexArray = (u32*)(fa[0].vertexArray+24);
-	fa[0].vertexes      = {fa[0].vertexArray,      4};
-	fa[0].outerVertexes = {fa[0].outerVertexArray, 4};
-	for(s32 i=1; i<6; ++i){
+	for(s32 i = 1; i < 6; ++i){
 		fa[i].vertexArray      = fa[i-1].vertexArray+4;
 		fa[i].outerVertexArray = fa[i-1].outerVertexArray+4;
-		fa[i].vertexes      = {fa[i].vertexArray,      4};
-		fa[i].outerVertexes = {fa[i].outerVertexArray, 4};
 	}
 	
 	//face array vertex array
@@ -274,174 +485,165 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){DPZoneScoped;
 	//face array neighbor array offsets
 	fa[0].neighborTriangleArray = (u32*)(fa[0].outerVertexArray+24);
 	fa[0].neighborFaceArray     = (u32*)(fa[0].neighborTriangleArray+24);
-	fa[0].triangleNeighbors = {fa[0].neighborTriangleArray, 4};
-	fa[0].faceNeighbors     = {fa[0].neighborFaceArray, 4};
-	for(s32 i=1; i<6; ++i){
+	for(s32 i = 1; i < 6; ++i){
 		fa[i].neighborTriangleArray = fa[i-1].neighborTriangleArray+4;
 		fa[i].neighborFaceArray     = fa[i-1].neighborFaceArray+4;
-		fa[i].triangleNeighbors = {fa[i].neighborTriangleArray, 4};
-		fa[i].faceNeighbors     = {fa[i].neighborFaceArray, 4};
 	}
 	
 	//face array neighbor triangle array
-	fa[0].triangleNeighbors[0]= 9; fa[0].triangleNeighbors[1]= 3; fa[0].triangleNeighbors[2]= 5; fa[0].triangleNeighbors[3]=11;
-	fa[1].triangleNeighbors[0]= 1; fa[1].triangleNeighbors[1]= 4; fa[1].triangleNeighbors[2]= 7; fa[1].triangleNeighbors[3]= 9;
-	fa[2].triangleNeighbors[0]= 1; fa[2].triangleNeighbors[1]=10; fa[2].triangleNeighbors[2]= 6; fa[2].triangleNeighbors[3]= 3;
-	fa[3].triangleNeighbors[0]= 4; fa[3].triangleNeighbors[1]=10; fa[3].triangleNeighbors[2]= 8; fa[3].triangleNeighbors[3]= 2;
-	fa[4].triangleNeighbors[0]= 0; fa[4].triangleNeighbors[1]= 2; fa[4].triangleNeighbors[2]= 7; fa[4].triangleNeighbors[3]=11;
-	fa[5].triangleNeighbors[0]= 0; fa[5].triangleNeighbors[1]= 8; fa[5].triangleNeighbors[2]= 6; fa[5].triangleNeighbors[3]= 5;
+	fa[0].neighborTriangleArray[0]= 9; fa[0].neighborTriangleArray[1]= 3; fa[0].neighborTriangleArray[2]= 5; fa[0].neighborTriangleArray[3]=11;
+	fa[1].neighborTriangleArray[0]= 1; fa[1].neighborTriangleArray[1]= 4; fa[1].neighborTriangleArray[2]= 7; fa[1].neighborTriangleArray[3]= 9;
+	fa[2].neighborTriangleArray[0]= 1; fa[2].neighborTriangleArray[1]=10; fa[2].neighborTriangleArray[2]= 6; fa[2].neighborTriangleArray[3]= 3;
+	fa[3].neighborTriangleArray[0]= 4; fa[3].neighborTriangleArray[1]=10; fa[3].neighborTriangleArray[2]= 8; fa[3].neighborTriangleArray[3]= 2;
+	fa[4].neighborTriangleArray[0]= 0; fa[4].neighborTriangleArray[1]= 2; fa[4].neighborTriangleArray[2]= 7; fa[4].neighborTriangleArray[3]=11;
+	fa[5].neighborTriangleArray[0]= 0; fa[5].neighborTriangleArray[1]= 8; fa[5].neighborTriangleArray[2]= 6; fa[5].neighborTriangleArray[3]= 5;
 	
 	//face array neighbor face array
-	fa[0].faceNeighbors[0]=1; fa[0].faceNeighbors[1]=2; fa[0].faceNeighbors[2]=4; fa[0].faceNeighbors[3]=5;
-	fa[1].faceNeighbors[0]=0; fa[1].faceNeighbors[1]=2; fa[1].faceNeighbors[2]=3; fa[1].faceNeighbors[3]=4;
-	fa[2].faceNeighbors[0]=0; fa[2].faceNeighbors[1]=1; fa[2].faceNeighbors[2]=3; fa[2].faceNeighbors[3]=5;
-	fa[3].faceNeighbors[0]=1; fa[3].faceNeighbors[1]=2; fa[3].faceNeighbors[2]=4; fa[3].faceNeighbors[3]=5;
-	fa[4].faceNeighbors[0]=0; fa[4].faceNeighbors[1]=1; fa[4].faceNeighbors[2]=3; fa[4].faceNeighbors[3]=5;
-	fa[5].faceNeighbors[0]=0; fa[5].faceNeighbors[1]=2; fa[5].faceNeighbors[2]=3; fa[5].faceNeighbors[3]=4;
+	fa[0].neighborFaceArray[0]=1; fa[0].neighborFaceArray[1]=2; fa[0].neighborFaceArray[2]=4; fa[0].neighborFaceArray[3]=5;
+	fa[1].neighborFaceArray[0]=0; fa[1].neighborFaceArray[1]=2; fa[1].neighborFaceArray[2]=3; fa[1].neighborFaceArray[3]=4;
+	fa[2].neighborFaceArray[0]=0; fa[2].neighborFaceArray[1]=1; fa[2].neighborFaceArray[2]=3; fa[2].neighborFaceArray[3]=5;
+	fa[3].neighborFaceArray[0]=1; fa[3].neighborFaceArray[1]=2; fa[3].neighborFaceArray[2]=4; fa[3].neighborFaceArray[3]=5;
+	fa[4].neighborFaceArray[0]=0; fa[4].neighborFaceArray[1]=1; fa[4].neighborFaceArray[2]=3; fa[4].neighborFaceArray[3]=5;
+	fa[5].neighborFaceArray[0]=0; fa[5].neighborFaceArray[1]=2; fa[5].neighborFaceArray[2]=3; fa[5].neighborFaceArray[3]=4;
 	
 	render_load_mesh(mesh);
-	
-	result.first  = mesh->idx;
-	result.second = mesh;
-	meshes.add(mesh);
-	return result;
+	arrput(DeshStorage->mesh_array, mesh);
+	return mesh;
 }
 
-pair<u32,Mesh*> Storage::
-CreateMeshFromFile(str8 filename){DPZoneScoped;
-	pair<u32,Mesh*> result(0, NullMesh());
-	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
+
+Mesh*
+storage_mesh_create_from_file(str8 name){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return storage_mesh_null();
 	
+	//prepend the meshes (models) folder
 	str8_builder builder;
-	str8_builder_init(&builder, str8_lit("data/models/"), deshi_temp_allocator);
-	str8_builder_append(&builder, filename);
+	str8_builder_init(&builder, STR8("data/models/"), deshi_temp_allocator);
+	str8_builder_append(&builder, name);
 	
 	//append extension if not provided
-	str8 front = str8_eat_until_last(filename, '.');
-	if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".mesh"));
+	str8 front = str8_eat_until_last(name, '.');
+	if(front.count == name.count) str8_builder_append(&builder, STR8(".mesh"));
 	
-	//check if mesh is already loaded
-	forI(meshes.count){
-		if(strncmp(meshes[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
-			return pair<u32,Mesh*>(i, meshes[i]);
-		}
-	}
-	
-	//load .mesh file
-	str8 contents = file_read_simple(str8_builder_peek(&builder), deshi_temp_allocator);
-	if(!contents) return result;
-	
-	return CreateMeshFromMemory(contents.str);
+	return storage_mesh_create_from_path(str8_builder_peek(&builder));
 }
 
-pair<u32,Mesh*> Storage::
-CreateMeshFromMemory(void* data){DPZoneScoped;
-	pair<u32,Mesh*> result(0, NullMesh());
+
+Mesh*
+storage_mesh_create_from_path(str8 path){DPZoneScoped;
+	str8 contents = file_read_simple(path, deshi_temp_allocator);
+	if(!contents) return storage_mesh_null();
 	
+	return storage_mesh_create_from_memory(contents.str);
+}
+
+
+Mesh*
+storage_mesh_create_from_memory(void* data){DPZoneScoped;
 	u32 bytes = *((u32*)data);
 	if(bytes < sizeof(Mesh)){
 		LogE("storage","Mesh size was too small when trying to load it from memory");
-		return result;
+		return storage_mesh_null();
 	}
 	
-	//allocate
-	Mesh* mesh = (Mesh*)memory_alloc(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
-	memcpy(mesh, data, bytes);
-	mesh->idx = meshes.count;
-	mesh->vertexArray   = (Mesh::Vertex*)cursor;       cursor +=   mesh->vertexCount*sizeof(Mesh::Vertex);
-	mesh->indexArray    = (Mesh::Index*)cursor;        cursor +=    mesh->indexCount*sizeof(Mesh::Index);
-	mesh->triangleArray = (Mesh::Triangle*)cursor;     cursor += mesh->triangleCount*sizeof(Mesh::Triangle);
-	mesh->faceArray     = (Mesh::Face*)cursor;         cursor +=     mesh->faceCount*sizeof(Mesh::Face);
-	mesh->indexes   = {mesh->indexArray,    mesh->indexCount};
-	mesh->vertexes  = {mesh->vertexArray,   mesh->vertexCount};
-	mesh->triangles = {mesh->triangleArray, mesh->triangleCount};
-	mesh->faces     = {mesh->faceArray,     mesh->faceCount};
-	mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
-	mesh->triangles[0].edgeArray     = (u8*) (mesh->triangleArray[0].neighborArray + mesh->totalTriNeighborCount);
-	mesh->triangles[0].neighbors = {mesh->triangles[0].neighborArray, mesh->triangles[0].neighborCount};
-	mesh->triangles[0].edges     = {mesh->triangles[0].edgeArray, mesh->triangles[0].neighborCount};
-	for(s32 ti=1; ti<mesh->triangles.count; ++ti){
-		mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + mesh->triangles[ti-1].neighborCount);
-		mesh->triangles[ti].edgeArray     = (u8*) (mesh->triangles[ti-1].edgeArray + mesh->triangles[ti-1].neighborCount);
-		mesh->triangles[ti].neighbors = {mesh->triangles[ti].neighborArray, mesh->triangles[ti].neighborCount};
-		mesh->triangles[ti].edges     = {mesh->triangles[ti].edgeArray, mesh->triangles[ti].neighborCount};
+	//allocate and copy from data
+	Mesh* mesh = (Mesh*)memory_alloc(bytes);
+	CopyMemory(mesh, data, bytes);
+	
+	//check if mesh is already loaded
+	for_array(DeshStorage->mesh_array){
+		if(strcmp((*it)->name, mesh->name) == 0){
+			memory_zfree(mesh);
+			return *it;
+		}
 	}
-	mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + mesh->totalTriNeighborCount);
-	mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + mesh->triangles.count);
-	mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + mesh->totalFaceVertexCount);
-	mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + mesh->totalFaceOuterVertexCount);
-	mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + mesh->totalFaceTriNeighborCount);
-	mesh->faces[0].triangles         = {mesh->faces[0].triangleArray,         mesh->faces[0].triangleCount};
-	mesh->faces[0].vertexes          = {mesh->faces[0].vertexArray,           mesh->faces[0].vertexCount};
-	mesh->faces[0].outerVertexes     = {mesh->faces[0].outerVertexArray,      mesh->faces[0].outerVertexCount};
-	mesh->faces[0].triangleNeighbors = {mesh->faces[0].neighborTriangleArray, mesh->faces[0].neighborTriangleCount};
-	mesh->faces[0].faceNeighbors     = {mesh->faces[0].neighborFaceArray,     mesh->faces[0].neighborFaceCount};
-	for(s32 fi=1; fi<mesh->faces.count; ++fi){
-		mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + mesh->faces[fi-1].triangleCount);
-		mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + mesh->faces[fi-1].vertexCount);
-		mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + mesh->faces[fi-1].outerVertexCount);
-		mesh->faces[fi].neighborTriangleArray = (u32*)(mesh->faces[fi-1].neighborTriangleArray + mesh->faces[fi-1].neighborTriangleCount);
-		mesh->faces[fi].neighborFaceArray     = (u32*)(mesh->faces[fi-1].neighborFaceArray     + mesh->faces[fi-1].neighborFaceCount);
-		mesh->faces[fi].triangles         = {mesh->faces[fi].triangleArray,         mesh->faces[fi].triangleCount};
-		mesh->faces[fi].vertexes          = {mesh->faces[fi].vertexArray,           mesh->faces[fi].vertexCount};
-		mesh->faces[fi].outerVertexes     = {mesh->faces[fi].outerVertexArray,      mesh->faces[fi].outerVertexCount};
-		mesh->faces[fi].triangleNeighbors = {mesh->faces[fi].neighborTriangleArray, mesh->faces[fi].neighborTriangleCount};
-		mesh->faces[fi].faceNeighbors     = {mesh->faces[fi].neighborFaceArray,     mesh->faces[fi].neighborFaceCount};
+	
+	//setup arrays
+	u8* cursor  = (u8*)mesh + (1*sizeof(Mesh));
+	mesh->vertexArray   = (MeshVertex*)cursor;    cursor +=   mesh->vertexCount*sizeof(MeshVertex);
+	mesh->indexArray    = (MeshIndex*)cursor;     cursor +=    mesh->indexCount*sizeof(MeshIndex);
+	mesh->triangleArray = (MeshTriangle*)cursor;  cursor += mesh->triangleCount*sizeof(MeshTriangle);
+	mesh->faceArray     = (MeshFace*)cursor;      cursor +=     mesh->faceCount*sizeof(MeshFace);
+	mesh->triangleArray[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
+	mesh->triangleArray[0].edgeArray     = (u8*) (mesh->triangleArray[0].neighborArray + mesh->totalTriNeighborCount);
+	for(s32 ti = 1; ti < mesh->triangleCount; ++ti){
+		mesh->triangleArray[ti].neighborArray = (u32*)(mesh->triangleArray[ti-1].neighborArray + mesh->triangleArray[ti-1].neighborCount);
+		mesh->triangleArray[ti].edgeArray     = (u8*) (mesh->triangleArray[ti-1].edgeArray + mesh->triangleArray[ti-1].neighborCount);
+	}
+	mesh->faceArray[0].triangleArray         = (u32*)(mesh->triangleArray[0].edgeArray         + mesh->totalTriNeighborCount);
+	mesh->faceArray[0].vertexArray           = (u32*)(mesh->faceArray[0].triangleArray         + mesh->triangleArray.count);
+	mesh->faceArray[0].outerVertexArray      = (u32*)(mesh->faceArray[0].vertexArray           + mesh->totalFaceVertexCount);
+	mesh->faceArray[0].neighborTriangleArray = (u32*)(mesh->faceArray[0].outerVertexArray      + mesh->totalFaceOuterVertexCount);
+	mesh->faceArray[0].neighborFaceArray     = (u32*)(mesh->faceArray[0].neighborTriangleArray + mesh->totalFaceTriNeighborCount);
+	for(s32 fi = 1; fi < mesh->faceCount; ++fi){
+		mesh->faceArray[fi].triangleArray         = (u32*)(mesh->faceArray[fi-1].triangleArray         + mesh->faceArray[fi-1].triangleCount);
+		mesh->faceArray[fi].vertexArray           = (u32*)(mesh->faceArray[fi-1].vertexArray           + mesh->faceArray[fi-1].vertexCount);
+		mesh->faceArray[fi].outerVertexArray      = (u32*)(mesh->faceArray[fi-1].outerVertexArray      + mesh->faceArray[fi-1].outerVertexCount);
+		mesh->faceArray[fi].neighborTriangleArray = (u32*)(mesh->faceArray[fi-1].neighborTriangleArray + mesh->faceArray[fi-1].neighborTriangleCount);
+		mesh->faceArray[fi].neighborFaceArray     = (u32*)(mesh->faceArray[fi-1].neighborFaceArray     + mesh->faceArray[fi-1].neighborFaceCount);
 	}
 	
 	render_load_mesh(mesh);
-	
-	result.first  = mesh->idx;
-	result.second = mesh;
-	meshes.add(mesh);
-	return result;
+	arrput(DeshStorage->mesh_array, mesh);
+	return mesh;
 }
 
-void Storage::
-SaveMesh(Mesh* mesh){DPZoneScoped;
-	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(mesh->name),str8_lit(".mesh"), deshi_temp_allocator);
+
+void
+storage_mesh_save(Mesh* mesh){DPZoneScoped;
+	storage_mesh_save_to_path(mesh, str8_concat3(STR8("data/models/"),str8_from_cstr(mesh->name),STR8(".mesh"), deshi_temp_allocator));
+}
+
+
+void
+storage_mesh_save_to_path(Mesh* mesh, str8 path){DPZoneScoped;
 	file_write_simple(path, mesh, mesh->bytes);
 	Log("storage","Successfully saved mesh: ",path);
 }
 
 
-//////////////////
-//// @texture ////
-//////////////////
-local Texture* 
-AllocateTexture(){DPZoneScoped;
-	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
-	return texture;
+void
+storage_mesh_delete(Mesh* mesh){DPZoneScoped;
+	if(mesh == storage_mesh_null()) return;
+	
+	for_array(DeshStorage->mesh_array) if(*it == mesh) arrdelswap(DeshStorage->mesh_array, it - DeshStorage->mesh_array);
+	render_unload_mesh(mesh);
+	memory_zfree(mesh);
 }
 
-pair<u32,Texture*> Storage::
-CreateTextureFromFile(str8 filename, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
-	pair<u32,Texture*> result(0, NullTexture());
-	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @storage_texture
+Texture*
+storage_texture_create_from_file(str8 name, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return storage_texture_null();
 	
 	//check if texture is already loaded
-	forI(textures.count){
-		if(strncmp(textures[i]->name, (const char*)filename.str, ClampMax(filename.count, 63)) == 0){
-			return pair<u32,Texture*>(i, textures[i]);
+	for_array(DeshStorage->texture_array){
+		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			return *it;
 		}
 	}
 	
-	str8 path = str8_concat(str8_lit("data/textures/"),filename, deshi_temp_allocator);
-	Texture* texture = AllocateTexture();
-	CopyMemory(texture->name, filename.str, ClampMax(filename.count, 63));
-	texture->idx     = textures.count;
+	str8 path = str8_concat(STR8("data/textures/"),name, deshi_temp_allocator);
+	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
+	CopyMemory(texture->name, name.str, ClampMax(name.count,63));
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
 	texture->uvMode  = uvMode;
-	texture->pixels  = stbi_load((const char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
-	texture->loaded  = true;
-	if(texture->pixels == 0){ 
+	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
+	if(texture->pixels == 0){
 		LogE("storage","Failed to create texture '",path,"': ",stbi_failure_reason()); 
 		memory_zfree(texture);
-		return result; 
+		return storage_texture_null();
 	}
-	texture->mipmaps = (generateMipmaps) ? (s32)log2(Max(texture->width, texture->height)) + 1 : 1;
+	
+	if(generateMipmaps){
+		texture->mipmaps = (s32)log2(Max(texture->width, texture->height)) + 1;
+	}else{
+		texture->mipmaps = 1;
+	}
 	
 	render_load_texture(texture);
 	if(!keepLoaded){
@@ -449,27 +651,67 @@ CreateTextureFromFile(str8 filename, ImageFormat format, TextureType type, Textu
 		texture->pixels = 0;
 	}
 	
-	result.first  = texture->idx;
-	result.second = texture;
-	textures.add(texture);
-	return result;
+	arrput(DeshStorage->texture_array, texture);
+	return texture;
 }
 
-pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, str8 name, s32 width, s32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
-	pair<u32,Texture*> result(0, NullTexture());
-	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
-	
-	//check if texture is already loaded (with that name)
-	forI(textures.count){
-		if(strncmp(textures[i]->name, (const char*)name.str, ClampMax(name.count, 63)) == 0){
-			return pair<u32,Texture*>(i, textures[i]);
+
+Texture*
+storage_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+	//check if texture is already loaded
+	str8 filename = str8_skip_until_last(path, '/');
+	for_array(DeshStorage->texture_array){
+		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
+			return *it;
 		}
 	}
 	
-	Texture* texture = AllocateTexture();
-	CopyMemory(texture->name, name.str, ClampMax(name.count, 63));
-	texture->idx     = textures.count;
+	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
+	CopyMemory(texture->name, filename.str, ClampMax(filename.count,63));
+	texture->format  = format; //TODO(delle) handle non RGBA formats properly
+	texture->type    = type;
+	texture->filter  = filter;
+	texture->uvMode  = uvMode;
+	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
+	if(texture->pixels == 0){
+		LogE("storage","Failed to create texture '",path,"': ",stbi_failure_reason()); 
+		memory_zfree(texture);
+		return storage_texture_null();
+	}
+	
+	if(generateMipmaps){
+		texture->mipmaps = (s32)log2(Max(texture->width, texture->height)) + 1;
+	}else{
+		texture->mipmaps = 1;
+	}
+	
+	render_load_texture(texture);
+	if(!keepLoaded){
+		stbi_image_free(texture->pixels); 
+		texture->pixels = 0;
+	}
+	
+	arrput(DeshStorage->texture_array, texture);
+	return texture;
+}
+
+
+Texture*
+storage_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
+	if(data == 0){
+		LogE("storage","Failed to create texture '",name,"': No memory passed!");
+		return storage_texture_null();
+	}
+	
+	//check if texture is already loaded (with that name)
+	for_array(DeshStorage->texture_array){
+		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			return *it;
+		}
+	}
+	
+	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
+	CopyMemory(texture->name, name.str, ClampMax(name.count,63));
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
@@ -477,119 +719,128 @@ CreateTextureFromMemory(void* data, str8 name, s32 width, s32 height, ImageForma
 	texture->width   = width;
 	texture->height  = height;
 	texture->depth   = 4;
-	texture->loaded  = true;
-	texture->mipmaps = (generateMipmaps) ? (s32)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
-	//reinterpret image as RGBA32
-	const u8* src = (u8*)data;
-	if(format != ImageFormat_RGBA){
-		texture->pixels = (u8*)memory_alloc((upt)width * (upt)height * 4);
-		data = texture->pixels;
+	if(generateMipmaps){
+		texture->mipmaps = (s32)log2(Max(texture->width, texture->height)) + 1;
+	}else{
+		texture->mipmaps = 1;
+	}
+	
+	//reinterpret image as RGBA32  //TODO(delle) handle non RGBA formats properly
+	if(format != ImageFormat_RGBA){ //NOTE(delle) texture->pixels is 0 for ImageFormat_RGBA since it does not alloc new memory
+		texture->pixels = (u8*)memory_alloc(width * height * 4);
+		
+	const u8* src = (const u8*)data;
 		u32* dst = (u32*)texture->pixels;
 		switch(format){
 			case ImageFormat_BW:{
 				for(s32 i = width*height; i > 0; i--){
-					u32 value = (u32)(*src++);
-					*dst++ = PackColorU32(value, value, value, value);
+					 u8 value = *src++;
+					*dst++ = PackColorU32(value, value, value, 0xFF);
 				}
 			}break;
 			case ImageFormat_BWA:{
-				NotImplemented; //!Incomplete
+				for(s32 i = width*height; i > 0; i--){
+					u8 value = *src++;
+					u8 alpha = *src++;
+					*dst++ = PackColorU32(value, value, value, alpha);
+				}
 			}break;
 			case ImageFormat_RGB:{
-				NotImplemented; //!Incomplete
+				for(s32 i = width*height; i > 0; i--){
+					u8 r = *src++;
+					u8 g = *src++;
+					u8 b = *src++;
+					*dst++ = PackColorU32(r, g, b, 0xFF);
+				}
 			}break;
 		}
-	}else{
-		texture->pixels = (u8*)data;
 	}
 	
 	render_load_texture(texture);
-	
-	result.first  = texture->idx;
-	result.second = texture;
-	textures.add(texture);
-	return result;
+	arrput(DeshStorage->texture_array, texture);
+	return texture;
 }
 
 
-///////////////////
-//// @material ////
-///////////////////
-local Material* 
-AllocateMaterial(u32 textureCount){DPZoneScoped;
+void
+storage_texture_delete(Texture* texture){DPZoneScoped;
+	if(texture == storage_texture_null()) return;
+	
+	for_array(DeshStorage->texture_array){
+		if(*it == texture){
+			arrdelswap(DeshStorage->texture_array, it - DeshStorage->texture_array);
+		}
+	}
+	render_unload_texture(texture);
+	if(texture->pixels) memory_zfree(texture->pixels); //NOTE(delle) stbi_image_free() simply calls STBI_FREE()
+	memory_zfree(texture);
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @storage_material
+Material*
+storage_material_allocate(u32 textureCount){DPZoneScoped;
 	Material* material = (Material*)memory_alloc(sizeof(Material));
-	material->textures = array<u32>(textureCount);
+	arrsetlen(material->textureArray, textureCount);
 	return material;
 }
 
-pair<u32,Material*> Storage::
-CreateMaterial(str8 name, Shader shader, MaterialFlags flags, array<u32> mat_textures){DPZoneScoped;
-	pair<u32,Material*> result(0, NullMaterial());
-	
+
+Material*
+storage_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count){DPZoneScoped;
 	//check if material is already loaded
-	forI(materials.count){
-		if(strncmp(materials[i]->name, (const char*)name.str, ClampMax(name.count, 63)) == 0){
-			return pair<u32,Material*>(i, materials[i]);
+	for_array(DeshStorage->material_array){
+		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			return *it;
 		}
 	}
 	
-	Material* material = AllocateMaterial(mat_textures.count);
-	CopyMemory(material->name, name.str, ClampMax(name.count, 63));
-	material->idx    = materials.count;
+	Material* material = storage_material_allocate(texture_count);
+	CopyMemory(material->name, name.str, ClampMax(name.count,63));
 	material->shader = shader;
 	material->flags  = flags;
-	forI(mat_textures.count) material->textures.add(mat_textures[i]);
+	forI(texture_count) material->textureArray[i] = textures[i];
 	
 	render_load_material(material);
-	
-	result.first  = material->idx;
-	result.second = material;
-	materials.add(material);
-	return result;
+	arrput(DeshStorage->material_array, material);
+	return material;
 }
 
-pair<u32,Material*> Storage::
-CreateMaterialFromFile(str8 filename){DPZoneScoped;
-	pair<u32,Material*> result(0, NullMaterial());
-	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
+
+Material*
+storage_material_create_from_file(str8 name){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return storage_material_null();
 	
+	//prepend the materials (models) folder
 	str8_builder builder;
-	str8_builder_init(&builder, str8_lit("data/models/"), deshi_temp_allocator);
-	str8_builder_append(&builder, filename);
+	str8_builder_init(&builder, STR8("data/models/"), deshi_temp_allocator);
+	str8_builder_append(&builder, name);
 	
 	//append extension if not provided
-	str8 front = str8_eat_until_last(filename, '.');
-	if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".mat"));
+	str8 front = str8_eat_until_last(name, '.');
+	if(front.count == name.count) str8_builder_append(&builder, STR8(".mat"));
 	
+	return storage_material_create_from_path(str8_builder_peek(&builder));
+}
+
+
+Material*
+storage_material_create_from_path(str8 path){DPZoneScoped;
 	//check if material is already loaded
-	forI(materials.count){
-		if(strncmp(materials[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
-			return {(u32)i, materials[i]};
+	str8 filename = str8_skip_until_last(path, '/');
+	for_array(DeshStorage->material_array){
+		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
+			return *it;
 		}
 	}
+	str8 front = str8_eat_until(filename, '.');
 	
 	//load .mat file
-	File* file = file_init(str8_builder_peek(&builder), FileAccess_Read);
-	if(!file) return result;
+	File* file = file_init(path, FileAccess_Read);
+	if(!file) return storage_material_null();
 	defer{ file_deinit(file); };
-	
-	//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
-	persist u8 line_buffer[256];
-	persist Allocator load_allocator{
-		[](upt bytes){
-			if(bytes > 256){
-				return memory_talloc(bytes);
-			}else{
-				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
-				return (void*)line_buffer;
-			}
-		},
-		Allocator_ChangeMemory_Noop,
-		Allocator_ChangeMemory_Noop,
-		Allocator_ReleaseMemory_Noop,
-		Allocator_ResizeMemory_Noop
-	};
 	
 	//parse .mat file
 	str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
@@ -603,7 +854,7 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 		line_number += 1;
 		
 		//next line
-		str8 line = file_read_line_alloc(file, &load_allocator);
+		str8 line = file_read_line_alloc(file, &storage_load_allocator);
 		if(!line) continue;
 		
 		//skip leading whitespace
@@ -616,15 +867,15 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 		
 		//check for header
 		if(decoded.codepoint == '>'){
-			if     (str8_begins_with(line, str8_lit(">material"))) header = HEADER_MATERIAL;
-			else if(str8_begins_with(line, str8_lit(">textures"))) header = HEADER_TEXTURES;
-			else{ header = HEADER_INVALID; LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header: ",line); };
+			if     (str8_begins_with(line, STR8(">material"))) header = HEADER_MATERIAL;
+			else if(str8_begins_with(line, STR8(">textures"))) header = HEADER_TEXTURES;
+			else{ header = HEADER_INVALID; LogE("storage","Error parsing material '",path,"' on line ",line_number,". Invalid Header: ",line); };
 			continue;
 		}
 		
 		//early out invalid header
 		if(header == HEADER_INVALID){
-			LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid Header; skipping line");
+			LogE("storage","Error parsing material '",path,"' on line ",line_number,". Invalid Header; skipping line");
 			continue;
 		}
 		
@@ -636,26 +887,26 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 			//skip separating whitespace
 			str8_advance_while(&line, ' ');
 			if(!line){
-				LogE("config","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("config","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			
 			//early out if comment is first value character
 			decoded = decoded_codepoint_from_utf8(line.str, 4);
 			if(decoded.codepoint == '#'){
-				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("storage","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			
-			if      (str8_equal_lazy(key, str8_lit("name"))){
+			if      (str8_equal_lazy(key, STR8("name"))){
 				if(decoded.codepoint != '\"'){
-					LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Names must be wrapped in double quotes.");
+					LogE("storage","Error parsing material '",path,"' on line ",line_number,". Names must be wrapped in double quotes.");
 					continue;
 				}
 				mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-			}else if(str8_equal_lazy(key, str8_lit("flags"))){
-				mat_flags = (ModelFlags)atoi((const char*)line.str);
-			}else if(str8_equal_lazy(key, str8_lit("shader"))){
+			}else if(str8_equal_lazy(key, STR8("flags"))){
+				mat_flags = (ModelFlags)atoi((char*)line.str);
+			}else if(str8_equal_lazy(key, STR8("shader"))){
 				forI(Shader_COUNT){
 					if(str8_equal_lazy(line, ShaderStrings[i])){
 						mat_shader = i;
@@ -663,12 +914,12 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 					}
 				}
 			}else{
-				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
+				LogE("storage","Error parsing material '",path,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
 				continue;
 			}
 		}else{
 			if(decoded.codepoint != '\"'){
-				LogE("storage","Error parsing material '",filename,"' on line ",line_number,". Textures must be wrapped in double quotes.");
+				LogE("storage","Error parsing material '",path,"' on line ",line_number,". Textures must be wrapped in double quotes.");
 				continue;
 			}
 			
@@ -676,77 +927,99 @@ CreateMaterialFromFile(str8 filename){DPZoneScoped;
 		}
 	}
 	
-	Material* material = AllocateMaterial(mat_textures.count);
+	Material* material = storage_material_allocate(mat_textures.count);
 	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
-	material->idx    = materials.count;
 	material->shader = mat_shader;
 	material->flags  = mat_flags;
-	forI(mat_textures.count) material->textures.add(CreateTextureFromFile(mat_textures[i]).first);
+	forI(mat_textures.count) material->textureArray[i] = storage_texture_create_from_file_simple(mat_textures[i]);
 	
 	render_load_material(material);
-	
-	result.first  = material->idx;
-	result.second = material;
-	materials.add(material);
-	return result;
+	arrput(DeshStorage->material_array, material);
+	return material;
 }
 
-void Storage::
-SaveMaterial(Material* material){DPZoneScoped;
-	string mat_text = ToString(">material"
+
+void
+storage_material_save(Material* material){DPZoneScoped;
+	storage_material_save_to_path(material, str8_concat3(STR8("data/models/"),str8_from_cstr(material->name),STR8(".mat"), deshi_temp_allocator));
+}
+
+
+void
+storage_material_save_to_path(Material* material, str8 path){DPZoneScoped;
+	str8_builder builder;
+	str8_builder_init(&builder,
+					  ToString8(deshi_temp_allocator,
+							  ">material"
 							   "\nname   \"",material->name,"\""
 							   "\nshader ",ShaderStrings[material->shader],
 							   "\nflags  ",material->flags,
 							   "\n"
-							   "\n>textures");
-	forI(material->textures.count) mat_text += ToString("\n\"",textures[material->textures[i]]->name,"\"");
-	mat_text += "\n";
-	
-	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(material->name),str8_lit(".mat"), deshi_temp_allocator);
-	file_write_simple(path, mat_text.str, mat_text.count*sizeof(char));
+															"\n>textures"),
+					  deshi_temp_allocator);
+	if(material->textureArray){
+		for_array(material->textureArray){
+			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
+		}
+	}
+	str8_builder_append(&builder, STR8("\n"));
+	str8 mat_text = str8_builder_peek(&builder);
+	file_write_simple(path, mat_text.str, mat_text.count*sizeof(u8));
 	Log("storage","Successfully saved material: ",path);
 }
 
 
-////////////////
-//// @model ////
-////////////////
+void
+storage_material_delete(Material* material){DPZoneScoped;
+	if(material == storage_material_null()) return;
+	
+	for_array(DeshStorage->material_array){
+		if(*it == material){
+			arrdelswap(DeshStorage->material_array, it - DeshStorage->material_array);
+		}
+	}
+	render_unload_material(material);
+	arrfree(material->textureArray);
+	memory_zfree(material);
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @storage_model
 #define ParseError(path,...) LogE("storage","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
 
-local Model* 
-AllocateModel(u32 batchCount){DPZoneScoped;
+Model*
+storage_model_allocate(u32 batchCount){DPZoneScoped;
 	Model* model = (Model*)memory_alloc(sizeof(Model));
-	model->batches = array<Model::Batch>();
-	model->batches.resize((batchCount) ? batchCount : 1);
+	arrsetlen(model->batchArray, (batchCount) ? batchCount : 1);
 	return model;
 }
 
-pair<u32,Model*> Storage::
-CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
-	pair<u32,Model*> result(0, NullModel());
-	if(str8_equal_lazy(filename, str8_lit("null"))) return result;
+
+Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
+	if(str8_equal_lazy(filename, STR8("null"))) return storage_model_null();
 	
-	Stopwatch model_stopwatch = start_stopwatch();
-	
-	str8 directory = str8_lit("data/models/");
+	//prepend the models folder
+	str8 directory = STR8("data/models/");
 	str8_builder builder;
 	str8_builder_init(&builder, directory, deshi_temp_allocator);
 	str8_builder_append(&builder, filename);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(filename, '.');
-	if(front.count == filename.count) str8_builder_append(&builder, str8_lit(".model"));
+	if(front.count == filename.count) str8_builder_append(&builder, STR8(".model"));
 	
 	//check if model is already loaded
-	forI(models.count){
-		if(strncmp(models[i]->name, (const char*)front.str, ClampMax(front.count, 63)) == 0){
-			return {(u32)i, models[i]};
+	for_array(DeshStorage->model_array){
+		if(strncmp((*it)->name, (char*)front.str, 64) == 0){
+			return *it;
 		}
 	}
 	
+	//check which files need to be parsed
 	str8 model_path = str8_builder_peek(&builder);
-	str8 obj_path  = str8_concat3(directory, front, str8_lit(".obj"),  deshi_temp_allocator);
-	str8 mesh_path = str8_concat3(directory, front, str8_lit(".mesh"), deshi_temp_allocator);
+	str8 obj_path  = str8_concat3(directory, front, STR8(".obj"),  deshi_temp_allocator);
+	str8 mesh_path = str8_concat3(directory, front, STR8(".mesh"), deshi_temp_allocator);
 	b32 parse_obj_mesh  = true;
 	b32 parse_obj_model = true;
 	if(!forceLoadOBJ){
@@ -754,28 +1027,141 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 		if(file_exists(model_path)) parse_obj_model = false;
 	}
 	
-	//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
-	persist u8 line_buffer[256];
-	persist Allocator load_allocator{
-		[](upt bytes){
-			if(bytes > 256){
-				return memory_talloc(bytes);
-			}else{
-				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
-				return (void*)line_buffer;
-			}
-		},
-		Allocator_ChangeMemory_Noop,
-		Allocator_ChangeMemory_Noop,
-		Allocator_ReleaseMemory_Noop,
-		Allocator_ResizeMemory_Noop
-	};
-	
 	//// load .obj and .mtl ////
-	Model* model = NullModel();
 	if(parse_obj_model && parse_obj_mesh){
-		//TODO(delle) use deshi allocators here
-		map<vec3,Mesh::Vertex> vUnique(deshi_temp_allocator);
+		return storage_model_create_from_obj(obj_path, flags);
+	}
+	//// load .obj (batch info only), .mtl, and .mesh ////
+	else if(parse_obj_model){
+		return storage_model_create_from_mesh_obj(storage_mesh_create_from_path(mesh_path), obj_path, flags);
+	}
+	
+	//// load .model and .mesh ////
+	Stopwatch load_stopwatch = start_stopwatch();
+		str8 model_name;
+		str8 model_mesh;
+		ModelFlags model_flags;
+		array<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
+		enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
+		
+		File* file = file_init(model_path, FileAccess_Read);
+		if(!file) return storage_model_null();
+		defer{ file_deinit(file); };
+		
+		u32 line_number = 0;
+		while(file->cursor < file->bytes){
+			line_number += 1;
+			
+			//next line
+			str8 line = file_read_line_alloc(file, &storage_load_allocator);
+			if(!line) continue;
+			
+			//skip leading whitespace
+			str8_advance_while(&line, ' ');
+			if(!line) continue;
+			
+			//early out if comment is first character
+			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+			if(decoded.codepoint == '#') continue;
+			
+			//check for headers
+			if(decoded.codepoint == '>'){
+				if     (str8_begins_with(line, STR8(">model"))) header = HEADER_MODEL;
+				else if(str8_begins_with(line, STR8(">batches"))) header = HEADER_BATCHES;
+				else{ header = HEADER_INVALID; LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
+				continue;
+			}
+			
+			//early out invalid header
+			if(header == HEADER_INVALID){
+				LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
+				continue;
+			}
+			
+			if(header == HEADER_MODEL){
+				//parse key
+				str8 key = str8_eat_until(line, ' ');
+				str8_increment(&line, key.count);
+				
+				//skip separating whitespace
+				str8_advance_while(&line, ' ');
+				if(!line){
+					LogE("config","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
+					continue;
+				}
+				
+				//early out if comment is first value character
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint == '#'){
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
+					continue;
+				}
+				
+				if      (str8_equal_lazy(key, STR8("name"))){
+					if(decoded.codepoint != '\"'){
+						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
+						continue;
+					}
+					model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				}else if(str8_equal_lazy(key, STR8("flags"))){
+					model_flags = (ModelFlags)atoi((char*)line.str);
+				}else if(str8_equal_lazy(key, STR8("mesh"))){
+					if(decoded.codepoint != '\"'){
+						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
+						continue;
+					}
+					model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				}else if(str8_equal_lazy(key, STR8("armature"))){
+					//NOTE currently nothing
+				}else{
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
+					continue;
+				}
+			}else{
+				if(decoded.codepoint != '\"'){
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
+					continue;
+				}
+				
+				str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+				str8_increment(&line, batch_mat.count+2);
+				if(!line){
+					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
+					continue;
+				}
+				
+				char* next = (char*)line.str;
+				u32 ioffset = strtol(next,&next,10);
+				u32 icount  = strtol(next,&next,10);
+				
+				model_batches.add({batch_mat, ioffset, icount});
+			}
+		}
+		Log("storage","Successfully loaded model ",model_path);
+		
+		Model* model = storage_model_allocate(model_batches.count);
+	cpystr(model->name, (char*)model_name.str, 64);
+		model->flags    = model_flags;
+		model->mesh     = storage_mesh_create_from_file(model_mesh);
+		model->armature = 0;
+		forI(model_batches.count){
+			model->batchArray[i] = ModelBatch{
+				model_batches[i].second,
+				model_batches[i].third,
+				storage_material_create_from_file(model_batches[i].first)
+			};
+		}
+		
+		arrput(DeshStorage->model_array, model);
+	Log("storage","Finished loading model '",filename,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	return model;
+}
+
+
+Model*
+storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
+		Stopwatch load_stopwatch = start_stopwatch();
+	map<vec3,MeshVertex> vUnique(deshi_temp_allocator);
 		set<vec3> vnUnique(deshi_temp_allocator);
 		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
 		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
@@ -789,9 +1175,9 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 		array<u32> gArray(deshi_temp_allocator);
 		array<u32> uArray(deshi_temp_allocator);
 		array<u32> mArray(deshi_temp_allocator);
-		array<Mesh::Index>    indexes(deshi_temp_allocator);
-		array<Mesh::Triangle> triangles(deshi_temp_allocator);
-		array<Mesh::Face>     faces(deshi_temp_allocator);
+		array<MeshIndex>    indexes(deshi_temp_allocator);
+		array<MeshTriangle> triangles(deshi_temp_allocator);
+		array<MeshFace>     faces(deshi_temp_allocator);
 		array<array<pair<u32,u8>>> triNeighbors(deshi_temp_allocator);
 		array<array<u32>> faceTriangles(deshi_temp_allocator);
 		array<set<u32>>   faceVertexes(deshi_temp_allocator);
@@ -811,9 +1197,8 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 		b32 non_tri_warning = false;
 		b32 fatal_error     = false;
 		
-		Stopwatch load_stopwatch = start_stopwatch();
 		File* file = file_init(obj_path, FileAccess_Read);
-		if(!file) return result;
+		if(!file) return storage_model_null();
 		defer{ file_deinit(file); };
 		
 		u32 line_number = 0;
@@ -821,7 +1206,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 			line_number += 1;
 			
 			//next line
-			str8 line = file_read_line_alloc(file, &load_allocator);
+			str8 line = file_read_line_alloc(file, &storage_load_allocator);
 			if(!line) continue;
 			
 			//skip leading whitespace
@@ -851,14 +1236,14 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 							f32 y = strtof(next, &next);
 							f32 z = strtof(next, 0);
 							vec3 vec{x,y,z};
-							vArray.add(vUnique.add(vec, Mesh::Vertex{vec}));
+							vArray.add(vUnique.add(vec, MeshVertex{vec}));
 						}continue;
 						
 						//// uv ////
 						case 't':{
 							str8_increment(&line, decoded.advance);
 							decoded = decoded_codepoint_from_utf8(line.str, 4);
-							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return result; }
+							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return storage_model_null(); }
 							str8_increment(&line, decoded.advance);
 							
 							char* next = (char*)line.str;
@@ -871,7 +1256,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 						case 'n':{
 							str8_increment(&line, decoded.advance);
 							decoded = decoded_codepoint_from_utf8(line.str, 4);
-							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return result; }
+							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return storage_model_null(); }
 							str8_increment(&line, decoded.advance);
 							
 							char* next = (char*)line.str;
@@ -883,7 +1268,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 						}continue;
 						default:{
 							ParseError(obj_path,"Invalid character after 'v': '",(char)decoded.codepoint,"'");
-						}return result;
+						}return storage_model_null();
 					}
 				}continue;
 				
@@ -893,8 +1278,8 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 					
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
-					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return storage_model_null(); }
+					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return storage_model_null(); }
 					
 					str8_increment(&line, decoded.advance);
 					char* next = (char*)line.str;
@@ -935,7 +1320,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 					
 					//triangle
 					u32 cti = triangles.count;
-					Mesh::Triangle triangle{};
+					MeshTriangle triangle{};
 					triangle.p[0] = vUnique.data[vArray[v0]].pos;
 					triangle.p[1] = vUnique.data[vArray[v1]].pos;
 					triangle.p[2] = vUnique.data[vArray[v2]].pos;
@@ -945,7 +1330,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 					triangle.face = (u32)-1;
 					triangle.normal = (triangle.p[0] - triangle.p[1]).cross(triangle.p[0] - triangle.p[2]).normalized();
 					triangles.add(triangle);
-					triNeighbors.add(array<pair<u32,u8>>{});
+				triNeighbors.add(array<pair<u32,u8>>(deshi_temp_allocator));
 					
 					//triangle neighbors
 					for(u32 oti=0; oti<triangles.count-1; ++oti){
@@ -999,7 +1384,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				
 				//// use material ////
 				case 'u':{
-					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+				if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return storage_model_null(); }
 					
 					if(mtllib_found){
 						str8_increment(&line, 7);
@@ -1012,7 +1397,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return storage_model_null(); }
 					
 					mtllib_found = true;
 					str8_increment(&line, 7);
@@ -1024,7 +1409,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				case 'g':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return storage_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> group(indexes.count, str8_copy(line, deshi_temp_allocator));
@@ -1035,7 +1420,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				case 'o':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return storage_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> object(indexes.count, str8_copy(line, deshi_temp_allocator));
@@ -1046,14 +1431,14 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				case 's':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return storage_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					s_warning = true;
 				}continue;
 				default:{
 					ParseError(obj_path,"Invalid starting character: '",(char)decoded.codepoint,"'");
-				}return result;
+				}return storage_model_null();
 			}
 		}
 		
@@ -1063,7 +1448,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 			
 			//create face and add base triange to it
 			u32 cfi = faces.count;
-			faces.add(Mesh::Face{});
+			faces.add(MeshFace{});
 			faceTriangles.add(array<u32>(deshi_temp_allocator));
 			faceVertexes.add(set<u32>(deshi_temp_allocator));
 			faceOuterVertexes.add(array<u32>(deshi_temp_allocator));
@@ -1155,56 +1540,51 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 		if(s_warning)         LogW("storage","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
 		if(!vtArray.count){   LogW("storage","No vertex UVs 'vt' were parsed in ",obj_path); }
 		if(!vnArray.count){   LogW("storage","No vertex normals 'vn' were parsed in ",obj_path); }
-		if(fatal_error){      LogE("storage","OBJ parsing encountered a fatal error in ",obj_path); return result; }
-		if(!vArray.count){    LogE("storage","No vertex positions 'v' were parsed in ",obj_path); return result; }
-		if(!triangles.count){ LogE("storage","No faces 'f' were parsed in ",obj_path); return result; }
-		
+		if(fatal_error){      LogE("storage","OBJ parsing encountered a fatal error in ",obj_path); return storage_model_null(); }
+		if(!vArray.count){    LogE("storage","No vertex positions 'v' were parsed in ",obj_path); return storage_model_null(); }
+		if(!triangles.count){ LogE("storage","No faces 'f' were parsed in ",obj_path); return storage_model_null(); }
+	
+	//// check if mesh is already loaded ////
+	Mesh* mesh = 0;
+	for_array(DeshStorage->mesh_array){
+		if(strncmp((*it)->name, (char*)file->front.str, 64) == 0){
+			mesh = *it;
+			break;
+		}
+	}
+	
 		//// create mesh ////
-		Mesh* mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
+	if(mesh == 0){
+		mesh = storage_mesh_allocate(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
 								  totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
-		cpystr(mesh->name, (const char*)front.str, 64);
-		mesh->idx = meshes.count;
+		cpystr(mesh->name, (char*)file->front.str, 64);
 		mesh->aabbMin  = aabb_min;
 		mesh->aabbMax  = aabb_max;
 		mesh->center   = {(aabb_max.x+aabb_min.x)/2.0f, (aabb_max.y+aabb_min.y)/2.0f, (aabb_max.z+aabb_min.z)/2.0f};
-		memcpy(mesh->vertexArray,   vUnique.data.data, vUnique.count*sizeof(Mesh::Vertex));
-		memcpy(mesh->indexArray,    indexes.data,      indexes.count*sizeof(Mesh::Index));
-		memcpy(mesh->triangleArray, triangles.data,    triangles.count*sizeof(Mesh::Triangle));
-		memcpy(mesh->faceArray,     faces.data,        faces.count*sizeof(Mesh::Face));
+		memcpy(mesh->vertexArray,   vUnique.data.data, vUnique.count*sizeof(MeshVertex));
+		memcpy(mesh->indexArray,    indexes.data,      indexes.count*sizeof(MeshIndex));
+		memcpy(mesh->triangleArray, triangles.data,    triangles.count*sizeof(MeshTriangle));
+		memcpy(mesh->faceArray,     faces.data,        faces.count*sizeof(MeshFace));
 		
 		//setup pointers
-		mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
-		mesh->triangles[0].edgeArray      = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
-		mesh->triangles[0].neighbors = {mesh->triangles[0].neighborArray, triNeighbors[0].count};
-		mesh->triangles[0].edges     = {mesh->triangles[0].edgeArray,     triNeighbors[0].count};
-		for(s32 ti=1; ti<mesh->triangles.count; ++ti){
-			mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + triNeighbors[ti-1].count);
-			mesh->triangles[ti].edgeArray      = (u8*)(mesh->triangles[ti-1].edgeArray     + triNeighbors[ti-1].count);
-			mesh->triangles[ti].neighbors  = {mesh->triangles[ti].neighborArray, triNeighbors[ti].count};
-			mesh->triangles[ti].edges      = {mesh->triangles[ti].edgeArray,     triNeighbors[ti].count};
+		mesh->triangleArray[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
+		mesh->triangleArray[0].edgeArray     = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
+		for(s32 ti = 1; ti < mesh->triangleCount; ++ti){
+			mesh->triangleArray[ti].neighborArray = (u32*)(mesh->triangleArray[ti-1].neighborArray + triNeighbors[ti-1].count);
+			mesh->triangleArray[ti].edgeArray     =  (u8*)(mesh->triangleArray[ti-1].edgeArray     + triNeighbors[ti-1].count);
 		}
-		mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + totalTriNeighbors);
-		mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + triangles.count);
-		mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + totalFaceVertexes);
-		mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + totalFaceOuterVertexes);
-		mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + totalFaceTriNeighbors);
-		mesh->faces[0].triangles          = {mesh->faces[0].triangleArray,          faceTriangles[0].count};
-		mesh->faces[0].vertexes           = {mesh->faces[0].vertexArray,            faceVertexes[0].count};
-		mesh->faces[0].outerVertexes      = {mesh->faces[0].outerVertexArray,       faceOuterVertexes[0].count};
-		mesh->faces[0].triangleNeighbors  = {mesh->faces[0].neighborTriangleArray,  faceTriNeighbors[0].count};
-		mesh->faces[0].faceNeighbors      = {mesh->faces[0].neighborFaceArray,      faceFaceNeighbors[0].count};
-		for(s32 fi=1; fi<mesh->faces.count; ++fi){
-			mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + faceTriangles[fi-1].count);
-			mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + faceVertexes[fi-1].count);
-			mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + faceOuterVertexes[fi-1].count);
-			mesh->faces[fi].neighborTriangleArray = (u32*)(mesh->faces[fi-1].neighborTriangleArray + faceTriNeighbors[fi-1].count);
-			mesh->faces[fi].neighborFaceArray     = (u32*)(mesh->faces[fi-1].neighborFaceArray     + faceFaceNeighbors[fi-1].count);
-			mesh->faces[fi].triangles          = {mesh->faces[fi-0].triangleArray,          faceTriangles[fi].count};
-			mesh->faces[fi].vertexes           = {mesh->faces[fi-0].vertexArray,            faceVertexes[fi].count};
-			mesh->faces[fi].outerVertexes      = {mesh->faces[fi-0].outerVertexArray,       faceOuterVertexes[fi].count};
-			mesh->faces[fi].triangleNeighbors  = {mesh->faces[fi-0].neighborTriangleArray,  faceTriNeighbors[fi].count};
-			mesh->faces[fi].faceNeighbors      = {mesh->faces[fi-0].neighborFaceArray,      faceFaceNeighbors[fi].count};
+		mesh->faceArray[0].triangleArray         = (u32*)(mesh->triangleArray[0].edgeArray     + totalTriNeighbors);
+		mesh->faceArray[0].vertexArray           = (u32*)(mesh->faceArray[0].triangleArray         + triangles.count);
+		mesh->faceArray[0].outerVertexArray      = (u32*)(mesh->faceArray[0].vertexArray           + totalFaceVertexes);
+		mesh->faceArray[0].neighborTriangleArray = (u32*)(mesh->faceArray[0].outerVertexArray      + totalFaceOuterVertexes);
+		mesh->faceArray[0].neighborFaceArray     = (u32*)(mesh->faceArray[0].neighborTriangleArray + totalFaceTriNeighbors);
+		for(s32 fi = 1; fi < mesh->faceCount; ++fi){
+			mesh->faceArray[fi].triangleArray         = (u32*)(mesh->faceArray[fi-1].triangleArray         + faceTriangles[fi-1].count);
+			mesh->faceArray[fi].vertexArray           = (u32*)(mesh->faceArray[fi-1].vertexArray           + faceVertexes[fi-1].count);
+			mesh->faceArray[fi].outerVertexArray      = (u32*)(mesh->faceArray[fi-1].outerVertexArray      + faceOuterVertexes[fi-1].count);
+			mesh->faceArray[fi].neighborTriangleArray = (u32*)(mesh->faceArray[fi-1].neighborTriangleArray + faceTriNeighbors[fi-1].count);
+			mesh->faceArray[fi].neighborFaceArray     = (u32*)(mesh->faceArray[fi-1].neighborFaceArray     + faceFaceNeighbors[fi-1].count);
 		}
 		
 		//fill triangle neighbors/edges
@@ -1217,32 +1597,33 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 		}
 		
 		//fill face tris/vertexes/neighbors
-		forX(fi, mesh->faces.count){
+		forX(fi, mesh->faceCount){
 			mesh->faceArray[fi].triangleCount = faceTriangles[fi].count;
 			mesh->faceArray[fi].vertexCount   = faceVertexes[fi].count;
 			mesh->faceArray[fi].outerVertexCount = faceOuterVertexes[fi].count;
 			mesh->faceArray[fi].neighborTriangleCount = faceTriNeighbors[fi].count;
 			mesh->faceArray[fi].neighborFaceCount = faceFaceNeighbors[fi].count;
 			mesh->faceArray[fi].center = faces[fi].center / (f32)faceOuterVertexes[fi].count;
-			forX(fti, mesh->faces[fi].triangles.count){
+			forX(fti, mesh->faceArray[fi].triangleCount){
 				mesh->faceArray[fi].triangleArray[fti] = faceTriangles[fi][fti];
 			}
-			forX(fvi, mesh->faces[fi].vertexes.count){
+			forX(fvi, mesh->faceArray[fi].vertexCount){
 				mesh->faceArray[fi].vertexArray[fvi] = faceVertexes[fi].data[fvi];
 			}
-			forX(fvi, mesh->faces[fi].outerVertexes.count){
+			forX(fvi, mesh->faceArray[fi].outerVertexCount){
 				mesh->faceArray[fi].outerVertexArray[fvi] = faceOuterVertexes[fi][fvi];
 			}
-			forX(fvi, mesh->faces[fi].triangleNeighbors.count){
+			forX(fvi, mesh->faceArray[fi].neighborTriangleCount){
 				mesh->faceArray[fi].neighborTriangleArray[fvi] = faceTriNeighbors[fi][fvi];
 			}
-			forX(fvi, mesh->faces[fi].faceNeighbors.count){
+			forX(fvi, mesh->faceArray[fi].neighborFaceCount){
 				mesh->faceArray[fi].neighborFaceArray[fvi] = faceFaceNeighbors[fi][fvi];
 			}
 		}
 		
-		render_load_mesh(mesh); //TODO(delle) check if mesh already loaded
-		meshes.add(mesh);
+		render_load_mesh(mesh);
+		arrput(DeshStorage->mesh_array, mesh);
+	}
 		Log("storage","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		
 		//parse MTL files
@@ -1254,33 +1635,69 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 			Log("storage","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
-		model = AllocateModel(mArray.count);
-		cpystr(model->name, (const char*)front.str, 64);
-		model->idx = models.count;
-		model->flags = flags;
+		Model* model = storage_model_allocate(mArray.count);
+	cpystr(model->name, (char*)file->front.str, 64);
+		model->flags    = flags;
 		model->mesh     = mesh;
 		model->armature = 0;
 		
 		//!Incomplete batch materials
 		if(mArray.count > 1){
-			model->batches[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-			model->batches[mArray.count-1].indexCount  = indexes.count - model->batches[mArray.count-1].indexOffset;
-			model->batches[mArray.count-1].material    = 0;
+			model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
+			model->batchArray[mArray.count-1].indexCount  = indexes.count - model->batchArray[mArray.count-1].indexOffset;
+			model->batchArray[mArray.count-1].material    = storage_material_null();
 			for(u32 bi = mArray.count-2; bi >= 0; --bi){
-				model->batches[bi].indexOffset = mUnique.data[mArray[bi]].first;
-				model->batches[bi].indexCount  = model->batches[bi+1].indexOffset - model->batches[bi].indexOffset;
-				model->batches[bi].material    = 0;
+				model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
+				model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
+				model->batchArray[bi].material    = storage_material_null();
 			}
 		}else{
-			model->batches[0].indexOffset = 0;
-			model->batches[0].indexCount  = indexes.count;
-			model->batches[0].material    = 0;
+			model->batchArray[0].indexOffset = 0;
+			model->batchArray[0].indexCount  = indexes.count;
+			model->batchArray[0].material    = storage_material_null();
+	}
+	
+	arrput(DeshStorage->model_array, model);
+	Log("storage","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	return model;
+}
+
+
+Model*
+storage_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
+	Stopwatch load_stopwatch = start_stopwatch();
+	
+	//check if created already
+	str8 model_name = str8_from_cstr(mesh->name);
+	for_array(DeshStorage->model_array){
+		if(   (*it)->mesh == mesh
+		   && strncmp((*it)->name, (char*)model_name.str, 64) == 0
+		   && (*it)->flags == flags
+		   && (*it)->batchArray != 0
+		   && arrlenu((*it)->batchArray) == 1
+		   && (*it)->batchArray[0].indexOffset == 0
+		   && (*it)->batchArray[0].indexCount == mesh->indexCount
+		   && (*it)->batchArray[0].material == storage_material_null())
+		{
+			return *it;
 		}
 	}
-	//// load .obj (batch info only), .mtl, and .mesh ////
-	else if(parse_obj_model){
-		Mesh* mesh = CreateMeshFromFile(front).second;
-		
+	
+	Model* model = storage_model_allocate(1);
+	cpystr(model->name, (char*)model_name.str, 64);
+	model->mesh     = mesh;
+	model->armature = 0;
+	model->batchArray[0] = ModelBatch{0, mesh->indexCount, storage_material_null()};
+	
+	arrput(DeshStorage->model_array, model);
+	Log("storage","Finished loading model '",model_name,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	return model;
+}
+
+
+Model*
+storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){DPZoneScoped;
+		Stopwatch load_stopwatch = start_stopwatch();
 		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
 		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
 		set<pair<u32,str8>> uUnique(deshi_temp_allocator);
@@ -1292,9 +1709,8 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 		b32 mtllib_found = false;
 		u32 index_count = 0;
 		
-		Stopwatch load_stopwatch = start_stopwatch();
 		File* file = file_init(obj_path, FileAccess_Read);
-		if(!file) return result;
+		if(!file) return storage_model_null();
 		defer{ file_deinit(file); };
 		
 		u32 line_number = 0;
@@ -1302,7 +1718,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 			line_number += 1;
 			
 			//next line
-			str8 line = file_read_line_alloc(file, &load_allocator);
+			str8 line = file_read_line_alloc(file, &storage_load_allocator);
 			if(!line) continue;
 			
 			//skip leading whitespace
@@ -1319,13 +1735,13 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
 					
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return storage_model_null(); }
 					index_count += 3;
 				}
 				
 				//// use material ////
 				case 'u':{ //use material
-					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
+					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return storage_model_null(); }
 					
 					if(mtllib_found){
 						str8_increment(&line, 7);
@@ -1338,7 +1754,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return result; }
+					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return storage_model_null(); }
 					
 					mtllib_found = true;
 					str8_increment(&line, 7);
@@ -1350,7 +1766,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				case 'g':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return storage_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> group(index_count, str8_copy(line, deshi_temp_allocator));
@@ -1361,7 +1777,7 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 				case 'o':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return result; }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return storage_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> object(index_count, str8_copy(line, deshi_temp_allocator));
@@ -1381,247 +1797,237 @@ CreateModelFromFile(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneSco
 			Log("storage","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
-		model = AllocateModel(mArray.count);
-		cpystr(model->name, (const char*)front.str, 64);
-		model->idx = models.count;
-		model->flags = flags;
+		Model* model = storage_model_allocate(mArray.count);
+	cpystr(model->name, (char*)file->front.str, 64);
+		model->flags    = flags;
 		model->mesh     = mesh;
 		model->armature = 0;
 		
 		//!Incomplete batch materials
 		if(mArray.count > 1){
-			model->batches[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-			model->batches[mArray.count-1].indexCount  = index_count - model->batches[mArray.count-1].indexOffset;
-			model->batches[mArray.count-1].material    = 0;
+			model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
+			model->batchArray[mArray.count-1].indexCount  = index_count - model->batchArray[mArray.count-1].indexOffset;
+		model->batchArray[mArray.count-1].material    = storage_material_null();
 			for(u32 bi = mArray.count-2; bi >= 0; --bi){
-				model->batches[bi].indexOffset = mUnique.data[mArray[bi]].first;
-				model->batches[bi].indexCount  = model->batches[bi+1].indexOffset - model->batches[bi].indexOffset;
-				model->batches[bi].material    = 0;
+				model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
+				model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
+				model->batchArray[bi].material    = storage_material_null();
 			}
 		}else{
-			model->batches[0].indexOffset = 0;
-			model->batches[0].indexCount  = index_count;
-			model->batches[0].material    = 0;
-		}
-	}
-	//// load .model and .mesh ////
-	else{
-		//model storage
-		str8 model_name;
-		str8 model_mesh;
-		ModelFlags model_flags;
-		array<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
-		enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
-		
-		File* file = file_init(model_path, FileAccess_Read);
-		if(!file) return result;
-		defer{ file_deinit(file); };
-		
-		u32 line_number = 0;
-		while(file->cursor < file->bytes){
-			line_number += 1;
-			
-			//next line
-			str8 line = file_read_line_alloc(file, &load_allocator);
-			if(!line) continue;
-			
-			//skip leading whitespace
-			str8_advance_while(&line, ' ');
-			if(!line) continue;
-			
-			//early out if comment is first character
-			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-			if(decoded.codepoint == '#') continue;
-			
-			//check for headers
-			if(decoded.codepoint == '>'){
-				if     (str8_begins_with(line, str8_lit(">model"))) header = HEADER_MODEL;
-				else if(str8_begins_with(line, str8_lit(">batches"))) header = HEADER_BATCHES;
-				else{ header = HEADER_INVALID; LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
-				continue;
-			}
-			
-			//early out invalid header
-			if(header == HEADER_INVALID){
-				LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
-				continue;
-			}
-			
-			if(header == HEADER_MODEL){
-				//parse key
-				str8 key = str8_eat_until(line, ' ');
-				str8_increment(&line, key.count);
-				
-				//skip separating whitespace
-				str8_advance_while(&line, ' ');
-				if(!line){
-					LogE("config","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
-					continue;
-				}
-				
-				//early out if comment is first value character
-				decoded = decoded_codepoint_from_utf8(line.str, 4);
-				if(decoded.codepoint == '#'){
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
-					continue;
-				}
-				
-				if      (str8_equal_lazy(key, str8_lit("name"))){
-					if(decoded.codepoint != '\"'){
-						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
-						continue;
-					}
-					model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				}else if(str8_equal_lazy(key, str8_lit("flags"))){
-					model_flags = (ModelFlags)atoi((const char*)line.str);
-				}else if(str8_equal_lazy(key, str8_lit("mesh"))){
-					if(decoded.codepoint != '\"'){
-						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
-						continue;
-					}
-					model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				}else if(str8_equal_lazy(key, str8_lit("armature"))){
-					//NOTE currently nothing
-				}else{
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
-					continue;
-				}
-			}else{
-				if(decoded.codepoint != '\"'){
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
-					continue;
-				}
-				
-				str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				str8_increment(&line, batch_mat.count+2);
-				if(!line){
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
-					continue;
-				}
-				
-				char* next = (char*)line.str;
-				u32 ioffset = strtol(next,&next,10);
-				u32 icount  = strtol(next,&next,10);
-				
-				model_batches.add({batch_mat, ioffset, icount});
-			}
-		}
-		
-		model = AllocateModel(model_batches.count);
-		cpystr(model->name, (const char*)model_name.str, 64);
-		model->idx      = models.count;
-		model->flags    = model_flags;
-		model->mesh     = CreateMeshFromFile(model_mesh).second;
-		model->armature = 0;
-		forI(model_batches.count){
-			model->batches[i] = Model::Batch{
-				model_batches[i].second,
-				model_batches[i].third,
-				CreateMaterialFromFile(model_batches[i].first).first
-			};
-		}
-		
-		Log("storage","Successfully loaded model ",model_path);
+			model->batchArray[0].indexOffset = 0;
+			model->batchArray[0].indexCount  = index_count;
+			model->batchArray[0].material    = storage_material_null();
 	}
 	
-	result.first  = model->idx;
-	result.second = model;
-	models.add(model);
-	Log("storage","Finished loading model '",filename,"' in ",peek_stopwatch(model_stopwatch),"ms");
-	return result;
+	arrput(DeshStorage->model_array, model);
+	Log("storage","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	return model;
 }
 
-pair<u32,Model*> Storage::
-CreateModelFromMesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
-	pair<u32,Model*> result(0, NullModel());
-	
-	str8 model_name = str8_from_cstr(mesh->name);
-	//check if created already
-	forI(models.count){
-		if((models[i]->mesh == mesh) && (strncmp(models[i]->name, (const char*)model_name.str, 64) == 0) && (models[i]->flags == flags) 
-		   && (models[i]->batches.count == 1) && (models[i]->batches[0].indexOffset == 0)
-		   && (models[i]->batches[0].indexCount == mesh->indexCount) && (models[i]->batches[0].material == 0)){
-			return pair<u32,Model*>(i,models[i]);
-		}
+
+Model* storage_model_copy(Model* base){DPZoneScoped;
+	Model* model = storage_model_allocate(arrlenu(base->batchArray));
+	cpystr(model->name, base->name, 64);
+	model->flags    = base->flags;
+	model->mesh     = base->mesh;
+	model->armature = base->armature;
+	forI(arrlenu(base->batchArray)){
+		model->batchArray[i].indexOffset = base->batchArray[i].indexOffset;
+		model->batchArray[i].indexCount  = base->batchArray[i].indexCount;
+		model->batchArray[i].material    = base->batchArray[i].material;
 	}
 	
-	Model* model = AllocateModel(1);
-	cpystr(model->name, (const char*)model_name.str, 64);
-	model->idx = models.count;
-	model->mesh = mesh;
-	model->armature = 0;
-	model->batches[0] = {0, mesh->indexCount, 0};
-	
-	result.first  = model->idx;
-	result.second = model;
-	models.add(model);
-	return result;
+	arrput(DeshStorage->model_array, model);
+	return model;
 }
 
-pair<u32,Model*> Storage::
-CopyModel(Model* _model){DPZoneScoped;
-	pair<u32,Model*> result(0, NullModel());
+
+void
+storage_model_save(Model* model){
+	str8 directory = STR8("data/models/");
 	
-	Model* model = AllocateModel(_model->batches.size());
-	cpystr(model->name, _model->name, 64);
-	model->idx      = models.count;
-	model->flags    = _model->flags;
-	model->mesh     = _model->mesh;
-	model->armature = _model->armature;
-	forI(model->batches.count){
-		model->batches[i].indexOffset = _model->batches[i].indexOffset;
-		model->batches[i].indexCount  = _model->batches[i].indexCount;
-		model->batches[i].material    = _model->batches[i].material;
+	if(model->mesh){
+		storage_mesh_save(model->mesh);
 	}
 	
-	result.first  = model->idx;
-	result.second = model;
-	models.add(model);
-	return result;
-}
-
-void Storage::
-SaveModel(Model* model){DPZoneScoped;
-	SaveMesh(model->mesh);
-	string model_save = ToString(">model"
+	str8 path = str8_concat3(directory,str8_from_cstr(model->name),STR8(".model"), deshi_temp_allocator);
+	str8_builder builder;
+	str8_builder_init(&builder,
+					  ToString8(deshi_temp_allocator,
+								">model"
 								 "\nname     \"",model->name,"\""
 								 "\nflags    ", model->flags,
 								 "\nmesh     \"", model->mesh->name,"\""
 								 "\narmature ", 0,
 								 "\n"
-								 "\n>batches");
-	forI(model->batches.count){
-		SaveMaterial(materials[model->batches[i].material]);
-		model_save += ToString("\n\"",materials[model->batches[i].material]->name,"\" ",
-							   model->batches[i].indexOffset," ",model->batches[i].indexCount);
+								"\n>batches"),
+					  deshi_temp_allocator);
+	if(model->batchArray){
+	for_array(model->batchArray){
+		storage_material_save(it->material);
+			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+		}
 	}
-	model_save += "\n";
-	
-	str8 path = str8_concat3(str8_lit("data/models/"),str8_from_cstr(model->name),str8_lit(".model"), deshi_temp_allocator);
-	file_write_simple(path, model_save.str, model_save.count*sizeof(char));
+	str8_builder_append(&builder, STR8("\n"));
+	str8 model_text = str8_builder_peek(&builder);
+	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
 	Log("storage","Successfully saved model: ",path);
 }
 
 
-///////////////
-//// @font ////
-///////////////
-local Font* 
-AllocateFont(Type type){DPZoneScoped;
-	Font* font = (Font*)memory_alloc(sizeof(Font));
-	font->type = type;
-	font->idx = Storage::fonts.count;
-	return font;
+void
+storage_model_save_at_path(Model* model, str8 path){DPZoneScoped;
+	str8 directory = str8_eat_until_last(path, '/');
+	if(directory.str[directory.count] == '/') directory.count += 1;
+	
+	if(model->mesh){
+		storage_mesh_save_to_path(model->mesh, str8_concat3(directory,str8_from_cstr(model->mesh->name),STR8(".mesh"), deshi_temp_allocator));
+	}
+	
+	str8_builder builder;
+	str8_builder_init(&builder,
+					  ToString8(deshi_temp_allocator,
+								">model"
+								 "\nname     \"",model->name,"\""
+								 "\nflags    ", model->flags,
+								 "\nmesh     \"", model->mesh->name,"\""
+								 "\narmature ", 0,
+								 "\n"
+								"\n>batches"),
+					  deshi_temp_allocator);
+	if(model->batchArray){
+	for_array(model->batchArray){
+			storage_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
+			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+		}
+	}
+	str8_builder_append(&builder, STR8("\n"));
+	str8 model_text = str8_builder_peek(&builder);
+	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
+	Log("storage","Successfully saved model: ",path);
 }
 
-pair<u32,Font*> Storage::
-CreateFontFromFileBDF(str8 filename){DPZoneScoped;
-	pair<u32,Font*> result(0,NullFont());
+
+void
+storage_model_delete(Model* model){
+	if(model == storage_model_null()) return;
 	
-	//check if created already
-	forI(fonts.count){
-		if(!str8_compare(fonts[i]->name, filename)){
-			return pair<u32,Font*>(i,fonts[i]);
+	for_array(DeshStorage->model_array){
+		if(*it == model){
+			arrdelswap(DeshStorage->model_array, it - DeshStorage->model_array);
+		}
+	}
+	arrfree(model->batchArray);
+	memory_zfree(model);
+}
+
+
+#undef ParseError
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @storage_font
+FontPackedChar*
+font_packed_char(Font* font, u32 codepoint){
+	//TODO(delle) an overload for specifying range if you know where you're working
+	forI(font->num_ranges){
+		if(   (codepoint >= font->ranges[i].first_codepoint)
+		   && (codepoint <  font->ranges[i].first_codepoint + font->ranges[i].num_chars)){
+			return font->ranges[i].chardata_for_range + (codepoint - font->ranges[i].first_codepoint);
+		}
+	}
+	Assert(!"The requested codepoint was not found in any of the ranges. TODO better error handling here.");
+	return 0;
+}
+
+
+FontAlignedQuad
+font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){
+	FontPackedChar* pc = font_packed_char(font, codepoint);
+	if(pc){
+		FontAlignedQuad q;
+		q.x0 = pos->x + pc->xoff * scale.x;
+		q.y0 = pos->y + (pc->yoff + font->ascent) * scale.y;
+		q.x1 = pos->x + (pc->xoff2 - pc->xoff) * scale.x;
+		q.y1 = pos->y + (pc->yoff2 + font->ascent) * scale.y;
+		q.u0 = ((f32)pc->x0 / font->ttf_size[0]); //NOTE(sushi) we could maybe store the UV values normalized instead of doing this everytime
+		q.v0 = ((f32)pc->y0 / font->ttf_size[1]) + font->uv_yoffset;
+		q.u1 = ((f32)pc->x1 / font->ttf_size[0]);
+		q.v1 = ((f32)pc->y1 / font->ttf_size[1]) + font->uv_yoffset;
+		pos->x += pc->xadvance * scale.x;
+		return q;
+	}
+	Assert(!"The requested codepoint was not found in any of the ranges. TODO better error handling here.");
+	return FontAlignedQuad{};
+}
+
+
+vec2
+font_visual_size(Font* font, str8 text){
+	vec2 result = vec2{0, (f32)font->max_height};
+	f32 line_width = 0;
+	switch(font->type){
+		case FontType_BDF: case FontType_NONE:{
+			u32 codepoint;
+			while(text && (codepoint = str8_advance(&text).codepoint)){
+				if(codepoint == '\n'){
+					result.y += font->max_height;
+					line_width = 0;
+				}
+				line_width += font->max_width * font->max_height / font->aspect_ratio / font->max_width;
+				if(line_width > result.x) result.x = line_width;
+			}
+		}break;
+		case FontType_TTF:{
+			u32 codepoint;
+			while(text && (codepoint = str8_advance(&text).codepoint)){
+				if(codepoint == '\n'){
+					result.y += font->max_height;
+					line_width = 0;
+				}
+				line_width += font_packed_char(font, codepoint)->xadvance * font->max_height / font->aspect_ratio / font->max_width;
+				if(line_width > result.x) result.x = line_width;
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
+	}
+	return result;
+}
+
+
+Font*
+storage_font_create_from_file(str8 name, u32 height){DPZoneScoped;
+	return storage_font_create_from_path(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
+}
+
+
+Font*
+storage_font_create_from_path(str8 path, u32 height){DPZoneScoped;
+	if(str8_ends_with(path, STR8(".bdf"))){
+		return storage_font_create_from_file_bdf(path);
+	}
+	
+	if(str8_ends_with(path, STR8(".ttf")) || str8_ends_with(path, STR8(".otf"))){
+		return storage_font_create_from_file_ttf(path, height);
+	}
+	
+	LogE("storage","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
+	return storage_font_null();
+}
+
+
+Font*
+storage_font_create_from_file_bdf(str8 name){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return storage_font_null();
+	return storage_font_create_from_path_bdf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator));
+}
+
+
+Font*
+storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
+	//check if font was loaded already
+	str8 filename = str8_skip_until_last(path, '/');
+	for_array(DeshStorage->font_array){
+		if(str8_equal_lazy((*it)->name, filename)){
+			return *it;
 		}
 	}
 	
@@ -1638,44 +2044,27 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 	u16* encodings = 0;
 	u8*  pixels = 0;
 	
-	//NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
-	persist u8 line_buffer[256];
-	persist Allocator load_allocator{
-		[](upt bytes){
-			if(bytes > 256){
-				return memory_talloc(bytes);
-			}else{
-				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
-				return (void*)line_buffer;
-			}
-		},
-		Allocator_ChangeMemory_Noop,
-		Allocator_ChangeMemory_Noop,
-		Allocator_ReleaseMemory_Noop,
-		Allocator_ResizeMemory_Noop
-	};
-	
 	//init file
-	str8 path = str8_concat(str8_lit("data/fonts/"), filename, deshi_temp_allocator);
 	File* file = file_init(path, FileAccess_Read);
-	if(!file) return result;
+	if(!file) return storage_font_null();
 	defer{ file_deinit(file); };
 	
-	str8 first_line = file_read_line_alloc(file, &load_allocator);
-	if(!str8_begins_with(first_line, str8_lit("STARTFONT"))){
-		LogE("storage","Error parsing BDF '",filename,"' on line 1. The file did not begin with 'STARTFONT'.");
-		return result;
+	str8 first_line = file_read_line_alloc(file, &storage_load_allocator);
+	if(!str8_begins_with(first_line, STR8("STARTFONT"))){
+		LogE("storage","Error parsing BDF '",path,"' on line 1. The file did not begin with 'STARTFONT'.");
+		return storage_font_null();
 	}
 	
 	
-	Font* font = AllocateFont(FontType_BDF);
+	Font* font = (Font*)memory_alloc(sizeof(Font));
+	font->type = FontType_BDF;
 	font->name = filename;
 	u32 line_number = 1;
 	while(file->cursor < file->bytes){
 		line_number += 1;
 		
 		//next line
-		str8 line = file_read_line_alloc(file, &load_allocator);
+		str8 line = file_read_line_alloc(file, &storage_load_allocator);
 		if(!line) continue;
 		
 		//skip leading whitespace
@@ -1690,7 +2079,7 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 		str8_advance_while(&line, ' ');
 		
 		if(in_bitmap){
-			if(str8_equal_lazy(key, str8_lit("ENDCHAR"))){
+			if(str8_equal_lazy(key, STR8("ENDCHAR"))){
 				in_char = false;
 				in_bitmap = false;
 				char_idx++;
@@ -1720,15 +2109,15 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 		}
 		
 		if(in_char){
-			if      (str8_equal_lazy(key, str8_lit("ENCODING"))){
+			if      (str8_equal_lazy(key, STR8("ENCODING"))){
 				encodings[char_idx] = strtol((const char*)line.str, 0, 10);
-			}else if(str8_equal_lazy(key, str8_lit("BITMAP"))){
+			}else if(str8_equal_lazy(key, STR8("BITMAP"))){
 				in_bitmap = true;
-			}else if(str8_equal_lazy(key, str8_lit("SWIDTH"))){
+			}else if(str8_equal_lazy(key, STR8("SWIDTH"))){
 				//unused
-			}else if(str8_equal_lazy(key, str8_lit("DWIDTH"))){
+			}else if(str8_equal_lazy(key, STR8("DWIDTH"))){
 				//unused in monospace fonts
-			}else if(str8_equal_lazy(key, str8_lit("BBX"))){
+			}else if(str8_equal_lazy(key, STR8("BBX"))){
 				char* cursor = (char*)line.str;
 				current_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
 				current_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
@@ -1748,19 +2137,19 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 			continue;
 		}
 		
-		if      (str8_equal_lazy(key, str8_lit("STARTCHAR"))){
+		if      (str8_equal_lazy(key, STR8("STARTCHAR"))){
 			in_char = true;
-		}else if(str8_equal_lazy(key, str8_lit("SIZE"))){
+		}else if(str8_equal_lazy(key, STR8("SIZE"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			char* cursor = (char*)line.str;
 			font_dpi.x = (f32)strtol(cursor+1, &cursor, 10);
 			font_dpi.y = (f32)strtol(cursor+1, &cursor, 10);
-		}else if(str8_equal_lazy(key, str8_lit("FONTBOUNDINGBOX"))){
+		}else if(str8_equal_lazy(key, STR8("FONTBOUNDINGBOX"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			char* cursor = (char*)line.str;
@@ -1770,29 +2159,29 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 			font_bbx.w = (f32)strtol(cursor+1, &cursor, 10); //lower-left y
 			font->max_width  = (u32)font_bbx.x;
 			font->max_height = (u32)font_bbx.y;
-		}else if(str8_equal_lazy(key, str8_lit("FONT_NAME"))){
+		}else if(str8_equal_lazy(key, STR8("FONT_NAME"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
-				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". FONT_NAME must be wrapped in double quotes.");
+				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". FONT_NAME must be wrapped in double quotes.");
 				continue;
 			}
 			str8 font_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
 			//TODO(sushi) replace name on Font with filename and add a name for this guy right here!
-		}else if(str8_equal_lazy(key, str8_lit("WEIGHT_NAME"))){
+		}else if(str8_equal_lazy(key, STR8("WEIGHT_NAME"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
-				LogE("storage","Error parsing BDF '",filename,"' on line ",line_number,". WEIGHT_NAME must be wrapped in double quotes.");
+				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". WEIGHT_NAME must be wrapped in double quotes.");
 				continue;
 			}
 			str8 font_weight = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
 			cpystr(font->weight, (const char*)font_weight.str, 64);
-		}else if(str8_equal_lazy(key, str8_lit("CHARS"))){
+		}else if(str8_equal_lazy(key, STR8("CHARS"))){
 			font->count = strtol((const char*)line.str, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
 			encodings = (u16*)memory_talloc(font->count*sizeof(u16));
@@ -1807,35 +2196,40 @@ CreateFontFromFileBDF(str8 filename){DPZoneScoped;
 		}
 	}
 	
-	Texture* texture = CreateTextureFromMemory(pixels, filename, font->max_width, font->max_height*font->count,
-											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false).second;
-	//DeleteTexture(texture);
+	Texture* texture = storage_texture_create_from_memory(pixels, filename, font->max_width, font->max_height*font->count,
+														  ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+														  TextureAddressMode_ClampToWhite, false);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
 	font->tex = texture;
 	
-	fonts.add(font);
-	result.first  = font->idx;
-	result.second = font;
-	return result;
+	arrput(DeshStorage->font_array, font);
+	return font;
 }
 
-//TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
-pair<u32,Font*> Storage::
-CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
-	pair<u32,Font*> result(0,NullFont());
+
+Font*
+storage_font_create_from_file_ttf(str8 name, u32 height){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return storage_font_null();
+	return storage_font_create_from_path_ttf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
+}
+
+
+Font*
+storage_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
+	//TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
 	
-	//check if created already
+	//check if font was loaded already
 	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
-	forI(fonts.count){
-		if(!str8_compare(fonts[i]->name, filename)){
-			return pair<u32,Font*>(i,fonts[i]);
+	str8 filename = str8_skip_until_last(path, '/');
+	for_array(DeshStorage->font_array){
+		if(str8_equal_lazy((*it)->name, filename)){
+			return *it;
 		}
 	}
 	
-	str8 path = str8_concat(str8_lit("data/fonts/"),filename, deshi_temp_allocator);
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) return result;
+	if(!contents) return storage_font_null();
 	
 	//Codepoint Ranges to Load:
 	// ASCII              32 - 126  ~  94 chars
@@ -1924,7 +2318,7 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	pixels[0] = 255; pixels[1] = 255; pixels[texture_size_x] = 255; pixels[texture_size_x+1] = 255;
 	
 	//perform the font packing
-	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(stbtt_pack_context));
+	stbtt_pack_context* pc = (stbtt_pack_context*)memory_talloc(1*sizeof(stbtt_pack_context));
 	success = stbtt_PackBegin(pc, pixels + 2*texture_size_x, texture_size_x, texture_size_y-2, 0, glyph_padding, 0); Assert(success);
 	stbtt_PackSetSkipMissingCodepoints(pc, true);
 	success = stbtt_PackFontRanges(pc, contents.str, 0, ranges, num_ranges); //NOTE(delle) this will return 0 if there are any missing codepoints
@@ -1950,11 +2344,12 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	int max_width = x1 - x0, max_height = y1 - y0;
 	f32 aspect_ratio = (f32)max_height / (f32)max_width;
 	
-	Texture* texture = CreateTextureFromMemory(pixels, filename, texture_size_x, texture_size_y,
+	Texture* texture = storage_texture_create_from_memory(pixels, filename, texture_size_x, texture_size_y,
 											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
-											   TextureAddressMode_ClampToWhite, false).second;
+											   TextureAddressMode_ClampToWhite, false);
 	
-	Font* font = AllocateFont(FontType_TTF);
+	Font* font = (Font*)memory_alloc(sizeof(Font));
+	font->type         = FontType_TTF;
 	font->name         = filename;
 	font->max_width    = (u32)((f32)max_width / (f32)max_height * (f32)size);
 	font->max_height   = size;
@@ -1968,257 +2363,25 @@ CreateFontFromFileTTF(str8 filename, u32 size){DPZoneScoped;
 	font->line_gap     = lineGap;
 	font->aspect_ratio = aspect_ratio;
 	font->tex          = texture;
-	font->ranges       = (pack_range*)ranges;
+	font->ranges       = (FontPackRange*)ranges;
 	
-	fonts.add(font);
-	result.first  = font->idx;
-	result.second = font;
-	return result;
+	arrput(DeshStorage->font_array, font);
+	return font;
 }
 
-pair<u32,Font*> Storage::
-CreateFontFromFile(str8 filename, u32 height){DPZoneScoped;
-	if(str8_ends_with(filename, str8_lit(".bdf"))){
-		return CreateFontFromFileBDF(filename);
-	}
+void
+storage_font_delete(Font* font){DPZoneScoped;
+	if(font == storage_font_null()) return;
 	
-	if(str8_ends_with(filename, str8_lit(".ttf")) || str8_ends_with(filename, str8_lit(".otf"))){
-		return CreateFontFromFileTTF(filename, height);
-	}
-	
-	LogE("storage","Failed to load font '",filename,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
-	return {};
-}
-
-void DrawMeshesWindow() {DPZoneScoped; 
-	using namespace UI;
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
-	TextOld(str8_lit("TODO"));
-	EndChild();
-}
-
-void DrawTexturesWindow() {DPZoneScoped;
-	Storage_* st = DeshStorage;
-	
-	//TODO make all of this stuff get checked only when necessary
-	b32 new_selected = 0;
-	persist Texture* selected = 0;
-	
-	Texture* largest = st->textures[0];
-	Texture* smallest = st->textures[0];
-	
-	//gather size of textures in memory
-	upt texture_bytes = 0;
-	
-	
-	for (Texture* t : st->textures) {
-		texture_bytes += t->width * t->height * u8size;
-		if (t->width * t->height > largest->width * largest->height)   largest = t;
-		if (t->width * t->height < smallest->width * smallest->height) smallest = t;
-	}
-	
-	using namespace UI;
-	
-	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
-	
-	
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
-	
-	BeginRow(str8_lit("StorageBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
-	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-	
-	TextF(str8_lit("Textures Loaded: %d"),       st->textures.count);
-	TextF(str8_lit("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
-	
-	EndRow();
-	
-	if (BeginCombo(str8_lit("StorageBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : str8_lit("select texture")))) {
-		for (Texture* t : st->textures) {
-			if (Selectable(str8_from_cstr(t->name), t == selected)) {
-				selected = t;
-				new_selected = 1;
-			}
+	for_array(DeshStorage->font_array){
+		if(*it == font){
+			arrdelswap(DeshStorage->font_array, it - DeshStorage->font_array);
 		}
-		EndCombo();
 	}
-	
-	Separator(9);
-	
-	if (BeginHeader(str8_lit("Stats"))) {
-		BeginRow(str8_lit("StorageBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
-		
-		TextF(str8_lit("Largest Texture: %s"), largest->name);
-		if (Button(str8_lit("select"))) { selected = largest; new_selected = 1;}
-		
-		TextF(str8_lit("Smallest Texture: %s"), smallest->name);
-		if (Button(str8_lit("select"))) { selected = smallest; new_selected = 1; }
-		
-		EndRow();
-		
-		EndHeader();
+	if(font->type == FontType_TTF){
+	forI(font->num_ranges) memory_zfree(font->ranges[i].chardata_for_range);
+		memory_zfree(font->ranges);
 	}
-	
-	Separator(9);
-	
-	if (selected) {
-		BeginRow(str8_lit("StorageBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
-		
-		u32 texbytes = selected->width * selected->height * u8size;
-		
-		TextF(str8_lit("Name: %s"), selected->name);
-		TextF(str8_lit("Index: %d"), selected->idx);
-		TextF(str8_lit("Width: %d"), selected->width);
-		TextF(str8_lit("Height: %d"), selected->height);
-		TextF(str8_lit("Depth: %d"), selected->depth);
-		TextF(str8_lit("MipMaps: %d"), selected->mipmaps);
-		TextF(str8_lit("Format: %s"), ImageFormatStrings[selected->format - 1].str);
-		TextF(str8_lit("Type: %s"), TextureTypeStrings[selected->type].str);
-		TextF(str8_lit("Filter: %s"), TextureFilterStrings[selected->filter].str);
-		TextF(str8_lit("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
-		TextF(str8_lit("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
-		
-		EndRow();
-		PushColor(UIStyleCol_WindowBg, 0x073030ff);
-		
-		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(str8_lit("StorageBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
-		persist f32  zoom = 300;
-		persist vec2 mpl;
-		persist vec2 imagepos;
-		persist vec2 imageposlatch;
-		persist UIImageFlags flags;
-		
-		vec2 mp = input_mouse_position();
-		
-		if (Button(str8_lit("Flip x"))) 
-			ToggleFlag(flags, UIImageFlags_FlipX);
-		SameLine();
-		if (Button(str8_lit("Flip y"))) 
-			ToggleFlag(flags, UIImageFlags_FlipY);
-		
-		if (new_selected) {
-			zoom = f32(GetWindow()->width) / selected->width ;
-			//imagepos = Vec2(
-			//				(GetWindow()->width - selected->width) / 2,
-			//				(GetWindow()->height - selected->height) / 2
-			//				);
-			imagepos = vec2::ZERO;
-		}
-		
-		string z = toStr(zoom);
-		TextOld(str8{(u8*)z.str, (s64)z.count});
-		
-		if (IsWinHovered()) {
-			SetPreventInputs();
-			
-			if (DeshInput->scrollY) {
-				f32 val = 10 * DeshInput->scrollY;
-				zoom += zoom / val;
-				//TODO make it zoom to the mouse 
-				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
-				//imagepos -= imtomp.normalized() * val * 4;
-			}
-			if (input_lmouse_pressed()) {
-				mpl = mp;
-				imageposlatch = imagepos;
-			}
-			if (input_lmouse_down()) {
-				imagepos = imageposlatch - (mpl - mp);
-			}
-			
-		}
-		else SetAllowInputs();
-		
-		SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
-		Image(selected, imagepos, 1, flags);
-		
-		EndChild();
-		PopColor();
-	}
-	
-	
-	EndChild();
-	ResetItemFlags(UIItemType_Header);
+	storage_texture_delete(font->tex);
+	memory_zfree(font);
 }
-
-void DrawMaterialsWindow(){DPZoneScoped;
-	Storage_* st = DeshStorage;
-	
-	using namespace UI;
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
-	
-	Separator(5);
-	
-	SetNextWindowSize(Vec2(MAX_F32, 200));
-	BeginChild(str8_lit("StorageBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
-		BeginRow(str8_lit("StorageBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-		
-		forI(st->materials.count) {
-			string s = toStr(i, "  ");
-			TextOld(str8{(u8*)s.str, (s64)s.count});
-			TextOld(str8_from_cstr(st->materials[i]->name));
-		}
-		
-		EndRow();
-	}EndChild();
-	
-	Separator(5);
-	
-	
-	EndChild();
-}
-
-void DrawModelsWindow(){DPZoneScoped;
-	using namespace UI;
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
-	TextOld(str8_lit("TODO"));
-	EndChild();
-}
-
-void DrawFontsWindow(){DPZoneScoped;
-	using namespace UI;
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(str8_lit("StorageBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
-	TextOld(str8_lit("TODO"));
-	EndChild();
-}
-
-
-void Storage::
-StorageBrowserUI() {DPZoneScoped;
-	using namespace UI;
-	PushColor(UIStyleCol_Border, Color_Grey);
-	PushColor(UIStyleCol_Separator, Color_Grey);
-	Begin(str8_lit("StorageBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
-	
-	
-	BeginTabBar(str8_lit("StorageBrowserUITabBar"), UITabBarFlags_NoIndent);
-	Separator(9);
-	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
-	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
-	PushColor(UIStyleCol_WindowBg,                Color_VeryDarkGrey);
-	PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
-	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
-	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
-	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
-	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
-	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
-	if(BeginTab(str8_lit("Meshes")))   {DrawMeshesWindow();    EndTab();}
-	if(BeginTab(str8_lit("Textures"))) {DrawTexturesWindow();  EndTab();}
-	if(BeginTab(str8_lit("Materials"))){DrawMaterialsWindow(); EndTab();}
-	if(BeginTab(str8_lit("Models")))   {DrawModelsWindow();    EndTab();}
-	if(BeginTab(str8_lit("Fonts")))    {DrawFontsWindow();     EndTab();}
-	EndTabBar();
-	
-	End();
-	PopColor(11);
-}
-
-#undef ParseError

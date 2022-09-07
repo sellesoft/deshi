@@ -145,7 +145,7 @@ void console_init(){DPZoneScoped;
 	console.state = ConsoleState_Closed;
 	
 	uiStyle base = {0};
-	base.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
+	base.font = storage_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	base.font_height = 11;
 	base.text_color = color(255,255,255);
 	base.overflow = overflow_scroll;

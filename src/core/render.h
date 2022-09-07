@@ -568,7 +568,7 @@ external void render_display_stats();
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef DESHI_IMPLEMENTATION
 #include "config.h"
-#include "model.h"
+#include "storage.h"
 #include "ui.h"
 
 
@@ -664,19 +664,19 @@ render_max_surface_count(){
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
 local RenderTempIndex  renderTempWireframeVertexCount = 0;
 local RenderTempIndex  renderTempWireframeIndexCount  = 0;
-local Mesh::Vertex     renderTempWireframeVertexArray[MAX_TEMP_VERTICES];
+local MeshVertex       renderTempWireframeVertexArray[MAX_TEMP_VERTICES];
 local RenderTempIndex  renderTempWireframeIndexArray[MAX_TEMP_INDICES];
 local RenderTempIndex  renderTempFilledVertexCount    = 0;
 local RenderTempIndex  renderTempFilledIndexCount     = 0;
-local Mesh::Vertex     renderTempFilledVertexArray[MAX_TEMP_VERTICES];
+local MeshVertex       renderTempFilledVertexArray[MAX_TEMP_VERTICES];
 local RenderTempIndex  renderTempFilledIndexArray[MAX_TEMP_INDICES];
 local RenderTempIndex  renderDebugWireframeVertexCount = 0;
 local RenderTempIndex  renderDebugWireframeIndexCount  = 0;
-local Mesh::Vertex     renderDebugWireframeVertexArray[MAX_TEMP_VERTICES];
+local MeshVertex       renderDebugWireframeVertexArray[MAX_TEMP_VERTICES];
 local RenderTempIndex  renderDebugWireframeIndexArray[MAX_TEMP_INDICES];
 local RenderTempIndex  renderDebugFilledVertexCount    = 0;
 local RenderTempIndex  renderDebugFilledIndexCount     = 0;
-local Mesh::Vertex     renderDebugFilledVertexArray[MAX_TEMP_VERTICES];
+local MeshVertex       renderDebugFilledVertexArray[MAX_TEMP_VERTICES];
 local RenderTempIndex  renderDebugFilledIndexArray[MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
@@ -689,7 +689,7 @@ render_line3(vec3 start, vec3 end, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
 	u32 rgba = c.rgba;
-	Mesh::Vertex*    vp = renderTempWireframeVertexArray + renderTempWireframeVertexCount;
+	MeshVertex*    vp = renderTempWireframeVertexArray + renderTempWireframeVertexCount;
 	RenderTempIndex* ip = renderTempWireframeIndexArray  + renderTempWireframeIndexCount;
 	
 	ip[0] = renderTempWireframeVertexCount; 
@@ -707,7 +707,7 @@ render_triangle3(vec3 p0, vec3 p1, vec3 p2, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
 	u32 rgba = c.rgba;
-	Mesh::Vertex*    vp = renderTempWireframeVertexArray + renderTempWireframeVertexCount;
+	MeshVertex*    vp = renderTempWireframeVertexArray + renderTempWireframeVertexCount;
 	RenderTempIndex* ip = renderTempWireframeIndexArray  + renderTempWireframeIndexCount;
 	
 	ip[0] = renderTempWireframeVertexCount; 
@@ -726,7 +726,7 @@ render_triangle_filled3(vec3 p0, vec3 p1, vec3 p2, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
 	u32 rgba = c.rgba;
-	Mesh::Vertex*    vp = renderTempFilledVertexArray + renderTempFilledVertexCount;
+	MeshVertex*    vp = renderTempFilledVertexArray + renderTempFilledVertexCount;
 	RenderTempIndex* ip = renderTempFilledIndexArray  + renderTempFilledIndexCount;
 	
 	ip[0] = renderTempFilledVertexCount; 
@@ -906,7 +906,7 @@ render_debug_line3(vec3 start, vec3 end, color c){DPZoneScoped;
 	if(c.a == 0) return;
 	
 	u32            color = c.rgba;
-	Mesh::Vertex*     vp = renderDebugWireframeVertexArray + renderDebugWireframeVertexCount;
+	MeshVertex*     vp = renderDebugWireframeVertexArray + renderDebugWireframeVertexCount;
 	RenderTempIndex*  ip = renderDebugWireframeIndexArray + renderDebugWireframeIndexCount;
 	
 	ip[0] = renderDebugWireframeVertexCount; 
@@ -1267,7 +1267,7 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				u32           color = c.rgba;
 				Vertex2*         vp = renderTwodVertexArray + renderTwodVertexCount;
 				RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
-				aligned_quad q = font_aligned_quad(font, decoded.codepoint, &pos, scale);
+				 FontAlignedQuad   q = font_aligned_quad(font, decoded.codepoint, &pos, scale);
 				
 				ip[0] = renderTwodVertexCount; ip[1] = renderTwodVertexCount + 1; ip[2] = renderTwodVertexCount + 2;
 				ip[3] = renderTwodVertexCount; ip[4] = renderTwodVertexCount + 2; ip[5] = renderTwodVertexCount + 3;
@@ -1606,7 +1606,7 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 				u32     col = color.rgba;
 				Vertex2* vp = putverts + offsets.vertices + 4 * i;
 				u32*     ip = putindices + offsets.indices + 6 * i;
-				aligned_quad q = font_aligned_quad(font, codepoint, &pos, scale);
+				FontAlignedQuad q = font_aligned_quad(font, codepoint, &pos, scale);
 				
 				ip[0] = offsets.vertices+4*i; ip[1] = offsets.vertices+4*i + 1; ip[2] = offsets.vertices+4*i + 2;
 				ip[3] = offsets.vertices+4*i; ip[4] = offsets.vertices+4*i + 2; ip[5] = offsets.vertices+4*i + 3;

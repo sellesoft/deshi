@@ -1828,13 +1828,13 @@ load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 local VkPipelineShaderStageCreateInfo
 CompileAndLoadShader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	PrintVk(3, "Compiling and loading shader: ",name);
+	
 	str8 dir = STR8("deshi/src/shaders/");
 	str8 path = str8_concat(dir, name, deshi_temp_allocator);
 	if(!file_exists(path)){
 		dir = STR8("data/shaders/");
 		path = str8_concat(dir, name, deshi_temp_allocator);
 	}
-	
 	
 	//load shader source
 	File shader_file = file_info(path);
@@ -2170,13 +2170,13 @@ SetupPipelineCreation(){DPZoneScoped;
 	//vertex input flow control
 	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
 	vertexInputBindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
-		{0, sizeof(Mesh::Vertex), VK_VERTEX_INPUT_RATE_VERTEX},
+		{0, sizeof(MeshVertex), VK_VERTEX_INPUT_RATE_VERTEX},
 	};
 	vertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, pos)},
-		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(Mesh::Vertex, uv)},
-		{2, 0, VK_FORMAT_R8G8B8A8_UNORM,   offsetof(Mesh::Vertex, color)},
-		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, normal)},
+		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MeshVertex, pos)},
+		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(MeshVertex, uv)},
+		{2, 0, VK_FORMAT_R8G8B8A8_UNORM,   offsetof(MeshVertex, color)},
+		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MeshVertex, normal)},
 	};
 	vertexInputState.vertexBindingDescriptionCount   = (u32)vertexInputBindings.count;
 	vertexInputState.pVertexBindingDescriptions      = vertexInputBindings.data;
@@ -2622,13 +2622,13 @@ SetupCommands(){DPZoneScoped;
 	}
 	
 	//create temp mesh vertex and index buffers
-	size_t temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(Mesh::Vertex);
-	size_t temp_fill_vb_size = renderTempFilledVertexCount*sizeof(Mesh::Vertex);
+	size_t temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(MeshVertex);
+	size_t temp_fill_vb_size = renderTempFilledVertexCount*sizeof(MeshVertex);
 	size_t temp_wire_ib_size = renderTempWireframeIndexCount*sizeof(RenderTempIndex);
 	size_t temp_fill_ib_size = renderTempFilledIndexCount*sizeof(RenderTempIndex);
 	size_t temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
 	size_t temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
-	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Mesh::Vertex);
+	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(MeshVertex);
 	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(RenderTempIndex);
 	if(temp_vb_size && temp_ib_size){
 		//create/resize buffers if they are too small
@@ -2669,13 +2669,13 @@ SetupCommands(){DPZoneScoped;
 	}
 	
 	//create debug mesh vertex and index buffers
-	size_t debug_wire_vb_size = renderDebugWireframeVertexCount*sizeof(Mesh::Vertex);
-	size_t debug_fill_vb_size = renderDebugFilledVertexCount*sizeof(Mesh::Vertex);
+	size_t debug_wire_vb_size = renderDebugWireframeVertexCount*sizeof(MeshVertex);
+	size_t debug_fill_vb_size = renderDebugFilledVertexCount*sizeof(MeshVertex);
 	size_t debug_wire_ib_size = renderDebugWireframeIndexCount*sizeof(RenderTempIndex);
 	size_t debug_fill_ib_size = renderDebugFilledIndexCount*sizeof(RenderTempIndex);
 	size_t debug_vb_size = debug_wire_vb_size+debug_fill_vb_size;
 	size_t debug_ib_size = debug_wire_ib_size+debug_fill_ib_size;
-	if(debugVertexBuffer.size == 0) debug_vb_size = 1000*sizeof(Mesh::Vertex);
+	if(debugVertexBuffer.size == 0) debug_vb_size = 1000*sizeof(MeshVertex);
 	if(debugIndexBuffer.size == 0)  debug_ib_size = 3000*sizeof(RenderTempIndex);
 	if(debug_vb_size && debug_ib_size){
 		//create/resize buffers if they are too small
@@ -3444,8 +3444,8 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 		mvk.indexOffset = vkMeshes.last->indexOffset + vkMeshes.last->indexCount;
 	}
 	
-	u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
-	u64 mesh_ib_size   = mesh->indexCount*sizeof(Mesh::Index);
+	u64 mesh_vb_size   = mesh->vertexCount*sizeof(MeshVertex);
+	u64 mesh_ib_size   = mesh->indexCount*sizeof(MeshIndex);
 	u64 mesh_vb_offset = meshVertexBuffer.size;
 	u64 mesh_ib_offset = meshIndexBuffer.size;
 	u64 total_vb_size  = meshVertexBuffer.size + mesh_vb_size;
@@ -3483,6 +3483,7 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	vkUnmapMemory(device, meshVertexBuffer.memory);
 	vkUnmapMemory(device, meshIndexBuffer.memory);
 	
+	mesh->render_idx = vkMeshes.count;
 	vkMeshes.add(mvk);
 }
 
@@ -3495,7 +3496,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	//determine image format
 	VkFormat image_format;
-	switch(texture->format){ //TODO(delle) handle non RGBA formats
+	switch(texture->format){ //TODO(delle) handle non RGBA formats properly
 		case ImageFormat_BW:   image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
 		case ImageFormat_BWA:  image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
 		case ImageFormat_RGB:  image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
@@ -3689,6 +3690,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	vkUpdateDescriptorSets(device, 1, &set, 0, 0);
 	
+	texture->render_idx = textures.count;
 	textures.add(tvk);
 }
 
@@ -3711,20 +3713,22 @@ render_load_material(Material* material){DPZoneScoped;
 	
 	//write descriptor set per texture
 	array<VkWriteDescriptorSet> sets;
-	for(u32 texIdx : material->textures){
+	if(material->textureArray){
+	for_array(material->textureArray){
 		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 		set.dstSet          = mvk.descriptorSet;
 		set.dstArrayElement = 0;
 		set.descriptorCount = 1;
 		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &textures[texIdx].descriptor;
+			set.pImageInfo      = &textures[(*it)->render_idx].descriptor;
 		set.dstBinding      = sets.size();
 		sets.add(set);
 	}
 	vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
+	}
 	
 	//HACK to fix materials with no textures
-	if(material->textures.size() < 4){
+	if(material->textureArray == 0 || arrlenu(material->textureArray) < 4){
 		forI(4 - sets.size()){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk.descriptorSet;
@@ -3738,30 +3742,48 @@ render_load_material(Material* material){DPZoneScoped;
 		vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
 	}
 	
+	material->render_idx = vkMaterials.count;
 	vkMaterials.add(mvk);
 }
 
 void
+render_unload_mesh(Mesh* mesh){
+	//!NotImplemented
+}
+
+void
+render_unload_texture(Texture* texture){
+	//!NotImplemented
+}
+
+void
+render_unload_material(Material* material){
+	//!NotImplemented
+}
+
+void
 render_update_material(Material* material){DPZoneScoped;
-	MaterialVk* mvk = &vkMaterials[material->idx];
+	MaterialVk* mvk = &vkMaterials[material->render_idx];
 	mvk->pipeline = GetPipelineFromShader(material->shader);
 	
 	//update descriptor set per texture
 	array<VkWriteDescriptorSet> sets;
-	for(u32 texIdx : material->textures){
+	if(material->textureArray){
+	for_array(material->textureArray){
 		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 		set.dstSet          = mvk->descriptorSet;
 		set.dstArrayElement = 0;
 		set.descriptorCount = 1;
 		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &textures[texIdx].descriptor;
+		set.pImageInfo      = &textures[(*it)->render_idx].descriptor;
 		set.dstBinding      = sets.size();
 		sets.add(set);
 	}
-	vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
+		vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
+	}
 	
 	//HACK to fix materials with no textures
-	if(material->shader == Shader_PBR && material->textures.size() < 4){
+	if(material->shader == Shader_PBR && (material->textureArray == 0 || arrlenu(material->textureArray) < 4)){
 		forI(4 - sets.size()){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk->descriptorSet;
@@ -3786,15 +3808,15 @@ render_update_material(Material* material){DPZoneScoped;
 //      3. this relies on scene mesh indexes matching renderer mesh indexes
 void
 render_model(Model* model, mat4* matrix){DPZoneScoped;
-	Assert(renderModelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
+	Assert(renderModelCmdCount + arrlenu(model->batchArray) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	RenderModelCmd* cmd = renderModelCmdArray + renderModelCmdCount;
-	forI(model->batches.size()){
-		if(!model->batches[i].indexCount) continue;
-		cmd[i].vertexOffset = vkMeshes[model->mesh->idx].vertexOffset;
-		cmd[i].indexOffset  = vkMeshes[model->mesh->idx].indexOffset + model->batches[i].indexOffset;
-		cmd[i].indexCount   = model->batches[i].indexCount;
-		cmd[i].material     = model->batches[i].material;
-		cmd[i].name         = model->name;
+	forI(arrlenu(model->batchArray)){
+		if(!model->batchArray[i].indexCount) continue;
+		cmd[i].vertexOffset = vkMeshes[model->mesh->render_idx].vertexOffset;
+		cmd[i].indexOffset  = vkMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
+		cmd[i].indexCount   = model->batchArray[i].indexCount;
+		cmd[i].material     = model->batchArray[i].material->render_idx;
+		cmd[i].name         = (char*)model->name;
 		cmd[i].matrix       = *matrix;
 		renderModelCmdCount += 1;
 	}
@@ -3807,10 +3829,10 @@ void
 render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
-	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != textures[(texture) ? texture->render_idx : 1].descriptorSet)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorOffset != scissorOffset)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorExtent != scissorExtent)){
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = textures[(texture) ? texture->render_idx : 1].descriptorSet;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
@@ -3825,12 +3847,12 @@ render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, 
 	if((idx==0)
 	   || (renderExternalCmdArrays[buffer.idx][idx-1].vertexBuffer  != vertbuff)
 	   || (renderExternalCmdArrays[buffer.idx][idx-1].indexBuffer   != indbuff)
-	   || (renderExternalCmdArrays[buffer.idx][idx-1].handle        != textures[(texture) ? texture->idx : 1].descriptorSet)
+	   || (renderExternalCmdArrays[buffer.idx][idx-1].handle        != textures[(texture) ? texture->render_idx : 1].descriptorSet)
 	   || (renderExternalCmdArrays[buffer.idx][idx-1].scissorOffset != scissorOffset)
 	   || (renderExternalCmdArrays[buffer.idx][idx-1].scissorExtent != scissorExtent)){
 		renderExternalCmdArrays[buffer.idx][idx].vertexBuffer  = vertbuff;
 		renderExternalCmdArrays[buffer.idx][idx].indexBuffer   = indbuff;
-		renderExternalCmdArrays[buffer.idx][idx].handle        = textures[(texture) ? texture->idx : 1].descriptorSet;
+		renderExternalCmdArrays[buffer.idx][idx].handle        = textures[(texture) ? texture->render_idx : 1].descriptorSet;
 		renderExternalCmdArrays[buffer.idx][idx].indexOffset   = index_offset;
 		renderExternalCmdArrays[buffer.idx][idx].scissorOffset = scissorOffset;
 		renderExternalCmdArrays[buffer.idx][idx].scissorExtent = scissorExtent;

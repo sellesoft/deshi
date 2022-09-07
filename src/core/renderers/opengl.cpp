@@ -254,6 +254,11 @@ CompileAndLoadShader(str8 filename, ShaderStage stage){
 		}
 	}
 	
+	str8 path = str8_concat(str8_lit("deshi/src/shaders/"), filename, deshi_temp_allocator);
+	if(!file_exists(path)){
+		path = str8_concat(str8_lit("data/shaders/"), filename, deshi_temp_allocator);
+	}
+	
 	ShaderGl sgl{};
 	sgl.filename = str8_copy(filename, deshi_allocator);
 	sgl.stage    = stage;
@@ -268,8 +273,7 @@ CompileAndLoadShader(str8 filename, ShaderStage stage){
 		case ShaderStage_Compute:  Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 	}
 	
-	str8 file_name = str8_concat(str8_lit("data/shaders/"), filename, deshi_temp_allocator);
-	str8 contents = file_read_simple(file_name, deshi_temp_allocator);
+	str8 contents = file_read_simple(path, deshi_temp_allocator);
 	if(!contents) Assert(!"Failed to load shader");
 	const char* str = (const char*)contents.str; int len = (int)contents.count;
 	glShaderSource(sgl.handle, 1, &str, &len);
@@ -737,13 +741,13 @@ render_update(){DPZoneScoped;
 		}
 		
 		//// temp commands ////
-		u64 temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(Mesh::Vertex);
-		u64 temp_fill_vb_size = renderTempFilledVertexCount*sizeof(Mesh::Vertex);
+		u64 temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(MeshVertex);
+		u64 temp_fill_vb_size = renderTempFilledVertexCount*sizeof(MeshVertex);
 		u64 temp_wire_ib_size = renderTempWireframeIndexCount*sizeof(RenderTempIndex);
 		u64 temp_fill_ib_size = renderTempFilledIndexCount*sizeof(RenderTempIndex);
 		u64 temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
 		u64 temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
-		temp_vb_size = Max(1000*sizeof(Mesh::Vertex),   temp_vb_size);
+		temp_vb_size = Max(1000*sizeof(MeshVertex),   temp_vb_size);
 		temp_ib_size = Max(3000*sizeof(RenderTempIndex), temp_ib_size);
 		if(temp_vb_size && temp_ib_size){
 			//create vertex array object and buffers if they dont exist
@@ -759,10 +763,10 @@ render_update(){DPZoneScoped;
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempBuffers.ibo_handle);
 			
 			//specify vertex packing
-			glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,pos));
-			glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
-			glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
-			glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
+			glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+			glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+			glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
+			glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 			
 			//resize buffers if too small and update buffer sizes
@@ -821,7 +825,7 @@ render_update(){DPZoneScoped;
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &renderModelCmdArray[i].matrix);
 		glPolygonMode(GL_FRONT_AND_BACK, (renderSettings.wireframeOnly) ? GL_LINE : GL_FILL);
 		glDrawElementsBaseVertex(GL_TRIANGLES, renderModelCmdArray[i].indexCount, INDEX_TYPE_GL_MESH,
-								 (void*)(renderModelCmdArray[i].indexOffset*sizeof(Mesh::Index)), renderModelCmdArray[i].vertexOffset);
+								 (void*)(renderModelCmdArray[i].indexOffset*sizeof(MeshIndex)), renderModelCmdArray[i].vertexOffset);
 	}
 	
 	//// draw temp ///
@@ -955,12 +959,12 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 		mgl.indexOffset  = glMeshes.last->indexOffset  + glMeshes.last->indexCount;
 	}
 	
-	u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
-	u64 mesh_ib_size   = mesh->indexCount*sizeof(Mesh::Index);
+	u64 mesh_vb_size   = mesh->vertexCount*sizeof(MeshVertex);
+	u64 mesh_ib_size   = mesh->indexCount*sizeof(MeshIndex);
 	u64 total_vb_size  = meshBuffers.vbo_size + mesh_vb_size;
 	u64 total_ib_size  = meshBuffers.ibo_size + mesh_ib_size;
-	total_vb_size = Max(1024*sizeof(Mesh::Vertex), total_vb_size); //minimum of 1024 vertexes to avoid early growths
-	total_ib_size = Max(4096*sizeof(Mesh::Index),  total_ib_size); //minimum of 4096 indexes to avoid early growths
+	total_vb_size = Max(1024*sizeof(MeshVertex), total_vb_size); //minimum of 1024 vertexes to avoid early growths
+	total_ib_size = Max(4096*sizeof(MeshIndex),  total_ib_size); //minimum of 4096 indexes to avoid early growths
 	
 	//create/bind vertex array object
 	if(meshBuffers.vao_handle){
@@ -1001,10 +1005,10 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->indexArray);
 	
 	//specify vertex packing
-	glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,pos));
-	glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
-	glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
-	glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
+	glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+	glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+	glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
+	glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 	
 	//update buffer sizes
@@ -1013,6 +1017,7 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	meshBuffers.vbo_size = meshBuffers.vbo_size + mesh_vb_size;
 	meshBuffers.ibo_size = meshBuffers.ibo_size + mesh_ib_size;
 	
+	mesh->render_idx = glMeshes.count;
 	glMeshes.add(mgl);
 }
 
@@ -1124,12 +1129,28 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	//TODO(delle) EXT_texture_filter_anisotropic
 	
+	texture->render_idx = glTextures.count;
 	glTextures.add(tgl);
 }
 
 void
 render_load_material(Material* material){DPZoneScoped;
 	//!Incomplete
+}
+
+void
+render_unload_mesh(Mesh* mesh){
+	//!NotImplemented
+}
+
+void
+render_unload_texture(Texture* texture){
+	//!NotImplemented
+}
+
+void
+render_unload_material(Material* material){
+	//!NotImplemented
 }
 
 void
@@ -1142,16 +1163,16 @@ render_update_material(Material* material){DPZoneScoped;
 //// @render_draw_3d
 void
 render_model(Model* model, mat4* matrix){DPZoneScoped;
-	Assert(renderModelCmdCount + model->batches.count < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
+	Assert(renderModelCmdCount + arrlenu(model->batchArray) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	RenderModelCmd* cmd = renderModelCmdArray + renderModelCmdCount;
-	forI(model->batches.count){
-		if(!model->batches[i].indexCount) continue;
-		cmd[i].vertexOffset = glMeshes[model->mesh->idx].vertexOffset;
-		cmd[i].indexOffset = glMeshes[model->mesh->idx].indexOffset + model->batches[i].indexOffset;
-		cmd[i].indexCount  = model->batches[i].indexCount;
-		cmd[i].material  = model->batches[i].material;
-		cmd[i].name      = model->name;
-		cmd[i].matrix    = *matrix;
+	forI(arrlenu(model->batchArray)){
+		if(!model->batchArray[i].indexCount) continue;
+		cmd[i].vertexOffset = glMeshes[model->mesh->render_idx].vertexOffset;
+		cmd[i].indexOffset  = glMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
+		cmd[i].indexCount   = model->batchArray[i].indexCount;
+		cmd[i].material     = model->batchArray[i].material->render_idx;
+		cmd[i].name         = model->name;
+		cmd[i].matrix       = *matrix;
 		renderModelCmdCount += 1;
 	}
 }
@@ -1168,10 +1189,10 @@ void
 render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
-	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != (void*)((texture) ? (u64)texture->idx : 1))
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != (void*)((texture) ? (u64)texture->render_idx : 1))
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorOffset != scissorOffset)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorExtent != scissorExtent)){
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = (void*)((texture) ? (u64)texture->idx : 1);
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = (void*)((texture) ? (u64)texture->render_idx : 1);
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;

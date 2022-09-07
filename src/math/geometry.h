@@ -1,9 +1,8 @@
 #pragma once
 #ifndef DESHI_GEOMETRY_H
 #define DESHI_GEOMETRY_H
-
+#include "../core/storage.h"
 #include "../math/math.h"
-#include "../core/model.h"
 
 //NOTE all targets are expected to be in the space of the reference object
 
@@ -43,11 +42,11 @@ inline global vec3 MeshTriangleMidpoint(MeshTriangle* tri){
 global MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshFace* closest_face = 0;
 	f32 max_projection = -INFINITY;
-	forE(mesh->faces){
-		f32 local_dot = target_normal.dot(it->normal);
+	forI(mesh->faceCount){
+		f32 local_dot = target_normal.dot(mesh->faceArray[i].normal);
 		if(local_dot > max_projection){
 			max_projection = local_dot;
-			closest_face = it;
+			closest_face = mesh->faceArray + i;
 		}
 	}
 	return closest_face;
@@ -56,11 +55,11 @@ global MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 global vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshVertex* closest_vertex = 0;
 	f32 max_projection = -INFINITY;
-	forE(mesh->vertexes){
-		f32 local_dot = target_normal.dot(it->pos);
+	forI(mesh->vertexCount){
+		f32 local_dot = target_normal.dot(mesh->vertexArray[i].pos);
 		if(local_dot > max_projection){
 			max_projection = local_dot;
-			closest_vertex = it;
+			closest_vertex = mesh->vertexArray + i;
 		}
 	}
 	return closest_vertex->pos;
@@ -83,13 +82,13 @@ global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	vec3 target_normal = target.normalized();
 	vec3 closest_normal = vec3::ZERO;
 	f32  max_projection = -INFINITY;
-	MeshFace* closest_face = &mesh->faces[0];
-	forE(mesh->faces){
-		vec3 face_normal = it->normal;
+	MeshFace* closest_face = &mesh->faceArray[0];
+	forI(mesh->faceCount){
+		vec3 face_normal = mesh->faceArray[i].normal;
 		f32  local_dot = target_normal.dot(face_normal);
 		if(local_dot > max_projection){
 			max_projection = local_dot;
-			closest_face = it;
+			closest_face = mesh->faceArray + i;
 			closest_normal = face_normal;
 		}
 	}
@@ -97,23 +96,23 @@ global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	//find three closest vertexes to make a triangle from
 	f32 smallest_distance0 = FLT_MAX, smallest_distance1 = FLT_MAX, smallest_distance2 = FLT_MAX;
 	vec3 closest_vert0{}; vec3 closest_vert1{}; vec3 closest_vert2{};
-	for(u32 vert_idx : closest_face->outerVertexes){
-		f32 local_distance = mesh->vertexes[vert_idx].pos.distanceTo(target);
+	forI(closest_face->outerVertexCount){
+		f32 local_distance = mesh->vertexArray[closest_face->outerVertexArray[i]].pos.distanceTo(target);
 		if(local_distance < smallest_distance0){
 			smallest_distance2 = smallest_distance1;
 			smallest_distance1 = smallest_distance0;
 			smallest_distance0 = local_distance;
 			closest_vert2 = closest_vert1;
 			closest_vert1 = closest_vert0;
-			closest_vert0 = mesh->vertexes[vert_idx].pos;
+			closest_vert0 = mesh->vertexArray[closest_face->outerVertexArray[i]].pos;
 		}else if(local_distance < smallest_distance1){
 			smallest_distance2 = smallest_distance1;
 			smallest_distance1 = local_distance;
 			closest_vert2 = closest_vert1;
-			closest_vert1 = mesh->vertexes[vert_idx].pos;
+			closest_vert1 = mesh->vertexArray[closest_face->outerVertexArray[i]].pos;
 		}else if(local_distance < smallest_distance2){
 			smallest_distance2 = local_distance;
-			closest_vert2 = mesh->vertexes[vert_idx].pos;
+			closest_vert2 = mesh->vertexArray[closest_face->outerVertexArray[i]].pos;
 		}
 	}
 	

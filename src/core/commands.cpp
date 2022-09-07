@@ -392,38 +392,90 @@ void cmd_init(){
 	
 	DESHI_CMD_START(mat_list, "Lists the materials and their info"){
 		Log("cmd", "Material List:\nName\tShader\tTextures");
-		forI(Storage::MaterialCount()){
-			Material* mat = Storage::MaterialAt(i);
+		forI(arrlenu(storage_material_array())){
+			Material* mat = storage_material_array()[i];
 			str8_builder builder;
 			str8_builder_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
 			str8_builder_append(&builder, str8_lit("\t"));
 			str8_builder_append(&builder, ShaderStrings[mat->shader]);
 			str8_builder_append(&builder, str8_lit("\t"));
-			forI(mat->textures.count){
+			if(mat->textureArray){
+			for_array(mat->textureArray){
 				str8_builder_append(&builder, str8_lit(" "));
-				str8_builder_append(&builder, Storage::TextureName(mat->textures[i]));
+					str8_builder_append(&builder, str8_from_cstr((*it)->name));
+				}
 			}
 			Log("cmd", (const char*)builder.str);
 		}
 	}DESHI_CMD_END_NO_ARGS(mat_list);
 	
 	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
-		s32 matID   = atoi(temp_str8_cstr(args[0]));
+		Material* mat = 0;
+		const char* mat_name = temp_str8_cstr(args[0]);
+		for_array(storage_material_array()){
+			if(strcmp((*it)->name, mat_name) == 0){
+				mat = *it;
+				break;
+			}
+		}
+		if(mat == 0){
+			LogE("cmd","Failed to update material texture. There is no material named '",args[0],"'.");
+			return;
+		}
+		
 		s32 texSlot = atoi(temp_str8_cstr(args[1]));
-		s32 texID   = atoi(temp_str8_cstr(args[2]));
-		Storage::MaterialAt(matID)->textures[texSlot] = texID;
-		Log("cmd", "Updated material ",Storage::MaterialName(matID),"'s texture",texSlot," to ",Storage::TextureName(texID));
-	}DESHI_CMD_END(mat_texture, CmdArgument_S32, CmdArgument_S32, CmdArgument_S32);
+		if(mat->textureArray == 0){
+			LogE("cmd","Failed to update material texture. The material '",args[0],"' has no textures.");
+			return;
+		}
+		if(texSlot < 0 || texSlot >= arrlen(mat->textureArray)){
+			LogE("cmd","Failed to update material texture. The supplied texture index '",texSlot,"' is outside of bounds '0..",arrlen(mat->textureArray),"'.");
+			return;
+		}
+		
+		Texture* tex = 0;
+		const char* tex_name = temp_str8_cstr(args[2]);
+		for_array(storage_texture_array()){
+			if(strcmp((*it)->name, tex_name) == 0){
+				 tex = *it;
+				break;
+			}
+		}
+		if(tex == 0){
+			LogE("cmd","Failed to update material texture. There is no texture named '",args[2],"'.");
+			return;
+		}
+		
+		mat->textureArray[texSlot] = tex;
+		Log("cmd", "Updated material ",mat->name,"'s texture",texSlot," to ",tex->name);
+	}DESHI_CMD_END(mat_texture, CmdArgument_String, CmdArgument_S32, CmdArgument_String);
 	
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
-		s32 matID  = atoi(temp_str8_cstr(args[0]));
+		Material* mat = 0;
+		const char* mat_name = temp_str8_cstr(args[0]);
+		for_array(storage_material_array()){
+			if(strcmp((*it)->name, mat_name) == 0){
+				mat = *it;
+				break;
+			}
+		}
+		if(mat == 0){
+			LogE("cmd","Failed to update material shader. There is no material named '",args[0],"'.");
+			return;
+		}
+		
 		s32 shader = atoi(temp_str8_cstr(args[1]));
-		Storage::MaterialAt(matID)->shader = (Shader)shader;
-		Log("cmd", "Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]);
+		if(shader < 0 || shader >= Shader_COUNT){
+			LogE("cmd","Failed to update material shader. There is no shader with value '",shader,"'.");
+			return;
+		}
+		
+		mat->shader = (Shader)shader;
+		Log("cmd", "Updated material ",mat->name,"'s shader to ",ShaderStrings[shader]);
 	}DESHI_CMD_END(mat_shader, CmdArgument_S32, CmdArgument_S32);
 	
 	DESHI_CMD_START(shader_reload, "Reloads specified shader"){
-		s32 id = atoi((const char*)args[0].str);
+		s32 id = atoi(temp_str8_cstr(args[0]));
 		if(id == -1){
 			render_reload_all_shaders();
 			console_log("{{t=CMD,c=magen}Reloaded all shaders");
@@ -444,16 +496,14 @@ void cmd_init(){
 	
 	DESHI_CMD_START(texture_load, "Loads a specific texture"){
 		Stopwatch load_stopwatch = start_stopwatch();
-		TextureType type = TextureType_2D;
-		if(arg_count == 2) type = (TextureType)atoi(temp_str8_cstr(args[1]));
-		Storage::CreateTextureFromFile(args[0], ImageFormat_RGBA, type);
+		storage_texture_create_from_file_simple(args[0]);
 		Log("cmd", "Loaded texture '",args[0],"' in ",peek_stopwatch(load_stopwatch),"ms");
-	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_S32|CmdArgument_OPTIONAL);
+	}DESHI_CMD_END(texture_load, CmdArgument_String);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("cmd", "Texture List:\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
-		forI(Storage::TextureCount()){
-			Texture* tex = Storage::TextureAt(i);
+		for_array(storage_texture_array()){
+			Texture* tex = *it;
 			Log("cmd", '\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth, '\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
 		}
 	}DESHI_CMD_END_NO_ARGS(texture_list);

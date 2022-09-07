@@ -132,7 +132,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,21/10/20,Feature] add OBJ MTL parsing
 [!!!,** ,21/12/31,Feature] data streaming to prevent loading freeze
 [!!!,*  ,22/01/12,Feature] make an interface for updating textures that have already been created
-[!! ,** ,22/02/26,Feature] replace the arrays with arenas and remove item indexing
+[!  ,*  ,22/09/04,Tweak]   rename to Assets
 
 `Time`
 ------
@@ -155,6 +155,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,** ,22/09/04,Bug]     there seems to be a bug with drawcmd removal when reallocating text drawinfo. 
     it triggers the assert that checks that the drawcmd being removed does not have the same offset as one that is already removed
     this check may just be invalid. this happens when clicking on text sometimes.
+
 
 `Window`
 --------
@@ -208,8 +209,8 @@ local DeshiStage deshiStage = DS_NONE;
 
 //// tracy ////
 #ifdef TRACY_ENABLE
-#include "TracyClient.cpp"
-#include "Tracy.hpp"
+#  include "TracyClient.cpp"
+#  include "Tracy.hpp"
 #endif
 
 //// kigu headers ////"
@@ -235,18 +236,16 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/commands.h"
 #include "core/config.h"
 #ifndef DESHI_DISABLE_CONSOLE
-#include "core/console.h"
+#  include "core/console.h"
 #endif // DESHI_DISABLE_CONSOLE
-#include "core/font.h"
 #ifndef DESHI_DISABLE_IMGUI
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "core/imgui.h"
+#  define IMGUI_DEFINE_MATH_OPERATORS
+#  include "core/imgui.h"
 #endif // DESHI_DISABLE_IMGUI
 #include "core/input.h"
 #include "core/file.h"
 #include "core/logger.h"
 #include "core/memory.h"
-#include "core/model.h"
 #include "core/networking.h"
 #include "core/platform.h"
 #include "core/render.h"
@@ -259,86 +258,86 @@ local DeshiStage deshiStage = DS_NONE;
 
 //// platform ////
 #if DESHI_WINDOWS
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <windowsx.h>
-#include <WinSock2.h>
-#include <ws2tcpip.h>
-#include <tlhelp32.h>
-#include <shellapi.h>
-#include <timeapi.h>
-#include "core/platforms/win32_deshi.cpp"
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#  include <windowsx.h>
+#  include <WinSock2.h>
+#  include <ws2tcpip.h>
+#  include <tlhelp32.h>
+#  include <shellapi.h>
+#  include <timeapi.h>
+#  include "core/platforms/win32_deshi.cpp"
 #elif DESHI_LINUX // DESHI_WINDOWS
-#include <GLFW/glfw3.h>
-#
-#include "core/platforms/linux_deshi.cpp"
+#  include <GLFW/glfw3.h>
+#  include "core/platforms/linux_deshi.cpp"
 #elif DESHI_MAC // DESHI_LINUX
-#include <GLFW/glfw3.h>
-#
-#include "core/platforms/osx_deshi.cpp"
+#  include <GLFW/glfw3.h>
+#  include "core/platforms/osx_deshi.cpp"
 #else // DESHI_MAC
-#error "unknown platform"
+#  error "unknown platform"
 #endif // DESHI_WINDOWS
 
 //// external for core ////
+#define STBDS_REALLOC(ctx,ptr,newsz) memory_realloc(ptr,newsz)
+#define STBDS_FREE(ctx,ptr) memory_zfree(ptr)
+#define STB_DS_IMPLEMENTATION
+#include <stb/stb_ds.h>
 #define STBI_MALLOC(sz) memory_alloc(sz)
-#define STBI_REALLOC(p, newsz) memory_realloc(p, newsz)
-#define STBI_FREE(p) memory_zfree(p)
+#define STBI_REALLOC(ptr, newsz) memory_realloc(ptr, newsz)
+#define STBI_FREE(ptr) memory_zfree(ptr)
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-#ifndef DESHI_DISABLE_IMGUI
-//<stb/stb_truetype.h> included by imgui
-//<stb/stb_sprintf.h> included by imgui
-#define IMGUI_USE_STB_SPRINTF
-#include <imgui/imgui.cpp>
-#include <imgui/imgui_demo.cpp>
-#include <imgui/imgui_draw.cpp>
-#include <imgui/imgui_tables.cpp>
-#include <imgui/imgui_widgets.cpp>
-#if DESHI_WINDOWS
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <imgui/imgui_impl_win32.cpp>
-#else
-#include <imgui/imgui_impl_glfw.cpp>
-#endif
-#else
-#define STB_TRUETYPE_IMPLEMENTATION
-#include <stb/stb_truetype.h>
+#define STB_RECT_PACK_IMPLEMENTATION
+#include <stb/stb_rect_pack.h>
 #define STB_SPRINTF_IMPLEMENTATION
 #include <stb/stb_sprintf.h>
-#define STB_RECT_PACK_IMPLEMENTATION
-#include <imgui/stb_rectpack.h>
+#define STBTT_malloc(sz,ctx) memory_alloc(sz)
+#define STBTT_free(ptr,ctx) memory_zfree(ptr)
+#define STBTT_assert(x) Assert(x)
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb/stb_truetype.h>
+
+#ifndef DESHI_DISABLE_IMGUI
+#  define IMGUI_USE_STB_SPRINTF
+#  include <imgui/imgui.cpp>
+#  include <imgui/imgui_demo.cpp>
+#  include <imgui/imgui_draw.cpp>
+#  include <imgui/imgui_tables.cpp>
+#  include <imgui/imgui_widgets.cpp>
+#  if DESHI_WINDOWS
+#    define VK_USE_PLATFORM_WIN32_KHR
+#    include <imgui/imgui_impl_win32.cpp>
+#  else
+#    include <imgui/imgui_impl_glfw.cpp>
+#  endif
 #endif
 
 //// renderer cpp (and libs) ////
 #if DESHI_VULKAN
-#include <vulkan/vulkan.h>
-#include <shaderc/shaderc.h>
-#include <imgui/imgui_impl_vulkan.cpp>
-#
-#include "core/renderers/vulkan.cpp"
+#  include <vulkan/vulkan.h>
+#  include <shaderc/shaderc.h>
+#  include <imgui/imgui_impl_vulkan.cpp>
+#  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
-#define GLAD_WGL_IMPLEMENTATION
-#include <glad/wgl.h>
-#define GLAD_GL_IMPLEMENTATION
-#include <glad/gl.h>
-#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#include <imgui/imgui_impl_opengl3.cpp>
-#
-#include "core/renderers/opengl.cpp"
+#  define GLAD_WGL_IMPLEMENTATION
+#  include <glad/wgl.h>
+#  define GLAD_GL_IMPLEMENTATION
+#  include <glad/gl.h>
+#  define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#  include <imgui/imgui_impl_opengl3.cpp>
+#  include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12
-#include "d3dx12/d3dx12.h"
-#include <d3d12.h>
-#include <wrl/client.h> //ComPtr
-#include <dxgi1_6.h>
+#  include "d3dx12/d3dx12.h"
+#  include <d3d12.h>
+#  include <wrl/client.h> //ComPtr
+#  include <dxgi1_6.h>
 //#  include <d3dcompiler.h> this is for compiling HLSL shaders at runtime, which ideally we wont do, but ill keep it just incase
 // if we do, dont forget to link against d3dcompiler.lib and copy D3dcompiler_47.dll to the same file as our exe
-#include <DirectXMath.h>
-#
-#include "core/renderers/directx.cpp"
+#  include <DirectXMath.h>
+#  include "core/renderers/directx.cpp"
 #else
-#error "no renderer selected"
+#  error "no renderer selected"
 #endif
 
 //// core cpp ////
@@ -354,8 +353,8 @@ local Time deshi_time;
 Time *g_time = &deshi_time;
 local Input deshi_input;
 Input *g_input = &deshi_input;
-local Storage_ deshi_storage;
-Storage_ *g_storage = &deshi_storage;
+local Storage deshi_storage;
+Storage *g_storage = &deshi_storage;
 local ThreadManager deshi_thread_manager;
 ThreadManager *g_tmanager = &deshi_thread_manager;
 local uiContext deshi_ui{};
