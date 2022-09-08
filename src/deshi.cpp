@@ -181,19 +181,20 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 typedef Flags DeshiStage;
 enum
 {
-    DS_NONE = 0,
-    DS_MEMORY = 1 << 0,
+    DS_NONE     = 0,
+    DS_MEMORY   = 1 << 0,
     DS_PLATFORM = 1 << 1,
-    DS_LOGGER = 1 << 2,
-    DS_NETWORK = 1 << 3,
-    DS_THREAD = 1 << 4,
-    DS_WINDOW = 1 << 5,
-    DS_CONSOLE = 1 << 6,
-    DS_RENDER = 1 << 7,
-    DS_IMGUI = 1 << 8,
-    DS_STORAGE = 1 << 9,
-    DS_UI = 1 << 10,
-    DS_CMD = 1 << 11,
+    DS_LOGGER   = 1 << 2,
+    DS_NETWORK  = 1 << 3,
+    DS_THREAD   = 1 << 4,
+    DS_WINDOW   = 1 << 5,
+    DS_RENDER   = 1 << 6,
+    DS_IMGUI    = 1 << 7,
+    DS_STORAGE  = 1 << 8,
+    DS_UI       = 1 << 9,
+    DS_UI2      = 1 << 10,
+    DS_CONSOLE  = 1 << 11,
+    DS_CMD      = 1 << 12,
 };
 local DeshiStage deshiStage = DS_NONE;
 

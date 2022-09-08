@@ -131,7 +131,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
 void console_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_CONSOLE, DS_LOGGER, "Attempted to initialize Console module before initializing the Logger module");
+	DeshiStageInitStart(DS_CONSOLE, DS_UI2|DS_STORAGE, "Attempted to initialize Console module before initializing the UI2 or Storage modules");
 	Assert(window_windows.count > 0, "Attempted to initialize Console module before a window was created");
 	
 	console.logger = logger_expose();
