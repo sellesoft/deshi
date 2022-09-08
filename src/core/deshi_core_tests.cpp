@@ -6,11 +6,6 @@
 #define DESHI_TEST_CORE_TODO(name) wprintf(L"[DESHI-TEST] TODO:   core/"name"\n")
 #define DESHI_TEST_CORE_PASSED(name) wprintf(L"[DESHI-TEST] PASSED: core/"name"\n")
 
-#include "armature.h"
-local void TEST_deshi_core_armature(){
-	DESHI_TEST_CORE_TODO("armature");
-}
-
 #include "camera.h"
 local void TEST_deshi_core_camera(){
 	DESHI_TEST_CORE_TODO("camera");
@@ -24,11 +19,6 @@ local void TEST_deshi_core_commands(){
 #include "console.h"
 local void TEST_deshi_core_console(){
 	DESHI_TEST_CORE_TODO("console");
-}
-
-#include "font.h"
-local void TEST_deshi_core_font(){
-	DESHI_TEST_CORE_TODO("font");
 }
 
 #include "input.h"
@@ -214,90 +204,90 @@ local void TEST_deshi_core_memory(){
 		}
 		
 		//default names
-		AssertAlways(equals(cstr_lit("Arena Heap"),   deshi__memory_allocinfo_get(arena_heap).name));
-		AssertAlways(equals(cstr_lit("Generic Heap"), deshi__memory_allocinfo_get(generic_heap).name));
-		AssertAlways(equals(cstr_lit("Temp Arena"),   deshi__memory_allocinfo_get(temp_arena).name));
+		AssertAlways(str8_equal_lazy(STR8("Arena Heap"),   deshi__memory_allocinfo_get(arena_heap).name));
+		AssertAlways(str8_equal_lazy(STR8("Generic Heap"), deshi__memory_allocinfo_get(generic_heap).name));
+		AssertAlways(str8_equal_lazy(STR8("Temp Arena"),   deshi__memory_allocinfo_get(temp_arena).name));
 		
 		//check arena heap defaults
 		AllocInfo info = deshi__memory_allocinfo_get(arena_heap);
 		AssertAlways(info.address == arena_heap);
 		AssertAlways(info.creation_frame == 0);
 		AssertAlways(info.deletion_frame == -1);
-		AssertAlways(equals(info.name, cstr_lit("Arena Heap")));
+		AssertAlways(str8_equal_lazy(info.name, STR8("Arena Heap")));
 		AssertAlways(info.type == Type_Heap);
 		
 		//changing name and type
-		deshi__memory_allocinfo_set(arena_heap, cstr_lit("blah"), Type_Arena);
+		deshi__memory_allocinfo_set(arena_heap, STR8("blah"), Type_Arena);
 		info = deshi__memory_allocinfo_get(arena_heap);
 		AssertAlways(info.address == arena_heap);
 		AssertAlways(info.creation_frame == 0);
 		AssertAlways(info.deletion_frame == -1);
-		AssertAlways(equals(info.name, cstr_lit("blah")));
+		AssertAlways(str8_equal_lazy(info.name, STR8("blah")));
 		AssertAlways(info.type == Type_Arena);
 		
 		//reset to default
-		deshi__memory_allocinfo_set(arena_heap, cstr_lit("Arena Heap"), Type_Heap);
-		AssertAlways(equals(cstr_lit("Arena Heap"), deshi__memory_allocinfo_get(arena_heap).name));
+		deshi__memory_allocinfo_set(arena_heap, STR8("Arena Heap"), Type_Heap);
+		AssertAlways(str8_equal_lazy(STR8("Arena Heap"), deshi__memory_allocinfo_get(arena_heap).name));
 		AssertAlways(Type_Heap == deshi__memory_allocinfo_get(arena_heap).type);
 		
 		//check arena allocation defaults
 		Arena* arena = memory_create_arena(Kilobytes(4));
 		info = deshi__memory_allocinfo_get(arena);
 		AssertAlways(info.address == arena);
-		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.creation_frame == DeshTime->frame);
 		AssertAlways(info.deletion_frame == -1);
-		AssertAlways(equals(info.name, cstr_lit("")));
+		AssertAlways(str8_equal_lazy(info.name, STR8("")));
 		AssertAlways(info.type == 0);
 		
 		//change arena allocation
-		deshi__memory_allocinfo_set(arena, cstr_lit("an arena"), Type_Arena);
+		deshi__memory_allocinfo_set(arena, STR8("an arena"), Type_Arena);
 		info = deshi__memory_allocinfo_get(arena);
 		AssertAlways(info.address == arena);
-		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.creation_frame == DeshTime->frame);
 		AssertAlways(info.deletion_frame == -1);
-		AssertAlways(equals(info.name, cstr_lit("an arena")));
+		AssertAlways(str8_equal_lazy(info.name, STR8("an arena")));
 		AssertAlways(info.type == Type_Arena);
 		
 		//check after arena allocaton is freed
 		memory_delete_arena(arena);
 		info = deshi__memory_allocinfo_get(arena);
 		AssertAlways(info.address == arena);
-		AssertAlways(info.creation_frame == DeshTime->updateCount);
-		AssertAlways(info.deletion_frame == DeshTime->updateCount);
-		AssertAlways(equals(info.name, cstr_lit("an arena")));
+		AssertAlways(info.creation_frame == DeshTime->frame);
+		AssertAlways(info.deletion_frame == DeshTime->frame);
+		AssertAlways(str8_equal_lazy(info.name, STR8("an arena")));
 		AssertAlways(info.type == Type_Arena);
 		
 		//check generic allocation defaults
 		void* alloc = memory_alloc(sizeof(Allocator));
 		info = deshi__memory_allocinfo_get(alloc);
 		AssertAlways(info.address == alloc);
-		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.creation_frame == DeshTime->frame);
 		AssertAlways(info.deletion_frame == -1);
-		AssertAlways(equals(info.name, cstr_lit("")));
+		AssertAlways(str8_equal_lazy(info.name, STR8("")));
 		AssertAlways(info.type == 0);
 		
 		//change generic allocation
-		deshi__memory_allocinfo_set(alloc, cstr_lit("some allocator"), Type_Allocator);
+		deshi__memory_allocinfo_set(alloc, STR8("some allocator"), Type_Allocator);
 		info = deshi__memory_allocinfo_get(alloc);
 		AssertAlways(info.address == alloc);
-		AssertAlways(info.creation_frame == DeshTime->updateCount);
+		AssertAlways(info.creation_frame == DeshTime->frame);
 		AssertAlways(info.deletion_frame == -1);
-		AssertAlways(equals(info.name, cstr_lit("some allocator")));
+		AssertAlways(str8_equal_lazy(info.name, STR8("some allocator")));
 		AssertAlways(info.type == Type_Allocator);
 		
 		//check after generic allocaton is freed
 		memory_zfree(alloc);
 		info = deshi__memory_allocinfo_get(alloc);
 		AssertAlways(info.address == alloc);
-		AssertAlways(info.creation_frame == DeshTime->updateCount);
-		AssertAlways(info.deletion_frame == DeshTime->updateCount);
-		AssertAlways(equals(info.name, cstr_lit("some allocator")));
+		AssertAlways(info.creation_frame == DeshTime->frame);
+		AssertAlways(info.deletion_frame == DeshTime->frame);
+		AssertAlways(str8_equal_lazy(info.name, STR8("some allocator")));
 		AssertAlways(info.type == Type_Allocator);
 #endif //BUILD_INTERNAL
 	}
 	
 	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");
-	Logger::PushIndent();
+	logger_push_indent();
 	{//// default to libc when running out of memory in arena heap ////
 		//use up all but 1KB of arena heap for setup
 		arena1 = memory_create_arena((arena_heap->size - (arena_heap->cursor - arena_heap->start)) - Kilobytes(1));
@@ -395,13 +385,13 @@ local void TEST_deshi_core_memory(){
 		alloc3 = memory_trealloc(alloc2, Kilobytes(4));
 		free((upt*)alloc3 - 1);
 	}
-	Logger::PopIndent();
+	logger_pop_indent();
 	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
 	DESHI_TEST_CORE_TODO("memory");
 }
 
-#include "renderer.h"
+#include "render.h"
 local void TEST_deshi_core_renderer(){
 	DESHI_TEST_CORE_TODO("renderer");
 }
@@ -427,11 +417,9 @@ local void TEST_deshi_core_window(){
 }
 
 local void TEST_deshi_core(){
-	TEST_deshi_core_armature();
 	TEST_deshi_core_camera();
 	TEST_deshi_core_commands();
 	TEST_deshi_core_console();
-	TEST_deshi_core_font();
 	TEST_deshi_core_input();
 	TEST_deshi_core_io();
 	TEST_deshi_core_logging();
