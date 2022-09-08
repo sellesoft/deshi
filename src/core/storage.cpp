@@ -2002,11 +2002,11 @@ storage_font_create_from_file(str8 name, u32 height){DPZoneScoped;
 Font*
 storage_font_create_from_path(str8 path, u32 height){DPZoneScoped;
 	if(str8_ends_with(path, STR8(".bdf"))){
-		return storage_font_create_from_file_bdf(path);
+		return storage_font_create_from_path_bdf(path);
 	}
 	
 	if(str8_ends_with(path, STR8(".ttf")) || str8_ends_with(path, STR8(".otf"))){
-		return storage_font_create_from_file_ttf(path, height);
+		return storage_font_create_from_path_ttf(path, height);
 	}
 	
 	LogE("storage","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
