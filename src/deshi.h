@@ -15,19 +15,20 @@
 #include "core/storage.h"
 #include "core/threading.h"
 #include "core/ui.h"
+#include "core/ui2.h"
 #include "core/window.h"
 #include "kigu/common.h"
-#include "kigu/unicode.h"
 
 #define deshi_init()                           \
-  memory_init(Megabytes(100), Megabytes(924)); \
+  memory_init(Megabytes(100), Megabytes(512)); \
   platform_init();                             \
   logger_init();                               \
-  console_init();                              \
   window_create(str8l("deshi"));               \
   render_init();                               \
   Storage::Init();                             \
+  uiInit(g_memory,0);                          \
   UI::Init();                                  \
+  console_init();                              \
   cmd_init();                                  \
   window_show(DeshWindow);                     \
   render_use_default_camera();                 \
@@ -39,6 +40,7 @@
 #define deshi_loop_end() \
     console_update();    \
     UI::Update();        \
+    uiUpdate();          \
     render_update();     \
     logger_update();     \
     memory_clear_temp(); \
