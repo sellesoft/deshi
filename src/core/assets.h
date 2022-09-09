@@ -24,7 +24,7 @@ StartLinkageC();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage
+//// @assets
 typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is no real need to iterate thru them
 	Mesh**     mesh_array;
 	Texture**  texture_array;

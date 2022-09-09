@@ -1,7 +1,7 @@
 #pragma once
 #ifndef DESHI_GEOMETRY_H
 #define DESHI_GEOMETRY_H
-#include "../core/storage.h"
+#include "../core/assets.h"
 #include "../math/math.h"
 
 //NOTE all targets are expected to be in the space of the reference object
