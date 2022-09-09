@@ -411,7 +411,7 @@ struct UIDrawCmd {
 	//because of how much drawCmds move around, we have to store these things on the heap
 	Vertex2* vertices = 0;
 	u32*     indices = 0;
-	RenderDrawCounts counts{}; 
+	vec2i    counts{}; //x = vertices, y = indices
 	
 	Texture* tex = 0;
 	
@@ -443,10 +443,10 @@ template<>
 struct hash<UIDrawCmd> {
 	inline u32 operator()(const UIDrawCmd& s) {
 		u32 seed = 2166134;
-		forI(s.counts.vertices){
+		forI(s.counts.x){
 			seed ^= u32(s.vertices[i].pos.x) << u32(s.vertices[i].pos.y); 
 		}
-		seed ^= (u32)s.counts.vertices | (u32)s.counts.indices << (u32)(u64)s.tex | (u32)s.useWindowScissor | (u32)(u64)s.parent
+		seed ^= (u32)s.counts.x | (u32)s.counts.y << (u32)(u64)s.tex | (u32)s.useWindowScissor | (u32)(u64)s.parent
 			<<u32(s.scissorOffset.x)|u32(s.scissorExtent.x) << u32(s.scissorOffset.y)|u32(s.scissorExtent.y);
 		return seed;
 	}

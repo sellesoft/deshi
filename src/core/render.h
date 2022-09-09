@@ -6,118 +6,16 @@ Notes:
 
 Index:
 @render_types
-  VSyncType
-  RendererStage
-  ShaderStage
-  RenderStats
-  RenderSettings
-  Vertex2
-  RenderModelCmd
-  RenderTwodCmd
-  RenderMesh
-  RenderDrawCounts
 @render_status
-  render_init() -> void
-  render_update() -> void
-  render_reset() -> void
-  render_cleanup() -> void
-  render_load_settings() -> void
-  render_save_settings() -> void
-  render_get_settings() -> RenderSettings*
-  render_get_stats() -> RenderStats*
-  render_get_stage() -> RenderStage*
 @render_surface
-  render_max_surface_count() -> u32
-  render_register_surface(Window* window) -> void
-  render_set_active_surface(Window* window) -> void
-  render_set_active_surface_idx(u32 idx) -> void
 @render_loading
-  render_load_mesh(Mesh* mesh) -> void
-  render_load_texture(Texture* texture) -> void
-  render_load_material(Material* material) -> void
-  render_unload_mesh(Mesh* mesh) -> void
-  render_unload_texture(Texture* texture) -> void
-  render_unload_material(Material* material) -> void
-  render_update_material(Material* material) -> void
 @render_draw_3d
-  render_model(Model* model, mat4* matrix) -> void
-  render_model(Model* model, vec3 position, vec3 rotation, vec3 scale) -> void
-  render_model_wireframe(Model* model, mat4* matrix, color c) -> void
-  render_line3(vec3 start, vec3 end, color c) -> void
-  render_triangle3(vec3 p0, vec3 p1, vec3 p2, color c) -> void
-  render_triangle_filled3(vec3 p0, vec3 p1, vec3 p2, color c) -> void
-  render_quad3(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) -> void
-  render_quad_filled3(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) -> void
-  render_poly3(vec3* points, u64 count, color c) -> void
-  render_poly3(const array<vec3>& points, color c = Color_White) -> void
-  render_poly_filled3(vec3* points, u64 count, color c) -> void
-  render_poly_filled3(const array<vec3>& points, color c = Color_White) -> void
-  render_circle3(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color c) -> void
-  render_box(mat4* transform, color c) -> void
-  render_box(vec3 position, vec3 rotation, vec3 scale, color c = Color_White) -> void
-  render_box_filled(mat4* transform, color c) -> void
-  render_box_filled(vec3 position, vec3 rotation, vec3 scale, color c = Color_White) -> void
-  render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color cx, color cy, color cz) -> void
-  render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White) -> void
-  render_frustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color c) -> void
-  render_clear_debug() -> void
-  render_debug_line3(vec3 p0, vec3 p1,  color c) -> void
 @render_draw_2d
-  render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent) -> void
-  render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) -> void
-  render_line2(vec2 start, vec2 end, color c) -> void
-  render_line_thick2(vec2 start, vec2 end, f32 thickness, color c) -> void
-  render_lines_smooth2(vec2* points, u64 count, f32 thickness, color c) -> void
-  render_lines_smooth2(array<vec2>& points, f32 thickness = 1, color c = Color_White) -> void
-  render_triangle2(vec2 p0, vec2 p1, vec2 p2, color c) -> void
-  render_triangle_filled2(vec2 p0, vec2 p1, vec2 p2, color c) -> void
-  render_quad2(vec2 p0, vec2 p1, vec2 p2, vec2 p3, color c) -> void
-  render_quad_filled2(vec2 p0, vec2 p1, vec2 p2, vec2 p3, color c) -> void
-  render_poly2(vec2* points, u64 count, color c) -> void
-  render_poly2(const array<vec2>& points, color c = Color_White) -> void
-  render_poly_filled2(vec2* points, u64 count, color c) -> void
-  render_poly_filled2(const array<vec2>& points, color c = Color_White) -> void
-  render_circle2(vec2 position, vec2 rotation, f32 radius, u32 subdivisions, color c) -> void
-  render_circle_filled2(vec2 position, vec2 rotation, f32 radius, u32 subdivisions, color c) -> void
-  render_text2(str8 text, vec2 position, vec2 scale, color c) -> void
-  render_texture2(Texture* texture, vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, f32 transparency) -> void
-  render_texture_flat2(Texture* texture, vec2 position, vec2 dimensions, f32 transparency) -> void
-  render_texture_rotated2(Texture* texture, vec2 position, vec2 dimensions, f32 rotation, f32 transparency) -> void
-  render_top_layer_index() -> u32
-  render_decoration_layer_index() -> u32
 @render_light
-  render_update_light(u32 idx, vec3 position, f32 brightness) -> void
 @render_camera
-  render_update_camera_position(vec3 position) -> void
-  render_update_camera_view(mat4& view_matrix) -> void
-  render_update_camera_projection(mat4& projection_matrix) -> void
-  render_use_default_camera() -> void
 @render_shaders
-  render_reload_shader(u32 shader_type) -> void
-  render_reload_all_shaders() -> void
 @render_make_2d
-  render_make_line_counts() -> RenderDrawCounts
-  render_make_filledtriangle_counts() -> RenderDrawCounts
-  render_make_triangle_counts() -> RenderDrawCounts
-  render_make_filledrect_counts() -> RenderDrawCounts
-  render_make_rect_counts() -> RenderDrawCounts
-  render_make_circle_counts(u32 subdiv) -> RenderDrawCounts
-  render_make_filledcircle_counts(u32 subdiv) -> RenderDrawCounts
-  render_make_text_counts(u32 charcount) -> RenderDrawCounts
-  render_make_texture_counts() -> RenderDrawCounts
-  render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 start, vec2 end, f32 thickness, color color) -> RenderDrawCounts
-  render_make_filledtriangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p1, vec2 p2, vec2 p3, color color) -> RenderDrawCounts
-  render_make_triangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color) -> RenderDrawCounts
-  render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, color color) -> RenderDrawCounts
-  render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, f32 thickness, color color) -> RenderDrawCounts
-  render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color) -> RenderDrawCounts
-  render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color) -> RenderDrawCounts
-  render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale) -> RenderDrawCounts
-  render_make_texture(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy) -> RenderDrawCounts
 @render_other
-  render_remake_offscreen() -> void
-  render_display_stats() -> void
-  render_create_external_buffer -> RenderBuffer
 @render_shared_status
 @render_shared_surface
 @render_shared_draw_3d
@@ -125,22 +23,20 @@ Index:
 @render_shared_make_2d
 @render_shared_other
 */
-
-#pragma once
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifndef DESHI_RENDER_H
 #define DESHI_RENDER_H
-
 #include "kigu/array.h"
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "math/math.h"
-
 struct Mesh;
 struct Texture;
 struct Material;
 struct Model;
 struct Font;
 struct Window;
+StartLinkageC();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -183,16 +79,16 @@ typedef Type ShaderStage; enum{
 	ShaderStage_COUNT,
 };
 
-external struct RenderStats{
+typedef struct RenderStats{
 	u32 totalTriangles;
 	u32 totalVertices;
 	u32 totalIndices;
 	u32 drawnTriangles;
 	u32 drawnIndices;
 	f32 renderTimeMS;
-};
+}RenderStats;
 
-external struct RenderSettings{
+typedef struct RenderSettings{
 	//// requires restart ////
 	b32 debugging           = true;
 	b32 printf              = false;
@@ -231,27 +127,27 @@ external struct RenderSettings{
 	bool meshNormals    = false;
 	bool lightFrustrums = false;
 	bool tempMeshOnTop  = false;
-};
+}RenderSettings;
 
-external struct Vertex2{
+typedef struct Vertex2{
 	vec2 pos;
 	vec2 uv;
 	u32  color;
-};
+}Vertex2;
 
 typedef u32 RenderTempIndex;  //NOTE(delle) changing this also requires changing defines in the backend
 typedef u32 RenderModelIndex; //NOTE(delle) changing this also requires changing defines in the backend
-external struct RenderModelCmd{
+typedef struct RenderModelCmd{
 	u32   vertexOffset;
 	u32   indexOffset;
 	u32   indexCount;
 	u32   material;
 	char* name;
 	mat4  matrix;
-};
+}RenderModelCmd;
 
 typedef u32 RenderTwodIndex;  //NOTE(delle) changing this also requires changing defines in the backend
-external struct RenderTwodCmd{
+typedef struct RenderTwodCmd{
 	void*    handle; //NOTE(delle) VkDescriptorSet in vulkan, texture index in OpenGl
 	Vertex2* vertexBuffer;
 	u32*     indexBuffer; // pointer to used index buffer
@@ -259,314 +155,316 @@ external struct RenderTwodCmd{
 	u64      indexCount;
 	vec2     scissorOffset;
 	vec2     scissorExtent;
-};
+}RenderTwodCmd;
 
-external struct RenderMesh{
+typedef struct RenderMesh{
 	Mesh* base;
 	u32   vertexOffset;
 	u32   vertexCount;
 	u32   indexOffset;
 	u32   indexCount;
-};
-
-//NOTE(sushi) simple replacement of vec2i till we make vecs compatible with external
-external struct RenderDrawCounts{
-	u64 vertices, indices;
-	RenderDrawCounts operator* (u64 rhs){return {vertices*rhs,indices*rhs};}
-	RenderDrawCounts operator+ (RenderDrawCounts rhs){return {vertices+rhs.vertices,indices+rhs.indices};}
-	void             operator+=(RenderDrawCounts rhs){vertices+=rhs.vertices;indices+=rhs.indices;}
-};
+}RenderMesh;
 
 //holds handles to vertex and index handles
-external struct RenderTwodBuffer{
+typedef struct RenderTwodBuffer{
 	u32 idx;
 	void* vertex_handle;
 	void* index_handle;
-};
+}RenderTwodBuffer;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_status
 //Initializes the `Render` module
-external void render_init();
+void render_init();
 
 //Updates the `Render` module
-external void render_update();
+void render_update();
 
 //Resets the `Render` module
-external void render_reset();
+void render_reset();
 
 //Cleans up the `Render` module
-external void render_cleanup();
+void render_cleanup();
 
 //Loads render settings from the render config file
-external void render_load_settings();
+void render_load_settings();
 
 //Saves current render settings to the render config file
-external void render_save_settings();
+void render_save_settings();
 
 //Returns the internal `RenderSettings`
-external RenderSettings* render_get_settings();
+RenderSettings* render_get_settings();
 
 //Returns the internal `RenderStats`
-external RenderStats* render_get_stats();
+RenderStats* render_get_stats();
 
 //Returns the internal `RenderStage`
-external RenderStage* render_get_stage();
+RenderStage* render_get_stage();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_surface
 //Returns the maximum number of surfaces the backend supports
-external u32 render_max_surface_count();
+u32 render_max_surface_count();
 
 //Creates a render surface for `window` with `idx`
-external void render_register_surface(Window* window);
+void render_register_surface(Window* window);
 
 //Sets the render surface for `window` to the active one
-external void render_set_active_surface(Window* window);
+void render_set_active_surface(Window* window);
 
 //Sets the render surface for `idx` to the active one
-external void render_set_active_surface_idx(u32 idx);
+void render_set_active_surface_idx(u32 idx);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_loading
 //Loads the `mesh` vertices and indices to the GPU and stores info to the backend for rendering
-external void render_load_mesh(Mesh* mesh);
+void render_load_mesh(Mesh* mesh);
 
 //Loads the `texture` pixels to the GPU and stores info to the backend for rendering
-external void render_load_texture(Texture* texture);
+void render_load_texture(Texture* texture);
 
 //Loads the `material` info to the backend for rendering
-external void render_load_material(Material* material);
+void render_load_material(Material* material);
 
 //Unloads the `mesh` vertices and indices from the GPU and info from the backend
-external void render_unload_mesh(Mesh* mesh);
+void render_unload_mesh(Mesh* mesh);
 
 //Unloads the `texture` pixels from the GPU and info from the backend
-external void render_unload_texture(Texture* texture);
+void render_unload_texture(Texture* texture);
 
 //Unloads the `material` info from the backend
-external void render_unload_material(Material* material);
+void render_unload_material(Material* material);
 
 //Updates the internal material copy of `material` with any new changes
-external void render_update_material(Material* material);
+void render_update_material(Material* material);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_3d
 //Renders the `model` with the transform `matrix`
-external void render_model(Model* model, mat4* matrix);
-FORCE_INLINE void render_model(Model* model, vec3 position, vec3 rotation, vec3 scale){mat4 transform=mat4::TransformationMatrix(position,rotation,scale);render_model(model,&transform);}
+void render_model(Model* model, mat4* matrix);
 
 //Renders the a wireframe of `model` with the transform `matrix`
-external void render_model_wireframe(Model* model, mat4* matrix, color c);
+void render_model_wireframe(Model* model, mat4* matrix, color c);
 
 //Renders a 3D line from `start` to `end`
-external void render_line3(vec3 start, vec3 end, color c);
+void render_line3(vec3 start, vec3 end, color c);
 
 //Renders a wireframe 3D triangle using the specified points
-external void render_triangle3(vec3 p0, vec3 p1, vec3 p2, color c);
+void render_triangle3(vec3 p0, vec3 p1, vec3 p2, color c);
 
 //Renders a filled 3D triangle using the specified points
-external void render_triangle_filled3(vec3 p0, vec3 p1, vec3 p2, color c);
+void render_triangle_filled3(vec3 p0, vec3 p1, vec3 p2, color c);
 
 //Renders a wireframe 3D quad using the specified points
-external void render_quad3(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c);
+void render_quad3(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c);
 
 //Renders a filled 3D quad using the specified points
-external void render_quad_filled3(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c);
+void render_quad_filled3(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c);
 
 //Renders a wireframe 3D polygon using `count` points from `points`
-external void render_poly3(vec3* points, u64 count, color c);
-FORCE_INLINE void render_poly3(const array<vec3>& points, color c = Color_White){ render_poly3(points.data, points.count, c); }
+void render_poly3(vec3* points, u64 count, color c);
 
 //Renders a filled 3D polygon using `count` points from `points`
-external void render_poly_filled3(vec3* points, u64 count, color c);
-FORCE_INLINE void render_poly_filled3(const array<vec3>& points, color c = Color_White){ render_poly_filled3(points.data, points.count, c); }
+void render_poly_filled3(vec3* points, u64 count, color c);
 
 //Renders a wireframe 3D circle centered at `position` with `rotation` and `radius` using `subdivisions` line segments
-external void render_circle3(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color c);
+void render_circle3(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color c);
 
 //Renders a wireframe box with a `transform`
-external void render_box(mat4* transform, color c);
-FORCE_INLINE void render_box(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){mat4 transform=mat4::TransformationMatrix(position, rotation, scale);render_box(&transform,c);}
+void render_box(mat4* transform, color c);
 
 //Renders a filled-face box with a `transform`
-external void render_box_filled(mat4* transform, color c);
-FORCE_INLINE void render_box_filled(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){mat4 transform=mat4::TransformationMatrix(position, rotation, scale);render_box_filled(&transform,c);}
+void render_box_filled(mat4* transform, color c);
 
 //Renders three 3D circles centered at `position` with `rotation` and `radius` using `subdivisions` line segments
-external void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color cx, color cy, color cz);
-FORCE_INLINE void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White){render_sphere(position,rotation,radius,subdivisions,c,c,c);}
+void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color cx, color cy, color cz);
+
+#if COMPILER_FEATURE_CPP
+EndLinkageC();
+FORCE_INLINE void render_model(Model* model, vec3 position, vec3 rotation, vec3 scale){ mat4 transform = mat4::TransformationMatrix(position,rotation,scale); render_model(model,&transform); }
+FORCE_INLINE void render_poly3(const array<vec3>& points, color c = Color_White){ render_poly3(points.data, points.count, c); }
+FORCE_INLINE void render_poly_filled3(const array<vec3>& points, color c = Color_White){ render_poly_filled3(points.data, points.count, c); }
+FORCE_INLINE void render_box(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ mat4 transform = mat4::TransformationMatrix(position, rotation, scale); render_box(&transform,c); }
+FORCE_INLINE void render_box_filled(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ mat4 transform = mat4::TransformationMatrix(position, rotation, scale); render_box_filled(&transform,c); }
+FORCE_INLINE void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White){ render_sphere(position,rotation,radius,subdivisions,c,c,c); }
+StartLinkageC();
+#endif //COMPILER_FEATURE_CPP
 
 //Renders a frustum shape starting at `position` facing towards `target` and with the properties `aspectRatio`, `fovx`, `nearZ`, `farZ`
-external void render_frustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color c);
+void render_frustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color c);
 
 //Clears the collection of debug lines
-external void render_clear_debug();
+void render_clear_debug();
 
 //Creates a debug line (non-immediate drawing) from `p0` to `p1`
-external void render_debug_line3(vec3 p0, vec3 p1,  color c);
+void render_debug_line3(vec3 p0, vec3 p1,  color c);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 //Starts a new `RenderTwodCmd` on `layer` with the specified values
-external void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 
 //Starts a new RenderTwodCmd with the specified calues using externally allocated buffers
 //NOTE: these buffers must have been mapped using render_update_external_2d_buffer()
-external void render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, RenderTwodIndex index_count, Vertex2* vertbuff, RenderTwodIndex* indbuff, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+void render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, RenderTwodIndex index_count, Vertex2* vertbuff, RenderTwodIndex* indbuff, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 
 //TODO(sushi) a full interface for using external buffers
 //eg. render_get_buffer_size, render_close_buffer, etc.
 //creates an external GPU buffer for 2D drawing information
-external RenderTwodBuffer render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize);
-external void render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount);
+RenderTwodBuffer render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize);
+void render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount);
 
 //Adds `vertices` and `indices` to the active `RenderTwodCmd` on `layer`
-//    `indices` values should be local to the addition (start at 0) since they are added to the offset internally
-external void render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
+//  `indices` values should be local to the addition (start at 0) since they are added to the offset internally
+void render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
 
 //Returns the top-most layer for 2D rendering
-external u32  render_top_layer_index();
+u32  render_top_layer_index();
 
 //Returns the window decorations layer for 2D rendering (higher than top-most)
-external u32  render_decoration_layer_index();
+u32  render_decoration_layer_index();
 
 //Returns the active layer in 2D rendering
-external u32  render_active_layer();
+u32  render_active_layer();
 
 //Renders a 2D line to the active `RenderTwodCmd` from `start` to `end` with 1 pixel thickness
-external void render_line2(vec2 start, vec2 end, color c);
+void render_line2(vec2 start, vec2 end, color c);
 
 //Renders a 2D line to the active `RenderTwodCmd` from `start` to `end` with `thickness` (in pixels)
-external void render_line_thick2(vec2 start, vec2 end, f32 thickness, color c);
+void render_line_thick2(vec2 start, vec2 end, f32 thickness, color c);
 
 //Renders a set of 2D lines to the active `RenderTwodCmd` with `thickness` (in pixels)
-external void render_lines2(vec2* points, u64 count, f32 thickness, color c);
-FORCE_INLINE void render_lines2(array<vec2>& points, f32 thickness = 1, color c = Color_White){render_lines2(points.data,points.count,thickness,c);}
+void render_lines2(vec2* points, u64 count, f32 thickness, color c);
 
 //Renders a wireframe 2D triangle to the active `RenderTwodCmd` using the specified points
-external void render_triangle2(vec2 p0, vec2 p1, vec2 p2, color c);
+void render_triangle2(vec2 p0, vec2 p1, vec2 p2, color c);
 
 //Renders a filled 2D triangle to the active `RenderTwodCmd` using the specified points
-external void render_triangle_filled2(vec2 p0, vec2 p1, vec2 p2, color c);
+void render_triangle_filled2(vec2 p0, vec2 p1, vec2 p2, color c);
 
 //Renders a wireframe 2D quad to the active `RenderTwodCmd` using the specified points
-external void render_quad2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, color c);
-FORCE_INLINE void render_quad2(vec2 position, vec2 dimensions, color c = Color_White){render_quad2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c);}
+void render_quad2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, color c);
 
 //Renders a wireframe 2D quad to the active `RenderTwodCmd` using the specified points and line `thickness`
-external void render_quad_thick2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, f32 thickness, color c);
-FORCE_INLINE void render_quad_thick2(vec2 position, vec2 dimensions, f32 thickness = 1, color c = Color_White){render_quad_thick2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,thickness,c);}
+void render_quad_thick2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, f32 thickness, color c);
 
 //Renders a filled 2D quad to the active `RenderTwodCmd` using the specified points
-external void render_quad_filled2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, color c);
-FORCE_INLINE void render_quad_filled2(vec2 position, vec2 dimensions, color c = Color_White){render_quad_filled2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c);}
+void render_quad_filled2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, color c);
 
 //Renders a wireframe 2D polygon to the active `RenderTwodCmd` using `count` points from `points`
-external void render_poly2(vec2* points, u64 count, color c);
-FORCE_INLINE void render_poly2(array<vec2>& points, color c = Color_White){render_poly2(points.data,points.count,c);}
+void render_poly2(vec2* points, u64 count, color c);
 
 //Renders a filled 2D polygon to the active `RenderTwodCmd` using `count` points from `points`
-external void render_poly_filled2(vec2* points, u64 count, color c);
-FORCE_INLINE void render_poly_filled2(array<vec2>& points, color c = Color_White){render_poly_filled2(points.data,points.count,c);}
+void render_poly_filled2(vec2* points, u64 count, color c);
+
+#if COMPILER_FEATURE_CPP
+EndLinkageC();
+FORCE_INLINE void render_lines2(array<vec2>& points, f32 thickness = 1, color c = Color_White){ render_lines2(points.data,points.count,thickness,c); }
+FORCE_INLINE void render_quad2(vec2 position, vec2 dimensions, color c = Color_White){ render_quad2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c); }
+FORCE_INLINE void render_quad_thick2(vec2 position, vec2 dimensions, f32 thickness = 1, color c = Color_White){ render_quad_thick2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,thickness,c); }
+FORCE_INLINE void render_quad_filled2(vec2 position, vec2 dimensions, color c = Color_White){ render_quad_filled2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c); }
+FORCE_INLINE void render_poly2(array<vec2>& points, color c = Color_White){ render_poly2(points.data,points.count,c); }
+FORCE_INLINE void render_poly_filled2(array<vec2>& points, color c = Color_White){render_poly_filled2(points.data,points.count,c); }
+StartLinkageC();
+#endif //COMPILER_FEATURE_CPP
 
 //Renders a wireframe 2D circle to the active `RenderTwodCmd` centered at `position` with `rotation` (degrees) and `radius` using `subdivisions` line segments
 //    `rotation` is in degrees counter-clockwise
-external void render_circle2(vec2 position, f32 rotation, f32 radius, u32 subdivisions, color c);
+void render_circle2(vec2 position, f32 rotation, f32 radius, u32 subdivisions, color c);
 
 //Renders a filled 2D circle to the active `RenderTwodCmd` centered at `position` with `rotation` and `radius` using `subdivisions` line segments
 //    `rotation` is in degrees counter-clockwise
 //    this does a triangle pie-fill algorithm, so it's not optimized for vertex count
-external void render_circle_filled2(vec2 position, f32 rotation, f32 radius, u32 subdivisions, color c);
+void render_circle_filled2(vec2 position, f32 rotation, f32 radius, u32 subdivisions, color c);
 
 //Renders 2D `text` to the active `RenderTwodCmd` at `position` with `font` and `scale`
-external void render_text2(Font* font, str8 text, vec2 position, vec2 scale, color c);
+void render_text2(Font* font, str8 text, vec2 position, vec2 scale, color c);
 
 //Renders a 2D `texture` to the active `RenderTwodCmd` with `transparency` and points `top_left`, `top_right`, `bot_left`, and `bot_right`
-external void render_texture2(Texture* texture, vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, f32 transparency);
+void render_texture2(Texture* texture, vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right, f32 transparency);
 
 //Renders a flat 2D `texture` to the active `RenderTwodCmd` at `position` (top-left) with `dimensions` and `transparency` (0-1)
-external void render_texture_flat2(Texture* texture, vec2 position, vec2 dimensions, f32 transparency);
+void render_texture_flat2(Texture* texture, vec2 position, vec2 dimensions, f32 transparency);
 
 //Renders a 2D `texture` to the active `RenderTwodCmd` rotated by `rotation` at `center` with `dimensions` and `transparency` (0-1)
 //    `rotation` is in degrees counter-clockwise
-external void render_texture_rotated2(Texture* texture, vec2 center, vec2 dimensions, f32 rotation, f32 transparency);
+void render_texture_rotated2(Texture* texture, vec2 center, vec2 dimensions, f32 rotation, f32 transparency);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_light
 //Updates the light at `idx` with `position` and `brightness`
-external void render_update_light(u32 idx, vec3 position, f32 brightness);
+void render_update_light(u32 idx, vec3 position, f32 brightness);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_camera
 //Updates the camera's `position`
 //TODO remove this since it's redundant with view matrix
-external void render_update_camera_position(vec3 position);
+void render_update_camera_position(vec3 position);
 
 //Updates the camera's `view_matrix`
-external void render_update_camera_view(mat4* view_matrix);
+void render_update_camera_view(mat4* view_matrix);
 
 //Updates the camera's `projection_matrix`
-external void render_update_camera_projection(mat4* projection_matrix);
+void render_update_camera_projection(mat4* projection_matrix);
 
 //Updates the camera to the position (0,0) looking at (1,1) with 90 horizontal FOV, 0.1 near plane, and 1000 far plane
-external void render_use_default_camera();
+void render_use_default_camera();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shaders
 //Recompiles and loads the shader with `shader_type`
-external void render_reload_shader(u32 shader_type);
+void render_reload_shader(u32 shader_type);
 
 //Recompiles and loads the all shaders in the shaders folder
 //TODO only reload loaded shaders
-external void render_reload_all_shaders();
+void render_reload_all_shaders();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_make_2d
 // NOTE(sushi): if you change any of the drawing algorithms do not forget to count the verticies and indices and update these functions!!
-FORCE_INLINE RenderDrawCounts render_make_line_counts()                  {return { 4, 6};};
-FORCE_INLINE RenderDrawCounts render_make_filledtriangle_counts()        {return { 3, 3};};
-FORCE_INLINE RenderDrawCounts render_make_triangle_counts()              {return {12,18};};
-FORCE_INLINE RenderDrawCounts render_make_filledrect_counts()            {return { 4, 6};};
-FORCE_INLINE RenderDrawCounts render_make_rect_counts()                  {return {16,24};};
-FORCE_INLINE RenderDrawCounts render_make_circle_counts(u32 subdiv)      {return {2*subdiv,6*subdiv};};
-FORCE_INLINE RenderDrawCounts render_make_filledcircle_counts(u32 subdiv){return {1+subdiv,3*subdiv};};
-FORCE_INLINE RenderDrawCounts render_make_text_counts(u32 charcount)     {return {4*charcount,6*charcount};};
-FORCE_INLINE RenderDrawCounts render_make_texture_counts()               {return { 8,24};};
+FORCE_INLINE vec2i render_make_line_counts()                  {return { 4, 6};};
+FORCE_INLINE vec2i render_make_filledtriangle_counts()        {return { 3, 3};};
+FORCE_INLINE vec2i render_make_triangle_counts()              {return {12,18};};
+FORCE_INLINE vec2i render_make_filledrect_counts()            {return { 4, 6};};
+FORCE_INLINE vec2i render_make_rect_counts()                  {return {16,24};};
+FORCE_INLINE vec2i render_make_circle_counts(u32 subdiv)      {return {2*(s32)subdiv,6*(s32)subdiv};};
+FORCE_INLINE vec2i render_make_filledcircle_counts(u32 subdiv){return {1+(s32)subdiv,3*(s32)subdiv};};
+FORCE_INLINE vec2i render_make_text_counts(u32 charcount)     {return {4*(s32)charcount,6*(s32)charcount};};
+FORCE_INLINE vec2i render_make_texture_counts()               {return { 8,24};};
 
-//TODO(sushi) reformat these to use vec2i for offsets once its compatible with external
-external RenderDrawCounts render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 start, vec2 end, f32 thickness, color color);
-external RenderDrawCounts render_make_filledtriangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p1, vec2 p2, vec2 p3, color color);
-external RenderDrawCounts render_make_triangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color);
-external RenderDrawCounts render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, color color);
-external RenderDrawCounts render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, f32 thickness, color color);
-external RenderDrawCounts render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color);
-external RenderDrawCounts render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
-external RenderDrawCounts render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
-external RenderDrawCounts render_make_texture(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
+vec2i render_make_line(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color);
+vec2i render_make_filledtriangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color);
+vec2i render_make_triangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color);
+vec2i render_make_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, color color);
+vec2i render_make_rect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color);
+vec2i render_make_circle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color);
+vec2i render_make_filledcircle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
+vec2i render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
+vec2i render_make_texture(Vertex2* putverts, u32* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_other
 //NOTE temporary function for vulkan shadow stuff
-external void render_remake_offscreen();
+void render_remake_offscreen();
 
 //displays render stats into a UI Window, this does NOT make it's own window, implemented in core_ui.cpp
-external void render_display_stats();
+void render_display_stats();
 
 
-
+EndLinkageC();
 #endif //DESHI_RENDER_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifdef DESHI_IMPLEMENTATION
+#if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_RENDER_IMPL)
+#define DESHI_RENDER_IMPL
 #include "assets.h"
 #include "config.h"
 #include "ui.h"
@@ -1332,20 +1230,20 @@ render_texture_rotated2(Texture* texture, vec2 center, vec2 dimensions, f32 rota
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_make_2d
 //4 verts, 6 indices
-RenderDrawCounts
-render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
+vec2i
+render_make_line(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
 	vec2 ott = end - start;
 	vec2 norm = Vec2(ott.y, -ott.x).normalized();
 	
-	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
-	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -1360,16 +1258,16 @@ render_make_line(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 }
 
 //3 verts, 3 indices
-RenderDrawCounts 
-render_make_filledtriangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
+vec2i 
+render_make_filledtriangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
-	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -1377,29 +1275,29 @@ render_make_filledtriangle(Vertex2* putverts, u32* putindices, RenderDrawCounts 
 	return render_make_filledtriangle_counts();
 }
 
-RenderDrawCounts
-render_make_triangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color){DPZoneScoped;
+vec2i
+render_make_triangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
-	RenderDrawCounts sum;
-	sum += render_make_line(vp, ip, {           0,          0}, p0, p1, 1, color);
-	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, p1, p2, 1, color);
-	sum += render_make_line(vp, ip, {sum.vertices,sum.indices}, p2, p0, 1, color);
+	vec2i sum;
+	sum += render_make_line(vp, ip, {    0,    0}, p0, p1, 1, color);
+	sum += render_make_line(vp, ip, {sum.x,sum.y}, p1, p2, 1, color);
+	sum += render_make_line(vp, ip, {sum.x,sum.y}, p2, p0, 1, color);
 	
 	return sum;
 	
 	//TODO(sushi) this should be fixed to replace reliance on MakeLine
-	//ip[0]  = offsets.indices + 0; ip[1]  = offsets.indices + 1; ip[2]  = offsets.indices + 3;
-	//ip[3]  = offsets.indices + 0; ip[4]  = offsets.indices + 3; ip[5]  = offsets.indices + 2;
-	//ip[6]  = offsets.indices + 2; ip[7]  = offsets.indices + 3; ip[8]  = offsets.indices + 5;
-	//ip[9]  = offsets.indices + 2; ip[10] = offsets.indices + 5; ip[11] = offsets.indices + 4;
-	//ip[12] = offsets.indices + 4; ip[13] = offsets.indices + 5; ip[14] = offsets.indices + 1;
-	//ip[15] = offsets.indices + 4; ip[16] = offsets.indices + 1; ip[17] = offsets.indices + 0;
+	//ip[0]  = offsets.y + 0; ip[1]  = offsets.y + 1; ip[2]  = offsets.y + 3;
+	//ip[3]  = offsets.y + 0; ip[4]  = offsets.y + 3; ip[5]  = offsets.y + 2;
+	//ip[6]  = offsets.y + 2; ip[7]  = offsets.y + 3; ip[8]  = offsets.y + 5;
+	//ip[9]  = offsets.y + 2; ip[10] = offsets.y + 5; ip[11] = offsets.y + 4;
+	//ip[12] = offsets.y + 4; ip[13] = offsets.y + 5; ip[14] = offsets.y + 1;
+	//ip[15] = offsets.y + 4; ip[16] = offsets.y + 1; ip[17] = offsets.y + 0;
 	//
 	//f32 ang1 = Math::AngBetweenVectors(p1 - p0, p2 - p0)/2;
 	//f32 ang2 = Math::AngBetweenVectors(p0 - p1, p2 - p1)/2;
@@ -1419,22 +1317,22 @@ render_make_triangle(Vertex2* putverts, u32* putindices, RenderDrawCounts offset
 	//return vec3(6, 18);
 }
 
-RenderDrawCounts
-render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, color color){DPZoneScoped;
+vec2i
+render_make_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
 	vec2 tl = pos;
 	vec2 br = pos + size;
 	vec2 bl = pos + Vec2(0, size.y);
 	vec2 tr = pos + Vec2(size.x, 0);
 	
-	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
-	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -1443,21 +1341,21 @@ render_make_filledrect(Vertex2* putverts, u32* putindices, RenderDrawCounts offs
 	return render_make_filledrect_counts();
 }
 
-RenderDrawCounts
-render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
+vec2i
+render_make_rect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
 	// vec2 tl = pos;
 	// vec2 br = pos + size;
 	// vec2 bl = pos + Vec2(0, size.y);
 	// vec2 tr = pos + Vec2(size.x, 0);
 	
-	// RenderDrawCounts sum = {0};
+	// vec2i sum = {0};
 	// sum += render_make_line(vp, ip, sum, tl,tr,thickness,color);
 	// sum += render_make_line(vp, ip, sum, tr,br,thickness,color);
 	// sum += render_make_line(vp, ip, sum, br,bl,thickness,color);
@@ -1468,7 +1366,7 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	vec2 br = pos + size;
 	vec2 bl = vec2{br.x, tl.y};
 	vec2 tr = vec2{tl.x, br.y};
-	f32 t = thickness; u32 v = offsets.vertices;
+	f32 t = thickness; u32 v = offsets.x;
 	ip[ 0] = v+0; ip[ 1] = v+1; ip[ 2] = v+3; 
 	ip[ 3] = v+0; ip[ 4] = v+3; ip[ 5] = v+2; 
 	ip[ 6] = v+2; ip[ 7] = v+3; ip[ 8] = v+5; 
@@ -1489,14 +1387,14 @@ render_make_rect(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, v
 	return render_make_rect_counts();
 }
 
-RenderDrawCounts
-render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color){DPZoneScoped;
+vec2i
+render_make_circle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
 	f32 subdivisions = f32(subdivisions_int);
 	u32 nuindexes = subdivisions * 6;
@@ -1505,8 +1403,8 @@ render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets,
 	vec2 last = pos + Vec2(radius, 0);
 	vp[0].pos = last + Vec2(-thickness / 2, 0); vp[0].uv={0,0}; vp[0].color=col;
 	vp[1].pos = last + Vec2( thickness / 2, 0); vp[1].uv={0,0}; vp[1].color=col;
-	ip[0] = offsets.vertices + 0; ip[1] = offsets.vertices + 1; ip[3] = offsets.vertices + 0;
-	ip[nuindexes - 1] = offsets.vertices + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.vertices + 1;
+	ip[0] = offsets.x + 0; ip[1] = offsets.x + 1; ip[3] = offsets.x + 0;
+	ip[nuindexes - 1] = offsets.x + 0; ip[nuindexes - 2] = ip[nuindexes - 4] = offsets.x + 1;
 	
 	for(s32 i = 1; i < subdivisions_int; i++){
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
@@ -1519,30 +1417,30 @@ render_make_circle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets,
 		
 		u32 ipidx1 = 6 * (i - 1) + 2;
 		u32 ipidx2 = 6 * i - 1;
-		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.vertices + idx + 1;
-		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.vertices + idx;
+		ip[ipidx1] = ip[ipidx1 + 2] = ip[ipidx1 + 5] = offsets.x + idx + 1;
+		ip[ipidx2] = ip[ipidx2 + 1] = ip[ipidx2 + 4] = offsets.x + idx;
 	}
 	
 	return render_make_circle_counts(subdivisions_int);
 }
 
-RenderDrawCounts 
-render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
+vec2i 
+render_make_filledcircle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
 	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = pos + Vec2(radius, 0); vp[1].uv = { 0,0 }; vp[1].color = col;
 	u32 nuindexes = 3 * subdivisions_int;
 	
-	ip[1] = offsets.vertices + 1;
-	for(s32 i = 0; i < nuindexes; i += 3) ip[i] = offsets.vertices;
+	ip[1] = offsets.x + 1;
+	for(s32 i = 0; i < nuindexes; i += 3) ip[i] = offsets.x;
 	
-	ip[nuindexes - 1] = offsets.vertices + 1;
+	ip[nuindexes - 1] = offsets.x + 1;
 	
 	vec2 sum;
 	f32 subdivisions = f32(subdivisions_int);
@@ -1554,18 +1452,18 @@ render_make_filledcircle(Vertex2* putverts, u32* putindices, RenderDrawCounts of
 		vp[i+1].pos = point; vp[i+1].uv = { 0,0 }; vp[i+1].color = col;
 		
 		u32 ipidx = 3 * i - 1;
-		ip[ipidx] = ip[ipidx + 2] = offsets.vertices + i + 1;
+		ip[ipidx] = ip[ipidx + 2] = offsets.x + i + 1;
 	}
 	
 	return render_make_filledcircle_counts(subdivisions_int);
 }
 
-RenderDrawCounts
-render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
+vec2i
+render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
-	RenderDrawCounts sum={0};
+	vec2i sum={0};
 	switch (font->type){
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE:{
@@ -1574,8 +1472,8 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 			u32 i = 0;
 			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
 				u32     col = color.rgba;
-				Vertex2* vp = putverts + offsets.vertices + 4 * i;
-				u32*     ip = putindices + offsets.indices + 6 * i;
+				Vertex2* vp = putverts + offsets.x + 4 * i;
+				u32*     ip = putindices + offsets.y + 6 * i;
 				
 				f32 w = font->max_width * scale.x;
 				f32 h = font->max_height * scale.y;
@@ -1585,8 +1483,8 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 				f32 topoff = (idx * dy) + font->uv_yoffset;
 				f32 botoff = topoff + dy;
 				
-				ip[0] = offsets.vertices+4*i; ip[1] = offsets.vertices+4*i + 1; ip[2] = offsets.vertices+4*i + 2;
-				ip[3] = offsets.vertices+4*i; ip[4] = offsets.vertices+4*i + 2; ip[5] = offsets.vertices+4*i + 3;
+				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
+				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
 				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col; //top left
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col; //top right
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col; //bot right
@@ -1604,12 +1502,12 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 			u32 i = 0;
 			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
 				u32     col = color.rgba;
-				Vertex2* vp = putverts + offsets.vertices + 4 * i;
-				u32*     ip = putindices + offsets.indices + 6 * i;
+				Vertex2* vp = putverts + offsets.x + 4 * i;
+				u32*     ip = putindices + offsets.y + 6 * i;
 				FontAlignedQuad q = font_aligned_quad(font, codepoint, &pos, scale);
 				
-				ip[0] = offsets.vertices+4*i; ip[1] = offsets.vertices+4*i + 1; ip[2] = offsets.vertices+4*i + 2;
-				ip[3] = offsets.vertices+4*i; ip[4] = offsets.vertices+4*i + 2; ip[5] = offsets.vertices+4*i + 3;
+				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
+				ip[3] = offsets.x+4*i; ip[4] = offsets.x+4*i + 2; ip[5] = offsets.x+4*i + 3;
 				vp[0].pos = { q.x0,q.y0 }; vp[0].uv = { q.u0,q.v0 }; vp[0].color = col; //top left
 				vp[1].pos = { q.x1,q.y0 }; vp[1].uv = { q.u1,q.v0 }; vp[1].color = col; //top right
 				vp[2].pos = { q.x1,q.y1 }; vp[2].uv = { q.u1,q.v1 }; vp[2].color = col; //bot right
@@ -1623,17 +1521,17 @@ render_make_text(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, s
 	return sum;
 }
 
-RenderDrawCounts 
-render_make_texture(Vertex2* putverts, u32* putindices, RenderDrawCounts offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
+vec2i 
+render_make_texture(Vertex2* putverts, u32* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(!alpha) return{0,0};
 	
 	u32     col = PackColorU32(255,255,255,255.f * alpha);
-	Vertex2* vp = putverts + offsets.vertices;
-	u32*     ip = putindices + offsets.indices;
+	Vertex2* vp = putverts + offsets.x;
+	u32*     ip = putindices + offsets.y;
 	
-	ip[0] = offsets.vertices; ip[1] = offsets.vertices + 1; ip[2] = offsets.vertices + 2;
-	ip[3] = offsets.vertices; ip[4] = offsets.vertices + 2; ip[5] = offsets.vertices + 3;
+	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
+	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = p0; vp[0].uv = { 0,1 }; vp[0].color = col;
 	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
 	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;

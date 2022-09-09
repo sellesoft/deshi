@@ -695,8 +695,8 @@ inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd){DPZoneScoped;
 	drawCmd.render_surface_target_idx = *drawTargetStack.last;
 	item->drawCmds.add(drawCmd);
 	ui_stats.draw_cmds++;
-	ui_stats.vertices += drawCmd.counts.vertices;
-	ui_stats.indices += drawCmd.counts.indices;
+	ui_stats.vertices += drawCmd.counts.x;
+	ui_stats.indices += drawCmd.counts.y;
 	BreakOnDrawCmdCreation;
 }
 
@@ -3125,7 +3125,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 				TextOld(UIDrawTypeStrs[dc.type], UITextFlags_NoWrap);
 				
 				if(MouseInArea(GetLastItemScreenPos(), GetLastItemSize())){
-					for(u32 tri = 0; tri < dc.counts.indices; tri += 3){
+					for(u32 tri = 0; tri < dc.counts.y; tri += 3){
 						vec2 
 							p0 = ipos + dc.vertices[dc.indices[tri]].pos,
 						p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
@@ -3222,7 +3222,7 @@ inline void MetricsBreaking(){DPZoneScoped;
 					selected = Clamp(selected, 0, item.drawCmds.count);
 					int o = 0;
 					for(UIDrawCmd& dc : item.drawCmds){
-						for(u32 tri = 0; tri < dc.counts.indices; tri += 3){
+						for(u32 tri = 0; tri < dc.counts.y; tri += 3){
 							vec2 
 								p0 = ipos + dc.vertices[dc.indices[tri]].pos,
 							p1 = ipos + dc.vertices[dc.indices[tri+1]].pos,
@@ -3522,7 +3522,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 							for(UIDrawCmd& dc : item.drawCmds){
 								TextOld(UIDrawTypeStrs[dc.type]);
 								if(MouseInArea(GetLastItemScreenPos(), GetLastItemSize())){
-									for(int tri = 0; tri < dc.counts.indices; tri += 3){
+									for(int tri = 0; tri < dc.counts.y; tri += 3){
 										vec2
 											p0 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri]].pos,
 										p1 = item.position * item.style.globalScale + debugee->position + item.style.globalScale * dc.vertices[dc.indices[tri + 1]].pos,
@@ -3668,7 +3668,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 			for(UIItem& item : debugee->preItems){
 				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for(UIDrawCmd& dc : item.drawCmds){
-					for(int i = 0; i < dc.counts.indices; i += 3){
+					for(int i = 0; i < dc.counts.y; i += 3){
 						DebugTriangle(ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
 									  ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
 									  ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale, Color_Green);
@@ -3679,7 +3679,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 				for(UIItem& item : debugee->items[i]){
 					vec2 ipos = debugee->position + item.position * item.style.globalScale;
 					for(UIDrawCmd& dc : item.drawCmds){
-						for(int i = 0; i < dc.counts.indices; i += 3){
+						for(int i = 0; i < dc.counts.y; i += 3){
 							DebugTriangle(ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
 										  ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
 										  ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale);
@@ -3690,7 +3690,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 			for(UIItem& item : debugee->postItems){
 				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for(UIDrawCmd& dc : item.drawCmds){
-					for(int i = 0; i < dc.counts.indices; i += 3){
+					for(int i = 0; i < dc.counts.y; i += 3){
 						DebugTriangle(ipos + dc.vertices[dc.indices[i]].pos * item.style.globalScale,
 									  ipos + dc.vertices[dc.indices[i + 1]].pos * item.style.globalScale,
 									  ipos + dc.vertices[dc.indices[i + 2]].pos * item.style.globalScale, Color_Blue);
@@ -4127,7 +4127,7 @@ inline void DrawItem(UIItem& item, UIWindow* window){DPZoneScoped;
 	for(UIDrawCmd& drawCmd : item.drawCmds){
 		BreakOnDrawCmdDraw;
 		//NOTE this expects vertex positions to be in item space
-		forI(drawCmd.counts.vertices) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale + itempos));
+		forI(drawCmd.counts.x) drawCmd.vertices[i].pos = floor((drawCmd.vertices[i].pos * item.style.globalScale + itempos));
 		
 		vec2 dcse = (drawCmd.useWindowScissor ? winScissorExtent : drawCmd.scissorExtent * item.style.globalScale);
 		vec2 dcso = (drawCmd.useWindowScissor ? winScissorOffset : itempos + drawCmd.scissorOffset);
@@ -4157,7 +4157,7 @@ inline void DrawItem(UIItem& item, UIWindow* window){DPZoneScoped;
 		Assert(!isinf(dcse.x) && !isinf(dcse.y));
 		render_set_active_surface_idx(drawCmd.render_surface_target_idx);
 		render_start_cmd2(window->layer, drawCmd.tex, dcso, dcse);
-		render_add_vertices2(window->layer, drawCmd.vertices, drawCmd.counts.vertices, drawCmd.indices, drawCmd.counts.indices);
+		render_add_vertices2(window->layer, drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 		
 		//if((input_mouse_position() - drawCmd.vertices[0].pos).mag() < 4){
 		//	DebugCircle(drawCmd.vertices[0].pos, 4, Color_Green);
@@ -4343,7 +4343,7 @@ void UI::Update(){DPZoneScoped;
 	//draw all debug commands if there are any
 	for(UIDrawCmd& drawCmd : debugCmds){
 		render_start_cmd2(render_decoration_layer_index(), drawCmd.tex, vec2::ZERO, Vec2(DeshWindow->width, DeshWindow->height));
-		render_add_vertices2(render_decoration_layer_index(), drawCmd.vertices, drawCmd.counts.vertices, drawCmd.indices, drawCmd.counts.indices);
+		render_add_vertices2(render_decoration_layer_index(), drawCmd.vertices, drawCmd.counts.x, drawCmd.indices, drawCmd.counts.y);
 	}
 	debugCmds.clear();
 }

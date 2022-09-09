@@ -17,7 +17,7 @@
 		   pop_item() -> void
 		@uiDrawCmd
 			drawcmd_remove(uiDrawCmd* drawcmd) -> void
-			drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts) -> void
+			drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts) -> void
 		@helpers
 			ui_setup_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
 			calc_text_size(uiItem* item) -> vec2 
@@ -112,24 +112,24 @@ void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 
 		if(mid != g_ui->inactive_drawcmds_vertex_sorted.count-1){
 			uiDrawCmd* right = g_ui->inactive_drawcmds_vertex_sorted[mid+1];
-			if(right->vertex_offset - drawcmd->counts_reserved.vertices == drawcmd->vertex_offset){
+			if(right->vertex_offset - drawcmd->counts_reserved.x == drawcmd->vertex_offset){
 				// in this case we have found a drawcmd on the right side that is aligned with the one we are currently 
 				// deleting, so we can take its vertices and set its count to 0
-				drawcmd->counts_reserved.vertices += right->counts_reserved.vertices;
-				right->counts_reserved.vertices = 0;
+				drawcmd->counts_reserved.x += right->counts_reserved.x;
+				right->counts_reserved.x = 0;
 				g_ui->inactive_drawcmds_vertex_sorted.remove(mid+1);
-				if(!right->counts_reserved.indices){
+				if(!right->counts_reserved.y){
 					drawcmd_delete(right);
 				}
 			}
 		}
 		if(mid){
 			uiDrawCmd* left = g_ui->inactive_drawcmds_vertex_sorted[mid-1];
-			if(left->vertex_offset + left->counts_reserved.vertices == drawcmd->vertex_offset){
+			if(left->vertex_offset + left->counts_reserved.x == drawcmd->vertex_offset){
 				// in this case we have found a drawcmd on the left side that is aligned with the one we are currently 
 				// deleting, so we can give it it's vertices and set them to 0
-				left->counts_reserved.vertices += drawcmd->counts_reserved.vertices;
-				drawcmd->counts_reserved.vertices = 0; 
+				left->counts_reserved.x += drawcmd->counts_reserved.x;
+				drawcmd->counts_reserved.x = 0; 
 				g_ui->inactive_drawcmds_vertex_sorted.remove(mid);
 				//since this is the drawcmd we are currently working with, its index count shouldn't be zero so we dont check that
 			}
@@ -159,26 +159,26 @@ void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 
 		if(mid != g_ui->inactive_drawcmds_index_sorted.count-1){
 			uiDrawCmd* right = g_ui->inactive_drawcmds_index_sorted[mid+1];
-			if(right->index_offset - drawcmd->counts_reserved.indices == drawcmd->index_offset){
+			if(right->index_offset - drawcmd->counts_reserved.y == drawcmd->index_offset){
 				// in this case we have found a drawcmd on the right side that is aligned with the one we are currently 
 				// deleting, so we can take its vertices and set its count to 0
-				drawcmd->counts_reserved.indices += right->counts_reserved.indices;
-				right->counts_reserved.indices = 0;
+				drawcmd->counts_reserved.y += right->counts_reserved.y;
+				right->counts_reserved.y = 0;
 				g_ui->inactive_drawcmds_index_sorted.remove(mid+1);
-				if(!right->counts_reserved.vertices){
+				if(!right->counts_reserved.x){
 					drawcmd_delete(right);
 				}
 			}
 		}
 		if(mid){
 			uiDrawCmd* left = g_ui->inactive_drawcmds_index_sorted[mid-1];
-			if(left->index_offset + left->counts_reserved.indices == drawcmd->index_offset){
+			if(left->index_offset + left->counts_reserved.y == drawcmd->index_offset){
 				// in this case we have found a drawcmd on the left side that is aligned with the one we are currently 
 				// deleting, so we can give it it's vertices and set them to 0
-				left->counts_reserved.indices += drawcmd->counts_reserved.indices;
-				drawcmd->counts_reserved.indices = 0; 
+				left->counts_reserved.y += drawcmd->counts_reserved.y;
+				drawcmd->counts_reserved.y = 0; 
 				g_ui->inactive_drawcmds_index_sorted.remove(mid);
-				if(!drawcmd->counts_reserved.vertices){
+				if(!drawcmd->counts_reserved.x){
 					//this drawcmd has been absorbed by others, so its safe to delete it
 					drawcmd_delete(drawcmd);
 				}
@@ -189,24 +189,24 @@ void drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	}
 }
 
-void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
+void drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 	u32 v_place_next = -1;
 	u32 i_place_next = -1;	
 
 	forI(g_ui->inactive_drawcmds_vertex_sorted.count){
 		uiDrawCmd* dc = g_ui->inactive_drawcmds_vertex_sorted[i];
-		s64 vremain = dc->counts_reserved.vertices - counts.vertices;
+		s64 vremain = dc->counts_reserved.x - counts.x;
 		if(vremain >= 0){
 			v_place_next = dc->vertex_offset;
 			if(!vremain){
 				g_ui->inactive_drawcmds_vertex_sorted.remove(i);
-				dc->counts_reserved.vertices = 0;
-				if(!dc->counts_reserved.indices){
+				dc->counts_reserved.x = 0;
+				if(!dc->counts_reserved.y){
 					drawcmd_delete(dc);
 				}
 			}else{
-				dc->vertex_offset += counts.vertices;
-				dc->counts_reserved.vertices -= counts.vertices;
+				dc->vertex_offset += counts.x;
+				dc->counts_reserved.x -= counts.x;
 			}
 			break;
 		}
@@ -214,18 +214,18 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 
 	forI(g_ui->inactive_drawcmds_index_sorted.count){
 		uiDrawCmd* dc = g_ui->inactive_drawcmds_index_sorted[i];
-		s64 iremain = dc->counts_reserved.indices - counts.indices;
+		s64 iremain = dc->counts_reserved.y - counts.y;
 		if(iremain >= 0){
 			i_place_next = dc->index_offset;
 			if(!iremain){
 				g_ui->inactive_drawcmds_index_sorted.remove(i);
-				dc->counts_reserved.indices = 0;
-				if(!dc->counts_reserved.vertices){
+				dc->counts_reserved.y = 0;
+				if(!dc->counts_reserved.x){
 					drawcmd_delete(dc);
 				}
 			}else{
-				dc->index_offset += counts.indices;
-				dc->counts_reserved.indices -= counts.indices;
+				dc->index_offset += counts.y;
+				dc->counts_reserved.y -= counts.y;
 			}
 			break;
 		}
@@ -233,17 +233,17 @@ void drawcmd_alloc(uiDrawCmd* drawcmd, RenderDrawCounts counts){DPZoneScoped;
 	
 	if(v_place_next == -1){
 		//we couldnt find a drawcmd with space for our new verts so we must allocate at the end 
-		g_ui->stats.vertices_reserved += counts.vertices;
+		g_ui->stats.vertices_reserved += counts.x;
 		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(Vertex2);
-		g_ui->vertex_arena->cursor += counts.vertices * sizeof(Vertex2);
-		g_ui->vertex_arena->used += counts.vertices * sizeof(Vertex2);
+		g_ui->vertex_arena->cursor += counts.x * sizeof(Vertex2);
+		g_ui->vertex_arena->used += counts.x * sizeof(Vertex2);
 	} else drawcmd->vertex_offset = v_place_next;
 	if(i_place_next == -1){
 		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
-		g_ui->stats.indices_reserved += counts.indices;
+		g_ui->stats.indices_reserved += counts.y;
 		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
-		g_ui->index_arena->cursor += counts.indices * sizeof(u32);
-		g_ui->index_arena->used += counts.indices * sizeof(u32);
+		g_ui->index_arena->cursor += counts.y * sizeof(u32);
+		g_ui->index_arena->used += counts.y * sizeof(u32);
 	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts_reserved = counts;
 }
@@ -266,7 +266,7 @@ struct uiItemSetup{
 	void (*evaluate)(uiItem*);
 	u32  (*hash)(uiItem*);
 	
-	RenderDrawCounts* drawinfo_reserve;
+	vec2i* drawinfo_reserve;
 	u32 drawcmd_count;
 };
 
@@ -403,7 +403,7 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 
 //NOTE(sushi) these are abstracted because widgets may use them as well
 inline
-RenderDrawCounts gen_background(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts counts){
+vec2i gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	vec2 bor = (item->style.border_style ? item->style.border_width : 0) * vec2::ONE; 
 	vec2 pos = item->spos + item->style.margintl + bor;
 	vec2 siz = item->size - (item->style.margintl + item->style.marginbr + 2*bor);
@@ -411,7 +411,7 @@ RenderDrawCounts gen_background(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCo
 }
 
 inline
-RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts counts){
+vec2i gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
@@ -420,7 +420,7 @@ RenderDrawCounts gen_border(uiItem* item, Vertex2* vp, u32* ip, RenderDrawCounts
 			vec2 tr = vec2{br.x, tl.y};
 			vec2 bl = vec2{tl.x, br.y}; 
 			f32 t = item->style.border_width;
-			u32 v = counts.vertices; u32 i = counts.indices;
+			u32 v = counts.x; u32 i = counts.y;
 			ip[i+ 0] = v+0; ip[i+ 1] = v+1; ip[i+ 2] = v+3; 
 			ip[i+ 3] = v+0; ip[i+ 4] = v+3; ip[i+ 5] = v+2; 
 			ip[i+ 6] = v+2; ip[i+ 7] = v+3; ip[i+ 8] = v+5; 
@@ -458,7 +458,7 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	RenderDrawCounts counts = {0};
+	vec2i counts = {0};
 	counts+=gen_background(item, vp, ip, counts);
 	counts+=gen_border(item, vp, ip, counts);
 	dc->counts_used = counts;
@@ -473,7 +473,7 @@ uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	setup.line = line;
 	setup.generate = &ui_gen_item;
 	setup.drawcmd_count = 1;
-	RenderDrawCounts counts[1] = {
+	vec2i counts[1] = {
 		render_make_filledrect_counts() + render_make_rect_counts()
 	};
 	setup.drawinfo_reserve = counts;
@@ -1092,15 +1092,15 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		g_ui->stats.items_visible++;
 		forI(item->drawcmd_count){
 			g_ui->stats.drawcmds_visible++;
-			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.vertices;
-			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.indices;
+			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.x;
+			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.y;
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
 			render_add_vertices2(5, 		
 				(Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
-				item->drawcmds[i].counts_used.vertices, 
+				item->drawcmds[i].counts_used.x, 
 				(u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
-				item->drawcmds[i].counts_used.indices
+				item->drawcmds[i].counts_used.y
 			);
 		}
 	}
@@ -1179,7 +1179,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	RenderDrawCounts counts = {0};	
+	vec2i counts = {0};	
 	uiSlider* data = uiGetSlider(item);
 	
 	vec2 pos = item->spos + item->cpos;
@@ -1256,7 +1256,7 @@ uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	// item->memsize = sizeof(uiSlider);
 	// item->__generate = &ui_gen_slider;
 	
-	// RenderDrawCounts counts = //reserve enough room for slider rail, dragger, and outline
+	// vec2i counts = //reserve enough room for slider rail, dragger, and outline
 	// 	render_make_filledrect_counts()*2+
 	// 	render_make_rect_counts();
 	
@@ -1322,7 +1322,7 @@ void ui_gen_checkbox(uiItem* item){
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	RenderDrawCounts counts = {0};	
+	vec2i counts = {0};	
 	
 	vec2 fillingpos = item->spos + data->style.fill_padding + item->cpos;
 	vec2 fillingsize = item->csize - data->style.fill_padding * 2;
@@ -1373,7 +1373,7 @@ uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	// data->style.fill_padding = vec2{2,2};
 	// data->var = var;
 	
-	// RenderDrawCounts counts = //reserve enough room for background, box filling, and outline
+	// vec2i counts = //reserve enough room for background, box filling, and outline
 	// 	render_make_filledrect_counts()*2+
 	// 	render_make_rect_counts();
 	
@@ -1503,7 +1503,7 @@ s64 find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){
 }
 
 //TODO(sushi) remove this abstraction because they arent the same between inputtext and text
-RenderDrawCounts render_ui_text(RenderDrawCounts counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks){DPZoneScoped;
+vec2i render_ui_text(vec2i counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks){DPZoneScoped;
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	vec2 cursor = item->spos;
 	forI(breaks.count-1){
@@ -1534,7 +1534,7 @@ RenderDrawCounts render_ui_text(RenderDrawCounts counts, uiDrawCmd* dc, Vertex2*
 
 
 void ui_gen_text(uiItem* item){DPZoneScoped;
-	RenderDrawCounts counts = {0};
+	vec2i counts = {0};
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
@@ -1559,8 +1559,8 @@ void ui_gen_text(uiItem* item){DPZoneScoped;
 		// }
 	}
 
-	RenderDrawCounts nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
-	if(nucounts.vertices != dc->counts_reserved.vertices || nucounts.indices != dc->counts_reserved.indices){
+	vec2i nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
+	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
 	    item->drawcmds = make_drawcmd(1);
 		drawcmd_remove(dc);
 		dc = item->drawcmds;
@@ -1617,7 +1617,7 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	setup.update = &ui_update_text;
 	setup.generate = &ui_gen_text;
 	setup.evaluate = &ui_eval_text;
-	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(text))};
+	vec2i counts[1] = {render_make_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 	
@@ -1639,7 +1639,7 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 // @inputtext
 
 void ui_gen_input_text(uiItem* item){DPZoneScoped;
-	RenderDrawCounts counts = {0};
+	vec2i counts = {0};
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
@@ -1647,10 +1647,10 @@ void ui_gen_input_text(uiItem* item){DPZoneScoped;
 	
 	dc->texture = item->style.font->tex;
 
-	RenderDrawCounts nucounts = 
+	vec2i nucounts = 
 		render_make_text_counts(str8_length(data->text.buffer.fin)) +
 		render_make_filledrect_counts(); //cursor
-	if(nucounts.vertices != dc->counts_reserved.vertices || nucounts.indices != dc->counts_reserved.indices){
+	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
 	    item->drawcmds = make_drawcmd(1);
 		drawcmd_remove(dc);
 		dc = item->drawcmds;
@@ -1782,7 +1782,7 @@ uiItem* ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DP
 	setup.update = &ui_update_input_text;
 	setup.generate = &ui_gen_input_text;
 	setup.evaluate = &ui_eval_input_text;
-	RenderDrawCounts counts[1] = {render_make_text_counts(str8_length(preview))+render_make_rect_counts()};
+	vec2i counts[1] = {render_make_text_counts(str8_length(preview))+render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 
