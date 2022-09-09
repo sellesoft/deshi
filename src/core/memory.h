@@ -190,7 +190,7 @@ StartLinkageC();
 // just a contigious allocation of the chunks. Allocation from the pool happens in O(1) unless a
 // growth operation is needed to create new free chunks. Fast allocation is possible because when
 // deleting from the pool, we insert a free chunk where the memory was to the beginning of a singly-
-// linked-list of free chunks. In the even a growth operation occurs during allocation, we generic
+// linked-list of free chunks. In the event a growth operation occurs during allocation, we generic
 // allocate a new block of memory which is linked with the pool's header thru a singly-linked-list
 // of all the blocks. As such, deinitting happens by iterating that list of blocks and freeing them.
 //
@@ -235,6 +235,21 @@ void* deshi__memory_pool_push(void* pool, upt type_size);
 //Deletes the chunk at `ptr` in the pooled arena `pool`
 #define memory_pool_delete(pool,ptr) deshi__memory_pool_delete((pool), sizeof(*(pool)), (ptr))
 void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
+
+//for-loop macro (iterates all chunks, regardless of emptiness)
+#if   COMPILER_FEATURE_TYPEOF
+#define for_pool(pool)                                                                                                                 \
+  for(typeof(*(pool))* it = pool, typeof(*(pool))* it_start = pool, it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \
+      it < it_start + memory_pool_header(pool)->chunks_per_block;                                                                      \
+      ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                                                  \
+            ? (it = it_start = (typeof(*(pool))*)((void**)it_block+1), it_block = (typeof(*(pool))*)(*(void**)it_block)) : 0)
+#elif COMPILER_FEATURE_CPP
+#define for_pool(pool)                                                                                  \
+  for(auto it = pool, it_start = pool, it_block = (decltype(pool))memory_pool_header(pool)->next_block; \
+      it < it_start + memory_pool_header(pool)->chunks_per_block;                                       \
+      ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                   \
+            ? (it = it_start = (decltype(pool))((void**)it_block+1), it_block = (decltype(pool))(*(void**)it_block)) : 0)
+#endif
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
