@@ -9,12 +9,12 @@ TODOs:
 change PADSECTION to a generic section type that can be checked for context based keys
 add a KEYONLY type/flag for line separated lists
 */
-
-#pragma once
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifndef DESHI_CONFIG_H
 #define DESHI_CONFIG_H
 #include "kigu/common.h"
-#include "kigu/unicode.h"
+StartLinkageC();
+
 
 typedef Type ConfigValueType; enum{
 	ConfigValueType_NONE, //can be used for comments
@@ -45,23 +45,26 @@ typedef Type ConfigValueType; enum{
 	ConfigValueType_Vec4 = ConfigValueType_FV4,
 };
 
-struct ConfigMapItem{
+typedef struct ConfigMapItem{
 	str8 key;
 	ConfigValueType type;
 	void* var;
-};
+}ConfigMapItem;
 
 //Saves the `config_map` to the `path`
-external void config_save(str8 path, ConfigMapItem* config_map, u64 config_count);
+void config_save(str8 path, ConfigMapItem* config_map, u64 config_count);
 
 //Loads the `config_map` from the `path`
-external void config_load(str8 path, ConfigMapItem* config_map, u64 config_count);
+void config_load(str8 path, ConfigMapItem* config_map, u64 config_count);
 
 
+EndLinkageC();
 #endif //DESHI_CONFIG_H
-#ifdef DESHI_IMPLEMENTATION
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_CONFIG_IMPL)
+#define DESHI_CONFIG_IMPL
+#include "assets.h"
 #include "input.h"
-#include "storage.h"
 
 void
 config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
@@ -331,10 +334,10 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 				case ConfigValueType_Font:{
 					str8 name = str8_eat_until(line, ',');
 					if(name.count == line.count) //no height was given
-						*(Font**)configs[i].var = storage_font_create_from_file(name, 0);
+						*(Font**)configs[i].var = assets_font_create_from_file(name, 0);
 					else{
 						str8_increment(&line, name.count+1);
-						*(Font**)configs[i].var = storage_font_create_from_file(name, strtol((char*)line.str, 0, 0));
+						*(Font**)configs[i].var = assets_font_create_from_file(name, strtol((char*)line.str, 0, 0));
 					}
 				}break;
 				case ConfigValueType_KeyMod:{

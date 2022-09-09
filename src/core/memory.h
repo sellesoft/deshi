@@ -238,16 +238,16 @@ void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 
 //for-loop macro (iterates all chunks, regardless of emptiness)
 #if   COMPILER_FEATURE_TYPEOF
-#define for_pool(pool)                                                                                                                 \
-  for(typeof(*(pool))* it = pool, typeof(*(pool))* it_start = pool, it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \
-      it < it_start + memory_pool_header(pool)->chunks_per_block;                                                                      \
-      ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                                                  \
+#define for_pool(pool)                                                                                                                     \
+for(typeof(*(pool))* it = (pool), typeof(*(pool))* it_start = (pool), it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \
+      it < it_start + memory_pool_header(pool)->chunks_per_block;                                                                          \
+      ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                                                      \
             ? (it = it_start = (typeof(*(pool))*)((void**)it_block+1), it_block = (typeof(*(pool))*)(*(void**)it_block)) : 0)
 #elif COMPILER_FEATURE_CPP
-#define for_pool(pool)                                                                                  \
-  for(auto it = pool, it_start = pool, it_block = (decltype(pool))memory_pool_header(pool)->next_block; \
-      it < it_start + memory_pool_header(pool)->chunks_per_block;                                       \
-      ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                   \
+#define for_pool(pool)                                                                                      \
+for(auto it = (pool), it_start = (pool), it_block = (decltype(pool))memory_pool_header(pool)->next_block; \
+      it < it_start + memory_pool_header(pool)->chunks_per_block;                                           \
+      ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                       \
             ? (it = it_start = (decltype(pool))((void**)it_block+1), it_block = (decltype(pool))(*(void**)it_block)) : 0)
 #endif
 

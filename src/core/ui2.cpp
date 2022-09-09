@@ -1,12 +1,12 @@
 #include "ui2.h"
 #include "kigu/array.h"
 #include "kigu/array_utils.h"
+#include "core/assets.h"
 #include "core/input.h"
+#include "core/logger.h"
 #include "core/memory.h"
 #include "core/render.h"
-#include "core/storage.h"
 #include "core/window.h"
-#include "core/logger.h"
 
 /*
 	Index:
@@ -1849,7 +1849,7 @@ void ui_debug(){
 		def_style.sizing = size_auto;
 		def_style.text_color = Color_White;
 		def_style.text_wrap = text_wrap_none;
-		def_style.font = storage_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+		def_style.font = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 		def_style.font_height = 11;
 		def_style.background_color = color(14,14,14);
 		def_style.tab_spaces = 4;
@@ -2059,7 +2059,7 @@ void ui_demo(){
 				c0->style.width = 3;
 				c0->id = STR8("c0");
 				c0->style.text_wrap = text_wrap_word;
-				c0->style.font = storage_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+				c0->style.font = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 				c0->style.font_height = 11;
 				c0->style.text_color = color(255,255,255);
 				uiTextML("some text to put in the flexed item ok")->id=STR8("text");

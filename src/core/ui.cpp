@@ -3929,7 +3929,7 @@ void UI::DemoWindow(){DPZoneScoped;
 		
 		Separator(7);
 		
-		persist Texture* tex = storage_texture_create_from_file_simple(str8_lit("lcdpix.png"));
+		persist Texture* tex = assets_texture_create_from_file_simple(str8_lit("lcdpix.png"));
 		
 		TextOld(str8_lit("heres a image in the child window:"));
 		Image(tex);
@@ -3995,7 +3995,7 @@ void UI::DemoWindow(){DPZoneScoped;
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
 void UI::Init(){DPZoneScoped;
-	DeshiStageInitStart(DS_UI, DS_STORAGE, "Attempted to initialize UI module before initializing Storage module");
+	DeshiStageInitStart(DS_UI, DS_ASSETS, "Attempted to initialize UI module before initializing Assets module");
 	
 	curwin = new UIWindow();
 	curwin->name = str8_lit("base");
@@ -4003,8 +4003,8 @@ void UI::Init(){DPZoneScoped;
 	curwin->dimensions = Vec2(DeshWindow->width, DeshWindow->height);
 	
 	//load font
-	style.font = storage_font_create_from_file_bdf(str8_lit("gohufont-11.bdf"));
-	Assert(style.font != storage_font_null());
+	style.font = assets_font_create_from_file_bdf(str8_lit("gohufont-11.bdf"));
+	Assert(style.font != assets_font_null());
 	
 	//push default color scheme
 	//this is never meant to be popped

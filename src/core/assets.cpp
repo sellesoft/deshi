@@ -1,12 +1,12 @@
 //NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
-	persist u8 storage_line_buffer[256];
-	persist Allocator storage_load_allocator{
+	persist u8 assets_line_buffer[256];
+	persist Allocator assets_load_allocator{
 		[](upt bytes){
 			if(bytes > 256){
 				return memory_talloc(bytes);
 			}else{
-				storage_line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
-				return (void*)storage_line_buffer;
+				assets_line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+				return (void*)assets_line_buffer;
 			}
 		},
 		Allocator_ChangeMemory_Noop,
@@ -16,69 +16,69 @@
 	};
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage_system
+//// @assets_system
 void
-storage_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_STORAGE, DS_RENDER, "Attempted to initialize Storage module before initializing Render module");
+assets_init(){DPZoneScoped;
+	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Render module");
 	
-	//create the storage directories if they don't exist already
+	//create the assets directories if they don't exist already
 	file_create(STR8("data/fonts/"));
 	file_create(STR8("data/models/"));
 	file_create(STR8("data/textures/"));
 	
 	//setup arrays
-	arrsetcap(DeshStorage->mesh_array,256);
-	arrsetcap(DeshStorage->texture_array,256);
-	arrsetcap(DeshStorage->material_array,256);
-	arrsetcap(DeshStorage->model_array,256);
-	arrsetcap(DeshStorage->font_array,8);
+	arrsetcap(DeshAssets->mesh_array,256);
+	arrsetcap(DeshAssets->texture_array,256);
+	arrsetcap(DeshAssets->material_array,256);
+	arrsetcap(DeshAssets->model_array,256);
+	arrsetcap(DeshAssets->font_array,8);
 	
 	//setup stb_image.h
 	stbi_set_flip_vertically_on_load(true);
 	
 	//setup null assets
-	storage_mesh_create_box(1.0f, 1.0f, 1.0f, Color_White.rgba); cpystr(storage_mesh_null()->name, "null", 64);
+	assets_mesh_create_box(1.0f, 1.0f, 1.0f, Color_White.rgba); cpystr(assets_mesh_null()->name, "null", 64);
 	//TODO(delle) get null128_png working
-	//storage_texture_create_from_memory(stbi_load_from_memory_simple(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA);
-	storage_texture_create_from_file_simple(STR8("null128.png"));
-	storage_material_create(STR8("null"), Shader_NULL, MaterialFlags_NONE, DeshStorage->texture_array, 1);
-	storage_model_create_from_mesh(storage_mesh_null(), ModelFlags_NONE); cpystr(storage_model_null()->name, "null", 64);
+	//assets_texture_create_from_memory(stbi_load_from_memory_simple(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA);
+	assets_texture_create_from_file_simple(STR8("null128.png"));
+	assets_material_create(STR8("null"), Shader_NULL, MaterialFlags_NONE, DeshAssets->texture_array, 1);
+	assets_model_create_from_mesh(assets_mesh_null(), ModelFlags_NONE); cpystr(assets_model_null()->name, "null", 64);
 	
 	//create null font (white square)
-	Font* null_font = arrput(DeshStorage->font_array, (Font*)memory_alloc(sizeof(Font)));
+	Font* null_font = arrput(DeshAssets->font_array, (Font*)memory_alloc(sizeof(Font)));
 	null_font->type = FontType_NONE;
 	null_font->max_width = 6;
 	null_font->max_height = 12;
 	null_font->count = 1;
 	null_font->name = STR8("null");
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = storage_texture_create_from_memory(white_pixels, STR8("null_font"), 2, 2, ImageFormat_BW, TextureType_2D,
+	Texture* nf_tex = assets_texture_create_from_memory(white_pixels, STR8("null_font"), 2, 2, ImageFormat_BW, TextureType_2D,
 														 TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false);
-	storage_texture_delete(nf_tex);
+	assets_texture_delete(nf_tex);
 	
-	DeshiStageInitEnd(DS_STORAGE);
+	DeshiStageInitEnd(DS_ASSETS);
 }
 
 
 void
-storage_reset(){DPZoneScoped;
-	for_array(DeshStorage->mesh_array) storage_mesh_delete(*it);
-	for_array(DeshStorage->texture_array) storage_texture_delete(*it);
-	for_array(DeshStorage->material_array) storage_material_delete(*it);
-	for_array(DeshStorage->model_array) storage_model_delete(*it);
-	for_array(DeshStorage->font_array) storage_font_delete(*it);
+assets_reset(){DPZoneScoped;
+	for_array(DeshAssets->mesh_array) assets_mesh_delete(*it);
+	for_array(DeshAssets->texture_array) assets_texture_delete(*it);
+	for_array(DeshAssets->material_array) assets_material_delete(*it);
+	for_array(DeshAssets->model_array) assets_model_delete(*it);
+	for_array(DeshAssets->font_array) assets_font_delete(*it);
 }
 
 
 void
-storage_browser(){DPZoneScoped;
+assets_browser(){DPZoneScoped;
 	using namespace UI;
 	PushColor(UIStyleCol_Border, Color_Grey);
 	PushColor(UIStyleCol_Separator, Color_Grey);
-	Begin(STR8("StorageBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
+	Begin(STR8("AssetsBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
 	
 	
-	BeginTabBar(STR8("StorageBrowserUITabBar"), UITabBarFlags_NoIndent);
+	BeginTabBar(STR8("AssetsBrowserUITabBar"), UITabBarFlags_NoIndent);
 	Separator(9);
 	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
 	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
@@ -92,7 +92,7 @@ storage_browser(){DPZoneScoped;
 	if(BeginTab(STR8("Meshes")))
 	{
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("StorageBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("AssetsBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
 	TextOld(STR8("TODO"));
 		EndChild();
 		
@@ -104,14 +104,14 @@ storage_browser(){DPZoneScoped;
 	b32 new_selected = 0;
 	persist Texture* selected = 0;
 	
-	Texture* largest = DeshStorage->texture_array[0];
-	Texture* smallest = DeshStorage->texture_array[0];
+	Texture* largest = DeshAssets->texture_array[0];
+	Texture* smallest = DeshAssets->texture_array[0];
 	
 	//gather size of textures in memory
 	upt texture_bytes = 0;
 	
 	
-	for_array(DeshStorage->texture_array){
+	for_array(DeshAssets->texture_array){
 			texture_bytes += (*it)->width * (*it)->height * u8size;
 		if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
 		if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
@@ -121,18 +121,18 @@ storage_browser(){DPZoneScoped;
 	
 	
 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("StorageBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
+	BeginChild(STR8("AssetsBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
 	
-	BeginRow(STR8("StorageBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
+	BeginRow(STR8("AssetsBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 	
-		TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshStorage->texture_array));
+		TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshAssets->texture_array));
 	TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
 	
 	EndRow();
 	
-		if(BeginCombo(STR8("StorageBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
-				for_array(DeshStorage->texture_array){
+		if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
+				for_array(DeshAssets->texture_array){
 				if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
 				selected = (*it);
 				new_selected = 1;
@@ -144,7 +144,7 @@ storage_browser(){DPZoneScoped;
 	Separator(9);
 	
 	if(BeginHeader(STR8("Stats"))){
-		BeginRow(STR8("StorageBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
+		BeginRow(STR8("AssetsBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
 		
 		TextF(STR8("Largest Texture: %s"), largest->name);
@@ -161,7 +161,7 @@ storage_browser(){DPZoneScoped;
 	Separator(9);
 	
 	if(selected){
-		BeginRow(STR8("StorageBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
+		BeginRow(STR8("AssetsBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 		
 		u32 texbytes = selected->width * selected->height * u8size;
@@ -182,7 +182,7 @@ storage_browser(){DPZoneScoped;
 		PushColor(UIStyleCol_WindowBg, 0x073030ff);
 		
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("StorageBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
+		BeginChild(STR8("AssetsBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
 		persist f32  zoom = 300;
 		persist vec2 mpl;
 		persist vec2 imagepos;
@@ -246,19 +246,19 @@ storage_browser(){DPZoneScoped;
 	if(BeginTab(STR8("Materials")))
 	{
 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("StorageBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
+	BeginChild(STR8("AssetsBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
 	
 	Separator(5);
 	
 	SetNextWindowSize(Vec2(MAX_F32, 200));
-	BeginChild(STR8("StorageBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
-		BeginRow(STR8("StorageBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
+	BeginChild(STR8("AssetsBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
+		BeginRow(STR8("AssetsBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
-			forI(arrlenu(DeshStorage->material_array)){
+			forI(arrlenu(DeshAssets->material_array)){
 			string s = toStr(i, "  ");
 			TextOld(str8{(u8*)s.str, (s64)s.count});
-				TextOld(str8_from_cstr(DeshStorage->material_array[i]->name));
+				TextOld(str8_from_cstr(DeshAssets->material_array[i]->name));
 		}
 		
 		EndRow();
@@ -274,7 +274,7 @@ storage_browser(){DPZoneScoped;
 	if(BeginTab(STR8("Models")))
 	{
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("StorageBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("AssetsBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
 	TextOld(STR8("TODO"));
 		EndChild();
 		
@@ -283,7 +283,7 @@ storage_browser(){DPZoneScoped;
 	if(BeginTab(STR8("Fonts")))
 	{
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("StorageBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
+	BeginChild(STR8("AssetsBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
 	TextOld(STR8("TODO"));
 		
 		EndTab();
@@ -296,9 +296,9 @@ storage_browser(){DPZoneScoped;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage_mesh
+//// @assets_mesh
 Mesh*
-storage_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){DPZoneScoped;
+assets_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){DPZoneScoped;
 	Assert(indexCount && vertexCount && faceCount);
 	
 	u32 triangleCount = indexCount/3;
@@ -335,7 +335,7 @@ storage_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 triang
 
 
 Mesh*
-storage_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped;
+assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped;
 	//TODO(delle) change this to take in 8 points
 	
 	width  /= 2.f;
@@ -343,13 +343,13 @@ storage_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScope
 	depth  /= 2.f;
 	
 	//check if created already
-	for_array(DeshStorage->mesh_array){
+	for_array(DeshAssets->mesh_array){
 		if((strcmp((*it)->name, "box_mesh") == 0) && vec3_equal((*it)->aabbMax, Vec3(width,height,depth))){
 			return *it;
 		}
 	}
 	
-	Mesh* mesh = storage_mesh_allocate(36, 8, 6, 36, 24, 24, 24, 24);
+	Mesh* mesh = assets_mesh_allocate(36, 8, 6, 36, 24, 24, 24, 24);
 	cpystr(mesh->name, "box_mesh", 64);
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
@@ -507,14 +507,14 @@ storage_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScope
 	fa[5].neighborFaceArray[0]=0; fa[5].neighborFaceArray[1]=2; fa[5].neighborFaceArray[2]=3; fa[5].neighborFaceArray[3]=4;
 	
 	render_load_mesh(mesh);
-	arrput(DeshStorage->mesh_array, mesh);
+	arrput(DeshAssets->mesh_array, mesh);
 	return mesh;
 }
 
 
 Mesh*
-storage_mesh_create_from_file(str8 name){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return storage_mesh_null();
+assets_mesh_create_from_file(str8 name){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return assets_mesh_null();
 	
 	//prepend the meshes (models) folder
 	str8_builder builder;
@@ -525,25 +525,25 @@ storage_mesh_create_from_file(str8 name){DPZoneScoped;
 	str8 front = str8_eat_until_last(name, '.');
 	if(front.count == name.count) str8_builder_append(&builder, STR8(".mesh"));
 	
-	return storage_mesh_create_from_path(str8_builder_peek(&builder));
+	return assets_mesh_create_from_path(str8_builder_peek(&builder));
 }
 
 
 Mesh*
-storage_mesh_create_from_path(str8 path){DPZoneScoped;
+assets_mesh_create_from_path(str8 path){DPZoneScoped;
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) return storage_mesh_null();
+	if(!contents) return assets_mesh_null();
 	
-	return storage_mesh_create_from_memory(contents.str);
+	return assets_mesh_create_from_memory(contents.str);
 }
 
 
 Mesh*
-storage_mesh_create_from_memory(void* data){DPZoneScoped;
+assets_mesh_create_from_memory(void* data){DPZoneScoped;
 	u32 bytes = *((u32*)data);
 	if(bytes < sizeof(Mesh)){
-		LogE("storage","Mesh size was too small when trying to load it from memory");
-		return storage_mesh_null();
+		LogE("assets","Mesh size was too small when trying to load it from memory");
+		return assets_mesh_null();
 	}
 	
 	//allocate and copy from data
@@ -551,7 +551,7 @@ storage_mesh_create_from_memory(void* data){DPZoneScoped;
 	CopyMemory(mesh, data, bytes);
 	
 	//check if mesh is already loaded
-	for_array(DeshStorage->mesh_array){
+	for_array(DeshAssets->mesh_array){
 		if(strcmp((*it)->name, mesh->name) == 0){
 			memory_zfree(mesh);
 			return *it;
@@ -584,42 +584,42 @@ storage_mesh_create_from_memory(void* data){DPZoneScoped;
 	}
 	
 	render_load_mesh(mesh);
-	arrput(DeshStorage->mesh_array, mesh);
+	arrput(DeshAssets->mesh_array, mesh);
 	return mesh;
 }
 
 
 void
-storage_mesh_save(Mesh* mesh){DPZoneScoped;
-	storage_mesh_save_to_path(mesh, str8_concat3(STR8("data/models/"),str8_from_cstr(mesh->name),STR8(".mesh"), deshi_temp_allocator));
+assets_mesh_save(Mesh* mesh){DPZoneScoped;
+	assets_mesh_save_to_path(mesh, str8_concat3(STR8("data/models/"),str8_from_cstr(mesh->name),STR8(".mesh"), deshi_temp_allocator));
 }
 
 
 void
-storage_mesh_save_to_path(Mesh* mesh, str8 path){DPZoneScoped;
+assets_mesh_save_to_path(Mesh* mesh, str8 path){DPZoneScoped;
 	file_write_simple(path, mesh, mesh->bytes);
-	Log("storage","Successfully saved mesh: ",path);
+	Log("assets","Successfully saved mesh: ",path);
 }
 
 
 void
-storage_mesh_delete(Mesh* mesh){DPZoneScoped;
-	if(mesh == storage_mesh_null()) return;
+assets_mesh_delete(Mesh* mesh){DPZoneScoped;
+	if(mesh == assets_mesh_null()) return;
 	
-	for_array(DeshStorage->mesh_array) if(*it == mesh) arrdelswap(DeshStorage->mesh_array, it - DeshStorage->mesh_array);
+	for_array(DeshAssets->mesh_array) if(*it == mesh) arrdelswap(DeshAssets->mesh_array, it - DeshAssets->mesh_array);
 	render_unload_mesh(mesh);
 	memory_zfree(mesh);
 }
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage_texture
+//// @assets_texture
 Texture*
-storage_texture_create_from_file(str8 name, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return storage_texture_null();
+assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return assets_texture_null();
 	
 	//check if texture is already loaded
-	for_array(DeshStorage->texture_array){
+	for_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
 			return *it;
 		}
@@ -634,9 +634,9 @@ storage_texture_create_from_file(str8 name, ImageFormat format, TextureType type
 	texture->uvMode  = uvMode;
 	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	if(texture->pixels == 0){
-		LogE("storage","Failed to create texture '",path,"': ",stbi_failure_reason()); 
+		LogE("assets","Failed to create texture '",path,"': ",stbi_failure_reason()); 
 		memory_zfree(texture);
-		return storage_texture_null();
+		return assets_texture_null();
 	}
 	
 	if(generateMipmaps){
@@ -651,16 +651,16 @@ storage_texture_create_from_file(str8 name, ImageFormat format, TextureType type
 		texture->pixels = 0;
 	}
 	
-	arrput(DeshStorage->texture_array, texture);
+	arrput(DeshAssets->texture_array, texture);
 	return texture;
 }
 
 
 Texture*
-storage_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+assets_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	//check if texture is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshStorage->texture_array){
+	for_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
 			return *it;
 		}
@@ -674,9 +674,9 @@ storage_texture_create_from_path(str8 path, ImageFormat format, TextureType type
 	texture->uvMode  = uvMode;
 	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	if(texture->pixels == 0){
-		LogE("storage","Failed to create texture '",path,"': ",stbi_failure_reason()); 
+		LogE("assets","Failed to create texture '",path,"': ",stbi_failure_reason()); 
 		memory_zfree(texture);
-		return storage_texture_null();
+		return assets_texture_null();
 	}
 	
 	if(generateMipmaps){
@@ -691,20 +691,20 @@ storage_texture_create_from_path(str8 path, ImageFormat format, TextureType type
 		texture->pixels = 0;
 	}
 	
-	arrput(DeshStorage->texture_array, texture);
+	arrput(DeshAssets->texture_array, texture);
 	return texture;
 }
 
 
 Texture*
-storage_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
+assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
 	if(data == 0){
-		LogE("storage","Failed to create texture '",name,"': No memory passed!");
-		return storage_texture_null();
+		LogE("assets","Failed to create texture '",name,"': No memory passed!");
+		return assets_texture_null();
 	}
 	
 	//check if texture is already loaded (with that name)
-	for_array(DeshStorage->texture_array){
+	for_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
 			return *it;
 		}
@@ -758,18 +758,18 @@ storage_texture_create_from_memory(void* data, str8 name, u32 width, u32 height,
 	}
 	
 	render_load_texture(texture);
-	arrput(DeshStorage->texture_array, texture);
+	arrput(DeshAssets->texture_array, texture);
 	return texture;
 }
 
 
 void
-storage_texture_delete(Texture* texture){DPZoneScoped;
-	if(texture == storage_texture_null()) return;
+assets_texture_delete(Texture* texture){DPZoneScoped;
+	if(texture == assets_texture_null()) return;
 	
-	for_array(DeshStorage->texture_array){
+	for_array(DeshAssets->texture_array){
 		if(*it == texture){
-			arrdelswap(DeshStorage->texture_array, it - DeshStorage->texture_array);
+			arrdelswap(DeshAssets->texture_array, it - DeshAssets->texture_array);
 		}
 	}
 	render_unload_texture(texture);
@@ -779,9 +779,9 @@ storage_texture_delete(Texture* texture){DPZoneScoped;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage_material
+//// @assets_material
 Material*
-storage_material_allocate(u32 textureCount){DPZoneScoped;
+assets_material_allocate(u32 textureCount){DPZoneScoped;
 	Material* material = (Material*)memory_alloc(sizeof(Material));
 	arrsetlen(material->textureArray, textureCount);
 	return material;
@@ -789,29 +789,29 @@ storage_material_allocate(u32 textureCount){DPZoneScoped;
 
 
 Material*
-storage_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count){DPZoneScoped;
+assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count){DPZoneScoped;
 	//check if material is already loaded
-	for_array(DeshStorage->material_array){
+	for_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
 			return *it;
 		}
 	}
 	
-	Material* material = storage_material_allocate(texture_count);
+	Material* material = assets_material_allocate(texture_count);
 	CopyMemory(material->name, name.str, ClampMax(name.count,63));
 	material->shader = shader;
 	material->flags  = flags;
 	forI(texture_count) material->textureArray[i] = textures[i];
 	
 	render_load_material(material);
-	arrput(DeshStorage->material_array, material);
+	arrput(DeshAssets->material_array, material);
 	return material;
 }
 
 
 Material*
-storage_material_create_from_file(str8 name){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return storage_material_null();
+assets_material_create_from_file(str8 name){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return assets_material_null();
 	
 	//prepend the materials (models) folder
 	str8_builder builder;
@@ -822,15 +822,15 @@ storage_material_create_from_file(str8 name){DPZoneScoped;
 	str8 front = str8_eat_until_last(name, '.');
 	if(front.count == name.count) str8_builder_append(&builder, STR8(".mat"));
 	
-	return storage_material_create_from_path(str8_builder_peek(&builder));
+	return assets_material_create_from_path(str8_builder_peek(&builder));
 }
 
 
 Material*
-storage_material_create_from_path(str8 path){DPZoneScoped;
+assets_material_create_from_path(str8 path){DPZoneScoped;
 	//check if material is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshStorage->material_array){
+	for_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
 			return *it;
 		}
@@ -839,7 +839,7 @@ storage_material_create_from_path(str8 path){DPZoneScoped;
 	
 	//load .mat file
 	File* file = file_init(path, FileAccess_Read);
-	if(!file) return storage_material_null();
+	if(!file) return assets_material_null();
 	defer{ file_deinit(file); };
 	
 	//parse .mat file
@@ -854,7 +854,7 @@ storage_material_create_from_path(str8 path){DPZoneScoped;
 		line_number += 1;
 		
 		//next line
-		str8 line = file_read_line_alloc(file, &storage_load_allocator);
+		str8 line = file_read_line_alloc(file, &assets_load_allocator);
 		if(!line) continue;
 		
 		//skip leading whitespace
@@ -869,13 +869,13 @@ storage_material_create_from_path(str8 path){DPZoneScoped;
 		if(decoded.codepoint == '>'){
 			if     (str8_begins_with(line, STR8(">material"))) header = HEADER_MATERIAL;
 			else if(str8_begins_with(line, STR8(">textures"))) header = HEADER_TEXTURES;
-			else{ header = HEADER_INVALID; LogE("storage","Error parsing material '",path,"' on line ",line_number,". Invalid Header: ",line); };
+			else{ header = HEADER_INVALID; LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid Header: ",line); };
 			continue;
 		}
 		
 		//early out invalid header
 		if(header == HEADER_INVALID){
-			LogE("storage","Error parsing material '",path,"' on line ",line_number,". Invalid Header; skipping line");
+			LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid Header; skipping line");
 			continue;
 		}
 		
@@ -894,13 +894,13 @@ storage_material_create_from_path(str8 path){DPZoneScoped;
 			//early out if comment is first value character
 			decoded = decoded_codepoint_from_utf8(line.str, 4);
 			if(decoded.codepoint == '#'){
-				LogE("storage","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("assets","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			
 			if      (str8_equal_lazy(key, STR8("name"))){
 				if(decoded.codepoint != '\"'){
-					LogE("storage","Error parsing material '",path,"' on line ",line_number,". Names must be wrapped in double quotes.");
+					LogE("assets","Error parsing material '",path,"' on line ",line_number,". Names must be wrapped in double quotes.");
 					continue;
 				}
 				mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
@@ -914,12 +914,12 @@ storage_material_create_from_path(str8 path){DPZoneScoped;
 					}
 				}
 			}else{
-				LogE("storage","Error parsing material '",path,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
+				LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
 				continue;
 			}
 		}else{
 			if(decoded.codepoint != '\"'){
-				LogE("storage","Error parsing material '",path,"' on line ",line_number,". Textures must be wrapped in double quotes.");
+				LogE("assets","Error parsing material '",path,"' on line ",line_number,". Textures must be wrapped in double quotes.");
 				continue;
 			}
 			
@@ -927,26 +927,26 @@ storage_material_create_from_path(str8 path){DPZoneScoped;
 		}
 	}
 	
-	Material* material = storage_material_allocate(mat_textures.count);
+	Material* material = assets_material_allocate(mat_textures.count);
 	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
 	material->shader = mat_shader;
 	material->flags  = mat_flags;
-	forI(mat_textures.count) material->textureArray[i] = storage_texture_create_from_file_simple(mat_textures[i]);
+	forI(mat_textures.count) material->textureArray[i] = assets_texture_create_from_file_simple(mat_textures[i]);
 	
 	render_load_material(material);
-	arrput(DeshStorage->material_array, material);
+	arrput(DeshAssets->material_array, material);
 	return material;
 }
 
 
 void
-storage_material_save(Material* material){DPZoneScoped;
-	storage_material_save_to_path(material, str8_concat3(STR8("data/models/"),str8_from_cstr(material->name),STR8(".mat"), deshi_temp_allocator));
+assets_material_save(Material* material){DPZoneScoped;
+	assets_material_save_to_path(material, str8_concat3(STR8("data/models/"),str8_from_cstr(material->name),STR8(".mat"), deshi_temp_allocator));
 }
 
 
 void
-storage_material_save_to_path(Material* material, str8 path){DPZoneScoped;
+assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 	str8_builder builder;
 	str8_builder_init(&builder,
 					  ToString8(deshi_temp_allocator,
@@ -965,17 +965,17 @@ storage_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 	str8_builder_append(&builder, STR8("\n"));
 	str8 mat_text = str8_builder_peek(&builder);
 	file_write_simple(path, mat_text.str, mat_text.count*sizeof(u8));
-	Log("storage","Successfully saved material: ",path);
+	Log("assets","Successfully saved material: ",path);
 }
 
 
 void
-storage_material_delete(Material* material){DPZoneScoped;
-	if(material == storage_material_null()) return;
+assets_material_delete(Material* material){DPZoneScoped;
+	if(material == assets_material_null()) return;
 	
-	for_array(DeshStorage->material_array){
+	for_array(DeshAssets->material_array){
 		if(*it == material){
-			arrdelswap(DeshStorage->material_array, it - DeshStorage->material_array);
+			arrdelswap(DeshAssets->material_array, it - DeshAssets->material_array);
 		}
 	}
 	render_unload_material(material);
@@ -985,19 +985,19 @@ storage_material_delete(Material* material){DPZoneScoped;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage_model
-#define ParseError(path,...) LogE("storage","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
+//// @assets_model
+#define ParseError(path,...) LogE("assets","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 Model*
-storage_model_allocate(u32 batchCount){DPZoneScoped;
+assets_model_allocate(u32 batchCount){DPZoneScoped;
 	Model* model = (Model*)memory_alloc(sizeof(Model));
 	arrsetlen(model->batchArray, (batchCount) ? batchCount : 1);
 	return model;
 }
 
 
-Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
-	if(str8_equal_lazy(filename, STR8("null"))) return storage_model_null();
+Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
+	if(str8_equal_lazy(filename, STR8("null"))) return assets_model_null();
 	
 	//prepend the models folder
 	str8 directory = STR8("data/models/");
@@ -1010,7 +1010,7 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 	if(front.count == filename.count) str8_builder_append(&builder, STR8(".model"));
 	
 	//check if model is already loaded
-	for_array(DeshStorage->model_array){
+	for_array(DeshAssets->model_array){
 		if(strncmp((*it)->name, (char*)front.str, 64) == 0){
 			return *it;
 		}
@@ -1029,11 +1029,11 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 	
 	//// load .obj and .mtl ////
 	if(parse_obj_model && parse_obj_mesh){
-		return storage_model_create_from_obj(obj_path, flags);
+		return assets_model_create_from_obj(obj_path, flags);
 	}
 	//// load .obj (batch info only), .mtl, and .mesh ////
 	else if(parse_obj_model){
-		return storage_model_create_from_mesh_obj(storage_mesh_create_from_path(mesh_path), obj_path, flags);
+		return assets_model_create_from_mesh_obj(assets_mesh_create_from_path(mesh_path), obj_path, flags);
 	}
 	
 	//// load .model and .mesh ////
@@ -1045,7 +1045,7 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 		enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
 		
 		File* file = file_init(model_path, FileAccess_Read);
-		if(!file) return storage_model_null();
+		if(!file) return assets_model_null();
 		defer{ file_deinit(file); };
 		
 		u32 line_number = 0;
@@ -1053,7 +1053,7 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 			line_number += 1;
 			
 			//next line
-			str8 line = file_read_line_alloc(file, &storage_load_allocator);
+			str8 line = file_read_line_alloc(file, &assets_load_allocator);
 			if(!line) continue;
 			
 			//skip leading whitespace
@@ -1068,13 +1068,13 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 			if(decoded.codepoint == '>'){
 				if     (str8_begins_with(line, STR8(">model"))) header = HEADER_MODEL;
 				else if(str8_begins_with(line, STR8(">batches"))) header = HEADER_BATCHES;
-				else{ header = HEADER_INVALID; LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
+				else{ header = HEADER_INVALID; LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
 				continue;
 			}
 			
 			//early out invalid header
 			if(header == HEADER_INVALID){
-				LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
+				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
 				continue;
 			}
 			
@@ -1093,13 +1093,13 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 				//early out if comment is first value character
 				decoded = decoded_codepoint_from_utf8(line.str, 4);
 				if(decoded.codepoint == '#'){
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
+					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
 					continue;
 				}
 				
 				if      (str8_equal_lazy(key, STR8("name"))){
 					if(decoded.codepoint != '\"'){
-						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
+						LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
 						continue;
 					}
 					model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
@@ -1107,26 +1107,26 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 					model_flags = (ModelFlags)atoi((char*)line.str);
 				}else if(str8_equal_lazy(key, STR8("mesh"))){
 					if(decoded.codepoint != '\"'){
-						LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
+						LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
 						continue;
 					}
 					model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
 				}else if(str8_equal_lazy(key, STR8("armature"))){
 					//NOTE currently nothing
 				}else{
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
+					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
 					continue;
 				}
 			}else{
 				if(decoded.codepoint != '\"'){
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
+					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
 					continue;
 				}
 				
 				str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
 				str8_increment(&line, batch_mat.count+2);
 				if(!line){
-					LogE("storage","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
+					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
 					continue;
 				}
 				
@@ -1137,29 +1137,29 @@ Model* storage_model_create_from_file(str8 filename, ModelFlags flags, b32 force
 				model_batches.add({batch_mat, ioffset, icount});
 			}
 		}
-		Log("storage","Successfully loaded model ",model_path);
+		Log("assets","Successfully loaded model ",model_path);
 		
-		Model* model = storage_model_allocate(model_batches.count);
+		Model* model = assets_model_allocate(model_batches.count);
 	cpystr(model->name, (char*)model_name.str, 64);
 		model->flags    = model_flags;
-		model->mesh     = storage_mesh_create_from_file(model_mesh);
+		model->mesh     = assets_mesh_create_from_file(model_mesh);
 		model->armature = 0;
 		forI(model_batches.count){
 			model->batchArray[i] = ModelBatch{
 				model_batches[i].second,
 				model_batches[i].third,
-				storage_material_create_from_file(model_batches[i].first)
+				assets_material_create_from_file(model_batches[i].first)
 			};
 		}
 		
-		arrput(DeshStorage->model_array, model);
-	Log("storage","Finished loading model '",filename,"' in ",peek_stopwatch(load_stopwatch),"ms");
+		arrput(DeshAssets->model_array, model);
+	Log("assets","Finished loading model '",filename,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
 
 
 Model*
-storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
+assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		Stopwatch load_stopwatch = start_stopwatch();
 	map<vec3,MeshVertex> vUnique(deshi_temp_allocator);
 		set<vec3> vnUnique(deshi_temp_allocator);
@@ -1198,7 +1198,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		b32 fatal_error     = false;
 		
 		File* file = file_init(obj_path, FileAccess_Read);
-		if(!file) return storage_model_null();
+		if(!file) return assets_model_null();
 		defer{ file_deinit(file); };
 		
 		u32 line_number = 0;
@@ -1206,7 +1206,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 			line_number += 1;
 			
 			//next line
-			str8 line = file_read_line_alloc(file, &storage_load_allocator);
+			str8 line = file_read_line_alloc(file, &assets_load_allocator);
 			if(!line) continue;
 			
 			//skip leading whitespace
@@ -1243,7 +1243,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 						case 't':{
 							str8_increment(&line, decoded.advance);
 							decoded = decoded_codepoint_from_utf8(line.str, 4);
-							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return storage_model_null(); }
+							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return assets_model_null(); }
 							str8_increment(&line, decoded.advance);
 							
 							char* next = (char*)line.str;
@@ -1256,7 +1256,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 						case 'n':{
 							str8_increment(&line, decoded.advance);
 							decoded = decoded_codepoint_from_utf8(line.str, 4);
-							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return storage_model_null(); }
+							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return assets_model_null(); }
 							str8_increment(&line, decoded.advance);
 							
 							char* next = (char*)line.str;
@@ -1268,7 +1268,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 						}continue;
 						default:{
 							ParseError(obj_path,"Invalid character after 'v': '",(char)decoded.codepoint,"'");
-						}return storage_model_null();
+						}return assets_model_null();
 					}
 				}continue;
 				
@@ -1278,8 +1278,8 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 					
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return storage_model_null(); }
-					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return assets_model_null(); }
+					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return assets_model_null(); }
 					
 					str8_increment(&line, decoded.advance);
 					char* next = (char*)line.str;
@@ -1378,13 +1378,13 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 					triangles[cti].neighborCount = triNeighbors[cti].count;
 					f64 load_watch = peek_stopwatch(load_stopwatch);
 					if(((u64)(load_watch / 1000.0) % 10 == 0) && ((u64)(load_watch / 1000.0) != 0)){
-						Log("storage",obj_path," face ",faces.count," on line ",line_number," finished creation in ",peek_stopwatch(face_stopwatch),"ms");
+						Log("assets",obj_path," face ",faces.count," on line ",line_number," finished creation in ",peek_stopwatch(face_stopwatch),"ms");
 					}
 				}continue;
 				
 				//// use material ////
 				case 'u':{
-				if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return storage_model_null(); }
+				if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return assets_model_null(); }
 					
 					if(mtllib_found){
 						str8_increment(&line, 7);
@@ -1397,7 +1397,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return storage_model_null(); }
+					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return assets_model_null(); }
 					
 					mtllib_found = true;
 					str8_increment(&line, 7);
@@ -1409,7 +1409,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 				case 'g':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return assets_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> group(indexes.count, str8_copy(line, deshi_temp_allocator));
@@ -1420,7 +1420,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 				case 'o':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return assets_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> object(indexes.count, str8_copy(line, deshi_temp_allocator));
@@ -1431,14 +1431,14 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 				case 's':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return assets_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					s_warning = true;
 				}continue;
 				default:{
 					ParseError(obj_path,"Invalid starting character: '",(char)decoded.codepoint,"'");
-				}return storage_model_null();
+				}return assets_model_null();
 			}
 		}
 		
@@ -1536,17 +1536,17 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		}
 		
 		//// parsing warnings/errors ////
-		if(non_tri_warning)   LogW("storage","The mesh was not triangulated before parsing; Expect missing triangles!");
-		if(s_warning)         LogW("storage","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
-		if(!vtArray.count){   LogW("storage","No vertex UVs 'vt' were parsed in ",obj_path); }
-		if(!vnArray.count){   LogW("storage","No vertex normals 'vn' were parsed in ",obj_path); }
-		if(fatal_error){      LogE("storage","OBJ parsing encountered a fatal error in ",obj_path); return storage_model_null(); }
-		if(!vArray.count){    LogE("storage","No vertex positions 'v' were parsed in ",obj_path); return storage_model_null(); }
-		if(!triangles.count){ LogE("storage","No faces 'f' were parsed in ",obj_path); return storage_model_null(); }
+		if(non_tri_warning)   LogW("assets","The mesh was not triangulated before parsing; Expect missing triangles!");
+		if(s_warning)         LogW("assets","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
+		if(!vtArray.count){   LogW("assets","No vertex UVs 'vt' were parsed in ",obj_path); }
+		if(!vnArray.count){   LogW("assets","No vertex normals 'vn' were parsed in ",obj_path); }
+		if(fatal_error){      LogE("assets","OBJ parsing encountered a fatal error in ",obj_path); return assets_model_null(); }
+		if(!vArray.count){    LogE("assets","No vertex positions 'v' were parsed in ",obj_path); return assets_model_null(); }
+		if(!triangles.count){ LogE("assets","No faces 'f' were parsed in ",obj_path); return assets_model_null(); }
 	
 	//// check if mesh is already loaded ////
 	Mesh* mesh = 0;
-	for_array(DeshStorage->mesh_array){
+	for_array(DeshAssets->mesh_array){
 		if(strncmp((*it)->name, (char*)file->front.str, 64) == 0){
 			mesh = *it;
 			break;
@@ -1555,7 +1555,7 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 	
 		//// create mesh ////
 	if(mesh == 0){
-		mesh = storage_mesh_allocate(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
+		mesh = assets_mesh_allocate(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
 								  totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
 		cpystr(mesh->name, (char*)file->front.str, 64);
@@ -1622,9 +1622,9 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		}
 		
 		render_load_mesh(mesh);
-		arrput(DeshStorage->mesh_array, mesh);
+		arrput(DeshAssets->mesh_array, mesh);
 	}
-		Log("storage","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+		Log("assets","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		
 		//parse MTL files
 		if(mtllib_found){
@@ -1632,10 +1632,10 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 			
 			//!Incomplete
 			
-			Log("storage","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+			Log("assets","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
-		Model* model = storage_model_allocate(mArray.count);
+		Model* model = assets_model_allocate(mArray.count);
 	cpystr(model->name, (char*)file->front.str, 64);
 		model->flags    = flags;
 		model->mesh     = mesh;
@@ -1645,31 +1645,31 @@ storage_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		if(mArray.count > 1){
 			model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
 			model->batchArray[mArray.count-1].indexCount  = indexes.count - model->batchArray[mArray.count-1].indexOffset;
-			model->batchArray[mArray.count-1].material    = storage_material_null();
+			model->batchArray[mArray.count-1].material    = assets_material_null();
 			for(u32 bi = mArray.count-2; bi >= 0; --bi){
 				model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
 				model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
-				model->batchArray[bi].material    = storage_material_null();
+				model->batchArray[bi].material    = assets_material_null();
 			}
 		}else{
 			model->batchArray[0].indexOffset = 0;
 			model->batchArray[0].indexCount  = indexes.count;
-			model->batchArray[0].material    = storage_material_null();
+			model->batchArray[0].material    = assets_material_null();
 	}
 	
-	arrput(DeshStorage->model_array, model);
-	Log("storage","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	arrput(DeshAssets->model_array, model);
+	Log("assets","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
 
 
 Model*
-storage_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
+assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	Stopwatch load_stopwatch = start_stopwatch();
 	
 	//check if created already
 	str8 model_name = str8_from_cstr(mesh->name);
-	for_array(DeshStorage->model_array){
+	for_array(DeshAssets->model_array){
 		if(   (*it)->mesh == mesh
 		   && strncmp((*it)->name, (char*)model_name.str, 64) == 0
 		   && (*it)->flags == flags
@@ -1677,26 +1677,26 @@ storage_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 		   && arrlenu((*it)->batchArray) == 1
 		   && (*it)->batchArray[0].indexOffset == 0
 		   && (*it)->batchArray[0].indexCount == mesh->indexCount
-		   && (*it)->batchArray[0].material == storage_material_null())
+		   && (*it)->batchArray[0].material == assets_material_null())
 		{
 			return *it;
 		}
 	}
 	
-	Model* model = storage_model_allocate(1);
+	Model* model = assets_model_allocate(1);
 	cpystr(model->name, (char*)model_name.str, 64);
 	model->mesh     = mesh;
 	model->armature = 0;
-	model->batchArray[0] = ModelBatch{0, mesh->indexCount, storage_material_null()};
+	model->batchArray[0] = ModelBatch{0, mesh->indexCount, assets_material_null()};
 	
-	arrput(DeshStorage->model_array, model);
-	Log("storage","Finished loading model '",model_name,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	arrput(DeshAssets->model_array, model);
+	Log("assets","Finished loading model '",model_name,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
 
 
 Model*
-storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){DPZoneScoped;
+assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){DPZoneScoped;
 		Stopwatch load_stopwatch = start_stopwatch();
 		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
 		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
@@ -1710,7 +1710,7 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 		u32 index_count = 0;
 		
 		File* file = file_init(obj_path, FileAccess_Read);
-		if(!file) return storage_model_null();
+		if(!file) return assets_model_null();
 		defer{ file_deinit(file); };
 		
 		u32 line_number = 0;
@@ -1718,7 +1718,7 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 			line_number += 1;
 			
 			//next line
-			str8 line = file_read_line_alloc(file, &storage_load_allocator);
+			str8 line = file_read_line_alloc(file, &assets_load_allocator);
 			if(!line) continue;
 			
 			//skip leading whitespace
@@ -1735,13 +1735,13 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
 					
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return assets_model_null(); }
 					index_count += 3;
 				}
 				
 				//// use material ////
 				case 'u':{ //use material
-					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return storage_model_null(); }
+					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return assets_model_null(); }
 					
 					if(mtllib_found){
 						str8_increment(&line, 7);
@@ -1754,7 +1754,7 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 				
 				//// load material ////
 				case 'm':{
-					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return storage_model_null(); }
+					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return assets_model_null(); }
 					
 					mtllib_found = true;
 					str8_increment(&line, 7);
@@ -1766,7 +1766,7 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 				case 'g':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return assets_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> group(index_count, str8_copy(line, deshi_temp_allocator));
@@ -1777,7 +1777,7 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 				case 'o':{
 					str8_increment(&line, decoded.advance);
 					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return storage_model_null(); }
+					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return assets_model_null(); }
 					str8_increment(&line, decoded.advance);
 					
 					pair<u32,str8> object(index_count, str8_copy(line, deshi_temp_allocator));
@@ -1794,10 +1794,10 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 			
 			//!Incomplete
 			
-			Log("storage","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+			Log("assets","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
 		}
 		
-		Model* model = storage_model_allocate(mArray.count);
+		Model* model = assets_model_allocate(mArray.count);
 	cpystr(model->name, (char*)file->front.str, 64);
 		model->flags    = flags;
 		model->mesh     = mesh;
@@ -1807,26 +1807,26 @@ storage_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){
 		if(mArray.count > 1){
 			model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
 			model->batchArray[mArray.count-1].indexCount  = index_count - model->batchArray[mArray.count-1].indexOffset;
-		model->batchArray[mArray.count-1].material    = storage_material_null();
+		model->batchArray[mArray.count-1].material    = assets_material_null();
 			for(u32 bi = mArray.count-2; bi >= 0; --bi){
 				model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
 				model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
-				model->batchArray[bi].material    = storage_material_null();
+				model->batchArray[bi].material    = assets_material_null();
 			}
 		}else{
 			model->batchArray[0].indexOffset = 0;
 			model->batchArray[0].indexCount  = index_count;
-			model->batchArray[0].material    = storage_material_null();
+			model->batchArray[0].material    = assets_material_null();
 	}
 	
-	arrput(DeshStorage->model_array, model);
-	Log("storage","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
+	arrput(DeshAssets->model_array, model);
+	Log("assets","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
 
 
-Model* storage_model_copy(Model* base){DPZoneScoped;
-	Model* model = storage_model_allocate(arrlenu(base->batchArray));
+Model* assets_model_copy(Model* base){DPZoneScoped;
+	Model* model = assets_model_allocate(arrlenu(base->batchArray));
 	cpystr(model->name, base->name, 64);
 	model->flags    = base->flags;
 	model->mesh     = base->mesh;
@@ -1837,17 +1837,17 @@ Model* storage_model_copy(Model* base){DPZoneScoped;
 		model->batchArray[i].material    = base->batchArray[i].material;
 	}
 	
-	arrput(DeshStorage->model_array, model);
+	arrput(DeshAssets->model_array, model);
 	return model;
 }
 
 
 void
-storage_model_save(Model* model){
+assets_model_save(Model* model){
 	str8 directory = STR8("data/models/");
 	
 	if(model->mesh){
-		storage_mesh_save(model->mesh);
+		assets_mesh_save(model->mesh);
 	}
 	
 	str8 path = str8_concat3(directory,str8_from_cstr(model->name),STR8(".model"), deshi_temp_allocator);
@@ -1864,24 +1864,24 @@ storage_model_save(Model* model){
 					  deshi_temp_allocator);
 	if(model->batchArray){
 	for_array(model->batchArray){
-		storage_material_save(it->material);
+		assets_material_save(it->material);
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
 	str8_builder_append(&builder, STR8("\n"));
 	str8 model_text = str8_builder_peek(&builder);
 	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
-	Log("storage","Successfully saved model: ",path);
+	Log("assets","Successfully saved model: ",path);
 }
 
 
 void
-storage_model_save_at_path(Model* model, str8 path){DPZoneScoped;
+assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 	str8 directory = str8_eat_until_last(path, '/');
 	if(directory.str[directory.count] == '/') directory.count += 1;
 	
 	if(model->mesh){
-		storage_mesh_save_to_path(model->mesh, str8_concat3(directory,str8_from_cstr(model->mesh->name),STR8(".mesh"), deshi_temp_allocator));
+		assets_mesh_save_to_path(model->mesh, str8_concat3(directory,str8_from_cstr(model->mesh->name),STR8(".mesh"), deshi_temp_allocator));
 	}
 	
 	str8_builder builder;
@@ -1897,24 +1897,24 @@ storage_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 					  deshi_temp_allocator);
 	if(model->batchArray){
 	for_array(model->batchArray){
-			storage_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
+			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
 	str8_builder_append(&builder, STR8("\n"));
 	str8 model_text = str8_builder_peek(&builder);
 	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
-	Log("storage","Successfully saved model: ",path);
+	Log("assets","Successfully saved model: ",path);
 }
 
 
 void
-storage_model_delete(Model* model){
-	if(model == storage_model_null()) return;
+assets_model_delete(Model* model){
+	if(model == assets_model_null()) return;
 	
-	for_array(DeshStorage->model_array){
+	for_array(DeshAssets->model_array){
 		if(*it == model){
-			arrdelswap(DeshStorage->model_array, it - DeshStorage->model_array);
+			arrdelswap(DeshAssets->model_array, it - DeshAssets->model_array);
 		}
 	}
 	arrfree(model->batchArray);
@@ -1924,7 +1924,7 @@ storage_model_delete(Model* model){
 
 #undef ParseError
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @storage_font
+//// @assets_font
 FontPackedChar*
 font_packed_char(Font* font, u32 codepoint){
 	//TODO(delle) an overload for specifying range if you know where you're working
@@ -1994,38 +1994,38 @@ font_visual_size(Font* font, str8 text){
 
 
 Font*
-storage_font_create_from_file(str8 name, u32 height){DPZoneScoped;
-	return storage_font_create_from_path(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
+assets_font_create_from_file(str8 name, u32 height){DPZoneScoped;
+	return assets_font_create_from_path(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
 }
 
 
 Font*
-storage_font_create_from_path(str8 path, u32 height){DPZoneScoped;
+assets_font_create_from_path(str8 path, u32 height){DPZoneScoped;
 	if(str8_ends_with(path, STR8(".bdf"))){
-		return storage_font_create_from_path_bdf(path);
+		return assets_font_create_from_path_bdf(path);
 	}
 	
 	if(str8_ends_with(path, STR8(".ttf")) || str8_ends_with(path, STR8(".otf"))){
-		return storage_font_create_from_path_ttf(path, height);
+		return assets_font_create_from_path_ttf(path, height);
 	}
 	
-	LogE("storage","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
-	return storage_font_null();
+	LogE("assets","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
+	return assets_font_null();
 }
 
 
 Font*
-storage_font_create_from_file_bdf(str8 name){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return storage_font_null();
-	return storage_font_create_from_path_bdf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator));
+assets_font_create_from_file_bdf(str8 name){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return assets_font_null();
+	return assets_font_create_from_path_bdf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator));
 }
 
 
 Font*
-storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
+assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	//check if font was loaded already
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshStorage->font_array){
+	for_array(DeshAssets->font_array){
 		if(str8_equal_lazy((*it)->name, filename)){
 			return *it;
 		}
@@ -2046,13 +2046,13 @@ storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	
 	//init file
 	File* file = file_init(path, FileAccess_Read);
-	if(!file) return storage_font_null();
+	if(!file) return assets_font_null();
 	defer{ file_deinit(file); };
 	
-	str8 first_line = file_read_line_alloc(file, &storage_load_allocator);
+	str8 first_line = file_read_line_alloc(file, &assets_load_allocator);
 	if(!str8_begins_with(first_line, STR8("STARTFONT"))){
-		LogE("storage","Error parsing BDF '",path,"' on line 1. The file did not begin with 'STARTFONT'.");
-		return storage_font_null();
+		LogE("assets","Error parsing BDF '",path,"' on line 1. The file did not begin with 'STARTFONT'.");
+		return assets_font_null();
 	}
 	
 	
@@ -2064,7 +2064,7 @@ storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 		line_number += 1;
 		
 		//next line
-		str8 line = file_read_line_alloc(file, &storage_load_allocator);
+		str8 line = file_read_line_alloc(file, &assets_load_allocator);
 		if(!line) continue;
 		
 		//skip leading whitespace
@@ -2141,7 +2141,7 @@ storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 			in_char = true;
 		}else if(str8_equal_lazy(key, STR8("SIZE"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("assets","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			char* cursor = (char*)line.str;
@@ -2149,7 +2149,7 @@ storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 			font_dpi.y = (f32)strtol(cursor+1, &cursor, 10);
 		}else if(str8_equal_lazy(key, STR8("FONTBOUNDINGBOX"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("assets","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			char* cursor = (char*)line.str;
@@ -2161,22 +2161,22 @@ storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 			font->max_height = (u32)font_bbx.y;
 		}else if(str8_equal_lazy(key, STR8("FONT_NAME"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("assets","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
-				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". FONT_NAME must be wrapped in double quotes.");
+				LogE("assets","Error parsing BDF '",path,"' on line ",line_number,". FONT_NAME must be wrapped in double quotes.");
 				continue;
 			}
 			str8 font_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
 			//TODO(sushi) replace name on Font with filename and add a name for this guy right here!
 		}else if(str8_equal_lazy(key, STR8("WEIGHT_NAME"))){
 			if(!line){
-				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
+				LogE("assets","Error parsing BDF '",path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
-				LogE("storage","Error parsing BDF '",path,"' on line ",line_number,". WEIGHT_NAME must be wrapped in double quotes.");
+				LogE("assets","Error parsing BDF '",path,"' on line ",line_number,". WEIGHT_NAME must be wrapped in double quotes.");
 				continue;
 			}
 			str8 font_weight = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
@@ -2196,40 +2196,40 @@ storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 		}
 	}
 	
-	Texture* texture = storage_texture_create_from_memory(pixels, filename, font->max_width, font->max_height*font->count,
+	Texture* texture = assets_texture_create_from_memory(pixels, filename, font->max_width, font->max_height*font->count,
 														  ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
 														  TextureAddressMode_ClampToWhite, false);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
 	font->tex = texture;
 	
-	arrput(DeshStorage->font_array, font);
+	arrput(DeshAssets->font_array, font);
 	return font;
 }
 
 
 Font*
-storage_font_create_from_file_ttf(str8 name, u32 height){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return storage_font_null();
-	return storage_font_create_from_path_ttf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
+assets_font_create_from_file_ttf(str8 name, u32 height){DPZoneScoped;
+	if(str8_equal_lazy(name, STR8("null"))) return assets_font_null();
+	return assets_font_create_from_path_ttf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
 }
 
 
 Font*
-storage_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
+assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	//TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
 	
 	//check if font was loaded already
 	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshStorage->font_array){
+	for_array(DeshAssets->font_array){
 		if(str8_equal_lazy((*it)->name, filename)){
 			return *it;
 		}
 	}
 	
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) return storage_font_null();
+	if(!contents) return assets_font_null();
 	
 	//Codepoint Ranges to Load:
 	// ASCII              32 - 126  ~  94 chars
@@ -2344,7 +2344,7 @@ storage_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	int max_width = x1 - x0, max_height = y1 - y0;
 	f32 aspect_ratio = (f32)max_height / (f32)max_width;
 	
-	Texture* texture = storage_texture_create_from_memory(pixels, filename, texture_size_x, texture_size_y,
+	Texture* texture = assets_texture_create_from_memory(pixels, filename, texture_size_x, texture_size_y,
 											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
 											   TextureAddressMode_ClampToWhite, false);
 	
@@ -2365,23 +2365,23 @@ storage_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	font->tex          = texture;
 	font->ranges       = (FontPackRange*)ranges;
 	
-	arrput(DeshStorage->font_array, font);
+	arrput(DeshAssets->font_array, font);
 	return font;
 }
 
 void
-storage_font_delete(Font* font){DPZoneScoped;
-	if(font == storage_font_null()) return;
+assets_font_delete(Font* font){DPZoneScoped;
+	if(font == assets_font_null()) return;
 	
-	for_array(DeshStorage->font_array){
+	for_array(DeshAssets->font_array){
 		if(*it == font){
-			arrdelswap(DeshStorage->font_array, it - DeshStorage->font_array);
+			arrdelswap(DeshAssets->font_array, it - DeshAssets->font_array);
 		}
 	}
 	if(font->type == FontType_TTF){
 	forI(font->num_ranges) memory_zfree(font->ranges[i].chardata_for_range);
 		memory_zfree(font->ranges);
 	}
-	storage_texture_delete(font->tex);
+	assets_texture_delete(font->tex);
 	memory_zfree(font);
 }

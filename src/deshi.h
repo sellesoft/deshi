@@ -1,7 +1,7 @@
-#pragma once
+// deshi Quickstart Includes and Macros
 #ifndef DESHI_H
 #define DESHI_H
-
+#include "core/assets.h"
 #include "core/commands.h"
 #include "core/console.h"
 #ifndef DESHI_DISABLE_IMGUI
@@ -12,7 +12,6 @@
 #include "core/memory.h"
 #include "core/platform.h"
 #include "core/render.h"
-#include "core/storage.h"
 #include "core/threading.h"
 #include "core/ui.h"
 #include "core/ui2.h"
@@ -25,7 +24,7 @@
   logger_init();                               \
   window_create(str8l("deshi"));               \
   render_init();                               \
-  Storage::Init();                             \
+  assets_init();                               \
   uiInit(g_memory,0);                          \
   UI::Init();                                  \
   console_init();                              \

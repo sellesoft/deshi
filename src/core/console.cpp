@@ -131,7 +131,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
 void console_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_CONSOLE, DS_UI2|DS_STORAGE, "Attempted to initialize Console module before initializing the UI2 or Storage modules");
+	DeshiStageInitStart(DS_CONSOLE, DS_UI2|DS_ASSETS, "Attempted to initialize Console module before initializing the UI2 or Assets modules");
 	Assert(window_windows.count > 0, "Attempted to initialize Console module before a window was created");
 	
 	console.logger = logger_expose();
@@ -145,7 +145,7 @@ void console_init(){DPZoneScoped;
 	console.state = ConsoleState_Closed;
 	
 	uiStyle base = {0};
-	base.font = storage_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+	base.font = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	base.font_height = 11;
 	base.text_color = color(255,255,255);
 	base.overflow = overflow_scroll;

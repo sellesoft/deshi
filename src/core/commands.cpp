@@ -392,8 +392,8 @@ void cmd_init(){
 	
 	DESHI_CMD_START(mat_list, "Lists the materials and their info"){
 		Log("cmd", "Material List:\nName\tShader\tTextures");
-		forI(arrlenu(storage_material_array())){
-			Material* mat = storage_material_array()[i];
+		forI(arrlenu(assets_material_array())){
+			Material* mat = assets_material_array()[i];
 			str8_builder builder;
 			str8_builder_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
 			str8_builder_append(&builder, str8_lit("\t"));
@@ -412,7 +412,7 @@ void cmd_init(){
 	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
 		Material* mat = 0;
 		const char* mat_name = temp_str8_cstr(args[0]);
-		for_array(storage_material_array()){
+		for_array(assets_material_array()){
 			if(strcmp((*it)->name, mat_name) == 0){
 				mat = *it;
 				break;
@@ -435,7 +435,7 @@ void cmd_init(){
 		
 		Texture* tex = 0;
 		const char* tex_name = temp_str8_cstr(args[2]);
-		for_array(storage_texture_array()){
+		for_array(assets_texture_array()){
 			if(strcmp((*it)->name, tex_name) == 0){
 				 tex = *it;
 				break;
@@ -453,7 +453,7 @@ void cmd_init(){
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
 		Material* mat = 0;
 		const char* mat_name = temp_str8_cstr(args[0]);
-		for_array(storage_material_array()){
+		for_array(assets_material_array()){
 			if(strcmp((*it)->name, mat_name) == 0){
 				mat = *it;
 				break;
@@ -496,13 +496,13 @@ void cmd_init(){
 	
 	DESHI_CMD_START(texture_load, "Loads a specific texture"){
 		Stopwatch load_stopwatch = start_stopwatch();
-		storage_texture_create_from_file_simple(args[0]);
+		assets_texture_create_from_file_simple(args[0]);
 		Log("cmd", "Loaded texture '",args[0],"' in ",peek_stopwatch(load_stopwatch),"ms");
 	}DESHI_CMD_END(texture_load, CmdArgument_String);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("cmd", "Texture List:\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
-		for_array(storage_texture_array()){
+		for_array(assets_texture_array()){
 			Texture* tex = *it;
 			Log("cmd", '\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth, '\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
 		}

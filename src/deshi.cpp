@@ -194,7 +194,7 @@ enum
     DS_WINDOW   = 1 << 5,
     DS_RENDER   = 1 << 6,
     DS_IMGUI    = 1 << 7,
-    DS_STORAGE  = 1 << 8,
+    DS_ASSETS   = 1 << 8,
     DS_UI       = 1 << 9,
     DS_UI2      = 1 << 10,
     DS_CONSOLE  = 1 << 11,
@@ -237,6 +237,7 @@ local DeshiStage deshiStage = DS_NONE;
 //// core headers ////
 #define DESHI_IMPLEMENTATION
 #include "deshi.h"
+#include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"
 #include "core/config.h"
@@ -254,7 +255,6 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/networking.h"
 #include "core/platform.h"
 #include "core/render.h"
-#include "core/storage.h"
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
@@ -349,22 +349,29 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/memory.cpp"
 #include "core/logger.cpp"
 #include "core/console.cpp"
-#include "core/storage.cpp"
+#include "core/assets.cpp"
 #include "core/ui.cpp"
 #include "core/ui2.cpp"
-#include "core/commands.cpp"
+#include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
 
+//// global definitions ////
 local Time deshi_time;
 Time *g_time = &deshi_time;
+
 local Input deshi_input;
 Input *g_input = &deshi_input;
-local Storage deshi_storage;
-Storage *g_storage = &deshi_storage;
+
+local Assets deshi_assets;
+Assets *g_assets = &deshi_assets;
+
 local ThreadManager deshi_thread_manager;
 ThreadManager *g_tmanager = &deshi_thread_manager;
+
 local uiContext deshi_ui{};
 uiContext *g_ui = &deshi_ui;
 local uiStyle deshi_ui_initial_style{};
 uiStyle *ui_initial_style = &deshi_ui_initial_style;
+
 Window *g_window = 0;
+
 MemoryContext *g_memory = 0;

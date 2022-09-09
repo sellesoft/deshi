@@ -567,8 +567,8 @@ external void render_display_stats();
 #endif //DESHI_RENDER_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef DESHI_IMPLEMENTATION
+#include "assets.h"
 #include "config.h"
-#include "storage.h"
 #include "ui.h"
 
 
