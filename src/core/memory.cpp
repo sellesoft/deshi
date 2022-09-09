@@ -3,6 +3,12 @@
 @memory_utils
 @memory_heap
 @memory_arena
+@memory_arena_create
+@memory_arena_grow
+@memory_arena_clear
+@memory_arena_delete
+@memory_arena_other
+@memory_pool
 @memory_generic
 @memory_temp
 @memory_debug
@@ -757,6 +763,124 @@ T* memory_arena_add_new(Arena* arena){
 	new(arena->cursor) T();
 	arena->cursor+=sizeof(T);
 	return (T*)(arena->cursor-sizeof(T));
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @memory_pool
+void
+deshi__memory_pool_grow(void* pool, upt type_size, upt count){
+	PoolHeader* header = memory_pool_header(pool);
+	
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(void*) + (chunk_size * (count));
+	
+	//iterate to the last block
+	void** last_block = header->next_block;
+	if(last_block){
+		while(*last_block){
+			last_block = (void**)(*last_block);
+		}
+	}
+	
+	//allocate a new block and point previously last block to it
+	if(last_block){
+		*last_block = memory_alloc(alloc_size);
+	}else{
+		header->next_block = (void**)memory_alloc(alloc_size);
+		last_block = header->next_block;
+	}
+	
+	//point to the previous free chunk in the last chunk of the new block
+	*((void**)((u8*)last_block + alloc_size - chunk_size)) = header->free_chunk;
+	
+	//set free chunk equal to the first chunk in the new block
+	header->free_chunk = last_block+1;
+	
+	//setup the rest of the free chunk single linked list
+	for(u8* chunk = (u8*)header->free_chunk; chunk < (u8*)last_block + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}    
+}
+
+void*
+deshi__memory_pool_init(void* pool, upt type_size, upt count){
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(PoolHeader) + (chunk_size * (count));
+	
+	//allocate space for chunks and header
+	pool = (u8*)memory_alloc(alloc_size) + sizeof(PoolHeader);
+	PoolHeader* header = memory_pool_header(pool);
+	header->chunks_per_block = (count);
+	
+	//set free chunk equal to the first chunk
+	header->free_chunk = (void**)(pool);
+	
+	//setup the rest of the free chunk linked list
+	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}
+	
+	//return pool so the macro can assign to var
+	return pool;
+}
+
+void
+memory_pool_deinit(void* pool){
+	//zfree the first block (and header)
+	PoolHeader* header = memory_pool_header(pool);
+	void** next_block = header->next_block;
+	memory_zfree(header);
+	
+	//zfree the rest of the blocks by iterating the linked list
+	if(next_block){
+	while(*next_block){
+		void* block = (void*)next_block;
+		next_block = (void**)(*next_block);
+		memory_zfree(block);
+		}
+	}
+}
+
+void*
+deshi__memory_pool_push(void* pool, upt type_size){
+	PoolHeader* header = memory_pool_header(pool);
+	
+	//grow if there are no free chunks
+	if(header->free_chunk == 0){
+		deshi__memory_pool_grow(pool, type_size, header->chunks_per_block);
+	}
+	
+	//store the current free chunk
+	void* result = header->free_chunk;
+	
+	//set free chunk to the next free chunk in the linked list
+	header->free_chunk = (void**)*header->free_chunk;
+	
+	//zero the result memory
+	*(void**)result = 0;
+	
+	header->count += 1;
+	return result;
+}
+
+void
+deshi__memory_pool_delete(void* pool, upt type_size, void* ptr){
+	PoolHeader* header = memory_pool_header(pool);
+	
+	//zero the memory at ptr
+	ZeroMemory(ptr, type_size);
+	
+	//create a new free chunk at ptr pointing to the previous free chunk
+	void** chunk = (void**)ptr;
+	*chunk = header->free_chunk;
+	
+	//set pool's free chunk to the new free chunk
+	header->free_chunk = chunk;
+	
+	header->count -= 1;
 }
 
 

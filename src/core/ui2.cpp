@@ -568,6 +568,8 @@ void ui_pop_id(str8 file, upt line){
 //---------------------------------------------------------------------------------------------------------------------
 // @context
 void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
+	DeshiStageInitStart(DS_UI2, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
+	
 #if DESHI_RELOADABLE_UI
 	g_memory = memctx;
 	g_ui     = uictx;

@@ -659,7 +659,7 @@ storage_texture_create_from_file(str8 name, ImageFormat format, TextureType type
 Texture*
 storage_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	//check if texture is already loaded
-	str8 filename = str8_skip_until_last(path, '/');
+	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	for_array(DeshStorage->texture_array){
 		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
 			return *it;
@@ -829,7 +829,7 @@ storage_material_create_from_file(str8 name){DPZoneScoped;
 Material*
 storage_material_create_from_path(str8 path){DPZoneScoped;
 	//check if material is already loaded
-	str8 filename = str8_skip_until_last(path, '/');
+	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	for_array(DeshStorage->material_array){
 		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
 			return *it;
@@ -2002,11 +2002,11 @@ storage_font_create_from_file(str8 name, u32 height){DPZoneScoped;
 Font*
 storage_font_create_from_path(str8 path, u32 height){DPZoneScoped;
 	if(str8_ends_with(path, STR8(".bdf"))){
-		return storage_font_create_from_file_bdf(path);
+		return storage_font_create_from_path_bdf(path);
 	}
 	
 	if(str8_ends_with(path, STR8(".ttf")) || str8_ends_with(path, STR8(".otf"))){
-		return storage_font_create_from_file_ttf(path, height);
+		return storage_font_create_from_path_ttf(path, height);
 	}
 	
 	LogE("storage","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
@@ -2024,7 +2024,7 @@ storage_font_create_from_file_bdf(str8 name){DPZoneScoped;
 Font*
 storage_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	//check if font was loaded already
-	str8 filename = str8_skip_until_last(path, '/');
+	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	for_array(DeshStorage->font_array){
 		if(str8_equal_lazy((*it)->name, filename)){
 			return *it;
@@ -2221,7 +2221,7 @@ storage_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	
 	//check if font was loaded already
 	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
-	str8 filename = str8_skip_until_last(path, '/');
+	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	for_array(DeshStorage->font_array){
 		if(str8_equal_lazy((*it)->name, filename)){
 			return *it;
