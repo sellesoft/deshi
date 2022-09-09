@@ -195,10 +195,10 @@ typedef Type TextureType; enum{
 
 typedef struct Texture{
 	char name[64]; //NOTE(delle) includes the extension
-	  s32 width;
-	 s32 height;
-	 s32 depth;
-	 s32 mipmaps;
+	s32 width;
+	s32 height;
+	s32 depth;
+	s32 mipmaps;
 	u8* pixels; //pixel data allocated during creation
 	u32 render_idx; //filled when render_load_texture() is called
 	ImageFormat format;
@@ -259,7 +259,7 @@ FORCE_INLINE Texture* storage_texture_create_from_memory_simple(void* data, str8
 }
 
 //Deletes the `Texture` object at `texture` after calling `render_unload_texture()`
-void     storage_texture_delete(Texture* texture);
+void storage_texture_delete(Texture* texture);
 
 //Returns a pointer to the default `Texture` object which is created when `storage_init()` is called
 FORCE_INLINE Texture*  storage_texture_null(){ return DeshStorage->texture_array[0]; };
