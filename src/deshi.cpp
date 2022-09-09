@@ -41,7 +41,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `File`
 ------
-[0  ,** ,21/09/16,Feature]  data folder specified on launch
+[0  ,** ,21/09/16,Feature]  data folder specified on launch (in launch args)
 [!!!,***,21/10/20,System]   linux/mac file IO
 [!  ,*  ,21/12/28,Feature]  add file locking and determination
 [!  ,*  ,21/12/28,Feature]  add hard/symbolic link creation/deletion
@@ -73,12 +73,12 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `Memory`
 --------
-[!!!,***,21/12/22,Feature] consider multiple thread contexts
+[!!!,** ,21/12/22,Feature] add threading locks to arenas, generic alloc, and temp alloc
 [!  ,***,21/12/22,Feature] add fast generic bins
     ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
 [!! ,** ,22/01/16,Bug]     memory system sometimes fails to alloc memory from OS (might only be during debugging)
 [!! ,** ,22/02/06,Tweak]   add a way to disable Memory module and set deshi_allocator to libc
-[!  ,*  ,22/04/26,Feature] create an interface for creating/using Heap
+[!!!,*  ,22/09/08,Feature] add memory_init args to deshi.cfg
 
 `Render`
 --------
@@ -130,12 +130,18 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!  ,*  ,21/10/20,Tweak]   merge mesh faces with <10 degree normal difference (for physics)
 [!  ,** ,21/10/20,Tweak]   add edges and hulls to meshes, remove unused vars
 [!! ,** ,21/10/20,Feature] add OBJ MTL parsing
-[!!!,** ,21/12/31,Feature] data streaming to prevent loading freeze
+[!!!,** ,21/12/31,Feature] data streaming (load in parts)
 [!!!,*  ,22/01/12,Feature] make an interface for updating textures that have already been created
 [!  ,*  ,22/09/04,Tweak]   rename to Assets
+[!!!,** ,22/09/08,Feature] use worker threads to load in the background
 
 `Time`
 ------
+[!!!,***,21/08/07,Feature] add the ability to limit framerate (delta time)
+
+`Threading`
+-----------
+[!  ,** ,22/09/08,Feature] add an async(tag,data_ptr) macro that works like defer expecting an {} after it to package into a wrapper func to send to the job worker
 
 `UI`
 ----
@@ -156,10 +162,8 @@ Common Tags: Feature, Tweak, Bug, System, PWide
     it triggers the assert that checks that the drawcmd being removed does not have the same offset as one that is already removed
     this check may just be invalid. this happens when clicking on text sometimes.
 
-
 `Window`
 --------
-[!!!,***,21/08/07,Feature] add the ability to limit framerate
 [!!!,*  ,21/09/01,Feature] make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 
 `Ungrouped`

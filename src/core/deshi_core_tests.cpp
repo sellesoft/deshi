@@ -194,8 +194,160 @@ local void TEST_deshi_core_memory(){
 	memory_zfree(string1);
 	memory_zfree(string2);
 	
+	//TODO(delle) memory heap testing
+	
+	//TODO(delle) temp alloc testing
+	
+	{//// memory pool ////
+		//pool init (test that the pool was alloced and setup correctly)
+		MemChunk* pool = 0;
+		memory_pool_init(pool, 64);
+		AssertAlways(pool != 0);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		AssertAlways(memory_pool_header(pool)->free_chunk != 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)pool);
+		AssertAlways(*memory_pool_header(pool)->free_chunk == &pool[1]);
+		AssertAlways(memory_pool_header(pool)->next_block == 0);
+		AssertAlways(memory_pool_header(pool)->count == 0);
+		forI(63) AssertAlways(*((void**)&pool[i]) == &pool[i+1]);
+		AssertAlways(*((void**)&pool[63]) == 0);
+		
+		//pool deinit (test that the memory is zfreed)
+		void* pool_prev = pool;
+		memory_pool_deinit(pool);
+		AssertAlways(pool->prev == 0);
+		AssertAlways(pool->size == 0);
+		AssertAlways(pool->node.next == 0);
+		AssertAlways(pool->node.prev == 0);
+		memory_pool_init(pool, 64);
+		AssertAlways(pool != 0);
+		AssertAlways(pool == pool_prev);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		AssertAlways(memory_pool_header(pool)->free_chunk != 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)pool);
+		AssertAlways(*memory_pool_header(pool)->free_chunk == &pool[1]);
+		AssertAlways(memory_pool_header(pool)->next_block == 0);
+		AssertAlways(memory_pool_header(pool)->count == 0);
+		forI(63) AssertAlways(*((void**)&pool[i]) == &pool[i+1]);
+		AssertAlways(*((void**)&pool[63]) == 0);
+		
+		//pool push (test that the memory is zero and that the free chunk was updated)
+		MemChunk* var1 = (MemChunk*)memory_pool_push(pool);
+		AssertAlways(var1->prev == 0);
+		AssertAlways(var1->size == 0);
+		AssertAlways(var1->node.next == 0);
+		AssertAlways(var1->node.prev == 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)(&pool[1]));
+		AssertAlways(memory_pool_header(pool)->count == 1);
+		for(int i = 1; i < 63; ++i) AssertAlways(*((void**)&pool[i]) == &pool[i+1]);
+		AssertAlways(*((void**)&pool[63]) == 0);
+		
+		//pool count
+		AssertAlways(memory_pool_count(pool) == 1);
+		
+		//pool delete (test that the memory at ptr is zeroed (other than next free) and that the pool is reset to previous state)
+		memory_pool_delete(pool, var1);
+		AssertAlways(var1->size == 0);
+		AssertAlways(var1->node.next == 0);
+		AssertAlways(var1->node.prev == 0);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		AssertAlways(memory_pool_header(pool)->free_chunk != 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)pool);
+		AssertAlways(*memory_pool_header(pool)->free_chunk == &pool[1]);
+		AssertAlways(memory_pool_header(pool)->next_block == 0);
+		AssertAlways(memory_pool_header(pool)->count == 0);
+		forI(63) AssertAlways(*((void**)&pool[i]) == &pool[i+1]);
+		AssertAlways(*((void**)&pool[63]) == 0);
+		
+		//pool deinit after push (test that the memory is zfreed)
+		var1 = (MemChunk*)memory_pool_push(pool);
+		pool_prev = pool;
+		memory_pool_deinit(pool);
+		AssertAlways(pool->prev == 0);
+		AssertAlways(pool->size == 0);
+		AssertAlways(pool->node.next == 0);
+		AssertAlways(pool->node.prev == 0);
+		memory_pool_init(pool, 64);
+		AssertAlways(pool != 0);
+		AssertAlways(pool == pool_prev);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		AssertAlways(memory_pool_header(pool)->free_chunk != 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)pool);
+		AssertAlways(*memory_pool_header(pool)->free_chunk == &pool[1]);
+		AssertAlways(memory_pool_header(pool)->next_block == 0);
+		AssertAlways(memory_pool_header(pool)->count == 0);
+		forI(63) AssertAlways(*((void**)&pool[i]) == &pool[i+1]);
+		AssertAlways(*((void**)&pool[63]) == 0);
+		
+		//pool grow manually (test that a new block is alloced, free chunk is its first chunk, and its last chunk points to the old free chunk)
+		void* prev_free = memory_pool_header(pool)->free_chunk;
+		memory_pool_grow(pool,64);
+		AssertAlways(pool != 0);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		forI(63) AssertAlways(*((void**)&pool[i]) == &pool[i+1]);
+		AssertAlways(*((void**)&pool[63]) == 0);
+		AssertAlways(memory_pool_header(pool)->next_block != 0);
+		void** block_header = memory_pool_header(pool)->next_block;
+		AssertAlways(*block_header == 0);
+		var1 = (MemChunk*)(memory_pool_header(pool)->next_block + 1);
+		forI(63) AssertAlways(*((void**)&var1[i]) == &var1[i+1]);
+		AssertAlways(*((void**)&var1[63]) == prev_free);
+		AssertAlways(memory_pool_header(pool)->free_chunk != 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)var1);
+		AssertAlways(*memory_pool_header(pool)->free_chunk == &var1[1]);
+		AssertAlways(memory_pool_header(pool)->count == 0);
+		
+		//pool push to max space (test that all chunks are filled and free chunk is empty)
+		forI(128) memory_pool_push(pool);
+		AssertAlways(pool != 0);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		forI(64) AssertAlways(*((void**)&pool[i]) == 0);
+		AssertAlways(memory_pool_header(pool)->next_block != 0);
+		AssertAlways(*block_header == 0);
+		forI(64) AssertAlways(*((void**)&var1[i]) == 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == 0);
+		AssertAlways(memory_pool_header(pool)->count == 128);
+		
+		//pool grow from pushing (test that a new block is allocated and free chunk is its second chunk)
+		var1 = (MemChunk*)memory_pool_push(pool);
+		AssertAlways(var1->prev == 0);
+		AssertAlways(var1->size == 0);
+		AssertAlways(var1->node.next == 0);
+		AssertAlways(var1->node.prev == 0);
+		AssertAlways((u8*)memory_pool_header(pool) - ((u8*)pool - sizeof(PoolHeader)) == 0);
+		AssertAlways(memory_pool_header(pool)->chunks_per_block == 64);
+		forI(64) AssertAlways(*((void**)&pool[i]) == 0);
+		AssertAlways(memory_pool_header(pool)->next_block != 0);
+		AssertAlways(*block_header != 0);
+		block_header = (void**)(*block_header);
+		AssertAlways(*block_header == 0);
+		for(int i = 1; i < 62; ++i) AssertAlways(*((void**)&var1[i]) == &var1[i+1]);
+		AssertAlways(*((void**)&var1[63]) == 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk != 0);
+		AssertAlways(memory_pool_header(pool)->free_chunk == (void**)&var1[1]);
+		AssertAlways(*memory_pool_header(pool)->free_chunk == &var1[2]);
+		AssertAlways(memory_pool_header(pool)->count == 129);
+		
+		//pool deinit after grow
+		void** block2 = memory_pool_header(pool)->next_block;
+		void** block3 = (void**)(*block2);
+		memory_pool_deinit(pool);
+		AssertAlways(pool->prev == 0);
+		AssertAlways(pool->size == 0);
+		AssertAlways(pool->node.next == 0);
+		AssertAlways(pool->node.prev == 0);
+		AssertAlways(((MemChunk*)(block2+1))->prev == 0);
+		AssertAlways(((MemChunk*)(block3+1))->prev == 0);
+	}
+	
 	{//// allocation info ////
-#if BUILD_INTERNAL
+#if BUILD_INTERNAL && MEMORY_TRACK_ALLOCS
 		//alloc info array
 		carray<AllocInfo> active = deshi__memory_allocinfo_active_expose();
 		AssertAlways(active.count >= 3);
@@ -388,7 +540,7 @@ local void TEST_deshi_core_memory(){
 	logger_pop_indent();
 	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
-	DESHI_TEST_CORE_TODO("memory");
+	DESHI_TEST_CORE_PASSED("memory");
 }
 
 #include "render.h"

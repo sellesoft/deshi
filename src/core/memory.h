@@ -50,8 +50,14 @@ Index:
   memory_delete_arena(Arena* arena) -> void
   memory_expose_arena_heap() -> Heap*
 @memory_pool
-PoolHeader
-
+  PoolHeader
+  memory_pool_header(void* pool) -> PoolHeader*
+  memory_pool_count(void* pool) -> upt
+  memory_pool_grow(T* pool, upt count) -> void
+  memory_pool_init(T* pool, upt count) -> T*
+  memory_pool_deinit(void* pool) -> void
+  memory_pool_push(T* pool) -> void*
+  memory_pool_delete(T* pool, void* ptr) -> void
 @memory_generic
   memory_alloc(upt size) -> void*
   memory_realloc(void* ptr, upt new_size) -> void*
@@ -78,10 +84,11 @@ PoolHeader
   deshi_temp_allocator
 
 References:
-https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c
-https://github.com/Dion-Systems/metadesk/blob/master/source/md.h
-https://github.com/Dion-Systems/metadesk/blob/master/source/md.c
-https://github.com/nothings/stb/blob/master/stb_ds.h
+  https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c
+  https://github.com/Dion-Systems/metadesk/blob/master/source/md.h
+  https://github.com/Dion-Systems/metadesk/blob/master/source/md.c
+  https://github.com/nothings/stb/blob/master/stb_ds.h
+  http://dmitrysoshnikov.com/compilers/writing-a-pool-allocator/
 */
 
 
@@ -235,45 +242,55 @@ T* memory_arena_add_new(Arena* arena);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_pool
+// A memory pool (in this context) is a memory-owning data structure for storing homogenous data
+// without invalidatng pointers on growth. The pool must first be init by passing a pointer of a
+// type, from which the chunk size comes. A pool chunk represents a slot that an item can fill in
+// the pool. When initting the pool, you specify how many chunks fit in one block. A pool block is
+// just a contigious allocation of the chunks. Allocation from the pool happens in O(1) unless a
+// growth operation is needed to create new free chunks. Fast allocation is possible because when
+// deleting from the pool, we insert a free chunk where the memory was to the beginning of a singly-
+// linked-list of free chunks. In the even a growth operation occurs during allocation, we generic
+// allocate a new block of memory which is linked with the pool's header thru a singly-linked-list
+// of all the blocks. As such, deinitting happens by iterating that list of blocks and freeing them.
+//
+// TL/DR: fast allocation, pointer persistence on growth, not-fully-contiguous
+
 external struct PoolHeader{
-	u32 chunk_size;
-	u32 chunks_per_block;
-	void* free_chunk;
-	void* next_block;
+	upt chunks_per_block;
+	void** free_chunk; //linked list of void*
+	void** next_block; //linked list of void*
+	upt count;
 };
 
-
+//Returns the header for the pooled arena `pool`
 #define memory_pool_header(pool) ((PoolHeader*)(pool) - 1)
 
-#define memory_pool_grow(pool) \
-  do{ \
-  }while(0)
+//Returns the number of items (not chunks) in the pooled arena `pool`
+#define memory_pool_count(pool) (memory_pool_header(pool)->count)
 
-#define memory_pool_maybegrow(pool) ((!(pool) || !memory_pool_header(pool)->free_chunk) ? (memory_pool_grow(pool),0) : 0)
+//Allocates a block of `count` chunks for the pooled arena `pool` and sets `PoolHeader.free_chunk` to the first new chunk
+#define memory_pool_grow(pool,count) deshi__memory_pool_grow((pool), sizeof(*(pool)), (count))
+external void deshi__memory_pool_grow(void* pool, upt type_size, upt count);
 
-//Creates a pooled arena with `cpb` chunks per block and sets `pool` equal to the first chunk
-#define memory_pool_init(pool,cpb) \
-  do{ \
-    u32 chunk_size = Max(sizeof(*(pool)), sizeof(void*)); \
-    (u8*)(pool) = (u8*)memory_alloc(sizeof(PoolHeader) + (chunk_size * (cpb))) + sizeof(PoolHeader); \
-    memory_pool_header(pool)->chunk_size = sizeof(*(pool)); \
-    memory_pool_header(pool)->chunks_per_block = (cpb); \
-  }while(0)
+//Creates a pooled arena with `count` chunks-per-block (item slots) and sets `pool` equal to the first chunk
+#define memory_pool_init(pool,count) ((pool) = memory_pool_init_wrapper(pool, sizeof(*(pool)), (count)))
+external void* deshi__memory_pool_init(void* pool, upt type_size, upt count);
+#if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
+template<class T> global inline T* memory_pool_init_wrapper(T*    pool, upt type_size, upt count){ return (T*)deshi__memory_pool_init(pool, type_size, count); }
+#else
+FORCE_INLINE                 void* memory_pool_init_wrapper(void* pool, upt type_size, upt count){ return     deshi__memory_pool_init(pool, type_size, count); }
+#endif
 
-#define memory_pool_deinit(pool) (((pool) ? memory_zfree(pool) : 0), (pool)=0)
+//Deletes the pooled arena `pool`
+external void memory_pool_deinit(void* pool);
 
-#define memory_pool_add(pool,item) \
-  do{ \
-    PoolHeader* header = memory_pool_header(pool); \
-    memory_pool_maybegrow(pool); \
-    void* next_chunk = header->free_chunk->next; \
-    *header->free_chunk = item; \
-    header->free_chunk = next_chunk; \
-  }while(0)
+//Returns a free chunk in `pool`, growing if necessary
+#define memory_pool_push(pool) deshi__memory_pool_push(pool, sizeof(*(pool)))
+external void* deshi__memory_pool_push(void* pool, upt type_size);
 
-#define memory_pool_delete(pool,ptr) 0 //TODO(delle) finis this
-
-#define memory_pool_index(pool,index) 0 //TODO(delle) finis this
+//Deletes the chunk at `ptr` in the pooled arena `pool`
+#define memory_pool_delete(pool,ptr) deshi__memory_pool_delete((pool), sizeof(*(pool)), (ptr))
+external void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
