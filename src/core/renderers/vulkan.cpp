@@ -2793,18 +2793,18 @@ BuildCommands(){DPZoneScoped;
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, 0);
 			
 			if(renderModelCmdCount){
-			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
-			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
-			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, INDEX_TYPE_VK_MESH);
-			forI(renderModelCmdCount){
-				RenderModelCmd& cmd = renderModelCmdArray[i];
-				MaterialVk& mat = vkMaterials[cmd.material];
-				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
-				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
-				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
-				renderStats.drawnIndices += cmd.indexCount;
-			}
+				DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
+				VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, INDEX_TYPE_VK_MESH);
+				forI(renderModelCmdCount){
+					RenderModelCmd& cmd = renderModelCmdArray[i];
+					MaterialVk& mat = vkMaterials[cmd.material];
+					DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
+					vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
+					renderStats.drawnIndices += cmd.indexCount;
+				}
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
@@ -2815,12 +2815,12 @@ BuildCommands(){DPZoneScoped;
 				for_pool(render_voxel_chunk_pool){
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
-					offsets[0] = 0;
-			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
+						offsets[0] = 0;
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
 						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
-				renderStats.drawnIndices += it->index_count;
+						renderStats.drawnIndices += it->index_count;
 					}
 				}
 				DebugEndLabelVk(cmdBuffer);
@@ -2863,32 +2863,32 @@ BuildCommands(){DPZoneScoped;
 			
 			//draw meshes
 			if(renderModelCmdCount){
-			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
-			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
-			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, INDEX_TYPE_VK_MESH);
-			forI(renderModelCmdCount){
-				RenderModelCmd& cmd = renderModelCmdArray[i];
-				MaterialVk& mat = vkMaterials[cmd.material];
-				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
-				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
-				
-				if(renderSettings.wireframeOnly){
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-				}else{
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat.pipeline);
-					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &mat.descriptorSet, 0, 0);
-				}
-				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
-				renderStats.drawnIndices += cmd.indexCount;
-				
-				//wireframe overlay
-				if(renderSettings.meshWireframes){
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+				DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
+				VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, INDEX_TYPE_VK_MESH);
+				forI(renderModelCmdCount){
+					RenderModelCmd& cmd = renderModelCmdArray[i];
+					MaterialVk& mat = vkMaterials[cmd.material];
+					DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
+					vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
+					
+					if(renderSettings.wireframeOnly){
+						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+					}else{
+						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat.pipeline);
+						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &mat.descriptorSet, 0, 0);
+					}
 					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
 					renderStats.drawnIndices += cmd.indexCount;
+					
+					//wireframe overlay
+					if(renderSettings.meshWireframes){
+						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+						vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
+						renderStats.drawnIndices += cmd.indexCount;
+					}
 				}
-			}
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
@@ -2899,12 +2899,12 @@ BuildCommands(){DPZoneScoped;
 				for_pool(render_voxel_chunk_pool){
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
-					offsets[0] = 0;
+						offsets[0] = 0;
 						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
 						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
-				renderStats.drawnIndices += it->index_count;
+						renderStats.drawnIndices += it->index_count;
 					}
 				}
 				DebugEndLabelVk(cmdBuffer);
@@ -3756,17 +3756,17 @@ render_load_material(Material* material){DPZoneScoped;
 	//write descriptor set per texture
 	array<VkWriteDescriptorSet> sets;
 	if(material->textureArray){
-	for_array(material->textureArray){
-		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-		set.dstSet          = mvk.descriptorSet;
-		set.dstArrayElement = 0;
-		set.descriptorCount = 1;
-		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		for_array(material->textureArray){
+			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+			set.dstSet          = mvk.descriptorSet;
+			set.dstArrayElement = 0;
+			set.descriptorCount = 1;
+			set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			set.pImageInfo      = &textures[(*it)->render_idx].descriptor;
-		set.dstBinding      = sets.size();
-		sets.add(set);
-	}
-	vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
+			set.dstBinding      = sets.size();
+			sets.add(set);
+		}
+		vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
 	}
 	
 	//HACK to fix materials with no textures
@@ -3811,16 +3811,16 @@ render_update_material(Material* material){DPZoneScoped;
 	//update descriptor set per texture
 	array<VkWriteDescriptorSet> sets;
 	if(material->textureArray){
-	for_array(material->textureArray){
-		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-		set.dstSet          = mvk->descriptorSet;
-		set.dstArrayElement = 0;
-		set.descriptorCount = 1;
-		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &textures[(*it)->render_idx].descriptor;
-		set.dstBinding      = sets.size();
-		sets.add(set);
-	}
+		for_array(material->textureArray){
+			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+			set.dstSet          = mvk->descriptorSet;
+			set.dstArrayElement = 0;
+			set.descriptorCount = 1;
+			set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			set.pImageInfo      = &textures[(*it)->render_idx].descriptor;
+			set.dstBinding      = sets.size();
+			sets.add(set);
+		}
 		vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, 0);
 	}
 	
@@ -4026,37 +4026,37 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	index_array = new_index_array;
 	
 	//fit the arena to its actually used size
-		chunk->arena->used = array_header_size + voxels_array_size + buffers_size + actual_vertices_size + actual_indices_size;
+	chunk->arena->used = array_header_size + voxels_array_size + buffers_size + actual_vertices_size + actual_indices_size;
 	memory_arena_fit(chunk->arena);
 	
 	//NOTE(DELLE) VULKAN SPECIFIC START
 	//create vertex and index GPU buffers
-			CreateOrResizeBuffer(vertex_buffer->buffer, vertex_buffer->memory, vertex_buffer->size, actual_vertices_size,
-								 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-			CreateOrResizeBuffer(index_buffer->buffer,  index_buffer->memory,  index_buffer->size,  actual_indices_size,
-								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	CreateOrResizeBuffer(vertex_buffer->buffer, vertex_buffer->memory, vertex_buffer->size, actual_vertices_size,
+						 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	CreateOrResizeBuffer(index_buffer->buffer,  index_buffer->memory,  index_buffer->size,  actual_indices_size,
+						 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	
+	//copy memory to the GPU
+	void* vb_data; void* ib_data;
+	resultVk = vkMapMemory(device, vertex_buffer->memory, 0, actual_vertices_size, 0, &vb_data); AssertVk(resultVk);
+	resultVk = vkMapMemory(device, index_buffer->memory,  0, actual_indices_size,  0, &ib_data); AssertVk(resultVk);
+	{
+		CopyMemory(vb_data, vertex_array, actual_vertices_size);
+		CopyMemory(ib_data, index_array,  actual_indices_size);
 		
-		//copy memory to the GPU
-		void* vb_data; void* ib_data;
-		resultVk = vkMapMemory(device, vertex_buffer->memory, 0, actual_vertices_size, 0, &vb_data); AssertVk(resultVk);
-		resultVk = vkMapMemory(device, index_buffer->memory,  0, actual_indices_size,  0, &ib_data); AssertVk(resultVk);
-		{
-			CopyMemory(vb_data, vertex_array, actual_vertices_size);
-			CopyMemory(ib_data, index_array,  actual_indices_size);
-			
-			VkMappedMemoryRange range[2] = {};
-			range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-			range[0].memory = vertex_buffer->memory;
-			range[0].size   = VK_WHOLE_SIZE;
-			range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-			range[1].memory = index_buffer->memory;
-			range[1].size   = VK_WHOLE_SIZE;
-			resultVk = vkFlushMappedMemoryRanges(device, 2, range); AssertVk(resultVk);
-		}
-		vkUnmapMemory(device, vertex_buffer->memory);
-		vkUnmapMemory(device, index_buffer->memory);
-		
-		//name buffers for debugging
+		VkMappedMemoryRange range[2] = {};
+		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[0].memory = vertex_buffer->memory;
+		range[0].size   = VK_WHOLE_SIZE;
+		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[1].memory = index_buffer->memory;
+		range[1].size   = VK_WHOLE_SIZE;
+		resultVk = vkFlushMappedMemoryRanges(device, 2, range); AssertVk(resultVk);
+	}
+	vkUnmapMemory(device, vertex_buffer->memory);
+	vkUnmapMemory(device, index_buffer->memory);
+	
+	//name buffers for debugging
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertex_buffer->buffer, (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") vertex buffer").str);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)index_buffer->buffer,  (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") index buffer").str);
 	//NOTE(DELLE) VULKAN SPECIFIC END
