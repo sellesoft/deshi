@@ -1,8 +1,12 @@
 /* deshi Render Module
 Notes:
-  All 2D and 3D drawing functions are immediate-mode, except render_debug_line().
-  Drawing functions ending in 2 are for 2D, 3 are for 3D, and nothing are implicitly 3D.
-  The 2D coordinate system goes from top left as the origin to bottom right.
+-All 2D and 3D drawing functions are immediate-mode, except render_debug_line().
+-Drawing functions ending in 2 are for 2D, 3 are for 3D, and nothing are implicitly 3D.
+-The 2D coordinate system goes from top left as the origin to bottom right.
+-The 3D coordinate system works such that +x is right, +y is up, and +z is forward.
+-Triangle winding (font-facing) is clockwise in 3D and counter-clockwise in 2D.
+-Voxels are bottom-left-back (-x,-y,-z) centered, meaning that the voxel at (0,0,0) has a vertex at (1,1,1).
+-Voxels are planar boxes, meaning that faces don't share vertices so that texture UVs are properly rendered.
 
 Index:
 @render_types
@@ -11,6 +15,7 @@ Index:
 @render_loading
 @render_draw_3d
 @render_draw_2d
+@render_voxel
 @render_light
 @render_camera
 @render_shaders
@@ -21,6 +26,7 @@ Index:
 @render_shared_draw_3d
 @render_shared_draw_2d
 @render_shared_make_2d
+@render_shared_voxel
 @render_shared_other
 */
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,12 +86,12 @@ typedef Type ShaderStage; enum{
 };
 
 typedef struct RenderStats{
-	u32 totalTriangles;
-	u32 totalVertices;
-	u32 totalIndices;
-	u32 drawnTriangles;
-	u32 drawnIndices;
-	f32 renderTimeMS;
+	u64 totalTriangles;
+	u64 totalVertices;
+	u64 totalIndices;
+	u64 drawnTriangles;
+	u64 drawnIndices;
+	f64 renderTimeMS;
 }RenderStats;
 
 typedef struct RenderSettings{
@@ -308,7 +314,7 @@ void render_debug_line3(vec3 p0, vec3 p1,  color c);
 //Starts a new `RenderTwodCmd` on `layer` with the specified values
 void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 
-//Starts a new RenderTwodCmd with the specified calues using externally allocated buffers
+//Starts a new RenderTwodCmd with the specified values using externally allocated buffers
 //NOTE: these buffers must have been mapped using render_update_external_2d_buffer()
 void render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, RenderTwodIndex index_count, Vertex2* vertbuff, RenderTwodIndex* indbuff, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
 
@@ -393,6 +399,56 @@ void render_texture_flat2(Texture* texture, vec2 position, vec2 dimensions, f32 
 //Renders a 2D `texture` to the active `RenderTwodCmd` rotated by `rotation` at `center` with `dimensions` and `transparency` (0-1)
 //    `rotation` is in degrees counter-clockwise
 void render_texture_rotated2(Texture* texture, vec2 center, vec2 dimensions, f32 rotation, f32 transparency);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_voxel
+typedef u16 RenderVoxelIndex; //NOTE(delle) changing this also requires changing defines in the backend
+
+typedef struct RenderVoxelType{
+	u32 color;
+	
+	//TODO(delle) voxel shape
+}RenderVoxelType;
+
+typedef struct RenderVoxel{ //8 bytes
+	u16 type; //voxel type index
+	s16 x;    //voxel offsets in chunk local space
+	s16 y;
+	s16 z;
+	
+	//TODO(delle) possible optimized form allowing more types and still 2^9 positions
+	//u32 type;
+	//u32 position; //0-9: x, 10-19: y, 20-29: z, 30-31: unused
+}RenderVoxel;
+
+typedef struct RenderVoxelChunk{
+	vec3 position;
+	vec3 rotation;
+	u32 dimensions;
+	
+	b32 modified;
+	b32 hidden; //NOTE(delle) temp user controlled culling
+	
+	RenderVoxel** voxels;
+	
+	void* vertex_buffer; //NOTE(delle) BufferVk in vulkan, TODO in opengl
+	u64   vertex_count;
+	void* index_buffer;  //same type as vertex_buffer
+	u64   index_count;
+}RenderVoxelChunk;
+
+//Inits the voxel renderer using an array of voxel types `types`
+//  `voxel_size` determines the size of a voxel in the world (a voxel's position is calculated with: chunk_position + voxel_size*voxel_offset)
+void render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size);
+
+//Creates a `RenderVoxelChunk` for `voxels`
+//  all voxels are transformed into global space by `position` and `rotation` (voxels describe their position in chunk local space)
+//  `chunk_size` determines the number of voxels for each each dimension (cube with `chunk_size` width, height, and depth)
+RenderVoxelChunk* render_voxel_create_chunk(vec3 position, vec3 rotation, u32 chunk_size, RenderVoxel* voxels, u64 voxels_count);
+
+//Deletes the `chunk`
+void render_voxel_delete_chunk(RenderVoxelChunk* chunk);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1547,6 +1603,57 @@ render_make_texture(Vertex2* putverts, u32* putindices, vec2i offsets, Texture* 
 	}
 	return render_make_texture_counts();
 }
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_shared_voxel
+enum{ //voxel face order
+	render_voxel_face_posx = 0,
+	render_voxel_face_posy = 1,
+	render_voxel_face_posz = 2,
+	render_voxel_face_negx = 3,
+	render_voxel_face_negy = 4,
+	render_voxel_face_negz = 5,
+};
+
+enum{ //voxel face vertex order (when looking at the front of the face)
+	render_voxel_face_vertex_bl = 0,
+	render_voxel_face_vertex_tl = 1,
+	render_voxel_face_vertex_tr = 2,
+	render_voxel_face_vertex_br = 3,
+};
+
+local RenderVoxelType* render_voxel_types;
+local u64 render_voxel_types_count;
+local RenderVoxelChunk* render_voxel_chunk_pool;
+local u32 render_voxel_voxel_size; //width, height, and depth of a voxel in the world
+
+local vec3 render_voxel_unit_vertex_offsets[6][4] = { //unit vertex offsets by face
+	{ { 1,0,0 }, { 1,1,0 }, { 1,1,1 }, { 1,0,1 } }, // +x face
+	{ { 0,1,0 }, { 0,1,1 }, { 1,1,1 }, { 1,1,0 } }, // +y face
+	{ { 1,0,1 }, { 1,1,1 }, { 0,1,1 }, { 0,0,1 } }, // +z face
+	{ { 0,0,1 }, { 0,1,1 }, { 0,1,0 }, { 0,0,0 } }, // -x face
+	{ { 0,0,1 }, { 0,0,0 }, { 1,0,0 }, { 1,0,1 } }, // -y face
+	{ { 0,0,0 }, { 0,1,0 }, { 1,1,0 }, { 1,0,0 } }, // -z face
+};
+
+local vec3 render_voxel_face_normals[6] = {
+	vec3_RIGHT(),
+	vec3_LEFT(),
+	vec3_UP(),
+	vec3_DOWN(),
+	vec3_FORWARD(),
+	vec3_BACK(),
+};
+
+//NOTE(delle) voxels are linearly laid out like x-y plane at z0, x-y plane at z1, ... with x being the major axis in the x-y plane
+#define render_voxel_linear(dims,x,y,z)  (((z) * (dims) * (dims)) + ((y) * (dims)) + (x))
+#define render_voxel_right(dims,linear)  ((linear) + 1)
+#define render_voxel_left(dims,linear)   ((linear) - 1)
+#define render_voxel_above(dims,linear)  ((linear) + (dims))
+#define render_voxel_below(dims,linear)  ((linear) - (dims))
+#define render_voxel_front(dims,linear)  ((linear) + ((dims)*(dims)))
+#define render_voxel_behind(dims,linear) ((linear) - ((dims)*(dims)))
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

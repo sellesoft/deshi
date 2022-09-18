@@ -9,6 +9,7 @@ Index:
 @vk_vars_buffers
 @vk_vars_pipelines
 @vk_vars_shaders
+@vk_vars_voxel
 @vk_vars_other
 @vk_funcs_utils
 @vk_funcs_memory
@@ -103,9 +104,9 @@ struct BufferVk{
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_vars
-#define INDEX_TYPE_VK_UI   VK_INDEX_TYPE_UINT32
-#define INDEX_TYPE_VK_TEMP VK_INDEX_TYPE_UINT32
-#define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
+#define INDEX_TYPE_VK_UI    VK_INDEX_TYPE_UINT32
+#define INDEX_TYPE_VK_TEMP  VK_INDEX_TYPE_UINT32
+#define INDEX_TYPE_VK_MESH  VK_INDEX_TYPE_UINT32
 StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
 StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
 StaticAssertAlways(sizeof(RenderModelIndex) == 4);
@@ -2198,7 +2199,7 @@ SetupPipelineCreation(){DPZoneScoped;
 	
 	//determines how to group vertices together
 	//https://renderdoc.org/vkspec_chunked/chap22.html#VkPipelineInputAssemblyStateCreateInfo
-	inputAssemblyState.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; 
+	inputAssemblyState.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssemblyState.primitiveRestartEnable = VK_FALSE;
 	
 	//container for viewports and scissors
@@ -2621,7 +2622,7 @@ SetupCommands(){DPZoneScoped;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiIndexBuffer.buffer, "2D index buffer");
 	}
 	
-	//create temp mesh vertex and index buffers
+	//create temp vertex and index buffers
 	size_t temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(MeshVertex);
 	size_t temp_fill_vb_size = renderTempFilledVertexCount*sizeof(MeshVertex);
 	size_t temp_wire_ib_size = renderTempWireframeIndexCount*sizeof(RenderTempIndex);
@@ -2668,7 +2669,7 @@ SetupCommands(){DPZoneScoped;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)tempIndexBuffer.buffer, "Temp index buffer");
 	}
 	
-	//create debug mesh vertex and index buffers
+	//create debug vertex and index buffers
 	size_t debug_wire_vb_size = renderDebugWireframeVertexCount*sizeof(MeshVertex);
 	size_t debug_fill_vb_size = renderDebugFilledVertexCount*sizeof(MeshVertex);
 	size_t debug_wire_ib_size = renderDebugWireframeIndexCount*sizeof(RenderTempIndex);
@@ -2791,6 +2792,7 @@ BuildCommands(){DPZoneScoped;
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, 0);
 			
+			if(renderModelCmdCount){
 			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
 			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
 			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
@@ -2803,15 +2805,34 @@ BuildCommands(){DPZoneScoped;
 				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
 				renderStats.drawnIndices += cmd.indexCount;
 			}
-			DebugEndLabelVk(cmdBuffer);
+				DebugEndLabelVk(cmdBuffer);
+			}
+			
+			//draw voxels
+			if(render_voxel_chunk_pool && memory_pool_count(render_voxel_chunk_pool)){
+				DebugBeginLabelVk(cmdBuffer, "Voxels", draw_group_color);
+				VkDeviceSize offsets[1]; //reset vertex buffer offsets
+				for_pool(render_voxel_chunk_pool){
+					if(!it->hidden){
+						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
+					offsets[0] = 0;
+			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
+						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
+						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
+						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
+				renderStats.drawnIndices += it->index_count;
+					}
+				}
+				DebugEndLabelVk(cmdBuffer);
+			}
 			
 			vkCmdEndRenderPass(cmdBuffer);
 			DebugEndLabelVk(cmdBuffer);
 		}
 		
-		//NOTE explicit synchronization is not required because it is done via the subpass dependenies
+		//NOTE explicit synchronization is not required because it is done via the subpass dependencies
 		
-		/////////////////////////////
+		///////////////////////////// //TODO(delle) separate 2d rendering into it's own renderpass
 		//// @second render pass ////
 		/////////////////////////////
 		{//scene rendering with applied shadow map
@@ -2841,6 +2862,7 @@ BuildCommands(){DPZoneScoped;
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, 0);
 			
 			//draw meshes
+			if(renderModelCmdCount){
 			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
 			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
 			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
@@ -2867,20 +2889,23 @@ BuildCommands(){DPZoneScoped;
 					renderStats.drawnIndices += cmd.indexCount;
 				}
 			}
-			DebugEndLabelVk(cmdBuffer);
+				DebugEndLabelVk(cmdBuffer);
+			}
 			
-			//draw mesh normals overlay
-			if(enabledFeatures.geometryShader && renderSettings.meshNormals){
-				DebugBeginLabelVk(cmdBuffer, "Debug Normals", draw_group_color);
-				forI(renderModelCmdCount){
-					RenderModelCmd& cmd = renderModelCmdArray[i];
-					MaterialVk& mat = vkMaterials[cmd.material];
-					DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
-					vkCmdPushConstants(cmdBuffer, pipelineLayouts.geometry, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &cmd.matrix);
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
-					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.geometry, 0, 1, &descriptorSets.geometry, 0, 0);
-					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
-					renderStats.drawnIndices += cmd.indexCount;
+			//draw voxels
+			if(render_voxel_chunk_pool && memory_pool_count(render_voxel_chunk_pool)){
+				DebugBeginLabelVk(cmdBuffer, "Voxels", draw_group_color);
+				VkDeviceSize offsets[1]; //reset vertex buffer offsets
+				for_pool(render_voxel_chunk_pool){
+					if(!it->hidden){
+						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
+					offsets[0] = 0;
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
+						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
+						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
+						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
+				renderStats.drawnIndices += it->index_count;
+					}
 				}
 				DebugEndLabelVk(cmdBuffer);
 			}
@@ -2932,7 +2957,23 @@ BuildCommands(){DPZoneScoped;
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
-			//draw twod stuff
+			//draw mesh normals overlay
+			if(enabledFeatures.geometryShader && renderSettings.meshNormals){
+				DebugBeginLabelVk(cmdBuffer, "Debug Mesh Normals", draw_group_color);
+				forI(renderModelCmdCount){
+					RenderModelCmd& cmd = renderModelCmdArray[i];
+					MaterialVk& mat = vkMaterials[cmd.material];
+					DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
+					vkCmdPushConstants(cmdBuffer, pipelineLayouts.geometry, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &cmd.matrix);
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.geometry, 0, 1, &descriptorSets.geometry, 0, 0);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
+					renderStats.drawnIndices += cmd.indexCount;
+				}
+				DebugEndLabelVk(cmdBuffer);
+			}
+			
+			//draw 2D stuff
 			if(renderTwodVertexCount > 0 && renderTwodIndexCount > 0){
 				DebugBeginLabelVk(cmdBuffer, "Twod", draw_group_color);
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);//TODO(sushi) should this be twod?
@@ -2974,10 +3015,11 @@ BuildCommands(){DPZoneScoped;
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
+			//draw external 2D buffers
 			BufferVk* exvbuffs = (BufferVk*)externalVertexBuffers->start;
 			BufferVk* exibuffs = (BufferVk*)externalIndexBuffers->start;
-			forI(externalBufferCount){//draw external buffers
-				DebugBeginLabelVk(cmdBuffer, "External buffers", draw_group_color);
+			forI(externalBufferCount){
+				DebugBeginLabelVk(cmdBuffer, "External 2D Buffers", draw_group_color);
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui); //TODO(sushi) should this be twod?
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &exvbuffs[i].buffer, offsets);
@@ -3049,7 +3091,7 @@ BuildCommands(){DPZoneScoped;
 			
 			//draw topmost stuff (custom window decorations for now)
 			if(renderTwodCmdCounts[renderActiveSurface][TWOD_LAYERS] > 1){
-				DebugBeginLabelVk(cmdBuffer, "Z-Zero", draw_group_color);
+				DebugBeginLabelVk(cmdBuffer, "Topmost 2D (Window Decorations)", draw_group_color);
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
 				VkDeviceSize offsets[1] = { 0 };
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
@@ -3859,6 +3901,179 @@ render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, 
 		renderExternalCmdArrays[buffer.idx][idx].indexCount    = index_count;
 		renderExternalCmdCounts[buffer.idx] += 1;
 	}
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_shared_voxel
+void
+render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
+	render_voxel_types = types;
+	render_voxel_types_count = count;
+	memory_pool_init(render_voxel_chunk_pool, 128);
+	render_voxel_voxel_size = voxel_size;
+}
+
+
+void
+render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){
+	vec3 voxel_position = chunk->position + Vec3(voxel->x, voxel->y, voxel->z);
+	mat4 transform = mat4::TransformationMatrix(voxel_position, chunk->rotation, vec3_ONE());
+	
+	vertex_array[*vertex_count+0] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_bl],
+		Vec2(0,0),
+		render_voxel_types[voxel->type].rgba,
+		render_voxel_face_normals[direction]
+	};
+	vertex_array[*vertex_count+1] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tl],
+		Vec2(0,1),
+		render_voxel_types[voxel->type].rgba,
+		render_voxel_face_normals[direction]
+	};
+	vertex_array[*vertex_count+2] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tr],
+		Vec2(1,1),
+		render_voxel_types[voxel->type].rgba,
+		render_voxel_face_normals[direction]
+	};
+	vertex_array[*vertex_count+3] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_br],
+		Vec2(1,0),
+		render_voxel_types[voxel->type].rgba,
+		render_voxel_face_normals[direction]
+	};
+	
+	index_array[*index_count+0] = *vertex_count+0;
+	index_array[*index_count+1] = *vertex_count+1;
+	index_array[*index_count+2] = *vertex_count+2;
+	index_array[*index_count+3] = *vertex_count+2;
+	index_array[*index_count+4] = *vertex_count+1;
+	index_array[*index_count+5] = *vertex_count+4;
+	
+	*vertex_count += 4;
+	*index_count  += 6;
+}
+
+
+RenderVoxelChunk*
+render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
+	//alloc and init chunk
+	RenderVoxelChunk* chunk = memory_pool_push(render_voxel_chunk_pool);
+	chunk->position   = position;
+	chunk->rotation   = rotation;
+	chunk->dimensions = dimensions;
+	chunk->modified   = false;
+	chunk->hidden     = false;
+	
+	//calculate some chunk creation info
+	s32 dimensions_extent = (dimensions / 2) - 1;
+	upt dimensions_cubed  = dimensions * dimensions * dimensions;
+	
+	//alloc an arena for chunk creation
+	upt array_header_size = sizeof(stbds_array_header);
+	upt voxels_array_size = dimensions_cubed * sizeof(RenderVoxel*);
+	upt buffers_size      = 2 * sizeof(BufferVk);
+	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
+	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
+	Arena* arena = memory_create_arena(array_header_size + voxels_array_size + buffers_size + max_vertices_size + max_indices_size);
+	
+	//init voxels array
+	stbds_array_header* voxels_array_header = memory_arena_pushT(arena,stbds_array_header);
+	voxels_array_header->length   = dimensions_cubed;
+	voxels_array_header->capacity = dimensions_cubed;
+	chunk->voxels = (RenderVoxel**)memory_arena_push(arena,voxels_array_size);
+	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
+	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
+		chunk->voxels[render_voxel_linear(dimensions, it->x, it->y, it->z)] = it;
+	}
+	
+	//NOTE(DELLE) VULKAN SPECIFIC START
+	//init vertex and index CPU buffers
+	BufferVk* vertex_buffer = memory_arena_pushT(arena,BufferVk);
+	BufferVk* index_buffer  = memory_arena_pushT(arena,BufferVk);
+	chunk->vertex_buffer = vertex_buffer;
+	chunk->index_buffer  = index_buffer;
+	//NOTE(DELLE) VULKAN SPECIFIC END
+	
+	//generate chunk's mesh
+	//TODO(delle) combine faces across the chunk where possible
+	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(arena,max_vertices_size);
+	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(arena,max_indices_size);
+	forI(dimensions_cubed){
+		if(chunk->voxels[i] == 0) continue; //skip empty voxels
+		
+		if((chunk->voxels[i]->x >= dimensions_half) || (chunk->voxels[render_voxel_right (dimensions,i)] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->x < -dimensions_half) || (chunk->voxels[render_voxel_left  (dimensions,i)] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->y >= dimensions_half) || (chunk->voxels[render_voxel_above (dimensions,i)] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->y < -dimensions_half) || (chunk->voxels[render_voxel_below (dimensions,i)] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->z >= dimensions_half) || (chunk->voxels[render_voxel_front (dimensions,i)] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->z < -dimensions_half) || (chunk->voxels[render_voxel_behind(dimensions,i)] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+	}
+	
+	//shift the index_array to the end of the vertex_array
+	upt actual_vertices_size = chunk->vertex_count*sizeof(MeshVertex);
+	upt actual_indices_size  =  chunk->index_count*sizeof(MeshIndex);
+	MeshIndex* new_index_array = (MeshIndex*)((u8*)vertex_array + actual_vertices_size);
+	CopyMemory(new_index_array, index_array, actual_indices_size);
+	index_array = new_index_array;
+	
+	//fit the arena to its actually used size
+		arena->used = array_header_size + voxels_array_size + buffers_size + actual_vertices_size + actual_indices_size;
+	memory_arena_fit(arena);
+	
+	//NOTE(DELLE) VULKAN SPECIFIC START
+	//create vertex and index GPU buffers
+			CreateOrResizeBuffer(vertex_buffer->buffer, vertex_buffer->memory, vertex_buffer->size, actual_vertices_size,
+								 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			CreateOrResizeBuffer(index_buffer->buffer,  index_buffer->memory,  index_buffer->size,  actual_indices_size,
+								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		
+		//copy memory to the GPU
+		void* vb_data; void* ib_data;
+		resultVk = vkMapMemory(device, vertex_buffer->memory, 0, actual_vertices_size, 0, &vb_data); AssertVk(resultVk);
+		resultVk = vkMapMemory(device, index_buffer->memory,  0, actual_indices_size,  0, &ib_data); AssertVk(resultVk);
+		{
+			CopyMemory(vb_data, vertex_array, actual_vertices_size);
+			CopyMemory(ib_data, index_array,  actual_indices_size);
+			
+			VkMappedMemoryRange range[2] = {};
+			range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[0].memory = vertex_buffer->memory;
+			range[0].size   = VK_WHOLE_SIZE;
+			range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[1].memory = index_buffer->memory;
+			range[1].size   = VK_WHOLE_SIZE;
+			resultVk = vkFlushMappedMemoryRanges(device, 2, range); AssertVk(resultVk);
+		}
+		vkUnmapMemory(device, vertex_buffer->memory);
+		vkUnmapMemory(device, index_buffer->memory);
+		
+		//name buffers for debugging
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertex_buffer->buffer, (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") vertex buffer").str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)index_buffer->buffer,  (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") index buffer").str);
+	//NOTE(DELLE) VULKAN SPECIFIC END
+	
+	return chunk;
+}
+
+
+void
+render_voxel_delete_chunk(RenderVoxelChunk* chunk){
+	//dealloc buffers
+	
+	
+	
+	//delete the chunk (and set it to hidden since for_pool() doesn't skip deleted chunks)
+	memory_pool_delete(render_voxel_chunk_pool, chunk);
+	chunk->hidden = true;
 }
 
 
