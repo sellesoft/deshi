@@ -676,6 +676,9 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 	//fit the arena and chunk sizes
 	arena->size = aligned_size;
 	chunk->size = aligned_size + MEMORY_ARENA_OVERHEAD;
+	if(arena->cursor > arena->start + arena->size){
+		arena->cursor = arena->start + arena->size;
+	}
 	
 	//current chunk is the last chunk, so readjust the heap cursor
 	if(chunk == g_memory->arena_heap.last_chunk){
