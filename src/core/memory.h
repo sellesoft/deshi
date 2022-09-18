@@ -51,19 +51,15 @@ StartLinkageC();
 //// @memory_chunk
 typedef struct MemChunk{
 	MemChunk* prev; //pointer to previous order chunk
-	upt       size; //size of this chunk (including this var and above vars as overhead)(OR'd with flags)
+	upt       size; //size of this chunk (including this var and above vars as overhead)(OR'd with flags so use GetChunkSize())
 	Node      node; //user memory starts here when in use; points to free chunks when not
 }MemChunk;
 
 #define MEMORY_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemChunk, node))
-#define ChunkToMemory(chunk)\
-((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
-#define ChunkToArena(chunk)\
-((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
-#define MemoryToChunk(memory)\
-((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
-#define ArenaToChunk(arena)\
-((MemChunk*)((u8*)(arena) - MEMORY_CHUNK_MEMORY_OFFSET))
+#define ChunkToMemory(chunk) ((void*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+#define ChunkToArena(chunk) ((Arena*)((u8*)(chunk) + MEMORY_CHUNK_MEMORY_OFFSET))
+#define MemoryToChunk(memory) ((MemChunk*)((u8*)(memory) - MEMORY_CHUNK_MEMORY_OFFSET))
+#define ArenaToChunk(arena) ((MemChunk*)((u8*)(arena) - MEMORY_CHUNK_MEMORY_OFFSET))
 
 //NOTE  Chunk Flags  !ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1224
 //  Chunk flags are stored in the lower bits of the chunk's size variable, and this doesn't cause problems b/c the size 
@@ -81,20 +77,13 @@ typedef struct MemChunk{
 #define MEMORY_CHUNK_SIZE_BITS (MEMORY_EMPTY_FLAG | MEMORY_ARENAD_FLAG | MEMORY_LIBC_FLAG)
 #define MEMORY_EXTRACT_SIZE_BITMASK (~MEMORY_CHUNK_SIZE_BITS)
 
-#define GetChunkSize(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
-#define GetNextOrderChunk(chunk_ptr)\
-((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
-#define GetPrevOrderChunk(chunk_ptr)\
-((chunk_ptr)->prev)
-#define GetChunkAtOffset(chunk_ptr,offset)\
-((MemChunk*)((u8*)(chunk_ptr) + (offset)))
-#define ChunkIsEmpty(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_EMPTY_FLAG)
-#define ChunkIsArenad(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_ARENAD_FLAG)
-#define ChunkIsLibc(chunk_ptr)\
-((chunk_ptr)->size & MEMORY_LIBC_FLAG)
+#define GetChunkSize(chunk_ptr) ((chunk_ptr)->size & MEMORY_EXTRACT_SIZE_BITMASK)
+#define GetNextOrderChunk(chunk_ptr) ((MemChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
+#define GetPrevOrderChunk(chunk_ptr) ((chunk_ptr)->prev)
+#define GetChunkAtOffset(chunk_ptr,offset) ((MemChunk*)((u8*)(chunk_ptr) + (offset)))
+#define ChunkIsEmpty(chunk_ptr) ((chunk_ptr)->size & MEMORY_EMPTY_FLAG)
+#define ChunkIsArenad(chunk_ptr) ((chunk_ptr)->size & MEMORY_ARENAD_FLAG)
+#define ChunkIsLibc(chunk_ptr) ((chunk_ptr)->size & MEMORY_LIBC_FLAG)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,12 +110,12 @@ void deshi__memory_heap_deinit(Heap* heap, str8 file, upt line);
 #define memory_heap_deinit(heap) deshi__memory_heap_deinit(heap, str8_lit(__FILE__), __LINE__)
 
 //Finds an empty chunk in `heap` of at least `bytes` in size and copies `bytes` from `data` to that chunk
-//    if the heap is full, it will grow its internal space by a factor of 2
+//  if the heap is full, it will grow its internal space by a factor of 2
 void* deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line);
 #define memory_heap_add_bytes(heap,bytes) deshi__memory_heap_add_bytes(heap, bytes, str8_lit(__FILE__), __LINE__)
 
 //Adds an `item` to an empty chunk in `heap`
-//    if the heap is full, it will grow its internal space by a factor of 2
+//  if the heap is full, it will grow its internal space by a factor of 2
 #define memory_heap_add(heap,item) memory_heap_add_bytes(heap, &item, sizeof(item))
 
 //Removes the item at `ptr` from `heap` by turning it into an empty chunk
@@ -148,37 +137,51 @@ typedef struct Arena{
 }Arena;
 
 //Creates an arena AT LEAST `size` in bytes with all memory zeroed
+#define memory_create_arena(size) deshi__memory_arena_create((size), str8_lit(__FILE__), __LINE__)
 Arena* deshi__memory_arena_create(upt size, str8 file, upt line);
-#define memory_create_arena(size) deshi__memory_arena_create(size, str8_lit(__FILE__), __LINE__)
 
 //Grows the `arena` by AT LEAST `size` bytes
 //  returns a different pointer than was passed if the memory was moved
 //  if its memory was moved, pointers to its memory are no longer valid
+#define memory_grow_arena(arena, size) deshi__memory_arena_grow((arena), (size), str8_lit(__FILE__), __LINE__)
 Arena* deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line);
-#define memory_grow_arena(arena, size) deshi__memory_arena_grow(arena, size, str8_lit(__FILE__), __LINE__)
 
 //Zeros the used amount of `arena` memory and resets used amount to zero
+#define memory_clear_arena(arena) deshi__memory_arena_clear((arena), str8_lit(__FILE__), __LINE__)
 void deshi__memory_arena_clear(Arena* arena, str8 file, upt line);
-#define memory_clear_arena(arena) deshi__memory_arena_clear(arena, str8_lit(__FILE__), __LINE__)
+
+//Reduces the allocated size of `arena` to it's used size
+#define memory_arena_fit(arena) deshi__memory_arena_fit((arena), str8_lit(__FILE__), __LINE__)
+void deshi__memory_arena_fit(Arena* arena, str8 file, upt line);
 
 //Deletes the `arena` and zeros its memory
+#define memory_delete_arena(arena) deshi__memory_arena_delete((arena), str8_lit(__FILE__), __LINE__)
 void deshi__memory_arena_delete(Arena* arena, str8 file, upt line);
-#define memory_delete_arena(arena) deshi__memory_arena_delete(arena, str8_lit(__FILE__), __LINE__)
+
+//Returns a `void*` to `size` bytes allocated from `arena` if there was enough space, 0 otherwise
+#define memory_arena_push(arena,size) deshi__memory_arena_push((arena), (size), str8_lit(__FILE__), __LINE__)
+void* deshi__memory_arena_push(Arena* arena, upt size, str8 file, upt line);
+
+//Returns a `T*` to `sizeof(T)` bytes allocated from `arena` if there was enough space, 0 otherwise
+#define memory_arena_pushT(arena,T) (T*)deshi__memory_arena_push((arena), sizeof(T), str8_lit(__FILE__), __LINE__)
+
+//Appends `item` to the end of `arena`, returns a pointer to `item` in the arena
+#define memory_arena_add(arena,item) deshi__memory_arena_add_wrapper((arena), (item));
+void* deshi__memory_arena_add(Arena* arena, void* item, upt size, str8 file, upt line);
+
+#if   COMPILER_FEATURE_TYPEOF
+#  define deshi__memory_arena_add_wrapper(arena,item) (typeof(item)*)deshi__memory_arena_add((arena), &(item), sizeof(item), str8_lit(__FILE__), __LINE__)
+#elif COMPILER_FEATURE_CPP
+EndLinkageC();
+template<typename T> T* deshi__memory_arena_add_wrapper(Arena* arena, const T& item){ return (T*)deshi__memory_arena_add(arena, &item, sizeof(T), str8_lit(__FILE__), __LINE__); }
+StartLinkageC();
+#else //NOTE(delle) without typeof() in C, just return void*
+#  define deshi__memory_arena_add_wrapper(arena,item) deshi__memory_arena_add((arena), &(item), sizeof(item), str8_lit(__FILE__), __LINE__)
+#endif //COMPILER_FEATURE_CPP
 
 //Exposes the internal `Arena Heap`
 Heap* deshi__memory_arena_expose();
 #define memory_expose_arena_heap() deshi__memory_arena_expose()
-
-#if COMPILER_FEATURE_CPP
-EndLinkageC();
-//TODO maybe implement file/line number stuff for these
-template<typename T>
-T* memory_arena_add(Arena* arena, const T& item);
-
-template<typename T>
-T* memory_arena_add_new(Arena* arena);
-StartLinkageC();
-#endif //COMPILER_FEATURE_CPP
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,22 +217,22 @@ typedef struct PoolHeader{
 void deshi__memory_pool_grow(void* pool, upt type_size, upt count);
 
 //Creates a pooled arena with `count` chunks-per-block (item slots) and sets `pool` equal to the first chunk
-#define memory_pool_init(pool,count) ((pool) = memory_pool_init_wrapper(pool, sizeof(*(pool)), (count)))
+#define memory_pool_init(pool,count) ((pool) = deshi__memory_pool_init_wrapper((pool), sizeof(*(pool)), (count)))
 void* deshi__memory_pool_init(void* pool, upt type_size, upt count);
 
 #if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
 EndLinkageC();
-template<class T> global inline T* memory_pool_init_wrapper(T*    pool, upt type_size, upt count){ return (T*)deshi__memory_pool_init(pool, type_size, count); }
+template<class T> global inline T* deshi__memory_pool_init_wrapper(T*    pool, upt type_size, upt count){ return (T*)deshi__memory_pool_init(pool, type_size, count); }
 StartLinkageC();
 #else
-FORCE_INLINE                 void* memory_pool_init_wrapper(void* pool, upt type_size, upt count){ return     deshi__memory_pool_init(pool, type_size, count); }
+FORCE_INLINE                 void* deshi__memory_pool_init_wrapper(void* pool, upt type_size, upt count){ return     deshi__memory_pool_init(pool, type_size, count); }
 #endif //COMPILER_FEATURE_CPP
 
 //Deletes the pooled arena `pool`
 void memory_pool_deinit(void* pool);
 
 //Returns a free chunk in `pool`, growing if necessary
-#define memory_pool_push(pool) deshi__memory_pool_push(pool, sizeof(*(pool)))
+#define memory_pool_push(pool) deshi__memory_pool_push((pool), sizeof(*(pool)))
 void* deshi__memory_pool_push(void* pool, upt type_size);
 
 //Deletes the chunk at `ptr` in the pooled arena `pool`
@@ -239,13 +242,13 @@ void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 //for-loop macro (iterates all chunks, regardless of emptiness)
 #if   COMPILER_FEATURE_TYPEOF
 #define for_pool(pool)                                                                                                                     \
-for(typeof(*(pool))* it = (pool), typeof(*(pool))* it_start = (pool), it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \
+  for(typeof(*(pool))* it = (pool), typeof(*(pool))* it_start = (pool), it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \
       it < it_start + memory_pool_header(pool)->chunks_per_block;                                                                          \
       ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                                                      \
             ? (it = it_start = (typeof(*(pool))*)((void**)it_block+1), it_block = (typeof(*(pool))*)(*(void**)it_block)) : 0)
 #elif COMPILER_FEATURE_CPP
 #define for_pool(pool)                                                                                      \
-for(auto it = (pool), it_start = (pool), it_block = (decltype(pool))memory_pool_header(pool)->next_block; \
+  for(auto it = (pool), it_start = (pool), it_block = (decltype(pool))memory_pool_header(pool)->next_block; \
       it < it_start + memory_pool_header(pool)->chunks_per_block;                                           \
       ++it, (it_block && it >= it_start + memory_pool_header(pool)->chunks_per_block)                       \
             ? (it = it_start = (decltype(pool))((void**)it_block+1), it_block = (decltype(pool))(*(void**)it_block)) : 0)
@@ -333,7 +336,7 @@ void deshi__memory_bytes_draw();
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_state
 typedef struct MemoryContext{
-	b32    cleanup_happened;
+	b32    cleanup_happened; //NOTE(delle) this exists to handle C++ destructors trying to free on program close
 	Heap   arena_heap;
 	Arena* generic_arena; //generic_heap is stored here; not used otherwise
 	Heap*  generic_heap;
@@ -342,12 +345,10 @@ typedef struct MemoryContext{
 extern MemoryContext* g_memory; //global memory pointer
 
 //Reserves and commits `main_size`+`temp_size` bytes of memory from the OS
-void deshi__memory_init(upt main_size, upt temp_size);
-#define memory_init(main_size, temp_size) deshi__memory_init(main_size, temp_size)
+void memory_init(upt main_size, upt temp_size);
 
 //Prevents memory operations on program close, since OS will cleanup anyways
-void deshi__memory_cleanup();
-#define memory_cleanup() deshi__memory_cleanup()
+void memory_cleanup();
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

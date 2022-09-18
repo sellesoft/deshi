@@ -3,11 +3,6 @@
 @memory_utils
 @memory_heap
 @memory_arena
-@memory_arena_create
-@memory_arena_grow
-@memory_arena_clear
-@memory_arena_delete
-@memory_arena_other
 @memory_pool
 @memory_generic
 @memory_temp
@@ -34,6 +29,7 @@ local array<AllocInfo> alloc_infos_inactive(stl_allocator);
 #define MEMORY_MIN_CHUNK_SIZE ((sizeof(MemChunk) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
 #define MEMORY_CHUNK_ALIGNMENT MEMORY_MIN_CHUNK_SIZE
 #define MEMORY_MAX_GENERIC_SIZE (Kilobytes(64) - 1)
+
 
 #if MEMORY_CHECK_HEAPS
 local void
@@ -72,6 +68,7 @@ DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
 #  define DEBUG_CheckHeap(...)
 #endif //MEMORY_CHECK_HEAPS
 
+
 local void
 DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){DPZoneScoped;
 	if(heap->initialized && heap->used > 0){
@@ -97,8 +94,10 @@ DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){DPZoneScoped;
 	}
 }
 
+
 local b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
 local b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
+
 
 #if MEMORY_TRACK_ALLOCS
 local AllocInfo*
@@ -137,7 +136,7 @@ DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
 	if(index != -1){
 		alloc_infos_active[index].deletion_frame = DeshTime->updateCount;
 		alloc_infos_inactive.add(alloc_infos_active[index]);
-		bubble_sort(alloc_infos_inactive, AllocInfo_GreaterThan); //TODO use binary_insertion_sort_low_to_high after testing it
+		bubble_sort(alloc_infos_inactive, AllocInfo_GreaterThan); //TODO(delle) use binary_insertion_sort_low_to_high after testing it
 		alloc_infos_active.remove(index);
 	}
 }
@@ -196,9 +195,9 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 			MemChunk* next = GetNextOrderChunk(chunk);
 			
 			//make new empty chunk after current chunk if there is enough space for an empty chunk
-			//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
+			//NOTE(delle) '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
 			if(leftover_size >= MEMORY_MIN_CHUNK_SIZE){
-				NodeRemove(&chunk->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+				NodeRemove(&chunk->node); //NOTE(delle) remove this early so new_chunk doesnt break next's nodes before removal
 				chunk->node = {0};
 				
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
@@ -214,7 +213,7 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 				chunk->node = {0}; //zero this data since it will be used by the allocation
 			}
 			
-			//convert empty node to order node //NOTE chunk->prev doesnt need to change
+			//convert empty node to order node  //NOTE(delle) chunk->prev doesnt need to change
 			chunk->size = aligned_size;
 			heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
@@ -273,8 +272,8 @@ deshi__memory_heap_remove(Heap* heap, void* ptr){DPZoneScoped;
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
 		chunk->size += GetChunkSize(next);
-		//NOTE zero_pointer doesnt change
-		zero_amount += sizeof(MemChunk); //NOTE next's memory is already zeroed, so only zero the chunk header
+		//NOTE(delle) zero_pointer doesnt change
+		zero_amount += sizeof(MemChunk); //NOTE(delle) next's memory is already zeroed, so only zero the chunk header
 		used_amount += sizeof(MemChunk);
 		next = next_next;
 	}
@@ -288,10 +287,10 @@ deshi__memory_heap_remove(Heap* heap, void* ptr){DPZoneScoped;
 			next->prev = prev;
 		}
 		NodeRemove(&chunk->node);
-		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
+		NodeRemove(&prev->node); //NOTE(delle) remove and reinsert as first empty node for locality
 		NodeInsertNext(&heap->empty_nodes, &prev->node);
 		prev->size += GetChunkSize(chunk);
-		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
+		zero_pointer = chunk; //NOTE(delle) prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
 		chunk = prev;
@@ -354,14 +353,16 @@ DEBUG_CheckArenaHeapArenas(){DPZoneScoped;
 #  define DEBUG_CheckArenaHeapArenas()
 #endif //MEMORY_CHECK_HEAPS
 
+
 #if MEMORY_PRINT_ARENA_CHUNKS
 FORCE_INLINE void DEBUG_PrintArenaHeapChunks(){ DEBUG_PrintHeapChunks(arena_heap,"Arena Heap"); }
 #else //MEMORY_PRINT_ARENA_CHUNKS
 #  define DEBUG_PrintArenaHeapChunks()
 #endif //MEMORY_PRINT_ARENA_CHUNKS
 
+
 local Arena*
-CreateArenaLibc(upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size with arena overhead
+CreateArenaLibc(upt aligned_size){DPZoneScoped; //NOTE(delle) expects pre-aligned size with arena overhead
 	MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
 	Assert(chunk, "libc failed to allocate memory");
 	chunk->size = aligned_size | MEMORY_LIBC_FLAG;
@@ -373,8 +374,6 @@ CreateArenaLibc(upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size 
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_arena_create
 Arena*
 deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
@@ -390,7 +389,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 	//check if there are any empty nodes that can hold the new arena
 	for(Node* node = g_memory->arena_heap.empty_nodes.next; node != &g_memory->arena_heap.empty_nodes; node = node->next){
 		MemChunk* chunk = CastFromMember(MemChunk, node, node);
-		upt chunk_size = GetChunkSize(chunk); //NOTE remember that chunk size includes the overhead
+		upt chunk_size = GetChunkSize(chunk); //NOTE(delle) remember that chunk size includes the overhead
 		if(chunk_size >= aligned_size){
 			upt leftover_size = chunk_size - aligned_size;
 			Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
@@ -398,7 +397,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 			
 			//make new empty chunk after current chunk if there is enough space for arena overhead
 			if(leftover_size > MEMORY_ARENA_OVERHEAD){
-				NodeRemove(&chunk->node); //NOTE remove this early so new_chunk doesnt break chunk's nodes before removal
+				NodeRemove(&chunk->node); //NOTE(delle) remove this early so new_chunk doesnt break chunk's nodes before removal
 				
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
 				NodeInsertNext(&g_memory->arena_heap.empty_nodes, &new_chunk->node);
@@ -413,7 +412,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 			}
 			
 			//convert empty node to order node
-			//chunk->node = {0}; //NOTE not necessary since its overwritten below
+			//chunk->node = {0}; //NOTE(delle) not necessary since its overwritten below
 			chunk->size = aligned_size;
 			g_memory->arena_heap.used += aligned_size - sizeof(MemChunk);
 			
@@ -483,8 +482,6 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_arena_grow
 Arena*
 deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
@@ -578,7 +575,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		//make new empty chunk after current chunk if there is enough space for arena overhead
 		MemChunk* next_next = GetNextOrderChunk(next);
 		if(leftover_size > MEMORY_ARENA_OVERHEAD){
-			NodeRemove(&next->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+			NodeRemove(&next->node); //NOTE(delle) remove this early so new_chunk doesnt break next's nodes before removal
 			next->prev = 0;
 			next->size = 0;
 			next->node = {0};
@@ -633,8 +630,6 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_arena_clear
 void
 deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
@@ -650,8 +645,99 @@ deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_arena_delete
+void
+deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
+	if(g_memory->cleanup_happened) return;
+	if(arena->used >= arena->size) return;
+	
+	DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas();
+	Assert(g_memory->arena_heap.initialized, "Attempted to fit an arena before memory_init() has been called");
+	
+	AllocInfo info = deshi__memory_allocinfo_get(arena);
+	MemChunk* chunk = ArenaToChunk(arena);
+	upt old_size = arena->size;
+	upt aligned_size = RoundUpTo(arena->used, MEMORY_BYTE_ALIGNMENT);
+	upt size_difference = old_size - aligned_size;
+	
+	//if using libc, call realloc to free the excess memory
+	if(ChunkIsLibc(chunk)){
+		arena->size = aligned_size;
+		chunk->size = (aligned_size + MEMORY_ARENA_OVERHEAD) | MEMORY_LIBC_FLAG;
+		chunk = (MemChunk*)realloc(chunk, chunk->size);
+		Assert(chunk, "libc failed to reallocate memory (which it shouldn't need to do anyways)");
+		
+#if MEMORY_PRINT_ARENA_ACTIONS
+		Logf("memory","Fit a libc arena[0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
+#endif //MEMORY_PRINT_ARENA_ACTIONS
+		return;
+	}
+	Assert((u8*)arena > g_memory->arena_heap.start && (u8*)arena < g_memory->arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap and missing the libc flag");
+	
+	//fit the arena and chunk sizes
+	arena->size = aligned_size;
+	chunk->size = aligned_size + MEMORY_ARENA_OVERHEAD;
+	
+	//current chunk is the last chunk, so readjust the heap cursor
+	if(chunk == g_memory->arena_heap.last_chunk){
+		g_memory->arena_heap.cursor -= size_difference;
+		g_memory->arena_heap.used   -= size_difference;
+		
+#if MEMORY_PRINT_ARENA_ACTIONS
+		Logf("memory","Fit an arena    [0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
+#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+		return;
+	}
+	
+	//next chunk is empty, so shift it to after the fit chunk
+	MemChunk* next = GetNextOrderChunk(chunk);
+	if(ChunkIsEmpty(next)){
+		MemChunk* new_next = GetChunkAtOffset(chunk, GetChunkSize(chunk));
+		
+		//if next is the last chunk, adjust heap's last chunk pointer
+		//else, adjust next_next chunk's prev order chunk pointer and next free chunk's pointer
+		if(next == g_memory->arena_heap.last_chunk){
+			g_memory->arena_heap.last_chunk = new_next;
+		}else{
+			MemChunk* next_next = GetNextOrderChunk(next);
+			next_next->prev = new_next;
+		}
+		
+		//fill the new_next chunk
+		new_next->prev = chunk;
+		new_next->size = (GetChunkSize(next) + size_difference) | MEMORY_EMPTY_FLAG;
+		
+		//adjust free chunk linked-list
+		NodeInsertPrev(&next->node, &new_next->node);
+		NodeRemove(&next->node);
+		
+		//zero the old_next chunk memory
+		ZeroMemory(next, sizeof(MemChunk));
+		
+#if MEMORY_PRINT_ARENA_ACTIONS
+		Logf("memory","Fit an arena    [0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
+#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+		return;
+	}
+	
+	//next chunk is not empty, so create a new empty chunk if there is enough space for arena overhead
+	if(size_difference > MEMORY_ARENA_OVERHEAD){
+		MemChunk* new_chunk = GetChunkAtOffset(chunk, GetChunkSize(chunk));
+		new_chunk->prev = chunk;
+		new_chunk->size = size_difference | MEMORY_EMPTY_FLAG;
+		NodeInsertNext(&g_memory->arena_heap.empty_nodes, &new_chunk->node);
+		next->prev = new_chunk;
+		g_memory->arena_heap.used += sizeof(MemChunk);
+	}
+	
+#if MEMORY_PRINT_ARENA_ACTIONS
+	Logf("memory","Fit an arena    [0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
+#endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+}
+
+
 void
 deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
@@ -696,8 +782,8 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
 		chunk->size += GetChunkSize(next);
-		//NOTE zero_pointer doesnt change
-		zero_amount += sizeof(MemChunk); //NOTE next's memory is already zeroed, so only zero the chunk header
+		//NOTE(delle) zero_pointer doesnt change
+		zero_amount += sizeof(MemChunk); //NOTE(delle) next's memory is already zeroed, so only zero the chunk header
 		used_amount += sizeof(MemChunk);
 		next = next_next;
 	}
@@ -711,10 +797,10 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 			next->prev = prev;
 		}
 		NodeRemove(&chunk->node);
-		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
+		NodeRemove(&prev->node); //NOTE(delle) remove and reinsert as first empty node for locality
 		NodeInsertNext(&g_memory->arena_heap.empty_nodes, &prev->node);
 		prev->size += GetChunkSize(chunk);
-		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
+		zero_pointer = chunk; //NOTE(delle) prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
 		chunk = prev;
@@ -742,27 +828,40 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @memory_arena_other
+void*
+deshi__memory_arena_push(Arena* arena, upt size, str8 file, upt line){DPZoneScoped;
+	if((arena->start + arena->size) - arena->cursor < size){
+		AllocInfo info = deshi__memory_allocinfo_get(arena);
+		LogE("memory","Failed to push ",size," bytes to arena[0x",(void*)arena,"]",info.name," (triggered at ",file,":",line,")");
+		return 0;
+	}
+	
+	void* result = arena->cursor;
+	arena->cursor += size;
+	arena->used   += size;
+	return result;
+}
+
+
+void*
+deshi__memory_arena_add(Arena* arena, void* item, upt size, str8 file, upt line){DPZoneScoped;
+	if((arena->start + arena->size) - arena->cursor < size){
+		AllocInfo info = deshi__memory_allocinfo_get(arena);
+		LogE("memory","Failed to add ",size," bytes to arena[0x",(void*)arena,"]",info.name," (triggered at ",file,":",line,")");
+		return 0;
+	}
+	
+	void* result = arena->cursor;
+	CopyMemory(result, item, size);
+	arena->cursor += size;
+	arena->used   += size;
+	return result;
+}
+
+
 Heap*
 deshi__memory_arena_expose(){DPZoneScoped;
 	return &g_memory->arena_heap;
-}
-
-template<typename T>
-T* memory_arena_add(Arena* arena, const T& item){
-	if(arena->cursor-(arena->start+arena->size) > -upt(sizeof(T))) return 0; //TODO maybe handle this better somehow
-	memcpy(arena->cursor, &item, sizeof(T));
-	arena->cursor+=sizeof(T);
-	return (T*)(arena->cursor-sizeof(T));
-}
-
-template<typename T>
-T* memory_arena_add_new(Arena* arena){
-	if(arena->cursor-(arena->start+arena->size) > -upt(sizeof(T))) return 0; //TODO maybe handle this better somehow
-	new(arena->cursor) T();
-	arena->cursor+=sizeof(T);
-	return (T*)(arena->cursor-sizeof(T));
 }
 
 
@@ -804,6 +903,7 @@ deshi__memory_pool_grow(void* pool, upt type_size, upt count){
 	}    
 }
 
+
 void*
 deshi__memory_pool_init(void* pool, upt type_size, upt count){
 	//calc chunk and alloc size
@@ -827,6 +927,7 @@ deshi__memory_pool_init(void* pool, upt type_size, upt count){
 	return pool;
 }
 
+
 void
 memory_pool_deinit(void* pool){
 	//zfree the first block (and header)
@@ -836,13 +937,14 @@ memory_pool_deinit(void* pool){
 	
 	//zfree the rest of the blocks by iterating the linked list
 	if(next_block){
-	while(*next_block){
-		void* block = (void*)next_block;
-		next_block = (void**)(*next_block);
-		memory_zfree(block);
+		while(*next_block){
+			void* block = (void*)next_block;
+			next_block = (void**)(*next_block);
+			memory_zfree(block);
 		}
 	}
 }
+
 
 void*
 deshi__memory_pool_push(void* pool, upt type_size){
@@ -865,6 +967,7 @@ deshi__memory_pool_push(void* pool, upt type_size){
 	header->count += 1;
 	return result;
 }
+
 
 void
 deshi__memory_pool_delete(void* pool, upt type_size, void* ptr){
@@ -892,16 +995,18 @@ FORCE_INLINE void DEBUG_PrintGenericHeapChunks(){ DEBUG_PrintHeapChunks(generic_
 #  define DEBUG_PrintGenericHeapChunks()
 #endif //MEMORY_PRINT_GENERIC_CHUNKS
 
+
 local void*
-AllocateLibc(upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size with chunk
+AllocateLibc(upt aligned_size){DPZoneScoped; //NOTE(delle) expects pre-aligned size with chunk
 	MemChunk* new_chunk = (MemChunk*)calloc(1, aligned_size);
 	Assert(new_chunk, "Libc failed to allocate memory");
 	new_chunk->size = aligned_size | MEMORY_LIBC_FLAG;
 	return ChunkToMemory(new_chunk);
 }
 
+
 local void* 
-ReallocateLibc(void* ptr, upt aligned_size){DPZoneScoped; //NOTE expects pre-aligned size with chunk
+ReallocateLibc(void* ptr, upt aligned_size){DPZoneScoped; //NOTE(delle) expects pre-aligned size with chunk
 	MemChunk* chunk = MemoryToChunk(ptr);
 	
 	upt old_size = GetChunkSize(chunk);
@@ -911,6 +1016,7 @@ ReallocateLibc(void* ptr, upt aligned_size){DPZoneScoped; //NOTE expects pre-ali
 	if(aligned_size > old_size) ZeroMemory((u8*)chunk + old_size, aligned_size - old_size);
 	return ChunkToMemory(chunk);
 }
+
 
 local void
 FreeLibc(void* ptr){DPZoneScoped;
@@ -935,8 +1041,8 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 	void* result = 0;
 	
 	//if the allocation is large, create an arena for it rather than using the generic heap
-	//NOTE when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
-	//     where the first chunk is for the arena and the second is for the generic allocation
+	//NOTE(delle) when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
+	//  where the first chunk is for the arena and the second is for the generic allocation
 	if(aligned_size > MEMORY_MAX_GENERIC_SIZE){
 		Arena* arena = deshi__memory_arena_create(aligned_size, file, line);
 		arena->used = aligned_size;
@@ -960,16 +1066,16 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 	//check if there are any empty chunks that can hold the allocation
 	for(Node* node = g_memory->generic_heap->empty_nodes.next; node != &g_memory->generic_heap->empty_nodes; node = node->next){
 		MemChunk* chunk = CastFromMember(MemChunk, node, node);
-		upt chunk_size = GetChunkSize(chunk); //NOTE remember that chunk size includes the overhead
+		upt chunk_size = GetChunkSize(chunk); //NOTE(delle) remember that chunk size includes the overhead
 		if(chunk_size >= aligned_size){
 			upt leftover_size = chunk_size - aligned_size;
 			Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 			MemChunk* next = GetNextOrderChunk(chunk);
 			
 			//make new empty chunk after current chunk if there is enough space for an empty chunk
-			//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
+			//NOTE(delle) '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
 			if(leftover_size >= MEMORY_MIN_CHUNK_SIZE){
-				NodeRemove(&chunk->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+				NodeRemove(&chunk->node); //NOTE(delle) remove this early so new_chunk doesnt break next's nodes before removal
 				chunk->node = {0};
 				
 				MemChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
@@ -985,7 +1091,7 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 				chunk->node = {0}; //zero this data since it will be used by the allocation
 			}
 			
-			//convert empty node to order node //NOTE chunk->prev doesnt need to change
+			//convert empty node to order node  //NOTE(delle) chunk->prev doesnt need to change
 			chunk->size = aligned_size;
 			g_memory->generic_heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
@@ -1080,8 +1186,8 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	Assert(ptr > g_memory->arena_heap.start && ptr < g_memory->arena_heap.cursor, "Attempted to reallocate a pointer outside the main heap and missing the libc flag");
 	
 	//previous allocation was an arena, so grow arena if new size is greater
-	//NOTE when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
-	//     where the first chunk is for the arena and the second is for the generic allocation
+	//NOTE(delle) when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
+	//  where the first chunk is for the arena and the second is for the generic allocation
 	if(ChunkIsArenad(chunk)){ 
 		if(aligned_size <= GetChunkSize(chunk)) return ptr; //do nothing if less than previous size
 		
@@ -1115,7 +1221,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	
 	//new allocation needs to be an arena and wasnt before, so copy memory to new arena and free old allocation
 	if(aligned_size > MEMORY_MAX_GENERIC_SIZE){
-		//NOTE since its larger than MEMORY_MAX_GENERIC_SIZE and not an arena already, it cant be less than previous size
+		//NOTE(delle) since its larger than MEMORY_MAX_GENERIC_SIZE and not an arena already, it cant be less than previous size
 		Arena* arena = deshi__memory_arena_create(aligned_size, file, line);
 		arena->used = aligned_size;
 		memcpy(arena->start, chunk, GetChunkSize(chunk));
@@ -1219,10 +1325,10 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 		
 		//make new empty chunk after current chunk if there is enough space for an empty chunk
-		//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
+		//NOTE(delle) '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
 		MemChunk* next_next = GetNextOrderChunk(next);
 		if(leftover_size >= MEMORY_MIN_CHUNK_SIZE){
-			NodeRemove(&next->node); //NOTE remove this early so new_chunk doesnt break next's nodes before removal
+			NodeRemove(&next->node); //NOTE(delle) remove this early so new_chunk doesnt break next's nodes before removal
 			next->prev = 0;
 			next->size = 0;
 			next->node = {0};
@@ -1305,8 +1411,8 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	Assert(ptr > g_memory->arena_heap.start && ptr < g_memory->arena_heap.cursor, "Attempted to free a pointer outside the main heap and missing the libc flag");
 	
 	//if allocation used an arena, delete the arena
-	//NOTE when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
-	//     where the first chunk is for the arena and the second is for the generic allocation
+	//NOTE(delle) when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
+	//  where the first chunk is for the arena and the second is for the generic allocation
 	if(ChunkIsArenad(chunk)){
 		deshi__memory_arena_delete((Arena*)chunk - 1, file, line);
 		
@@ -1336,8 +1442,8 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
 		chunk->size += GetChunkSize(next);
-		//NOTE zero_pointer doesnt change
-		zero_amount += sizeof(MemChunk); //NOTE next's memory is already zeroed, so only zero the chunk header
+		//NOTE(delle) zero_pointer doesnt change
+		zero_amount += sizeof(MemChunk); //NOTE(delle) next's memory is already zeroed, so only zero the chunk header
 		used_amount += sizeof(MemChunk);
 		next = next_next;
 	}
@@ -1351,10 +1457,10 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 			next->prev = prev;
 		}
 		NodeRemove(&chunk->node);
-		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
+		NodeRemove(&prev->node); //NOTE(delle) remove and reinsert as first empty node for locality
 		NodeInsertNext(&g_memory->generic_heap->empty_nodes, &prev->node);
 		prev->size += GetChunkSize(chunk);
-		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
+		zero_pointer = chunk; //NOTE(delle) prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
 		used_amount += sizeof(MemChunk);
 		chunk = prev;
@@ -1415,6 +1521,7 @@ deshi__memory_temp_allocate(upt size, str8 file, upt line){DPZoneScoped;
 	return result;
 }
 
+
 void*
 deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return 0;
@@ -1450,6 +1557,7 @@ deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneSc
 	return new_ptr;
 }
 
+
 void
 deshi__memory_temp_clear(){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
@@ -1461,6 +1569,7 @@ deshi__memory_temp_clear(){DPZoneScoped;
 	g_memory->temp_arena.used = 0;
 	memory_clear_arena(&g_memory->temp_arena);
 }
+
 
 Arena*
 deshi__memory_temp_expose(){DPZoneScoped;
@@ -1506,6 +1615,7 @@ deshi__memory_allocinfo_set(void* address, str8 name, Type type){DPZoneScoped;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
+
 local AllocInfo null_alloc_info{0, {}, 0, upt(-1), str8_lit(""), 0};
 local AllocInfo test_alloc_info{0, {}, 0, upt(-1), str8_lit(""), 0};
 AllocInfo
@@ -1534,6 +1644,7 @@ deshi__memory_allocinfo_get(void* address){DPZoneScoped;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
+
 carray<AllocInfo>
 deshi__memory_allocinfo_active_expose(){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
@@ -1543,6 +1654,7 @@ deshi__memory_allocinfo_active_expose(){DPZoneScoped;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
+
 carray<AllocInfo>
 deshi__memory_allocinfo_inactive_expose(){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
@@ -1551,6 +1663,7 @@ deshi__memory_allocinfo_inactive_expose(){DPZoneScoped;
 	return carray<AllocInfo>{};
 #endif //MEMORY_TRACK_ALLOCS
 }
+
 
 void
 deshi__memory_draw(){DPZoneScoped;
@@ -1649,6 +1762,7 @@ deshi__memory_draw(){DPZoneScoped;
 	UI::PopColor(2);
 }
 
+
 void 
 deshi__memory_bytes_draw() {
 	using namespace UI;
@@ -1703,8 +1817,9 @@ deshi__memory_bytes_draw() {
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_state
 void
-deshi__memory_init(upt main_size, upt temp_size){DPZoneScoped;
+memory_init(upt main_size, upt temp_size){DPZoneScoped;
 #if defined(TRACY_ENABLE) && defined(DESHI_WAIT_FOR_TRACY_CONNECTION)
+	//TODO(sushi) this is here only b/c this is usually the first system init, make a profiler system to init instead
 	printf("TRACY_ENABLE and DESHI_WAIT_FOR_TRACY_CONNECTION both enabled. Waiting for connection...");
 	while(!TracyIsConnected){}
 #endif
@@ -1713,7 +1828,7 @@ deshi__memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	u8*   allocation   = 0;
 	u64   total_size   = main_size + temp_size + sizeof(MemoryContext);
 	
-#if BUILD_INTERNAL
+#if BUILD_INTERNAL //NOTE(delle) when debugging, always allocate to the same address so addresses stay the same across sessions
 	base_address = (void*)Terabytes(2);
 #endif //BUILD_INTERNAL
 	
@@ -1767,7 +1882,8 @@ deshi__memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	deshiStage |= DS_MEMORY;
 }
 
+
 void
-deshi__memory_cleanup(){DPZoneScoped;
+memory_cleanup(){DPZoneScoped;
 	g_memory->cleanup_happened = true;
 }

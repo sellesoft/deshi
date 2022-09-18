@@ -79,6 +79,9 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,22/01/16,Bug]     memory system sometimes fails to alloc memory from OS (might only be during debugging)
 [!! ,** ,22/02/06,Tweak]   add a way to disable Memory module and set deshi_allocator to libc
 [!!!,*  ,22/09/08,Feature] add memory_init args to deshi.cfg
+[!!!,*  ,22/09/17,Tweak]   fix and test the memory_heap interface, memory_heap_add() isnt even valid
+[!!!,*  ,22/09/17,Docs]    write descriptions for generic allocation, temp allocation, memory chunk, memory heap, and memory arena
+[!  ,** ,22/09/17,Tweak]   use memory_heap interface internally for the arena and generic heaps
 
 `Render`
 --------
