@@ -1821,12 +1821,6 @@ deshi__memory_bytes_draw() {
 //// @memory_state
 void
 memory_init(upt main_size, upt temp_size){DPZoneScoped;
-#if defined(TRACY_ENABLE) && defined(DESHI_WAIT_FOR_TRACY_CONNECTION)
-	//TODO(sushi) this is here only b/c this is usually the first system init, make a profiler system to init instead
-	printf("TRACY_ENABLE and DESHI_WAIT_FOR_TRACY_CONNECTION both enabled. Waiting for connection...");
-	while(!TracyIsConnected){}
-#endif
-	
 	void* base_address = 0;
 	u8*   allocation   = 0;
 	u64   total_size   = main_size + temp_size + sizeof(MemoryContext);
