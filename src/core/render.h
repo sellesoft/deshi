@@ -430,6 +430,7 @@ typedef struct RenderVoxelChunk{
 	b32 modified;
 	b32 hidden; //NOTE(delle) temp user controlled culling
 	
+	Arena* arena;
 	RenderVoxel** voxels;
 	
 	void* vertex_buffer; //NOTE(delle) BufferVk in vulkan, TODO in opengl

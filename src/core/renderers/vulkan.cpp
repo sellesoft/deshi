@@ -3977,13 +3977,13 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	upt buffers_size      = 2 * sizeof(BufferVk);
 	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
 	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
-	Arena* arena = memory_create_arena(array_header_size + voxels_array_size + buffers_size + max_vertices_size + max_indices_size);
+	chunk->arena = memory_create_arena(array_header_size + voxels_array_size + buffers_size + max_vertices_size + max_indices_size);
 	
 	//init voxels array
-	stbds_array_header* voxels_array_header = memory_arena_pushT(arena,stbds_array_header);
+	stbds_array_header* voxels_array_header = memory_arena_pushT(chunk->arena,stbds_array_header);
 	voxels_array_header->length   = dimensions_cubed;
 	voxels_array_header->capacity = dimensions_cubed;
-	chunk->voxels = (RenderVoxel**)memory_arena_push(arena,voxels_array_size);
+	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
 	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
 	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
 		chunk->voxels[render_voxel_linear(dimensions, it->x, it->y, it->z)] = it;
@@ -3991,16 +3991,16 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	
 	//NOTE(DELLE) VULKAN SPECIFIC START
 	//init vertex and index CPU buffers
-	BufferVk* vertex_buffer = memory_arena_pushT(arena,BufferVk);
-	BufferVk* index_buffer  = memory_arena_pushT(arena,BufferVk);
+	BufferVk* vertex_buffer = memory_arena_pushT(chunk->arena,BufferVk);
+	BufferVk* index_buffer  = memory_arena_pushT(chunk->arena,BufferVk);
 	chunk->vertex_buffer = vertex_buffer;
 	chunk->index_buffer  = index_buffer;
 	//NOTE(DELLE) VULKAN SPECIFIC END
 	
 	//generate chunk's mesh
 	//TODO(delle) combine faces across the chunk where possible
-	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(arena,max_vertices_size);
-	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(arena,max_indices_size);
+	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(chunk->arena,max_vertices_size);
+	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(chunk->arena,max_indices_size);
 	forI(dimensions_cubed){
 		if(chunk->voxels[i] == 0) continue; //skip empty voxels
 		
@@ -4026,8 +4026,8 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	index_array = new_index_array;
 	
 	//fit the arena to its actually used size
-		arena->used = array_header_size + voxels_array_size + buffers_size + actual_vertices_size + actual_indices_size;
-	memory_arena_fit(arena);
+		chunk->arena->used = array_header_size + voxels_array_size + buffers_size + actual_vertices_size + actual_indices_size;
+	memory_arena_fit(chunk->arena);
 	
 	//NOTE(DELLE) VULKAN SPECIFIC START
 	//create vertex and index GPU buffers
@@ -4067,9 +4067,16 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 
 void
 render_voxel_delete_chunk(RenderVoxelChunk* chunk){
-	//dealloc buffers
+	//dealloc GPU buffers
+	//NOTE(DELLE) VULKAN SPECIFIC START
+	vkDestroyBuffer(device, chunk->vertex_buffer->buffer, allocator);
+	vkFreeMemory(device, chunk->vertex_buffer->memory, allocator);
+	vkDestroyBuffer(device, chunk->index_buffer->buffer, allocator);
+	vkFreeMemory(device, chunk->index_buffer->memory, allocator);
+	//NOTE(DELLE) VULKAN SPECIFIC END
 	
-	
+	//dealloc chunk arena
+	memory_delete_arena(chunk->arena);
 	
 	//delete the chunk (and set it to hidden since for_pool() doesn't skip deleted chunks)
 	memory_pool_delete(render_voxel_chunk_pool, chunk);
