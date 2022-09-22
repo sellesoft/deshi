@@ -33,6 +33,7 @@ TODOs:
 #define DESHI_CONSOLE_H
 
 #include "kigu/common.h"
+#include "kigu/pair.h"
 #include "kigu/string_utils.h"
 #include "kigu/ring_array.h"
 #include "kigu/unicode.h"

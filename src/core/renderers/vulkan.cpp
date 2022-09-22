@@ -2816,7 +2816,7 @@ BuildCommands(){DPZoneScoped;
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
 						offsets[0] = 0;
-						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &((BufferVk*)it->vertex_buffer)->buffer, offsets);
 						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
@@ -2900,7 +2900,7 @@ BuildCommands(){DPZoneScoped;
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
 						offsets[0] = 0;
-						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, ((BufferVk*)it->vertex_buffer)->buffer, offsets);
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &((BufferVk*)it->vertex_buffer)->buffer, offsets);
 						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
@@ -3923,25 +3923,25 @@ render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel*
 	vertex_array[*vertex_count+0] = {
 		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_bl],
 		Vec2(0,0),
-		render_voxel_types[voxel->type].rgba,
+		render_voxel_types[voxel->type].color,
 		render_voxel_face_normals[direction]
 	};
 	vertex_array[*vertex_count+1] = {
 		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tl],
 		Vec2(0,1),
-		render_voxel_types[voxel->type].rgba,
+		render_voxel_types[voxel->type].color,
 		render_voxel_face_normals[direction]
 	};
 	vertex_array[*vertex_count+2] = {
 		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tr],
 		Vec2(1,1),
-		render_voxel_types[voxel->type].rgba,
+		render_voxel_types[voxel->type].color,
 		render_voxel_face_normals[direction]
 	};
 	vertex_array[*vertex_count+3] = {
 		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_br],
 		Vec2(1,0),
-		render_voxel_types[voxel->type].rgba,
+		render_voxel_types[voxel->type].color,
 		render_voxel_face_normals[direction]
 	};
 	
@@ -3960,7 +3960,7 @@ render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel*
 RenderVoxelChunk*
 render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
 	//alloc and init chunk
-	RenderVoxelChunk* chunk = memory_pool_push(render_voxel_chunk_pool);
+	RenderVoxelChunk* chunk = (RenderVoxelChunk*)memory_pool_push(render_voxel_chunk_pool);
 	chunk->position   = position;
 	chunk->rotation   = rotation;
 	chunk->dimensions = dimensions;
@@ -4004,17 +4004,17 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	forI(dimensions_cubed){
 		if(chunk->voxels[i] == 0) continue; //skip empty voxels
 		
-		if((chunk->voxels[i]->x >= dimensions_half) || (chunk->voxels[render_voxel_right (dimensions,i)] == 0))
+		if((chunk->voxels[i]->x >= dimensions_extent) || (chunk->voxels[render_voxel_right (dimensions,i)] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->x < -dimensions_half) || (chunk->voxels[render_voxel_left  (dimensions,i)] == 0))
+		if((chunk->voxels[i]->x < -dimensions_extent) || (chunk->voxels[render_voxel_left  (dimensions,i)] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y >= dimensions_half) || (chunk->voxels[render_voxel_above (dimensions,i)] == 0))
+		if((chunk->voxels[i]->y >= dimensions_extent) || (chunk->voxels[render_voxel_above (dimensions,i)] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y < -dimensions_half) || (chunk->voxels[render_voxel_below (dimensions,i)] == 0))
+		if((chunk->voxels[i]->y < -dimensions_extent) || (chunk->voxels[render_voxel_below (dimensions,i)] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z >= dimensions_half) || (chunk->voxels[render_voxel_front (dimensions,i)] == 0))
+		if((chunk->voxels[i]->z >= dimensions_extent) || (chunk->voxels[render_voxel_front (dimensions,i)] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z < -dimensions_half) || (chunk->voxels[render_voxel_behind(dimensions,i)] == 0))
+		if((chunk->voxels[i]->z < -dimensions_extent) || (chunk->voxels[render_voxel_behind(dimensions,i)] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
 	}
 	
@@ -4069,10 +4069,10 @@ void
 render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 	//dealloc GPU buffers
 	//NOTE(DELLE) VULKAN SPECIFIC START
-	vkDestroyBuffer(device, chunk->vertex_buffer->buffer, allocator);
-	vkFreeMemory(device, chunk->vertex_buffer->memory, allocator);
-	vkDestroyBuffer(device, chunk->index_buffer->buffer, allocator);
-	vkFreeMemory(device, chunk->index_buffer->memory, allocator);
+	vkDestroyBuffer(device, ((BufferVk*)chunk->vertex_buffer)->buffer, allocator);
+	vkFreeMemory(device, ((BufferVk*)chunk->vertex_buffer)->memory, allocator);
+	vkDestroyBuffer(device, ((BufferVk*)chunk->index_buffer)->buffer, allocator);
+	vkFreeMemory(device, ((BufferVk*)chunk->index_buffer)->memory, allocator);
 	//NOTE(DELLE) VULKAN SPECIFIC END
 	
 	//dealloc chunk arena

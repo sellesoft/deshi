@@ -3,6 +3,7 @@
 #define DESHI_MATH_UTILS_H
 
 #include "kigu/common.h"
+#include "kigu/profiling.h"
 #include <cmath>
 
 //// enable SSE if available ////

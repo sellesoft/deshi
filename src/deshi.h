@@ -17,8 +17,10 @@
 #include "core/ui2.h"
 #include "core/window.h"
 #include "kigu/common.h"
+#include "kigu/profiling.h"
 
 #define deshi_init()                           \
+  profiler_init();                             \
   memory_init(Megabytes(100), Megabytes(512)); \
   platform_init();                             \
   logger_init();                               \
@@ -31,9 +33,9 @@
   cmd_init();                                  \
   window_show(DeshWindow);                     \
   render_use_default_camera();                 \
-  DeshThreadManager->init();                   \
+  DeshThreadManager->init();
 
-#define deshi_loop_start() \
+#define deshi_loop_start()   \
   while(platform_update()){  \
 
 #define deshi_loop_end() \
@@ -48,6 +50,6 @@
 #define deshi_cleanup() \
   render_cleanup();     \
   logger_cleanup();     \
-  memory_cleanup();     \
+  memory_cleanup();
 
 #endif //DESHI_H
