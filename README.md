@@ -13,7 +13,6 @@ A 3D graphics and realtime utilities library, originally [P3DPGE](https://github
 ### Major TODOs
 * Lighting and shadows
 * Sound module
-* Storage rewrite
 * Materials rewrite
 * DirectX12 rendering
 * Multithreaded rendering and asset loading
