@@ -1856,7 +1856,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	g_memory->arena_heap.last_chunk = 0;
 	g_memory->arena_heap.initialized = true;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
-	deshi__memory_allocinfo_set(&g_memory->arena_heap, str8_lit("Arena Heap"), Type_Heap);
+	deshi__memory_allocinfo_set(&g_memory->arena_heap, str8_lit("Arena Heap"), 0);
 	
 	g_memory->generic_arena = memory_create_arena(Megabytes(64)+sizeof(Heap));
 	g_memory->generic_heap = (Heap*)g_memory->generic_arena->start;
@@ -1868,13 +1868,13 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	g_memory->generic_heap->last_chunk = 0;
 	g_memory->generic_heap->initialized = true;
 	DEBUG_CheckHeap(g_memory->generic_heap);
-	deshi__memory_allocinfo_set(g_memory->generic_heap, str8_lit("Generic Heap"), Type_Heap);
+	deshi__memory_allocinfo_set(g_memory->generic_heap, str8_lit("Generic Heap"), 0);
 	
 	g_memory->temp_arena.start  = g_memory->arena_heap.start + g_memory->arena_heap.size;
 	g_memory->temp_arena.cursor = g_memory->temp_arena.start;
 	g_memory->temp_arena.size   = temp_size;
 	g_memory->temp_arena.used   = 0;
-	deshi__memory_allocinfo_set(&g_memory->temp_arena, str8_lit("Temp Arena"), Type_Arena);
+	deshi__memory_allocinfo_set(&g_memory->temp_arena, str8_lit("Temp Arena"), 0);
 	
 	deshiStage |= DS_MEMORY;
 }
