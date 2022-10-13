@@ -237,6 +237,10 @@ local DeshiStage deshiStage = DS_NONE;
 #include "kigu/unicode.h"
 #include "math/math.h"
 
+//// baked data ////
+#include "core/baked/shaders.h"
+#include "core/baked/textures.h"
+
 //// core headers ////
 #define DESHI_IMPLEMENTATION
 #include "deshi.h"

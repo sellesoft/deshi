@@ -277,11 +277,8 @@ typedef Type Shader; enum{
 	Shader_Phong,
 	Shader_PBR,
 	Shader_Wireframe,
-	Shader_Lavalamp,
-	Shader_Testing0,
-	Shader_Testing1,
 	Shader_COUNT,
-}; global str8 ShaderStrings[] = { str8_lit("NULL"), str8_lit("Flat"), str8_lit("Phong"), str8_lit("PBR"), str8_lit("Wireframe"), str8_lit("Lavalamp"), str8_lit("Testing0"), str8_lit("Testing1") };
+}; global str8 ShaderStrings[] = { str8_lit("NULL"), str8_lit("Flat"), str8_lit("Phong"), str8_lit("PBR"), str8_lit("Wireframe") };
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

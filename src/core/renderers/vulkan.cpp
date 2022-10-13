@@ -308,7 +308,6 @@ local struct{ //pipelines
 			VkPipeline flat;
 			VkPipeline phong;
 			VkPipeline pbr;
-			VkPipeline lavalamp;
 			VkPipeline twod;
 			VkPipeline ui;
 			
@@ -318,8 +317,6 @@ local struct{ //pipelines
 			VkPipeline wireframe_depth;
 			VkPipeline selected;
 			VkPipeline collider;
-			VkPipeline testing0;
-			VkPipeline testing1;
 			VkPipeline offscreen;
 			
 			//debug shaders
@@ -1728,54 +1725,71 @@ SetupShaderCompiler(){
 	}
 }
 
-//NOTE(delle) this does not free the shaderc_compilation_result_t, use shaderc_result_release() to do so
-//NOTE(sushi) this can probably just take the File* since it contains the majority of info passed
-local shaderc_compilation_result_t
-compile_shader(str8 source, str8 name, str8 front, str8 ext, str8 out_path){DPZoneScoped;
-	PrintVk(4, "Compiling shader: ",name);
-	Stopwatch t_s = start_stopwatch();
-	
-	//try to compile from GLSL to SPIR-V binary
-	shaderc_compilation_result_t result;
-	if      (str8_equal_lazy(ext, str8_lit("vert"))){
-		result = shaderc_compile_into_spv(shader_compiler, (const char*)source.str, source.count, shaderc_glsl_vertex_shader,
-										  (const char*)name.str, "main", shader_compiler_options);
-	}else if(str8_equal_lazy(ext, str8_lit("frag"))){
-		result = shaderc_compile_into_spv(shader_compiler, (const char*)source.str, source.count, shaderc_glsl_fragment_shader,
-										  (const char*)name.str, "main", shader_compiler_options);
-	}else if(str8_equal_lazy(ext, str8_lit("geom"))){
-		result = shaderc_compile_into_spv(shader_compiler, (const char*)source.str, source.count, shaderc_glsl_geometry_shader,
-										  (const char*)name.str, "main", shader_compiler_options);
-	}else{ return 0; }
-	
-	//check for errors
-	if(!result){ 
-		LogE("vulkan",name,": Shader compiler returned a null result");
-		return 0; 
-	}
-	if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-		LogE("vulkan",shaderc_result_get_error_message(result)); 
-		return 0;
-	}
-	
-	//create or overwrite .spv files
-	file_write_simple(str8_concat3(out_path,name,str8_lit(".spv"), deshi_temp_allocator),
-					  (void*)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
-	PrintVk(5, "Finished compiling shader '",name,"' in ",peek_stopwatch(t_s),"ms");
-	return result;
-}
-
 //TODO(delle) maybe just save the shader module to disk and load that instead of .spv (since openGL can't load vulkan format .spv)?
 local VkPipelineShaderStageCreateInfo
-load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
+load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
+	if(!source) return VkPipelineShaderStageCreateInfo{};
+	
+	Stopwatch t_s = start_stopwatch();
+	PrintVk(4, "Compiling shader: ",name);
+	
+	//try to compile from GLSL to SPIR-V binary
+	shaderc_compilation_result_t compiled;
+	if      (stage == VK_SHADER_STAGE_VERTEX_BIT){
+		compiled = shaderc_compile_into_spv(shader_compiler, (const char*)source.str, source.count, shaderc_glsl_vertex_shader,
+											(const char*)name.str, "main", shader_compiler_options);
+	}else if(stage == VK_SHADER_STAGE_FRAGMENT_BIT){
+		compiled = shaderc_compile_into_spv(shader_compiler, (const char*)source.str, source.count, shaderc_glsl_fragment_shader,
+											(const char*)name.str, "main", shader_compiler_options);
+	}else if(stage == VK_SHADER_STAGE_GEOMETRY_BIT){
+		compiled = shaderc_compile_into_spv(shader_compiler, (const char*)source.str, source.count, shaderc_glsl_geometry_shader,
+											(const char*)name.str, "main", shader_compiler_options);
+	}else{
+		Assert(!"unhandled shader stage");
+		return VkPipelineShaderStageCreateInfo{};
+	}
+	
+	//check for compile errors
+	if(!compiled){ 
+		LogE("vulkan",name,": Shader compiler returned a null result");
+		return VkPipelineShaderStageCreateInfo{}; 
+	}
+	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success){
+		LogE("vulkan",shaderc_result_get_error_message(compiled)); 
+		return VkPipelineShaderStageCreateInfo{};
+	}
+	defer{ shaderc_result_release(compiled); };
+	
+	//create or overwrite .spv files
+	file_write_simple(str8_concat3(STR8("data/shaders/"),name,str8_lit(".spv"), deshi_temp_allocator),
+					  (void*)shaderc_result_get_bytes(compiled), shaderc_result_get_length(compiled));
+	PrintVk(5, "Finished compiling shader '",name,"' in ",peek_stopwatch(t_s),"ms");
+	
+	//create shader module
+	VkShaderModule shaderModule{};
+	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+	moduleInfo.codeSize = shaderc_result_get_length(compiled);
+	moduleInfo.pCode    = (u32*)shaderc_result_get_bytes(compiled);
+	resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ",name).str);
+	
+	//setup shader stage create info
+	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+	shaderStage.stage  = stage;
+	shaderStage.pName  = "main";
+	shaderStage.module = shaderModule;
+	
+	PrintVk(5, "Finished loading shader '",name,"' in ",peek_stopwatch(t_s),"ms");
+	return shaderStage;
+}
+
+local VkPipelineShaderStageCreateInfo
+load_shader_file(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	PrintVk(3, "Loading shader: ",name);
 	Stopwatch t_s = start_stopwatch();
-	str8 dir = STR8("deshi/src/shaders/");
+	str8 dir = STR8("data/shaders/");
 	str8 path = str8_concat(dir, name, deshi_temp_allocator);
-	if(!file_exists(path)){
-		dir = STR8("data/shaders/");
-		path = str8_concat(dir, name, deshi_temp_allocator);
-	}
+	
 	//load from .spv if previously compiled and create shader module
 	if(!renderSettings.recompileAllShaders){
 		str8 spv  = str8_concat(path, str8_lit(".spv"), deshi_temp_allocator);
@@ -1805,64 +1819,7 @@ load_shader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 	if(!shader_file.creation_time) return VkPipelineShaderStageCreateInfo{};
 	
 	str8 shader_source = file_read_simple(path, deshi_temp_allocator);
-	if(!shader_source) return VkPipelineShaderStageCreateInfo{};
-	
-	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext, dir);
-	if(!compiled) return VkPipelineShaderStageCreateInfo{};
-	defer{ shaderc_result_release(compiled); };
-	
-	VkShaderModule shaderModule{};
-	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-	moduleInfo.codeSize = shaderc_result_get_length(compiled);
-	moduleInfo.pCode    = (u32*)shaderc_result_get_bytes(compiled);
-	resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ",name).str);
-	
-	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-	shaderStage.stage  = stage;
-	shaderStage.pName  = "main";
-	shaderStage.module = shaderModule;
-	PrintVk(5, "Finished loading shader '",name,"' in ",peek_stopwatch(t_s),"ms");
-	return shaderStage;
-}
-
-local VkPipelineShaderStageCreateInfo
-CompileAndLoadShader(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
-	PrintVk(3, "Compiling and loading shader: ",name);
-	
-	str8 dir = STR8("deshi/src/shaders/");
-	str8 path = str8_concat(dir, name, deshi_temp_allocator);
-	if(!file_exists(path)){
-		dir = STR8("data/shaders/");
-		path = str8_concat(dir, name, deshi_temp_allocator);
-	}
-	
-	//load shader source
-	File shader_file = file_info(path);
-	if(!shader_file.creation_time) return VkPipelineShaderStageCreateInfo{};
-	
-	str8 shader_source = file_read_simple(path, deshi_temp_allocator);
-	if(!shader_source) return VkPipelineShaderStageCreateInfo{};
-	
-	//compile shader source
-	shaderc_compilation_result_t compiled = compile_shader(shader_source, shader_file.name, shader_file.front, shader_file.ext, dir);
-	if(!compiled) return VkPipelineShaderStageCreateInfo{};
-	defer{ shaderc_result_release(compiled); };
-	
-	//create shader module
-	VkShaderModule shaderModule{};
-	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-	moduleInfo.codeSize = shaderc_result_get_length(compiled);
-	moduleInfo.pCode    = (u32*)shaderc_result_get_bytes(compiled);
-	resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ", name).str);
-	
-	//setup shader stage create info
-	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-	shaderStage.stage  = stage;
-	shaderStage.pName  = "main";
-	shaderStage.module = shaderModule;
-	return shaderStage;
+	return load_shader(name, shader_source, stage);
 }
 
 
@@ -2330,8 +2287,8 @@ specializationInfo.mapEntryCount = 1;
 		pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineCreateInfo.basePipelineIndex  = -1;
 		
-		shaderStages[0] = load_shader(str8_lit("base.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("base.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("base.vert"), baked_shader_base_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("base.frag"), baked_shader_base_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.base); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.base, "Base pipeline");
@@ -2356,8 +2313,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//null pipeline
-		shaderStages[0] = load_shader(str8_lit("null.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("null.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("null.vert"), baked_shader_null_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("null.frag"), baked_shader_null_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.null); AssertVk(resultVk);
@@ -2365,8 +2322,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//flat pipeline
-		shaderStages[0] = load_shader(str8_lit("flat.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("flat.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("flat.vert"), baked_shader_flat_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("flat.frag"), baked_shader_flat_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.flat); AssertVk(resultVk);
@@ -2374,8 +2331,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//phong
-		shaderStages[0] = load_shader(str8_lit("phong.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("phong.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("phong.vert"), baked_shader_phong_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("phong.frag"), baked_shader_phong_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.phong); AssertVk(resultVk);
@@ -2389,16 +2346,16 @@ specializationInfo.mapEntryCount = 1;
 		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		depthStencilState.depthTestEnable = VK_FALSE;
 		
-		shaderStages[0] = load_shader(str8_lit("twod.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("twod.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("twod.vert"), baked_shader_twod_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("twod.frag"), baked_shader_twod_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.twod); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.twod, "2D pipeline");
 		
 		{//ui
-			shaderStages[0] = load_shader(str8_lit("ui.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = load_shader(str8_lit("ui.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[0] = load_shader(STR8("ui.vert"), baked_shader_ui_vert, VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = load_shader(STR8("ui.frag"), baked_shader_ui_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 			shaderStages[1].pSpecializationInfo = &specializationInfo;
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.ui);
@@ -2413,8 +2370,8 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//pbr
-		shaderStages[0] = load_shader(str8_lit("pbr.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("pbr.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("pbr.vert"), baked_shader_pbr_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("pbr.frag"), baked_shader_pbr_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.pbr); AssertVk(resultVk);
@@ -2428,8 +2385,8 @@ specializationInfo.mapEntryCount = 1;
 		rasterizationState.cullMode    = VK_CULL_MODE_NONE;
 		depthStencilState.depthTestEnable = VK_FALSE;
 		
-		shaderStages[0] = load_shader(str8_lit("wireframe.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("wireframe.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("wireframe.vert"), baked_shader_wireframe_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("wireframe.frag"), baked_shader_wireframe_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.wireframe); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.wireframe, "Wireframe pipeline");
@@ -2471,15 +2428,6 @@ specializationInfo.mapEntryCount = 1;
 		depthStencilState.depthTestEnable = VK_TRUE;
 	}
 	
-	{//lavalamp
-		shaderStages[0] = load_shader(str8_lit("lavalamp.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("lavalamp.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		shaderStages[1].pSpecializationInfo = &specializationInfo;
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.lavalamp); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.lavalamp, "Lavalamp pipeline");
-	}
-	
 	{//offscreen
 		colorBlendState.attachmentCount = 0; //no color attachments used
 		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL; //cull front faces
@@ -2491,7 +2439,7 @@ specializationInfo.mapEntryCount = 1;
 		dynamicState.pDynamicStates    = dynamicStates.data;       //it can be changed at runtime
 		pipelineCreateInfo.renderPass = offscreen.renderpass;
 		
-		shaderStages[0] = load_shader(str8_lit("offscreen.vert"), VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[0] = load_shader(STR8("offscreen.vert"), baked_shader_offscreen_vert, VK_SHADER_STAGE_VERTEX_BIT);
 		pipelineCreateInfo.stageCount = 1;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.offscreen); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.offscreen, "Offscreen pipeline");
@@ -2506,54 +2454,6 @@ specializationInfo.mapEntryCount = 1;
 		dynamicState.pDynamicStates    = dynamicStates.data;
 		pipelineCreateInfo.renderPass = renderPass;
 	}
-	
-	//NOTE(delle) testing/debug shaders should be removed on release
-	{//testing0
-		shaderStages[0] = load_shader(str8_lit("testing0.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("testing0.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		shaderStages[1].pSpecializationInfo = &specializationInfo;
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.testing0); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.testing0, "Testing0 pipeline");
-	}
-	
-	{//testing1
-		shaderStages[0] = load_shader(str8_lit("testing1.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("testing1.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		shaderStages[1].pSpecializationInfo = &specializationInfo;
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.testing1); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.testing1, "Testing1 pipeline");
-	}
-	
-	//DEBUG mesh normals
-	if(enabledFeatures.geometryShader){
-		pipelineCreateInfo.layout = pipelineLayouts.geometry;
-		
-		shaderStages[0] = load_shader(str8_lit("nothing.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("nothing.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		shaderStages[2] = load_shader(str8_lit("normaldebug.geom"), VK_SHADER_STAGE_GEOMETRY_BIT);
-		pipelineCreateInfo.stageCount = 3;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.normals_debug); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.normals_debug, "DEBUG Mesh normals pipeline");
-		
-		pipelineCreateInfo.layout = pipelineLayouts.base;
-	}
-	
-	{//DEBUG shadow map
-		rasterizationState.cullMode = VK_CULL_MODE_NONE;
-		VkPipelineVertexInputStateCreateInfo emptyVertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-		pipelineCreateInfo.pVertexInputState = &emptyVertexInputState;
-		
-		shaderStages[0] = load_shader(str8_lit("shadowmapDEBUG.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = load_shader(str8_lit("shadowmapDEBUG.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-		pipelineCreateInfo.stageCount = 2;
-		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.shadowmap_debug); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.shadowmap_debug, "DEBUG Shadowmap pipeline");
-		
-		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-		pipelineCreateInfo.pVertexInputState = &vertexInputState;
-	}
 } //CreatePipelines
 
 local VkPipeline 
@@ -2564,9 +2464,6 @@ GetPipelineFromShader(u32 shader){DPZoneScoped;
 		case(Shader_Phong):       { return pipelines.phong;     }
 		case(Shader_PBR):         { return pipelines.pbr;       }
 		case(Shader_Wireframe):   { return pipelines.wireframe; }
-		case(Shader_Lavalamp):    { return pipelines.lavalamp;  }
-		case(Shader_Testing0):    { return pipelines.testing0;  }
-		case(Shader_Testing1):    { return pipelines.testing1;  }
 	}
 }
 
@@ -4163,15 +4060,15 @@ render_reload_shader(u32 shader){DPZoneScoped;
 	switch(shader){
 		case(Shader_NULL):{ 
 			vkDestroyPipeline(device, pipelines.null, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("null.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("null.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[0] = load_shader(STR8("null.vert"), baked_shader_null_vert, VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = load_shader(STR8("null.frag"), baked_shader_null_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.null); AssertVk(resultVk);
 		}break;
 		case(Shader_Flat):{ 
 			vkDestroyPipeline(device, pipelines.flat, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("flat.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("flat.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[0] = load_shader(STR8("flag.vert"), baked_shader_flat_vert, VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = load_shader(STR8("flag.frag"), baked_shader_flat_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.flat); AssertVk(resultVk, "failed to create flat graphics pipeline");
 		}break;
@@ -4181,8 +4078,8 @@ render_reload_shader(u32 shader){DPZoneScoped;
 				rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
 				rasterizationState.cullMode = VK_CULL_MODE_NONE;
 				depthStencilState.depthTestEnable = VK_FALSE;
-				shaderStages[0] = CompileAndLoadShader(str8_lit("wireframe.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-				shaderStages[1] = CompileAndLoadShader(str8_lit("wireframe.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+				shaderStages[0] = load_shader(STR8("wireframe.vert"), baked_shader_wireframe_vert, VK_SHADER_STAGE_VERTEX_BIT);
+				shaderStages[1] = load_shader(STR8("wireframe.frag"), baked_shader_wireframe_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 				pipelineCreateInfo.stageCount = 2;
 				resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.wireframe); AssertVk(resultVk, "failed to create wireframe graphics pipeline");
 				rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
@@ -4192,38 +4089,17 @@ render_reload_shader(u32 shader){DPZoneScoped;
 		}break;
 		case(Shader_Phong):{
 			vkDestroyPipeline(device, pipelines.phong, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("phong.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("phong.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[0] = load_shader(STR8("phong.vert"), baked_shader_phong_vert, VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = load_shader(STR8("phong.frag"), baked_shader_phong_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.phong); AssertVk(resultVk, "failed to create phong graphics pipeline");
 		}break;
 		case(Shader_PBR):{ 
 			vkDestroyPipeline(device, pipelines.pbr, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("pbr.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("pbr.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[0] = load_shader(STR8("pbr.vert"), baked_shader_pbr_vert, VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = load_shader(STR8("pbr.frag"), baked_shader_pbr_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.pbr); AssertVk(resultVk, "failed to create pbr graphics pipeline");
-		}break;
-		case(Shader_Lavalamp):{ 
-			vkDestroyPipeline(device, pipelines.lavalamp, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("lavalamp.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("lavalamp.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-			pipelineCreateInfo.stageCount = 2;
-			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.lavalamp); AssertVk(resultVk, "failed to create lavalamp graphics pipeline");
-		}break;
-		case(Shader_Testing0):{ 
-			vkDestroyPipeline(device, pipelines.testing0, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("testing0.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("testing0.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-			pipelineCreateInfo.stageCount = 2;
-			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing0); AssertVk(resultVk, "failed to create testing0 graphics pipeline");
-		}break;
-		case(Shader_Testing1):{ 
-			vkDestroyPipeline(device, pipelines.testing1, 0);
-			shaderStages[0] = CompileAndLoadShader(str8_lit("testing1.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader(str8_lit("testing1.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-			pipelineCreateInfo.stageCount = 2;
-			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing1); AssertVk(resultVk, "failed to create testing1 graphics pipeline");
 		}break;
 		default:{
 			render_reload_all_shaders();
@@ -4237,14 +4113,14 @@ render_reload_all_shaders(){DPZoneScoped;
 	remakePipelines = true;
 	
 	vkDestroyPipeline(device, pipelines.null, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("null.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("null.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = load_shader(STR8("null.vert"), baked_shader_null_vert, VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = load_shader(STR8("null.frag"), baked_shader_null_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 	pipelineCreateInfo.stageCount = 2;
 	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.null); AssertVk(resultVk);
 	
 	vkDestroyPipeline(device, pipelines.flat, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("flat.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("flat.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = load_shader(STR8("flat.vert"), baked_shader_flat_vert, VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = load_shader(STR8("flat.frag"), baked_shader_flat_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 	pipelineCreateInfo.stageCount = 2;
 	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.flat); AssertVk(resultVk, "failed to create flat graphics pipeline");
 	
@@ -4253,8 +4129,8 @@ render_reload_all_shaders(){DPZoneScoped;
 		rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
 		rasterizationState.cullMode = VK_CULL_MODE_NONE;
 		depthStencilState.depthTestEnable = VK_FALSE;
-		shaderStages[0] = CompileAndLoadShader(str8_lit("wireframe.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = CompileAndLoadShader(str8_lit("wireframe.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = load_shader(STR8("wireframe.vert"), baked_shader_wireframe_vert, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = load_shader(STR8("wireframe.frag"), baked_shader_wireframe_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
 		resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.wireframe); AssertVk(resultVk, "failed to create wireframe graphics pipeline");
 		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
@@ -4263,34 +4139,16 @@ render_reload_all_shaders(){DPZoneScoped;
 	}
 	
 	vkDestroyPipeline(device, pipelines.phong, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("phong.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("phong.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = load_shader(STR8("phong.vert"), baked_shader_phong_vert, VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = load_shader(STR8("phong.frag"), baked_shader_phong_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 	pipelineCreateInfo.stageCount = 2;
 	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.phong); AssertVk(resultVk, "failed to create phong graphics pipeline");
 	
 	vkDestroyPipeline(device, pipelines.pbr, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("pbr.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("pbr.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = load_shader(STR8("pbr.vert"), baked_shader_pbr_vert, VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = load_shader(STR8("pbr.frag"), baked_shader_pbr_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 	pipelineCreateInfo.stageCount = 2;
 	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.pbr); AssertVk(resultVk, "failed to create pbr graphics pipeline");
-	
-	vkDestroyPipeline(device, pipelines.lavalamp, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("lavalamp.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("lavalamp.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-	pipelineCreateInfo.stageCount = 2;
-	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.lavalamp); AssertVk(resultVk, "failed to create lavalamp graphics pipeline");
-	
-	vkDestroyPipeline(device, pipelines.testing0, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("testing0.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("testing0.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-	pipelineCreateInfo.stageCount = 2;
-	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing0); AssertVk(resultVk, "failed to create testing0 graphics pipeline");
-	
-	vkDestroyPipeline(device, pipelines.testing1, 0);
-	shaderStages[0] = CompileAndLoadShader(str8_lit("testing1.vert"), VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = CompileAndLoadShader(str8_lit("testing1.frag"), VK_SHADER_STAGE_FRAGMENT_BIT);
-	pipelineCreateInfo.stageCount = 2;
-	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.testing1); AssertVk(resultVk, "failed to create testing1 graphics pipeline");
 	
 	UpdateMaterialPipelines();
 }

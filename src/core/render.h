@@ -1222,7 +1222,7 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				u32           color = c.rgba;
 				Vertex2*         vp = renderTwodVertexArray + renderTwodVertexCount;
 				RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
-				 FontAlignedQuad   q = font_aligned_quad(font, decoded.codepoint, &pos, scale);
+				FontAlignedQuad   q = font_aligned_quad(font, decoded.codepoint, &pos, scale);
 				
 				ip[0] = renderTwodVertexCount; ip[1] = renderTwodVertexCount + 1; ip[2] = renderTwodVertexCount + 2;
 				ip[3] = renderTwodVertexCount; ip[4] = renderTwodVertexCount + 2; ip[5] = renderTwodVertexCount + 3;

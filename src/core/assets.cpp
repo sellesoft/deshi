@@ -38,9 +38,10 @@ assets_init(){DPZoneScoped;
 	
 	//setup null assets
 	assets_mesh_create_box(1.0f, 1.0f, 1.0f, Color_White.rgba); cpystr(assets_mesh_null()->name, "null", 64);
-	//TODO(delle) get null128_png working
-	//assets_texture_create_from_memory(stbi_load_from_memory_simple(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA);
-	assets_texture_create_from_file_simple(STR8("null128.png"));
+	int null_x, null_y, null_channels;
+	unsigned char* null_data = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &null_x, &null_y, &null_channels, STBI_rgb_alpha);
+	assets_texture_create_from_memory(null_data, STR8("null"), 128, 128, ImageFormat_RGBA, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_Repeat, false);
+	stbi_image_free(null_data);
 	assets_material_create(STR8("null"), Shader_NULL, MaterialFlags_NONE, DeshAssets->texture_array, 1);
 	assets_model_create_from_mesh(assets_mesh_null(), ModelFlags_NONE); cpystr(assets_model_null()->name, "null", 64);
 	
