@@ -9,7 +9,6 @@ Index:
 @vk_vars_buffers
 @vk_vars_pipelines
 @vk_vars_shaders
-@vk_vars_voxel
 @vk_vars_other
 @vk_funcs_utils
 @vk_funcs_memory
@@ -3858,11 +3857,12 @@ RenderVoxelChunk*
 render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
 	//alloc and init chunk
 	RenderVoxelChunk* chunk = (RenderVoxelChunk*)memory_pool_push(render_voxel_chunk_pool);
-	chunk->position   = position;
-	chunk->rotation   = rotation;
-	chunk->dimensions = dimensions;
-	chunk->modified   = false;
-	chunk->hidden     = false;
+	chunk->position    = position;
+	chunk->rotation    = rotation;
+	chunk->dimensions  = dimensions;
+	chunk->modified    = false;
+	chunk->hidden      = false;
+	chunk->voxel_count = voxels_count;
 	
 	//calculate some chunk creation info
 	s32 dimensions_extent = (dimensions / 2) - 1;
@@ -3958,12 +3958,16 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)index_buffer->buffer,  (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") index buffer").str);
 	//NOTE(DELLE) VULKAN SPECIFIC END
 	
+	renderStats.totalVoxels += voxels_count;
+	renderStats.totalVoxelChunks += 1;
 	return chunk;
 }
 
 
 void
 render_voxel_delete_chunk(RenderVoxelChunk* chunk){
+	Assert(renderStats.totalVoxelChunks > 0);
+	
 	//dealloc GPU buffers
 	//NOTE(DELLE) VULKAN SPECIFIC START
 	vkDestroyBuffer(device, ((BufferVk*)chunk->vertex_buffer)->buffer, allocator);
@@ -3978,6 +3982,9 @@ render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 	//delete the chunk (and set it to hidden since for_pool() doesn't skip deleted chunks)
 	memory_pool_delete(render_voxel_chunk_pool, chunk);
 	chunk->hidden = true;
+	
+	renderStats.totalVoxels -= chunk->voxel_count;
+	renderStats.totalVoxelChunks -= 1;
 }
 
 

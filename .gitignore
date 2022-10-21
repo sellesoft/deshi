@@ -1,1 +1,6 @@
-*.spv
+examples/*/build
+
+#delle specific
+project.4coder
+remedy.rdbg
+examples/shell.bat

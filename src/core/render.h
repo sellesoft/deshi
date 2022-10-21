@@ -86,12 +86,16 @@ typedef Type ShaderStage; enum{
 };
 
 typedef struct RenderStats{
-	u64 totalTriangles;
+	f64 renderTimeMS;
+	
 	u64 totalVertices;
 	u64 totalIndices;
-	u64 drawnTriangles;
 	u64 drawnIndices;
-	f64 renderTimeMS;
+	u64 totalTriangles;
+	u64 drawnTriangles;
+	
+	u64 totalVoxels;
+	u64 totalVoxelChunks;
 }RenderStats;
 
 typedef struct RenderSettings{
@@ -422,6 +426,7 @@ typedef struct RenderVoxel{ //8 bytes
 	//u32 position; //0-9: x, 10-19: y, 20-29: z, 30-31: unused
 }RenderVoxel;
 
+//A collection of voxels that gets turned into a mesh for rendering.
 typedef struct RenderVoxelChunk{
 	vec3 position;
 	vec3 rotation;
@@ -432,6 +437,7 @@ typedef struct RenderVoxelChunk{
 	
 	Arena* arena;
 	RenderVoxel** voxels;
+	u64 voxel_count; //number of voxels that are not empty
 	
 	void* vertex_buffer; //NOTE(delle) BufferVk in vulkan, TODO in opengl
 	u64   vertex_count;
