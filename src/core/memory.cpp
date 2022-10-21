@@ -1858,7 +1858,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	deshi__memory_allocinfo_set(&g_memory->arena_heap, str8_lit("Arena Heap"), 0);
 	
-	g_memory->generic_arena = memory_create_arena(Megabytes(64)+sizeof(Heap));
+	g_memory->generic_arena = memory_create_arena((main_size / 4) + sizeof(Heap));
 	g_memory->generic_heap = (Heap*)g_memory->generic_arena->start;
 	g_memory->generic_heap->start      = (u8*)(g_memory->generic_heap+1);
 	g_memory->generic_heap->cursor     = g_memory->generic_heap->start;
