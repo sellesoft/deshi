@@ -2004,6 +2004,17 @@ void ui_debug(){
 		}
 	}uiImmediateE();
 	
+	u64 memsum = 0;
+	forI(g_ui->items.count){
+		memsum += g_ui->items[i]->memsize;
+	}
+	forI(g_ui->immediate_items.count){
+		memsum += g_ui->immediate_items[i]->memsize;
+	}
+	memsum += g_ui->stats.vertices_reserved * sizeof(Vertex2);
+	memsum += g_ui->stats.indices_reserved * sizeof(u32);
+	memsum += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
+
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
 	text_clear_and_replace(&uiGetText(ui_dwi.panel1text)->text, toStr8(
 		"visible: \n",
@@ -2015,7 +2026,8 @@ void ui_debug(){
 		"	   items: ", g_ui->stats.items_reserved, "\n",
 		"	drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
 		"	vertices: ", g_ui->stats.vertices_reserved, "\n",
-		"	 indices: ", g_ui->stats.indices_reserved
+		"	 indices: ", g_ui->stats.indices_reserved, "\n",
+		"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
 	));
 	ui_dwi.panel1text->dirty = 1;
 

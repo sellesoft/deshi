@@ -184,7 +184,6 @@ int main(int args_count, char** args){
 			f32 xn = floor(camera.position.x) - lines;
 			f32 zp = floor(camera.position.z) + lines;
 			f32 zn = floor(camera.position.z) - lines;
-			
 			color color(50, 50, 50);
 			for(int i = 0; i < lines * 2 + 1; i++){
 				vec3 v1 = Vec3(xn + i, 0, zn);
@@ -195,7 +194,6 @@ int main(int args_count, char** args){
 				if(xn + i != 0) render_line3(v1, v2, color);
 				if(zn + i != 0) render_line3(v3, v4, color);
 			}
-			
 			render_line3(Vec3(-1000,0,0), Vec3(1000,0,0), Color_Red);
 			render_line3(Vec3(0,-1000,0), Vec3(0,1000,0), Color_Green);
 			render_line3(Vec3(0,0,-1000), Vec3(0,0,1000), Color_Blue);
@@ -222,6 +220,5 @@ int main(int args_count, char** args){
 			uiItemE();
 		}uiImmediateE();
 	}deshi_loop_end();
-	
 	deshi_cleanup();
 }
