@@ -1038,8 +1038,8 @@ struct uiContext{
 	array<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
 	array<uiDrawCmd*> inactive_drawcmds_index_sorted;
 
-	Arena* vertex_arena;
-	Arena* index_arena;
+	Arena* vertex_arena; // arena of Vertex2
+	Arena* index_arena; // arena of u32
 	RenderTwodBuffer render_buffer;
 	array<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 
