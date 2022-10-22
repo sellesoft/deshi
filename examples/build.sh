@@ -482,7 +482,7 @@ if [ ! -e $build_folder ]; then mkdir $build_folder; fi
 if [ ! -e $build_folder/$build_dir ]; then mkdir $build_folder/$build_dir; fi
 pushd $root_folder > /dev/null
 build_dir="examples/$app_name/build/$build_dir"
-if [ $builder_platform == "win32" ]; then
+if [ $builder_platform == "win32" ]; then #_________________________________________________________________________________win32
   if [ -e examples/ctime.exe ]; then ctime -begin examples/$app_name/$app_name.ctm; fi
   if [ $build_time == 1 ]; then start_time=$(date +%s.%3N); fi
   echo ---------------------------------
@@ -497,18 +497,6 @@ if [ $builder_platform == "win32" ]; then
 
     if [ $? == 0 ] && [ -e $build_dir/$app_name.exe ]; then
       echo "[32m  $app_name.exe[0m"
-
-      #### compile dll (generates deshi.dll)
-      if [ $build_shared == 1 ]; then
-        exe $build_compiler $dll_sources $build_dir/deshi.obj $build_dir/main.obj $includes $compile_flags $defines -Fo"$build_dir/" -DDESHI_DLL -LD -link -noimplib -noexp $link_flags $link_libs -OUT:"$build_dir/deshi.dll" -PDB:"$build_dir/deshi_dlls_$RANDOM.pdb"
-
-        if [ $? == 0 ] && [ -e $build_dir/deshi.dll ]; then
-          echo "[32m  deshi.dll[0m"
-          cp $build_dir/deshi.dll $root_folder/deshi.dll
-        else
-          echo "[93mFailed to build: deshi.dll[0m"
-        fi
-      fi
     else
       echo "[93mFailed to build: $app_name.exe[0m"
     fi
@@ -520,45 +508,17 @@ if [ $builder_platform == "win32" ]; then
 
     if [ $? == 0 ] && [ -e $build_dir/$app_name.exe ]; then
       echo "[32m  $app_name.exe[0m"
-    
-      #### compile dll (generates deshi.dll)
-      if [ $build_shared == 1 ]; then
-        exe $build_compiler $dll_sources $build_dir/deshi.o $build_dir/main.o $includes $compile_flags $defines -Fo"$build_dir/" -DDESHI_DLL $link_flags $link_libs -o"$build_dir/deshi.dll"
-
-        if [ $? == 0 ] && [ -e $build_dir/deshi.dll ]; then
-          echo "[32m  deshi.dll[0m"
-          cp $build_dir/deshi.dll $root_folder/deshi.dll
-        else
-          echo "[93mFailed to build: deshi.dll[0m"
-        fi
-      fi
     else
       echo "[93mFailed to build: $app_name.exe[0m"
     fi
-
-    #exe clang $deshi_sources -c $compile_flags $defines $includes -o"$build_dir/deshi.o"
-    #
-    ##### compile dlls (generates deshi.dll)
-    #if [ $build_shared == 1 ]; then
-    #  exe clang $dll_sources -c -shared $compile_flags $defines -DDESHI_DLL $includes -o"$build_dir/deshi.dll"
-    #  
-    #  if [ -e deshi.dll ]; then echo "  deshi.dll"; fi
-    #fi
-    #
-    #### compile app (generates app_name.o)
-    #exe clang -c $app_sources $compile_flags $defines $includes -o"$build_dir/$app_name.o"
-    #
-    ##### link everything (generates app_name.exe)
-    #exe clang deshi.o $app_name.o $link_flags $link_libs -o"$app_name.exe"
-    #if [ -e $app_name.exe ]; then echo "  $app_name.exe"; fi
   fi
 
   echo ---------------------------------
   if [ -e examples/ctime.exe ]; then ctime -end examples/$app_name/$app_name.ctm; fi
   if [ $build_time == 1 ]; then printf "time: %f seconds" $(awk "BEGIN {print $(date +%s.%3N) - $start_time}"); fi
-elif [ $builder_platform == "mac" ]; then
+elif [ $builder_platform == "mac" ]; then #_________________________________________________________________________________mac
   echo "Execute commands not setup for platform: $builder_platform"
-elif [ $builder_platform == "linux" ]; then
+elif [ $builder_platform == "linux" ]; then #_______________________________________________________________________________linux
   echo "Execute commands not setup for platform: $builder_platform"
 else
   echo "Execute commands not setup for platform: $builder_platform"
