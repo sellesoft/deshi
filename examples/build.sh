@@ -476,8 +476,7 @@ exe(){
   fi
 }
 
-
-date +"%a, %h %d %Y, %H:%M:%S"
+echo "`date +'%a, %h %d %Y, %H:%M:%S'` ($build_dir) [$app_name]"
 if [ ! -e $build_folder ]; then mkdir $build_folder; fi
 if [ ! -e $build_folder/$build_dir ]; then mkdir $build_folder/$build_dir; fi
 pushd $root_folder > /dev/null

@@ -65,7 +65,7 @@ int main(int args_count, char** args){
 		std::uniform_int_distribution<s32>  rng_dist_size_radius(-ASTEROIDS_SIZE_RADIUS_MIN, ASTEROIDS_SIZE_RADIUS_MAX);
 		
 		//forI(ASTEROIDS_COUNT){
-		forI(0){
+		forI(1){
 			RenderVoxel* asteroid_voxels = 0;
 			arrsetcap(asteroid_voxels, ASTEROIDS_SIZE_RADIUS_MIN*ASTEROIDS_SIZE_RADIUS_MAX);
 			arrput(asteroids, asteroid_voxels);
@@ -94,6 +94,7 @@ int main(int args_count, char** args){
 			
 			//draw voxel sphere
 			//!ref: https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#C
+			//!ref: https://web.archive.org/web/20120422045142/https://banu.com/blog/7/drawing-circles/
 			//TODO(delle) extend the circle algo to 3D
 			s16 local_radius = 1;
 			for(s16 y = -radius; y <= radius; y += 1){
@@ -104,10 +105,10 @@ int main(int args_count, char** args){
 				s16 z = local_radius;
 				
 				RenderVoxel* voxels = arraddnptr(asteroid_voxels, 4);
-				voxels[0] = RenderVoxel{VoxelType_Rock,  x,  y,  z};
-				voxels[1] = RenderVoxel{VoxelType_Rock,  x,  y, -z};
-				voxels[2] = RenderVoxel{VoxelType_Rock, -x,  y,  z};
-				voxels[3] = RenderVoxel{VoxelType_Rock, -x,  y, -z};
+				voxels[0] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius+z)};
+				voxels[1] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius-z)};
+				voxels[2] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius+z)};
+				voxels[3] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius-z)};
 				
 				while(x < z){
 					if(f >= 0){
@@ -120,14 +121,14 @@ int main(int args_count, char** args){
 					f += ddf_x + 1;
 					
 					RenderVoxel* voxels = arraddnptr(asteroid_voxels, 8);
-					voxels[0] = RenderVoxel{VoxelType_Rock,  x,  y,  z};
-					voxels[1] = RenderVoxel{VoxelType_Rock,  x,  y, -z};
-					voxels[2] = RenderVoxel{VoxelType_Rock, -x,  y,  z};
-					voxels[3] = RenderVoxel{VoxelType_Rock, -x,  y, -z};
-					voxels[4] = RenderVoxel{VoxelType_Rock,  z,  y,  x};
-					voxels[5] = RenderVoxel{VoxelType_Rock,  z,  y, -x};
-					voxels[6] = RenderVoxel{VoxelType_Rock, -z,  y,  x};
-					voxels[7] = RenderVoxel{VoxelType_Rock, -z,  y, -x};
+					voxels[0] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius+z)};
+					voxels[1] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius-z)};
+					voxels[2] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius+z)};
+					voxels[3] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius-z)};
+					voxels[4] = RenderVoxel{VoxelType_Rock, (u16)(radius+z), (u16)(radius+y), (u16)(radius+x)};
+					voxels[5] = RenderVoxel{VoxelType_Rock, (u16)(radius+z), (u16)(radius+y), (u16)(radius-x)};
+					voxels[6] = RenderVoxel{VoxelType_Rock, (u16)(radius-z), (u16)(radius+y), (u16)(radius+x)};
+					voxels[7] = RenderVoxel{VoxelType_Rock, (u16)(radius-z), (u16)(radius+y), (u16)(radius-x)};
 				}
 				
 				if(y < 0){
