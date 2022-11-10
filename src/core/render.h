@@ -417,9 +417,9 @@ typedef struct RenderVoxelType{
 
 typedef struct RenderVoxel{ //8 bytes
 	u16 type; //voxel type index
-	s16 x;    //voxel offsets in chunk local space
-	s16 y;
-	s16 z;
+	u16 x;    //voxel offsets in chunk local space
+	u16 y;
+	u16 z;
 	
 	//TODO(delle) possible optimized form allowing more types and still 2^9 positions
 	//u32 type;

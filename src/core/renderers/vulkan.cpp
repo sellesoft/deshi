@@ -3883,7 +3883,8 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
 	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
 	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
-		chunk->voxels[render_voxel_linear(dimensions, it->x, it->y, it->z)] = it;
+		u32 linear = render_voxel_linear(dimensions, it->x, it->y, it->z);
+		chunk->voxels[linear] = it;
 	}
 	
 	//NOTE(DELLE) VULKAN SPECIFIC START
