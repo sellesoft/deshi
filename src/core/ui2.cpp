@@ -583,8 +583,8 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
 	
-	g_ui->vertex_arena = memory_create_arena(Megabytes(100));
-	g_ui->index_arena  = memory_create_arena(Megabytes(100));
+	g_ui->vertex_arena = memory_create_arena(g_memory->arena_heap.size / 16);
+	g_ui->index_arena  = memory_create_arena(g_memory->arena_heap.size / 16);
 	
 	g_ui->base = uiItem{0};
 	g_ui->base.file_created = STR8(__FILE__);
