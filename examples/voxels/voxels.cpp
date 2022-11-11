@@ -1,7 +1,7 @@
+#include <random>
 #include "deshi.h"
 #include "core/camera.h"
 #include "external/stb/stb_ds.h"
-#include <random>
 
 int main(int args_count, char** args){
 	deshi_init();
@@ -219,6 +219,7 @@ int main(int args_count, char** args){
 			uiTextM(ToString8(deshi_temp_allocator, camera.rotation));
 			uiItemE();
 		}uiImmediateE();
+		ui_debug();
 	}deshi_loop_end();
 	deshi_cleanup();
 }

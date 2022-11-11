@@ -109,6 +109,9 @@ for (( i=1; i<=$#; i++)); do
     if [ "${!i}" == "voxels" ]; then
       build_example="voxels"
       continue
+    elif [ "${!i}" == "ui" ]; then
+      build_example="ui"
+      continue
     else
       echo "Unknown example: ${!i}"
       exit 1

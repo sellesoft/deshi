@@ -4,3 +4,5 @@ examples/*/build
 project.4coder
 remedy.rdbg
 examples/shell.bat
+
+*.spv
