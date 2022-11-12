@@ -32,6 +32,8 @@ Index:
 @render_loading
 @render_draw_3d
 @render_draw_2d
+@render_voxel
+@render_buffer
 @render_surface
 @render_light
 @render_camera
@@ -363,6 +365,8 @@ local struct {
 #define AssertVk(result, ...) Assert((result) == VK_SUCCESS)
 #define AssertRS(stages, ...) Assert((renderStage & (stages)) == (stages))
 #define PrintVk(level, ...) if(renderSettings.loggingLevel >= level){ logger_push_indent(level); Log("vulkan", __VA_ARGS__); logger_pop_indent(level); }(void)0
+#define LogEVk(msg) LogE("render-vulkan", __FUNCTION__ "(): " msg)
+#define LogWVk(msg) LogW("render-vulkan", __FUNCTION__ "(): " msg)
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
 local inline void 
@@ -3199,7 +3203,8 @@ render_init(){DPZoneScoped;
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ",reset_stopwatch(&t_temp),"ms");
 	
-	//init external buffers arena TODO(sushi) find a better place for this
+	//// init shared render ////
+	memory_pool_init(deshi__render_buffer_pool, 16);
 	externalVertexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
 	externalIndexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
 	externalBufferCount = 0;
@@ -3801,7 +3806,7 @@ render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, 
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_shared_voxel
+//// @render_voxel
 void
 render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
 	render_voxel_types = types;
@@ -3986,6 +3991,200 @@ render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 	
 	renderStats.totalVoxels -= chunk->voxel_count;
 	renderStats.totalVoxelChunks -= 1;
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_buffer
+RenderBuffer*
+render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping){DPZoneScoped;
+	if(!deshi__render_buffer_pool){
+		LogEVk("Must not be called before deshi__render_buffer_pool is init.");
+		return 0;
+	}
+	if(size == 0){
+		LogEVk("Must not be called with zero size.");
+		return 0;
+	}
+	if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible) && HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)){
+		LogEVk("The flags RenderMemoryPropertyFlag_HostVisible and RenderMemoryPropertyFlag_LazilyAllocated are incompatible.");
+		return 0;
+	}
+	
+	RenderBuffer* result = memory_pool_push(deshi__render_buffer_pool);
+	
+	VkDeviceSize aligned_buffer_size = RoundUpTo(size, bufferMemoryAlignment);
+	{//create the buffer
+		VkBufferUsageFlags usage_flags = 0;
+		if(HasFlag(usage,RenderBufferUsage_TransferSource))      usage_flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	if(HasFlag(usage,RenderBufferUsage_TransferDestination)) usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	if(HasFlag(usage,RenderBufferUsage_UniformTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+	if(HasFlag(usage,RenderBufferUsage_StorageTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+	if(HasFlag(usage,RenderBufferUsage_UniformBuffer))       usage_flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	if(HasFlag(usage,RenderBufferUsage_StorageBuffer))       usage_flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	if(HasFlag(usage,RenderBufferUsage_IndexBuffer))         usage_flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	if(HasFlag(usage,RenderBufferUsage_VertexBuffer))        usage_flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	if(HasFlag(usage,RenderBufferUsage_IndirectBuffer))      usage_flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+		
+		VkBufferCreateInfo create_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	create_info.size        = aligned_buffer_size;
+		create_info.usage       = usage_flags;
+		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		resultVk = vkCreateBuffer(device, &create_info, allocator, &((VkBuffer)result->buffer_handle)); AssertVk(resultVk);
+	}
+	
+	{//allocate the memory
+		VkMemoryPropertyFlags property_flags = 0;
+		if(HasFlag(properties,RenderMemoryPropertyFlag_DeviceLocal))     property_flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible))     property_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	if(HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent))    property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	if(HasFlag(properties,RenderMemoryPropertyFlag_HostCached))      property_flags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+	if(HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)) property_flags |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+		
+		//get buffer memory requirements (alignment, size, memory type)
+		VkMemoryRequirements requirements;
+		vkGetBufferMemoryRequirements(device, (VkBuffer)result->buffer_handle, &requirements);
+		bufferMemoryAlignment = (bufferMemoryAlignment > requirements.alignment) ? bufferMemoryAlignment : requirements.alignment;
+		
+		VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	alloc_info.allocationSize  = requirements.size;
+	alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
+		resultVk = vkAllocateMemory(device, &alloc_info, allocator, &((VkDeviceMemory)result->memory_handle)); AssertVk(resultVk);
+		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
+	}
+	
+	//map the memory
+	if(mapping == RenderMemoryMapping_Persistent){
+		resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
+		
+		//copy data to the mapped memory
+		if(data){
+			CopyMemory(result->mapped_data, data, size);
+			
+			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+		range.memory = (VkDeviceMemory)result->memory_handle;
+		range.offset = 0;
+			range.size   = RoundUpTo(size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
+		resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
+		}
+	}
+	
+	result->size       = (u64)aligned_buffer_size;
+	result->usage      = usage;
+	result->properties = properties;
+	result->mapping    = mapping;
+	return result;
+}
+
+
+void
+render_buffer_delete(RenderBuffer* buffer){DPZoneScoped;
+	Assert(buffer);
+	if(!deshi__render_buffer_pool){
+		LogEVk("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle || !buffer->memory_handle){
+		LogEVk("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	
+	//unmap before deletion
+	if(buffer->mapped_data){
+		vkUnmapMemory(device, (VkDeviceMemory)buffer->memory_handle);
+	}
+	
+	vkDestroyBuffer(device, (VkBuffer)buffer->buffer_handle, allocator);
+	vkFreeMemory(device, (VkDeviceMemory)buffer->memory_handle, allocator);
+	
+	memory_pool_delete(deshi__render_buffer_pool, buffer);
+}
+
+
+void
+render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size){DPZoneScoped;
+	Assert(buffer);
+	if(!deshi__render_buffer_pool){
+		LogEVk("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	 if(!buffer || !buffer->buffer_handle || !buffer->memory_handle){
+		LogEVk("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	if(buffer->mapped_data){
+		if(buffer->mapping == RenderMemoryMapping_Persistent){
+			LogWVk("Cannot map a persistently mapped buffer since it's always actively mapped.");
+		}else{
+			LogWVk("Cannot map an actively mapped buffer.");
+		}
+		return;
+	}
+	if(buffer->mapping != RenderMemoryMapping_MapWriteUnmap){
+		LogEVk("A buffer must have the mapping RenderMemoryMapping_MapWriteUnmap in order to be mapped in the middle of its lifetime.");
+		return;
+	}
+	
+	resultVk = vkMapMemory(device, (VkDeviceMemory)buffer->memory_handle, offset, size, 0, &buffer->mapped_data); AssertVk(resultVk);
+	buffer->mapped_offset = offset;
+	buffer->mapped_size   = size;
+}
+
+
+void
+render_buffer_unmap(RenderBuffer* buffer, b32 flush){DPZoneScoped;
+	Assert(buffer);
+	if(!deshi__render_buffer_pool){
+		LogEVk("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle || !buffer->memory_handle){
+		LogEVk("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	if(!buffer->mapped_data){
+		LogEVk("The input buffer is not actively mapped.");
+		return;
+	}
+	if(buffer->mapping != RenderMemoryMapping_MapWriteUnmap){
+		LogEVk("A buffer must have the mapping RenderMemoryMapping_MapWriteUnmap in order to be unmapped in the middle of its lifetime.");
+		return;
+	}
+	
+	//flush before unmapping
+	if(flush){
+		VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+		range.memory = (VkDeviceMemory)buffer->memory_handle;
+		range.offset = buffer->mapped_offset;
+			range.size   = RoundUpTo(buffer->mapped_size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
+		resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
+	}
+	
+	vkUnmapMemory(device, (VkDeviceMemory)buffer->memory_handle);
+}
+
+
+void
+render_buffer_flush(RenderBuffer* buffer){DPZoneScoped;
+	Assert(buffer);
+	if(!deshi__render_buffer_pool){
+		LogEVk("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle || !buffer->memory_handle){
+		LogEVk("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	if(!buffer->mapped_data){
+		LogEVk("The input buffer is not actively mapped.");
+		return;
+	}
+	
+	VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+		range.memory = (VkDeviceMemory)buffer->memory_handle;
+		range.offset = buffer->mapped_offset;
+			range.size   = RoundUpTo(buffer->mapped_size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
+		resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 }
 
 

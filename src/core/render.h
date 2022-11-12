@@ -7,11 +7,13 @@ Notes:
 -Triangle winding (font-facing) is clockwise in 3D and counter-clockwise in 2D.
 -Voxels are bottom-left-back (-x,-y,-z) centered, meaning that the voxel at (0,0,0) has a vertex at (1,1,1).
 -Voxels are planar boxes, meaning that faces don't share vertices so that texture UVs are properly rendered.
+-Usually, "device" means GPU and "host" means CPU/RAM.
 
 Index:
 @render_types
 @render_status
 @render_surface
+@render_buffer
 @render_loading
 @render_draw_3d
 @render_draw_2d
@@ -22,6 +24,7 @@ Index:
 @render_make_2d
 @render_other
 @render_shared_status
+@render_shared_buffer
 @render_shared_surface
 @render_shared_draw_3d
 @render_shared_draw_2d
@@ -47,6 +50,8 @@ StartLinkageC();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_types
+#define RENDER_MAX_ALLOCATIONS 4096 //NOTE(delle): Vulkan drivers are only required to support up to 4096 individual allocations
+
 typedef Type VSyncType; enum{
 	VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
 	VSyncType_Mailbox,     //image queue that replaces current pending image with new one, but waits to display on refresh
@@ -210,6 +215,82 @@ RenderStats* render_get_stats();
 
 //Returns the internal `RenderStage`
 RenderStage* render_get_stage();
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_buffer
+typedef Flags RenderBufferUsageFlags; enum{
+	RenderBufferUsage_TransferSource      = (1 << 0),
+	RenderBufferUsage_TransferDestination = (1 << 1),
+	RenderBufferUsage_UniformTexelBuffer  = (1 << 2),
+	RenderBufferUsage_StorageTexelBuffer  = (1 << 3),
+	RenderBufferUsage_UniformBuffer       = (1 << 4),
+	RenderBufferUsage_StorageBuffer       = (1 << 5),
+	RenderBufferUsage_IndexBuffer         = (1 << 6),
+	RenderBufferUsage_VertexBuffer        = (1 << 7),
+	RenderBufferUsage_IndirectBuffer      = (1 << 8),
+};
+
+typedef Flags RenderMemoryPropertyFlags; enum{
+	RenderMemoryPropertyFlag_DeviceLocal     = (1 << 0), //device memory, fastest device access
+	RenderMemoryPropertyFlag_HostVisible     = (1 << 1), //device memory that can be mapped for host access, not compatible with RenderMemoryPropertyFlag_LazilyAllocated
+	RenderMemoryPropertyFlag_HostCoherent    = (1 << 2), //host memory that can be read by device over PCIe as needed
+	RenderMemoryPropertyFlag_HostCached      = (1 << 3), //device memory that is also cached on the host
+	RenderMemoryPropertyFlag_LazilyAllocated = (1 << 4), //device only access, commits memory as needed, not compatible with RenderMemoryPropertyFlag_HostVisible
+	
+	RenderMemoryProperty_DeviceOnly     = RenderMemoryPropertyFlag_DeviceLocal,                                            //device only memory, render targets, static resources
+	RenderMemoryProperty_DeviceOnlyLazy = RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_LazilyAllocated, //device only committed as used, large render targets that are never stored to, MSAA or depth images
+	RenderMemoryProperty_DeviceMappable = RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible,     //frequent host written memory, uniform buffers, dynamic vertex/index buffers
+	RenderMemoryProperty_HostStreamed   = RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,    //host local memory, read by device over PCIe, staging buffers for static resources
+};
+
+typedef Type RenderMemoryMappingType; enum{
+	RenderMemoryMapping_None,          //the memory is never mapped or unmapped after initial upload
+	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion
+	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time
+};
+
+typedef struct RenderBuffer{
+	void* buffer_handle;
+	void* memory_handle;
+	
+	u64 size;
+	
+	void* mapped_data; //null if not mapped
+	u64 mapped_offset;
+	u64 mapped_size;
+	
+	RenderBufferUsageFlags usage;
+	RenderMemoryPropertyFlags properties;
+	RenderMemoryMappingType mapping;
+}RenderBuffer;
+
+//Creates a `RenderBuffer*`, allocates at least `size` bytes on the device, and uploads `size` bytes at `data` to the device
+//  `data` can be a null pointer, in which case the buffer memory will be allocated but nothing will be uploaded
+//  `usage` determines how the buffer can be used
+//  `properties` determines how the buffer memory can be accessed
+//  `mapping` determines the duration a buffer will be mapped between the device and host
+RenderBuffer* render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping);
+
+//Deletes the `buffer` from the device and host
+void render_buffer_delete(RenderBuffer* buffer);
+
+//Maps `size` bytes at `offset` from an unmapped `buffer` with host-visible memory
+//  allows the host to modify memory at `buffer.mapped_data` which can be flushed back to the device
+//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
+//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
+void render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size);
+
+//Unmaps a mapped `buffer` with host-visible memory
+//  `flush` will flush the mapped data back to the device before unmapping
+//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
+//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
+void render_buffer_unmap(RenderBuffer* buffer, b32 flush);
+
+//Flushes the contents of a mapped `buffer` back to the device
+//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
+//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
+void render_buffer_flush(RenderBuffer* buffer);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -606,6 +687,11 @@ RenderStage*
 render_get_stage(){
 	return &renderStage;
 }
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_shared_buffer
+local RenderBuffer* deshi__render_buffer_pool;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
