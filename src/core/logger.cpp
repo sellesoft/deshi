@@ -4,19 +4,32 @@
 #include <ctime>
 #include <clocale>
 
+//NOTE(delle) customize this as you see fit locally, but it should be 1 on commit
+#if DESHI_INTERNAL
+#  define LOGGER_ASSERT_ON_ERROR 1
+#else
+#  define LOGGER_ASSERT_ON_ERROR 0
+#endif //#if DESHI_INTERNAL
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @internal
 local Logger logger;
 
 int
 logger_message_prefix(int cursor, str8 caller_file, upt caller_line, str8 tag, Type log_type){DPZoneScoped;
+#if LOGGER_ASSERT_ON_ERROR
+	if(log_type == LogType_Error){
+		Assert(!"assert on error");
+	}
+#endif //#if LOGGER_ASSERT_ON_ERROR
+	
 	//tag
 	if(tag && !logger.ignore_tags){
 		logger.last_message[cursor++] = '[';
 		if     (log_type==LogType_Error)  {memcpy(logger.last_message+cursor, "\x1b[31m", 5); cursor+=5;}
 		else if(log_type==LogType_Success){memcpy(logger.last_message+cursor, "\x1b[32m", 5); cursor+=5;}
 		else if(log_type==LogType_Warning){memcpy(logger.last_message+cursor, "\x1b[33m", 5); cursor+=5;}
-
+		
 		str8 temp = tag;
 		while(temp){
 			cursor += utf8_from_codepoint(logger.last_message + cursor, towupper(str8_advance(&temp).codepoint));
