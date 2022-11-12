@@ -232,8 +232,16 @@ FORCE_INLINE                 void* deshi__memory_pool_init_wrapper(void* pool, u
 void memory_pool_deinit(void* pool);
 
 //Returns a free chunk in `pool`, growing if necessary
-#define memory_pool_push(pool) deshi__memory_pool_push((pool), sizeof(*(pool)))
+#define memory_pool_push(pool) deshi__memory_pool_push_wrapper((pool), sizeof(*(pool)))
 void* deshi__memory_pool_push(void* pool, upt type_size);
+
+#if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
+EndLinkageC();
+template<class T> global inline T* deshi__memory_pool_push_wrapper(T*    pool, upt type_size){ return (T*)deshi__memory_pool_push(pool, type_size); }
+StartLinkageC();
+#else
+FORCE_INLINE                 void* deshi__memory_pool_push_wrapper(void* pool, upt type_size){ return     deshi__memory_pool_init(pool, type_size); }
+#endif //COMPILER_FEATURE_CPP
 
 //Deletes the chunk at `ptr` in the pooled arena `pool`
 #define memory_pool_delete(pool,ptr) deshi__memory_pool_delete((pool), sizeof(*(pool)), (ptr))
