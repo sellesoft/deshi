@@ -4017,17 +4017,17 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 	{//create the buffer
 		VkBufferUsageFlags usage_flags = 0;
 		if(HasFlag(usage,RenderBufferUsage_TransferSource))      usage_flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	if(HasFlag(usage,RenderBufferUsage_TransferDestination)) usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	if(HasFlag(usage,RenderBufferUsage_UniformTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-	if(HasFlag(usage,RenderBufferUsage_StorageTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-	if(HasFlag(usage,RenderBufferUsage_UniformBuffer))       usage_flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	if(HasFlag(usage,RenderBufferUsage_StorageBuffer))       usage_flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	if(HasFlag(usage,RenderBufferUsage_IndexBuffer))         usage_flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	if(HasFlag(usage,RenderBufferUsage_VertexBuffer))        usage_flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	if(HasFlag(usage,RenderBufferUsage_IndirectBuffer))      usage_flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_TransferDestination)) usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		if(HasFlag(usage,RenderBufferUsage_UniformTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_StorageTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_UniformBuffer))       usage_flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_StorageBuffer))       usage_flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_IndexBuffer))         usage_flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_VertexBuffer))        usage_flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		if(HasFlag(usage,RenderBufferUsage_IndirectBuffer))      usage_flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 		
 		VkBufferCreateInfo create_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-	create_info.size        = aligned_buffer_size;
+		create_info.size        = aligned_buffer_size;
 		create_info.usage       = usage_flags;
 		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		resultVk = vkCreateBuffer(device, &create_info, allocator, &((VkBuffer)result->buffer_handle)); AssertVk(resultVk);
@@ -4036,10 +4036,10 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 	{//allocate the memory
 		VkMemoryPropertyFlags property_flags = 0;
 		if(HasFlag(properties,RenderMemoryPropertyFlag_DeviceLocal))     property_flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible))     property_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	if(HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent))    property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	if(HasFlag(properties,RenderMemoryPropertyFlag_HostCached))      property_flags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-	if(HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)) property_flags |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+		if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible))     property_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+		if(HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent))    property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		if(HasFlag(properties,RenderMemoryPropertyFlag_HostCached))      property_flags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+		if(HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)) property_flags |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
 		
 		//get buffer memory requirements (alignment, size, memory type)
 		VkMemoryRequirements requirements;
@@ -4047,8 +4047,8 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		bufferMemoryAlignment = (bufferMemoryAlignment > requirements.alignment) ? bufferMemoryAlignment : requirements.alignment;
 		
 		VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-	alloc_info.allocationSize  = requirements.size;
-	alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
+		alloc_info.allocationSize  = requirements.size;
+		alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
 		resultVk = vkAllocateMemory(device, &alloc_info, allocator, &((VkDeviceMemory)result->memory_handle)); AssertVk(resultVk);
 		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
 	}
@@ -4062,10 +4062,10 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 			CopyMemory(result->mapped_data, data, size);
 			
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-		range.memory = (VkDeviceMemory)result->memory_handle;
-		range.offset = 0;
+			range.memory = (VkDeviceMemory)result->memory_handle;
+			range.offset = 0;
 			range.size   = RoundUpTo(size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
-		resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
+			resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 		}
 	}
 	
@@ -4108,7 +4108,7 @@ render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size){DPZoneScoped;
 		LogEVk("Must not be called before deshi__render_buffer_pool is init.");
 		return;
 	}
-	 if(!buffer || !buffer->buffer_handle || !buffer->memory_handle){
+	if(!buffer || !buffer->buffer_handle || !buffer->memory_handle){
 		LogEVk("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
 		return;
 	}
@@ -4156,7 +4156,7 @@ render_buffer_unmap(RenderBuffer* buffer, b32 flush){DPZoneScoped;
 		VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 		range.memory = (VkDeviceMemory)buffer->memory_handle;
 		range.offset = buffer->mapped_offset;
-			range.size   = RoundUpTo(buffer->mapped_size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
+		range.size   = RoundUpTo(buffer->mapped_size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
 		resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 	}
 	
@@ -4181,10 +4181,10 @@ render_buffer_flush(RenderBuffer* buffer){DPZoneScoped;
 	}
 	
 	VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-		range.memory = (VkDeviceMemory)buffer->memory_handle;
-		range.offset = buffer->mapped_offset;
-			range.size   = RoundUpTo(buffer->mapped_size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
-		resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
+	range.memory = (VkDeviceMemory)buffer->memory_handle;
+	range.offset = buffer->mapped_offset;
+	range.size   = RoundUpTo(buffer->mapped_size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
+	resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 }
 
 
