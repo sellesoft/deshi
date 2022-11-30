@@ -562,6 +562,7 @@ platform_update(){DPZoneScoped; DPFrameMark;
 		::DispatchMessageW(&msg);
 	}
 	
+	b32 any_window_focused = false;
 	forI(window_windows.count){
 		window_windows[i]->resized = false;
 		while(::PeekMessageW(&msg, (HWND)window_windows[i]->handle, 0, 0, PM_REMOVE)){
@@ -572,6 +573,7 @@ platform_update(){DPZoneScoped; DPFrameMark;
 		//if(window_windows[i]->decorations != Decoration_SystemDecorations) DrawDecorations(window_windows[i]);
 		//window_windows[i].hit_test = HitTestNone;
 		if(window_windows[i]->focused){
+			any_window_focused = true;
 			if(window_windows[i]->cursor_mode == CursorMode_FirstPerson){
 				window_cursor_position(window_windows[i], window_windows[i]->center);
 			}
@@ -581,33 +583,35 @@ platform_update(){DPZoneScoped; DPFrameMark;
 	
 	
 	//// update input ////
-	//caches input values so they are consistent thru the frame
-	memcpy(&DeshInput->oldKeyState, &DeshInput->newKeyState,  sizeof(b32)*MAX_KEYBOARD_KEYS);
-	memcpy(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
-	
-	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
-		reset_stopwatch(&DeshInput->time_since_key_hold);
-		DeshInput->newKeyState[0] = 1;
-		DeshInput->anyKeyDown = 0;
-	}else{
-		DeshInput->time_key_held = peek_stopwatch(DeshInput->time_since_key_hold);
-		DeshInput->anyKeyDown = 1;
+	if(any_window_focused){
+		//caches input values so they are consistent thru the frame
+		memcpy(&DeshInput->oldKeyState, &DeshInput->newKeyState,  sizeof(b32)*MAX_KEYBOARD_KEYS);
+		memcpy(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
+		
+		if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+			reset_stopwatch(&DeshInput->time_since_key_hold);
+			DeshInput->newKeyState[0] = 1;
+			DeshInput->anyKeyDown = 0;
+		}else{
+			DeshInput->time_key_held = peek_stopwatch(DeshInput->time_since_key_hold);
+			DeshInput->anyKeyDown = 1;
+		}
+		
+		if(!DeshInput->realCharCount){
+			reset_stopwatch(&DeshInput->time_since_char_hold);
+		}else{
+			DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
+		}
+		
+		DeshInput->mouseX        = DeshInput->realMouseX;
+		DeshInput->mouseY        = DeshInput->realMouseY;
+		DeshInput->screenMouseX  = DeshInput->realScreenMouseX;
+		DeshInput->screenMouseY  = DeshInput->realScreenMouseY;
+		DeshInput->scrollY       = DeshInput->realScrollY;
+		DeshInput->realScrollY   = 0;
+		DeshInput->charCount     = DeshInput->realCharCount;
+		DeshInput->realCharCount = 0;
 	}
-	
-	if(!DeshInput->realCharCount){
-		reset_stopwatch(&DeshInput->time_since_char_hold);
-	}else{
-		DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
-	}
-	
-	DeshInput->mouseX        = DeshInput->realMouseX;
-	DeshInput->mouseY        = DeshInput->realMouseY;
-	DeshInput->screenMouseX  = DeshInput->realScreenMouseX;
-	DeshInput->screenMouseY  = DeshInput->realScreenMouseY;
-	DeshInput->scrollY       = DeshInput->realScrollY;
-	DeshInput->realScrollY   = 0;
-	DeshInput->charCount     = DeshInput->realCharCount;
-	DeshInput->realCharCount = 0;
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
 	
 	
