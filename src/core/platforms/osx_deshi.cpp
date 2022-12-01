@@ -1,4 +1,5 @@
 ﻿local b32 _resized = false;
+
 local int _width, _height, _x, _y;
 local int opengl_version;
 local b32 block_mouse_pos_change = false;

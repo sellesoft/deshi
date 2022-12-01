@@ -1539,24 +1539,26 @@ platform_set_clipboard(str8 text){DPZoneScoped;
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @win32_threading
-void mutex::
-init(){DPZoneScoped;
-	if(handle = ::CreateMutex(NULL, FALSE, NULL); !handle)
+mutex
+mutex_init(){DPZoneScoped;
+	mutex m;
+	if(m.handle = ::CreateMutex(NULL, FALSE, NULL); !m.handle)
 		win32_log_last_error("CreateMutex");
+	return m;
 }
 
-void mutex::
-deinit(){DPZoneScoped;//NOTE a mutex is not released on scope end, use scopedlock for this
-	::CloseHandle(handle);
+void 
+mutex_deinit(mutex* m){DPZoneScoped;
+	::CloseHandle(m->handle);
 }
 
-void mutex::
-lock(){DPZoneScoped;
-	if(!handle){
+void 
+mutex_lock(mutex* m){DPZoneScoped;
+	if(!m->handle){
 		LogE("threading-win32", "Attempted to use a mutex that hasnt been initialized or has already been deinitializaed.");
 		Assert(0);
 	} 
-	DWORD waitResult = ::WaitForSingleObject(handle, INFINITE);
+	DWORD waitResult = ::WaitForSingleObject(m->handle, INFINITE);
 	switch(waitResult){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1565,16 +1567,16 @@ lock(){DPZoneScoped;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
-	is_locked = 1;
+	m->is_locked = 1;
 }
 
-b32 mutex::
-try_lock(){DPZoneScoped;
-	if(!handle){
+b32 
+mutex_try_lock(mutex* m){DPZoneScoped;
+	if(!m->handle){
 		LogE("threading-win32", "Attempted to use a mutex that hasnt been initialized or has already been deinitializaed.");
 		Assert(0);
 	}
-	DWORD waitResult = ::WaitForSingleObject(handle, 0);
+	DWORD waitResult = ::WaitForSingleObject(m->handle, 0);
 	switch(waitResult){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1586,17 +1588,17 @@ try_lock(){DPZoneScoped;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
-	is_locked = 1;
+	m->is_locked = 1;
 	return true;
 }
 
-b32 mutex::
-try_lock_for(u64 milliseconds){DPZoneScoped;
-	if(!handle){
+b32 
+mutex_try_lock_for(mutex* m, u64 milliseconds){DPZoneScoped;
+	if(!m->handle){
 		LogE("threading-win32", "Attempted to use a mutex that hasnt been initialized or has already been deinitializaed.");
 		Assert(0);
 	}
-	DWORD waitResult = ::WaitForSingleObject(handle, milliseconds);
+	DWORD waitResult = ::WaitForSingleObject(m->handle, milliseconds);
 	switch(waitResult){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1608,78 +1610,79 @@ try_lock_for(u64 milliseconds){DPZoneScoped;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
-	is_locked = 1;
+	m->is_locked = 1;
 	return true;
 }
 
-void mutex::
-unlock(){DPZoneScoped;
-	if(!ReleaseMutex(handle)){ win32_log_last_error("ReleaseMutex"); Assert(0); }
-	is_locked = 0;
+void 
+mutex_unlock(mutex* m){DPZoneScoped;
+	if(!ReleaseMutex(m->handle)){ win32_log_last_error("ReleaseMutex"); Assert(0); }
+	m->is_locked = 0;
 }
 
 
-void condition_variable::
-init(){DPZoneScoped;
+condvar
+condition_variable_init(){DPZoneScoped;
 	//NOTE i have to use std mem here in the case that condvar is used before memory is initialized (eg. a condvar global var)
-	cvhandle = malloc(sizeof(CONDITION_VARIABLE));
-	cshandle = malloc(sizeof(CRITICAL_SECTION));
-	::InitializeCriticalSection((CRITICAL_SECTION*)cshandle);
-	::InitializeConditionVariable((CONDITION_VARIABLE*)cvhandle);
+	condition_variable cv;
+	cv.cvhandle = malloc(sizeof(CONDITION_VARIABLE));
+	cv.cshandle = malloc(sizeof(CRITICAL_SECTION));
+	::InitializeCriticalSection((CRITICAL_SECTION*)cv.cshandle);
+	::InitializeConditionVariable((CONDITION_VARIABLE*)cv.cvhandle);
+	return cv;
 }
 
-void condvar::
-deinit(){DPZoneScoped;
-	free(cvhandle); 
-	free(cshandle);
+void 
+condition_variable_deinit(condvar* cv){DPZoneScoped;
+	free(cv->cvhandle);
+	free(cv->cshandle);
 }
 
-void condition_variable::
-notify_one(){DPZoneScoped;
-	::WakeConditionVariable((CONDITION_VARIABLE*)cvhandle);
+void 
+condition_variable_notify_one(condvar* cv){DPZoneScoped;
+	::WakeConditionVariable((CONDITION_VARIABLE*)cv->cvhandle);
 }
 
-void condition_variable::
-notify_all(){DPZoneScoped;
-	::WakeAllConditionVariable((CONDITION_VARIABLE*)cvhandle);
+void condition_variable_notify_all(condvar* cv){DPZoneScoped;
+	::WakeAllConditionVariable((CONDITION_VARIABLE*)cv->cvhandle);
 }
 
-void condition_variable::
-wait(){DPZoneScoped;
-	//DeshThreadManager->going_to_sleep();
-	DeshThreadManager->wake_up_barrier.leave();
-	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
-	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, INFINITE)){
+void 
+condition_variable_wait(condvar* cv){DPZoneScoped;
+	semaphore_leave(&DeshThreadManager->wake_up_barrier);
+	::EnterCriticalSection((CRITICAL_SECTION*)cv->cshandle);
+	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cv->cvhandle, (CRITICAL_SECTION*)cv->cshandle, INFINITE)){
 		win32_log_last_error("SleepConditionVariableCS");
 	}
-	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);
-	//DeshThreadManager->waking_up();
-	DeshThreadManager->wake_up_barrier.enter();
+	::LeaveCriticalSection((CRITICAL_SECTION*)cv->cshandle);
+	semaphore_enter(&DeshThreadManager->wake_up_barrier);
 }
 
-void condition_variable::
-wait_for(u64 milliseconds){DPZoneScoped;
-	::EnterCriticalSection((CRITICAL_SECTION*)cshandle);
-	::SleepConditionVariableCS((CONDITION_VARIABLE*)cvhandle, (CRITICAL_SECTION*)cshandle, milliseconds);
-	::LeaveCriticalSection((CRITICAL_SECTION*)cshandle);	
+void 
+condition_variable_wait_for(condvar* cv, u64 milliseconds){DPZoneScoped;
+	::EnterCriticalSection((CRITICAL_SECTION*)cv->cshandle);
+	::SleepConditionVariableCS((CONDITION_VARIABLE*)cv->cvhandle, (CRITICAL_SECTION*)cv->cshandle, milliseconds);
+	::LeaveCriticalSection((CRITICAL_SECTION*)cv->cshandle);	
 }
 
 
-void semaphore::
-init(u64 ival, u64 mval){
-	if(handle = CreateSemaphore(0, mval, ival, 0); !handle){
+semaphore
+semaphore_init(u64 ival, u64 mval){
+	semaphore se;
+	if(se.handle = CreateSemaphore(0, mval, ival, 0); !se.handle){
 		win32_log_last_error("CreateSemaphore");
 	}
+	return se;
 }
 
-void semaphore::
-deinit(){
-	CloseHandle(handle);
+void 
+semaphore_deinit(semaphore* se){
+	CloseHandle(se->handle);
 }
 
-void semaphore::
-enter(){
-	DWORD waitres = WaitForSingleObject(handle, INFINITE);
+void 
+semaphore_enter(semaphore* se){
+	DWORD waitres = WaitForSingleObject(se->handle, INFINITE);
 	switch(waitres){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
@@ -1689,15 +1692,15 @@ enter(){
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
 	//TODO(sushi) need to see if this should be locked!
-	count--;
+	se->count--;
 }
 
-void semaphore::
-leave(){
-	if(!ReleaseSemaphore(handle, 1, 0)){
+void 
+semaphore_leave(semaphore* se){
+	if(!ReleaseSemaphore(se->handle, 1, 0)){
 		win32_log_last_error("ReleaseSemaphore");
 	}
-	count++;
+	se->count++;
 }
 
 
@@ -1714,7 +1717,7 @@ void
 deshi__thread_worker(Thread* me){DPZoneScoped;
 	ThreadManager* man = DeshThreadManager;
 	WorkerLog("spawned");
-	man->wake_up_barrier.enter();
+	semaphore_enter(&man->wake_up_barrier);
 	SetThreadDescription(GetCurrentThread(), wchar_from_str8(toStr8("worker ", me->idx), 0, deshi_temp_allocator));
 	while(!me->close){
 		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
@@ -1722,12 +1725,12 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			ThreadJob tj;
 			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
 			
-			man->job_ring_lock.lock();
+			mutex_lock(&man->job_ring_lock);
 			
 			//check once more that there are jobs since the locking thread could have taken the last one
 			//im sure theres a better way to do this
 			if(!man->job_ring.count){
-				man->job_ring_lock.unlock();
+				mutex_unlock(&man->job_ring_lock);
 				break; 
 			} 	
 			WorkerLog("locked job ring and taking a job");
@@ -1735,7 +1738,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj = man->job_ring[0];
 			man->job_ring.remove(1);
 			
-			man->job_ring_lock.unlock();
+			mutex_unlock(&man->job_ring_lock);
 			
 			//run the function
 			WorkerLog("running job");
@@ -1743,14 +1746,13 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj.ThreadFunction(tj.data);
 			me->running = false;
 			WorkerLog("finished running job");
-			if(!man->worker_should_continue()) break; 
-			
+			if(!threader_worker_should_continue()) break;
 		}
 		//when there are no more jobs go to sleep until notified again by thread manager
 		WorkerLog("going to sleep");
-		man->set_thread_name(STR8("sleeping..."));
-		man->idle.wait();
-		man->set_thread_name(STR8("waking up"));
+		threader_set_thread_name(STR8("sleeping..."));
+		condition_variable_wait(&man->idle);
+		threader_set_thread_name(STR8("waking up"));
 		WorkerLog("woke up");
 		
 	}
@@ -1763,73 +1765,72 @@ deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
 	return 0;
 }
 
-void ThreadManager::
-init(u32 max_jobs){DPZoneScoped;
-	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init ThreadManager without loading Memory first");
-	job_ring.init(max_jobs, deshi_allocator);
-	wake_up_queue.init(max_awake_threads*4);
+void 
+threader_init(u32 max_jobs){DPZoneScoped;
+	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
+	g_tmanager->job_ring.init(max_jobs, deshi_allocator);
+	DeshThreadManager->wake_up_queue.init(DeshThreadManager->max_awake_threads*4);
 	//TODO(sushi) query for max amount of threads 
-	wake_up_barrier.init(8,8);
-	wake_up_barrier.enter();
-	idle.init();
-	job_ring_lock.init();
-	hypnagogia_lock.init();
+	DeshThreadManager->wake_up_barrier = semaphore_init(8,8);
+	semaphore_enter(&DeshThreadManager->wake_up_barrier);
+	DeshThreadManager->idle = condition_variable_init();
+	DeshThreadManager->job_ring_lock = mutex_init();
 	DeshiStageInitEnd(DS_THREAD);
 }
 
-void ThreadManager::
-spawn_thread(u32 count){DPZoneScoped;
-	if(max_threads && threads.count + count > max_threads){
-		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", max_threads);
+void 
+threader_spawn_thread(u32 count){DPZoneScoped;
+	if(DeshThreadManager->max_threads && DeshThreadManager->threads.count + count > DeshThreadManager->max_threads){
+		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", DeshThreadManager->max_threads);
 	}
 	forI(count){
 		DeshThreadManager->awake_threads++;
 		Thread* t = (Thread*)memalloc(sizeof(Thread));
-		if(threads.count)
-			t->idx = (*threads.last)->idx + 1;
+		if(DeshThreadManager->threads.count)
+			t->idx = (*DeshThreadManager->threads.last)->idx + 1;
 		else
 			t->idx = 0;
-		threads.add(t);
+		DeshThreadManager->threads.add(t);
 		::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
 	}
 }
 
-void ThreadManager::
-close_all_threads(){DPZoneScoped;
-	forI(threads.count) threads[i]->close = true;
-	wake_threads(0);
-	threads.clear();
+void 
+threader_close_all_threads(){DPZoneScoped;
+	forI(DeshThreadManager->threads.count) DeshThreadManager->threads[i]->close = true;
+	threader_wake_threads(0);
+	DeshThreadManager->threads.clear();
 }
 
-void ThreadManager::
-add_job(ThreadJob job){DPZoneScoped;
-	job_ring.add(job);
+void 
+threader_add_job(ThreadJob job){DPZoneScoped;
+	DeshThreadManager->job_ring.add(job);
 }
 
-void ThreadManager::
-add_jobs(carray<ThreadJob> jobs){DPZoneScoped;
-	forI(jobs.count) job_ring.add(jobs[i]);
+void 
+threader_add_jobs(carray<ThreadJob> jobs){DPZoneScoped;
+	forI(jobs.count) DeshThreadManager->job_ring.add(jobs[i]);
 }
 
-void ThreadManager::
-cancel_all_jobs(){DPZoneScoped;
-	job_ring.clear();
+void 
+threader_cancel_all_jobs(){DPZoneScoped;
+	DeshThreadManager->job_ring.clear();
 } 
 
-void ThreadManager::
-wake_threads(u32 count){DPZoneScoped;
-	if(!threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
+void 
+threader_wake_threads(u32 count){DPZoneScoped;
+	if(!DeshThreadManager->threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
 	else if(!count){
-		idle.notify_all();
+		condition_variable_notify_all(&DeshThreadManager->idle);
 	}  
 	else{
 		forI(count) 
-			idle.notify_one();
+			condition_variable_notify_one(&DeshThreadManager->idle);
 	}
 }
 
-void ThreadManager::
-set_thread_name(str8 name){
+void 
+threader_set_thread_name(str8 name){
 	SetThreadDescription(GetCurrentThread(), wchar_from_str8(name, 0, deshi_temp_allocator));
 }
 
