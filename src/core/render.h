@@ -245,14 +245,13 @@ typedef Flags RenderMemoryPropertyFlags; enum{
 };
 
 typedef Type RenderMemoryMappingType; enum{
-	RenderMemoryMapping_None,          //the memory is never mapped or unmapped after initial upload
-	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion
 	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time
+	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion
 };
 
 typedef struct RenderBuffer{
-	void* buffer_handle;
-	void* memory_handle;
+	void* buffer_handle; //VkBuffer in vulkan, ... in OpenGL, ... in DirectX
+	void* memory_handle; //VkDeviceMemory in vulkan, ... in OpenGL, ... in DirectX
 	
 	u64 size;
 	
@@ -520,10 +519,10 @@ typedef struct RenderVoxelChunk{
 	RenderVoxel** voxels;
 	u64 voxel_count; //number of voxels that are not empty
 	
-	void* vertex_buffer; //NOTE(delle) BufferVk in vulkan, TODO in opengl
-	u64   vertex_count;
-	void* index_buffer;  //same type as vertex_buffer
-	u64   index_count;
+	RenderBuffer* vertex_buffer;
+	u64 vertex_count;
+	RenderBuffer* index_buffer;
+	u64 index_count;
 }RenderVoxelChunk;
 
 //Inits the voxel renderer using an array of voxel types `types`
@@ -1716,18 +1715,19 @@ enum{ //voxel face vertex order (when looking at the front of the face)
 	render_voxel_face_vertex_br = 3,
 };
 
+
 local RenderVoxelType* render_voxel_types;
 local u64 render_voxel_types_count;
 local RenderVoxelChunk* render_voxel_chunk_pool;
 local u32 render_voxel_voxel_size; //width, height, and depth of a voxel in the world
 
 local vec3 render_voxel_unit_vertex_offsets[6][4] = { //unit vertex offsets by face
-	{ { 1,0,0 }, { 1,1,0 }, { 1,1,1 }, { 1,0,1 } }, // +x face
-	{ { 0,1,0 }, { 0,1,1 }, { 1,1,1 }, { 1,1,0 } }, // +y face
-	{ { 1,0,1 }, { 1,1,1 }, { 0,1,1 }, { 0,0,1 } }, // +z face
-	{ { 0,0,1 }, { 0,1,1 }, { 0,1,0 }, { 0,0,0 } }, // -x face
-	{ { 0,0,1 }, { 0,0,0 }, { 1,0,0 }, { 1,0,1 } }, // -y face
-	{ { 0,0,0 }, { 0,1,0 }, { 1,1,0 }, { 1,0,0 } }, // -z face
+	{ { 1,0,0 }, { 1,1,0 }, { 1,1,1 }, { 1,0,1 } }, //render_voxel_face_posx
+	{ { 0,1,0 }, { 0,1,1 }, { 1,1,1 }, { 1,1,0 } }, //render_voxel_face_posy
+	{ { 1,0,1 }, { 1,1,1 }, { 0,1,1 }, { 0,0,1 } }, //render_voxel_face_posz
+	{ { 0,0,1 }, { 0,1,1 }, { 0,1,0 }, { 0,0,0 } }, //render_voxel_face_negx
+	{ { 0,0,1 }, { 0,0,0 }, { 1,0,0 }, { 1,0,1 } }, //render_voxel_face_negy
+	{ { 0,0,0 }, { 0,1,0 }, { 1,1,0 }, { 1,0,0 } }, //render_voxel_face_negz
 };
 
 local vec3 render_voxel_face_normals[6] = {
@@ -1739,6 +1739,7 @@ local vec3 render_voxel_face_normals[6] = {
 	vec3_BACK(),
 };
 
+
 //NOTE(delle) voxels are linearly laid out like x-y plane at z0, x-y plane at z1, ... with x being the major axis in the x-y plane
 #define render_voxel_linear(dims,x,y,z)  (((z) * (dims) * (dims)) + ((y) * (dims)) + (x))
 #define render_voxel_right(dims,linear)  ((linear) + 1)
@@ -1747,6 +1748,156 @@ local vec3 render_voxel_face_normals[6] = {
 #define render_voxel_below(dims,linear)  ((linear) - (dims))
 #define render_voxel_front(dims,linear)  ((linear) + ((dims)*(dims)))
 #define render_voxel_behind(dims,linear) ((linear) - ((dims)*(dims)))
+
+
+void
+render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
+	render_voxel_types = types;
+	render_voxel_types_count = count;
+	memory_pool_init(render_voxel_chunk_pool, 128);
+	for_pool(render_voxel_chunk_pool) it->hidden = true;
+	render_voxel_voxel_size = voxel_size;
+}
+
+
+void
+render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){
+	vec3 voxel_position = chunk->position + Vec3(voxel->x, voxel->y, voxel->z);
+	mat4 transform = mat4::TransformationMatrix(voxel_position, chunk->rotation, vec3_ONE());
+	
+	vertex_array[*vertex_count+0] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_bl] * transform,
+		Vec2(0,0),
+		render_voxel_types[voxel->type].color,
+		render_voxel_face_normals[direction] * transform
+	};
+	vertex_array[*vertex_count+1] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tl] * transform,
+		Vec2(0,1),
+		render_voxel_types[voxel->type].color,
+		render_voxel_face_normals[direction] * transform
+	};
+	vertex_array[*vertex_count+2] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tr] * transform,
+		Vec2(1,1),
+		render_voxel_types[voxel->type].color,
+		render_voxel_face_normals[direction] * transform
+	};
+	vertex_array[*vertex_count+3] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_br] * transform,
+		Vec2(1,0),
+		render_voxel_types[voxel->type].color,
+		render_voxel_face_normals[direction] * transform
+	};
+	
+	index_array[*index_count+0] = *vertex_count+0;
+	index_array[*index_count+1] = *vertex_count+1;
+	index_array[*index_count+2] = *vertex_count+2;
+	index_array[*index_count+3] = *vertex_count+0;
+	index_array[*index_count+4] = *vertex_count+2;
+	index_array[*index_count+5] = *vertex_count+3;
+	
+	*vertex_count += 4;
+	*index_count  += 6;
+}
+
+
+RenderVoxelChunk*
+render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
+	//alloc and init chunk
+	RenderVoxelChunk* chunk = memory_pool_push(render_voxel_chunk_pool);
+	chunk->position    = position;
+	chunk->rotation    = rotation;
+	chunk->dimensions  = dimensions;
+	chunk->modified    = false;
+	chunk->hidden      = false;
+	chunk->voxel_count = voxels_count;
+	
+	//calculate some chunk creation info
+	upt dimensions_cubed    = dimensions * dimensions * dimensions;
+	upt dimensions_stride_x = 1;
+	upt dimensions_stride_y = dimensions;
+	upt dimensions_stride_z = dimensions * dimensions;
+	
+	//alloc an arena for chunk creation
+	upt array_header_size = sizeof(stbds_array_header);
+	upt voxels_array_size = dimensions_cubed * sizeof(RenderVoxel*);
+	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
+	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
+	chunk->arena = memory_create_arena(array_header_size + voxels_array_size + max_vertices_size + max_indices_size);
+	
+	//init voxels array
+	stbds_array_header* voxels_array_header = memory_arena_pushT(chunk->arena,stbds_array_header);
+	voxels_array_header->length   = dimensions_cubed;
+	voxels_array_header->capacity = dimensions_cubed;
+	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
+	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
+	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
+		chunk->voxels[render_voxel_linear(dimensions, it->x, it->y, it->z)] = it;
+	}
+	
+	//generate chunk's mesh
+	//TODO(delle) combine faces across the chunk where possible
+	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(chunk->arena,max_vertices_size);
+	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(chunk->arena,max_indices_size);
+	forI(dimensions_cubed){
+		if(chunk->voxels[i] == 0) continue; //skip empty voxels
+		
+		if((chunk->voxels[i]->x >= dimensions) || (chunk->voxels[i + dimensions_stride_x] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->x == 0)          || (chunk->voxels[i - dimensions_stride_x] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->y >= dimensions) || (chunk->voxels[i + dimensions_stride_y] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->y == 0)          || (chunk->voxels[i - dimensions_stride_y] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->z >= dimensions) || (chunk->voxels[i + dimensions_stride_z] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->z == 0)          || (chunk->voxels[i - dimensions_stride_z] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+	}
+	
+	//shift the index_array to the end of the vertex_array
+	upt actual_vertices_size = chunk->vertex_count*sizeof(MeshVertex);
+	upt actual_indices_size  =  chunk->index_count*sizeof(MeshIndex);
+	MeshIndex* new_index_array = (MeshIndex*)((u8*)vertex_array + actual_vertices_size);
+	CopyMemory(new_index_array, index_array, actual_indices_size);
+	index_array = new_index_array;
+	
+	//fit the arena to its actually used size
+	chunk->arena->used = array_header_size + voxels_array_size + actual_vertices_size + actual_indices_size;
+	memory_arena_fit(chunk->arena);
+	
+	//create the vertex/index GPU buffers and upload the vertex/index data to them
+	chunk->vertex_buffer = render_buffer_create(vertex_array, actual_vertices_size, RenderBufferUsage_VertexBuffer,
+												RenderMemoryProperty_DeviceMappable, RenderMemoryMapping_MapWriteUnmap);
+	chunk->index_buffer  = render_buffer_create(index_array,  actual_indices_size,  RenderBufferUsage_IndexBuffer,
+												RenderMemoryProperty_DeviceMappable, RenderMemoryMapping_MapWriteUnmap);
+	
+	renderStats.totalVoxels += voxels_count;
+	renderStats.totalVoxelChunks += 1;
+	return chunk;
+}
+
+
+void
+render_voxel_delete_chunk(RenderVoxelChunk* chunk){
+	Assert(renderStats.totalVoxelChunks > 0);
+	
+	//dealloc GPU buffers
+	render_buffer_delete(chunk->vertex_buffer);
+	render_buffer_delete(chunk->index_buffer);
+	
+	//dealloc chunk arena
+	memory_delete_arena(chunk->arena);
+	
+	//delete the chunk (and set it to hidden since for_pool() doesn't skip deleted chunks)
+	memory_pool_delete(render_voxel_chunk_pool, chunk);
+	chunk->hidden = true;
+	
+	renderStats.totalVoxels -= chunk->voxel_count;
+	renderStats.totalVoxelChunks -= 1;
+}
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

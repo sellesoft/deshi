@@ -1115,7 +1115,7 @@ CreateLogicalDevice(){DPZoneScoped;
 		createInfo.enabledLayerCount     = 0;
 	}
 	
-	resultVk = vkCreateDevice(physicalDevice, &createInfo, 0, &device); AssertVk(resultVk, "failed to create logical device");
+	resultVk = vkCreateDevice(physicalDevice, &createInfo, allocator, &device); AssertVk(resultVk, "failed to create logical device");
 	
 	vkGetDeviceQueue(device, physicalQueueFamilies.graphicsFamily.value, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, physicalQueueFamilies.presentFamily.value,  0, &presentQueue);
@@ -2716,8 +2716,8 @@ BuildCommands(){DPZoneScoped;
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
 						offsets[0] = 0;
-						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &((BufferVk*)it->vertex_buffer)->buffer, offsets);
-						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(VkBuffer)it->vertex_buffer->buffer_handle, offsets);
+						vkCmdBindIndexBuffer(cmdBuffer, (VkBuffer)it->index_buffer->buffer_handle, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
 						renderStats.drawnIndices += it->index_count;
@@ -2795,18 +2795,20 @@ BuildCommands(){DPZoneScoped;
 			//draw voxels
 			if(render_voxel_chunk_pool && memory_pool_count(render_voxel_chunk_pool)){
 				DebugBeginLabelVk(cmdBuffer, "Voxels", draw_group_color);
-				VkDeviceSize offsets[1]; //reset vertex buffer offsets
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.flat);
+				VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
 				for_pool(render_voxel_chunk_pool){
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
 						offsets[0] = 0;
-						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &((BufferVk*)it->vertex_buffer)->buffer, offsets);
-						vkCmdBindIndexBuffer(cmdBuffer, ((BufferVk*)it->index_buffer)->buffer, 0, INDEX_TYPE_VK_MESH);
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(VkBuffer)it->vertex_buffer->buffer_handle, offsets);
+						vkCmdBindIndexBuffer(cmdBuffer, (VkBuffer)it->index_buffer->buffer_handle, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
 						renderStats.drawnIndices += it->index_count;
 					}
 				}
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
@@ -3806,195 +3808,6 @@ render_start_cmd2_exbuff(RenderTwodBuffer buffer, RenderTwodIndex index_offset, 
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_voxel
-void
-render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
-	render_voxel_types = types;
-	render_voxel_types_count = count;
-	memory_pool_init(render_voxel_chunk_pool, 128);
-	render_voxel_voxel_size = voxel_size;
-}
-
-
-void
-render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){
-	vec3 voxel_position = chunk->position + Vec3(voxel->x, voxel->y, voxel->z);
-	mat4 transform = mat4::TransformationMatrix(voxel_position, chunk->rotation, vec3_ONE());
-	
-	vertex_array[*vertex_count+0] = {
-		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_bl],
-		Vec2(0,0),
-		render_voxel_types[voxel->type].color,
-		render_voxel_face_normals[direction]
-	};
-	vertex_array[*vertex_count+1] = {
-		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tl],
-		Vec2(0,1),
-		render_voxel_types[voxel->type].color,
-		render_voxel_face_normals[direction]
-	};
-	vertex_array[*vertex_count+2] = {
-		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tr],
-		Vec2(1,1),
-		render_voxel_types[voxel->type].color,
-		render_voxel_face_normals[direction]
-	};
-	vertex_array[*vertex_count+3] = {
-		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_br],
-		Vec2(1,0),
-		render_voxel_types[voxel->type].color,
-		render_voxel_face_normals[direction]
-	};
-	
-	index_array[*index_count+0] = *vertex_count+0;
-	index_array[*index_count+1] = *vertex_count+1;
-	index_array[*index_count+2] = *vertex_count+2;
-	index_array[*index_count+3] = *vertex_count+2;
-	index_array[*index_count+4] = *vertex_count+1;
-	index_array[*index_count+5] = *vertex_count+4;
-	
-	*vertex_count += 4;
-	*index_count  += 6;
-}
-
-
-RenderVoxelChunk*
-render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
-	//alloc and init chunk
-	RenderVoxelChunk* chunk = (RenderVoxelChunk*)memory_pool_push(render_voxel_chunk_pool);
-	chunk->position    = position;
-	chunk->rotation    = rotation;
-	chunk->dimensions  = dimensions;
-	chunk->modified    = false;
-	chunk->hidden      = false;
-	chunk->voxel_count = voxels_count;
-	
-	//calculate some chunk creation info
-	s32 dimensions_extent = (dimensions / 2) - 1;
-	upt dimensions_cubed  = dimensions * dimensions * dimensions;
-	
-	//alloc an arena for chunk creation
-	upt array_header_size = sizeof(stbds_array_header);
-	upt voxels_array_size = dimensions_cubed * sizeof(RenderVoxel*);
-	upt buffers_size      = 2 * sizeof(BufferVk);
-	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
-	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
-	chunk->arena = memory_create_arena(array_header_size + voxels_array_size + buffers_size + max_vertices_size + max_indices_size);
-	
-	//init voxels array
-	stbds_array_header* voxels_array_header = memory_arena_pushT(chunk->arena,stbds_array_header);
-	voxels_array_header->length   = dimensions_cubed;
-	voxels_array_header->capacity = dimensions_cubed;
-	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
-	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
-	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
-		u32 linear = render_voxel_linear(dimensions, it->x, it->y, it->z);
-		chunk->voxels[linear] = it;
-	}
-	
-	//NOTE(DELLE) VULKAN SPECIFIC START
-	//init vertex and index CPU buffers
-	BufferVk* vertex_buffer = memory_arena_pushT(chunk->arena,BufferVk);
-	BufferVk* index_buffer  = memory_arena_pushT(chunk->arena,BufferVk);
-	chunk->vertex_buffer = vertex_buffer;
-	chunk->index_buffer  = index_buffer;
-	//NOTE(DELLE) VULKAN SPECIFIC END
-	
-	//generate chunk's mesh
-	//TODO(delle) combine faces across the chunk where possible
-	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(chunk->arena,max_vertices_size);
-	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(chunk->arena,max_indices_size);
-	forI(dimensions_cubed){
-		if(chunk->voxels[i] == 0) continue; //skip empty voxels
-		
-		if((chunk->voxels[i]->x >= dimensions_extent) || (chunk->voxels[render_voxel_right (dimensions,i)] == 0))
-			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->x < -dimensions_extent) || (chunk->voxels[render_voxel_left  (dimensions,i)] == 0))
-			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y >= dimensions_extent) || (chunk->voxels[render_voxel_above (dimensions,i)] == 0))
-			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y < -dimensions_extent) || (chunk->voxels[render_voxel_below (dimensions,i)] == 0))
-			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z >= dimensions_extent) || (chunk->voxels[render_voxel_front (dimensions,i)] == 0))
-			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z < -dimensions_extent) || (chunk->voxels[render_voxel_behind(dimensions,i)] == 0))
-			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-	}
-	
-	//shift the index_array to the end of the vertex_array
-	upt actual_vertices_size = chunk->vertex_count*sizeof(MeshVertex);
-	upt actual_indices_size  =  chunk->index_count*sizeof(MeshIndex);
-	MeshIndex* new_index_array = (MeshIndex*)((u8*)vertex_array + actual_vertices_size);
-	CopyMemory(new_index_array, index_array, actual_indices_size);
-	index_array = new_index_array;
-	
-	//fit the arena to its actually used size
-	chunk->arena->used = array_header_size + voxels_array_size + buffers_size + actual_vertices_size + actual_indices_size;
-	memory_arena_fit(chunk->arena);
-	
-	//NOTE(DELLE) VULKAN SPECIFIC START
-	//create vertex and index GPU buffers
-	CreateOrResizeBuffer(vertex_buffer->buffer, vertex_buffer->memory, vertex_buffer->size, actual_vertices_size,
-						 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	CreateOrResizeBuffer(index_buffer->buffer,  index_buffer->memory,  index_buffer->size,  actual_indices_size,
-						 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	
-	//copy memory to the GPU
-	void* vb_data; void* ib_data;
-	resultVk = vkMapMemory(device, vertex_buffer->memory, 0, actual_vertices_size, 0, &vb_data); AssertVk(resultVk);
-	resultVk = vkMapMemory(device, index_buffer->memory,  0, actual_indices_size,  0, &ib_data); AssertVk(resultVk);
-	{
-		CopyMemory(vb_data, vertex_array, actual_vertices_size);
-		CopyMemory(ib_data, index_array,  actual_indices_size);
-		
-		VkMappedMemoryRange range[2] = {};
-		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		range[0].memory = vertex_buffer->memory;
-		range[0].size   = VK_WHOLE_SIZE;
-		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		range[1].memory = index_buffer->memory;
-		range[1].size   = VK_WHOLE_SIZE;
-		resultVk = vkFlushMappedMemoryRanges(device, 2, range); AssertVk(resultVk);
-	}
-	vkUnmapMemory(device, vertex_buffer->memory);
-	vkUnmapMemory(device, index_buffer->memory);
-	
-	//name buffers for debugging
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertex_buffer->buffer, (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") vertex buffer").str);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)index_buffer->buffer,  (const char*)ToString8(deshi_temp_allocator,"Voxel chunk(",position,") index buffer").str);
-	//NOTE(DELLE) VULKAN SPECIFIC END
-	
-	renderStats.totalVoxels += voxels_count;
-	renderStats.totalVoxelChunks += 1;
-	return chunk;
-}
-
-
-void
-render_voxel_delete_chunk(RenderVoxelChunk* chunk){
-	Assert(renderStats.totalVoxelChunks > 0);
-	
-	//dealloc GPU buffers
-	//NOTE(DELLE) VULKAN SPECIFIC START
-	vkDestroyBuffer(device, ((BufferVk*)chunk->vertex_buffer)->buffer, allocator);
-	vkFreeMemory(device, ((BufferVk*)chunk->vertex_buffer)->memory, allocator);
-	vkDestroyBuffer(device, ((BufferVk*)chunk->index_buffer)->buffer, allocator);
-	vkFreeMemory(device, ((BufferVk*)chunk->index_buffer)->memory, allocator);
-	//NOTE(DELLE) VULKAN SPECIFIC END
-	
-	//dealloc chunk arena
-	memory_delete_arena(chunk->arena);
-	
-	//delete the chunk (and set it to hidden since for_pool() doesn't skip deleted chunks)
-	memory_pool_delete(render_voxel_chunk_pool, chunk);
-	chunk->hidden = true;
-	
-	renderStats.totalVoxels -= chunk->voxel_count;
-	renderStats.totalVoxelChunks -= 1;
-}
-
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_buffer
 RenderBuffer*
 render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping){DPZoneScoped;
@@ -4031,6 +3844,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		create_info.usage       = usage_flags;
 		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		resultVk = vkCreateBuffer(device, &create_info, allocator, &((VkBuffer)result->buffer_handle)); AssertVk(resultVk);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)result->buffer_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Buffer").str);
 	}
 	
 	{//allocate the memory
@@ -4046,19 +3860,36 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		vkGetBufferMemoryRequirements(device, (VkBuffer)result->buffer_handle, &requirements);
 		bufferMemoryAlignment = (bufferMemoryAlignment > requirements.alignment) ? bufferMemoryAlignment : requirements.alignment;
 		
+		//alloc and bind to the buffer
 		VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 		alloc_info.allocationSize  = requirements.size;
 		alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
 		resultVk = vkAllocateMemory(device, &alloc_info, allocator, &((VkDeviceMemory)result->memory_handle)); AssertVk(resultVk);
 		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
 	}
 	
-	//map the memory
-	if(mapping == RenderMemoryMapping_Persistent){
+	//depending on mapping style and data existence: map the memory, copy the data, flush the data, then unmap the memory
+	if(mapping == RenderMemoryMapping_MapWriteUnmap){
+		if(data && size){
+			resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
+			
+			CopyMemory(result->mapped_data, data, size);
+			
+			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+			range.memory = (VkDeviceMemory)result->memory_handle;
+			range.offset = 0;
+			range.size   = RoundUpTo(size, physicalDeviceProperties.limits.nonCoherentAtomSize); //TODO(delle) test that this works, otherwise use VK_WHOLE_SIZE
+			resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
+			
+			vkUnmapMemory(device, (VkDeviceMemory)result->memory_handle);
+		}
+	}else if(mapping == RenderMemoryMapping_Persistent){
 		resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
+		result->mapped_offset = 0;
+		result->mapped_size = 0;
 		
-		//copy data to the mapped memory
-		if(data){
+		if(data && size){
 			CopyMemory(result->mapped_data, data, size);
 			
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
@@ -4069,6 +3900,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		}
 	}
 	
+	StaticAssertAlways(sizeof(VkDeviceSize) == sizeof(u64));
 	result->size       = (u64)aligned_buffer_size;
 	result->usage      = usage;
 	result->properties = properties;
