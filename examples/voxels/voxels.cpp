@@ -26,7 +26,6 @@ int main(int args_count, char** args){
 		camera.up       = vec3_UP();
 		camera.viewMat  = Math::LookAtMatrix(vec3_ZERO(), vec3_FORWARD()).Inverse();
 		camera.projMat  = Math::PerspectiveProjectionMatrix(g_window->width, g_window->height, camera.fov, camera.nearZ, camera.farZ);
-		window_cursor_mode(g_window, CursorMode_FirstPerson);
 	}
 	
 	//init voxels
@@ -38,7 +37,7 @@ int main(int args_count, char** args){
 		VoxelType_COUNT
 	};
 	RenderVoxelType voxel_types[VoxelType_COUNT] = {
-		{ 0 },
+		{ PackColorU32(  0,  0,  0,255) },
 		{ PackColorU32( 12, 12, 12,255) },
 		{ PackColorU32( 92,166,181,255) },
 		{ PackColorU32(214,107,  0,255) },
@@ -62,7 +61,7 @@ int main(int args_count, char** args){
 		std::uniform_real_distribution<f32> rng_dist_alpha(0, 1);
 		std::uniform_real_distribution<f32> rng_dist_ring_angle(0, M_TAU);
 		std::uniform_real_distribution<f32> rng_dist_ring_height(-ASTEROIDS_RING_HEIGHT_MAX, ASTEROIDS_RING_HEIGHT_MAX);
-		std::uniform_int_distribution<s32>  rng_dist_size_radius(-ASTEROIDS_SIZE_RADIUS_MIN, ASTEROIDS_SIZE_RADIUS_MAX);
+		std::uniform_int_distribution<s32>  rng_dist_size_radius(ASTEROIDS_SIZE_RADIUS_MIN, ASTEROIDS_SIZE_RADIUS_MAX);
 		
 		//forI(ASTEROIDS_COUNT){
 		forI(1){
@@ -148,7 +147,7 @@ int main(int args_count, char** args){
 	
 	deshi_loop_start();{
 		//update camera
-		if(!g_window->minimized){
+		if(g_window->focused){
 			vec3 inputs = vec3_ZERO();
 			if(key_down(Key_W))     inputs += camera.forward;
 			if(key_down(Key_S))     inputs -= camera.forward;
@@ -160,15 +159,20 @@ int main(int args_count, char** args){
 			else if(input_lalt_down())  { camera.position += inputs * 4.f  * (g_time->deltaTime / 1000); }
 			else                        { camera.position += inputs * 8.f  * (g_time->deltaTime / 1000); }
 			
-			camera.rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
-			camera.rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
-			camera.rotation.x = Clamp(camera.rotation.x, -89.0f, 89.0f);
-			if(camera.rotation.y >  1440.f) camera.rotation.y -= 1440.f;
-			if(camera.rotation.y < -1440.f) camera.rotation.y += 1440.f;
-			
-			camera.forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera.rotation));
-			camera.right   = vec3_normalized(vec3_cross(vec3_UP(), camera.forward));
-			camera.up      = vec3_normalized(vec3_cross(camera.forward, camera.right));
+			if(key_down(Mouse_RIGHT)){
+				window_cursor_mode(g_window, CursorMode_FirstPerson);
+				camera.rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
+				camera.rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
+				camera.rotation.x = Clamp(camera.rotation.x, -89.0f, 89.0f);
+				if(camera.rotation.y >  1440.f) camera.rotation.y -= 1440.f;
+				if(camera.rotation.y < -1440.f) camera.rotation.y += 1440.f;
+				
+				camera.forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera.rotation));
+				camera.right   = vec3_normalized(vec3_cross(vec3_UP(), camera.forward));
+				camera.up      = vec3_normalized(vec3_cross(camera.forward, camera.right));
+			}else{
+				window_cursor_mode(g_window, CursorMode_Default);
+			}
 			
 			camera.viewMat = Math::LookAtMatrix(camera.position, camera.position + camera.forward).Inverse();
 			if(g_window->resized){
@@ -220,7 +224,6 @@ int main(int args_count, char** args){
 			uiTextM(ToString8(deshi_temp_allocator, camera.rotation));
 			uiItemE();
 		}uiImmediateE();
-		ui_debug();
 	}deshi_loop_end();
 	deshi_cleanup();
 }
