@@ -118,6 +118,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,***,22/02/26,Feature] OpenGL render/video settings
 [!! ,** ,22/06/04,Tweak]   shrink Vertex2 footprint by using s16 for pos and f16 for uv
 [!!!,***,22/08/12,Feature] add support for render taking in external vertex/index buffer to draw from
+[!! ,*  ,22/12/03,Feature] add VRAM tracking when creating and deleting device memory
 
 `Sound`
 -------
@@ -241,6 +242,27 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/baked/shaders.h"
 #include "core/baked/textures.h"
 
+//// external for core ////
+#define STBDS_REALLOC(ctx,ptr,newsz) memory_realloc(ptr,newsz)
+#define STBDS_FREE(ctx,ptr) memory_zfree(ptr)
+#define STB_DS_IMPLEMENTATION
+#include <stb/stb_ds.h>
+#define STBI_MALLOC(sz) memory_alloc(sz)
+#define STBI_REALLOC(ptr, newsz) memory_realloc(ptr, newsz)
+#define STBI_FREE(ptr) memory_zfree(ptr)
+#define STBI_FAILURE_USERMSG
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#define STB_RECT_PACK_IMPLEMENTATION
+#include <stb/stb_rect_pack.h>
+#define STB_SPRINTF_IMPLEMENTATION
+#include <stb/stb_sprintf.h>
+#define STBTT_malloc(sz,ctx) memory_alloc(sz)
+#define STBTT_free(ptr,ctx) memory_zfree(ptr)
+#define STBTT_assert(x) Assert(x)
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb/stb_truetype.h>
+
 //// core headers ////
 #define DESHI_IMPLEMENTATION
 #include "deshi.h"
@@ -288,27 +310,6 @@ local DeshiStage deshiStage = DS_NONE;
 #else // DESHI_MAC
 #  error "unknown platform"
 #endif // DESHI_WINDOWS
-
-//// external for core ////
-#define STBDS_REALLOC(ctx,ptr,newsz) memory_realloc(ptr,newsz)
-#define STBDS_FREE(ctx,ptr) memory_zfree(ptr)
-#define STB_DS_IMPLEMENTATION
-#include <stb/stb_ds.h>
-#define STBI_MALLOC(sz) memory_alloc(sz)
-#define STBI_REALLOC(ptr, newsz) memory_realloc(ptr, newsz)
-#define STBI_FREE(ptr) memory_zfree(ptr)
-#define STBI_FAILURE_USERMSG
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-#define STB_RECT_PACK_IMPLEMENTATION
-#include <stb/stb_rect_pack.h>
-#define STB_SPRINTF_IMPLEMENTATION
-#include <stb/stb_sprintf.h>
-#define STBTT_malloc(sz,ctx) memory_alloc(sz)
-#define STBTT_free(ptr,ctx) memory_zfree(ptr)
-#define STBTT_assert(x) Assert(x)
-#define STB_TRUETYPE_IMPLEMENTATION
-#include <stb/stb_truetype.h>
 
 #ifndef DESHI_DISABLE_IMGUI
 #  define IMGUI_USE_STB_SPRINTF
