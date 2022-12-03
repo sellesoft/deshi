@@ -16,8 +16,7 @@
 //// GLSL extensions
 #if DESHI_VULKAN
 #  define DESHI_BAKED_SHADERS_EXTENSIONS_VERTEX_STRING \
-"#extension GL_ARB_separate_shader_objects : enable\n" \
-"#extension GL_KHR_vulkan_glsl : enable\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
 #elif DESHI_OPENGL
 #  define DESHI_BAKED_SHADERS_EXTENSIONS_VERTEX_STRING \
 "#extension GL_ARB_separate_shader_objects : enable\n"
@@ -196,12 +195,13 @@ DESHI_BAKED_SHADERS_COMMON_VERTEX_INPUT_STRING
 "layout(location = 0) out vec4 outColor;\n"
 "\n"
 "void main(){\n"
-"   vec3 light = vec3(ubo.viewPos) + vec3(10,0,0);\n"
-"	vec3 position = primitive.model[3].xyz;\n"
-"	vec3 normal = mat3(primitive.model) * inNormal;\n"
-"   float val = dot(light - position, normal);\n"
-"	outColor = vec4(val,val,val,1);\n"
-"   gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);\n"
+"	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);\n"
+"\n"
+"	vec3 vertex_to_light = vec3(ubo.viewPos) - gl_Position.xyz;\n" //light is at the camera
+"	vec3 normal = mat3(primitive.model) * inNormal;\n" //rotate the normal by the model's rotation
+"	float light_value = clamp(dot(normalize(vertex_to_light), normal) * 0.7f, 0.1f, 1.0f);\n"
+"\n"
+"	outColor = inColor * vec4(light_value,light_value,light_value,1);\n"
 "}\n"
 );
 
