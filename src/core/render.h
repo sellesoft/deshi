@@ -239,7 +239,7 @@ typedef Flags RenderBufferUsageFlags; enum{
 // RenderMemoryPropertyFlag_DeviceLocal has the fastest device access because the memory is stored on
 // the device. RenderMemoryPropertyFlag_HostVisible allows mapping memory between the host and device,
 // but that means the device has to send the memory to the host before the host can make any changes,
-// which it will have to send back to the device. A possible way to eleviate part of that transfer time
+// which it will have to send back to the device. A possible way to alleviate part of that transfer time
 // is to use RenderMemoryPropertyFlag_HostCached, which will keep a copy of the memory on the host and
 // only update the memory that has changed on the device. But, that also means you have two copies of
 // the memory at no benefit to sending updates to the device, so it's often useful for host readback

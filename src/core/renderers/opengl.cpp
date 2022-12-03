@@ -2,7 +2,26 @@
 Index:
 @gl_types
 @gl_vars
-
+@gl_vars_instance
+@gl_vars_buffers
+@gl_vars_programs
+@gl_funcs_utils
+@gl_funcs_init
+@gl_funcs_shaders
+@gl_funcs_programs
+@gl_funcs_imgui
+@render_init
+@render_update
+@render_reset
+@render_cleanup
+@render_loading
+@render_draw_3d
+@render_draw_2d
+@render_surface
+@render_light
+@render_camera
+@render_shaders
+@render_other
 */
 
 
@@ -667,6 +686,12 @@ render_init(){DPZoneScoped;
 		}
 	}
 	
+	//-///////////////////////////////////////////////////////////////////////////////////////////////
+	//// setup shared render
+	{
+		memory_pool_init(deshi__render_buffer_pool, 16);
+	}
+	
 	initialized = true;
 	DeshiStageInitEnd(DS_RENDER);
 }
@@ -1198,6 +1223,35 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_buffer
+RenderBuffer*
+render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping){
+	NotImplemented; //!Incomplete: https://www.khronos.org/opengl/wiki/Buffer_Object
+	return 0;
+}
+
+void
+render_buffer_delete(RenderBuffer* buffer){
+	NotImplemented; //!Incomplete
+}
+
+void
+render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size){
+	NotImplemented; //!Incomplete
+}
+
+void
+render_buffer_unmap(RenderBuffer* buffer, b32 flush){
+	NotImplemented; //!Incomplete
+}
+
+void
+render_buffer_flush(RenderBuffer* buffer){
+	NotImplemented; //!Incomplete
 }
 
 
