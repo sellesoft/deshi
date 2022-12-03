@@ -119,6 +119,8 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,22/06/04,Tweak]   shrink Vertex2 footprint by using s16 for pos and f16 for uv
 [!!!,***,22/08/12,Feature] add support for render taking in external vertex/index buffer to draw from
 [!! ,*  ,22/12/03,Feature] add VRAM tracking when creating and deleting device memory
+[!! ,*  ,22/12/03,Tweak]   replace usage of externalVertexBuffers with RenderBuffer, then delete externalVertexBuffers
+[!! ,***,22/12/03,Feature] memory suballocation (like memory does) since device memory allocation can be quite slow
 
 `Sound`
 -------

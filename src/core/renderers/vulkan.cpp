@@ -32,7 +32,6 @@ Index:
 @render_loading
 @render_draw_3d
 @render_draw_2d
-@render_voxel
 @render_buffer
 @render_surface
 @render_light
@@ -590,7 +589,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 	bufferSize = newSize;
 }
 
-//copies a buffer, we use this to copy from CPU to GPU
+//copies a buffer, we use this to copy from a host-visible staging buffer to device-only buffer
 local void 
 CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){DPZoneScoped;
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
@@ -3819,7 +3818,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		LogEVk("Must not be called with zero size.");
 		return 0;
 	}
-	if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible) && HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)){
+	if(HasFlag(properties,RenderMemoryProperty_HostStreamed) && HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)){
 		LogEVk("The flags RenderMemoryPropertyFlag_HostVisible and RenderMemoryPropertyFlag_LazilyAllocated are incompatible.");
 		return 0;
 	}
@@ -3838,6 +3837,9 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		if(HasFlag(usage,RenderBufferUsage_IndexBuffer))         usage_flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		if(HasFlag(usage,RenderBufferUsage_VertexBuffer))        usage_flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		if(HasFlag(usage,RenderBufferUsage_IndirectBuffer))      usage_flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+		if(mapping == RenderMemoryMapping_None){
+			usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT; //RenderMemoryMapping_None uses a staging buffer, so this buffer must be able to receive
+		}
 		
 		VkBufferCreateInfo create_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
 		create_info.size        = aligned_buffer_size;
@@ -3869,9 +3871,46 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
 	}
 	
-	//depending on mapping style and data existence: map the memory, copy the data, flush the data, then unmap the memory
-	if(mapping == RenderMemoryMapping_MapWriteUnmap){
-		if(data && size){
+	//map and upload the data depending on the mapping style
+	if(mapping == RenderMemoryMapping_None){
+		if(data == 0){
+			LogEVk("Called with RenderMemoryMapping_None but the data pointer was null. This means that the buffer on the device will be empty and cannot be written to.");
+		}else if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible|RenderMemoryPropertyFlag_HostCoherent|RenderMemoryPropertyFlag_HostCached)){
+			LogEVk("Called with incompatible mapping and memory flags, RenderMemoryMapping_None and RenderMemoryPropertyFlag_HostVisible or RenderMemoryPropertyFlag_HostCoherent or RenderMemoryPropertyFlag_HostCached.");
+		}else{
+			//create a staging buffer
+			VkBuffer staging_buffer_handle;
+			VkBufferCreateInfo staging_buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+			staging_buffer_info.size        = aligned_buffer_size;
+			staging_buffer_info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			staging_buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			resultVk = vkCreateBuffer(device, &staging_buffer_info, allocator, &staging_buffer_handle); AssertVk(resultVk);
+			
+			//allocate memory for the staging buffer
+			VkDeviceMemory staging_memory_handle;
+			VkMemoryRequirements staging_memory_requirements;
+			vkGetBufferMemoryRequirements(device, staging_buffer_handle, &staging_memory_requirements);
+			VkMemoryAllocateInfo staging_memory_alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+			staging_memory_alloc_info.allocationSize  = staging_memory_requirements.size;
+			staging_memory_alloc_info.memoryTypeIndex = FindMemoryType(staging_memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			resultVk = vkAllocateMemory(device, &staging_memory_alloc_info, allocator, &staging_memory_handle); AssertVk(resultVk);
+			resultVk = vkBindBufferMemory(device, staging_buffer_handle, staging_memory_handle, 0); AssertVk(resultVk);
+			
+			//map the staging buffer and copy the data to it
+			void* staging_memory_data;
+			resultVk = vkMapMemory(device, staging_memory_handle, 0, aligned_buffer_size, 0, &staging_memory_data); AssertVk(resultVk);
+			CopyMemory(staging_memory_data, data, size);
+			vkUnmapMemory(device, staging_memory_handle);
+			
+			//copy from the staging buffer to the device-only buffer
+			CopyBuffer(staging_buffer_handle, (VkBuffer)result->buffer_handle, size);
+			
+			//clean up the staging buffer
+			vkDestroyBuffer(device, staging_buffer_handle, allocator);
+			vkFreeMemory(device, staging_memory_handle, allocator);
+		}
+	}else if(mapping == RenderMemoryMapping_MapWriteUnmap){
+		if(data){
 			resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
 			
 			CopyMemory(result->mapped_data, data, size);
@@ -3883,13 +3922,11 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 			resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 			
 			vkUnmapMemory(device, (VkDeviceMemory)result->memory_handle);
+			
 		}
 	}else if(mapping == RenderMemoryMapping_Persistent){
 		resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
-		result->mapped_offset = 0;
-		result->mapped_size = 0;
-		
-		if(data && size){
+		if(data){
 			CopyMemory(result->mapped_data, data, size);
 			
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
