@@ -33,7 +33,7 @@
   cmd_init();                                  \
   window_show(DeshWindow);                     \
   render_use_default_camera();                 \
-  DeshThreadManager->init();
+  threader_init();
 
 #define deshi_loop_start()   \
   while(platform_update()){  \
