@@ -247,7 +247,7 @@ text_delete_left_wordpart(Text* t){
 global void
 text_insert_string(Text* t, str8 s){
     if(t->cursor.count) text_delete_selection(t);
-    if(t->buffer.count + s.count >= t->buffer.space) str8_builder_grow(&t->buffer, s.count);
+    if(t->buffer.count + s.count > t->buffer.space) str8_builder_grow(&t->buffer, s.count);
     str8_builder_insert_byteoffset(&t->buffer,t->cursor.pos,s);
     t->cursor.pos += s.count;
 }
