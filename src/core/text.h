@@ -46,7 +46,7 @@ struct Text{
 global Text
 text_init(str8 init, Allocator* allocator = deshi_allocator){
     Text out = {0};
-    str8_builder_init(&out.buffer, init, deshi_allocator);
+    str8_builder_init(&out.buffer, init, allocator);
     str8_builder_grow(&out.buffer, Max(Kilobytes(1),out.buffer.count));
     return out;
 }
