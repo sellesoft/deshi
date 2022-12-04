@@ -71,6 +71,8 @@ struct Logger;
 struct uiItem;
 struct Arena;
 struct Console{
+	b32 initialized;
+	
 	ring_array<ConsoleChunk> dictionary;
 
 	Logger* logger;
@@ -124,10 +126,10 @@ void console_change_state(ConsoleState new_state);
 void console_parse_message(str8 message, str8 tag = STR8(""), Type type = ConsoleChunkType_Normal, b32 from_logger = 0, u32 logger_offset = 0);
 
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
-#define console_log(...) \
-{ \
-string message##__LINE__ = ToString(__VA_ARGS__); \
-console_parse_message(str8{(u8*)message##__LINE__.str, (s64)message##__LINE__.count}); \
-}(void)0
+#define console_log(...)                                                                   \
+  {                                                                                        \
+    string message##__LINE__ = ToString(__VA_ARGS__);                                      \
+    console_parse_message(str8{(u8*)message##__LINE__.str, (s64)message##__LINE__.count}); \
+  }(void)0
 
 #endif //DESHI_CONSOLE_H

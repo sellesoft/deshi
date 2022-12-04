@@ -4,6 +4,7 @@ local Console console;
 local CursorMode restore_cursor_mode;
 
 void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u32 logger_offset){DPZoneScoped;
+	if(!console.initialized) return;
 	if(message.count == 0) return;
 	
 	if(console.automatic_scroll){
@@ -200,12 +201,11 @@ void console_init(){DPZoneScoped;
 	uiItemE();
 	uiItemE();
 	
-	
+	console.initialized = true;
 	DeshiStageInitEnd(DS_CONSOLE);
 }
 
 void console_update(){DPZoneScoped;
-	
 	//check for console state changing inputs
 	if(key_pressed(Key_TILDE)){
 		if      (input_shift_down()){
