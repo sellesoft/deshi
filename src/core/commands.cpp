@@ -1,33 +1,37 @@
 /*Index:
 @vars
+@utils
 @add
 @run
 @init
 */
 
-#include "memory.h"
-
-#define DESHI_CMD_START(name, desc) \
-deshi__last_cmd_desc = str8_lit(desc); \
-auto deshi__cmd__##name = [](str8* args, u32 arg_count) -> void
-
-#define DESHI_CMD_END_NO_ARGS(name) \
-; \
-cmd_add(deshi__cmd__##name, str8_lit(#name), deshi__last_cmd_desc, 0, 0)
-
-#define DESHI_CMD_END(name, ...) \
-; \
-local Type deshi__cmd__##name##args[] = {__VA_ARGS__}; \
-cmd_add(deshi__cmd__##name, str8_lit(#name), deshi__last_cmd_desc, deshi__cmd__##name##args, ArrayCount(deshi__cmd__##name##args))
-
-//TODO remove the need for this by having functions take in str8
-#define temp_str8_cstr(s) (const char*)str8_copy(s, deshi_temp_allocator).str
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@vars
 local array<Command> deshi__cmd_commands(deshi_allocator);
 local array<Alias> deshi__cmd_aliases(deshi_allocator);
 local str8 deshi__last_cmd_desc;
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//@utils
+#define DESHI_CMD_START(name, desc)      \
+  deshi__last_cmd_desc = str8_lit(desc); \
+  auto deshi__cmd__##name = [](str8* args, u32 arg_count) -> void
+
+#define DESHI_CMD_END_NO_ARGS(name) \
+  ;                                 \
+  cmd_add(deshi__cmd__##name, str8_lit(#name), deshi__last_cmd_desc, 0, 0)
+
+#define DESHI_CMD_END(name, ...)                         \
+  ;                                                      \
+  local Type deshi__cmd__##name##args[] = {__VA_ARGS__}; \
+  cmd_add(deshi__cmd__##name, str8_lit(#name), deshi__last_cmd_desc, deshi__cmd__##name##args, ArrayCount(deshi__cmd__##name##args))
+
+//TODO remove the need for this by having functions take in str8
+#define temp_str8_cstr(s) (const char*)str8_copy(s, deshi_temp_allocator).str
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@add
@@ -73,6 +77,7 @@ void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
 	cmd->usage.str   = builder.str;
 	cmd->usage.count = builder.count;
 }
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@run
@@ -164,6 +169,7 @@ void cmd_run(str8 input){
 		}
 	}
 }
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@init
@@ -400,8 +406,8 @@ void cmd_init(){
 			str8_builder_append(&builder, ShaderStrings[mat->shader]);
 			str8_builder_append(&builder, str8_lit("\t"));
 			if(mat->textureArray){
-			for_array(mat->textureArray){
-				str8_builder_append(&builder, str8_lit(" "));
+				for_array(mat->textureArray){
+					str8_builder_append(&builder, str8_lit(" "));
 					str8_builder_append(&builder, str8_from_cstr((*it)->name));
 				}
 			}
@@ -437,7 +443,7 @@ void cmd_init(){
 		const char* tex_name = temp_str8_cstr(args[2]);
 		for_array(assets_texture_array()){
 			if(strcmp((*it)->name, tex_name) == 0){
-				 tex = *it;
+				tex = *it;
 				break;
 			}
 		}
@@ -508,6 +514,10 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
+	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window"){
+		ToggleBool(show_metrics); //show_metrics defined in ui2.cpp
+	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
+	
 	DESHI_CMD_START(quit, "Exits the application"){
 		platform_exit();
 	}DESHI_CMD_END_NO_ARGS(quit);
@@ -516,4 +526,5 @@ void cmd_init(){
 }
 
 #undef DESHI_CMD_START
+#undef DESHI_CMD_END_NO_ARGS
 #undef DESHI_CMD_END
