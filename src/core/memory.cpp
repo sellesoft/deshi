@@ -122,9 +122,9 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 		}
 		
 		Assert(index == -1, "There is already an existing active AllocInfo with this address");
-		alloc_infos_active.insert(AllocInfo{address, file, line, DeshTime->frame, upt(-1)}, middle);
+		alloc_infos_active.insert(AllocInfo{address, file, line, DeshTime->frame, upt(-1), str8_lit(""), 0}, middle);
 	}else{
-		alloc_infos_active.add(AllocInfo{address, file, line, DeshTime->frame, upt(-1)});
+		alloc_infos_active.add(AllocInfo{address, file, line, DeshTime->frame, upt(-1), str8_lit(""), 0});
 	}
 	return &alloc_infos_active[middle];
 }
@@ -311,7 +311,7 @@ deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line){DPZoneScop
 	
 #if MEMORY_PRINT_HEAP_ACTIONS
 	AllocInfo info2 = deshi__memory_allocinfo_get(heap);
-	Logf("memory","Freed an allocation  [0x%p]%s in heap[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, heap, info2.name.str, file.str, line);
+	Logf("memory","Freed   an allocation[0x%p]%s in heap[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, heap, info2.name.str, file.str, line);
 #endif //MEMORY_PRINT_HEAP_ACTIONS
 	DEBUG_CheckHeap(heap);
 }
@@ -1420,7 +1420,7 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 		deshi__memory_arena_delete((Arena*)chunk - 1, file, line);
 		
 #if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Freed an allocation  [0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
+		Logf("memory","Freed   an allocation[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
@@ -1483,7 +1483,7 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	ZeroMemory(zero_pointer, zero_amount);
 	
 #if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Freed an allocation  [0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
+	Logf("memory","Freed   an allocation[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
 #endif //MEMORY_PRINT_GENERIC_ACTIONS
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	DEBUG_PrintGenericHeapChunks();
