@@ -122,9 +122,9 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 		}
 		
 		Assert(index == -1, "There is already an existing active AllocInfo with this address");
-		alloc_infos_active.insert(AllocInfo{address, CodeLocation{{(char*)file.str, file.count}, u32(line), 0}, DeshTime->totalTime, upt(-1), cstr_lit("")}, middle);
+		alloc_infos_active.insert(AllocInfo{address, file, line, DeshTime->frame, upt(-1)}, middle);
 	}else{
-		alloc_infos_active.add(AllocInfo{address, CodeLocation{{(char*)file.str, file.count}, u32(line), 0}, DeshTime->totalTime, upt(-1), cstr_lit("")});
+		alloc_infos_active.add(AllocInfo{address, file, line, DeshTime->frame, upt(-1)});
 	}
 	return &alloc_infos_active[middle];
 }
@@ -134,7 +134,7 @@ DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
 	if(address == 0) return;
 	upt index = binary_search(alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
 	if(index != -1){
-		alloc_infos_active[index].deletion_frame = DeshTime->updateCount;
+		alloc_infos_active[index].deletion_frame = DeshTime->frame;
 		alloc_infos_inactive.add(alloc_infos_active[index]);
 		bubble_sort(alloc_infos_inactive, AllocInfo_GreaterThan); //TODO(delle) use binary_insertion_sort_low_to_high after testing it
 		alloc_infos_active.remove(index);
@@ -165,8 +165,8 @@ deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){DPZoneScoped;
 void
 deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){DPZoneScoped;
 #if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info = memory_allocinfo_get(heap);
-	Logf("memory","Deinitted a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, arena->size, file.str, line);
+	AllocInfo info = deshi__memory_allocinfo_get(heap);
+	Logf("memory","Deinitted a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, heap->size, file.str, line);
 #endif //MEMORY_PRINT_HEAP_ACTIONS
 	
 	deshi__memory_generic_zero_free(heap, file, line);
@@ -219,7 +219,7 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 			result = ChunkToMemory(chunk);
 			
 #if MEMORY_PRINT_HEAP_ACTIONS
-			AllocInfo info = memory_allocinfo_get(heap);
+			AllocInfo info = deshi__memory_allocinfo_get(heap);
 			Logf("memory","Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", result, heap, info.name.str, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_HEAP_ACTIONS
 			DEBUG_CheckHeap(heap);
@@ -237,7 +237,7 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 	result = ChunkToMemory(new_chunk);
 	
 #if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info = memory_allocinfo_get(heap);
+	AllocInfo info = deshi__memory_allocinfo_get(heap);
 	Logf("memory","Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", result, heap, info.name.str, aligned_size, file.str, line);
 #endif //MEMORY_PRINT_HEAP_ACTIONS
 	DEBUG_CheckHeap(heap);
@@ -246,7 +246,7 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 
 
 void
-deshi__memory_heap_remove(Heap* heap, void* ptr){DPZoneScoped;
+deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(ptr == 0 || heap == 0) return;
 	
@@ -310,21 +310,21 @@ deshi__memory_heap_remove(Heap* heap, void* ptr){DPZoneScoped;
 	ZeroMemory(zero_pointer, zero_amount);
 	
 #if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info2 = memory_allocinfo_get(heap);
-	Logf("memory","Freed an allocation  [0x%p]%s in heap[0x%p]%s (triggered at %s:%zu)", result, info.name.str, heap, info2.name.str, aligned_size, file.str, line);
+	AllocInfo info2 = deshi__memory_allocinfo_get(heap);
+	Logf("memory","Freed an allocation  [0x%p]%s in heap[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, heap, info2.name.str, file.str, line);
 #endif //MEMORY_PRINT_HEAP_ACTIONS
 	DEBUG_CheckHeap(heap);
 }
 
 
 void
-deshi__memory_heap_clear(Heap* heap){DPZoneScoped;
+deshi__memory_heap_clear(Heap* heap, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(heap == 0) return;
 	
 #if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info = memory_allocinfo_get(heap);
-	Logf("memory","Cleared a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, arena->size, file.str, line);
+	AllocInfo info = deshi__memory_allocinfo_get(heap);
+	Logf("memory","Cleared a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, heap->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
 	
 	ZeroMemory(heap->start, heap->size);
@@ -355,7 +355,7 @@ DEBUG_CheckArenaHeapArenas(){DPZoneScoped;
 
 
 #if MEMORY_PRINT_ARENA_CHUNKS
-FORCE_INLINE void DEBUG_PrintArenaHeapChunks(){ DEBUG_PrintHeapChunks(arena_heap,"Arena Heap"); }
+FORCE_INLINE void DEBUG_PrintArenaHeapChunks(){ DEBUG_PrintHeapChunks(&g_memory->arena_heap,"Arena Heap"); }
 #else //MEMORY_PRINT_ARENA_CHUNKS
 #  define DEBUG_PrintArenaHeapChunks()
 #endif //MEMORY_PRINT_ARENA_CHUNKS
@@ -622,7 +622,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 	DEBUG_CheckArenaHeapArenas();
 	DEBUG_PrintArenaHeapChunks();
 #if MEMORY_TRACK_ALLOCS
-	memory_allocinfo_set(result, info.name, info.type);
+	deshi__memory_allocinfo_set(result, info.name, info.type);
 #endif //MEMORY_TRACK_ALLOCS
 	
 	deshi__memory_arena_delete(arena, file, line);
@@ -635,7 +635,7 @@ deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	
 #if MEMORY_PRINT_ARENA_ACTIONS
-	AllocInfo info = memory_allocinfo_get(arena);
+	AllocInfo info = deshi__memory_allocinfo_get(arena);
 	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
 #endif //MEMORY_PRINT_ARENA_ACTIONS
 	
@@ -993,7 +993,7 @@ deshi__memory_pool_delete(void* pool, upt type_size, void* ptr){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_generic
 #if MEMORY_PRINT_GENERIC_CHUNKS
-FORCE_INLINE void DEBUG_PrintGenericHeapChunks(){ DEBUG_PrintHeapChunks(generic_heap,"Generic Heap"); }
+FORCE_INLINE void DEBUG_PrintGenericHeapChunks(){ DEBUG_PrintHeapChunks(g_memory->generic_heap,"Generic Heap"); }
 #else //MEMORY_PRINT_GENERIC_CHUNKS
 #  define DEBUG_PrintGenericHeapChunks()
 #endif //MEMORY_PRINT_GENERIC_CHUNKS
@@ -1377,7 +1377,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	DEBUG_PrintGenericHeapChunks();
 #if MEMORY_TRACK_ALLOCS
-	memory_allocinfo_set(result, info.name, info.type);
+	deshi__memory_allocinfo_set(result, info.name, info.type);
 #endif //MEMORY_TRACK_ALLOCS
 	
 	deshi__memory_generic_zero_free(ptr, file, line);
@@ -1532,7 +1532,7 @@ deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneSc
 	if(ptr == 0) return 0;
 	
 #if MEMORY_PRINT_TEMP_ACTIONS
-	AllocInfo info = deshi__memory_allocinfo_get(ptr);
+	AllocInfo info = deshi__deshi__memory_allocinfo_get(ptr);
 	Logf("memory","Reallocating a temp ptr[0x%p]%s to %zu bytes (triggered at %s:%zu)", ptr, info.name.str, size, file.str, line);
 #endif //MEMORY_PRINT_TEMP_ACTIONS
 	
@@ -1585,7 +1585,7 @@ deshi__memory_temp_expose(){DPZoneScoped;
 void
 deshi__memory_allocinfo_set(void* address, str8 name, Type type){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
-	if(cleanup_happened) return;
+	if(g_memory->cleanup_happened) return;
 	if(address == 0) return;
 	
 	//binary search for address index (or index to insert at)
@@ -1613,18 +1613,19 @@ deshi__memory_allocinfo_set(void* address, str8 name, Type type){DPZoneScoped;
 		alloc_infos_active[index].name = name;
 		alloc_infos_active[index].type = type;
 	}else{
-		alloc_infos_active.insert(AllocInfo{address, {}, DeshTime->updateCount, upt(-1), name, type}, middle);
+		alloc_infos_active.insert(AllocInfo{address, str8_lit(""), 0, DeshTime->frame, upt(-1), name, type}, middle);
 	}
 #endif //MEMORY_TRACK_ALLOCS
 }
 
 
-local AllocInfo null_alloc_info{0, {}, 0, upt(-1), str8_lit(""), 0};
-local AllocInfo test_alloc_info{0, {}, 0, upt(-1), str8_lit(""), 0};
 AllocInfo
 deshi__memory_allocinfo_get(void* address){DPZoneScoped;
+	local AllocInfo null_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0};
+local AllocInfo test_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0};
+	
 #if MEMORY_TRACK_ALLOCS
-	if(cleanup_happened) return null_alloc_info;
+	if(g_memory->cleanup_happened) return null_alloc_info;
 	if(address == 0) return null_alloc_info;
 	
 	test_alloc_info.address = address;

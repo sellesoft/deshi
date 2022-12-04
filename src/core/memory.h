@@ -314,7 +314,8 @@ Arena* deshi__memory_temp_expose();
 typedef struct AllocInfo{
 	//automatic
 	void* address;
-	CodeLocation trigger;
+	str8 file;
+	upt line;
 	u64 creation_frame;
 	u64 deletion_frame;
 	
