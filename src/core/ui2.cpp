@@ -1991,7 +1991,7 @@ void ui_debug(){
 						uiItem* sel = g_ui->active;
 						uiText* text = 0;
 						if(sel->memsize == sizeof(uiText)) text = uiGetText(sel);
-						uiTextM(toStr8(
+						uiTextM(ToString8(deshi_temp_allocator,
 							sel->id,"\n",
 							sel->node.child_count
 						));
@@ -2016,7 +2016,7 @@ void ui_debug(){
 	memsum += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
 
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
-	text_clear_and_replace(&uiGetText(ui_dwi.panel1text)->text, toStr8(
+	text_clear_and_replace(&uiGetText(ui_dwi.panel1text)->text, ToString8(deshi_temp_allocator,
 		"visible: \n",
 		"	   items: ", g_ui->stats.items_visible, "\n",
 		"	drawcmds: ", g_ui->stats.drawcmds_visible, "\n",

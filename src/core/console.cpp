@@ -315,7 +315,7 @@ void console_update(){DPZoneScoped;
 			if(console.dictionary[i].newline == 1 && nlines++){
 				uiItemE(); 
 				line = uiItemBS(&line->style);
-				line->id = toStr8("console.line",nlines);
+				line->id = ToString8(deshi_temp_allocator, "console.line",nlines);
 			}
 			
 			//get chunk text from the log file
@@ -325,7 +325,7 @@ void console_update(){DPZoneScoped;
 			
 			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
 			uiItem* text = uiTextMS(&line->style, out);
-			text->id = toStr8("console.text",i);
+			text->id = ToString8(deshi_temp_allocator, "console.text",i);
 			text->style.text_color = console.dictionary[i].fg;
 			
 			
@@ -338,20 +338,20 @@ void console_update(){DPZoneScoped;
 		debug->style.anchor = anchor_bottom_right;
 		debug->style.sizing = size_auto;
 		debug->id = STR8("console.debug");
-		uiTextM(toStr8(
-					   "      show tags: ", console.tag_show, "\n",
-					   " highlight tags: ", console.tag_highlighting, "\n",
-					   "   outline tags: ", console.tag_outlines, "\n",
-					   "highlight lines: ", console.line_highlighing, "\n",
-					   "    auto scroll: ", console.automatic_scroll, "\n",
-					   "          state: ", console.state, "\n",
-					   "   small open %: ", console.open_small_percent, "\n",
-					   "     max open %: ", console.open_max_percent, "\n",
-					   "    open amount: ", console.open_amount, "\n",
-					   "    open target: ", console.open_target, "\n",
-					   "open delta time: ", console.open_dt, "\n",
-					   "         scroll: ", console.scroll
-					   ));
+		uiTextM(ToString8(deshi_temp_allocator,
+						  "      show tags: ", console.tag_show, "\n",
+						  " highlight tags: ", console.tag_highlighting, "\n",
+						  "   outline tags: ", console.tag_outlines, "\n",
+						  "highlight lines: ", console.line_highlighing, "\n",
+						  "    auto scroll: ", console.automatic_scroll, "\n",
+						  "          state: ", console.state, "\n",
+						  "   small open %: ", console.open_small_percent, "\n",
+						  "     max open %: ", console.open_max_percent, "\n",
+						  "    open amount: ", console.open_amount, "\n",
+						  "    open target: ", console.open_target, "\n",
+						  "open delta time: ", console.open_dt, "\n",
+						  "         scroll: ", console.scroll
+						  ));
 		uiItemE();
 	}uiImmediateE();
 	
