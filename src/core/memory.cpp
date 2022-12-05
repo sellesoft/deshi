@@ -1396,6 +1396,7 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	MemChunk* chunk = MemoryToChunk(ptr);
 	Assert(chunk->size > 0, "A chunk must always have a size");
+	Assert(!HasFlag(chunk->size, MEMORY_EMPTY_FLAG), "This pointer has already been freed.");
 	
 #if MEMORY_TRACK_ALLOCS
 	DEBUG_AllocInfo_Deletion(ptr);

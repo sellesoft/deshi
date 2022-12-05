@@ -36,7 +36,7 @@ References:
 #include "kigu/node.h"
 StartLinkageC();
 
-#define MEMORY_CHECK_HEAPS false
+#define MEMORY_CHECK_HEAPS DESHI_INTERNAL
 #define MEMORY_TRACK_ALLOCS false
 
 #define MEMORY_PRINT_ARENA_CHUNKS false
@@ -93,7 +93,7 @@ typedef struct Heap{
 	u8*       cursor;
 	upt       used;
 	upt       size;
-	Node      empty_nodes;
+	Node      empty_nodes; //circular double-linked list
 	MemChunk* last_chunk;
 	b32       initialized;
 }Heap;
