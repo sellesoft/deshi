@@ -983,20 +983,35 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 
 void drag_item(uiItem* item){DPZoneScoped;
 	if(!item) return;
-	if(item->style.positioning == pos_draggable_fixed || 
-	   item->style.positioning == pos_draggable_relative){
-		vec2 mp_cur = input_mouse_position();
+	if(   item->style.positioning == pos_draggable_fixed
+	   || item->style.positioning == pos_draggable_relative
+	   || item->style.positioning == pos_draggable_absolute){
+		persist vec2 mouse_begin;
+		persist vec2 item_begin;
 		persist b32 dragging = false;
-		persist vec2 mp_offset;
-		if(key_pressed(Mouse_LEFT) && Math::PointInRectangle(mp_cur, item->spos, item->size)){
-			mp_offset = item->style.pos - mp_cur;
+		vec2 mouse_current = input_mouse_position();
+		if(key_pressed(Mouse_LEFT) && Math::PointInRectangle(mouse_current, item->spos, item->size)){
 			dragging = true;
 			g_ui->istate = uiISDragging;            
+			mouse_begin = mouse_current;
+			item_begin = item->style.pos;
 		}
-		if(key_released(Mouse_LEFT)){ dragging = false;  g_ui->istate = uiISNone; }
-		
+		if(key_released(Mouse_LEFT)){
+			dragging = false;
+			g_ui->istate = uiISNone;
+		}
 		if(dragging){
-			item->style.pos = input_mouse_position() + mp_offset;
+			vec2 mouse_difference = mouse_current - mouse_begin;
+			if(item->style.anchor == anchor_top_left || item->style.anchor == anchor_bottom_left){
+				item->style.pos.x = item_begin.x + mouse_difference.x;
+			}else{
+				item->style.pos.x = item_begin.x - mouse_difference.x;
+			}
+			if(item->style.anchor == anchor_top_left || item->style.anchor == anchor_top_right){
+				item->style.pos.y = item_begin.y + mouse_difference.y;
+			}else{
+				item->style.pos.y = item_begin.y - mouse_difference.y;
+			}
 		}
 	}
 }
