@@ -646,6 +646,8 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 			item->pos_screen = uiItemFromNode(item->node.parent)->pos_screen + item->pos_local;
 		}
 	}
+
+	if(HasFlag(item->style.display, display_hidden)) return;
 	
 	if(item->drawcmd_count){
 		Assert(item->__generate, "item with no generate function");
