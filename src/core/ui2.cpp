@@ -405,7 +405,7 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 inline
 vec2i gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	vec2 bor = (item->style.border_style ? item->style.border_width : 0) * vec2::ONE; 
-	vec2 pos = item->spos + item->style.margintl + bor;
+	vec2 pos = item->pos_screen + item->style.margintl + bor;
 	vec2 siz = item->size - (item->style.margintl + item->style.marginbr + 2*bor);
 	return render_make_filledrect(vp, ip, counts, pos, siz, item->style.background_color);
 }
@@ -415,7 +415,7 @@ vec2i gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
-			vec2 tl = item->spos + item->style.margintl;
+			vec2 tl = item->pos_screen + item->style.margintl;
 			vec2 br = tl+(item->size - (item->style.marginbr+item->style.margintl));
 			vec2 tr = vec2{br.x, tl.y};
 			vec2 bl = vec2{tl.x, br.y}; 
@@ -449,7 +449,7 @@ b32 mouse_in_rect(vec2 pos, vec2 size){
 
 b32 ui_item_hovered(uiItem* item, b32 strict){
 	if(strict) return g_ui->hovered == item;
-	if(mouse_in_rect(item->spos, item->size)) return true;
+	if(mouse_in_rect(item->pos_screen, item->size)) return true;
 	return false;
 }
 
@@ -641,9 +641,9 @@ TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
 void draw_item_branch(uiItem* item){DPZoneScoped;
 	if(item != &g_ui->base){
 		if(match_any(item->style.positioning, pos_fixed, pos_draggable_fixed)){
-			item->spos = item->style.pos;
+			item->pos_screen = item->style.pos;
 		}else{
-			item->spos = uiItemFromNode(item->node.parent)->spos + item->lpos;
+			item->pos_screen = uiItemFromNode(item->node.parent)->pos_screen + item->pos_local;
 		}
 	}
 	
@@ -812,51 +812,51 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		
 		switch(child->style.positioning){
 			case pos_static:{
-				//child->lpos =  child->style.margin;
+				//child->pos_local =  child->style.margin;
 				//if(item->style.border_style)
-				//child->lpos += item->style.border_width * vec2::ONE;
-				child->lpos = cursor;
+				//child->pos_local += item->style.border_width * vec2::ONE;
+				child->pos_local = cursor;
 				if(HasFlag(item->style.display, display_row))
-					cursor.x = child->lpos.x + child->width;
+					cursor.x = child->pos_local.x + child->width;
 				else{
-					cursor.y = child->lpos.y + child->height;
+					cursor.y = child->pos_local.y + child->height;
 				}
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
-				child->lpos = child->style.margintl;
+				child->pos_local = child->style.margintl;
 				if(item->style.border_style)
-					child->lpos += item->style.border_width * vec2::ONE;
-				child->lpos += cursor;
+					child->pos_local += item->style.border_width * vec2::ONE;
+				child->pos_local += cursor;
 				
 				if(HasFlag(item->style.display, display_row)){
-					cursor.x = child->lpos.x + child->width;
+					cursor.x = child->pos_local.x + child->width;
 				}else{
-					cursor.y = child->lpos.y + child->height;
+					cursor.y = child->pos_local.y + child->height;
 				}
 				
 				switch(child->style.anchor){
 					case anchor_top_left:{
-						child->lx += child->style.x;
-						child->ly += child->style.y;
+						child->pos_local.x += child->style.x;
+						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->lx += (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x += (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
-						child->ly += child->style.y;
+						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->lx += (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x += (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->ly += (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y += (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
-						child->lx += child->style.x;
+						child->pos_local.x += child->style.x;
 						
-						if(!hauto) child->ly += (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y += (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -871,26 +871,26 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 			case pos_draggable_absolute:{
 				switch(child->style.anchor){
 					case anchor_top_left:{
-						child->lx = child->style.x;
-						child->ly = child->style.y;
+						child->pos_local.x = child->style.x;
+						child->pos_local.y = child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->lx = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
-						child->ly = child->style.y;
+						child->pos_local.y = child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->lx = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->ly = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
-						child->lx = child->style.x;
+						child->pos_local.x = child->style.x;
 						
-						if(!hauto) child->ly = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -902,10 +902,10 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		//            as much as it would if we used full precision
 		//            this also fixes some issues like items not touching when they should
 		//TODO(sushi) maybe make a global define for this
-		child->lpos = floor(child->lpos*1)/1;
+		child->pos_local = floor(child->pos_local*1)/1;
 		
-		if(wauto) item->width  = Max(item->width,  child->lpos.x + child->width);
-        if(hauto) item->height = Max(item->height, child->lpos.y + child->height);
+		if(wauto) item->width  = Max(item->width,  child->pos_local.x + child->width);
+        if(hauto) item->height = Max(item->height, child->pos_local.y + child->height);
         
 		idx++;
 		Assert(it!=it->next, "infinite loop.");
@@ -949,7 +949,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
         for_node(item->node.first_child){
             uiItem* child = uiItemFromNode(it);
             if(child->style.positioning == pos_static){
-                last_static_offset = child->lpos.x;
+                last_static_offset = child->pos_local.x;
                 f32 marr = child->style.margin_right;
                 f32 marl = child->style.margin_left;
                 f32 mart = child->style.margin_top;
@@ -960,12 +960,12 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 									  child->width + (marr==MAX_F32?marl:marr) + marl,
 									  child->height + (marb==MAX_F32?mart:marb) +mart
 									  );
-                child->lx = item->style.padding_left + child->style.margin_left + item->style.content_align.x * (child_space.x - true_size.x);
-                last_static_offset = child->lpos.x - last_static_offset;
-				child->ly += y_offset;
+                child->pos_local.x = item->style.padding_left + child->style.margin_left + item->style.content_align.x * (child_space.x - true_size.x);
+                last_static_offset = child->pos_local.x - last_static_offset;
+				child->pos_local.y += y_offset;
             }else if(child->style.positioning==pos_relative){
-                child->lpos.x += last_static_offset;
-				child->ly += y_offset;
+                child->pos_local.x += last_static_offset;
+				child->pos_local.y += y_offset;
             }
         }
     }
@@ -978,7 +978,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		
 	*/
 	
-	item->lpos = floor(item->lpos);
+	item->pos_local = floor(item->pos_local);
 }
 
 void drag_item(uiItem* item){DPZoneScoped;
@@ -990,7 +990,7 @@ void drag_item(uiItem* item){DPZoneScoped;
 		persist vec2 item_begin;
 		persist b32 dragging = false;
 		vec2 mouse_current = input_mouse_position();
-		if(key_pressed(Mouse_LEFT) && Math::PointInRectangle(mouse_current, item->spos, item->size)){
+		if(key_pressed(Mouse_LEFT) && Math::PointInRectangle(mouse_current, item->pos_screen, item->size)){
 			dragging = true;
 			g_ui->istate = uiISDragging;            
 			mouse_begin = mouse_current;
@@ -1027,7 +1027,7 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden)) continue;
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
-	if(Math::PointInRectangle(input_mouse_position(), item->spos, item->size)){
+	if(Math::PointInRectangle(input_mouse_position(), item->pos_screen, item->size)){
 		uiItem* cur = item;
 		while(cur->style.hover_passthrough) cur = uiItemFromNode(cur->node.parent);
 		g_ui->hovered = cur;
@@ -1084,20 +1084,20 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	vec2 scoff;
 	vec2 scext;
 	if(parent && parent->style.overflow != overflow_visible){
-		vec2 cpos = item->spos + item->style.margintl + (item->style.border_style ? item->style.border_width : 0) * vec2::ONE;
+		vec2 cpos = item->pos_screen + item->style.margintl + (item->style.border_style ? item->style.border_width : 0) * vec2::ONE;
 		vec2 csiz = BorderedArea(item);
 		
-		scoff = Max(vec2{0,0}, Max(parent->visible_start, Min(item->spos, parent->visible_start+parent->visible_size)));
-		vec2 br = Max(parent->visible_start, Min(item->spos+item->size, parent->visible_start+parent->visible_size));
+		scoff = Max(vec2{0,0}, Max(parent->visible_start, Min(item->pos_screen, parent->visible_start+parent->visible_size)));
+		vec2 br = Max(parent->visible_start, Min(item->pos_screen+item->size, parent->visible_start+parent->visible_size));
 		scext = Max(vec2{0,0}, br-scoff);
 		item->visible_start =  Max(vec2{0,0}, Max(parent->visible_start, Min(cpos, parent->visible_start+parent->visible_size)));
 		br =  Max(parent->visible_start, Min(cpos+csiz, parent->visible_start+parent->visible_size));
 		
 		item->visible_size = br - item->visible_start; 
 	}else{
-		scoff = Max(vec2::ZERO, item->spos); scext = Max(vec2::ZERO, Min(item->spos+item->size, Vec2(DeshWindow->width,DeshWindow->height))-scoff);
+		scoff = Max(vec2::ZERO, item->pos_screen); scext = Max(vec2::ZERO, Min(item->pos_screen+item->size, Vec2(DeshWindow->width,DeshWindow->height))-scoff);
 		item->visible_size = item->size;
-		item->visible_start = item->spos;
+		item->visible_start = item->pos_screen;
 	}
 	
 	//if the scissor is offscreen or outside of the item it resides in, dont render it.
@@ -1120,12 +1120,12 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		}
 	}
 	
-	vec2 pos = item->spos, siz = item->size;
+	vec2 pos = item->pos_screen, siz = item->size;
     for_node(node->first_child){
         auto [cpos, csiz] = ui_recur(it);
 		if(csiz.x == -MAX_F32) continue;
-        pos = Min(cpos, item->spos);
-        siz = Max((item->spos - pos)+siz, (cpos-pos)+csiz); 
+        pos = Min(cpos, item->pos_screen);
+        siz = Max((item->pos_screen - pos)+siz, (cpos-pos)+csiz); 
     }
 	
     item->children_bbx_pos=pos;
@@ -1197,7 +1197,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 	vec2i counts = {0};	
 	uiSlider* data = uiGetSlider(item);
 	
-	vec2 pos = item->spos + item->cpos;
+	vec2 pos = item->pos_screen + item->pos_client;
 	vec2 size = item->csize;
 	
 	counts+=gen_background(item, vp, ip, counts);
@@ -1222,7 +1222,7 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 void ui_slider_callback(uiItem* item){DPZoneScoped;
 	uiSlider* data = uiGetSlider(item);
 	vec2 mp = input_mouse_position();
-	vec2 lmp = mp - item->spos;
+	vec2 lmp = mp - item->pos_screen;
 	switch(data->type){
 		case 0:{
 			f32 dragpos;
@@ -1339,7 +1339,7 @@ void ui_gen_checkbox(uiItem* item){
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 	vec2i counts = {0};	
 	
-	vec2 fillingpos = item->spos + data->style.fill_padding + item->cpos;
+	vec2 fillingpos = item->pos_screen + data->style.fill_padding + item->pos_client;
 	vec2 fillingsize = item->csize - data->style.fill_padding * 2;
 	
 	counts+=gen_background(item, vp, ip, counts);
@@ -1464,7 +1464,6 @@ void find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f3
 						breaks->last->second.x = 0;
 					}
 				}
-				
 				xoffset = font_visual_size(item->style.font, str8{scan.str-dc.advance,dc.advance}).x * item->style.font_height / item->style.font->max_height;
 			}
 		}
@@ -1478,7 +1477,7 @@ s64 find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){
 	if(item->style.font->type == FontType_TTF) {
 		LogW("ui", "find_hovered_offset() is not tested on non monospace fonts! Selection may not work properly, if it does come delete this please.");
 	}
-	vec2 mpl = input_mouse_position() - item->spos;
+	vec2 mpl = input_mouse_position() - item->pos_screen;
 	forX(i,breaks.count){
 		if(i!=breaks.count-1 && mpl.y > breaks[i].second.y + item->style.font_height) continue;
 		//breaks dont only happen on newlines, they happen for tabs too
@@ -1520,10 +1519,10 @@ s64 find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){
 //TODO(sushi) remove this abstraction because they arent the same between inputtext and text
 vec2i render_ui_text(vec2i counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks){DPZoneScoped;
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-	vec2 cursor = item->spos;
+	vec2 cursor = item->pos_screen;
 	forI(breaks.count-1){
 		auto [idx, pos] = breaks[i];
-		cursor = pos+item->spos;
+		cursor = pos+item->pos_screen;
 		forX(j,breaks[i+1].first-idx){
 			vec2 csize = font_visual_size(item->style.font, {text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
 			if(idx+j > Min(text.cursor.pos, text.cursor.pos+text.cursor.count) && idx+j < Max(text.cursor.pos, text.cursor.pos+text.cursor.count)){
@@ -1678,10 +1677,10 @@ void ui_gen_input_text(uiItem* item){DPZoneScoped;
 	}
 
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
-	vec2 cursor = item->spos;
+	vec2 cursor = item->pos_screen;
 	forI(data->breaks.count-1){
 		auto [idx, pos] = data->breaks[i];
-		cursor = pos+item->spos;
+		cursor = pos+item->pos_screen;
 		forX(j,data->breaks[i+1].first-idx){
 			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
 			if(idx+j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count) && idx+j < Max(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)){
@@ -1852,7 +1851,7 @@ void ui_debug_callback(uiItem* item){
 void ui_debug_panel_callback(uiItem* item){
 	if(Math::PointInRectangle(
 		input_mouse_position(),
-		item->spos + item->size.xComp() - Vec2(10,0), item->size.yComp() + Vec2(10, 0))){
+		item->pos_screen + item->size.xComp() - Vec2(10,0), item->size.yComp() + Vec2(10, 0))){
 		
 	}
 	
@@ -2050,7 +2049,7 @@ void ui_debug(){
 
 	if(g_ui->hovered){
 		render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
-		vec2 ipos = g_ui->hovered->spos;
+		vec2 ipos = g_ui->hovered->pos_screen;
 		vec2 mpos = ipos + g_ui->hovered->style.margintl;
 		vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
 		vec2 ppos = bpos + g_ui->hovered->style.paddingtl;

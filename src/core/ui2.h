@@ -684,19 +684,11 @@ struct uiItem{
 
 	//// INTERNAL ////
 	u32 style_hash;
-	
-	union{ // position relative to parent
-		struct{ f32 lx, ly; };
-		vec2 lpos;
-	};
-	union{ // position relative to screen
-		struct{ f32 sx, sy; };
-		vec2 spos;
-	};
-	union{ // position that the item's content starts at relative to the item's position
-		struct{ f32 cx, cy; };
-		vec2 cpos;
-	};
+
+	vec2 pos_local;  // position relative to parent
+	vec2 pos_screen; // position relative to screen
+	vec2 pos_client; // position that the item's content starts at relative to the item's position
+
 	union{ // size that the item visually takes up on the screen
 		struct{ f32 width, height; };
 		vec2 size;
