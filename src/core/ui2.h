@@ -541,8 +541,8 @@ struct uiDrawCmd{
 	Texture* texture;
 	u32 vertex_offset; 
 	u32 index_offset;
-	vec2i counts_reserved;
-	vec2i counts_used;
+	vec2i counts_reserved; //x: vertex, y: index
+	vec2i counts_used; //x: vertex, y: index
 	vec2i scissorOffset;
 	vec2i scissorExtent;
 };

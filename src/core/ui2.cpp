@@ -1619,7 +1619,9 @@ uiItem* ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScope
 	setup.evaluate = &ui_eval_text;
 	vec2i counts[1] = {render_make_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
-	setup.drawcmd_count = 1;
+	if(text.count){
+		setup.drawcmd_count = 1;
+	}
 	
 	b32 retrieved = 0;
 	uiItem* item = ui_setup_item(setup, &retrieved);
