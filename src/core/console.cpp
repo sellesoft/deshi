@@ -386,6 +386,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 			console.open_amount = console.ui.main->style.height;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
+			g_ui->active = console.ui.inputtext;
 			window_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		case ConsoleState_OpenBig:{
@@ -393,6 +394,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 			console.open_amount = console.ui.main->style.height;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
+			g_ui->active = console.ui.inputtext;
 			window_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		// case ConsoleState_Popout:{
