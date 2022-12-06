@@ -34,11 +34,11 @@ local array<AllocInfo> alloc_infos_inactive(stl_allocator);
 #if MEMORY_CHECK_HEAPS
 local void
 DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
-	AssertAlways(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
-	AssertAlways(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
-	AssertAlways(heap->empty_nodes.next != 0 && heap->empty_nodes.prev != 0, "First heap empty node is invalid");
+	Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
+	Assert(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
+	Assert(heap->empty_nodes.next != 0 && heap->empty_nodes.prev != 0, "First heap empty node is invalid");
 	for(Node* node = &heap->empty_nodes; ; ){
-		AssertAlways(node->next->prev == node && node->prev->next == node, "Heap empty node is invalid");
+		Assert(node->next->prev == node && node->prev->next == node, "Heap empty node is invalid");
 		node = node->next;
 		if(node == &heap->empty_nodes) break;
 	}
@@ -46,11 +46,11 @@ DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
 	if(heap->initialized && heap->used > 0){
 		upt overall_used = 0;
 		for(MemChunk* chunk = (MemChunk*)heap->start; ;chunk = GetNextOrderChunk(chunk)){
-			AssertAlways((u8*)chunk < heap->cursor, "All chunks must be below the cursor");
-			AssertAlways(GetChunkSize(chunk) >= MEMORY_MIN_CHUNK_SIZE, "Chunk size is less than minimum");
-			AssertAlways(GetChunkSize(chunk) % MEMORY_BYTE_ALIGNMENT == 0, "Chunk size is not aligned correctly");
+			Assert((u8*)chunk < heap->cursor, "All chunks must be below the cursor");
+			Assert(GetChunkSize(chunk) >= MEMORY_MIN_CHUNK_SIZE, "Chunk size is less than minimum");
+			Assert(GetChunkSize(chunk) % MEMORY_BYTE_ALIGNMENT == 0, "Chunk size is not aligned correctly");
 			if(chunk != heap->last_chunk){
-				AssertAlways(GetNextOrderChunk(chunk)->prev == chunk, "Next order chunk is not correctly pointing to current chunk");
+				Assert(GetNextOrderChunk(chunk)->prev == chunk, "Next order chunk is not correctly pointing to current chunk");
 				if(ChunkIsEmpty(chunk)){
 					overall_used += sizeof(MemChunk);
 				}else{
@@ -61,7 +61,7 @@ DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
 				break;
 			}
 		}
-		AssertAlways(overall_used == heap->used, "Heap used amount is invalid");
+		Assert(overall_used == heap->used, "Heap used amount is invalid");
 	}
 }
 #else
@@ -121,7 +121,7 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 			}
 		}
 		
-		AssertAlways(index == -1, "There is already an existing active AllocInfo with this address");
+		Assert(index == -1, "There is already an existing active AllocInfo with this address");
 		alloc_infos_active.insert(AllocInfo{address, file, line, DeshTime->frame, upt(-1), str8_lit(""), 0}, middle);
 	}else{
 		alloc_infos_active.add(AllocInfo{address, file, line, DeshTime->frame, upt(-1), str8_lit(""), 0});
@@ -201,7 +201,7 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 		upt chunk_size = GetChunkSize(chunk); //NOTE remember that chunk size includes the overhead
 		if(chunk_size >= aligned_size){
 			upt leftover_size = chunk_size - aligned_size;
-			AssertAlways(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
+			Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 			MemChunk* next = GetNextOrderChunk(chunk);
 			
 			//make new empty chunk after current chunk if there is enough space for an empty chunk
@@ -259,8 +259,8 @@ deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line){DPZoneScop
 	DEBUG_CheckHeap(heap);
 	AllocInfo info = deshi__memory_allocinfo_get(ptr);
 	MemChunk* chunk = MemoryToChunk(ptr);
-	AssertAlways(chunk->size > 0, "A chunk must always have a size");
-	AssertAlways(heap->initialized, "Attempted to remove before heap_init() has been called");
+	Assert(chunk->size > 0, "A chunk must always have a size");
+	Assert(heap->initialized, "Attempted to remove before heap_init() has been called");
 	
 	upt   chunk_size   = GetChunkSize(chunk);
 	void* zero_pointer = chunk+1;
@@ -344,7 +344,7 @@ DEBUG_CheckArenaHeapArenas(){DPZoneScoped;
 			MemChunk* next = GetNextOrderChunk(chunk);
 			if(!ChunkIsEmpty(chunk)){
 				Arena* arena = ChunkToArena(chunk);
-				AssertAlways(PointerDifference(arena->start + arena->size, next) == 0, "Arena start and size dont point to the next chunk");
+				Assert(PointerDifference(arena->start + arena->size, next) == 0, "Arena start and size dont point to the next chunk");
 			}
 			chunk = next;
 		}
@@ -387,7 +387,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 		upt chunk_size = GetChunkSize(chunk); //NOTE(delle) remember that chunk size includes the overhead
 		if(chunk_size >= aligned_size){
 			upt leftover_size = chunk_size - aligned_size;
-			AssertAlways(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
+			Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 			MemChunk* next = GetNextOrderChunk(chunk);
 			
 			//make new empty chunk after current chunk if there is enough space for arena overhead
@@ -422,7 +422,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 			DEBUG_PrintArenaHeapChunks();
 			DEBUG_PrintArenaAction("Created an arena[0x%p] with %zu bytes", result, result->size);
 			DEBUG_AllocInfo_Creation(result, file, line);
-			AssertAlways(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
+			Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
 			
 			return result;
 		}
@@ -433,7 +433,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 		LogfE("memory","Deshi ran out of main memory when attempting to create an arena with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", result->size, file.str, line);
 		
 		MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
-	AssertAlways(chunk, "libc failed to allocate memory");
+	Assert(chunk, "libc failed to allocate memory");
 	chunk->size = aligned_size | MEMORY_LIBC_FLAG;
 	 result = ChunkToArena(chunk);
 	result->start  = (u8*)(result+1);
@@ -442,7 +442,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 		
 		DEBUG_PrintArenaAction("Created a libc arena[0x%p] with %zu bytes", result, result->size);
 		DEBUG_AllocInfo_Creation(result, file, line);
-		AssertAlways(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
+		Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
 		
 		return result;
 	}
@@ -465,7 +465,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 	DEBUG_PrintArenaHeapChunks();
 	DEBUG_PrintArenaAction("Created an arena[0x%p] with %zu bytes", result, result->size);
 	DEBUG_AllocInfo_Creation(result, file, line);
-	AssertAlways(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
+	Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
 	
 	return result;
 }
@@ -479,7 +479,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 	if(g_memory->cleanup_happened) return 0;
 	if(size == 0) return arena;
 	if(arena == 0) return 0;
-	AssertAlways(g_memory->arena_heap.initialized, "Attempted to grow an arena before memory_init() has been called");
+	Assert(g_memory->arena_heap.initialized, "Attempted to grow an arena before memory_init() has been called");
 	
 	upt aligned_size = RoundUpTo(size, MEMORY_BYTE_ALIGNMENT);
 	AllocInfo info = deshi__memory_allocinfo_get(arena);
@@ -491,7 +491,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		upt old_size   = arena->size;
 		upt old_cursor = arena->cursor - arena->start;
 		chunk = (MemChunk*)realloc(chunk, MEMORY_ARENA_OVERHEAD + old_size + size);
-		AssertAlways(chunk, "libc failed to allocate memory");
+		Assert(chunk, "libc failed to allocate memory");
 		chunk->size += size;
 		
 		result = ChunkToArena(chunk);
@@ -512,7 +512,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		
 		return result;
 	}
-	AssertAlways((u8*)arena > g_memory->arena_heap.start && (u8*)arena < g_memory->arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap and missing the libc flag");
+	Assert((u8*)arena > g_memory->arena_heap.start && (u8*)arena < g_memory->arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap and missing the libc flag");
 	
 	//current chunk is the last chunk, so grow current
 	if(chunk == g_memory->arena_heap.last_chunk){
@@ -521,7 +521,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 			
 			upt chunk_size = arena->size + size;
 			MemChunk* chunk = (MemChunk*)calloc(1, chunk_size);
-	AssertAlways(chunk, "libc failed to allocate memory");
+	Assert(chunk, "libc failed to allocate memory");
 	chunk->size = chunk_size | MEMORY_LIBC_FLAG;
 	result = ChunkToArena(chunk);
 	result->start  = (u8*)(arena+1);
@@ -559,7 +559,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 	upt next_chunk_size = GetChunkSize(next);
 	if(ChunkIsEmpty(next) && (next_chunk_size >= aligned_size)){
 		upt leftover_size = next_chunk_size - aligned_size;
-		AssertAlways(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
+		Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
 		
 		//make new empty chunk after current chunk if there is enough space for arena overhead
 		MemChunk* next_next = GetNextOrderChunk(next);
