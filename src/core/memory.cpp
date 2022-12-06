@@ -132,7 +132,7 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 local void
 DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
 	b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
-b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
+	b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
 	
 	if(address == 0) return;
 	upt index = binary_search(alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
@@ -433,12 +433,12 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 		LogfE("memory","Deshi ran out of main memory when attempting to create an arena with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", result->size, file.str, line);
 		
 		MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
-	Assert(chunk, "libc failed to allocate memory");
-	chunk->size = aligned_size | MEMORY_LIBC_FLAG;
-	 result = ChunkToArena(chunk);
-	result->start  = (u8*)(result+1);
-	result->cursor = result->start;
-	result->size   = aligned_size - MEMORY_ARENA_OVERHEAD;
+		Assert(chunk, "libc failed to allocate memory");
+		chunk->size = aligned_size | MEMORY_LIBC_FLAG;
+		result = ChunkToArena(chunk);
+		result->start  = (u8*)(result+1);
+		result->cursor = result->start;
+		result->size   = aligned_size - MEMORY_ARENA_OVERHEAD;
 		
 		DEBUG_PrintArenaAction("Created a libc arena[0x%p] with %zu bytes", result, result->size);
 		DEBUG_AllocInfo_Creation(result, file, line);
@@ -521,12 +521,12 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 			
 			upt chunk_size = arena->size + size;
 			MemChunk* chunk = (MemChunk*)calloc(1, chunk_size);
-	Assert(chunk, "libc failed to allocate memory");
-	chunk->size = chunk_size | MEMORY_LIBC_FLAG;
-	result = ChunkToArena(chunk);
-	result->start  = (u8*)(arena+1);
-	result->cursor = result->start + (arena->cursor - arena->start);
-	result->size   = chunk_size - MEMORY_ARENA_OVERHEAD;
+			Assert(chunk, "libc failed to allocate memory");
+			chunk->size = chunk_size | MEMORY_LIBC_FLAG;
+			result = ChunkToArena(chunk);
+			result->start  = (u8*)(arena+1);
+			result->cursor = result->start + (arena->cursor - arena->start);
+			result->size   = chunk_size - MEMORY_ARENA_OVERHEAD;
 			result->used   = arena->used;
 			memcpy(result->start, arena->start, arena->size);
 			
@@ -1590,10 +1590,10 @@ void
 deshi__memory_allocinfo_active_expose(AllocInfo** out_array, upt* out_size){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	*out_array = alloc_infos_active.data;
-			*out_size = alloc_infos_active.count;
+	*out_size = alloc_infos_active.count;
 #else
 	*out_array = 0;
-			*out_size = 0;
+	*out_size = 0;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
@@ -1602,10 +1602,10 @@ void
 deshi__memory_allocinfo_inactive_expose(AllocInfo** out_array, upt* out_size){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	*out_array = alloc_infos_inactive.data;
-			*out_size = alloc_infos_inactive.count;
+	*out_size = alloc_infos_inactive.count;
 #else
 	*out_array = 0;
-			*out_size = 0;
+	*out_size = 0;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
