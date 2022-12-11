@@ -112,6 +112,9 @@ for (( i=1; i<=$#; i++)); do
     elif [ "${!i}" == "ui" ]; then
       build_example="ui"
       continue
+    elif [ "${!i}" == "dining_philosophers" ]; then
+      build_example="dining_philosophers"
+      continue
     else
       echo "Unknown example: ${!i}"
       exit 1
