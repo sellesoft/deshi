@@ -157,7 +157,8 @@ Implement a system for trimming down how much we have to do to check every item.
 	TODO(sushi) look into a way around this
 
 -   Defaults:
-		top and left default to 0, while bottom and right default to MAX_S32, indicating to use top or left instead.
+		top and left default to 0
+		bottom and right default to 0, indicating to use top or left instead
 
 -   Shorthands:
 		tl - a vec2i representing the x and y coords of the top left corner of the item
@@ -177,6 +178,7 @@ Implement a system for trimming down how much we have to do to check every item.
 
 ------------------------------------------------------------------------------------------------------------
 *   size, width, height
+    ---
 	Determines the size of the item. Note that text is not affected by this property, and its size is always
 	as it appears on the screen. If you want to change text size use font_height.
 
@@ -195,6 +197,34 @@ Implement a system for trimming down how much we have to do to check every item.
 			width: auto; //size based on content
 			height: 20%; //size 20% of parent's width
 			width: fill; //fills remaining width of parent.
+
+
+------------------------------------------------------------------------------------------------------------
+*   min_width, min_height, max_width, max_height
+    ---
+    Determins the minimum and maximum size of the item. The minimum and maximum are applied to the the final
+    size of the item including: padding, border, and margin.
+
+    Note, max_width overrides width, and min_width overrides max_width. Same with height.
+
+-   Defaults:
+        max_width and max_height both default to 0, meaning they are not applied.
+        min_width and min_height both default to 0.
+
+-   Example:
+        in code:
+            uiStyle style;
+            style.size = Vec2(10, 6);
+            style.margin = Vec4(1, 0, 1, 0);
+            style.border_width = 1;
+            style.max_width = 10; //final content width will be 6
+            style.min_height = 10; //final content height will be 10
+        in string:
+            size: 10px 6px;
+            margin: 1px 0px 1px 0px;
+            border_width: 1px;
+            max_width: 10px; //content width will be 6px, overall width will be 10px
+            min_height: 10px; //content height will be 10px, overall height will be 10px
 
 
 ------------------------------------------------------------------------------------------------------------
@@ -218,11 +248,11 @@ Implement a system for trimming down how much we have to do to check every item.
 	   margin_left
 
 -   Defaults:
-		margin_top and margin_left default to 0, while margin_bottom and margin_right default to MAX_S32
-		MAXP_S32 just indicates to the renderer that it should use the same value as the other side
+		margin_top and margin_left default to 0.
+		margin_bottom and margin_right default to 0, indicating to use the top and left values.
 
 -   Shorthands:
-		margin sets margin_left and margin_top
+		margin sets margin_left and margin_top.
 
 -   Example:
 		in code:
@@ -255,8 +285,8 @@ Implement a system for trimming down how much we have to do to check every item.
 			padding_left
 
 -   Defaults:
-		padding_top and padding_left default to 0, while padding_bottom and padding_right default to MAX_S32
-		MAX_S32 just indicates to the renderer that it should use the same value as the other side
+		padding_top and padding_left default to 0.
+		padding_bottom and padding_right default to 0, indicating to use the top and left values.
 
 -   Shorthands:
 		padding sets padding_left and padding_top
@@ -268,6 +298,46 @@ Implement a system for trimming down how much we have to do to check every item.
 			style.padding_bottom = 15;
 		in string:
 			padding: 20; //sets both padding_left and padding_top to 20 pixels;
+
+
+------------------------------------------------------------------------------------------------------------
+*   scale, x_scale, y_scale
+    ---
+	Scales an item's size, padding, border, margin, and children items.
+	TODO(delle) scale item parts individually, currently scales everything at the end (size{48,48},border{1,1,1,1} results in total size of {75,75} when it should be {74,74})
+
+-   Notes:
+	   y_scale affects text.  TODO(delle) support x_scale on text
+       scale ignores minimum or maximum size.  TODO(delle) respect min and max size when scaling
+	   scale on children items is scaled before application by its parent's scale.
+	   scale applies from the anchor, not from the center.
+	   User is responsible for handling scale in custom __generate functions.
+
+-   Dev Notes:
+      scale is applied during the generation step of UI.
+	  Sizes after scaling should be floored for pixel consistency.
+
+-   Defaults:
+		x_scale and y_scale both default to 0, meaning don't scale
+
+-   Shorthands:
+		scale sets x_scale and y_scale.
+
+-   Example:
+		in code:
+			uiStyle style;
+			style.size = Vec2(20, 20);
+			style.max_height = 25; //final total height will 32px
+			style.border_style = border_solid;
+			style.border_color = Color_Black;
+			style.border_width = 1; //final border width will be 1px
+			style.scale = Vec2(1.5, 1.5); //final total width will be 32px, content width will be 30px
+		in string:
+			size: 20px 20px;
+			max_height: 25px; //final total height will 32px
+			border: solid 1px; //final border width will be 1px
+			scale: 1.5 1.5; //final total width will be 32px
+
 
 ------------------------------------------------------------------------------------------------------------
 *   scroll, scrollx, scrolly
@@ -393,8 +463,9 @@ TODO(sushi) example
 	 	Defaults to false.
 
 -   Catches:
-		When using this on an item whose positioning is not fixed, absolute you must remember that
-		it will affect the positioing of items around it.
+		When using this on an item whose positioning is not fixed, absolute you must remember that it will
+		affect the positioning of items around it. This is because focusing an item will make it the last
+		child of the parent, so that it is rendered on top of its siblings.
 
 ------------------------------------------------------------------------------------------------------------
 *   display
@@ -437,6 +508,14 @@ TODO(sushi) example
 		every single time I make an item, display_column is equal to 0. This sort of makes it so that the first bit
 		is a boolean determining if we are drawing a row or column. This is beneficial because it enforces
 		row and column being mutually exclusive.
+
+------------------------------------------------------------------------------------------------------------
+*   hover_passthrough
+	---
+	Flag that determines if an item should pass its hover status to its parent.
+
+-   Defaults:
+	 	Defaults to false.
 */
 
 
@@ -649,6 +728,10 @@ external struct uiStyle{
 		};
 	};
 	union{
+		struct{f32 x_scale, y_scale;};
+		vec2 scale;
+	};
+	union{
 		struct{f32 scrx, scry;};
 		vec2 scroll;
 	};
@@ -687,15 +770,14 @@ struct uiItem{
 
 	vec2 pos_local;  // position relative to parent
 	vec2 pos_screen; // position relative to screen
-	vec2 pos_client; // position that the item's content starts at relative to the item's position
 
-	union{ // size that the item visually takes up on the screen
+	union{ // size that the item visually takes up on the screen (before scaling)
 		struct{ f32 width, height; };
 		vec2 size;
 	};
-	union{ // size that content occupies
-		struct{ f32 cwidth, cheight; };
-		vec2 csize;
+	union{ // scale after applying parent scale
+		struct{ f32 x_scale, y_scale; };
+		vec2 scale;
 	};
 	vec2 max_scroll;
 
@@ -768,6 +850,8 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= *(u32*)&s->padding_top;     seed *= 16777619;
 	seed ^= *(u32*)&s->padding_bottom;  seed *= 16777619;
 	seed ^= *(u32*)&s->padding_right;   seed *= 16777619;
+	seed ^= *(u32*)&s->x_scale;         seed *= 16777619;
+	seed ^= *(u32*)&s->y_scale;         seed *= 16777619;
 	seed ^= *(u32*)&s->content_align.x; seed *= 16777619;
 	seed ^= *(u32*)&s->content_align.y; seed *= 16777619;
 	seed ^= (u64)s->font;               seed *= 16777619;

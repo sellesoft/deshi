@@ -1,3 +1,47 @@
+/*
+Index:
+@memory
+	push_item(uiItem* item) -> void
+	pop_item() -> void
+@uiDrawCmd
+	drawcmd_remove(uiDrawCmd* drawcmd) -> void
+	drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts) -> void
+@helpers
+	ui_setup_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
+	calc_text_size(uiItem* item) -> vec2 
+@item	
+	ui_gen_item(uiItem* item) -> void 
+	ui_make_item(uiStyle* style, str8 file, upt line) -> uiItem* 
+	ui_begin_item(uiStyle* style, str8 file, upt line) -> uiItem* 
+	ui_end_item(str8 file, upt line) -> void 
+	ui_remove_item(uiItem* item, str8 file, upt line) -> void 
+@context
+	ui_init(MemoryContext* memctx, uiContext* uictx) -> void 
+	ui_find_static_sized_parent(TNode* node, TNode* child) -> TNode* 
+	draw_item_branch(uiItem* item) -> void 
+	eval_item_branch(uiItem* item) -> void 
+	drag_item(uiItem* item) -> void 
+	find_hovered_item(uiItem* item) -> b32 
+	ui_recur(TNode* node) -> pair<vec2,vec2> 
+	ui_update() -> void 
+@widgets
+	@text
+		ui_gen_text(uiItem* item) -> void 
+		ui_eval_text(uiItem* item) -> void 
+		ui_make_text(str8 text, uiStyle* style, str8 file, upt line) -> uiItem* 
+	@slider
+		ui_gen_slider(uiItem* item) -> void 
+		ui_slider_callback(uiItem* item) -> void 
+		ui_make_slider(uiStyle* style, str8 file, upt line) -> uiItem* 
+		ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
+		ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
+		ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
+@debug
+	ui_debug() -> void 
+@demo
+	ui_demo() -> void 
+*/
+
 #include "ui2.h"
 #include "kigu/array.h"
 #include "kigu/array_utils.h"
@@ -7,53 +51,6 @@
 #include "core/memory.h"
 #include "core/render.h"
 #include "core/window.h"
-
-/*
-	Index:
-		@memory
-		   create_arena_list(ArenaList* old) -> ArenaList*
-		   arena_add(Arena* arena, upt size) -> void*
-		   push_item(uiItem* item) -> void
-		   pop_item() -> void
-		@uiDrawCmd
-			drawcmd_remove(uiDrawCmd* drawcmd) -> void
-			drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts) -> void
-		@helpers
-			ui_setup_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
-			calc_text_size(uiItem* item) -> vec2 
-		@item	
-			ui_gen_item(uiItem* item) -> void 
-			ui_make_item(uiStyle* style, str8 file, upt line) -> uiItem* 
-			ui_begin_item(uiStyle* style, str8 file, upt line) -> uiItem* 
-			ui_end_item(str8 file, upt line) -> void 
-			ui_remove_item(uiItem* item, str8 file, upt line) -> void 
-		@context
-			ui_init(MemoryContext* memctx, uiContext* uictx) -> void 
-			ui_find_static_sized_parent(TNode* node, TNode* child) -> TNode* 
-			draw_item_branch(uiItem* item) -> void 
-			eval_item_branch(uiItem* item) -> void 
-			drag_item(uiItem* item) -> void 
-			find_hovered_item(uiItem* item) -> b32 
-			ui_recur(TNode* node) -> pair<vec2,vec2> 
-			ui_update() -> void 
-		@widgets
-			@text
-				ui_gen_text(uiItem* item) -> void 
-				ui_eval_text(uiItem* item) -> void 
-				ui_make_text(str8 text, uiStyle* style, str8 file, upt line) -> uiItem* 
-			@slider
-				ui_gen_slider(uiItem* item) -> void 
-				ui_slider_callback(uiItem* item) -> void 
-				ui_make_slider(uiStyle* style, str8 file, upt line) -> uiItem* 
-				ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
-				ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
-				ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line) -> uiItem* 
-		@debug
-			__ui_debug_callback(uiItem* item) -> void 
-			ui_debug() -> void 
-		@demo
-			ui_demo() -> void 
-*/
 
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -371,17 +368,18 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0){DPZoneScoped;
 vec2 calc_text_size(uiItem* item){DPZoneScoped;
 	uiStyle* style = &item->style;
 	str8 text = uiGetText(item)->text.buffer.fin;
-	vec2 result = vec2{0, (f32)style->font_height};
+	f32 scaled_font_height = (f32)style->font_height * item->y_scale;
+	vec2 result = vec2{0, scaled_font_height};
 	f32 line_width = 0;
 	switch(style->font->type){
 		case FontType_BDF: case FontType_NONE:{
 			u32 codepoint;
 			while(text && (codepoint = str8_advance(&text).codepoint)){
 				if(codepoint == '\n'){
-					result.y += style->font_height;
+					result.y += scaled_font_height;
 					line_width = 0;
 				}
-				line_width += style->font->max_width * style->font_height / style->font->aspect_ratio / style->font->max_width;
+				line_width += style->font->max_width * scaled_font_height / style->font->aspect_ratio / style->font->max_width;
 				if(line_width > result.x) result.x = line_width;
 			}
 		}break;
@@ -389,10 +387,10 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 			u32 codepoint;
 			while(text && (codepoint = str8_advance(&text).codepoint)){
 				if(codepoint == '\n'){
-					result.y += style->font_height;
+					result.y += scaled_font_height;
 					line_width = 0;
 				}
-				line_width += font_packed_char(style->font, codepoint)->xadvance * style->font_height / style->font->aspect_ratio / style->font->max_width;
+				line_width += font_packed_char(style->font, codepoint)->xadvance * scaled_font_height / style->font->aspect_ratio / style->font->max_width;
 				if(line_width > result.x) result.x = line_width;
 			}
 		}break;
@@ -404,9 +402,11 @@ vec2 calc_text_size(uiItem* item){DPZoneScoped;
 //NOTE(sushi) these are abstracted because widgets may use them as well
 inline
 vec2i gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
-	vec2 bor = (item->style.border_style ? item->style.border_width : 0) * vec2::ONE; 
-	vec2 pos = item->pos_screen + item->style.margintl + bor;
-	vec2 siz = item->size - (item->style.margintl + item->style.marginbr + 2*bor);
+	vec2 mtl = floor(item->style.margintl * item->scale);
+	vec2 mbr = floor(item->style.marginbr * item->scale);
+	vec2 bor = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
+	vec2 pos = item->pos_screen + mtl + bor;
+	vec2 siz = floor(item->size * item->scale); //NOTE(delle) item->size already has margins and borders applied in eval_item_branch
 	return render_make_filledrect(vp, ip, counts, pos, siz, item->style.background_color);
 }
 
@@ -415,42 +415,42 @@ vec2i gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
-			vec2 tl = item->pos_screen + item->style.margintl;
-			vec2 br = tl+(item->size - (item->style.marginbr+item->style.margintl));
+			vec2 tl = item->pos_screen + (item->style.margintl * item->scale);
+			vec2 br = tl + ((item->size - item->style.marginbr - item->style.margintl) * item->scale);
 			vec2 tr = vec2{br.x, tl.y};
 			vec2 bl = vec2{tl.x, br.y}; 
-			f32 t = item->style.border_width;
+			f32 w = floor(item->style.border_width * item->x_scale);
+			f32 h = floor(item->style.border_width * item->y_scale);
 			u32 v = counts.x; u32 i = counts.y;
-			ip[i+ 0] = v+0; ip[i+ 1] = v+1; ip[i+ 2] = v+3; 
-			ip[i+ 3] = v+0; ip[i+ 4] = v+3; ip[i+ 5] = v+2; 
-			ip[i+ 6] = v+2; ip[i+ 7] = v+3; ip[i+ 8] = v+5; 
-			ip[i+ 9] = v+2; ip[i+10] = v+5; ip[i+11] = v+4; 
-			ip[i+12] = v+4; ip[i+13] = v+5; ip[i+14] = v+7; 
-			ip[i+15] = v+4; ip[i+16] = v+7; ip[i+17] = v+6; 
-			ip[i+18] = v+6; ip[i+19] = v+7; ip[i+20] = v+1; 
-			ip[i+21] = v+6; ip[i+22] = v+1; ip[i+23] = v+0;
+			ip[i+ 0] = v+0; ip[i+ 1] = v+1; ip[i+ 2] = v+3; //top border, bottom triangle
+			ip[i+ 3] = v+0; ip[i+ 4] = v+3; ip[i+ 5] = v+2; //top border, top triangle
+			ip[i+ 6] = v+2; ip[i+ 7] = v+3; ip[i+ 8] = v+5; //right border, left triangle
+			ip[i+ 9] = v+2; ip[i+10] = v+5; ip[i+11] = v+4; //right border, right triangle
+			ip[i+12] = v+4; ip[i+13] = v+5; ip[i+14] = v+7; //bottom border, top triangle
+			ip[i+15] = v+4; ip[i+16] = v+7; ip[i+17] = v+6; //bottom border, bottom triangle
+			ip[i+18] = v+6; ip[i+19] = v+7; ip[i+20] = v+1; //left border, right triangle
+			ip[i+21] = v+6; ip[i+22] = v+1; ip[i+23] = v+0; //left border, left triangle
 			vp[v+0].pos = tl;             vp[v+0].uv = {0,0}; vp[v+0].color = item->style.border_color.rgba;
-			vp[v+1].pos = tl+Vec2( t, t); vp[v+1].uv = {0,0}; vp[v+1].color = item->style.border_color.rgba;
+			vp[v+1].pos = tl+Vec2( w, h); vp[v+1].uv = {0,0}; vp[v+1].color = item->style.border_color.rgba;
 			vp[v+2].pos = tr;             vp[v+2].uv = {0,0}; vp[v+2].color = item->style.border_color.rgba;
-			vp[v+3].pos = tr+Vec2(-t, t); vp[v+3].uv = {0,0}; vp[v+3].color = item->style.border_color.rgba;
+			vp[v+3].pos = tr+Vec2(-w, h); vp[v+3].uv = {0,0}; vp[v+3].color = item->style.border_color.rgba;
 			vp[v+4].pos = br;             vp[v+4].uv = {0,0}; vp[v+4].color = item->style.border_color.rgba;
-			vp[v+5].pos = br+Vec2(-t,-t); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
+			vp[v+5].pos = br+Vec2(-w,-h); vp[v+5].uv = {0,0}; vp[v+5].color = item->style.border_color.rgba;
 			vp[v+6].pos = bl;             vp[v+6].uv = {0,0}; vp[v+6].color = item->style.border_color.rgba;
-			vp[v+7].pos = bl+Vec2( t,-t); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
+			vp[v+7].pos = bl+Vec2( w,-h); vp[v+7].uv = {0,0}; vp[v+7].color = item->style.border_color.rgba;
 			return {8,24};
 		}break;
 	}
 	return {0,0};
 }
 
-b32 mouse_in_rect(vec2 pos, vec2 size){
-	return Math::PointInRectangle(input_mouse_position(), pos, size);
+b32 mouse_in_item(uiItem* item){
+	return Math::PointInRectangle(input_mouse_position(), item->pos_screen, item->size * item->scale);
 }
 
 b32 ui_item_hovered(uiItem* item, b32 strict){
 	if(strict) return g_ui->hovered == item;
-	if(mouse_in_rect(item->pos_screen, item->size)) return true;
-	return false;
+	return mouse_in_item(item);
 }
 
 //@item
@@ -587,11 +587,11 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->index_arena  = memory_create_arena(g_memory->arena_heap.size / 16);
 	
 	g_ui->base = uiItem{0};
+	g_ui->base.id = STR8("base");
 	g_ui->base.file_created = STR8(__FILE__);
 	g_ui->base.line_created = __LINE__;
 	g_ui->base.style.width = DeshWindow->width;
 	g_ui->base.style.height = DeshWindow->height;
-	g_ui->base.id = STR8("base");
 	g_ui->base.style_hash = hash_style(&g_ui->base);
 	push_item(&g_ui->base);
 
@@ -680,14 +680,13 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	EvalContext contextout = {0};
 	
-	uiItem* parent = uiItemFromNode(item->node.parent); 
+	uiItem* parent = uiItemFromNode(item->node.parent);
 	
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_row);
 	
-	vec2 parent_size_padded;
 	//TODO(sushi) this can probably be cleaned up 
 	if(!hauto){
 		if(context && context->flex.flex_container && !context->flex.disprow && HasFlag(item->style.sizing, size_flex)){
@@ -790,12 +789,19 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		}
 		contextout.flex.n_ceils = contextout.flex.effective_size - floored_sum;
 	}
+
+	//// calculate item scale based on parent scale ////
+	item->scale = (parent) ? parent->scale : vec2::ONE;
+	if(item->style.x_scale) item->scale.x *= item->style.x_scale;
+	if(item->style.y_scale) item->scale.y *= item->style.y_scale;
 	
+	//// custom item evaluate ////
 	if(item->__evaluate) item->__evaluate(item);
 	
+	//// evaluate item children ////
 	vec2 cursor = item->style.margintl + item->style.paddingtl + vec2{wborder,wborder} - item->style.scroll;
 	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);
- 	u32 aeidx = 0; //index into the already evaluated array, incremented when we find one thats already been eval'd
+	u32 aeidx = 0; //index into the already evaluated array, incremented when we find one thats already been eval'd
 	u32 idx = 0;
 	while(it){
 		uiItem* child = uiItemFromNode(it);
@@ -914,6 +920,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
 	}
 	
+	//// calculate size ////
 	if(wauto){
 		item->width += item->style.padding_right;
 		item->width += item->style.margin_right;
@@ -929,11 +936,11 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	if(item->style.max_height) item->height = Min(item->style.max_height, item->height);
 	item->width  = Max(item->style.min_width,  item->width);
 	item->height = Max(item->style.min_height, item->height);
-	
-	vec2 pa = PaddedArea(item);
-	
+
+	//// calculate max scroll ////
 	item->max_scroll = Max(vec2{0,0}, cursor - PaddedArea(item));
 	
+	//// calculate content alignment ////
 	//TODO(sushi) I'm pretty sure the x part of this can be moved into the child loop above, so we dont have to do a second
 	//            pass if y isnt set
     if(item->style.content_align.x > 0 || item->style.content_align.y > 0){
@@ -944,9 +951,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		f32 padb = item->style.padding_bottom;
 		//space that children may actually occupy
         vec2 child_space = Vec2(
-								(item->width-(padr==MAX_F32?padl:padr))-padl, 
-								(item->height-(padb==MAX_F32?padt:padb))-padt
-								);
+			(item->width  - ((padr == MAX_F32) ? padl : padr)) - padl, 
+			(item->height - ((padb == MAX_F32) ? padt : padb)) - padt
+		);
 		f32 y_offset = ceil(item->style.content_align.y*(child_space.y - cursor.y));
         for_node(item->node.first_child){
             uiItem* child = uiItemFromNode(it);
@@ -959,9 +966,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				//the actual size the child occupies
 				//TODO(sushi) probably cache this
                 vec2 true_size = Vec2(
-									  child->width + (marr==MAX_F32?marl:marr) + marl,
-									  child->height + (marb==MAX_F32?mart:marb) +mart
-									  );
+					child->width + (marr==MAX_F32?marl:marr) + marl,
+					child->height + (marb==MAX_F32?mart:marb) +mart
+				);
                 child->pos_local.x = item->style.padding_left + child->style.margin_left + item->style.content_align.x * (child_space.x - true_size.x);
                 last_static_offset = child->pos_local.x - last_static_offset;
 				child->pos_local.y += y_offset;
@@ -992,7 +999,7 @@ void drag_item(uiItem* item){DPZoneScoped;
 		persist vec2 item_begin;
 		persist b32 dragging = false;
 		vec2 mouse_current = input_mouse_position();
-		if(key_pressed(Mouse_LEFT) && Math::PointInRectangle(mouse_current, item->pos_screen, item->size)){
+		if(key_pressed(Mouse_LEFT) && mouse_in_item(item)){
 			dragging = true;
 			g_ui->istate = uiISDragging;            
 			mouse_begin = mouse_current;
@@ -1029,7 +1036,7 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden)) continue;
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
-	if(Math::PointInRectangle(input_mouse_position(), item->pos_screen, item->size)){
+	if(mouse_in_item(item)){
 		uiItem* cur = item;
 		while(cur->style.hover_passthrough) cur = uiItemFromNode(cur->node.parent);
 		g_ui->hovered = cur;
@@ -1090,15 +1097,16 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		vec2 csiz = BorderedArea(item);
 		
 		scoff = Max(vec2{0,0}, Max(parent->visible_start, Min(item->pos_screen, parent->visible_start+parent->visible_size)));
-		vec2 br = Max(parent->visible_start, Min(item->pos_screen+item->size, parent->visible_start+parent->visible_size));
+		vec2 br = Max(parent->visible_start, Min(item->pos_screen + (item->size * item->scale), parent->visible_start+parent->visible_size));
 		scext = Max(vec2{0,0}, br-scoff);
 		item->visible_start =  Max(vec2{0,0}, Max(parent->visible_start, Min(cpos, parent->visible_start+parent->visible_size)));
 		br =  Max(parent->visible_start, Min(cpos+csiz, parent->visible_start+parent->visible_size));
 		
 		item->visible_size = br - item->visible_start; 
 	}else{
-		scoff = Max(vec2::ZERO, item->pos_screen); scext = Max(vec2::ZERO, Min(item->pos_screen+item->size, Vec2(DeshWindow->width,DeshWindow->height))-scoff);
-		item->visible_size = item->size;
+		scoff = Max(vec2::ZERO, item->pos_screen);
+		scext = Max(vec2::ZERO, Min(item->pos_screen + (item->size * item->scale), Vec2(DeshWindow->width,DeshWindow->height))-scoff);
+		item->visible_size = item->size * item->scale;
 		item->visible_start = item->pos_screen;
 	}
 	
@@ -1122,7 +1130,8 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		}
 	}
 	
-	vec2 pos = item->pos_screen, siz = item->size;
+	vec2 pos = item->pos_screen;
+	vec2 siz = item->size * item->scale;
     for_node(node->first_child){
         auto [cpos, csiz] = ui_recur(it);
 		if(csiz.x == -MAX_F32) continue;
@@ -1148,8 +1157,7 @@ void ui_update(){DPZoneScoped;
 		forI(g_ui->item_stack.count-1){
 			if(i==g_ui->item_stack.count-2){
 				item_error(g_ui->item_stack[i+1], "Items are still left on the item stack. Did you forget to call uiItemE? Did you mean to use uiItemM?");
-			}
-			else {
+			}else{
 				item_error(g_ui->item_stack[i+1], "");
 			}
 		}
@@ -1193,6 +1201,8 @@ void ui_update(){DPZoneScoped;
 // @slider
 
 void ui_gen_slider(uiItem* item){DPZoneScoped;
+	FixMe;
+	/*
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
@@ -1219,9 +1229,12 @@ void ui_gen_slider(uiItem* item){DPZoneScoped;
 		NotImplemented;
 	}
 	dc->counts_used = counts;
+	*/
 }
 
 void ui_slider_callback(uiItem* item){DPZoneScoped;
+	FixMe;
+	/*
 	uiSlider* data = uiGetSlider(item);
 	vec2 mp = input_mouse_position();
 	vec2 lmp = mp - item->pos_screen;
@@ -1254,6 +1267,7 @@ void ui_slider_callback(uiItem* item){DPZoneScoped;
 		case 1:{NotImplemented;}break;
 		case 2:{NotImplemented;}break;
 	}
+	*/
 }
 
 uiItem* ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
@@ -1335,6 +1349,8 @@ uiItem* ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file
 // @checkbox
 
 void ui_gen_checkbox(uiItem* item){
+	FixMe;
+	/*
 	uiCheckbox* data = uiGetCheckbox(item);
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
@@ -1356,12 +1372,16 @@ void ui_gen_checkbox(uiItem* item){
 	}
 	
 	dc->counts_used = counts;
+	*/
 }
 
 void ui_checkbox_callback(uiItem* item){
+	FixMe;
+	/*
 	uiCheckbox* data = uiGetCheckbox(item);
 	*data->var = !*data->var;
 	item->dirty = 1;
+	*/
 }
 
 uiItem* ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
@@ -1851,11 +1871,6 @@ void ui_debug_callback(uiItem* item){
 }
 
 void ui_debug_panel_callback(uiItem* item){
-	if(Math::PointInRectangle(
-		input_mouse_position(),
-		item->pos_screen + item->size.xComp() - Vec2(10,0), item->size.yComp() + Vec2(10, 0))){
-		
-	}
 	
 }
 
@@ -2107,6 +2122,33 @@ void ui_demo(){
 				c2->style.background_color = Color_Blue;
 				c2->style.width = 1;
 				c2->id = STR8("c2");
+			}uiItemE();
+		}uiItemE();
+	}
+	{//test scaling
+		uiItem* test = uiItemB();{
+			test->style.size = {200, 200};
+			test->style.positioning = pos_draggable_absolute;
+			test->style.background_color = Color_White;
+			test->style.paddingtl = {10,10};
+			test->style.paddingbr = {10,10};
+			
+			uiItem* test2 = uiItemB();{
+				test2->style.positioning = pos_absolute;
+				test2->style.pos = {50, 50};
+				test2->style.size = {48, 48};
+				test2->style.border_style = border_solid;
+				test2->style.border_color = Color_Black;
+				test2->style.border_width = 1;
+				test2->style.scale = {1.5,1.5};
+				test2->style.background_color = Color_Green;
+			}uiItemE();
+			
+			uiItem* test3 = uiItemB();{
+				test3->style.positioning = pos_absolute;
+				test3->style.pos = {50, 50};
+				test3->style.size = {50, 50};
+				test3->style.background_color = Color_Blue;
 			}uiItemE();
 		}uiItemE();
 	}
