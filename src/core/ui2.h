@@ -1137,6 +1137,8 @@ struct uiContext{
 extern uiContext* g_ui;
 
 void ui_debug();
+
+//Creates the demo window (or destroys if already created)
 void ui_demo();
 
 #endif //DESHI_UI2_H

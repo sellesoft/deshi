@@ -2085,7 +2085,139 @@ void ui_debug(){
 
 */
 
+local uiItem* deshi__ui_demo_window = 0;
 void ui_demo(){
+	if(deshi__ui_demo_window){
+		uiItemR(deshi__ui_demo_window);
+		deshi__ui_demo_window = 0;
+		return;
+	}
+	
+	deshi__ui_demo_window = uiItemB();{
+		uiItem* window = deshi__ui_demo_window;
+		window->id = STR8("demo.window");
+		window->style.positioning = pos_draggable_absolute;
+		//window->style.sizing = size_resizeable;  //TODO requires item resizing
+		window->style.size = {598/*pixels*/,298/*pixels*/}; //NOTE because border_width = 1
+		window->style.min_size = {25/*pixels*/,25/*pixels*/};
+		window->style.border_style = border_solid;
+		window->style.border_color = Color_DarkCyan;
+		window->style.border_width = 1/*pixels*/;
+		window->style.font = assets_font_create_from_file(STR8("gohufont-uni-14.ttf"), 14);
+		window->style.font_height = 14/*pixels*/;
+		window->style.text_color = Color_White;
+		window->style.focus = true;
+		window->style.display = display_column | display_flex;
+		
+		uiItem* window_decoration = uiItemB();{
+			window_decoration->id = STR8("demo.window_decoration");
+			window_decoration->style.sizing = size_percent_x;
+			window_decoration->style.size = {100/*percent*/,18/*pixels*/};
+			window_decoration->style.min_size = {50/*pixels*/,18/*pixels*/};
+			window_decoration->style.max_size = {0,18/*pixels*/};
+			window_decoration->style.padding_left = 5/*pixels*/;
+			window_decoration->style.background_color = Color_DarkCyan;
+			window_decoration->style.content_align = {0,.5f};
+			
+			uiItem* title = uiTextML("Demo Window");{
+				title->id = STR8("demo.window_decoration.title");
+				title->style.text_color = Color_LightGrey;
+			}
+			
+			//TODO maximize button
+			
+			//TODO close button
+		}uiItemE();//window_decoration
+		
+		uiItem* window_content = uiItemB();{
+			window_content->id = STR8("demo.window_content");
+			window_content->style.sizing = size_flex;
+			window_content->style.size = {1/*ratio of 1*/,1/*ratio of 1*/};
+			window_content->style.background_color = Color_VeryDarkCyan;
+			window_content->style.display = display_flex | display_row;
+			
+			persist uiStyle preview_style{};
+			
+			uiItem* item_panel = uiItemB();{
+				item_panel->id = STR8("demo.window_content.item_panel");
+				item_panel->style.sizing = size_flex/*| size_resizeable_x*/; //TODO requires item resizing
+				item_panel->style.size = {1/*ratio of 3*/,1/*ratio of 1*/};
+				item_panel->style.border_style = border_solid; //TODO remove this once separators are added
+				item_panel->style.border_color = Color_DarkCyan;
+				item_panel->style.border_width = 1/*pixels*/;
+				
+				uiItem* item_tree = uiItemB();{
+					item_tree->id = STR8("demo.window_content.item_panel.item_tree");
+					item_tree->style.sizing = size_flex/*| size_resizeable_y*/; //TODO requires item resizing
+					item_tree->style.size = {1/*ratio of 1*/,1/*ratio of 3*/};
+					item_tree->style.border_style = border_solid; //TODO remove this once separators are added
+					item_tree->style.border_color = Color_DarkCyan;
+					item_tree->style.border_width = 1/*pixels*/;
+					
+					//TODO add item button
+					//TODO add text button
+					//TODO remove item button
+					//TODO item tree
+				}uiItemE();//item_tree
+				
+				//uiItem* item_panel_separator = uiSeparator(1/*pixels*/);  //TODO requires separator widget
+				//item_panel_separator->id = STR8("demo.window_content.item_panel.separator");
+				//item_panel_separator->style.background_color = Color_DarkCyan;
+				//item_panel_separator->style.positioning = pos_draggable_relative;
+				
+				uiItem* item_settings = uiItemB();{
+					item_settings->id = STR8("demo.window_content.item_panel.item_settings");
+					item_settings->style.sizing = size_flex/*| size_resizeable_y*/; //TODO requires item resizing //NOTE(delle) resizeable here in addition to item_tree for extended resize hover region
+					item_settings->style.size = {1/*ratio of 1*/,2/*ratio of 3*/};
+					item_settings->style.border_style = border_solid; //TODO remove this once separators are added
+					item_settings->style.border_color = Color_DarkCyan;
+					item_settings->style.border_width = 1/*pixels*/;
+					
+					//TODO positioning  combobox
+					//TODO anchor  combobox
+					//TODO sizing  radio
+					//TODO position  input_vec2
+					//TODO size  input_vec2
+					//TODO min_size  input_vec2
+					//TODO max_size  input_vec2
+					//TODO margin  input_vec4
+					//TODO padding  input_vec4
+					//TODO scale  input_vec2
+					//TODO scroll  input_vec2
+					//TODO border_style  combobox
+					//TODO border_color  input_color/color dialog
+					//TODO border_width  slider
+					//TODO font  input_text
+					//TODO font_height  input_number
+					//TODO text_wrap  combobox
+					//TODO text_color  input_color/color dialog
+					//TODO tab_spaces  input_number
+					//TODO focus  checkbox
+					//TODO display  radio
+					//TODO overflow  combobox
+					//TODO content_align  input_vec2
+					//TODO hover_passthrough  checkbox
+				}uiItemE();//item_settings
+			}uiItemE();//item_panel
+			
+			//uiItem* window_content_separator = uiSeparator(1/*pixels*/);  //TODO requires separator widget
+			//window_content_separator->id = STR8("demo.window_content.item_panel.separator");
+			//window_content_separator->style.background_color = Color_DarkCyan;
+			//window_content_separator->style.positioning = pos_draggable_relative;
+			
+			uiItem* item_preview = uiItemB();{
+				item_preview->id = STR8("demo.window_content.item_preview");
+				item_preview->style.sizing = size_flex/*| size_resizeable_x*/; //TODO requires item resizing //NOTE(delle) resizeable here in addition to item_panel for extended resize hover region
+				item_preview->style.size = {2/*ratio of 3*/,1/*ratio of 1*/};
+				item_preview->style.border_style = border_solid;
+				item_preview->style.border_color = Color_DarkCyan;
+				item_preview->style.border_width = 1/*pixels*/; //TODO remove this once separators are added
+				
+				//TODO requires dynamically-added items
+			}uiItemE();//item_preview
+		}uiItemE();//window_content
+	}uiItemE();//window
+	/*
 	{//test sizer
 		uiItem* container = uiItemB();{
 			container->style.size = {200, 100};
@@ -2125,6 +2257,8 @@ void ui_demo(){
 			}uiItemE();
 		}uiItemE();
 	}
+	*/
+	/*
 	{//test scaling
 		uiItem* test = uiItemB();{
 			test->style.size = {200, 200};
@@ -2152,4 +2286,5 @@ void ui_demo(){
 			}uiItemE();
 		}uiItemE();
 	}
+	*/
 }

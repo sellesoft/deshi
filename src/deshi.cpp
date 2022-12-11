@@ -156,7 +156,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,*  ,22/08/09,Tweak]   reimplement slider and checkbox
 [!!!,** ,22/08/09,Feature] add tabs widget
 [!! ,** ,22/08/09,Feature] add tables widget
-[!  ,*  ,22/08/09,Feature] add combo widget
+[!  ,*  ,22/08/09,Feature] add combo widget (requires z-layering)
 [!  ,** ,22/08/09,Feature] add tree widget
 [!  ,*  ,22/08/09,Feature] add spinner widget
 [0  ,*  ,22/08/09,Feature] add radio widget
@@ -167,6 +167,16 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,** ,22/09/04,Bug]     there seems to be a bug with drawcmd removal when reallocating text drawinfo. 
     it triggers the assert that checks that the drawcmd being removed does not have the same offset as one that is already removed
     this check may just be invalid. this happens when clicking on text sometimes.
+[!!!,***,22/12/11,Feature] add z-layering (siblings could maybe be sorted so that higher z-level is last)
+[!!!,** ,22/12/11,Feature] add side-specific border styling (left, right, top, bottom)
+[!! ,** ,22/12/11,Feature] add the ability to add child items after ending an item (dynamically added items)
+[!! ,** ,22/12/11,Feature] add texture support (non-widget like text might be?)
+[!! ,** ,22/12/11,Feature] add resizer widget
+[!!!,*  ,22/12/11,Feature] add separator widget (with resizeability)
+[!  ,*  ,22/12/11,Feature] add window decorator widget (title, maximize/minimize button?, expand/collapse button?, close button)
+[!  ,*  ,22/12/11,Feature] add menu bar and menu widgets (requires z-layering)
+[!! ,*  ,22/12/11,Feature] add more input text widget flavours (input_number, input_vec2, input_vec3, input_vec4, input_color)
+[!  ,*  ,22/12/11,Feature] add button widget (can be done already but add for ease of use, text and image flavours)
 
 `Window`
 --------
