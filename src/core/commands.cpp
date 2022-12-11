@@ -515,8 +515,12 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
 	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window"){
-		ToggleBool(show_metrics); //show_metrics defined in ui2.cpp
+		ToggleBool(show_metrics); //show_metrics defined in ui.cpp
 	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
+
+	DESHI_CMD_START(show_ui_demo, "Toggles the visibility of the UI demo window"){
+		ui_demo();
+	}DESHI_CMD_END_NO_ARGS(show_ui_demo);
 	
 	DESHI_CMD_START(quit, "Exits the application"){
 		platform_exit();

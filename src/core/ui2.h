@@ -89,18 +89,18 @@ Implement a system for trimming down how much we have to do to check every item.
             normally been placed with pos_static. This removes the item from the normal flow, 
             but items added after it will be placed as if the item was where it would have been. 
 
-        pos_absolute  |  absolute
-            The position values will position the item relative to where its parent will
-            be placed. If its parent's position is dynamically determined then it finds
-            the closest ancestor whose position is static and positions relative to it.
-            This removes the item from the normal flow.
+		pos_absolute  |  absolute
+			The position values will position the item relative to where its parent will
+			be placed. If its parent's position is dynamically determined then it finds
+			the closest ancestor whose position is static and positions relative to it.
+			This removes the item from the normal flow.
 
-        pos_fixed  |  fixed
-            The item is positioned relative to the viewport and does not move.
+		pos_fixed  |  fixed
+			The item is positioned relative to the viewport and does not move.
 
-        pos_sticky  |  sticy
-            The item is positioned just as it would be in relative, but if the item
-            were to go out of view by the user scrolling the item will stick to the edge
+		pos_sticky  |  sticy
+			The item is positioned just as it would be in relative, but if the item
+			were to go out of view by the user scrolling the item will stick to the edge
 
 		pos_draggable_relative | draggable_relative
 			The item is positioned the same as relative, but its position may be changed
@@ -117,11 +117,11 @@ Implement a system for trimming down how much we have to do to check every item.
 ------------------------------------------------------------------------------------------------------------
 *   sizing 
 	---
-    Determines how an item is sized. This is a flagged value, meaning it can take on multiple of these properties. 
+	Determines how an item is sized. This is a flagged value, meaning it can take on multiple of these properties. 
 
 	Percent only applies when the parent's sizing is not size_auto, otherwise the item will fallback to normal sizing.
 
-    Since structs default to 0, this means an item's size is also 0 both ways, so an item must always be either given 
+	Since structs default to 0, this means an item's size is also 0 both ways, so an item must always be either given 
 	an explicit size, or have it's sizing set to size_auto to be able to see it and its children! 
 
 -   Values:
@@ -156,13 +156,14 @@ Implement a system for trimming down how much we have to do to check every item.
 
 ------------------------------------------------------------------------------------------------------------
 *   size, width, height
+	---
 	Determines the size of the item. Note that text is not affected by this property, and its size is always
 	as it appears on the screen. If you want to change text size use font_height.
 
-    This is the size of the area in which items can be placed minus padding. Note that if margins or borders are 
-    specified, this increases the total area an item takes up visually.
+	This is the size of the area in which items can be placed minus padding. Note that if margins or borders are 
+	specified, this increases the total area an item takes up visually.
 
-    If sizing is set to size_flex, then one of these values represents a flux ratio. If display is set to display_vertical, 
+	If sizing is set to size_flex, then one of these values represents a flux ratio. If display is set to display_vertical, 
 	then height is the ratio of this item's height to any other flex item in the container's height, and similarly for 
 	display_horizontal and width. See display for more information.
 
@@ -170,6 +171,34 @@ Implement a system for trimming down how much we have to do to check every item.
 		uiStyle style;
 		style.width = 30; // width of 30 pixels
 		style.height = 20; // height of 20 pixels
+
+------------------------------------------------------------------------------------------------------------
+*   min_width, min_height, max_width, max_height
+	---
+	Determins the minimum and maximum size of the item. The minimum and maximum are applied to the the final
+	size of the item including: padding, border, and margin.
+
+	Note, max_width overrides width, and min_width overrides max_width. Same with height.
+
+-   Defaults:
+		max_width and max_height both default to 0, meaning they are not applied.
+		min_width and min_height both default to 0.
+
+-   Example:
+		in code:
+			uiStyle style;
+			style.size = Vec2(10, 6);
+			style.margin = Vec4(1, 0, 1, 0);
+			style.border_width = 1;
+			style.max_width = 10; //final content width will be 6
+			style.min_height = 10; //final content height will be 10
+		in string:
+			size: 10px 6px;
+			margin: 1px 0px 1px 0px;
+			border_width: 1px;
+			max_width: 10px; //content width will be 6px, overall width will be 10px
+			min_height: 10px; //content height will be 10px, overall height will be 10px
+
 
 ------------------------------------------------------------------------------------------------------------
 *   margin, margintl, marginbr, margin_top, margin_bottom, margin_left, margin_right
@@ -187,14 +216,15 @@ Implement a system for trimming down how much we have to do to check every item.
 	 |    ┌------------------┑    |
 	 |━━━━|                  |    |
 	 |  | |    child item    |    |
-     |  | |                  |    |
-     |  | |                  |    |
-     |  | |                  |    |
+	 |  | |                  |    |
+	 |  | |                  |    |
+	 |  | |                  |    |
 	 |  | └------------------┙    |
 	 |  |                         |
 	 └--|-------------------------┙
 		|
 	   margin_left
+
 
 ------------------------------------------------------------------------------------------------------------
 *   padding, paddingtl, paddingbr, padding_top, padding_bottom, padding_left, padding_right
@@ -221,6 +251,43 @@ Implement a system for trimming down how much we have to do to check every item.
 	 └------|---------------------┙
 			|
 			padding_left
+
+
+------------------------------------------------------------------------------------------------------------
+*   scale, x_scale, y_scale
+	---
+	Scales an item's size, padding, border, margin, and children items.
+	TODO(delle) scale item parts individually, currently scales everything at the end (size{48,48},border{1,1,1,1} results in total size of {75,75} when it should be {74,74})
+
+-   Notes:
+	   y_scale affects text.  TODO(delle) support x_scale on text
+	   scale ignores minimum or maximum size.  TODO(delle) respect min and max size when scaling
+	   scale on children items is scaled before application by its parent's scale.
+	   scale applies from the anchor, not from the center.
+	   User is responsible for handling scale in custom __generate functions.
+
+-   Dev Notes:
+	  scale is applied during the generation step of UI.
+	  Sizes after scaling should be floored for pixel consistency.
+
+-   Defaults:
+		x_scale and y_scale both default to 0, meaning don't scale
+
+-   Example:
+		in code:
+			uiStyle style;
+			style.size = Vec2(20, 20);
+			style.max_height = 25; //final total height will 32px
+			style.border_style = border_solid;
+			style.border_color = Color_Black;
+			style.border_width = 1; //final border width will be 1px
+			style.scale = Vec2(1.5, 1.5); //final total width will be 32px, content width will be 30px
+		in string:
+			size: 20px 20px;
+			max_height: 25px; //final total height will 32px
+			border: solid 1px; //final border width will be 1px
+			scale: 1.5 1.5; //final total width will be 32px
+
 
 ------------------------------------------------------------------------------------------------------------
 *   scroll, scrollx, scrolly
@@ -302,21 +369,20 @@ TODO(sushi) example
 	Determines how items that go out of their parent's bounds are displayed.
 
 -  Values:
-	
-	overflow_scroll (default)
-		When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
-	
-	overflow_scroll_hidden | scroll_hidden
-		Same as overflow_scroll, but scrollbars are not shown
-	
-	overflow_hidden | hidden
-		The overflowing items are cut off, but the user cannot scroll.
-		In this case you can still manually change the scroll value on the item it just 
-		prevents the user from scrolling the item. Good for scrolling things you
-		dont want the user to mess with.
-	
-	overflow_visible | visible
-		The overflowing items are shown and there is no scrolling.
+		overflow_scroll (default)
+			When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
+
+		overflow_scroll_hidden | scroll_hidden
+			Same as overflow_scroll, but scrollbars are not shown
+
+		overflow_hidden | hidden
+			The overflowing items are cut off, but the user cannot scroll.
+			In this case you can still manually change the scroll value on the item it just 
+			prevents the user from scrolling the item. Good for scrolling things you
+			dont want the user to mess with.
+
+		overflow_visible | visible
+			The overflowing items are shown and there is no scrolling.
 
 ------------------------------------------------------------------------------------------------------------
 *   focus
@@ -325,7 +391,9 @@ TODO(sushi) example
 
 -   Catches:
 		When using this on an item whose positioning is not fixed, it will affect the positioning 
-		of items in the same item as it.
+		of items in the same item as it.. This is because focusing an item will make it the last
+		child of the parent, so that it is rendered on top of its siblings.
+
 
 ------------------------------------------------------------------------------------------------------------
 *   display
@@ -368,6 +436,14 @@ TODO(sushi) example
 		every single time I make an item, display_vertical is equal to 0. This sort of makes it so that the first bit
 		is a boolean determining if we are drawing a row or column. This is beneficial because it enforces
 		row and column being mutually exclusive.
+
+------------------------------------------------------------------------------------------------------------
+*   hover_passthrough
+	---
+	Flag that determines if an item should pass its hover status to its parent.
+
+-   Defaults:
+	 	Defaults to false.
 */
 
 
@@ -443,7 +519,7 @@ struct uiKeybinds{
 
 			KeyCode up;
 			KeyCode down;
-    		
+			
 			//KeyCode anchor;
 		}cursor, select;
 
@@ -500,9 +576,9 @@ enum{
 	size_auto_y    = 1 << 0,
 	size_auto_x    = 1 << 1,
 	size_auto      = size_auto_x | size_auto_y,
-    size_percent_x = 1 << 2,
-    size_percent_y = 1 << 3,
-    size_percent   = size_percent_x | size_percent_y,
+	size_percent_x = 1 << 2,
+	size_percent_y = 1 << 3,
+	size_percent   = size_percent_x | size_percent_y,
 	size_square    = 1 << 4,
 	size_flex      = 1 << 5,
 
@@ -536,7 +612,7 @@ struct Font;
 external struct uiStyle{
 	Type positioning; 
 	Type anchor;
-    Type sizing;
+	Type sizing;
 	union{
 		struct{f32 x, y;};
 		vec2 pos;
@@ -580,6 +656,10 @@ external struct uiStyle{
 		};
 	};
 	union{
+		struct{f32 x_scale, y_scale;};
+		vec2 scale;
+	};
+	union{
 		struct{f32 scrx, scry;};
 		vec2 scroll;
 	};
@@ -618,22 +698,21 @@ struct uiItem{
 
 	vec2 pos_local;  // position relative to parent
 	vec2 pos_screen; // position relative to screen
-	vec2 pos_client; // position that the item's content starts at relative to the item's position
 
-	union{ // size that the item visually takes up on the screen
+	union{ // size that the item visually takes up on the screen (before scaling)
 		struct{ f32 width, height; };
 		vec2 size;
 	};
-	union{ // size that content occupies
-		struct{ f32 cwidth, cheight; };
-		vec2 csize;
+	union{ // scale after applying parent scale
+		struct{ f32 x_scale, y_scale; };
+		vec2 scale;
 	};
 	vec2 max_scroll;
 
-    //screen position and size of the bounding box containing all of an items
-    //children, this is used to optimize things later, such as finding the hovered item
-    vec2 children_bbx_pos;
-    vec2 children_bbx_size;
+	//screen position and size of the bounding box containing all of an items
+	//children, this is used to optimize things later, such as finding the hovered item
+	vec2 children_bbx_pos;
+	vec2 children_bbx_size;
 
 	//the visible size of the item after being cut by overflow
 	vec2 visible_start;
@@ -704,6 +783,8 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	seed ^= *(u32*)&s->padding_top;     seed *= 16777619;
 	seed ^= *(u32*)&s->padding_bottom;  seed *= 16777619;
 	seed ^= *(u32*)&s->padding_right;   seed *= 16777619;
+	seed ^= *(u32*)&s->x_scale;         seed *= 16777619;
+	seed ^= *(u32*)&s->y_scale;         seed *= 16777619;
 	seed ^= *(u32*)&s->content_align.x; seed *= 16777619;
 	seed ^= *(u32*)&s->content_align.y; seed *= 16777619;
 	seed ^= (u64)s->font;               seed *= 16777619;
@@ -989,6 +1070,8 @@ struct uiContext{
 extern uiContext* g_ui;
 
 void ui_debug();
+
+//Creates the demo window (or destroys if already created)
 void ui_demo();
 
 #endif //DESHI_UI2_H
