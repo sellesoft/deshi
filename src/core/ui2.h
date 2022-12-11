@@ -84,23 +84,23 @@ Implement a system for trimming down how much we have to do to check every item.
 			The first item placed in this manner will just be positioned at 0,0 plus its margin and borders,
 			then items placed after it are placed below it, as it would be in HTML or ImGui.
 
-		pos_relative  |  relative
-			The position values will position the item relative to where it would have 
-			normally been placed. This removes the item from the normal flow, but items
-			added after it will be placed as if the item was where it would have been
+        pos_relative  |  relative
+            The position values will position the item relative to where it would have 
+            normally been placedth pos_static. This removes the item from the normal flow, 
+            but items added after it will be placed as if the item was where it would have been. 
 
         pos_absolute  |  absolute
-			The position values will position the item relative to where its parent will
+            The position values will position the item relative to where its parent will
             be placed. If its parent's position is dynamically determined then it finds
-			the closest ancestor whose position is static and positions relative to it.
-			This removes the item from the normal flow.
+            the closest ancestor whose position is static and positions relative to it.
+            This removes the item from the normal flow.
 
-		pos_fixed  |  fixed
-			The item is positioned relative to the viewport and does not move.
+        pos_fixed  |  fixed
+            The item is positioned relative to the viewport and does not move.
 
-		pos_sticky  |  sticy
-			The item is positioned just as it would be in relative, but if the item
-			were to go out of view by the user scrolling the item will stick to the edge
+        pos_sticky  |  sticy
+            The item is positioned just as it would be in relative, but if the item
+            were to go out of view by the user scrolling the item will stick to the edge
 
 		pos_draggable_relative | draggable_relative
 			The item is positioned the same as relative, but its position may be changed
@@ -117,17 +117,25 @@ Implement a system for trimming down how much we have to do to check every item.
 ------------------------------------------------------------------------------------------------------------
 *   sizing 
 	---
-    Determines how an item is sized. This is a flagged value, meaning it can take on multiple of these
-	properties. For example setting 'size_fill_x | size_percent_x' will tell the renderer to interpret
-	the width as a percentage of the remaining space of the item's parent's width.
+    Determines how an item is sized. This is a flagged value, meaning it can take on multiple of these properties. 
 
-	Percent and fill only apply when the parent's size has been explicitly set either by sizing it relative to
-	it's parent or giving it size values. If its parent is not explicitly sized then the item fallsback 
-	to automatic sizing and an error is issued.
+	Percent only applies when the parent's sizing is not size_auto, otherwise the item will fallback to normal sizing.
+
+    Since structs default to 0, this means an item's size is also 0 both ways, so an item must always be either given 
+	an explicit size, or have it's sizing set to size_auto to be able to see it and its children! 
 
 -   Values:
 		size_normal (default)
 			The item's width and height will be set to its style 'size' property.
+
+		size_auto_x
+			The item will automatically set its width to contain all of its children.
+
+		size_auto_y
+			The item will automatically set its height to contain all of its children.
+		
+		size_auto
+			Combination of size_auto_x and size_auto_y
 	
 		size_percent_x 
 			Sets the items width as a percentage of its parents width.
@@ -136,7 +144,7 @@ Implement a system for trimming down how much we have to do to check every item.
 			Sets the items height as a percentage of its parent's height.
 
 		size_percent   
-			Combination of percentx and percenty.
+			Combination of size_percent_x and size_percent_y.
 
 		size_square
 			Keeps the item at a 1:1 aspect ratio. This requires that either height or width are set to auto, while
@@ -147,35 +155,6 @@ Implement a system for trimming down how much we have to do to check every item.
 			(depending on if display is set to row or column) to be a ratio to other flex items in the container.
 
 ------------------------------------------------------------------------------------------------------------
-*   top,left,bottom,right
-	---
-	Determines where a uiItem is positioned according to it's 'positioning' value. Percents are only supported
-	in string styling, by suffixing the literal with a %. Note that if bottom or right are used, they overrule
-	top or left respectively.
-
-	Note that if an item wants to use bottom or right, their parent's size must not be automatically determined.
-	TODO(sushi) look into a way around this
-
--   Defaults:
-		top and left default to 0, while bottom and right default to MAX_S32, indicating to use top or left instead.
-
--   Shorthands:
-		tl - a vec2i representing the x and y coords of the top left corner of the item
-		br - a vec2i representing the x and y coords of the bottom right corner of the item
-	
--   Example:
-		in code:
-			uiStyle style;
-			style.positioning = pos_relative; 
-			style.top = 10; //sets the item's position to be 10 pixels below 
-		in string:
-			positioning: static;
-			top: 10; 
-			////
-			positioning: relative;
-			lt: 10% 15%; //sets the item's left edge to be 10% of its parents width from its parent left edge and 15% of its parent's height from its parent's top edge
-
-------------------------------------------------------------------------------------------------------------
 *   size, width, height
 	Determines the size of the item. Note that text is not affected by this property, and its size is always
 	as it appears on the screen. If you want to change text size use font_height.
@@ -183,62 +162,51 @@ Implement a system for trimming down how much we have to do to check every item.
     This is the size of the area in which items can be placed minus padding. Note that if margins or borders are 
     specified, this increases the total area an item takes up visually.
 
--   Defaults:
-		width and height both default to size_auto.
+    If sizing is set to size_flex, then one of these values represents a flux ratio. If display is set to display_vertical, 
+	then height is the ratio of this item's height to any other flex item in the container's height, and similarly for 
+	display_horizontal and width. See display for more information.
 
 -   Example:
-		in code:
-			uiStyle style;
-			style.width = size_fill; //will fill remaining width of parent
-			style.height = 20; //height 20 pixels
-		in string:
-			width: auto; //size based on content
-			height: 20%; //size 20% of parent's width
-			width: fill; //fills remaining width of parent.
-
+		uiStyle style;
+		style.width = 30; // width of 30 pixels
+		style.height = 20; // height of 20 pixels
 
 ------------------------------------------------------------------------------------------------------------
-*   margin, margin_top, margin_bottom, margin_left, margin_right
+*   margin, margintl, marginbr, margin_top, margin_bottom, margin_left, margin_right
 	---
-	Determines the spacing between a child's edges and its parents edges. Percents are only supported in
-	string styling. Note that if bottom or right are used, they overrule top or left respectively.
+	Determines the spacing between a child's edges and its parents edges. 
+	
+	margin is a vec4 that represents all sides, and so can be used to set all values on a single line 
+		
+		margin = {margin_top, margin_left, margin_bottom, margin_right};
+
+	margintl is margin_top and margin_left, and marginbr is similar.
 
 	 ┌----------------------------┑
 	 |     |─────────────────────────── margin_top
 	 |    ┌------------------┑    |
 	 |━━━━|                  |    |
 	 |  | |    child item    |    |
-	 |  | |                  |    |
-	 |  | |                  |    |
-	 |  | |                  |    |
+     |  | |                  |    |
+     |  | |                  |    |
+     |  | |                  |    |
 	 |  | └------------------┙    |
 	 |  |                         |
 	 └--|-------------------------┙
 		|
 	   margin_left
 
--   Defaults:
-		margin_top and margin_left default to 0, while margin_bottom and margin_right default to MAX_S32
-		MAXP_S32 just indicates to the renderer that it should use the same value as the other side
-
--   Shorthands:
-		margin sets margin_left and margin_top
-
--   Example:
-		in code:
-			uiStyle style;
-			style.margin_top = 10;
-		in string:
-			margin: 10px 10%;
-
--   Behavoir:
-		Margins do not cause items to push away their siblings, a margin for an item just 
-
 ------------------------------------------------------------------------------------------------------------
-*   padding, padding_top, padding_bottom, padding_left, padding_right
+*   padding, paddingtl, paddingbr, padding_top, padding_bottom, padding_left, padding_right
 	---
-	Determines the spacing between an item's edges and its content's edges. Percents are only supported in
-	string styling. The value is interpretted as a 
+	Determines the spacing between an item's edges and its content's edges. 
+
+	padding is a vec4 that represents all sides, so it can be used to set all values on a single line
+
+		padding = {padding_top, padding_left, padding_bottom, padding_right};
+
+	paddingtl is padding_top and padding_left, and paddingbr is similar.
+
 
 	 ┌----------------------------┑
 	 |                            |
@@ -253,21 +221,6 @@ Implement a system for trimming down how much we have to do to check every item.
 	 └------|---------------------┙
 			|
 			padding_left
-
--   Defaults:
-		padding_top and padding_left default to 0, while padding_bottom and padding_right default to MAX_S32
-		MAX_S32 just indicates to the renderer that it should use the same value as the other side
-
--   Shorthands:
-		padding sets padding_left and padding_top
-
--   Example:
-		in code:
-			uiStyle style;
-			style.padding_left = 10;
-			style.padding_bottom = 15;
-		in string:
-			padding: 20; //sets both padding_left and padding_top to 20 pixels;
 
 ------------------------------------------------------------------------------------------------------------
 *   scroll, scrollx, scrolly
@@ -306,18 +259,10 @@ TODO(sushi) example
 ------------------------------------------------------------------------------------------------------------
 *   font
 	---
-	Determines the font to use when rendering text. In code this takes a Font* while in string this takes the
-	name of a font file stored in data/fonts.
+	Determines the font to use when rendering text. Being a text property, this property is inherited from 
+	the item's parent if another style is not provided at creation.
 
--   Defaults:
-		By default the font used is gohudont-11.bdf which should ship with deshi.
-
--   Example:
-		in code:
-			uiStyle style;
-			style.font = Storage::CreateFontFromFile("Terminus.ttf").second;
-		in string:
-			font: Terminus.ttf;
+TODO(sushi) example
 
 ------------------------------------------------------------------------------------------------------------
 *   font_height
@@ -325,23 +270,12 @@ TODO(sushi) example
 	Determines the visible height in pixels of rendered text. Note that this does not have to be the same height
 	the font was loaded at, though it may not render as pretty if it isnt.
 
--   Defaults:
-		Defaults to 11, the height of the default loaded font.
-
--   Example:
-		in code:
-			uiStyle style; 
-			style.font_height = 200;
-		in string:
-			font_height: 200;
+TODO(sushi) example
 
 ------------------------------------------------------------------------------------------------------------
 *   background_color
 	---
-	Determines the background color of a uiItem. Note that this property does not apply to all items.
-
--   Defaults:
-		Defaults to (0,0,0,0)
+	Determines the background color of a uiItem. Custom items don't have to implement this and may not.
 
 ------------------------------------------------------------------------------------------------------------
 *   border_style
@@ -353,7 +287,7 @@ TODO(sushi) example
 ------------------------------------------------------------------------------------------------------------
 *   border_width
 	---
-	Determines the width of a uiItem's border. This has no affect if border style is not set.
+	Determines the width of a uiItem's border. This has no affect if border_style is not set.
 
 ------------------------------------------------------------------------------------------------------------
 *   text_color
@@ -389,26 +323,23 @@ TODO(sushi) example
 	---
 	Flag that determines if an item should focus over its siblings when clicked by the mouse.
 
--   Defaults:
-	 	Defaults to false.
-
 -   Catches:
-		When using this on an item whose positioning is not fixed, absolute you must remember that
-		it will affect the positioing of items around it.
+		When using this on an item whose positioning is not fixed, it will affect the positioning 
+		of items in the same item as it.
 
 ------------------------------------------------------------------------------------------------------------
 *   display
 	---
 	Determines how to display an item's children. This is a flagged value, meaning it can take on several
-	different values. For example using 'display_column | display_reverse' will display children in a column
+	different values. For example using 'display_vertical | display_reverse' will display children in a column
 	but in the reverse order that they were added.
 
 -	Values:
-		display_column (default)
-			Displays children from top to bottom. This is mutually exclusive with display_row.
+		display_vertical (default)
+			Displays children from top to bottom. This is mutually exclusive with display_horizontal.
 		
-		display_row
-			Displays children from left to right. This is mutually exclusive with display_column.
+		display_horizontal
+			Displays children from left to right. This is mutually exclusive with display_vertical.
 
 		display_flex 
 			Sets the item to act as a flex container. This makes the container able to manually set the size
@@ -424,7 +355,7 @@ TODO(sushi) example
 			flex will size its items around it. (TODO(sushi) flex demo) See the flex demo for examples.
 		    
 		display_reverse
-			Displays the containers items in reverse order, eg with display_column it will display items from 
+			Displays the containers items in reverse order, eg with display_horizontal it will display items from 
 			right to left. Not from the right side of the container to the left though, this just specifies to
 			draw items in the reverse order they were added. If you want to draw items from the right side consider using
 			anchors or content align.
@@ -434,7 +365,7 @@ TODO(sushi) example
 
 -	Technical:
 		Since we require uiStyle's default to be 0, and I dont want to explicitly set display to column
-		every single time I make an item, display_column is equal to 0. This sort of makes it so that the first bit
+		every single time I make an item, display_vertical is equal to 0. This sort of makes it so that the first bit
 		is a boolean determining if we are drawing a row or column. This is beneficial because it enforces
 		row and column being mutually exclusive.
 */
@@ -587,8 +518,8 @@ enum{
 	text_wrap_char, 
 	text_wrap_word,
 
-	display_column      = 0,
-	display_row         = 1 << 0,
+	display_vertical    = 0,
+	display_horizontal  = 1 << 0,
 	display_flex        = 1 << 1,
 	display_reverse     = 1 << 2,
 	display_hidden      = 1 << 3,
@@ -731,6 +662,11 @@ struct uiItem{
 	//indicates if the item has been cached or not.
 	//this only applies to immediate mode items 	
 	b32 cached;
+
+	struct{
+		u32 evals;
+		u32 draws;
+	}debug_frame_stats;
 	
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };

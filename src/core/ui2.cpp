@@ -55,7 +55,6 @@
 			ui_demo() -> void 
 */
 
-
 //---------------------------------------------------------------------------------------------------------------------
 // @memory
 
@@ -639,6 +638,10 @@ TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
 }
 
 void draw_item_branch(uiItem* item){DPZoneScoped;
+	if(HasFlag(item->style.display, display_hidden)) return;
+	
+	item->debug_frame_stats.draws++;
+	
 	if(item != &g_ui->base){
 		if(match_any(item->style.positioning, pos_fixed, pos_draggable_fixed)){
 			item->pos_screen = item->style.pos;
@@ -647,8 +650,6 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 		}
 	}
 
-	if(HasFlag(item->style.display, display_hidden)) return;
-	
 	if(item->drawcmd_count){
 		Assert(item->__generate, "item with no generate function");
 		item->__generate(item);
@@ -682,10 +683,12 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	uiItem* parent = uiItemFromNode(item->node.parent); 
 	
+	item->debug_frame_stats.evals++;
+
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
-	b32 disprow = HasFlag(item->style.display, display_row);
+	b32 disprow = HasFlag(item->style.display, display_horizontal);
 	
 	vec2 parent_size_padded;
 	//TODO(sushi) this can probably be cleaned up 
@@ -752,10 +755,10 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		contextout.flex.disprow = disprow;
 		
 		if(disprow && wauto){
-			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_row' were set, but the containers sizing property was set with flag 'size_auto_x'.");
+			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_horizontal' were set, but the containers sizing property was set with flag 'size_auto_x'.");
 			return;	
 		}else if(hauto){
-			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_column' were set, but the containers sizing property was set with flag 'size_auto_y'.");
+			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_vertical' were set, but the containers sizing property was set with flag 'size_auto_y'.");
 			return;
 		}
 		
@@ -818,7 +821,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				//if(item->style.border_style)
 				//child->pos_local += item->style.border_width * vec2::ONE;
 				child->pos_local = cursor;
-				if(HasFlag(item->style.display, display_row))
+				if(HasFlag(item->style.display, display_horizontal))
 					cursor.x = child->pos_local.x + child->width;
 				else{
 					cursor.y = child->pos_local.y + child->height;
@@ -831,7 +834,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 					child->pos_local += item->style.border_width * vec2::ONE;
 				child->pos_local += cursor;
 				
-				if(HasFlag(item->style.display, display_row)){
+				if(HasFlag(item->style.display, display_horizontal)){
 					cursor.x = child->pos_local.x + child->width;
 				}else{
 					cursor.y = child->pos_local.y + child->height;
@@ -1143,6 +1146,14 @@ void ui_update(){DPZoneScoped;
 	g_ui->stats.indices_visible = 0;
 	g_ui->stats.items_visible = 0;
 	g_ui->stats.vertices_visible = 0;
+
+	for(auto item : g_ui->items){
+		Log("", 
+			item->id, ".draws: ", item->debug_frame_stats.draws, "\n",
+			item->id, ".evals: ", item->debug_frame_stats.evals
+		);
+		item->debug_frame_stats = {0};
+	}
 	
 	if(g_ui->item_stack.count > 1){
 		forI(g_ui->item_stack.count-1){
@@ -1907,7 +1918,7 @@ void ui_debug(){
 			style->border_width = 1;
 			style->focus = 1;
 			style->size = {500,300};
-			style->display = display_flex | display_row;
+			style->display = display_flex | display_horizontal;
 			style->padding = {5,5,5,5};
 			
 			{uiItem* panel = uiItemBS(&panel_style); //selected information
@@ -2074,7 +2085,7 @@ void ui_demo(){
 	{//test sizer
 		uiItem* container = uiItemB();{
 			container->style.size = {200, 100};
-			container->style.display = display_flex | display_row;
+			container->style.display = display_flex | display_horizontal;
 			container->style.background_color = color(50,60,100);
 			container->style.paddingtl = {10,10};
 			container->style.paddingbr = {10,10};
