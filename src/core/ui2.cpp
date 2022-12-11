@@ -692,6 +692,13 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	vec2 parent_size_padded;
 	//TODO(sushi) this can probably be cleaned up 
+	/*0
+	
+
+		Sizing logic
+
+	
+	*/
 	if(!hauto){
 		if(context && context->flex.flex_container && !context->flex.disprow && HasFlag(item->style.sizing, size_flex)){
 			item->height = item->style.height / context->flex.ratio_sum * context->flex.effective_size;
@@ -747,6 +754,14 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		else if( wauto && !hauto) item->width = item->height;
 		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified." : "specified."));
 	}
+
+	/*1
+	
+
+		flex logic
+
+	
+	*/
 	
 	if(HasFlag(item->style.display, display_flex)){
 		contextout.flex.flex_container = 1;
@@ -793,8 +808,24 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		}
 		contextout.flex.n_ceils = contextout.flex.effective_size - floored_sum;
 	}
+
+	/*2
+	
+
+		custom evaluate
+
+	
+	*/
 	
 	if(item->__evaluate) item->__evaluate(item);
+
+	/*3
+	
+
+		child evaluation and positioning logic
+
+	
+	*/
 	
 	vec2 cursor = item->style.margintl + item->style.paddingtl + vec2{wborder,wborder} - item->style.scroll;
 	TNode* it = (HasFlag(item->style.display, display_reverse) ? item->node.last_child : item->node.first_child);

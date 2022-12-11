@@ -86,7 +86,7 @@ Implement a system for trimming down how much we have to do to check every item.
 
         pos_relative  |  relative
             The position values will position the item relative to where it would have 
-            normally been placedth pos_static. This removes the item from the normal flow, 
+            normally been placed with pos_static. This removes the item from the normal flow, 
             but items added after it will be placed as if the item was where it would have been. 
 
         pos_absolute  |  absolute
