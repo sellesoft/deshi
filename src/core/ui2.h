@@ -369,21 +369,20 @@ TODO(sushi) example
 	Determines how items that go out of their parent's bounds are displayed.
 
 -  Values:
-	
-	overflow_scroll (default)
-		When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
-	
-	overflow_scroll_hidden | scroll_hidden
-		Same as overflow_scroll, but scrollbars are not shown
-	
-	overflow_hidden | hidden
-		The overflowing items are cut off, but the user cannot scroll.
-		In this case you can still manually change the scroll value on the item it just 
-		prevents the user from scrolling the item. Good for scrolling things you
-		dont want the user to mess with.
-	
-	overflow_visible | visible
-		The overflowing items are shown and there is no scrolling.
+		overflow_scroll (default)
+			When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
+
+		overflow_scroll_hidden | scroll_hidden
+			Same as overflow_scroll, but scrollbars are not shown
+
+		overflow_hidden | hidden
+			The overflowing items are cut off, but the user cannot scroll.
+			In this case you can still manually change the scroll value on the item it just 
+			prevents the user from scrolling the item. Good for scrolling things you
+			dont want the user to mess with.
+
+		overflow_visible | visible
+			The overflowing items are shown and there is no scrolling.
 
 ------------------------------------------------------------------------------------------------------------
 *   focus
