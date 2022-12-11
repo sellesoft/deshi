@@ -299,7 +299,7 @@ void console_update(){DPZoneScoped;
 	uiImmediateBP(console.ui.buffer);{
 		vec2 cursor = vec2::ZERO;
 		uiItem* line = uiItemB();
-		line->style.display = display_row;
+		line->style.display = display_horizontal;
 		line->style.sizing = size_percent_x;
 		line->style.size = {100, f32(console.ui.buffer->style.font_height)};
 		line->id = STR8("console.line0");

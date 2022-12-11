@@ -52,7 +52,6 @@ Index:
 #include "core/render.h"
 #include "core/window.h"
 
-
 //---------------------------------------------------------------------------------------------------------------------
 // @memory
 
@@ -639,6 +638,10 @@ TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
 }
 
 void draw_item_branch(uiItem* item){DPZoneScoped;
+	if(HasFlag(item->style.display, display_hidden)) return;
+	
+	item->debug_frame_stats.draws++;
+	
 	if(item != &g_ui->base){
 		if(match_any(item->style.positioning, pos_fixed, pos_draggable_fixed)){
 			item->pos_screen = item->style.pos;
@@ -647,8 +650,6 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 		}
 	}
 
-	if(HasFlag(item->style.display, display_hidden)) return;
-	
 	if(item->drawcmd_count){
 		Assert(item->__generate, "item with no generate function");
 		item->__generate(item);
@@ -682,10 +683,12 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	
+	item->debug_frame_stats.evals++;
+
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
-	b32 disprow = HasFlag(item->style.display, display_row);
+	b32 disprow = HasFlag(item->style.display, display_horizontal);
 	
 	//TODO(sushi) this can probably be cleaned up 
 	if(!hauto){
@@ -751,10 +754,10 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		contextout.flex.disprow = disprow;
 		
 		if(disprow && wauto){
-			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_row' were set, but the containers sizing property was set with flag 'size_auto_x'.");
+			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_horizontal' were set, but the containers sizing property was set with flag 'size_auto_x'.");
 			return;	
 		}else if(hauto){
-			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_column' were set, but the containers sizing property was set with flag 'size_auto_y'.");
+			item_error(item, "\x1b[31m\x1b[7mFATAL\x1b[0m: Display flags 'display_flex' and 'display_vertical' were set, but the containers sizing property was set with flag 'size_auto_y'.");
 			return;
 		}
 		
@@ -824,7 +827,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				//if(item->style.border_style)
 				//child->pos_local += item->style.border_width * vec2::ONE;
 				child->pos_local = cursor;
-				if(HasFlag(item->style.display, display_row))
+				if(HasFlag(item->style.display, display_horizontal))
 					cursor.x = child->pos_local.x + child->width;
 				else{
 					cursor.y = child->pos_local.y + child->height;
@@ -837,7 +840,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 					child->pos_local += item->style.border_width * vec2::ONE;
 				child->pos_local += cursor;
 				
-				if(HasFlag(item->style.display, display_row)){
+				if(HasFlag(item->style.display, display_horizontal)){
 					cursor.x = child->pos_local.x + child->width;
 				}else{
 					cursor.y = child->pos_local.y + child->height;
@@ -913,8 +916,8 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		child->pos_local = floor(child->pos_local*1)/1;
 		
 		if(wauto) item->width  = Max(item->width,  child->pos_local.x + child->width);
-        if(hauto) item->height = Max(item->height, child->pos_local.y + child->height);
-        
+		if(hauto) item->height = Max(item->height, child->pos_local.y + child->height);
+		
 		idx++;
 		Assert(it!=it->next, "infinite loop.");
 		it = (HasFlag(item->style.display, display_reverse) ? it->prev : it->next);
@@ -943,41 +946,41 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	//// calculate content alignment ////
 	//TODO(sushi) I'm pretty sure the x part of this can be moved into the child loop above, so we dont have to do a second
 	//            pass if y isnt set
-    if(item->style.content_align.x > 0 || item->style.content_align.y > 0){
-        f32 last_static_offset = 0;
-        f32 padr = item->style.padding_right;
-        f32 padl = item->style.padding_left;
+	if(item->style.content_align.x > 0 || item->style.content_align.y > 0){
+		f32 last_static_offset = 0;
+		f32 padr = item->style.padding_right;
+		f32 padl = item->style.padding_left;
 		f32 padt = item->style.padding_top;
 		f32 padb = item->style.padding_bottom;
 		//space that children may actually occupy
-        vec2 child_space = Vec2(
+		vec2 child_space = Vec2(
 			(item->width  - ((padr == MAX_F32) ? padl : padr)) - padl, 
 			(item->height - ((padb == MAX_F32) ? padt : padb)) - padt
 		);
 		f32 y_offset = ceil(item->style.content_align.y*(child_space.y - cursor.y));
-        for_node(item->node.first_child){
-            uiItem* child = uiItemFromNode(it);
-            if(child->style.positioning == pos_static){
-                last_static_offset = child->pos_local.x;
-                f32 marr = child->style.margin_right;
-                f32 marl = child->style.margin_left;
-                f32 mart = child->style.margin_top;
-                f32 marb = child->style.margin_bottom;
+		for_node(item->node.first_child){
+			uiItem* child = uiItemFromNode(it);
+			if(child->style.positioning == pos_static){
+				last_static_offset = child->pos_local.x;
+				f32 marr = child->style.margin_right;
+				f32 marl = child->style.margin_left;
+				f32 mart = child->style.margin_top;
+				f32 marb = child->style.margin_bottom;
 				//the actual size the child occupies
 				//TODO(sushi) probably cache this
-                vec2 true_size = Vec2(
+				vec2 true_size = Vec2(
 					child->width + (marr==MAX_F32?marl:marr) + marl,
 					child->height + (marb==MAX_F32?mart:marb) +mart
 				);
-                child->pos_local.x = item->style.padding_left + child->style.margin_left + item->style.content_align.x * (child_space.x - true_size.x);
-                last_static_offset = child->pos_local.x - last_static_offset;
+				child->pos_local.x = item->style.padding_left + child->style.margin_left + item->style.content_align.x * (child_space.x - true_size.x);
+				last_static_offset = child->pos_local.x - last_static_offset;
 				child->pos_local.y += y_offset;
-            }else if(child->style.positioning==pos_relative){
-                child->pos_local.x += last_static_offset;
+			}else if(child->style.positioning==pos_relative){
+				child->pos_local.x += last_static_offset;
 				child->pos_local.y += y_offset;
-            }
-        }
-    }
+			}
+		}
+	}
 	
 	/*-------------------------------------------------------------------------------------------------------
 		at this point the item is finished. 
@@ -1028,11 +1031,11 @@ void drag_item(uiItem* item){DPZoneScoped;
 //depth first walk to ensure we find topmost hovered item
 //TODO(sushi) remove this in favor of doing it where its needed instead of every frame
 b32 find_hovered_item(uiItem* item){DPZoneScoped;
-    //early out if the mouse is not within the item's known children bbx 
+	//early out if the mouse is not within the item's known children bbx 
 	//NOTE(sushi) this does not work properly anymore now that we support immediate mode blocks
 	//TODO(sushi) come up with a way around this
 	//if(!Math::PointInRectangle(input_mouse_position(),item->children_bbx_pos,item->children_bbx_size)) return false;
-    for_node_reverse(item->node.last_child){
+	for_node_reverse(item->node.last_child){
 		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden)) continue;
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
@@ -1132,17 +1135,17 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	
 	vec2 pos = item->pos_screen;
 	vec2 siz = item->size * item->scale;
-    for_node(node->first_child){
-        auto [cpos, csiz] = ui_recur(it);
+	for_node(node->first_child){
+		auto [cpos, csiz] = ui_recur(it);
 		if(csiz.x == -MAX_F32) continue;
-        pos = Min(cpos, item->pos_screen);
-        siz = Max((item->pos_screen - pos)+siz, (cpos-pos)+csiz); 
-    }
+		pos = Min(cpos, item->pos_screen);
+		siz = Max((item->pos_screen - pos)+siz, (cpos-pos)+csiz); 
+	}
 	
-    item->children_bbx_pos=pos;
-    item->children_bbx_size=siz;
+	item->children_bbx_pos=pos;
+	item->children_bbx_size=siz;
 	
-    return {pos,siz};
+	return {pos,siz};
 }
 
 void ui_update(){DPZoneScoped;
@@ -1152,6 +1155,16 @@ void ui_update(){DPZoneScoped;
 	g_ui->stats.indices_visible = 0;
 	g_ui->stats.items_visible = 0;
 	g_ui->stats.vertices_visible = 0;
+	
+	for(auto item : g_ui->items){
+#if 0
+		Log("", 
+			item->id, ".draws: ", item->debug_frame_stats.draws, "\n",
+			item->id, ".evals: ", item->debug_frame_stats.evals
+		);
+#endif
+		item->debug_frame_stats = {0};
+	}
 	
 	if(g_ui->item_stack.count > 1){
 		forI(g_ui->item_stack.count-1){
@@ -1922,7 +1935,7 @@ void ui_debug(){
 			style->border_width = 1;
 			style->focus = 1;
 			style->size = {500,300};
-			style->display = display_flex | display_row;
+			style->display = display_flex | display_horizontal;
 			style->padding = {5,5,5,5};
 			
 			{uiItem* panel = uiItemBS(&panel_style); //selected information
@@ -2107,7 +2120,7 @@ void ui_demo(){
 		window->style.font_height = 14/*pixels*/;
 		window->style.text_color = Color_White;
 		window->style.focus = true;
-		window->style.display = display_column | display_flex;
+		window->style.display = display_vertical | display_flex;
 		
 		uiItem* window_decoration = uiItemB();{
 			window_decoration->id = STR8("demo.window_decoration");
@@ -2134,7 +2147,7 @@ void ui_demo(){
 			window_content->style.sizing = size_flex;
 			window_content->style.size = {1/*ratio of 1*/,1/*ratio of 1*/};
 			window_content->style.background_color = Color_VeryDarkCyan;
-			window_content->style.display = display_flex | display_row;
+			window_content->style.display = display_horizontal | display_flex;
 			
 			persist uiStyle preview_style{};
 			
@@ -2145,6 +2158,7 @@ void ui_demo(){
 				item_panel->style.border_style = border_solid; //TODO remove this once separators are added
 				item_panel->style.border_color = Color_DarkCyan;
 				item_panel->style.border_width = 1/*pixels*/;
+				item_panel->style.display = display_vertical | display_flex;
 				
 				uiItem* item_tree = uiItemB();{
 					item_tree->id = STR8("demo.window_content.item_panel.item_tree");
@@ -2221,7 +2235,7 @@ void ui_demo(){
 	{//test sizer
 		uiItem* container = uiItemB();{
 			container->style.size = {200, 100};
-			container->style.display = display_flex | display_row;
+			container->style.display = display_flex | display_horizontal;
 			container->style.background_color = color(50,60,100);
 			container->style.paddingtl = {10,10};
 			container->style.paddingbr = {10,10};
