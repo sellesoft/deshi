@@ -64,11 +64,12 @@ DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
 		Assert(overall_used == heap->used, "Heap used amount is invalid");
 	}
 }
-#else //MEMORY_CHECK_HEAPS
-#  define DEBUG_CheckHeap(...)
+#else
+#  define DEBUG_CheckHeap(heap) (void)0
 #endif //MEMORY_CHECK_HEAPS
 
 
+#if MEMORY_PRINT_ARENA_CHUNKS || MEMORY_PRINT_GENERIC_CHUNKS
 local void
 DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){DPZoneScoped;
 	if(heap->initialized && heap->used > 0){
@@ -93,10 +94,9 @@ DEBUG_PrintHeapChunks(Heap* heap, char* heap_name = 0){DPZoneScoped;
 		Log("memory",heap_order); Log("memory",heap_empty);
 	}
 }
-
-
-local b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
-local b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
+#else
+#  define DEBUG_PrintHeapChunks(heap,heap_name) (void)0
+#endif //MEMORY_PRINT_ARENA_CHUNKS || MEMORY_PRINT_GENERIC_CHUNKS
 
 
 #if MEMORY_TRACK_ALLOCS
@@ -131,6 +131,9 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 
 local void
 DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
+	b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
+	b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
+	
 	if(address == 0) return;
 	upt index = binary_search(alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
 	if(index != -1){
@@ -140,11 +143,21 @@ DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
 		alloc_infos_active.remove(index);
 	}
 }
+#else
+#  define DEBUG_AllocInfo_Creation(address,file,line) (void)0
+#  define DEBUG_AllocInfo_Deletion(address) (void)0
 #endif //MEMORY_TRACK_ALLOCS
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
+#if MEMORY_PRINT_HEAP_ACTIONS
+#  define DEBUG_PrintHeapAction(text,...) Logf("memory",text " (triggered at %s:%zu)", __VA_ARGS__, file.str, line)
+#else
+#  define DEBUG_PrintHeapAction(text,...) (void)0
+#endif //MEMORY_PRINT_HEAP_ACTIONS
+
+
 Heap*
 deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){DPZoneScoped;
 	Heap* result = (Heap*)deshi__memory_generic_allocate(bytes+sizeof(Heap), file, line);
@@ -154,20 +167,17 @@ deshi__memory_heap_init_bytes(upt bytes, str8 file, upt line){DPZoneScoped;
 	result->empty_nodes.next = result->empty_nodes.prev = &result->empty_nodes;
 	result->last_chunk = 0;
 	result->initialized = true;
+	
 	DEBUG_CheckHeap(result);
-#if MEMORY_PRINT_HEAP_ACTIONS
-	Logf("memory","Initted a heap[0x%p] with %zu bytes (triggered at %s:%zu)", result, bytes, file.str, line);
-#endif //MEMORY_PRINT_HEAP_ACTIONS
+	DEBUG_PrintHeapAction("Initted a heap[0x%p] with %zu bytes", result, bytes);
+	
 	return result;
 }
 
 
 void
 deshi__memory_heap_deinit(Heap* heap, str8 file, upt line){DPZoneScoped;
-#if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info = deshi__memory_allocinfo_get(heap);
-	Logf("memory","Deinitted a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, heap->size, file.str, line);
-#endif //MEMORY_PRINT_HEAP_ACTIONS
+	DEBUG_PrintHeapAction("Deinitted a heap[0x%p]%s with %zu bytes", heap, deshi__memory_allocinfo_get(heap).name.str, heap->size);
 	
 	deshi__memory_generic_zero_free(heap, file, line);
 }
@@ -218,11 +228,9 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 			heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
 			
-#if MEMORY_PRINT_HEAP_ACTIONS
-			AllocInfo info = deshi__memory_allocinfo_get(heap);
-			Logf("memory","Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", result, heap, info.name.str, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_HEAP_ACTIONS
 			DEBUG_CheckHeap(heap);
+			DEBUG_PrintHeapAction("Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes", result, heap, deshi__memory_allocinfo_get(heap).name.str, aligned_size);
+			
 			return result;
 		}
 	}
@@ -236,11 +244,9 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 	heap->last_chunk = new_chunk;
 	result = ChunkToMemory(new_chunk);
 	
-#if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info = deshi__memory_allocinfo_get(heap);
-	Logf("memory","Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", result, heap, info.name.str, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_HEAP_ACTIONS
 	DEBUG_CheckHeap(heap);
+	DEBUG_PrintHeapAction("Created an allocation[0x%p] in heap[0x%p]%s with %zu bytes", result, heap, deshi__memory_allocinfo_get(heap).name.str, aligned_size);
+	
 	return result;
 }
 
@@ -306,13 +312,11 @@ deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line){DPZoneScop
 		used_amount += sizeof(MemChunk);
 	}
 	
+	//clear the used memory
 	heap->used -= used_amount;
 	ZeroMemory(zero_pointer, zero_amount);
 	
-#if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info2 = deshi__memory_allocinfo_get(heap);
-	Logf("memory","Freed   an allocation[0x%p]%s in heap[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, heap, info2.name.str, file.str, line);
-#endif //MEMORY_PRINT_HEAP_ACTIONS
+	DEBUG_PrintHeapAction("Freed   an allocation[0x%p]%s in heap[0x%p]%s", ptr, info.name.str, heap, deshi__memory_allocinfo_get(heap).name.str);
 	DEBUG_CheckHeap(heap);
 }
 
@@ -322,10 +326,7 @@ deshi__memory_heap_clear(Heap* heap, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(heap == 0) return;
 	
-#if MEMORY_PRINT_HEAP_ACTIONS
-	AllocInfo info = deshi__memory_allocinfo_get(heap);
-	Logf("memory","Cleared a heap[0x%p]%s with %zu bytes (triggered at %s:%zu)", heap, info.name.str, heap->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_PrintHeapAction("Cleared a heap[0x%p]%s with %zu bytes", heap, deshi__memory_allocinfo_get(heap).name.str, heap->size);
 	
 	ZeroMemory(heap->start, heap->size);
 	heap->cursor = heap->start;
@@ -350,28 +351,22 @@ DEBUG_CheckArenaHeapArenas(){DPZoneScoped;
 	}
 }
 #else //MEMORY_CHECK_HEAPS
-#  define DEBUG_CheckArenaHeapArenas()
+#  define DEBUG_CheckArenaHeapArenas() (void)0
 #endif //MEMORY_CHECK_HEAPS
 
 
 #if MEMORY_PRINT_ARENA_CHUNKS
-FORCE_INLINE void DEBUG_PrintArenaHeapChunks(){ DEBUG_PrintHeapChunks(&g_memory->arena_heap,"Arena Heap"); }
+#  define DEBUG_PrintArenaHeapChunks() DEBUG_PrintHeapChunks(&g_memory->arena_heap,"Arena Heap")
 #else //MEMORY_PRINT_ARENA_CHUNKS
-#  define DEBUG_PrintArenaHeapChunks()
+#  define DEBUG_PrintArenaHeapChunks() (void)0
 #endif //MEMORY_PRINT_ARENA_CHUNKS
 
 
-local Arena*
-CreateArenaLibc(upt aligned_size){DPZoneScoped; //NOTE(delle) expects pre-aligned size with arena overhead
-	MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
-	Assert(chunk, "libc failed to allocate memory");
-	chunk->size = aligned_size | MEMORY_LIBC_FLAG;
-	Arena* arena = ChunkToArena(chunk);
-	arena->start  = (u8*)(arena+1);
-	arena->cursor = arena->start;
-	arena->size   = aligned_size - MEMORY_ARENA_OVERHEAD;
-	return arena;
-}
+#if MEMORY_PRINT_ARENA_ACTIONS
+#  define DEBUG_PrintArenaAction(text,...) Logf("memory",text " (triggered at %s:%zu)", __VA_ARGS__, file.str, line)
+#else
+#  define DEBUG_PrintArenaAction(text,...) (void)0
+#endif //MEMORY_PRINT_ARENA_ACTIONS
 
 
 Arena*
@@ -422,35 +417,33 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 			result->size   = aligned_size - MEMORY_ARENA_OVERHEAD;
 			result->used   = 0;
 			
-#if MEMORY_PRINT_ARENA_ACTIONS
-			Logf("memory","Created an arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
 			DEBUG_CheckHeap(&g_memory->arena_heap);
 			DEBUG_CheckArenaHeapArenas();
 			DEBUG_PrintArenaHeapChunks();
-#if MEMORY_TRACK_ALLOCS
+			DEBUG_PrintArenaAction("Created an arena[0x%p] with %zu bytes", result, result->size);
 			DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
-			
 			Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
+			
 			return result;
 		}
 	}
 	
 	//if we cant replace an empty node, make a new order node for the allocation (if there is space)
 	if(g_memory->arena_heap.cursor + aligned_size > g_memory->arena_heap.start + g_memory->arena_heap.size){
-		LogfE("memory","Deshi ran out of main memory when attempting to create an arena (triggered at %s:%zu); defaulting to libc calloc.", file.str, line);
+		LogfE("memory","Deshi ran out of main memory when attempting to create an arena with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", result->size, file.str, line);
 		
-		result = CreateArenaLibc(aligned_size);
+		MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
+		Assert(chunk, "libc failed to allocate memory");
+		chunk->size = aligned_size | MEMORY_LIBC_FLAG;
+		result = ChunkToArena(chunk);
+		result->start  = (u8*)(result+1);
+		result->cursor = result->start;
+		result->size   = aligned_size - MEMORY_ARENA_OVERHEAD;
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Created a libc arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
-#if MEMORY_TRACK_ALLOCS
+		DEBUG_PrintArenaAction("Created a libc arena[0x%p] with %zu bytes", result, result->size);
 		DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
-		
 		Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
+		
 		return result;
 	}
 	
@@ -467,17 +460,13 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 	result->size   = aligned_size - MEMORY_ARENA_OVERHEAD;
 	result->used   = 0;
 	
-#if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Created an arena[0x%p] with %zu bytes (triggered at %s:%zu)", result, result->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	DEBUG_PrintArenaHeapChunks();
-#if MEMORY_TRACK_ALLOCS
+	DEBUG_PrintArenaAction("Created an arena[0x%p] with %zu bytes", result, result->size);
 	DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
-	
 	Assert(result->size >= requested_size, "Arena size was not greater than or equal to requested size");
+	
 	return result;
 }
 
@@ -511,9 +500,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		result->size  += size;
 		ZeroMemory(result->start + old_size, size);
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Grew a libc arena[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", arena, info.name.str, result, size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_PrintArenaAction("Grew a libc arena[0x%p]%s to libc [0x%p] with %zu bytes", arena, info.name.str, result, size);
 #if MEMORY_TRACK_ALLOCS
 		if(arena != result){
 			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
@@ -532,14 +519,18 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		if(g_memory->arena_heap.cursor + aligned_size > g_memory->arena_heap.start + g_memory->arena_heap.size){
 			LogfE("memory","Deshi ran out of main memory when attempting to grow an arena[0x%p]%s of size %zu bytes with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", arena, info.name.str, arena->size, size, file.str, line);
 			
-			result = CreateArenaLibc(arena->size + size);
-			result->cursor += (arena->cursor - arena->start);
-			result->used    = arena->used;
+			upt chunk_size = arena->size + size;
+			MemChunk* chunk = (MemChunk*)calloc(1, chunk_size);
+			Assert(chunk, "libc failed to allocate memory");
+			chunk->size = chunk_size | MEMORY_LIBC_FLAG;
+			result = ChunkToArena(chunk);
+			result->start  = (u8*)(arena+1);
+			result->cursor = result->start + (arena->cursor - arena->start);
+			result->size   = chunk_size - MEMORY_ARENA_OVERHEAD;
+			result->used   = arena->used;
 			memcpy(result->start, arena->start, arena->size);
 			
-#if MEMORY_PRINT_ARENA_ACTIONS
-			Logf("memory","Grew an arena   [0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", arena, info.name.str, result, size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+			DEBUG_PrintArenaAction("Grew an arena   [0x%p]%s to libc [0x%p] with %zu bytes", arena, info.name.str, result, size);
 #if MEMORY_TRACK_ALLOCS
 			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
 			new_info->name = info.name;
@@ -555,9 +546,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		g_memory->arena_heap.cursor += aligned_size;
 		g_memory->arena_heap.used   += aligned_size;
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Grew an arena   [0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_PrintArenaAction("Grew an arena   [0x%p]%s with %zu bytes", arena, info.name.str, aligned_size);
 		DEBUG_CheckHeap(&g_memory->arena_heap);
 		DEBUG_CheckArenaHeapArenas();
 		DEBUG_PrintArenaHeapChunks();
@@ -599,9 +588,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 		result->size += aligned_size;
 		g_memory->arena_heap.used += aligned_size - sizeof(MemChunk);
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Grew an arena   [0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_PrintArenaAction("Grew an arena   [0x%p]%s with %zu bytes", arena, info.name.str, aligned_size);
 		DEBUG_CheckHeap(&g_memory->arena_heap);
 		DEBUG_CheckArenaHeapArenas();
 		DEBUG_PrintArenaHeapChunks();
@@ -615,15 +602,11 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 	result->used   = arena->used;
 	result->cursor = result->start + (arena->cursor - arena->start);
 	
-#if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Grew an arena   [0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", arena, info.name.str, result, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_PrintArenaAction("Grew an arena   [0x%p]%s to [0x%p] with %zu bytes", arena, info.name.str, result, aligned_size);
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	DEBUG_PrintArenaHeapChunks();
-#if MEMORY_TRACK_ALLOCS
 	deshi__memory_allocinfo_set(result, info.name, info.type);
-#endif //MEMORY_TRACK_ALLOCS
 	
 	deshi__memory_arena_delete(arena, file, line);
 	return result;
@@ -634,10 +617,7 @@ void
 deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	
-#if MEMORY_PRINT_ARENA_ACTIONS
-	AllocInfo info = deshi__memory_allocinfo_get(arena);
-	Logf("memory","Cleared an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+	DEBUG_PrintArenaAction("Cleared an arena[0x%p]%s with %zu bytes", arena, deshi__memory_allocinfo_get(arena).name.str, arena->size);
 	
 	ZeroMemory(arena->start, arena->used);
 	arena->cursor = arena->start;
@@ -650,7 +630,8 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	if(arena->used >= arena->size) return;
 	
-	DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas();
+	DEBUG_CheckHeap(&g_memory->arena_heap);
+	DEBUG_CheckArenaHeapArenas();
 	Assert(g_memory->arena_heap.initialized, "Attempted to fit an arena before memory_init() has been called");
 	
 	AllocInfo info = deshi__memory_allocinfo_get(arena);
@@ -666,9 +647,8 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 		chunk = (MemChunk*)realloc(chunk, chunk->size);
 		Assert(chunk, "libc failed to reallocate memory (which it shouldn't need to do anyways)");
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Fit a libc arena[0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_PrintArenaAction("Fit a libc arena[0x%p]%s from %zu bytes to %zu bytes", arena, info.name.str, old_size, arena->size);
+		
 		return;
 	}
 	Assert((u8*)arena > g_memory->arena_heap.start && (u8*)arena < g_memory->arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap and missing the libc flag");
@@ -685,10 +665,11 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 		g_memory->arena_heap.cursor -= size_difference;
 		g_memory->arena_heap.used   -= size_difference;
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Fit an arena    [0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
-		DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+		DEBUG_CheckHeap(&g_memory->arena_heap);
+		DEBUG_CheckArenaHeapArenas();
+		DEBUG_PrintArenaHeapChunks();
+		DEBUG_PrintArenaAction("Fit an arena    [0x%p]%s from %zu bytes to %zu bytes", arena, info.name.str, old_size, arena->size);
+		
 		return;
 	}
 	
@@ -717,10 +698,11 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 		//zero the old_next chunk memory
 		ZeroMemory(next, sizeof(MemChunk));
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Fit an arena    [0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
-		DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+		DEBUG_CheckHeap(&g_memory->arena_heap);
+		DEBUG_CheckArenaHeapArenas();
+		DEBUG_PrintArenaHeapChunks();
+		DEBUG_PrintArenaAction("Fit an arena    [0x%p]%s from %zu bytes to %zu bytes", arena, info.name.str, old_size, arena->size);
+		
 		return;
 	}
 	
@@ -734,10 +716,10 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 		g_memory->arena_heap.used += sizeof(MemChunk);
 	}
 	
-#if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Fit an arena    [0x%p]%s from %zu bytes to %zu bytes (triggered at %s:%zu)", arena, info.name.str, old_size, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
-	DEBUG_CheckHeap(&g_memory->arena_heap); DEBUG_CheckArenaHeapArenas(); DEBUG_PrintArenaHeapChunks();
+	DEBUG_CheckHeap(&g_memory->arena_heap);
+	DEBUG_CheckArenaHeapArenas();
+	DEBUG_PrintArenaHeapChunks();
+	DEBUG_PrintArenaAction("Fit an arena    [0x%p]%s from %zu bytes to %zu bytes", arena, info.name.str, old_size, arena->size);
 }
 
 
@@ -753,17 +735,13 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 	AllocInfo info = deshi__memory_allocinfo_get(arena);
 	MemChunk* chunk = ArenaToChunk(arena);
 	
-#if MEMORY_TRACK_ALLOCS
 	DEBUG_AllocInfo_Deletion(arena);
-#endif //MEMORY_TRACK_ALLOCS
 	
 	//if allocated from libc, free with libc
 	if(ChunkIsLibc(chunk)){
 		free(chunk);
 		
-#if MEMORY_PRINT_ARENA_ACTIONS
-		Logf("memory","Deleted a libc arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
+		DEBUG_PrintArenaAction("Deleted a libc arena[0x%p]%s with %zu bytes", arena, info.name.str, arena->size);
 		
 		return;
 	}
@@ -822,12 +800,10 @@ deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
 	g_memory->arena_heap.used -= used_amount;
 	ZeroMemory(zero_pointer, zero_amount);
 	
-#if MEMORY_PRINT_ARENA_ACTIONS
-	Logf("memory","Deleted an arena[0x%p]%s with %zu bytes (triggered at %s:%zu)", arena, info.name.str, arena->size, file.str, line);
-#endif //MEMORY_PRINT_ARENA_ACTIONS
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	DEBUG_PrintArenaHeapChunks();
+	DEBUG_PrintArenaAction("Deleted an arena[0x%p]%s with %zu bytes", arena, info.name.str, arena->size);
 }
 
 
@@ -1029,6 +1005,13 @@ FreeLibc(void* ptr){DPZoneScoped;
 }
 
 
+#if MEMORY_PRINT_GENERIC_ACTIONS
+#  define DEBUG_PrintGenericAction(text,...) Logf("memory",text " (triggered at %s:%zu)", __VA_ARGS__, file.str, line)
+#else
+#  define DEBUG_PrintGenericAction(text,...) (void)0
+#endif //MEMORY_PRINT_GENERIC_ACTIONS
+
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_generic_alloc
 void*
@@ -1055,13 +1038,8 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
-		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
-#if MEMORY_TRACK_ALLOCS
+		DEBUG_PrintGenericAction("Created an allocation[0x%p] with %zu bytes", result, aligned_size);
 		DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
 		
 		return result;
 	}
@@ -1099,15 +1077,10 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 			g_memory->generic_heap->used += aligned_size - sizeof(MemChunk);
 			result = ChunkToMemory(chunk);
 			
-			
-#if MEMORY_PRINT_GENERIC_ACTIONS
-			Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 			DEBUG_CheckHeap(g_memory->generic_heap);
 			DEBUG_PrintGenericHeapChunks();
-#if MEMORY_TRACK_ALLOCS
+			DEBUG_PrintGenericAction("Created an allocation[0x%p] with %zu bytes", result, aligned_size);
 			DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
 			
 			return result;
 		}
@@ -1118,13 +1091,8 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 		LogfE("memory","Deshi ran out of generic memory when attempting to allocate %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", requested_size, file.str, line);
 		result = AllocateLibc(aligned_size);
 		
-		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Created a libc allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
-#if MEMORY_TRACK_ALLOCS
+		DEBUG_PrintGenericAction("Created an allocation[0x%p] with %zu bytes", result, aligned_size);
 		DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
 		
 		return result;
 	}
@@ -1137,15 +1105,10 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 	g_memory->generic_heap->last_chunk = new_chunk;
 	result = ChunkToMemory(new_chunk);
 	
-	
-#if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Created an allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	DEBUG_PrintGenericHeapChunks();
-#if MEMORY_TRACK_ALLOCS
+	DEBUG_PrintGenericAction("Created an allocation[0x%p] with %zu bytes", result, aligned_size);
 	DEBUG_AllocInfo_Creation(result, file, line);
-#endif //MEMORY_TRACK_ALLOCS
 	
 	return result;
 }
@@ -1171,10 +1134,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	if(ChunkIsLibc(chunk)){
 		result = ReallocateLibc(ptr, aligned_size);
 		
-		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated a libc allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
+		DEBUG_PrintGenericAction("Reallocated a libc allocation[0x%p]%s to [0x%p] with %zu bytes", ptr, info.name.str, result, requested_size);
 #if MEMORY_TRACK_ALLOCS
 		if(ptr != result){
 			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
@@ -1203,12 +1163,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		chunk->size = arena->size | MEMORY_ARENAD_FLAG;
 		result = ChunkToMemory(chunk);
 		
-		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
+		DEBUG_PrintGenericAction("Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes", ptr, info.name.str, result, requested_size);
 #if MEMORY_TRACK_ALLOCS
 		if(ptr != result){
 			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
@@ -1235,11 +1192,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		result = ChunkToMemory(chunk);
 		
 		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
+		DEBUG_PrintGenericAction("Reallocated an allocation[0x%p]%s to [0x%p] with %zu bytes", ptr, info.name.str, result, requested_size);
 #if MEMORY_TRACK_ALLOCS
 		AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
 		new_info->name = info.name;
@@ -1266,10 +1221,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 			MemChunk* new_chunk = MemoryToChunk(result);
 			memcpy(&new_chunk->node, &chunk->node, GetChunkSize(chunk) - MEMORY_CHUNK_OVERHEAD);
 			
-			
-#if MEMORY_PRINT_GENERIC_ACTIONS
-			Logf("memory","Reallocated an allocation[0x%p]%s to libc [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
+			DEBUG_PrintGenericAction("Reallocated an allocation[0x%p]%s to libc [0x%p] with %zu bytes", ptr, info.name.str, result, requested_size);
 #if MEMORY_TRACK_ALLOCS
 			AllocInfo* new_info = DEBUG_AllocInfo_Creation(result, file, line);
 			new_info->name = info.name;
@@ -1285,11 +1237,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		if(difference > 0) ZeroMemory(g_memory->generic_heap->cursor, difference);
 		chunk->size = aligned_size;
 		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
+		DEBUG_PrintGenericAction("Reallocated an allocation[0x%p]%s with %zu bytes without moving", ptr, info.name.str, requested_size);
 		
 		return ptr;
 	}
@@ -1306,11 +1256,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		g_memory->generic_heap->used -= difference;
 		g_memory->generic_heap->used += sizeof(MemChunk);
 		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
+		DEBUG_PrintGenericAction("Reallocated an allocation[0x%p]%s with %zu bytes without moving", ptr, info.name.str, requested_size);
 		
 		return ptr;
 	}
@@ -1356,11 +1304,9 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		chunk->size = aligned_size;
 		g_memory->generic_heap->used += -difference - sizeof(MemChunk);
 		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Reallocated an allocation[0x%p]%s with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
+		DEBUG_PrintArenaAction("Reallocated an allocation[0x%p]%s with %zu bytes without moving", ptr, info.name.str, aligned_size);
 		
 		return ptr;
 	}
@@ -1371,14 +1317,10 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	memcpy(result, &chunk->node, GetChunkSize(chunk) - MEMORY_CHUNK_OVERHEAD);
 	chunk = MemoryToChunk(result);
 	
-#if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Reallocated an allocation[0x%p%s] to [0x%p] with %zu bytes (triggered at %s:%zu)", ptr, info.name.str, result, requested_size, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	DEBUG_PrintGenericHeapChunks();
-#if MEMORY_TRACK_ALLOCS
+	DEBUG_PrintArenaAction("Reallocated an allocation[0x%p%s] to [0x%p] with %zu bytes", ptr, info.name.str, result, requested_size);
 	deshi__memory_allocinfo_set(result, info.name, info.type);
-#endif //MEMORY_TRACK_ALLOCS
 	
 	deshi__memory_generic_zero_free(ptr, file, line);
 	return result;
@@ -1398,17 +1340,13 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	Assert(chunk->size > 0, "A chunk must always have a size");
 	Assert(!HasFlag(chunk->size, MEMORY_EMPTY_FLAG), "This pointer has already been freed.");
 	
-#if MEMORY_TRACK_ALLOCS
 	DEBUG_AllocInfo_Deletion(ptr);
-#endif //MEMORY_TRACK_ALLOCS
 	
 	//if allocated from libc, free with libc
 	if(ChunkIsLibc(chunk)){
 		FreeLibc(ptr);
 		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Freed a libc allocation[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
+		DEBUG_PrintGenericAction("Freed a libc allocation[0x%p]%s", ptr, info.name.str);
 		
 		return;
 	}
@@ -1420,11 +1358,9 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	if(ChunkIsArenad(chunk)){
 		deshi__memory_arena_delete((Arena*)chunk - 1, file, line);
 		
-#if MEMORY_PRINT_GENERIC_ACTIONS
-		Logf("memory","Freed   an allocation[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 		DEBUG_CheckHeap(g_memory->generic_heap);
 		DEBUG_PrintGenericHeapChunks();
+		DEBUG_PrintGenericAction("Freed   an allocation[0x%p]%s", ptr, info.name.str);
 		
 		return;
 	}
@@ -1483,11 +1419,9 @@ deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
 	g_memory->generic_heap->used -= used_amount;
 	ZeroMemory(zero_pointer, zero_amount);
 	
-#if MEMORY_PRINT_GENERIC_ACTIONS
-	Logf("memory","Freed   an allocation[0x%p]%s (triggered at %s:%zu)", ptr, info.name.str, file.str, line);
-#endif //MEMORY_PRINT_GENERIC_ACTIONS
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	DEBUG_PrintGenericHeapChunks();
+	DEBUG_PrintGenericAction("Freed   an allocation[0x%p]%s", ptr, info.name.str);
 }
 
 
@@ -1499,6 +1433,13 @@ deshi__memory_generic_expose(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_temp
+#if MEMORY_PRINT_TEMP_ACTIONS
+#  define DEBUG_PrintTempAction(text,...) Logf("memory",text " (triggered at %s:%zu)", __VA_ARGS__, file.str, line)
+#else
+#  define DEBUG_PrintTempAction(text,...) (void)0
+#endif //MEMORY_PRINT_TEMP_ACTIONS
+
+
 void*
 deshi__memory_temp_allocate(upt size, str8 file, upt line){DPZoneScoped;
 	if(g_memory->cleanup_happened) return 0;
@@ -1519,9 +1460,8 @@ deshi__memory_temp_allocate(upt size, str8 file, upt line){DPZoneScoped;
 	g_memory->temp_arena.cursor += aligned_size;
 	g_memory->temp_arena.used += aligned_size;
 	
-#if MEMORY_PRINT_TEMP_ACTIONS
-	Logf("memory","Created a temp allocation[0x%p] with %zu bytes (triggered at %s:%zu)", result, aligned_size, file.str, line);
-#endif //MEMORY_PRINT_TEMP_ACTIONS
+	DEBUG_PrintTempAction("Created a temp allocation[0x%p] with %zu bytes", result, aligned_size);
+	
 	return result;
 }
 
@@ -1532,10 +1472,7 @@ deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneSc
 	if(size == 0) return 0;
 	if(ptr == 0) return 0;
 	
-#if MEMORY_PRINT_TEMP_ACTIONS
-	AllocInfo info = deshi__deshi__memory_allocinfo_get(ptr);
-	Logf("memory","Reallocating a temp ptr[0x%p]%s to %zu bytes (triggered at %s:%zu)", ptr, info.name.str, size, file.str, line);
-#endif //MEMORY_PRINT_TEMP_ACTIONS
+	DEBUG_PrintTempAction("Reallocating a temp ptr[0x%p]%s to %zu bytes", ptr, deshi__memory_allocinfo_get(ptr).name.str, size);
 	
 	upt* size_ptr = (upt*)ptr - 1;
 	upt  prev_size = *size_ptr; //including overhead and flags
@@ -1566,9 +1503,8 @@ void
 deshi__memory_temp_clear(){DPZoneScoped;
 	if(g_memory->cleanup_happened) return;
 	
-#if MEMORY_PRINT_TEMP_ACTIONS
-	Logf("memory","Clearing temporary memory which used %zu bytes", g_memory->temp_arena.used);
-#endif //MEMORY_PRINT_TEMP_ACTIONS
+	DEBUG_PrintTempAction("Clearing temporary memory which used %zu bytes", g_memory->temp_arena.used);
+	
 	g_memory->temp_arena.cursor = g_memory->temp_arena.start;
 	g_memory->temp_arena.used = 0;
 	memory_clear_arena(&g_memory->temp_arena);
@@ -1623,9 +1559,9 @@ deshi__memory_allocinfo_set(void* address, str8 name, Type type){DPZoneScoped;
 AllocInfo
 deshi__memory_allocinfo_get(void* address){DPZoneScoped;
 	local AllocInfo null_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0};
-local AllocInfo test_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0};
-	
 #if MEMORY_TRACK_ALLOCS
+	local AllocInfo test_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0};
+	
 	if(g_memory->cleanup_happened) return null_alloc_info;
 	if(address == 0) return null_alloc_info;
 	
@@ -1650,22 +1586,26 @@ local AllocInfo test_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0}
 }
 
 
-carray<AllocInfo>
-deshi__memory_allocinfo_active_expose(){DPZoneScoped;
+void
+deshi__memory_allocinfo_active_expose(AllocInfo** out_array, upt* out_size){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
-	return carray<AllocInfo>{alloc_infos_active.data, alloc_infos_active.count};
+	*out_array = alloc_infos_active.data;
+	*out_size = alloc_infos_active.count;
 #else
-	return carray<AllocInfo>{};
+	*out_array = 0;
+	*out_size = 0;
 #endif //MEMORY_TRACK_ALLOCS
 }
 
 
-carray<AllocInfo>
-deshi__memory_allocinfo_inactive_expose(){DPZoneScoped;
+void
+deshi__memory_allocinfo_inactive_expose(AllocInfo** out_array, upt* out_size){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
-	return carray<AllocInfo>{alloc_infos_inactive.data, alloc_infos_inactive.count};
+	*out_array = alloc_infos_inactive.data;
+	*out_size = alloc_infos_inactive.count;
 #else
-	return carray<AllocInfo>{};
+	*out_array = 0;
+	*out_size = 0;
 #endif //MEMORY_TRACK_ALLOCS
 }
 

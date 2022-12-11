@@ -330,13 +330,11 @@ void deshi__memory_allocinfo_set(void* address, str8 name, Type type);
 //Gets the allocation info of an `address` (previously allocated or not)
 AllocInfo deshi__memory_allocinfo_get(void* address);
 
-#if COMPILER_FEATURE_CPP
-EndLinkageC();
-//Exposes the internal allocation info array
-carray<AllocInfo> deshi__memory_allocinfo_active_expose();
-carray<AllocInfo> deshi__memory_allocinfo_inactive_expose();
-StartLinkageC();
-#endif //COMPILER_FEATURE_CPP
+//Exposes the active internal allocation info array
+void deshi__memory_allocinfo_active_expose(AllocInfo** out_array, upt* out_size);
+
+//Exposes the inactive internal allocation info array
+void deshi__memory_allocinfo_inactive_expose(AllocInfo** out_array, upt* out_size);
 
 void deshi__memory_draw();
 void deshi__memory_bytes_draw();
