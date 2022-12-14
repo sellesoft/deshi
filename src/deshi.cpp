@@ -300,6 +300,7 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/time.h"
 #include "core/ui.h"
 #include "core/ui2.h"
+#include "core/ui2_widgets.h"
 #include "core/window.h"
 
 //// platform ////

@@ -1,7 +1,17 @@
 /* deshi UI Module
+Index
+-----
+@ui_keybinds
+@ui_drawcmd
+@ui_style
+@ui_item
+@ui_generate
+@ui_immediate
+@ui_context
+
+
 Notes
 -----
-
 	The basic object of ui is the uiItem struct. uiItems are laid out in memory as they are created and connected by nodes. 
 	These connections determine in what order uiItems are rendered. uiItems never move in memory, except when deleted. 
 
@@ -35,16 +45,6 @@ Notes
 	many different types, unless the user explicitly asks for them.
 
 
-Index
------
-@ui_style
-@ui_item
-@ui_window
-@ui_button
-@ui_text
-@ui_section
-@ui_context
-
 TODOs
 -----
 possibly implement a system for suppressing certain errors on some behavoirs or just for suppressing all errors
@@ -54,10 +54,9 @@ Implement a system for trimming down how much we have to do to check every item.
 	that stores uiItem*'s in the order we would have walked it. This also reduces the potentially massive amount of
 	recursion that ui can go into.
 
-*/
 
-/*
-	Item Style Documentation
+Item Style Documentation
+-------------------------
 
 	uiItems may be passed a uiStyle object or a css-style string to determine
 	the style an item takes on. Following is docs about each property. Each property
@@ -445,12 +444,9 @@ TODO(sushi) example
 -   Defaults:
 	 	Defaults to false.
 */
-
-
 #pragma once
 #ifndef DESHI_UI2_H
 #define DESHI_UI2_H
-
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "kigu/node.h"
@@ -459,6 +455,9 @@ TODO(sushi) example
 #include "core/render.h"
 #include "core/text.h"
 #include "kigu/hash.h"
+struct Font;
+struct Texture;
+
 
 #if DESHI_RELOADABLE_UI
 #  if DESHI_DLL
@@ -486,24 +485,10 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
-#define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
-#define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
-#define MarginedArea(item)        (vec2{MarginedWidth(item), MarginedHeight(item)})
-#define MarginedStyleWidth(item)  ((item)->style.width + (item)->style.margin_left + (item)->style.margin_right)
-#define MarginedStyleHeight(item) ((item)->style.height + (item)->style.margin_top + (item)->style.margin_bottom)
-#define MarginedStyleArea(item)   (vec2{MarginedStyleWidth(item), MarginedStyleHeight(item)})
-#define BorderedWidth(item)       (MarginedWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedHeight(item)      (MarginedHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedArea(item)        (vec2{BorderedWidth(item), BorderedHeight(item)})
-#define BorderedStyleWidth(item)  ((item)->style.width + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedStyleHeight(item) ((item)->style.height + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedStyleArea(item)   (vec2{BorderedStyleWidth(item), BorderedStyleHeight(item)})
-#define PaddedWidth(item)         (BorderedWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
-#define PaddedHeight(item)        (BorderedHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
-#define PaddedArea(item)          (vec2{PaddedWidth(item), PaddedHeight(item)})
-#define PaddedStyleWidth(item)    ((item)->style.width - (item)->style.padding_left - (item)->style.padding_right)
-#define PaddedStyleHeight(item)   ((item)->style.height - (item)->style.padding_top - (item)->style.padding_bottom)
-#define PaddedStyleArea(item)     (vec2{PaddedStyleWidth(item), PaddedStyleHeight(item)})
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_keybinds
+
 
 // a singleton collection of keybinds for use throughout ui
 struct uiKeybinds{
@@ -512,22 +497,22 @@ struct uiKeybinds{
 			KeyCode left;
 			KeyCode left_word;
 			KeyCode left_wordpart;
-
+			
 			KeyCode right;
 			KeyCode right_word;
 			KeyCode right_wordpart;
-
+			
 			KeyCode up;
 			KeyCode down;
 			
 			//KeyCode anchor;
 		}cursor, select;
-
+		
 		struct{
 			KeyCode left;
 			KeyCode left_word;
 			KeyCode left_wordpart;
-
+			
 			KeyCode right;
 			KeyCode right_word;
 			KeyCode right_wordpart;
@@ -535,14 +520,11 @@ struct uiKeybinds{
 	}inputtext;
 }global uikeys;
 
-//calling this with strict = 1 means it will only return hovered if the mouse is 
-//visibly over it and not blocked by anything else. calling this with strict = 0 
-//just checks if the mouse is within the items bounds
-b32 ui_item_hovered(uiItem* item, b32 strict = 1);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @item
-struct Texture;
+// @ui_drawcmd
+
+
 struct uiDrawCmd{
 	Node node;
 	Texture* texture;
@@ -553,8 +535,20 @@ struct uiDrawCmd{
 	vec2i scissorOffset;
 	vec2i scissorExtent;
 };
+
 #define uiDrawCmdFromNode(x) CastFromMember(uiDrawCmd, node, x)
 
+uiDrawCmd* ui_make_drawcmd(upt count);
+
+void ui_drawcmd_delete(uiDrawCmd* dc);
+
+void ui_drawcmd_remove(uiDrawCmd* drawcmd);
+
+void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_style
 
 
 enum{
@@ -566,12 +560,12 @@ enum{
 	pos_draggable_relative,
 	pos_draggable_absolute,
 	pos_draggable_fixed,
-
+	
 	anchor_top_left = 0,
 	anchor_top_right,
 	anchor_bottom_right,
 	anchor_bottom_left,
-
+	
 	size_normal    = 0,
 	size_auto_y    = 1 << 0,
 	size_auto_x    = 1 << 1,
@@ -581,7 +575,7 @@ enum{
 	size_percent   = size_percent_x | size_percent_y,
 	size_square    = 1 << 4,
 	size_flex      = 1 << 5,
-
+	
 	border_none = 0,
 	border_solid,
 	
@@ -589,17 +583,17 @@ enum{
 	overflow_scroll_hidden,
 	overflow_hidden,
 	overflow_visible,
-
+	
 	text_wrap_none = 0,
 	text_wrap_char, 
 	text_wrap_word,
-
+	
 	display_vertical    = 0,
 	display_horizontal  = 1 << 0,
 	display_flex        = 1 << 1,
 	display_reverse     = 1 << 2,
 	display_hidden      = 1 << 3,
-
+	
 	action_act_never = 0,
 	action_act_mouse_hover,    // call action when the mouse is positioned over the item
 	action_act_mouse_pressed,  // call action when the mouse is pressed over the item
@@ -608,7 +602,6 @@ enum{
 	action_act_always,         // call action every frame
 };
 
-struct Font;
 external struct uiStyle{
 	Type positioning; 
 	Type anchor;
@@ -681,6 +674,30 @@ external struct uiStyle{
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
 
+#define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
+#define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
+#define MarginedArea(item)        (vec2{MarginedWidth(item), MarginedHeight(item)})
+#define MarginedStyleWidth(item)  ((item)->style.width + (item)->style.margin_left + (item)->style.margin_right)
+#define MarginedStyleHeight(item) ((item)->style.height + (item)->style.margin_top + (item)->style.margin_bottom)
+#define MarginedStyleArea(item)   (vec2{MarginedStyleWidth(item), MarginedStyleHeight(item)})
+#define BorderedWidth(item)       (MarginedWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedHeight(item)      (MarginedHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedArea(item)        (vec2{BorderedWidth(item), BorderedHeight(item)})
+#define BorderedStyleWidth(item)  ((item)->style.width + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedStyleHeight(item) ((item)->style.height + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
+#define BorderedStyleArea(item)   (vec2{BorderedStyleWidth(item), BorderedStyleHeight(item)})
+#define PaddedWidth(item)         (BorderedWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
+#define PaddedHeight(item)        (BorderedHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
+#define PaddedArea(item)          (vec2{PaddedWidth(item), PaddedHeight(item)})
+#define PaddedStyleWidth(item)    ((item)->style.width - (item)->style.padding_left - (item)->style.padding_right)
+#define PaddedStyleHeight(item)   ((item)->style.height - (item)->style.padding_top - (item)->style.padding_bottom)
+#define PaddedStyleArea(item)     (vec2{PaddedStyleWidth(item), PaddedStyleHeight(item)})
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_item
+
+
 struct uiItem{
 	TNode node;
 	str8 id; //NOTE(sushi) mostly for debugging, not sure if this will have any other use in the interface
@@ -692,13 +709,13 @@ struct uiItem{
 	void (*action)(uiItem*);
 	void* action_data; //a pointer to arbitrary data to be accessed in the action callback
 	Type action_trigger; //how the action is triggered
-
+	
 	//// INTERNAL ////
 	u32 style_hash;
-
+	
 	vec2 pos_local;  // position relative to parent
 	vec2 pos_screen; // position relative to screen
-
+	
 	union{ // size that the item visually takes up on the screen (before scaling)
 		struct{ f32 width, height; };
 		vec2 size;
@@ -708,12 +725,12 @@ struct uiItem{
 		vec2 scale;
 	};
 	vec2 max_scroll;
-
+	
 	//screen position and size of the bounding box containing all of an items
 	//children, this is used to optimize things later, such as finding the hovered item
 	vec2 children_bbx_pos;
 	vec2 children_bbx_size;
-
+	
 	//the visible size of the item after being cut by overflow
 	vec2 visible_start;
 	vec2 visible_size; 
@@ -724,9 +741,9 @@ struct uiItem{
 	
 	//set to manually force the item to regenerate
 	b32 dirty;
-
+	
 	Type update_trigger;
-
+	
 	void (*__update)(uiItem*);
 	void (*__evaluate)(uiItem*);
 	void (*__generate)(uiItem*);
@@ -734,14 +751,14 @@ struct uiItem{
 	
 	str8 file_created;
 	upt  line_created;
-
+	
 	//size of the item in memory and the offset of the item member on widgets 
 	u64 memsize;
-
+	
 	//indicates if the item has been cached or not.
 	//this only applies to immediate mode items 	
 	b32 cached;
-
+	
 	struct{
 		u32 evals;
 		u32 draws;
@@ -749,28 +766,30 @@ struct uiItem{
 	
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
+
+struct uiItemSetup{
+	upt size; 
+	uiStyle* style; 
+	str8 file; 
+	upt line; 
+	void (*update)(uiItem*); 
+	Type update_trigger; 
+	void (*generate)(uiItem*); 
+	void (*evaluate)(uiItem*);
+	u32  (*hash)(uiItem*);
+	
+	vec2i* drawinfo_reserve;
+	u32 drawcmd_count;
+};
+
 #define uiItemFromNode(x) CastFromMember(uiItem, node, x)
-
-UI_FUNC_API(uiItem*, ui_make_item, uiStyle* style, str8 file, upt line);
-#define uiItemM()       UI_DEF(make_item( 0,STR8(__FILE__),__LINE__))
-#define uiItemMS(style) UI_DEF(make_item((style),STR8(__FILE__),__LINE__))
-
-UI_FUNC_API(uiItem*, ui_begin_item, uiStyle* style, str8 file, upt line);
-#define uiItemB()       UI_DEF(begin_item(0,STR8(__FILE__),__LINE__))
-#define uiItemBS(style) UI_DEF(begin_item((style),STR8(__FILE__),__LINE__))
-
-UI_FUNC_API(void, ui_end_item, str8 file, upt line);
-#define uiItemE() UI_DEF(end_item(STR8(__FILE__),__LINE__))
-
-UI_FUNC_API(void, ui_remove_item, uiItem* item, str8 file, upt line);
-#define uiItemR(item) UI_DEF(remove_item((item), STR8(__FILE__),__LINE__))
 
 inline u32 hash_style(uiItem* item){DPZoneScoped;
 	uiStyle* s = &item->style;
 	u32 seed = 2166136261;
 	seed ^= *(u32*)&s->positioning;     seed *= 16777619;
-	seed ^= *(u32*)&s->sizing;			seed *= 16777619;
-	seed ^= *(u32*)&s->anchor;			seed *= 16777619;
+	seed ^= *(u32*)&s->sizing;          seed *= 16777619;
+	seed ^= *(u32*)&s->anchor;          seed *= 16777619;
 	seed ^= *(u32*)&s->x;               seed *= 16777619;
 	seed ^= *(u32*)&s->y;               seed *= 16777619;
 	seed ^= *(u32*)&s->width;           seed *= 16777619;
@@ -802,8 +821,41 @@ inline u32 hash_style(uiItem* item){DPZoneScoped;
 	return seed;
 }
 
-//-------------------------------------------------------------------------------------------------
-// @immediate
+//calling this with strict = 1 means it will only return hovered if the mouse is 
+//visibly over it and not blocked by anything else. calling this with strict = 0 
+//just checks if the mouse is within the items bounds
+b32 ui_item_hovered(uiItem* item, b32 strict = 1);
+
+UI_FUNC_API(uiItem*, ui_make_item, uiStyle* style, str8 file, upt line);
+#define uiItemM()       UI_DEF(make_item( 0,STR8(__FILE__),__LINE__))
+#define uiItemMS(style) UI_DEF(make_item((style),STR8(__FILE__),__LINE__))
+
+UI_FUNC_API(uiItem*, ui_begin_item, uiStyle* style, str8 file, upt line);
+#define uiItemB()       UI_DEF(begin_item(0,STR8(__FILE__),__LINE__))
+#define uiItemBS(style) UI_DEF(begin_item((style),STR8(__FILE__),__LINE__))
+
+UI_FUNC_API(void, ui_end_item, str8 file, upt line);
+#define uiItemE() UI_DEF(end_item(STR8(__FILE__),__LINE__))
+
+UI_FUNC_API(void, ui_remove_item, uiItem* item, str8 file, upt line);
+#define uiItemR(item) UI_DEF(remove_item((item), STR8(__FILE__),__LINE__))
+
+uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_generate
+
+
+vec2i ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
+
+vec2i ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_immediate
+
+
 UI_FUNC_API(void, ui_begin_immediate_branch, uiItem* parent, str8 file, upt line);
 UI_FUNC_API(void, ui_end_immediate_branch, str8 file, upt line);
 UI_FUNC_API(void, ui_push_id, s64 x, str8 file, upt line);
@@ -814,172 +866,11 @@ UI_FUNC_API(void, ui_pop_id, str8 file, upt line);
 #define uiPushID(x)           UI_DEF(push_id(x, STR8(__FILE__),__LINE__))
 #define uiPopID()             UI_DEF(pop_id(STR8(__FILE__),__LINE__))
 
-//-------------------------------------------------------------------------------------------------
-// @slider
-UI_FUNC_API(uiItem*, ui_make_slider_f32, f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
-#define uiSliderf32(min,max,var)        UI_DEF(make_slider_f32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSliderf32S(min,max,var,style) UI_DEF(make_slider_f32(min,max,var,(style),STR8(__FILE__),__LINE__));
-UI_FUNC_API(uiItem*, ui_make_slider_u32, u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line);
-#define uiSlideru32(min,max,var)        UI_DEF(make_slider_u32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSlideru32S(min,max,var,style) UI_DEF(make_slider_u32(min,max,var,(style),STR8(__FILE__),__LINE__));
-UI_FUNC_API(uiItem*, ui_make_slider_s32, s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line);
-#define uiSliders32(min,max,var)        UI_DEF(make_slider_s32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSliders32S(min,max,var,style) UI_DEF(make_slider_s32(min,max,var,(style),STR8(__FILE__),__LINE__));
-
-struct uiSlider{
-	uiItem item;
-	
-	union{
-		u32 maxu32;
-		s32 maxs32;
-		f32 maxf32;
-	};
-	union{
-		u32 minu32;
-		s32 mins32;
-		f32 minf32;
-	};
-	union{
-		u32* varu32;
-		s32* vars32;
-		f32* varf32;
-	};
-	Type type; //0:f32 1:u32 2:s32
-	f32 mouse_offset;
-	b32 active;
-	f32 pos;
-	f32 width;
-
-	struct{
-		struct{
-			color rail;
-			color rail_outline;
-			color dragger;
-		}colors;
-		Type dragger_shape;
-		f32 rail_thickness; //percentage of full thickness, 0-1
-	}style;
-};
-#define uiGetSlider(x) CastFromMember(uiSlider, item, x)
-
-enum{
-	slider_dragger_rect = 0,
-	slider_dragger_round,
-};
-
-inline u32 slider_style_hash(uiItem* item){
-	uiSlider* data = uiGetSlider(item);
-	
-	u32 seed = 2166136261;
-	seed ^= data->style.colors.rail.rgba;       seed *= 16777619;
-	seed ^= data->style.colors.dragger.rgba;    seed *= 16777619;
-	seed ^= data->style.dragger_shape;          seed *= 16777619;
-	seed ^= *(u32*)&data->style.rail_thickness; seed *= 16777619;
-
-	return seed;
-} 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @checkbox
-
-//uiCheckbox is a terminal node, so it cannot hold any children
-UI_FUNC_API(uiItem*, ui_make_checkbox, b32* var, uiStyle* style, str8 file, upt line);
-#define uiCheckboxM(var)         UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
-#define uiCheckboxMS(var, style) UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
-
-enum{
-	checkbox_fill_box = 0,
-	checkbox_fill_checkmark,
-};
-
-struct uiCheckbox{
-	uiItem item;
-	
-	b32* var;
-
-	struct{
-		struct{
-			color filling;
-		}colors;
-		Type fill_type;
-		vec2 fill_padding;
-	}style;
-};
-#define uiGetCheckbox(x) CastFromMember(uiCheckbox, item, x)
-
-inline u32 checkbox_style_hash(uiItem* item){
-	uiCheckbox* data = uiGetCheckbox(item);
-
-	u32 seed = 2166136261;
-	seed ^= data->style.colors.filling.rgba;    seed *= 16777619;
-	seed ^= data->style.fill_type;              seed *= 16777619;
-	return seed;
-}
-
-//---------------------------------------------------------------------------------------------
-// @text
-
-//uiText is a terminal node meaning it cannot have any children.
-UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
-//NOTE(sushi) does not automatically make a str8, use uiTextML for that.
-#define uiTextM(text)          UI_DEF(make_text((text),           0, STR8(__FILE__),__LINE__))
-#define uiTextMS(style, text)  UI_DEF(make_text((text),     (style), STR8(__FILE__),__LINE__))
-//NOTE(sushi) this automatically applies STR8() to text, so you can only use literals with this macro
-#define uiTextML(text)         UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
-#define uiTextMSL(style, text) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
-
-struct uiText{
-	uiItem item;
-	Text text;
-	b32 selecting;
-	//TODO(sushi) get rid of array here
-	array<pair<s64,vec2>> breaks;
-};
-#define uiGetText(x) CastFromMember(uiText, item, x)
+// @ui_context
 
 
-//---------------------------------------------------------------------------------------------
-// @inputtext
-
-UI_FUNC_API(uiItem*, ui_make_input_text, str8 preview, uiStyle* style, str8 file, upt line);
-#define uiInputTextM()                UI_DEF(make_input_text(    {0},       0, STR8(__FILE__),__LINE__))
-#define uiInputTextMS(style)          UI_DEF(make_input_text(    {0}, (style), STR8(__FILE__),__LINE__))
-#define uiInputTextMP(preview)        UI_DEF(make_input_text(preview,       0, STR8(__FILE__),__LINE__))
-#define uiInputTextMSP(style,preview) UI_DEF(make_input_text(preview, (style), STR8(__FILE__),__LINE__))
-
-enum{
-	input_cursor_line = 0,
-	input_cursor_underline,
-	input_cursor_rect,
-	input_cursor_filled_rect,
-};
-
-struct uiInputText{
-	uiItem item;
-	str8   preview;
-	Text   text;
-	b32    selecting;
-	//TODO(sushi) get rid of array here
-	array<pair<s64,vec2>> breaks;
-
-	Stopwatch repeat_hold;
-	Stopwatch repeat_throttle;
-
-	struct{
-		//b32 allow_multiline; TODO
-		struct{
-			color preview;
-			color cursor;
-		}colors;
-		Type cursor;
-		f32 hold_time;     //time until repeating starts in ms
-		f32 throttle_time; //time between repeats in ms
-	}style;
-};
-#define uiGetInputText(x) CastFromMember(uiInputText, item, x)
-
-//-------------------------------------------------------------------------------------------------
-// @context
 struct MemoryContext;
 struct uiContext;
 UI_FUNC_API(void, ui_init, MemoryContext* memctx, uiContext* uictx);
@@ -1027,7 +918,7 @@ struct uiContext{
 	uiItem* hovered; //item currently hovered by the mouse
 	uiItem* active;  //item last interacted with
 	uiInputState istate;
-
+	
 	struct{
 		b32  active;
 		b32  pushed;
@@ -1036,9 +927,9 @@ struct uiContext{
 		map<u64, uiItem*> cache;
 		u32 id; 
 	}immediate;
-
+	
 	b32 updating; //set true while ui_update is running
-
+	
 	//// memory ////
 	//b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
 	array<uiItem*> items;
@@ -1046,12 +937,12 @@ struct uiContext{
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
 	array<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
 	array<uiDrawCmd*> inactive_drawcmds_index_sorted;
-
+	
 	Arena* vertex_arena; // arena of Vertex2
 	Arena* index_arena; // arena of u32
 	RenderTwodBuffer render_buffer;
 	array<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
-
+	
 	struct{
 		//visible on screen
 		u64 items_visible;
@@ -1065,13 +956,12 @@ struct uiContext{
 		u64 indices_reserved;  
 	}stats;
 };
-
-//global UI pointer
-extern uiContext* g_ui;
+extern uiContext* g_ui; //global UI pointer
 
 void ui_debug();
 
 //Creates the demo window (or destroys if already created)
 void ui_demo();
+
 
 #endif //DESHI_UI2_H
