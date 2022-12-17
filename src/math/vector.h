@@ -329,13 +329,13 @@ FORCE_INLINE vec2i Vec2i(s32 x, s32 y){DPZoneScoped;
 
 //// nonmember constants ////
 FORCE_INLINE vec2i vec2i_ZERO() { return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_ONE()  { return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_UP()   { return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_DOWN() { return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_LEFT() { return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_RIGHT(){ return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_UNITX(){ return vec2i{ 0, 0}; }
-FORCE_INLINE vec2i vec2i_UNITY(){ return vec2i{ 0, 0}; }
+FORCE_INLINE vec2i vec2i_ONE()  { return vec2i{ 1, 1}; }
+FORCE_INLINE vec2i vec2i_UP()   { return vec2i{ 0, 1}; }
+FORCE_INLINE vec2i vec2i_DOWN() { return vec2i{ 0,-1}; }
+FORCE_INLINE vec2i vec2i_LEFT() { return vec2i{-1, 0}; }
+FORCE_INLINE vec2i vec2i_RIGHT(){ return vec2i{ 1, 0}; }
+FORCE_INLINE vec2i vec2i_UNITX(){ return vec2i{ 1, 0}; }
+FORCE_INLINE vec2i vec2i_UNITY(){ return vec2i{ 0, 1}; }
 
 
 //// nonmember operators ////
