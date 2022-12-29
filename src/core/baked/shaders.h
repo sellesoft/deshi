@@ -32,7 +32,7 @@
 "layout(set = "set", binding = "binding") uniform UniformBufferObject{\n"
 #elif DESHI_OPENGL
 #  define DESHI_BAKED_SHADERS_UBO_HEADER_STRING(set,binding) \
-"uniform PushConsts{\n"
+"uniform UniformBufferObject{\n"
 #endif
 
 #if DESHI_VULKAN
@@ -389,7 +389,7 @@ DESHI_BAKED_SHADERS_COMMON_VERTEX_OUTPUT_STRING
 "layout(location = 3) out float outLightBrightness;\n"
 "layout(location = 4) out vec3 outWorldPos;\n"
 "layout(location = 5) out vec3 viewPosition;\n"
-"layout(location = 6) out int  outEnablePCF;\n"
+"layout(location = 6) flat out int outEnablePCF;\n"
 "layout(location = 7) out vec4 outShadowCoord;\n"
 "layout(location = 8) out vec3 outLightVec;\n"
 "layout(location = 9) out vec3 outViewVec;\n"
@@ -429,7 +429,7 @@ DESHI_BAKED_SHADERS_COMMON_FRAGMENT_INPUT_STRING
 "layout(location = 3) in float lightBrightness;\n"
 "layout(location = 4) in vec3 worldPosition;\n"
 "layout(location = 5) in vec3 viewPosition;\n"
-"layout(location = 6) in flat int inEnablePCF;\n"
+"layout(location = 6) flat in int inEnablePCF;\n"
 "layout(location = 7) in vec4 inShadowCoord;\n"
 "layout(location = 8) in vec3 inLightVec;\n"
 "layout(location = 9) in vec3 inViewVec;\n"
