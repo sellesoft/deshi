@@ -738,6 +738,8 @@ render_update(){DPZoneScoped;
 				glGenBuffers(1, &uiBuffers.vbo_handle);
 				glGenBuffers(1, &uiBuffers.ibo_handle);
 			}
+
+			
 			
 			//bind buffers
 			glBindVertexArray(uiBuffers.vao_handle);
