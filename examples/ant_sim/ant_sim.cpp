@@ -124,7 +124,7 @@ inline f32 distance_attenuation(f32 score, f32 pos1[2], f32 pos2[2]){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@agent
 enum{
-	Race_Ant,
+	Race_BlackAnt,
 };
 
 typedef struct Agent{
@@ -158,6 +158,10 @@ void flush_screen(){
 int main(int args_count, char** args){
 	deshi_init();
 	
+	
+	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+	g_ui->base.style.font_height = 11;
+	g_ui->base.style.text_color  = Color_White;
 	uiItem* item = uiItemM();
 	item->style.size = {20,20};
 	item->style.background_color = {50,75,100,255};
@@ -216,7 +220,19 @@ int main(int args_count, char** args){
 	}
 	
 	deshi_loop_start();{
-		
+		//update ui
+		uiImmediateB();{
+			persist Type anchor = anchor_top_left;
+			uiItem* window = uiItemB();
+			if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
+			window->style.positioning      = pos_absolute;
+			window->style.anchor           = anchor;
+			window->style.sizing           = size_auto;
+			window->style.background_color = Color_DarkGrey;
+			window->id                     = STR8("ant_sim.info_window");
+			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
+			uiItemE();
+		}uiImmediateE();
 	}deshi_loop_end();
 	
 	
