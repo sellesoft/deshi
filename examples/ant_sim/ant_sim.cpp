@@ -316,9 +316,37 @@ Agent* make_agent(Type race, u32 age, vec2i pos, u32 need_count, ...){
 	return agent;
 }
 
+
+template<typename... Args>
+Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
+	constexpr u32 arg_count = sizeof...(Args);
+	Agent* agent = (Agent*)memory_heap_add_bytes(agents_heap, sizeof(Agent) + arg_count*sizeof(Need));
+	agent->entity.name  = str8{0};
+	agent->entity.age   = age;
+	agent->entity.pos   = pos;
+	agent->race         = race;
+	agent->action_index = -1;
+	forI(AGENT_ADVERT_QUEUE_SIZE) agent->advert_queue[i] = 0;
+	agent->needs_array  = (Need*)(agent+1);
+	agent->needs_count  = arg_count;
+	Need needs[arg_count] = {args...};
+	CopyMemory(agent->needs_array, needs, agent->needs_count*sizeof(Need));
+	return agent;
+}
+
 Advert* make_advert_def(str8 name, Flags flags, u32 range, u32 time, int cost_count, int action_count, ...){
 	NotImplemented;
 	return 0;
+}
+
+ActionDef* make_action_def(Type type, Flags flags, u32 time, int costs_count, ...){
+	ActionDef* def = memory_arena_pushT(action_def_arena, ActionDef);
+	def->type = type;
+	def->flags = flags;
+	def->time = time;
+	def->costs_count = costs_count;
+
+	return def;	
 }
 
 Entity* make_nonagent_entity(vec2i pos, u32 age){
@@ -389,9 +417,15 @@ int main(int args_count, char** args){
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
-	// uiItem* item = uiItemM();
-	// item->style.size = {20,20};
-	// item->style.background_color = {50,75,100,255};
+
+	//init ant_sim storage
+	action_def_arena = memory_create_arena(Megabytes(1));
+	advert_def_arena = memory_create_arena(Megabytes(1));
+	agents_heap = memory_heap_init_bytes(Megabytes(1));
+	memory_pool_init(adverts_pool, 1024);
+	memory_pool_init(entities_pool, 1024);
+	
+	make_agent(0, 1, {2,2}, Need{1,0.0,0.0,0.0}, Need{1,1.0,0.0,0.0});
 
 	{// init screen texture
 		// https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
@@ -448,6 +482,10 @@ int main(int args_count, char** args){
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, rendering.screen);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
+
+	glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
+	glBindVertexArray(rendering.vao);
+	glDrawElements(GL_TRIANGLES, 2, GL_UNSIGNED_BYTE, 0);
 	
 	deshi_loop_start();{
 		//simulate
