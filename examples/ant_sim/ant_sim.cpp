@@ -12,6 +12,8 @@ Index:
 @main
 */
 #include "deshi.h"
+#include "glad/gl.h"
+#include "glad/wgl.h"
 struct ActionDef;
 struct AdvertDef;
 struct Advert;
@@ -358,6 +360,25 @@ void tick_agent(Agent* agent){
 	
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//@render
+
+
+struct{
+	u32 screen[1080*1080];
+	GLuint screen_idx;
+	u32 vao; // handle to vtx array object
+	u32 vbo; // handle to vtx buffer object
+	u32 ibo; // handle to idx buffer object
+	Vertex2* vtxarr; // screen vtx array
+	u32* idxarr;
+}rendering;
+#define GetPixel(x,y) rendering.screen->pixels[x+y*1080]
+
+
+void flush_screen(){
+	//glTexSubImage2D(GL_TEXTURE_2D, );
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
@@ -368,6 +389,64 @@ int main(int args_count, char** args){
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
+	
+	
+	uiItem* item = uiItemM();
+	item->style.size = {20,20};
+	item->style.background_color = {50,75,100,255};
+	
+	{// init screen texture
+		// https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
+		glGenVertexArrays(1, &rendering.vao)
+			glBindVertexArray(rendering.vao);
+		
+		rendering.vtxarr = (Vertex2*)memalloc(sizeof(Vertex2)*4);
+		rendering.vtxarr[0] = {   0,   0}; rendering.vtxarr[0].color = {50,75,100,255};
+		rendering.vtxarr[1] = {   0,1080}; rendering.vtxarr[1].color = {50,75,100,255};
+		rendering.vtxarr[2] = {1080,   0}; rendering.vtxarr[2].color = {50,75,100,255};
+		rendering.vtxarr[3] = {1080,1080}; rendering.vtxarr[3].color = {50,75,100,255};
+		
+		rendering.idxarr = (u32*)memalloc(sizeof(u32) * 6);
+		rendering.idxarr[0] = 0;
+		rendering.idxarr[1] = 2;
+		rendering.idxarr[2] = 1;
+		rendering.idxarr[3] = 2;
+		rendering.idxarr[4] = 3;
+		rendering.idxarr[5] = 1;
+		
+		glGenBuffers(1, &rendering.vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
+		glBufferData(GL_ARRAY_BUFFER, 4, 0, GL_STATIC_DRAW);
+		
+		glGenBuffers(1, &rendering.ibo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6, 0, GL_STATIC_DRAW);
+		
+		glBindBuffer(   GL_ARRAY_BUFFER,         rendering.vbo);
+		glBufferSubData(GL_ARRAY_BUFFER,         rendering.vbo, 4, rendering.verts);
+		glBindBuffer(   GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo, 4, rendering.);
+		
+		// do index array
+		
+		
+		glGenTextures(1, &rendering.gpu_idx);
+		glBindTexture(GL_TEXTURE_2D, rendering.gpu_idx);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 8, 8, 0, GL_RGBA32UI, GL_UNSIGNED_BYTE, screen);
+		glBindTexture(GL_TEXTURE_2D, 0);	
+		
+		
+		glClear(GL_COLOR_BUFFER_BIT);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		glEnable(GL_TEXTURE_2D);
+		
+		
+		
+		
+		
+	}
 	
 	//init ant_sim storage
 	action_def_arena = memory_create_arena(Megabytes(1));
