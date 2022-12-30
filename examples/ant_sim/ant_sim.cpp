@@ -162,9 +162,9 @@ int main(int args_count, char** args){
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
-	uiItem* item = uiItemM();
-	item->style.size = {20,20};
-	item->style.background_color = {50,75,100,255};
+	// uiItem* item = uiItemM();
+	// item->style.size = {20,20};
+	// item->style.background_color = {50,75,100,255};
 
 	{// init screen texture
 	 // https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
@@ -218,11 +218,28 @@ int main(int args_count, char** args){
 		glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA8UI, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, rendering.screen);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 	}
-	
+
+	u32 text[] = {
+		PackColorU32(50,50,50,255), PackColorU32(50,50,50,255), 
+		PackColorU32(50,50,50,255), PackColorU32(50,50,50,255)
+	};
+
+	GLint w,h;
+	glGetTextureLevelParameteriv(rendering.screen_idx, 0, GL_TEXTURE_WIDTH, &w);
+	glGetTextureLevelParameteriv(rendering.screen_idx, 0, GL_TEXTURE_HEIGHT, &h);
+
+	Log("", w, " ", h);
+
+	glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 2, 2, GL_RGBA, GL_UNSIGNED_BYTE, text);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	deshi_loop_start();{
 		//update ui
 		uiImmediateB();{
@@ -237,6 +254,8 @@ int main(int args_count, char** args){
 			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
 			uiItemE();
 		}uiImmediateE();
+
+		
 	}deshi_loop_end();
 	
 	
