@@ -168,14 +168,17 @@ int main(int args_count, char** args){
 
 	{// init screen texture
 	 // https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
-		glGenVertexArrays(1, &rendering.vao)
+		glGenVertexArrays(1, &rendering.vao);
 		glBindVertexArray(rendering.vao);
 
+		u32 vtxsize = sizeof(Vertex2)*4;
+		u32 idxsize = sizeof(u32)*6;
+
 		rendering.vtxarr = (Vertex2*)memalloc(sizeof(Vertex2)*4);
-		rendering.vtxarr[0] = {   0,   0}; rendering.vtxarr[0].color = {50,75,100,255};
-		rendering.vtxarr[1] = {   0,1080}; rendering.vtxarr[1].color = {50,75,100,255};
-		rendering.vtxarr[2] = {1080,   0}; rendering.vtxarr[2].color = {50,75,100,255};
-		rendering.vtxarr[3] = {1080,1080}; rendering.vtxarr[3].color = {50,75,100,255};
+		rendering.vtxarr[0] = {   0,   0}; rendering.vtxarr[0].color = PackColorU32(50,75,100,255);
+		rendering.vtxarr[1] = {   0,1080}; rendering.vtxarr[1].color = PackColorU32(50,75,100,255);
+		rendering.vtxarr[2] = {1080,   0}; rendering.vtxarr[2].color = PackColorU32(50,75,100,255);
+		rendering.vtxarr[3] = {1080,1080}; rendering.vtxarr[3].color = PackColorU32(50,75,100,255);
 
 		rendering.idxarr = (u32*)memalloc(sizeof(u32) * 6);
 		rendering.idxarr[0] = 0;
@@ -185,37 +188,38 @@ int main(int args_count, char** args){
 		rendering.idxarr[4] = 3;
 		rendering.idxarr[5] = 1;
 
+		// generate and bind vertex buffers
 		glGenBuffers(1, &rendering.vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
-		glBufferData(GL_ARRAY_BUFFER, 4, 0, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vtxsize, 0, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, rendering.vbo, rendering.vtxarr);
 
+		// generate and bind index buffers
 		glGenBuffers(1, &rendering.ibo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6, 0, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxsize, 0, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
 
-		glBindBuffer(   GL_ARRAY_BUFFER,         rendering.vbo);
-		glBufferSubData(GL_ARRAY_BUFFER,         rendering.vbo, 4, rendering.verts);
-		glBindBuffer(   GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo, 4, rendering.);
+		// copy quad to buffers
+		glBindBuffer(GL_ARRAY_BUFFER,               rendering.vbo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,       rendering.ibo);
+		glBufferSubData(GL_ARRAY_BUFFER,         0, rendering.vbo, rendering.vtxarr);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
 
-		// do index array
+		// specify vertex packing
+		glVertexAttribPointer(0, 3,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
+		glVertexAttribPointer(1, 2,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
+		glVertexAttribPointer(2, 4,   GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
+		glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
 
-
-		glGenTextures(1, &rendering.gpu_idx);
-		glBindTexture(GL_TEXTURE_2D, rendering.gpu_idx);
+		glGenTextures(1, &rendering.screen_idx);
+		glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 8, 8, 0, GL_RGBA32UI, GL_UNSIGNED_BYTE, screen);
-		glBindTexture(GL_TEXTURE_2D, 0);	
-
-
-		glClear(GL_COLOR_BUFFER_BIT);
-		glBindTexture(GL_TEXTURE_2D, tex);
-		glEnable(GL_TEXTURE_2D);
-
-
-
-		
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA8UI, GL_UNSIGNED_BYTE, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 
 	}
 	
