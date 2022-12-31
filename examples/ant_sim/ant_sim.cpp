@@ -14,32 +14,23 @@ Index:
 #include "deshi.h"
 #include "glad/gl.h"
 #include "glad/wgl.h"
-struct ActionDef;
-struct AdvertDef;
 struct Advert;
-struct Entity;
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@vars
-u64 ticks;
-b32 paused;
-Arena* action_def_arena;
-Arena* advert_def_arena;
-Heap* agents_heap;
-Advert* adverts_pool;
-Entity* entities_pool;
-
-#define WORLD_WIDTH 512
-#define WORLD_HEIGHT 512
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@entity
+enum{
+	Entity_NULL = 0,
+	Entity_Agent,
+	Entity_Leaf,
+	Entity_COUNT
+};
+
 typedef struct Entity{
 	str8 name;
 	u64 age;
 	vec2i pos;
+	Type type;
 }Entity;
 
 
@@ -68,7 +59,7 @@ str8 NeedStrings[] = {
 	STR8("Safety"),
 	STR8("Sleep"),
 	STR8("Water"),
-};StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
+};//StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
 
 typedef struct Need{
 	Type type;
@@ -149,6 +140,7 @@ str8 RaceSpeciesStrings[] = {
 };StaticAssert(ArrayCount(RaceSpeciesStrings) == Race_COUNT);
 
 typedef struct Agent{
+	Node node;
 	Entity entity;
 	Type race;
 	u32 action_index;
@@ -156,8 +148,9 @@ typedef struct Agent{
 	Need* needs_array;
 	u32 needs_count;
 	u32 padding;
-	Node node;
 }Agent;
+#define AgentFromNode(ptr) CastFromMember(Agent,node,ptr)
+#define AgentFromEntity(ptr) CastFromMember(Agent,entity,ptr)
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -297,11 +290,35 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@world
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
 
+struct{
+	Entity** map;
+}world;
+#define GetEntity(x,y) world.map[x+y*WORLD_WIDTH]
+
+b32 move_entity(Entity* e, vec2i pos){
+	if(GetEntity(pos.x,pos.y)) return false;
+	GetEntity(e->pos.x,e->pos.y) = 0;
+	GetEntity(pos.x,pos.y) = e;
+	e->pos = pos;
+	return true;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@simulation
+u64 ticks;
+b32 paused;
+Arena* action_def_arena;
+Arena* advert_def_arena;
+Heap* agents_heap;
+Node agents_node;
+Advert* adverts_pool;
+Entity* entities_pool;
+u32 entity_counts[Entity_COUNT];
+
 Agent* make_agent(Type race, u32 age, vec2i pos, u32 need_count, ...){
 	Agent* agent = (Agent*)memory_heap_add_bytes(agents_heap, sizeof(Agent) + need_count*sizeof(Need));
 	agent->entity.name = str8{0};
@@ -355,11 +372,12 @@ ActionDef* make_action_def(Type type, Flags flags, u32 time, Args... args){
 	return def;	
 }
 
-Entity* make_nonagent_entity(vec2i pos, u32 age){
+Entity* make_nonagent_entity(vec2i pos, u32 age, Type type){
 	Entity* entity = memory_pool_push(entities_pool);
 	entity->name = str8{0};
 	entity->age  = age;
 	entity->pos  = pos;
+	entity->type = type;
 	return entity;
 }
 
@@ -374,14 +392,20 @@ array<Advert*> collect_adverts(Agent* agent){
 	return adverts;
 }
 
-void tick_agent(Agent* agent){
-	agent->entity.age += 1;
-	
-	//delta needs
+void tick_agent_needs(Agent* agent){
 	for(Need* it = agent->needs_array; it < agent->needs_array+agent->needs_count; ++it){
 		it->value += it->delta;
 		it->value = Clamp(it->value, MIN_NEED_VALUE, MAX_NEED_VALUE);
 	}
+}
+
+void tick_agent_adverts(Agent* agent){
+
+}
+
+void tick_agent(Agent* agent){
+	//delta needs
+	
 	
 	//advance the advert actions
 	b32 new_advert = false;
@@ -399,8 +423,8 @@ void tick_agent(Agent* agent){
 
 
 struct{
-	u32* screen;
 	GLuint screen_idx;
+	u32* screen;
 	u32 vao; // handle to vtx array object
 	u32 vbo; // handle to vtx buffer object
 	u32 ibo; // handle to idx buffer object
@@ -408,12 +432,9 @@ struct{
 	u32* idxarr;
 	Texture* texture; // texture representing the world
 }rendering;
-#define GetPixel(x,y) rendering.screen->pixels[x+y*1080]
+#define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
 
 
-void flush_screen(){
-	//glTexSubImage2D(GL_TEXTURE_2D, );
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
@@ -431,11 +452,10 @@ int main(int args_count, char** args){
 	agents_heap = memory_heap_init_bytes(Megabytes(1));
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
-	
+	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
 
-	rendering.screen = (u32*)memalloc(sizeof(u32)*1080*1080);
-	forI(WORLD_WIDTH*WORLD_HEIGHT) rendering.screen[i] = PackColorU32(rand()%255,rand()%255,rand()%255,255);
-
+	//init ant_sim rendering
+	rendering.screen = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
 	rendering.texture = assets_texture_create_from_memory(
 		rendering.screen, 
 		STR8("world_screen"), 
@@ -447,68 +467,44 @@ int main(int args_count, char** args){
 		0
 	);
 
-
-
-	// if(0){// init screen texture
-	// 	// https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
-	// 	glGenVertexArrays(1, &rendering.vao);
-	// 	glBindVertexArray(rendering.vao);
-		
-	// 	u32 vtxsize = sizeof(Vertex2)*4;
-	// 	u32 idxsize = sizeof(u32)*6;
-		
-	// 	rendering.vtxarr = (Vertex2*)memalloc(sizeof(Vertex2)*4);
-	// 	rendering.vtxarr[0] = {   0,   0}; rendering.vtxarr[0].color = PackColorU32(50,75,100,255);
-	// 	rendering.vtxarr[1] = {   0,1080}; rendering.vtxarr[1].color = PackColorU32(50,75,100,255);
-	// 	rendering.vtxarr[2] = {1080,   0}; rendering.vtxarr[2].color = PackColorU32(50,75,100,255);
-	// 	rendering.vtxarr[3] = {1080,1080}; rendering.vtxarr[3].color = PackColorU32(50,75,100,255);
-		
-	// 	rendering.idxarr = (u32*)memalloc(sizeof(u32) * 6);
-	// 	rendering.idxarr[0] = 0;
-	// 	rendering.idxarr[1] = 2;
-	// 	rendering.idxarr[2] = 1;
-	// 	rendering.idxarr[3] = 2;
-	// 	rendering.idxarr[4] = 3;
-	// 	rendering.idxarr[5] = 1;
-		
-	// 	// generate and bind vertex buffers
-	// 	glGenBuffers(1, &rendering.vbo);
-	// 	glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
-	// 	glBufferData(GL_ARRAY_BUFFER, vtxsize, 0, GL_STATIC_DRAW);
-	// 	glBufferSubData(GL_ARRAY_BUFFER, 0, rendering.vbo, rendering.vtxarr);
-		
-	// 	// generate and bind index buffers
-	// 	glGenBuffers(1, &rendering.ibo);
-	// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
-	// 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxsize, 0, GL_STATIC_DRAW);
-	// 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
-		
-	// 	// copy quad to buffers
-	// 	glBindBuffer(GL_ARRAY_BUFFER,               rendering.vbo);
-	// 	glBufferSubData(GL_ARRAY_BUFFER,         0, rendering.vbo, rendering.vtxarr);
-	// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,       rendering.ibo);
-	// 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
-		
-	// 	// specify vertex packing
-	// 	glVertexAttribPointer(0, 3,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
-	// 	glVertexAttribPointer(1, 2,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
-	// 	glVertexAttribPointer(2, 4,   GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
-	// 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
-		
-	// 	glGenTextures(1, &rendering.screen_idx);
-	// 	glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    // 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, rendering.screen);
-		
-	// }
-
-	
-
 	while(platform_update()){
 		//simulate
 		if(!paused){
+			//tick agents
+			for_node(agents_node.next){
+				tick_agent(AgentFromNode(it));
+			}
 			
+			//spawn more leaves
+			if(entity_counts[Entity_Leaf] < 100){
+				u32 add = (100 - entity_counts[Entity_Leaf]) +  rand() % 50; 
+				forI(add){
+					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT};
+					while(GetEntity(pos.x,pos.y) && pos.y) pos.y -= 1;
+					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
+					Entity* e = make_nonagent_entity(pos, 0, Entity_Leaf);
+					GetEntity(pos.x,pos.y) = e;
+				}
+				entity_counts[Entity_Leaf] += add;
+			}
+
+			for_pool(entities_pool){
+				
+				switch(it->type){
+					case Entity_Leaf:{
+						if(it->age % (rand() % 5 + 1)) break;
+						GetPixel(it->pos.x,it->pos.y) = PackColorU32(0,0,0,0);
+						vec2i nupos = it->pos;
+						nupos.y--;
+						u32 r = rand() % 3; 
+						if(r == 1) nupos.x += 1;
+						else if(r == 2) nupos.x -= 1;
+						move_entity(it, nupos);
+						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
+					}break;
+				}
+				it->age++;
+			}
 		}
 		
 		//update ui
@@ -525,9 +521,36 @@ int main(int args_count, char** args){
 			uiItemE();
 		}uiImmediateE();
 
+		for_pool(entities_pool){
+			switch(it->type){
+				case Entity_Agent:{
+					Agent* agent = CastFromMember(Agent, entity, it);
+					switch(agent->race){
+						case Race_BlackGardenAntQueen:
+						case Race_BlackGardenAntMale:
+						case Race_BlackGardenAntWorker: {
+							GetPixel(it->pos.x,it->pos.y) = PackColorU32(15,15,15,255);
+						}break;
+						case Race_CottonAntQueen: 
+						case Race_CottonAntMajorWorker:
+						case Race_CottonAntMinorWorker:
+						case Race_CottonAntMale:{
+							GetPixel(it->pos.x,it->pos.y) = PackColorU32(100,15,15,255);
+						}break;
+					}
+				}break;
+				case Entity_Leaf:{
+					
+				}break;
+			}
+		}
 		
-		forI(WORLD_WIDTH*WORLD_HEIGHT) rendering.screen[i] = PackColorU32(rand()%255,rand()%255,rand()%255,255);
-		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{400,400});
+		// forI(WORLD_WIDTH*WORLD_HEIGHT) {
+		// 	rendering.screen[i] = PackColorU32((u32)floor(255.0*i/(WORLD_WIDTH*WORLD_HEIGHT)),50,50,255);
+		// }
+
+
+		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 		render_texture_flat2(rendering.texture, vec2{0,0}, vec2{WORLD_WIDTH,WORLD_HEIGHT}, 1);
 		
 		console_update();

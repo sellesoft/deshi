@@ -1401,7 +1401,7 @@ render_texture2(Texture* texture, vec2 tl, vec2 tr, vec2 bl, vec2 br, f32 transp
 
 	RenderTwodCmd* cmd =  &renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]];
 	cmd->indexCount += 6;
-	cmd->handle = (void*)texture->render_idx;
+	cmd->handle = (void*)((u64)texture->render_idx);
 	cmd->scissorExtent = DeshWindow->dimensions.toVec2();
 	cmd->scissorOffset = Vec2(0,0);
 	renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] += 1;
