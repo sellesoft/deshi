@@ -426,7 +426,7 @@ struct{
 	vec2i visual_size;
 	vec2i visual_position;
 }rendering;
-#define GetPixel(x,y) rendering.screen[x+(WORLD_HEIGHT-y*WORLD_WIDTH)]
+#define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
@@ -488,6 +488,12 @@ int main(int args_count, char** args){
 			infowin->style.sizing = size_flex | size_percent_y;
 			infowin->style.size = {1, 100};
 			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
 		}uiItemE();
 	}uiItemE();
 
@@ -519,12 +525,13 @@ int main(int args_count, char** args){
 				switch(it->type){
 					case Entity_Leaf:{
 						if(it->age % (rand() % 50 + 1)) break;
-						GetPixel(it->pos.x,it->pos.y) = PackColorU32(0,0,0,0);
+						GetPixel(it->pos.x,it->pos.y) = 0;
 						vec2i nupos = it->pos;
 						nupos.y--;
 						u32 r = rand() % 3; 
 						if(r == 1) nupos.x += 1;
 						else if(r == 2) nupos.x -= 1;
+						it->pos = nupos;
 						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
 					}break;
 					case Entity_Dirt:{
