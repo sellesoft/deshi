@@ -291,8 +291,8 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@world
-#define WORLD_WIDTH 512
-#define WORLD_HEIGHT 512
+#define WORLD_WIDTH 64
+#define WORLD_HEIGHT 64
 
 struct{
 	Entity** map;
@@ -320,23 +320,13 @@ Advert* adverts_pool;
 Entity* entities_pool;
 u32 entity_counts[Entity_COUNT];
 
-Agent* make_agent(Type race, u32 age, vec2i pos, u32 need_count, ...){
-	Agent* agent = (Agent*)memory_heap_add_bytes(agents_heap, sizeof(Agent) + need_count*sizeof(Need));
-	agent->entity.name = str8{0};
-	agent->entity.age  = age;
-	agent->entity.pos  = pos;
-	agent->race         = race;
-	agent->action_index = -1;
-	forI(AGENT_ADVERT_QUEUE_SIZE) agent->advert_queue[i] = 0;
-	agent->needs_array  = (Need*)(agent+1);
-	agent->needs_count  = need_count;
-	va_list args;
-	va_start(args, need_count);
-	forI(need_count) agent->needs_array[i] = Need{va_arg(args,Type), MAX_NEED_VALUE, va_arg(args,f32), 1.0f};
-	va_end(args);
-	return agent;
-}
-
+struct{
+	u32 entity[Entity_COUNT]; // count of each entity
+	u32 entities; // total entities
+	u32 agents; // sub count of entities
+	u32 actions;
+	u32 adverts; 
+}counts = {0};
 
 template<typename... Args>
 Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
@@ -352,11 +342,13 @@ Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 	agent->needs_count  = arg_count;
 	Need needs[arg_count] = {args...};
 	CopyMemory(agent->needs_array, needs, arg_count*sizeof(Need));
+	counts.agents++;
 	return agent;
 }
 
 Advert* make_advert_def(str8 name, Flags flags, u32 range, u32 time, int cost_count, int action_count, ...){
 	NotImplemented;
+	counts.adverts++;
 	return 0;
 }
 
@@ -370,6 +362,7 @@ ActionDef* make_action_def(Type type, Flags flags, u32 time, Args... args){
 	def->costs_count = arg_count;
 	Cost costs[arg_count] = {args...};
 	CopyMemory(def->costs_array, costs, arg_count*sizeof(Cost));
+	counts.actions++;
 	return def;	
 }
 
@@ -379,6 +372,8 @@ Entity* make_nonagent_entity(vec2i pos, u32 age, Type type){
 	entity->age  = age;
 	entity->pos  = pos;
 	entity->type = type;
+	counts.entities++;
+	counts.entity[type]++;
 	return entity;
 }
 
@@ -422,7 +417,6 @@ void tick_agent(Agent* agent){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@render
 
-
 struct{
 	GLuint screen_idx;
 	u32* screen;
@@ -434,8 +428,6 @@ struct{
 	Texture* texture; // texture representing the world
 }rendering;
 #define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
@@ -486,8 +478,8 @@ int main(int args_count, char** args){
 			}
 			
 			//spawn more leaves
-			if(entity_counts[Entity_Leaf] < 100){
-				u32 add = (100 - entity_counts[Entity_Leaf]) +  rand() % 50; 
+			if(entity_counts[Entity_Leaf] < 50){
+				u32 add = (50 - entity_counts[Entity_Leaf]) +  rand() % 10; 
 				forI(add){
 					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT};
 					while(GetEntity(pos.x,pos.y) && pos.y) pos.y -= 1;
@@ -497,9 +489,7 @@ int main(int args_count, char** args){
 				}
 				entity_counts[Entity_Leaf] += add;
 			}
-
-			
-
+			Log("", memory_pool_count(entities_pool));
 			for_pool(entities_pool){
 				switch(it->type){
 					case Entity_Leaf:{
@@ -538,32 +528,26 @@ int main(int args_count, char** args){
 			uiItemE();
 		}uiImmediateE();
 
-		for_pool(entities_pool){
-			switch(it->type){
-				case Entity_Agent:{
-					Agent* agent = CastFromMember(Agent, entity, it);
-					switch(agent->race){
-						case Race_BlackGardenAntQueen:
-						case Race_BlackGardenAntMale:
-						case Race_BlackGardenAntWorker: {
-							GetPixel(it->pos.x,it->pos.y) = PackColorU32(15,15,15,255);
-						}break;
-						case Race_CottonAntQueen: 
-						case Race_CottonAntMajorWorker:
-						case Race_CottonAntMinorWorker:
-						case Race_CottonAntMale:{
-							GetPixel(it->pos.x,it->pos.y) = PackColorU32(100,15,15,255);
-						}break;
-					}
-				}break;
-				case Entity_Leaf:{
-					
-				}break;
-				case Entity_Dirt:{ 
-					
-				}break;	
-			}
-		}
+		// for_pool(entities_pool){
+		// 	switch(it->type){
+		// 		case Entity_Agent:{
+		// 			Agent* agent = CastFromMember(Agent, entity, it);
+		// 			switch(agent->race){
+		// 				case Race_BlackGardenAntQueen:
+		// 				case Race_BlackGardenAntMale:
+		// 				case Race_BlackGardenAntWorker: {
+		// 					GetPixel(it->pos.x,it->pos.y) = PackColorU32(15,15,15,255);
+		// 				}break;
+		// 				case Race_CottonAntQueen: 
+		// 				case Race_CottonAntMajorWorker:
+		// 				case Race_CottonAntMinorWorker:
+		// 				case Race_CottonAntMale:{
+		// 					GetPixel(it->pos.x,it->pos.y) = PackColorU32(100,15,15,255);
+		// 				}break;
+		// 			}
+		// 		}break;
+		// 	}
+		// }
 		
 		// forI(WORLD_WIDTH*WORLD_HEIGHT) {
 		// 	rendering.screen[i] = PackColorU32((u32)floor(255.0*i/(WORLD_WIDTH*WORLD_HEIGHT)),50,50,255);
@@ -571,8 +555,10 @@ int main(int args_count, char** args){
 
 
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
+		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(WORLD_WIDTH * DeshWindow->width/DeshWindow->height, DeshWindow->height), 1);
 		render_texture_flat2(rendering.texture, vec2{0,0}, vec2{WORLD_WIDTH,WORLD_HEIGHT}, 1);
-		entity_counts[Entity_Leaf]--;
+		
+		//entity_counts[Entity_Leaf]--;
 		
 		console_update();
 		UI::Update();
