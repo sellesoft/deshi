@@ -1250,8 +1250,6 @@ void ui_debug(){
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 1;
-				
-				
 				panel->style.margin_right = 1;
 				
 				{ui_dwi.internal_info = uiItemB(); 
@@ -1323,23 +1321,21 @@ void ui_debug(){
 					}
 					
 				}else{
-					// {uiItem* item = uiItemB();
-					// 	item->id = STR8("button");
-					// 	item->style.background_color = Color_VeryDarkCyan;
-					// 	item->style.sizing = size_auto;
-					// 	item->style.padding = {1,1,1,1};
-					// 	item->style.margin = {1,1,1,1};
-					// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-					// 	item->style.font_height = 11;
-					// 	item->style.text_color = Color_White;
-					// 	item->action = [](uiItem* item) { 
-					// 		ui_dwi.selecting_item = 1; 
-					// 	};
-					// 	item->action_trigger = action_act_mouse_pressed;
-					// 	uiTextML("O");
-					// }uiItemE();
-					// ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					// uiTextML("no item selected.");
+					{uiItem* item = uiItemB();
+						item->id = STR8("button");
+						item->style.background_color = Color_VeryDarkCyan;
+						item->style.sizing = size_auto;
+						item->style.padding = {1,1,1,1};
+						item->style.margin = {1,1,1,1};
+						item->style.text_color = Color_White;
+						item->action = [](uiItem* item) {
+							ui_dwi.selecting_item = 1;
+						};
+						item->action_trigger = action_act_mouse_pressed;
+						uiTextML("O");
+					}uiItemE();
+					ui_dwi.internal_info->style.content_align = {0.5,0.5};
+					uiTextML("no item selected.");
 					if(g_ui->active){
 						uiItem* sel = g_ui->active;
 						uiText* text = 0;

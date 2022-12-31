@@ -696,8 +696,6 @@ render_update(){DPZoneScoped;
 				glGenBuffers(1, &uiBuffers.ibo_handle);
 			}
 
-			
-			
 			//bind buffers
 			glBindVertexArray(uiBuffers.vao_handle);
 			glBindBuffer(GL_ARRAY_BUFFER, uiBuffers.vbo_handle);

@@ -440,8 +440,6 @@ int main(int args_count, char** args){
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
 	
-	
-	
 	//init ant_sim storage
 	action_def_arena = memory_create_arena(Megabytes(1));
 	advert_def_arena = memory_create_arena(Megabytes(1));
@@ -480,8 +478,8 @@ int main(int args_count, char** args){
 				worldtex->style.background_color = {255,255,255,255};
 				worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
 				worldtex->style.size = {100,0};
-				worldtex->style.positioning = pos_draggable_relative;
-				
+				worldtex->style.positioning = pos_draggable_fixed;
+				worldtex->style.border_width = 1;
 			}uiItemE();
 		}uiItemE();
 		uiItem* infowin = uiItemB();{
@@ -489,16 +487,16 @@ int main(int args_count, char** args){
 			infowin->style.sizing = size_flex | size_percent_y;
 			infowin->style.size = {1, 100};
 			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
+			uiTextML("test");
 		}uiItemE();
 	}uiItemE();
 	
 	// initialize world by spawning all items in mid air so they fall down and it looks cool
-	
-	// forI(WORLD_WIDTH*WORLD_HEIGHT/2){
-	// 	vec2i pos = {rand() % WORLD_WIDTH, rand() % WORLD_HEIGHT};
-	// 	make_nonagent_entity(pos, 0, Entity_Dirt);
-	// }
-	
 	while(platform_update()){
 		//simulate
 		if(!paused){
@@ -523,16 +521,13 @@ int main(int args_count, char** args){
 				switch(it->type){
 					case Entity_Leaf:{
 						if(it->age % (rand() % 50 + 1)) break;
-						GetPixel(it->pos.x,it->pos.y) = PackColorU32(0,0,0,0);
+						GetPixel(it->pos.x,it->pos.y) = 0;
 						vec2i nupos = it->pos;
 						nupos.y--;
 						u32 r = rand() % 3; 
 						if(r == 1) nupos.x += 1;
 						else if(r == 2) nupos.x -= 1;
-						
-						while(!move_entity(it, nupos)){
-							nupos.x += (rand()%2 ? 1 : -1);
-						}
+						it->pos = nupos;
 						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
 					}break;
 					case Entity_Dirt:{
@@ -584,8 +579,8 @@ int main(int args_count, char** args){
 		// forI(WORLD_WIDTH*WORLD_HEIGHT) {
 		// 	rendering.screen[i] = PackColorU32((u32)floor(255.0*i/(WORLD_WIDTH*WORLD_HEIGHT)),50,50,255);
 		// }
-		
-		
+		ui_debug();
+
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(DeshWindow->height,DeshWindow->height), 1);
 		
