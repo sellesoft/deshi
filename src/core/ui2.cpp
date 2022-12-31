@@ -636,7 +636,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_horizontal);
-	
+	// if(str8_equal(item->id, STR8("ant_sim.main.infowin"))){
+	// 	DebugBreakpoint;
+	// }
 	//TODO(sushi) this can probably be cleaned up 
 	/*0
 	

@@ -428,6 +428,13 @@ struct{
 }rendering;
 #define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
 
+struct{
+	uiItem* main;
+	uiItem* worldwin;
+	uiItem* worldtex;
+	uiItem* info;
+}ui;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
 int main(int args_count, char** args){
@@ -462,42 +469,33 @@ int main(int args_count, char** args){
 		0
 	);
 
-	uiItem* main = uiItemB();{
-		main->id = STR8("ant_sim.main");
-		main->style.background_color = {20,20,20,255};
-		main->style.sizing = size_percent;
-		main->style.size = {100,100};
-		main->style.display = display_flex;
-		uiItem* worldwin = uiItemB();{
-			worldwin->id = STR8("ant_sim.main.worldwin");
-			worldwin->style.sizing = size_percent_y;
-			worldwin->style.size = {512, 100};
-			worldwin->style.background_color = {5,5,5,255};
-			uiItem* worldtex = uiItemB();{
-				worldtex->id = STR8("ant_sim.main.worldtex");
-				worldtex->style.background_image = rendering.texture;
-				worldtex->style.background_color = {255,255,255,255};
-				worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
-				worldtex->style.size = {100,0};
-				worldtex->style.positioning = pos_draggable_fixed;
-				worldtex->style.border_width = 1;
+	ui.main = uiItemB();{
+		ui.main->id = STR8("ant_sim.main");
+		ui.main->style.background_color = {20,20,20,255};
+		ui.main->style.sizing = size_percent;
+		ui.main->style.size = {100,100};
+		ui.main->style.display = display_flex | display_horizontal;
+		ui.worldwin = uiItemB();{
+			ui.worldwin->id = STR8("ant_sim.main.worldwin");
+			ui.worldwin->style.sizing = size_percent_y;
+			ui.worldwin->style.size = {512, 100};
+			ui.worldwin->style.background_color = {5,5,5,255};
+			ui.worldtex = uiItemB();{
+				ui.worldtex->id = STR8("ant_sim.main.worldtex");
+				ui.worldtex->style.background_image = rendering.texture;
+				ui.worldtex->style.background_color = {255,255,255,255};
+				ui.worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
+				ui.worldtex->style.size = {100,0};
+				ui.worldtex->style.positioning = pos_draggable_fixed;
+				ui.worldtex->style.border_width = 1;
 			}uiItemE();
 		}uiItemE();
-		uiItem* infowin = uiItemB();{
-			infowin->id = STR8("ant_sim.main.infowin");
-			infowin->style.sizing = size_flex | size_percent_y;
-			infowin->style.size = {1, 100};
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
+		ui.info = uiItemB();{
+			ui.info->id = STR8("ant_sim.main.infowin");
+			ui.info->style.sizing = size_flex | size_percent_y;
+			ui.info->style.size = {1, 100};
 		}uiItemE();
 	}uiItemE();
-
-
 
 	// initialize world by spawning all items in mid air so they fall down and it looks cool
 
@@ -558,33 +556,6 @@ int main(int args_count, char** args){
 			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
 			uiItemE();
 		}uiImmediateE();
-
-		// for_pool(entities_pool){
-		// 	switch(it->type){
-		// 		case Entity_Agent:{
-		// 			Agent* agent = CastFromMember(Agent, entity, it);
-		// 			switch(agent->race){
-		// 				case Race_BlackGardenAntQueen:
-		// 				case Race_BlackGardenAntMale:
-		// 				case Race_BlackGardenAntWorker: {
-		// 					GetPixel(it->pos.x,it->pos.y) = PackColorU32(15,15,15,255);
-		// 				}break;
-		// 				case Race_CottonAntQueen: 
-		// 				case Race_CottonAntMajorWorker:
-		// 				case Race_CottonAntMinorWorker:
-		// 				case Race_CottonAntMale:{
-		// 					GetPixel(it->pos.x,it->pos.y) = PackColorU32(100,15,15,255);
-		// 				}break;
-		// 			}
-		// 		}break;
-		// 	}
-		// }
-		
-		// forI(WORLD_WIDTH*WORLD_HEIGHT) {
-		// 	rendering.screen[i] = PackColorU32((u32)floor(255.0*i/(WORLD_WIDTH*WORLD_HEIGHT)),50,50,255);
-		// }
-		ui_debug();
-
 
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(DeshWindow->height,DeshWindow->height), 1);
