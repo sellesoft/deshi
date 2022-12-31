@@ -28,10 +28,11 @@ enum{
 };
 
 typedef struct Entity{
-	str8 name;
+	Type type;
+	u32 padding;
 	u64 age;
 	vec2i pos;
-	Type type;
+	str8 name;
 }Entity;
 
 
@@ -351,7 +352,6 @@ Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 
 Advert* make_advert_def(str8 name, Flags flags, u32 range, u32 time, int cost_count, int action_count, ...){
 	NotImplemented;
-	counts.adverts++;
 	return 0;
 }
 
@@ -365,16 +365,15 @@ ActionDef* make_action_def(Type type, Flags flags, u32 time, Args... args){
 	def->costs_count = arg_count;
 	Cost costs[arg_count] = {args...};
 	CopyMemory(def->costs_array, costs, arg_count*sizeof(Cost));
-	counts.actions++;
 	return def;	
 }
 
-Entity* make_nonagent_entity(vec2i pos, u32 age, Type type){
+Entity* make_nonagent_entity(Type type, vec2i pos, u32 age){
 	Entity* entity = memory_pool_push(entities_pool);
-	entity->name = str8{0};
+	entity->type = type;
 	entity->age  = age;
 	entity->pos  = pos;
-	entity->type = type;
+	entity->name = str8{0};
 	counts.entities++;
 	counts.entity[type]++;
 	return entity;
@@ -399,19 +398,20 @@ void tick_agent_needs(Agent* agent){
 }
 
 void tick_agent_adverts(Agent* agent){
-
+	//advance the advert actions
+	b32 new_advert = false;
+	
+	//select an advert to add to the queue
+	if(new_advert){
+		
+	}
 }
 
 void tick_agent(Agent* agent){
 	//delta needs
 	
 	
-	//advance the advert actions
-	b32 new_advert = false;
 	
-	//select an advert to add to the queue
-	if(new_advert){
-	}
 	
 	//action perform
 	
@@ -434,14 +434,14 @@ int main(int args_count, char** args){
 	deshi_init();
 	
 	srand(1235123);
-
+	
 	//init deshi UI2
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
-
 	
-
+	
+	
 	//init ant_sim storage
 	action_def_arena = memory_create_arena(Megabytes(1));
 	advert_def_arena = memory_create_arena(Megabytes(1));
@@ -449,7 +449,7 @@ int main(int args_count, char** args){
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
 	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
-
+	
 	//init ant_sim rendering
 	rendering.screen = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
 	rendering.texture = assets_texture_create_from_memory(
@@ -462,7 +462,7 @@ int main(int args_count, char** args){
 		TextureAddressMode_ClampToTransparent,
 		0
 	);
-
+	
 	uiItem* main = uiItemB();{
 		main->id = STR8("ant_sim.main");
 		main->style.background_color = {20,20,20,255};
@@ -491,14 +491,14 @@ int main(int args_count, char** args){
 			uiTextML("test");
 		}uiItemE();
 	}uiItemE();
-
+	
 	// initialize world by spawning all items in mid air so they fall down and it looks cool
-
+	
 	// forI(WORLD_WIDTH*WORLD_HEIGHT/2){
 	// 	vec2i pos = {rand() % WORLD_WIDTH, rand() % WORLD_HEIGHT};
 	// 	make_nonagent_entity(pos, 0, Entity_Dirt);
 	// }
-
+	
 	while(platform_update()){
 		//simulate
 		if(!paused){
@@ -506,7 +506,7 @@ int main(int args_count, char** args){
 			for_node(agents_node.next){
 				tick_agent(AgentFromNode(it));
 			}
-
+			
 			//spawn more leaves
 			if(counts.entity[Entity_Leaf] < 50){
 				u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
@@ -514,11 +514,11 @@ int main(int args_count, char** args){
 					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT};
 					while(GetEntity(pos.x,pos.y) && pos.y) pos.y -= 1;
 					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
-					Entity* e = make_nonagent_entity(pos, 0, Entity_Leaf);
+					Entity* e = make_nonagent_entity(Entity_Leaf, pos, 0);
 					GetEntity(pos.x,pos.y) = e;
 				}
 			}
-
+			
 			for_pool(entities_pool){
 				switch(it->type){
 					case Entity_Leaf:{
@@ -559,7 +559,7 @@ int main(int args_count, char** args){
 			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
 			uiItemE();
 		}uiImmediateE();
-
+		
 		// for_pool(entities_pool){
 		// 	switch(it->type){
 		// 		case Entity_Agent:{
@@ -584,13 +584,13 @@ int main(int args_count, char** args){
 		// forI(WORLD_WIDTH*WORLD_HEIGHT) {
 		// 	rendering.screen[i] = PackColorU32((u32)floor(255.0*i/(WORLD_WIDTH*WORLD_HEIGHT)),50,50,255);
 		// }
-
-
+		
+		
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(DeshWindow->height,DeshWindow->height), 1);
 		
 		counts.entity[Entity_Leaf]--;
-
+		
 		console_update();
 		UI::Update();
 		ui_update();
@@ -598,7 +598,7 @@ int main(int args_count, char** args){
 		logger_update();
 		deshi__memory_temp_clear();
 	}
-
+	
 	
 	
 	
