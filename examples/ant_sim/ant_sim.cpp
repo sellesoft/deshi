@@ -23,6 +23,7 @@ enum{
 	Entity_NULL = 0,
 	Entity_Agent,
 	Entity_Leaf,
+	Entity_Dirt,
 	Entity_COUNT
 };
 
@@ -441,6 +442,8 @@ struct{
 int main(int args_count, char** args){
 	deshi_init();
 	
+	srand(1235123);
+
 	//init deshi UI2
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
@@ -467,6 +470,13 @@ int main(int args_count, char** args){
 		0
 	);
 
+	// initialize world by spawning all items in mid air so they fall down and it looks cool
+
+	forI(WORLD_WIDTH*WORLD_HEIGHT/2){
+		vec2i pos = {rand() % WORLD_WIDTH, rand() % WORLD_HEIGHT};
+		make_nonagent_entity(pos, 0, Entity_Dirt);
+	}
+
 	while(platform_update()){
 		//simulate
 		if(!paused){
@@ -488,11 +498,12 @@ int main(int args_count, char** args){
 				entity_counts[Entity_Leaf] += add;
 			}
 
+			
+
 			for_pool(entities_pool){
-				
 				switch(it->type){
 					case Entity_Leaf:{
-						if(it->age % (rand() % 5 + 1)) break;
+						//if(it->age % (rand() % 5 + 1)) break;
 						GetPixel(it->pos.x,it->pos.y) = PackColorU32(0,0,0,0);
 						vec2i nupos = it->pos;
 						nupos.y--;
@@ -501,6 +512,12 @@ int main(int args_count, char** args){
 						else if(r == 2) nupos.x -= 1;
 						move_entity(it, nupos);
 						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
+					}break;
+					case Entity_Dirt:{
+						if(!it->pos.y || GetEntity(it->pos.x,it->pos.y-1)) break;
+						GetPixel(it->pos.x,it->pos.y) = 0;
+						move_entity(it, vec2i{it->pos.x,it->pos.y-1});
+						GetPixel(it->pos.x,it->pos.y) = 0xff13458b;
 					}break;
 				}
 				it->age++;
@@ -542,6 +559,9 @@ int main(int args_count, char** args){
 				case Entity_Leaf:{
 					
 				}break;
+				case Entity_Dirt:{ 
+					
+				}break;	
 			}
 		}
 		
@@ -552,6 +572,7 @@ int main(int args_count, char** args){
 
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 		render_texture_flat2(rendering.texture, vec2{0,0}, vec2{WORLD_WIDTH,WORLD_HEIGHT}, 1);
+		entity_counts[Entity_Leaf]--;
 		
 		console_update();
 		UI::Update();
