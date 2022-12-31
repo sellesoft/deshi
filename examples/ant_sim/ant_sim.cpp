@@ -30,6 +30,9 @@ Heap* agents_heap;
 Advert* adverts_pool;
 Entity* entities_pool;
 
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@entity
@@ -330,7 +333,7 @@ Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 	agent->needs_array  = (Need*)(agent+1);
 	agent->needs_count  = arg_count;
 	Need needs[arg_count] = {args...};
-	CopyMemory(agent->needs_array, needs, agent->needs_count*sizeof(Need));
+	CopyMemory(agent->needs_array, needs, arg_count*sizeof(Need));
 	return agent;
 }
 
@@ -339,13 +342,16 @@ Advert* make_advert_def(str8 name, Flags flags, u32 range, u32 time, int cost_co
 	return 0;
 }
 
-ActionDef* make_action_def(Type type, Flags flags, u32 time, int costs_count, ...){
+template<typename... Args>
+ActionDef* make_action_def(Type type, Flags flags, u32 time, Args... args){
+	constexpr u32 arg_count = sizeof...(Args);
 	ActionDef* def = memory_arena_pushT(action_def_arena, ActionDef);
 	def->type = type;
 	def->flags = flags;
 	def->time = time;
-	def->costs_count = costs_count;
-
+	def->costs_count = arg_count;
+	Cost costs[arg_count] = {args...};
+	CopyMemory(def->costs_array, costs, arg_count*sizeof(Cost));
 	return def;	
 }
 
@@ -393,13 +399,14 @@ void tick_agent(Agent* agent){
 
 
 struct{
-	u32 screen[1080*1080];
+	u32* screen;
 	GLuint screen_idx;
 	u32 vao; // handle to vtx array object
 	u32 vbo; // handle to vtx buffer object
 	u32 ibo; // handle to idx buffer object
 	Vertex2* vtxarr; // screen vtx array
 	u32* idxarr;
+	Texture* texture; // texture representing the world
 }rendering;
 #define GetPixel(x,y) rendering.screen->pixels[x+y*1080]
 
@@ -425,69 +432,80 @@ int main(int args_count, char** args){
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
 	
-	make_agent(0, 1, {2,2}, Need{1,0.0,0.0,0.0}, Need{1,1.0,0.0,0.0});
 
-	{// init screen texture
-		// https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
-		glGenVertexArrays(1, &rendering.vao);
-		glBindVertexArray(rendering.vao);
-		
-		u32 vtxsize = sizeof(Vertex2)*4;
-		u32 idxsize = sizeof(u32)*6;
-		
-		rendering.vtxarr = (Vertex2*)memalloc(sizeof(Vertex2)*4);
-		rendering.vtxarr[0] = {   0,   0}; rendering.vtxarr[0].color = PackColorU32(50,75,100,255);
-		rendering.vtxarr[1] = {   0,1080}; rendering.vtxarr[1].color = PackColorU32(50,75,100,255);
-		rendering.vtxarr[2] = {1080,   0}; rendering.vtxarr[2].color = PackColorU32(50,75,100,255);
-		rendering.vtxarr[3] = {1080,1080}; rendering.vtxarr[3].color = PackColorU32(50,75,100,255);
-		
-		rendering.idxarr = (u32*)memalloc(sizeof(u32) * 6);
-		rendering.idxarr[0] = 0;
-		rendering.idxarr[1] = 2;
-		rendering.idxarr[2] = 1;
-		rendering.idxarr[3] = 2;
-		rendering.idxarr[4] = 3;
-		rendering.idxarr[5] = 1;
-		
-		// generate and bind vertex buffers
-		glGenBuffers(1, &rendering.vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
-		glBufferData(GL_ARRAY_BUFFER, vtxsize, 0, GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, rendering.vbo, rendering.vtxarr);
-		
-		// generate and bind index buffers
-		glGenBuffers(1, &rendering.ibo);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxsize, 0, GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
-		
-		// copy quad to buffers
-		glBindBuffer(GL_ARRAY_BUFFER,               rendering.vbo);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,       rendering.ibo);
-		glBufferSubData(GL_ARRAY_BUFFER,         0, rendering.vbo, rendering.vtxarr);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
-		
-		// specify vertex packing
-		glVertexAttribPointer(0, 3,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
-		glVertexAttribPointer(1, 2,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
-		glVertexAttribPointer(2, 4,   GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
-		glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
-		
-		glGenTextures(1, &rendering.screen_idx);
-		glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, rendering.screen);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	rendering.screen = (u32*)memalloc(sizeof(u32)*1080*1080);
+	forI(WORLD_WIDTH*WORLD_HEIGHT) rendering.screen[i] = PackColorU32(rand()%255,rand()%255,rand()%255,255);
 
-	glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
-	glBindVertexArray(rendering.vao);
-	glDrawElements(GL_TRIANGLES, 2, GL_UNSIGNED_BYTE, 0);
+	rendering.texture = assets_texture_create_from_memory(
+		rendering.screen, 
+		STR8("world_screen"), 
+		WORLD_WIDTH, WORLD_HEIGHT,
+		ImageFormat_RGBA,
+		TextureType_2D,
+		TextureFilter_Nearest,
+		TextureAddressMode_ClampToTransparent,
+		0
+	);
+
+
+
+	// if(0){// init screen texture
+	// 	// https://stackoverflow.com/questions/24262264/drawing-a-2d-texture-in-opengl
+	// 	glGenVertexArrays(1, &rendering.vao);
+	// 	glBindVertexArray(rendering.vao);
+		
+	// 	u32 vtxsize = sizeof(Vertex2)*4;
+	// 	u32 idxsize = sizeof(u32)*6;
+		
+	// 	rendering.vtxarr = (Vertex2*)memalloc(sizeof(Vertex2)*4);
+	// 	rendering.vtxarr[0] = {   0,   0}; rendering.vtxarr[0].color = PackColorU32(50,75,100,255);
+	// 	rendering.vtxarr[1] = {   0,1080}; rendering.vtxarr[1].color = PackColorU32(50,75,100,255);
+	// 	rendering.vtxarr[2] = {1080,   0}; rendering.vtxarr[2].color = PackColorU32(50,75,100,255);
+	// 	rendering.vtxarr[3] = {1080,1080}; rendering.vtxarr[3].color = PackColorU32(50,75,100,255);
+		
+	// 	rendering.idxarr = (u32*)memalloc(sizeof(u32) * 6);
+	// 	rendering.idxarr[0] = 0;
+	// 	rendering.idxarr[1] = 2;
+	// 	rendering.idxarr[2] = 1;
+	// 	rendering.idxarr[3] = 2;
+	// 	rendering.idxarr[4] = 3;
+	// 	rendering.idxarr[5] = 1;
+		
+	// 	// generate and bind vertex buffers
+	// 	glGenBuffers(1, &rendering.vbo);
+	// 	glBindBuffer(GL_ARRAY_BUFFER, rendering.vbo);
+	// 	glBufferData(GL_ARRAY_BUFFER, vtxsize, 0, GL_STATIC_DRAW);
+	// 	glBufferSubData(GL_ARRAY_BUFFER, 0, rendering.vbo, rendering.vtxarr);
+		
+	// 	// generate and bind index buffers
+	// 	glGenBuffers(1, &rendering.ibo);
+	// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rendering.ibo);
+	// 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, idxsize, 0, GL_STATIC_DRAW);
+	// 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
+		
+	// 	// copy quad to buffers
+	// 	glBindBuffer(GL_ARRAY_BUFFER,               rendering.vbo);
+	// 	glBufferSubData(GL_ARRAY_BUFFER,         0, rendering.vbo, rendering.vtxarr);
+	// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,       rendering.ibo);
+	// 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, rendering.ibo, rendering.idxarr);
+		
+	// 	// specify vertex packing
+	// 	glVertexAttribPointer(0, 3,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
+	// 	glVertexAttribPointer(1, 2,   GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
+	// 	glVertexAttribPointer(2, 4,   GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
+	// 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+		
+	// 	glGenTextures(1, &rendering.screen_idx);
+	// 	glBindTexture(GL_TEXTURE_2D, rendering.screen_idx);
+	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    // 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1080, 1080, 0, GL_RGBA, GL_UNSIGNED_BYTE, rendering.screen);
+		
+	// }
+
 	
-	deshi_loop_start();{
+
+	while(platform_update()){
 		//simulate
 		if(!paused){
 			
@@ -508,7 +526,18 @@ int main(int args_count, char** args){
 		}uiImmediateE();
 
 		
-	}deshi_loop_end();
+		forI(WORLD_WIDTH*WORLD_HEIGHT) rendering.screen[i] = PackColorU32(rand()%255,rand()%255,rand()%255,255);
+		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{400,400});
+		render_texture_flat2(rendering.texture, vec2{0,0}, vec2{WORLD_WIDTH,WORLD_HEIGHT}, 1);
+		
+		console_update();
+		UI::Update();
+		ui_update();
+		render_update();
+		logger_update();
+		deshi__memory_temp_clear();
+	}
+
 	
 	
 	

@@ -4263,6 +4263,10 @@ render_create_external_2d_buffer(u64 vert_buffsize, u64 ind_buffsize){DPZoneScop
 	return buff;
 }
 
+void render_update_texture(Texture* texture, vec2i offset, vec2i size, u32* data){
+	NotImplemented;
+}
+
 void 
 render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount){
 	BufferVk* vbuff = (BufferVk*)buffer->vertex_handle;

@@ -1287,3 +1287,18 @@ void
 render_remake_offscreen(){DPZoneScoped;
 	NotImplemented; //!Incomplete
 }
+
+void 
+render_update_texture(Texture* texture, vec2i offset, vec2i size){
+	TextureGl* gltex = &glTextures[texture->render_idx];
+
+	switch(texture->type){
+		case TextureType_2D:{
+			glBindTexture(GL_TEXTURE_2D, gltex->handle); 
+			glTexSubImage2D(GL_TEXTURE_2D, 0, offset.x, offset.y, size.x, size.y, gltex->format, GL_UNSIGNED_BYTE, texture->pixels);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			
+		}break;
+		default: NotImplemented;
+	}
+}

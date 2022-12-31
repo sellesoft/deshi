@@ -649,6 +649,9 @@ void render_remake_offscreen();
 //displays render stats into a UI Window, this does NOT make it's own window, implemented in core_ui.cpp
 void render_display_stats();
 
+// updates a subregion of a texture
+void render_update_texture(Texture* texture, vec2i offset, vec2i size);
+
 
 EndLinkageC();
 #endif //DESHI_RENDER_H
@@ -1395,11 +1398,17 @@ render_texture2(Texture* texture, vec2 tl, vec2 tr, vec2 bl, vec2 br, f32 transp
 	
 	renderTwodVertexCount += 4;
 	renderTwodIndexCount  += 6;
-	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+
+	RenderTwodCmd* cmd =  &renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]];
+	cmd->indexCount += 6;
+	cmd->handle = (void*)texture->render_idx;
+	cmd->scissorExtent = DeshWindow->dimensions.toVec2();
+	cmd->scissorOffset = Vec2(0,0);
+	renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] += 1;
 }
 
 void
-render_texture_flat2(Texture* texture, vec2 pos, vec2 dimensions, f32 rotation, f32 transparency){DPZoneScoped;
+render_texture_flat2(Texture* texture, vec2 pos, vec2 dimensions, f32 transparency){DPZoneScoped;
 	if(transparency == 0) return;
 	
 	vec2 tl = pos,
