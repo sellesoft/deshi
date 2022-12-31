@@ -606,6 +606,7 @@ external struct uiStyle{
 		vec2 scroll;
 	};
 	color background_color;
+	Texture* background_image;
 	Type  border_style;
 	color border_color;
 	f32   border_width;

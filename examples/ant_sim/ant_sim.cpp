@@ -291,8 +291,8 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@world
-#define WORLD_WIDTH 64
-#define WORLD_HEIGHT 64
+#define WORLD_WIDTH 128
+#define WORLD_HEIGHT 128
 
 struct{
 	Entity** map;
@@ -307,6 +307,10 @@ b32 move_entity(Entity* e, vec2i pos){
 	return true;
 }
 
+Entity* get_entity_under_mouse(){
+	return 0;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@simulation
@@ -318,7 +322,6 @@ Heap* agents_heap;
 Node agents_node;
 Advert* adverts_pool;
 Entity* entities_pool;
-u32 entity_counts[Entity_COUNT];
 
 struct{
 	u32 entity[Entity_COUNT]; // count of each entity
@@ -418,14 +421,10 @@ void tick_agent(Agent* agent){
 //@render
 
 struct{
-	GLuint screen_idx;
 	u32* screen;
-	u32 vao; // handle to vtx array object
-	u32 vbo; // handle to vtx buffer object
-	u32 ibo; // handle to idx buffer object
-	Vertex2* vtxarr; // screen vtx array
-	u32* idxarr;
 	Texture* texture; // texture representing the world
+	vec2i visual_size;
+	vec2i visual_position;
 }rendering;
 #define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
 
@@ -440,6 +439,8 @@ int main(int args_count, char** args){
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
+
+	
 
 	//init ant_sim storage
 	action_def_arena = memory_create_arena(Megabytes(1));
@@ -462,12 +463,41 @@ int main(int args_count, char** args){
 		0
 	);
 
+	uiItem* main = uiItemB();{
+		main->id = STR8("ant_sim.main");
+		main->style.background_color = {20,20,20,255};
+		main->style.sizing = size_percent;
+		main->style.size = {100,100};
+		main->style.display = display_flex;
+		uiItem* worldwin = uiItemB();{
+			worldwin->id = STR8("ant_sim.main.worldwin");
+			worldwin->style.sizing = size_percent_y;
+			worldwin->style.size = {512, 100};
+			worldwin->style.background_color = {5,5,5,255};
+			uiItem* worldtex = uiItemB();{
+				worldtex->id = STR8("ant_sim.main.worldtex");
+				worldtex->style.background_image = rendering.texture;
+				worldtex->style.background_color = {255,255,255,255};
+				worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
+				worldtex->style.size = {100,0};
+				worldtex->style.positioning = pos_draggable_relative;
+				
+			}uiItemE();
+		}uiItemE();
+		uiItem* infowin = uiItemB();{
+			infowin->id = STR8("ant_sim.main.infowin");
+			infowin->style.sizing = size_flex | size_percent_y;
+			infowin->style.size = {1, 100};
+			uiTextML("test");
+		}uiItemE();
+	}uiItemE();
+
 	// initialize world by spawning all items in mid air so they fall down and it looks cool
 
-	forI(WORLD_WIDTH*WORLD_HEIGHT/2){
-		vec2i pos = {rand() % WORLD_WIDTH, rand() % WORLD_HEIGHT};
-		make_nonagent_entity(pos, 0, Entity_Dirt);
-	}
+	// forI(WORLD_WIDTH*WORLD_HEIGHT/2){
+	// 	vec2i pos = {rand() % WORLD_WIDTH, rand() % WORLD_HEIGHT};
+	// 	make_nonagent_entity(pos, 0, Entity_Dirt);
+	// }
 
 	while(platform_update()){
 		//simulate
@@ -476,10 +506,10 @@ int main(int args_count, char** args){
 			for_node(agents_node.next){
 				tick_agent(AgentFromNode(it));
 			}
-			
+
 			//spawn more leaves
-			if(entity_counts[Entity_Leaf] < 50){
-				u32 add = (50 - entity_counts[Entity_Leaf]) +  rand() % 10; 
+			if(counts.entity[Entity_Leaf] < 50){
+				u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
 				forI(add){
 					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT};
 					while(GetEntity(pos.x,pos.y) && pos.y) pos.y -= 1;
@@ -487,20 +517,22 @@ int main(int args_count, char** args){
 					Entity* e = make_nonagent_entity(pos, 0, Entity_Leaf);
 					GetEntity(pos.x,pos.y) = e;
 				}
-				entity_counts[Entity_Leaf] += add;
 			}
-			Log("", memory_pool_count(entities_pool));
+
 			for_pool(entities_pool){
 				switch(it->type){
 					case Entity_Leaf:{
-						//if(it->age % (rand() % 5 + 1)) break;
+						if(it->age % (rand() % 50 + 1)) break;
 						GetPixel(it->pos.x,it->pos.y) = PackColorU32(0,0,0,0);
 						vec2i nupos = it->pos;
 						nupos.y--;
 						u32 r = rand() % 3; 
 						if(r == 1) nupos.x += 1;
 						else if(r == 2) nupos.x -= 1;
-						move_entity(it, nupos);
+						
+						while(!move_entity(it, nupos)){
+							nupos.x += (rand()%2 ? 1 : -1);
+						}
 						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
 					}break;
 					case Entity_Dirt:{
@@ -555,11 +587,10 @@ int main(int args_count, char** args){
 
 
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(WORLD_WIDTH * DeshWindow->width/DeshWindow->height, DeshWindow->height), 1);
-		render_texture_flat2(rendering.texture, vec2{0,0}, vec2{WORLD_WIDTH,WORLD_HEIGHT}, 1);
+		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(DeshWindow->height,DeshWindow->height), 1);
 		
-		//entity_counts[Entity_Leaf]--;
-		
+		counts.entity[Entity_Leaf]--;
+
 		console_update();
 		UI::Update();
 		ui_update();

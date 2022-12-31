@@ -851,22 +851,15 @@ render_update(){DPZoneScoped;
 		glUseProgram(programs.ui.handle);
 		
 		//NOTE I don't think using a 2D array would be any different than having a separate for loop
-		//     for each layer here, if its worse tell me and ill fix it.
+		//     for each layer here, if it's worse tell me and ill fix it.
 		forX(layer, TWOD_LAYERS){
 			forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
 				if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount == 0) continue;
-				
-				glScissor(GLint(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.x),
-						  GLint(  (height - renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.y)
-								- (renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y)),
-						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x),
-						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y));
-				
-				glBindTexture(glTextures[(u64)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].type,
-							  glTextures[(u64)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].handle);
+				RenderTwodCmd cmd = renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx];
+				glScissor(GLint(cmd.scissorOffset.x), GLint((height - cmd.scissorOffset.y) - (cmd.scissorExtent.y)), GLsizei(cmd.scissorExtent.x), GLsizei(cmd.scissorExtent.y));
+				glBindTexture(glTextures[(u64)cmd.handle].type, glTextures[(u64)cmd.handle].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
-				glDrawElementsBaseVertex(GL_TRIANGLES, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, INDEX_TYPE_GL_TWOD,
-										 (void*)(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset * sizeof(RenderTwodIndex)), 0);
+				glDrawElementsBaseVertex(GL_TRIANGLES, cmd.indexCount, INDEX_TYPE_GL_TWOD, (void*)(cmd.indexOffset * sizeof(RenderTwodIndex)), 0);
 			}
 		}
 		

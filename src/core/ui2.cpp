@@ -399,6 +399,7 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 	vec2i counts = {0};
 	counts += ui_gen_background(item, vp, ip, counts);
 	counts += ui_gen_border(item, vp, ip, counts);
+	dc->texture = item->style.background_image;
 	dc->counts_used = counts;
 }
 
@@ -498,11 +499,13 @@ void ui_end_immediate_branch(str8 file, upt line){
 
 void ui_push_id(s64 x, str8 file, upt line){
 	//g_ui->immediate.id_stack.add(x);
+	NotImplemented; // TODO(sushi) decide if these are necessary
 }
 
 void ui_pop_id(str8 file, upt line){
 	//if(!g_ui->immediate.id_stack.count) gen_error(file,line,"ui_pop_id was called before any calls to ui_push_id were made");
 	//else g_ui->immediate.id_stack.pop();
+	NotImplemented; // TODO(sushi) decide if these are necessary
 }
 
 

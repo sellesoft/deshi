@@ -1538,9 +1538,9 @@ render_make_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
 	ip[3] = offsets.x; ip[4] = offsets.x + 2; ip[5] = offsets.x + 3;
 	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
+	vp[1].pos = tr; vp[1].uv = { 1,0 }; vp[1].color = col;
+	vp[2].pos = br; vp[2].uv = { 1,1 }; vp[2].color = col;
+	vp[3].pos = bl; vp[3].uv = { 0,1 }; vp[3].color = col;
 	
 	return render_make_filledrect_counts();
 }
