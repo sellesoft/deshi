@@ -2846,6 +2846,17 @@ to_str8(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 }
 
 global str8
+to_str8(const vec2i& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	str8b s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%i, %i)", x.x, x.y);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%i, %i)", x.x, x.y);
+	return s.fin;
+}
+
+global str8
 to_str8(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 	str8b s; s.allocator = a;
 	if(trunc){
