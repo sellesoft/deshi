@@ -737,9 +737,12 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				if((disprow && HasFlag(child->style.sizing, size_auto_x)) || HasFlag(child->style.sizing, size_auto_y)){
 					//if a child has automatic sizing we can still support using it in flex containers by just evaluating it 
 					//early. if we do this we need to tell the main eval loop later that we dont need to evaluate it again
+					// this is done using the already_evaluated array
 					eval_item_branch(child, &contextout);
 					contextout.flex.effective_size -= (disprow ? child->width : child->height);
 					already_evaluated.add(idx);
+				}else if(HasFlag(child->style.sizing, size_percent)){
+					contextout.flex.effective_size -= (disprow ? child->style.width/100.f * item->width : child->style.height/100.f * item->height);
 				}else{
 					contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
 				}
@@ -968,7 +971,7 @@ void drag_item(uiItem* item){DPZoneScoped;
 		vec2 mouse_current = input_mouse_position();
 		if(key_pressed(g_ui->keys.drag_item) && mouse_in_item(item)){
 			dragging = true;
-			g_ui->istate = uiISDragging;            
+			g_ui->istate = uiISDragging;
 			mouse_begin = mouse_current;
 			item_begin = item->style.pos;
 		}
@@ -1059,7 +1062,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	//determine scissoring for overflow_hidden items
 	vec2 scoff;
 	vec2 scext;
-	if(parent && parent->style.overflow != overflow_visible){
+	if (parent && parent->style.overflow != overflow_visible) {
 		vec2 cpos = item->pos_screen + item->style.margintl + (item->style.border_style ? item->style.border_width : 0) * vec2::ONE;
 		vec2 csiz = BorderedArea(item);
 		

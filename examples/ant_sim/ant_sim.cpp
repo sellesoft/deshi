@@ -292,8 +292,8 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@world
-#define WORLD_WIDTH 64
-#define WORLD_HEIGHT 64
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
 
 struct{
 	Entity** map;
@@ -498,6 +498,31 @@ void change_mode(Type mode){
 	sim.mode = mode;
 }
 
+// allocates a temporary string
+str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
+	str8b build;
+	str8_builder_init(&build, {0}, deshi_temp_allocator);
+
+	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
+	memset(max, 0, sizeof(u32)*columns);
+
+	forI(rows*columns) {
+		u32 len = texts[i].count;
+		if(len > max[i%rows]) max[i%rows] = len;
+	}
+
+	forI(rows*columns) {
+		u32 len = max[i%rows];
+		str8_builder_grow(&build, len);
+		memcpy(build.str+build.count, texts[i].str, texts[i].count);
+		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
+		build.count += len;
+		if(i%columns == columns-1)  str8_builder_append(&build, STR8("\n"));
+	}
+
+	return build.fin;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
 int main(int args_count, char** args){
@@ -539,7 +564,7 @@ int main(int args_count, char** args){
 		ui.main->style.display = display_flex | display_horizontal;
 		ui.worldwin = uiItemB();{
 			ui.worldwin->id = STR8("ant_sim.main.worldwin");
-			ui.worldwin->style.sizing = size_percent_y;
+			ui.worldwin->style.sizing = size_percent_y | size_flex;
 			ui.worldwin->style.size = {512, 100};
 			ui.worldwin->style.background_color = {5,5,5,255};
 			ui.worldholder = uiItemB();{
@@ -560,8 +585,15 @@ int main(int args_count, char** args){
 		}uiItemE();
 		ui.info = uiItemB();{
 			ui.info->id = STR8("ant_sim.main.infowin");
-			ui.info->style.sizing = size_flex | size_percent_y;
-			ui.info->style.size = {1, 100};
+			ui.info->style.sizing = size_percent_x | size_percent_y;
+			ui.info->style.size = {40, 100};
+			uiTextML("keys:");
+			uiTextM(aligned_text(3,3,{
+				STR8("pause"), STR8("- "), STR8("space"),
+				STR8("draw"), STR8("-"), STR8("lshift + d"),
+				STR8("navigate "), STR8("-"), STR8("lshift + n")
+ 			}));
+
 		}uiItemE();
 	}uiItemE();
 
@@ -656,6 +688,8 @@ int main(int args_count, char** args){
 				}
 			}break;
 		}
+
+			
 
 		console_update();
 		UI::Update();
