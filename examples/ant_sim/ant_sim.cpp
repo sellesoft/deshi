@@ -24,6 +24,7 @@ enum{
 	Entity_Agent,
 	Entity_Leaf,
 	Entity_Dirt,
+	Entity_Water,
 	Entity_COUNT
 };
 
@@ -33,7 +34,15 @@ u32 entity_colors[Entity_COUNT][7] = {
 	0,          0,          0,          0,          0,          0,          0         ,
 	0xff709a88, 0xff7ba694, 0xff86b19f, 0xff91bdab, 0xff9cc9b7, 0xffa8d5c3, 0xffb4e1cf,
 	0xff3d5f82, 0xff45678a, 0xff4c6e93, 0xff53769b, 0xff5a7ea3, 0xff6286ac, 0xff698eb4,
+	0xffb7aa93, 0xffc4b7a0, 0xffd1c5ad, 0xffdfd2ba, 0xffede0c7, 0xfffbedd5, 0xfffffbe3,
 };	
+
+u32 divide_color(u32 color, u32 divisor){
+	u32 r = (color >>  0 & 0x000000ff) / divisor;
+	u32 g = (color >>  8 & 0x000000ff) / divisor;
+	u32 b = (color >> 16 & 0x000000ff) / divisor;
+	return PackColorU32(255,b,g,r);
+}
 
 typedef struct Entity{
 	Node overlap_node; // connection to other entities occupying the same world tile
@@ -304,8 +313,23 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 #define WORLD_WIDTH 512
 #define WORLD_HEIGHT 512
 
+enum{
+	Weather_Clear,
+	Weather_Cloudy,
+	Weather_Rain,
+	Weather_Thunderstorm,
+	Weather_Snow,
+};
+
 struct{
 	Entity** map;
+
+	struct{
+		Type type;
+		s32 wind_strength;
+		s32 temperature; // celsius
+	}weather;
+
 }world;
 
 Entity* get_entity(u32 x, u32 y){
@@ -501,8 +525,6 @@ enum{
 	Mode_Draw,
 };
 
-
-
 void change_mode(Type mode){
 	switch(mode){
 		case Mode_Navigate:{
@@ -573,9 +595,8 @@ void eval_leaf(Entity* e){
 		if(e->age % 5) return;
 		vec2i nupos = e->pos;
 		nupos.y--;
-		u32 r = rand() % 3; 
-		if(r == 1) nupos.x += 1;
-		else if(r == 2) nupos.x -= 1;
+		s32 r = rand() % 3 + world.weather.wind_strength; 
+		nupos.x += r;
 		nupos.x = Clamp(nupos.x, 0, WORLD_WIDTH);
 		nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
 		move_entity(e, nupos);
@@ -647,6 +668,37 @@ int main(int args_count, char** args){
 			ui.info->style.sizing = size_percent_x | size_percent_y;
 			ui.info->style.size = {40, 100};
 			ui.info->style.padding = {5,5,5,5};
+			uiItem* break_button = uiItemB();{
+				break_button->style.sizing = size_auto;
+				break_button->style.background_color = Color_VeryDarkCyan;
+				break_button->style.border_color = Color_White;
+				break_button->style.border_width = 1;
+				break_button->style.border_style = border_solid;
+				break_button->style.padding = {2,2,2,2};
+				break_button->action = [](uiItem* item){
+					if(item->action_trigger == action_act_mouse_released){
+						item->action_trigger = action_act_always;
+						text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("breaking (esc to cancel)"));
+						item->style.background_color = Color_Red;
+					}else if(input_lmouse_pressed()){
+						Entity* e = get_entity_under_mouse();
+						if(e){
+							sim.break_on_me = e;
+							item->action_trigger = action_act_mouse_released;
+							text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("break on click"));
+						item->style.background_color = Color_VeryDarkCyan;
+						}
+					}else if(key_pressed(Key_ESCAPE)){
+						item->action_trigger = action_act_mouse_released;
+						text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("break on click"));
+						item->style.background_color = Color_VeryDarkCyan;
+					}
+				};
+				break_button->action_trigger = action_act_mouse_released;
+				uiTextML("break on click")->style.hover_passthrough=1;
+
+
+			}uiItemE();
 			uiTextML("keys:");
 			uiTextM(aligned_text(3,3,{
 				STR8("pause"), STR8("- "), STR8("space"),
@@ -657,7 +709,10 @@ int main(int args_count, char** args){
 	}uiItemE();
 
 	sim.mode = Mode_Navigate;
-	sim.paused = 1;
+	//sim.paused = 1;
+
+	world.weather.type = Weather_Rain;
+	world.weather.wind_strength = -3;
 
 	// TODO(sushi) initialize world by spawning all items in mid air so they fall down and it looks cool
 
@@ -683,7 +738,7 @@ int main(int args_count, char** args){
 		forX(j,pos){
 			if(rand()%2==0) color = entity_colors[Entity_Dirt][rand()%7];
 			Entity* e = make_nonagent_entity({i,j}, 0, Entity_Dirt);
-			e->color = color;
+			e->color = divide_color(color, 2);
 			set_entity(i,j,e);
 			e->name = STR8("dirt");
 		}
