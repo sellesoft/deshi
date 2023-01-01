@@ -479,9 +479,7 @@ ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	setup.evaluate = &ui_eval_text;
 	vec2i counts[1] = {render_make_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
-	if(text.count){
-		setup.drawcmd_count = 1;
-	}
+	setup.drawcmd_count = 1;
 	
 	b32 retrieved = 0;
 	uiItem* item = ui_setup_item(setup, &retrieved);
@@ -594,24 +592,24 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 	//allows input on first press, then allows repeats when the repeat bool is set on input
 	//do action depending on bind pressed
 #define CanDoInput(x) (key_pressed(x) || key_down(x) && repeat)
-	if(CanDoInput(uikeys.inputtext.cursor.left))           text_move_cursor_left(t),             item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.cursor.left_word))      text_move_cursor_left_word(t),        item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.cursor.left_wordpart))  text_move_cursor_left_wordpart(t),    item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.cursor.right))          text_move_cursor_right(t),            item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.cursor.right_word))     text_move_cursor_right_word(t),       item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.cursor.right_wordpart)) text_move_cursor_right_wordpart(t),   item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.select.left))           text_move_cursor_left(t,1),           item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.select.left_word))      text_move_cursor_left_word(t,1),      item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.select.left_wordpart))  text_move_cursor_left_wordpart(t,1),  item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.select.right))          text_move_cursor_right(t,1),          item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.select.right_word))     text_move_cursor_right_word(t,1),     item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.select.right_wordpart)) text_move_cursor_right_wordpart(t,1), item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.del   .right))          text_delete_right(t),                 item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.del   .right_word))     text_delete_right_word(t),            item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.del   .right_wordpart)) text_delete_right_wordpart(t),        item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.del   .left))           text_delete_left(t),                  item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.del   .left_word))      text_delete_left_word(t),             item->dirty = 1;
-	if(CanDoInput(uikeys.inputtext.del   .left_wordpart))  text_delete_left_wordpart(t),         item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.cursor.left))           text_move_cursor_left(t),             item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.cursor.left_word))      text_move_cursor_left_word(t),        item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.cursor.left_wordpart))  text_move_cursor_left_wordpart(t),    item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.cursor.right))          text_move_cursor_right(t),            item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.cursor.right_word))     text_move_cursor_right_word(t),       item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.cursor.right_wordpart)) text_move_cursor_right_wordpart(t),   item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.select.left))           text_move_cursor_left(t,1),           item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.select.left_word))      text_move_cursor_left_word(t,1),      item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.select.left_wordpart))  text_move_cursor_left_wordpart(t,1),  item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.select.right))          text_move_cursor_right(t,1),          item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.select.right_word))     text_move_cursor_right_word(t,1),     item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.select.right_wordpart)) text_move_cursor_right_wordpart(t,1), item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.del   .right))          text_delete_right(t),                 item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.del   .right_word))     text_delete_right_word(t),            item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.del   .right_wordpart)) text_delete_right_wordpart(t),        item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.del   .left))           text_delete_left(t),                  item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.del   .left_word))      text_delete_left_word(t),             item->dirty = 1;
+	if(CanDoInput(g_ui->keys.inputtext.del   .left_wordpart))  text_delete_left_wordpart(t),         item->dirty = 1;
 #undef CanDoInput
 	
 	//text input

@@ -296,64 +296,64 @@ void console_update(){DPZoneScoped;
 	}
 	
 	
-	uiImmediateBP(console.ui.buffer);{
-		vec2 cursor = vec2::ZERO;
-		uiItem* line = uiItemB();
-		line->style.display = display_horizontal;
-		line->style.sizing = size_percent_x;
-		line->style.size = {100, f32(console.ui.buffer->style.font_height)};
-		line->id = STR8("console.line0");
-		u64 nlines = 0;
-		u64 i = console.scroll;
-		while(nlines < linestofit){
-			if(i>=console.dictionary.count) break;
-			//if console_chunk_render_arena isn't large enough, double the space for it
-			if(console.dictionary[i].size >= console.chunk_render_arena->size){
-				console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
-			}
+	// uiImmediateBP(console.ui.buffer);{
+	// 	vec2 cursor = vec2::ZERO;
+	// 	uiItem* line = uiItemB();
+	// 	line->style.display = display_horizontal;
+	// 	line->style.sizing = size_percent_x;
+	// 	line->style.size = {100, f32(console.ui.buffer->style.font_height)};
+	// 	line->id = STR8("console.line0");
+	// 	u64 nlines = 0;
+	// 	u64 i = console.scroll;
+	// 	while(nlines < linestofit){
+	// 		if(i>=console.dictionary.count) break;
+	// 		//if console_chunk_render_arena isn't large enough, double the space for it
+	// 		if(console.dictionary[i].size >= console.chunk_render_arena->size){
+	// 			console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
+	// 		}
 			
-			if(console.dictionary[i].newline == 1 && nlines++){
-				uiItemE(); 
-				line = uiItemBS(&line->style);
-				line->id = ToString8(deshi_temp_allocator, "console.line",nlines);
-			}
+	// 		if(console.dictionary[i].newline == 1 && nlines++){
+	// 			uiItemE(); 
+	// 			line = uiItemBS(&line->style);
+	// 			line->id = ToString8(deshi_temp_allocator, "console.line",nlines);
+	// 		}
 			
-			//get chunk text from the log file
-			file_cursor(console.logger->file, console.dictionary[i].start);
-			file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
-			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
+	// 		//get chunk text from the log file
+	// 		file_cursor(console.logger->file, console.dictionary[i].start);
+	// 		file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
+	// 		console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
 			
-			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
-			uiItem* text = uiTextMS(&line->style, out);
-			text->id = ToString8(deshi_temp_allocator, "console.text",i);
-			text->style.text_color = console.dictionary[i].fg;
+	// 		str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
+	// 		uiItem* text = uiTextMS(&line->style, out);
+	// 		text->id = ToString8(deshi_temp_allocator, "console.text",i);
+	// 		text->style.text_color = console.dictionary[i].fg;
 			
 			
-			i++;
-		}
-		uiItemE();
+	// 		i++;
+	// 	}
+	// 	uiItemE();
 		
-		uiItem* debug = uiItemB();
-		debug->style.positioning = pos_absolute;
-		debug->style.anchor = anchor_bottom_right;
-		debug->style.sizing = size_auto;
-		debug->id = STR8("console.debug");
-		uiTextM(ToString8(deshi_temp_allocator,
-						  "      show tags: ", console.tag_show, "\n",
-						  " highlight tags: ", console.tag_highlighting, "\n",
-						  "   outline tags: ", console.tag_outlines, "\n",
-						  "highlight lines: ", console.line_highlighing, "\n",
-						  "    auto scroll: ", console.automatic_scroll, "\n",
-						  "          state: ", console.state, "\n",
-						  "   small open %: ", console.open_small_percent, "\n",
-						  "     max open %: ", console.open_max_percent, "\n",
-						  "    open amount: ", console.open_amount, "\n",
-						  "    open target: ", console.open_target, "\n",
-						  "open delta time: ", console.open_dt, "\n",
-						  "         scroll: ", console.scroll
-						  ));
-		uiItemE();
-	}uiImmediateE();
+	// 	uiItem* debug = uiItemB();
+	// 	debug->style.positioning = pos_absolute;
+	// 	debug->style.anchor = anchor_bottom_right;
+	// 	debug->style.sizing = size_auto;
+	// 	debug->id = STR8("console.debug");
+	// 	uiTextM(ToString8(deshi_temp_allocator,
+	// 					  "      show tags: ", console.tag_show, "\n",
+	// 					  " highlight tags: ", console.tag_highlighting, "\n",
+	// 					  "   outline tags: ", console.tag_outlines, "\n",
+	// 					  "highlight lines: ", console.line_highlighing, "\n",
+	// 					  "    auto scroll: ", console.automatic_scroll, "\n",
+	// 					  "          state: ", console.state, "\n",
+	// 					  "   small open %: ", console.open_small_percent, "\n",
+	// 					  "     max open %: ", console.open_max_percent, "\n",
+	// 					  "    open amount: ", console.open_amount, "\n",
+	// 					  "    open target: ", console.open_target, "\n",
+	// 					  "open delta time: ", console.open_dt, "\n",
+	// 					  "         scroll: ", console.scroll
+	// 					  ));
+	// 	uiItemE();
+	// }uiImmediateE();
 	
 	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
 		str8 command = uiGetInputText(console.ui.inputtext)->text.buffer.fin;

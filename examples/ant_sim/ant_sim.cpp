@@ -24,15 +24,33 @@ enum{
 	Entity_Agent,
 	Entity_Leaf,
 	Entity_Dirt,
+	Entity_Water,
 	Entity_COUNT
 };
 
+// color palettes for entities that randomly choose color
+u32 entity_colors[Entity_COUNT][7] = {
+	0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff,
+	0,          0,          0,          0,          0,          0,          0         ,
+	0xff709a88, 0xff7ba694, 0xff86b19f, 0xff91bdab, 0xff9cc9b7, 0xffa8d5c3, 0xffb4e1cf,
+	0xff3d5f82, 0xff45678a, 0xff4c6e93, 0xff53769b, 0xff5a7ea3, 0xff6286ac, 0xff698eb4,
+	0xff595d47, 0xff60644d, 0xff666a54, 0xff6d715a, 0xff747861, 0xff7a7e67, 0xff81856e,
+};	
+
+u32 divide_color(u32 color, u32 divisor){
+	u32 r = (color >>  0 & 0x000000ff) / divisor;
+	u32 g = (color >>  8 & 0x000000ff) / divisor;
+	u32 b = (color >> 16 & 0x000000ff) / divisor;
+	return PackColorU32(255,b,g,r);
+}
+
 typedef struct Entity{
+	Node overlap_node; // connection to other entities occupying the same world tile
 	Type type;
-	u32 padding;
+	u32 color;
+	str8 name;
 	u64 age;
 	vec2i pos;
-	str8 name;
 }Entity;
 
 
@@ -292,37 +310,69 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@world
-#define WORLD_WIDTH 128
-#define WORLD_HEIGHT 128
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
+
+enum{
+	Weather_Clear,
+	Weather_Cloudy,
+	Weather_Rain,
+	Weather_Thunderstorm,
+	Weather_Snow,
+};
 
 struct{
 	Entity** map;
+
+	struct{
+		Type type;
+		s32 wind_strength;
+		s32 temperature; // celsius
+	}weather;
+
 }world;
-#define GetEntity(x,y) world.map[x+y*WORLD_WIDTH]
+
+Entity* get_entity(u32 x, u32 y){
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	return world.map[x+y*WORLD_WIDTH];
+}
+
+b32 set_pixel(u32 x,u32 y,u32 val);
+b32 set_entity(u32 x, u32 y, Entity* entity){
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	world.map[x+y*WORLD_WIDTH] = entity;
+	if(entity) set_pixel(x,y,entity->color);
+	else set_pixel(x,y,0);
+	return 1;
+}
 
 b32 move_entity(Entity* e, vec2i pos){
-	if(GetEntity(pos.x,pos.y)) return false;
-	GetEntity(e->pos.x,e->pos.y) = 0;
-	GetEntity(pos.x,pos.y) = e;
+	if(get_entity(pos.x,pos.y)) return false;
+	set_entity(e->pos.x,e->pos.y,0);
+	set_entity(pos.x,pos.y,e);
 	e->pos = pos;
 	return true;
 }
 
-Entity* get_entity_under_mouse(){
-	return 0;
-}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@simulation
-u64 ticks;
-b32 paused;
+
 Arena* action_def_arena;
 Arena* advert_def_arena;
 Heap* agents_heap;
 Node agents_node;
 Advert* adverts_pool;
 Entity* entities_pool;
+
+struct{
+	Type mode;
+	Entity* break_on_me;
+	u64 ticks;
+	b32 paused;
+	b32 step;
+}sim;
 
 struct{
 	u32 entity[Entity_COUNT]; // count of each entity
@@ -426,27 +476,151 @@ struct{
 	vec2i visual_size;
 	vec2i visual_position;
 }rendering;
-#define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
+
+u32 get_pixel(u32 x, u32 y) {	
+	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
+	return rendering.screen[x+y*WORLD_WIDTH];
+}
+
+b32 set_pixel(u32 x, u32 y, u32 val) {
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	rendering.screen[x+y*WORLD_WIDTH] = val;
+	return 1;
+}
+
+struct{
+	uiItem* main;
+	uiItem* worldwin;
+	uiItem* worldholder;
+	uiItem* worldtex;
+	uiItem* info;
+}ui;
+
+// returns a boolean indicating if the mouse is actually over the world 
+pair<vec2i, b32> get_tile_under_mouse(){
+	vec2 mouse_pos = input_mouse_position();
+	if(mouse_pos.x > ui.worldtex->pos_screen.x + ui.worldtex->size.x || mouse_pos.x < ui.worldtex->pos_screen.x ||
+	   mouse_pos.y > ui.worldtex->pos_screen.y + ui.worldtex->size.y || mouse_pos.y < ui.worldtex->pos_screen.y ||
+	   !ui.worldtex->height || !ui.worldtex->width){
+		return {{0},0};
+	}
+	vec2i local_pos;
+	local_pos.x = mouse_pos.x - ui.worldtex->pos_screen.x;
+	local_pos.y = mouse_pos.y - ui.worldtex->pos_screen.y;
+	local_pos.x = floor(f32(local_pos.x) / f32(ui.worldtex->width) * WORLD_WIDTH);
+	local_pos.y = floor(f32(local_pos.y) / f32(ui.worldtex->height) * WORLD_HEIGHT);
+	local_pos.y = WORLD_HEIGHT-1 - local_pos.y;
+	return {local_pos, 1};
+}
+
+Entity* get_entity_under_mouse(){
+	auto [pos, ok] = get_tile_under_mouse();
+	if(!ok) return 0; 
+	return get_entity(pos.x, pos.y);
+}
+
+enum{
+	Mode_Navigate,
+	Mode_Draw,
+};
+
+void change_mode(Type mode){
+	switch(mode){
+		case Mode_Navigate:{
+			g_ui->keys.drag_item = Mouse_LEFT;
+		}break;
+		case Mode_Draw:{
+			g_ui->keys.drag_item = Mouse_MIDDLE;
+		}break;
+	}
+	sim.mode = mode;
+}
+
+// allocates a temporary string
+str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
+	str8b build;
+	str8_builder_init(&build, {0}, deshi_temp_allocator);
+
+	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
+	memset(max, 0, sizeof(u32)*columns);
+
+	forI(rows*columns) {
+		u32 len = texts[i].count;
+		if(len > max[i%rows]) max[i%rows] = len;
+	}
+
+	forI(rows*columns) {
+		u32 len = max[i%rows];
+		str8_builder_grow(&build, len);
+		memcpy(build.str+build.count, texts[i].str, texts[i].count);
+		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
+		build.count += len;
+		if(i%columns == columns-1)  str8_builder_append(&build, STR8("\n"));
+	}
+
+	return build.fin;
+}
+
+// NOTE(sushi) this is separated into another function because i call it again on leaves that are above leaves that are moved because there are too many above it
+// https://encycolorpedia.com/d57835
+void eval_leaf(Entity* e){
+	if(!e->pos.y || get_entity(e->pos.x,e->pos.y-1)){
+		// stupid way to try and get leaves to spread out 
+		vec2i search = e->pos;
+		while(search.y < WORLD_HEIGHT && get_entity(search.x,search.y)) search.y++;
+		if(search.y-e->pos.y > 1){
+			if(e->pos.x == 0 && !get_entity(e->pos.x+1,e->pos.y)){
+				move_entity(e,{e->pos.x+1,e->pos.y});
+			}else if(e->pos.x == WORLD_WIDTH-1 && !get_entity(e->pos.x-1,e->pos.y)){
+				move_entity(e,{e->pos.x-1,e->pos.y});
+			}else{
+				Entity* l = get_entity(e->pos.x-1,e->pos.y);
+				Entity* r = get_entity(e->pos.x+1,e->pos.y);
+				if(!l&&!r) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
+				else if(l) move_entity(e,{e->pos.x+1,e->pos.y});
+				else if(r) move_entity(e,{e->pos.x-1,e->pos.y});
+			}
+		}
+		if(search.x != e->pos.x){
+			forI(search.y - e->pos.y - 1){
+				Entity* above = get_entity(search.x, e->pos.y + i + 1);
+				if(!above) continue;
+				u32 col = get_pixel(above->pos.x, above->pos.y);
+				move_entity(above, {above->pos.x, above->pos.y-1});
+			}
+		}
+
+	}else{
+		if(e->age % 5) return;
+		vec2i nupos = e->pos;
+		nupos.y--;
+		s32 r = rand() % 3 + world.weather.wind_strength; 
+		nupos.x += r;
+		nupos.x = Clamp(nupos.x, 0, WORLD_WIDTH);
+		nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
+		move_entity(e, nupos);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
 int main(int args_count, char** args){
 	deshi_init();
 	
-	srand(1235123);
-	
+	srand(13535153135);
+
 	//init deshi UI2
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
 	
 	//init ant_sim storage
+	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
 	action_def_arena = memory_create_arena(Megabytes(1));
 	advert_def_arena = memory_create_arena(Megabytes(1));
 	agents_heap = memory_heap_init_bytes(Megabytes(1));
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
-	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
 	
 	//init ant_sim rendering
 	rendering.screen = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
@@ -461,85 +635,200 @@ int main(int args_count, char** args){
 		0
 	);
 	
-	uiItem* main = uiItemB();{
-		main->id = STR8("ant_sim.main");
-		main->style.background_color = {20,20,20,255};
-		main->style.sizing = size_percent;
-		main->style.size = {100,100};
-		main->style.display = display_flex;
-		uiItem* worldwin = uiItemB();{
-			worldwin->id = STR8("ant_sim.main.worldwin");
-			worldwin->style.sizing = size_percent_y;
-			worldwin->style.size = {512, 100};
-			worldwin->style.background_color = {5,5,5,255};
-			uiItem* worldtex = uiItemB();{
-				worldtex->id = STR8("ant_sim.main.worldtex");
-				worldtex->style.background_image = rendering.texture;
-				worldtex->style.background_color = {255,255,255,255};
-				worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
-				worldtex->style.size = {100,0};
-				worldtex->style.positioning = pos_draggable_fixed;
-				worldtex->style.border_width = 1;
+	ui.main = uiItemB();{
+		ui.main->id = STR8("ant_sim.main");
+		ui.main->style.background_color = {20,20,20,255};
+		ui.main->style.sizing = size_percent;
+		ui.main->style.size = {100,100};
+		ui.main->style.display = display_flex | display_horizontal;
+		ui.worldwin = uiItemB();{
+			ui.worldwin->id = STR8("ant_sim.main.worldwin");
+			ui.worldwin->style.sizing = size_percent_y | size_flex;
+			ui.worldwin->style.size = {512, 100};
+			ui.worldwin->style.background_color = {5,5,5,255};
+			ui.worldholder = uiItemB();{
+				ui.worldholder->style.sizing = size_auto;
+				ui.worldholder->style.positioning = pos_draggable_fixed;
+				ui.worldholder->style.padding = {10,10,10,10};
+				ui.worldholder->style.border_style = border_solid;
+				ui.worldholder->style.border_width = 4;
+				ui.worldholder->style.border_color = Color_White;
+				ui.worldtex = uiItemB();{
+					ui.worldtex->id = STR8("ant_sim.main.worldtex");
+					ui.worldtex->style.background_image = rendering.texture;
+					ui.worldtex->style.background_color = {255,255,255,255};
+					ui.worldtex->style.size = {100,100};
+					ui.worldtex->style.hover_passthrough = 1;
+				}uiItemE();
 			}uiItemE();
 		}uiItemE();
-		uiItem* infowin = uiItemB();{
-			infowin->id = STR8("ant_sim.main.infowin");
-			infowin->style.sizing = size_flex | size_percent_y;
-			infowin->style.size = {1, 100};
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
-			uiTextML("test");
+		ui.info = uiItemB();{
+			ui.info->id = STR8("ant_sim.main.infowin");
+			ui.info->style.sizing = size_percent_x | size_percent_y;
+			ui.info->style.size = {40, 100};
+			ui.info->style.padding = {5,5,5,5};
+			uiItem* break_button = uiItemB();{
+				break_button->style.sizing = size_auto;
+				break_button->style.background_color = Color_VeryDarkCyan;
+				break_button->style.border_color = Color_White;
+				break_button->style.border_width = 1;
+				break_button->style.border_style = border_solid;
+				break_button->style.padding = {2,2,2,2};
+				break_button->action = [](uiItem* item){
+					if(item->action_trigger == action_act_mouse_released){
+						item->action_trigger = action_act_always;
+						text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("breaking (esc to cancel)"));
+						item->style.background_color = Color_Red;
+					}else if(input_lmouse_pressed()){
+						Entity* e = get_entity_under_mouse();
+						if(e){
+							sim.break_on_me = e;
+							item->action_trigger = action_act_mouse_released;
+							text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("break on click"));
+							item->style.background_color = Color_VeryDarkCyan;
+						}
+					}else if(key_pressed(Key_ESCAPE)){
+						item->action_trigger = action_act_mouse_released;
+						text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("break on click"));
+						item->style.background_color = Color_VeryDarkCyan;
+					}
+				};
+				break_button->action_trigger = action_act_mouse_released;
+				uiTextML("break on click")->style.hover_passthrough=1;
+			}uiItemE();
+			uiTextML("keys:");
+			uiTextM(aligned_text(3,3,{
+				STR8("pause"), STR8("- "), STR8("space"),
+				STR8("draw"), STR8("-"), STR8("lshift + d"),
+				STR8("navigate "), STR8("-"), STR8("lshift + n")
+ 			}));
 		}uiItemE();
 	}uiItemE();
-	
-	// initialize world by spawning all items in mid air so they fall down and it looks cool
+
+	sim.mode = Mode_Navigate;
+	//sim.paused = 1;
+
+	world.weather.type = Weather_Rain;
+	world.weather.wind_strength = 0;
+
+	// TODO(sushi) initialize world by spawning all items in mid air so they fall down and it looks cool
+
+	s32 vel = 0;
+	s32 pos = WORLD_HEIGHT / 2;
+
+	forI(WORLD_WIDTH){
+		if(i%WORLD_WIDTH/(rand() % 8 + 8)){
+			u32 mag = 0;
+			if     (rand()%32==0) { mag = 8; }
+			else if(rand()%16==0) { mag = 6; }
+			else if(rand()% 8==0) { mag = 4; }
+			else                    mag = 2;
+
+			if(pos < u32(WORLD_HEIGHT/6.f)) vel = rand() % mag+1;
+			else if(pos > u32(5.f*WORLD_HEIGHT/6.f)) vel = -(rand() % mag + 1);
+			else vel = rand() % (mag+1) - mag/2;
+		}
+		pos += vel;
+		pos = Clamp(pos,0, WORLD_HEIGHT-1);
+
+		u32 color = entity_colors[Entity_Dirt][rand()%7];
+		forX(j,pos){
+			if(rand()%2==0) color = entity_colors[Entity_Dirt][rand()%7];
+			Entity* e = make_nonagent_entity(Entity_Dirt, {i,j}, 0);
+			e->color = divide_color(color, 2);
+			set_entity(i,j,e);
+			e->name = STR8("dirt");
+		}
+	}
+
 	while(platform_update()){
 		//simulate
-		if(!paused){
+		if(!sim.paused || sim.step){
+			sim.step = 0;
+
 			//tick agents
 			for_node(agents_node.next){
 				tick_agent(AgentFromNode(it));
 			}
-			
-			//spawn more leaves
-			if(counts.entity[Entity_Leaf] < 50){
-				u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
-				forI(add){
-					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT};
-					while(GetEntity(pos.x,pos.y) && pos.y) pos.y -= 1;
-					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
-					Entity* e = make_nonagent_entity(Entity_Leaf, pos, 0);
-					GetEntity(pos.x,pos.y) = e;
-				}
-			}
-			
+
 			for_pool(entities_pool){
+				if(it == sim.break_on_me) sim.break_on_me = 0, DebugBreakpoint;
 				switch(it->type){
-					case Entity_Leaf:{
-						if(it->age % (rand() % 50 + 1)) break;
-						GetPixel(it->pos.x,it->pos.y) = 0;
-						vec2i nupos = it->pos;
-						nupos.y--;
-						u32 r = rand() % 3; 
-						if(r == 1) nupos.x += 1;
-						else if(r == 2) nupos.x -= 1;
-						it->pos = nupos;
-						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
-					}break;
+					case Entity_Leaf: eval_leaf(it); break;
 					case Entity_Dirt:{
-						if(!it->pos.y || GetEntity(it->pos.x,it->pos.y-1)) break;
-						GetPixel(it->pos.x,it->pos.y) = 0;
+						if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)) break;
 						move_entity(it, vec2i{it->pos.x,it->pos.y-1});
-						GetPixel(it->pos.x,it->pos.y) = 0xff13458b;
+					}break;
+					case Entity_Water:{
+						if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)){
+
+							if(it->pos.x == 0 && !get_entity(it->pos.x+1,it->pos.y-1)){
+								move_entity(it,{it->pos.x+1,it->pos.y-1});
+							}else if(it->pos.x == WORLD_WIDTH-1 && !get_entity(it->pos.x-1,it->pos.y-1)){
+								move_entity(it,{it->pos.x-1,it->pos.y-1});
+							}else{
+								Entity* bl = get_entity(it->pos.x-1,it->pos.y-1);
+								Entity* br = get_entity(it->pos.x+1,it->pos.y-1);
+								if(br&&bl){
+									Entity* l = get_entity(it->pos.x-1,it->pos.y);
+									Entity* r = get_entity(it->pos.x+1,it->pos.y);
+									move_entity(it,{it->pos.x+(rand()%2?1:-1),it->pos.y});
+									if(!l&&!r) move_entity(it,{it->pos.x+(rand()%2?1:-1),it->pos.y});
+									else if(l) move_entity(it,{it->pos.x+1,it->pos.y});
+									else if(r) move_entity(it,{it->pos.x-1,it->pos.y});
+								} 
+								else if(!bl&&!br) move_entity(it,{it->pos.x+(rand()%2?1:-1),it->pos.y-1});
+								else if(bl) move_entity(it,{it->pos.x+1,it->pos.y-1});
+								else if(br) move_entity(it,{it->pos.x-1,it->pos.y-1});
+							}
+						}else{
+							vec2i nupos = it->pos;
+							nupos.y--;
+								//TODO(sushi) this needs to check along the line of movement, not just across x
+							forI(abs(world.weather.wind_strength)/2){
+								u32 move = (world.weather.wind_strength>0?1:-1);
+								if(get_entity(nupos.x+move,it->pos.y-1)) break;
+								nupos.x += move;
+							}
+							//nupos.x += world.weather.wind_strength / 2;
+							nupos.x = Clamp(nupos.x, 0, WORLD_WIDTH);
+							nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
+							move_entity(it, nupos);
+						}
 					}break;
 				}
 				it->age++;
 			}
+
+			//spawn more leaves
+			if(counts.entity[Entity_Leaf] < 50){
+				u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
+				forI(add){
+					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
+					while(get_entity(pos.x,pos.y) && pos.y) pos.y -= 1;
+					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
+					Entity* e = make_nonagent_entity(Entity_Leaf, pos, 0);
+					e->name = STR8("leaf");
+					e->color = entity_colors[Entity_Leaf][rand()%7];
+					set_entity(pos.x,pos.y,e);
+				}
+			}
+
+			// weather
+			switch(world.weather.type){
+				case Weather_Rain:{
+					forI(rand() % 10){
+						vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
+						Entity* e = make_nonagent_entity(Entity_Water, pos, 0);
+						e->name = STR8("water");
+						e->color = entity_colors[Entity_Water][rand()%7];
+						set_entity(pos.x,pos.y,e);
+					}
+				}break;
+			}
 		}
+
+		Entity* hovered = get_entity_under_mouse();
 		
 		//update ui
 		uiImmediateB();{
@@ -554,38 +843,55 @@ int main(int args_count, char** args){
 			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
 			uiItemE();
 		}uiImmediateE();
-		
-		// for_pool(entities_pool){
-		// 	switch(it->type){
-		// 		case Entity_Agent:{
-		// 			Agent* agent = CastFromMember(Agent, entity, it);
-		// 			switch(agent->race){
-		// 				case Race_BlackGardenAntQueen:
-		// 				case Race_BlackGardenAntMale:
-		// 				case Race_BlackGardenAntWorker: {
-		// 					GetPixel(it->pos.x,it->pos.y) = PackColorU32(15,15,15,255);
-		// 				}break;
-		// 				case Race_CottonAntQueen: 
-		// 				case Race_CottonAntMajorWorker:
-		// 				case Race_CottonAntMinorWorker:
-		// 				case Race_CottonAntMale:{
-		// 					GetPixel(it->pos.x,it->pos.y) = PackColorU32(100,15,15,255);
-		// 				}break;
-		// 			}
-		// 		}break;
-		// 	}
-		// }
-		
-		// forI(WORLD_WIDTH*WORLD_HEIGHT) {
-		// 	rendering.screen[i] = PackColorU32((u32)floor(255.0*i/(WORLD_WIDTH*WORLD_HEIGHT)),50,50,255);
-		// }
-		ui_debug();
 
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(DeshWindow->height,DeshWindow->height), 1);
-		
-		counts.entity[Entity_Leaf]--;
-		
+
+		if(key_pressed(Key_SPACE | InputMod_None)) sim.paused = !sim.paused;
+		if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = 1;
+
+
+		if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
+		if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
+
+		switch(sim.mode){
+			case Mode_Navigate:{
+				// even though ui handles moving the world for us, we still need to handle zooming
+				vec2 cursize = ui.worldtex->style.size;
+				vec2 local_mouse = input_mouse_position() - ui.worldholder->pos_screen;
+				ui.worldtex->style.size.x += DeshInput->scrollY / 10.0 * cursize.x;
+				ui.worldtex->style.size.y += DeshInput->scrollY / 10.0 * cursize.y;
+				vec2 diff = ui.worldtex->style.size - cursize;
+				if(DeshInput->scrollY){
+					ui.worldholder->style.pos.x -= local_mouse.x * ((ui.worldtex->style.size.x / cursize.x) - 1);
+					ui.worldholder->style.pos.y -= local_mouse.y * ((ui.worldtex->style.size.y / cursize.y) - 1);
+				}
+
+				
+
+				//break on clicked entity	
+				// /* if(hovered && input_lmouse_pressed()){
+				// 	sim.break_on_me = hovered;
+				// } */
+				
+			}break;
+			case Mode_Draw:{
+				if(auto [pos, ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
+					Entity* e = make_nonagent_entity(Entity_Leaf, pos, 0);
+					e->color = entity_colors[Entity_Leaf][rand()%7];
+					e->name = STR8("leaf");
+					set_entity(pos.x,pos.y, e);
+				}
+			}break;
+		}
+
+		uiImmediateBP(ui.info);{
+			if(hovered) uiTextM(ToString8(deshi_temp_allocator, "hovered: ", hovered->name));
+			else  uiTextM(ToString8(deshi_temp_allocator, "hovered: nothing"));
+			auto [pos,ok] = get_tile_under_mouse();
+			if(ok) uiTextM(ToString8(deshi_temp_allocator, pos));
+			
+		}uiImmediateE();
+
 		console_update();
 		UI::Update();
 		ui_update();
@@ -593,9 +899,6 @@ int main(int args_count, char** args){
 		logger_update();
 		deshi__memory_temp_clear();
 	}
-	
-	
-	
 	
 	deshi_cleanup();
 }
