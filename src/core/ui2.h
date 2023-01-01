@@ -467,8 +467,9 @@ struct uiKeybinds{
 			KeyCode right_wordpart;
 		}del;
 	}inputtext;
-}global uikeys;
 
+	KeyCode drag_item;
+};
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_drawcmd
@@ -905,6 +906,9 @@ struct uiContext{
 		u64 vertices_reserved; 
 		u64 indices_reserved;  
 	}stats;
+
+	//// other ////
+	uiKeybinds keys;
 };
 extern uiContext* g_ui; //global UI pointer
 

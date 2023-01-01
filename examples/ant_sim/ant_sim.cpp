@@ -489,14 +489,14 @@ struct{
 void change_mode(Type mode){
 	switch(mode){
 		case Mode_Navigate:{
-			ui.worldholder->style.positioning = pos_draggable_fixed;
+			g_ui->keys.drag_item = Mouse_LEFT;
 		}break;
 		case Mode_Draw:{
-			ui.worldholder->style.positioning = pos_fixed;
+			g_ui->keys.drag_item = Mouse_MIDDLE;
 		}break;
 	}
+	sim.mode = mode;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
@@ -555,7 +555,6 @@ int main(int args_count, char** args){
 					ui.worldtex->style.background_color = {255,255,255,255};
 					ui.worldtex->style.size = {100,100};
 					ui.worldtex->style.hover_passthrough = 1;
-					//ui.worldtex->style.positioning = pos_draggable_fixed;
 				}uiItemE();
 			}uiItemE();
 		}uiItemE();
@@ -634,8 +633,6 @@ int main(int args_count, char** args){
 
 		if(key_pressed(Key_SPACE)) paused = !paused;
 
-		
-
 		if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
 		if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
 
@@ -653,7 +650,8 @@ int main(int args_count, char** args){
 				}
 			}break;
 			case Mode_Draw:{
-				if(auto [pos,ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
+				
+				if(auto [pos, ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
 					set_entity(pos.x,pos.y,make_nonagent_entity(pos, 0, Entity_Leaf));
 				}
 			}break;

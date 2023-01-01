@@ -543,32 +543,32 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 
 	//setup default keybinds
 	//TODO(sushi) export these to a config file and load them instead
-	uikeys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
-	uikeys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
-	uikeys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
-	uikeys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
-	uikeys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
-	uikeys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
-	uikeys.inputtext.cursor.            up = Key_UP    | InputMod_None;
-	uikeys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
+	g_ui->keys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
+	g_ui->keys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
+	g_ui->keys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
+	g_ui->keys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
+	g_ui->keys.inputtext.cursor.            up = Key_UP    | InputMod_None;
+	g_ui->keys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
 
-	uikeys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
-	uikeys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
-	uikeys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
-	uikeys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
-	uikeys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
-	uikeys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
-	uikeys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
-	uikeys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
+	g_ui->keys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
+	g_ui->keys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
 
-	uikeys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
-	uikeys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
-	uikeys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
-	uikeys.inputtext.del.            right = Key_DELETE    | InputMod_None;
-	uikeys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
-	uikeys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
+	g_ui->keys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
+	g_ui->keys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
+	g_ui->keys.inputtext.del.            right = Key_DELETE    | InputMod_None;
+	g_ui->keys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
 
-	//g_ui->render_buffer = render_create_external_2d_buffer(Megabytes(1), Megabytes(1));
+	g_ui->keys.drag_item = Mouse_LEFT;
 }
 
 //pass 0 for child on first call
@@ -966,13 +966,13 @@ void drag_item(uiItem* item){DPZoneScoped;
 		persist vec2 item_begin;
 		persist b32 dragging = false;
 		vec2 mouse_current = input_mouse_position();
-		if(key_pressed(Mouse_LEFT) && mouse_in_item(item)){
+		if(key_pressed(g_ui->keys.drag_item) && mouse_in_item(item)){
 			dragging = true;
 			g_ui->istate = uiISDragging;            
 			mouse_begin = mouse_current;
 			item_begin = item->style.pos;
 		}
-		if(key_released(Mouse_LEFT)){
+		if(key_released(g_ui->keys.drag_item)){
 			dragging = false;
 			g_ui->istate = uiISNone;
 		}
