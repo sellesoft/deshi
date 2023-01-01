@@ -477,6 +477,26 @@ Entity* get_entity_under_mouse(){
 	return get_entity(pos.x, WORLD_HEIGHT - pos.y);
 }
 
+enum{
+	Mode_Navigate,
+	Mode_Draw,
+};
+
+struct{
+	Type mode;
+}sim;
+
+void change_mode(Type mode){
+	switch(mode){
+		case Mode_Navigate:{
+			ui.worldholder->style.positioning = pos_draggable_fixed;
+		}break;
+		case Mode_Draw:{
+			ui.worldholder->style.positioning = pos_fixed;
+		}break;
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
@@ -524,6 +544,7 @@ int main(int args_count, char** args){
 			ui.worldwin->style.background_color = {5,5,5,255};
 			ui.worldholder = uiItemB();{
 				ui.worldholder->style.sizing = size_auto;
+				ui.worldholder->style.positioning = pos_draggable_fixed;
 				ui.worldholder->style.padding = {10,10,10,10};
 				ui.worldholder->style.border_style = border_solid;
 				ui.worldholder->style.border_width = 4;
@@ -532,9 +553,9 @@ int main(int args_count, char** args){
 					ui.worldtex->id = STR8("ant_sim.main.worldtex");
 					ui.worldtex->style.background_image = rendering.texture;
 					ui.worldtex->style.background_color = {255,255,255,255};
-					ui.worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
-					ui.worldtex->style.size = {100,0};
-					ui.worldtex->style.positioning = pos_draggable_fixed;
+					ui.worldtex->style.size = {100,100};
+					ui.worldtex->style.hover_passthrough = 1;
+					//ui.worldtex->style.positioning = pos_draggable_fixed;
 				}uiItemE();
 			}uiItemE();
 		}uiItemE();
@@ -544,6 +565,8 @@ int main(int args_count, char** args){
 			ui.info->style.size = {1, 100};
 		}uiItemE();
 	}uiItemE();
+
+	sim.mode = Mode_Navigate;
 
 	// initialize world by spawning all items in mid air so they fall down and it looks cool
 
@@ -611,8 +634,29 @@ int main(int args_count, char** args){
 
 		if(key_pressed(Key_SPACE)) paused = !paused;
 
-		if(auto [pos,ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
-			set_entity(pos.x,pos.y,make_nonagent_entity(pos, 0, Entity_Leaf));
+		
+
+		if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
+		if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
+
+		switch(sim.mode){
+			case Mode_Navigate:{
+				// even though ui handles moving the world for us, we still need to handle zooming
+				vec2 cursize = ui.worldtex->style.size;
+				vec2 local_mouse = input_mouse_position() - ui.worldholder->pos_screen;
+				ui.worldtex->style.size.x += DeshInput->scrollY / 10.0 * cursize.x;
+				ui.worldtex->style.size.y += DeshInput->scrollY / 10.0 * cursize.y;
+				vec2 diff = ui.worldtex->style.size - cursize;
+				if(DeshInput->scrollY){
+					ui.worldholder->style.pos.x -= local_mouse.x * ((ui.worldtex->style.size.x / cursize.x) - 1);
+					ui.worldholder->style.pos.y -= local_mouse.y * ((ui.worldtex->style.size.y / cursize.y) - 1);
+				}
+			}break;
+			case Mode_Draw:{
+				if(auto [pos,ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
+					set_entity(pos.x,pos.y,make_nonagent_entity(pos, 0, Entity_Leaf));
+				}
+			}break;
 		}
 
 		console_update();
