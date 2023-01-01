@@ -34,7 +34,7 @@ u32 entity_colors[Entity_COUNT][7] = {
 	0,          0,          0,          0,          0,          0,          0         ,
 	0xff709a88, 0xff7ba694, 0xff86b19f, 0xff91bdab, 0xff9cc9b7, 0xffa8d5c3, 0xffb4e1cf,
 	0xff3d5f82, 0xff45678a, 0xff4c6e93, 0xff53769b, 0xff5a7ea3, 0xff6286ac, 0xff698eb4,
-	0xffb7aa93, 0xffc4b7a0, 0xffd1c5ad, 0xffdfd2ba, 0xffede0c7, 0xfffbedd5, 0xfffffbe3,
+	0xff595d47, 0xff60644d, 0xff666a54, 0xff6d715a, 0xff747861, 0xff7a7e67, 0xff81856e,
 };	
 
 u32 divide_color(u32 color, u32 divisor){
@@ -577,7 +577,7 @@ void eval_leaf(Entity* e){
 			}else{
 				Entity* l = get_entity(e->pos.x-1,e->pos.y);
 				Entity* r = get_entity(e->pos.x+1,e->pos.y);
-				if(!l&&!r) move_entity(e,{e->pos.x+(rand()%2?1:-1)});
+				if(!l&&!r) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
 				else if(l) move_entity(e,{e->pos.x+1,e->pos.y});
 				else if(r) move_entity(e,{e->pos.x-1,e->pos.y});
 			}
@@ -686,7 +686,7 @@ int main(int args_count, char** args){
 							sim.break_on_me = e;
 							item->action_trigger = action_act_mouse_released;
 							text_clear_and_replace(&((uiText*)item->node.first_child)->text, STR8("break on click"));
-						item->style.background_color = Color_VeryDarkCyan;
+							item->style.background_color = Color_VeryDarkCyan;
 						}
 					}else if(key_pressed(Key_ESCAPE)){
 						item->action_trigger = action_act_mouse_released;
@@ -696,8 +696,6 @@ int main(int args_count, char** args){
 				};
 				break_button->action_trigger = action_act_mouse_released;
 				uiTextML("break on click")->style.hover_passthrough=1;
-
-
 			}uiItemE();
 			uiTextML("keys:");
 			uiTextM(aligned_text(3,3,{
@@ -712,7 +710,7 @@ int main(int args_count, char** args){
 	//sim.paused = 1;
 
 	world.weather.type = Weather_Rain;
-	world.weather.wind_strength = -3;
+	world.weather.wind_strength = 0;
 
 	// TODO(sushi) initialize world by spawning all items in mid air so they fall down and it looks cool
 
@@ -762,6 +760,43 @@ int main(int args_count, char** args){
 						if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)) break;
 						move_entity(it, vec2i{it->pos.x,it->pos.y-1});
 					}break;
+					case Entity_Water:{
+						if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)){
+
+							if(it->pos.x == 0 && !get_entity(it->pos.x+1,it->pos.y-1)){
+								move_entity(it,{it->pos.x+1,it->pos.y-1});
+							}else if(it->pos.x == WORLD_WIDTH-1 && !get_entity(it->pos.x-1,it->pos.y-1)){
+								move_entity(it,{it->pos.x-1,it->pos.y-1});
+							}else{
+								Entity* bl = get_entity(it->pos.x-1,it->pos.y-1);
+								Entity* br = get_entity(it->pos.x+1,it->pos.y-1);
+								if(br&&bl){
+									Entity* l = get_entity(it->pos.x-1,it->pos.y);
+									Entity* r = get_entity(it->pos.x+1,it->pos.y);
+									move_entity(it,{it->pos.x+(rand()%2?1:-1),it->pos.y});
+									if(!l&&!r) move_entity(it,{it->pos.x+(rand()%2?1:-1),it->pos.y});
+									else if(l) move_entity(it,{it->pos.x+1,it->pos.y});
+									else if(r) move_entity(it,{it->pos.x-1,it->pos.y});
+								} 
+								else if(!bl&&!br) move_entity(it,{it->pos.x+(rand()%2?1:-1),it->pos.y-1});
+								else if(bl) move_entity(it,{it->pos.x+1,it->pos.y-1});
+								else if(br) move_entity(it,{it->pos.x-1,it->pos.y-1});
+							}
+						}else{
+							vec2i nupos = it->pos;
+							nupos.y--;
+								//TODO(sushi) this needs to check along the line of movement, not just across x
+							forI(abs(world.weather.wind_strength)/2){
+								u32 move = (world.weather.wind_strength>0?1:-1);
+								if(get_entity(nupos.x+move,it->pos.y-1)) break;
+								nupos.x += move;
+							}
+							//nupos.x += world.weather.wind_strength / 2;
+							nupos.x = Clamp(nupos.x, 0, WORLD_WIDTH);
+							nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
+							move_entity(it, nupos);
+						}
+					}break;
 				}
 				it->age++;
 			}
@@ -778,6 +813,19 @@ int main(int args_count, char** args){
 					e->color = entity_colors[Entity_Leaf][rand()%7];
 					set_entity(pos.x,pos.y,e);
 				}
+			}
+
+			// weather
+			switch(world.weather.type){
+				case Weather_Rain:{
+					forI(rand() % 10){
+						vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
+						Entity* e = make_nonagent_entity(pos, 0, Entity_Water);
+						e->name = STR8("water");
+						e->color = entity_colors[Entity_Water][rand()%7];
+						set_entity(pos.x,pos.y,e);
+					}
+				}break;
 			}
 		}
 
