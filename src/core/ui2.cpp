@@ -88,8 +88,6 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		s32 right = varr.count-1;
 		while(left <= right){
 			mid = left + (right-left)/2;
-			//I dont think this should ever happen but tell me if it does
-			Assert(varr[mid]->vertex_offset != drawcmd->vertex_offset);
 			if(varr[mid]->vertex_offset < drawcmd->vertex_offset){
 				left = mid + 1;
 				mid = left+((right-left)/2);
@@ -135,8 +133,6 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		s32 right = iarr.count-1;
 		while(left <= right){
 			mid = left + (right-left)/2;
-			//I dont think this should ever happen but tell me if it does
-			Assert(iarr[mid]->index_offset != drawcmd->index_offset);
 			if(iarr[mid]->index_offset < drawcmd->index_offset){
 				left = mid + 1;
 				mid = left+((right-left)/2);
@@ -733,7 +729,6 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 			if(HasFlag(child->style.sizing, size_flex)){
 				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
 			}else{
-				
 				if((disprow && HasFlag(child->style.sizing, size_auto_x)) || HasFlag(child->style.sizing, size_auto_y)){
 					//if a child has automatic sizing we can still support using it in flex containers by just evaluating it 
 					//early. if we do this we need to tell the main eval loop later that we dont need to evaluate it again
