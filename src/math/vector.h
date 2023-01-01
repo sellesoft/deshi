@@ -2574,7 +2574,7 @@ toVec2()const{
 
 inline vec2i vec2::
 toVec2i()const{
-	return vec2i{s32(this->x), s32(this->y)};
+	return vec2i{s32(this->x), s32(this->y)};		
 }
 
 inline vec3 vec2::

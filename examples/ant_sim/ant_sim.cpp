@@ -28,6 +28,7 @@ enum{
 };
 
 typedef struct Entity{
+	Node overlap_node; // connection to other entities occupying the same world tile
 	str8 name;
 	u64 age;
 	vec2i pos;
@@ -291,25 +292,32 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@world
-#define WORLD_WIDTH 128
-#define WORLD_HEIGHT 128
+#define WORLD_WIDTH 64
+#define WORLD_HEIGHT 64
 
 struct{
 	Entity** map;
 }world;
-#define GetEntity(x,y) world.map[x+y*WORLD_WIDTH]
+
+Entity* get_entity(u32 x, u32 y){
+	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
+	return world.map[x+y*WORLD_WIDTH];
+}
+
+b32 set_entity(u32 x, u32 y, Entity* entity){
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	world.map[x+y*WORLD_WIDTH] = entity;
+	return 1;
+}
 
 b32 move_entity(Entity* e, vec2i pos){
-	if(GetEntity(pos.x,pos.y)) return false;
-	GetEntity(e->pos.x,e->pos.y) = 0;
-	GetEntity(pos.x,pos.y) = e;
+	if(get_entity(pos.x,pos.y)) return false;
+	set_entity(e->pos.x,e->pos.y,0);
+	set_entity(pos.x,pos.y,e);
 	e->pos = pos;
 	return true;
 }
 
-Entity* get_entity_under_mouse(){
-	return 0;
-}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -426,35 +434,69 @@ struct{
 	vec2i visual_size;
 	vec2i visual_position;
 }rendering;
-#define GetPixel(x,y) rendering.screen[x+y*WORLD_WIDTH]
+
+u32 get_pixel(u32 x, u32 y) {	
+	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
+	return rendering.screen[x+y*WORLD_WIDTH];
+}
+
+b32 set_pixel(u32 x, u32 y, u32 val) {
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	rendering.screen[x+y*WORLD_WIDTH] = val;
+	return 1;
+}
 
 struct{
 	uiItem* main;
 	uiItem* worldwin;
+	uiItem* worldholder;
 	uiItem* worldtex;
 	uiItem* info;
 }ui;
+
+// returns a boolean indicating if the mouse is actually over the world 
+pair<vec2i, b32> get_tile_under_mouse(){
+	vec2 mouse_pos = input_mouse_position();
+	if(mouse_pos.x > ui.worldtex->pos_screen.x + ui.worldtex->size.x || mouse_pos.x < ui.worldtex->pos_screen.x ||
+	   mouse_pos.y > ui.worldtex->pos_screen.y + ui.worldtex->size.y || mouse_pos.y < ui.worldtex->pos_screen.y ||
+	   !ui.worldtex->height || !ui.worldtex->width){
+		return {{0},0};
+	}
+	vec2i local_pos;
+	local_pos.x = mouse_pos.x - ui.worldtex->pos_screen.x;
+	local_pos.y = mouse_pos.y - ui.worldtex->pos_screen.y;
+	local_pos.x = floor(f32(local_pos.x) / f32(ui.worldtex->width) * WORLD_WIDTH);
+	local_pos.y = floor(f32(local_pos.y) / f32(ui.worldtex->height) * WORLD_HEIGHT);
+	local_pos.y = WORLD_HEIGHT-1 - local_pos.y;
+	return {local_pos, 1};
+}
+
+Entity* get_entity_under_mouse(){
+	auto [pos, ok] = get_tile_under_mouse();
+	if(!ok) return 0; 
+	return get_entity(pos.x, WORLD_HEIGHT - pos.y);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
 int main(int args_count, char** args){
 	deshi_init();
 	
-	srand(1235123);
+	srand(2321);
 
 	//init deshi UI2
 	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
 
-
 	//init ant_sim storage
+	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
 	action_def_arena = memory_create_arena(Megabytes(1));
 	advert_def_arena = memory_create_arena(Megabytes(1));
 	agents_heap = memory_heap_init_bytes(Megabytes(1));
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
-	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
 
 	//init ant_sim rendering
 	rendering.screen = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
@@ -480,14 +522,20 @@ int main(int args_count, char** args){
 			ui.worldwin->style.sizing = size_percent_y;
 			ui.worldwin->style.size = {512, 100};
 			ui.worldwin->style.background_color = {5,5,5,255};
-			ui.worldtex = uiItemB();{
-				ui.worldtex->id = STR8("ant_sim.main.worldtex");
-				ui.worldtex->style.background_image = rendering.texture;
-				ui.worldtex->style.background_color = {255,255,255,255};
-				ui.worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
-				ui.worldtex->style.size = {100,0};
-				ui.worldtex->style.positioning = pos_draggable_fixed;
-				ui.worldtex->style.border_width = 1;
+			ui.worldholder = uiItemB();{
+				ui.worldholder->style.sizing = size_auto;
+				ui.worldholder->style.padding = {10,10,10,10};
+				ui.worldholder->style.border_style = border_solid;
+				ui.worldholder->style.border_width = 4;
+				ui.worldholder->style.border_color = Color_White;
+				ui.worldtex = uiItemB();{
+					ui.worldtex->id = STR8("ant_sim.main.worldtex");
+					ui.worldtex->style.background_image = rendering.texture;
+					ui.worldtex->style.background_color = {255,255,255,255};
+					ui.worldtex->style.sizing = size_percent_x | size_square | size_auto_y;
+					ui.worldtex->style.size = {100,0};
+					ui.worldtex->style.positioning = pos_draggable_fixed;
+				}uiItemE();
 			}uiItemE();
 		}uiItemE();
 		ui.info = uiItemB();{
@@ -511,11 +559,11 @@ int main(int args_count, char** args){
 			if(counts.entity[Entity_Leaf] < 50){
 				u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
 				forI(add){
-					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT};
-					while(GetEntity(pos.x,pos.y) && pos.y) pos.y -= 1;
+					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
+					while(get_entity(pos.x,pos.y) && pos.y) pos.y -= 1;
 					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
 					Entity* e = make_nonagent_entity(pos, 0, Entity_Leaf);
-					GetEntity(pos.x,pos.y) = e;
+					set_entity(pos.x,pos.y,e);
 				}
 			}
 
@@ -523,20 +571,22 @@ int main(int args_count, char** args){
 				switch(it->type){
 					case Entity_Leaf:{
 						if(it->age % (rand() % 50 + 1)) break;
-						GetPixel(it->pos.x,it->pos.y) = 0;
+						set_pixel(it->pos.x,it->pos.y,0);
 						vec2i nupos = it->pos;
 						nupos.y--;
 						u32 r = rand() % 3; 
 						if(r == 1) nupos.x += 1;
 						else if(r == 2) nupos.x -= 1;
 						it->pos = nupos;
-						GetPixel(it->pos.x,it->pos.y) = PackColorU32(255,0,255,0);
+						it->pos.x = Clamp(it->pos.x, 0, WORLD_WIDTH);
+						it->pos.y = Clamp(it->pos.y, 0, WORLD_HEIGHT-1);
+						set_pixel(it->pos.x, it->pos.y, PackColorU32(255,0,255,0));
 					}break;
 					case Entity_Dirt:{
-						if(!it->pos.y || GetEntity(it->pos.x,it->pos.y-1)) break;
-						GetPixel(it->pos.x,it->pos.y) = 0;
+						if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)) break;
+						set_pixel(it->pos.x,it->pos.y,0);
 						move_entity(it, vec2i{it->pos.x,it->pos.y-1});
-						GetPixel(it->pos.x,it->pos.y) = 0xff13458b;
+						set_pixel(it->pos.x,it->pos.y,0xff13458b);
 					}break;
 				}
 				it->age++;
@@ -558,9 +608,12 @@ int main(int args_count, char** args){
 		}uiImmediateE();
 
 		render_update_texture(rendering.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-		//render_texture_flat2(rendering.texture, vec2{0,0}, Vec2(DeshWindow->height,DeshWindow->height), 1);
-		
-		counts.entity[Entity_Leaf]--;
+
+		if(key_pressed(Key_SPACE)) paused = !paused;
+
+		if(auto [pos,ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
+			set_entity(pos.x,pos.y,make_nonagent_entity(pos, 0, Entity_Leaf));
+		}
 
 		console_update();
 		UI::Update();
