@@ -1,0 +1,66 @@
+/////////////////////////////////////////////////
+// @actions
+Action{
+  name "Idle"
+}
+
+Action{
+  name "Walk"
+}
+
+Action{
+  name "Dig"
+  costs{
+    sleep 1%
+  }
+}
+
+Action{
+  name "Eat Leaf"
+  costs{
+    bladder 30%
+    food    30%
+    water   10%
+  }
+}
+
+Action{
+  name "Drink Water"
+  costs{
+    bladder 30%
+    water   90%
+  }
+}
+
+
+/////////////////////////////////////////////////
+// @adverts
+Advert{
+  name  "Dig"
+  flags ConsumeOwnerOnCompletion
+  costs Action(Dig).costs //no false costs
+  range -1
+  actions{
+    Action(Dig)
+  }
+}
+
+Advert{
+  name  "Eat Leaf"
+  flags ConsumeOwnerOnCompletion
+  costs Action(Eat Leaf).costs //no false costs
+  range -1
+  actions{
+    Action(Eat Leaf)
+  }
+}
+
+Advert{
+  name  "Drink Water"
+  flags ConsumeOwnerOnCompletion
+  costs Action(Drink Water).costs //no false costs
+  range -1
+  actions{
+    Action(Drink Water)
+  }
+}

@@ -1,20 +1,37 @@
 /* ant_sim deshi example
 
 Index:
+@utils
 @vars
 @entity
-@need/cost
+@need
 @action
 @agent
 @advert
 @world
+@pathfinding
 @simulation
 @main
 */
 #include "deshi.h"
-#include "glad/gl.h"
-#include "glad/wgl.h"
 struct Advert;
+struct Path;
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//@utils
+#define TICKS_PER_WORLD_SECOND 1
+#define TICKS_PER_WORLD_MINUTE 60
+#define TICKS_PER_WORLD_DAY    86400
+#define TICKS_PER_WORLD_MONTH  2629740
+#define TICKS_PER_WORLD_YEAR   31536000
+
+u32 divide_color(u32 color, u32 divisor){
+	u32 r = (color >>  0 & 0x000000ff) / divisor;
+	u32 g = (color >>  8 & 0x000000ff) / divisor;
+	u32 b = (color >> 16 & 0x000000ff) / divisor;
+	return PackColorU32(255,b,g,r);
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,21 +45,22 @@ enum{
 	Entity_COUNT
 };
 
+str8 EntityStrings[] = {
+	STR8("NULL"),
+	STR8("Agent"),
+	STR8("Leaf"),
+	STR8("Dirt"),
+	STR8("Water"),
+};StaticAssert(ArrayCount(EntityStrings) == Entity_COUNT);
+
 // color palettes for entities that randomly choose color
-u32 entity_colors[Entity_COUNT][7] = {
+u32 EntityColors[Entity_COUNT][7] = {
 	0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff,
 	0,          0,          0,          0,          0,          0,          0         ,
 	0xff709a88, 0xff7ba694, 0xff86b19f, 0xff91bdab, 0xff9cc9b7, 0xffa8d5c3, 0xffb4e1cf,
 	0xff3d5f82, 0xff45678a, 0xff4c6e93, 0xff53769b, 0xff5a7ea3, 0xff6286ac, 0xff698eb4,
 	0xff595d47, 0xff60644d, 0xff666a54, 0xff6d715a, 0xff747861, 0xff7a7e67, 0xff81856e,
-};	
-
-u32 divide_color(u32 color, u32 divisor){
-	u32 r = (color >>  0 & 0x000000ff) / divisor;
-	u32 g = (color >>  8 & 0x000000ff) / divisor;
-	u32 b = (color >> 16 & 0x000000ff) / divisor;
-	return PackColorU32(255,b,g,r);
-}
+};
 
 typedef struct Entity{
 	Node overlap_node; // connection to other entities occupying the same world tile
@@ -60,75 +78,56 @@ typedef struct Entity{
 #define MIN_NEED_VALUE      0
 
 enum{
-	Need_NULL = 0,
 	Need_Bladder,
 	Need_Food,
 	Need_Health,
 	Need_Mating,
-	Need_Safety,
 	Need_Sleep,
 	Need_Water,
+	//Need_PADDING, //NOTE only necessary when there is an odd number of needs
 	Need_COUNT
 };
 str8 NeedStrings[] = {
-	STR8("NULL"),
 	STR8("Bladder"),
 	STR8("Food"),
 	STR8("Health"),
 	STR8("Mating"),
-	STR8("Safety"),
 	STR8("Sleep"),
 	STR8("Water"),
-};//StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
+	//STR8("PADDING"),
+};StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
 
 typedef struct Need{
 	Type type;
 	f32 value;
 	f32 delta;
-	f32 weight; //weight applied when scoring
+	u32 padding;
 }Need;
 
-typedef struct Cost{
-	Type need;
-	f32 delta;
-}Cost;
+void delta_need(Need* need, f32 delta){
+	need->value += delta;
+	need->value  = Clamp(need->value, MIN_NEED_VALUE, MAX_NEED_VALUE);
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@action
-enum{
-	Action_Walk,
-	Action_Dig,
-	Action_COUNT
-};
-str8 ActionStrings[] = {
-	STR8("Walk"),
-	STR8("Dig"),
-};StaticAssert(ArrayCount(ActionStrings) == Action_COUNT);
-
-enum{
-	ActionFlags_None = 0,
-	ActionFlags_ConsumeActionOnCompletion = (1 << 0),
-	ActionFlags_ConsumeOwnerOnCompletion  = (1 << 1),
-};
-
 typedef struct ActionDef{
-	Type type;
-	Flags flags;
-	u32 time;
-	u32 costs_count;
-	Cost* costs_array;
+	str8 name;
+	f32 costs[Need_COUNT];
 }ActionDef;
 
 typedef struct Action{
 	ActionDef* def;
-	Entity* owner;
+	vec2i target;
+	u32 completion_time;
+	f32 progress; //0-1; 1 is complete
 }Action;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@agent
-#define AGENT_ADVERT_QUEUE_SIZE 4
+#define AGENT_ADVERT_QUEUE_SIZE 2
 
 enum{
 	Race_BlackGardenAntQueen,
@@ -161,13 +160,15 @@ str8 RaceSpeciesStrings[] = {
 
 typedef struct Agent{
 	Node node;
-	Entity entity;
+	Entity* entity;
 	Type race;
 	u32 action_index;
-	Advert* advert_queue[AGENT_ADVERT_QUEUE_SIZE];
+	Advert* adverts_queue[AGENT_ADVERT_QUEUE_SIZE];
 	Need* needs_array;
 	u32 needs_count;
-	u32 padding;
+	u32 inventory_size;
+	Entity** inventory_array;
+	Path* path;
 }Agent;
 #define AgentFromNode(ptr) CastFromMember(Agent,node,ptr)
 #define AgentFromEntity(ptr) CastFromMember(Agent,entity,ptr)
@@ -175,8 +176,11 @@ typedef struct Agent{
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@advert
+#define ADVERT_COST_DELTA_EPSILON (10)
+#define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
+
 enum{
-	AdvertFlags_None = 0,
+	AdvertFlags_None                      = 0,
 	AdvertFlags_ConsumeAdvertOnCompletion = (1 << 0),
 	AdvertFlags_ConsumeOwnerOnCompletion  = (1 << 1),
 };
@@ -184,25 +188,28 @@ enum{
 typedef struct AdvertDef{
 	str8 name;
 	Flags flags;
-	u32 rangeSq;
-	u32 time; //advertised time
 	u32 padding;
-	Cost* costs_array; //advertised costs
-	u32 costs_count;
+	f32 costs[Need_COUNT];
+	u32 rangeSq;
 	u32 actions_count;
-	ActionDef* actions_array;
+	ActionDef** actions_array;
 }AdvertDef;
 
 typedef struct Advert{
 	AdvertDef* def;
 	Entity* owner;
+	Action* actions_array;
+	u32 actions_count; //NOTE new actions can be inserted during progress towards advert
+	u32 completion_time;
+	u32 ongoing_time;
+	u32 padding;
 }Advert;
 
 //scales a score value based on the need increase's distance from zero (so the change from 70-80 has less value than 10-30)
 //NOTE usually returns a value between -1 and 1
 //NOTE the "+ .001f" is just to avoid division by zero
-f32 need_attenuation(f32 current, f32 future, f32 weight){
-	return weight * ((10.f / (current + .001f)) - (10.f / (future + .001f)));
+f32 need_attenuation(f32 current, f32 future){
+	return (10.f / (current + .001f)) - (10.f / (future + .001f));
 }
 
 //scales a score value with distance: 100 * score / distance^2
@@ -213,39 +220,25 @@ f32 distance_attenuation(f32 score, vec2i pos1, vec2i pos2){
 	return score / ((d > 1.f) ? d : 1.f);
 }
 
-//computes the completion time of an advert based on a given value
-f32 compute_completion_time(AdvertDef* advert, f32 weighed_value){
-	return (MAX_NEED_VALUE / weighed_value) + advert->time;
-}
-
-
 //score the advert based on its positive/negative costs, completion time, distance, ...
-//TODO factor in whether something will become more important due to time (mining for a whole day instead of eating) see Fero::TimeAspect
-//TODO weight negative costs heavier
 f32 score_advert(Agent* agent, Advert* advert){
 	f32 average = 0;
-	forX(cost_idx, advert->def->costs_count){ Cost* cost = advert->def->costs_array + cost_idx;
-		forX(need_idx, agent->needs_count){ Need* need = agent->needs_array + need_idx;
-			if(cost->need == need->type){
-				f32 current_score = need->value;
-				f32 future_score  = current_score + cost->delta;
-				if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
-				
-				if(cost->delta > 0){
-					average += need_attenuation(current_score, future_score, need->weight);
-				}else{
-					average += need_attenuation(current_score, future_score, need->weight);
-				}
-				break;
-			}
+	ForX(need, agent->needs_array, agent->needs_count){
+		f32 current_score = need->value;
+		f32 future_score  = current_score + advert->def->costs[need->type];
+		if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
+							
+		if(advert->def->costs[need->type] > 0){
+			average += need_attenuation(current_score, future_score);
+		}else{
+			//TODO(delle) weight negative costs heavier
+			average += need_attenuation(current_score, future_score);
 		}
 	}
+	average /= agent->needs_count;
 	
-	if(advert->def->costs_count){
-		average /= advert->def->costs_count;
-	}
-	
-	return distance_attenuation(average, agent->entity.pos, advert->owner->pos) / advert->def->time;
+	//TODO(delle) better factor in whether something will become more important due to time (mining for a whole day instead of eating) see Fero::TimeAspect
+	return distance_attenuation(average, agent->entity->pos, advert->owner->pos) / advert->completion_time;
 }
 
 Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
@@ -300,11 +293,17 @@ Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
 		}
 		
 		//error printing
-		forI(score_count) Log("ant_sim", best_ads[i]->def->name," ",best_scores[i]);
+		LogE("ant_sim","Unchosen advert scores: ");
+		forI(score_count) LogE("ant_sim","\t",best_ads[i]->def->name," ",best_scores[i]);
 		Assert(!"An advert should always be chosen if there is a positive one.");
 		return 0;
 	}
 #undef MAX_BEST_ADS
+}
+
+void add_action(Advert* advert, u32 action_index, ActionDef* action_def, vec2i target){
+	//TODO(delle) implement add_action 
+	//advert->actions_count += 1;
 }
 
 
@@ -337,6 +336,10 @@ Entity* get_entity(u32 x, u32 y){
 	return world.map[x+y*WORLD_WIDTH];
 }
 
+Entity* get_entity(vec2i pos){
+	return get_entity(pos.x, pos.y);
+}
+
 b32 set_pixel(u32 x,u32 y,u32 val);
 b32 set_entity(u32 x, u32 y, Entity* entity){
 	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
@@ -355,10 +358,38 @@ b32 move_entity(Entity* e, vec2i pos){
 }
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//@pathfinding
+typedef struct NavNode{
+	vec2i pos;
+	NavNode* edges_array;
+	u32 edges_count;
+	u32 padding;
+}NavNode;
+
+typedef struct Path{
+	NavNode* nodes_array;
+	u32 nodes_count;
+	u32 current_index;
+}Path;
+
+//pathfind from agents starting position (inclusive) to target position (inclusive) using A* algorithm
+//if no valid path is found, returns best path towards target
+Path* generate_path(Agent* agent, vec2i target){ //TODO(delle) implement pathfinding
+	//find empty point closest to target (along line between)
+	
+	//A* pathfind to that closest point
+	
+	//cache the pathing data
+	
+	//return the path
+	return 0;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@simulation
-
 Arena* action_def_arena;
 Arena* advert_def_arena;
 Heap* agents_heap;
@@ -391,7 +422,7 @@ Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 	agent->entity.pos   = pos;
 	agent->race         = race;
 	agent->action_index = -1;
-	forI(AGENT_ADVERT_QUEUE_SIZE) agent->advert_queue[i] = 0;
+	forI(AGENT_ADVERT_QUEUE_SIZE) agent->adverts_queue[i] = 0;
 	agent->needs_array  = (Need*)(agent+1);
 	agent->needs_count  = arg_count;
 	Need needs[arg_count] = {args...};
@@ -400,25 +431,7 @@ Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 	return agent;
 }
 
-Advert* make_advert_def(str8 name, Flags flags, u32 range, u32 time, int cost_count, int action_count, ...){
-	NotImplemented;
-	return 0;
-}
-
-template<typename... Args>
-ActionDef* make_action_def(Type type, Flags flags, u32 time, Args... args){
-	constexpr u32 arg_count = sizeof...(Args);
-	ActionDef* def = memory_arena_pushT(action_def_arena, ActionDef);
-	def->type = type;
-	def->flags = flags;
-	def->time = time;
-	def->costs_count = arg_count;
-	Cost costs[arg_count] = {args...};
-	CopyMemory(def->costs_array, costs, arg_count*sizeof(Cost));
-	return def;	
-}
-
-Entity* make_nonagent_entity(Type type, vec2i pos, u32 age){
+Entity* make_entity(Type type, vec2i pos, u32 age){
 	Entity* entity = memory_pool_push(entities_pool);
 	entity->type = type;
 	entity->age  = age;
@@ -433,7 +446,7 @@ array<Advert*> collect_adverts(Agent* agent){
 	array<Advert*> adverts(deshi_temp_allocator);
 	for_pool(adverts_pool){
 		if(!it->def) continue;
-		if(vec2i_distanceToSq(agent->entity.pos,it->owner->pos) <= it->def->rangeSq){
+		if(vec2i_distanceToSq(agent->entity->pos,it->owner->pos) <= it->def->rangeSq){
 			adverts.add(it);
 		}
 	}
@@ -441,9 +454,8 @@ array<Advert*> collect_adverts(Agent* agent){
 }
 
 void tick_agent_needs(Agent* agent){
-	for(Need* it = agent->needs_array; it < agent->needs_array+agent->needs_count; ++it){
-		it->value += it->delta;
-		it->value = Clamp(it->value, MIN_NEED_VALUE, MAX_NEED_VALUE);
+	For(agent->needs_array, agent->needs_count){
+		delta_need(it, it->delta);
 	}
 }
 
@@ -457,19 +469,93 @@ void tick_agent_adverts(Agent* agent){
 	}
 }
 
-void tick_agent(Agent* agent){
-	//delta needs
+void tick_agent_actions(Agent* agent){
+	if(agent->adverts_queue[0] == 0) return;
 	
+	//perform action
+	Advert* advert = agent->adverts_queue[0];
+	Action* action = &advert->actions_array[agent->action_index];
+	/*
+	switch(action->def->type){
+		case Action_Walk:{
+			//move to next nav node pos
+			NavNode* nav_node = &agent->path->nodes_array[agent->path->current_index];
+			if(move_entity(agent->entity, nav_node->pos)){
+				agent->path.current_index += 1;
+			}else{
+				//entity in the way of the path, so generate new path or stack on top if same race
+				Entity* entity_in_way = get_entity(nav_node->pos);
+				if((entity_in_way->type == Entity_Agent) && (AgentFromEntity(entity_in_way)->race == agent->race)){
+					//TODO(delle) handle entity stacking
+				}else{
+					Path* path = generate_path(agent, action->target);
+					if(path->nodes_count == 0){ //no valid path
+						//TODO(delle) handle no valid path (dig or wait)
+						return;
+					}
+				}
+			}
+			
+			//at destination
+			if(vec2i_equal(agent->entity->pos, action->target)){
+				action->progress = 1.0f;
+			}
+		}break;
+		case Action_Dig:{
+			//too far from target, insert a walk action
+			if(vec2i_distanceToSq(agent->entity->pos, action->target) > 1){
+				Path* path = generate_path(agent, action->target);
+				vec2i closest_point = path->nodes_array[path->nodes_count-1].pos;
+				add_action(advert, agent->action_index, &ActionDefinitions[Action_Walk], closest_point);
+				tick_agent_actions(agent);
+				return;
+			}
+			
+			//TODO(delle) digging
+			//TODO(delle) adding dirt to inventory
+		}break;
+		default:{
+			if(action->def->type < Action_COUNT){
+				LogE("ant_sim","Unhandled action type: ",ActionStrings[action->def->type]);
+			}else{
+				LogE("ant_sim","Unhandled action type: ",action->def->type);
+			}
+		}break;
+	}
+	*/
 	
+	//action completed
+	if(action->progress >= 1.0f){
+		//award costs
+		ForX(need, agent->needs_array, agent->needs_count){
+			if(abs(advert->def->costs[need->type] - action->def->costs[need->type]) > ADVERT_COST_DELTA_EPSILON){
+				//TODO(delle) make a memory if adverted completion reward didnt match actual
+			}
+			
+			delta_need(need, advert->def->costs[need->type]);
+		}
+		
+		//next action
+		agent->action_index += 1;
+	}
 	
-	
-	//action perform
-	
+	//advert completed
+	if(agent->action_index >= advert->actions_count){
+		if(abs((int)(advert->completion_time - advert->ongoing_time)) > ADVERT_TIME_DELTA_EPSILON){
+			//TODO(delle) make a memory if adverted completion time didnt match actual
+		}
+		
+		//remove advert from queue
+		forI(AGENT_ADVERT_QUEUE_SIZE-1){
+			agent->adverts_queue[i] = agent->adverts_queue[i+1];
+		}
+		agent->adverts_queue[AGENT_ADVERT_QUEUE_SIZE-1] = 0;
+	}
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@render
-
 struct{
 	u32* screen;
 	Texture* texture; // texture representing the world
@@ -622,6 +708,9 @@ int main(int args_count, char** args){
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
 	
+	//load definitions
+	//TODO(delle) definition loading
+	
 	//init ant_sim rendering
 	rendering.screen = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
 	rendering.texture = assets_texture_create_from_memory(
@@ -731,10 +820,10 @@ int main(int args_count, char** args){
 		pos += vel;
 		pos = Clamp(pos,0, WORLD_HEIGHT-1);
 
-		u32 color = entity_colors[Entity_Dirt][rand()%7];
+		u32 color = EntityColors[Entity_Dirt][rand()%7];
 		forX(j,pos){
-			if(rand()%2==0) color = entity_colors[Entity_Dirt][rand()%7];
-			Entity* e = make_nonagent_entity(Entity_Dirt, {i,j}, 0);
+			if(rand()%2==0) color = EntityColors[Entity_Dirt][rand()%7];
+			Entity* e = make_entity(Entity_Dirt, {i,j}, 0);
 			e->color = divide_color(color, 2);
 			set_entity(i,j,e);
 			e->name = STR8("dirt");
@@ -746,11 +835,18 @@ int main(int args_count, char** args){
 		if(!sim.paused || sim.step){
 			sim.step = 0;
 
-			//tick agents
+			//agents tick needs and choose adverts
 			for_node(agents_node.next){
-				tick_agent(AgentFromNode(it));
+				tick_agent_needs(AgentFromNode(it));
+				tick_agent_adverts(AgentFromNode(it));
 			}
-
+			
+			//agents perform actions (after all agents decide what to do)
+			for_node(agents_node.next){
+				tick_agent_actions(AgentFromNode(it));
+			}
+			
+			//update entities
 			for_pool(entities_pool){
 				if(it == sim.break_on_me) sim.break_on_me = 0, DebugBreakpoint;
 				switch(it->type){
@@ -807,9 +903,9 @@ int main(int args_count, char** args){
 					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
 					while(get_entity(pos.x,pos.y) && pos.y) pos.y -= 1;
 					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
-					Entity* e = make_nonagent_entity(Entity_Leaf, pos, 0);
+					Entity* e = make_entity(Entity_Leaf, pos, 0);
 					e->name = STR8("leaf");
-					e->color = entity_colors[Entity_Leaf][rand()%7];
+					e->color = EntityColors[Entity_Leaf][rand()%7];
 					set_entity(pos.x,pos.y,e);
 				}
 			}
@@ -819,9 +915,9 @@ int main(int args_count, char** args){
 				case Weather_Rain:{
 					forI(rand() % 10){
 						vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
-						Entity* e = make_nonagent_entity(Entity_Water, pos, 0);
+						Entity* e = make_entity(Entity_Water, pos, 0);
 						e->name = STR8("water");
-						e->color = entity_colors[Entity_Water][rand()%7];
+						e->color = EntityColors[Entity_Water][rand()%7];
 						set_entity(pos.x,pos.y,e);
 					}
 				}break;
@@ -876,8 +972,8 @@ int main(int args_count, char** args){
 			}break;
 			case Mode_Draw:{
 				if(auto [pos, ok] = get_tile_under_mouse(); ok && input_lmouse_down()){
-					Entity* e = make_nonagent_entity(Entity_Leaf, pos, 0);
-					e->color = entity_colors[Entity_Leaf][rand()%7];
+					Entity* e = make_entity(Entity_Leaf, pos, 0);
+					e->color = EntityColors[Entity_Leaf][rand()%7];
 					e->name = STR8("leaf");
 					set_entity(pos.x,pos.y, e);
 				}
