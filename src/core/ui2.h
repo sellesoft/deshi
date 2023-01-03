@@ -653,6 +653,7 @@ struct uiItem{
 	TNode node;
 	str8 id; //NOTE(sushi) mostly for debugging, not sure if this will have any other use in the interface
 	uiStyle style;
+	u64 userVar; // variable never touched internally, for user use;
 	
 	//an items action call back function 
 	//this function is called in situations defined by the flags in the in the uiStyle enum

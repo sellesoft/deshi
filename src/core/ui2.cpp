@@ -632,9 +632,6 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_horizontal);
-	// if(str8_equal(item->id, STR8("ant_sim.main.infowin"))){
-	// 	DebugBreakpoint;
-	// }
 	//TODO(sushi) this can probably be cleaned up 
 	/*0
 	
@@ -794,6 +791,32 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				else{
 					cursor.y = child->pos_local.y + child->height;
 				}
+
+				switch(child->style.anchor){
+					case anchor_top_left:{
+						child->pos_local.x += child->style.x;
+						child->pos_local.y += child->style.y;
+					}break;
+					case anchor_top_right:{
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
+						
+						child->pos_local.y += child->style.y;
+					}break;
+					case anchor_bottom_right:{
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
+						
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+					case anchor_bottom_left:{
+						child->pos_local.x += child->style.x;
+						
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+				}
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
@@ -814,22 +837,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->pos_local.x += (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->pos_local.x += (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->pos_local.y += (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->pos_local.x += child->style.x;
 						
-						if(!hauto) child->pos_local.y += (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
