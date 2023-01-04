@@ -79,6 +79,7 @@ typedef struct Entity{
 			b32 evaluating;
 			b32 evaluated;
 			u32 pressure;
+			Node node; // connects the surface of a body of water
 		}water;
 	};
 
@@ -746,82 +747,23 @@ void eval_leaf(Entity* e){
 }
 
 void eval_water(Entity* e){
-	if(e->water.evaluated == sim.ticks % 2) return;
-	e->water.evaluated = sim.ticks % 2;
-
-	if(sim.break_on_me == e){
-		DebugBreakpoint;
-		sim.break_on_me = 0;
-	} 
-	
-	Entity* t = get_entity(e->pos.x,e->pos.y+1);
-	Entity* r = get_entity(e->pos.x+1,e->pos.y);
-	Entity* b = get_entity(e->pos.x,e->pos.y-1);
-	Entity* l = get_entity(e->pos.x-1,e->pos.y);
-
-	if(b || !e->pos.y){
-		if(t && t->type == Entity_Water){
-			eval_water(t);
-			if(t->pos == vec2i{e->pos.x,e->pos.y+1}){
-				e->water.pressure = t->water.pressure + 1;
-			}else{
-				e->water.pressure = 0;
-				t = 0;
-			}
-		}else{
-			e->water.pressure = 0;
-		}
-
-		if(r && r->type == Entity_Water){
-			eval_water(r);
-			if(r->pos == vec2i{e->pos.x+1,e->pos.y}){
-				if(r->water.pressure > e->water.pressure){
-					e->water.pressure += r->water.pressure;
-				}
-			}else{
-				r = 0;
-			}
-		}
-
-		if(l && l->type == Entity_Water){
-			eval_water(l);
-			if(l->pos == vec2i{e->pos.x-1,e->pos.y}){
-				if(l->water.pressure > e->water.pressure){
-					e->water.pressure += l->water.pressure;
-				}
-			}else{
-				l = 0;
-			}
-		}
-
-		if(b->water.pressure > e->water.pressure + 1){
-			e->water.pressure = b->water.pressure - 1;
-		}
-
-		if(!t && e->water.pressure){
-			move_entity(e,e->pos.x,e->pos.y+1);
-		}else if(e->pos.x == 0 && !get_entity(e->pos.x+1,e->pos.y-1)){
+	if(!e->pos.y || get_entity(e->pos.x,e->pos.y-1)){
+		if(e->pos.x == 0 && !get_entity(e->pos.x+1,e->pos.y-1)){
 			move_entity(e,{e->pos.x+1,e->pos.y-1});
 		}else if(e->pos.x == WORLD_WIDTH-1 && !get_entity(e->pos.x-1,e->pos.y-1)){
 			move_entity(e,{e->pos.x-1,e->pos.y-1});
-		}else if(l && !r && e->water.pressure){
-			move_entity(e,e->pos.x+1,e->pos.y);
-		}else if(r && !l && e->water.pressure){
-			move_entity(e,e->pos.x-1,e->pos.y);
-		}else if (!r && !l && e->water.pressure){
-			move_entity(e,e->pos.x+(rand()%2?1:-1),e->pos.y);
 		}else{
 			Entity* bl = get_entity(e->pos.x-1,e->pos.y-1);
 			Entity* br = get_entity(e->pos.x+1,e->pos.y-1);
-			// if(br&&bl){
-			// 	Entity* l = get_entity(e->pos.x-1,e->pos.y);
-			// 	Entity* r = get_entity(e->pos.x+1,e->pos.y);
-			// 	move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
-			// 	if(!l&&!r) 
-			// 	else if(l) move_entity(e,{e->pos.x+1,e->pos.y});
-			// 	else if(r) move_entity(e,{e->pos.x-1,e->pos.y});
-			// } 
-			if(!bl&&!br) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y-1});
+			if(br&&bl){
+				Entity* l = get_entity(e->pos.x-1,e->pos.y);
+				Entity* r = get_entity(e->pos.x+1,e->pos.y);
+				move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
+				if(!l&&!r) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
+				else if(l) move_entity(e,{e->pos.x+1,e->pos.y});
+				else if(r) move_entity(e,{e->pos.x-1,e->pos.y});
+			} 
+			else if(!bl&&!br) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y-1});
 			else if(bl) move_entity(e,{e->pos.x+1,e->pos.y-1});
 			else if(br) move_entity(e,{e->pos.x-1,e->pos.y-1});
 		}
@@ -839,6 +781,131 @@ void eval_water(Entity* e){
 		nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
 		move_entity(e, nupos);
 	}
+
+	// TODO(sushi) better water sim so that water equilizes
+	// if(e->water.evaluated == sim.ticks % 2) return;
+	// e->water.evaluated = sim.ticks % 2;
+
+	// if(sim.break_on_me == e){
+	// 	DebugBreakpoint;
+	// 	sim.break_on_me = 0;
+	// } 
+	
+	// Entity* t = get_entity(e->pos.x,e->pos.y+1);
+	// Entity* r = get_entity(e->pos.x+1,e->pos.y);
+	// Entity* b = get_entity(e->pos.x,e->pos.y-1);
+	// Entity* l = get_entity(e->pos.x-1,e->pos.y);
+
+	// if(b || !e->pos.y){
+	// 	//if there is an entity below us, or we are at the bottom of the world
+	// 	if(t && t->type == Entity_Water){
+	// 		// if there is an entity above us and it is water, we try to evaluate it so that
+	// 		// it knows its water pressure
+	// 		eval_water(t);
+	// 		if(t->pos == vec2i{e->pos.x,e->pos.y+1}){
+	// 			// if the water has not moved, we set this water's pressure to its pressure plus 1
+	// 			e->water.pressure = t->water.pressure + 1;
+	// 		}
+	// 	}
+
+	// 	if(r && r->type == Entity_Water){
+
+	// 	}
+	// }
+
+
+
+	// if(b || !e->pos.y){
+	// 	if(t && t->type == Entity_Water){
+	// 		eval_water(t);
+	// 		if(t->pos == vec2i{e->pos.x,e->pos.y+1}){
+	// 			e->water.pressure = t->water.pressure + 1;
+	// 		}else{
+	// 			e->water.pressure = 0;
+	// 			t = 0;
+	// 		}
+	// 	}else{
+	// 		e->water.pressure = 0;
+	// 	}
+
+	// 	if(r && r->type == Entity_Water){
+	// 		eval_water(r);
+	// 		if(r->pos == vec2i{e->pos.x+1,e->pos.y}){
+	// 			if(r->water.pressure > e->water.pressure){
+	// 				e->water.pressure += r->water.pressure;
+	// 			}
+	// 		}else{
+	// 			r = 0;
+	// 		}
+	// 	}
+
+	// 	if(l && l->type == Entity_Water){
+	// 		eval_water(l);
+	// 		if(l->pos == vec2i{e->pos.x-1,e->pos.y}){
+	// 			if(l->water.pressure > e->water.pressure){
+	// 				e->water.pressure += l->water.pressure;
+	// 			}
+	// 		}else{
+	// 			l = 0;
+	// 		}
+	// 	}
+
+	// 	if(b->type == Entity_Water){
+	// 		eval_water(b);
+	// 		if(b->pos == vec2i{e->pos.x,e->pos.y-1}){
+	// 			// if(b->water.pressure > e->water.pressure + 1){
+	// 			// 	e->water.pressure = b->water.pressure - 1;
+	// 			// }
+	// 		}else{
+	// 			b = 0;
+	// 		}
+	// 	}
+
+	// 	if(!t && b){
+	// 		if(b->type == Entity_Water && b->water.pressure > e->water.pressure + 1){
+	// 			move_entity(e,e->pos.x,e->pos.y+1);
+	// 		}else if(b->type != Entity_Water && e->water.pressure){
+	// 			move_entity(e,e->pos.x,e->pos.y+1);
+	// 		}
+	// 	}else if(e->pos.x == 0 && !get_entity(e->pos.x+1,e->pos.y-1)){
+	// 		move_entity(e,{e->pos.x+1,e->pos.y-1});
+	// 	}else if(e->pos.x == WORLD_WIDTH-1 && !get_entity(e->pos.x-1,e->pos.y-1)){
+	// 		move_entity(e,{e->pos.x-1,e->pos.y-1});
+	// 	}else if(l && !r && e->water.pressure){
+	// 		move_entity(e,e->pos.x+1,e->pos.y);
+	// 	}else if(r && !l && e->water.pressure){
+	// 		move_entity(e,e->pos.x-1,e->pos.y);
+	// 	}else if (!r && !l && e->water.pressure){
+	// 		move_entity(e,e->pos.x+(rand()%2?1:-1),e->pos.y);
+	// 	}else{
+	// 		Entity* bl = get_entity(e->pos.x-1,e->pos.y-1);
+	// 		Entity* br = get_entity(e->pos.x+1,e->pos.y-1);
+	// 		// if(br&&bl){
+	// 		// 	Entity* l = get_entity(e->pos.x-1,e->pos.y);
+	// 		// 	Entity* r = get_entity(e->pos.x+1,e->pos.y);
+	// 		// 	move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
+	// 		// 	if(!l&&!r) 
+	// 		// 	else if(l) move_entity(e,{e->pos.x+1,e->pos.y});
+	// 		// 	else if(r) move_entity(e,{e->pos.x-1,e->pos.y});
+	// 		// } 
+	// 		if(!bl&&!br) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y-1});
+	// 		else if(bl) move_entity(e,{e->pos.x+1,e->pos.y-1});
+	// 		else if(br) move_entity(e,{e->pos.x-1,e->pos.y-1});
+	// 	}
+	// }else{
+	// 	vec2i nupos = e->pos;
+	// 	nupos.y--;
+	// 		//TODO(sushi) this needs to check along the line of movement, not just across x
+	// 	forI(abs(world.weather.wind_strength)/2){
+	// 		u32 move = (world.weather.wind_strength>0?1:-1);
+	// 		if(get_entity(nupos.x+move,e->pos.y-1)) break;
+	// 		nupos.x += move;
+	// 	}
+	// 	//nupos.x += world.weather.wind_strength / 2;
+	// 	nupos.x = Clamp(nupos.x, 0, WORLD_WIDTH);
+	// 	nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
+	// 	move_entity(e, nupos);
+	// }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
