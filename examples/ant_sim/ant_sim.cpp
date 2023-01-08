@@ -11,6 +11,7 @@ Index:
 @world
 @pathfinding
 @simulation
+@render
 @main
 */
 #include "deshi.h"
@@ -112,7 +113,18 @@ void delta_need(Need* need, f32 delta){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@action
+enum{
+	Action_Idle,
+	Action_Walk,
+	Action_Dig,
+	Action_EatLeaf,
+	Action_DrinkWater,
+	Action_COUNT
+};
+
 typedef struct ActionDef{
+	Type type;
+	u32 padding;
 	str8 name;
 	f32 costs[Need_COUNT];
 }ActionDef;
@@ -123,6 +135,55 @@ typedef struct Action{
 	u32 completion_time;
 	f32 progress; //0-1; 1 is complete
 }Action;
+
+ActionDef ActionDefinitions[] = {
+	{Action_Idle,
+		/*padding*/ 0,
+		/*name   */ STR8("Idle"),
+		/*costs  */ {},
+	},
+	{Action_Walk,
+		/*padding*/ 0,
+		/*name   */ STR8("Walk"),
+		/*costs  */ {},
+	},
+	{Action_Dig,
+		/*padding*/ 0,
+		/*name   */ STR8("Digs"),
+		/*costs  */ {
+			/*bladder*/ .00f*MAX_NEED_VALUE,
+			/*food   */ .00f*MAX_NEED_VALUE,
+			/*health */ .00f*MAX_NEED_VALUE,
+			/*mating */ .00f*MAX_NEED_VALUE,
+			/*sleep  */ .01f*MAX_NEED_VALUE,
+			/*water  */ .00f*MAX_NEED_VALUE,
+		},
+	},
+	{Action_EatLeaf,
+		/*padding*/ 0,
+		/*name   */ STR8("Eat Leaf"),
+		/*costs  */ {
+			/*bladder*/ .30f*MAX_NEED_VALUE,
+			/*food   */ .30f*MAX_NEED_VALUE,
+			/*health */ .00f*MAX_NEED_VALUE,
+			/*mating */ .00f*MAX_NEED_VALUE,
+			/*sleep  */ .00f*MAX_NEED_VALUE,
+			/*water  */ .10f*MAX_NEED_VALUE,
+		},
+	},
+	{Action_DrinkWater,
+		/*padding*/ 0,
+		/*name   */ STR8("Drink Water"),
+		/*costs  */ {
+			/*bladder*/ .30f*MAX_NEED_VALUE,
+			/*food   */ .00f*MAX_NEED_VALUE,
+			/*health */ .00f*MAX_NEED_VALUE,
+			/*mating */ .00f*MAX_NEED_VALUE,
+			/*sleep  */ .00f*MAX_NEED_VALUE,
+			/*water  */ .90f*MAX_NEED_VALUE,
+		},
+	},
+};StaticAssert(ArrayCount(ActionDefinitions) == Action_COUNT);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,8 +237,16 @@ typedef struct Agent{
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@advert
+#define MAX_ADVERT_DEF_ACTIONS 8 //arbitrary value, increase if needed
 #define ADVERT_COST_DELTA_EPSILON (10)
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
+
+enum{
+	Advert_Dig,
+	Advert_EatLeaf,
+	Advert_DrinkWater,
+	Advert_COUNT
+};
 
 enum{
 	AdvertFlags_None                      = 0,
@@ -188,11 +257,9 @@ enum{
 typedef struct AdvertDef{
 	str8 name;
 	Flags flags;
-	u32 padding;
-	f32 costs[Need_COUNT];
 	u32 rangeSq;
-	u32 actions_count;
-	ActionDef** actions_array;
+	f32 costs[Need_COUNT];
+	ActionDef* actions[MAX_ADVERT_DEF_ACTIONS];
 }AdvertDef;
 
 typedef struct Advert{
@@ -204,6 +271,54 @@ typedef struct Advert{
 	u32 ongoing_time;
 	u32 padding;
 }Advert;
+
+AdvertDef AdvertDefinitions[] = {
+	{STR8("Dig"),
+		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
+		/*rangeSq*/ (u32)-1,
+		/*costs  */ {
+			/*bladder*/ .00f*MAX_NEED_VALUE,
+			/*food   */ .00f*MAX_NEED_VALUE,
+			/*health */ .00f*MAX_NEED_VALUE,
+			/*mating */ .00f*MAX_NEED_VALUE,
+			/*sleep  */ .01f*MAX_NEED_VALUE,
+			/*water  */ .00f*MAX_NEED_VALUE,
+		},
+		/*actions*/ {
+			&ActionDefinitions[Action_Dig],
+		},
+	},
+	{STR8("Eat Leaf"),
+		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
+		/*rangeSq*/ (u32)-1,
+		/*costs  */ {
+			/*bladder*/ .30f*MAX_NEED_VALUE,
+			/*food   */ .30f*MAX_NEED_VALUE,
+			/*health */ .00f*MAX_NEED_VALUE,
+			/*mating */ .00f*MAX_NEED_VALUE,
+			/*sleep  */ .00f*MAX_NEED_VALUE,
+			/*water  */ .10f*MAX_NEED_VALUE,
+		},
+		/*actions*/ {
+			&ActionDefinitions[Action_EatLeaf],
+		},
+	},
+	{STR8("Drink Water"),
+		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
+		/*rangeSq*/ (u32)-1,
+		/*costs  */ {
+			/*bladder*/ .30f*MAX_NEED_VALUE,
+			/*food   */ .00f*MAX_NEED_VALUE,
+			/*health */ .00f*MAX_NEED_VALUE,
+			/*mating */ .00f*MAX_NEED_VALUE,
+			/*sleep  */ .00f*MAX_NEED_VALUE,
+			/*water  */ .90f*MAX_NEED_VALUE,
+		},
+		/*actions*/ {
+			&ActionDefinitions[Action_DrinkWater],
+		},
+	},
+};StaticAssert(ArrayCount(AdvertDefinitions) == Advert_COUNT);
 
 //scales a score value based on the need increase's distance from zero (so the change from 70-80 has less value than 10-30)
 //NOTE usually returns a value between -1 and 1
@@ -331,23 +446,21 @@ struct{
 
 }world;
 
-Entity* get_entity(u32 x, u32 y){
-	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
-	return world.map[x+y*WORLD_WIDTH];
-}
-
 Entity* get_entity(vec2i pos){
-	return get_entity(pos.x, pos.y);
+	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return 0;
+	return world.map[pos.x + pos.y * WORLD_WIDTH];
 }
+FORCE_INLINE Entity* get_entity(u32 x, u32 y){ return get_entity(Vec2i(x,y)); }
 
 b32 set_pixel(u32 x,u32 y,u32 val);
-b32 set_entity(u32 x, u32 y, Entity* entity){
-	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
-	world.map[x+y*WORLD_WIDTH] = entity;
-	if(entity) set_pixel(x,y,entity->color);
-	else set_pixel(x,y,0);
+b32 set_entity(vec2i pos, Entity* entity){
+	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return 0;
+	world.map[pos.x + pos.y * WORLD_WIDTH] = entity;
+	if(entity) set_pixel(pos.x,pos.y,entity->color);
+	else set_pixel(pos.x,pos.y,0);
 	return 1;
 }
+FORCE_INLINE b32 set_entity(u32 x, u32 y, Entity* entity){ return set_entity(Vec2i(x,y), entity); }
 
 b32 move_entity(Entity* e, vec2i pos){
 	if(get_entity(pos.x,pos.y)) return false;
@@ -355,6 +468,36 @@ b32 move_entity(Entity* e, vec2i pos){
 	set_entity(pos.x,pos.y,e);
 	e->pos = pos;
 	return true;
+}
+
+//walks the path between two positions to see if there are any entities inbetween
+b32 line_of_sight(vec2i start, vec2i end){
+	vec2i between;
+	while(true){
+		between = vec2i_subtract(end, start);
+		
+		if(between.x == 0 && between.y == 0){
+			return true;
+		}
+		
+		if(abs(between.x) > abs(between.y)){
+			if      (between.x > 0){
+				start.x += 1;
+			}else if(between.x < 0){
+				start.x -= 1;
+			}
+		}else{
+			if      (between.y > 0){
+				start.y += 1;
+			}else if(between.y < 0){
+				start.y -= 1;
+			}
+		}
+		
+		if(get_entity(start) != 0){
+			return false;
+		}
+	}
 }
 
 
@@ -373,6 +516,10 @@ typedef struct Path{
 	u32 current_index;
 }Path;
 
+void update_navgraph(){
+	
+}
+
 //pathfind from agents starting position (inclusive) to target position (inclusive) using A* algorithm
 //if no valid path is found, returns best path towards target
 Path* generate_path(Agent* agent, vec2i target){ //TODO(delle) implement pathfinding
@@ -387,11 +534,8 @@ Path* generate_path(Agent* agent, vec2i target){ //TODO(delle) implement pathfin
 }
 
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@simulation
-Arena* action_def_arena;
-Arena* advert_def_arena;
 Heap* agents_heap;
 Node agents_node;
 Advert* adverts_pool;
@@ -459,7 +603,7 @@ void tick_agent_needs(Agent* agent){
 	}
 }
 
-void tick_agent_adverts(Agent* agent){
+void tick_agent_adverts(Agent* agent){ //TODO(delle) advert selection
 	//advance the advert actions
 	b32 new_advert = false;
 	
@@ -475,13 +619,12 @@ void tick_agent_actions(Agent* agent){
 	//perform action
 	Advert* advert = agent->adverts_queue[0];
 	Action* action = &advert->actions_array[agent->action_index];
-	/*
 	switch(action->def->type){
 		case Action_Walk:{
 			//move to next nav node pos
 			NavNode* nav_node = &agent->path->nodes_array[agent->path->current_index];
 			if(move_entity(agent->entity, nav_node->pos)){
-				agent->path.current_index += 1;
+				agent->path->current_index += 1;
 			}else{
 				//entity in the way of the path, so generate new path or stack on top if same race
 				Entity* entity_in_way = get_entity(nav_node->pos);
@@ -490,8 +633,7 @@ void tick_agent_actions(Agent* agent){
 				}else{
 					Path* path = generate_path(agent, action->target);
 					if(path->nodes_count == 0){ //no valid path
-						//TODO(delle) handle no valid path (dig or wait)
-						return;
+						//TODO(delle) handle no valid path (dig or wait or etc)
 					}
 				}
 			}
@@ -502,29 +644,36 @@ void tick_agent_actions(Agent* agent){
 			}
 		}break;
 		case Action_Dig:{
-			//too far from target, insert a walk action
+			//too far from target
 			if(vec2i_distanceToSq(agent->entity->pos, action->target) > 1){
+				//if line of sight and the dirt is gone, skip the action; else, walk to the dirt
+				Entity* target_entity = get_entity(action->target);
+				if(line_of_sight(agent->entity->pos, action->target) && target_entity && target_entity->type != Entity_Dirt){
+					agent->action_index += 1;
+			}else{
 				Path* path = generate_path(agent, action->target);
 				vec2i closest_point = path->nodes_array[path->nodes_count-1].pos;
 				add_action(advert, agent->action_index, &ActionDefinitions[Action_Walk], closest_point);
 				tick_agent_actions(agent);
 				return;
 			}
+				}
 			
-			//TODO(delle) digging
-			//TODO(delle) adding dirt to inventory
+			set_entity(action->target, 0);
+			update_navgraph(); //TODO(delle) smarter modification of the navgraph
+			
+			//TODO(delle) adding dirt to inventory to drag it
 		}break;
 		default:{
 			if(action->def->type < Action_COUNT){
-				LogE("ant_sim","Unhandled action type: ",ActionStrings[action->def->type]);
+				LogE("ant_sim","Unhandled action type: ",action->def->name);
 			}else{
 				LogE("ant_sim","Unhandled action type: ",action->def->type);
 			}
 		}break;
 	}
-	*/
 	
-	//action completed
+	//if action completed
 	if(action->progress >= 1.0f){
 		//award costs
 		ForX(need, agent->needs_array, agent->needs_count){
@@ -539,7 +688,7 @@ void tick_agent_actions(Agent* agent){
 		agent->action_index += 1;
 	}
 	
-	//advert completed
+	//if advert completed
 	if(agent->action_index >= advert->actions_count){
 		if(abs((int)(advert->completion_time - advert->ongoing_time)) > ADVERT_TIME_DELTA_EPSILON){
 			//TODO(delle) make a memory if adverted completion time didnt match actual
@@ -550,6 +699,9 @@ void tick_agent_actions(Agent* agent){
 			agent->adverts_queue[i] = agent->adverts_queue[i+1];
 		}
 		agent->adverts_queue[AGENT_ADVERT_QUEUE_SIZE-1] = 0;
+		
+		//delete the advert
+		//TODO(delle) handle deletion
 	}
 }
 
@@ -688,6 +840,7 @@ void eval_leaf(Entity* e){
 	}
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@main
 int main(int args_count, char** args){
@@ -702,14 +855,9 @@ int main(int args_count, char** args){
 	
 	//init ant_sim storage
 	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
-	action_def_arena = memory_create_arena(Megabytes(1));
-	advert_def_arena = memory_create_arena(Megabytes(1));
 	agents_heap = memory_heap_init_bytes(Megabytes(1));
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
-	
-	//load definitions
-	//TODO(delle) definition loading
 	
 	//init ant_sim rendering
 	rendering.screen = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
