@@ -143,7 +143,6 @@ enum{
 
 typedef struct ActionDef{
 	Type type;
-	u32 padding;
 	str8 name;
 	f32 costs[Need_COUNT];
 }ActionDef;
@@ -157,18 +156,15 @@ typedef struct Action{
 
 ActionDef ActionDefinitions[] = {
 	{Action_Idle,
-		/*padding*/ 0,
 		/*name   */ STR8("Idle"),
 		/*costs  */ {},
 	},
 	{Action_Walk,
-		/*padding*/ 0,
 		/*name   */ STR8("Walk"),
 		/*costs  */ {},
 	},
 	{Action_Dig,
-		/*padding*/ 0,
-		/*name   */ STR8("Digs"),
+		/*name   */ STR8("Dig"),
 		/*costs  */ {
 			/*bladder*/ .00f*MAX_NEED_VALUE,
 			/*food   */ .00f*MAX_NEED_VALUE,
@@ -179,7 +175,6 @@ ActionDef ActionDefinitions[] = {
 		},
 	},
 	{Action_EatLeaf,
-		/*padding*/ 0,
 		/*name   */ STR8("Eat Leaf"),
 		/*costs  */ {
 			/*bladder*/ .30f*MAX_NEED_VALUE,
@@ -191,7 +186,6 @@ ActionDef ActionDefinitions[] = {
 		},
 	},
 	{Action_DrinkWater,
-		/*padding*/ 0,
 		/*name   */ STR8("Drink Water"),
 		/*costs  */ {
 			/*bladder*/ .30f*MAX_NEED_VALUE,
@@ -207,8 +201,6 @@ ActionDef ActionDefinitions[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //@agent
-#define AGENT_ADVERT_QUEUE_SIZE 2
-
 enum{
 	Race_BlackGardenAntQueen,
 	Race_BlackGardenAntMale,
@@ -243,7 +235,7 @@ typedef struct Agent{
 	Entity* entity;
 	Type race;
 	u32 action_index;
-	Advert* adverts_queue[AGENT_ADVERT_QUEUE_SIZE];
+	Advert* active_advert;
 	Need* needs_array;
 	u32 needs_count;
 	u32 inventory_size;
@@ -375,18 +367,18 @@ f32 score_advert(Agent* agent, Advert* advert){
 	return distance_attenuation(average, agent->entity->pos, advert->owner->pos) / advert->completion_time;
 }
 
-Advert* select_advert(Agent* agent, Advert* adverts, u32 adverts_count){
+Advert* select_advert(Agent* agent, Advert** adverts, u32 adverts_count){
 #define MAX_BEST_ADS 3
 	Advert* best_ads[MAX_BEST_ADS] = {0};
 	f32 best_scores[MAX_BEST_ADS] = {0};
 	u32 score_count = 0;
 	
 	//score the adverts and get the best three
-	forX(advert_idx, adverts_count){ Advert* advert = adverts+advert_idx;
-		f32 score = score_advert(agent, advert);
+	For(adverts, adverts_count){
+		f32 score = score_advert(agent, *it);
 		if(score < 0) continue; //skip ads that have no benefits
 		
-		Advert* compare_ad = advert;
+		Advert* compare_ad = *it;
 		f32 compare_score = score;
 		forI(MAX_BEST_ADS){
 			if(best_ads[i]){
@@ -590,14 +582,14 @@ template<typename... Args>
 Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 	constexpr u32 arg_count = sizeof...(Args);
 	Agent* agent = (Agent*)memory_heap_add_bytes(agents_heap, sizeof(Agent) + arg_count*sizeof(Need));
-	agent->entity.name  = str8{0};
-	agent->entity.age   = age;
-	agent->entity.pos   = pos;
-	agent->race         = race;
-	agent->action_index = -1;
-	forI(AGENT_ADVERT_QUEUE_SIZE) agent->adverts_queue[i] = 0;
-	agent->needs_array  = (Need*)(agent+1);
-	agent->needs_count  = arg_count;
+	agent->entity.name   = str8{0};
+	agent->entity.age    = age;
+	agent->entity.pos    = pos;
+	agent->race          = race;
+	agent->action_index  = -1;
+	agent->active_advert = 0;
+	agent->needs_array   = (Need*)(agent+1);
+	agent->needs_count   = arg_count;
 	Need needs[arg_count] = {args...};
 	CopyMemory(agent->needs_array, needs, arg_count*sizeof(Need));
 	counts.agents++;
@@ -615,6 +607,23 @@ Entity* make_entity(Type type, vec2i pos, u32 age){
 	return entity;
 }
 
+void delete_entity(Entity* entity){
+	//TODO(delle) handle entity->overlap_node
+	if(entity == get_entity(entity->pos)){
+		set_entity(entity->pos, 0);
+	}
+	
+	if(entity->type == Entity_Agent){
+		Agent* agent = AgentFromEntity(entity);
+		memory_heap_remove(agents_heap, agent);
+	}else{
+		//TODO(sushi) handle entity->ui
+		
+		entity->type = Entity_NULL;
+		memory_pool_delete(entities_pool, entity);
+	}
+}
+
 array<Advert*> collect_adverts(Agent* agent){
 	array<Advert*> adverts(deshi_temp_allocator);
 	for_pool(adverts_pool){
@@ -626,29 +635,17 @@ array<Advert*> collect_adverts(Agent* agent){
 	return adverts;
 }
 
-void tick_agent_needs(Agent* agent){
-	For(agent->needs_array, agent->needs_count){
-		delta_need(it, it->delta);
-	}
-}
-
-void tick_agent_adverts(Agent* agent){ //TODO(delle) advert selection
-	//advance the advert actions
-	b32 new_advert = false;
-	
-	//select an advert to add to the queue
-	if(new_advert){
-		
-	}
-}
-
-void tick_agent_actions(Agent* agent){
-	if(agent->adverts_queue[0] == 0) return;
+void perform_actions(Agent* agent){
+	if(agent->active_advert == 0) return;
 	
 	//perform action
-	Advert* advert = agent->adverts_queue[0];
+	Advert* advert = agent->active_advert;
 	Action* action = &advert->actions_array[agent->action_index];
 	switch(action->def->type){
+		case Action_Idle:{
+			action->progress += (1.0f / (f32)action->completion_time);
+		}break;
+		
 		case Action_Walk:{
 			//move to next nav node pos
 			NavNode* nav_node = &agent->path->nodes_array[agent->path->current_index];
@@ -672,27 +669,42 @@ void tick_agent_actions(Agent* agent){
 				action->progress = 1.0f;
 			}
 		}break;
+		
 		case Action_Dig:{
+			Entity* target_entity = get_entity(action->target);
+			
 			//too far from target
 			if(vec2i_distanceToSq(agent->entity->pos, action->target) > 1){
 				//if line of sight and the dirt is gone, skip the action; else, walk to the dirt
-				Entity* target_entity = get_entity(action->target);
 				if(line_of_sight(agent->entity->pos, action->target) && target_entity && target_entity->type != Entity_Dirt){
 					agent->action_index += 1;
-			}else{
-				Path* path = generate_path(agent, action->target);
-				vec2i closest_point = path->nodes_array[path->nodes_count-1].pos;
-				add_action(advert, agent->action_index, &ActionDefinitions[Action_Walk], closest_point);
-				tick_agent_actions(agent);
-				return;
-			}
+				}else{
+					Path* path = generate_path(agent, action->target);
+					vec2i closest_point = path->nodes_array[path->nodes_count-1].pos;
+					add_action(advert, agent->action_index, &ActionDefinitions[Action_Walk], closest_point);
+					perform_actions(agent);
+					return;
 				}
+			}
 			
-			set_entity(action->target, 0);
-			update_navgraph(); //TODO(delle) smarter modification of the navgraph
+			if(target_entity && target_entity->type == Entity_Dirt){
+				set_entity(action->target, 0);
+				update_navgraph(); //TODO(delle) smarter modification of the navgraph
+			}
 			
 			//TODO(delle) adding dirt to inventory to drag it
 		}break;
+		
+		case Action_EatLeaf:{
+			//TODO(delle) leaf eating
+			action->progress = 1.0f;
+		}break;
+		
+		case Action_DrinkWater:{
+			//TODO(delle) water drinking
+			action->progress = 1.0f;
+		}break;
+		
 		default:{
 			if(action->def->type < Action_COUNT){
 				LogE("ant_sim","Unhandled action type: ",action->def->name);
@@ -724,13 +736,15 @@ void tick_agent_actions(Agent* agent){
 		}
 		
 		//remove advert from queue
-		forI(AGENT_ADVERT_QUEUE_SIZE-1){
-			agent->adverts_queue[i] = agent->adverts_queue[i+1];
-		}
-		agent->adverts_queue[AGENT_ADVERT_QUEUE_SIZE-1] = 0;
+		agent->active_advert = 0;
 		
 		//delete the advert
-		//TODO(delle) handle deletion
+		if(HasFlag(advert->def->flags, AdvertFlags_ConsumeOwnerOnCompletion)){
+			delete_entity(advert->owner);
+		}
+		if(HasFlag(advert->def->flags, AdvertFlags_ConsumeAdvertOnCompletion)){
+			//TODO(delle) handle deletion
+		}
 	}
 }
 
@@ -1292,17 +1306,25 @@ int main(int args_count, char** args){
 	while(platform_update()){
 		//simulate
 		if(!sim.paused || sim.step){
-			sim.step = 0;
+			sim.step = false;
 
 			//agents tick needs and choose adverts
 			for_node(agents_node.next){
-				tick_agent_needs(AgentFromNode(it));
-				tick_agent_adverts(AgentFromNode(it));
+				Agent* agent = AgentFromNode(it);
+				
+				ForX(need, agent->needs_array, agent->needs_count){
+		delta_need(need, need->delta);
+				}
+				
+				if(agent->active_advert == 0){
+					array<Advert*> adverts = collect_adverts(agent);
+					agent->active_advert = select_advert(agent, adverts.data, adverts.count);
+				}
 			}
 			
 			//agents perform actions (after all agents decide what to do)
 			for_node(agents_node.next){
-				tick_agent_actions(AgentFromNode(it));
+				perform_actions(AgentFromNode(it));
 			}
 			
 			//update entities
@@ -1371,7 +1393,7 @@ int main(int args_count, char** args){
 		render_update_texture(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 
 		if(key_pressed(Key_SPACE | InputMod_None)) sim.paused = !sim.paused;
-		if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = 1;
+		if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = true;
 
 
 		if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
