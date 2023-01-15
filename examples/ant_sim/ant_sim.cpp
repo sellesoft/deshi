@@ -9,23 +9,36 @@ Index:
 @agent
 @advert
 @world
-@pathfinding
 @simulation
 @render
 @main
 */
 #include "deshi.h"
+#include "kigu/array_utils.h"
 struct Advert;
-struct Path;
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@utils
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @utils
 #define TICKS_PER_WORLD_SECOND 1
 #define TICKS_PER_WORLD_MINUTE 60
 #define TICKS_PER_WORLD_DAY    86400
 #define TICKS_PER_WORLD_MONTH  2629740
 #define TICKS_PER_WORLD_YEAR   31536000
+
+enum{
+	north,
+	east,
+	south,
+	west
+};
+
+vec2i direction_to_movement[] = {
+		vec2i{ 0, 1}, //north
+		vec2i{ 1, 0}, //east
+		vec2i{ 0,-1}, //south
+		vec2i{-1, 0}, //west
+	};
 
 u32 divide_color(u32 color, u32 divisor){
 	u32 r = (color >>  0 & 0x000000ff) / divisor;
@@ -35,8 +48,8 @@ u32 divide_color(u32 color, u32 divisor){
 }
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@entity
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @entity
 enum{
 	Entity_NULL = 0,
 	Entity_Wall,
@@ -92,8 +105,8 @@ enum{
 };
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@need/cost
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @need/cost
 #define MAX_NEED_VALUE 100000
 #define MIN_NEED_VALUE      0
 
@@ -104,7 +117,6 @@ enum{
 	Need_Mating,
 	Need_Sleep,
 	Need_Water,
-	//Need_PADDING, //NOTE only necessary when there is an odd number of needs
 	Need_COUNT
 };
 str8 NeedStrings[] = {
@@ -114,14 +126,12 @@ str8 NeedStrings[] = {
 	STR8("Mating"),
 	STR8("Sleep"),
 	STR8("Water"),
-	//STR8("PADDING"),
 };StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
 
 typedef struct Need{
 	Type type;
 	f32 value;
 	f32 delta;
-	u32 padding;
 }Need;
 
 void delta_need(Need* need, f32 delta){
@@ -130,8 +140,8 @@ void delta_need(Need* need, f32 delta){
 }
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@action
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @action
 enum{
 	Action_Idle,
 	Action_Walk,
@@ -199,8 +209,8 @@ ActionDef ActionDefinitions[] = {
 };StaticAssert(ArrayCount(ActionDefinitions) == Action_COUNT);
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@agent
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @agent
 enum{
 	Race_BlackGardenAntQueen,
 	Race_BlackGardenAntMale,
@@ -232,22 +242,26 @@ str8 RaceSpeciesStrings[] = {
 
 typedef struct Agent{
 	Node node;
-	Entity* entity;
+	
+	Entity entity;
 	Type race;
+	
 	u32 action_index;
 	Advert* active_advert;
+	
 	Need* needs_array;
 	u32 needs_count;
-	u32 inventory_size;
-	Entity** inventory_array;
-	Path* path;
+	
+	u8* path_nodes; //movement direction steps (north, east, south, west)
+	u32 path_count;
+	u32 path_index; //progress along path
 }Agent;
 #define AgentFromNode(ptr) CastFromMember(Agent,node,ptr)
 #define AgentFromEntity(ptr) CastFromMember(Agent,entity,ptr)
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@advert
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @advert
 #define MAX_ADVERT_DEF_ACTIONS 8 //arbitrary value, increase if needed
 #define ADVERT_COST_DELTA_EPSILON (10)
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
@@ -280,7 +294,6 @@ typedef struct Advert{
 	u32 actions_count; //NOTE new actions can be inserted during progress towards advert
 	u32 completion_time;
 	u32 ongoing_time;
-	u32 padding;
 }Advert;
 
 AdvertDef AdvertDefinitions[] = {
@@ -364,7 +377,7 @@ f32 score_advert(Agent* agent, Advert* advert){
 	average /= agent->needs_count;
 	
 	//TODO(delle) better factor in whether something will become more important due to time (mining for a whole day instead of eating) see Fero::TimeAspect
-	return distance_attenuation(average, agent->entity->pos, advert->owner->pos) / advert->completion_time;
+	return distance_attenuation(average, agent->entity.pos, advert->owner->pos) / advert->completion_time;
 }
 
 Advert* select_advert(Agent* agent, Advert** adverts, u32 adverts_count){
@@ -433,8 +446,8 @@ void add_action(Advert* advert, u32 action_index, ActionDef* action_def, vec2i t
 }
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@world
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @world
 #define WORLD_WIDTH 512
 #define WORLD_HEIGHT 512
 
@@ -512,42 +525,89 @@ b32 line_of_sight(vec2i start, vec2i end){
 	}
 }
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@pathfinding
-typedef struct NavNode{
-	vec2i pos;
-	NavNode* edges_array;
-	u32 edges_count;
-	u32 padding;
-}NavNode;
-
-typedef struct Path{
-	NavNode* nodes_array;
-	u32 nodes_count;
-	u32 current_index;
-}Path;
-
-void update_navgraph(){
+//pathfind from agent position to target position using A* algorithm on the raw grid
+//!ref: https://www.redblobgames.com/pathfinding/a-star/introduction.html#astar
+void generate_path(Agent* agent, vec2i target){
+	persist Allocator deshi_allocator_no_release{
+		deshi__memory_generic_allocate_allocator,
+		Allocator_ChangeMemory_Noop,
+		Allocator_ChangeMemory_Noop,
+		Allocator_ReleaseMemory_Noop,
+		deshi__memory_generic_reallocate_allocator
+	};
 	
+	//remove the agent's previous path
+	memory_zfree(agent->path_nodes);
+	agent->path_nodes = 0;
+	agent->path_count = 0;
+	
+	//early out if already at the target
+	if(vec2i_equal(agent->entity.pos, target)){
+		return;
+	}
+	
+	//BEGIN_ALGORITHM: A* with uniform tile movement cost
+	b32 valid_path = false;
+	map<vec2i,u8> directions(deshi_temp_allocator); //<pos,direction> (direction = previous path tile -> this tile)
+	array<pair<vec2i,u32>> frontier(128,deshi_temp_allocator); //priority stack (lowest prio -> highest prio)
+	frontier.add({agent->entity.pos,0});
+	
+	//iterate frontier (tiles not yet assigned a direction towards the path start)
+	while(frontier.count){
+		//travel along the frontier stack
+		vec2i current = frontier.pop().first;
+		
+		//path is valid if the target is reached
+		if(vec2i_equal(current, target)){
+			valid_path = true;
+			break;
+		}
+		
+		//iterate neighbors
+		forX(direction,4){
+			vec2i next = vec2i_add(current, direction_to_movement[direction]);
+			if(!directions.has(next)){
+				//insert to frontier based on priority (so that travelling the frontier goes towards the target)
+				u32 priority = abs(target.x - next.x) + abs(target.y - next.y); //manhattan distance on square grid
+				u32 frontier_idx = 0;
+				while(frontier_idx < frontier.count){
+					if(priority <= frontier[frontier_idx].second){
+						frontier.insert({next,priority}, frontier_idx);
+						break;
+					}
+					frontier_idx += 1;
+				}
+				if(frontier_idx == frontier.count){
+					frontier.add({next,priority});
+				}
+				
+				//store the direction
+				directions.add(next, direction);
+			}
+		}
+	}
+	//END_ALGORITHM: A* with uniform tile movement cost
+	
+	//create the path and give it to the agent
+	if(valid_path){
+		vec2i current = target;
+		array<u8> path(32,&deshi_allocator_no_release);
+		while(!vec2i_equal(current, agent->entity.pos)){
+			u8 direction = *directions.at(current);
+			path.add(direction);
+			current = vec2i_add(current, direction_to_movement[(direction + 2) % 4]); //add 2 and wrap if over 4 to go to opposite direction
+		}
+		reverse(path.data, path.count);
+		
+		agent->path_nodes = path.data;
+		agent->path_count = path.count;
+		agent->path_index = 0;
+	}
 }
 
-//pathfind from agents starting position (inclusive) to target position (inclusive) using A* algorithm
-//if no valid path is found, returns best path towards target
-Path* generate_path(Agent* agent, vec2i target){ //TODO(delle) implement pathfinding
-	//find empty point closest to target (along line between)
-	
-	//A* pathfind to that closest point
-	
-	//cache the pathing data
-	
-	//return the path
-	return 0;
-}
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@simulation
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @simulation
 Heap* agents_heap;
 Node agents_node;
 Advert* adverts_pool;
@@ -575,7 +635,7 @@ struct{
 	u32 entities; // total entities
 	u32 agents; // sub count of entities
 	u32 actions;
-	u32 adverts; 
+	u32 adverts;
 }counts = {0};
 
 template<typename... Args>
@@ -628,7 +688,7 @@ array<Advert*> collect_adverts(Agent* agent){
 	array<Advert*> adverts(deshi_temp_allocator);
 	for_pool(adverts_pool){
 		if(!it->def) continue;
-		if(vec2i_distanceToSq(agent->entity->pos,it->owner->pos) <= it->def->rangeSq){
+		if(vec2i_distanceToSq(agent->entity.pos,it->owner->pos) <= it->def->rangeSq){
 			adverts.add(it);
 		}
 	}
@@ -647,26 +707,34 @@ void perform_actions(Agent* agent){
 		}break;
 		
 		case Action_Walk:{
-			//move to next nav node pos
-			NavNode* nav_node = &agent->path->nodes_array[agent->path->current_index];
-			if(move_entity(agent->entity, nav_node->pos)){
-				agent->path->current_index += 1;
+			//check if a path has already been generated
+			if(agent->path_nodes == 0){
+				//at destination
+				if(vec2i_equal(agent->entity.pos, action->target)){
+					action->progress = 1.0f;
+				}
+				
+				//generate a path if one doesnt exist yet and consume the tick doing it (wait)
+				generate_path(agent, action->target);
 			}else{
-				//entity in the way of the path, so generate new path or stack on top if same race
-				Entity* entity_in_way = get_entity(nav_node->pos);
-				if((entity_in_way->type == Entity_Agent) && (AgentFromEntity(entity_in_way)->race == agent->race)){
-					//TODO(delle) handle entity stacking
+				//move to next nav node
+				vec2i next_node = agent->entity.pos + direction_to_movement[agent->path_nodes[agent->path_index]];
+				if(move_entity(&agent->entity, next_node)){
+					agent->path_index += 1;
 				}else{
-					Path* path = generate_path(agent, action->target);
-					if(path->nodes_count == 0){ //no valid path
-						//TODO(delle) handle no valid path (dig or wait or etc)
+					//entity in the way of the path, so generate new path or stack on top if same race
+					Entity* entity_in_way = get_entity(next_node);
+					if((entity_in_way->type == Entity_Agent) && (AgentFromEntity(entity_in_way)->race == agent->race)){
+						//TODO(delle) handle entity stacking
+					}else{
+						generate_path(agent, action->target);
 					}
 				}
-			}
-			
-			//at destination
-			if(vec2i_equal(agent->entity->pos, action->target)){
-				action->progress = 1.0f;
+				
+				//at destination
+				if(vec2i_equal(agent->entity.pos, action->target)){
+					action->progress = 1.0f;
+				}
 			}
 		}break;
 		
@@ -674,22 +742,25 @@ void perform_actions(Agent* agent){
 			Entity* target_entity = get_entity(action->target);
 			
 			//too far from target
-			if(vec2i_distanceToSq(agent->entity->pos, action->target) > 1){
+			if(vec2i_distanceToSq(agent->entity.pos, action->target) > 1){
 				//if line of sight and the dirt is gone, skip the action; else, walk to the dirt
-				if(line_of_sight(agent->entity->pos, action->target) && target_entity && target_entity->type != Entity_Dirt){
+				if(line_of_sight(agent->entity.pos, action->target) && target_entity && target_entity->type != Entity_Dirt){
 					agent->action_index += 1;
 				}else{
-					Path* path = generate_path(agent, action->target);
-					vec2i closest_point = path->nodes_array[path->nodes_count-1].pos;
-					add_action(advert, agent->action_index, &ActionDefinitions[Action_Walk], closest_point);
-					perform_actions(agent);
-					return;
+					//TODO(delle) handle pathing to dig once we switch to graph navigation (to allow travelling to closest point and not knowing if the path is valid)
+					action->progress = 1.0f;
+					
+					//Path* path = generate_path(agent, action->target);
+					//vec2i closest_point = path->nodes_array[path->nodes_count-1].pos;
+					//add_action(advert, agent->action_index, &ActionDefinitions[Action_Walk], closest_point);
+					//perform_actions(agent);
+					//return;
 				}
 			}
 			
 			if(target_entity && target_entity->type == Entity_Dirt){
 				set_entity(action->target, 0);
-				update_navgraph(); //TODO(delle) smarter modification of the navgraph
+				//update_navgraph(); //TODO(delle) smarter modification of the navgraph
 			}
 			
 			//TODO(delle) adding dirt to inventory to drag it
@@ -749,8 +820,8 @@ void perform_actions(Agent* agent){
 }
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@render
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render
 struct{
 
 	struct{
@@ -1067,8 +1138,8 @@ void eval_water(Entity* e){
 	// }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//@main
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @main
 int main(int args_count, char** args){
 	deshi_init();
 	

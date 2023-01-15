@@ -187,6 +187,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,21/07/19,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 [!!!,***,21/12/31,System]  remove GLFW and add linux/mac platform specifics
 [!  ,*  ,22/02/01,Tweak]   remove commit/decommit from Allocator
+[!  ,*  ,23/01/15,Feature] add regression testing for examples (and a github precommit to run it)
 
 */
 
