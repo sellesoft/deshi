@@ -8,9 +8,10 @@ Index:
 @action
 @agent
 @advert
-@world
-@simulation
 @render
+@simulation
+@ui
+@input
 @main
 */
 #include "deshi.h"
@@ -26,6 +27,9 @@ struct Advert;
 #define TICKS_PER_WORLD_MONTH  2629740
 #define TICKS_PER_WORLD_YEAR   31536000
 
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
+
 enum{
 	north,
 	east,
@@ -34,11 +38,11 @@ enum{
 };
 
 vec2i direction_to_movement[] = {
-		vec2i{ 0, 1}, //north
-		vec2i{ 1, 0}, //east
-		vec2i{ 0,-1}, //south
-		vec2i{-1, 0}, //west
-	};
+	vec2i{ 0, 1}, //north
+	vec2i{ 1, 0}, //east
+	vec2i{ 0,-1}, //south
+	vec2i{-1, 0}, //west
+};
 
 u32 divide_color(u32 color, u32 divisor){
 	u32 r = (color >>  0 & 0x000000ff) / divisor;
@@ -87,7 +91,7 @@ typedef struct Entity{
 	u64 age;
 	vec2i pos;
 	Flags flags;
-
+	
 	union{
 		struct{
 			b32 evaluating;
@@ -96,7 +100,7 @@ typedef struct Entity{
 			Node node; // connects the surface of a body of water
 		}water;
 	};
-
+	
 	uiItem* ui;
 }Entity;
 
@@ -366,7 +370,7 @@ f32 score_advert(Agent* agent, Advert* advert){
 		f32 current_score = need->value;
 		f32 future_score  = current_score + advert->def->costs[need->type];
 		if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
-							
+		
 		if(advert->def->costs[need->type] > 0){
 			average += need_attenuation(current_score, future_score);
 		}else{
@@ -447,10 +451,61 @@ void add_action(Advert* advert, u32 action_index, ActionDef* action_def, vec2i t
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @world
-#define WORLD_WIDTH 512
-#define WORLD_HEIGHT 512
+//// @render
+struct{
+	struct{
+		u32* data;
+		Texture* texture;
+	}foreground;
+	
+	struct{
+		u32* data;
+		Texture* texture;
+	}background;
+	
+	vec2i visual_size;
+	vec2i visual_position;
+}rendering;
 
+u32 get_pixelfg(u32 x, u32 y) {	
+	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
+	return rendering.foreground.data[x+y*WORLD_WIDTH];
+}
+
+b32 set_pixelfg(u32 x, u32 y, u32 val) {
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	rendering.foreground.data[x+y*WORLD_WIDTH] = val;
+	return 1;
+}
+
+u32 get_pixelbg(u32 x, u32 y) {	
+	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
+	return rendering.background.data[x+y*WORLD_WIDTH];
+}
+
+b32 set_pixelbg(u32 x, u32 y, u32 val) {
+	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
+	rendering.background.data[x+y*WORLD_WIDTH] = val;
+	return 1;
+}
+
+void setup_rendering(){
+	rendering.foreground.data = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
+	rendering.foreground.texture = assets_texture_create_from_memory(rendering.foreground.data, STR8("world_foreground"),
+																	 WORLD_WIDTH, WORLD_HEIGHT,
+																	 ImageFormat_RGBA, TextureType_2D, TextureFilter_Nearest,
+																	 TextureAddressMode_ClampToTransparent, false);
+	
+	rendering.background.data = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
+	rendering.background.texture = assets_texture_create_from_memory(rendering.background.data, STR8("world_background"),
+																	 WORLD_WIDTH, WORLD_HEIGHT,
+																	 ImageFormat_RGBA, TextureType_2D, TextureFilter_Nearest,
+																	 TextureAddressMode_ClampToTransparent, false);
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @simulation
 enum{
 	Weather_Clear,
 	Weather_Cloudy,
@@ -459,16 +514,62 @@ enum{
 	Weather_Snow,
 };
 
+enum{
+	DrawTool_Draw_Square,
+	DrawTool_Erase_Square,
+};
+
+enum{
+	Mode_Navigate,
+	Mode_Draw,
+};
+
 struct{
 	Entity** map;
-
+	
 	struct{
 		Type type;
 		s32 wind_strength;
 		s32 temperature; // celsius
 	}weather;
-
 }world;
+
+struct{
+	Type mode;
+	struct{
+		Type tool;
+		Type entity_type;
+	}drawing;
+	Entity* break_on_me;
+	u64 ticks;
+	b32 paused;
+	b32 step;
+}sim;
+
+struct{
+	u32 entity[Entity_COUNT]; // count of each entity
+	u32 entities; // total entities
+	u32 agents; // sub count of entities
+	u32 actions;
+	u32 adverts;
+}counts = {0};
+
+Heap* agents_heap;
+Node agents_node;
+Advert* adverts_pool;
+Entity* entities_pool;
+
+void change_mode(Type mode){
+	switch(mode){
+		case Mode_Navigate:{
+			g_ui->keys.drag_item = Mouse_LEFT;
+		}break;
+		case Mode_Draw:{
+			g_ui->keys.drag_item = Mouse_MIDDLE;
+		}break;
+	}
+	sim.mode = mode;
+}
 
 Entity* get_entity(vec2i pos){
 	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return 0;
@@ -476,7 +577,6 @@ Entity* get_entity(vec2i pos){
 }
 FORCE_INLINE Entity* get_entity(u32 x, u32 y){ return get_entity(Vec2i(x,y)); }
 
-b32 set_pixelfg(u32 x,u32 y,u32 val);
 b32 set_entity(vec2i pos, Entity* entity){
 	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return false;
 	world.map[pos.x + pos.y * WORLD_WIDTH] = entity;
@@ -604,39 +704,6 @@ void generate_path(Agent* agent, vec2i target){
 		agent->path_index = 0;
 	}
 }
-
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @simulation
-Heap* agents_heap;
-Node agents_node;
-Advert* adverts_pool;
-Entity* entities_pool;
-
-enum{
-	DrawTool_Draw_Square,
-	DrawTool_Erase_Square,
-};
-
-struct{
-	Type mode;
-	struct{
-		Type tool;
-		Type entity_type;
-	}drawing;
-	Entity* break_on_me;
-	u64 ticks;
-	b32 paused;
-	b32 step;
-}sim;
-
-struct{
-	u32 entity[Entity_COUNT]; // count of each entity
-	u32 entities; // total entities
-	u32 agents; // sub count of entities
-	u32 actions;
-	u32 adverts;
-}counts = {0};
 
 template<typename... Args>
 Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
@@ -819,122 +886,6 @@ void perform_actions(Agent* agent){
 	}
 }
 
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render
-struct{
-
-	struct{
-		u32* data;
-		Texture* texture;
-	}foreground;
-
-	struct{
-		u32* data;
-		Texture* texture;
-	}background;
-
-	vec2i visual_size;
-	vec2i visual_position;
-}rendering;
-
-u32 get_pixelfg(u32 x, u32 y) {	
-	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
-	return rendering.foreground.data[x+y*WORLD_WIDTH];
-}
-
-b32 set_pixelfg(u32 x, u32 y, u32 val) {
-	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
-	rendering.foreground.data[x+y*WORLD_WIDTH] = val;
-	return 1;
-}
-
-u32 get_pixelbg(u32 x, u32 y) {	
-	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
-	return rendering.background.data[x+y*WORLD_WIDTH];
-}
-
-b32 set_pixelbg(u32 x, u32 y, u32 val) {
-	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
-	rendering.background.data[x+y*WORLD_WIDTH] = val;
-	return 1;
-}
-
-struct{
-	uiItem* main;
-	uiItem* worldwin;
-	uiItem* worldholder;
-	uiItem* background; // NOTE(sushi) the foreground is a child of the background so that it follows it and always draws over
-	uiItem* foreground;
-	uiItem* info;
-	uiItem* draw_menu;
-}ui;
-
-// returns a boolean indicating if the mouse is actually over the world 
-pair<vec2i, b32> get_tile_under_mouse(){
-	vec2 mouse_pos = input_mouse_position();
-	if(mouse_pos.x > ui.foreground->pos_screen.x + ui.foreground->size.x || mouse_pos.x < ui.foreground->pos_screen.x ||
-	   mouse_pos.y > ui.foreground->pos_screen.y + ui.foreground->size.y || mouse_pos.y < ui.foreground->pos_screen.y ||
-	   !ui.foreground->height || !ui.foreground->width){
-		return {{0},0};
-	}
-	vec2i local_pos;
-	local_pos.x = mouse_pos.x - ui.foreground->pos_screen.x;
-	local_pos.y = mouse_pos.y - ui.foreground->pos_screen.y;
-	local_pos.x = floor(f32(local_pos.x) / f32(ui.foreground->width) * WORLD_WIDTH);
-	local_pos.y = floor(f32(local_pos.y) / f32(ui.foreground->height) * WORLD_HEIGHT);
-	local_pos.y = WORLD_HEIGHT-1 - local_pos.y;
-	return {local_pos, 1};
-}
-
-Entity* get_entity_under_mouse(){
-	auto [pos, ok] = get_tile_under_mouse();
-	if(!ok) return 0; 
-	return get_entity(pos.x, pos.y);
-}
-
-enum{
-	Mode_Navigate,
-	Mode_Draw,
-};
-
-void change_mode(Type mode){
-	switch(mode){
-		case Mode_Navigate:{
-			g_ui->keys.drag_item = Mouse_LEFT;
-		}break;
-		case Mode_Draw:{
-			g_ui->keys.drag_item = Mouse_MIDDLE;
-		}break;
-	}
-	sim.mode = mode;
-}
-
-// allocates a temporary string
-str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
-	str8b build;
-	str8_builder_init(&build, {0}, deshi_temp_allocator);
-
-	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
-	memset(max, 0, sizeof(u32)*columns);
-
-	forI(rows*columns) {
-		u32 len = texts[i].count;
-		if(len > max[i%rows]) max[i%rows] = len;
-	}
-
-	forI(rows*columns) {
-		u32 len = max[i%rows];
-		str8_builder_grow(&build, len);
-		memcpy(build.str+build.count, texts[i].str, texts[i].count);
-		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
-		build.count += len;
-		if(i%columns == columns-1)  str8_builder_append(&build, STR8("\n"));
-	}
-
-	return build.fin;
-}
-
 // NOTE(sushi) this is separated into another function because i call it again on leaves that are above leaves that are moved because there are too many above it
 // https://encycolorpedia.com/d57835
 void eval_leaf(Entity* e){
@@ -963,7 +914,7 @@ void eval_leaf(Entity* e){
 				move_entity(above, {above->pos.x, above->pos.y-1});
 			}
 		}
-
+		
 	}else{
 		if(e->age % 5) return;
 		vec2i nupos = e->pos;
@@ -1000,7 +951,7 @@ void eval_water(Entity* e){
 	}else{
 		vec2i nupos = e->pos;
 		nupos.y--;
-			//TODO(sushi) this needs to check along the line of movement, not just across x
+		//TODO(sushi) this needs to check along the line of movement, not just across x
 		forI(abs(world.weather.wind_strength)/2){
 			u32 move = (world.weather.wind_strength>0?1:-1);
 			if(get_entity(nupos.x+move,e->pos.y-1)) break;
@@ -1011,11 +962,11 @@ void eval_water(Entity* e){
 		nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
 		move_entity(e, nupos);
 	}
-
+	
 	// TODO(sushi) better water sim so that water equilizes
 	// if(e->water.evaluated == sim.ticks % 2) return;
 	// e->water.evaluated = sim.ticks % 2;
-
+	
 	// if(sim.break_on_me == e){
 	// 	DebugBreakpoint;
 	// 	sim.break_on_me = 0;
@@ -1025,7 +976,7 @@ void eval_water(Entity* e){
 	// Entity* r = get_entity(e->pos.x+1,e->pos.y);
 	// Entity* b = get_entity(e->pos.x,e->pos.y-1);
 	// Entity* l = get_entity(e->pos.x-1,e->pos.y);
-
+	
 	// if(b || !e->pos.y){
 	// 	//if there is an entity below us, or we are at the bottom of the world
 	// 	if(t && t->type == Entity_Water){
@@ -1037,14 +988,14 @@ void eval_water(Entity* e){
 	// 			e->water.pressure = t->water.pressure + 1;
 	// 		}
 	// 	}
-
+	
 	// 	if(r && r->type == Entity_Water){
-
+	
 	// 	}
 	// }
-
-
-
+	
+	
+	
 	// if(b || !e->pos.y){
 	// 	if(t && t->type == Entity_Water){
 	// 		eval_water(t);
@@ -1057,7 +1008,7 @@ void eval_water(Entity* e){
 	// 	}else{
 	// 		e->water.pressure = 0;
 	// 	}
-
+	
 	// 	if(r && r->type == Entity_Water){
 	// 		eval_water(r);
 	// 		if(r->pos == vec2i{e->pos.x+1,e->pos.y}){
@@ -1068,7 +1019,7 @@ void eval_water(Entity* e){
 	// 			r = 0;
 	// 		}
 	// 	}
-
+	
 	// 	if(l && l->type == Entity_Water){
 	// 		eval_water(l);
 	// 		if(l->pos == vec2i{e->pos.x-1,e->pos.y}){
@@ -1079,7 +1030,7 @@ void eval_water(Entity* e){
 	// 			l = 0;
 	// 		}
 	// 	}
-
+	
 	// 	if(b->type == Entity_Water){
 	// 		eval_water(b);
 	// 		if(b->pos == vec2i{e->pos.x,e->pos.y-1}){
@@ -1090,7 +1041,7 @@ void eval_water(Entity* e){
 	// 			b = 0;
 	// 		}
 	// 	}
-
+	
 	// 	if(!t && b){
 	// 		if(b->type == Entity_Water && b->water.pressure > e->water.pressure + 1){
 	// 			move_entity(e,e->pos.x,e->pos.y+1);
@@ -1138,47 +1089,192 @@ void eval_water(Entity* e){
 	// }
 }
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @main
-int main(int args_count, char** args){
-	deshi_init();
-	
+void setup_simulation(){
+	//init RNG
 	srand(13535153135);
-
-	//init deshi ui2
-	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
-	g_ui->base.style.font_height = 11;
-	g_ui->base.style.text_color  = Color_White;
 	
-	//init ant_sim storage
+	//init storage
 	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
 	agents_heap = memory_heap_init_bytes(Megabytes(1));
 	memory_pool_init(adverts_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
 	
-	//init ant_sim rendering
-	rendering.foreground.data = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
-	rendering.foreground.texture = assets_texture_create_from_memory(
-		rendering.foreground.data, 
-		STR8("world_foreground"), 
-		WORLD_WIDTH, WORLD_HEIGHT,
-		ImageFormat_RGBA,
-		TextureType_2D,
-		TextureFilter_Nearest,
-		TextureAddressMode_ClampToTransparent,
-		0
-	);
-	rendering.background.data = (u32*)memalloc(sizeof(u32)*WORLD_WIDTH*WORLD_HEIGHT);
-	rendering.background.texture = assets_texture_create_from_memory(
-		rendering.background.data,
-		STR8("world_background"),
-		WORLD_WIDTH,WORLD_HEIGHT,
-		ImageFormat_RGBA,
-		TextureType_2D,
-		TextureFilter_Nearest,
-		TextureAddressMode_ClampToTransparent,
-		0
-	);
+	//init weather
+	world.weather.type = Weather_Clear;
+	world.weather.wind_strength = 0;
+	
+	//generate terrain
+	//TODO(sushi) initialize world by spawning all items in mid air so they fall down and it looks cool
+	s32 vel = 0;
+	s32 pos = WORLD_HEIGHT / 2;
+	forI(WORLD_WIDTH){
+		if(i%WORLD_WIDTH/(rand() % 8 + 8)){
+			u32 mag = 0;
+			if     (rand()%16==0) { mag = 8; }
+			else if(rand()% 8==0) { mag = 6; }
+			else if(rand()% 4==0) { mag = 4; }
+			else                    mag = 2;
+			
+			if(pos < u32(WORLD_HEIGHT/6.f)) vel = rand() % mag+1;
+			else if(pos > u32(5.f*WORLD_HEIGHT/6.f)) vel = -(rand() % mag + 1);
+			else vel = rand() % (mag+1) - mag/2;
+		}
+		pos += vel;
+		pos = Clamp(pos,0, WORLD_HEIGHT-1);
+		
+		u32 color = EntityColors[Entity_Dirt][rand()%7];
+		forX(j,pos){
+			if(rand()%2==0) color = EntityColors[Entity_Dirt][rand()%7];
+			Entity* e = make_entity(Entity_Dirt, {i,j}, 0);
+			e->color = color;
+			set_entity(i,j,e);
+			e->name = STR8("dirt");
+			set_pixelbg(i,j,e->color);
+		}
+		forX(j,WORLD_HEIGHT-pos){
+			set_pixelbg(i,pos+j,0xffcd7f07);
+		}
+	}
+	
+	sim.mode = Mode_Navigate;
+	//sim.paused = 1;
+}
+
+void update_simulation(){
+	if(!sim.paused || sim.step){
+		sim.step = false;
+		
+		//agents tick needs and choose adverts
+		for_node(agents_node.next){
+			Agent* agent = AgentFromNode(it);
+			
+			ForX(need, agent->needs_array, agent->needs_count){
+				delta_need(need, need->delta);
+			}
+			
+			if(agent->active_advert == 0){
+				array<Advert*> adverts = collect_adverts(agent);
+				agent->active_advert = select_advert(agent, adverts.data, adverts.count);
+			}
+		}
+		
+		//agents perform actions (after all agents decide what to do)
+		for_node(agents_node.next){
+			perform_actions(AgentFromNode(it));
+		}
+		
+		//update entities
+		for_pool(entities_pool){
+			//if(it == sim.break_on_me) sim.break_on_me = 0, DebugBreakpoint;
+			switch(it->type){
+				case Entity_Leaf: eval_leaf(it); break;
+				case Entity_Dirt:{
+					if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)) break;
+					move_entity(it, vec2i{it->pos.x,it->pos.y-1});
+				}break;
+				case Entity_Water: eval_water(it); break;
+			}
+			it->age++;
+		}
+		
+		//spawn more leaves
+		if(counts.entity[Entity_Leaf] < 50){
+			u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
+			forI(add){
+				vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
+				while(get_entity(pos.x,pos.y) && pos.y) pos.y -= 1;
+				if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
+				Entity* e = make_entity(Entity_Leaf, pos, 0);
+				e->name = STR8("leaf");
+				e->color = EntityColors[Entity_Leaf][rand()%7];
+				set_entity(pos.x,pos.y,e);
+			}
+		}
+		
+		//weather
+		switch(world.weather.type){
+			case Weather_Clear:{
+				//do nothing
+			}break;
+			case Weather_Rain:{
+				forI(rand() % 10){
+					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
+					Entity* e = make_entity(Entity_Water, pos, 0);
+					e->name = STR8("water");
+					e->color = EntityColors[Entity_Water][rand()%7];
+					set_entity(pos.x,pos.y,e);
+				}
+			}break;
+		}
+		sim.ticks++;
+	}
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @ui
+struct{
+	uiItem* main;
+	uiItem* worldwin;
+	uiItem* worldholder;
+	uiItem* background; // NOTE(sushi) the foreground is a child of the background so that it follows it and always draws over
+	uiItem* foreground;
+	uiItem* info;
+	uiItem* draw_menu;
+}ui;
+
+// returns a boolean indicating if the mouse is actually over the world 
+pair<vec2i, b32> get_tile_under_mouse(){
+	vec2 mouse_pos = input_mouse_position();
+	if(mouse_pos.x > ui.foreground->pos_screen.x + ui.foreground->size.x || mouse_pos.x < ui.foreground->pos_screen.x ||
+	   mouse_pos.y > ui.foreground->pos_screen.y + ui.foreground->size.y || mouse_pos.y < ui.foreground->pos_screen.y ||
+	   !ui.foreground->height || !ui.foreground->width){
+		return {{0},0};
+	}
+	vec2i local_pos;
+	local_pos.x = mouse_pos.x - ui.foreground->pos_screen.x;
+	local_pos.y = mouse_pos.y - ui.foreground->pos_screen.y;
+	local_pos.x = floor(f32(local_pos.x) / f32(ui.foreground->width) * WORLD_WIDTH);
+	local_pos.y = floor(f32(local_pos.y) / f32(ui.foreground->height) * WORLD_HEIGHT);
+	local_pos.y = WORLD_HEIGHT-1 - local_pos.y;
+	return {local_pos, 1};
+}
+
+Entity* get_entity_under_mouse(){
+	auto [pos, ok] = get_tile_under_mouse();
+	if(!ok) return 0; 
+	return get_entity(pos.x, pos.y);
+}
+
+// allocates a temporary string
+str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
+	str8b build;
+	str8_builder_init(&build, {0}, deshi_temp_allocator);
+	
+	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
+	memset(max, 0, sizeof(u32)*columns);
+	
+	forI(rows*columns) {
+		u32 len = texts[i].count;
+		if(len > max[i%rows]) max[i%rows] = len;
+	}
+	
+	forI(rows*columns) {
+		u32 len = max[i%rows];
+		str8_builder_grow(&build, len);
+		memcpy(build.str+build.count, texts[i].str, texts[i].count);
+		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
+		build.count += len;
+		if(i%columns == columns-1)  str8_builder_append(&build, STR8("\n"));
+	}
+	
+	return build.fin;
+}
+
+void setup_ui(){
+	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+	g_ui->base.style.font_height = 11;
+	g_ui->base.style.text_color  = Color_White;
 	
 	ui.main = uiItemB();{
 		ui.main->id = STR8("ant_sim.main");
@@ -1325,226 +1421,123 @@ int main(int args_count, char** args){
 				}uiItemE();
 			}uiItemE();
 			uiTextML("keys:");
-			uiTextM(aligned_text(3,3,{
-				STR8("pause"), STR8("- "), STR8("space"),
-				STR8("draw"), STR8("-"), STR8("lshift + d"),
-				STR8("navigate "), STR8("-"), STR8("lshift + n")
- 			}));
+			uiTextM(aligned_text(3,3,
+								 {
+									 STR8("pause"), STR8("- "), STR8("space"),
+									 STR8("draw"), STR8("-"), STR8("lshift + d"),
+									 STR8("navigate "), STR8("-"), STR8("lshift + n")
+								 }));
 		}uiItemE();
 	}uiItemE();
+}
 
-	sim.mode = Mode_Navigate;
-	//sim.paused = 1;
-
-	world.weather.type = Weather_Clear;
-	world.weather.wind_strength = 0;
-
-	// TODO(sushi) initialize world by spawning all items in mid air so they fall down and it looks cool
-
-	s32 vel = 0;
-	s32 pos = WORLD_HEIGHT / 2;
+void update_ui(){
+	Entity* hovered = get_entity_under_mouse();
 	
-	// randomly generate terrain
-	forI(WORLD_WIDTH){
-		if(i%WORLD_WIDTH/(rand() % 8 + 8)){
-			u32 mag = 0;
-			if     (rand()%16==0) { mag = 8; }
-			else if(rand()% 8==0) { mag = 6; }
-			else if(rand()% 4==0) { mag = 4; }
-			else                    mag = 2;
-
-			if(pos < u32(WORLD_HEIGHT/6.f)) vel = rand() % mag+1;
-			else if(pos > u32(5.f*WORLD_HEIGHT/6.f)) vel = -(rand() % mag + 1);
-			else vel = rand() % (mag+1) - mag/2;
-		}
-		pos += vel;
-		pos = Clamp(pos,0, WORLD_HEIGHT-1);
-
-		u32 color = EntityColors[Entity_Dirt][rand()%7];
-		forX(j,pos){
-			if(rand()%2==0) color = EntityColors[Entity_Dirt][rand()%7];
-			Entity* e = make_entity(Entity_Dirt, {i,j}, 0);
-			e->color = color;
-			set_entity(i,j,e);
-			e->name = STR8("dirt");
-			set_pixelbg(i,j,e->color);
-		}
-		forX(j,WORLD_HEIGHT-pos){
-			set_pixelbg(i,pos+j,0xffcd7f07);
-		}
+	uiImmediateB();{
+		persist Type anchor = anchor_top_left;
+		uiItem* window = uiItemB();
+		if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
+		window->style.positioning      = pos_absolute;
+		window->style.anchor           = anchor;
+		window->style.sizing           = size_auto;
+		window->style.background_color = Color_DarkGrey;
+		window->id                     = STR8("ant_sim.info_window");
+		uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
+		uiItemE();
+	}uiImmediateE();
+	
+	render_update_texture(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
+	render_update_texture(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
+	
+	//zooming (even though ui handles moving the world for us, we still need to handle zooming)
+	vec2 cursize = ui.background->style.size;
+	vec2 local_mouse = input_mouse_position() - ui.worldholder->pos_screen;
+	ui.background->style.size.x += DeshInput->scrollY / 10.0 * cursize.x;
+	ui.background->style.size.y += DeshInput->scrollY / 10.0 * cursize.y;
+	vec2 diff = ui.background->style.size - cursize;
+	if(DeshInput->scrollY){
+		ui.worldholder->style.pos.x -= local_mouse.x * ((ui.background->style.size.x / cursize.x) - 1);
+		ui.worldholder->style.pos.y -= local_mouse.y * ((ui.background->style.size.y / cursize.y) - 1);
 	}
-
-	while(platform_update()){
-		//simulate
-		if(!sim.paused || sim.step){
-			sim.step = false;
-
-			//agents tick needs and choose adverts
-			for_node(agents_node.next){
-				Agent* agent = AgentFromNode(it);
-				
-				ForX(need, agent->needs_array, agent->needs_count){
-		delta_need(need, need->delta);
-				}
-				
-				if(agent->active_advert == 0){
-					array<Advert*> adverts = collect_adverts(agent);
-					agent->active_advert = select_advert(agent, adverts.data, adverts.count);
-				}
+	
+	uiImmediateBP(ui.info);{
+		if(hovered){
+			uiTextM(ToString8(deshi_temp_allocator, "hovered: ", hovered->name));
+			if(hovered->type == Entity_Water){
+				uiTextM(ToString8(deshi_temp_allocator, "pressure: ", hovered->water.pressure));
 			}
+		} 
+		else  uiTextM(ToString8(deshi_temp_allocator, "hovered: nothing"));
+		auto [pos,ok] = get_tile_under_mouse();
+		if(ok) uiTextM(ToString8(deshi_temp_allocator, pos));
+		
+		if(g_ui->hovered) uiTextM(ToString8(deshi_temp_allocator, "hovered ui: ", g_ui->hovered->id));
+		
+		if(sim.paused){ 
+			uiItem* pausebox = uiItemB();{
+				pausebox->style.anchor = anchor_bottom_right;
+				pausebox->style.sizing = size_auto;
+				pausebox->style.padding = {2,2,2,2};
+				pausebox->style.background_color = color(255*(sin(1.5*DeshTime->totalTime/1000 + cos(1.5*DeshTime->totalTime/1000))+1)/2, 0, 0, 255);
+				uiTextML("paused");
+			}uiItemE();
+		}
+	}uiImmediateE();
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @input
+void update_input(){
+	if(key_pressed(Key_SPACE | InputMod_None)) sim.paused = !sim.paused;
+	if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = true;
+	
+	if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
+	if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
+	
+	switch(sim.mode){
+		case Mode_Navigate:{
 			
-			//agents perform actions (after all agents decide what to do)
-			for_node(agents_node.next){
-				perform_actions(AgentFromNode(it));
-			}
+		}break;
+		case Mode_Draw:{
+			if(key_pressed(Key_1)) sim.drawing.tool = DrawTool_Draw_Square;
+			if(key_pressed(Key_2)) sim.drawing.tool = DrawTool_Erase_Square;
 			
-			//update entities
-			for_pool(entities_pool){
-				//if(it == sim.break_on_me) sim.break_on_me = 0, DebugBreakpoint;
-				switch(it->type){
-					case Entity_Leaf: eval_leaf(it); break;
-					case Entity_Dirt:{
-						if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)) break;
-						move_entity(it, vec2i{it->pos.x,it->pos.y-1});
-					}break;
-					case Entity_Water: eval_water(it); break;
-				}
-				it->age++;
-			}
-
-			//spawn more leaves
-			if(counts.entity[Entity_Leaf] < 50){
-				u32 add = (50 - counts.entity[Entity_Leaf]) +  rand() % 10; 
-				forI(add){
-					vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
-					while(get_entity(pos.x,pos.y) && pos.y) pos.y -= 1;
-					if(!pos.y){ add--; continue; } // we somehow failed to place the leaf anywhere in the random column, whatever
-					Entity* e = make_entity(Entity_Leaf, pos, 0);
-					e->name = STR8("leaf");
-					e->color = EntityColors[Entity_Leaf][rand()%7];
-					set_entity(pos.x,pos.y,e);
-				}
-			}
-
-			// weather
-			switch(world.weather.type){
-				case Weather_Clear:{
-					
-				}break;
-				case Weather_Rain:{
-					forI(rand() % 10){
-						vec2i pos = {rand() % WORLD_WIDTH, WORLD_HEIGHT-1};
-						Entity* e = make_entity(Entity_Water, pos, 0);
-						e->name = STR8("water");
-						e->color = EntityColors[Entity_Water][rand()%7];
-						set_entity(pos.x,pos.y,e);
+			if(get_entity_under_mouse()) break;
+			
+			auto [pos, ok] = get_tile_under_mouse();
+			if(!ok || sim.break_on_me) break;
+			
+			switch(sim.drawing.tool){
+				case DrawTool_Draw_Square:{
+					if(input_lmouse_down()){
+						Entity* e = make_entity(sim.drawing.entity_type, pos, 0);
+						e->color = EntityColors[sim.drawing.entity_type][rand()%7];
+						e->name = EntityStrings[sim.drawing.entity_type];
+						set_entity(pos.x,pos.y, e);
 					}
 				}break;
 			}
-			sim.ticks++;
-		}
-
-		Entity* hovered = get_entity_under_mouse();
-		
-		//update ui
-		uiImmediateB();{
-			persist Type anchor = anchor_top_left;
-			uiItem* window = uiItemB();
-			if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
-			window->style.positioning      = pos_absolute;
-			window->style.anchor           = anchor;
-			window->style.sizing           = size_auto;
-			window->style.background_color = Color_DarkGrey;
-			window->id                     = STR8("ant_sim.info_window");
-			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"));
-			uiItemE();
-		}uiImmediateE();
-
-		render_update_texture(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-		render_update_texture(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-
-		if(key_pressed(Key_SPACE | InputMod_None)) sim.paused = !sim.paused;
-		if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = true;
-
-
-		if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
-		if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
-
-		switch(sim.mode){
-			case Mode_Navigate:{
-				
-			}break;
-			case Mode_Draw:{
-				if(key_pressed(Key_1)) sim.drawing.tool = DrawTool_Draw_Square;
-				if(key_pressed(Key_2)) sim.drawing.tool = DrawTool_Erase_Square;
-
-				if(hovered) break;
-
-				auto [pos, ok] = get_tile_under_mouse();
-				if(!ok || sim.break_on_me) break;
-
-				switch(sim.drawing.tool){
-					case DrawTool_Draw_Square:{
-						if(input_lmouse_down()){
-							Entity* e = make_entity(sim.drawing.entity_type, pos, 0);
-							e->color = EntityColors[sim.drawing.entity_type][rand()%7];
-							e->name = EntityStrings[sim.drawing.entity_type];
-							set_entity(pos.x,pos.y, e);
-						}
-					}break;
-				}
-
-				
-
-			}break;
-		}
-
-		// even though ui handles moving the world for us, we still need to handle zooming
-		vec2 cursize = ui.background->style.size;
-		vec2 local_mouse = input_mouse_position() - ui.worldholder->pos_screen;
-		ui.background->style.size.x += DeshInput->scrollY / 10.0 * cursize.x;
-		ui.background->style.size.y += DeshInput->scrollY / 10.0 * cursize.y;
-		vec2 diff = ui.background->style.size - cursize;
-		if(DeshInput->scrollY){
-			ui.worldholder->style.pos.x -= local_mouse.x * ((ui.background->style.size.x / cursize.x) - 1);
-			ui.worldholder->style.pos.y -= local_mouse.y * ((ui.background->style.size.y / cursize.y) - 1);
-		}
-
-		uiImmediateBP(ui.info);{
-			if(hovered){
-				uiTextM(ToString8(deshi_temp_allocator, "hovered: ", hovered->name));
-				if(hovered->type == Entity_Water){
-					uiTextM(ToString8(deshi_temp_allocator, "pressure: ", hovered->water.pressure));
-				}
-			} 
-			else  uiTextM(ToString8(deshi_temp_allocator, "hovered: nothing"));
-			auto [pos,ok] = get_tile_under_mouse();
-			if(ok) uiTextM(ToString8(deshi_temp_allocator, pos));
-
-			if(g_ui->hovered) uiTextM(ToString8(deshi_temp_allocator, "hovered ui: ", g_ui->hovered->id));
-
-			if(sim.paused){ 
-				uiItem* pausebox = uiItemB();{
-					pausebox->style.anchor = anchor_bottom_right;
-					pausebox->style.sizing = size_auto;
-					pausebox->style.padding = {2,2,2,2};
-					pausebox->style.background_color = color(255*(sin(1.5*DeshTime->totalTime/1000 + cos(1.5*DeshTime->totalTime/1000))+1)/2, 0, 0, 255);
-					uiTextML("paused");
-				}uiItemE();
-			
-			}
-
-		}uiImmediateE();
-		
-
-
-		console_update();
-		UI::Update();
-		ui_update();
-		render_update();
-		logger_update();
-		deshi__memory_temp_clear();
+		}break;
 	}
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @main
+int main(int args_count, char** args){
+	deshi_init();
+	
+	setup_rendering();
+	setup_simulation();
+	setup_ui();
+	
+	deshi_loop_start();{
+		update_input();
+		update_simulation();
+		update_ui();
+	}deshi_loop_end();
 	
 	deshi_cleanup();
 }
