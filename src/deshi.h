@@ -37,7 +37,7 @@
   threader_init();
 
 #define deshi_loop_start()   \
-  while(platform_update()){  \
+  while(platform_update()){
 
 #define deshi_loop_end() \
     console_update();    \
