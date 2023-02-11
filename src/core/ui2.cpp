@@ -251,7 +251,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 			 "\tui_update() requires that all items are made outside of it.\n",
 			 "\tA possible cause of this is trying to make an item in another item's action, update, generate, or evaluate function."
 			 );
-		Assert(0);	
+		Assert(0);
 	}
 	
 	uiItem* parent = *(g_ui->item_stack.last);
@@ -264,9 +264,9 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 		//im pretty sure this will fail in some cases 
 		//if its REALLY bad then we should just go with allowing the user to give unique ids
 		u64 hash = str8_hash64(setup.file);
-		hash ^=        setup.line;     hash *= 16777619;
-		hash ^=        setup.size;     hash *= 16777619;
-		hash ^= *(u64*)setup.generate; hash *= 16777619;
+		hash ^=        setup.line;     hash *= UI_HASH_PRIME;
+		hash ^=        setup.size;     hash *= UI_HASH_PRIME;
+		hash ^= *(u64*)setup.generate; hash *= UI_HASH_PRIME;
 		hash ^= g_ui->immediate.id;
 		//load item from immediate cache if it has been made before
 		if(g_ui->immediate.cache.has(hash)){
@@ -535,7 +535,7 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->base.line_created = __LINE__;
 	g_ui->base.style.width = DeshWindow->width;
 	g_ui->base.style.height = DeshWindow->height;
-	g_ui->base.style_hash = hash_style(&g_ui->base);
+	g_ui->base.style_hash = ui_hash_style(&g_ui->base);
 	push_item(&g_ui->base);
 
 	//setup default keybinds
@@ -1022,7 +1022,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	
 	//check if an item's style was modified, if so reevaluate the item,
 	//its children, and every child of its parents until a manually sized parent is found
-	u32 nuhash = hash_style(item);
+	u32 nuhash = ui_hash_style(item);
 	if(item->dirty || nuhash!=item->style_hash){
 		item->dirty = 0;
 		item->style_hash = nuhash; 

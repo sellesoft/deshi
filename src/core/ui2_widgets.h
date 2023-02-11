@@ -172,11 +172,11 @@ struct uiSlider{
 inline u32 slider_style_hash(uiItem* item){
 	uiSlider* data = uiGetSlider(item);
 	
-	u32 seed = 2166136261;
-	seed ^= data->style.colors.rail.rgba;       seed *= 16777619;
-	seed ^= data->style.colors.dragger.rgba;    seed *= 16777619;
-	seed ^= data->style.dragger_shape;          seed *= 16777619;
-	seed ^= *(u32*)&data->style.rail_thickness; seed *= 16777619;
+	u32 seed = UI_HASH_SEED;
+	seed ^= data->style.colors.rail.rgba;       seed *= UI_HASH_PRIME;
+	seed ^= data->style.colors.dragger.rgba;    seed *= UI_HASH_PRIME;
+	seed ^= data->style.dragger_shape;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&data->style.rail_thickness; seed *= UI_HASH_PRIME;
 	
 	return seed;
 } 
@@ -225,9 +225,9 @@ struct uiCheckbox{
 inline u32 checkbox_style_hash(uiItem* item){
 	uiCheckbox* data = uiGetCheckbox(item);
 	
-	u32 seed = 2166136261;
-	seed ^= data->style.colors.filling.rgba;    seed *= 16777619;
-	seed ^= data->style.fill_type;              seed *= 16777619;
+	u32 seed = UI_HASH_SEED;
+	seed ^= data->style.colors.filling.rgba; seed *= UI_HASH_PRIME;
+	seed ^= data->style.fill_type;           seed *= UI_HASH_PRIME;
 	return seed;
 }
 

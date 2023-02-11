@@ -97,9 +97,9 @@ Item Style Documentation
 		pos_fixed  |  fixed
 			The item is positioned relative to the viewport and does not move.
 
-		pos_sticky  |  sticy
-			The item is positioned just as it would be in relative, but if the item
-			were to go out of view by the user scrolling the item will stick to the edge
+		pos_sticky  |  sticky
+			The item is positioned just as it would be in relative, but if the item were to go out of view by the
+user scrolling, the item will instead stick to the edge of the scroll space.
 
 		pos_draggable_relative | draggable_relative
 			The item is positioned the same as relative, but its position may be changed
@@ -485,6 +485,10 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
+#define UI_HASH_SEED 2166136261 //32bit FNV_offset_basis (FNV-1a)
+#define UI_HASH_PRIME 16777619 //32bit FNV_prime (FNV-1a)
+#define UI_HASH_VAR(x) seed ^= (x); seed *= UI_HASH_PRIME
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_keybinds
@@ -532,8 +536,6 @@ struct uiDrawCmd{
 	u32 index_offset;
 	vec2i counts_reserved; //x: vertex, y: index
 	vec2i counts_used; //x: vertex, y: index
-	vec2i scissorOffset;
-	vec2i scissorExtent;
 };
 
 #define uiDrawCmdFromNode(x) CastFromMember(uiDrawCmd, node, x)
@@ -784,39 +786,43 @@ struct uiItemSetup{
 
 #define uiItemFromNode(x) CastFromMember(uiItem, node, x)
 
-inline u32 hash_style(uiItem* item){DPZoneScoped;
+//Hashes the uiItem's style and merges it with the result of a custom hash function if one is set
+inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
 	uiStyle* s = &item->style;
-	u32 seed = 2166136261;
-	seed ^= *(u32*)&s->positioning;     seed *= 16777619;
-	seed ^= *(u32*)&s->sizing;          seed *= 16777619;
-	seed ^= *(u32*)&s->anchor;          seed *= 16777619;
-	seed ^= *(u32*)&s->x;               seed *= 16777619;
-	seed ^= *(u32*)&s->y;               seed *= 16777619;
-	seed ^= *(u32*)&s->width;           seed *= 16777619;
-	seed ^= *(u32*)&s->height;          seed *= 16777619;
-	seed ^= *(u32*)&s->margin_left;     seed *= 16777619;
-	seed ^= *(u32*)&s->margin_top;      seed *= 16777619;
-	seed ^= *(u32*)&s->margin_bottom;   seed *= 16777619;
-	seed ^= *(u32*)&s->margin_right;    seed *= 16777619;
-	seed ^= *(u32*)&s->padding_left;    seed *= 16777619;
-	seed ^= *(u32*)&s->padding_top;     seed *= 16777619;
-	seed ^= *(u32*)&s->padding_bottom;  seed *= 16777619;
-	seed ^= *(u32*)&s->padding_right;   seed *= 16777619;
-	seed ^= *(u32*)&s->x_scale;         seed *= 16777619;
-	seed ^= *(u32*)&s->y_scale;         seed *= 16777619;
-	seed ^= *(u32*)&s->content_align.x; seed *= 16777619;
-	seed ^= *(u32*)&s->content_align.y; seed *= 16777619;
-	seed ^= (u64)s->font;               seed *= 16777619;
-	seed ^= s->font_height;             seed *= 16777619;
-	seed ^= s->background_color.rgba;   seed *= 16777619;
-	seed ^= s->border_style;            seed *= 16777619;
-	seed ^= s->border_color.rgba;       seed *= 16777619;
-	seed ^= *(u32*)&s->border_width;    seed *= 16777619;
-	seed ^= s->text_color.rgba;         seed *= 16777619;
-	seed ^= s->overflow;                seed *= 16777619;
-	seed ^= s->focus;                   seed *= 16777619;
+	u32 seed = UI_HASH_SEED;
+	seed ^= *(u32*)&s->positioning;     seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->sizing;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->anchor;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->x;               seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->y;               seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->width;           seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->height;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_left;     seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_top;      seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_bottom;   seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_right;    seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_left;    seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_top;     seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_bottom;  seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_right;   seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->x_scale;         seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->y_scale;         seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->content_align.x; seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->content_align.y; seed *= UI_HASH_PRIME;
+	seed ^= (u64)s->font;               seed *= UI_HASH_PRIME;
+	seed ^= s->font_height;             seed *= UI_HASH_PRIME;
+	seed ^= s->background_color.rgba;   seed *= UI_HASH_PRIME;
+	seed ^= s->border_style;            seed *= UI_HASH_PRIME;
+	seed ^= s->border_color.rgba;       seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->border_width;    seed *= UI_HASH_PRIME;
+	seed ^= s->text_color.rgba;         seed *= UI_HASH_PRIME;
+	seed ^= s->overflow;                seed *= UI_HASH_PRIME;
+	seed ^= s->focus;                   seed *= UI_HASH_PRIME;
 	
-	if(item->__hash) { seed ^= item->__hash(item); seed *= 16777619; }
+	if(item->__hash){
+		seed ^= item->__hash(item);
+		seed *= UI_HASH_PRIME;
+	}
 	
 	return seed;
 }
