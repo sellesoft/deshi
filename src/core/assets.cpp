@@ -728,10 +728,10 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 	}
 	
 	//reinterpret image as RGBA32  //TODO(delle) handle non RGBA formats properly
-	if(format != ImageFormat_RGBA){ //NOTE(delle) texture->pixels is 0 for ImageFormat_RGBA since it does not alloc new memory
+	if(format != ImageFormat_RGBA){
 		texture->pixels = (u8*)memory_alloc(width * height * 4);
 		
-	const u8* src = (const u8*)data;
+		const u8* src = (const u8*)data;
 		u32* dst = (u32*)texture->pixels;
 		switch(format){
 			case ImageFormat_BW:{
@@ -756,6 +756,8 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 				}
 			}break;
 		}
+	}else{
+		texture->pixels = (u8*)data;
 	}
 	
 	render_load_texture(texture);

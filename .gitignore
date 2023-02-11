@@ -1,8 +1,8 @@
 examples/*/build
 
+.vscode/
+
 #delle specific
 project.4coder
 remedy.rdbg
 examples/shell.bat
-
-*.spv

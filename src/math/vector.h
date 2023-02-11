@@ -226,6 +226,10 @@ typedef struct vec2i{
 		return (*this - rhs).mag();
 	}
 	
+	inline s32   distanceToSq(const vec2i& rhs)const{DPZoneScoped;
+		return (*this - rhs).magSq();
+	}
+	
 	inline s32   projectOn(const vec2i& rhs)const{DPZoneScoped;
 		if(this->mag() != 0){
 			return this->dot(rhs) / this->mag();
@@ -450,6 +454,10 @@ inline vec2i vec2i_clampedMag(vec2i lhs, s32 min, s32 max){DPZoneScoped;
 
 inline s32   vec2i_distanceTo(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return vec2i_mag(vec2i_subtract(lhs,rhs));
+}
+
+inline s32   vec2i_distanceToSq(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return vec2i_magSq(vec2i_subtract(lhs,rhs));
 }
 
 inline s32   vec2i_projectOn(vec2i lhs, vec2i rhs){DPZoneScoped;
@@ -723,6 +731,10 @@ typedef struct vec2{
 		return (*this - rhs).mag();
 	}
 	
+	inline f32   distanceToSq(const vec2& rhs)const{DPZoneScoped;
+		return (*this - rhs).magSq();
+	}
+	
 	inline f32   projectOn(const vec2& rhs)const{DPZoneScoped;
 		if(this->mag() > M_EPSILON){
 			return this->dot(rhs) / this->mag();
@@ -968,6 +980,10 @@ inline vec2 vec2_clampedMag(vec2 lhs, f32 min, f32 max){DPZoneScoped;
 
 inline f32   vec2_distanceTo(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return vec2_mag(vec2_subtract(lhs,rhs));
+}
+
+inline f32   vec2_distanceToSq(vec2 lhs, vec2 rhs){DPZoneScoped;
+	return vec2_magSq(vec2_subtract(lhs,rhs));
 }
 
 inline f32   vec2_projectOn(vec2 lhs, vec2 rhs){DPZoneScoped;
@@ -1315,6 +1331,10 @@ typedef struct vec3{
 		return (*this - rhs).mag();
 	}
 	
+	inline f32  distanceToSq(const vec3& rhs)const{DPZoneScoped;
+		return (*this - rhs).magSq();
+	}
+	
 	inline f32  projectOn(const vec3& rhs)const{DPZoneScoped;
 		f32 m = this->mag();
 		if(m > M_EPSILON){
@@ -1647,6 +1667,10 @@ inline vec3 vec3_clampedMag(vec3 lhs, f32 min, f32 max){DPZoneScoped;
 
 inline f32  vec3_distanceTo(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return vec3_mag(vec3_subtract(lhs,rhs));
+}
+
+inline f32  vec3_distanceToSq(vec3 lhs, vec3 rhs){DPZoneScoped;
+	return vec3_magSq(vec3_subtract(lhs,rhs));
 }
 
 inline f32  vec3_projectOn(vec3 lhs, vec3 rhs){DPZoneScoped;
@@ -2550,7 +2574,7 @@ toVec2()const{
 
 inline vec2i vec2::
 toVec2i()const{
-	return vec2i{s32(this->x), s32(this->y)};
+	return vec2i{s32(this->x), s32(this->y)};		
 }
 
 inline vec3 vec2::
@@ -2818,6 +2842,17 @@ to_str8(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
 		s.space = s.count+1;
 		snprintf((char*)s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
 	}
+	return s.fin;
+}
+
+global str8
+to_str8(const vec2i& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+	str8b s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%i, %i)", x.x, x.y);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%i, %i)", x.x, x.y);
 	return s.fin;
 }
 

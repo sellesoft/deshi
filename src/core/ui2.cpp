@@ -88,8 +88,6 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		s32 right = varr.count-1;
 		while(left <= right){
 			mid = left + (right-left)/2;
-			//I dont think this should ever happen but tell me if it does
-			Assert(varr[mid]->vertex_offset != drawcmd->vertex_offset);
 			if(varr[mid]->vertex_offset < drawcmd->vertex_offset){
 				left = mid + 1;
 				mid = left+((right-left)/2);
@@ -135,8 +133,6 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		s32 right = iarr.count-1;
 		while(left <= right){
 			mid = left + (right-left)/2;
-			//I dont think this should ever happen but tell me if it does
-			Assert(iarr[mid]->index_offset != drawcmd->index_offset);
 			if(iarr[mid]->index_offset < drawcmd->index_offset){
 				left = mid + 1;
 				mid = left+((right-left)/2);
@@ -399,6 +395,7 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 	vec2i counts = {0};
 	counts += ui_gen_background(item, vp, ip, counts);
 	counts += ui_gen_border(item, vp, ip, counts);
+	dc->texture = item->style.background_image;
 	dc->counts_used = counts;
 }
 
@@ -498,11 +495,13 @@ void ui_end_immediate_branch(str8 file, upt line){
 
 void ui_push_id(s64 x, str8 file, upt line){
 	//g_ui->immediate.id_stack.add(x);
+	NotImplemented; // TODO(sushi) decide if these are necessary
 }
 
 void ui_pop_id(str8 file, upt line){
 	//if(!g_ui->immediate.id_stack.count) gen_error(file,line,"ui_pop_id was called before any calls to ui_push_id were made");
 	//else g_ui->immediate.id_stack.pop();
+	NotImplemented; // TODO(sushi) decide if these are necessary
 }
 
 
@@ -540,32 +539,32 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 
 	//setup default keybinds
 	//TODO(sushi) export these to a config file and load them instead
-	uikeys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
-	uikeys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
-	uikeys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
-	uikeys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
-	uikeys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
-	uikeys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
-	uikeys.inputtext.cursor.            up = Key_UP    | InputMod_None;
-	uikeys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
+	g_ui->keys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
+	g_ui->keys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
+	g_ui->keys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
+	g_ui->keys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
+	g_ui->keys.inputtext.cursor.            up = Key_UP    | InputMod_None;
+	g_ui->keys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
 
-	uikeys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
-	uikeys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
-	uikeys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
-	uikeys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
-	uikeys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
-	uikeys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
-	uikeys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
-	uikeys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
+	g_ui->keys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
+	g_ui->keys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
 
-	uikeys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
-	uikeys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
-	uikeys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
-	uikeys.inputtext.del.            right = Key_DELETE    | InputMod_None;
-	uikeys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
-	uikeys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
+	g_ui->keys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
+	g_ui->keys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
+	g_ui->keys.inputtext.del.            right = Key_DELETE    | InputMod_None;
+	g_ui->keys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
 
-	//g_ui->render_buffer = render_create_external_2d_buffer(Megabytes(1), Megabytes(1));
+	g_ui->keys.drag_item = Mouse_LEFT;
 }
 
 //pass 0 for child on first call
@@ -633,7 +632,6 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
 	b32 disprow = HasFlag(item->style.display, display_horizontal);
-	
 	//TODO(sushi) this can probably be cleaned up 
 	/*0
 	
@@ -728,13 +726,15 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 			if(HasFlag(child->style.sizing, size_flex)){
 				contextout.flex.ratio_sum += (disprow ? child->style.width : child->style.height);
 			}else{
-				
 				if((disprow && HasFlag(child->style.sizing, size_auto_x)) || HasFlag(child->style.sizing, size_auto_y)){
 					//if a child has automatic sizing we can still support using it in flex containers by just evaluating it 
 					//early. if we do this we need to tell the main eval loop later that we dont need to evaluate it again
+					// this is done using the already_evaluated array
 					eval_item_branch(child, &contextout);
 					contextout.flex.effective_size -= (disprow ? child->width : child->height);
 					already_evaluated.add(idx);
+				}else if(HasFlag(child->style.sizing, size_percent)){
+					contextout.flex.effective_size -= (disprow ? child->style.width/100.f * item->width : child->style.height/100.f * item->height);
 				}else{
 					contextout.flex.effective_size -= (disprow ? child->style.width : child->style.height);
 				}
@@ -791,6 +791,32 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				else{
 					cursor.y = child->pos_local.y + child->height;
 				}
+
+				switch(child->style.anchor){
+					case anchor_top_left:{
+						child->pos_local.x += child->style.x;
+						child->pos_local.y += child->style.y;
+					}break;
+					case anchor_top_right:{
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
+						
+						child->pos_local.y += child->style.y;
+					}break;
+					case anchor_bottom_right:{
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
+						
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+					case anchor_bottom_left:{
+						child->pos_local.x += child->style.x;
+						
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
+					}break;
+				}
 			}break;
 			case pos_relative:
 			case pos_draggable_relative:{
@@ -811,22 +837,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->pos_local.x += (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->pos_local.x += (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->pos_local.y += (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->pos_local.x += child->style.x;
 						
-						if(!hauto) child->pos_local.y += (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -961,13 +987,13 @@ void drag_item(uiItem* item){DPZoneScoped;
 		persist vec2 item_begin;
 		persist b32 dragging = false;
 		vec2 mouse_current = input_mouse_position();
-		if(key_pressed(Mouse_LEFT) && mouse_in_item(item)){
+		if(key_pressed(g_ui->keys.drag_item) && mouse_in_item(item)){
 			dragging = true;
-			g_ui->istate = uiISDragging;            
+			g_ui->istate = uiISDragging;
 			mouse_begin = mouse_current;
 			item_begin = item->style.pos;
 		}
-		if(key_released(Mouse_LEFT)){
+		if(key_released(g_ui->keys.drag_item)){
 			dragging = false;
 			g_ui->istate = uiISNone;
 		}
@@ -1054,7 +1080,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	//determine scissoring for overflow_hidden items
 	vec2 scoff;
 	vec2 scext;
-	if(parent && parent->style.overflow != overflow_visible){
+	if (parent && parent->style.overflow != overflow_visible) {
 		vec2 cpos = item->pos_screen + item->style.margintl + (item->style.border_style ? item->style.border_width : 0) * vec2::ONE;
 		vec2 csiz = BorderedArea(item);
 		
@@ -1247,8 +1273,6 @@ void ui_debug(){
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 1;
-				
-				
 				panel->style.margin_right = 1;
 				
 				{ui_dwi.internal_info = uiItemB(); 
@@ -1320,23 +1344,21 @@ void ui_debug(){
 					}
 					
 				}else{
-					// {uiItem* item = uiItemB();
-					// 	item->id = STR8("button");
-					// 	item->style.background_color = Color_VeryDarkCyan;
-					// 	item->style.sizing = size_auto;
-					// 	item->style.padding = {1,1,1,1};
-					// 	item->style.margin = {1,1,1,1};
-					// 	item->style.font = Storage::CreateFontFromFileBDF(STR8("gohufont-11.bdf")).second;
-					// 	item->style.font_height = 11;
-					// 	item->style.text_color = Color_White;
-					// 	item->action = [](uiItem* item) { 
-					// 		ui_dwi.selecting_item = 1; 
-					// 	};
-					// 	item->action_trigger = action_act_mouse_pressed;
-					// 	uiTextML("O");
-					// }uiItemE();
-					// ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					// uiTextML("no item selected.");
+					{uiItem* item = uiItemB();
+						item->id = STR8("button");
+						item->style.background_color = Color_VeryDarkCyan;
+						item->style.sizing = size_auto;
+						item->style.padding = {1,1,1,1};
+						item->style.margin = {1,1,1,1};
+						item->style.text_color = Color_White;
+						item->action = [](uiItem* item) {
+							ui_dwi.selecting_item = 1;
+						};
+						item->action_trigger = action_act_mouse_pressed;
+						uiTextML("O");
+					}uiItemE();
+					ui_dwi.internal_info->style.content_align = {0.5,0.5};
+					uiTextML("no item selected.");
 					if(g_ui->active){
 						uiItem* sel = g_ui->active;
 						uiText* text = 0;

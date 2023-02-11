@@ -263,26 +263,22 @@ GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @gl_funcs_shaders
 local u32
-CompileAndLoadShader(str8 filename, ShaderStage stage){
+load_shader(str8 name, str8 source, ShaderStage stage){
+	if(!source){
+		//TODO(delle) proper error
+		Assert(!"Failed to load shader");
+		return -1;
+	}
 	Assert(stage > ShaderStage_NONE && stage < ShaderStage_COUNT);
 	
-	//check if already loaded
-	forE(glShaders){
-		if(str8_equal_lazy(it->filename, filename)){
-			return u32(it-it_begin);
-		}
-	}
-	
-	str8 path = str8_concat(str8_lit("deshi/src/shaders/"), filename, deshi_temp_allocator);
-	if(!file_exists(path)){
-		path = str8_concat(str8_lit("data/shaders/"), filename, deshi_temp_allocator);
-	}
+	Stopwatch t_s = start_stopwatch();
+	PrintGl(4, "Compiling shader: ",name);
 	
 	ShaderGl sgl{};
-	sgl.filename = str8_copy(filename, deshi_allocator);
+	sgl.filename = str8_copy(name, deshi_allocator);
 	sgl.stage    = stage;
 	
-	//create shader, load file, and compile shader
+	//create shader
 	switch(stage){ //TODO(delle) opengl4 shader stages
 		case ShaderStage_Vertex:   sgl.handle = glCreateShader(GL_VERTEX_SHADER);   break;
 		case ShaderStage_TessCtrl: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
@@ -292,9 +288,8 @@ CompileAndLoadShader(str8 filename, ShaderStage stage){
 		case ShaderStage_Compute:  Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 	}
 	
-	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) Assert(!"Failed to load shader");
-	const char* str = (const char*)contents.str; int len = (int)contents.count;
+	//compile shader
+	const char* str = (const char*)source.str; int len = (int)source.count;
 	glShaderSource(sgl.handle, 1, &str, &len);
 	glCompileShader(sgl.handle);
 	
@@ -302,7 +297,7 @@ CompileAndLoadShader(str8 filename, ShaderStage stage){
 	glGetShaderiv(sgl.handle, GL_COMPILE_STATUS, &opengl_success);
 	if(opengl_success != GL_TRUE){
 		glGetShaderInfoLog(sgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-		PrintGl(0, "Failed to compile shader '",(char*)filename.str,"':\n",opengl_infolog);
+		PrintGl(0, "Failed to compile shader '",(char*)name.str,"':\n",opengl_infolog);
 		glDeleteShader(sgl.handle);
 		return 0;
 	}
@@ -578,8 +573,8 @@ render_init(){DPZoneScoped;
 		u32 shader_count = 0;
 		
 		{//base
-			shaders[0] = CompileAndLoadShader(str8_lit("base_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("base_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("base.vert"), baked_shader_base_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("base.frag"), baked_shader_base_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.base = CreateProgram(shaders, shader_count);
 			
@@ -589,52 +584,50 @@ render_init(){DPZoneScoped;
 		}
 		
 		{//null
-			shaders[0] = CompileAndLoadShader(str8_lit("null_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("null_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("null.vert"), baked_shader_null_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("null.frag"), baked_shader_null_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.null = CreateProgram(shaders, shader_count);
 		}
 		
 		{//flat
-			shaders[0] = CompileAndLoadShader(str8_lit("flat_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("flat_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("flat.vert"), baked_shader_flat_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("flat.frag"), baked_shader_flat_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.flat = CreateProgram(shaders, shader_count);
 		}
 		
 		{//phong
-			shaders[0] = CompileAndLoadShader(str8_lit("phong_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("phong_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("phong.vert"), baked_shader_phong_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("phong.frag"), baked_shader_phong_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.phong = CreateProgram(shaders, shader_count);
 		}
 		
 		{//pbr
-			shaders[0] = CompileAndLoadShader(str8_lit("pbr_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("pbr_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("pbr.vert"), baked_shader_pbr_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("pbr.frag"), baked_shader_pbr_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.pbr = CreateProgram(shaders, shader_count);
 		}
 		
 		{//2d
-			shaders[0] = CompileAndLoadShader(str8_lit("twod_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("twod_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("twod.vert"), baked_shader_twod_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("twod.frag"), baked_shader_twod_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.twod = CreateProgram(shaders, shader_count, true);
 			
 			{//ui
-				shaders[0] = CompileAndLoadShader(str8_lit("ui_gl3.vert"), ShaderStage_Vertex);
-				shaders[1] = CompileAndLoadShader(str8_lit("ui_gl3.frag"), ShaderStage_Fragment);
+				shaders[0] = load_shader(STR8("ui.vert"), baked_shader_ui_vert, ShaderStage_Vertex);
+				shaders[1] = load_shader(STR8("ui.frag"), baked_shader_ui_frag, ShaderStage_Fragment);
 				shader_count = 2;
 				programs.ui = CreateProgram(shaders, shader_count, true);
-				
-				
 			}
 		}
 		
 		{//wireframe
-			shaders[0] = CompileAndLoadShader(str8_lit("wireframe_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("wireframe_gl3.frag"), ShaderStage_Fragment);
+			shaders[0] = load_shader(STR8("wireframe.vert"), baked_shader_wireframe_vert, ShaderStage_Vertex);
+			shaders[1] = load_shader(STR8("wireframe.frag"), baked_shader_wireframe_frag, ShaderStage_Fragment);
 			shader_count = 2;
 			programs.wireframe = CreateProgram(shaders, shader_count);
 			
@@ -643,46 +636,10 @@ render_init(){DPZoneScoped;
 			}
 		}
 		
-		{//lavalamp
-			shaders[0] = CompileAndLoadShader(str8_lit("lavalamp_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("lavalamp_gl3.frag"), ShaderStage_Fragment);
-			shader_count = 2;
-			programs.lavalamp = CreateProgram(shaders, shader_count);
-		}
-		
 		{//offscreen
-			shaders[0] = CompileAndLoadShader(str8_lit("offscreen_gl3.vert"), ShaderStage_Vertex);
+			shaders[0] = load_shader(STR8("offscreen.vert"), baked_shader_offscreen_vert, ShaderStage_Vertex);
 			shader_count = 1;
 			programs.offscreen = CreateProgram(shaders, shader_count);
-		}
-		
-		{//testing0
-			shaders[0] = CompileAndLoadShader(str8_lit("testing0_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("testing0_gl3.frag"), ShaderStage_Fragment);
-			shader_count = 2;
-			programs.testing0 = CreateProgram(shaders, shader_count);
-		}
-		
-		{//testing1
-			shaders[0] = CompileAndLoadShader(str8_lit("testing1_gl3.vert"), ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("testing1_gl3.frag"), ShaderStage_Fragment);
-			shader_count = 2;
-			programs.testing1 = CreateProgram(shaders, shader_count);
-		}
-		
-		{//DEBUG mesh normals
-			shaders[0] = CompileAndLoadShader(str8_lit("nothing_gl3.vert"),     ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader(str8_lit("normaldebug_gl3.geom"), ShaderStage_Geometry);
-			shaders[2] = CompileAndLoadShader(str8_lit("nothing_gl3.frag"),     ShaderStage_Fragment);
-			shader_count = 3;
-			programs.normals_debug = CreateProgram(shaders, shader_count);
-		}
-		
-		{//DEBUG shadow map
-			//shaders[0] = CompileAndLoadShader(str8_lit("shadowmapDEBUG.vert"), ShaderStage_Vertex);
-			//shaders[1] = CompileAndLoadShader(str8_lit("shadowmapDEBUG.frag"), ShaderStage_Fragment);
-			//shader_count = 2;
-			//programs.shadowmap_debug = CreateProgram(shaders, shader_count);
 		}
 	}
 	
@@ -738,7 +695,7 @@ render_update(){DPZoneScoped;
 				glGenBuffers(1, &uiBuffers.vbo_handle);
 				glGenBuffers(1, &uiBuffers.ibo_handle);
 			}
-			
+
 			//bind buffers
 			glBindVertexArray(uiBuffers.vao_handle);
 			glBindBuffer(GL_ARRAY_BUFFER, uiBuffers.vbo_handle);
@@ -892,22 +849,15 @@ render_update(){DPZoneScoped;
 		glUseProgram(programs.ui.handle);
 		
 		//NOTE I don't think using a 2D array would be any different than having a separate for loop
-		//     for each layer here, if its worse tell me and ill fix it.
+		//     for each layer here, if it's worse tell me and ill fix it.
 		forX(layer, TWOD_LAYERS){
 			forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
 				if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount == 0) continue;
-				
-				glScissor(GLint(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.x),
-						  GLint(  (height - renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.y)
-								- (renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y)),
-						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x),
-						  GLsizei(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y));
-				
-				glBindTexture(glTextures[(u64)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].type,
-							  glTextures[(u64)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle].handle);
+				RenderTwodCmd cmd = renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx];
+				glScissor(GLint(cmd.scissorOffset.x), GLint((height - cmd.scissorOffset.y) - (cmd.scissorExtent.y)), GLsizei(cmd.scissorExtent.x), GLsizei(cmd.scissorExtent.y));
+				glBindTexture(glTextures[(u64)cmd.handle].type, glTextures[(u64)cmd.handle].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
-				glDrawElementsBaseVertex(GL_TRIANGLES, renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount, INDEX_TYPE_GL_TWOD,
-										 (void*)(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexOffset * sizeof(RenderTwodIndex)), 0);
+				glDrawElementsBaseVertex(GL_TRIANGLES, cmd.indexCount, INDEX_TYPE_GL_TWOD, (void*)(cmd.indexOffset * sizeof(RenderTwodIndex)), 0);
 			}
 		}
 		
@@ -1327,4 +1277,19 @@ render_reload_all_shaders(){DPZoneScoped;
 void
 render_remake_offscreen(){DPZoneScoped;
 	NotImplemented; //!Incomplete
+}
+
+void 
+render_update_texture(Texture* texture, vec2i offset, vec2i size){
+	TextureGl* gltex = &glTextures[texture->render_idx];
+
+	switch(texture->type){
+		case TextureType_2D:{
+			glBindTexture(GL_TEXTURE_2D, gltex->handle); 
+			glTexSubImage2D(GL_TEXTURE_2D, 0, offset.x, offset.y, size.x, size.y, gltex->format, GL_UNSIGNED_BYTE, texture->pixels);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			
+		}break;
+		default: NotImplemented;
+	}
 }

@@ -15,6 +15,7 @@
 #include "core/threading.h"
 #include "core/ui.h"
 #include "core/ui2.h"
+#include "core/ui2_widgets.h"
 #include "core/window.h"
 #include "kigu/common.h"
 #include "kigu/profiling.h"
@@ -36,7 +37,7 @@
   threader_init();
 
 #define deshi_loop_start()   \
-  while(platform_update()){  \
+  while(platform_update()){
 
 #define deshi_loop_end() \
     console_update();    \
