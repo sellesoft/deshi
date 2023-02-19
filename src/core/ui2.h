@@ -436,7 +436,7 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_HASH_SEED 2166136261 //32bit FNV_offset_basis (FNV-1a)
 #define UI_HASH_PRIME 16777619 //32bit FNV_prime (FNV-1a)
-#define UI_HASH_VAR(x) seed ^= (x); seed *= UI_HASH_PRIME
+#define UI_HASH_VAR(x) seed ^= (s32)(x); seed *= UI_HASH_PRIME
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -471,7 +471,7 @@ struct uiKeybinds{
 			KeyCode right_wordpart;
 		}del;
 	}inputtext;
-
+	
 	KeyCode drag_item;
 };
 
@@ -913,7 +913,7 @@ struct uiContext{
 		u64 vertices_reserved; 
 		u64 indices_reserved;  
 	}stats;
-
+	
 	//// other ////
 	uiKeybinds keys;
 };

@@ -331,8 +331,10 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	
 	item->drawcmd_count = setup.drawcmd_count;
 	item->drawcmds = ui_make_drawcmd(setup.drawcmd_count);
-	forI(setup.drawcmd_count){
-		ui_drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
+	if(setup.drawinfo_reserve){
+		forI(setup.drawcmd_count){
+			ui_drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
+		}
 	}
 	return item;
 }
@@ -598,9 +600,10 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 		item->__generate(item);
 	}
 	
-	if(item->node.first_child)
+	if(item->node.first_child){
 		for_node(item->node.first_child){
-		draw_item_branch(uiItemFromNode(it));
+			draw_item_branch(uiItemFromNode(it));
+		}
 	}
 }
 
@@ -976,6 +979,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	*/
 	
 	item->pos_local = floor(item->pos_local);
+	item->style_hash = ui_hash_style(item);
 }
 
 void drag_item(uiItem* item){DPZoneScoped;

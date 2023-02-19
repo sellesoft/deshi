@@ -20,7 +20,6 @@ Index:
 
 #include "math_utils.h"
 
-struct vec2g; //graphing's vec2
 struct vec2;
 struct vec3;
 struct vec4;
