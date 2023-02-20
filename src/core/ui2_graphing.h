@@ -252,9 +252,11 @@ ui_graph_gen_cartesian(uiItem* item){
 		u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
 		vec2i  counts = vec2i{0,0};
 		
-		vec2 item_margin_top_left  = floor(item->style.margintl * item->scale);
-		vec2 item_border_size      = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
-		vec2 item_content_top_left = item->pos_screen + item_margin_top_left + item_border_size;
+		vec2 item_margin_top_left   = floor(item->style.margintl * item->scale);
+		vec2 item_margin_bot_right  = floor(item->style.marginbr * item->scale);
+		vec2 item_border_size       = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
+		vec2 item_content_top_left  = item->pos_screen + item_margin_top_left + item_border_size;
+		vec2 item_content_bot_right = item->pos_screen + floor(item->style.size) - item_margin_bot_right - item_border_size;
 		
 		//background
 		counts += ui_gen_background(item, vp, ip, counts);
@@ -263,7 +265,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		//TODO fix pixel discrepancies between lines? is the full size accurate? which is more important?
 		if(graph->x_minor_gridline_shown){
 			scalar_t cursor = minor_left_edge_rounded;
-			while(cursor < bot_right.x){
+			while(cursor < item_content_bot_right.x){
 				scalar_t offset = round((cursor - top_left.x) * graph->unit_length.x);
 				vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
 				vec2 size = Vec2(1, dims.y);
@@ -273,7 +275,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		}
 		if(graph->y_minor_gridline_shown){
 			scalar_t cursor = minor_top_edge_rounded;
-			while(cursor < bot_right.y){
+			while(cursor < item_content_bot_right.y){
 				scalar_t offset = round((cursor - top_left.y) * graph->unit_length.y);
 				vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
 				vec2 size = Vec2(dims.x, 1);
@@ -286,8 +288,8 @@ ui_graph_gen_cartesian(uiItem* item){
 		//TODO fix pixel discrepancies between lines? is the full size accurate? which is more important?
 		if(graph->x_major_gridline_shown){
 			scalar_t cursor = major_left_edge_rounded;
-			while(cursor < bot_right.x){
-				scalar_t offset = round((cursor - top_left.x) * graph->unit_length.x);
+			while(cursor < item_content_bot_right.x){
+				scalar_t offset = round((cursor - item_content_top_left.x) * graph->unit_length.x);
 				vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
 				vec2 size = Vec2(1, dims.y);
 				counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_major_gridline_color);
@@ -296,8 +298,8 @@ ui_graph_gen_cartesian(uiItem* item){
 		}
 		if(graph->y_major_gridline_shown){
 			scalar_t cursor = major_top_edge_rounded;
-			while(cursor < bot_right.y){
-				scalar_t offset = round((cursor - top_left.y) * graph->unit_length.y);
+			while(cursor < item_content_bot_right.y){
+				scalar_t offset = round((cursor - item_content_top_left.y) * graph->unit_length.y);
 				vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
 				vec2 size = Vec2(dims.x, 1);
 				counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_major_gridline_color);
@@ -311,7 +313,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		
 		//x axis
 		if(graph->x_axis_shown){
-			scalar_t offset = round((0 - top_left.y) * graph->unit_length.y);
+			scalar_t offset = round((0 - item_content_top_left.y) * graph->unit_length.y);
 			vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
 			vec2 size = Vec2(dims.x, 1);
 			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_axis_color);
@@ -321,7 +323,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		
 		//y axis
 		if(graph->y_axis_shown){
-			scalar_t offset = round((0 - top_left.x) * graph->unit_length.x);
+			scalar_t offset = round((0 - item_content_top_left.x) * graph->unit_length.x);
 			vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
 			vec2 size = Vec2(1, dims.y);
 			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_axis_color);
