@@ -118,7 +118,7 @@ assets_browser(){DPZoneScoped;
 			if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
 		}
 		
-		AddItemFlags(UIItem_Type_Header, UIHeaderFlags_NoBorder);
+		AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
 		
 		
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
@@ -240,7 +240,7 @@ assets_browser(){DPZoneScoped;
 		
 		
 		EndChild();
-		ResetItemFlags(UIItem_Type_Header);
+		ResetItemFlags(UIItemType_Header);
 		
 		EndTab();
 	}
