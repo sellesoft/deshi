@@ -18,7 +18,7 @@
 	we add drawcalls to build the items that the user requests. 
 	basically, never use items to build other items.
 
-	it is VERY important that a UIItem function calls AdvanceCursor before ANY functionality involving
+	it is VERY important that a UIItem_old function calls AdvanceCursor before ANY functionality involving
 	the user interacting with the item visually, as well as after setting the item's size.
 	for example in Button we have to make sure we call AdvanceCursor before querying if the user 
 	has clicked it or not. this is because Row moves items and if you attempt to query for any 
@@ -50,7 +50,7 @@ simulate hovered/clicked/toggled on items
 #include "math/math.h"
 
 struct UIDrawCmd;
-struct UIItem;
+struct UIItem_old;
 struct UIWindow;
 
 enum UIStyleVar : u32 {
@@ -223,7 +223,7 @@ struct UIStyle_old {
 struct UIContextInfo {
 	UIWindow* hovered_window = 0;
 	UIWindow* focused_window = 0;
-	UIItem* last_placed_item = 0;
+	UIItem_old* last_placed_item = 0;
 };
 
 enum UITextFlags_ {
@@ -309,7 +309,7 @@ enum UITabBarFlags_ {
 struct UITab {
 	f32    width = 0;
 	f32   height = 0;
-	UIItem* item = 0;
+	UIItem_old* item = 0;
 };
 
 struct UITabBar {
@@ -318,7 +318,7 @@ struct UITabBar {
 	u32  selected = 0;
 	f32 tabHeight = 0;
 	u32   xoffset = 0; //how far along the bar we've placed tabs 
-	UIItem*  item = 0; //item representing this tabbar
+	UIItem_old*  item = 0; //item representing this tabbar
 };
 
 enum UISliderFlags_ {
@@ -429,7 +429,7 @@ struct UIDrawCmd {
 	//for matching draw cmds in debug
 	u32 hash = 0;
 	
-	UIItem* parent = 0;
+	UIItem_old* parent = 0;
 	
 	UIDrawCmd(){
 		vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
@@ -507,7 +507,7 @@ global str8 UIItemTypeStrs[] = {
 // was before it moved it and all the style options it used to create itself.
 // this is useful for when we have to look back at previous items to position a new one
 struct UIWindow;
-struct UIItem {
+struct UIItem_old {
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle_old    style;         //style at the time of making the item
@@ -599,17 +599,17 @@ struct UIWindow {
 	
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
-	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
-	array<UIItem> preItems;
-	array<UIItem> postItems;
-	array<UIItem> popOuts;
+	array<UIItem_old> items[UI_WINDOW_ITEM_LAYERS];
+	array<UIItem_old> preItems;
+	array<UIItem_old> postItems;
+	array<UIItem_old> popOuts;
 	
 	u32 layer = 5;
 	
 	//a collection of child windows
 	UIWindow* parent = 0;
 	map<str8, UIWindow*> children;
-	pair<UIWindow*, UIItem*> hoveredChild;
+	pair<UIWindow*, UIItem_old*> hoveredChild;
 	
 	
 	vec2 minSizeForFit;
@@ -652,7 +652,7 @@ struct UIColumn {
 	f32  max_width = 0;
 	b32  reeval_width = 0;
 	vec2 alignment = Vec2(-1,-1);
-	array<UIItem*> items;
+	array<UIItem_old*> items;
 };
 
 struct UIRow {
@@ -703,7 +703,7 @@ namespace UI {
 	UIWindow* GetWindow();
 	
 	//returns a pointer to the last placed item
-	UIItem*   GetLastItem(u32 layeroffset = 0);
+	UIItem_old*   GetLastItem(u32 layeroffset = 0);
 	
 	//returns the position of the last placed item
 	vec2      GetLastItemPos();
@@ -957,8 +957,8 @@ namespace UI {
 	//TODO reformat this eventually since im currently making it to suit a specific purpose and am not considering polishing it atm
 	//TODO write up examples/a guide on how to use this
 	//some knowledge about how UI works internally is somewhat required to work this
-	UIItem* BeginCustomItem();
-	void    CustomItem_AdvanceCursor(UIItem* item, b32 move_cursor = 1);
+	UIItem_old* BeginCustomItem();
+	void    CustomItem_AdvanceCursor(UIItem_old* item, b32 move_cursor = 1);
 	void    EndCustomItem();
 	
 	//TODO decide if we should just expose the internal drawing commands 
@@ -972,7 +972,7 @@ namespace UI {
 	void CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color);
 	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color color, vec2 scale);
 	void CustomItem_DCMakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
-	void CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd);
+	void CustomItem_AddDrawCmd(UIItem_old* item, UIDrawCmd& drawCmd);
 	
 	//returns if the last placed item is hovered or not
 	b32 IsLastItemHovered();

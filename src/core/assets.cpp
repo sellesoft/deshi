@@ -1,19 +1,19 @@
 //NOTE(delle) creating an allocator here to either use 256 bytes locally or temp allocate more than 256 bytes
-	persist u8 assets_line_buffer[256];
-	persist Allocator assets_load_allocator{
-		[](upt bytes){
-			if(bytes > 256){
-				return memory_talloc(bytes);
-			}else{
-				assets_line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
-				return (void*)assets_line_buffer;
-			}
-		},
-		Allocator_ChangeMemory_Noop,
-		Allocator_ChangeMemory_Noop,
-		Allocator_ReleaseMemory_Noop,
-		Allocator_ResizeMemory_Noop
-	};
+persist u8 assets_line_buffer[256];
+persist Allocator assets_load_allocator{
+	[](upt bytes){
+		if(bytes > 256){
+			return memory_talloc(bytes);
+		}else{
+			assets_line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator
+			return (void*)assets_line_buffer;
+		}
+	},
+	Allocator_ChangeMemory_Noop,
+	Allocator_ChangeMemory_Noop,
+	Allocator_ReleaseMemory_Noop,
+	Allocator_ResizeMemory_Noop
+};
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_system
@@ -54,7 +54,7 @@ assets_init(){DPZoneScoped;
 	null_font->name = STR8("null");
 	u8 white_pixels[4] = {255,255,255,255};
 	Texture* nf_tex = assets_texture_create_from_memory(white_pixels, STR8("null_font"), 2, 2, ImageFormat_BW, TextureType_2D,
-														 TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false);
+														TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false);
 	assets_texture_delete(nf_tex);
 	
 	DeshiStageInitEnd(DS_ASSETS);
@@ -93,190 +93,190 @@ assets_browser(){DPZoneScoped;
 	if(BeginTab(STR8("Meshes")))
 	{
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("AssetsBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
-	TextOld(STR8("TODO"));
+		BeginChild(STR8("AssetsBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
+		TextOld(STR8("TODO"));
 		EndChild();
 		
 		EndTab();
 	}
 	if(BeginTab(STR8("Textures")))
 	{
-	//TODO make all of this stuff get checked only when necessary
-	b32 new_selected = 0;
-	persist Texture* selected = 0;
-	
-	Texture* largest = DeshAssets->texture_array[0];
-	Texture* smallest = DeshAssets->texture_array[0];
-	
-	//gather size of textures in memory
-	upt texture_bytes = 0;
-	
-	
-	for_array(DeshAssets->texture_array){
+		//TODO make all of this stuff get checked only when necessary
+		b32 new_selected = 0;
+		persist Texture* selected = 0;
+		
+		Texture* largest = DeshAssets->texture_array[0];
+		Texture* smallest = DeshAssets->texture_array[0];
+		
+		//gather size of textures in memory
+		upt texture_bytes = 0;
+		
+		
+		for_array(DeshAssets->texture_array){
 			texture_bytes += (*it)->width * (*it)->height * u8size;
-		if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
-		if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
-	}
-	
-	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
-	
-	
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("AssetsBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
-	
-	BeginRow(STR8("AssetsBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
-	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-	
-		TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshAssets->texture_array));
-	TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
-	
-	EndRow();
-	
-		if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
-				for_array(DeshAssets->texture_array){
-				if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
-				selected = (*it);
-				new_selected = 1;
-			}
+			if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
+			if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
 		}
-		EndCombo();
-	}
-	
-	Separator(9);
-	
-	if(BeginHeader(STR8("Stats"))){
-		BeginRow(STR8("AssetsBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
 		
-		TextF(STR8("Largest Texture: %s"), largest->name);
-		if(Button(STR8("select"))){ selected = largest; new_selected = 1;}
+		AddItemFlags(UIItem_Type_Header, UIHeaderFlags_NoBorder);
 		
-		TextF(STR8("Smallest Texture: %s"), smallest->name);
-		if(Button(STR8("select"))){ selected = smallest; new_selected = 1; }
-		
-		EndRow();
-		
-		EndHeader();
-	}
-	
-	Separator(9);
-	
-	if(selected){
-		BeginRow(STR8("AssetsBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
-		
-		u32 texbytes = selected->width * selected->height * u8size;
-		
-		TextF(STR8("Name: %s"), selected->name);
-		TextF(STR8("Render Index: %d"), selected->render_idx);
-		TextF(STR8("Width: %d"), selected->width);
-		TextF(STR8("Height: %d"), selected->height);
-		TextF(STR8("Depth: %d"), selected->depth);
-		TextF(STR8("MipMaps: %d"), selected->mipmaps);
-		TextF(STR8("Format: %s"), ImageFormatStrings[selected->format - 1].str);
-		TextF(STR8("Type: %s"), TextureTypeStrings[selected->type].str);
-		TextF(STR8("Filter: %s"), TextureFilterStrings[selected->filter].str);
-		TextF(STR8("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
-		TextF(STR8("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
-		
-		EndRow();
-		PushColor(UIStyleCol_WindowBg, 0x073030ff);
 		
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("AssetsBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
-		persist f32  zoom = 300;
-		persist vec2 mpl;
-		persist vec2 imagepos;
-		persist vec2 imageposlatch;
-		persist UIImageFlags flags;
+		BeginChild(STR8("AssetsBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
 		
-		vec2 mp = input_mouse_position();
+		BeginRow(STR8("AssetsBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
+		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
-		if(Button(STR8("Flip x"))) 
-			ToggleFlag(flags, UIImageFlags_FlipX);
-		SameLine();
-		if(Button(STR8("Flip y"))) 
-			ToggleFlag(flags, UIImageFlags_FlipY);
+		TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshAssets->texture_array));
+		TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
 		
-		if(new_selected){
-			zoom = f32(GetWindow()->width) / selected->width ;
-			//imagepos = Vec2(
-			//				(GetWindow()->width - selected->width) / 2,
-			//				(GetWindow()->height - selected->height) / 2
-			//				);
-			imagepos = vec2::ZERO;
+		EndRow();
+		
+		if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
+			for_array(DeshAssets->texture_array){
+				if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
+					selected = (*it);
+					new_selected = 1;
+				}
+			}
+			EndCombo();
 		}
 		
-		string z = toStr(zoom);
-		TextOld(str8{(u8*)z.str, (s64)z.count});
+		Separator(9);
 		
-		if(IsWinHovered()){
-			SetPreventInputs();
+		if(BeginHeader(STR8("Stats"))){
+			BeginRow(STR8("AssetsBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
+			RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
 			
-			if(DeshInput->scrollY){
-				f32 val = 10 * DeshInput->scrollY;
-				zoom += zoom / val;
-				//TODO make it zoom to the mouse 
-				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
-				//imagepos -= imtomp.normalized() * val * 4;
-			}
-			if(input_lmouse_pressed()){
-				mpl = mp;
-				imageposlatch = imagepos;
-			}
-			if(input_lmouse_down()){
-				imagepos = imageposlatch - (mpl - mp);
-			}
+			TextF(STR8("Largest Texture: %s"), largest->name);
+			if(Button(STR8("select"))){ selected = largest; new_selected = 1;}
 			
+			TextF(STR8("Smallest Texture: %s"), smallest->name);
+			if(Button(STR8("select"))){ selected = smallest; new_selected = 1; }
+			
+			EndRow();
+			
+			EndHeader();
 		}
-		else SetAllowInputs();
 		
-		SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
-		Image(selected, imagepos, 1, flags);
+		Separator(9);
+		
+		if(selected){
+			BeginRow(STR8("AssetsBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
+			RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
+			
+			u32 texbytes = selected->width * selected->height * u8size;
+			
+			TextF(STR8("Name: %s"), selected->name);
+			TextF(STR8("Render Index: %d"), selected->render_idx);
+			TextF(STR8("Width: %d"), selected->width);
+			TextF(STR8("Height: %d"), selected->height);
+			TextF(STR8("Depth: %d"), selected->depth);
+			TextF(STR8("MipMaps: %d"), selected->mipmaps);
+			TextF(STR8("Format: %s"), ImageFormatStrings[selected->format - 1].str);
+			TextF(STR8("Type: %s"), TextureTypeStrings[selected->type].str);
+			TextF(STR8("Filter: %s"), TextureFilterStrings[selected->filter].str);
+			TextF(STR8("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
+			TextF(STR8("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
+			
+			EndRow();
+			PushColor(UIStyleCol_WindowBg, 0x073030ff);
+			
+			SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+			BeginChild(STR8("AssetsBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
+			persist f32  zoom = 300;
+			persist vec2 mpl;
+			persist vec2 imagepos;
+			persist vec2 imageposlatch;
+			persist UIImageFlags flags;
+			
+			vec2 mp = input_mouse_position();
+			
+			if(Button(STR8("Flip x"))) 
+				ToggleFlag(flags, UIImageFlags_FlipX);
+			SameLine();
+			if(Button(STR8("Flip y"))) 
+				ToggleFlag(flags, UIImageFlags_FlipY);
+			
+			if(new_selected){
+				zoom = f32(GetWindow()->width) / selected->width ;
+				//imagepos = Vec2(
+				//				(GetWindow()->width - selected->width) / 2,
+				//				(GetWindow()->height - selected->height) / 2
+				//				);
+				imagepos = vec2::ZERO;
+			}
+			
+			string z = toStr(zoom);
+			TextOld(str8{(u8*)z.str, (s64)z.count});
+			
+			if(IsWinHovered()){
+				SetPreventInputs();
+				
+				if(DeshInput->scrollY){
+					f32 val = 10 * DeshInput->scrollY;
+					zoom += zoom / val;
+					//TODO make it zoom to the mouse 
+					vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
+					//imagepos -= imtomp.normalized() * val * 4;
+				}
+				if(input_lmouse_pressed()){
+					mpl = mp;
+					imageposlatch = imagepos;
+				}
+				if(input_lmouse_down()){
+					imagepos = imageposlatch - (mpl - mp);
+				}
+				
+			}
+			else SetAllowInputs();
+			
+			SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
+			Image(selected, imagepos, 1, flags);
+			
+			EndChild();
+			PopColor();
+		}
+		
 		
 		EndChild();
-		PopColor();
-	}
-	
-	
-	EndChild();
-		ResetItemFlags(UIItemType_Header);
+		ResetItemFlags(UIItem_Type_Header);
 		
 		EndTab();
 	}
 	if(BeginTab(STR8("Materials")))
 	{
-	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("AssetsBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
-	
-	Separator(5);
-	
-	SetNextWindowSize(Vec2(MAX_F32, 200));
-	BeginChild(STR8("AssetsBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
-		BeginRow(STR8("AssetsBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+		BeginChild(STR8("AssetsBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
 		
+		Separator(5);
+		
+		SetNextWindowSize(Vec2(MAX_F32, 200));
+		BeginChild(STR8("AssetsBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
+			BeginRow(STR8("AssetsBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
+			RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+			
 			forI(arrlenu(DeshAssets->material_array)){
-			string s = toStr(i, "  ");
-			TextOld(str8{(u8*)s.str, (s64)s.count});
+				string s = toStr(i, "  ");
+				TextOld(str8{(u8*)s.str, (s64)s.count});
 				TextOld(str8_from_cstr(DeshAssets->material_array[i]->name));
-		}
+			}
+			
+			EndRow();
+		}EndChild();
 		
-		EndRow();
-	}EndChild();
-	
-	Separator(5);
-	
-	
-	EndChild();
+		Separator(5);
+		
+		
+		EndChild();
 		
 		EndTab();
 	}
 	if(BeginTab(STR8("Models")))
 	{
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("AssetsBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
-	TextOld(STR8("TODO"));
+		BeginChild(STR8("AssetsBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
+		TextOld(STR8("TODO"));
 		EndChild();
 		
 		EndTab();
@@ -284,8 +284,8 @@ assets_browser(){DPZoneScoped;
 	if(BeginTab(STR8("Fonts")))
 	{
 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-	BeginChild(STR8("AssetsBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
-	TextOld(STR8("TODO"));
+		BeginChild(STR8("AssetsBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
+		TextOld(STR8("TODO"));
 		
 		EndTab();
 	}
@@ -736,7 +736,7 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 		switch(format){
 			case ImageFormat_BW:{
 				for(s32 i = width*height; i > 0; i--){
-					 u8 value = *src++;
+					u8 value = *src++;
 					*dst++ = PackColorU32(value, value, value, 0xFF);
 				}
 			}break;
@@ -953,12 +953,12 @@ assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 	str8_builder builder;
 	str8_builder_init(&builder,
 					  ToString8(deshi_temp_allocator,
-							  ">material"
-							   "\nname   \"",material->name,"\""
-							   "\nshader ",ShaderStrings[material->shader],
-							   "\nflags  ",material->flags,
-							   "\n"
-															"\n>textures"),
+								">material"
+								"\nname   \"",material->name,"\""
+								"\nshader ",ShaderStrings[material->shader],
+								"\nflags  ",material->flags,
+								"\n"
+								"\n>textures"),
 					  deshi_temp_allocator);
 	if(material->textureArray){
 		for_array(material->textureArray){
@@ -1041,121 +1041,121 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	
 	//// load .model and .mesh ////
 	Stopwatch load_stopwatch = start_stopwatch();
-		str8 model_name;
-		str8 model_mesh;
-		ModelFlags model_flags;
-		array<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
-		enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
+	str8 model_name;
+	str8 model_mesh;
+	ModelFlags model_flags;
+	array<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
+	enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
+	
+	File* file = file_init(model_path, FileAccess_Read);
+	if(!file) return assets_model_null();
+	defer{ file_deinit(file); };
+	
+	u32 line_number = 0;
+	while(file->cursor < file->bytes){
+		line_number += 1;
 		
-		File* file = file_init(model_path, FileAccess_Read);
-		if(!file) return assets_model_null();
-		defer{ file_deinit(file); };
+		//next line
+		str8 line = file_read_line_alloc(file, &assets_load_allocator);
+		if(!line) continue;
 		
-		u32 line_number = 0;
-		while(file->cursor < file->bytes){
-			line_number += 1;
+		//skip leading whitespace
+		str8_advance_while(&line, ' ');
+		if(!line) continue;
+		
+		//early out if comment is first character
+		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+		if(decoded.codepoint == '#') continue;
+		
+		//check for headers
+		if(decoded.codepoint == '>'){
+			if     (str8_begins_with(line, STR8(">model"))) header = HEADER_MODEL;
+			else if(str8_begins_with(line, STR8(">batches"))) header = HEADER_BATCHES;
+			else{ header = HEADER_INVALID; LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
+			continue;
+		}
+		
+		//early out invalid header
+		if(header == HEADER_INVALID){
+			LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
+			continue;
+		}
+		
+		if(header == HEADER_MODEL){
+			//parse key
+			str8 key = str8_eat_until(line, ' ');
+			str8_increment(&line, key.count);
 			
-			//next line
-			str8 line = file_read_line_alloc(file, &assets_load_allocator);
-			if(!line) continue;
-			
-			//skip leading whitespace
+			//skip separating whitespace
 			str8_advance_while(&line, ' ');
-			if(!line) continue;
-			
-			//early out if comment is first character
-			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-			if(decoded.codepoint == '#') continue;
-			
-			//check for headers
-			if(decoded.codepoint == '>'){
-				if     (str8_begins_with(line, STR8(">model"))) header = HEADER_MODEL;
-				else if(str8_begins_with(line, STR8(">batches"))) header = HEADER_BATCHES;
-				else{ header = HEADER_INVALID; LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
+			if(!line){
+				LogE("config","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			
-			//early out invalid header
-			if(header == HEADER_INVALID){
-				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
+			//early out if comment is first value character
+			decoded = decoded_codepoint_from_utf8(line.str, 4);
+			if(decoded.codepoint == '#'){
+				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
 				continue;
 			}
 			
-			if(header == HEADER_MODEL){
-				//parse key
-				str8 key = str8_eat_until(line, ' ');
-				str8_increment(&line, key.count);
-				
-				//skip separating whitespace
-				str8_advance_while(&line, ' ');
-				if(!line){
-					LogE("config","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
-					continue;
-				}
-				
-				//early out if comment is first value character
-				decoded = decoded_codepoint_from_utf8(line.str, 4);
-				if(decoded.codepoint == '#'){
-					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
-					continue;
-				}
-				
-				if      (str8_equal_lazy(key, STR8("name"))){
-					if(decoded.codepoint != '\"'){
-						LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
-						continue;
-					}
-					model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				}else if(str8_equal_lazy(key, STR8("flags"))){
-					model_flags = (ModelFlags)atoi((char*)line.str);
-				}else if(str8_equal_lazy(key, STR8("mesh"))){
-					if(decoded.codepoint != '\"'){
-						LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
-						continue;
-					}
-					model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				}else if(str8_equal_lazy(key, STR8("armature"))){
-					//NOTE currently nothing
-				}else{
-					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
-					continue;
-				}
-			}else{
+			if      (str8_equal_lazy(key, STR8("name"))){
 				if(decoded.codepoint != '\"'){
-					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
+					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
 					continue;
 				}
-				
-				str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-				str8_increment(&line, batch_mat.count+2);
-				if(!line){
-					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
+				model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			}else if(str8_equal_lazy(key, STR8("flags"))){
+				model_flags = (ModelFlags)atoi((char*)line.str);
+			}else if(str8_equal_lazy(key, STR8("mesh"))){
+				if(decoded.codepoint != '\"'){
+					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
 					continue;
 				}
-				
-				char* next = (char*)line.str;
-				u32 ioffset = strtol(next,&next,10);
-				u32 icount  = strtol(next,&next,10);
-				
-				model_batches.add({batch_mat, ioffset, icount});
+				model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			}else if(str8_equal_lazy(key, STR8("armature"))){
+				//NOTE currently nothing
+			}else{
+				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
+				continue;
 			}
+		}else{
+			if(decoded.codepoint != '\"'){
+				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
+				continue;
+			}
+			
+			str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			str8_increment(&line, batch_mat.count+2);
+			if(!line){
+				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
+				continue;
+			}
+			
+			char* next = (char*)line.str;
+			u32 ioffset = strtol(next,&next,10);
+			u32 icount  = strtol(next,&next,10);
+			
+			model_batches.add({batch_mat, ioffset, icount});
 		}
-		Log("assets","Successfully loaded model ",model_path);
-		
-		Model* model = assets_model_allocate(model_batches.count);
+	}
+	Log("assets","Successfully loaded model ",model_path);
+	
+	Model* model = assets_model_allocate(model_batches.count);
 	cpystr(model->name, (char*)model_name.str, 64);
-		model->flags    = model_flags;
-		model->mesh     = assets_mesh_create_from_file(model_mesh);
-		model->armature = 0;
-		forI(model_batches.count){
-			model->batchArray[i] = ModelBatch{
-				model_batches[i].second,
-				model_batches[i].third,
-				assets_material_create_from_file(model_batches[i].first)
-			};
-		}
-		
-		arrput(DeshAssets->model_array, model);
+	model->flags    = model_flags;
+	model->mesh     = assets_mesh_create_from_file(model_mesh);
+	model->armature = 0;
+	forI(model_batches.count){
+		model->batchArray[i] = ModelBatch{
+			model_batches[i].second,
+			model_batches[i].third,
+			assets_material_create_from_file(model_batches[i].first)
+		};
+	}
+	
+	arrput(DeshAssets->model_array, model);
 	Log("assets","Finished loading model '",filename,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
@@ -1163,389 +1163,389 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 
 Model*
 assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
-		Stopwatch load_stopwatch = start_stopwatch();
+	Stopwatch load_stopwatch = start_stopwatch();
 	map<vec3,MeshVertex> vUnique(deshi_temp_allocator);
-		set<vec3> vnUnique(deshi_temp_allocator);
-		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
-		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
-		set<pair<u32,str8>> uUnique(deshi_temp_allocator);
-		set<pair<u32,str8>> mUnique(deshi_temp_allocator);
-		set<pair<u32,vec3>> appliedUniqueNormals(deshi_temp_allocator); //vertex applied on, normal
-		array<vec2> vtArray(deshi_temp_allocator); //NOTE UV vertices arent expected to be unique
-		array<u32> vArray(deshi_temp_allocator); //index in unique array
-		array<u32> vnArray(deshi_temp_allocator);
-		array<u32> oArray(deshi_temp_allocator);
-		array<u32> gArray(deshi_temp_allocator);
-		array<u32> uArray(deshi_temp_allocator);
-		array<u32> mArray(deshi_temp_allocator);
-		array<MeshIndex>    indexes(deshi_temp_allocator);
-		array<MeshTriangle> triangles(deshi_temp_allocator);
-		array<MeshFace>     faces(deshi_temp_allocator);
-		array<array<pair<u32,u8>>> triNeighbors(deshi_temp_allocator);
-		array<array<u32>> faceTriangles(deshi_temp_allocator);
-		array<set<u32>>   faceVertexes(deshi_temp_allocator);
-		array<array<u32>> faceOuterVertexes(deshi_temp_allocator);
-		array<array<u32>> faceTriNeighbors(deshi_temp_allocator);
-		array<array<u32>> faceFaceNeighbors(deshi_temp_allocator);
-		u32 totalTriNeighbors      = 0;
-		u32 totalFaceVertexes      = 0;
-		u32 totalFaceOuterVertexes = 0;
-		u32 totalFaceTriNeighbors  = 0;
-		u32 totalFaceFaceNeighbors = 0;
-		vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
-		vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
-		u32 default_color = Color_White.rgba;
-		b32 mtllib_found    = false;
-		b32 s_warning       = false;
-		b32 non_tri_warning = false;
-		b32 fatal_error     = false;
+	set<vec3> vnUnique(deshi_temp_allocator);
+	set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
+	set<pair<u32,str8>> gUnique(deshi_temp_allocator);
+	set<pair<u32,str8>> uUnique(deshi_temp_allocator);
+	set<pair<u32,str8>> mUnique(deshi_temp_allocator);
+	set<pair<u32,vec3>> appliedUniqueNormals(deshi_temp_allocator); //vertex applied on, normal
+	array<vec2> vtArray(deshi_temp_allocator); //NOTE UV vertices arent expected to be unique
+	array<u32> vArray(deshi_temp_allocator); //index in unique array
+	array<u32> vnArray(deshi_temp_allocator);
+	array<u32> oArray(deshi_temp_allocator);
+	array<u32> gArray(deshi_temp_allocator);
+	array<u32> uArray(deshi_temp_allocator);
+	array<u32> mArray(deshi_temp_allocator);
+	array<MeshIndex>    indexes(deshi_temp_allocator);
+	array<MeshTriangle> triangles(deshi_temp_allocator);
+	array<MeshFace>     faces(deshi_temp_allocator);
+	array<array<pair<u32,u8>>> triNeighbors(deshi_temp_allocator);
+	array<array<u32>> faceTriangles(deshi_temp_allocator);
+	array<set<u32>>   faceVertexes(deshi_temp_allocator);
+	array<array<u32>> faceOuterVertexes(deshi_temp_allocator);
+	array<array<u32>> faceTriNeighbors(deshi_temp_allocator);
+	array<array<u32>> faceFaceNeighbors(deshi_temp_allocator);
+	u32 totalTriNeighbors      = 0;
+	u32 totalFaceVertexes      = 0;
+	u32 totalFaceOuterVertexes = 0;
+	u32 totalFaceTriNeighbors  = 0;
+	u32 totalFaceFaceNeighbors = 0;
+	vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
+	vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
+	u32 default_color = Color_White.rgba;
+	b32 mtllib_found    = false;
+	b32 s_warning       = false;
+	b32 non_tri_warning = false;
+	b32 fatal_error     = false;
+	
+	File* file = file_init(obj_path, FileAccess_Read);
+	if(!file) return assets_model_null();
+	defer{ file_deinit(file); };
+	
+	u32 line_number = 0;
+	while(file->cursor < file->bytes){
+		line_number += 1;
 		
-		File* file = file_init(obj_path, FileAccess_Read);
-		if(!file) return assets_model_null();
-		defer{ file_deinit(file); };
+		//next line
+		str8 line = file_read_line_alloc(file, &assets_load_allocator);
+		if(!line) continue;
 		
-		u32 line_number = 0;
-		while(file->cursor < file->bytes){
-			line_number += 1;
-			
-			//next line
-			str8 line = file_read_line_alloc(file, &assets_load_allocator);
-			if(!line) continue;
-			
-			//skip leading whitespace
-			str8_advance_while(&line, ' ');
-			if(!line) continue;
-			
-			//early out if comment is first character
-			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-			if(decoded.codepoint == '#') continue;
-			
-			//TODO(delle) add parsing safety checks to strtof and strol
-			//TODO(delle) handle non-triangle faces (maybe)
-			switch(decoded.codepoint){
-				case '\0': case '\n': case '\r': case '#': case ' ': continue; //skip empty and comment lines
-				//// vertex, normal, or uv ////
-				case 'v':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					
-					switch(decoded.codepoint){
-						//// vertex ////
-						case ' ':{
-							str8_increment(&line, decoded.advance);
-							
-							char* next = (char*)line.str;
-							f32 x = strtof(next, &next);
-							f32 y = strtof(next, &next);
-							f32 z = strtof(next, 0);
-							vec3 vec{x,y,z};
-							vArray.add(vUnique.add(vec, MeshVertex{vec}));
-						}continue;
-						
-						//// uv ////
-						case 't':{
-							str8_increment(&line, decoded.advance);
-							decoded = decoded_codepoint_from_utf8(line.str, 4);
-							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return assets_model_null(); }
-							str8_increment(&line, decoded.advance);
-							
-							char* next = (char*)line.str;
-							f32 x = strtof(next, &next);
-							f32 y = strtof(next, 0);
-							vtArray.add(vec2{x,y});
-						}continue;
-						
-						//// normal ////
-						case 'n':{
-							str8_increment(&line, decoded.advance);
-							decoded = decoded_codepoint_from_utf8(line.str, 4);
-							if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return assets_model_null(); }
-							str8_increment(&line, decoded.advance);
-							
-							char* next = (char*)line.str;
-							f32 x = strtof(next, &next);
-							f32 y = strtof(next, &next);
-							f32 z = strtof(next, 0);
-							vec3 vec{x,y,z};
-							vnArray.add(vnUnique.add(vec, vec));
-						}continue;
-						default:{
-							ParseError(obj_path,"Invalid character after 'v': '",(char)decoded.codepoint,"'");
-						}return assets_model_null();
-					}
-				}continue;
+		//skip leading whitespace
+		str8_advance_while(&line, ' ');
+		if(!line) continue;
+		
+		//early out if comment is first character
+		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+		if(decoded.codepoint == '#') continue;
+		
+		//TODO(delle) add parsing safety checks to strtof and strol
+		//TODO(delle) handle non-triangle faces (maybe)
+		switch(decoded.codepoint){
+			case '\0': case '\n': case '\r': case '#': case ' ': continue; //skip empty and comment lines
+			//// vertex, normal, or uv ////
+			case 'v':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
 				
-				//// face ////
-				case 'f':{
-					Stopwatch face_stopwatch = start_stopwatch();
+				switch(decoded.codepoint){
+					//// vertex ////
+					case ' ':{
+						str8_increment(&line, decoded.advance);
+						
+						char* next = (char*)line.str;
+						f32 x = strtof(next, &next);
+						f32 y = strtof(next, &next);
+						f32 z = strtof(next, 0);
+						vec3 vec{x,y,z};
+						vArray.add(vUnique.add(vec, MeshVertex{vec}));
+					}continue;
 					
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return assets_model_null(); }
-					if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return assets_model_null(); }
+					//// uv ////
+					case 't':{
+						str8_increment(&line, decoded.advance);
+						decoded = decoded_codepoint_from_utf8(line.str, 4);
+						if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vt'"); return assets_model_null(); }
+						str8_increment(&line, decoded.advance);
+						
+						char* next = (char*)line.str;
+						f32 x = strtof(next, &next);
+						f32 y = strtof(next, 0);
+						vtArray.add(vec2{x,y});
+					}continue;
 					
-					str8_increment(&line, decoded.advance);
-					char* next = (char*)line.str;
-					u32 v0=strtol(next,&next,10)-1; u32 vt0=strtol(next+1,&next,10)-1; u32 vn0=strtol(next+1,&next,10)-1;
-					u32 v1=strtol(next,&next,10)-1; u32 vt1=strtol(next+1,&next,10)-1; u32 vn1=strtol(next+1,&next,10)-1;
-					u32 v2=strtol(next,&next,10)-1; u32 vt2=strtol(next+1,&next,10)-1; u32 vn2=strtol(next+1,&next,10)-1;
-					u32 o = oArray.count; u32 g = gArray.count; u32 m = mArray.count;
-					
-					//index
-					indexes.add(vArray[v0]);
-					indexes.add(vArray[v1]);
-					indexes.add(vArray[v2]);
-					
-					//uv
-					if(vtArray.count){
-						vUnique.data[vArray[v0]].uv = vtArray[vt0];
-						vUnique.data[vArray[v1]].uv = vtArray[vt1];
-						vUnique.data[vArray[v2]].uv = vtArray[vt2];
+					//// normal ////
+					case 'n':{
+						str8_increment(&line, decoded.advance);
+						decoded = decoded_codepoint_from_utf8(line.str, 4);
+						if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'vn'"); return assets_model_null(); }
+						str8_increment(&line, decoded.advance);
+						
+						char* next = (char*)line.str;
+						f32 x = strtof(next, &next);
+						f32 y = strtof(next, &next);
+						f32 z = strtof(next, 0);
+						vec3 vec{x,y,z};
+						vnArray.add(vnUnique.add(vec, vec));
+					}continue;
+					default:{
+						ParseError(obj_path,"Invalid character after 'v': '",(char)decoded.codepoint,"'");
+					}return assets_model_null();
+				}
+			}continue;
+			
+			//// face ////
+			case 'f':{
+				Stopwatch face_stopwatch = start_stopwatch();
+				
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return assets_model_null(); }
+				if(vArray.count == 0){ ParseError(obj_path,"Specifier 'f' before any 'v'"); return assets_model_null(); }
+				
+				str8_increment(&line, decoded.advance);
+				char* next = (char*)line.str;
+				u32 v0=strtol(next,&next,10)-1; u32 vt0=strtol(next+1,&next,10)-1; u32 vn0=strtol(next+1,&next,10)-1;
+				u32 v1=strtol(next,&next,10)-1; u32 vt1=strtol(next+1,&next,10)-1; u32 vn1=strtol(next+1,&next,10)-1;
+				u32 v2=strtol(next,&next,10)-1; u32 vt2=strtol(next+1,&next,10)-1; u32 vn2=strtol(next+1,&next,10)-1;
+				u32 o = oArray.count; u32 g = gArray.count; u32 m = mArray.count;
+				
+				//index
+				indexes.add(vArray[v0]);
+				indexes.add(vArray[v1]);
+				indexes.add(vArray[v2]);
+				
+				//uv
+				if(vtArray.count){
+					vUnique.data[vArray[v0]].uv = vtArray[vt0];
+					vUnique.data[vArray[v1]].uv = vtArray[vt1];
+					vUnique.data[vArray[v2]].uv = vtArray[vt2];
+				}
+				
+				//normal
+				if(vnArray.count){
+					if(appliedUniqueNormals.add({vArray[v0],vnUnique.data[vnArray[vn0]]}) == appliedUniqueNormals.count-1){
+						vUnique.data[vArray[v0]].normal += vnUnique.data[vnArray[vn0]];
 					}
-					
-					//normal
-					if(vnArray.count){
-						if(appliedUniqueNormals.add({vArray[v0],vnUnique.data[vnArray[vn0]]}) == appliedUniqueNormals.count-1){
-							vUnique.data[vArray[v0]].normal += vnUnique.data[vnArray[vn0]];
-						}
-						if(appliedUniqueNormals.add({vArray[v1],vnUnique.data[vnArray[vn1]]}) == appliedUniqueNormals.count-1){
-							vUnique.data[vArray[v1]].normal += vnUnique.data[vnArray[vn1]];
-						}
-						if(appliedUniqueNormals.add({vArray[v2],vnUnique.data[vnArray[vn2]]}) == appliedUniqueNormals.count-1){
-							vUnique.data[vArray[v2]].normal += vnUnique.data[vnArray[vn2]];
-						}
+					if(appliedUniqueNormals.add({vArray[v1],vnUnique.data[vnArray[vn1]]}) == appliedUniqueNormals.count-1){
+						vUnique.data[vArray[v1]].normal += vnUnique.data[vnArray[vn1]];
 					}
-					
-					//color
-					vUnique.data[vArray[v0]].color = default_color;
-					vUnique.data[vArray[v1]].color = default_color;
-					vUnique.data[vArray[v2]].color = default_color;
-					
-					//triangle
-					u32 cti = triangles.count;
-					MeshTriangle triangle{};
-					triangle.p[0] = vUnique.data[vArray[v0]].pos;
-					triangle.p[1] = vUnique.data[vArray[v1]].pos;
-					triangle.p[2] = vUnique.data[vArray[v2]].pos;
-					triangle.v[0] = vArray[v0];
-					triangle.v[1] = vArray[v1];
-					triangle.v[2] = vArray[v2];
-					triangle.face = (u32)-1;
-					triangle.normal = (triangle.p[0] - triangle.p[1]).cross(triangle.p[0] - triangle.p[2]).normalized();
-					triangles.add(triangle);
+					if(appliedUniqueNormals.add({vArray[v2],vnUnique.data[vnArray[vn2]]}) == appliedUniqueNormals.count-1){
+						vUnique.data[vArray[v2]].normal += vnUnique.data[vnArray[vn2]];
+					}
+				}
+				
+				//color
+				vUnique.data[vArray[v0]].color = default_color;
+				vUnique.data[vArray[v1]].color = default_color;
+				vUnique.data[vArray[v2]].color = default_color;
+				
+				//triangle
+				u32 cti = triangles.count;
+				MeshTriangle triangle{};
+				triangle.p[0] = vUnique.data[vArray[v0]].pos;
+				triangle.p[1] = vUnique.data[vArray[v1]].pos;
+				triangle.p[2] = vUnique.data[vArray[v2]].pos;
+				triangle.v[0] = vArray[v0];
+				triangle.v[1] = vArray[v1];
+				triangle.v[2] = vArray[v2];
+				triangle.face = (u32)-1;
+				triangle.normal = (triangle.p[0] - triangle.p[1]).cross(triangle.p[0] - triangle.p[2]).normalized();
+				triangles.add(triangle);
 				triNeighbors.add(array<pair<u32,u8>>(deshi_temp_allocator));
+				
+				//triangle neighbors
+				for(u32 oti=0; oti<triangles.count-1; ++oti){
+					//check that its not already a neighbor
+					b32 neighbor_already = false;
+					for(u32 tni=0; tni<triNeighbors[oti].count; ++tni){
+						if(triNeighbors[oti][tni].first == cti){ neighbor_already = true; break; }
+					}
 					
-					//triangle neighbors
-					for(u32 oti=0; oti<triangles.count-1; ++oti){
-						//check that its not already a neighbor
-						b32 neighbor_already = false;
-						for(u32 tni=0; tni<triNeighbors[oti].count; ++tni){
-							if(triNeighbors[oti][tni].first == cti){ neighbor_already = true; break; }
-						}
+					//check for shared vertexes and mark the edges
+					if(!neighbor_already){
+						b32 ct0_ot0 = (vArray[v0] == triangles[oti].v[0]);
+						b32 ct0_ot1 = (vArray[v0] == triangles[oti].v[1]);
+						b32 ct0_ot2 = (vArray[v0] == triangles[oti].v[2]);
+						b32 ct1_ot0 = (vArray[v1] == triangles[oti].v[0]);
+						b32 ct1_ot1 = (vArray[v1] == triangles[oti].v[1]);
+						b32 ct1_ot2 = (vArray[v1] == triangles[oti].v[2]);
+						b32 ct2_ot0 = (vArray[v2] == triangles[oti].v[0]);
+						b32 ct2_ot1 = (vArray[v2] == triangles[oti].v[1]);
+						b32 ct2_ot2 = (vArray[v2] == triangles[oti].v[2]);
 						
-						//check for shared vertexes and mark the edges
-						if(!neighbor_already){
-							b32 ct0_ot0 = (vArray[v0] == triangles[oti].v[0]);
-							b32 ct0_ot1 = (vArray[v0] == triangles[oti].v[1]);
-							b32 ct0_ot2 = (vArray[v0] == triangles[oti].v[2]);
-							b32 ct1_ot0 = (vArray[v1] == triangles[oti].v[0]);
-							b32 ct1_ot1 = (vArray[v1] == triangles[oti].v[1]);
-							b32 ct1_ot2 = (vArray[v1] == triangles[oti].v[2]);
-							b32 ct2_ot0 = (vArray[v2] == triangles[oti].v[0]);
-							b32 ct2_ot1 = (vArray[v2] == triangles[oti].v[1]);
-							b32 ct2_ot2 = (vArray[v2] == triangles[oti].v[2]);
-							
-							//current tri v0 && v1
-							if(ct0_ot0 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot0 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot1 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot1 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot2 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot2 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							//current tri v1 && v2
-							if(ct1_ot0 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot0 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot1 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot1 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot2 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot2 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							//current tri v2 && v0
-							if(ct2_ot0 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot0 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot1 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot1 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot2 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-						}
+						//current tri v0 && v1
+						if(ct0_ot0 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+						if(ct0_ot0 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+						if(ct0_ot1 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+						if(ct0_ot1 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+						if(ct0_ot2 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+						if(ct0_ot2 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+						//current tri v1 && v2
+						if(ct1_ot0 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+						if(ct1_ot0 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+						if(ct1_ot1 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+						if(ct1_ot1 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+						if(ct1_ot2 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+						if(ct1_ot2 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+						//current tri v2 && v0
+						if(ct2_ot0 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+						if(ct2_ot0 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+						if(ct2_ot1 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+						if(ct2_ot1 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+						if(ct2_ot2 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+						if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 					}
-					triangles[cti].neighborCount = triNeighbors[cti].count;
-					f64 load_watch = peek_stopwatch(load_stopwatch);
-					if(((u64)(load_watch / 1000.0) % 10 == 0) && ((u64)(load_watch / 1000.0) != 0)){
-						Log("assets",obj_path," face ",faces.count," on line ",line_number," finished creation in ",peek_stopwatch(face_stopwatch),"ms");
-					}
-				}continue;
-				
-				//// use material ////
-				case 'u':{
+				}
+				triangles[cti].neighborCount = triNeighbors[cti].count;
+				f64 load_watch = peek_stopwatch(load_stopwatch);
+				if(((u64)(load_watch / 1000.0) % 10 == 0) && ((u64)(load_watch / 1000.0) != 0)){
+					Log("assets",obj_path," face ",faces.count," on line ",line_number," finished creation in ",peek_stopwatch(face_stopwatch),"ms");
+				}
+			}continue;
+			
+			//// use material ////
+			case 'u':{
 				if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return assets_model_null(); }
-					
-					if(mtllib_found){
-						str8_increment(&line, 7);
-						pair<u32,str8> usemtl(indexes.count, str8_copy(line, deshi_temp_allocator));
-						uArray.add(uUnique.add(usemtl,usemtl));
-					}else{
-						ParseError(obj_path,"Specifier 'usemtl' used before 'mtllib' specifier");
-					}
-				}continue;
 				
-				//// load material ////
-				case 'm':{
-					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return assets_model_null(); }
-					
-					mtllib_found = true;
+				if(mtllib_found){
 					str8_increment(&line, 7);
-					pair<u32,str8> mtllib(indexes.count, str8_copy(line, deshi_temp_allocator));
-					mArray.add(mUnique.add(mtllib,mtllib));
-				}continue;
+					pair<u32,str8> usemtl(indexes.count, str8_copy(line, deshi_temp_allocator));
+					uArray.add(uUnique.add(usemtl,usemtl));
+				}else{
+					ParseError(obj_path,"Specifier 'usemtl' used before 'mtllib' specifier");
+				}
+			}continue;
+			
+			//// load material ////
+			case 'm':{
+				if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return assets_model_null(); }
 				
-				//// group (batch) ////
-				case 'g':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return assets_model_null(); }
-					str8_increment(&line, decoded.advance);
-					
-					pair<u32,str8> group(indexes.count, str8_copy(line, deshi_temp_allocator));
-					gArray.add(gUnique.add(group,group));
-				}continue;
+				mtllib_found = true;
+				str8_increment(&line, 7);
+				pair<u32,str8> mtllib(indexes.count, str8_copy(line, deshi_temp_allocator));
+				mArray.add(mUnique.add(mtllib,mtllib));
+			}continue;
+			
+			//// group (batch) ////
+			case 'g':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return assets_model_null(); }
+				str8_increment(&line, decoded.advance);
 				
-				//// object ////
-				case 'o':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return assets_model_null(); }
-					str8_increment(&line, decoded.advance);
-					
-					pair<u32,str8> object(indexes.count, str8_copy(line, deshi_temp_allocator));
-					oArray.add(oUnique.add(object,object));
-				}continue;
+				pair<u32,str8> group(indexes.count, str8_copy(line, deshi_temp_allocator));
+				gArray.add(gUnique.add(group,group));
+			}continue;
+			
+			//// object ////
+			case 'o':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return assets_model_null(); }
+				str8_increment(&line, decoded.advance);
 				
-				//// smoothing ////
-				case 's':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return assets_model_null(); }
-					str8_increment(&line, decoded.advance);
-					
-					s_warning = true;
-				}continue;
-				default:{
-					ParseError(obj_path,"Invalid starting character: '",(char)decoded.codepoint,"'");
-				}return assets_model_null();
-			}
+				pair<u32,str8> object(indexes.count, str8_copy(line, deshi_temp_allocator));
+				oArray.add(oUnique.add(object,object));
+			}continue;
+			
+			//// smoothing ////
+			case 's':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 's'"); return assets_model_null(); }
+				str8_increment(&line, decoded.advance);
+				
+				s_warning = true;
+			}continue;
+			default:{
+				ParseError(obj_path,"Invalid starting character: '",(char)decoded.codepoint,"'");
+			}return assets_model_null();
 		}
+	}
+	
+	//// generate mesh faces ////
+	forX(bti, triangles.count){
+		if(triangles[bti].face != -1) continue;
 		
-		//// generate mesh faces ////
-		forX(bti, triangles.count){
-			if(triangles[bti].face != -1) continue;
-			
-			//create face and add base triange to it
-			u32 cfi = faces.count;
-			faces.add(MeshFace{});
-			faceTriangles.add(array<u32>(deshi_temp_allocator));
-			faceVertexes.add(set<u32>(deshi_temp_allocator));
-			faceOuterVertexes.add(array<u32>(deshi_temp_allocator));
-			faceTriNeighbors.add(array<u32>(deshi_temp_allocator));
-			faceFaceNeighbors.add(array<u32>(deshi_temp_allocator));
-			faces[cfi].normal = triangles[bti].normal;
-			triangles[bti].face = cfi;
-			faceTriangles[cfi].add(bti);
-			faceVertexes[cfi].add(triangles[bti].v[0],triangles[bti].v[0]);
-			faceVertexes[cfi].add(triangles[bti].v[1],triangles[bti].v[1]);
-			faceVertexes[cfi].add(triangles[bti].v[2],triangles[bti].v[2]);
-			totalFaceVertexes += 3;
-			
-			array<u32> check_tris({(u32)bti});
-			forX(check_tri_idx, check_tris.count){
-				u32 cti = check_tris[check_tri_idx];
-				forX(nei_tri_idx, triNeighbors[cti].count){
-					u32 nti = triNeighbors[cti][nei_tri_idx].first;
-					b32 checked = false;
-					forI(check_tris.count){ if(check_tris[i] == nti){ checked = true; break; } }
-					if(checked) continue;
-					
-					//check if neighbor triangle has same normal
-					if(triangles[cti].normal == triangles[nti].normal){
-						check_tris.add(nti);
-						triangles[nti].face = cfi;
-						faceTriangles[cfi].add(nti);
-						faceVertexes[cfi].add(triangles[nti].v[0],triangles[nti].v[0]);
-						faceVertexes[cfi].add(triangles[nti].v[1],triangles[nti].v[1]);
-						faceVertexes[cfi].add(triangles[nti].v[2],triangles[nti].v[2]);
-						totalFaceVertexes += 3;
-					}else{
-						faceTriNeighbors[cfi].add(nti);
-						totalFaceTriNeighbors++;
-						u32 v1 = triangles[cti].v[ triNeighbors[cti][nei_tri_idx].second       ];
-						u32 v2 = triangles[cti].v[(triNeighbors[cti][nei_tri_idx].second+1) % 3];
-						b32 v1_already = false; b32 v2_already = false;
-						forX(fovi, faceOuterVertexes[cfi].count){
-							if(!v1_already && faceOuterVertexes[cfi][fovi] == v1){ v1_already = true; }
-							if(!v2_already && faceOuterVertexes[cfi][fovi] == v2){ v2_already = true; }
-							if(v1_already && v2_already) break;
-						}
-						if(!v1_already){
-							faceOuterVertexes[cfi].add(v1); 
-							totalFaceOuterVertexes++;
-							faces[cfi].center += vUnique.atIdx(v1)->pos;
-						}
-						if(!v2_already){
-							faceOuterVertexes[cfi].add(v2);
-							totalFaceOuterVertexes++;
-							faces[cfi].center += vUnique.atIdx(v2)->pos;
-						}
+		//create face and add base triange to it
+		u32 cfi = faces.count;
+		faces.add(MeshFace{});
+		faceTriangles.add(array<u32>(deshi_temp_allocator));
+		faceVertexes.add(set<u32>(deshi_temp_allocator));
+		faceOuterVertexes.add(array<u32>(deshi_temp_allocator));
+		faceTriNeighbors.add(array<u32>(deshi_temp_allocator));
+		faceFaceNeighbors.add(array<u32>(deshi_temp_allocator));
+		faces[cfi].normal = triangles[bti].normal;
+		triangles[bti].face = cfi;
+		faceTriangles[cfi].add(bti);
+		faceVertexes[cfi].add(triangles[bti].v[0],triangles[bti].v[0]);
+		faceVertexes[cfi].add(triangles[bti].v[1],triangles[bti].v[1]);
+		faceVertexes[cfi].add(triangles[bti].v[2],triangles[bti].v[2]);
+		totalFaceVertexes += 3;
+		
+		array<u32> check_tris({(u32)bti});
+		forX(check_tri_idx, check_tris.count){
+			u32 cti = check_tris[check_tri_idx];
+			forX(nei_tri_idx, triNeighbors[cti].count){
+				u32 nti = triNeighbors[cti][nei_tri_idx].first;
+				b32 checked = false;
+				forI(check_tris.count){ if(check_tris[i] == nti){ checked = true; break; } }
+				if(checked) continue;
+				
+				//check if neighbor triangle has same normal
+				if(triangles[cti].normal == triangles[nti].normal){
+					check_tris.add(nti);
+					triangles[nti].face = cfi;
+					faceTriangles[cfi].add(nti);
+					faceVertexes[cfi].add(triangles[nti].v[0],triangles[nti].v[0]);
+					faceVertexes[cfi].add(triangles[nti].v[1],triangles[nti].v[1]);
+					faceVertexes[cfi].add(triangles[nti].v[2],triangles[nti].v[2]);
+					totalFaceVertexes += 3;
+				}else{
+					faceTriNeighbors[cfi].add(nti);
+					totalFaceTriNeighbors++;
+					u32 v1 = triangles[cti].v[ triNeighbors[cti][nei_tri_idx].second       ];
+					u32 v2 = triangles[cti].v[(triNeighbors[cti][nei_tri_idx].second+1) % 3];
+					b32 v1_already = false; b32 v2_already = false;
+					forX(fovi, faceOuterVertexes[cfi].count){
+						if(!v1_already && faceOuterVertexes[cfi][fovi] == v1){ v1_already = true; }
+						if(!v2_already && faceOuterVertexes[cfi][fovi] == v2){ v2_already = true; }
+						if(v1_already && v2_already) break;
+					}
+					if(!v1_already){
+						faceOuterVertexes[cfi].add(v1); 
+						totalFaceOuterVertexes++;
+						faces[cfi].center += vUnique.atIdx(v1)->pos;
+					}
+					if(!v2_already){
+						faceOuterVertexes[cfi].add(v2);
+						totalFaceOuterVertexes++;
+						faces[cfi].center += vUnique.atIdx(v2)->pos;
 					}
 				}
 			}
 		}
-		
-		//generate face neighbors
-		forX(cfi, faces.count){
-			forX(cnti, faceTriNeighbors[cfi].count){ //check neighbor triangles
-				b32 already_added = false;
-				forX(nfi, faceFaceNeighbors[cfi].count){ //see if face neighbor already added
-					if(triangles[faceTriNeighbors[cfi][cnti]].face == faceFaceNeighbors[cfi][nfi]){
-						already_added = true;
-						break;
-					}
-				}
-				if(!already_added){
-					faceFaceNeighbors[cfi].add(triangles[faceTriNeighbors[cfi][cnti]].face);
-					faceFaceNeighbors[triangles[faceTriNeighbors[cfi][cnti]].face].add(cfi);
-					totalFaceFaceNeighbors += 2;
+	}
+	
+	//generate face neighbors
+	forX(cfi, faces.count){
+		forX(cnti, faceTriNeighbors[cfi].count){ //check neighbor triangles
+			b32 already_added = false;
+			forX(nfi, faceFaceNeighbors[cfi].count){ //see if face neighbor already added
+				if(triangles[faceTriNeighbors[cfi][cnti]].face == faceFaceNeighbors[cfi][nfi]){
+					already_added = true;
+					break;
 				}
 			}
+			if(!already_added){
+				faceFaceNeighbors[cfi].add(triangles[faceTriNeighbors[cfi][cnti]].face);
+				faceFaceNeighbors[triangles[faceTriNeighbors[cfi][cnti]].face].add(cfi);
+				totalFaceFaceNeighbors += 2;
+			}
 		}
-		
-		//// calculate vertex normals ////
-		forI(vUnique.count){
-			aabb_min.x = Min(aabb_min.x, vUnique.data.data[i].pos.x);
-			aabb_max.x = Max(aabb_max.x, vUnique.data.data[i].pos.x);
-			aabb_min.y = Min(aabb_min.y, vUnique.data.data[i].pos.y);
-			aabb_max.y = Max(aabb_max.y, vUnique.data.data[i].pos.y);
-			aabb_min.z = Min(aabb_min.z, vUnique.data.data[i].pos.z);
-			aabb_max.z = Max(aabb_max.z, vUnique.data.data[i].pos.z);
-			vUnique.data.data[i].normal.normalize();
-		}
-		
-		//// parsing warnings/errors ////
-		if(non_tri_warning)   LogW("assets","The mesh was not triangulated before parsing; Expect missing triangles!");
-		if(s_warning)         LogW("assets","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
-		if(!vtArray.count){   LogW("assets","No vertex UVs 'vt' were parsed in ",obj_path); }
-		if(!vnArray.count){   LogW("assets","No vertex normals 'vn' were parsed in ",obj_path); }
-		if(fatal_error){      LogE("assets","OBJ parsing encountered a fatal error in ",obj_path); return assets_model_null(); }
-		if(!vArray.count){    LogE("assets","No vertex positions 'v' were parsed in ",obj_path); return assets_model_null(); }
-		if(!triangles.count){ LogE("assets","No faces 'f' were parsed in ",obj_path); return assets_model_null(); }
+	}
+	
+	//// calculate vertex normals ////
+	forI(vUnique.count){
+		aabb_min.x = Min(aabb_min.x, vUnique.data.data[i].pos.x);
+		aabb_max.x = Max(aabb_max.x, vUnique.data.data[i].pos.x);
+		aabb_min.y = Min(aabb_min.y, vUnique.data.data[i].pos.y);
+		aabb_max.y = Max(aabb_max.y, vUnique.data.data[i].pos.y);
+		aabb_min.z = Min(aabb_min.z, vUnique.data.data[i].pos.z);
+		aabb_max.z = Max(aabb_max.z, vUnique.data.data[i].pos.z);
+		vUnique.data.data[i].normal.normalize();
+	}
+	
+	//// parsing warnings/errors ////
+	if(non_tri_warning)   LogW("assets","The mesh was not triangulated before parsing; Expect missing triangles!");
+	if(s_warning)         LogW("assets","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
+	if(!vtArray.count){   LogW("assets","No vertex UVs 'vt' were parsed in ",obj_path); }
+	if(!vnArray.count){   LogW("assets","No vertex normals 'vn' were parsed in ",obj_path); }
+	if(fatal_error){      LogE("assets","OBJ parsing encountered a fatal error in ",obj_path); return assets_model_null(); }
+	if(!vArray.count){    LogE("assets","No vertex positions 'v' were parsed in ",obj_path); return assets_model_null(); }
+	if(!triangles.count){ LogE("assets","No faces 'f' were parsed in ",obj_path); return assets_model_null(); }
 	
 	//// check if mesh is already loaded ////
 	Mesh* mesh = 0;
@@ -1556,10 +1556,10 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		}
 	}
 	
-		//// create mesh ////
+	//// create mesh ////
 	if(mesh == 0){
 		mesh = assets_mesh_allocate(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
-								  totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
+									totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
 		cpystr(mesh->name, (char*)file->front.str, 64);
 		mesh->aabbMin  = aabb_min;
@@ -1627,37 +1627,37 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		render_load_mesh(mesh);
 		arrput(DeshAssets->mesh_array, mesh);
 	}
-		Log("assets","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+	Log("assets","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+	
+	//parse MTL files
+	if(mtllib_found){
+		load_stopwatch = start_stopwatch();
 		
-		//parse MTL files
-		if(mtllib_found){
-			load_stopwatch = start_stopwatch();
-			
-			//!Incomplete
-			
-			Log("assets","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
-		}
+		//!Incomplete
 		
-		Model* model = assets_model_allocate(mArray.count);
+		Log("assets","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+	}
+	
+	Model* model = assets_model_allocate(mArray.count);
 	cpystr(model->name, (char*)file->front.str, 64);
-		model->flags    = flags;
-		model->mesh     = mesh;
-		model->armature = 0;
-		
-		//!Incomplete batch materials
-		if(mArray.count > 1){
-			model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-			model->batchArray[mArray.count-1].indexCount  = indexes.count - model->batchArray[mArray.count-1].indexOffset;
-			model->batchArray[mArray.count-1].material    = assets_material_null();
-			for(u32 bi = mArray.count-2; bi >= 0; --bi){
-				model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
-				model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
-				model->batchArray[bi].material    = assets_material_null();
-			}
-		}else{
-			model->batchArray[0].indexOffset = 0;
-			model->batchArray[0].indexCount  = indexes.count;
-			model->batchArray[0].material    = assets_material_null();
+	model->flags    = flags;
+	model->mesh     = mesh;
+	model->armature = 0;
+	
+	//!Incomplete batch materials
+	if(mArray.count > 1){
+		model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
+		model->batchArray[mArray.count-1].indexCount  = indexes.count - model->batchArray[mArray.count-1].indexOffset;
+		model->batchArray[mArray.count-1].material    = assets_material_null();
+		for(u32 bi = mArray.count-2; bi >= 0; --bi){
+			model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
+			model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
+			model->batchArray[bi].material    = assets_material_null();
+		}
+	}else{
+		model->batchArray[0].indexOffset = 0;
+		model->batchArray[0].indexCount  = indexes.count;
+		model->batchArray[0].material    = assets_material_null();
 	}
 	
 	arrput(DeshAssets->model_array, model);
@@ -1700,126 +1700,126 @@ assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 
 Model*
 assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){DPZoneScoped;
-		Stopwatch load_stopwatch = start_stopwatch();
-		set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
-		set<pair<u32,str8>> gUnique(deshi_temp_allocator);
-		set<pair<u32,str8>> uUnique(deshi_temp_allocator);
-		set<pair<u32,str8>> mUnique(deshi_temp_allocator);
-		array<u32> oArray(deshi_temp_allocator); //index in unique array
-		array<u32> gArray(deshi_temp_allocator);
-		array<u32> uArray(deshi_temp_allocator);
-		array<u32> mArray(deshi_temp_allocator);
-		b32 mtllib_found = false;
-		u32 index_count = 0;
+	Stopwatch load_stopwatch = start_stopwatch();
+	set<pair<u32,str8>> oUnique(deshi_temp_allocator); //index offset, name
+	set<pair<u32,str8>> gUnique(deshi_temp_allocator);
+	set<pair<u32,str8>> uUnique(deshi_temp_allocator);
+	set<pair<u32,str8>> mUnique(deshi_temp_allocator);
+	array<u32> oArray(deshi_temp_allocator); //index in unique array
+	array<u32> gArray(deshi_temp_allocator);
+	array<u32> uArray(deshi_temp_allocator);
+	array<u32> mArray(deshi_temp_allocator);
+	b32 mtllib_found = false;
+	u32 index_count = 0;
+	
+	File* file = file_init(obj_path, FileAccess_Read);
+	if(!file) return assets_model_null();
+	defer{ file_deinit(file); };
+	
+	u32 line_number = 0;
+	while(file->cursor < file->bytes){
+		line_number += 1;
 		
-		File* file = file_init(obj_path, FileAccess_Read);
-		if(!file) return assets_model_null();
-		defer{ file_deinit(file); };
+		//next line
+		str8 line = file_read_line_alloc(file, &assets_load_allocator);
+		if(!line) continue;
 		
-		u32 line_number = 0;
-		while(file->cursor < file->bytes){
-			line_number += 1;
-			
-			//next line
-			str8 line = file_read_line_alloc(file, &assets_load_allocator);
-			if(!line) continue;
-			
-			//skip leading whitespace
-			str8_advance_while(&line, ' ');
-			if(!line) continue;
-			
-			//early out if comment is first character
-			DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-			if(decoded.codepoint == '#') continue;
-			
-			switch(decoded.codepoint){
-				//// face ////
-				case 'f':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return assets_model_null(); }
-					index_count += 3;
-				}
+		//skip leading whitespace
+		str8_advance_while(&line, ' ');
+		if(!line) continue;
+		
+		//early out if comment is first character
+		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+		if(decoded.codepoint == '#') continue;
+		
+		switch(decoded.codepoint){
+			//// face ////
+			case 'f':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
 				
-				//// use material ////
-				case 'u':{ //use material
-					if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return assets_model_null(); }
-					
-					if(mtllib_found){
-						str8_increment(&line, 7);
-						pair<u32,str8> usemtl(index_count, str8_copy(line, deshi_temp_allocator));
-						uArray.add(uUnique.add(usemtl,usemtl));
-					}else{
-						ParseError(obj_path, "Specifier 'usemtl' used before 'mtllib' specifier");
-					}
-				}continue;
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'f'"); return assets_model_null(); }
+				index_count += 3;
+			}
+			
+			//// use material ////
+			case 'u':{ //use material
+				if(strncmp((const char*)line.str, "usemtl ", 7) != 0){ ParseError(obj_path,"Specifier started with 'u' but didn't equal 'usemtl '"); return assets_model_null(); }
 				
-				//// load material ////
-				case 'm':{
-					if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return assets_model_null(); }
-					
-					mtllib_found = true;
+				if(mtllib_found){
 					str8_increment(&line, 7);
-					pair<u32,str8> mtllib(index_count, str8_copy(line, deshi_temp_allocator));
-					mArray.add(mUnique.add(mtllib,mtllib));
-				}continue;
-				
-				//// group (batch) ////
-				case 'g':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return assets_model_null(); }
-					str8_increment(&line, decoded.advance);
-					
-					pair<u32,str8> group(index_count, str8_copy(line, deshi_temp_allocator));
-					gArray.add(gUnique.add(group,group));
-				}continue;
-				
-				//// object ////
-				case 'o':{
-					str8_increment(&line, decoded.advance);
-					decoded = decoded_codepoint_from_utf8(line.str, 4);
-					if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return assets_model_null(); }
-					str8_increment(&line, decoded.advance);
-					
-					pair<u32,str8> object(index_count, str8_copy(line, deshi_temp_allocator));
-					oArray.add(oUnique.add(object,object));
-				}continue;
-				
-				default: continue;
-			}
-		}
-		
-		//parse MTL files
-		if(mtllib_found){
-			load_stopwatch = start_stopwatch();
+					pair<u32,str8> usemtl(index_count, str8_copy(line, deshi_temp_allocator));
+					uArray.add(uUnique.add(usemtl,usemtl));
+				}else{
+					ParseError(obj_path, "Specifier 'usemtl' used before 'mtllib' specifier");
+				}
+			}continue;
 			
-			//!Incomplete
+			//// load material ////
+			case 'm':{
+				if(strncmp((const char*)line.str, "mtllib ", 7) != 0){ ParseError(obj_path,"Specifier started with 'm' but didn't equal 'mtllib '"); return assets_model_null(); }
+				
+				mtllib_found = true;
+				str8_increment(&line, 7);
+				pair<u32,str8> mtllib(index_count, str8_copy(line, deshi_temp_allocator));
+				mArray.add(mUnique.add(mtllib,mtllib));
+			}continue;
 			
-			Log("assets","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+			//// group (batch) ////
+			case 'g':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'g'"); return assets_model_null(); }
+				str8_increment(&line, decoded.advance);
+				
+				pair<u32,str8> group(index_count, str8_copy(line, deshi_temp_allocator));
+				gArray.add(gUnique.add(group,group));
+			}continue;
+			
+			//// object ////
+			case 'o':{
+				str8_increment(&line, decoded.advance);
+				decoded = decoded_codepoint_from_utf8(line.str, 4);
+				if(decoded.codepoint != ' '){ ParseError(obj_path,"No space after 'o'"); return assets_model_null(); }
+				str8_increment(&line, decoded.advance);
+				
+				pair<u32,str8> object(index_count, str8_copy(line, deshi_temp_allocator));
+				oArray.add(oUnique.add(object,object));
+			}continue;
+			
+			default: continue;
 		}
+	}
+	
+	//parse MTL files
+	if(mtllib_found){
+		load_stopwatch = start_stopwatch();
 		
-		Model* model = assets_model_allocate(mArray.count);
+		//!Incomplete
+		
+		Log("assets","Parsing and loading MTLs for OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+	}
+	
+	Model* model = assets_model_allocate(mArray.count);
 	cpystr(model->name, (char*)file->front.str, 64);
-		model->flags    = flags;
-		model->mesh     = mesh;
-		model->armature = 0;
-		
-		//!Incomplete batch materials
-		if(mArray.count > 1){
-			model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-			model->batchArray[mArray.count-1].indexCount  = index_count - model->batchArray[mArray.count-1].indexOffset;
+	model->flags    = flags;
+	model->mesh     = mesh;
+	model->armature = 0;
+	
+	//!Incomplete batch materials
+	if(mArray.count > 1){
+		model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
+		model->batchArray[mArray.count-1].indexCount  = index_count - model->batchArray[mArray.count-1].indexOffset;
 		model->batchArray[mArray.count-1].material    = assets_material_null();
-			for(u32 bi = mArray.count-2; bi >= 0; --bi){
-				model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
-				model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
-				model->batchArray[bi].material    = assets_material_null();
-			}
-		}else{
-			model->batchArray[0].indexOffset = 0;
-			model->batchArray[0].indexCount  = index_count;
-			model->batchArray[0].material    = assets_material_null();
+		for(u32 bi = mArray.count-2; bi >= 0; --bi){
+			model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
+			model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
+			model->batchArray[bi].material    = assets_material_null();
+		}
+	}else{
+		model->batchArray[0].indexOffset = 0;
+		model->batchArray[0].indexCount  = index_count;
+		model->batchArray[0].material    = assets_material_null();
 	}
 	
 	arrput(DeshAssets->model_array, model);
@@ -1858,16 +1858,16 @@ assets_model_save(Model* model){
 	str8_builder_init(&builder,
 					  ToString8(deshi_temp_allocator,
 								">model"
-								 "\nname     \"",model->name,"\""
-								 "\nflags    ", model->flags,
-								 "\nmesh     \"", model->mesh->name,"\""
-								 "\narmature ", 0,
-								 "\n"
+								"\nname     \"",model->name,"\""
+								"\nflags    ", model->flags,
+								"\nmesh     \"", model->mesh->name,"\""
+								"\narmature ", 0,
+								"\n"
 								"\n>batches"),
 					  deshi_temp_allocator);
 	if(model->batchArray){
-	for_array(model->batchArray){
-		assets_material_save(it->material);
+		for_array(model->batchArray){
+			assets_material_save(it->material);
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
@@ -1891,15 +1891,15 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 	str8_builder_init(&builder,
 					  ToString8(deshi_temp_allocator,
 								">model"
-								 "\nname     \"",model->name,"\""
-								 "\nflags    ", model->flags,
-								 "\nmesh     \"", model->mesh->name,"\""
-								 "\narmature ", 0,
-								 "\n"
+								"\nname     \"",model->name,"\""
+								"\nflags    ", model->flags,
+								"\nmesh     \"", model->mesh->name,"\""
+								"\narmature ", 0,
+								"\n"
 								"\n>batches"),
 					  deshi_temp_allocator);
 	if(model->batchArray){
-	for_array(model->batchArray){
+		for_array(model->batchArray){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
@@ -2200,8 +2200,8 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	}
 	
 	Texture* texture = assets_texture_create_from_memory(pixels, filename, font->max_width, font->max_height*font->count,
-														  ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
-														  TextureAddressMode_ClampToWhite, false);
+														 ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+														 TextureAddressMode_ClampToWhite, false);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
 	font->tex = texture;
@@ -2348,8 +2348,8 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	f32 aspect_ratio = (f32)max_height / (f32)max_width;
 	
 	Texture* texture = assets_texture_create_from_memory(pixels, filename, texture_size_x, texture_size_y,
-											   ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
-											   TextureAddressMode_ClampToWhite, false);
+														 ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+														 TextureAddressMode_ClampToWhite, false);
 	
 	Font* font = (Font*)memory_alloc(sizeof(Font));
 	font->type         = FontType_TTF;
@@ -2382,7 +2382,7 @@ assets_font_delete(Font* font){DPZoneScoped;
 		}
 	}
 	if(font->type == FontType_TTF){
-	forI(font->num_ranges) memory_zfree(font->ranges[i].chardata_for_range);
+		forI(font->num_ranges) memory_zfree(font->ranges[i].chardata_for_range);
 		memory_zfree(font->ranges);
 	}
 	assets_texture_delete(font->tex);

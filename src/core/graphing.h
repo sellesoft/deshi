@@ -147,7 +147,7 @@ struct Graph{
 void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_cursor){DPZoneScoped;
     //NOTE the graph is built y down and rendered y up
     using namespace UI;
-    UIItem* item = BeginCustomItem();
+    UIItem_old* item = BeginCustomItem();
     item->position = Vec2(position.x, position.y);
     item->size = Vec2(dimensions.x, dimensions.y);
     CustomItem_AdvanceCursor(item, move_cursor);

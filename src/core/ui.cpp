@@ -283,15 +283,15 @@ vec2 UI::CalcTextSize(str8 text){DPZoneScoped;
 	return result;
 }
 
-inline b32 isItemHovered(UIItem* item){DPZoneScoped;
+inline b32 isItemHovered(UIItem_old* item){DPZoneScoped;
 	return Math::PointInRectangle(input_mouse_position(), item->position * style.globalScale + curwin->position, item->size * style.globalScale);
 }
 
-inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item){DPZoneScoped;
+inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem_old* item){DPZoneScoped;
 	return Math::PointInRectangle(input_mouse_position(), pos + item->position + curwin->position, size);
 }
 
-inline b32 isItemActive(UIItem* item){DPZoneScoped;
+inline b32 isItemActive(UIItem_old* item){DPZoneScoped;
 	return WinHovered(curwin) && CanTakeInput && isItemHovered(item);
 }
 
@@ -302,7 +302,7 @@ inline str8 delimitLabel(str8 label){
 }
 
 //internal master cursor controller
-inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1){DPZoneScoped;
+inline void AdvanceCursor(UIItem_old* itemmade, b32 moveCursor = 1){DPZoneScoped;
 	
 	//if a row is in progress, we must reposition the item to conform to row style variables
 	//this means that you MUST ensure that this happens before any interactions with the item are calculated
@@ -646,27 +646,27 @@ void UI::SetAllowInputs(){DPZoneScoped;
 
 
 //internal last item getter, returns nullptr if there are none
-UIItem* UI::GetLastItem(u32 layeroffset){DPZoneScoped;
+UIItem_old* UI::GetLastItem(u32 layeroffset){DPZoneScoped;
 	return curwin->items[currlayer + layeroffset].last;
 }
 
-//helper for making any new UIItem
-inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0){DPZoneScoped;
+//helper for making any new UIItem_old
+inline UIItem_old* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0){DPZoneScoped;
 	Assert(!StateHasFlag(UISCustomItemBegan), "attempt to start an item while a custom item is in progress");
 	if(type == UIItemType_PreItems){
-		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
+		curwin->preItems.add(UIItem_old{ type, curwin->cursor, style });
 		return curwin->preItems.last;
 	}
 	else if(type == UIItemType_PostItems){
-		curwin->postItems.add(UIItem{ type, curwin->cursor, style });
+		curwin->postItems.add(UIItem_old{ type, curwin->cursor, style });
 		return curwin->postItems.last;
 	}
 	else if(type == UIItemType_PopOutWindow){
-		curwin->popOuts.add(UIItem{ type, curwin->cursor, style });
+		curwin->popOuts.add(UIItem_old{ type, curwin->cursor, style });
 		return curwin->popOuts.last;
 	}
 	else{
-		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
+		curwin->items[currlayer + layeroffset].add(UIItem_old{ type, curwin->cursor, style });
 #ifdef BUILD_INTERNAL
 		UI::GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
 		UI::GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
@@ -686,10 +686,10 @@ inline UIItem* BeginItem(UIItemType type, u32 userflags = 0, u32 layeroffset = 0
 	return UI::GetLastItem(layeroffset);
 }
 
-inline void EndItem(UIItem* item){DPZoneScoped;}
+inline void EndItem(UIItem_old* item){DPZoneScoped;}
 
 
-inline void AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd){DPZoneScoped;
+inline void AddDrawCmd(UIItem_old* item, UIDrawCmd& drawCmd){DPZoneScoped;
 	if(!drawCmd.tex) drawCmd.tex = style.font->tex;
 	drawCmd.hash = hash<UIDrawCmd>{}(drawCmd);
 	drawCmd.render_surface_target_idx = *drawTargetStack.last;
@@ -1026,7 +1026,7 @@ b32 TextInputBehavoir(str8* buffer, u64 buffer_size, UIInputTextState* state){DP
 
 
 void UI::Rect(vec2 pos, vec2 dimen, color color){DPZoneScoped;
-	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIItem_old       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeRect(drawCmd, vec2::ZERO, dimen, 1, color);
 	AddDrawCmd(&item, drawCmd);
@@ -1037,7 +1037,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color){DPZoneScoped;
 }
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color){DPZoneScoped;
-	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIItem_old       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeFilledRect(drawCmd, vec2::ZERO, dimen, color);
 	AddDrawCmd(&item, drawCmd);
@@ -1052,7 +1052,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color){DPZoneScoped;
 
 
 void UI::Line(vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
-	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIItem_old       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeLine(drawCmd, start, end, thickness, color);
 	AddDrawCmd(&item, drawCmd);
@@ -1067,7 +1067,7 @@ void UI::Line(vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
 
 
 void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color color){DPZoneScoped;
-	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIItem_old       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeCircle(drawCmd, pos, radius, subdivisions, thickness, color);
 	AddDrawCmd(&item, drawCmd);
@@ -1081,7 +1081,7 @@ void UI::Circle(vec2 pos, f32 radius, f32 thickness, u32 subdivisions, color col
 }
 
 void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color){DPZoneScoped;
-	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIItem_old       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd;
 	MakeFilledCircle(drawCmd, pos, radius, subdivisions, color);
 	AddDrawCmd(&item, drawCmd);
@@ -1110,7 +1110,7 @@ local void TextW(str8 in, vec2 pos, color color, b32 nowrap, b32 move_cursor = t
 		return;
 	}
 	
-	UIItem* item = BeginItem(UIItemType_Text);
+	UIItem_old* item = BeginItem(UIItemType_Text);
 	item->position = pos;
 	vec2 workcur = vec2{ 0,0 };
 	
@@ -1225,7 +1225,7 @@ void UI::TextF(str8 fmt, ...){DPZoneScoped;
 b32 UI::Button(str8 text, vec2 pos, UIButtonFlags flags){DPZoneScoped;
 	vec2 text_size = CalcTextSize(text);
 	
-	UIItem* item = BeginItem(UIItemType_Button, flags);
+	UIItem_old* item = BeginItem(UIItemType_Button, flags);
 	item->position = pos;
 	//item->size = DecideItemSize(Vec2(Min(MarginedRight() - item->position.x, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
 	item->size = DecideItemSize(Vec2(ClampMin(1.1f*text_size.x, 50.f), style.fontHeight * style.buttonHeightRelToFont), item->position);
@@ -1286,7 +1286,7 @@ b32 UI::Button(str8 text, UIButtonFlags flags){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Checkbox
 void UI::Checkbox(str8 label, b32* b){DPZoneScoped;
-	UIItem* item = BeginItem(UIItemType_Checkbox);
+	UIItem_old* item = BeginItem(UIItemType_Checkbox);
 	
 	vec2 boxpos = DecideItemPos();
 	vec2 boxsiz = vec2::ONE * style.checkboxHeightRelToFont * style.fontHeight;
@@ -1347,7 +1347,7 @@ void UI::Checkbox(str8 label, b32* b){DPZoneScoped;
 b32 UI::BeginCombo(str8 label, str8 preview, vec2 pos){DPZoneScoped;
 	vec2 preview_size = CalcTextSize(preview);
 	
-	UIItem* item = BeginItem(UIItemType_Combo, 1);
+	UIItem_old* item = BeginItem(UIItemType_Combo, 1);
 	item->position = pos;
 	item->size = DecideItemSize(preview_size * 1.5, item->position);
 	
@@ -1413,7 +1413,7 @@ void UI::EndCombo(){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Selectable
 b32 SelectableCall(str8 label, vec2 pos, b32 selected, b32 move_cursor = 1){DPZoneScoped;
-	UIItem* item = BeginItem(UIItemType_Selectable, 0, 0);
+	UIItem_old* item = BeginItem(UIItemType_Selectable, 0, 0);
 	item->position = pos;
 	
 	vec2 label_size = UI::CalcTextSize(label);
@@ -1464,7 +1464,7 @@ b32 UI::Selectable(str8 label, b32 selected){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Header
 b32 UI::BeginHeader(str8 label, UIHeaderFlags flags){DPZoneScoped;
-	UIItem* item = BeginItem(UIItemType_Header, flags);
+	UIItem_old* item = BeginItem(UIItemType_Header, flags);
 	
 	b32* open = 0;
 	if(!headers.has(label)){
@@ -1567,7 +1567,7 @@ void UI::BeginTabBar(str8 label, UITabBarFlags flags){DPZoneScoped;
 	
 	f32 tabBarLineHeight = 3;
 	
-	UIItem* item = BeginItem(UIItemType_TabBar);
+	UIItem_old* item = BeginItem(UIItemType_TabBar);
 	item->position = DecideItemPos();
 	item->size     = DecideItemSize(Vec2(MAX_F32, style.tabHeightRelToFont * style.fontHeight + tabBarLineHeight), item->position);
 	AdvanceCursor(item);
@@ -1601,7 +1601,7 @@ b32 UI::BeginTab(str8 label){DPZoneScoped;
 	tab = curTabBar->tabs.at(label);
 	//UITab& tab = curtabBar->tabs[label];
 	
-	UIItem* item = BeginItem(UIItemType_Tab);
+	UIItem_old* item = BeginItem(UIItemType_Tab);
 	item->position = Vec2(curTabBar->item->position.x + curTabBar->xoffset, curTabBar->item->position.y);
 	item->size = Vec2(tab->width, tab->height);
 	tab->item = item;
@@ -1660,7 +1660,7 @@ void UI::EndTabBar(){DPZoneScoped;
 	
 	curTabBar->xoffset = 0;
 	forI(curTabBar->tabs.count){
-		UIItem* item = curTabBar->tabs.atIdx(i)->item;
+		UIItem_old* item = curTabBar->tabs.atIdx(i)->item;
 		if(WinHovered(curwin) && LeftMousePressed && MouseInWinArea(item->position, item->size)){
 			curTabBar->selected = i;
 		}
@@ -1679,7 +1679,7 @@ void UI::Slider(str8 label, f32* val, f32 val_min, f32 val_max, UISliderFlags fl
 		being_moved = sliders[label];
 	}
 	
-	UIItem* item = BeginItem(UIItemType_Slider, flags);
+	UIItem_old* item = BeginItem(UIItemType_Slider, flags);
 	item->position = DecideItemPos();
 	item->size = DecideItemSize(vec2{ curwin->width * M_ONETHIRD, 10 }, item->position);
 	AdvanceCursor(item);
@@ -1732,7 +1732,7 @@ void UI::Slider(str8 label, f32* val, f32 val_min, f32 val_max, UISliderFlags fl
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Image
 void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags){DPZoneScoped;
-	UIItem* item = BeginItem(UIItemType_Image, flags);
+	UIItem_old* item = BeginItem(UIItemType_Image, flags);
 	item->position = pos;
 	item->size = DecideItemSize(Vec2((f32)image->width, (f32)image->height), item->position);
 	AdvanceCursor(item);
@@ -1758,7 +1758,7 @@ void UI::Image(Texture* image, f32 alpha, UIImageFlags flags){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Separator
 void UI::Separator(f32 height){DPZoneScoped;
-	UIItem* item = BeginItem(UIItemType_Separator);
+	UIItem_old* item = BeginItem(UIItemType_Separator);
 	item->position = DecideItemPos();
 	item->size = Vec2(MarginedRight() - item->position.x, height);
 	AdvanceCursor(item);
@@ -1775,7 +1775,7 @@ void UI::Separator(f32 height){DPZoneScoped;
 //// @InputText
 //final input text
 b32 InputTextCall(str8 label, u8* buff, u32 buffSize, vec2 position, str8 preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor){DPZoneScoped;
-	UIItem* item = BeginItem(UIItemType_InputText);
+	UIItem_old* item = BeginItem(UIItemType_InputText);
 	item->position = position;
 	
 	str8 buffer{buff,0};
@@ -1930,7 +1930,7 @@ b32 UI::InputText(str8 label, u8* buffer, u32 buffSize, vec2 pos, UIInputTextCal
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Menu
 //void BeginMenuCall(vec2 pos, vec2 size, UIMenuFlags flags){
-//	UIItem* item = BeginItem(UIItemType_Menu, flags);
+//	UIItem_old* item = BeginItem(UIItemType_Menu, flags);
 //}
 //
 //void UI::BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags){
@@ -1948,13 +1948,13 @@ b32 UI::InputText(str8 label, u8* buffer, u32 buffSize, vec2 pos, UIInputTextCal
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @Custom
-UIItem* UI::BeginCustomItem(){
-	UIItem* item = BeginItem(UIItemType_Custom);
+UIItem_old* UI::BeginCustomItem(){
+	UIItem_old* item = BeginItem(UIItemType_Custom);
 	StateAddFlag(UISCustomItemBegan);
 	return item;
 }
 
-void UI::CustomItem_AdvanceCursor(UIItem* item, b32 move_cursor){
+void UI::CustomItem_AdvanceCursor(UIItem_old* item, b32 move_cursor){
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
 	AdvanceCursor(item, move_cursor);
 }
@@ -2001,7 +2001,7 @@ void UI::CustomItem_DCMakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 p0,
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
 	render_make_texture(drawCmd.vertices, drawCmd.indices, drawCmd.counts, texture, p0, p1, p2, p3, alpha, flipx, flipy);
 }
-void UI::CustomItem_AddDrawCmd(UIItem* item, UIDrawCmd& drawCmd){
+void UI::CustomItem_AddDrawCmd(UIItem_old* item, UIDrawCmd& drawCmd){
 	Assert(StateHasFlag(UISCustomItemBegan), "attempt to use a custom item command without beginning a custom item first");
 	AddDrawCmd(item, drawCmd);
 }
@@ -2567,7 +2567,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 		}break;
 		case UIWindowType_Child:{ ///////////////////////////////////////////////////////////////////////
 			UIWindow* parent = curwin;
-			UIItem* item = BeginItem(UIItemType_Window);
+			UIItem_old* item = BeginItem(UIItemType_Window);
 			
 			//TODO(sushi) add custom positioning for child windows
 			item->position = pos;
@@ -2615,7 +2615,7 @@ void BeginCall(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags, UIWind
 		}break;
 		case UIWindowType_PopOut:{ //////////////////////////////////////////////////////////////////////
 			UIWindow* parent = curwin;
-			UIItem* item = BeginItem(UIItemType_PopOutWindow);
+			UIItem_old* item = BeginItem(UIItemType_PopOutWindow);
 			item->position = pos;
 			
 			if(parent->children.has(name)){
@@ -2696,7 +2696,7 @@ void UI::BeginPopOut(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags){
 vec2 CalcWindowMinSize(){DPZoneScoped;
 	vec2 max;
 	forI(UI_WINDOW_ITEM_LAYERS){
-		for(UIItem& item : curwin->items[i]){
+		for(UIItem_old& item : curwin->items[i]){
 			//if(item.type == UIItemType_Window && item.child->type != UIWindowType_PopOut){
 			if(item.trackedForMinSize){
 				max.x = Max(max.x, item.position.x + curwin->scx + item.size.x);
@@ -2772,8 +2772,8 @@ if(!(curwin->flags & UIWindowFlags_NoTitleBar)){DPZoneScoped;
 void EndCall(){DPZoneScoped;
 	Assert(windowStack.count, "Attempted to end the base window");
 	
-	UIItem* preitem = BeginItem(UIItemType_PreItems);
-	UIItem* postitem = BeginItem(UIItemType_PostItems);
+	UIItem_old* preitem = BeginItem(UIItemType_PreItems);
+	UIItem_old* postitem = BeginItem(UIItemType_PostItems);
 	
 	preitem->position = vec2::ZERO;
 	postitem->position = vec2::ZERO;
@@ -3019,7 +3019,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 	
 	persist DebugItemState distate = None;
 	
-	persist UIItem    iteml;
+	persist UIItem_old    iteml;
 	persist UIWindow* debugee = 0;
 	persist vec2      mplatch;
 	
@@ -3037,7 +3037,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 		if(key_pressed(Key_ESCAPE)) distate = None;
 	}
 	
-	auto check_item = [&](UIItem& item){
+	auto check_item = [&](UIItem_old& item){
 		vec2 ipos = hovered->position + item.position;
 		if(MouseInArea(ipos, item.size)){
 			
@@ -3071,7 +3071,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 		}break;
 		case InspectingWindowPreItems:{
 			if(hovered){
-				for(UIItem& item : hovered->preItems){
+				for(UIItem_old& item : hovered->preItems){
 					DebugRect(item.position + hovered->position, item.size);
 					check_item(item);
 				}
@@ -3081,7 +3081,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 			if(hovered){
 				b32 item_found = 0;
 				forI(UI_WINDOW_ITEM_LAYERS){
-					for(UIItem& item : hovered->items[i]){
+					for(UIItem_old& item : hovered->items[i]){
 						item_found = check_item(item);
 					}
 				}
@@ -3100,7 +3100,7 @@ inline void MetricsDebugItem(){DPZoneScoped;
 		}break;
 		case InspectingWindowPostItems:{
 			if(hovered){
-				for(UIItem& item : hovered->postItems){
+				for(UIItem_old& item : hovered->postItems){
 					check_item(item);
 				}
 			}
@@ -3196,7 +3196,7 @@ inline void MetricsBreaking(){DPZoneScoped;
 	
 	auto check_win_items = [&](UIWindow* win){
 		forI(UI_WINDOW_ITEM_LAYERS){
-			for(UIItem& item : win->items[i]){
+			for(UIItem_old& item : win->items[i]){
 				if(MouseInArea(win->position + item.position, item.size)){
 					DebugRect(win->position + item.position, item.size);
 					if(input_lmouse_pressed()){
@@ -3215,7 +3215,7 @@ inline void MetricsBreaking(){DPZoneScoped;
 	auto check_win_drawcmds = [&](UIWindow* win){
 		static u32 selected = -1;
 		forI(UI_WINDOW_ITEM_LAYERS){
-			for(UIItem& item : win->items[i]){
+			for(UIItem_old& item : win->items[i]){
 				if(MouseInArea(win->position + item.position, item.size)){
 					//DebugRect(win->position + item.position, item.size);
 					vec2 ipos = win->position + item.position;
@@ -3512,7 +3512,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 			BeginChild(str8_lit("METRICSItems"), Vec2(0,0)); {
 				forI(UI_WINDOW_ITEM_LAYERS){
 					u32 count = 0;
-					for(UIItem& item : debugee->items[i]){
+					for(UIItem_old& item : debugee->items[i]){
 						string s = toStr(UIItemTypeStrs[item.type], " ", count);
 						if(BeginHeader(str8{(u8*)s.str, (s64)s.count})){
 							persist f32 frs = CalcTextSize(str8_lit("FilledRectangle")).x;
@@ -3586,7 +3586,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		
 		if(showItemBoxes){
 			forI(UI_WINDOW_ITEM_LAYERS){
-				for(UIItem& item : debugee->items[i]){
+				for(UIItem_old& item : debugee->items[i]){
 					DebugRect(debugee->position + item.position, item.size);
 				}
 			}
@@ -3594,7 +3594,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		
 		if(showItemCursors){ 
 			forI(UI_WINDOW_ITEM_LAYERS){
-				for(UIItem& item : debugee->items[i]){
+				for(UIItem_old& item : debugee->items[i]){
 					{
 						//UIDrawCmd dc;
 						//dc.color = Color_Green;
@@ -3608,7 +3608,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		
 		if(showItemNames){
 			forI(UI_WINDOW_ITEM_LAYERS){
-				for(UIItem& item : debugee->items[i]){
+				for(UIItem_old& item : debugee->items[i]){
 					DebugText(debugee->position + item.position, UIItemTypeStrs[item.type]);
 				}
 			}
@@ -3616,7 +3616,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		
 		if(showItemCoords){
 			forI(UI_WINDOW_ITEM_LAYERS){
-				for(UIItem& item : debugee->items[i]){
+				for(UIItem_old& item : debugee->items[i]){
 					string s = toStr("(",item.position.x,",",item.position.y,")");
 					DebugText(debugee->position + item.position, str8{(u8*)s.str, (s64)s.count});
 				}
@@ -3624,38 +3624,38 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		}
 		
 		if(showAllDrawCmdScissors){
-			for(UIItem& item : debugee->preItems){
+			for(UIItem_old& item : debugee->preItems){
 				for(UIDrawCmd& dc : item.drawCmds){
 					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS){
-				for(UIItem& item : debugee->items[i]){
+				for(UIItem_old& item : debugee->items[i]){
 					for(UIDrawCmd& dc : item.drawCmds){
 						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 					}
 				}
 			}
-			for(UIItem& item : debugee->postItems){
+			for(UIItem_old& item : debugee->postItems){
 				for(UIDrawCmd& dc : item.drawCmds){
 					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
 				}
 			}
 			
 			for(UIWindow* c : debugee->children){
-				for(UIItem& item : c->preItems){
+				for(UIItem_old& item : c->preItems){
 					for(UIDrawCmd& dc : item.drawCmds){
 						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
 					}
 				}
 				forI(UI_WINDOW_ITEM_LAYERS){
-					for(UIItem& item : c->items[i]){
+					for(UIItem_old& item : c->items[i]){
 						for(UIDrawCmd& dc : item.drawCmds){
 							DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
 						}
 					}
 				}
-				for(UIItem& item : c->postItems){
+				for(UIItem_old& item : c->postItems){
 					for(UIDrawCmd& dc : item.drawCmds){
 						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
 					}
@@ -3665,7 +3665,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 		}
 		
 		if(showDrawCmdTriangles){
-			for(UIItem& item : debugee->preItems){
+			for(UIItem_old& item : debugee->preItems){
 				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for(UIDrawCmd& dc : item.drawCmds){
 					for(int i = 0; i < dc.counts.y; i += 3){
@@ -3676,7 +3676,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 				}
 			}
 			forI(UI_WINDOW_ITEM_LAYERS){
-				for(UIItem& item : debugee->items[i]){
+				for(UIItem_old& item : debugee->items[i]){
 					vec2 ipos = debugee->position + item.position * item.style.globalScale;
 					for(UIDrawCmd& dc : item.drawCmds){
 						for(int i = 0; i < dc.counts.y; i += 3){
@@ -3687,7 +3687,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 					}
 				}
 			}
-			for(UIItem& item : debugee->postItems){
+			for(UIItem_old& item : debugee->postItems){
 				vec2 ipos = debugee->position + item.position * item.style.globalScale;
 				for(UIDrawCmd& dc : item.drawCmds){
 					for(int i = 0; i < dc.counts.y; i += 3){
@@ -3803,10 +3803,10 @@ void UI::DemoWindow(){DPZoneScoped;
 	
 	if(BeginHeader(str8_lit("Headers"))){
 		TextOld(str8_lit(
-					  "Headers automatically indent according to UIStyleVar_IndentAmount\n"
-					  "They also automatically adjust their width to the width of the window\n"
-					  "TODO(sushi) make a way to turn these off!"
-					  ));
+						 "Headers automatically indent according to UIStyleVar_IndentAmount\n"
+						 "They also automatically adjust their width to the width of the window\n"
+						 "TODO(sushi) make a way to turn these off!"
+						 ));
 		
 		Separator(7);
 		
@@ -3826,8 +3826,8 @@ void UI::DemoWindow(){DPZoneScoped;
 	
 	if(BeginHeader(str8_lit("Row"))){
 		TextOld(str8_lit(
-					  "UI::Row() aligns any other item in a row"
-					  ));
+						 "UI::Row() aligns any other item in a row"
+						 ));
 		
 		Separator(7);
 		
@@ -3841,8 +3841,8 @@ void UI::DemoWindow(){DPZoneScoped;
 		Separator(7);
 		
 		TextOld(str8_lit(
-					  "Rows aren't restricted to one Row, you can add as many items as you like as long as the amount of items is divisible by the amount of columns you made the Row with"
-					  ));
+						 "Rows aren't restricted to one Row, you can add as many items as you like as long as the amount of items is divisible by the amount of columns you made the Row with"
+						 ));
 		
 		persist f32 rowyalign = 0.5;
 		persist f32 rowxalign = 0.5;
@@ -4111,7 +4111,7 @@ void UI::Init(){DPZoneScoped;
 
 //in our final draw system, this is the function that primarily does the work
 //of figuring out how each draw call will be sent to the renderer
-inline void DrawItem(UIItem& item, UIWindow* window){DPZoneScoped;
+inline void DrawItem(UIItem_old& item, UIWindow* window){DPZoneScoped;
 	
 	vec2 winpos = Vec2(window->x, window->y);
 	vec2 winsiz = Vec2(window->width, window->height) * window->style.globalScale;
@@ -4185,13 +4185,13 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0){DPZoneScoped;
 		StateAddFlag(UISGlobalHovered);
 	
 	//draw pre cmds first
-	for(UIItem& item : p->preItems){
+	for(UIItem_old& item : p->preItems){
 		DrawItem(item, p);
 	}
 	
 	
 	forI(UI_WINDOW_ITEM_LAYERS){
-		for(UIItem& item : p->items[i]){
+		for(UIItem_old& item : p->items[i]){
 			if(item.type == UIItemType_Window){
 				item.child->position = p->position + item.position * item.style.globalScale;
 				DrawWindow(item.child, p);
@@ -4204,12 +4204,12 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0){DPZoneScoped;
 	
 	
 	//draw post items, such as scroll bars or context menus
-	for(UIItem& item : p->postItems){
+	for(UIItem_old& item : p->postItems){
 		DrawItem(item, p);
 	}
 	
 	//after we draw everything to do with the base window we then draw its popouts
-	for(UIItem& item : p->popOuts){
+	for(UIItem_old& item : p->popOuts){
 		item.child->position = p->position + item.position * item.style.globalScale;
 		DrawWindow(item.child, p);
 		WinUnSetBegan(item.child);
