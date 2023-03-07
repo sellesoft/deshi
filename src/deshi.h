@@ -34,6 +34,22 @@
   cmd_init();                                  \
   window_show(DeshWindow);                     \
   render_use_default_camera();                 \
+threader_init();
+
+#define deshi_init_specify(name,main_size,temp_size) \
+  profiler_init();                                   \
+  memory_init(main_size,temp_size);                  \
+  platform_init();                                   \
+  logger_init();                                     \
+  window_create(str8l(name));                        \
+  render_init();                                     \
+  assets_init();                                     \
+  uiInit(g_memory,0);                                \
+  UI::Init();                                        \
+  console_init();                                    \
+  cmd_init();                                        \
+  window_show(DeshWindow);                           \
+  render_use_default_camera();                       \
   threader_init();
 
 #define deshi_loop_start()   \
