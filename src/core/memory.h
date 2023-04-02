@@ -268,6 +268,7 @@ void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 //Allocates AT LEAST `size` bytes with all memory zeroed
 void* deshi__memory_generic_allocate(upt size, str8 file, upt line);
 #define memory_alloc(size) deshi__memory_generic_allocate(size, str8_lit(__FILE__), __LINE__)
+#define memory_allocT(type) (type*)memory_alloc(sizeof(type))
 #define memalloc(size) memory_alloc(size)
 
 //Resizes the allocation at `ptr` to AT LEAST `new_size` bytes
