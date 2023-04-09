@@ -224,8 +224,11 @@ local DeshiStage deshiStage = DS_NONE;
   deshiStage |= stage;                                     \
   Stopwatch stopwatch##stage = start_stopwatch()
 
-#define DeshiStageInitEnd(stage) \
-  LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
+#if DESHI_LOG_MODULE_INIT
+#  define DeshiStageInitEnd(stage) LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
+#else
+#  define DeshiStageInitEnd(stage) (void)0
+#endif
 
 #define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
 
