@@ -63,11 +63,11 @@ assets_init(){DPZoneScoped;
 
 void
 assets_reset(){DPZoneScoped;
-	for_array(DeshAssets->mesh_array) assets_mesh_delete(*it);
-	for_array(DeshAssets->texture_array) assets_texture_delete(*it);
-	for_array(DeshAssets->material_array) assets_material_delete(*it);
-	for_array(DeshAssets->model_array) assets_model_delete(*it);
-	for_array(DeshAssets->font_array) assets_font_delete(*it);
+	for_stb_array(DeshAssets->mesh_array) assets_mesh_delete(*it);
+	for_stb_array(DeshAssets->texture_array) assets_texture_delete(*it);
+	for_stb_array(DeshAssets->material_array) assets_material_delete(*it);
+	for_stb_array(DeshAssets->model_array) assets_model_delete(*it);
+	for_stb_array(DeshAssets->font_array) assets_font_delete(*it);
 }
 
 
@@ -112,7 +112,7 @@ assets_browser(){DPZoneScoped;
 		upt texture_bytes = 0;
 		
 		
-		for_array(DeshAssets->texture_array){
+		for_stb_array(DeshAssets->texture_array){
 			texture_bytes += (*it)->width * (*it)->height * u8size;
 			if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
 			if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
@@ -133,7 +133,7 @@ assets_browser(){DPZoneScoped;
 		EndRow();
 		
 		if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
-			for_array(DeshAssets->texture_array){
+			for_stb_array(DeshAssets->texture_array){
 				if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
 					selected = (*it);
 					new_selected = 1;
@@ -344,7 +344,7 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	depth  /= 2.f;
 	
 	//check if created already
-	for_array(DeshAssets->mesh_array){
+	for_stb_array(DeshAssets->mesh_array){
 		if((strcmp((*it)->name, "box_mesh") == 0) && vec3_equal((*it)->aabbMax, Vec3(width,height,depth))){
 			return *it;
 		}
@@ -552,7 +552,7 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 	CopyMemory(mesh, data, bytes);
 	
 	//check if mesh is already loaded
-	for_array(DeshAssets->mesh_array){
+	for_stb_array(DeshAssets->mesh_array){
 		if(strcmp((*it)->name, mesh->name) == 0){
 			memory_zfree(mesh);
 			return *it;
@@ -607,7 +607,7 @@ void
 assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 	if(mesh == assets_mesh_null()) return;
 	
-	for_array(DeshAssets->mesh_array) if(*it == mesh) arrdelswap(DeshAssets->mesh_array, it - DeshAssets->mesh_array);
+	for_stb_array(DeshAssets->mesh_array) if(*it == mesh) arrdelswap(DeshAssets->mesh_array, it - DeshAssets->mesh_array);
 	render_unload_mesh(mesh);
 	memory_zfree(mesh);
 }
@@ -620,7 +620,7 @@ assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type,
 	if(str8_equal_lazy(name, STR8("null"))) return assets_texture_null();
 	
 	//check if texture is already loaded
-	for_array(DeshAssets->texture_array){
+	for_stb_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
 			return *it;
 		}
@@ -661,7 +661,7 @@ Texture*
 assets_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	//check if texture is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshAssets->texture_array){
+	for_stb_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
 			return *it;
 		}
@@ -705,7 +705,7 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 	}
 	
 	//check if texture is already loaded (with that name)
-	for_array(DeshAssets->texture_array){
+	for_stb_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
 			return *it;
 		}
@@ -770,7 +770,7 @@ void
 assets_texture_delete(Texture* texture){DPZoneScoped;
 	if(texture == assets_texture_null()) return;
 	
-	for_array(DeshAssets->texture_array){
+	for_stb_array(DeshAssets->texture_array){
 		if(*it == texture){
 			arrdelswap(DeshAssets->texture_array, it - DeshAssets->texture_array);
 		}
@@ -794,7 +794,7 @@ assets_material_allocate(u32 textureCount){DPZoneScoped;
 Material*
 assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count){DPZoneScoped;
 	//check if material is already loaded
-	for_array(DeshAssets->material_array){
+	for_stb_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
 			return *it;
 		}
@@ -833,7 +833,7 @@ Material*
 assets_material_create_from_path(str8 path){DPZoneScoped;
 	//check if material is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshAssets->material_array){
+	for_stb_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
 			return *it;
 		}
@@ -961,7 +961,7 @@ assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 								"\n>textures"),
 					  deshi_temp_allocator);
 	if(material->textureArray){
-		for_array(material->textureArray){
+		for_stb_array(material->textureArray){
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
 		}
 	}
@@ -976,7 +976,7 @@ void
 assets_material_delete(Material* material){DPZoneScoped;
 	if(material == assets_material_null()) return;
 	
-	for_array(DeshAssets->material_array){
+	for_stb_array(DeshAssets->material_array){
 		if(*it == material){
 			arrdelswap(DeshAssets->material_array, it - DeshAssets->material_array);
 		}
@@ -1013,7 +1013,7 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	if(front.count == filename.count) str8_builder_append(&builder, STR8(".model"));
 	
 	//check if model is already loaded
-	for_array(DeshAssets->model_array){
+	for_stb_array(DeshAssets->model_array){
 		if(strncmp((*it)->name, (char*)front.str, 64) == 0){
 			return *it;
 		}
@@ -1549,7 +1549,7 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 	
 	//// check if mesh is already loaded ////
 	Mesh* mesh = 0;
-	for_array(DeshAssets->mesh_array){
+	for_stb_array(DeshAssets->mesh_array){
 		if(strncmp((*it)->name, (char*)file->front.str, 64) == 0){
 			mesh = *it;
 			break;
@@ -1672,7 +1672,7 @@ assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	
 	//check if created already
 	str8 model_name = str8_from_cstr(mesh->name);
-	for_array(DeshAssets->model_array){
+	for_stb_array(DeshAssets->model_array){
 		if(   (*it)->mesh == mesh
 		   && strncmp((*it)->name, (char*)model_name.str, 64) == 0
 		   && (*it)->flags == flags
@@ -1866,7 +1866,7 @@ assets_model_save(Model* model){
 								"\n>batches"),
 					  deshi_temp_allocator);
 	if(model->batchArray){
-		for_array(model->batchArray){
+		for_stb_array(model->batchArray){
 			assets_material_save(it->material);
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
@@ -1899,7 +1899,7 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 								"\n>batches"),
 					  deshi_temp_allocator);
 	if(model->batchArray){
-		for_array(model->batchArray){
+		for_stb_array(model->batchArray){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
 			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
@@ -1915,7 +1915,7 @@ void
 assets_model_delete(Model* model){
 	if(model == assets_model_null()) return;
 	
-	for_array(DeshAssets->model_array){
+	for_stb_array(DeshAssets->model_array){
 		if(*it == model){
 			arrdelswap(DeshAssets->model_array, it - DeshAssets->model_array);
 		}
@@ -2028,7 +2028,7 @@ Font*
 assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	//check if font was loaded already
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshAssets->font_array){
+	for_stb_array(DeshAssets->font_array){
 		if(str8_equal_lazy((*it)->name, filename)){
 			return *it;
 		}
@@ -2225,7 +2225,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	//check if font was loaded already
 	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-	for_array(DeshAssets->font_array){
+	for_stb_array(DeshAssets->font_array){
 		if(str8_equal_lazy((*it)->name, filename)){
 			return *it;
 		}
@@ -2376,7 +2376,7 @@ void
 assets_font_delete(Font* font){DPZoneScoped;
 	if(font == assets_font_null()) return;
 	
-	for_array(DeshAssets->font_array){
+	for_stb_array(DeshAssets->font_array){
 		if(*it == font){
 			arrdelswap(DeshAssets->font_array, it - DeshAssets->font_array);
 		}

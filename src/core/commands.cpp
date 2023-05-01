@@ -406,7 +406,7 @@ void cmd_init(){
 			str8_builder_append(&builder, ShaderStrings[mat->shader]);
 			str8_builder_append(&builder, str8_lit("\t"));
 			if(mat->textureArray){
-				for_array(mat->textureArray){
+				for_stb_array(mat->textureArray){
 					str8_builder_append(&builder, str8_lit(" "));
 					str8_builder_append(&builder, str8_from_cstr((*it)->name));
 				}
@@ -418,7 +418,7 @@ void cmd_init(){
 	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
 		Material* mat = 0;
 		const char* mat_name = temp_str8_cstr(args[0]);
-		for_array(assets_material_array()){
+		for_stb_array(assets_material_array()){
 			if(strcmp((*it)->name, mat_name) == 0){
 				mat = *it;
 				break;
@@ -441,7 +441,7 @@ void cmd_init(){
 		
 		Texture* tex = 0;
 		const char* tex_name = temp_str8_cstr(args[2]);
-		for_array(assets_texture_array()){
+		for_stb_array(assets_texture_array()){
 			if(strcmp((*it)->name, tex_name) == 0){
 				tex = *it;
 				break;
@@ -459,7 +459,7 @@ void cmd_init(){
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
 		Material* mat = 0;
 		const char* mat_name = temp_str8_cstr(args[0]);
-		for_array(assets_material_array()){
+		for_stb_array(assets_material_array()){
 			if(strcmp((*it)->name, mat_name) == 0){
 				mat = *it;
 				break;
@@ -508,7 +508,7 @@ void cmd_init(){
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("cmd", "Texture List:\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
-		for_array(assets_texture_array()){
+		for_stb_array(assets_texture_array()){
 			Texture* tex = *it;
 			Log("cmd", '\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth, '\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
 		}

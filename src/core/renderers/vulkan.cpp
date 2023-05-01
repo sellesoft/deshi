@@ -3658,7 +3658,7 @@ render_load_material(Material* material){DPZoneScoped;
 	//write descriptor set per texture
 	array<VkWriteDescriptorSet> sets;
 	if(material->textureArray){
-		for_array(material->textureArray){
+		for_stb_array(material->textureArray){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk.descriptorSet;
 			set.dstArrayElement = 0;
@@ -3713,7 +3713,7 @@ render_update_material(Material* material){DPZoneScoped;
 	//update descriptor set per texture
 	array<VkWriteDescriptorSet> sets;
 	if(material->textureArray){
-		for_array(material->textureArray){
+		for_stb_array(material->textureArray){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk->descriptorSet;
 			set.dstArrayElement = 0;
