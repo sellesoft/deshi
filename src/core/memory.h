@@ -212,13 +212,9 @@ typedef struct PoolHeader{
 //Returns the number of items (not chunks) in the pooled arena `pool`
 #define memory_pool_count(pool) (memory_pool_header(pool)->count)
 
-//Allocates a block of `count` chunks for the pooled arena `pool` and sets `PoolHeader.free_chunk` to the first new chunk
-#define memory_pool_grow(pool,count) deshi__memory_pool_grow((pool), sizeof(*(pool)), (count))
-void deshi__memory_pool_grow(void* pool, upt type_size, upt count);
-
-//Creates a pooled arena with `count` chunks-per-block (item slots) and sets `pool` equal to the first chunk
+//Creates a pooled arena with `count` chunks-per-block (item slots) and assigns `pool` equal to the first chunk
 #define memory_pool_init(pool,count) ((pool) = deshi__memory_pool_init_wrapper((pool), sizeof(*(pool)), (count)))
-void* deshi__memory_pool_init(void* pool, upt type_size, upt count);
+void* deshi__memory_pool_init(upt type_size, upt count);
 
 #if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
 EndLinkageC();
@@ -231,23 +227,27 @@ FORCE_INLINE                 void* deshi__memory_pool_init_wrapper(void* pool, u
 //Deletes the pooled arena `pool`
 void memory_pool_deinit(void* pool);
 
+//Allocates a block of `count` chunks for the pooled arena `pool` and sets `PoolHeader.free_chunk` to the first new chunk
+#define memory_pool_grow(pool,count) deshi__memory_pool_grow((pool), sizeof(*(pool)), (count))
+void deshi__memory_pool_grow(void* pool, upt type_size, upt count);
+
 //Returns a free chunk in `pool`, growing if necessary
 #define memory_pool_push(pool) deshi__memory_pool_push_wrapper((pool), sizeof(*(pool)))
 void* deshi__memory_pool_push(void* pool, upt type_size);
 
-#if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
+#if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't, so templates are required
 EndLinkageC();
 template<class T> global inline T* deshi__memory_pool_push_wrapper(T*    pool, upt type_size){ return (T*)deshi__memory_pool_push(pool, type_size); }
 StartLinkageC();
 #else
-FORCE_INLINE                 void* deshi__memory_pool_push_wrapper(void* pool, upt type_size){ return     deshi__memory_pool_init(pool, type_size); }
+FORCE_INLINE                 void* deshi__memory_pool_push_wrapper(void* pool, upt type_size){ return     deshi__memory_pool_push(pool, type_size); }
 #endif //COMPILER_FEATURE_CPP
 
 //Deletes the chunk at `ptr` in the pooled arena `pool`
 #define memory_pool_delete(pool,ptr) deshi__memory_pool_delete((pool), sizeof(*(pool)), (ptr))
 void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 
-//for-loop macro (iterates all chunks, regardless of emptiness)
+//for loop macro (iterates all chunks, regardless of emptiness)
 #if   COMPILER_FEATURE_TYPEOF
 #define for_pool(pool)                                                                                                                     \
   for(typeof(*(pool))* it = (pool), typeof(*(pool))* it_start = (pool), it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \

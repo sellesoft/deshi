@@ -846,6 +846,48 @@ deshi__memory_arena_expose(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_pool
+void*
+deshi__memory_pool_init(void* pool, upt type_size, upt count){
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(PoolHeader) + (chunk_size * count);
+	
+	//allocate space for chunks and header
+	pool = memory_alloc(sizeof(PoolHeader) + alloc_size);
+	PoolHeader* header = memory_pool_header(pool);
+	header->chunks_per_block = count;
+	
+	//set free chunk equal to the first chunk
+	header->free_chunk = (void**)(pool);
+	
+	//setup the rest of the free chunk linked list
+	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}
+	
+	//return pool so the macro can assign to var
+	return pool;
+}
+
+
+void
+memory_pool_deinit(void* pool){
+	//zfree the first block (and header)
+	PoolHeader* header = memory_pool_header(pool);
+	void** next_block = header->next_block;
+	memory_zfree(header);
+	
+	//zfree the rest of the blocks by iterating the linked list
+	if(next_block){
+		while(*next_block){
+			void* block = (void*)next_block;
+			next_block = (void**)(*next_block);
+			memory_zfree(block);
+		}
+	}
+}
+
+
 void
 deshi__memory_pool_grow(void* pool, upt type_size, upt count){
 	PoolHeader* header = memory_pool_header(pool);
@@ -879,48 +921,6 @@ deshi__memory_pool_grow(void* pool, upt type_size, upt count){
 	//setup the rest of the free chunk single linked list
 	for(u8* chunk = (u8*)header->free_chunk; chunk < (u8*)last_block + alloc_size - chunk_size; chunk += chunk_size){
 		*(void**)chunk = chunk + chunk_size;
-	}    
-}
-
-
-void*
-deshi__memory_pool_init(void* pool, upt type_size, upt count){
-	//calc chunk and alloc size
-	upt chunk_size = Max(type_size, sizeof(void*));
-	upt alloc_size = sizeof(PoolHeader) + (chunk_size * (count));
-	
-	//allocate space for chunks and header
-	pool = (u8*)memory_alloc(alloc_size) + sizeof(PoolHeader);
-	PoolHeader* header = memory_pool_header(pool);
-	header->chunks_per_block = (count);
-	
-	//set free chunk equal to the first chunk
-	header->free_chunk = (void**)(pool);
-	
-	//setup the rest of the free chunk linked list
-	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
-		*(void**)chunk = chunk + chunk_size;
-	}
-	
-	//return pool so the macro can assign to var
-	return pool;
-}
-
-
-void
-memory_pool_deinit(void* pool){
-	//zfree the first block (and header)
-	PoolHeader* header = memory_pool_header(pool);
-	void** next_block = header->next_block;
-	memory_zfree(header);
-	
-	//zfree the rest of the blocks by iterating the linked list
-	if(next_block){
-		while(*next_block){
-			void* block = (void*)next_block;
-			next_block = (void**)(*next_block);
-			memory_zfree(block);
-		}
 	}
 }
 
