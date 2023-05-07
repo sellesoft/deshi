@@ -2,7 +2,7 @@
 #ifndef DESHI_THREADING_H
 #define DESHI_THREADING_H
 
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include "kigu/common.h"
 #include "kigu/map.h"
 #include "kigu/string.h"

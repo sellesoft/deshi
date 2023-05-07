@@ -144,7 +144,7 @@ external u64 platform_process_write(Process p, upt address, void* data, upt size
 #ifdef DESHI_IMPLEMENTATION
 #include "file.h"
 #include "window.h"
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

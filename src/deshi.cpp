@@ -240,7 +240,7 @@ local DeshiStage deshiStage = DS_NONE;
 
 //// kigu headers ////"
 #include "kigu/profiling.h"
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include "kigu/array_utils.h"
 #include "kigu/carray.h"
 #include "kigu/color.h"

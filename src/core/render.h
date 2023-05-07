@@ -35,7 +35,7 @@ Index:
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifndef DESHI_RENDER_H
 #define DESHI_RENDER_H
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "math/math.h"

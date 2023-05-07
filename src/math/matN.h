@@ -76,7 +76,7 @@ The transformation matrix will follow the format to the right:                  
 #define DESHI_matN_H
 
 #include "vector.h"
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include <cstring> //memcpy
 
 struct matN {

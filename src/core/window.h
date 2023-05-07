@@ -204,7 +204,7 @@ FORCE_INLINE void window_cursor_position(Window* window, vec2 position){ window_
 #endif //DESHI_WINDOW_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef DESHI_IMPLEMENTATION
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

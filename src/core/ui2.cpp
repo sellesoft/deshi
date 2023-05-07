@@ -32,7 +32,7 @@ Index:
 
 
 #include "ui2.h"
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include "kigu/array_utils.h"
 #include "core/assets.h"
 #include "core/input.h"

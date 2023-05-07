@@ -271,7 +271,7 @@ external u64 deshi__file_append_simple(str8 caller_file, upt caller_line, str8 p
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifdef DESHI_IMPLEMENTATION
 #include "logger.h"
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
