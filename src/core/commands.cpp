@@ -9,8 +9,8 @@
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@vars
-local array<Command> deshi__cmd_commands(deshi_allocator);
-local array<Alias> deshi__cmd_aliases(deshi_allocator);
+local arrayT<Command> deshi__cmd_commands(deshi_allocator);
+local arrayT<Alias> deshi__cmd_aliases(deshi_allocator);
 local str8 deshi__last_cmd_desc;
 
 
@@ -82,7 +82,7 @@ void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@run
 void cmd_run(str8 input){
-	array<str8> args(deshi_temp_allocator);
+	arrayT<str8> args(deshi_temp_allocator);
 	
 	//split input by spaces (treating double quoted strings as one item)
 	//TODO nested aliases
@@ -177,7 +177,7 @@ void cmd_init(){
 	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
 	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
-		array<File> files = file_search_directory(args[0]);
+	arrayT<File> files = file_search_directory(args[0]);
 		char time_str[1024];
 		if(files.count){
 			Log("cmd","Directory of '",args[0],"':");

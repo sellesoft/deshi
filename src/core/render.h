@@ -422,8 +422,8 @@ void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, c
 #if COMPILER_FEATURE_CPP
 EndLinkageC();
 FORCE_INLINE void render_model(Model* model, vec3 position, vec3 rotation, vec3 scale){ mat4 transform = mat4::TransformationMatrix(position,rotation,scale); render_model(model,&transform); }
-FORCE_INLINE void render_poly3(const array<vec3>& points, color c = Color_White){ render_poly3(points.data, points.count, c); }
-FORCE_INLINE void render_poly_filled3(const array<vec3>& points, color c = Color_White){ render_poly_filled3(points.data, points.count, c); }
+FORCE_INLINE void render_poly3(const arrayT<vec3>& points, color c = Color_White){ render_poly3(points.data, points.count, c); }
+FORCE_INLINE void render_poly_filled3(const arrayT<vec3>& points, color c = Color_White){ render_poly_filled3(points.data, points.count, c); }
 FORCE_INLINE void render_box(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ mat4 transform = mat4::TransformationMatrix(position, rotation, scale); render_box(&transform,c); }
 FORCE_INLINE void render_box_filled(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ mat4 transform = mat4::TransformationMatrix(position, rotation, scale); render_box_filled(&transform,c); }
 FORCE_INLINE void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White){ render_sphere(position,rotation,radius,subdivisions,c,c,c); }
@@ -500,12 +500,12 @@ void render_poly_filled2(vec2* points, u64 count, color c);
 
 #if COMPILER_FEATURE_CPP
 EndLinkageC();
-FORCE_INLINE void render_lines2(array<vec2>& points, f32 thickness = 1, color c = Color_White){ render_lines2(points.data,points.count,thickness,c); }
+FORCE_INLINE void render_lines2(arrayT<vec2>& points, f32 thickness = 1, color c = Color_White){ render_lines2(points.data,points.count,thickness,c); }
 FORCE_INLINE void render_quad2(vec2 position, vec2 dimensions, color c = Color_White){ render_quad2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c); }
 FORCE_INLINE void render_quad_thick2(vec2 position, vec2 dimensions, f32 thickness = 1, color c = Color_White){ render_quad_thick2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,thickness,c); }
 FORCE_INLINE void render_quad_filled2(vec2 position, vec2 dimensions, color c = Color_White){ render_quad_filled2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c); }
-FORCE_INLINE void render_poly2(array<vec2>& points, color c = Color_White){ render_poly2(points.data,points.count,c); }
-FORCE_INLINE void render_poly_filled2(array<vec2>& points, color c = Color_White){render_poly_filled2(points.data,points.count,c); }
+FORCE_INLINE void render_poly2(arrayT<vec2>& points, color c = Color_White){ render_poly2(points.data,points.count,c); }
+FORCE_INLINE void render_poly_filled2(arrayT<vec2>& points, color c = Color_White){render_poly_filled2(points.data,points.count,c); }
 StartLinkageC();
 #endif //COMPILER_FEATURE_CPP
 

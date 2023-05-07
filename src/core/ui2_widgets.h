@@ -27,7 +27,7 @@ Index:
 @ui2_widgets_shared_impl
   item_error(uiItem* item, ...) -> void
   gen_error(str8 file, upt line, ...) -> void
-  find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size) -> void
+  find_text_breaks(arrayT<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size) -> void
   find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text) -> s64
   render_ui_text(vec2i counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks) -> vec2i
 @ui2_widgets_text_impl
@@ -66,7 +66,7 @@ struct uiText{
 	Text text;
 	b32 selecting;
 	//TODO(sushi) get rid of array here
-	array<pair<s64,vec2>> breaks;
+	arrayT<pair<s64,vec2>> breaks;
 };
 
 #define uiGetText(x) CastFromMember(uiText, item, x)
@@ -97,7 +97,7 @@ struct uiInputText{
 	Text   text;
 	b32    selecting;
 	//TODO(sushi) get rid of array here
-	array<pair<s64,vec2>> breaks;
+	arrayT<pair<s64,vec2>> breaks;
 	
 	Stopwatch repeat_hold;
 	Stopwatch repeat_throttle;
@@ -259,7 +259,7 @@ LogE("ui",CyanFormatComma(file),":",line,":",RedFormatComma("error"),":",__VA_AR
 //            of uiText. The way the API is setup right now doesn't really allow for this, at least not in any nice way.
 //            It may be better to keep them separate however.
 void
-find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size = 0){DPZoneScoped;
+find_text_breaks(arrayT<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size = 0){DPZoneScoped;
 	breaks->clear();
 	breaks->add({0,{0,0}});
 	str8 last_space_or_tab = text.buffer.fin;

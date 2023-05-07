@@ -623,7 +623,7 @@ b32 last_flex_floored = 1;
 void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
 	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically sized child.
-	array<u32> already_evaluated;
+	arrayT<u32> already_evaluated;
 	
 	EvalContext contextout = {0};
 	

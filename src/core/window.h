@@ -210,7 +210,7 @@ FORCE_INLINE void window_cursor_position(Window* window, vec2 position){ window_
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_shared_variables
 local Window window_helper{};
-local array<Window*> window_windows;
+local arrayT<Window*> window_windows;
 local Window* window_active;
 
 

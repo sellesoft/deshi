@@ -849,7 +849,7 @@ assets_material_create_from_path(str8 path){DPZoneScoped;
 	str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
 	Shader mat_shader = 0;
 	MaterialFlags mat_flags = 0;
-	array<str8> mat_textures(deshi_temp_allocator);
+	arrayT<str8> mat_textures(deshi_temp_allocator);
 	enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
 	
 	u32 line_number = 0;
@@ -1044,7 +1044,7 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	str8 model_name;
 	str8 model_mesh;
 	ModelFlags model_flags;
-	array<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
+	arrayT<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
 	enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
 	
 	File* file = file_init(model_path, FileAccess_Read);
@@ -1171,22 +1171,22 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 	set<pair<u32,str8>> uUnique(deshi_temp_allocator);
 	set<pair<u32,str8>> mUnique(deshi_temp_allocator);
 	set<pair<u32,vec3>> appliedUniqueNormals(deshi_temp_allocator); //vertex applied on, normal
-	array<vec2> vtArray(deshi_temp_allocator); //NOTE UV vertices arent expected to be unique
-	array<u32> vArray(deshi_temp_allocator); //index in unique array
-	array<u32> vnArray(deshi_temp_allocator);
-	array<u32> oArray(deshi_temp_allocator);
-	array<u32> gArray(deshi_temp_allocator);
-	array<u32> uArray(deshi_temp_allocator);
-	array<u32> mArray(deshi_temp_allocator);
-	array<MeshIndex>    indexes(deshi_temp_allocator);
-	array<MeshTriangle> triangles(deshi_temp_allocator);
-	array<MeshFace>     faces(deshi_temp_allocator);
-	array<array<pair<u32,u8>>> triNeighbors(deshi_temp_allocator);
-	array<array<u32>> faceTriangles(deshi_temp_allocator);
-	array<set<u32>>   faceVertexes(deshi_temp_allocator);
-	array<array<u32>> faceOuterVertexes(deshi_temp_allocator);
-	array<array<u32>> faceTriNeighbors(deshi_temp_allocator);
-	array<array<u32>> faceFaceNeighbors(deshi_temp_allocator);
+	arrayT<vec2> vtArray(deshi_temp_allocator); //NOTE UV vertices arent expected to be unique
+	arrayT<u32> vArray(deshi_temp_allocator); //index in unique array
+	arrayT<u32> vnArray(deshi_temp_allocator);
+	arrayT<u32> oArray(deshi_temp_allocator);
+	arrayT<u32> gArray(deshi_temp_allocator);
+	arrayT<u32> uArray(deshi_temp_allocator);
+	arrayT<u32> mArray(deshi_temp_allocator);
+	arrayT<MeshIndex>    indexes(deshi_temp_allocator);
+	arrayT<MeshTriangle> triangles(deshi_temp_allocator);
+	arrayT<MeshFace>     faces(deshi_temp_allocator);
+	arrayT<arrayT<pair<u32,u8>>> triNeighbors(deshi_temp_allocator);
+	arrayT<arrayT<u32>> faceTriangles(deshi_temp_allocator);
+	arrayT<set<u32>>   faceVertexes(deshi_temp_allocator);
+	arrayT<arrayT<u32>> faceOuterVertexes(deshi_temp_allocator);
+	arrayT<arrayT<u32>> faceTriNeighbors(deshi_temp_allocator);
+	arrayT<arrayT<u32>> faceFaceNeighbors(deshi_temp_allocator);
 	u32 totalTriNeighbors      = 0;
 	u32 totalFaceVertexes      = 0;
 	u32 totalFaceOuterVertexes = 0;
@@ -1333,7 +1333,7 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 				triangle.face = (u32)-1;
 				triangle.normal = (triangle.p[0] - triangle.p[1]).cross(triangle.p[0] - triangle.p[2]).normalized();
 				triangles.add(triangle);
-				triNeighbors.add(array<pair<u32,u8>>(deshi_temp_allocator));
+				triNeighbors.add(arrayT<pair<u32,u8>>(deshi_temp_allocator));
 				
 				//triangle neighbors
 				for(u32 oti=0; oti<triangles.count-1; ++oti){
@@ -1452,11 +1452,11 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		//create face and add base triange to it
 		u32 cfi = faces.count;
 		faces.add(MeshFace{});
-		faceTriangles.add(array<u32>(deshi_temp_allocator));
+		faceTriangles.add(arrayT<u32>(deshi_temp_allocator));
 		faceVertexes.add(set<u32>(deshi_temp_allocator));
-		faceOuterVertexes.add(array<u32>(deshi_temp_allocator));
-		faceTriNeighbors.add(array<u32>(deshi_temp_allocator));
-		faceFaceNeighbors.add(array<u32>(deshi_temp_allocator));
+		faceOuterVertexes.add(arrayT<u32>(deshi_temp_allocator));
+		faceTriNeighbors.add(arrayT<u32>(deshi_temp_allocator));
+		faceFaceNeighbors.add(arrayT<u32>(deshi_temp_allocator));
 		faces[cfi].normal = triangles[bti].normal;
 		triangles[bti].face = cfi;
 		faceTriangles[cfi].add(bti);
@@ -1465,7 +1465,7 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		faceVertexes[cfi].add(triangles[bti].v[2],triangles[bti].v[2]);
 		totalFaceVertexes += 3;
 		
-		array<u32> check_tris({(u32)bti});
+	arrayT<u32> check_tris({(u32)bti});
 		forX(check_tri_idx, check_tris.count){
 			u32 cti = check_tris[check_tri_idx];
 			forX(nei_tri_idx, triNeighbors[cti].count){
@@ -1705,10 +1705,10 @@ assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){D
 	set<pair<u32,str8>> gUnique(deshi_temp_allocator);
 	set<pair<u32,str8>> uUnique(deshi_temp_allocator);
 	set<pair<u32,str8>> mUnique(deshi_temp_allocator);
-	array<u32> oArray(deshi_temp_allocator); //index in unique array
-	array<u32> gArray(deshi_temp_allocator);
-	array<u32> uArray(deshi_temp_allocator);
-	array<u32> mArray(deshi_temp_allocator);
+	arrayT<u32> oArray(deshi_temp_allocator); //index in unique array
+	arrayT<u32> gArray(deshi_temp_allocator);
+	arrayT<u32> uArray(deshi_temp_allocator);
+	arrayT<u32> mArray(deshi_temp_allocator);
 	b32 mtllib_found = false;
 	u32 index_count = 0;
 	

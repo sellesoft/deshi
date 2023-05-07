@@ -890,16 +890,16 @@ struct uiContext{
 	
 	//// memory ////
 	//b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
-	array<uiItem*> items;
-	array<uiItem*> immediate_items;
+	arrayT<uiItem*> items;
+	arrayT<uiItem*> immediate_items;
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
-	array<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
-	array<uiDrawCmd*> inactive_drawcmds_index_sorted;
+	arrayT<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
+	arrayT<uiDrawCmd*> inactive_drawcmds_index_sorted;
 	
 	Arena* vertex_arena; // arena of Vertex2
 	Arena* index_arena; // arena of u32
 	RenderTwodBuffer render_buffer;
-	array<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
+	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 	
 	struct{
 		//visible on screen

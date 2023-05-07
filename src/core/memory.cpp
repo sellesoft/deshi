@@ -14,8 +14,8 @@
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_vars
 #if MEMORY_TRACK_ALLOCS
-local array<AllocInfo> alloc_infos_active(stl_allocator); //uses libc so it is external the system
-local array<AllocInfo> alloc_infos_inactive(stl_allocator);
+local arrayT<AllocInfo> alloc_infos_active(stl_allocator); //uses libc so it is external the system
+local arrayT<AllocInfo> alloc_infos_inactive(stl_allocator);
 #endif //MEMORY_TRACK_ALLOCS
 
 

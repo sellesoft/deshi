@@ -495,7 +495,7 @@ platform_init(){DPZoneScoped;
 	win32_file_data_folder = (wchar_t*)memory_alloc((win32_file_data_folder_len+1)*sizeof(wchar_t));
 	CopyMemory(win32_file_data_folder, wpath, win32_file_data_folder_len*sizeof(wchar_t));
 	
-	file_files = array<File*>(deshi_allocator);
+	file_files = arrayT<File*>(deshi_allocator);
 	
 	//create data directories
 	file_create(str8_lit("data/"));
@@ -1033,7 +1033,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 	forI(directory_slash.count) if(directory_slash.str[i] == '\\') directory_slash.str[i] = '/';
 	
 	ULARGE_INTEGER size, time;
-	array<File> result(deshi_temp_allocator);
+	arrayT<File> result(deshi_temp_allocator);
 	while(next != INVALID_HANDLE_VALUE){
 		if((wcscmp(data.cFileName, L".") == 0) || (wcscmp(data.cFileName, L"..") == 0)){
 			if(::FindNextFileW(next, &data) == 0) break;

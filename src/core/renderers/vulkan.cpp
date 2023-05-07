@@ -74,8 +74,8 @@ struct QueueFamilyIndices{
 
 struct SwapChainSupportDetails{
 	VkSurfaceCapabilitiesKHR  capabilities;
-	array<VkSurfaceFormatKHR> formats;
-	array<VkPresentModeKHR>   presentModes;
+	arrayT<VkSurfaceFormatKHR> formats;
+	arrayT<VkPresentModeKHR>   presentModes;
 };
 
 struct FrameVk{
@@ -111,9 +111,9 @@ StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
 StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
 StaticAssertAlways(sizeof(RenderModelIndex) == 4);
 
-local array<RenderMesh>  vkMeshes(deshi_allocator);
-local array<TextureVk>   textures(deshi_allocator);
-local array<MaterialVk>  vkMaterials(deshi_allocator);
+local arrayT<RenderMesh>  vkMeshes(deshi_allocator);
+local arrayT<TextureVk>   textures(deshi_allocator);
+local arrayT<MaterialVk>  vkMaterials(deshi_allocator);
 local vec4 vkLights[10]{ Vec4(0,0,0,-1) };
 
 local bool initialized      = false;
@@ -152,7 +152,7 @@ local char* deviceExtensions[] = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
 	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
 };
-local array<VkValidationFeatureEnableEXT> validationFeaturesEnabled;
+local arrayT<VkValidationFeatureEnableEXT> validationFeaturesEnabled;
 
 local VkDebugUtilsMessageSeverityFlagsEXT callbackSeverities = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -173,7 +173,7 @@ struct VkSwapchain{
 	Window*                  window         = 0;
 	u32                      imageCount     = 0;
 	u32                      frameIndex     = 0;
-	array<FrameVk>           frames;
+	arrayT<FrameVk>           frames;
 	FramebufferAttachmentsVk attachments{};
 };
 
@@ -293,11 +293,11 @@ local VkPipelineVertexInputStateCreateInfo   vertexInputState{VK_STRUCTURE_TYPE_
 local VkPipelineVertexInputStateCreateInfo   twodVertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
 local VkPipelineDynamicStateCreateInfo       dynamicState{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
 local VkGraphicsPipelineCreateInfo           pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
-local array<VkDynamicState>                    dynamicStates(deshi_allocator);
-local array<VkVertexInputBindingDescription>   vertexInputBindings(deshi_allocator);
-local array<VkVertexInputAttributeDescription> vertexInputAttributes(deshi_allocator);
-local array<VkVertexInputBindingDescription>   twodVertexInputBindings(deshi_allocator);
-local array<VkVertexInputAttributeDescription> twodVertexInputAttributes(deshi_allocator);
+local arrayT<VkDynamicState>                    dynamicStates(deshi_allocator);
+local arrayT<VkVertexInputBindingDescription>   vertexInputBindings(deshi_allocator);
+local arrayT<VkVertexInputAttributeDescription> vertexInputAttributes(deshi_allocator);
+local arrayT<VkVertexInputBindingDescription>   twodVertexInputBindings(deshi_allocator);
+local arrayT<VkVertexInputAttributeDescription> twodVertexInputAttributes(deshi_allocator);
 
 local struct{ //pipelines
 	union{
@@ -852,7 +852,7 @@ CreateInstance(){DPZoneScoped;
 		
 		u32 layerCount = 0;
 		vkEnumerateInstanceLayerProperties(&layerCount, 0);
-		array<VkLayerProperties> availableLayers(layerCount, deshi_temp_allocator);
+	arrayT<VkLayerProperties> availableLayers(layerCount, deshi_temp_allocator);
 		availableLayers.count = layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data);
 		
@@ -895,17 +895,17 @@ CreateInstance(){DPZoneScoped;
 	
 #if DESHI_WINDOWS
 	u32 extensionCount = 2;
-	array<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+	arrayT<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
 #elif DESHI_LINUX
 	u32 extensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-	array<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	arrayT<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 #elif DESHI_MAC
 	u32 extensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-	array<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	arrayT<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 #endif
 	
 #if BUILD_INTERNAL
@@ -985,7 +985,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 	
 	u32 deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, 0);
-	array<VkPhysicalDevice> devices(deviceCount, deshi_temp_allocator);
+	arrayT<VkPhysicalDevice> devices(deviceCount, deshi_temp_allocator);
 	devices.count = deviceCount;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data);
 	
@@ -997,7 +997,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 			
 			u32 queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, 0);
-			array<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, deshi_temp_allocator);
+	arrayT<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, deshi_temp_allocator);
 			queueFamilies.count = queueFamilyCount;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data);
 			
@@ -1017,7 +1017,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 		{//check if device supports enabled/required extensions
 			u32 extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, 0, &extensionCount, 0);
-			array<VkExtensionProperties> availableExtensions(extensionCount, deshi_temp_allocator);
+	arrayT<VkExtensionProperties> availableExtensions(extensionCount, deshi_temp_allocator);
 			availableExtensions.count = extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, 0, &extensionCount, availableExtensions.data);
 			
@@ -1070,7 +1070,7 @@ CreateLogicalDevice(){DPZoneScoped;
 	
 	//setup device queue create infos
 	f32 queuePriority = 1.0f;
-	array<VkDeviceQueueCreateInfo> queueCreateInfos(deshi_temp_allocator);
+	arrayT<VkDeviceQueueCreateInfo> queueCreateInfos(deshi_temp_allocator);
 	VkDeviceQueueCreateInfo queueCreateInfo{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
 	queueCreateInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value;
 	queueCreateInfo.queueCount       = 1;
@@ -1460,7 +1460,7 @@ CreateFrames(){DPZoneScoped;
 		//create the framebuffers
 		if(activeSwapchain.frames[i].framebuffer) vkDestroyFramebuffer(device, activeSwapchain.frames[i].framebuffer, allocator);
 		
-		array<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
+	arrayT<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
 		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
 			frameBufferAttachments = { activeSwapchain.attachments.colorImageView, activeSwapchain.attachments.depthImageView, activeSwapchain.frames[i].imageView };
 		}else{
@@ -3656,7 +3656,7 @@ render_load_material(Material* material){DPZoneScoped;
 						 toStr("Material descriptor set ",material->name).str);
 	
 	//write descriptor set per texture
-	array<VkWriteDescriptorSet> sets;
+	arrayT<VkWriteDescriptorSet> sets;
 	if(material->textureArray){
 		for_stb_array(material->textureArray){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -3711,7 +3711,7 @@ render_update_material(Material* material){DPZoneScoped;
 	mvk->pipeline = GetPipelineFromShader(material->shader);
 	
 	//update descriptor set per texture
-	array<VkWriteDescriptorSet> sets;
+	arrayT<VkWriteDescriptorSet> sets;
 	if(material->textureArray){
 		for_stb_array(material->textureArray){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};

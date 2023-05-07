@@ -660,7 +660,7 @@ void generate_path(Agent* agent, vec2i target){
 	//BEGIN_ALGORITHM: A* with uniform tile movement cost
 	b32 valid_path = false;
 	map<vec2i,u8> directions(deshi_temp_allocator); //<pos,direction> (direction = previous path tile -> this tile)
-	array<pair<vec2i,u32>> frontier(128,deshi_temp_allocator); //priority stack (lowest prio -> highest prio)
+	arrayT<pair<vec2i,u32>> frontier(128,deshi_temp_allocator); //priority stack (lowest prio -> highest prio)
 	frontier.add({agent->entity.pos,0});
 	
 	//iterate frontier (tiles not yet assigned a direction towards the path start)
@@ -702,7 +702,7 @@ void generate_path(Agent* agent, vec2i target){
 	//create the path and give it to the agent
 	if(valid_path){
 		vec2i current = target;
-		array<u8> path(32,&deshi_allocator_no_release);
+	arrayT<u8> path(32,&deshi_allocator_no_release);
 		while(!vec2i_equal(current, agent->entity.pos)){
 			u8 direction = *directions.at(current);
 			path.add(direction);
@@ -762,8 +762,8 @@ void delete_entity(Entity* entity){
 	}
 }
 
-array<Advert*> collect_adverts(Agent* agent){
-	array<Advert*> adverts(deshi_temp_allocator);
+arrayT<Advert*> collect_adverts(Agent* agent){
+	arrayT<Advert*> adverts(deshi_temp_allocator);
 	for_pool(adverts_pool){
 		if(!it->def) continue;
 		if(vec2i_distanceToSq(agent->entity.pos,it->owner->pos) <= it->def->rangeSq){
@@ -1164,7 +1164,7 @@ void update_simulation(){
 			}
 			
 			if(agent->active_advert == 0){
-				array<Advert*> adverts = collect_adverts(agent);
+	arrayT<Advert*> adverts = collect_adverts(agent);
 				agent->active_advert = select_advert(agent, adverts.data, adverts.count);
 			}
 		}
@@ -1260,7 +1260,7 @@ Entity* get_entity_under_mouse(){
 }
 
 // allocates a temporary string
-str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
+str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
 	str8b build;
 	str8_builder_init(&build, {0}, deshi_temp_allocator);
 	

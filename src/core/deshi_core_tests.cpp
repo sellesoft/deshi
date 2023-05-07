@@ -469,7 +469,7 @@ local void TEST_deshi_core_memory(){
 	}
 	
 	{//// default to libc when running out of memory in generic heap ////
-		array<void*> setup;
+	arrayT<void*> setup;
 		void *alloc2, *alloc3;
 		
 		//use up all but 1KB of generic heap for setup

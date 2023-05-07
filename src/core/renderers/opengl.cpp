@@ -63,10 +63,10 @@ StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
 StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
 StaticAssertAlways(sizeof(RenderModelIndex) == 4);
 
-local array<RenderMesh> glMeshes(deshi_allocator);
-local array<ShaderGl>   glShaders(deshi_allocator);
-local array<TextureGl>  glTextures(deshi_allocator);
-local array<MaterialGl> glMaterials(deshi_allocator);
+local arrayT<RenderMesh> glMeshes(deshi_allocator);
+local arrayT<ShaderGl>   glShaders(deshi_allocator);
+local arrayT<TextureGl>  glTextures(deshi_allocator);
+local arrayT<MaterialGl> glMaterials(deshi_allocator);
 
 local s32  width  = 0;
 local s32  height = 0;

@@ -83,7 +83,7 @@ struct matN {
 	u32 rows;
 	u32 cols;
 	u32 elementCount;
-	array<f64> data;
+	arrayT<f64> data;
 	
 	matN() { rows = 0; cols = 0; elementCount = 0; }
 	matN(u32 _rows, u32 _cols) {
@@ -91,7 +91,7 @@ struct matN {
 		elementCount = _rows * _cols;
 		forI(elementCount) data.add(0);
 	};
-	matN(u32 _rows, u32 _cols, array<f64> list) {
+	matN(u32 _rows, u32 _cols, arrayT<f64> list) {
 		Assert(list.count == _rows * _cols);
 		rows = _rows; cols = _cols;
 		elementCount = _rows * _cols;
@@ -122,7 +122,7 @@ struct matN {
 	friend matN operator * (const f64& lhs, const matN& rhs) { return rhs * lhs; }
 	
 	matN Transpose() const;
-	matN Submatrix(array<u32> inRows, array<u32> inCols) const;
+	matN Submatrix(arrayT<u32> inRows, arrayT<u32> inCols) const;
 	f64  Minor(int row, int col) const;
 	f64  Cofactor(int row, int col) const;
 	matN Adjoint() const;
@@ -162,7 +162,7 @@ struct matN {
 
 //matN::matN(u32 _rows, u32 _cols)
 //
-//matN::matN(u32 _rows, u32 _cols, array<f64> list)
+//matN::matN(u32 _rows, u32 _cols, arrayT<f64> list)
 
 
 //// Operators ////
@@ -396,7 +396,7 @@ Transpose() const {
 //returns a matrix only with the specified rows and cols
 //NOTE 0...n-1 not 1...n
 inline matN matN::
-Submatrix(array<u32> inRows, array<u32> inCols) const {
+Submatrix(arrayT<u32> inRows, arrayT<u32> inCols) const {
 	Assert(inRows.size() != 0 && inCols.size() > 0, "matN submatrix cant be performed with zero dimensions");
 	matN newMatrix(inRows.size(), inCols.size());
 	for (int i = 0; i < inRows.size(); ++i) {
@@ -426,8 +426,6 @@ Minor(int row, int col) const {
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
 inline f64 matN::
-
-
 Cofactor(int row, int col) const {
 	if ((row + col) % 2) {
 		return -Minor(row, col);

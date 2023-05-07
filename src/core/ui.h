@@ -518,7 +518,7 @@ struct UIItem_old {
 	vec2 size;
 	
 	//all draw command positions are relative to the items position
-	array<UIDrawCmd> drawCmds;
+	arrayT<UIDrawCmd> drawCmds;
 	
 	//this is only used when the item is a child window
 	UIWindow* child = 0;
@@ -599,10 +599,10 @@ struct UIWindow {
 	
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
-	array<UIItem_old> items[UI_WINDOW_ITEM_LAYERS];
-	array<UIItem_old> preItems;
-	array<UIItem_old> postItems;
-	array<UIItem_old> popOuts;
+	arrayT<UIItem_old> items[UI_WINDOW_ITEM_LAYERS];
+	arrayT<UIItem_old> preItems;
+	arrayT<UIItem_old> postItems;
+	arrayT<UIItem_old> popOuts;
 	
 	u32 layer = 5;
 	
@@ -652,7 +652,7 @@ struct UIColumn {
 	f32  max_width = 0;
 	b32  reeval_width = 0;
 	vec2 alignment = Vec2(-1,-1);
-	array<UIItem_old*> items;
+	arrayT<UIItem_old*> items;
 };
 
 struct UIRow {
@@ -677,7 +677,7 @@ struct UIRow {
 	vec2 position;
 	
 	u32 item_count = 0;
-	array<UIColumn> columns;
+	arrayT<UIColumn> columns;
 };
 
 struct UIStats {
@@ -858,18 +858,18 @@ namespace UI {
 	void BeginRow(str8 label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
 	//takes an array of size equal to the number of columns specified and sets their widths to the specified sizes in pixels
-	void RowSetupColumnWidths(array<f32> widths);
+	void RowSetupColumnWidths(arrayT<f32> widths);
 	//sets one columns width in pixels
 	void RowSetupColumnWidth(u32 column, f32 width);
 	//sets a columns width relative to the size of the item it holds. 
 	//for example 1 will make the columns width 30 when it holds an item of width 30, 2 will make the columns width 60
 	void RowSetupRelativeColumnWidth(u32 column, f32 width);
 	//takes an array of size equal to the number of columns specified and sets their widths relative to the item they hold 
-	void RowSetupRelativeColumnWidths(array<f32> widths);
+	void RowSetupRelativeColumnWidths(arrayT<f32> widths);
 	//TODO
-	void RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge);
+	void RowFitBetweenEdges(arrayT<f32> ratios, f32 left_edge, f32 right_edge);
 	//sets individual item alignments for each column
-	void RowSetupColumnAlignments(array<vec2> alignments);
+	void RowSetupColumnAlignments(arrayT<vec2> alignments);
 	
 	
 	//// drawing ////

@@ -77,20 +77,20 @@ local map<str8, UIMenu>           menus;       //stores known menus
 local map<str8, UIRow>            rows;        //stores known Rows
 local map<str8, b32>              combos;      //stores known combos and if they are open or not
 local map<str8, b32>              sliders;     //stores whether a slider is being actively changed
-local array<UIWindow*>            windowStack; 
-local array<UIHeader*>            headerStack;
-local array<ColorMod>             colorStack; 
-local array<UIVarMod>             varStack; 
-local array<vec2>                 scaleStack;  //global scales
-local array<Font*>                fontStack;
-local array<u32>                  layerStack;
-local array<f32>                  leftIndentStack{ 0 }; //stores global indentations
-local array<f32>                  rightIndentStack{ 0 }; //stores global indentations
-local array<u32>                  drawTargetStack{ 0 }; //stores draw target indexes for the renderer
+local arrayT<UIWindow*>            windowStack; 
+local arrayT<UIHeader*>            headerStack;
+local arrayT<ColorMod>             colorStack; 
+local arrayT<UIVarMod>             varStack; 
+local arrayT<vec2>                 scaleStack;  //global scales
+local arrayT<Font*>                fontStack;
+local arrayT<u32>                  layerStack;
+local arrayT<f32>                  leftIndentStack{ 0 }; //stores global indentations
+local arrayT<f32>                  rightIndentStack{ 0 }; //stores global indentations
+local arrayT<u32>                  drawTargetStack{ 0 }; //stores draw target indexes for the renderer
 
 local u32 itemFlags[UIItemType_COUNT]; //stores the default flags for every item that supports flagging, these can be set using SetItemFlags
 
-local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
+local arrayT<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
@@ -865,7 +865,7 @@ void UI::RowSetupColumnWidth(u32 column, f32 width){DPZoneScoped;
 }
 
 //this function sets up static column widths that do not respect the size of the item at all
-void UI::RowSetupColumnWidths(array<f32> widths){DPZoneScoped;
+void UI::RowSetupColumnWidths(arrayT<f32> widths){DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(widths.count == curRow->columns.count, "Passed in the wrong amount of column widths for in progress Row");
 	if(!HasFlag(curRow->flags, UIRowFlags_AutoSize))
@@ -884,7 +884,7 @@ void UI::RowSetupRelativeColumnWidth(u32 column, f32 width){DPZoneScoped;
 //this function sets it so that column widths are relative to the size of the item the cell holds
 //meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
 //1.2 * width of the item
-void UI::RowSetupRelativeColumnWidths(array<f32> widths){DPZoneScoped;
+void UI::RowSetupRelativeColumnWidths(arrayT<f32> widths){DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(widths.count == curRow->columns.count, "Passed in the wrong amount of column widths for in progress Row");
 	if(!HasFlag(curRow->flags, UIRowFlags_AutoSize))
@@ -892,7 +892,7 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths){DPZoneScoped;
 		curRow->columns[i] = { widths[i], true };
 }
 
-void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge){DPZoneScoped;
+void UI::RowFitBetweenEdges(arrayT<f32> ratios, f32 left_edge, f32 right_edge){DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(ratios.count == curRow->columns.count);
 	//AddFlag(curRow->flags, UIRowFlags_FitWidthOfArea);
@@ -907,7 +907,7 @@ void UI::RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge){DP
 	Assert(1 - ratio_sum < 0.999998888f, "ratios given do not add up to one!");
 }
 
-void UI::RowSetupColumnAlignments(array<vec2> alignments){DPZoneScoped;
+void UI::RowSetupColumnAlignments(arrayT<vec2> alignments){DPZoneScoped;
 	Assert(StateHasFlag(UISRowBegan), "Attempted to pass column widths without first calling BeginRow()!");
 	Assert(alignments.count == curRow->columns.count);
 	forI(curRow->columns.count)
@@ -3346,7 +3346,7 @@ UIWindow* DisplayMetrics(){DPZoneScoped;
 	persist UIWindow* mostitems = windows.data[0];
 	persist UIWindow* longname = windows.data[0];
 	
-	array<UIWindow*> winsorted;
+	arrayT<UIWindow*> winsorted;
 	for(UIWindow* win : windows){
 		//TODO optional metrics filter or allow text filtering 
 		//if(!(win->name == "METRICS")){

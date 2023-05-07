@@ -111,7 +111,7 @@ struct ThreadManager{
     u64 idle_count; //count of idling threads. NOTE(sushi) this is a count of threads waiting on the idle condition variable and does not represent how many threads are sleeping overall
     mutex idle_count_lock; 
     ring_array<ThreadJob> job_ring; 
-    array<Thread*> threads; //TODO arena threads instead of using memalloc
+ arrayT<Thread*> threads; //TODO arena threads instead of using memalloc
 
     //queue of threads that are waiting to be woken up 
     ring_array<condvar*> wake_up_queue;
