@@ -151,13 +151,14 @@ ui_graph_gen_cartesian(uiItem* item){
 	scalar_t minor_left_edge_rounded = ceil(top_left.x / x_minor_increment_scaled) * x_minor_increment_scaled;
 	scalar_t minor_top_edge_rounded  = ceil(top_left.y / y_minor_increment_scaled) * y_minor_increment_scaled;
 	
+	u64 x_minor_line_count = (u64)floor((bot_right.x - minor_left_edge_rounded) / x_minor_increment_scaled);
+	u64 y_minor_line_count = (u64)floor((bot_right.y - minor_top_edge_rounded ) / y_minor_increment_scaled);
+	
 	scalar_t x_major_increment_scaled = graph->x_major_gridline_increment * power_of_ten;
 	scalar_t y_major_increment_scaled = graph->y_major_gridline_increment * power_of_ten;
 	scalar_t major_left_edge_rounded = ceil(top_left.x / x_major_increment_scaled) * x_major_increment_scaled;
 	scalar_t major_top_edge_rounded  = ceil(top_left.y / y_major_increment_scaled) * y_major_increment_scaled;
 	
-	u64 x_minor_line_count = (u64)floor((bot_right.x - minor_left_edge_rounded) / x_minor_increment_scaled);
-	u64 y_minor_line_count = (u64)floor((bot_right.y - minor_top_edge_rounded ) / y_minor_increment_scaled);
 	u64 x_major_line_count = (u64)floor((bot_right.x - major_left_edge_rounded) / x_major_increment_scaled);
 	u64 y_major_line_count = (u64)floor((bot_right.y - major_top_edge_rounded ) / y_major_increment_scaled);
 	
@@ -255,8 +256,9 @@ ui_graph_gen_cartesian(uiItem* item){
 		vec2 item_margin_top_left   = floor(item->style.margintl * item->scale);
 		vec2 item_margin_bot_right  = floor(item->style.marginbr * item->scale);
 		vec2 item_border_size       = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
+		vec2 item_content_size      = floor(item->style.size);
 		vec2 item_content_top_left  = item->pos_screen + item_margin_top_left + item_border_size;
-		vec2 item_content_bot_right = item->pos_screen + floor(item->style.size) - item_margin_bot_right - item_border_size;
+		vec2 item_content_bot_right = item->pos_screen + item_content_size - item_margin_bot_right - item_border_size;
 		
 		//background
 		counts += ui_gen_background(item, vp, ip, counts);
@@ -307,28 +309,30 @@ ui_graph_gen_cartesian(uiItem* item){
 			}
 		}
 		if(graph->x_major_gridline_coords_shown){
+			//TODO coordinates
 		}
 		if(graph->y_major_gridline_coords_shown){
+			//TODO coordinates
 		}
 		
 		//x axis
 		if(graph->x_axis_shown){
-			scalar_t offset = round((0 - item_content_top_left.y) * graph->unit_length.y);
-			vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
+			vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + round(item_content_size.y/2.0f));
 			vec2 size = Vec2(dims.x, 1);
 			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_axis_color);
 		}
 		if(graph->x_axis_coords_shown){
+			//TODO coordinates
 		}
 		
 		//y axis
 		if(graph->y_axis_shown){
-			scalar_t offset = round((0 - item_content_top_left.x) * graph->unit_length.x);
-			vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
+			vec2 pos  = Vec2(item_content_top_left.x + round(item_content_size.x/2.0f), item_content_top_left.y);
 			vec2 size = Vec2(1, dims.y);
 			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_axis_color);
 		}
 		if(graph->y_axis_coords_shown){
+			//TODO coordinates
 		}
 		
 		//axes labels
@@ -345,6 +349,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		
 		//data
 		if(graph->points_array){
+			//TODO data graphing
 		}
 		
 		//border
