@@ -572,7 +572,7 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 		mesh->triangleArray[ti].edgeArray     = (u8*) (mesh->triangleArray[ti-1].edgeArray + mesh->triangleArray[ti-1].neighborCount);
 	}
 	mesh->faceArray[0].triangleArray         = (u32*)(mesh->triangleArray[0].edgeArray         + mesh->totalTriNeighborCount);
-	mesh->faceArray[0].vertexArray           = (u32*)(mesh->faceArray[0].triangleArray         + mesh->triangleArray.count);
+	mesh->faceArray[0].vertexArray           = (u32*)(mesh->faceArray[0].triangleArray         + mesh->triangleCount);
 	mesh->faceArray[0].outerVertexArray      = (u32*)(mesh->faceArray[0].vertexArray           + mesh->totalFaceVertexCount);
 	mesh->faceArray[0].neighborTriangleArray = (u32*)(mesh->faceArray[0].outerVertexArray      + mesh->totalFaceOuterVertexCount);
 	mesh->faceArray[0].neighborFaceArray     = (u32*)(mesh->faceArray[0].neighborTriangleArray + mesh->totalFaceTriNeighborCount);

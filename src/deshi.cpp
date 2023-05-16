@@ -195,6 +195,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 #define UNICODE
 #define _UNICODE
 
+#include <ctime>
 #include "kigu/common.h"
 #include "core/memory.h" //NOTE(delle) this is included above everything so things can reference deshi_allocator
 
@@ -320,14 +321,18 @@ local DeshiStage deshiStage = DS_NONE;
 #  include <timeapi.h>
 #  include "core/platforms/win32_deshi.cpp"
 #elif DESHI_LINUX // DESHI_WINDOWS
-namespace X11 {
-#  include "X11/Xlib.h" // TODO(sushi) Wayland implementation
+#  include "unistd.h" // misc stuff, apparently. used for file stuff
+#  include "sys/mman.h" // for mapping virtual memory with mmap
+#  include "wctype.h" // unicode string manip functions that we should probably replace
+namespace X11 { 
+    // windowing api. for whatever reason, X defines a lot of things with very simple names
+    // such as Window, Font, etc. which conflict with our stuff, so we need to put it in a namespace
+#  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
 #  include "X11/Xutil.h"
 #  include "X11/Xos.h"
 }
-#  include "sys/mman.h"
-#  include "wctype.h" // unicode string manip functions that we should probably replace
-#  include "core/platforms/linux_deshi.cpp"
+#  undef None // X defines this for whatever reason
+#  include "core/platforms/linux_deshi.cpp" 
 #elif DESHI_MAC // DESHI_LINUX
 #  include <GLFW/glfw3.h>
 #  include "core/platforms/osx_deshi.cpp"

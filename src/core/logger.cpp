@@ -1,6 +1,6 @@
 //NOTE(delle) these are used in logger_init() for setting Win32 stdout mode to UTF16
 #include <fcntl.h>
-#include <ctime>
+//#include <ctime>
 #include <clocale>
 
 //NOTE(delle) customize this as you see fit locally, but it should be 1 on commit
@@ -166,7 +166,10 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	setvbuf(logger.file->handle,0,_IONBF,0);
 #endif
 	
-	fflush(stdout); _setmode(_fileno(stdout), _O_U16TEXT); //NOTE(delle) enables Unicode printing to stdout on Windows
+	fflush(stdout); 
+#if DESHI_WINDOWS
+	_setmode(_fileno(stdout), _O_U16TEXT); //NOTE(delle) enables Unicode printing to stdout on Windows
+#endif
 	setlocale(LC_ALL, ".utf8");
 	
 	DeshiStageInitEnd(DS_LOGGER);
@@ -182,7 +185,10 @@ logger_update(){DPZoneScoped;
 void
 logger_cleanup(){DPZoneScoped;
 	file_deinit(logger.file);
-	fflush(stdout); _setmode(_fileno(stdout), _O_TEXT); //NOTE(delle) disable Unicode printing to stdout on Windows
+	fflush(stdout); 
+#if DESHI_WINDOWS
+	_setmode(_fileno(stdout), _O_TEXT); //NOTE(delle) disable Unicode printing to stdout on Windows
+#endif
 	logger.file = 0;
 }
 

@@ -1,21 +1,21 @@
 ﻿/* deshi Win32 Platform Backend
 Index:
-@win32_vars
-@win32_helpers
-@win32_callback
-@win32_platform
-@win32_stopwatch
-@win32_file
-@win32_modules
-@win32_clipboard
-@win32_threading
-@win32_window
-@win32_networking
+@vars
+@helpers
+@callback
+@platform
+@stopwatch
+@file
+@modules
+@clipboard
+@threading
+@window
+@networking
 */
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_vars
+//// @vars
 local s64 win32_perf_count_frequency;
 local wchar_t* win32_file_data_folder;
 local s32 win32_file_data_folder_len;
@@ -24,7 +24,7 @@ local b32 win32_delayed_activate;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_helpers
+//// @helpers
 //NOTE(delle) ideally we'd do this with a static C array, but C++ doesn't support out of order array init
 //NOTE(delle) FORCE_INLINE because it's only used in one place
 FORCE_INLINE KeyCode
@@ -159,7 +159,7 @@ win32_enable_cursor(Window* window){
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_callback
+//// @callback
 LRESULT CALLBACK
 win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
 	Window* window = (Window*)::GetWindowLongPtrW(hwnd, GWLP_USERDATA);
@@ -471,7 +471,7 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_platform
+//// @platform
 #define DESHI_HELPER_WNDCLASSNAME L"_DESHI_HELPER_WINDOW_"
 #define DESHI_RENDER_WNDCLASSNAME L"_DESHI_RENDER_WINDOW_"
 void
@@ -676,7 +676,7 @@ platform_process_write(Process p, upt address, void* data, upt size){
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_stopwatch
+//// @stopwatch
 Stopwatch
 start_stopwatch(){DPZoneScoped;
 	LARGE_INTEGER current;
@@ -693,7 +693,7 @@ peek_stopwatch(Stopwatch watch){DPZoneScoped;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_file
+//// @file
 b32
 deshi__file_exists(str8 caller_file, upt caller_line, str8 path){DPZoneScoped;
 	if(!path || *path.str == 0){
@@ -1453,7 +1453,7 @@ deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* da
 }
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_modules
+//// @modules
 void*
 platform_load_module(str8 module_path){DPZoneScoped;
 	wchar_t* wmodule_path = wchar_from_str8(module_path, 0, deshi_temp_allocator);
@@ -1479,7 +1479,7 @@ platform_get_module_symbol(void* module, const char* symbol_name){DPZoneScoped;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_clipboard
+//// @clipboard
 //!ref: Dear ImGui imgui.cpp@GetClipboardTextFn_DefaultImpl
 str8
 platform_get_clipboard(){DPZoneScoped;
@@ -1538,7 +1538,7 @@ platform_set_clipboard(str8 text){DPZoneScoped;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_threading
+//// @threading
 mutex
 mutex_init(){DPZoneScoped;
 	mutex m;
@@ -1836,7 +1836,7 @@ threader_set_thread_name(str8 name){
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_window
+//// @window
 Window*
 window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode, Decoration decorations){DPZoneScoped;
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
@@ -2085,7 +2085,7 @@ window_set_cursor_position(Window* window, s32 x, s32 y){DPZoneScoped;
 }
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
-//// @win32_networking
+//// @networking
 
 //collection of error codes and their messages, so this list isnt typed out in every function
 //some of these should just never happen but I'm including them just in case

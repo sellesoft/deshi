@@ -1,9 +1,20 @@
-﻿local b32 _resized = false;
-local int _width, _height, _x, _y;
-local int opengl_version;
-local b32 block_mouse_pos_change = false;
+﻿/* deshi Linux Platform Backend
+Index:
+@vars
+@helpers
+@callback
+@platform
+@stopwatch
+@file
+@modules
+@clipboard
+@threading
+@window
+@networking
+*/
 
-
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @vars
 struct{
 	struct{
 		// points to the X server
@@ -13,9 +24,58 @@ struct{
 	}x11;
 }linux;
 
+b32
+deshi__file_exists(str8 caller_file, upt caller_line, str8 path){
+	if(!path || *path.str == 0) {
+		LogE("file", "file_exists() was passed an empty 'path' at ", caller_file, "(", caller_line, ")");
+		return false;
+	}
+	return !access(path.str, F_OK);
+
+}
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @stopwatch
+
+Stopwatch
+start_stopwatch() {
+	timespec current;
+	// I am unsure if 'CLOCK_PROCESS_CPUTIME_ID' is appropriate here.
+	// it is the high resolution clock available from Linux
+	if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current) == -1){
+		switch(errno) {
+			case EFAULT: LogE("stopwatch", "in start_stopwatch(), clock_gettime() was passed a bad address. ERRNO 14: EFAULT"); return 0;
+			case EINVAL: LogE("stopwatch", "in start_stopwatch(), clock_gettime() was given a clk_id that is not supported on this system. ERRNO 22: EINVAL"); return 0;
+		}
+	}
+	return (current.tv_sec*1000000000+current.tv_nsec)/3;
+}
+
+f64 peek_stopwatch(Stopwatch watch) {
+	timespec current;
+	if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current) == -1){
+		switch(errno) {
+			case EFAULT: LogE("stopwatch", "in peek_stopwatch(), clock_gettime() was passed a bad address. ERRNO 14: EFAULT"); return 0;
+			case EINVAL: LogE("stopwatch", "in peek_stopwatch(), clock_gettime() was given a clk_id that is not supported on this system. ERRNO 22: EINVAL"); return 0;
+		}
+	}
+	return (current.tv_sec*1000000000+current.tv_nsec)/3 - watch;
+}
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @platform
+
+void
+platform_init() {
+	DeshiStageInitStart(DS_PLATFORM, DS_MEMORY, "Attempted to initialize Platform module before initializing the Memory module");
 
 
 
+	DeshiStageInitEnd(DS_PLATFORM);
+}
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+//// @window
 Window*
 window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode, Decoration decorations){
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
