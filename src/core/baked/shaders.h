@@ -29,7 +29,7 @@
 //// GLSL uniform buffer object
 #if DESHI_VULKAN
 #  define DESHI_BAKED_SHADERS_UBO_HEADER_STRING(set,binding) \
-"layout(set = "set", binding = "binding") uniform UniformBufferObject{\n"
+"layout(set = " set ", binding = " binding ") uniform UniformBufferObject{\n"
 #elif DESHI_OPENGL
 #  define DESHI_BAKED_SHADERS_UBO_HEADER_STRING(set,binding) \
 "uniform UniformBufferObject{\n"
@@ -92,15 +92,15 @@
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// GLSL sampler
 #if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_SAMPLER2D_STRING(set,binding,name) "layout(set = "set", binding = "binding") uniform sampler2D "name";\n"
+#  define DESHI_BAKED_SHADERS_SAMPLER2D_STRING(set,binding,name) "layout(set = " set ", binding = " binding ") uniform sampler2D " name ";\n"
 #elif DESHI_OPENGL
-#  define DESHI_BAKED_SHADERS_SAMPLER2D_STRING(set,binding,name) "uniform sampler2D "name";\n"
+#  define DESHI_BAKED_SHADERS_SAMPLER2D_STRING(set,binding,name) "uniform sampler2D " name ";\n"
 #endif
 
 #if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_SAMPLER2D_NOSET_STRING(binding,name) "layout(binding = "binding") uniform sampler2D "name";\n"
+#  define DESHI_BAKED_SHADERS_SAMPLER2D_NOSET_STRING(binding,name) "layout(binding = " binding ") uniform sampler2D " name ";\n"
 #elif DESHI_OPENGL
-#  define DESHI_BAKED_SHADERS_SAMPLER2D_NOSET_STRING(binding,name) "uniform sampler2D "name";\n"
+#  define DESHI_BAKED_SHADERS_SAMPLER2D_NOSET_STRING(binding,name) "uniform sampler2D " name ";\n"
 #endif
 
 

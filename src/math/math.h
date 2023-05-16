@@ -441,7 +441,7 @@ namespace Math {
 	
 	template<int decimals = 2> inline global vec3 round(vec3 a){
 		constexpr f32 multiple = f32(pow(10,decimals));
-		return vec3(f32(s32(a.x * multiple + .5f)) / multiple,
+		return Vec3(f32(s32(a.x * multiple + .5f)) / multiple,
 					f32(s32(a.y * multiple + .5f)) / multiple,
 					f32(s32(a.z * multiple + .5f)) / multiple);
 	}

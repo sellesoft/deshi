@@ -1,5 +1,4 @@
 //NOTE(delle) these are used in logger_init() for setting Win32 stdout mode to UTF16
-#include <io.h>
 #include <fcntl.h>
 #include <ctime>
 #include <clocale>
@@ -58,7 +57,7 @@ logger_message_prefix(int cursor, str8 caller_file, upt caller_line, str8 tag, T
 	//caller file and line
 	if(logger.track_caller){
 		cursor += stbsp_snprintf((char*)logger.last_message + cursor, LOGGER_BUFFER_SIZE - cursor,
-								 "%s(%lld): ", (char*)caller_file.str, caller_line);
+								 "%s(%zu): ", (char*)caller_file.str, caller_line);
 	}
 	
 	return cursor;

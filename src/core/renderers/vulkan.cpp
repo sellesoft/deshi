@@ -364,8 +364,8 @@ local struct {
 #define AssertVk(result, ...) Assert((result) == VK_SUCCESS)
 #define AssertRS(stages, ...) Assert((renderStage & (stages)) == (stages))
 #define PrintVk(level, ...) if(renderSettings.loggingLevel >= level){ logger_push_indent(level); Log("vulkan", __VA_ARGS__); logger_pop_indent(level); }(void)0
-#define LogEVk(msg) LogE("render-vulkan", __FUNCTION__ "(): " msg)
-#define LogWVk(msg) LogW("render-vulkan", __FUNCTION__ "(): " msg)
+#define LogEVk(msg) LogE("render-vulkan", __func__, "(): " msg)
+#define LogWVk(msg) LogW("render-vulkan", __func__, "(): " msg)
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
 local inline void 
@@ -897,10 +897,8 @@ CreateInstance(){DPZoneScoped;
 	u32 extensionCount = 2;
 	arrayT<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
 #elif DESHI_LINUX
-	u32 extensionCount = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-	arrayT<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	NotImplemented;
+	arrayT<const char*> extensions;
 #elif DESHI_MAC
 	u32 extensionCount = 0;
 	const char** glfwExtensions;
@@ -962,15 +960,15 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	renderStage |= RSVK_SURFACE;
 	
 	
-#ifdef DESHI_WINDOWS
+#if DESHI_WINDOWS
 	PrintVk(2, "Creating Win32-Vulkan surface");
 	VkWin32SurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
 	info.hwnd = (HWND)win->handle;
 	info.hinstance = (HINSTANCE)win32_console_instance;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
-	PrintVk(2, "Creating glfw-Vulkan surface");
-	resultVk = glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surfaces[renderActiveSurface]); AssertVk(resultVk, "failed to create glfw surface");
+	PrintVk(2, "Creating X11-Vulkan surface");
+	NotImplemented;
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");
 	resultVk = glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surfaces[renderActiveSurface]); AssertVk(resultVk, "failed to create glfw surface");
@@ -2715,7 +2713,7 @@ BuildCommands(){DPZoneScoped;
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
 						offsets[0] = 0;
-						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(VkBuffer)it->vertex_buffer->buffer_handle, offsets);
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, (VkBuffer*)it->vertex_buffer->buffer_handle, offsets);
 						vkCmdBindIndexBuffer(cmdBuffer, (VkBuffer)it->index_buffer->buffer_handle, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
@@ -2800,7 +2798,7 @@ BuildCommands(){DPZoneScoped;
 					if(!it->hidden){
 						mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
 						offsets[0] = 0;
-						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(VkBuffer)it->vertex_buffer->buffer_handle, offsets);
+						vkCmdBindVertexBuffers(cmdBuffer, 0, 1, (VkBuffer*)it->vertex_buffer->buffer_handle, offsets);
 						vkCmdBindIndexBuffer(cmdBuffer, (VkBuffer)it->index_buffer->buffer_handle, 0, INDEX_TYPE_VK_MESH);
 						vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &matrix);
 						vkCmdDrawIndexed(cmdBuffer, it->index_count, 1, 0, 0, 0);
@@ -3054,7 +3052,7 @@ Init(){DPZoneScoped;
 #if DESHI_WINDOWS
 	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
 #elif DESHI_LINUX
-	ImGui_ImplGlfw_InitForVulkan(DeshWindow->window, true);
+	
 #elif DESHI_MAC
 	ImGui_ImplGlfw_InitForVulkan(DeshWindow->window, true);
 #endif
@@ -3104,7 +3102,6 @@ Cleanup(){DPZoneScoped;
 #if DESHI_WINDOWS
 	ImGui_ImplWin32_Shutdown();
 #elif DESHI_LINUX
-	ImGui_ImplGlfw_Shutdown();
 #elif DESHI_MAC
 	ImGui_ImplGlfw_Shutdown();
 #endif
@@ -3118,7 +3115,6 @@ NewFrame(){DPZoneScoped;
 #if DESHI_WINDOWS
 	ImGui_ImplWin32_NewFrame();
 #elif DESHI_LINUX
-	ImGui_ImplGlfw_Shutdown();
 #elif DESHI_MAC
 	ImGui_ImplGlfw_NewFrame();
 #endif
@@ -3845,7 +3841,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		create_info.size        = aligned_buffer_size;
 		create_info.usage       = usage_flags;
 		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		resultVk = vkCreateBuffer(device, &create_info, allocator, &((VkBuffer)result->buffer_handle)); AssertVk(resultVk);
+		resultVk = vkCreateBuffer(device, &create_info, allocator, (VkBuffer*)result->buffer_handle); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)result->buffer_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Buffer").str);
 	}
 	
@@ -3866,7 +3862,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 		alloc_info.allocationSize  = requirements.size;
 		alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
-		resultVk = vkAllocateMemory(device, &alloc_info, allocator, &((VkDeviceMemory)result->memory_handle)); AssertVk(resultVk);
+		resultVk = vkAllocateMemory(device, &alloc_info, allocator, (VkDeviceMemory*)result->memory_handle); AssertVk(resultVk);
 		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
 	}

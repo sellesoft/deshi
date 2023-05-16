@@ -37,7 +37,7 @@ StartLinkageC();
 typedef struct vec2i{
 	//// data ////
 	union{
-		s32 arr[2] = {0};
+		s32 arr[2];
 		struct{ s32 x, y; };
 		struct{ s32 r, g; };
 		struct{ s32 w, h; };
@@ -541,15 +541,15 @@ inline vec2i vec2i_yAdd(vec2i lhs, s32 a){DPZoneScoped;
 typedef struct vec2{
 	//// data ////
 	union{
-		f32 arr[2] = {};
+		f32 arr[2];
 		struct{ f32 x, y; };
 		struct{ f32 r, g; };
 		struct{ f32 w, h; };
 		struct{ f32 u, v; };
 	};
 	
-	
 #ifdef __cplusplus
+
 	//// member constants ////
 	static const vec2 ZERO;
 	static const vec2 ONE;
@@ -1101,7 +1101,7 @@ typedef struct vec3i{
 typedef struct vec3{
 	//// data ////
 	union{
-		f32 arr[3] = {};
+		f32 arr[3];
 		struct{ f32 x, y, z; };
 		struct{ f32 r, g, b; };
 		struct{ vec2 xy; f32 _unusedZ0; };
@@ -1854,7 +1854,7 @@ typedef struct vec4i{
 typedef struct vec4{
 	//// data ////
 	union{
-		f32 arr[4] = {};
+		f32 arr[4];
 		struct{ 
 			union{
 				vec3 xyz;

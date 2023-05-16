@@ -436,7 +436,7 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 
 #define UI_HASH_SEED 2166136261 //32bit FNV_offset_basis (FNV-1a)
 #define UI_HASH_PRIME 16777619 //32bit FNV_prime (FNV-1a)
-#define UI_HASH_VAR(x) seed ^= (s32)(x); seed *= UI_HASH_PRIME
+#define UI_HASH_VAR(x) seed ^= (u64)(x); seed *= UI_HASH_PRIME
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

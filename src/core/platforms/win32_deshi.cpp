@@ -575,7 +575,7 @@ platform_update(){DPZoneScoped; DPFrameMark;
 		if(window_windows[i]->focused){
 			any_window_focused = true;
 			if(window_windows[i]->cursor_mode == CursorMode_FirstPerson){
-				window_cursor_position(window_windows[i], window_windows[i]->center);
+				window_set_cursor_position(window_windows[i], window_windows[i]->center);
 			}
 		}
 	}
@@ -1848,7 +1848,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	if(!window->handle){ win32_log_last_error("CreateWindowExW", true); memory_zfree(window); return 0; }
 	//set Win32 window user data to the deshi Window pointer
 	::SetWindowLongPtrW((HWND)window->handle, GWLP_USERDATA, (LONG_PTR)window);
-	window->dc = ::GetDC((HWND)window->handle);
+	window->context = ::GetDC((HWND)window->handle);
 	
 	//set window decorations
 	window->display_mode = -1;
@@ -2005,7 +2005,7 @@ window_hide(Window* window){DPZoneScoped;
 }
 
 void
-window_title(Window* window, str8 title){DPZoneScoped;
+window_set_title(Window* window, str8 title){DPZoneScoped;
 	::SetWindowTextW((HWND)window->handle, wchar_from_str8(title, 0, deshi_temp_allocator));
 	memory_zfree(window->title.str);
 	window->title = str8_copy(title, deshi_allocator);
@@ -2074,7 +2074,7 @@ window_cursor_type(Window* window, CursorType type){DPZoneScoped;
 }
 
 void
-window_cursor_position(Window* window, s32 x, s32 y){DPZoneScoped;
+window_set_cursor_position(Window* window, s32 x, s32 y){DPZoneScoped;
 	POINT p{x, y};
 	::ClientToScreen((HWND)window->handle, &p);
 	::SetCursorPos(p.x, p.y);

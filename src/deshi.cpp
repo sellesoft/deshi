@@ -320,7 +320,13 @@ local DeshiStage deshiStage = DS_NONE;
 #  include <timeapi.h>
 #  include "core/platforms/win32_deshi.cpp"
 #elif DESHI_LINUX // DESHI_WINDOWS
-#  include <GLFW/glfw3.h>
+namespace X11 {
+#  include "X11/Xlib.h" // TODO(sushi) Wayland implementation
+#  include "X11/Xutil.h"
+#  include "X11/Xos.h"
+}
+#  include "sys/mman.h"
+#  include "wctype.h" // unicode string manip functions that we should probably replace
 #  include "core/platforms/linux_deshi.cpp"
 #elif DESHI_MAC // DESHI_LINUX
 #  include <GLFW/glfw3.h>
@@ -340,7 +346,7 @@ local DeshiStage deshiStage = DS_NONE;
 #    define VK_USE_PLATFORM_WIN32_KHR
 #    include <imgui/imgui_impl_win32.cpp>
 #  else
-#    include <imgui/imgui_impl_glfw.cpp>
+//#    include <imgui/imgui_impl_glfw.cpp>
 #  endif
 #endif
 

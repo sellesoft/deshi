@@ -19,11 +19,11 @@ Index:
   window_decorations(Window* window, Decoration decorations) -> void
   window_show(Window* window) -> void
   window_hide(Window* window) -> void
-  window_title(str8 title) -> void
+  window_set_title(str8 title) -> void
 @window_cursor
   window_cursor_mode(Window* window, CursorMode mode) -> void
   window_cursor_type(Window* window, CursorType type) -> void
-  window_cursor_position(Window* window, s32 x, s32 y) -> void
+  window_set_cursor_position(Window* window, s32 x, s32 y) -> void
 @window_shared_variables
 
 TODOs:
@@ -106,10 +106,9 @@ struct Window{
 	u32 index;
 	str8 title;
 	
-	void* handle; //win32: HWND; linux/mac not implemented
-	void* dc; //win32: HDC; linux/mac not implemented
-	void* glwf_window; //GLFWwindow
-	void* glwf_monitor; //GLFWmonitor
+	void* handle; //win32: HWND; linux: X11::Window; mac not implemented
+	void* context; //win32: HDC; linux: X11::GC; linux/mac not implemented
+	
 	
 	union{
 		vec2i position;
@@ -183,8 +182,8 @@ external void window_show(Window* window);
 external void window_hide(Window* window);
 
 //Updates the title of the `window` to `title`
-external void window_title(str8 title);
-FORCE_INLINE void window_title(const char* title){ window_title(str8{(u8*)title, (s64)strlen(title)}); }
+external void window_set_title(Window* window, str8 title);
+FORCE_INLINE void window_set_title(Window* window, const char* title){ window_set_title(window, str8{(u8*)title, (s64)strlen(title)}); }
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,9 +195,9 @@ external void window_cursor_mode(Window* window, CursorMode mode);
 external void window_cursor_type(Window* window, CursorType type);
 
 //Sets the cursor position in `Client Space` of `window`
-external void window_cursor_position(Window* window, s32 x, s32 y);
-FORCE_INLINE void window_cursor_position(Window* window, vec2i position){ window_cursor_position(window, position.x, position.y); }
-FORCE_INLINE void window_cursor_position(Window* window, vec2 position){ window_cursor_position(window, (s32)position.x, (s32)position.y); }
+external void window_set_cursor_position(Window* window, s32 x, s32 y);
+FORCE_INLINE void window_set_cursor_position(Window* window, vec2i position){ window_set_cursor_position(window, position.x, position.y); }
+FORCE_INLINE void window_set_cursor_position(Window* window, vec2 position){ window_set_cursor_position(window, (s32)position.x, (s32)position.y); }
 
 
 #endif //DESHI_WINDOW_H

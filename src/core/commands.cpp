@@ -327,10 +327,10 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END(window_display_mode, CmdArgument_S32);
 	
-	DESHI_CMD_START(window_title, "Changes the title of the active window"){
-		window_title(window_active, args[0]);
+	DESHI_CMD_START(window_set_title, "Changes the title of the active window"){
+		window_set_title(window_active, args[0]);
 		Log("cmd","Updated active window's title to: ",args[0]);
-	}DESHI_CMD_END(window_title, CmdArgument_String);
+	}DESHI_CMD_END(window_set_title, CmdArgument_String);
 	
 	DESHI_CMD_START(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
 		s32 mode = atoi((const char*)args[0].str);

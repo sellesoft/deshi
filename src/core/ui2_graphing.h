@@ -365,7 +365,7 @@ ui_graph_gen_cartesian(uiItem* item){
 u32
 ui_graph_hash_cartesian(uiItem* item){ //TODO(delle) consider using a 64bit hash for ui_graph_hash()
 	uiGraphCartesian* graph = uiGetGraphCartesian(item);
-	u32 seed = UI_HASH_SEED;
+	u64 seed = UI_HASH_SEED;
 	UI_HASH_VAR(graph->x_axis_shown);
 	UI_HASH_VAR(graph->y_axis_shown);
 	UI_HASH_VAR(graph->x_axis_coords_shown);
