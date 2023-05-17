@@ -1779,6 +1779,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 #elif DESHI_LINUX //DESHI_WINDOWS
 		// TODO(sushi) confirm that MAP_PRIVATE is the behavoir we want 
 		allocation = (u8*)mmap(base_address, total_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, 0, 0);
+		print_errno(errno, "memory", __func__, {0});
 #elif DESHI_MAC   //DESHI_LINUX
 #  error not implemented
 		allocation = (u8*)calloc(1, total_size);

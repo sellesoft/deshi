@@ -177,7 +177,8 @@ void cmd_init(){
 	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
 	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
-	arrayT<File> files = file_search_directory(args[0]);
+		FixMe;
+	arrayT<File> files = {};file_search_directory(args[0]);
 		char time_str[1024];
 		if(files.count){
 			Log("cmd","Directory of '",args[0],"':");
@@ -190,7 +191,7 @@ void cmd_init(){
 	}DESHI_CMD_END(dir, CmdArgument_String);
 	
 	DESHI_CMD_START(rm, "Remove a file"){
-		file_delete(args[0]);
+		file_delete(args[0], FileDeleteFlags_File);
 	}DESHI_CMD_END(rm, CmdArgument_String);
 	
 	DESHI_CMD_START(cp, "Copies a file/directory to a new location"){
@@ -332,22 +333,22 @@ void cmd_init(){
 		Log("cmd","Updated active window's title to: ",args[0]);
 	}DESHI_CMD_END(window_set_title, CmdArgument_String);
 	
-	DESHI_CMD_START(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
+	DESHI_CMD_START(window_set_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
 		s32 mode = atoi((const char*)args[0].str);
 		switch(mode){
 			case 0:{
-				window_cursor_mode(window_active, CursorMode_Default);
+				window_set_cursor_mode(window_active, CursorMode_Default);
 				Log("cmd", "Cursor mode updated to 'default'");
 			}break;
 			case 1:{
-				window_cursor_mode(window_active, CursorMode_FirstPerson);
+				window_set_cursor_mode(window_active, CursorMode_FirstPerson);
 				Log("cmd", "Cursor mode updated to 'first person'");
 			}break;
 			default:{
 				Log("cmd", "Cursor Modes: 0=Default, 1=First Person");
 			}break;
 		}
-	}DESHI_CMD_END(window_cursor_mode, CmdArgument_S32);
+	}DESHI_CMD_END(window_set_cursor_mode, CmdArgument_S32);
 	
 	DESHI_CMD_START(window_raw_input, "Changes whether the window uses raw input"){
 		LogE("cmd","Raw Input not setup yet");

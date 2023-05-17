@@ -122,7 +122,8 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	
 	u8 path_buffer[256];
 	log_count = ClampMin(log_count, 1);
-	carray<File> log_files = file_search_directory(str8_lit("data/logs/"));
+	FixMe;
+	carray<File> log_files = {};//file_search_directory(str8_lit("data/logs/"));
 	
 	//rename previous log.txt
 	forE(log_files){
@@ -149,7 +150,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 		}
 		
 		//delete logs
-		forI((log_files.count-log_count)+1) file_delete(log_files[i].path);
+		forI((log_files.count-log_count)+1) file_delete(log_files[i].path, FileDeleteFlags_File);
 	}
 	
 	//create log file named as current time

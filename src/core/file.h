@@ -10,6 +10,7 @@ Currently this module shoud be considered NOT thread-safe
 Index:
 @file_types
   FileAccess
+  FileType
   File
 @file_system
   file_exists(str8 path) -> void
@@ -26,7 +27,7 @@ file_copy(str8 src_path, str8 dst_path) -> void
   file_init_if_exists(str8 path, FileAccess access) -> File*
   file_deinit(File* file) -> void
   file_change_access(File* file, FileAccess access) -> void
-  file_cursor(File* file, s64 offset) -> void
+  file_set_cursor(File* file, s64 offset) -> void
 @file_read
   file_read(File* file, void* buffer, u64 bytes) -> str8
   file_read_alloc(File* file, u64 bytes, Allocator* allocator) -> str8
@@ -41,6 +42,8 @@ file_copy(str8 src_path, str8 dst_path) -> void
   file_append_line(File* file, str8 line) -> u64
   file_append_simple(str8 path, void* data, u64 bytes) -> u64
   TODO file_set_size(File* file, s64 bytes) -> void
+@file_utils
+  file_get_type_of_path(str8 path) -> FileType
 @file_shared_variables
 @file_tests
 
@@ -90,6 +93,13 @@ typedef Flags FileAccess; enum{
 	FileAccess_WriteTruncateCreate     =                 FileAccess_Write|                  FileAccess_Truncate|FileAccess_Create,
 };
 
+typedef Type FileType; enum {
+	FileType_ERROR,
+	FileType_File,
+	FileType_Directory,
+	FileType_SymbolicLink,
+};
+
 struct File{
 	FILE* handle;
 	
@@ -122,9 +132,15 @@ external b32 deshi__file_exists(str8 caller_file, upt caller_line, str8 path);
 external void deshi__file_create(str8 caller_file, upt caller_line, str8 path);
 #define file_create(path) deshi__file_create(str8_lit(__FILE__),__LINE__, (path))
 
-//Deletes the file/directory (and sub-directories) at `path` if it exists
-external void deshi__file_delete(str8 caller_file, upt caller_line, str8 path);
-#define file_delete(path) deshi__file_delete(str8_lit(__FILE__),__LINE__, (path))
+enum{
+	FileDeleteFlags_File = 1 << 0,
+	FileDeleteFlags_Directory = 1 << 1,
+	FileDeleteFlags_Recursive_And_I_Promise_I_Am_Using_This_Responsibly = 1 << 2,
+};
+
+// Deletes files or directories based on the flags given
+external void deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags);
+#define file_delete(path, flags) deshi__file_delete(str8_lit(__FILE__),__LINE__, (path), flags)
 
 //Renames the file/directory at `old_path` if it exists to `new_path`
 external void deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path);
@@ -140,8 +156,8 @@ external File deshi__file_info(str8 caller_file, upt caller_line, str8 path);
 #define file_info(path) deshi__file_info(str8_lit(__FILE__),__LINE__, (path))
 
 //Returns a temporary array of files/directories in the `directory` if it exists
-//TODO rework the return type so this function is C compatible
-carray<File> deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory);
+//returns an array compatible with kigu/array.h
+external File* deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory);
 #define file_search_directory(directory) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory))
 
 //Returns a temporary string of the absolute path to the file/directory at `path` if it exists
@@ -159,12 +175,14 @@ external b32 deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path
 //    `FileAccess_Append`, FileAccess_Create`, and `FileAccess_Truncate` do not get applied to `File.access`
 //    this call is equivalent to `file_change_access()` if there already is an initialized `File` for `path`
 //    `ignore_nonexistence` just prevents error messages if the file doesn't exist (will still return 0)
+// PLATFORM
 external File* deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access, b32 ignore_nonexistence);
 #define file_init(path,access) deshi__file_init(str8_lit(__FILE__),__LINE__, path,(access),false)
 #define file_init_if_exists(path,access) deshi__file_init(str8_lit(__FILE__),__LINE__, (path),(access),true)
 
 //Closes a previously init `file` if it has `FileAccess_Read` or `FileAccess_Write` and deletes the internal `File` object
 //    this does not delete the file on disk, call `file_delete()` to do that
+// PLATFORM
 external void deshi__file_deinit(str8 caller_file, upt caller_line, File* file);
 #define file_deinit(file) deshi__file_deinit(str8_lit(__FILE__),__LINE__, (file))
 
@@ -172,18 +190,20 @@ external void deshi__file_deinit(str8 caller_file, upt caller_line, File* file);
 //    if new access includes `FileAccess_Read` or `FileAccess_Write`, the file is opened internally if it wasn't already open
 //    if new access doesn't include `FileAccess_Read` or `FileAccess_Write`, the file is closed internally if it was open
 //    `FileAccess_Append` and `FileAccess_Truncate` are only performed if the file is not already open and do not get applied to `File.access`
+// PLATFORM
 external void deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess access);
 #define file_change_access(file,access) deshi__file_change_access(str8_lit(__FILE__),__LINE__, (file),(access))
 
 //Returns a view over the internally initialized files
-//TODO rework the return type so this function is C compatible
-carray<File*> file_initted_files(); 
+// returns an array compatible with kigu/array.h
+File* file_initted_files(); 
 
 //Sets the `File.cursor` of `file` (if it's been init) to `offset` from the beginning if positive
 //    this function prevents the `File.cursor` from going above `File.bytes`
 //    writing in the middle overwrites rather then inserts
-external void deshi__file_cursor(str8 caller_file, upt caller_line, File* file, u64 offset);
-#define file_cursor(file,offset) deshi__file_cursor(str8_lit(__FILE__),__LINE__, (file),(offset))
+// LOCAL
+external void deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset);
+#define file_cursor(file,offset) deshi__file_set_cursor(str8_lit(__FILE__),__LINE__, (file),(offset))
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -193,6 +213,7 @@ external void deshi__file_cursor(str8 caller_file, upt caller_line, File* file, 
 //    if the end of file is reached before reading all `bytes`, no error occurs and `File.cursor` is set to `File.size`
 //    if an error occurs, the `File.cursor` is not affected and an empty str8 is returned
 //    writes a null-terminating character to the `buffer` at `bytes+1`
+// LOCAL
 external str8 deshi__file_read(str8 caller_file, upt caller_line, File* file, void* buffer, u64 bytes);
 #define file_read(file,buffer,bytes) deshi__file_read(str8_lit(__FILE__),__LINE__, (file),(buffer),(bytes))
 
@@ -201,6 +222,7 @@ external str8 deshi__file_read(str8 caller_file, upt caller_line, File* file, vo
 //    if the end of file is reached before reading all `bytes`, no error occurs and `File.cursor` is set to `File.size`
 //    if an error occurs, the `File.cursor` is not affected and an empty str8 is returned
 //    allocates an extra byte for a null-terminating character
+// LOCAL
 external str8 deshi__file_read_alloc(str8 caller_file, upt caller_line, File* file, u64 bytes, Allocator* allocator);
 #define file_read_alloc(file,bytes,allocator) deshi__file_read_alloc(str8_lit(__FILE__),__LINE__, (file),(bytes),(allocator))
 
@@ -210,6 +232,7 @@ external str8 deshi__file_read_alloc(str8 caller_file, upt caller_line, File* fi
 //    if the end of file is reached, no error occurs and `File.cursor` is set to `File.size`
 //    if an error occurs, the `File.cursor` is not affected and an empty str8 is returned
 //    writes a null-terminating character to the `buffer` after the string (even if it has to cut off part of the string to fit into `max_bytes`)
+// LOCAL
 external str8 deshi__file_read_line(str8 caller_file, upt caller_line, File* file, void* buffer, u64 max_bytes);
 #define file_read_line(file,buffer,bytes) deshi__file_read_line(str8_lit(__FILE__),__LINE__, (file),(buffer),(bytes))
 
@@ -219,11 +242,13 @@ external str8 deshi__file_read_line(str8 caller_file, upt caller_line, File* fil
 //    if the end of file is reached, no error occurs and `File.cursor` is set to `File.size`
 //    if an error occurs, the `File.cursor` is not affected and an empty str8 is returned
 //    allocates an extra byte for a null-terminating character
+// LOCAL
 external str8 deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Allocator* allocator);
 #define file_read_line_alloc(file,allocator) deshi__file_read_line_alloc(str8_lit(__FILE__),__LINE__, (file),(allocator))
 
 //Returns the entire contents (allocated with `allocator`) of the file at `path` if it exists
 //    allocatoes and extra bytes for a null-terminating character
+// PLATFORM
 external str8 deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator);
 #define file_read_simple(path,allocator) deshi__file_read_simple(str8_lit(__FILE__),__LINE__, (path),(allocator))
 
@@ -232,39 +257,53 @@ external str8 deshi__file_read_simple(str8 caller_file, upt caller_line, str8 pa
 //// @file_write
 //Writes `bytes` from `data` to `file` (if it's been init) and returns the number of bytes written (which may be less if an error occurred)
 //    starts writing at `File.cursor` and advances the `File.cursor` forward by `bytes`
+// LOCAL
 external u64 deshi__file_write(str8 caller_file, upt caller_line, File* file, const void* data, u64 bytes);
 #define file_write(file,data,bytes) deshi__file_write(str8_lit(__FILE__),__LINE__, (file),(data),(bytes))
 
 //Writes `line` and a newline to `file` (if it's been init) and returns the number of bytes written (which may be less if an error occurred)
 //    starts writing at `File.cursor` and advances the `File.cursor` past the line ending
 //    regardless of platform, this only writes a single newline character '\n'
+// LOCAL
 external u64 deshi__file_write_line(str8 caller_file, upt caller_line, File* file, str8 line);
 #define file_write_line(file,line) deshi__file_write_line(str8_lit(__FILE__),__LINE__, (file),(line))
 
 //Creates a file at `path` and writes `bytes` of `data` to it then closes the file and returns the number of bytes written (which may be less if an error occurred)
 //    this truncates the file at `path` if it exists
+// PLATFORM
 external u64 deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes);
 #define file_write_simple(path,data,bytes) deshi__file_write_simple(str8_lit(__FILE__),__LINE__, (path),(data),(bytes))
 
 //Writes `bytes` from `data` to the end of `file` (if it's been init) and returns the number of bytes written (which may be less if an error occurred)
 //    always writes at the end of the file and doesn't modify the `File.cursor`
+// LOCAL
 external u64 deshi__file_append(str8 caller_file, upt caller_line, File* file, void* data, u64 bytes);
 #define file_append(file,data,bytes) deshi__file_append(str8_lit(__FILE__),__LINE__, (file),(data),(bytes))
 
 //Writes `line` and a newline to the end of `file` (if it's been init) and returns the number of bytes written (which may be less if an error occurred)
 //    always writes at the end of the file and doesn't modify the `File.cursor`
 //    regardless of platform, this only writes a single newline character '\n'
+// LOCAL
 external u64 deshi__file_append_line(str8 caller_file, upt caller_line, File* file, str8 line);
 #define file_append_line(file,line) deshi__file_append_line(str8_lit(__FILE__),__LINE__, (file),(line))
 
 //Opens the file at `path` and writes `bytes` of `data` to the end of it then closes the file
 //    this creates the file at `path` if one doesn't exist
+// LOCAL
 external u64 deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes);
 #define file_append_simple(path,data,bytes) deshi__file_append_simple(str8_lit(__FILE__),__LINE__, (path),(data),(bytes))
 
 //Resizes a file to a specified size
 //external void deshi__file_set_size(str8 caller_file, upt caller_line, File* file, s64 bytes);
 //#define file_set_size(file, bytes) deshi__file_set_size(str8_lit(__FILE__),__LINE__,(file),(bytes));
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @file_utils
+
+// gets the type of a file and returns it
+// PLATFORM
+external FileType deshi__file_get_type_of_path(str8 caller_file, upt caller_line, str8 path);
+#define file_get_type_of_path(path) deshi__file_get_type_of_path(str8_lit(__FILE__),__LINE__,path)
 
 
 #endif //DESHI_FILE_H
@@ -283,9 +322,9 @@ local arrayT<File*> file_files;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_init
 void
-deshi__file_cursor(str8 caller_file, upt caller_line, File* file, u64 offset){
+deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset){
 	if(file == 0){
-		LogE("file","file_cursor() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
+		LogE("file","file_set_cursor() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 		return;
 	}
 	
@@ -294,10 +333,10 @@ deshi__file_cursor(str8 caller_file, upt caller_line, File* file, u64 offset){
 		if(fseek(file->handle, offset, SEEK_SET) == 0){
 			file->cursor = offset;
 		}else{
-			LogE("file","fseek() failed in file_cursor() call on file '",file->path,"' with offset: ",offset);
+			LogE("file","fseek() failed in file_set_cursor() call on file '",file->path,"' with offset: ",offset);
 		}
 	}else{
-		LogE("file","file_cursor() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
+		LogE("file","file_set_cursor() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
 	}
 }
 
@@ -933,11 +972,11 @@ void TEST_deshi_file(){
 		Test(file->bytes == 9);
 		Test(file->cursor == 9);
 		
-		file_cursor(file, 0);
+		file_set_cursor(file, 0);
 		Test(file->cursor == 0);
-		file_cursor(file, 2);
+		file_set_cursor(file, 2);
 		Test(file->cursor == 2);
-		file_cursor(file, 16);
+		file_set_cursor(file, 16);
 		Test(file->cursor == 9);
 		
 		file_deinit(file);
@@ -976,7 +1015,7 @@ void TEST_deshi_file(){
 		Test(file->cursor == s1.count+1+s3.count+1);
 		fflush(file->handle);
 		
-		file_cursor(file, s1.count+1);
+		file_set_cursor(file, s1.count+1);
 		Test(file->cursor == s1.count+1);
 		count = file_write_line(file, s2);
 		Test(count == s2.count+1);
@@ -984,7 +1023,7 @@ void TEST_deshi_file(){
 		Test(file->cursor == s1.count+1+s2.count+1);
 		fflush(file->handle);
 		
-		file_cursor(file, -1);
+		file_set_cursor(file, -1);
 		count = file_write_line(file, s3);
 		Test(count == s3.count+1);
 		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1);
@@ -1029,7 +1068,7 @@ void TEST_deshi_file(){
 		file_change_access(file, FileAccess_ReadAppend);
 		Test(file->cursor == file->bytes);
 		Test(file->cursor == s.count);
-		file_cursor(file, 0);
+		file_set_cursor(file, 0);
 		
 		u8 buffer[256];
 		str8 read = file_read(file, buffer, s1.count);
@@ -1059,7 +1098,7 @@ void TEST_deshi_file(){
 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
 		Test(file->cursor == file->bytes);
 		
-		file_cursor(file, 0);
+		file_set_cursor(file, 0);
 		read = file_read_alloc(file, s.count, deshi_temp_allocator);
 		Test(str8_equal_lazy(read, s));
 		Test(file->cursor == file->bytes);

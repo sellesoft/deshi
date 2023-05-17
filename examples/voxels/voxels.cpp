@@ -160,7 +160,7 @@ int main(int args_count, char** args){
 			else                        { camera.position += inputs * 8.f  * (g_time->deltaTime / 1000); }
 			
 			if(key_down(Mouse_RIGHT)){
-				window_cursor_mode(g_window, CursorMode_FirstPerson);
+				window_set_cursor_mode(g_window, CursorMode_FirstPerson);
 				camera.rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
 				camera.rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
 				camera.rotation.x = Clamp(camera.rotation.x, -89.0f, 89.0f);
@@ -171,7 +171,7 @@ int main(int args_count, char** args){
 				camera.right   = vec3_normalized(vec3_cross(vec3_UP(), camera.forward));
 				camera.up      = vec3_normalized(vec3_cross(camera.forward, camera.right));
 			}else{
-				window_cursor_mode(g_window, CursorMode_Default);
+				window_set_cursor_mode(g_window, CursorMode_Default);
 			}
 			
 			camera.viewMat = Math::LookAtMatrix(camera.position, camera.position + camera.forward).Inverse();

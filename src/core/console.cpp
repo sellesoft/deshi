@@ -244,7 +244,7 @@ void console_update(){DPZoneScoped;
 		// 	for(;;){
 		// 		u32 characters = (cursor + chunk.size > CONSOLE_INPUT_BUFFER_SIZE)
 		// 			? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.size) : chunk.size;
-		// 		file_cursor(console.logger->file, chunk.start);
+		// 		file_set_cursor(console.logger->file, chunk.start);
 		// 		file_read(console.logger->file, console.input_buffer, characters);
 		// 		console.input_length += characters;
 		// 		cursor += characters;
@@ -255,7 +255,7 @@ void console_update(){DPZoneScoped;
 		// 			chunk = console.dictionary[++chunk_idx];
 		// 		}
 		// 	}
-		// 	file_cursor(console.logger->file, restore);
+		// 	file_set_cursor(console.logger->file, restore);
 		// }
 	}
 	
@@ -319,7 +319,7 @@ void console_update(){DPZoneScoped;
 	// 		}
 			
 	// 		//get chunk text from the log file
-	// 		file_cursor(console.logger->file, console.dictionary[i].start);
+	// 		file_set_cursor(console.logger->file, console.dictionary[i].start);
 	// 		file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
 	// 		console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
 			
@@ -379,7 +379,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 		case ConsoleState_Closed:{
 			console.open_target = 0;
 			console.open_amount = console.ui.main->style.height;
-			window_cursor_mode(g_window, restore_cursor_mode);
+			window_set_cursor_mode(g_window, restore_cursor_mode);
 		}break;
 		case ConsoleState_OpenSmall:{
 			console.open_target = 100 * console.open_small_percent;
@@ -387,7 +387,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 			g_ui->active = console.ui.inputtext;
-			window_cursor_mode(g_window, CursorMode_Default);
+			window_set_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		case ConsoleState_OpenBig:{
 			console.open_target = 100 * console.open_max_percent;
@@ -395,7 +395,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 			g_ui->active = console.ui.inputtext;
-			window_cursor_mode(g_window, CursorMode_Default);
+			window_set_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		// case ConsoleState_Popout:{
 		// 	console.open_target = console.console_dim.y;

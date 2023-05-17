@@ -21,8 +21,8 @@ Index:
   window_hide(Window* window) -> void
   window_set_title(str8 title) -> void
 @window_cursor
-  window_cursor_mode(Window* window, CursorMode mode) -> void
-  window_cursor_type(Window* window, CursorType type) -> void
+  window_set_cursor_mode(Window* window, CursorMode mode) -> void
+  window_set_cursor_type(Window* window, CursorType type) -> void
   window_set_cursor_position(Window* window, s32 x, s32 y) -> void
 @window_shared_variables
 
@@ -189,10 +189,10 @@ FORCE_INLINE void window_set_title(Window* window, const char* title){ window_se
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_cursor
 //Sets the `CursorMode` of `window` to `mode`
-external void window_cursor_mode(Window* window, CursorMode mode);
+external void window_set_cursor_mode(Window* window, CursorMode mode);
 
 //Sets the `CursorType` of `window` to `type`
-external void window_cursor_type(Window* window, CursorType type);
+external void window_set_cursor_type(Window* window, CursorType type);
 
 //Sets the cursor position in `Client Space` of `window`
 external void window_set_cursor_position(Window* window, s32 x, s32 y);

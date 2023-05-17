@@ -471,7 +471,7 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos){DPZoneScoped;
 }
 
 FORCE_INLINE void SetWindowCursor(CursorType curtype){DPZoneScoped;
-	window_cursor_type(DeshWindow, curtype);
+	window_set_cursor_type(DeshWindow, curtype);
 	StateAddFlag(UISCursorSet);
 }
 
@@ -4313,7 +4313,7 @@ void UI::Update(){DPZoneScoped;
 	//reset cursor to default if no item decided to set it 
 	if(!StateHasFlag(UISCursorSet)){
 		if(StateHasFlag(UISGlobalHovered)){
-			window_cursor_type(DeshWindow, CursorType_Arrow);
+			window_set_cursor_type(DeshWindow, CursorType_Arrow);
 		}
 	}else{
 		StateRemoveFlag(UISCursorSet);

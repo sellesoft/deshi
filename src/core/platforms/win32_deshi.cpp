@@ -2012,7 +2012,7 @@ window_set_title(Window* window, str8 title){DPZoneScoped;
 }
 
 void
-window_cursor_mode(Window* window, CursorMode mode){DPZoneScoped;
+window_set_cursor_mode(Window* window, CursorMode mode){DPZoneScoped;
 	if(window->cursor_mode == mode) return;
 	switch(mode){
 		case CursorMode_Default: default:{
@@ -2040,7 +2040,7 @@ window_cursor_mode(Window* window, CursorMode mode){DPZoneScoped;
 }
 
 void
-window_cursor_type(Window* window, CursorType type){DPZoneScoped;
+window_set_cursor_type(Window* window, CursorType type){DPZoneScoped;
 	switch(type){
 		case CursorType_Arrow:{
 			::SetCursor(::LoadCursor(0, IDC_ARROW));

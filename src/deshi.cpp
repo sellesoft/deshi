@@ -323,7 +323,11 @@ local DeshiStage deshiStage = DS_NONE;
 #elif DESHI_LINUX // DESHI_WINDOWS
 #  include "unistd.h" // misc stuff, apparently. used for file stuff
 #  include "sys/mman.h" // for mapping virtual memory with mmap
+#  include "sys/stat.h"
+#  include "sys/types.h"
 #  include "wctype.h" // unicode string manip functions that we should probably replace
+#  include "fcntl.h" // creat
+#  include "dirent.h"
 namespace X11 { 
     // windowing api. for whatever reason, X defines a lot of things with very simple names
     // such as Window, Font, etc. which conflict with our stuff, so we need to put it in a namespace
