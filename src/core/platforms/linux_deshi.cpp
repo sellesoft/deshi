@@ -28,8 +28,9 @@ struct{
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
-void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
-#define errcase(errname, info) case errname: LogE("linux", tag, ": ", funcname, "(): encountered errno ", errname, ": ", STRINGIZE(errname), ". ", info, message); break;
+str8
+get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
+#define errcase(errname, info) case errname: return ToString8(stl_allocator, tag, ": ", funcname, "() encountered errno ", errname, ": ", info, message, "\n"); break;
 	switch(err){
 		errcase(EPERM,          "operation not permitted")
 		errcase(ENOENT,         "no such file or directory")
@@ -162,12 +163,20 @@ void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
 		errcase(EHWPOISON,      "memory page has hardware error")
 	}
 #undef errcase
+	printf("Unknown errno: %u", errno);
+	return {};
+}
+
+void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
+	str8 r = get_errno_print(err, tag, funcname, message);
+	LogE("linux", r);
+	free(r.str);
 }
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file
 b32
-deshi__file_exists(str8 caller_file, upt caller_line, str8 path){
+deshi__file_exists(str8 caller_file, upt caller_line, str8 path, FileResult* result){
 	if(!path || *path.str == 0) {
 		LogE("file", "file_exists() was passed an empty 'path' at ", caller_file, "(", caller_line, ")");
 		return false;
@@ -175,34 +184,85 @@ deshi__file_exists(str8 caller_file, upt caller_line, str8 path){
 	return !access((char*)path.str, F_OK);
 }
 
-void 
-deshi__file_create(str8 caller_file, upt caller_line, str8 path) {
+void
+deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* result) {
 	if(!path || *path.str == 0){
 		LogE("file","file_create() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return;
 	}
 
-	// O_CREAT makes open() create the file if it does not exist
-	// if it creates it, we make it with the permissions:
-	//   S_IRUSR: user may read
-	//   S_IWUSR: user may write
-	s64 handle = open((char*)path.str, O_CREAT, S_IRUSR|S_IWUSR);
-
-	if(handle == -1){
-		u32 e = errno;
-		switch(e) {
-			case EACCES: print_errno(EACCES, "file", __func__, ToString8(deshi_temp_allocator, "while trying to create path '", path, "'. \npossible reasons include: the protected_fifos or protected_regular sysctl is enabled, the file already exists and is a FIFO or regular file, the owner of the file is neither the current user nor the owner of the containing directory, and the containing directory is both world- or group-writable and sticky.")); return;
-			default: print_errno(e,"file",__func__,ToString8(deshi_temp_allocator, "while trying to create path '", path, "'"));
+	if(str8_ends_with(path, STR8("/")) || str8_ends_with(path, STR8("\\"))) {
+		if(mkdir((char*)path.str, 0) == -1){
+			u32 e = errno;
+			if(!result){
+				print_errno(e,"file",__func__,{});
+				return;
+			}
+			switch(e) {
+				case EACCES:       *result = {FileResult_AccessDenied,     STR8("Search permission is denied on a component of the path prefix, or write permission is denied on the parent directory of the directory to be created.")}; 
+				case EEXIST:       *result = {FileResult_NameExists,       STR8("Attempted to create a directory, but a file with the same name already exists at the given path.")}; 
+				case ELOOP:        *result = {FileResult_SymbolicLinkLoop, STR8("Resolving the given path resulted in a loop of symbolic links.")};
+				case EMLINK:       *result = {FileResult_MaxLinks,         STR8("Creating this directory would cause the link count of the parent directory to exceed LINK_MAX")};
+				case ENAMETOOLONG: *result = {FileResult_NameTooLong,      STR8("Either the given path or the resulting path is too long, path length must not exceed " STRINGIZE(PATH_MAX) " characters.")};
+				case ENOENT:       *result = {FileResult_PathDoesNotExist, STR8("Some part of the resulting path does not exist.")};
+				case ENOSPC:       *result = {FileResult_OutOfSpace,       STR8("The filesystem does not have enough space to create the directory.")};
+				case ENOTDIR:      *result = {FileResult_NotADirectory,    STR8("Some part of the given path is not a directory.")};
+				case EROFS:        *result = {FileResult_ReadOnly,         STR8("Some parent directory is read only.")};
+				default:{
+					LogE("linux-file", "unhandled errno in deshi__file_create()");
+					print_errno(e, "file", __func__, {});
+					AssertAlways(false);
+				}
+			}
+			return;
 		}
+	}else{
+		// O_CREAT makes open() create the file if it does not exist
+		// if it creates it, we make it with the permissions:
+		//   S_IRUSR: user may read
+		//   S_IWUSR: user may write
+		s64 handle = open((char*)path.str, O_CREAT, S_IRUSR|S_IWUSR);
+		if(handle == -1){
+			u32 e = errno;
+			if(!result){
+				print_errno(e,"file",__func__,{});
+				return;
+			}
+			switch(errno) {
+				case EACCES:       *result = {FileResult_AccessDenied,      STR8("It is possible that the file already exists and is FIFO or a regular file, the owner of the file is netiher the current user nor the owner of the containing directory, or the containing directory is both world- or group-writable and sticky.")};
+				case ENOSPC:
+				case EDQUOT:       *result = {FileResult_OutOfSpace,        STR8("The file does not already exist, but the file system is full.")};
+				case EISDIR:       *result = {FileResult_IsADirectory,      STR8("The given path already exists and is a directory.")};
+				case ENOTDIR:      *result = {FileResult_NotADirectory,     STR8("Some component of the given path is not a directory.")};
+				case ELOOP:        *result = {FileResult_SymbolicLinkLoop,  STR8("Too many symbolic links were encountered when resolving the path.")};
+				case EMFILE:       *result = {FileResult_TooManyHandles,    STR8("The per-process limit on the amount of handles opened has been reached.")};
+				case ENAMETOOLONG: *result = {FileResult_NameTooLong,       STR8("The given path is too long.")};
+				case ENFILE:       *result = {FileResult_TooManyHandles,    STR8("The system-wide limit on the total number of open handles has been reached.")};
+				case ENOENT:       *result = {FileResult_PathDoesNotExist,  STR8("Some part of the given path does not exist.")};
+				case ENOMEM:       *result = {FileResult_SystemOutOfMemory, STR8("The kernel has insufficient memory to create a file.")};
+				case EFBIG:
+				case EOVERFLOW:    *result = {FileResult_TooBig,            STR8("The file is too large to open.")};
+				case EFAULT:      {*result = {FileResult_InvalidArgument,   STR8("The given path is outside of the accessible address space.")}; result->error.invalid_arg = 3; }
+				case EINVAL:      {*result = {FileResult_InvalidArgument,   STR8("The given path is invalid, eg. it contains characters not permitted by the underlying filesystem.")}; result->error.invalid_arg = 3;}
+				default:{
+					LogE("linux-file", "unhandled errno in deshi__file_create(): ");
+					print_errno(e, "file", __func__, {});
+					AssertAlways(false);
+				}
+			}
+			return;
+		}
+		close(handle);
 	}
-
-	close(handle);
 }
 
 void
-deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags){NotImplemented;
+deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, FileResult* result){
 	if(!path || *path.str == 0){
-		LogE("file","file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+		if(!result)
+			LogE("file","file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+		else		
+			*result = {FileResult_EmptyPath, ToString8(deshi_temp_allocator, "file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")")};
 		return;
 	}
 
@@ -221,7 +281,18 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags){NotI
 		}
 		// we are just deleting a single file, so we don't need to do anything special
 		if(unlink((char*)path.str) == -1) {
+			u32 e = errno;
+			if(!result){
+				print_errno(e, "file", __func__, ToString8(deshi_temp_allocator, "while trying to unlink path "));
+				return;
+			}
+			switch(e) {
+				case EACCES: *result = {FileResult_AccessDenied, STR8("Write access to the directory containing the given path is not allowed for the process's ")}; 
+				case EBUSY:
+			}
+			return;
 			print_errno(errno, "file", __func__, ToString8(deshi_temp_allocator, "while trying to delete path '", path, "'"));
+
 		}
 		return;
 	}
@@ -229,6 +300,21 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags){NotI
 	if(type == FileType_Directory) {
 		if(!HasFlag(flags, FileDeleteFlags_Directory)){
 			LogE("file", "in ", caller_file, "(", caller_line, "): file_delete() was called on a directory, but FileDeleteFlags_Directory was not specified as a flag.");
+			return;
+		}
+
+
+		u8* scan = path.str+path.count;
+		str8 prepath = {0};
+		while(scan - path.str) {
+			if(*scan == '/' || *scan == '\\'){
+				prepath.str = path.str;
+				prepath.count = scan-path.str;
+			}
+		}
+
+		if(!prepath) {
+			LogE("file", "malformed path given: ", path);
 			return;
 		}
 
@@ -244,33 +330,25 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags){NotI
 				}
 				while((ep = readdir(dir))){
 					if(ep->d_type == DT_REG){
-
 					}
 				}
 			}
 		}
 	}
-
-
-	if(HasAllFlags(flags, FileDeleteFlags_Directory | FileDeleteFlags_File)) {
-		// deleting both files and directories
-	}
-
-
 }
 
 void 
-deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path){
+deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path, FileResult* result){
 	NotImplemented;
 }
 
 void 
-deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path){
+deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path, FileResult* result){
 	NotImplemented;
 }
 
 File 
-deshi__file_info(str8 caller_file, upt caller_line, str8 path) {
+deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* result) {
 	NotImplemented;
 	return {};
 }
@@ -282,38 +360,169 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 		return 0;
 	}
 
+	File* out;
+	array_init(out, 4, deshi_temp_allocator);
+	
+	DIR* dir = opendir((char*)directory.str);
+	if(!dir) {
+		print_errno(errno, "file", __func__, {});
+		return 0;
+	}
 
-	NotImplemented;
+
+	struct dirent* entry;
+	while((entry = readdir(dir))){
+		File* file = file_init((str8{(u8*)entry->d_name,(s64)strlen(entry->d_name)}), FileAccess_Read);
+
+	}
 
 	return 0;
 }
 
 str8 
-deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path){
+deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path, FileResult* result){
 	NotImplemented;
 	return {};
 }
 
 b32 
-deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2){
-	NotImplemented;
-	return 0;
+deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, FileResult* result){
+	if(str8_ends_with(path1, STR8("\\")) || str8_ends_with(path1, STR8("/"))){
+		path1.count--;
+		path1.str[path1.count] = 0;
+	}
+
+	if(str8_ends_with(path2, STR8("\\")) || str8_ends_with(path2, STR8("/"))){
+		path1.count--;
+		path1.str[path1.count] = 0;
+	}
+
+	return str8_equal(path1, path2);
 }
 
 File* 
-deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access, b32 ignore_nonexistence) {
-	NotImplemented;
-	return 0;
+deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access, b32 ignore_nonexistence, FileResult* result) {
+	if(!path || *path.str == 0){
+		LogE("file","file_init() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+		return 0;
+	}
+
+	forX_array(f, file_shared.files) {
+		if(file_path_equal(path, f->path)){
+			file_change_access(f, access);
+			return f;
+		}
+	}
+
+	if(!file_exists(path)){
+		LogE("file", "at ", caller_file, "(", caller_line, "): file_init() was give a path to a file that doesn't exist");
+		return 0;
+	}
+
+	File* out = array_push(file_shared.files);
+	// this function fully handles access flags, including opening it and such 
+	file_change_access(out, access);
+
+	out->path.str = (u8*)memalloc(PATH_MAX);
+	out->path.str = (u8*)realpath((char*)path.str, (char*)out->path.str);
+	if(!out->path.str) {
+		print_errno(errno, "file", __func__, ToString8(deshi_temp_allocator,"while trying to find absolute path of '", path, "'"));
+		return 0;
+	}
+	out->path.count = strlen((char*)out->path.str);
+
+	str8 scan = {out->path.str, out->path.count};
+	while(scan && *scan.str != '\\' && *scan.str != '/') {
+		scan.str--;
+		scan.count--;
+	}
+
+	out->name = {scan.str + scan.count, out->path.count-scan.count};
+	out->front = out->name;
+	scan = out->front;
+	while(scan) {
+		if(*scan.str == '.') {
+			out->front = {out->front.str, scan.str-out->front.str};
+			break;
+		}
+		scan.str++;
+	}
+	out->ext = {out->front.str+out->front.count, out->path.str - out->front.str};
+
+	struct statx s;
+
+	if(statx(AT_FDCWD, (char*)path.str, 0, STATX_ATIME|STATX_MTIME|STATX_CTIME|STATX_SIZE|STATX_MODE, &s) == -1) {
+		print_errno(errno, "file", __func__, ToString8(deshi_temp_allocator, "while trying to get stats for path '", out->path));
+		return 0;
+	}
+
+	out->creation_time = s.stx_ctime.tv_sec * 1000000000 + s.stx_ctime.tv_nsec;
+	out->last_access_time = s.stx_atime.tv_sec * 1000000000 + s.stx_atime.tv_nsec;
+	out->last_write_time = s.stx_mtime.tv_sec * 1000000000 + s.stx_mtime.tv_nsec;
+	out->bytes = s.stx_size;
+
+	if     (S_ISREG(s.stx_mode)) out->type = FileType_File;
+	else if(S_ISDIR(s.stx_mode)) out->type = FileType_Directory;
+	else if(S_ISLNK(s.stx_mode)) out->type = FileType_SymbolicLink;	
+	else{
+		LogE("file", "attempted to initialize a File that is not a file, directory, or symbolic link. path: ", path);
+		return 0;
+	}
+
+	return out;
 }
 
 void 
-deshi__file_deinit(str8 caller_file, upt caller_line, File* file) {
+deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* result) {
 	NotImplemented;
 }
 
 void 
-deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess access){
-	NotImplemented;
+deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess access, FileResult* result){
+	if(file == 0){
+		LogE("file","file_change_access() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
+		return;
+	}
+
+	RemoveFlag(access, FileAccess_Create); // the file already exists
+	if(!file->handle && HasFlag(access, FileAccess_ReadWrite)) {
+		Flags open_flags = access & ~(FileAccess_Append);
+		char* open_mode = 0;
+		switch(open_flags) {
+			case FileAccess_Read:              open_mode = "rb";  break;
+			case FileAccess_WriteTruncate:     open_mode = "wb";  file->bytes = 0; break;
+			case FileAccess_Write:
+			case FileAccess_ReadWrite:         open_mode = "rb+"; break;
+			case FileAccess_ReadWriteTruncate: open_mode = "wb+"; file->bytes = 0; break;
+		}
+		
+		file->handle = fopen((char*)file->path.str, open_mode);
+		if(!file->handle) {
+			print_errno(errno, "file", __func__, {});
+			return;
+		}
+	} else if(file->handle && !HasFlag(access, FileAccess_ReadWrite)) {
+		fclose(file->handle);
+		file->handle = 0;
+	}
+
+	if(file->handle && HasFlag(access, FileAccess_Append)) {
+		fseek(file->handle, file->bytes, SEEK_SET);
+		file->cursor = file->bytes;
+	}
+
+	if(file->handle && HasFlag(access, FileAccess_Truncate)) {
+		fclose(file->handle);
+		file->handle = 0;
+		if     (HasFlag(access, FileAccess_ReadWrite)) file->handle = fopen((char*)file->path.str, "wb+");
+		else if(HasFlag(access, FileAccess_Write))     file->handle = fopen((char*)file->path.str, "wb");
+		else {
+			// just truncate
+			fclose(fopen((char*)file->path.str, "wb"));
+		}
+	}
+
+	file->access = access & ~(FileAccess_Append|FileAccess_Truncate);
 }
 
 File* 
@@ -323,19 +532,19 @@ file_initted_files(){
 }
 
 str8
-deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator) {
+deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator, FileResult* result) {
 	NotImplemented;
 	return {};
 }
 
 u64 
-deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes) {
+deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes, FileResult* result) {
 	NotImplemented;
 	return 0;
 }
 
 FileType
-deshi__file_get_type_of_path(str8 caller_file, upt caller_line, str8 path) {
+deshi__file_get_type_of_path(str8 caller_file, upt caller_line, str8 path, FileResult* result) {
 	if(!path || *path.str == 0){
 		LogE("file","file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return FileType_ERROR;
@@ -396,6 +605,8 @@ f64 peek_stopwatch(Stopwatch watch) {
 void
 platform_init() {
 	DeshiStageInitStart(DS_PLATFORM, DS_MEMORY, "Attempted to initialize Platform module before initializing the Memory module");
+
+	array_init(file_shared.files, 16, deshi_allocator);
 
 	NotImplemented;
 

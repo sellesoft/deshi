@@ -241,9 +241,10 @@ local DeshiStage deshiStage = DS_NONE;
 
 //// kigu headers ////"
 #include "kigu/profiling.h"
+//#define KIGU_ARRAY_SHORTHANDS
+#include "kigu/array.h"
 #include "kigu/arrayT.h"
 #include "kigu/array_utils.h"
-#include "kigu/carray.h"
 #include "kigu/color.h"
 #include "kigu/debug.h"
 #include "kigu/hash.h"
@@ -260,6 +261,7 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/baked/textures.h"
 
 //// external for core ////
+// TODO(sushi) remove stb ds once we have our own C map and such 
 #define STBDS_REALLOC(ctx,ptr,newsz) memory_realloc(ptr,newsz)
 #define STBDS_FREE(ctx,ptr) memory_zfree(ptr)
 #define STB_DS_IMPLEMENTATION

@@ -1344,6 +1344,7 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 	
 	if(file->handle && HasFlag(flags, FileAccess_Truncate)){
 		fclose(file->handle);
+		file->handle = 0;
 		if     (HasFlag(flags, FileAccess_ReadWrite)) file->handle = _wfopen(wpath, (wchar_t*)L"wb+");
 		else if(HasFlag(flags, FileAccess_Write))     file->handle = _wfopen(wpath, (wchar_t*)L"wb"); 
 		else{//just truncate the file

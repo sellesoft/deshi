@@ -184,7 +184,7 @@ void cmd_init(){
 			Log("cmd","Directory of '",args[0],"':");
 			forE(files){
 				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->last_write_time));
-				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),
+				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->type == FileType_Directory)?"<DIR> ":"<FILE>"),
 					 (const char*)it->name.str,it->bytes);
 			}
 		}

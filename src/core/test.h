@@ -8,8 +8,8 @@
 
 #define Test(condition,...) AssertAlways(condition)
 
-#define TestPassed(test) Log("deshi-test","PASSED: "test)
-#define TestTodo(test)   Log("deshi-test","TODO:   "test)
+#define TestPassed(test) Log("deshi-test","PASSED: " test)
+#define TestTodo(test)   Log("deshi-test","TODO:   " test)
 
 //TODO(delle) change this to prevent printing
 #define TestExpectedLog(...)                       \

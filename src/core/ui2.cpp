@@ -1057,7 +1057,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		item->dirty = 0;
 		item->style_hash = nuhash; 
 		uiItem* sspar = uiItemFromNode(ui_find_static_sized_parent(&item->node, 0));
-		eval_item_branch(sspar, {0});
+		eval_item_branch(sspar, {});
 		draw_item_branch(sspar);
 	}
 
