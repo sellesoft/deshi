@@ -28,6 +28,43 @@ struct{
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
+
+// handles a range of errors that can be given from errno
+#define StartFileErrnoHandler(result_name, err, return_error_value) {\
+	if(!result_name) {                                               \
+		print_errno(err,"file",__func__,{});                         \
+		return return_error_value;                                   \
+	}                                                                \
+	u32 __feh__errno = err;                                          \
+	StartErrorHandler(result_name, FileResult, __feh__errno)
+
+#define EndFileErrnoHandler()                            \
+	EndErrorHandlerAndCatch("linux-file", __feh__errno, {\
+		print_errno(__feh__errno, "file", __func__, {}); \
+		AssertAlways(false);                             \
+	})}
+
+// handles a single error, usually one that doesn't have to do with the system
+#define FileHandleErrorL(result_name, result_tag, return_error_value, message, extra)\
+	if(!result_name){                                                                \
+		LogE("file", __func__, "(): ", message);                                     \
+		return return_error_value;                                                   \
+	}                                                                                \
+	*result_name = {result_tag, STR8(message)};                                      \
+	extra                                                                            \
+	return return_error_value;
+
+// handles a single error, usually one that doesn't have to do with the system
+// dynamic version
+#define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)\
+	if(!result_name){                                                            \
+		LogE("file", __func__, "(): ", __VA_ARGS__);                             \
+		return return_error_value;                                               \
+	}                                                                            \
+	*result_name = {result_tag, ToString8(deshi_temp_allocator,__VA_ARGS__)};    \
+	extra                                                                        \
+	return return_error_value; 
+
 str8
 get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 #define errcase(errname, info) case errname: return ToString8(stl_allocator, tag, ": ", funcname, "() encountered errno ", errname, ": ", info, message, "\n"); break;
@@ -163,7 +200,7 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 		errcase(EHWPOISON,      "memory page has hardware error")
 	}
 #undef errcase
-	printf("Unknown errno: %u", errno);
+	printf("Unknown errno: %llu", err);
 	return {};
 }
 
@@ -178,8 +215,7 @@ void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
 b32
 deshi__file_exists(str8 caller_file, upt caller_line, str8 path, FileResult* result){
 	if(!path || *path.str == 0) {
-		LogE("file", "file_exists() was passed an empty 'path' at ", caller_file, "(", caller_line, ")");
-		return false;
+		FileHandleErrorD(result, FileResult_EmptyPath, false,, "file_exists() was passed an empty 'path' at ", caller_file, "(", caller_line, ")");
 	}
 	return !access((char*)path.str, F_OK);
 }
@@ -193,27 +229,17 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 
 	if(str8_ends_with(path, STR8("/")) || str8_ends_with(path, STR8("\\"))) {
 		if(mkdir((char*)path.str, 0) == -1){
-			u32 e = errno;
-			if(!result){
-				print_errno(e,"file",__func__,{});
-				return;
-			}
-			switch(e) {
-				case EACCES:       *result = {FileResult_AccessDenied,     STR8("Search permission is denied on a component of the path prefix, or write permission is denied on the parent directory of the directory to be created.")}; 
-				case EEXIST:       *result = {FileResult_NameExists,       STR8("Attempted to create a directory, but a file with the same name already exists at the given path.")}; 
-				case ELOOP:        *result = {FileResult_SymbolicLinkLoop, STR8("Resolving the given path resulted in a loop of symbolic links.")};
-				case EMLINK:       *result = {FileResult_MaxLinks,         STR8("Creating this directory would cause the link count of the parent directory to exceed LINK_MAX")};
-				case ENAMETOOLONG: *result = {FileResult_NameTooLong,      STR8("Either the given path or the resulting path is too long, path length must not exceed " STRINGIZE(PATH_MAX) " characters.")};
-				case ENOENT:       *result = {FileResult_PathDoesNotExist, STR8("Some part of the resulting path does not exist.")};
-				case ENOSPC:       *result = {FileResult_OutOfSpace,       STR8("The filesystem does not have enough space to create the directory.")};
-				case ENOTDIR:      *result = {FileResult_NotADirectory,    STR8("Some part of the given path is not a directory.")};
-				case EROFS:        *result = {FileResult_ReadOnly,         STR8("Some parent directory is read only.")};
-				default:{
-					LogE("linux-file", "unhandled errno in deshi__file_create()");
-					print_errno(e, "file", __func__, {});
-					AssertAlways(false);
-				}
-			}
+			StartFileErrnoHandler(result, errno,)
+				ErrorCaseL(EACCES,       FileResult_AccessDenied,     "Search permission is denied on a component of the path prefix, or write permission is denied on the parent directory of the directory to be created.",) 
+				ErrorCaseL(EEXIST,       FileResult_NameExists,       "Attempted to create a directory, but a file with the same name already exists at the given path.",) 
+				ErrorCaseL(ELOOP,        FileResult_SymbolicLinkLoop, "Resolving the given path resulted in a loop of symbolic links.",)
+				ErrorCaseL(EMLINK,       FileResult_MaxLinks,         "Creating this directory would cause the link count of the parent directory to exceed LINK_MAX",)
+				ErrorCaseL(ENAMETOOLONG, FileResult_NameTooLong,      "Either the given path or the resulting path is too long, path length must not exceed " STRINGIZE(PATH_MAX) " characters.",)
+				ErrorCaseL(ENOENT,       FileResult_PathDoesNotExist, "Some part of the resulting path does not exist.",)
+				ErrorCaseL(ENOSPC,       FileResult_OutOfSpace,       "The filesystem does not have enough space to create the directory.",)
+				ErrorCaseL(ENOTDIR,      FileResult_NotADirectory,    "Some part of the given path is not a directory.",)
+				ErrorCaseL(EROFS,        FileResult_ReadOnly,         "Some parent directory is read only.",)
+			EndFileErrnoHandler()
 			return;
 		}
 	}else{
@@ -223,33 +249,23 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 		//   S_IWUSR: user may write
 		s64 handle = open((char*)path.str, O_CREAT, S_IRUSR|S_IWUSR);
 		if(handle == -1){
-			u32 e = errno;
-			if(!result){
-				print_errno(e,"file",__func__,{});
-				return;
-			}
-			switch(errno) {
-				case EACCES:       *result = {FileResult_AccessDenied,      STR8("It is possible that the file already exists and is FIFO or a regular file, the owner of the file is netiher the current user nor the owner of the containing directory, or the containing directory is both world- or group-writable and sticky.")};
-				case ENOSPC:
-				case EDQUOT:       *result = {FileResult_OutOfSpace,        STR8("The file does not already exist, but the file system is full.")};
-				case EISDIR:       *result = {FileResult_IsADirectory,      STR8("The given path already exists and is a directory.")};
-				case ENOTDIR:      *result = {FileResult_NotADirectory,     STR8("Some component of the given path is not a directory.")};
-				case ELOOP:        *result = {FileResult_SymbolicLinkLoop,  STR8("Too many symbolic links were encountered when resolving the path.")};
-				case EMFILE:       *result = {FileResult_TooManyHandles,    STR8("The per-process limit on the amount of handles opened has been reached.")};
-				case ENAMETOOLONG: *result = {FileResult_NameTooLong,       STR8("The given path is too long.")};
-				case ENFILE:       *result = {FileResult_TooManyHandles,    STR8("The system-wide limit on the total number of open handles has been reached.")};
-				case ENOENT:       *result = {FileResult_PathDoesNotExist,  STR8("Some part of the given path does not exist.")};
-				case ENOMEM:       *result = {FileResult_SystemOutOfMemory, STR8("The kernel has insufficient memory to create a file.")};
-				case EFBIG:
-				case EOVERFLOW:    *result = {FileResult_TooBig,            STR8("The file is too large to open.")};
-				case EFAULT:      {*result = {FileResult_InvalidArgument,   STR8("The given path is outside of the accessible address space.")}; result->error.invalid_arg = 3; }
-				case EINVAL:      {*result = {FileResult_InvalidArgument,   STR8("The given path is invalid, eg. it contains characters not permitted by the underlying filesystem.")}; result->error.invalid_arg = 3;}
-				default:{
-					LogE("linux-file", "unhandled errno in deshi__file_create(): ");
-					print_errno(e, "file", __func__, {});
-					AssertAlways(false);
-				}
-			}
+			StartFileErrnoHandler(result, errno,)
+				ErrorCaseL(EACCES,        FileResult_AccessDenied,      "It is possible that the file already exists and is FIFO or a regular file, the owner of the file is netiher the current user nor the owner of the containing directory, or the containing directory is both world- or group-writable and sticky.",);
+				ErrorCaseF(ENOSPC)
+				ErrorCaseL(EDQUOT,        FileResult_OutOfSpace,        "The file does not already exist, but the file system is full.",);
+				ErrorCaseL(EISDIR,        FileResult_IsADirectory,      "The given path already exists and is a directory.",);
+				ErrorCaseL(ENOTDIR,       FileResult_NotADirectory,     "Some component of the given path is not a directory.",);
+				ErrorCaseL(ELOOP,         FileResult_SymbolicLinkLoop,  "Too many symbolic links were encountered when resolving the path.",);
+				ErrorCaseL(EMFILE,        FileResult_TooManyHandles,    "The per-process limit on the amount of handles opened has been reached.",);
+				ErrorCaseL(ENAMETOOLONG,  FileResult_NameTooLong,       "The given path is too long.",);
+				ErrorCaseL(ENFILE,        FileResult_TooManyHandles,    "The system-wide limit on the total number of open handles has been reached.",);
+				ErrorCaseL(ENOENT,        FileResult_PathDoesNotExist,  "Some part of the given path does not exist.",);
+				ErrorCaseL(ENOMEM,        FileResult_SystemOutOfMemory, "The kernel has insufficient memory to create a file.",);
+				ErrorCaseF(EFBIG)
+				ErrorCaseL(EOVERFLOW,     FileResult_TooBig,            "The file is too large to open.",);
+				ErrorCaseL(EFAULT,        FileResult_InvalidArgument,   "The given path is outside of the accessible address space.", result->error.invalid_arg = 1;);
+				ErrorCaseL(EINVAL,        FileResult_InvalidArgument,   "The given path is invalid, eg. it contains characters not permitted by the underlying filesystem.", result->error.invalid_arg = 1;);
+			EndFileErrnoHandler()
 			return;
 		}
 		close(handle);
@@ -259,19 +275,14 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 void
 deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, FileResult* result){
 	if(!path || *path.str == 0){
-		if(!result)
-			LogE("file","file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
-		else		
-			*result = {FileResult_EmptyPath, ToString8(deshi_temp_allocator, "file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")")};
-		return;
+		FileHandleErrorD(result, FileResult_EmptyPath,,,"file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 	}
 
-	if(!file_exists(path)){
-		LogE("file", "file_delete() was a passed a path to a file that doesn't exist.");
-		return;
-	}
+	// NOTE(sushi) this may get confusing if the name of the called function gets attached to the result
+	//             so I need to test this.
+	if(!file_exists_result(path, result)) return;
 
-	FileType type = file_get_type_of_path(path);
+	FileType type = file_get_type_of_path_result(path, result);
 	if(!type) return;
 
 	if(type == FileType_File) {
@@ -281,28 +292,27 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 		}
 		// we are just deleting a single file, so we don't need to do anything special
 		if(unlink((char*)path.str) == -1) {
-			u32 e = errno;
-			if(!result){
-				print_errno(e, "file", __func__, ToString8(deshi_temp_allocator, "while trying to unlink path "));
-				return;
-			}
-			switch(e) {
-				case EACCES: *result = {FileResult_AccessDenied, STR8("Write access to the directory containing the given path is not allowed for the process's ")}; 
-				case EBUSY:
-			}
-			return;
-			print_errno(errno, "file", __func__, ToString8(deshi_temp_allocator, "while trying to delete path '", path, "'"));
-
+			StartFileErrnoHandler(result, errno,)
+				ErrorCaseL(EACCES,       FileResult_AccessDenied,      "Write access to the directory containing the given path is not allowed for the current process's user.",);
+				ErrorCaseL(EBUSY,        FileResult_PathBusy,          "The given path cannot be unlinked because it is being used by the system or another process.",);
+				ErrorCaseL(EFAULT,       FileResult_InvalidArgument,   "The given path pointer points outside of accessible address space.", result->error.invalid_arg = 1;);
+				ErrorCaseL(EIO,          FileResult_IOError,           "Linux has encountered an unspecified I/O error.",);
+				ErrorCaseL(ELOOP,        FileResult_SymbolicLinkLoop,  "Too many symbolic links were encounted in translating the given path",);
+				ErrorCaseL(ENAMETOOLONG, FileResult_NameTooLong,       "The given path is too long.",);
+				ErrorCaseL(ENOENT,       FileResult_PathDoesNotExist,  "Some part of the given path does not exist.",);
+				ErrorCaseL(ENOMEM,       FileResult_SystemOutOfMemory, "The kernel has insufficient memory to complete the unlinking operation.",);
+				ErrorCaseL(ENOTDIR,      FileResult_NotADirectory,     "Some part of the given path is not a directory.",);
+				ErrorCaseL(EPERM,        FileResult_AccessDenied,      "The filesystem does not allow unlinking of files or the process does have the correct permissions.",);
+				ErrorCaseL(EROFS,        FileResult_ReadOnly,          "The filesystem is read only.",);
+			EndFileErrnoHandler()
 		}
 		return;
 	}
 
 	if(type == FileType_Directory) {
 		if(!HasFlag(flags, FileDeleteFlags_Directory)){
-			LogE("file", "in ", caller_file, "(", caller_line, "): file_delete() was called on a directory, but FileDeleteFlags_Directory was not specified as a flag.");
-			return;
+			FileHandleErrorD(result, FileResult_IsADirectory,,,"in ", caller_file, "(", caller_line, "): file_delete() was called on a directory, but FileDeleteFlags_Directory was not specified as a flag.");
 		}
-
 
 		u8* scan = path.str+path.count;
 		str8 prepath = {0};
@@ -314,8 +324,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 		}
 
 		if(!prepath) {
-			LogE("file", "malformed path given: ", path);
-			return;
+			FileHandleErrorD(result, FileResult_InvalidArgument,,, "malformed path given: ", path);
 		}
 
 		if(HasFlag(flags, FileDeleteFlags_Recursive_And_I_Promise_I_Am_Using_This_Responsibly)) {
@@ -354,10 +363,9 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 }
 
 File* 
-deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
+deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result){
 	if(!directory || *directory.str == 0){
-		LogE("file","file_search_directory() was passed an empty `directory` at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_EmptyPath, 0, , "file_search_directory() was passed an empty `directory` at ",caller_file,"(",caller_line,")");
 	}
 
 	File* out;
@@ -365,16 +373,22 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory){
 	
 	DIR* dir = opendir((char*)directory.str);
 	if(!dir) {
-		print_errno(errno, "file", __func__, {});
-		return 0;
+		StartFileErrnoHandler(result, errno, 0)
+			ErrorCaseL(EACCES, FileResult_AccessDenied,      "This process does not have permission to open the given directory",)
+			ErrorCaseL(EMFILE, FileResult_TooManyHandles,    "This process has too many handles open.",)
+			ErrorCaseL(ENFILE, FileResult_TooManyHandles,    "The system-wide limit on open handles has been reached.",)
+			ErrorCaseL(ENOENT, FileResult_PathDoesNotExist,  "The given path doesn't exist",)
+			ErrorCaseL(ENOMEM, FileResult_SystemOutOfMemory, "Not enough memory to open directory.",)
+		EndFileErrnoHandler()
 	}
 
 
 	struct dirent* entry;
 	while((entry = readdir(dir))){
-		File* file = file_init((str8{(u8*)entry->d_name,(s64)strlen(entry->d_name)}), FileAccess_Read);
-
-	}
+		str8 filepath = ToString8(deshi_allocator, directory, entry->d_name);
+		File* file = file_init_result(filepath, FileAccess_Read, result);
+		
+	}	
 
 	return 0;
 }

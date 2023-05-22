@@ -119,9 +119,29 @@ struct File{
 	u64 cursor;
 };
 
+// TODO(sushi) move this somewhere else
+// we reserve a name for internal use, so that the separate case defines use the right name without needing to define it repeatedly
+#define StartErrorHandler(name, errtype, err) { \
+	errtype* __errhandler__internal__pointer = name; \
+	switch(err) { \
+
+#define ErrorCaseF(err) case err:
+#define ErrorCaseL(err, resulttag, message, extra) case err: *__errhandler__internal__pointer = {resulttag, STR8(message)}; extra; break;
+#define ErrorCaseD(err, resulttag, extra, ...) case err: *__errhandler__internal__pointer = {resulttag, ToString8(deshi_temp_allocator, __VA_ARGS__ )}; extra; break;
+
+
+#define EndErrorHandlerAndCatch(tag, err, unhandlederr_code) default: {LogE(tag, "unhandled errno in ", __func__, "(): ", err); unhandlederr_code} } }
+
+#define SetResultInfoD(resulttag, ...) *result = {resulttag, ToString8(deshi_temp_allocator, __VA_ARGS__)}
+#define SetResultInfoL(resulttag, message) *result = {resulttag, STR8(message)}
+
 
 typedef Type FileResultTag; enum {
 	FileResult_Ok,
+	// when an error occurs with a file, but the function used
+	// doesn't give any useful information about why it failed
+	// context can be found in the returned message 
+	FileResult_UnspecifiedError,
 	// the function called was given an empty path
 	FileResult_EmptyPath,
 	// the path given does not exist 
@@ -154,6 +174,18 @@ typedef Type FileResultTag; enum {
 	FileResult_TooManyHandles,
 	// the system is out of RAM
 	FileResult_SystemOutOfMemory,
+	// the operation failed because the path is currently in use 
+	// by the system or another process
+	FileResult_PathBusy,
+	// the OS gave an unspecified IO error
+	// if there is more information given in the documentation of a function
+	// that causes this, you should include that information in the returned message!
+	FileResult_IOError,
+	// the handle used for the file is invalid for the attempted operation
+	FileResult_InvalidHandleType,
+	// a File was passed that does not have an open handle, but the requested
+	// operation needs a handle.
+	FileResult_FileNotOpen,
 };
 
 struct FileResult{
@@ -168,8 +200,9 @@ struct FileResult{
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_system
 //Returns true if a file/directory exists at `path`
-external b32 deshi__file_exists(str8 caller_file, upt caller_line, str8 path);
-#define file_exists(path) deshi__file_exists(str8_lit(__FILE__),__LINE__, (path))
+external b32 deshi__file_exists(str8 caller_file, upt caller_line, str8 path, FileResult* result);
+#define file_exists(path) deshi__file_exists(str8_lit(__FILE__),__LINE__, (path), 0)
+#define file_exists_result(path, result) deshi__file_exists(str8_lit(__FILE__),__LINE__, (path), (result))
 
 //Creates an empty file/directory at `path` if one doesn't exist already
 //    if needed, this will create multiple directories to make the path valid
@@ -216,6 +249,9 @@ external File deshi__file_info(str8 caller_file, upt caller_line, str8 path, Fil
 
 //Returns a temporary array of files/directories in the `directory` if it exists
 //returns an array compatible with kigu/array.h
+// NOTE when constructing filepaths for storage on the File, we dynamically allocate the names
+// meaning that if you use this, you have to make sure that the name is freed
+// the allocated string is JUST 'path', all of the following str8's are views on this str8
 external File* deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result);
 #define file_search_directory(directory) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),0)
 #define file_search_directory_result(directory,res) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),(res))
@@ -390,6 +426,41 @@ external FileType deshi__file_get_type_of_path(str8 caller_file, upt caller_line
 #include "logger.h"
 #include "kigu/arrayT.h"
 
+// handles a range of errors that can be given from errno
+#define StartFileErrnoHandler(result_name, err, return_error_value) {\
+	if(!result_name) {                                               \
+		LogE("file", "unhandled errno: ", err);                      \
+		return return_error_value;                                   \
+	}                                                                \
+	u32 __feh__errno = err;                                          \
+	StartErrorHandler(result_name, FileResult, __feh__errno)
+
+#define EndFileErrnoHandler()                            \
+	EndErrorHandlerAndCatch("linux-file", __feh__errno, {\
+		LogE("file", "unhandled errno: ", __feh__errno); \
+		AssertAlways(false);                             \
+	})}
+
+// handles a single error, usually one that doesn't have to do with the system
+#define FileHandleErrorL(result_name, result_tag, return_error_value, message, extra)\
+	if(!result_name){                                                                \
+		LogE("file", __func__, "(): ", message);                                     \
+		return return_error_value;                                                   \
+	}                                                                                \
+	*result_name = {result_tag, STR8(message)};                                      \
+	extra                                                                            \
+	return return_error_value;
+
+// handles a single error, usually one that doesn't have to do with the system
+// dynamic version
+#define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)\
+	if(!result_name){                                                            \
+		LogE("file", __func__, "(): ", __VA_ARGS__);                             \
+		return return_error_value;                                               \
+	}                                                                            \
+	*result_name = {result_tag, ToString8(deshi_temp_allocator,__VA_ARGS__)};    \
+	extra                                                                        \
+	return return_error_value; 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_shared_variables
@@ -401,10 +472,9 @@ local struct{
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_init
 void
-deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset){
+deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset, FileResult* result){
 	if(file == 0){
-		LogE("file","file_set_cursor() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return;
+		FileHandleErrorD(result, FileResult_InvalidArgument,,,"file_set_cursor() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	
 	if(file->handle){
@@ -412,10 +482,13 @@ deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset
 		if(fseek(file->handle, offset, SEEK_SET) == 0){
 			file->cursor = offset;
 		}else{
-			LogE("file","fseek() failed in file_set_cursor() call on file '",file->path,"' with offset: ",offset);
+			StartFileErrnoHandler(result, errno,)
+				ErrorCaseD(EINVAL, FileResult_InvalidArgument,, "The offset provided to fseek resulted in a negative. Offset was ", offset, ".")
+				ErrorCaseL(ESPIPE, FileResult_InvalidHandleType, "The file descriptor is not seekable, eg. it refers to a pipe, FIFO, or socket.",);
+			EndFileErrnoHandler();
 		}
 	}else{
-		LogE("file","file_set_cursor() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
+		FileHandleErrorD(result, FileResult_FileNotOpen,,,"file_set_cursor() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")")
 	}
 }
 
@@ -423,14 +496,12 @@ deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_read
 str8
-deshi__file_read(str8 caller_file, upt caller_line, File* file, void* buffer, u64 bytes){
+deshi__file_read(str8 caller_file, upt caller_line, File* file, void* buffer, u64 bytes, FileResult* result){
 	if(file == 0){
-		LogE("file","file_read() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},,"file_read() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(buffer == 0 && bytes > 0){
-		LogE("file","file_read() was passed a null `buffer` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},,"file_read() was passed a null `buffer` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
 	}
 	
 	if(file->handle){
@@ -448,7 +519,11 @@ deshi__file_read(str8 caller_file, upt caller_line, File* file, void* buffer, u6
 				clearerr(file->handle);
 				file->cursor = file->bytes;
 			}else if(ferror(file->handle)){
-				LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				if(!result){
+					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}else{
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
 				return str8{};
@@ -463,20 +538,17 @@ deshi__file_read(str8 caller_file, upt caller_line, File* file, void* buffer, u6
 		((u8*)buffer)[bytes_read] = '\0';
 		return str8{(u8*)buffer, bytes_read};
 	}else{
-		LogE("file","file_read() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_FileNotOpen,{},,"file_read() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")")
 	}
 }
 
 str8
-deshi__file_read_alloc(str8 caller_file, upt caller_line, File* file, u64 bytes, Allocator* allocator){
+deshi__file_read_alloc(str8 caller_file, upt caller_line, File* file, u64 bytes, Allocator* allocator, FileResult* result){
 	if(file == 0){
-		LogE("file","file_read_alloc() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},, "file_read_alloc() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(allocator == 0 && bytes > 0){
-		LogE("file","file_read_alloc() was passed a null `allocator` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},, "file_read_alloc() was passed a null `allocator` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
 	}
 	
 	if(file->handle){
@@ -494,7 +566,11 @@ deshi__file_read_alloc(str8 caller_file, upt caller_line, File* file, u64 bytes,
 				clearerr(file->handle);
 				file->cursor = file->bytes;
 			}else if(ferror(file->handle)){
-				LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				if(!result){
+					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}else{
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
 				return str8{};
@@ -510,20 +586,17 @@ deshi__file_read_alloc(str8 caller_file, upt caller_line, File* file, u64 bytes,
 		result.str[bytes_read] = '\0';
 		return result;
 	}else{
-		LogE("file","file_read_alloc() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_FileNotOpen,{},,"file_read_alloc() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")")
 	}
 }
 
 str8
-deshi__file_read_line(str8 caller_file, upt caller_line, File* file, void* buffer, u64 max_bytes){
+deshi__file_read_line(str8 caller_file, upt caller_line, File* file, void* buffer, u64 max_bytes, FileResult* result){
 	if(file == 0){
-		LogE("file","file_read_line() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},, "file_read_line() was passed a null `file` pointer at ",caller_file,"(",caller_line,")"); 
 	}
 	if(buffer == 0){
-		LogE("file","file_read_line() was passed a null `buffer` pointer at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},, "file_read_line() was passed a null `buffer` pointer at ",caller_file,"(",caller_line,")");
 	}
 	
 	max_bytes -= 1; //NOTE(delle) leave space for \0
@@ -542,7 +615,11 @@ deshi__file_read_line(str8 caller_file, upt caller_line, File* file, void* buffe
 				clearerr(file->handle);
 				file->cursor = file->bytes;
 			}else if(ferror(file->handle)){
-				LogE("file","fread() failed in file_read_line_alloc() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				if(!result){
+					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}else{
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
 				return str8{};
@@ -562,20 +639,17 @@ deshi__file_read_line(str8 caller_file, upt caller_line, File* file, void* buffe
 		((u8*)buffer)[bytes_read] = '\0';
 		return str8{(u8*)buffer, bytes_read};
 	}else{
-		LogE("file","file_read_line() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_FileNotOpen,{},,"file_read_line() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")")
 	}
 }
 
 str8
-deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Allocator* allocator){
+deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Allocator* allocator, FileResult* result){
 	if(file == 0){
-		LogE("file","file_read_line_alloc() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},, "file_read_line_alloc() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(allocator == 0){
-		LogE("file","file_read_line_alloc() was passed a null `allocator` pointer at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_InvalidArgument,{},, "file_read_line_alloc() was passed a null `allocator` pointer at ",caller_file,"(",caller_line,")");
 	}
 	
 	if(file->handle){
@@ -593,7 +667,11 @@ deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Alloc
 				clearerr(file->handle);
 				file->cursor = file->bytes;
 			}else if(ferror(file->handle)){
-				LogE("file","fread() failed in file_read_line_alloc() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				if(!result){
+					LogE("file","fgetc() failed in file_read_line_alloc() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}else{
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
 				return str8{};
@@ -613,8 +691,7 @@ deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Alloc
 		fseek(file->handle, file->cursor,   SEEK_SET);
 		return result;
 	}else{
-		LogE("file","file_read_line_alloc() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return str8{};
+		FileHandleErrorD(result, FileResult_FileNotOpen,{},,"file_read_line_alloc() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
 	}
 }
 
@@ -622,14 +699,12 @@ deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Alloc
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_write
 u64
-deshi__file_write(str8 caller_file, upt caller_line, File* file, const void* data, u64 bytes){
+deshi__file_write(str8 caller_file, upt caller_line, File* file, const void* data, u64 bytes, FileResult* result){
 	if(file == 0){
-		LogE("file","file_write() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,, "file_write() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(data == 0 && bytes > 0){
-		LogE("file","file_write() was passed a null `data` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,, "file_write() was passed a null `data` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
 	}
 	
 	if(file->handle){
@@ -639,16 +714,14 @@ deshi__file_write(str8 caller_file, upt caller_line, File* file, const void* dat
 		if(file->cursor > file->bytes) file->bytes = file->cursor;
 		return bytes_written;
 	}else{
-		LogE("file","file_write() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_FileNotOpen,0,,"file_write() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
 	}
 }
 
 u64
-deshi__file_write_line(str8 caller_file, upt caller_line, File* file, str8 line){
+deshi__file_write_line(str8 caller_file, upt caller_line, File* file, str8 line, FileResult* result){
 	if(file == 0){
-		LogE("file","file_write_line() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,, "file_write_line() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(!line){
 		return 0;
@@ -661,20 +734,17 @@ deshi__file_write_line(str8 caller_file, upt caller_line, File* file, str8 line)
 		if(file->cursor > file->bytes) file->bytes = file->cursor;
 		return bytes_written;
 	}else{
-		LogE("file","file_write_line() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_FileNotOpen,0,, "file_write_line() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
 	}
 }
 
 u64
-deshi__file_append(str8 caller_file, upt caller_line, File* file, void* data, u64 bytes){
+deshi__file_append(str8 caller_file, upt caller_line, File* file, void* data, u64 bytes, FileResult* result){
 	if(file == 0){
-		LogE("file","file_append() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,, "file_append() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(data == 0 && bytes > 0){
-		LogE("file","file_append() was passed a null `data` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,, "file_append() was passed a null `data` pointer (with non-zero `bytes` to read) at ",caller_file,"(",caller_line,")");
 	}
 	
 	if(file->handle){
@@ -684,16 +754,14 @@ deshi__file_append(str8 caller_file, upt caller_line, File* file, void* data, u6
 		file->bytes += bytes_written;
 		return bytes_written;
 	}else{
-		LogE("file","file_append() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_FileNotOpen,0,,"file_append() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
 	}
 }
 
 u64
-deshi__file_append_line(str8 caller_file, upt caller_line, File* file, str8 line){
+deshi__file_append_line(str8 caller_file, upt caller_line, File* file, str8 line, FileResult* result){
 	if(file == 0){
-		LogE("file","file_append_line() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,, "file_append_line() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 	}
 	if(!line){
 		return 0;
@@ -707,11 +775,14 @@ deshi__file_append_line(str8 caller_file, upt caller_line, File* file, str8 line
 		file->bytes += bytes_written;
 		return bytes_written;
 	}else{
-		LogE("file","file_append_line() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_FileNotOpen,0,,"file_append_line() called on a closed file '",file->path,"' at ",caller_file,"(",caller_line,")");
 	}
 }
 
+#undef FileHandleErrorL
+#undef FileHandleErrorD
+#undef EndFileErrnoHandler
+#undef StartFileErrnoHandler
 
 #endif //DESHI_IMPLEMENTATION
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1204,5 +1275,6 @@ static void TEST_deshi_file(){
 	file_delete(str8_lit("data/test_deshi_file"), FileDeleteFlags_File);
 	TestPassed("core/file");
 }
+
 
 #endif //DESHI_TESTS
