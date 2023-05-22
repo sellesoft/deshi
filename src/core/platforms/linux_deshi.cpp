@@ -287,8 +287,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 
 	if(type == FileType_File) {
 		if(!HasFlag(flags, FileDeleteFlags_File)){
-			LogE("file", "in ", caller_file, "(",caller_line,"): file_delete() was called on a file, but FileDeleteFlags_File was not specified as a flag.");
-			return;
+			FileHandleErrorD(result, FileResult_InvalidArgument,,, "in ", caller_file, "(",caller_line,"): file_delete() was called on a file, but FileDeleteFlags_File was not specified as a flag.");
 		}
 		// we are just deleting a single file, so we don't need to do anything special
 		if(unlink((char*)path.str) == -1) {
@@ -327,6 +326,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 			FileHandleErrorD(result, FileResult_InvalidArgument,,, "malformed path given: ", path);
 		}
 
+		// TODO(sushi) get file_search_directory working and then use it here
 		if(HasFlag(flags, FileDeleteFlags_Recursive_And_I_Promise_I_Am_Using_This_Responsibly)) {
 			while(1) {
 				errno = 0;

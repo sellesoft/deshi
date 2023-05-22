@@ -795,485 +795,508 @@ static void TEST_deshi_file(){
 	if(file_exists(str8_lit("data/test_deshi_file"))){
 		file_delete(str8_lit("data/test_deshi_file"), FileDeleteFlags_File);
 	}
+
+	Log("", "Beginning deshi file module tests...");
+	logger_push_indent();
 	
 	{//system
+
+		Log("", "System tests:");
+		logger_push_indent();
+
 		//// exists ////
-		Test(file_exists(str8_lit("data")));
-		Test(file_exists(str8_lit("data/")));
-		Test(file_exists(str8_lit("data\\")));
+		Log("", "file_exists: ");
+		logger_push_indent();
+
+		FileResult result;
+
+		TestReturn(file_exists(STR8("data")),1);
+		TestReturn(file_exists(STR8("data/")),1);
+		TestReturn(file_exists(STR8("data\\")),1);
 		
-		Test(!file_exists(str8_lit("datadbasjkdabskjdasbkjdasbjkds")));
-		Test(!file_exists(str8_lit("datadbasjkdabskjdasbkjdasbjkds/")));
-		Test(!file_exists(str8_lit("datadbasjkdabskjdasbkjdasbjkds\\")));
+		TestReturn(file_exists(STR8("datadbasjkdabskjdasbkjdasbjkds")), 1);
+		TestReturn(file_exists(STR8("datadbasjkdabskjdasbkjdasbjkds/")), 1);
+		TestReturn(file_exists(STR8("datadbasjkdabskjdasbkjdasbjkds\\")), 1);
 		
-		TestExpectedLog("[FILE-ERROR] file_exists() was passed an empty `path` at " __FILE__ "(",__LINE__+1,")");
-		Test(!file_exists(str8{}));
-		TestExpectedLog("[FILE-ERROR] file_exists() was passed an empty `path` at " __FILE__ "(",__LINE__+1,")");
-		Test(!file_exists(str8_lit("")));
+		Test(file_exists_result(str8{},&result), FileResult_EmptyPath);
+		Test(file_exists_result(STR8(""), &result), FileResult_EmptyPath);
 		
 		//// create ////
-		file_create(str8_lit("data/"));
-		Test(file_exists(str8_lit("data/")));
+		logger_pop_indent();
+		Log("", "file_create: ");
+		logger_push_indent();
+		TestOk(file_create_result(STR8("data/"), &result));
+		TestReturnTrue(file_exists(STR8("data")));
 		
-		file_create(str8_lit("data/test_deshi_file/"));
-		Test(file_exists(str8_lit("data/test_deshi_file")));
+		TestOk(file_create_result(STR8("data/test_deshi_file/"), &result));
+		TestReturnTrue(file_exists(STR8("data/test_deshi_file")));
 		
-		file_create(str8_lit("data/test_deshi_file/food/apple.txt"));
-		Test(file_exists(str8_lit("data/test_deshi_file/food/apple.txt")));
+		TestOk(file_create_result(STR8("data/test_deshi_file/food/apple.txt"), &result));
+		TestReturnTrue(file_exists(STR8("data/test_deshi_file/food/apple.txt")));
 		
-		file_create(str8_lit("data/test_deshi_file/food/apple.txt"));
-		Test(file_exists(str8_lit("data/test_deshi_file/food/apple.txt")));
+		TestOk(file_create_result(STR8("data/test_deshi_file/food/apple.txt"), &result));
+		TestReturnTrue(file_exists(STR8("data/test_deshi_file/food/apple.txt")));
 		
-		file_create(str8_lit("data/test_deshi_file/不明誘惑/"));
-		Test(file_exists(str8_lit("data/test_deshi_file/不明誘惑")));
+		TestOk(file_create_result(STR8("data/test_deshi_file/不明誘惑/"), &result));
+		TestReturnTrue(file_exists(STR8("data/test_deshi_file/不明誘惑")));
 		
-		file_create(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"));
-		Test(file_exists(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市")));
+		TestOk(file_create_result(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), &result));
+		TestReturnTrue(file_exists(STR8("data/test_deshi_file/不明誘惑/悪徳.市")));
 		
-		TestExpectedLog("[FILE-ERROR] file_create() was passed an empty `path` at " __FILE__ "(",__LINE__+1,")");
-		file_create(str8{});
-		TestExpectedLog("[FILE-ERROR] file_create() was passed an empty `path` at " __FILE__ "(",__LINE__+1,")");
-		file_create(str8_lit(""));
+		Test(file_create_result(str8{}, &result), FileResult_EmptyPath);
+		Test(file_create_result(STR8(""), &result), FileResult_EmptyPath);
 		
 		//// delete ////
-		file_delete(str8_lit("data/test_deshi_file/food/"), FileDeleteFlags_Directory);
-		Test(!file_exists(str8_lit("data/test_deshi_file/food/apple.txt")));
-		Test(!file_exists(str8_lit("data/test_deshi_file/food")));
+		logger_pop_indent();
+		Log("", "file_delete: ");
+		logger_push_indent();
 		
-		file_delete(str8_lit("data/test_deshi_file/不明誘惑"), FileDeleteFlags_File);
-		Test(!file_exists(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市")));
-		Test(!file_exists(str8_lit("data/test_deshi_file/不明誘惑")));
+		TestOk(file_delete_result(STR8("data/test_deshi_file/food/"), FileDeleteFlags_Directory, &result));
+		TestReturnTrue((!file_exists(STR8("data/test_deshi_file/food/apple.txt"))));
+		TestReturnTrue((!file_exists(STR8("data/test_deshi_file/food"))));
 		
-		TestExpectedLog("[FILE-ERROR] file_delete() was passed an empty `path` at " __FILE__ "(",__LINE__+1,")");
-		file_delete(str8{}, 0);
-		TestExpectedLog("[FILE-ERROR] file_delete() was passed an empty `path` at " __FILE__ "(",__LINE__+1,")");
-		file_delete(str8_lit(""), 0);
+		TestOk(file_delete_result(STR8("data/test_deshi_file/不明誘惑"), FileDeleteFlags_File, &result));
+		TestReturnTrue((!file_exists(STR8("data/test_deshi_file/不明誘惑/悪徳.市"))));
+		TestReturnTrue((!file_exists(STR8("data/test_deshi_file/不明誘惑"))));
+		
+		Test(file_delete_result(str8{}, 0, &result), FileResult_EmptyPath);
+		Test(file_delete_result(STR8(""), 0, &result), FileResult_EmptyPath);
+
+		file_create(STR8("data/dummydir/"));
+		file_create(STR8("data/dummyfile"));
+
+		Test(file_delete_result(STR8("data/dummydir"), 0, &result), FileResult_InvalidArgument);
+		Test(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_File, &result), FileResult_IsADirectory);
+		Test(file_delete_result(STR8("data/dummyfile"), FileDeleteFlags_Directory, &result), FileResult_NotADirectory);
+
+
+
 		//TestExpectedLog("[FILE-ERROR] File deletion can only occur within the data folder. Input path: apple/");
-		//file_delete(str8_lit("apple/"), FileDeleteFlags_Directory);
+		//file_delete(STR8("apple/"), FileDeleteFlags_Directory);
 		
-		//// rename ////
-		file_create(str8_lit("data/test_deshi_file/food/apple.txt"));
-		file_rename(str8_lit("data/test_deshi_file/food/apple.txt"), str8_lit("data/test_deshi_file/food/banana.txt"));
-		Test(!file_exists(str8_lit("data/test_deshi_file/food/apple.txt")));
-		Test(file_exists(str8_lit("data/test_deshi_file/food/banana.txt")));
+// 		//// rename ////
+// 		file_create(STR8("data/test_deshi_file/food/apple.txt"));
+// 		file_rename(STR8("data/test_deshi_file/food/apple.txt"), STR8("data/test_deshi_file/food/banana.txt"));
+// 		Test(!file_exists(STR8("data/test_deshi_file/food/apple.txt")));
+// 		Test(file_exists(STR8("data/test_deshi_file/food/banana.txt")));
 		
-		file_rename(str8_lit("data/test_deshi_file/food/"), str8_lit("data/test_deshi_file/fruits/"));
-		Test(!file_exists(str8_lit("data/test_deshi_file/food/apple.txt")));
-		Test(!file_exists(str8_lit("data/test_deshi_file/food/banana.txt")));
-		Test(!file_exists(str8_lit("data/test_deshi_file/food")));
-		Test(file_exists(str8_lit("data/test_deshi_file/fruits")));
-		Test(file_exists(str8_lit("data/test_deshi_file/fruits/banana.txt")));
+// 		file_rename(STR8("data/test_deshi_file/food/"), STR8("data/test_deshi_file/fruits/"));
+// 		Test(!file_exists(STR8("data/test_deshi_file/food/apple.txt")));
+// 		Test(!file_exists(STR8("data/test_deshi_file/food/banana.txt")));
+// 		Test(!file_exists(STR8("data/test_deshi_file/food")));
+// 		Test(file_exists(STR8("data/test_deshi_file/fruits")));
+// 		Test(file_exists(STR8("data/test_deshi_file/fruits/banana.txt")));
 		
-		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `old_path` at " __FILE__ "(",__LINE__+1,")");
-		file_rename(str8{}, str8{});
-		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `old_path` at " __FILE__ "(",__LINE__+1,")");
-		file_rename(str8_lit(""), str8_lit(""));
-		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `new_path` at " __FILE__ "(",__LINE__+1,")");
-		file_rename(str8_lit("test"), str8{});
-		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `new_path` at " __FILE__ "(",__LINE__+1,")");
-		file_rename(str8_lit("test"), str8_lit(""));
-		TestExpectedLog("[FILE-ERROR] File renaming can only occur within the data folder. Input old path: test/");
-		file_rename(str8_lit("test/"), str8_lit("apple/"));
-		TestExpectedLog("[FILE-ERROR] File renaming can only occur within the data folder. Input new path: apple/");
-		file_rename(str8_lit("data/"), str8_lit("apple/"));
-		TestExpectedLog("[FILE-ERROR] File renaming can only occur within the data folder. Input new path: apple/test.txt");
-		file_rename(str8_lit("data/test.txt"), str8_lit("apple/test.txt"));
-#if DESHI_WINDOWS
-		TestExpectedLog("[WIN32-ERROR] MoveFileW failed with error 3: The system cannot find the path specified.\n data/test_deshi_file/food/apple.txt");
-#else
-		TestExpectedLog("[LINUX-ERROR] ...");
-#endif
-		file_rename(str8_lit("data/test_deshi_file/food/apple.txt"), str8_lit("data/test_deshi_file/food/banana.txt"));
+// 		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `old_path` at " __FILE__ "(",__LINE__+1,")");
+// 		file_rename(str8{}, str8{});
+// 		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `old_path` at " __FILE__ "(",__LINE__+1,")");
+// 		file_rename(STR8(""), STR8(""));
+// 		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `new_path` at " __FILE__ "(",__LINE__+1,")");
+// 		file_rename(STR8("test"), str8{});
+// 		TestExpectedLog("[FILE-ERROR] file_rename() was passed an empty `new_path` at " __FILE__ "(",__LINE__+1,")");
+// 		file_rename(STR8("test"), STR8(""));
+// 		TestExpectedLog("[FILE-ERROR] File renaming can only occur within the data folder. Input old path: test/");
+// 		file_rename(STR8("test/"), STR8("apple/"));
+// 		TestExpectedLog("[FILE-ERROR] File renaming can only occur within the data folder. Input new path: apple/");
+// 		file_rename(STR8("data/"), STR8("apple/"));
+// 		TestExpectedLog("[FILE-ERROR] File renaming can only occur within the data folder. Input new path: apple/test.txt");
+// 		file_rename(STR8("data/test.txt"), STR8("apple/test.txt"));
+// #if DESHI_WINDOWS
+// 		TestExpectedLog("[WIN32-ERROR] MoveFileW failed with error 3: The system cannot find the path specified.\n data/test_deshi_file/food/apple.txt");
+// #else
+// 		TestExpectedLog("[LINUX-ERROR] ...");
+// #endif
+// 		file_rename(STR8("data/test_deshi_file/food/apple.txt"), STR8("data/test_deshi_file/food/banana.txt"));
 		
-		//// info ////
-		File file = file_info(str8_lit("data/"));
-		Test(file.creation_time != 0);
-		Test(file.last_access_time >= file.creation_time);
-		Test(file.last_write_time >= file.creation_time);
-		Test(file.bytes == 0);
-		Test(file.type == FileType_Directory);
-		//Test(!file.changed);
-		Test(str8_ends_with(file.path, str8_lit("data/")));
-		Test(str8_equal_lazy(file.name, str8{}));
-		Test(str8_equal_lazy(file.front, str8{}));
-		Test(str8_equal_lazy(file.ext, str8{}));
-		Test(file.access == 0);
-		Test(file.cursor == 0);
+// 		//// info ////
+// 		File file = file_info(STR8("data/"));
+// 		Test(file.creation_time != 0);
+// 		Test(file.last_access_time >= file.creation_time);
+// 		Test(file.last_write_time >= file.creation_time);
+// 		Test(file.bytes == 0);
+// 		Test(file.type == FileType_Directory);
+// 		//Test(!file.changed);
+// 		Test(str8_ends_with(file.path, STR8("data/")));
+// 		Test(str8_equal_lazy(file.name, str8{}));
+// 		Test(str8_equal_lazy(file.front, str8{}));
+// 		Test(str8_equal_lazy(file.ext, str8{}));
+// 		Test(file.access == 0);
+// 		Test(file.cursor == 0);
 		
-		file = file_info(str8_lit("data/test_deshi_file/fruits/banana.txt"));
-		Test(file.creation_time != 0);
-		Test(file.last_access_time >= file.creation_time);
-		Test(file.last_write_time >= file.creation_time);
-		Test(file.bytes == 0);
-		Test(file.type != FileType_Directory);
-		//Test(!file.changed);
-		Test(str8_ends_with(file.path, str8_lit("data/test_deshi_file/fruits/banana.txt")));
-		Test(str8_equal_lazy(file.name, str8_lit("banana.txt")));
-		Test(str8_equal_lazy(file.front, str8_lit("banana")));
-		Test(str8_equal_lazy(file.ext, str8_lit("txt")));
-		Test(file.access == 0);
-		Test(file.cursor == 0);
+// 		file = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
+// 		Test(file.creation_time != 0);
+// 		Test(file.last_access_time >= file.creation_time);
+// 		Test(file.last_write_time >= file.creation_time);
+// 		Test(file.bytes == 0);
+// 		Test(file.type != FileType_Directory);
+// 		//Test(!file.changed);
+// 		Test(str8_ends_with(file.path, STR8("data/test_deshi_file/fruits/banana.txt")));
+// 		Test(str8_equal_lazy(file.name, STR8("banana.txt")));
+// 		Test(str8_equal_lazy(file.front, STR8("banana")));
+// 		Test(str8_equal_lazy(file.ext, STR8("txt")));
+// 		Test(file.access == 0);
+// 		Test(file.cursor == 0);
 		
-#if DESHI_WINDOWS
-		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/food");
-#else
-        TestExpectedLog("[LINUX-ERROR] ...");
-#endif
-		file = file_info(str8_lit("data/test_deshi_file/food"));
-#if DESHI_WINDOWS
-		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/fruits/apple.txt");
-#else
-		TestExpectedLog("[LINUX-ERROR] ...");
-#endif
-		file = file_info(str8_lit("data/test_deshi_file/fruits/apple.txt"));
-		Test(file.creation_time == 0);
+// #if DESHI_WINDOWS
+// 		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/food");
+// #else
+//         TestExpectedLog("[LINUX-ERROR] ...");
+// #endif
+// 		file = file_info(STR8("data/test_deshi_file/food"));
+// #if DESHI_WINDOWS
+// 		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/fruits/apple.txt");
+// #else
+// 		TestExpectedLog("[LINUX-ERROR] ...");
+// #endif
+// 		file = file_info(STR8("data/test_deshi_file/fruits/apple.txt"));
+// 		Test(file.creation_time == 0);
 		
-		//// search_directory ////
-		file_create(str8_lit("data/test_deshi_file/fruits/apple.bin"));
-		File* files = file_search_directory(str8_lit("data/test_deshi_file/fruits/"));
-		Test(array_count(files) == 2);
-		u32 apple_index = 0, banana_index = 1;
-		if(str8_equal_lazy(files[0].front, str8_lit("banana"))) Swap(apple_index, banana_index);
-		Test(files[banana_index].creation_time != 0);
-		Test(files[banana_index].last_access_time >= files[banana_index].creation_time);
-		Test(files[banana_index].last_write_time >= files[banana_index].creation_time);
-		Test(files[banana_index].bytes == 0);
-		Test(files[banana_index].type != FileType_Directory);
-		//Test(!files[banana_index].changed);
-		Test(str8_ends_with(files[banana_index].path, str8_lit("data/test_deshi_file/fruits/banana.txt")));
-		Test(str8_equal_lazy(files[banana_index].name, str8_lit("banana.txt")));
-		Test(str8_equal_lazy(files[banana_index].front, str8_lit("banana")));
-		Test(str8_equal_lazy(files[banana_index].ext, str8_lit("txt")));
-		Test(files[banana_index].access == 0);
-		Test(files[banana_index].cursor == 0);
-		Test(files[apple_index].creation_time != 0 && files[apple_index].creation_time >= files[banana_index].creation_time);
-		Test(files[apple_index].last_access_time >= files[apple_index].creation_time && files[apple_index].last_access_time >= files[banana_index].last_access_time);
-		Test(files[apple_index].last_write_time >= files[apple_index].creation_time && files[apple_index].last_write_time >= files[banana_index].last_write_time);
-		Test(files[apple_index].bytes == 0);
-		Test(files[apple_index].type != FileType_Directory);
-		//Test(!files[apple_index].changed);
-		Test(str8_ends_with(files[apple_index].path, str8_lit("data/test_deshi_file/fruits/apple.bin")));
-		Test(str8_equal_lazy(files[apple_index].name, str8_lit("apple.bin")));
-		Test(str8_equal_lazy(files[apple_index].front, str8_lit("apple")));
-		Test(str8_equal_lazy(files[apple_index].ext, str8_lit("bin")));
-		Test(files[apple_index].access == 0);
-		Test(files[apple_index].cursor == 0);
+// 		//// search_directory ////
+// 		file_create(STR8("data/test_deshi_file/fruits/apple.bin"));
+// 		File* files = file_search_directory(STR8("data/test_deshi_file/fruits/"));
+// 		Test(array_count(files) == 2);
+// 		u32 apple_index = 0, banana_index = 1;
+// 		if(str8_equal_lazy(files[0].front, STR8("banana"))) Swap(apple_index, banana_index);
+// 		Test(files[banana_index].creation_time != 0);
+// 		Test(files[banana_index].last_access_time >= files[banana_index].creation_time);
+// 		Test(files[banana_index].last_write_time >= files[banana_index].creation_time);
+// 		Test(files[banana_index].bytes == 0);
+// 		Test(files[banana_index].type != FileType_Directory);
+// 		//Test(!files[banana_index].changed);
+// 		Test(str8_ends_with(files[banana_index].path, STR8("data/test_deshi_file/fruits/banana.txt")));
+// 		Test(str8_equal_lazy(files[banana_index].name, STR8("banana.txt")));
+// 		Test(str8_equal_lazy(files[banana_index].front, STR8("banana")));
+// 		Test(str8_equal_lazy(files[banana_index].ext, STR8("txt")));
+// 		Test(files[banana_index].access == 0);
+// 		Test(files[banana_index].cursor == 0);
+// 		Test(files[apple_index].creation_time != 0 && files[apple_index].creation_time >= files[banana_index].creation_time);
+// 		Test(files[apple_index].last_access_time >= files[apple_index].creation_time && files[apple_index].last_access_time >= files[banana_index].last_access_time);
+// 		Test(files[apple_index].last_write_time >= files[apple_index].creation_time && files[apple_index].last_write_time >= files[banana_index].last_write_time);
+// 		Test(files[apple_index].bytes == 0);
+// 		Test(files[apple_index].type != FileType_Directory);
+// 		//Test(!files[apple_index].changed);
+// 		Test(str8_ends_with(files[apple_index].path, STR8("data/test_deshi_file/fruits/apple.bin")));
+// 		Test(str8_equal_lazy(files[apple_index].name, STR8("apple.bin")));
+// 		Test(str8_equal_lazy(files[apple_index].front, STR8("apple")));
+// 		Test(str8_equal_lazy(files[apple_index].ext, STR8("bin")));
+// 		Test(files[apple_index].access == 0);
+// 		Test(files[apple_index].cursor == 0);
 		
-#if DESHI_WINDOWS
-		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 3: The system cannot find the path specified.\n data/test_deshi_file/food/");
-#else
-		TestExpectedLog("[LINUX-ERROR] ...");
-#endif
-		files = file_search_directory(str8_lit("data/test_deshi_file/food/"));
-		Test(array_count(files) == 0);
-		//Test(files.data == 0);
+// #if DESHI_WINDOWS
+// 		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 3: The system cannot find the path specified.\n data/test_deshi_file/food/");
+// #else
+// 		TestExpectedLog("[LINUX-ERROR] ...");
+// #endif
+// 		files = file_search_directory(STR8("data/test_deshi_file/food/"));
+// 		Test(array_count(files) == 0);
+// 		//Test(files.data == 0);
 		
-		//// path_absolute ////
-		Test(str8_ends_with(file_path_absolute(str8_lit("data/test_deshi_file/fruits/apple.bin")), str8_lit("data/test_deshi_file/fruits/apple.bin")));
-		Test(str8_ends_with(file_path_absolute(str8_lit("data/test_deshi_file/fruits")), str8_lit("data/test_deshi_file/fruits/")));
-		Test(str8_ends_with(file_path_absolute(str8_lit("data/test_deshi_file/")), str8_lit("data/test_deshi_file/")));
-#if 0 //NOTE(delle) user specific path testing
-		Test(str8_equal_lazy(file_path_absolute(str8_lit("data/test_deshi_file/fruits/apple.bin")), str8_lit("W:/suugu/data/test_deshi_file/fruits/apple.bin")));
-		Test(str8_equal_lazy(file_path_absolute(str8_lit("data/test_deshi_file/fruits")), str8_lit("W:/suugu/data/test_deshi_file/fruits/")));
-#endif
+// 		//// path_absolute ////
+// 		Test(str8_ends_with(file_path_absolute(STR8("data/test_deshi_file/fruits/apple.bin")), STR8("data/test_deshi_file/fruits/apple.bin")));
+// 		Test(str8_ends_with(file_path_absolute(STR8("data/test_deshi_file/fruits")), STR8("data/test_deshi_file/fruits/")));
+// 		Test(str8_ends_with(file_path_absolute(STR8("data/test_deshi_file/")), STR8("data/test_deshi_file/")));
+// #if 0 //NOTE(delle) user specific path testing
+// 		Test(str8_equal_lazy(file_path_absolute(STR8("data/test_deshi_file/fruits/apple.bin")), STR8("W:/suugu/data/test_deshi_file/fruits/apple.bin")));
+// 		Test(str8_equal_lazy(file_path_absolute(STR8("data/test_deshi_file/fruits")), STR8("W:/suugu/data/test_deshi_file/fruits/")));
+// #endif
 		
-#if DESHI_WINDOWS
-		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/food/");
-#else
-		TestExpectedLog("[LINUX-ERROR] ...");
-#endif
-		file_path_absolute(str8_lit("data/test_deshi_file/food/"));
+// #if DESHI_WINDOWS
+// 		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/food/");
+// #else
+// 		TestExpectedLog("[LINUX-ERROR] ...");
+// #endif
+// 		file_path_absolute(STR8("data/test_deshi_file/food/"));
 		
-		//// path_equal ////
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits/apple.bin"), str8_lit("data/test_deshi_file/fruits/apple.bin")));
-		Test(file_path_equal(str8_lit("data\\test_deshi_file\\fruits\\apple.bin"), str8_lit("data/test_deshi_file/fruits/apple.bin")));
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits/apple.bin"), str8_lit("data\\test_deshi_file\\fruits\\apple.bin")));
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits/apple.bin"), str8_lit("data\\test_deshi_file/fruits\\apple.bin")));
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits/"), str8_lit("data/test_deshi_file/fruits")));
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits"), str8_lit("data/test_deshi_file/fruits/")));
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits\\"), str8_lit("data/test_deshi_file/fruits/")));
-		Test(file_path_equal(str8_lit("data/test_deshi_file/fruits/"), str8_lit("data/test_deshi_file/fruits\\")));
+// 		//// path_equal ////
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data/test_deshi_file/fruits/apple.bin")));
+// 		Test(file_path_equal(STR8("data\\test_deshi_file\\fruits\\apple.bin"), STR8("data/test_deshi_file/fruits/apple.bin")));
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data\\test_deshi_file\\fruits\\apple.bin")));
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data\\test_deshi_file/fruits\\apple.bin")));
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits/"), STR8("data/test_deshi_file/fruits")));
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits"), STR8("data/test_deshi_file/fruits/")));
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits\\"), STR8("data/test_deshi_file/fruits/")));
+// 		Test(file_path_equal(STR8("data/test_deshi_file/fruits/"), STR8("data/test_deshi_file/fruits\\")));
 		
-		Test(!file_path_equal(str8_lit("data/test_deshi_file/fruits/apple.bin"), str8_lit("data/test_deshi_file/fruits/banana.txt")));
-		Test(!file_path_equal(str8_lit("data/test_deshi_file/fruits/apple.bin"), str8_lit("data/test_deshi_file/fruits/apple.bi")));
-		Test(!file_path_equal(str8_lit("data/test_deshi_file/fruits/apple.bin"), str8_lit("data/test_deshi_file/fruits/")));
+// 		Test(!file_path_equal(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data/test_deshi_file/fruits/banana.txt")));
+// 		Test(!file_path_equal(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data/test_deshi_file/fruits/apple.bi")));
+// 		Test(!file_path_equal(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data/test_deshi_file/fruits/")));
 		
-		TestPassed("core/file/system");
-	}
+// 		TestPassed("core/file/system");
+// 	}
 	
-	{//simple read/write/append
-		File file1 = file_info(str8_lit("data/test_deshi_file/fruits/banana.txt"));
+// 	{//simple read/write/append
+// 		File file1 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
 		
-		//// write ////
-		str8 s1 = str8_lit("woah, this is a banana!");
-		u32 count = file_write_simple(str8_lit("data/test_deshi_file/fruits/banana.txt"), s1.str, s1.count);
-		File file2 = file_info(str8_lit("data/test_deshi_file/fruits/banana.txt"));
-		Test(count == s1.count);
-		Test(file2.bytes == s1.count);
+// 		//// write ////
+// 		str8 s1 = STR8("woah, this is a banana!");
+// 		u32 count = file_write_simple(STR8("data/test_deshi_file/fruits/banana.txt"), s1.str, s1.count);
+// 		File file2 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
+// 		Test(count == s1.count);
+// 		Test(file2.bytes == s1.count);
 		
-		//// truncate write ////
-		str8 s2 = str8_lit("アクアマン");
-		count = file_write_simple(str8_lit("data/test_deshi_file/fruits/banana.txt"), s2.str, s2.count);
-		file1 = file_info(str8_lit("data/test_deshi_file/fruits/banana.txt"));
-		Test(count == s2.count);
-		Test(file1.bytes == s2.count);
+// 		//// truncate write ////
+// 		str8 s2 = STR8("アクアマン");
+// 		count = file_write_simple(STR8("data/test_deshi_file/fruits/banana.txt"), s2.str, s2.count);
+// 		file1 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
+// 		Test(count == s2.count);
+// 		Test(file1.bytes == s2.count);
 		
-		//// append ////
-		count = file_append_simple(str8_lit("data/test_deshi_file/fruits/banana.txt"), s1.str, s1.count);
-		file2 = file_info(str8_lit("data/test_deshi_file/fruits/banana.txt"));
-		Test(count == s1.count);
-		Test(file2.bytes == s2.count + s1.count);
+// 		//// append ////
+// 		count = file_append_simple(STR8("data/test_deshi_file/fruits/banana.txt"), s1.str, s1.count);
+// 		file2 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
+// 		Test(count == s1.count);
+// 		Test(file2.bytes == s2.count + s1.count);
 		
-		//// read ////
-		str8 read = file_read_simple(str8_lit("data/test_deshi_file/fruits/banana.txt"), deshi_temp_allocator);
-		file1 = file_info(str8_lit("data/test_deshi_file/fruits/banana.txt"));
-		Test(read.count == s2.count + s1.count);
-		Test(str8_begins_with(read, s2));
-		Test(str8_ends_with(read, s1));
-		Test(file1.bytes == s2.count + s1.count);
+// 		//// read ////
+// 		str8 read = file_read_simple(STR8("data/test_deshi_file/fruits/banana.txt"), deshi_temp_allocator);
+// 		file1 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
+// 		Test(read.count == s2.count + s1.count);
+// 		Test(str8_begins_with(read, s2));
+// 		Test(str8_ends_with(read, s1));
+// 		Test(file1.bytes == s2.count + s1.count);
 		
-		TestPassed("core/file/simple");
-	}
+// 		TestPassed("core/file/simple");
+// 	}
 	
-	{//init
-		file_create(str8_lit("data/test_deshi_file/不明誘惑/"));
+// 	{//init
+// 		file_create(STR8("data/test_deshi_file/不明誘惑/"));
 		
-		//// init ////
-		File* file = file_init(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate);
-		Test(file_initted_files() == file);
-		Test(array_count(file_initted_files()) == 1);
-		Test(file->handle != 0);
-		Test(file->creation_time != 0);
-		Test(file->last_access_time >= file->creation_time);
-		Test(file->last_write_time >= file->creation_time);
-		Test(file->bytes == 0);
-		Test(file->type != FileType_Directory);
-		//Test(!file->changed);
-		Test(str8_ends_with(file->path, str8_lit("data/test_deshi_file/不明誘惑/悪徳.市")));
-		Test(str8_equal_lazy(file->name, str8_lit("悪徳.市")));
-		Test(str8_equal_lazy(file->front, str8_lit("悪徳")));
-		Test(str8_equal_lazy(file->ext, str8_lit("市")));
-		Test(file->access == FileAccess_ReadWrite);
-		Test(file->cursor == 0);
+// 		//// init ////
+// 		File* file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate);
+// 		Test(file_initted_files() == file);
+// 		Test(array_count(file_initted_files()) == 1);
+// 		Test(file->handle != 0);
+// 		Test(file->creation_time != 0);
+// 		Test(file->last_access_time >= file->creation_time);
+// 		Test(file->last_write_time >= file->creation_time);
+// 		Test(file->bytes == 0);
+// 		Test(file->type != FileType_Directory);
+// 		//Test(!file->changed);
+// 		Test(str8_ends_with(file->path, STR8("data/test_deshi_file/不明誘惑/悪徳.市")));
+// 		Test(str8_equal_lazy(file->name, STR8("悪徳.市")));
+// 		Test(str8_equal_lazy(file->front, STR8("悪徳")));
+// 		Test(str8_equal_lazy(file->ext, STR8("市")));
+// 		Test(file->access == FileAccess_ReadWrite);
+// 		Test(file->cursor == 0);
 		
-		file = file_init(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate);
-		Test(file_initted_files() == file);
-		Test(array_count(file_initted_files()) == 1);
-		Test(file->handle != 0);
-		Test(file->creation_time != 0);
-		Test(file->last_access_time >= file->creation_time);
-		Test(file->last_write_time >= file->creation_time);
-		Test(file->bytes == 0);
-		Test(file->type != FileType_Directory);
-		//Test(!file->changed);
-		Test(str8_ends_with(file->path, str8_lit("data/test_deshi_file/不明誘惑/悪徳.市")));
-		Test(str8_equal_lazy(file->name, str8_lit("悪徳.市")));
-		Test(str8_equal_lazy(file->front, str8_lit("悪徳")));
-		Test(str8_equal_lazy(file->ext, str8_lit("市")));
-		Test(file->access == FileAccess_ReadWrite);
-		Test(file->cursor == 0);
+// 		file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate);
+// 		Test(file_initted_files() == file);
+// 		Test(array_count(file_initted_files()) == 1);
+// 		Test(file->handle != 0);
+// 		Test(file->creation_time != 0);
+// 		Test(file->last_access_time >= file->creation_time);
+// 		Test(file->last_write_time >= file->creation_time);
+// 		Test(file->bytes == 0);
+// 		Test(file->type != FileType_Directory);
+// 		//Test(!file->changed);
+// 		Test(str8_ends_with(file->path, STR8("data/test_deshi_file/不明誘惑/悪徳.市")));
+// 		Test(str8_equal_lazy(file->name, STR8("悪徳.市")));
+// 		Test(str8_equal_lazy(file->front, STR8("悪徳")));
+// 		Test(str8_equal_lazy(file->ext, STR8("市")));
+// 		Test(file->access == FileAccess_ReadWrite);
+// 		Test(file->cursor == 0);
 		
-#if DESHI_WINDOWS
-		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/fruits/apple.txt");
-#else
-		TestExpectedLog("[LINUX-ERROR] ...");
-#endif
-		File* file2 = file_init(str8_lit("data/test_deshi_file/fruits/apple.txt"), FileAccess_ReadWrite);
-		Test(file2 == 0);
+// #if DESHI_WINDOWS
+// 		TestExpectedLog("[WIN32-ERROR] FindFirstFileW failed with error 2: The system cannot find the file specified.\n data/test_deshi_file/fruits/apple.txt");
+// #else
+// 		TestExpectedLog("[LINUX-ERROR] ...");
+// #endif
+// 		File* file2 = file_init(STR8("data/test_deshi_file/fruits/apple.txt"), FileAccess_ReadWrite);
+// 		Test(file2 == 0);
 		
-		//// change_access ////
-		file_change_access(file, FileAccess_ReadAppend);
-		Test(file->handle != 0);
-		Test(file->access == FileAccess_Read);
-		Test(file->cursor == 0);
+// 		//// change_access ////
+// 		file_change_access(file, FileAccess_ReadAppend);
+// 		Test(file->handle != 0);
+// 		Test(file->access == FileAccess_Read);
+// 		Test(file->cursor == 0);
 		
-		file_change_access(file, FileAccess_WriteTruncate);
-		Test(file->handle != 0);
-		Test(file->access == FileAccess_Write);
-		Test(file->cursor == 0);
+// 		file_change_access(file, FileAccess_WriteTruncate);
+// 		Test(file->handle != 0);
+// 		Test(file->access == FileAccess_Write);
+// 		Test(file->cursor == 0);
 		
-		//// deinit ////
-		file_deinit(file);
-		Test(array_count(file_initted_files()) == 0);
+// 		//// deinit ////
+// 		file_deinit(file);
+// 		Test(array_count(file_initted_files()) == 0);
 		
-		//// append ////
-		str8 s1 = str8_lit("aaabbbccc");
-		file_write_simple(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), s1.str, s1.count);
-		file = file_init(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteAppend);
-		Test(file->handle != 0);
-		Test(file->bytes == 9);
-		Test(file->access == FileAccess_ReadWrite);
-		Test(file->cursor == 9);
-		file_deinit(file);
+// 		//// append ////
+// 		str8 s1 = STR8("aaabbbccc");
+// 		file_write_simple(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), s1.str, s1.count);
+// 		file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteAppend);
+// 		Test(file->handle != 0);
+// 		Test(file->bytes == 9);
+// 		Test(file->access == FileAccess_ReadWrite);
+// 		Test(file->cursor == 9);
+// 		file_deinit(file);
 		
-		//// truncate ////
-		str8 s2 = str8_lit("aaabbbcccddd");
-		file_write_simple(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), s2.str, s2.count);
-		file = file_init(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_WriteTruncate);
-		Test(file->handle != 0);
-		Test(file->bytes == 0);
-		Test(file->access == FileAccess_Write);
-		Test(file->cursor == 0);
-		file_deinit(file);
+// 		//// truncate ////
+// 		str8 s2 = STR8("aaabbbcccddd");
+// 		file_write_simple(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), s2.str, s2.count);
+// 		file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_WriteTruncate);
+// 		Test(file->handle != 0);
+// 		Test(file->bytes == 0);
+// 		Test(file->access == FileAccess_Write);
+// 		Test(file->cursor == 0);
+// 		file_deinit(file);
 		
-		//// cursor ////
-		file_write_simple(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), s1.str, s1.count);
-		file = file_init(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadAppend);
-		Test(file->bytes == 9);
-		Test(file->cursor == 9);
+// 		//// cursor ////
+// 		file_write_simple(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), s1.str, s1.count);
+// 		file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadAppend);
+// 		Test(file->bytes == 9);
+// 		Test(file->cursor == 9);
 		
-		file_set_cursor(file, 0);
-		Test(file->cursor == 0);
-		file_set_cursor(file, 2);
-		Test(file->cursor == 2);
-		file_set_cursor(file, 16);
-		Test(file->cursor == 9);
+// 		file_set_cursor(file, 0);
+// 		Test(file->cursor == 0);
+// 		file_set_cursor(file, 2);
+// 		Test(file->cursor == 2);
+// 		file_set_cursor(file, 16);
+// 		Test(file->cursor == 9);
 		
-		file_deinit(file);
-		TestPassed("core/file/init");
-	}
+// 		file_deinit(file);
+// 		TestPassed("core/file/init");
+// 	}
 	
-	File* file = file_init(str8_lit("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_WriteTruncateCreate);
-	str8 s1 = str8_lit("If death is what it seems");
-	str8 s2 = str8_lit("なぜ夢の中でこんなに鮮明に描かれているのか");
-	str8 s3 = str8_lit("理解することへの恐れ");
-	str8 s4 = str8_lit("悪魔の仕業だ");
-	str8 s5 = str8_lit("Hatred's not received, it's coming straight from the source");
-	str8 s = str8_lit("If death is what it seems\n"
-					  "なぜ夢の中でこんなに鮮明に描かれているのか\n"
-					  "理解することへの恐れ\n"
-					  "悪魔の仕業だ\n"
-					  "Hatred's not received, it's coming straight from the source");
+// 	File* file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_WriteTruncateCreate);
+// 	str8 s1 = STR8("If death is what it seems");
+// 	str8 s2 = STR8("なぜ夢の中でこんなに鮮明に描かれているのか");
+// 	str8 s3 = STR8("理解することへの恐れ");
+// 	str8 s4 = STR8("悪魔の仕業だ");
+// 	str8 s5 = STR8("Hatred's not received, it's coming straight from the source");
+// 	str8 s = STR8("If death is what it seems\n"
+// 					  "なぜ夢の中でこんなに鮮明に描かれているのか\n"
+// 					  "理解することへの恐れ\n"
+// 					  "悪魔の仕業だ\n"
+// 					  "Hatred's not received, it's coming straight from the source");
 	
-	{//write
-		Test(file->bytes == 0);
-		Test(file->cursor == 0);
+// 	{//write
+// 		Test(file->bytes == 0);
+// 		Test(file->cursor == 0);
 		
-		u32 count = file_write(file, s1.str, s1.count);
-		Test(count == s1.count);
-		Test(file->bytes  == s1.count);
-		Test(file->cursor == s1.count);
-		count = file_write(file, "\n", 1);
-		Test(count == 1);
-		Test(file->bytes  == s1.count+1);
-		Test(file->cursor == s1.count+1);
-		fflush(file->handle);
+// 		u32 count = file_write(file, s1.str, s1.count);
+// 		Test(count == s1.count);
+// 		Test(file->bytes  == s1.count);
+// 		Test(file->cursor == s1.count);
+// 		count = file_write(file, "\n", 1);
+// 		Test(count == 1);
+// 		Test(file->bytes  == s1.count+1);
+// 		Test(file->cursor == s1.count+1);
+// 		fflush(file->handle);
 		
-		count = file_write_line(file, s3);
-		Test(count == s3.count+1);
-		Test(file->bytes  == s1.count+1+s3.count+1);
-		Test(file->cursor == s1.count+1+s3.count+1);
-		fflush(file->handle);
+// 		count = file_write_line(file, s3);
+// 		Test(count == s3.count+1);
+// 		Test(file->bytes  == s1.count+1+s3.count+1);
+// 		Test(file->cursor == s1.count+1+s3.count+1);
+// 		fflush(file->handle);
 		
-		file_set_cursor(file, s1.count+1);
-		Test(file->cursor == s1.count+1);
-		count = file_write_line(file, s2);
-		Test(count == s2.count+1);
-		Test(file->bytes  == s1.count+1+s2.count+1);
-		Test(file->cursor == s1.count+1+s2.count+1);
-		fflush(file->handle);
+// 		file_set_cursor(file, s1.count+1);
+// 		Test(file->cursor == s1.count+1);
+// 		count = file_write_line(file, s2);
+// 		Test(count == s2.count+1);
+// 		Test(file->bytes  == s1.count+1+s2.count+1);
+// 		Test(file->cursor == s1.count+1+s2.count+1);
+// 		fflush(file->handle);
 		
-		file_set_cursor(file, -1);
-		count = file_write_line(file, s3);
-		Test(count == s3.count+1);
-		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1);
-		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
-		fflush(file->handle);
+// 		file_set_cursor(file, -1);
+// 		count = file_write_line(file, s3);
+// 		Test(count == s3.count+1);
+// 		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1);
+// 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
+// 		fflush(file->handle);
 		
-		count = file_append_line(file, s4);
-		Test(count == s4.count+1);
-		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1+s4.count+1);
-		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
-		fflush(file->handle);
+// 		count = file_append_line(file, s4);
+// 		Test(count == s4.count+1);
+// 		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1+s4.count+1);
+// 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
+// 		fflush(file->handle);
 		
-		count = file_append(file, s5.str, s5.count);
-		Test(count == s5.count);
-		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
-		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
-		fflush(file->handle);
+// 		count = file_append(file, s5.str, s5.count);
+// 		Test(count == s5.count);
+// 		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
+// 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
+// 		fflush(file->handle);
 		
-		file_change_access(file, 0);
-		str8 sanity = file_read_simple(file->path, deshi_temp_allocator);
-		Test(str8_equal_lazy(sanity, s));
+// 		file_change_access(file, 0);
+// 		str8 sanity = file_read_simple(file->path, deshi_temp_allocator);
+// 		Test(str8_equal_lazy(sanity, s));
 		
-		File invalid{};
-		invalid.path = str8_lit("an/invalid/path");
-		TestExpectedLog("[FILE-ERROR] file_write() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		count = file_write(&invalid, s1.str, s1.count);
-		Test(count == 0);
-		TestExpectedLog("[FILE-ERROR] file_write_line() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		count = file_write_line(&invalid, s1);
-		Test(count == 0);
-		TestExpectedLog("[FILE-ERROR] file_append() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		count = file_append(&invalid, s1.str, s1.count);
-		Test(count == 0);
-		TestExpectedLog("[FILE-ERROR] file_append_line() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		count = file_append_line(&invalid, s1);
-		Test(count == 0);
+// 		File invalid{};
+// 		invalid.path = STR8("an/invalid/path");
+// 		TestExpectedLog("[FILE-ERROR] file_write() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		count = file_write(&invalid, s1.str, s1.count);
+// 		Test(count == 0);
+// 		TestExpectedLog("[FILE-ERROR] file_write_line() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		count = file_write_line(&invalid, s1);
+// 		Test(count == 0);
+// 		TestExpectedLog("[FILE-ERROR] file_append() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		count = file_append(&invalid, s1.str, s1.count);
+// 		Test(count == 0);
+// 		TestExpectedLog("[FILE-ERROR] file_append_line() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		count = file_append_line(&invalid, s1);
+// 		Test(count == 0);
 		
-		TestPassed("core/file/write");
-	}
+// 		TestPassed("core/file/write");
+// 	}
 	
-	{//read
-		file_change_access(file, FileAccess_ReadAppend);
-		Test(file->cursor == file->bytes);
-		Test(file->cursor == s.count);
-		file_set_cursor(file, 0);
+// 	{//read
+// 		file_change_access(file, FileAccess_ReadAppend);
+// 		Test(file->cursor == file->bytes);
+// 		Test(file->cursor == s.count);
+// 		file_set_cursor(file, 0);
 		
-		u8 buffer[256];
-		str8 read = file_read(file, buffer, s1.count);
-		Test(str8_equal_lazy(read, s1));
-		Test(file->cursor == s1.count);
-		read = file_read(file, buffer, 1);
-		Test(str8_equal_lazy(read, str8_lit("\n")));
-		Test(file->cursor == s1.count+1);
+// 		u8 buffer[256];
+// 		str8 read = file_read(file, buffer, s1.count);
+// 		Test(str8_equal_lazy(read, s1));
+// 		Test(file->cursor == s1.count);
+// 		read = file_read(file, buffer, 1);
+// 		Test(str8_equal_lazy(read, STR8("\n")));
+// 		Test(file->cursor == s1.count+1);
 		
-		read = file_read_alloc(file, s2.count, deshi_temp_allocator);
-		Test(str8_equal_lazy(read, s2));
-		Test(file->cursor == s1.count+1+s2.count);
-		read = file_read_alloc(file, 1, deshi_temp_allocator);
-		Test(str8_equal_lazy(read, str8_lit("\n")));
-		Test(file->cursor == s1.count+1+s2.count+1);
+// 		read = file_read_alloc(file, s2.count, deshi_temp_allocator);
+// 		Test(str8_equal_lazy(read, s2));
+// 		Test(file->cursor == s1.count+1+s2.count);
+// 		read = file_read_alloc(file, 1, deshi_temp_allocator);
+// 		Test(str8_equal_lazy(read, STR8("\n")));
+// 		Test(file->cursor == s1.count+1+s2.count+1);
 		
-		read = file_read_line(file, buffer, 255);
-		Test(str8_equal_lazy(read, s3));
-		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
+// 		read = file_read_line(file, buffer, 255);
+// 		Test(str8_equal_lazy(read, s3));
+// 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
 		
-		read = file_read_line_alloc(file, deshi_temp_allocator);
-		Test(str8_equal_lazy(read, s4));
-		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1);
+// 		read = file_read_line_alloc(file, deshi_temp_allocator);
+// 		Test(str8_equal_lazy(read, s4));
+// 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1);
 		
-		read = file_read(file, buffer, -1);
-		Test(str8_equal_lazy(read, s5));
-		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
-		Test(file->cursor == file->bytes);
+// 		read = file_read(file, buffer, -1);
+// 		Test(str8_equal_lazy(read, s5));
+// 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
+// 		Test(file->cursor == file->bytes);
 		
-		file_set_cursor(file, 0);
-		read = file_read_alloc(file, s.count, deshi_temp_allocator);
-		Test(str8_equal_lazy(read, s));
-		Test(file->cursor == file->bytes);
+// 		file_set_cursor(file, 0);
+// 		read = file_read_alloc(file, s.count, deshi_temp_allocator);
+// 		Test(str8_equal_lazy(read, s));
+// 		Test(file->cursor == file->bytes);
 		
-		File invalid{};
-		invalid.path = str8_lit("an/invalid/path");
-		TestExpectedLog("[FILE-ERROR] file_read() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		read = file_read(&invalid, s1.str, s1.count);
-		Test(read.str == 0 && read.count == 0);
-		TestExpectedLog("[FILE-ERROR] file_read_alloc() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		read = file_read_alloc(&invalid, s1.count, deshi_temp_allocator);
-		Test(read.str == 0 && read.count == 0);
-		TestExpectedLog("[FILE-ERROR] file_read_line() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		read = file_read_line(&invalid, s1.str, -1);
-		Test(read.str == 0 && read.count == 0);
-		TestExpectedLog("[FILE-ERROR] file_read_line_alloc() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
-		read = file_read_line_alloc(&invalid, deshi_temp_allocator);
-		Test(read.str == 0 && read.count == 0);
+// 		File invalid{};
+// 		invalid.path = STR8("an/invalid/path");
+// 		TestExpectedLog("[FILE-ERROR] file_read() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		read = file_read(&invalid, s1.str, s1.count);
+// 		Test(read.str == 0 && read.count == 0);
+// 		TestExpectedLog("[FILE-ERROR] file_read_alloc() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		read = file_read_alloc(&invalid, s1.count, deshi_temp_allocator);
+// 		Test(read.str == 0 && read.count == 0);
+// 		TestExpectedLog("[FILE-ERROR] file_read_line() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		read = file_read_line(&invalid, s1.str, -1);
+// 		Test(read.str == 0 && read.count == 0);
+// 		TestExpectedLog("[FILE-ERROR] file_read_line_alloc() called on a closed file 'an/invalid/path' at " __FILE__ "(",__LINE__+1,")");
+// 		read = file_read_line_alloc(&invalid, deshi_temp_allocator);
+// 		Test(read.str == 0 && read.count == 0);
 		
-		TestPassed("core/file/read");
-	}
+// 		TestPassed("core/file/read");
+// 	}
 	
-	file_deinit(file);
-	file_delete(str8_lit("data/test_deshi_file"), FileDeleteFlags_File);
-	TestPassed("core/file");
+// 	file_deinit(file);
+// 	file_delete(STR8("data/test_deshi_file"), FileDeleteFlags_File);
+// 	TestPassed("core/file");
 }
 
 

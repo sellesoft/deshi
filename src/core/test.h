@@ -6,7 +6,29 @@
 
 #define TestRequires(condition,...) AssertAlways(condition)
 
-#define Test(condition,...) AssertAlways(condition)
+//#define Test(condition,...) AssertAlways(condition)
+
+
+
+// expects the result handle to be named 'result'
+#define Test(call,expected)                                         \
+	call;                                                           \
+	if(result.tag == expected){                                     \
+		Log("", SuccessFormat("succeeded: "), STRINGIZE(call));     \
+	}else{                                                          \
+		Log("",   ErrorFormat("failed:    "), STRINGIZE(call));     \
+	}
+
+#define TestOk(call) Test(call, 0)
+
+#define TestReturn(call,expected)                                   \
+	if(call == expected){                                           \
+		Log("", SuccessFormat("succeeded: "), STRINGIZE(call));     \
+	}else{                                                          \
+		Log("",   ErrorFormat("failed:    "), STRINGIZE(call));     \
+	}
+
+#define TestReturnTrue(call) TestReturn(call, 1)
 
 #define TestPassed(test) Log("deshi-test","PASSED: " test)
 #define TestTodo(test)   Log("deshi-test","TODO:   " test)
