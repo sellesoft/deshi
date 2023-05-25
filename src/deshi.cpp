@@ -346,26 +346,10 @@ namespace X11 {
 #  error "unknown platform"
 #endif // DESHI_WINDOWS
 
-#ifndef DESHI_DISABLE_IMGUI
-#  define IMGUI_USE_STB_SPRINTF
-#  include <imgui/imgui.cpp>
-#  include <imgui/imgui_demo.cpp>
-#  include <imgui/imgui_draw.cpp>
-#  include <imgui/imgui_tables.cpp>
-#  include <imgui/imgui_widgets.cpp>
-#  if DESHI_WINDOWS
-#    define VK_USE_PLATFORM_WIN32_KHR
-#    include <imgui/imgui_impl_win32.cpp>
-#  else
-//#    include <imgui/imgui_impl_glfw.cpp>
-#  endif
-#endif
-
 //// renderer cpp (and libs) ////
 #if DESHI_VULKAN
 #  include <vulkan/vulkan.h>
 #  include <shaderc/shaderc.h>
-#  include <imgui/imgui_impl_vulkan.cpp>
 #  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
 #  define GLAD_WGL_IMPLEMENTATION

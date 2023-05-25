@@ -1785,7 +1785,7 @@ b32 InputTextCall(str8 label, u8* buff, u32 buffSize, vec2 position, str8 previe
 	if(HasFlag(flags, UIInputTextFlags_FitSizeToText)){
 		dim = UI::CalcTextSize(buffer);
 	}else{
-		dim = DecideItemSize(Vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowMargins.x, 1.f, FLT_MAX)),
+		dim = DecideItemSize(Vec2(Clamp(100.f, 0.f, Clamp(curwin->width - 2.f * style.windowMargins.x, 1.f, MAX_F32)),
 								  style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
 	item->size = dim;

@@ -206,7 +206,11 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 
 void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
 	str8 r = get_errno_print(err, tag, funcname, message);
-	LogE("linux", r);
+	if(HasFlag(deshiStage, DS_LOGGER)){
+		LogE("linux", r);
+	}else{
+		printf("%s\n", (u8*)r.str);
+	}
 	free(r.str);
 }
 
@@ -328,19 +332,10 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 
 		// TODO(sushi) get file_search_directory working and then use it here
 		if(HasFlag(flags, FileDeleteFlags_Recursive_And_I_Promise_I_Am_Using_This_Responsibly)) {
-			while(1) {
-				errno = 0;
-				DIR* dir;
-				struct dirent* ep;
-				dir = opendir((char*)path.str);
-				if(!dir){
-					print_errno(errno, "file", __func__, {});
-					return;
-				}
-				while((ep = readdir(dir))){
-					if(ep->d_type == DT_REG){
-					}
-				}
+			File* files = file_search_directory_result(prepath, result);
+			if(!files) return;
+			forX_array(file, files){
+				printf("%s\n", file->path.str);
 			}
 		}
 	}
@@ -362,7 +357,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 	return {};
 }
 
-File* 
+File*
 deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result){
 	if(!directory || *directory.str == 0){
 		FileHandleErrorD(result, FileResult_EmptyPath, 0, , "file_search_directory() was passed an empty `directory` at ",caller_file,"(",caller_line,")");
@@ -370,7 +365,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 
 	File* out;
 	array_init(out, 4, deshi_temp_allocator);
-	
+
 	DIR* dir = opendir((char*)directory.str);
 	if(!dir) {
 		StartFileErrnoHandler(result, errno, 0)
@@ -385,12 +380,66 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 
 	struct dirent* entry;
 	while((entry = readdir(dir))){
-		str8 filepath = ToString8(deshi_allocator, directory, entry->d_name);
-		File* file = file_init_result(filepath, FileAccess_Read, result);
+		if(!strcmp(entry->d_name, "..")) continue;
+		str8 filepath = ToString8(deshi_allocator, directory, "/", entry->d_name);
+
+		File file = {};
+
+		// gather absolute path and format into different parts
+		file.path.str = (u8*)memalloc(PATH_MAX);
+		file.path.str = (u8*)realpath((char*)filepath.str, (char*)file.path.str);
+		if(!file.path.str) {
+			print_errno(errno, "file", __func__, ToString8(deshi_temp_allocator,"while trying to find absolute path of '", filepath, "'"));
+			return 0;
+		}
+		file.path.count = strlen((char*)file.path.str);
+		file.path.str = (u8*)memrealloc(file.path.str, file.path.count);
+
+		u32 name_length = 0;
+		u8* scan = file.path.str+file.path.count;
+		while(name_length != file.path.count && 
+			*scan != '\\' && 
+			*scan != '/') {
+			scan--;
+			name_length++;
+		}
+		name_length--;
+
+		file.name = {file.path.str + file.path.count - name_length, name_length};
+		file.front = file.name;
+		forI_reverse(name_length) {
+			// on linux, files starting with a '.' are hidden
+			// so we don't want to say the entire name is the extension
+			if(i && file.name.str[i] == '.'){ 
+				file.front.count = i;
+			}
+		}
+		file.ext = {file.front.str+file.front.count, file.path.str+file.path.count-(file.front.str+file.front.count)};
+
+		// get time information
+		struct statx s;
+		if(statx(0, (char*)file.path.str, 0, STATX_ATIME|STATX_MTIME|STATX_CTIME|STATX_SIZE|STATX_MODE, &s) == -1) {
+			// NOTE(sushi) I believe that this should not error in most cases, because we just checked a lot of this
+			//             while opening the file, but let me know if it does throw something not here.
+			StartFileErrnoHandler(result, errno, 0)
+				ErrorCaseL(ENOMEM, FileResult_SystemOutOfMemory, "The system is out of memory.",)
+			EndFileErrnoHandler();
+		}
+
+		file.creation_time = s.stx_ctime.tv_sec * 1000000000 + s.stx_ctime.tv_nsec;
+		file.last_access_time = s.stx_atime.tv_sec * 1000000000 + s.stx_atime.tv_nsec;
+		file.last_write_time = s.stx_mtime.tv_sec * 1000000000 + s.stx_mtime.tv_nsec;
+		file.bytes = s.stx_size;
+
+		if     (S_ISREG(s.stx_mode)) file.type = FileType_File;
+		else if(S_ISDIR(s.stx_mode)) file.type = FileType_Directory;
+		else if(S_ISLNK(s.stx_mode)) file.type = FileType_SymbolicLink;	
+		else file.type = FileType_Unknown;
 		
+		*array_push(out) = file;
 	}	
 
-	return 0;
+	return out;
 }
 
 str8 
@@ -417,8 +466,9 @@ deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2
 File* 
 deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access, b32 ignore_nonexistence, FileResult* result) {
 	if(!path || *path.str == 0){
-		LogE("file","file_init() was passed an empty `path` at ",caller_file,"(",caller_line,")");
-		return 0;
+		FileHandleErrorD(result, FileResult_EmptyPath, 0,, 
+			"file_init() was passed an empty `path` at ",caller_file,"(",caller_line,")"
+		);
 	}
 
 	forX_array(f, file_shared.files) {
@@ -429,14 +479,14 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access
 	}
 
 	if(!file_exists(path)){
-		LogE("file", "at ", caller_file, "(", caller_line, "): file_init() was give a path to a file that doesn't exist");
-		return 0;
+		FileHandleErrorD(result, FileResult_PathDoesNotExist, 0,, 
+			"at ", caller_file, "(", caller_line, "): file_init() was give a path to a file that doesn't exist"
+		);
 	}
 
 	File* out = array_push(file_shared.files);
-	// this function fully handles access flags, including opening it and such 
-	file_change_access(out, access);
 
+	// gather absolute path and format into different parts
 	out->path.str = (u8*)memalloc(PATH_MAX);
 	out->path.str = (u8*)realpath((char*)path.str, (char*)out->path.str);
 	if(!out->path.str) {
@@ -444,30 +494,41 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access
 		return 0;
 	}
 	out->path.count = strlen((char*)out->path.str);
+	out->path.str = (u8*)memrealloc(out->path.str, out->path.count);
 
-	str8 scan = {out->path.str, out->path.count};
-	while(scan && *scan.str != '\\' && *scan.str != '/') {
-		scan.str--;
-		scan.count--;
+	u32 name_length = 0;
+	u8* scan = out->path.str+out->path.count;
+	while(name_length != out->path.count && 
+		 *scan != '\\' && 
+		 *scan != '/') {
+		scan--;
+		name_length++;
 	}
+	name_length--;
 
-	out->name = {scan.str + scan.count, out->path.count-scan.count};
+	out->name = {out->path.str + out->path.count - name_length, name_length};
 	out->front = out->name;
-	scan = out->front;
-	while(scan) {
-		if(*scan.str == '.') {
-			out->front = {out->front.str, scan.str-out->front.str};
-			break;
+	forI_reverse(name_length) {
+		// on linux, files starting with a '.' are hidden
+		// so we don't want to say the entire name is the extension
+		if(i && out->name.str[i] == '.'){ 
+			out->front.count = i;
 		}
-		scan.str++;
 	}
-	out->ext = {out->front.str+out->front.count, out->path.str - out->front.str};
+	out->ext = {out->front.str+out->front.count, out->path.str+out->path.count-(out->front.str+out->front.count)};
 
+	// this function fully handles access flags, including opening it and such 
+	file_change_access_result(out, access, result);
+	if(result && result->tag) return 0;
+
+	// get time information
 	struct statx s;
-
-	if(statx(AT_FDCWD, (char*)path.str, 0, STATX_ATIME|STATX_MTIME|STATX_CTIME|STATX_SIZE|STATX_MODE, &s) == -1) {
-		print_errno(errno, "file", __func__, ToString8(deshi_temp_allocator, "while trying to get stats for path '", out->path));
-		return 0;
+	if(statx(0, (char*)out->path.str, 0, STATX_ATIME|STATX_MTIME|STATX_CTIME|STATX_SIZE|STATX_MODE, &s) == -1) {
+		// NOTE(sushi) I believe that this should not error in most cases, because we just checked a lot of this
+		//             while opening the file, but let me know if it does throw something not here.
+		StartFileErrnoHandler(result, errno, 0)
+			ErrorCaseL(ENOMEM, FileResult_SystemOutOfMemory, "The system is out of memory.",)
+		EndFileErrnoHandler();
 	}
 
 	out->creation_time = s.stx_ctime.tv_sec * 1000000000 + s.stx_ctime.tv_nsec;
@@ -479,8 +540,9 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access
 	else if(S_ISDIR(s.stx_mode)) out->type = FileType_Directory;
 	else if(S_ISLNK(s.stx_mode)) out->type = FileType_SymbolicLink;	
 	else{
-		LogE("file", "attempted to initialize a File that is not a file, directory, or symbolic link. path: ", path);
-		return 0;
+		FileHandleErrorD(result, FileResult_InvalidArgument, 0,, 
+			"attempted to initialize a File that is not a file, directory, or symbolic link. path: ", path
+		);
 	}
 
 	return out;
@@ -622,7 +684,7 @@ platform_init() {
 
 	array_init(file_shared.files, 16, deshi_allocator);
 
-	NotImplemented;
+	// NotImplemented;
 
 	DeshiStageInitEnd(DS_PLATFORM);
 }

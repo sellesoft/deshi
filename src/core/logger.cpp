@@ -122,7 +122,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	
 	u8 path_buffer[256];
 	log_count = ClampMin(log_count, 1);
-	FixMe;
+	//FixMe;
 	carray<File> log_files = {};//file_search_directory(str8_lit("data/logs/"));
 	
 	//rename previous log.txt

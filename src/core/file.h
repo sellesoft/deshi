@@ -98,6 +98,7 @@ typedef Type FileType; enum {
 	FileType_File,
 	FileType_Directory,
 	FileType_SymbolicLink,
+	FileType_Unknown,
 };
 
 struct File{
@@ -869,7 +870,7 @@ static void TEST_deshi_file(){
 		Test(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_File, &result), FileResult_IsADirectory);
 		Test(file_delete_result(STR8("data/dummyfile"), FileDeleteFlags_Directory, &result), FileResult_NotADirectory);
 
-
+	} // NOTE(sushi) TEMPORARY }
 
 		//TestExpectedLog("[FILE-ERROR] File deletion can only occur within the data folder. Input path: apple/");
 		//file_delete(STR8("apple/"), FileDeleteFlags_Directory);

@@ -3032,97 +3032,6 @@ BuildCommands(){DPZoneScoped;
 	}
 }
 
-
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @vk_funcs_imgui
-void DeshiImGui::
-Init(){DPZoneScoped;
-	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
-	
-	//Setup Dear ImGui context
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.IniFilename = "data/cfg/imgui.ini";
-	
-	//Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
-	
-	//Setup Platform/Renderer backends
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
-#elif DESHI_LINUX
-	
-#elif DESHI_MAC
-	ImGui_ImplGlfw_InitForVulkan(DeshWindow->window, true);
-#endif
-	ImGui_ImplVulkan_InitInfo init_info{};
-	init_info.Instance        = instance;
-	init_info.PhysicalDevice  = physicalDevice;
-	init_info.Device          = device;
-	init_info.QueueFamily     = physicalQueueFamilies.graphicsFamily.value;
-	init_info.Queue           = graphicsQueue;
-	init_info.PipelineCache   = pipelineCache;
-	init_info.DescriptorPool  = descriptorPool;
-	init_info.Allocator       = allocator;
-	init_info.MinImageCount   = activeSwapchain.minImageCount;
-	init_info.ImageCount      = activeSwapchain.imageCount;
-	init_info.CheckVkResultFn = [](VkResult result){ AssertVk(result, "imgui vulkan error"); };
-	init_info.MSAASamples     = msaaSamples;
-	ImGui_ImplVulkan_Init(&init_info, renderPass);
-	
-	//Upload Fonts
-	VkCommandPool   command_pool   = commandPool;
-	VkCommandBuffer command_buffer = activeSwapchain.frames[activeSwapchain.frameIndex].commandBuffer;
-	
-	resultVk = vkResetCommandPool(device, command_pool, 0); AssertVk(resultVk);
-	
-	VkCommandBufferBeginInfo begin_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-	begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	resultVk = vkBeginCommandBuffer(command_buffer, &begin_info); AssertVk(resultVk);
-	ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-	
-	VkSubmitInfo end_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-	end_info.commandBufferCount = 1;
-	end_info.pCommandBuffers    = &command_buffer;
-	resultVk = vkEndCommandBuffer(command_buffer); AssertVk(resultVk);
-	
-	resultVk = vkQueueSubmit(graphicsQueue, 1, &end_info, VK_NULL_HANDLE); AssertVk(resultVk);
-	
-	resultVk = vkDeviceWaitIdle(device); AssertVk(resultVk);
-	ImGui_ImplVulkan_DestroyFontUploadObjects();
-	
-	DeshiStageInitEnd(DS_IMGUI);
-}
-
-void DeshiImGui::
-Cleanup(){DPZoneScoped;
-	resultVk = vkDeviceWaitIdle(device); AssertVk(resultVk);
-	ImGui_ImplVulkan_Shutdown();
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_Shutdown();
-#elif DESHI_LINUX
-#elif DESHI_MAC
-	ImGui_ImplGlfw_Shutdown();
-#endif
-	ImGui::DestroyContext();
-}
-
-void DeshiImGui::
-NewFrame(){DPZoneScoped;
-	ImGui_ImplVulkan_NewFrame();
-	
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_NewFrame();
-#elif DESHI_LINUX
-#elif DESHI_MAC
-	ImGui_ImplGlfw_NewFrame();
-#endif
-	
-	ImGui::NewFrame();
-}
-
-
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_init
 void
@@ -3231,7 +3140,7 @@ render_update(){DPZoneScoped;
 		if(remakeWindow){
 			activeSwapchain.width  = scwin->width;
 			activeSwapchain.height = scwin->height;
-			if(activeSwapchain.width <= 0 || activeSwapchain.height <= 0){ ImGui::EndFrame(); return; }
+			if(activeSwapchain.width <= 0 || activeSwapchain.height <= 0){ return; }
 			vkDeviceWaitIdle(device);
 			CreateSwapchain(scwin, i);
 			CreateFrames();
@@ -3255,9 +3164,6 @@ render_update(){DPZoneScoped;
 		//render stuff
 		if(renderSettings.lightFrustrums){
 			render_frustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, renderSettings.shadowNearZ, renderSettings.shadowFarZ, Color_White);
-		}
-		if(DeshiModuleLoaded(DS_IMGUI)){
-			ImGui::Render();
 		}
 		UpdateUniformBuffers();
 		

@@ -4,10 +4,6 @@
 #include "core/assets.h"
 #include "core/commands.h"
 #include "core/console.h"
-#ifndef DESHI_DISABLE_IMGUI
-#  define IMGUI_DEFINE_MATH_OPERATORS
-#  include "core/imgui.h"
-#endif //DESHI_DISABLE_IMGUI
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/platform.h"
