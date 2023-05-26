@@ -1612,150 +1612,153 @@ deshi__memory_allocinfo_inactive_expose(AllocInfo** out_array, upt* out_size){DP
 
 void
 deshi__memory_draw(){DPZoneScoped;
-	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
-		if(bytes >= Kilobytes(1)){
-			character = 'K'; divisor = Kilobytes(1);
-			if(bytes >= Megabytes(1)){
-				character = 'M'; divisor = Megabytes(1);
-			}
-		}
-	};
+	FixMe;
+// 	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
+// 		if(bytes >= Kilobytes(1)){
+// 			character = 'K'; divisor = Kilobytes(1);
+// 			if(bytes >= Megabytes(1)){
+// 				character = 'M'; divisor = Megabytes(1);
+// 			}
+// 		}
+// 	};
 	
-	UI::PushColor(UIStyleCol_Border,             Color_Grey);
-	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
-	UI::Begin(str8_lit("deshi_memory"), Vec2(DeshWindow->width,DeshWindow->height)/4.f, Vec2(DeshWindow->width,DeshWindow->height)/2.f, UIWindowFlags_NoScroll);{
-		UIWindow* window = UI::GetWindow();
-		UIStyle_old& style = UI::GetStyle();
-		char used_char = ' ', size_char = ' ';
-		f32  used_divisor = 1.f, size_divisor = 1.f;
+// 	UI::PushColor(UIStyleCol_Border,             Color_Grey);
+// 	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
+// 	UI::Begin(str8_lit("deshi_memory"), Vec2(DeshWindow->width,DeshWindow->height)/4.f, Vec2(DeshWindow->width,DeshWindow->height)/2.f, UIWindowFlags_NoScroll);{
+// 		UIWindow* window = UI::GetWindow();
+// 		UIStyle_old& style = UI::GetStyle();
+// 		char used_char = ' ', size_char = ' ';
+// 		f32  used_divisor = 1.f, size_divisor = 1.f;
 		
-		//UI::SetNextItemSize({MAX_F32, window->height*.9f});
-		UI::BeginTabBar(str8_lit("deshi_memory_top_panel"), UITabBarFlags_NoIndent);{
-			//left panel: generic heap
-			if(UI::BeginTab(str8_lit("deshi_memory_generic"))){
-				bytes_sigfigs(g_memory->generic_heap->used, used_char, used_divisor);
-				bytes_sigfigs(g_memory->generic_heap->size, size_char, size_divisor);
-				UI::Separator(style.fontHeight / 2.f);
-				UI::TextF(str8_lit("Generic Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->generic_heap->used / used_divisor, used_char, (f32)g_memory->generic_heap->size / size_divisor, size_char);
-				UI::Separator(style.fontHeight/2.f);
+// 		//UI::SetNextItemSize({MAX_F32, window->height*.9f});
+// 		UI::BeginTabBar(str8_lit("deshi_memory_top_panel"), UITabBarFlags_NoIndent);{
+// 			//left panel: generic heap
+// 			if(UI::BeginTab(str8_lit("deshi_memory_generic"))){
+// 				bytes_sigfigs(g_memory->generic_heap->used, used_char, used_divisor);
+// 				bytes_sigfigs(g_memory->generic_heap->size, size_char, size_divisor);
+// 				UI::Separator(style.fontHeight / 2.f);
+// 				UI::TextF(str8_lit("Generic Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->generic_heap->used / used_divisor, used_char, (f32)g_memory->generic_heap->size / size_divisor, size_char);
+// 				UI::Separator(style.fontHeight/2.f);
 				
-				UI::PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
-				UI::PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
-				UI::PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
-				UI::PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
-				UI::PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
-				UI::PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
-				UI::PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
-				UI::SetNextWindowSize({MAX_F32, MAX_F32});
-				UI::BeginChild(str8_lit("deshi_memory_generic_timeline"), vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
-#if 0 //MEMORY_TRACK_ALLOCS //TODO update this to new alloc info arrays
-					f32 alloc_height = 10.f;
-					f32 frame_width  = 5.f;
+// 				UI::PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
+// 				UI::PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+// 				UI::PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+// 				UI::PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+// 				UI::PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+// 				UI::PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+// 				UI::PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
+// 				UI::SetNextWindowSize({MAX_F32, MAX_F32});
+// 				UI::BeginChild(str8_lit("deshi_memory_generic_timeline"), vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
+// #if 0 //MEMORY_TRACK_ALLOCS //TODO update this to new alloc info arrays
+// 					f32 alloc_height = 10.f;
+// 					f32 frame_width  = 5.f;
 					
-					forI(alloc_infos.count){
-						UI::TextF(str8_lit("0x%p"), alloc_infos[i].address);
-						if(UI::IsLastItemHovered()){
-							UI::PushColor(UIStyleCol_WindowBg, color(32,0,0,255));
-							UI::BeginPopOut(str8_lit("deshi_memory_generic_hovered"), input_mouse_position - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
-								UI::TextF(str8_lit("Trigger: %s:%u"), alloc_infos[i].trigger.file.str, alloc_infos[i].trigger.line);
-								UI::TextF(str8_lit("Name: %s"), alloc_infos[i].name.str);
-								UI::TextF(str8_lit("Type: %u"), alloc_infos[i].type);
-							}UI::EndPopOut();
-							UI::PopColor();
-						}
+// 					forI(alloc_infos.count){
+// 						UI::TextF(str8_lit("0x%p"), alloc_infos[i].address);
+// 						if(UI::IsLastItemHovered()){
+// 							UI::PushColor(UIStyleCol_WindowBg, color(32,0,0,255));
+// 							UI::BeginPopOut(str8_lit("deshi_memory_generic_hovered"), input_mouse_position - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
+// 								UI::TextF(str8_lit("Trigger: %s:%u"), alloc_infos[i].trigger.file.str, alloc_infos[i].trigger.line);
+// 								UI::TextF(str8_lit("Name: %s"), alloc_infos[i].name.str);
+// 								UI::TextF(str8_lit("Type: %u"), alloc_infos[i].type);
+// 							}UI::EndPopOut();
+// 							UI::PopColor();
+// 						}
 						
-						//TODO draw rect for time the alloc has been alive
-					}
-#endif //MEMORY_TRACK_ALLOCS
-				}UI::EndChild();
-				UI::PopColor(7);
+// 						//TODO draw rect for time the alloc has been alive
+// 					}
+// #endif //MEMORY_TRACK_ALLOCS
+// 				}UI::EndChild();
+// 				UI::PopColor(7);
 				
-				UI::EndTab();
-			}
+// 				UI::EndTab();
+// 			}
 			
-			//right panel: arena heap
-			if(UI::BeginTab(str8_lit("deshi_memory_arena"))){
-				bytes_sigfigs(g_memory->arena_heap.used, used_char, used_divisor);
-				bytes_sigfigs(g_memory->arena_heap.size, size_char, size_divisor);
-				UI::Separator(style.fontHeight / 2.f);
-				UI::TextF(str8_lit("Arena Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->arena_heap.used / used_divisor, used_char, (f32)g_memory->arena_heap.size / size_divisor, size_char);
-				UI::Separator(style.fontHeight/2.f);
+// 			//right panel: arena heap
+// 			if(UI::BeginTab(str8_lit("deshi_memory_arena"))){
+// 				bytes_sigfigs(g_memory->arena_heap.used, used_char, used_divisor);
+// 				bytes_sigfigs(g_memory->arena_heap.size, size_char, size_divisor);
+// 				UI::Separator(style.fontHeight / 2.f);
+// 				UI::TextF(str8_lit("Arena Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->arena_heap.used / used_divisor, used_char, (f32)g_memory->arena_heap.size / size_divisor, size_char);
+// 				UI::Separator(style.fontHeight/2.f);
 				
-				UI::PushColor(UIStyleCol_WindowBg, Color_VeryDarkGreen);
-				UI::SetNextWindowSize({MAX_F32, MAX_F32});
-				UI::BeginChild(str8_lit("deshi_memory_arena_treemap"), vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
-					//TODO this
-				}UI::EndChild();
-				UI::PopColor();
+// 				UI::PushColor(UIStyleCol_WindowBg, Color_VeryDarkGreen);
+// 				UI::SetNextWindowSize({MAX_F32, MAX_F32});
+// 				UI::BeginChild(str8_lit("deshi_memory_arena_treemap"), vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
+// 					//TODO this
+// 				}UI::EndChild();
+// 				UI::PopColor();
 				
-				UI::EndTab();
-			}
-		}UI::EndTabBar();
-		/*
-		//bottom panel: temp arena
-		UI::SetNextWindowSize({MAX_F32, window->height*.1f});
-		UI::BeginChild("deshi_memory_bottom_panel", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
-			bytes_sigfigs(temp_arena->used, used_char, used_divisor);
-			bytes_sigfigs(temp_arena->size, size_char, size_divisor);
-			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)temp_arena->used / used_divisor, used_char, (f32)temp_arena->size / size_divisor, size_char);
+// 				UI::EndTab();
+// 			}
+// 		}UI::EndTabBar();
+// 		/*
+// 		//bottom panel: temp arena
+// 		UI::SetNextWindowSize({MAX_F32, window->height*.1f});
+// 		UI::BeginChild("deshi_memory_bottom_panel", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
+// 			bytes_sigfigs(temp_arena->used, used_char, used_divisor);
+// 			bytes_sigfigs(temp_arena->size, size_char, size_divisor);
+// 			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)temp_arena->used / used_divisor, used_char, (f32)temp_arena->size / size_divisor, size_char);
 			
-			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
-			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace() * vec2{((f32)temp_arena->used / (f32)temp_arena->size), 1.f}, Color_DarkCyan);
-		}UI::EndChild();
-		*/
-	}UI::End();
-	UI::PopColor(2);
+// 			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
+// 			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace() * vec2{((f32)temp_arena->used / (f32)temp_arena->size), 1.f}, Color_DarkCyan);
+// 		}UI::EndChild();
+// 		*/
+// 	}UI::End();
+// 	UI::PopColor(2);
 }
 
 
 void 
 deshi__memory_bytes_draw() {
-	using namespace UI;
+	FixMe;
+
+	// using namespace UI;
 	
-	Heap* heap = g_memory->generic_heap;
-	u32 scale = 8;
+	// Heap* heap = g_memory->generic_heap;
+	// u32 scale = 8;
 	
-	Begin(str8_lit("memory_bytes_draw"));
+	// Begin(str8_lit("memory_bytes_draw"));
 	
-	u32 winw = GetMarginedRight() - GetMarginedLeft();
+	// u32 winw = GetMarginedRight() - GetMarginedLeft();
 	
-	persist f32 selected_chunk = 0;
+	// persist f32 selected_chunk = 0;
 	
-	Slider(str8_lit("chunksel"), &selected_chunk, 0, 450);
-	SameLine();
-	if (Button(str8_lit("<-"))) selected_chunk = Max(--selected_chunk, 0.f);
-	SameLine();
-	if (Button(str8_lit("->"))) selected_chunk++;
+	// Slider(str8_lit("chunksel"), &selected_chunk, 0, 450);
+	// SameLine();
+	// if (Button(str8_lit("<-"))) selected_chunk = Max(--selected_chunk, 0.f);
+	// SameLine();
+	// if (Button(str8_lit("->"))) selected_chunk++;
 	
-	MemChunk* chunk = (MemChunk*)heap->start;
-	forI(s32(selected_chunk)) chunk = GetNextOrderChunk(chunk);
+	// MemChunk* chunk = (MemChunk*)heap->start;
+	// forI(s32(selected_chunk)) chunk = GetNextOrderChunk(chunk);
 	
-	u8* mem = (u8*)ChunkToMemory(chunk);
-	u32 count = GetChunkSize(chunk);
+	// u8* mem = (u8*)ChunkToMemory(chunk);
+	// u32 count = GetChunkSize(chunk);
 	
-	forI(Min(count, u32(5000))) {
-		u8 val = mem[i]; 
-		u32 canfit = winw / scale;
+	// forI(Min(count, u32(5000))) {
+	// 	u8 val = mem[i]; 
+	// 	u32 canfit = winw / scale;
 		
-		vec2 pos = Vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
-		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
-		if (Math::PointInRectangle(input_mouse_position(), GetLastItemScreenPos(), GetLastItemSize())) {
-			PushLayer(GetCenterLayer() + 1);
-			vec2 mp = (input_mouse_position() - GetWindow()->position);
-			string m = toStr(mem + i);
-			RectFilled(mp + Vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
-			TextOld(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
-			string v = toStr(val);
-			RectFilled(mp + Vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
-			TextOld(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
-			PopLayer();
-		}
-	}
+	// 	vec2 pos = Vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
+	// 	RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
+	// 	if (Math::PointInRectangle(input_mouse_position(), GetLastItemScreenPos(), GetLastItemSize())) {
+	// 		PushLayer(GetCenterLayer() + 1);
+	// 		vec2 mp = (input_mouse_position() - GetWindow()->position);
+	// 		string m = toStr(mem + i);
+	// 		RectFilled(mp + Vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
+	// 		TextOld(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
+	// 		string v = toStr(val);
+	// 		RectFilled(mp + Vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
+	// 		TextOld(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
+	// 		PopLayer();
+	// 	}
+	// }
 	
-	//Texture* memsnap = Storage::CreateTextureFromMemory(mem, (char*)chunk, ceil(sqrt(count)), ceil(sqrt(count)), ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToBlack, 1).second;
-	//Image(memsnap);
+	// //Texture* memsnap = Storage::CreateTextureFromMemory(mem, (char*)chunk, ceil(sqrt(count)), ceil(sqrt(count)), ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToBlack, 1).second;
+	// //Image(memsnap);
 	
-	End();
+	// End();
 }
 
 

@@ -11,7 +11,7 @@ TODO:
 */
 #ifndef UI2_GRAPHING_H
 #define UI2_GRAPHING_H
-#include "ui2.h"
+#include "ui.h"
 #include "kigu/unicode.h"
 
 

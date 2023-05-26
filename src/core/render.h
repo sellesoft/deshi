@@ -660,8 +660,6 @@ EndLinkageC();
 #define DESHI_RENDER_IMPL
 #include "assets.h"
 #include "config.h"
-#include "ui.h"
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_status
@@ -1960,16 +1958,17 @@ render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 //// @render_shared_other
 void
 render_display_stats(){
-    using namespace UI;
-    BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
-        RowSetupColumnAlignments({{0,0.5},{1,0.5}});
-        TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
-        TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
-        TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
-        TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
-        TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
-        TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
-    }EndRow();
+	FixMe;
+    // using namespace UI;
+    // BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
+    //     RowSetupColumnAlignments({{0,0.5},{1,0.5}});
+    //     TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
+    //     TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
+    //     TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
+    //     TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
+    //     TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
+    //     TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
+    // }EndRow();
 }
 
 

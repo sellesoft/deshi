@@ -73,226 +73,227 @@ assets_reset(){DPZoneScoped;
 
 void
 assets_browser(){DPZoneScoped;
-	using namespace UI;
-	PushColor(UIStyleCol_Border, Color_Grey);
-	PushColor(UIStyleCol_Separator, Color_Grey);
-	Begin(STR8("AssetsBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
+	FixMe;
+	// using namespace UI;
+	// PushColor(UIStyleCol_Border, Color_Grey);
+	// PushColor(UIStyleCol_Separator, Color_Grey);
+	// Begin(STR8("AssetsBrowserUI"), vec2::ONE * 200, Vec2(400, 600));
 	
 	
-	BeginTabBar(STR8("AssetsBrowserUITabBar"), UITabBarFlags_NoIndent);
-	Separator(9);
-	PushColor(UIStyleCol_HeaderBg,                0x073030ff);
-	PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
-	PushColor(UIStyleCol_WindowBg,                Color_VeryDarkGrey);
-	PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
-	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
-	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
-	PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
-	PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
-	PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
-	if(BeginTab(STR8("Meshes")))
-	{
-		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("AssetsBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
-		TextOld(STR8("TODO"));
-		EndChild();
+	// BeginTabBar(STR8("AssetsBrowserUITabBar"), UITabBarFlags_NoIndent);
+	// Separator(9);
+	// PushColor(UIStyleCol_HeaderBg,                0x073030ff);
+	// PushColor(UIStyleCol_HeaderBorder,            Color_Grey);
+	// PushColor(UIStyleCol_WindowBg,                Color_VeryDarkGrey);
+	// PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+	// PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+	// PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+	// PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+	// PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+	// PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
+	// if(BeginTab(STR8("Meshes")))
+	// {
+	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	// 	BeginChild(STR8("AssetsBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
+	// 	TextOld(STR8("TODO"));
+	// 	EndChild();
 		
-		EndTab();
-	}
-	if(BeginTab(STR8("Textures")))
-	{
-		//TODO make all of this stuff get checked only when necessary
-		b32 new_selected = 0;
-		persist Texture* selected = 0;
+	// 	EndTab();
+	// }
+	// if(BeginTab(STR8("Textures")))
+	// {
+	// 	//TODO make all of this stuff get checked only when necessary
+	// 	b32 new_selected = 0;
+	// 	persist Texture* selected = 0;
 		
-		Texture* largest = DeshAssets->texture_array[0];
-		Texture* smallest = DeshAssets->texture_array[0];
+	// 	Texture* largest = DeshAssets->texture_array[0];
+	// 	Texture* smallest = DeshAssets->texture_array[0];
 		
-		//gather size of textures in memory
-		upt texture_bytes = 0;
-		
-		
-		for_stb_array(DeshAssets->texture_array){
-			texture_bytes += (*it)->width * (*it)->height * u8size;
-			if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
-			if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
-		}
-		
-		AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
+	// 	//gather size of textures in memory
+	// 	upt texture_bytes = 0;
 		
 		
-		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("AssetsBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
+	// 	for_stb_array(DeshAssets->texture_array){
+	// 		texture_bytes += (*it)->width * (*it)->height * u8size;
+	// 		if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
+	// 		if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
+	// 	}
 		
-		BeginRow(STR8("AssetsBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
-		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+	// 	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
 		
-		TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshAssets->texture_array));
-		TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
 		
-		EndRow();
+	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	// 	BeginChild(STR8("AssetsBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
 		
-		if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
-			for_stb_array(DeshAssets->texture_array){
-				if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
-					selected = (*it);
-					new_selected = 1;
-				}
-			}
-			EndCombo();
-		}
+	// 	BeginRow(STR8("AssetsBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
+	// 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 		
-		Separator(9);
+	// 	TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshAssets->texture_array));
+	// 	TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
 		
-		if(BeginHeader(STR8("Stats"))){
-			BeginRow(STR8("AssetsBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
-			RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
+	// 	EndRow();
+		
+	// 	if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
+	// 		for_stb_array(DeshAssets->texture_array){
+	// 			if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
+	// 				selected = (*it);
+	// 				new_selected = 1;
+	// 			}
+	// 		}
+	// 		EndCombo();
+	// 	}
+		
+	// 	Separator(9);
+		
+	// 	if(BeginHeader(STR8("Stats"))){
+	// 		BeginRow(STR8("AssetsBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
+	// 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
 			
-			TextF(STR8("Largest Texture: %s"), largest->name);
-			if(Button(STR8("select"))){ selected = largest; new_selected = 1;}
+	// 		TextF(STR8("Largest Texture: %s"), largest->name);
+	// 		if(Button(STR8("select"))){ selected = largest; new_selected = 1;}
 			
-			TextF(STR8("Smallest Texture: %s"), smallest->name);
-			if(Button(STR8("select"))){ selected = smallest; new_selected = 1; }
+	// 		TextF(STR8("Smallest Texture: %s"), smallest->name);
+	// 		if(Button(STR8("select"))){ selected = smallest; new_selected = 1; }
 			
-			EndRow();
+	// 		EndRow();
 			
-			EndHeader();
-		}
+	// 		EndHeader();
+	// 	}
 		
-		Separator(9);
+	// 	Separator(9);
 		
-		if(selected){
-			BeginRow(STR8("AssetsBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
-			RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
+	// 	if(selected){
+	// 		BeginRow(STR8("AssetsBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
+	// 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
 			
-			u32 texbytes = selected->width * selected->height * u8size;
+	// 		u32 texbytes = selected->width * selected->height * u8size;
 			
-			TextF(STR8("Name: %s"), selected->name);
-			TextF(STR8("Render Index: %d"), selected->render_idx);
-			TextF(STR8("Width: %d"), selected->width);
-			TextF(STR8("Height: %d"), selected->height);
-			TextF(STR8("Depth: %d"), selected->depth);
-			TextF(STR8("MipMaps: %d"), selected->mipmaps);
-			TextF(STR8("Format: %s"), ImageFormatStrings[selected->format - 1].str);
-			TextF(STR8("Type: %s"), TextureTypeStrings[selected->type].str);
-			TextF(STR8("Filter: %s"), TextureFilterStrings[selected->filter].str);
-			TextF(STR8("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
-			TextF(STR8("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
+	// 		TextF(STR8("Name: %s"), selected->name);
+	// 		TextF(STR8("Render Index: %d"), selected->render_idx);
+	// 		TextF(STR8("Width: %d"), selected->width);
+	// 		TextF(STR8("Height: %d"), selected->height);
+	// 		TextF(STR8("Depth: %d"), selected->depth);
+	// 		TextF(STR8("MipMaps: %d"), selected->mipmaps);
+	// 		TextF(STR8("Format: %s"), ImageFormatStrings[selected->format - 1].str);
+	// 		TextF(STR8("Type: %s"), TextureTypeStrings[selected->type].str);
+	// 		TextF(STR8("Filter: %s"), TextureFilterStrings[selected->filter].str);
+	// 		TextF(STR8("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
+	// 		TextF(STR8("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
 			
-			EndRow();
-			PushColor(UIStyleCol_WindowBg, 0x073030ff);
+	// 		EndRow();
+	// 		PushColor(UIStyleCol_WindowBg, 0x073030ff);
 			
-			SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-			BeginChild(STR8("AssetsBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
-			persist f32  zoom = 300;
-			persist vec2 mpl;
-			persist vec2 imagepos;
-			persist vec2 imageposlatch;
-			persist UIImageFlags flags;
+	// 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	// 		BeginChild(STR8("AssetsBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
+	// 		persist f32  zoom = 300;
+	// 		persist vec2 mpl;
+	// 		persist vec2 imagepos;
+	// 		persist vec2 imageposlatch;
+	// 		persist UIImageFlags flags;
 			
-			vec2 mp = input_mouse_position();
+	// 		vec2 mp = input_mouse_position();
 			
-			if(Button(STR8("Flip x"))) 
-				ToggleFlag(flags, UIImageFlags_FlipX);
-			SameLine();
-			if(Button(STR8("Flip y"))) 
-				ToggleFlag(flags, UIImageFlags_FlipY);
+	// 		if(Button(STR8("Flip x"))) 
+	// 			ToggleFlag(flags, UIImageFlags_FlipX);
+	// 		SameLine();
+	// 		if(Button(STR8("Flip y"))) 
+	// 			ToggleFlag(flags, UIImageFlags_FlipY);
 			
-			if(new_selected){
-				zoom = f32(GetWindow()->width) / selected->width ;
-				//imagepos = Vec2(
-				//				(GetWindow()->width - selected->width) / 2,
-				//				(GetWindow()->height - selected->height) / 2
-				//				);
-				imagepos = vec2::ZERO;
-			}
+	// 		if(new_selected){
+	// 			zoom = f32(GetWindow()->width) / selected->width ;
+	// 			//imagepos = Vec2(
+	// 			//				(GetWindow()->width - selected->width) / 2,
+	// 			//				(GetWindow()->height - selected->height) / 2
+	// 			//				);
+	// 			imagepos = vec2::ZERO;
+	// 		}
 			
-			string z = toStr(zoom);
-			TextOld(str8{(u8*)z.str, (s64)z.count});
+	// 		string z = toStr(zoom);
+	// 		TextOld(str8{(u8*)z.str, (s64)z.count});
 			
-			if(IsWinHovered()){
-				SetPreventInputs();
+	// 		if(IsWinHovered()){
+	// 			SetPreventInputs();
 				
-				if(DeshInput->scrollY){
-					f32 val = 10 * DeshInput->scrollY;
-					zoom += zoom / val;
-					//TODO make it zoom to the mouse 
-					vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
-					//imagepos -= imtomp.normalized() * val * 4;
-				}
-				if(input_lmouse_pressed()){
-					mpl = mp;
-					imageposlatch = imagepos;
-				}
-				if(input_lmouse_down()){
-					imagepos = imageposlatch - (mpl - mp);
-				}
+	// 			if(DeshInput->scrollY){
+	// 				f32 val = 10 * DeshInput->scrollY;
+	// 				zoom += zoom / val;
+	// 				//TODO make it zoom to the mouse 
+	// 				vec2 imtomp = (mp - GetWindow()->position) - GetWindow()->dimensions / 2;
+	// 				//imagepos -= imtomp.normalized() * val * 4;
+	// 			}
+	// 			if(input_lmouse_pressed()){
+	// 				mpl = mp;
+	// 				imageposlatch = imagepos;
+	// 			}
+	// 			if(input_lmouse_down()){
+	// 				imagepos = imageposlatch - (mpl - mp);
+	// 			}
 				
-			}
-			else SetAllowInputs();
+	// 		}
+	// 		else SetAllowInputs();
 			
-			SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
-			Image(selected, imagepos, 1, flags);
+	// 		SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
+	// 		Image(selected, imagepos, 1, flags);
 			
-			EndChild();
-			PopColor();
-		}
+	// 		EndChild();
+	// 		PopColor();
+	// 	}
 		
 		
-		EndChild();
-		ResetItemFlags(UIItemType_Header);
+	// 	EndChild();
+	// 	ResetItemFlags(UIItemType_Header);
 		
-		EndTab();
-	}
-	if(BeginTab(STR8("Materials")))
-	{
-		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("AssetsBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
+	// 	EndTab();
+	// }
+	// if(BeginTab(STR8("Materials")))
+	// {
+	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	// 	BeginChild(STR8("AssetsBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
 		
-		Separator(5);
+	// 	Separator(5);
 		
-		SetNextWindowSize(Vec2(MAX_F32, 200));
-		BeginChild(STR8("AssetsBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
-			BeginRow(STR8("AssetsBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
-			RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
+	// 	SetNextWindowSize(Vec2(MAX_F32, 200));
+	// 	BeginChild(STR8("AssetsBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
+	// 		BeginRow(STR8("AssetsBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
+	// 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
 			
-			forI(arrlenu(DeshAssets->material_array)){
-				string s = toStr(i, "  ");
-				TextOld(str8{(u8*)s.str, (s64)s.count});
-				TextOld(str8_from_cstr(DeshAssets->material_array[i]->name));
-			}
+	// 		forI(arrlenu(DeshAssets->material_array)){
+	// 			string s = toStr(i, "  ");
+	// 			TextOld(str8{(u8*)s.str, (s64)s.count});
+	// 			TextOld(str8_from_cstr(DeshAssets->material_array[i]->name));
+	// 		}
 			
-			EndRow();
-		}EndChild();
+	// 		EndRow();
+	// 	}EndChild();
 		
-		Separator(5);
+	// 	Separator(5);
 		
 		
-		EndChild();
+	// 	EndChild();
 		
-		EndTab();
-	}
-	if(BeginTab(STR8("Models")))
-	{
-		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("AssetsBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
-		TextOld(STR8("TODO"));
-		EndChild();
+	// 	EndTab();
+	// }
+	// if(BeginTab(STR8("Models")))
+	// {
+	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	// 	BeginChild(STR8("AssetsBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
+	// 	TextOld(STR8("TODO"));
+	// 	EndChild();
 		
-		EndTab();
-	}
-	if(BeginTab(STR8("Fonts")))
-	{
-		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
-		BeginChild(STR8("AssetsBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
-		TextOld(STR8("TODO"));
+	// 	EndTab();
+	// }
+	// if(BeginTab(STR8("Fonts")))
+	// {
+	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
+	// 	BeginChild(STR8("AssetsBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
+	// 	TextOld(STR8("TODO"));
 		
-		EndTab();
-	}
-	EndTabBar();
+	// 	EndTab();
+	// }
+	// EndTabBar();
 	
-	End();
-	PopColor(11);
+	// End();
+	// PopColor(11);
 }
 
 

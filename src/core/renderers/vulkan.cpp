@@ -2956,17 +2956,6 @@ BuildCommands(){DPZoneScoped;
 				
 			}
 			
-			//draw imgui stuff
-#ifndef DESHI_DISABLE_IMGUI
-			if(DeshiModuleLoaded(DS_IMGUI)){
-				if(ImDrawData* imDrawData = ImGui::GetDrawData()){
-					DebugBeginLabelVk(cmdBuffer, "ImGui", draw_group_color);
-					ImGui_ImplVulkan_RenderDrawData(imDrawData, cmdBuffer);
-					DebugEndLabelVk(cmdBuffer);
-				}
-			}
-#endif
-			
 			//DEBUG draw shadow map
 			if(renderSettings.showShadowMap){
 				viewport.x      = (f32)(activeSwapchain.width - 400);
