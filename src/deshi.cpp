@@ -222,13 +222,12 @@ local DeshiStage deshiStage = DS_NONE;
 
 #define DeshiStageInitStart(stage, dependencies, ...)      \
   Assert((deshiStage & (dependencies)) == (dependencies)); \
-  deshiStage |= stage;                                     \
   Stopwatch stopwatch##stage = start_stopwatch()
 
 #if DESHI_LOG_MODULE_INIT
-#  define DeshiStageInitEnd(stage) LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
+#  define DeshiStageInitEnd(stage) deshiStage |= stage; LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
 #else
-#  define DeshiStageInitEnd(stage) (void)0
+#  define DeshiStageInitEnd(stage) deshiStage |= stage;
 #endif
 
 #define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
@@ -282,7 +281,7 @@ local DeshiStage deshiStage = DS_NONE;
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb/stb_truetype.h>
 
-//// core headers ////
+//// core implementations ////
 #define DESHI_IMPLEMENTATION
 #include "deshi.h"
 #include "core/assets.h"
@@ -292,13 +291,9 @@ local DeshiStage deshiStage = DS_NONE;
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
 #endif // DESHI_DISABLE_CONSOLE
-#ifndef DESHI_DISABLE_IMGUI
-#  define IMGUI_DEFINE_MATH_OPERATORS
-#  include "core/imgui.h"
-#endif // DESHI_DISABLE_IMGUI
 #include "core/input.h"
-#include "core/file.h"
 #include "core/logger.h"
+#include "core/file.h"
 #include "core/memory.h"
 #include "core/networking.h"
 #include "core/platform.h"
@@ -306,9 +301,8 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
-#include "core/ui2.h"
-#include "core/ui2_widgets.h"
-#include "core/ui2_graphing.h"
+#include "core/ui_widgets.h"
+#include "core/ui_graphing.h"
 #include "core/window.h"
 
 //// platform ////
@@ -374,11 +368,10 @@ namespace X11 {
 
 //// core cpp ////
 #include "core/memory.cpp"
-#include "core/logger.cpp"
+//#include "core/logger.cpp"
 #include "core/console.cpp"
 #include "core/assets.cpp"
 #include "core/ui.cpp"
-#include "core/ui2.cpp"
 #include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
 
 //// global definitions ////

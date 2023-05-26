@@ -1319,7 +1319,7 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 		Flags open_flags = flags & ~(FileAccess_Append);
 		wchar_t* open_mode = 0;
 		switch(open_flags){
-			case FileAccess_Read:              open_mode = (wchar_t*)L"rb";  break;
+			case FileAccess_Read:              open_mode = (wchar_t*)L"rb";  file->bytes = 0; break;
 			case FileAccess_WriteTruncate:     open_mode = (wchar_t*)L"wb";  file->bytes = 0; break;
 			case FileAccess_Write:
 			case FileAccess_ReadWrite:         open_mode = (wchar_t*)L"rb+"; break;

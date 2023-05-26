@@ -35,7 +35,6 @@ TODOs:
 [05/18/22,MEDI,Feature] add custom resolution and refresh rate
 */
 
-#pragma once
 #ifndef DESHI_WINDOW_H
 #define DESHI_WINDOW_H
 #include "kigu/common.h"
@@ -202,15 +201,14 @@ FORCE_INLINE void window_set_cursor_position(Window* window, vec2 position){ win
 
 #endif //DESHI_WINDOW_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifdef DESHI_IMPLEMENTATION
+#if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_WINDOW_IMPL)
+#define DESHI_WINDOW_IMPL
 #include "kigu/arrayT.h"
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_shared_variables
 local Window window_helper{};
 local arrayT<Window*> window_windows;
 local Window* window_active;
-
 
 #endif //DESHI_IMPLEMENTATION

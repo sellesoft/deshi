@@ -122,25 +122,25 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	
 	u8 path_buffer[256];
 	log_count = ClampMin(log_count, 1);
-	//FixMe;
-	carray<File> log_files = {};//file_search_directory(str8_lit("data/logs/"));
-	
+	File* log_files = file_search_directory(str8_lit("data/logs/"));
+
+
 	//rename previous log.txt
-	forE(log_files){
-		if(str8_equal(it->name, str8_lit("log.txt"))){
-			int len = stbsp_snprintf((char*)path_buffer, ArrayCount(path_buffer), "data/logs/log_%lld.txt", it->last_write_time);
-			file_rename(it->path, (str8{path_buffer, (s64)len}));
-			it->path = str8{path_buffer, (s64)len}; //NOTE(delle) correcting path on temp memory so it's valid for deletion
+	forX_array(file, log_files){
+		if(str8_equal(file->name, str8_lit("log.txt"))){
+			int len = stbsp_snprintf((char*)path_buffer, ArrayCount(path_buffer), "data/logs/log_%lld.txt", file->last_write_time);
+			file_rename(file->path, (str8{path_buffer, (s64)len}));
+			file->path = str8{path_buffer, (s64)len}; //NOTE(delle) correcting path on temp memory so it's valid for deletion
 		}
 	}
 	
 	//delete all but last 'log_count' files in logs directory
-	if(log_files.count > log_count){
+	if(array_count(log_files) > log_count){
 		//sort logs ascending based on last write time
 		b32 swapped = false;
 		forX(i,log_count){
 			swapped = false;
-			forX(j,log_files.count-1-i){
+			forX(j,array_count(log_files)-1-i){
 				if(log_files[j].last_write_time > log_files[j+1].last_write_time){
 					Swap(log_files[j], log_files[j+1]);
 					swapped = true;
@@ -150,7 +150,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 		}
 		
 		//delete logs
-		forI((log_files.count-log_count)+1) file_delete(log_files[i].path, FileDeleteFlags_File);
+		forI((array_count(log_files)-log_count)+1) file_delete(log_files[i].path, FileDeleteFlags_File);
 	}
 	
 	//create log file named as current time
@@ -187,7 +187,7 @@ void
 logger_cleanup(){DPZoneScoped;
 	file_deinit(logger.file);
 	fflush(stdout); 
-#if DESHI_WINDOWS
+#ifdef DESHI_WINDOWS
 	_setmode(_fileno(stdout), _O_TEXT); //NOTE(delle) disable Unicode printing to stdout on Windows
 #endif
 	logger.file = 0;

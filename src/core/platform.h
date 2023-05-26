@@ -141,7 +141,8 @@ external u64 platform_process_write(Process p, upt address, void* data, upt size
 
 #endif //DESHI_PLATFORM_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifdef DESHI_IMPLEMENTATION
+#if defined( DESHI_IMPLEMENTATION ) && !defined( DESHI_PLATFORM_IMPL )
+#define DESHI_PLATFORM_IMPL
 #include "file.h"
 #include "window.h"
 #include "kigu/arrayT.h"
@@ -164,9 +165,6 @@ void
 platform_fast_application_exit(b32 exit_fast){DPZoneScoped;
 	platform_fast_exit = exit_fast;
 }
-
-
-
 
 /*
 //TODO(sushi) options for decoration colors
