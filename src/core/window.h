@@ -155,7 +155,7 @@ extern Window* g_window;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_management
 //Creates an `OS` window with the specified values
-//The first time this function is called, g_window (also DeshWindow, the global window pointer), is set to the created window
+//The first time this function is called, g_window (aka DeshWindow, the global window pointer), is set to the created window
 external Window* window_create(str8 title, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode display_mode = DisplayMode_Windowed, Decoration decorations = Decoration_SystemDecorations);
 FORCE_INLINE Window* window_create(const char* title, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode display_mode = DisplayMode_Windowed, Decoration decorations = Decoration_SystemDecorations){ return window_create(str8{(u8*)title,(s64)strlen(title)},width,height,x,y,display_mode,decorations); }
 

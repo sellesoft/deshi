@@ -839,17 +839,26 @@ void
 platform_init() {
 	DeshiStageInitStart(DS_PLATFORM, DS_MEMORY, "Attempted to initialize Platform module before initializing the Memory module");
 
-	array_init(file_shared.files, 16, deshi_allocator);
+	DeshTime->stopwatch = start_stopwatch();
 
-	// NotImplemented;
+	array_init(file_shared.files, 16, deshi_allocator);
+	file_create(STR8("data/"));
+	file_create(STR8("data/cfg/"));
+	file_create(STR8("data/temp/"));
+
+	// initialize display and screen
+	X11::Display* display = linux.x11.display = X11::XOpenDisplay(0);
+	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);
+	u32 white = X11::XWhitePixel(display, screen);
+	u32 black = X11::XBlackPixel(display, screen);
 
 	DeshiStageInitEnd(DS_PLATFORM);
 }
 
 b32 
 platform_update() {
-	NotImplemented;
-	return 0;
+	
+	return 1;
 }
 
 void 
@@ -940,15 +949,32 @@ Window*
 window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode, Decoration decorations){
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
 	
-	linux.x11.display = X11::XOpenDisplay(0);
-	linux.x11.screen = X11::XDefaultScreen(linux.x11.display);
 	u32 black = X11::XBlackPixel(linux.x11.display, linux.x11.screen);
 	u32 white = X11::XWhitePixel(linux.x11.display, linux.x11.screen);
 
 	Window* window = (Window*)memalloc(sizeof(Window));
 	window->handle = (void*)X11::XCreateSimpleWindow(linux.x11.display, X11::XDefaultRootWindow(linux.x11.display), 0,0,200,300,5,white,black);
-	
+	if(!DeshWindow) DeshWindow = window;
+
 	X11::XSetStandardProperties(linux.x11.display, (X11::Window)window->handle, (const char*)title.str, 0,0,0,0,0);
+
+	X11::XSelectInput(linux.x11.display, (X11::Window)window->handle, 
+		  ExposureMask      // caused when an invisible window becomes visible, or when a hidden part of a window becomes visible
+		| ButtonPressMask   // mouse button pressed
+		| ButtonReleaseMask // mouse button released
+		| KeyPressMask      
+		| KeyReleaseMask
+		| EnterWindowMask
+		| LeaveWindowMask
+		| PointerMotionMask // mouse movement event
+		);
+	window->context = X11::XCreateGC(linux.x11.display, (X11::Window)window->handle, 0, 0);
+	X11::XSetBackground(linux.x11.display, (X11::GC)window->context, black);
+	X11::XSetForeground(linux.x11.display, (X11::GC)window->context, white);
+
+	X11::XClearWindow(linux.x11.display, (X11::Window)window->handle);
+	X11::XMapRaised(linux.x11.display, (X11::Window)window->handle);
+
 	DeshiStageInitEnd(DS_WINDOW);
 	return window;
 
