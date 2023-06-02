@@ -269,11 +269,20 @@ int
 logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 	//write to stdout (convert to wide characters b/c MSVC/Windows requires it)
 	if(logger.mirror_to_stdout){
+#if DESHI_WINDOWS
 		persist wchar_t logger_conversion_buffer[LOGGER_BUFFER_SIZE] = {0};
 		logger.last_message[cursor] = '\0';
 		mbstowcs(logger_conversion_buffer, (char*)logger.last_message, LOGGER_BUFFER_SIZE-1);
 		fputws(logger_conversion_buffer, stdout);
 		if(logger.auto_newline) fputwc('\n', stdout);
+#else
+		if(logger.auto_newline){
+			printf("%s\n", logger.last_message);
+		}else{
+			printf("%s", logger.last_message);
+			fflush(stdout);
+		}
+#endif 
 	}
 	
 	//automatically append newline
@@ -355,6 +364,8 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 		forI((array_count(log_files)-log_count)+1) file_delete(log_files[i].path, FileDeleteFlags_File);
 	}
 	
+	array_deinit(log_files);
+
 	//create log file named as current time
 	logger.file = file_init(str8_lit("data/logs/log.txt"), FileAccess_ReadWriteAppendCreate);
 	Assert(logger.file, "logger failed to open file");
@@ -378,7 +389,6 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	//             use 'locale -a' on cli to see a list of strings you can use here
 	setlocale(LC_ALL, "en_US.utf8");
 #endif
-
 	
 	DeshiStageInitEnd(DS_LOGGER);
 }
