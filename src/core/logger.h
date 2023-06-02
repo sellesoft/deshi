@@ -276,6 +276,7 @@ logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 		fputws(logger_conversion_buffer, stdout);
 		if(logger.auto_newline) fputwc('\n', stdout);
 #else
+		logger.last_message[cursor] = '\0';
 		if(logger.auto_newline){
 			printf("%s\n", logger.last_message);
 		}else{
