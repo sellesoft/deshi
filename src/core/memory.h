@@ -36,7 +36,7 @@ References:
 #include "kigu/node.h"
 StartLinkageC();
 
-#define MEMORY_CHECK_HEAPS DESHI_INTERNAL
+#define MEMORY_CHECK_HEAPS BUILD_INTERNAL
 #define MEMORY_TRACK_ALLOCS false
 
 #define MEMORY_PRINT_ARENA_CHUNKS false
@@ -214,7 +214,7 @@ typedef struct PoolHeader{
 
 //Creates a pooled arena with `count` chunks-per-block (item slots) and assigns `pool` equal to the first chunk
 #define memory_pool_init(pool,count) ((pool) = deshi__memory_pool_init_wrapper((pool), sizeof(*(pool)), (count)))
-void* deshi__memory_pool_init(upt type_size, upt count);
+void* deshi__memory_pool_init(void* pool, upt type_size, upt count);
 
 #if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
 EndLinkageC();
