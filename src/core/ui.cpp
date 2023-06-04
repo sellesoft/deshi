@@ -78,6 +78,14 @@ void ui_drawcmd_delete(uiDrawCmd* dc){
 }
 
 void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
+	/*
+		Because we store our vertexes and indexes (here on as drawinfo) in manually managed Arenas,
+		we need to keep track of the drawinfo that a drawcmd releases when it is not needed anymore
+		so that later drawcmds may come and use it. We do this by storing a linked list of inactive
+		drawcmds, which we organize in arrays sorted by their *memory address*. This allows us to
+		merge bordering drawcmds, preventing waste of memory.
+	*/
+
 	carray<uiDrawCmd*> varr = {g_ui->inactive_drawcmds_vertex_sorted.data, g_ui->inactive_drawcmds_vertex_sorted.count};
 	carray<uiDrawCmd*> iarr = {g_ui->inactive_drawcmds_index_sorted.data, g_ui->inactive_drawcmds_index_sorted.count};
 
@@ -512,7 +520,7 @@ void ui_pop_id(str8 file, upt line){
 
 
 void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
-	DeshiStageInitStart(DS_UI2, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
+	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
 	
 #if DESHI_RELOADABLE_UI
 	g_memory = memctx;
@@ -567,6 +575,8 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui->keys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
 
 	g_ui->keys.drag_item = Mouse_LEFT;
+
+	DeshiStageInitEnd(DS_UI);
 }
 
 //pass 0 for child on first call

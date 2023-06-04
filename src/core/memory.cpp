@@ -129,11 +129,11 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 	return &alloc_infos_active[middle];
 }
 
+b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
+b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
+
 local void
 DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
-	b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
-	b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
-	
 	if(address == 0) return;
 	upt index = binary_search(alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
 	if(index != -1){

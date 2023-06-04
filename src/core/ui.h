@@ -443,7 +443,6 @@ sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;
 // @ui_keybinds
 
 
-// a singleton collection of keybinds for use throughout ui
 struct uiKeybinds{
 	struct{
 		struct{
@@ -488,12 +487,19 @@ struct uiDrawCmd{
 	vec2i counts_used; //x: vertex, y: index
 };
 
-#define uiDrawCmdFromNode(x) CastFromMember(uiDrawCmd, node, x)
-
+// allocates `count amount of uiDrawCmds generically 
 uiDrawCmd* ui_make_drawcmd(upt count);
 
+// deletes the given uiDrawCmd
+// it is not recommended to call this on any drawcmd that
+// you do not have total control over, eg. if it is a drawcmd from an 
+// item that you did not explicitly construct yourself
+// you should use ui_drawcmd_remove instead
 void ui_drawcmd_delete(uiDrawCmd* dc);
 
+// removes the given uiDrawCmd, reserving the memory it points to 
+// for use with later drawcmds. See the implementation function
+// for further info.
 void ui_drawcmd_remove(uiDrawCmd* drawcmd);
 
 void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts);

@@ -504,7 +504,6 @@ Inverse() const {
 	matN nu = matN::Identity(rows);
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
-			
 			if (i != j && this->operator()(i, j)) {
 				diag = 0;
 				goto diagbreak;
