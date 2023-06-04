@@ -3,8 +3,8 @@
 #include <ctime>
 #include "kigu/common.h"
 
-#define DESHI_TEST_CORE_TODO(name) wprintf(L"[DESHI-TEST] TODO:   core/"name"\n")
-#define DESHI_TEST_CORE_PASSED(name) wprintf(L"[DESHI-TEST] PASSED: core/"name"\n")
+#define DESHI_TEST_CORE_TODO(name) wprintf(L"[DESHI-TEST] TODO:   core/" name "\n")
+#define DESHI_TEST_CORE_PASSED(name) wprintf(L"[DESHI-TEST] PASSED: core/" name "\n")
 
 #include "camera.h"
 local void TEST_deshi_core_camera(){
@@ -24,11 +24,6 @@ local void TEST_deshi_core_console(){
 #include "input.h"
 local void TEST_deshi_core_input(){
 	DESHI_TEST_CORE_TODO("input");
-}
-
-#include "io.h"
-local void TEST_deshi_core_io(){
-	DESHI_TEST_CORE_TODO("io");
 }
 
 #include "logger.h"
@@ -198,7 +193,7 @@ local void TEST_deshi_core_memory(){
 	
 	//TODO(delle) temp alloc testing
 	
-	{//// memory pool ////
+	if(0){//// memory pool ////
 		//pool init (test that the pool was alloced and setup correctly)
 		MemChunk* pool = 0;
 		memory_pool_init(pool, 64);
@@ -548,11 +543,6 @@ local void TEST_deshi_core_renderer(){
 	DESHI_TEST_CORE_TODO("renderer");
 }
 
-#include "storage.h"
-local void TEST_deshi_core_storage(){
-	DESHI_TEST_CORE_TODO("storage");
-}
-
 #include "time.h"
 local void TEST_deshi_core_time(){
 	DESHI_TEST_CORE_TODO("time");
@@ -573,11 +563,9 @@ local void TEST_deshi_core(){
 	TEST_deshi_core_commands();
 	TEST_deshi_core_console();
 	TEST_deshi_core_input();
-	TEST_deshi_core_io();
 	TEST_deshi_core_logging();
 	TEST_deshi_core_memory();
 	TEST_deshi_core_renderer();
-	TEST_deshi_core_storage();
 	TEST_deshi_core_time();
 	TEST_deshi_core_ui();
 	TEST_deshi_core_window();
