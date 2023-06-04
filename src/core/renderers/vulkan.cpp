@@ -852,7 +852,7 @@ CreateInstance(){DPZoneScoped;
 		
 		u32 layerCount = 0;
 		vkEnumerateInstanceLayerProperties(&layerCount, 0);
-	arrayT<VkLayerProperties> availableLayers(layerCount, deshi_temp_allocator);
+		arrayT<VkLayerProperties> availableLayers(layerCount, deshi_temp_allocator);
 		availableLayers.count = layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data);
 		
@@ -897,17 +897,18 @@ CreateInstance(){DPZoneScoped;
 	u32 extensionCount = 2;
 	arrayT<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
 #elif DESHI_LINUX
-	NotImplemented;
-	arrayT<const char*> extensions;
+	const char* extensions[] = {
+		VK_KHR_SURFACE_EXTENSION_NAME, 
+		VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+#if BUILD_INTERNAL
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif
+	};
 #elif DESHI_MAC
 	u32 extensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 	arrayT<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-#endif
-	
-#if BUILD_INTERNAL
-	extensions.add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 	
 	//setup instance debug messenger
@@ -919,8 +920,8 @@ CreateInstance(){DPZoneScoped;
 	//create the instance
 	VkInstanceCreateInfo createInfo{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
 	createInfo.pApplicationInfo        = &appInfo;
-	createInfo.enabledExtensionCount   = (u32)extensions.size();
-	createInfo.ppEnabledExtensionNames = extensions.data;
+	createInfo.enabledExtensionCount   = ArrayCount(extensions);
+	createInfo.ppEnabledExtensionNames = extensions;
 	if(renderSettings.debugging){
 		createInfo.enabledLayerCount   = (u32)ArrayCount(validationLayers);
 		createInfo.ppEnabledLayerNames = validationLayers;
@@ -968,6 +969,7 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating X11-Vulkan surface");
+
 	NotImplemented;
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");

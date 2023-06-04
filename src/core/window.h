@@ -108,7 +108,6 @@ struct Window{
 	void* handle; //win32: HWND; linux: X11::Window; mac not implemented
 	void* context; //win32: HDC; linux: X11::GC; linux/mac not implemented
 	
-	
 	union{
 		vec2i position;
 		struct{ s32 x, y; };

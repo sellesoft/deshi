@@ -23,11 +23,82 @@ struct{
 		X11::Display* display;
 		// which screen of the display are we using
 		int screen;
+		// the root window of the X windowing system
+		X11::Window root;
 	}x11;
 }linux;
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
+
+int linux_error_handler(X11::Display* display, X11::XErrorEvent* event) {
+	switch(event->error_code){
+		case BadAccess: 			printf("A client attempts to grab a key/button combination already grabbed by another client.\n"
+							                "A client attempts to free a colormap entry that it had not already allocated or to free an entry in a colormap that was created with all entries writable.\n"
+							                "A client attempts to store into a read-only or unallocated colormap entry.\n"
+							                "A client attempts to modify the access control list from other than the local (or otherwise authorized) host.\n"
+							                "A client attempts to select an event type that another client has already selected."); break;
+		case BadAlloc: 			    printf("The server fails to allocate the requested resource. Note that the explicit listing of BadAlloc errors in requests only covers allocation errors at a very coarse level and is not intended to (nor can it in practice hope to) cover all cases of a server running out of allocation space in the middle of service. The semantics when a server runs out of allocation space are left unspecified, but a server may generate a BadAlloc error on any request for this reason, and clients should be prepared to receive such errors and handle or discard them."); break;
+		case BadAtom: 			    printf("A value for an atom argument does not name a defined atom."); break;
+		case BadColor: 			    printf("A value for a colormap argument does not name a defined colormap."); break;
+		case BadCursor: 			printf("A value for a cursor argument does not name a defined cursor."); break;
+		case BadDrawable: 		    printf("A value for a drawable argument does not name a defined window or pixmap."); break;
+		case BadFont: 			    printf("A value for a font argument does not name a defined font (or, in some cases, GContext)."); break;
+		case BadGC: 				printf("A value for a GContext argument does not name a defined GContext ."); break;
+		case BadIDChoice: 		    printf("The value chosen for a resource identifier either is not included in the range assigned to the client or is already in use. Under normal circumstances, this cannot occur and should be considered a server or Xlib error."); break;
+		case BadImplementation: 	printf("The server does not implement some aspect of the request. A server that generates this error for a core request is deficient. As such, this error is not listed for any of the requests, but clients should be prepared to receive such errors and handle or discard them."); 
+		case BadLength: 			printf("The length of a request is shorter or longer than that required to contain the arguments. This is an internal Xlib or server error.\n" 
+							                "The length of a request exceeds the maximum length accepted by the server."); break;
+		case BadMatch: 			    printf("In a graphics request, the root and depth of the graphics context does not match that of the drawable.\n"
+							                "An InputOnly window is used as a drawable.\n"
+							                "Some argument or pair of arguments has the correct type and range, but it fails to match in some other way required by the request.\n"
+							                "An InputOnly window lacks this attribute."); break;
+		case BadName: 			    printf("A font or color of the specified name does not exist."); break;
+		case BadPixmap: 			printf("A value for a pixmap argument does not name a defined pixmap."); break;
+		case BadRequest: 			printf("The major or minor opcode does not specify a valid request. This usually is an Xlib or server error."); break;
+		case BadValue: 			    printf("Some numeric value falls outside of the range of values accepted by the request. Unless a specific range is specified for an argument, the full range defined by the argument's type is accepted. Any argument defined as a set of alternatives typically can generate this error (due to the encoding)."); break;
+		case BadWindow: 			printf("A value for a window argument does not name a defined window. "); break;
+	}
+	return 1;
+}
+
+FORCE_INLINE KeyCode
+linux_keysym_to_key(X11::KeySym k) {
+	switch(k){
+		case XK_a: return Key_A; case XK_b: return Key_B; case XK_c: return Key_C; case XK_d: return Key_D; case XK_e: return Key_E;
+		case XK_f: return Key_F; case XK_g: return Key_G; case XK_h: return Key_H; case XK_i: return Key_I; case XK_j: return Key_J;
+		case XK_k: return Key_K; case XK_l: return Key_L; case XK_m: return Key_M; case XK_n: return Key_N; case XK_o: return Key_O;
+		case XK_p: return Key_P; case XK_q: return Key_Q; case XK_r: return Key_R; case XK_s: return Key_S; case XK_t: return Key_T;
+		case XK_u: return Key_U; case XK_v: return Key_V; case XK_w: return Key_W; case XK_x: return Key_X; case XK_y: return Key_Y;
+		case XK_z: return Key_Z;
+		case XK_0: return Key_0; case XK_1: return Key_1; case XK_2: return Key_2; case XK_3: return Key_3; case XK_4: return Key_4;
+		case XK_5: return Key_5; case XK_6: return Key_6; case XK_7: return Key_7; case XK_8: return Key_8; case XK_9: return Key_9;
+		case XK_F1: return Key_F1; case XK_F2:  return Key_F2;  case XK_F3:  return Key_F3;  case XK_F4:  return Key_F4;
+		case XK_F5: return Key_F5; case XK_F6:  return Key_F6;  case XK_F7:  return Key_F7;  case XK_F8:  return Key_F8;
+		case XK_F9: return Key_F9; case XK_F10: return Key_F10; case XK_F11: return Key_F11; case XK_F12: return Key_F12;
+		case XK_Up: return Key_UP; case XK_Down: return Key_DOWN; case XK_Left: return Key_LEFT; case XK_Right: return Key_RIGHT;
+		case XK_Escape:       return Key_ESCAPE;     case XK_asciitilde: return Key_TILDE;        case XK_Tab:         return Key_TAB;
+		case XK_Caps_Lock:    return Key_CAPSLOCK;   case XK_Shift_L:    return Key_LSHIFT;       case XK_Control_L:   return Key_LCTRL;
+		case XK_Alt_L:        return Key_LALT;       case XK_BackSpace:  return Key_BACKSPACE;    case XK_Return:      return Key_ENTER;
+		case XK_Shift_R:      return Key_RSHIFT;     case XK_Control_R:  return Key_RCTRL;        case XK_Alt_R:       return Key_RALT;
+		case XK_minus:        return Key_MINUS;      case XK_plus:       return Key_EQUALS;       case XK_bracketleft: return Key_LBRACKET;
+		case XK_bracketright: return Key_RBRACKET;   case XK_slash:      return Key_FORWARDSLASH; case XK_semicolon:   return Key_SEMICOLON;
+		case XK_apostrophe:   return Key_APOSTROPHE; case XK_comma:      return Key_COMMA;        case XK_period:      return Key_PERIOD;
+		case XK_backslash:    return Key_BACKSLASH;  case XK_space:      return Key_SPACE;        case XK_Insert:      return Key_INSERT;
+		case XK_Delete:       return Key_DELETE;     case XK_Home:       return Key_HOME;         case XK_End:         return Key_END;
+		case XK_Prior:        return Key_PAGEUP;     case XK_Page_Down:  return Key_PAGEDOWN;     case XK_Pause:       return Key_PAUSEBREAK;
+		case XK_Scroll_Lock:  return Key_SCROLLLOCK; case XK_Meta_L:     return Key_LMETA;        case XK_Meta_R:      return Key_RMETA;
+		case XK_Print:  return Key_PRINTSCREEN;
+		case XK_KP_0: return Key_NP0; case XK_KP_1: return Key_NP1; case XK_KP_2: return Key_NP2; case XK_KP_3: return Key_NP3;
+		case XK_KP_4: return Key_NP4; case XK_KP_5: return Key_NP5; case XK_KP_6: return Key_NP6; case XK_KP_7: return Key_NP7;
+		case XK_KP_8: return Key_NP8; case XK_KP_9: return Key_NP9;
+		case XK_KP_Multiply: return Key_NPMULTIPLY; case XK_KP_Divide:  return Key_NPDIVIDE; case XK_KP_Add:     return Key_NPPLUS;
+		case XK_KP_Subtract: return Key_NPMINUS;    case XK_KP_Decimal: return Key_NPPERIOD; case XK_Num_Lock: return Key_NUMLOCK;
+		default: return Key_NONE;
+	}
+}
+
+
 
 // handles a range of errors that can be given from errno
 #define StartFileErrnoHandler(result_name, err, return_error_value) {\
@@ -453,7 +524,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 
 	if(!file_exists(path)){
 		FileHandleErrorD(result, FileResult_PathDoesNotExist, {},, 
-			"at ", caller_file, "(", caller_line, "): file_init() was given a path to a file that doesn't exist"
+			"at ", caller_file, "(", caller_line, "): file_init() was given a path to a file that doesn't exist: ", path
 		);
 	}
 
@@ -735,7 +806,7 @@ deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator*
 
 	// very scuffed way of going about this
 	// TODO(sushi) change this to just use the platform stuff directly
-	File f = file_info_result(path, result);
+	File f = deshi__file_info(caller_file, caller_line, path, result);
 	if(!f.creation_time) return {};
 	if(!file_change_access_result(&f, FileAccess_Read, result)) return {};
 
@@ -818,7 +889,7 @@ start_stopwatch() {
 			case EINVAL: LogE("stopwatch", "in start_stopwatch(), clock_gettime() was given a clk_id that is not supported on this system. ERRNO 22: EINVAL"); return 0;
 		}
 	}
-	return (current.tv_sec*1000000000+current.tv_nsec)/3;
+	return (current.tv_sec*1000000000+current.tv_nsec)/1e6;
 }
 
 f64 peek_stopwatch(Stopwatch watch) {
@@ -829,11 +900,12 @@ f64 peek_stopwatch(Stopwatch watch) {
 			case EINVAL: LogE("stopwatch", "in peek_stopwatch(), clock_gettime() was given a clk_id that is not supported on this system. ERRNO 22: EINVAL"); return 0;
 		}
 	}
-	return (current.tv_sec*1000000000+current.tv_nsec)/3 - watch;
+	return (current.tv_sec*1000000000+current.tv_nsec)/1e6 - watch;
 }
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @platform
+
 
 void
 platform_init() {
@@ -846,18 +918,89 @@ platform_init() {
 	file_create(STR8("data/cfg/"));
 	file_create(STR8("data/temp/"));
 
+	X11::XSetErrorHandler(&linux_error_handler);
+	
 	// initialize display and screen
 	X11::Display* display = linux.x11.display = X11::XOpenDisplay(0);
 	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);
-	u32 white = X11::XWhitePixel(display, screen);
-	u32 black = X11::XBlackPixel(display, screen);
+	X11::Window root = linux.x11.root = X11::XRootWindow(display, screen);
+
+	X11::XWindowAttributes wa;
+	X11::XGetWindowAttributes(display, root, &wa);
+
+
+	// forI(n_monitors) {
+	// 	X11::XRRMonitorInfo monitor = monitors[i];
+	// 	printf("Monitor %u: \n", i);
+	// 	printf("  size: %u x %u\n", monitor.width, monitor.height);
+	// 	printf("   pos: (%u, %u)\n", monitor.x, monitor.y);
+	// }
+
+	// u32 n_screens = X11::XScreenCount(linux.x11.display);
+	// Log("", "found ", n_screens, " screens for display 0.");
+	// forI(n_screens) {
+	// 	X11::Screen* screen = X11::XScreenOfDisplay(linux.x11.display, i);
+	// 	u32 w = X11::XWidthOfScreen(screen);
+	// 	u32 h = X11::XHeightOfScreen(screen);
+	// 	Log("", "screen ", i, ": ");
+	// 	Log("", "	width: ", w);
+	// 	Log("", "  height: ", h);
+	// }
+
+	int min,max;
+	X11::XDisplayKeycodes(linux.x11.display, &min,&max);
+	//Log("", "min: ", min, ", max: ", max);
 
 	DeshiStageInitEnd(DS_PLATFORM);
 }
 
 b32 
 platform_update() {
+	Stopwatch update_stopwatch = start_stopwatch();
+
+	DeshTime->prevDeltaTime = DeshTime->deltaTime;
+	DeshTime->deltaTime     = reset_stopwatch(&DeshTime->stopwatch);
+	DeshTime->totalTime    += DeshTime->deltaTime;
+	DeshTime->frame        += 1;
+	DeshTime->timeTime = reset_stopwatch(&update_stopwatch);
 	
+	X11::XEvent event;
+	X11::KeySym key;
+	char text[255];
+
+	// get the current amount of events in queue
+	u64 events_to_handle = X11::XEventsQueued(linux.x11.display, QueuedAlready);
+
+	forI(events_to_handle){
+		X11::XNextEvent(linux.x11.display, &event);
+		switch(event.type) {
+			case Expose: {
+				
+			}break;
+
+			case MotionNotify: {
+				X11:: XMotionEvent motion = event.xmotion;
+				//Log("", "mouse -> root:(", motion.x_root, ", ", motion.y_root, "), win:(", motion.x, ", ", motion.y, ")");
+			}break;
+
+			case KeyPress: {
+				X11::KeySym ks = XLookupKeysym(&event.xkey, 0);
+				KeyCode key = linux_keysym_to_key(ks);
+				if(key != Key_NONE) {
+					DeshInput->realKeyState[key] = 1;
+				}
+			}break;
+
+			case KeyRelease: {
+				X11::KeySym ks = XLookupKeysym(&event.xkey,  0);
+				KeyCode key = linux_keysym_to_key(ks);
+				if(key != Key_NONE) {
+					DeshInput->realKeyState[key] = 0;
+				}
+			}break;
+		}
+	}
+
 	return 1;
 }
 
@@ -873,8 +1016,8 @@ platform_cursor_position(s32 x, s32 y) {
 
 void* 
 platform_load_module(str8 module_path) {
-	NotImplemented;
-	return 0;
+	void* handle = dlopen((char*)module_path.str, RTLD_NOW);
+	return handle;
 }
 
 void 
@@ -949,11 +1092,38 @@ Window*
 window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode, Decoration decorations){
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
 	
+	// we'll create the window in the monitor that the user's cursor is in 
+	X11::Window root,child;
+	s32 root_x, root_y;
+	s32 win_x, win_y;
+	u32 mask;
+	X11::XQueryPointer(linux.x11.display, linux.x11.root, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+
+	s32 n_monitors;
+	X11::XRRMonitorInfo* monitors = X11::XRRGetMonitors(linux.x11.display, linux.x11.root, 1, &n_monitors);
+
+	X11::XRRMonitorInfo selection;
+	forI(n_monitors){
+		X11::XRRMonitorInfo monitor = monitors[i];
+		if(Math::PointInRectangle(Vec2(root_x,root_y), Vec2(monitor.x,monitor.y), Vec2(monitor.width,monitor.height))) {
+			selection = monitor;
+			break;
+		}
+	}
+
+	if(width == -1)  width = selection.width / 2;
+	if(height == -1) height = selection.height / 2;
+	if(x == -1)      x = selection.x + width / 2;
+	if(y == -1)      y = selection.y + height / 2;
+
 	u32 black = X11::XBlackPixel(linux.x11.display, linux.x11.screen);
 	u32 white = X11::XWhitePixel(linux.x11.display, linux.x11.screen);
 
+	linux.x11.root = X11::XRootWindow(linux.x11.display, linux.x11.screen);
+
 	Window* window = (Window*)memalloc(sizeof(Window));
-	window->handle = (void*)X11::XCreateSimpleWindow(linux.x11.display, X11::XDefaultRootWindow(linux.x11.display), 0,0,200,300,5,white,black);
+	X11::Window handle = X11::XCreateSimpleWindow(linux.x11.display, linux.x11.root, x, y, width, height, 0, white, black);
+	window->handle = (void*)handle;
 	if(!DeshWindow) DeshWindow = window;
 
 	X11::XSetStandardProperties(linux.x11.display, (X11::Window)window->handle, (const char*)title.str, 0,0,0,0,0);
@@ -967,13 +1137,17 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 		| EnterWindowMask
 		| LeaveWindowMask
 		| PointerMotionMask // mouse movement event
-		);
+	);
 	window->context = X11::XCreateGC(linux.x11.display, (X11::Window)window->handle, 0, 0);
 	X11::XSetBackground(linux.x11.display, (X11::GC)window->context, black);
 	X11::XSetForeground(linux.x11.display, (X11::GC)window->context, white);
 
 	X11::XClearWindow(linux.x11.display, (X11::Window)window->handle);
 	X11::XMapRaised(linux.x11.display, (X11::Window)window->handle);
+
+	u32 bw,d;
+	X11::Window groot,gchild;
+	X11::XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
 
 	DeshiStageInitEnd(DS_WINDOW);
 	return window;
@@ -987,7 +1161,8 @@ void window_close(Window* window){
 
 void
 window_swap_buffers(Window* window){
-	NotImplemented;
+	X11::XFlush(linux.x11.display);
+	//X11::XSync(linux.x11.display, 0);
 }
 
 void window_display_mode(Window* window, DisplayMode displayMode){

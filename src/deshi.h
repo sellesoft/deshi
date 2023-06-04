@@ -29,7 +29,7 @@
   cmd_init();                                  \
   window_show(DeshWindow);                     \
   render_use_default_camera();                 \
-threader_init();
+  threader_init();
 
 #define deshi_init_specify(name,main_size,temp_size) \
   profiler_init();                                   \

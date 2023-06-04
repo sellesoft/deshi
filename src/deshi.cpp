@@ -324,15 +324,24 @@ local DeshiStage deshiStage = DS_NONE;
 #  include "wctype.h" // unicode string manip functions that we should probably replace
 #  include "fcntl.h" // creat
 #  include "dirent.h"
+#  include "dlfcn.h"
 namespace X11 { 
     // windowing api. for whatever reason, X defines a lot of things with very simple names
     // such as Window, Font, etc. which conflict with our stuff, so we need to put it in a namespace
 #  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
 #  include "X11/Xutil.h"
 #  include "X11/Xos.h"
+   // I don't know why, but when we query Xlib for the screens of 
+   // a display, it will give a screen which covers all monitors
+   // if you have multiple, so we use the xrandr extenstion to get 
+   // proper information.
+   // this is possibly a problem with using WSL, so we'll
+   // need to check if this is necessary outside of that
+#  include "X11/extensions/Xrandr.h"
 }
 #  undef None // X defines this for whatever reason
 #  include "core/platforms/linux_deshi.cpp" 
+
 #elif DESHI_MAC // DESHI_LINUX
 #  include <GLFW/glfw3.h>
 #  include "core/platforms/osx_deshi.cpp"
@@ -344,14 +353,32 @@ namespace X11 {
 #if DESHI_VULKAN
 #  include <vulkan/vulkan.h>
 #  include <shaderc/shaderc.h>
+#if DESHI_LINUX
+#  include "external/vulkan/vulkan_xlib.h"
+#endif 
 #  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
+#if DESHI_WINDOWS
 #  define GLAD_WGL_IMPLEMENTATION
-#  include <glad/wgl.h>
+#  include "glad/wgl.h"
+#elif DESHI_LINUX
 #  define GLAD_GL_IMPLEMENTATION
-#  include <glad/gl.h>
-#  define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#  include <imgui/imgui_impl_opengl3.cpp>
+#  define GLAD_GLX_IMPLEMENTATION
+// GLX relies on X11 , and so it needs to see it
+// so we wrap it in the same namespace we wrap those headers in
+// we also wrap glad in another header so that we may 
+// use 'using namespace' on it and only get glad and not x11 functions.
+namespace X11{
+    namespace GLAD {
+        // I have no idea why, but glx should be defining this on its own
+        // but it guards that definition behind a define that gl.h defines
+        // and glx.h includes gl.h, so i have no idea what to do other than this.
+        #define GLAD_UNUSED(x) (void)(x)
+#       include <glad/glx.h>
+    }
+}
+using namespace X11::GLAD;
+#endif
 #  include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12
 #  include "d3dx12/d3dx12.h"
