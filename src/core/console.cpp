@@ -132,7 +132,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
 void console_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_CONSOLE, DS_UI2|DS_ASSETS, "Attempted to initialize Console module before initializing the UI2 or Assets modules");
+	DeshiStageInitStart(DS_CONSOLE, DS_UI|DS_ASSETS, "Attempted to initialize Console module before initializing the UI or Assets module");
 	Assert(window_windows.count > 0, "Attempted to initialize Console module before a window was created");
 	
 	console.logger = logger_expose();
@@ -166,7 +166,8 @@ void console_init(){DPZoneScoped;
 	mains->           sizing = size_percent;
 	mains->            width = 100;
 	mains->           height = 0;
-	mains->          padding = {2,2,2,2};
+	mains->          paddingtl = {2,2};
+	mains->          paddingbr = {2,2};
 	mains->      positioning = pos_fixed;
 	
 	console.ui.buffer = uiItemBS(&base);

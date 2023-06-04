@@ -214,9 +214,8 @@ enum
     DS_IMGUI    = 1 << 7,
     DS_ASSETS   = 1 << 8,
     DS_UI       = 1 << 9,
-    DS_UI2      = 1 << 10,
-    DS_CONSOLE  = 1 << 11,
-    DS_CMD      = 1 << 12,
+    DS_CONSOLE  = 1 << 10,
+    DS_CMD      = 1 << 11,
 };
 local DeshiStage deshiStage = DS_NONE;
 
