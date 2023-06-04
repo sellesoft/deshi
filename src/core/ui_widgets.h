@@ -417,7 +417,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 		cursor = pos+item->pos_screen;
 		forX(j,data->breaks[i+1].first-idx){
 			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
-			if(   (idx + j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count))
+			if(   (idx + j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)) // make selected text red 
 			   && (idx + j < Max(data->text.cursor.pos, data->text.cursor.pos + data->text.cursor.count))){
 				counts += render_make_text(vp,ip,counts, {data->text.buffer.str + idx + j, 1}, item->style.font, cursor, Color_Red,
 										   vec2::ONE * item->style.font_height / item->style.font->max_height);

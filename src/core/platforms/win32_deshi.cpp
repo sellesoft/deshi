@@ -581,7 +581,6 @@ platform_update(){DPZoneScoped; DPFrameMark;
 	}
 	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
 	
-	
 	//// update input ////
 	if(any_window_focused){
 		//caches input values so they are consistent thru the frame

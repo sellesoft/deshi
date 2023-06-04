@@ -978,9 +978,34 @@ platform_update() {
 				
 			}break;
 
+			case ButtonPress:
+			case ButtonRelease: {
+				X11::XButtonEvent bev = event.xbutton;
+				KeyCode mbutton;
+				switch(bev.button){
+					case Button1: mbutton = Mouse_LEFT; break;
+					case Button2: mbutton = Mouse_MIDDLE; break;
+					case Button3: mbutton = Mouse_RIGHT; break;
+					case Button4: mbutton = Mouse_4; break;
+					case Button5: mbutton = Mouse_5; break;
+					default: {
+						// TODO(sushi) there's a bug here when I press either mouse 4 or 5 on my mouse, it gives a value of 8, which is
+						//             not defined by linux's button stuff
+						LogE("input", "unknown button given by linux event: ", bev.button);
+					}break;
+				}
+				DeshInput->realKeyState[mbutton] = (event.type == ButtonPress? 1 : 0);
+#if LOG_INPUTS
+				Log("input", KeyCodeStrings[mbutton], (event.type==ButtonPress? " pressed" : " released"));
+#endif
+			}break;	
+
 			case MotionNotify: {
-				X11:: XMotionEvent motion = event.xmotion;
-				//Log("", "mouse -> root:(", motion.x_root, ", ", motion.y_root, "), win:(", motion.x, ", ", motion.y, ")");
+				X11::XMotionEvent motion = event.xmotion;
+				DeshInput->realMouseX = motion.x;
+				DeshInput->realMouseY = motion.y;
+				DeshInput->realScreenMouseX = motion.x_root;
+				DeshInput->realScreenMouseY = motion.y_root;
 			}break;
 
 			case KeyPress: {
@@ -1000,8 +1025,39 @@ platform_update() {
 			}break;
 		}
 	}
+	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
 
-	return 1;
+	//// update input ////
+	CopyMemory(&DeshInput->oldKeyState, &DeshInput->newKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
+	CopyMemory(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
+
+	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+		reset_stopwatch(&DeshInput->time_since_key_hold);
+		DeshInput->newKeyState[0] = 1;
+		DeshInput->anyKeyDown = 0;
+	}else{
+		DeshInput->time_key_held = peek_stopwatch(DeshInput->time_since_key_hold);
+		DeshInput->anyKeyDown = 1;
+	}
+
+	// TODO(sushi) figure out how to support this on linux
+	// if(!DeshInput->realCharCount){
+	// 	reset_stopwatch(&DeshInput->time_since_char_hold);
+	// }else{
+	// 	DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
+	// }
+
+	DeshInput->mouseX        = DeshInput->realMouseX;
+	DeshInput->mouseY        = DeshInput->realMouseY;
+	DeshInput->screenMouseX  = DeshInput->realScreenMouseX;
+	DeshInput->screenMouseY  = DeshInput->realScreenMouseY;
+	DeshInput->scrollY       = DeshInput->realScrollY;
+	DeshInput->realScrollY   = 0;
+	DeshInput->charCount     = DeshInput->realCharCount;
+	DeshInput->realCharCount = 0;
+	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
+
+	return !platform_exit_application;
 }
 
 void 
