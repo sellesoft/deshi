@@ -76,11 +76,10 @@ local b32  remake_window = false;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @gl_vars_instance
-local void* opengl_module = 0;
 local void* opengl_context = 0;
 local s32 opengl_success = 0;
 local int opengl_version = 0;
-local int wgl_version = 0;
+local int backend_version = 0;
 #define OPENGL_INFOLOG_SIZE 512
 local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 
@@ -381,63 +380,6 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @gl_funcs_imgui
-local char iniFilepath[256] = {};
-void DeshiImGui::
-Init(){
-	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
-	
-	//Setup Dear ImGui context
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, "data/config/imgui.ini", 256);
-	io.IniFilename = iniFilepath;
-	
-	//Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
-	
-	//Setup Platform/Renderer backends
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
-#elif DESHI_LINUX
-	ImGui_ImplGlfw_InitForopenGl(DeshWindow->glfw_window, true);
-#elif DESHI_MAC
-	ImGui_ImplGlfw_InitForopenGl(DeshWindow->glfw_window, true);
-#endif
-	ImGui_ImplOpenGL3_Init();
-	
-	DeshiStageInitEnd(DS_IMGUI);
-}
-
-void DeshiImGui::
-Cleanup(){
-	ImGui_ImplOpenGL3_Shutdown();
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_Shutdown();
-#elif DESHI_LINUX
-	ImGui_ImplGlfw_Shutdown();
-#elif DESHI_MAC
-	ImGui_ImplGlfw_Shutdown();
-#endif
-	ImGui::DestroyContext();
-}
-
-void DeshiImGui::
-NewFrame(){
-	ImGui_ImplOpenGL3_NewFrame();
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_NewFrame();
-#elif DESHI_LINUX
-	ImGui_ImplGlfw_Shutdown();
-#elif DESHI_MAC
-	ImGui_ImplGlfw_NewFrame();
-#endif
-	ImGui::NewFrame();
-}
-
-
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_init
 void
@@ -458,15 +400,7 @@ render_init(){DPZoneScoped;
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup WGL and glad
-	{
-		opengl_module = platform_load_module(str8_lit("opengl32.dll"));
-		if(!opengl_module){
-			LogE("opengl", "Failed to load module opengl32.dll");
-			Assert(false);
-			deshiStage = RemoveFlag(deshiStage, DS_RENDER);
-			return;
-		}
-		
+	{ 
 #if DESHI_WINDOWS
 		//restore point for contexts
 		HDC   prev_dc = wglGetCurrentDC();
@@ -474,7 +408,7 @@ render_init(){DPZoneScoped;
 		
 		//setup pixel format for dummy device context
 		PIXELFORMATDESCRIPTOR temp_pfd{sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER};
-		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8; temp_pfd.iLayerType = PFD_MAIN_PLANE;
+		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8;
 		int temp_format = ChoosePixelFormat((HDC)window_helper.dc, &temp_pfd);
 		if(!SetPixelFormat((HDC)window_helper.dc, temp_format, &temp_pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
@@ -484,9 +418,9 @@ render_init(){DPZoneScoped;
 		wglMakeCurrent((HDC)window_helper.dc, temp_context);
 		
 		//load wgl extensions
-		wgl_version = gladLoaderLoadWGL((HDC)window_helper.dc);
-		if(wgl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
-		Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(wgl_version), GLAD_VERSION_MINOR(wgl_version));
+		backend_version = gladLoaderLoadWGL((HDC)window_helper.dc);
+		if(backend_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
+		Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		gladInstallWGLDebug();
 		gladSetWGLPostCallback(WGLDebugPostCallback);
 		
@@ -518,11 +452,11 @@ render_init(){DPZoneScoped;
 		int context_attributes[] = {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 			WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-#if BUILD_INTERNAL
+	#if BUILD_INTERNAL
 			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
-#else
+	#else
 			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-#endif
+	#endif
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 			0
 		};
@@ -535,17 +469,64 @@ render_init(){DPZoneScoped;
 		//load glad extensions
 		opengl_version = gladLoaderLoadGL();
 		
-#else
-		glfwMakeContextCurrent((HWND)DeshWindow->handle);
-		opengl_version = gladLoadGL(glfwGetProcAddress);
+#elif DESHI_LINUX 
+		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
+
+
+		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
+		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
+		gladInstallGLXDebug();
+
+		// get restore points 
+		X11::Display* prev_display = glXGetCurrentDisplay();
+		GLXContext prev_context = glXGetCurrentContext();
+
+		// list of attributes to ask of GLX
+		int attributes[] = {
+			GLX_RGBA,            // true color
+			GLX_DEPTH_SIZE, 24,  // 24 bit depth
+			GLX_STENCIL_SIZE, 8, // 8 bit stencil size
+			GLX_DOUBLEBUFFER,    // use a double buffer
+			GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB,
+			0,
+		};
+
+		// get the best visual for our chosen attributes
+		X11::XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
+		if(!vi) {
+			LogE("opengl", "Cannot find an appropriate visual for the given attributes");
+			Assert(0);
+		}
+
+		X11::Colormap cm = X11::XCreateColormap(linux.x11.display, (X11::Window)DeshWindow->handle, vi->visual, AllocNone);
+		// X11::XSetWindowColormap(linux.x11.display, (X11::Window)DeshWindow->handle, cm);
+
+		// X11::XSetWindowAttributes swa;
+		// swa.colormap = cm;
+		// swa.event_mask = ExposureMask | KeyPressMask;
+
+		// X11::Window win = X11::XCreateWindow(linux.x11.display, linux.x11.root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+		// X11::XMapWindow(linux.x11.display, win);
+
+		// DeshWindow->handle = (void*)win;
+
+		GLXContext context = glXCreateContext(linux.x11.display, vi, 0, 1);
+		if(!glXMakeCurrent(linux.x11.display, (X11::Window)DeshWindow->handle, context)) {
+			Log("", "unable to set glx context");
+		}
+
+		opengl_version = gladLoaderLoadGL();
 #endif
 		
+		/// !!!!!!!
+
 		if(opengl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
 		Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 		gladInstallGLDebug();
 		gladSetGLPostCallback(GladDebugPostCallback);
 		
-		UpdateWindow((HWND)DeshWindow->handle);
+		//UpdateWindow((HWND)DeshWindow->handle);
+		X11::XFlush(linux.x11.display);
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
@@ -664,7 +645,7 @@ render_update(){DPZoneScoped;
 	if(DeshWindow->resized || remake_window){
 		width  = DeshWindow->width;
 		height = DeshWindow->height;
-		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
+		if(width <= 0 || height <= 0){ return; }
 		glViewport(0,0,width,height);
 		remake_window = false;
 	}
@@ -768,10 +749,6 @@ render_update(){DPZoneScoped;
 			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, temp_fill_ib_size, temp_wire_ib_size, renderTempWireframeIndexArray);
 		}
 		
-		//// imgui commands ////
-		if(DeshiModuleLoaded(DS_IMGUI)){
-			ImGui::Render();
-		}
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
@@ -864,15 +841,14 @@ render_update(){DPZoneScoped;
 		glScissor(0, 0, width, height);
 	}
 	
-	//// draw imgui ////
-	if(DeshiModuleLoaded(DS_IMGUI)){
-		if(ImDrawData* imDrawData = ImGui::GetDrawData()) ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
-	}
-	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// present frame
 	{
+#if DESHI_LINUX
+		glXSwapBuffers(linux.x11.display, (X11::Window)DeshWindow->handle);
+#else 
 		window_swap_buffers(DeshWindow);
+#endif
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
