@@ -199,7 +199,9 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #include <fcntl.h>
 //#include <ctime>
 #include <clocale>
-#ifdef DESHI_LINUX
+#ifdef DESHI_WINDOWS
+#  include <io.h>
+#elif DESHI_LINUX
 #  include "wctype.h"
 #endif 
 #include "file.h" 

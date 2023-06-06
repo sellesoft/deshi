@@ -477,6 +477,11 @@ local struct{
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_init
+File*
+file_initted_files(){
+	return file_shared.files;
+}
+
 b32
 deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset, FileResult* result){
 	if(file == 0){
