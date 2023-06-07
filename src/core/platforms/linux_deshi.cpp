@@ -922,34 +922,12 @@ platform_init() {
 	
 	// initialize display and screen
 	X11::Display* display = linux.x11.display = X11::XOpenDisplay(0);
+	if(!display) {
+		printf("platform_init(): " ErrorFormat("failed to open X11 display"));
+		return;
+	}
 	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);
 	X11::Window root = linux.x11.root = X11::XRootWindow(display, screen);
-
-	X11::XWindowAttributes wa;
-	X11::XGetWindowAttributes(display, root, &wa);
-
-
-	// forI(n_monitors) {
-	// 	X11::XRRMonitorInfo monitor = monitors[i];
-	// 	printf("Monitor %u: \n", i);
-	// 	printf("  size: %u x %u\n", monitor.width, monitor.height);
-	// 	printf("   pos: (%u, %u)\n", monitor.x, monitor.y);
-	// }
-
-	// u32 n_screens = X11::XScreenCount(linux.x11.display);
-	// Log("", "found ", n_screens, " screens for display 0.");
-	// forI(n_screens) {
-	// 	X11::Screen* screen = X11::XScreenOfDisplay(linux.x11.display, i);
-	// 	u32 w = X11::XWidthOfScreen(screen);
-	// 	u32 h = X11::XHeightOfScreen(screen);
-	// 	Log("", "screen ", i, ": ");
-	// 	Log("", "	width: ", w);
-	// 	Log("", "  height: ", h);
-	// }
-
-	int min,max;
-	X11::XDisplayKeycodes(linux.x11.display, &min,&max);
-	//Log("", "min: ", min, ", max: ", max);
 
 	DeshiStageInitEnd(DS_PLATFORM);
 }
@@ -1014,6 +992,8 @@ platform_update() {
 				if(key != Key_NONE) {
 					DeshInput->realKeyState[key] = 1;
 				}
+				X11::KeySym ret;
+				DeshInput->realCharCount += X11::XLookupString(&event.xkey, (char*)DeshInput->charIn + DeshInput->charCount, 256, &ret, 0);
 			}break;
 
 			case KeyRelease: {
@@ -1062,7 +1042,7 @@ platform_update() {
 
 void 
 platform_sleep(u32 time) {
-	NotImplemented;
+	usleep(time*1000);
 }
 
 void 
