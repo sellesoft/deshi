@@ -793,11 +793,6 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 	return 1;
 }
 
-File* 
-file_initted_files(){
-	return file_shared.files;
-}
-
 str8
 deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator, FileResult* result) {
 	if(!path){

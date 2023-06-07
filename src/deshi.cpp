@@ -357,12 +357,14 @@ namespace X11 {
 #endif 
 #  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
-#if DESHI_WINDOWS
-#  define GLAD_WGL_IMPLEMENTATION
-#  include "glad/wgl.h"
-#elif DESHI_LINUX
-#  define GLAD_GL_IMPLEMENTATION
-#  define GLAD_GLX_IMPLEMENTATION
+#  if DESHI_WINDOWS
+#    define GLAD_WGL_IMPLEMENTATION
+#    include "glad/wgl.h"
+#    define GLAD_GL_IMPLEMENTATION
+#    include <glad/gl.h>
+#  elif DESHI_LINUX
+#    define GLAD_GL_IMPLEMENTATION
+#    define GLAD_GLX_IMPLEMENTATION
 // GLX relies on X11 , and so it needs to see it
 // so we wrap it in the same namespace we wrap those headers in
 // we also wrap glad in another header so that we may 
@@ -377,7 +379,7 @@ namespace X11{
     }
 }
 using namespace X11::GLAD;
-#endif
+#  endif
 #  include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12
 #  include "d3dx12/d3dx12.h"

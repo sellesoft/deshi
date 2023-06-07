@@ -409,16 +409,16 @@ render_init(){DPZoneScoped;
 		//setup pixel format for dummy device context
 		PIXELFORMATDESCRIPTOR temp_pfd{sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER};
 		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8;
-		int temp_format = ChoosePixelFormat((HDC)window_helper.dc, &temp_pfd);
-		if(!SetPixelFormat((HDC)window_helper.dc, temp_format, &temp_pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
+		int temp_format = ChoosePixelFormat((HDC)window_helper.context, &temp_pfd);
+		if(!SetPixelFormat((HDC)window_helper.context, temp_format, &temp_pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
 		//create and enable dummy render context
-		HGLRC temp_context = wglCreateContext((HDC)window_helper.dc);
+		HGLRC temp_context = wglCreateContext((HDC)window_helper.context);
 		if(!temp_context){ win32_log_last_error("wglCreateContext", renderSettings.crashOnError); return; }
-		wglMakeCurrent((HDC)window_helper.dc, temp_context);
+		wglMakeCurrent((HDC)window_helper.context, temp_context);
 		
 		//load wgl extensions
-		backend_version = gladLoaderLoadWGL((HDC)window_helper.dc);
+		backend_version = gladLoaderLoadWGL((HDC)window_helper.context);
 		if(backend_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
 		Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		gladInstallWGLDebug();
@@ -443,36 +443,35 @@ render_init(){DPZoneScoped;
 			WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
 			0
 		};
-		wglChoosePixelFormatARB((HDC)DeshWindow->dc, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
-		if(!DescribePixelFormat((HDC)DeshWindow->dc, format, sizeof(pfd), &pfd)){  win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
+		wglChoosePixelFormatARB((HDC)DeshWindow->context, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
+		if(!DescribePixelFormat((HDC)DeshWindow->context, format, sizeof(pfd), &pfd)){  win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
 		if(format == 0){ win32_log_last_error("ChoosePixelFormatARB", renderSettings.crashOnError); return; }
-		if(!SetPixelFormat((HDC)DeshWindow->dc, format, &pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
+		if(!SetPixelFormat((HDC)DeshWindow->context, format, &pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
 		//set the desired OpenGL version and render context settings
 		int context_attributes[] = {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 			WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-	#if BUILD_INTERNAL
+#  if BUILD_INTERNAL
 			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
-	#else
+#  else
 			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-	#endif
+#  endif
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 			0
 		};
 		
 		//create actual render context and delete temporary one
-		opengl_context = wglCreateContextAttribsARB((HDC)DeshWindow->dc, 0, context_attributes); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt
+		opengl_context = wglCreateContextAttribsARB((HDC)DeshWindow->context, 0, context_attributes); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt
 		if(!opengl_context){ win32_log_last_error("wglCreateContextAttribsARB", renderSettings.crashOnError); return; }
-		wglMakeCurrent((HDC)DeshWindow->dc, (HGLRC)opengl_context);
+		wglMakeCurrent((HDC)DeshWindow->context, (HGLRC)opengl_context);
 		
 		//load glad extensions
 		opengl_version = gladLoaderLoadGL();
 		
 #elif DESHI_LINUX 
 		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
-
-
+		
 		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		gladInstallGLXDebug();
@@ -480,7 +479,7 @@ render_init(){DPZoneScoped;
 		// get restore points 
 		X11::Display* prev_display = glXGetCurrentDisplay();
 		GLXContext prev_context = glXGetCurrentContext();
-
+		
 		// list of attributes to ask of GLX
 		int attributes[] = {
 			GLX_RGBA,            // true color
@@ -490,43 +489,50 @@ render_init(){DPZoneScoped;
 			GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB,
 			0,
 		};
-
+		
 		// get the best visual for our chosen attributes
 		X11::XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
 		if(!vi) {
 			LogE("opengl", "Cannot find an appropriate visual for the given attributes");
 			Assert(0);
 		}
-
+		
 		X11::Colormap cm = X11::XCreateColormap(linux.x11.display, (X11::Window)DeshWindow->handle, vi->visual, AllocNone);
 		// X11::XSetWindowColormap(linux.x11.display, (X11::Window)DeshWindow->handle, cm);
 
 		// X11::XSetWindowAttributes swa;
 		// swa.colormap = cm;
 		// swa.event_mask = ExposureMask | KeyPressMask;
-
+		
 		// X11::Window win = X11::XCreateWindow(linux.x11.display, linux.x11.root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 		// X11::XMapWindow(linux.x11.display, win);
-
+		
 		// DeshWindow->handle = (void*)win;
-
+		
 		GLXContext context = glXCreateContext(linux.x11.display, vi, 0, 1);
 		if(!glXMakeCurrent(linux.x11.display, (X11::Window)DeshWindow->handle, context)) {
 			Log("", "unable to set glx context");
 		}
-
+		
 		opengl_version = gladLoaderLoadGL();
+#else
+#  error "unhandled platform"
 #endif
 		
 		/// !!!!!!!
-
+		
 		if(opengl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
 		Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 		gladInstallGLDebug();
 		gladSetGLPostCallback(GladDebugPostCallback);
 		
-		//UpdateWindow((HWND)DeshWindow->handle);
+#if DESHI_WINDOWS
+		UpdateWindow((HWND)DeshWindow->handle);
+#elif DESHI_LINUX
 		X11::XFlush(linux.x11.display);
+#else
+#  error "unhandled platform"
+#endif
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
