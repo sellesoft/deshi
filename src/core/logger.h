@@ -123,27 +123,27 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #define VTS_BrightCyanBg    "\x1b[106m"
 #define VTS_BrightWhiteBg   "\x1b[107m"
 
-#define ErrorFormat(str)   (VTS_RedFg    str VTS_Default)
-#define WarningFormat(str) (VTS_YellowFg str VTS_Default)
-#define SuccessFormat(str) (VTS_GreenFg  str VTS_Default)
+#define ErrorFormat(str)   VTS_RedFg    str VTS_Default
+#define WarningFormat(str) VTS_YellowFg str VTS_Default
+#define SuccessFormat(str) VTS_GreenFg  str VTS_Default
 
-#define NegativeFormat(str) (VTS_Negative   str VTS_Default)
-#define BlackFormat(str)    (VTS_BlackFg    str VTS_Default)          
-#define RedFormat(str)      (VTS_RedFg      str VTS_Default)            
-#define GreenFormat(str)    (VTS_GreenFg    str VTS_Default)          
-#define YellowFormat(str)   (VTS_YellowFg   str VTS_Default)         
-#define BlueFormat(str)     (VTS_BlueFg     str VTS_Default)           
-#define MagentaFormat(str)  (VTS_MagentaFg  str VTS_Default)        
-#define CyanFormat(str)     (VTS_CyanFg     str VTS_Default)           
-#define WhiteFormat(str)    (VTS_WhiteFg    str VTS_Default)          
-#define RGBFormat(r,g,b,str) (VTS_RGBFg(r,g,b) str VTS_Default)       
-#define BrightBlackFormat(str)    (VTS_BrightBlackFg    str VTS_Default)          
-#define BrightRedFormat(str)      (VTS_BrightRedFg      str VTS_Default)            
-#define BrightGreenFormat(str)    (VTS_BrightGreenFg    str VTS_Default)          
-#define BrightYellowFormat(str)   (VTS_BrightYellowFg   str VTS_Default)         
-#define BrightBlueFormat(str)     (VTS_BrightBlueFg     str VTS_Default)           
-#define BrightMagentaFormat(str)  (VTS_BrightMagentaFg  str VTS_Default)        
-#define BrightCyanFormat(str)     (VTS_BrightCyanFg     str VTS_Default)  
+#define NegativeFormat(str) VTS_Negative   str VTS_Default
+#define BlackFormat(str)    VTS_BlackFg    str VTS_Default
+#define RedFormat(str)      VTS_RedFg      str VTS_Default
+#define GreenFormat(str)    VTS_GreenFg    str VTS_Default
+#define YellowFormat(str)   VTS_YellowFg   str VTS_Default
+#define BlueFormat(str)     VTS_BlueFg     str VTS_Default
+#define MagentaFormat(str)  VTS_MagentaFg  str VTS_Default
+#define CyanFormat(str)     VTS_CyanFg     str VTS_Default
+#define WhiteFormat(str)    VTS_WhiteFg    str VTS_Default
+#define RGBFormat(r,g,b,str) VTS_RGBFg(r,g,b) str VTS_Default
+#define BrightBlackFormat(str)    VTS_BrightBlackFg    str VTS_Default
+#define BrightRedFormat(str)      VTS_BrightRedFg      str VTS_Default
+#define BrightGreenFormat(str)    VTS_BrightGreenFg    str VTS_Default
+#define BrightYellowFormat(str)   VTS_BrightYellowFg   str VTS_Default
+#define BrightBlueFormat(str)     VTS_BrightBlueFg     str VTS_Default
+#define BrightMagentaFormat(str)  VTS_BrightMagentaFg  str VTS_Default
+#define BrightCyanFormat(str)     VTS_BrightCyanFg     str VTS_Default
 
 #define ErrorFormatComma(...)   VTS_RedFg,    __VA_ARGS__, VTS_Default
 #define WarningFormatComma(...) VTS_YellowFg, __VA_ARGS__, VTS_Default
