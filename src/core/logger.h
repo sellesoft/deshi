@@ -104,7 +104,7 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #define VTS_MagentaBg       "\x1b[45m"
 #define VTS_CyanBg          "\x1b[46m"
 #define VTS_WhiteBg         "\x1b[47m"
-#define VTS_RGBBg(r,g,b)      "\x1b[48;2;" STRINGIZE(r) ";" STRINGIZE(g) ";" STRINGIZE(b) "m"
+#define VTS_RGBBg(r,g,b)    "\x1b[48;2;" STRINGIZE(r) ";" STRINGIZE(g) ";" STRINGIZE(b) "m"
 #define VTS_DefaultBg       "\x1b[49m"
 #define VTS_BrightBlackFg   "\x1b[90m"
 #define VTS_BrightRedFg     "\x1b[91m"
@@ -199,7 +199,7 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #include <fcntl.h>
 //#include <ctime>
 #include <clocale>
-#ifdef DESHI_WINDOWS
+#if DESHI_WINDOWS
 #  include <io.h>
 #elif DESHI_LINUX
 #  include "wctype.h"
