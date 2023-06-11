@@ -111,11 +111,11 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_F32:{
-				conversion = to_string(*(f32*)config_map[i].var, 0, deshi_temp_allocator);
+				conversion = to_string(*(f32*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_F64:{
-				conversion = to_string(*(f64*)config_map[i].var, 0, deshi_temp_allocator);
+				conversion = to_string(*(f64*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_FV2:{

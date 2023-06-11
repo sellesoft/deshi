@@ -914,7 +914,7 @@ deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path
 		}
 		return false;
 	}*/
-
+	
 	wchar_t* dst_wpath = win32_path_from_str8(dst_path, true, 1); //NOTE(delle) 1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
 	//TODO(delle) restrict file stuff to root folder not data folder
 	/*if(memcmp(dst_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
@@ -1131,7 +1131,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 		File* file = array_push(result);
 		time.LowPart  = data.ftCreationTime.dwLowDateTime;
 		time.HighPart = data.ftCreationTime.dwHighDateTime;
-			file->creation_time    = WindowsTimeToUnixTime(time.QuadPart);
+		file->creation_time    = WindowsTimeToUnixTime(time.QuadPart);
 		time.LowPart  = data.ftLastAccessTime.dwLowDateTime;
 		time.HighPart = data.ftLastAccessTime.dwHighDateTime;
 		file->last_access_time = WindowsTimeToUnixTime(time.QuadPart);
@@ -1261,7 +1261,6 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 		//the file exists, so gather information with WIN32_FIND_DATAW
 		defer{ ::FindClose(handle); };
 		
-		result = (File*)memory_alloc(sizeof(File));
 		ULARGE_INTEGER size, time;
 		time.LowPart  = data.ftCreationTime.dwLowDateTime;
 		time.HighPart = data.ftCreationTime.dwHighDateTime;
@@ -1330,9 +1329,9 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 			size.LowPart  = info.nFileSizeLow;
 			size.HighPart = info.nFileSizeHigh;
 			result->bytes            = size.QuadPart;
-			result->type             = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? FileType_Directory : FileType_File; //TODO(delle) other filetypes
+			result->type             = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? FileType_Directory : FileType_File; //TODO(delle) other filetypes
 			
-			if(result->type){
+			if(result->type == FileType_Directory){
 				wpath[wpath_len++] = L'\\';
 			}
 			result->path = str8_from_wchar(wpath+4, deshi_allocator); //NOTE(delle) +4 b/c of "\\?\"
@@ -1407,6 +1406,7 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* er
 	}
 	
 	fclose(file->handle);
+	memory_zfree(file->path.str);
 	
 	forI(array_count(file_shared.files)){
 		if(file_shared.files+i == file){
@@ -1414,9 +1414,6 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* er
 			break;
 		}
 	}
-	
-	memory_zfree(file->path.str);
-	memory_zfree(file);
 	
 	return true;
 }
@@ -1464,13 +1461,14 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 	if(file->handle && HasFlag(flags, FileAccess_Truncate)){
 		fclose(file->handle);
 		file->handle = 0;
+		file->bytes = 0;
 		if     (HasFlag(flags, FileAccess_ReadWrite)){
 			file->handle = _wfopen(wpath, (wchar_t*)L"wb+");
 		}else if(HasFlag(flags, FileAccess_Write)){
 			file->handle = _wfopen(wpath, (wchar_t*)L"wb");
 		}else{
 			//just truncate the file
-			_wfopen(wpath, (wchar_t*)L"wb");
+			fclose(_wfopen(wpath, (wchar_t*)L"wb"));
 		}
 	}
 	
