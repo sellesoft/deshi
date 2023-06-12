@@ -1261,7 +1261,7 @@ Entity* get_entity_under_mouse(){
 
 // allocates a temporary string
 str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
-	str8b build;
+	dstr8 build;
 	dstr8_init(&build, {0}, deshi_temp_allocator);
 	
 	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
@@ -1420,7 +1420,7 @@ void setup_ui(){
 						if(i == Entity_Agent) continue; //handle agent races below
 						
 						uiItem* item = uiItemB();
-						item->id = ToString8(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.", EntityStrings[i]);
+						item->id = to_dstr8v(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.", EntityStrings[i]);
 						item->userVar = i;
 						item->style.background_color = Color_VeryDarkCyan;
 						item->style.margin_bottom = 2;
@@ -1445,7 +1445,7 @@ void setup_ui(){
 					}
 					forI(Race_COUNT){
 						uiItem* item = uiItemB();{
-							item->id = ToString8(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.Agent.", RaceStrings[i]);
+							item->id = to_dstr8v(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.Agent.", RaceStrings[i]);
 							item->userVar = i;
 							item->style.background_color = Color_VeryDarkCyan;
 							item->style.margin_bottom = 2;
@@ -1509,7 +1509,7 @@ void update_ui(){
 		window->style.sizing           = size_auto;
 		window->style.background_color = Color_DarkGrey;
 		window->id                     = STR8("ant_sim.info_window");
-		uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"))->id = STR8("ant_sim.info_window.fps");
+		uiTextM(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"))->id = STR8("ant_sim.info_window.fps");
 		if(sim.paused){ 
 			uiItem* pausebox = uiItemB();{
 				pausebox->style.anchor = anchor_bottom_right;
@@ -1537,29 +1537,29 @@ void update_ui(){
 	}
 	
 	uiImmediateBP(ui.hover_container);{
-		uiTextM(ToString8(deshi_temp_allocator, STR8("entity: "), (hovered) ? hovered->name : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.entity");
+		uiTextM(to_dstr8v(deshi_temp_allocator, STR8("entity: "), (hovered) ? hovered->name : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.entity");
 		
 		auto [tile_pos,valid_tile] = get_tile_under_mouse();
 		if(valid_tile){
-			uiTextM(ToString8(deshi_temp_allocator, STR8("tile  : "), tile_pos))->id = STR8("ant_sim.main.info.hovered_container.tile");
+			uiTextM(to_dstr8v(deshi_temp_allocator, STR8("tile  : "), tile_pos))->id = STR8("ant_sim.main.info.hovered_container.tile");
 		}else{
 			uiTextML("tile  : nothing")->id = STR8("ant_sim.main.info.hovered_container.tile");
 		}
 		
-		uiTextM(ToString8(deshi_temp_allocator, STR8("ui    : "), (g_ui->hovered) ? g_ui->hovered->id : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.ui");
+		uiTextM(to_dstr8v(deshi_temp_allocator, STR8("ui    : "), (g_ui->hovered) ? g_ui->hovered->id : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.ui");
 	}uiImmediateE();
 	
 	uiImmediateBP(ui.selected_container);{
 		if(sim.selected_entity){
-			uiTextM(ToString8(deshi_temp_allocator, "name: ", sim.selected_entity->name))->id = STR8("ant_sim.main.info.selected_container.name");
-			uiTextM(ToString8(deshi_temp_allocator, "type: ", EntityStrings[sim.selected_entity->type]))->id = STR8("ant_sim.main.info.selected_container.type");
-			uiTextM(ToString8(deshi_temp_allocator, "age : ", sim.selected_entity->age))->id = STR8("ant_sim.main.info.selected_container.age");
-			uiTextM(ToString8(deshi_temp_allocator, "pos : ", sim.selected_entity->pos))->id = STR8("ant_sim.main.info.selected_container.pos");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "name: ", sim.selected_entity->name))->id = STR8("ant_sim.main.info.selected_container.name");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "type: ", EntityStrings[sim.selected_entity->type]))->id = STR8("ant_sim.main.info.selected_container.type");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "age : ", sim.selected_entity->age))->id = STR8("ant_sim.main.info.selected_container.age");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "pos : ", sim.selected_entity->pos))->id = STR8("ant_sim.main.info.selected_container.pos");
 			switch(sim.selected_entity->type){
 				case Entity_Agent:{
 					Agent* agent = AgentFromEntity(sim.selected_entity);
-					uiTextM(ToString8(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.species");
-					uiTextM(ToString8(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.race");
+					uiTextM(to_dstr8v(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.species");
+					uiTextM(to_dstr8v(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.race");
 					uiTextML("needs  : ")->id = STR8("ant_sim.main.info.selected_container.agent.needs_header");
 					
 					dstr8 needs_builder;
@@ -1573,7 +1573,7 @@ void update_ui(){
 						forI(dash_count) dstr8_append(&needs_builder, STR8("-"));
 						forI(space_count) dstr8_append(&needs_builder, STR8(" "));
 						dstr8_append(&needs_builder, STR8("] ("));
-						dstr8_append(&needs_builder, to_str8(need_percent_whole, deshi_temp_allocator));
+						dstr8_append(&needs_builder, to_dstr8(need_percent_whole, deshi_temp_allocator));
 						dstr8_append(&needs_builder, STR8("%) "));
 						dstr8_append(&needs_builder, NeedStrings[need->type]);
 						dstr8_append(&needs_builder, STR8("\n"));
@@ -1581,7 +1581,7 @@ void update_ui(){
 					uiTextM(dstr8_peek(&needs_builder))->id = STR8("ant_sim.main.info.selected_container.agent.needs_list");
 				}break;
 				case Entity_Water:{
-					uiTextM(ToString8(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.main.info.selected_container.water.pressure");
+					uiTextM(to_dstr8v(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.main.info.selected_container.water.pressure");
 				}break;
 			}
 		}else{

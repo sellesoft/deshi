@@ -526,6 +526,10 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_memory = memctx;
 	g_ui     = uictx;
 #endif
+
+	deshi_ui_allocator = {
+
+	};
 	
 	//g_ui->cleanup = 0;
 	
@@ -1377,10 +1381,10 @@ void ui_debug(){
 						uiItem* sel = g_ui->active;
 						uiText* text = 0;
 						if(sel->memsize == sizeof(uiText)) text = uiGetText(sel);
-						uiTextM(ToString8(deshi_temp_allocator,
+						uiTextM(to_dstr8v(deshi_temp_allocator,
 							sel->id,"\n",
 							sel->node.child_count
-						));
+						).fin);
 						if(text){
 							uiTextM(text->text.buffer.fin);
 						}
@@ -1402,7 +1406,7 @@ void ui_debug(){
 	memsum += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
 
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
-	text_clear_and_replace(&uiGetText(ui_dwi.panel1text)->text, ToString8(deshi_temp_allocator,
+	dstr8 t = to_dstr8v(deshi_temp_allocator,
 		"visible: \n",
 		"	   items: ", g_ui->stats.items_visible, "\n",
 		"	drawcmds: ", g_ui->stats.drawcmds_visible, "\n",
@@ -1414,7 +1418,9 @@ void ui_debug(){
 		"	vertices: ", g_ui->stats.vertices_reserved, "\n",
 		"	 indices: ", g_ui->stats.indices_reserved, "\n",
 		"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
-	));
+	);
+	defer{dstr8_deinit(&t);};
+	text_clear_and_replace(&uiGetText(ui_dwi.panel1text)->text, t.fin);
 	ui_dwi.panel1text->dirty = 1;
 
 	if(g_ui->hovered){

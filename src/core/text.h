@@ -34,7 +34,7 @@ enum{
 };
 
 struct Text{
-    str8b buffer;
+    dstr8 buffer;
 
     struct{
         s64 pos;   //byte offset into buffer

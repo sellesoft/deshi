@@ -1851,7 +1851,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 	ThreadManager* man = DeshThreadManager;
 	WorkerLog("spawned");
 	semaphore_enter(&man->wake_up_barrier);
-	SetThreadDescription(GetCurrentThread(), wchar_from_str8(ToString8(deshi_temp_allocator, "worker ", me->idx), 0, deshi_temp_allocator));
+	SetThreadDescription(GetCurrentThread(), wchar_from_str8(to_dstr8v(deshi_temp_allocator, "worker ", me->idx), 0, deshi_temp_allocator));
 	while(!me->close){
 		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
 			WorkerLog("looking to take a job from job ring");

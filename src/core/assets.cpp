@@ -953,17 +953,17 @@ void
 assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 	dstr8 builder;
 	dstr8_init(&builder,
-					  ToString8(deshi_temp_allocator,
-								">material"
-								"\nname   \"",material->name,"\""
-								"\nshader ",ShaderStrings[material->shader],
-								"\nflags  ",material->flags,
-								"\n"
-								"\n>textures"),
-					  deshi_temp_allocator);
+			to_dstr8v(deshi_temp_allocator,
+					">material"
+					"\nname   \"",material->name,"\""
+					"\nshader ",ShaderStrings[material->shader],
+					"\nflags  ",material->flags,
+					"\n"
+					"\n>textures").fin,
+			deshi_temp_allocator);
 	if(material->textureArray){
 		for_stb_array(material->textureArray){
-			dstr8_append(&builder, ToString8(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
 		}
 	}
 	dstr8_append(&builder, STR8("\n"));
@@ -1857,19 +1857,19 @@ assets_model_save(Model* model){
 	str8 path = str8_concat3(directory,str8_from_cstr(model->name),STR8(".model"), deshi_temp_allocator);
 	dstr8 builder;
 	dstr8_init(&builder,
-					  ToString8(deshi_temp_allocator,
-								">model"
-								"\nname     \"",model->name,"\""
-								"\nflags    ", model->flags,
-								"\nmesh     \"", model->mesh->name,"\""
-								"\narmature ", 0,
-								"\n"
-								"\n>batches"),
-					  deshi_temp_allocator);
+			to_dstr8v(deshi_temp_allocator,
+					">model"
+					"\nname     \"",model->name,"\""
+					"\nflags    ", model->flags,
+					"\nmesh     \"", model->mesh->name,"\""
+					"\narmature ", 0,
+					"\n"
+					"\n>batches").fin,
+			deshi_temp_allocator);
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save(it->material);
-			dstr8_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
 	dstr8_append(&builder, STR8("\n"));
@@ -1890,19 +1890,19 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 	
 	dstr8 builder;
 	dstr8_init(&builder,
-					  ToString8(deshi_temp_allocator,
-								">model"
-								"\nname     \"",model->name,"\""
-								"\nflags    ", model->flags,
-								"\nmesh     \"", model->mesh->name,"\""
-								"\narmature ", 0,
-								"\n"
-								"\n>batches"),
-					  deshi_temp_allocator);
+			to_dstr8v(deshi_temp_allocator,
+					">model"
+					"\nname     \"",model->name,"\""
+					"\nflags    ", model->flags,
+					"\nmesh     \"", model->mesh->name,"\""
+					"\narmature ", 0,
+					"\n"
+					"\n>batches").fin,
+			deshi_temp_allocator);
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
-			dstr8_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
 	dstr8_append(&builder, STR8("\n"));

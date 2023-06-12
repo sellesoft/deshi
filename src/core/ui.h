@@ -727,6 +727,7 @@ struct uiItem{
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
 
+
 struct uiItemSetup{
 	upt size; 
 	uiStyle* style; 
@@ -924,6 +925,10 @@ struct uiContext{
 	uiKeybinds keys;
 };
 extern uiContext* g_ui; //global UI pointer
+
+// used for allocating things which should stay alive until ui closes.
+global Allocator _deshi_ui_allocator;
+global Allocator* deshi_ui_allocator;
 
 void ui_debug();
 

@@ -1783,9 +1783,9 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 		// TODO(sushi) confirm that MAP_PRIVATE is the behavoir we want 
 		allocation = (u8*)mmap(base_address, total_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
 		if((s64)allocation == -1) {
-			str8 o = get_errno_print(errno, "memory", __func__, {0});
+			dstr8 o = get_errno_print(errno, "memory", __func__, {0});
 			printf("%s", (char*)o.str);
-			free(o.str);
+			dstr8_deinit(&o);
 			allocation = 0;
 		}
 #elif DESHI_MAC   //DESHI_LINUX

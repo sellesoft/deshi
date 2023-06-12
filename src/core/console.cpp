@@ -316,7 +316,7 @@ void console_update(){DPZoneScoped;
 	// 		if(console.dictionary[i].newline == 1 && nlines++){
 	// 			uiItemE(); 
 	// 			line = uiItemBS(&line->style);
-	// 			line->id = ToString8(deshi_temp_allocator, "console.line",nlines);
+	// 			line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines);
 	// 		}
 			
 	// 		//get chunk text from the log file
@@ -326,7 +326,7 @@ void console_update(){DPZoneScoped;
 			
 	// 		str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
 	// 		uiItem* text = uiTextMS(&line->style, out);
-	// 		text->id = ToString8(deshi_temp_allocator, "console.text",i);
+	// 		text->id = to_dstr8v(deshi_temp_allocator, "console.text",i);
 	// 		text->style.text_color = console.dictionary[i].fg;
 			
 			
@@ -339,7 +339,7 @@ void console_update(){DPZoneScoped;
 	// 	debug->style.anchor = anchor_bottom_right;
 	// 	debug->style.sizing = size_auto;
 	// 	debug->id = STR8("console.debug");
-	// 	uiTextM(ToString8(deshi_temp_allocator,
+	// 	uiTextM(to_dstr8v(deshi_temp_allocator,
 	// 					  "      show tags: ", console.tag_show, "\n",
 	// 					  " highlight tags: ", console.tag_highlighting, "\n",
 	// 					  "   outline tags: ", console.tag_outlines, "\n",

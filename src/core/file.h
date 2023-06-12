@@ -127,12 +127,14 @@ struct File{
 
 #define ErrorCaseF(err) case err:
 #define ErrorCaseL(err, resulttag, message, extra) case err: *__errhandler__internal__pointer = {resulttag, STR8(message)}; extra; break;
-#define ErrorCaseD(err, resulttag, extra, ...) case err: *__errhandler__internal__pointer = {resulttag, ToString8(deshi_temp_allocator, __VA_ARGS__ )}; extra; break;
+// !LEAK: this makes a dynamic string with deshi's temp allocator, so if an app doesn't use that, then we're in trouble
+// TODO(sushi) decide to remove this or not 
+#define ErrorCaseD(err, resulttag, extra, ...) case err: *__errhandler__internal__pointer = {resulttag, to_dstr8v(deshi_temp_allocator, __VA_ARGS__ ).fin}; extra; break;
 
 
 #define EndErrorHandlerAndCatch(tag, err, unhandlederr_code) default: {LogE(tag, "unhandled errno in ", __func__, "(): ", err); unhandlederr_code} } }
 
-#define SetResultInfoD(resulttag, ...) *result = {resulttag, ToString8(deshi_temp_allocator, __VA_ARGS__)}
+#define SetResultInfoD(resulttag, ...) *result = {resulttag, to_dstr8v(deshi_temp_allocator, __VA_ARGS__).fin}
 #define SetResultInfoL(resulttag, message) *result = {resulttag, STR8(message)}
 
 
@@ -459,12 +461,14 @@ external FileType deshi__file_get_type_of_path(str8 caller_file, upt caller_line
 
 // handles a single error, usually one that doesn't have to do with the system
 // dynamic version
+// !LEAK: this makes a dynamic string with deshi's temp allocator, so if an app doesn't use that, then we're in trouble
+// TODO(sushi) decide to remove this or not 
 #define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)\
 	if(!result_name){                                                            \
 		LogE("file", __func__, "(): ", __VA_ARGS__);                             \
 		return return_error_value;                                               \
 	}                                                                            \
-	*result_name = {result_tag, ToString8(deshi_temp_allocator,__VA_ARGS__)};    \
+	*result_name = {result_tag, to_dstr8v(deshi_temp_allocator,__VA_ARGS__).fin};\
 	extra                                                                        \
 	return return_error_value; 
 

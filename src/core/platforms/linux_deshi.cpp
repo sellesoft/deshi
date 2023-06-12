@@ -134,16 +134,16 @@ linux_keysym_to_key(X11::KeySym k) {
 // dynamic version
 #define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)do{\
 	if(!result_name){                                                            \
-		printf("%s\n", ToString8(deshi_temp_allocator, __func__, "(): ", __VA_ARGS__).str); \
+		printf("%s\n", to_dstr8v(deshi_temp_allocator, __func__, "(): ", __VA_ARGS__).str); \
 		return return_error_value;                                               \
 	}                                                                            \
-	*result_name = {result_tag, ToString8(deshi_temp_allocator,__VA_ARGS__)};    \
+	*result_name = {result_tag, to_dstr8v(deshi_temp_allocator,__VA_ARGS__).fin};\
 	extra                                                                        \
 	return return_error_value; } while(0)
 
-str8
+dstr8
 get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
-#define errcase(errname, info) case errname: return ToString8(stl_allocator, tag, ": ", funcname, "() encountered errno ", errname, ": ", info, " ", message, "\n"); break;
+#define errcase(errname, info) case errname: return to_dstr8v(stl_allocator, tag, ": ", funcname, "() encountered errno ", errname, ": ", info, " ", message, "\n"); break;
 	switch(err){
 		errcase(EPERM,          "operation not permitted")
 		errcase(ENOENT,         "no such file or directory")
@@ -281,13 +281,13 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 }
 
 void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
-	str8 r = get_errno_print(err, tag, funcname, message);
+	dstr8 r = get_errno_print(err, tag, funcname, message);
 	if(HasFlag(deshiStage, DS_LOGGER)){
 		LogE("linux", r);
 	}else{
 		printf("%s\n", (u8*)r.str);
 	}
-	free(r.str);
+	dstr8_deinit(&r);
 }
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -321,7 +321,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 		// we have to make a copy of each iteration
 		// we could also temporarily set a 0 after the end of 'scan'
 		// and replace it when done, but I think that would come with other problems
-		str8b temp;
+		dstr8 temp;
 		dstr8_init(&temp, scan, deshi_allocator);
 
 		if(!file_exists(temp.fin)){
@@ -624,10 +624,10 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 	struct dirent* entry;
 	while((entry = readdir(dir))){
 		if(!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, ".")) continue;
-		str8 filepath = ToString8(deshi_allocator, directory, "/", entry->d_name);
-		defer {memzfree(filepath.str);};
+		dstr8 filepath = to_dstr8v(deshi_allocator, directory, "/", entry->d_name);
+		defer {dstr8_deinit(&filepath);};
 
-		File file = file_info_result(filepath, result);
+		File file = file_info_result(filepath.fin, result);
 		if(!file.creation_time) return 0;
 
 		*array_push(out) = file;
@@ -663,12 +663,12 @@ deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2
 	if(!path1 || *path1.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path1` at ",caller_file,"(",caller_line,")");
 	if(!path2 || *path2.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path2` at ",caller_file,"(",caller_line,")");
 
-	str8b path1b;
+	dstr8 path1b;
 	dstr8_init(&path1b, path1, deshi_allocator);
 	dstr8_replace_codepoint(&path1b, '\\', '/');
 	defer {dstr8_deinit(&path1b);};
 
-	str8b path2b;
+	dstr8 path2b;
 	dstr8_init(&path2b, path2, deshi_allocator);
 	dstr8_replace_codepoint(&path2b, '\\', '/');
 	defer {dstr8_deinit(&path2b);};
