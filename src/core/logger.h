@@ -68,14 +68,14 @@ str8 logger_last_message();
 //logs a message in printf style using `fmt`
 void logger_format_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, str8 fmt, ...);
 
-void logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_type, string* arr, u32 arr_count);
+void logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_type, dstr8* arr, u32 arr_count);
 
 //logs a message in comma style using `args`
 template<typename... T> inline void
 logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T... args){
 	StaticAssert(sizeof...(T) > 0, "A call to Log() was empty or did not specify a tag.");
 	constexpr auto arg_count{sizeof...(T)};
-	string arr[arg_count] = {to_string(args)...}; //TODO use temp allocation
+	dstr8 arr[arg_count] = {to_dstr8(args)...}; //TODO use temp allocation
 	logger_comma_log_internal(caller_file, caller_line, tag, log_type, arr, arg_count);
 }
 
@@ -450,7 +450,7 @@ logger_format_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, st
 }
 
 void
-logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_type, string* arr, u32 arr_count){DPZoneScoped;
+logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_type, dstr8* arr, u32 arr_count){DPZoneScoped;
 	if(!logger.file) return;
 	
 	int cursor = logger_message_prefix(0, caller_file, caller_line, tag, log_type);
