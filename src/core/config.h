@@ -216,8 +216,6 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 				return (void*)line_buffer;
 			}
 		},
-		Allocator_ChangeMemory_Noop,
-		Allocator_ChangeMemory_Noop,
 		Allocator_ReleaseMemory_Noop,
 		Allocator_ResizeMemory_Noop
 	};

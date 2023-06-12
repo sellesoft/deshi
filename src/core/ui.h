@@ -920,11 +920,25 @@ struct uiContext{
 		u64 vertices_reserved; 
 		u64 indices_reserved;  
 	}stats;
-	
+
+	// root of nodes used to track memory that ui has allocated
+	Node allocator_root;
+
 	//// other ////
 	uiKeybinds keys;
 };
 extern uiContext* g_ui; //global UI pointer
+
+// header for things allocated with deshi_ui_allocator
+// allows things in ui to detect if certain things were allocated using 
+// this allocator and to remove it if so 
+struct uiMemoryHeader {
+	Node node;
+	u32 magic;
+};
+const u32 ui_memory_magic = 0xf00f00f0;
+#define ui_memory_header(ptr) ((uiMemoryHeader*)(ptr) - 1)
+#define is_ui_memory(ptr) (ui_memory_header(ptr)->magic == g_ui->memory_\magic)
 
 // used for allocating things which should stay alive until ui closes.
 global Allocator _deshi_ui_allocator;

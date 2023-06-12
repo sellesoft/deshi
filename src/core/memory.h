@@ -366,8 +366,6 @@ FORCE_INLINE void* deshi__memory_generic_reallocate_allocator(void* ptr, upt new
 FORCE_INLINE void deshi__memory_generic_zero_free_allocator(void* ptr){return deshi__memory_generic_zero_free(ptr, str8_lit("deshi_allocator"), 0);}
 global Allocator deshi_allocator_{
 	deshi__memory_generic_allocate_allocator,
-	Allocator_ChangeMemory_Noop,
-	Allocator_ChangeMemory_Noop,
 	deshi__memory_generic_zero_free_allocator,
 	deshi__memory_generic_reallocate_allocator
 };
@@ -377,8 +375,6 @@ FORCE_INLINE void* deshi__memory_temp_allocate_allocator(upt size){return deshi_
 FORCE_INLINE void* deshi__memory_temp_reallocate_allocator(void* ptr, upt size){return deshi__memory_temp_reallocate(ptr, size, str8_lit("deshi_allocator"), 0);}
 global Allocator deshi_temp_allocator_{
 	deshi__memory_temp_allocate_allocator,
-	Allocator_ChangeMemory_Noop,
-	Allocator_ChangeMemory_Noop,
 	Allocator_ReleaseMemory_Noop,
 	deshi__memory_temp_reallocate_allocator
 };

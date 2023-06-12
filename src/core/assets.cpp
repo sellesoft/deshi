@@ -9,8 +9,6 @@ persist Allocator assets_load_allocator{
 			return (void*)assets_line_buffer;
 		}
 	},
-	Allocator_ChangeMemory_Noop,
-	Allocator_ChangeMemory_Noop,
 	Allocator_ReleaseMemory_Noop,
 	Allocator_ResizeMemory_Noop
 };

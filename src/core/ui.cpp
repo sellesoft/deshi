@@ -527,9 +527,15 @@ void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
 	g_ui     = uictx;
 #endif
 
-	deshi_ui_allocator = {
-
-	};
+	// deshi_ui_allocator = {
+	// 	[](upt size) { // reserve
+	// 		upt real_size = sizeof(uiMemoryHeader) + size;
+	// 		uiMemoryHeader* ptr = (uiMemoryHeader*)memalloc(real_size);
+	// 		ptr->magic = g_ui->memory_magic;
+	// 		NodeInsertPrev(&g_ui->allocator_root, &ptr->node);
+	// 		return (void*)(ptr + sizeof(uiMemoryHeader));
+	// 	},
+	// };
 	
 	//g_ui->cleanup = 0;
 	
