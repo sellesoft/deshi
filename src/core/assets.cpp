@@ -519,15 +519,15 @@ assets_mesh_create_from_file(str8 name){DPZoneScoped;
 	if(str8_equal_lazy(name, STR8("null"))) return assets_mesh_null();
 	
 	//prepend the meshes (models) folder
-	str8_builder builder;
-	str8_builder_init(&builder, STR8("data/models/"), deshi_temp_allocator);
-	str8_builder_append(&builder, name);
+	dstr8 builder;
+	dstr8_init(&builder, STR8("data/models/"), deshi_temp_allocator);
+	dstr8_append(&builder, name);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(name, '.');
-	if(front.count == name.count) str8_builder_append(&builder, STR8(".mesh"));
+	if(front.count == name.count) dstr8_append(&builder, STR8(".mesh"));
 	
-	return assets_mesh_create_from_path(str8_builder_peek(&builder));
+	return assets_mesh_create_from_path(dstr8_peek(&builder));
 }
 
 
@@ -818,15 +818,15 @@ assets_material_create_from_file(str8 name){DPZoneScoped;
 	if(str8_equal_lazy(name, STR8("null"))) return assets_material_null();
 	
 	//prepend the materials (models) folder
-	str8_builder builder;
-	str8_builder_init(&builder, STR8("data/models/"), deshi_temp_allocator);
-	str8_builder_append(&builder, name);
+	dstr8 builder;
+	dstr8_init(&builder, STR8("data/models/"), deshi_temp_allocator);
+	dstr8_append(&builder, name);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(name, '.');
-	if(front.count == name.count) str8_builder_append(&builder, STR8(".mat"));
+	if(front.count == name.count) dstr8_append(&builder, STR8(".mat"));
 	
-	return assets_material_create_from_path(str8_builder_peek(&builder));
+	return assets_material_create_from_path(dstr8_peek(&builder));
 }
 
 
@@ -951,8 +951,8 @@ assets_material_save(Material* material){DPZoneScoped;
 
 void
 assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
-	str8_builder builder;
-	str8_builder_init(&builder,
+	dstr8 builder;
+	dstr8_init(&builder,
 					  ToString8(deshi_temp_allocator,
 								">material"
 								"\nname   \"",material->name,"\""
@@ -963,11 +963,11 @@ assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 					  deshi_temp_allocator);
 	if(material->textureArray){
 		for_stb_array(material->textureArray){
-			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
+			dstr8_append(&builder, ToString8(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
 		}
 	}
-	str8_builder_append(&builder, STR8("\n"));
-	str8 mat_text = str8_builder_peek(&builder);
+	dstr8_append(&builder, STR8("\n"));
+	str8 mat_text = dstr8_peek(&builder);
 	file_write_simple(path, mat_text.str, mat_text.count*sizeof(u8));
 	Log("assets","Successfully saved material: ",path);
 }
@@ -1005,13 +1005,13 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	
 	//prepend the models folder
 	str8 directory = STR8("data/models/");
-	str8_builder builder;
-	str8_builder_init(&builder, directory, deshi_temp_allocator);
-	str8_builder_append(&builder, filename);
+	dstr8 builder;
+	dstr8_init(&builder, directory, deshi_temp_allocator);
+	dstr8_append(&builder, filename);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(filename, '.');
-	if(front.count == filename.count) str8_builder_append(&builder, STR8(".model"));
+	if(front.count == filename.count) dstr8_append(&builder, STR8(".model"));
 	
 	//check if model is already loaded
 	for_stb_array(DeshAssets->model_array){
@@ -1021,7 +1021,7 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	}
 	
 	//check which files need to be parsed
-	str8 model_path = str8_builder_peek(&builder);
+	str8 model_path = dstr8_peek(&builder);
 	str8 obj_path  = str8_concat3(directory, front, STR8(".obj"),  deshi_temp_allocator);
 	str8 mesh_path = str8_concat3(directory, front, STR8(".mesh"), deshi_temp_allocator);
 	b32 parse_obj_mesh  = true;
@@ -1855,8 +1855,8 @@ assets_model_save(Model* model){
 	}
 	
 	str8 path = str8_concat3(directory,str8_from_cstr(model->name),STR8(".model"), deshi_temp_allocator);
-	str8_builder builder;
-	str8_builder_init(&builder,
+	dstr8 builder;
+	dstr8_init(&builder,
 					  ToString8(deshi_temp_allocator,
 								">model"
 								"\nname     \"",model->name,"\""
@@ -1869,11 +1869,11 @@ assets_model_save(Model* model){
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save(it->material);
-			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
-	str8_builder_append(&builder, STR8("\n"));
-	str8 model_text = str8_builder_peek(&builder);
+	dstr8_append(&builder, STR8("\n"));
+	str8 model_text = dstr8_peek(&builder);
 	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
 	Log("assets","Successfully saved model: ",path);
 }
@@ -1888,8 +1888,8 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 		assets_mesh_save_to_path(model->mesh, str8_concat3(directory,str8_from_cstr(model->mesh->name),STR8(".mesh"), deshi_temp_allocator));
 	}
 	
-	str8_builder builder;
-	str8_builder_init(&builder,
+	dstr8 builder;
+	dstr8_init(&builder,
 					  ToString8(deshi_temp_allocator,
 								">model"
 								"\nname     \"",model->name,"\""
@@ -1902,11 +1902,11 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
-			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
-	str8_builder_append(&builder, STR8("\n"));
-	str8 model_text = str8_builder_peek(&builder);
+	dstr8_append(&builder, STR8("\n"));
+	str8 model_text = dstr8_peek(&builder);
 	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
 	Log("assets","Successfully saved model: ",path);
 }

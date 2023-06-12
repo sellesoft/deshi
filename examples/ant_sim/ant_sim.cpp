@@ -1262,7 +1262,7 @@ Entity* get_entity_under_mouse(){
 // allocates a temporary string
 str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
 	str8b build;
-	str8_builder_init(&build, {0}, deshi_temp_allocator);
+	dstr8_init(&build, {0}, deshi_temp_allocator);
 	
 	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
 	memset(max, 0, sizeof(u32)*columns);
@@ -1274,11 +1274,11 @@ str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
 	
 	forI(rows*columns) {
 		u32 len = max[i%rows];
-		str8_builder_grow(&build, len);
+		dstr8_grow(&build, len);
 		memcpy(build.str+build.count, texts[i].str, texts[i].count);
 		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
 		build.count += len;
-		if(i%columns == columns-1)  str8_builder_append(&build, STR8("\n"));
+		if(i%columns == columns-1)  dstr8_append(&build, STR8("\n"));
 	}
 	
 	return build.fin;
@@ -1562,23 +1562,23 @@ void update_ui(){
 					uiTextM(ToString8(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.race");
 					uiTextML("needs  : ")->id = STR8("ant_sim.main.info.selected_container.agent.needs_header");
 					
-					str8_builder needs_builder;
-					str8_builder_init(&needs_builder, str8{}, deshi_temp_allocator);
+					dstr8 needs_builder;
+					dstr8_init(&needs_builder, str8{}, deshi_temp_allocator);
 					ForX(need,agent->needs_array,agent->needs_count){
-						str8_builder_append(&needs_builder, STR8("["));
+						dstr8_append(&needs_builder, STR8("["));
 						f32 need_percent = need->value / MAX_NEED_VALUE;
 						u32 need_percent_whole = (u32)(need_percent * 100.f);
 						u32 dash_count = (u32)(need_percent / 10.f);
 						u32 space_count = 10 - dash_count;
-						forI(dash_count) str8_builder_append(&needs_builder, STR8("-"));
-						forI(space_count) str8_builder_append(&needs_builder, STR8(" "));
-						str8_builder_append(&needs_builder, STR8("] ("));
-						str8_builder_append(&needs_builder, to_str8(need_percent_whole, deshi_temp_allocator));
-						str8_builder_append(&needs_builder, STR8("%) "));
-						str8_builder_append(&needs_builder, NeedStrings[need->type]);
-						str8_builder_append(&needs_builder, STR8("\n"));
+						forI(dash_count) dstr8_append(&needs_builder, STR8("-"));
+						forI(space_count) dstr8_append(&needs_builder, STR8(" "));
+						dstr8_append(&needs_builder, STR8("] ("));
+						dstr8_append(&needs_builder, to_str8(need_percent_whole, deshi_temp_allocator));
+						dstr8_append(&needs_builder, STR8("%) "));
+						dstr8_append(&needs_builder, NeedStrings[need->type]);
+						dstr8_append(&needs_builder, STR8("\n"));
 					}
-					uiTextM(str8_builder_peek(&needs_builder))->id = STR8("ant_sim.main.info.selected_container.agent.needs_list");
+					uiTextM(dstr8_peek(&needs_builder))->id = STR8("ant_sim.main.info.selected_container.agent.needs_list");
 				}break;
 				case Entity_Water:{
 					uiTextM(ToString8(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.main.info.selected_container.water.pressure");

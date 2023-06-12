@@ -46,34 +46,34 @@ void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
 	cmd->min_args  = 0;
 	cmd->max_args  = 0;
 	
-	str8_builder builder;
-	str8_builder_init(&builder, name, deshi_allocator);
+	dstr8 builder;
+	dstr8_init(&builder, name, deshi_allocator);
 	forI(arg_count){
 		cmd->max_args++;
-		str8_builder_append(&builder, str8_lit(" "));
+		dstr8_append(&builder, str8_lit(" "));
 		if(args[i] & CmdArgument_OPTIONAL){
-			str8_builder_append(&builder, str8_lit("["));
+			dstr8_append(&builder, str8_lit("["));
 		}else{
-			str8_builder_append(&builder, str8_lit("<"));
+			dstr8_append(&builder, str8_lit("<"));
 			cmd->min_args++;
 		}
 		
 		if      (args[i] & CmdArgument_S32){
-			str8_builder_append(&builder, str8_lit("S32"));
+			dstr8_append(&builder, str8_lit("S32"));
 		}else if(args[i] & CmdArgument_String){
-			str8_builder_append(&builder, str8_lit("String"));
+			dstr8_append(&builder, str8_lit("String"));
 		}else{
 			Assert(!"unhandled command arguent");
 			NotImplemented;
 		}
 		
 		if(args[i] & CmdArgument_OPTIONAL){
-			str8_builder_append(&builder, str8_lit("]"));
+			dstr8_append(&builder, str8_lit("]"));
 		}else{
-			str8_builder_append(&builder, str8_lit(">"));
+			dstr8_append(&builder, str8_lit(">"));
 		}
 	}
-	str8_builder_fit(&builder);
+	dstr8_fit(&builder);
 	cmd->usage.str   = builder.str;
 	cmd->usage.count = builder.count;
 }
@@ -221,13 +221,13 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(daytime);
 	
 	DESHI_CMD_START(list, "Lists available commands"){
-		str8_builder builder;
-		str8_builder_init(&builder, {}, deshi_temp_allocator);
+		dstr8 builder;
+		dstr8_init(&builder, {}, deshi_temp_allocator);
 		forE(deshi__cmd_commands){
-			str8_builder_append(&builder, it->name);
-			str8_builder_append(&builder, str8_lit(": "));
-			str8_builder_append(&builder, it->desc);
-			str8_builder_append(&builder, str8_lit("\n"));
+			dstr8_append(&builder, it->name);
+			dstr8_append(&builder, str8_lit(": "));
+			dstr8_append(&builder, it->desc);
+			dstr8_append(&builder, str8_lit("\n"));
 		}
 		Log("cmd", (const char*)builder.str);
 	}DESHI_CMD_END_NO_ARGS(list);
@@ -401,15 +401,15 @@ void cmd_init(){
 		Log("cmd", "Material List:\nName\tShader\tTextures");
 		forI(arrlenu(assets_material_array())){
 			Material* mat = assets_material_array()[i];
-			str8_builder builder;
-			str8_builder_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
-			str8_builder_append(&builder, str8_lit("\t"));
-			str8_builder_append(&builder, ShaderStrings[mat->shader]);
-			str8_builder_append(&builder, str8_lit("\t"));
+			dstr8 builder;
+			dstr8_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
+			dstr8_append(&builder, str8_lit("\t"));
+			dstr8_append(&builder, ShaderStrings[mat->shader]);
+			dstr8_append(&builder, str8_lit("\t"));
 			if(mat->textureArray){
 				for_stb_array(mat->textureArray){
-					str8_builder_append(&builder, str8_lit(" "));
-					str8_builder_append(&builder, str8_from_cstr((*it)->name));
+					dstr8_append(&builder, str8_lit(" "));
+					dstr8_append(&builder, str8_from_cstr((*it)->name));
 				}
 			}
 			Log("cmd", (const char*)builder.str);

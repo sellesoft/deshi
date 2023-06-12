@@ -10,12 +10,7 @@ class vec2printer:
         self.val = val
     
     def to_string(self):
-        return (
-            f"{{"
-                f"x = {self.val['x']}, "
-                f"y = {self.val['y']}"
-            f"}}"
-        )
+        return f"({self.val['x']}, {self.val['y']})"
 pp.add_printer("vec2", "^vec2$", vec2printer)
 
 gdb.printing.register_pretty_printer(gdb.current_objfile(), pp)

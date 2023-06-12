@@ -316,16 +316,16 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 	
 	ProgramGl pgl{};
 	pgl.shader_count = shader_count;
-	str8_builder prog_shaders;
-	str8_builder_init(&prog_shaders, str8_lit("|"), deshi_temp_allocator);
+	dstr8 prog_shaders;
+	dstr8_init(&prog_shaders, str8_lit("|"), deshi_temp_allocator);
 	
 	//create program, attach shaders and link
 	pgl.handle = glCreateProgram();
 	forI(shader_count){ 
 		glAttachShader(pgl.handle, glShaders[shader_indexes[i]].handle); 
 		pgl.shaders[i] = shader_indexes[i]; 
-		str8_builder_append(&prog_shaders, glShaders[shader_indexes[i]].filename);
-		str8_builder_append(&prog_shaders, str8_lit("|"));
+		dstr8_append(&prog_shaders, glShaders[shader_indexes[i]].filename);
+		dstr8_append(&prog_shaders, str8_lit("|"));
 	}
 	glLinkProgram(pgl.handle);
 	

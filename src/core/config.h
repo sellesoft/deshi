@@ -321,7 +321,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 						col->a = strtol(cursor+4,0,10);
 					}
 				}break;
-				case ConfigValueType_Str8:{ //TODO(delle) !Leak can't free if we don't know if str8 is based on a literal (use str8_builder)
+				case ConfigValueType_Str8:{ //TODO(delle) !Leak can't free if we don't know if str8 is based on a literal (use dstr8)
 					//if the value starts with a double-quote, parse until next double-quote, else parse until end of line
 					if(decoded_codepoint_from_utf8(line.str,4).codepoint == '\"'){
 						str8_increment(&line, 1);

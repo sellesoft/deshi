@@ -322,7 +322,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 		// we could also temporarily set a 0 after the end of 'scan'
 		// and replace it when done, but I think that would come with other problems
 		str8b temp;
-		str8_builder_init(&temp, scan, deshi_allocator);
+		dstr8_init(&temp, scan, deshi_allocator);
 
 		if(!file_exists(temp.fin)){
 			if(str8_ends_with(temp.fin, STR8("/")) || str8_ends_with(temp.fin, STR8("\\"))) {
@@ -385,7 +385,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 				close(handle);
 			}
 		}
-		str8_builder_deinit(&temp);
+		dstr8_deinit(&temp);
 	} 
 
 	
@@ -664,14 +664,14 @@ deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2
 	if(!path2 || *path2.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path2` at ",caller_file,"(",caller_line,")");
 
 	str8b path1b;
-	str8_builder_init(&path1b, path1, deshi_allocator);
-	str8_builder_replace_codepoint(&path1b, '\\', '/');
-	defer {str8_builder_deinit(&path1b);};
+	dstr8_init(&path1b, path1, deshi_allocator);
+	dstr8_replace_codepoint(&path1b, '\\', '/');
+	defer {dstr8_deinit(&path1b);};
 
 	str8b path2b;
-	str8_builder_init(&path2b, path2, deshi_allocator);
-	str8_builder_replace_codepoint(&path2b, '\\', '/');
-	defer {str8_builder_deinit(&path2b);};
+	dstr8_init(&path2b, path2, deshi_allocator);
+	dstr8_replace_codepoint(&path2b, '\\', '/');
+	defer {dstr8_deinit(&path2b);};
 
 	str8 p1normalized = file_path_absolute_result(path1b.fin, result);
 	if(!p1normalized) return 0;

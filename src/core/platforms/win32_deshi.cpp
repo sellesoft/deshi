@@ -318,15 +318,15 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 				DeshInput->realKeyState[key] = !upFlag;
 				
 #if LOG_INPUTS
-				str8_builder s; str8_builder_init(&s, KeyCodeStrings[key], deshi_temp_allocator);
-				str8_builder_append(&s, (upFlag) ? str8l(" released") : str8l(" pressed"));
-				if(DeshInput->realKeyState[Key_LSHIFT]) str8_builder_append(&s, str8l(" + LSHIFT"));
-				if(DeshInput->realKeyState[Key_RSHIFT]) str8_builder_append(&s, str8l(" + RSHIFT"));
-				if(DeshInput->realKeyState[Key_LCTRL])  str8_builder_append(&s, str8l(" + LCTRL"));
-				if(DeshInput->realKeyState[Key_RCTRL])  str8_builder_append(&s, str8l(" + RCTRL"));
-				if(DeshInput->realKeyState[Key_LALT])   str8_builder_append(&s, str8l(" + LALT"));
-				if(DeshInput->realKeyState[Key_RALT])   str8_builder_append(&s, str8l(" + RALT"));
-				Log("input", str8_builder_peek(&s)); 
+				dstr8 s; dstr8_init(&s, KeyCodeStrings[key], deshi_temp_allocator);
+				dstr8_append(&s, (upFlag) ? str8l(" released") : str8l(" pressed"));
+				if(DeshInput->realKeyState[Key_LSHIFT]) dstr8_append(&s, str8l(" + LSHIFT"));
+				if(DeshInput->realKeyState[Key_RSHIFT]) dstr8_append(&s, str8l(" + RSHIFT"));
+				if(DeshInput->realKeyState[Key_LCTRL])  dstr8_append(&s, str8l(" + LCTRL"));
+				if(DeshInput->realKeyState[Key_RCTRL])  dstr8_append(&s, str8l(" + RCTRL"));
+				if(DeshInput->realKeyState[Key_LALT])   dstr8_append(&s, str8l(" + LALT"));
+				if(DeshInput->realKeyState[Key_RALT])   dstr8_append(&s, str8l(" + RALT"));
+				Log("input", dstr8_peek(&s)); 
 #endif
 			}
 		}break;
