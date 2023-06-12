@@ -409,7 +409,8 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 	dc->counts_used = counts;
 }
 
-uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
+uiItem* 
+deshi__ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiItem);
@@ -428,24 +429,27 @@ uiItem* ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	return item;
 }
 
-uiItem* ui_begin_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	uiItem* item = ui_make_item(style, file, line);
+uiItem* 
+deshi__ui_begin_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
+	uiItem* item = deshi__ui_make_item(style, file, line);
 	push_item(item);
 	return item;
 }
 
-void ui_end_item(str8 file, upt line){DPZoneScoped;
+void 
+deshi__ui_end_item(str8 file, upt line){DPZoneScoped;
 	if(g_ui->item_stack.count == 1){
 		LogE("ui", 
 			 "In ", file, " at line ", line, " :\n",
-			 "\tAttempted to end base item. Did you call uiItemE too many times? Did you use uiItemM instead of uiItemB?"
+			 "\tAttempted to end base item. Did you call ui_end_item too many times? Did you use uiItemM instead of uiItemB?"
 			 );
 		//TODO(sushi) implement a hint showing what instruction could possibly be wrong 
 	}else pop_item();
 	
 }
 
-void ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
+void 
+deshi__ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
 	//TODO(sushi) check for contiguous regions of memory in the drawcmds' vertex and index regions so we can combine drawcmds into one 
 	forI(item->drawcmd_count){
 		ui_drawcmd_remove(item->drawcmds + i);
@@ -460,7 +464,8 @@ void ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
 // @ui_immediate
 
 
-void ui_begin_immediate_branch(uiItem* parent, str8 file, upt line){
+void 
+deshi__ui_begin_immediate_branch(uiItem* parent, str8 file, upt line){
 	if(g_ui->immediate.active){
 		LogE("ui", "In file ", file, " on line ", line, ": Attempted to start an immediate branch before ending one that was started in file ", g_ui->immediate.file, " on line ", g_ui->immediate.line);
 		return;
@@ -483,7 +488,8 @@ void ui_begin_immediate_branch(uiItem* parent, str8 file, upt line){
 	} 
 }
 
-void ui_end_immediate_branch(str8 file, upt line){
+void 
+deshi__ui_end_immediate_branch(str8 file, upt line){
 	if(!g_ui->immediate.active){
 		LogE("ui", "In file ", file, " on line ", line, ": Attempted to end an immediate branch before one was ever started");
 		return;
@@ -503,12 +509,14 @@ void ui_end_immediate_branch(str8 file, upt line){
 	}
 }
 
-void ui_push_id(s64 x, str8 file, upt line){
+void 
+deshi__ui_push_id(s64 x, str8 file, upt line){
 	//g_ui->immediate.id_stack.add(x);
 	NotImplemented; // TODO(sushi) decide if these are necessary
 }
 
-void ui_pop_id(str8 file, upt line){
+void 
+deshi__ui_pop_id(str8 file, upt line){
 	//if(!g_ui->immediate.id_stack.count) gen_error(file,line,"ui_pop_id was called before any calls to ui_push_id were made");
 	//else g_ui->immediate.id_stack.pop();
 	NotImplemented; // TODO(sushi) decide if these are necessary
@@ -519,25 +527,14 @@ void ui_pop_id(str8 file, upt line){
 // @ui_context
 
 
-void ui_init(MemoryContext* memctx, uiContext* uictx){DPZoneScoped;
+void 
+deshi__ui_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
 	
-#if DESHI_RELOADABLE_UI
-	g_memory = memctx;
-	g_ui     = uictx;
-#endif
-
-	// deshi_ui_allocator = {
-	// 	[](upt size) { // reserve
-	// 		upt real_size = sizeof(uiMemoryHeader) + size;
-	// 		uiMemoryHeader* ptr = (uiMemoryHeader*)memalloc(real_size);
-	// 		ptr->magic = g_ui->memory_magic;
-	// 		NodeInsertPrev(&g_ui->allocator_root, &ptr->node);
-	// 		return (void*)(ptr + sizeof(uiMemoryHeader));
-	// 	},
-	// };
-	
 	//g_ui->cleanup = 0;
+
+	g_ui->allocator_root.next = &g_ui->allocator_root;
+	g_ui->allocator_root.prev = &g_ui->allocator_root;
 	
 	g_ui->immediate.active = 0;
 	g_ui->immediate.pushed = 0;
@@ -1157,7 +1154,8 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	return {pos,siz};
 }
 
-void ui_update(){DPZoneScoped;
+void 
+deshi__ui_update(){DPZoneScoped;
 	g_ui->updating = 1;
 	
 	g_ui->stats.drawcmds_visible = 0;
@@ -1178,7 +1176,7 @@ void ui_update(){DPZoneScoped;
 	if(g_ui->item_stack.count > 1){
 		forI(g_ui->item_stack.count-1){
 			if(i==g_ui->item_stack.count-2){
-				item_error(g_ui->item_stack[i+1], "Items are still left on the item stack. Did you forget to call uiItemE? Did you mean to use uiItemM?");
+				item_error(g_ui->item_stack[i+1], "Items are still left on the item stack. Did you forget to call ui_end_item? Did you mean to use uiItemM?");
 			}else{
 				item_error(g_ui->item_stack[i+1], "");
 			}
@@ -1277,7 +1275,7 @@ void ui_debug(){
 		itemlist_style.width = 100;
 		
 		uiStyle* style;
-		{uiItem* window = uiItemB();
+		{uiItem* window = ui_begin_item(0);
 			window->id = STR8("ui_debug win");
 			window->action = &ui_debug_callback;
 			window->action_trigger = action_act_always;
@@ -1292,14 +1290,14 @@ void ui_debug(){
 			style->display = display_flex | display_horizontal;
 			style->padding = {5,5,5,5};
 			
-			{uiItem* panel = uiItemBS(&panel_style); //selected information
+			{uiItem* panel = ui_begin_item(&panel_style); //selected information
 				panel->id = STR8("ui_debug win panel0");
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 1;
 				panel->style.margin_right = 1;
 				
-				{ui_dwi.internal_info = uiItemB(); 
+				{ui_dwi.internal_info = ui_begin_item(0); 
 					ui_dwi.internal_info->style = def_style;
 					ui_dwi.internal_info->id = STR8("ui_debug internal info");
 					ui_dwi.internal_info->style.sizing = size_percent_x;
@@ -1309,30 +1307,30 @@ void ui_debug(){
 					ui_dwi.internal_info->style.content_align = {0.5, 0.5};
 				
 				
-					uiItemE();
+					ui_end_item();
 				}
 				
 				ui_dwi.panel0 = panel;
-			}uiItemE();
+			}ui_end_item();
 			
-			{uiItem* panel = uiItemBS(&panel_style);
+			{uiItem* panel = ui_begin_item(&panel_style);
 				panel->id = STR8("ui_debug win panel1");
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 0.5;
 				
-				ui_dwi.panel1text = uiTextML("stats");
+				ui_dwi.panel1text = ui_make_text(str8l("stats"), 0);
 				
-				uiItemE();
+				ui_end_item();
 				ui_dwi.panel1 = panel;
 			}
-		}uiItemE();
+		}ui_end_item();
 		ui_dwi.init = 1;
 	}
 	
-	uiImmediateBP(ui_dwi.panel0);{//make internal info header
+	ui_begin_immediate_branch(ui_dwi.panel0);{//make internal info header
 		//header stores an action that toggles its boolean in the data struct
-		{uiItem* header = uiItemBS(&ui_dwi.def_style);
+		{uiItem* header = ui_begin_item(&ui_dwi.def_style);
 			header->id = STR8("header");
 			header->style.sizing = size_auto_y | size_percent_x;
 			header->style.width = 100;
@@ -1346,10 +1344,10 @@ void ui_debug(){
 			header->action_trigger = action_act_mouse_hover;
 			
 			//uiTextML("internal info")->id = STR8("header text");
-		}uiItemE();
+		}ui_end_item();
 		
 		if(ui_dwi.internal_info_header){
-			{uiItem* cont = uiItemBS(&ui_dwi.def_style);
+			{uiItem* cont = ui_begin_item(&ui_dwi.def_style);
 				cont->id = STR8("header cont");
 				
 				cont->style.sizing = size_percent_x;
@@ -1361,14 +1359,14 @@ void ui_debug(){
 				}else if(ui_dwi.selecting_item){
 					
 					ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					uiTextML("selecting item...");
+					ui_make_text(str8l("selecting item..."), 0);
 					
 					if(g_ui->hovered && input_lmouse_pressed()){
 						ui_dwi.selected_item = g_ui->hovered;
 					}
 					
 				}else{
-					{uiItem* item = uiItemB();
+					{uiItem* item = ui_begin_item(0);
 						item->id = STR8("button");
 						item->style.background_color = Color_VeryDarkCyan;
 						item->style.sizing = size_auto;
@@ -1379,26 +1377,26 @@ void ui_debug(){
 							ui_dwi.selecting_item = 1;
 						};
 						item->action_trigger = action_act_mouse_pressed;
-						uiTextML("O");
-					}uiItemE();
+						ui_make_text(str8l("O"), 0);
+					}ui_end_item();
 					ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					uiTextML("no item selected.");
+					ui_make_text(str8l("no item selected."), 0);
 					if(g_ui->active){
 						uiItem* sel = g_ui->active;
 						uiText* text = 0;
-						if(sel->memsize == sizeof(uiText)) text = uiGetText(sel);
-						uiTextM(to_dstr8v(deshi_temp_allocator,
+						if(sel->memsize == sizeof(uiText)) text = ui_get_text(sel);
+						ui_make_text(to_dstr8v(deshi_temp_allocator,
 							sel->id,"\n",
 							sel->node.child_count
-						).fin);
+						).fin, 0);
 						if(text){
-							uiTextM(text->text.buffer.fin);
+							ui_make_text(text->text.buffer.fin, 0);
 						}
 					}
 				}
-			}uiItemE();
+			}ui_end_item();
 		}
-	}uiImmediateE();
+	}ui_end_immediate_branch();
 	
 	u64 memsum = 0;
 	forI(g_ui->items.count){
@@ -1426,7 +1424,7 @@ void ui_debug(){
 		"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
 	);
 	defer{dstr8_deinit(&t);};
-	text_clear_and_replace(&uiGetText(ui_dwi.panel1text)->text, t.fin);
+	text_clear_and_replace(&ui_get_text(ui_dwi.panel1text)->text, t.fin);
 	ui_dwi.panel1text->dirty = 1;
 
 	if(g_ui->hovered){
@@ -1451,12 +1449,12 @@ void ui_debug(){
 local uiItem* deshi__ui_demo_window = 0;
 void ui_demo(){
 	if(deshi__ui_demo_window){
-		uiItemR(deshi__ui_demo_window);
+		ui_remove_item(deshi__ui_demo_window);
 		deshi__ui_demo_window = 0;
 		return;
 	}
 	
-	deshi__ui_demo_window = uiItemB();{
+	deshi__ui_demo_window = ui_begin_item(0);{
 		uiItem* window = deshi__ui_demo_window;
 		window->id = STR8("demo.window");
 		window->style.positioning = pos_draggable_absolute;
@@ -1472,7 +1470,7 @@ void ui_demo(){
 		window->style.focus = true;
 		window->style.display = display_vertical | display_flex;
 		
-		uiItem* window_decoration = uiItemB();{
+		uiItem* window_decoration = ui_begin_item(0);{
 			window_decoration->id = STR8("demo.window_decoration");
 			window_decoration->style.sizing = size_percent_x;
 			window_decoration->style.size = {100/*percent*/,18/*pixels*/};
@@ -1482,16 +1480,16 @@ void ui_demo(){
 			window_decoration->style.background_color = Color_DarkCyan;
 			window_decoration->style.content_align = {0,.5f};
 			
-			uiItem* title = uiTextML("Demo Window");{
+			uiItem* title = ui_make_text(str8l("Demo Window"), 0);{
 				title->id = STR8("demo.window_decoration.title");
 				title->style.text_color = Color_LightGrey;
 			}
 			
 			//TODO maximize button
 			//TODO close button
-		}uiItemE();//window_decoration
+		}ui_end_item();//window_decoration
 		
-		uiItem* window_content = uiItemB();{
+		uiItem* window_content = ui_begin_item(0);{
 			window_content->id = STR8("demo.window_content");
 			window_content->style.sizing = size_flex;
 			window_content->style.size = {1/*ratio of 1*/,1/*ratio of 1*/};
@@ -1500,7 +1498,7 @@ void ui_demo(){
 			
 			persist uiStyle preview_style{};
 			
-			uiItem* item_panel = uiItemB();{
+			uiItem* item_panel = ui_begin_item(0);{
 				item_panel->id = STR8("demo.window_content.item_panel");
 				item_panel->style.sizing = size_flex/*| size_resizeable_x*/; //TODO requires item resizing
 				item_panel->style.size = {1/*ratio of 3*/,1/*ratio of 1*/};
@@ -1509,7 +1507,7 @@ void ui_demo(){
 				item_panel->style.border_width = 1/*pixels*/;
 				item_panel->style.display = display_vertical | display_flex;
 				
-				uiItem* item_tree = uiItemB();{
+				uiItem* item_tree = ui_begin_item(0);{
 					item_tree->id = STR8("demo.window_content.item_panel.item_tree");
 					item_tree->style.sizing = size_flex/*| size_resizeable_y*/; //TODO requires item resizing
 					item_tree->style.size = {1/*ratio of 1*/,1/*ratio of 3*/};
@@ -1521,14 +1519,14 @@ void ui_demo(){
 					//TODO add text button
 					//TODO remove item button
 					//TODO item tree
-				}uiItemE();//item_tree
+				}ui_end_item();//item_tree
 				
 				//uiItem* item_panel_separator = uiSeparator(1/*pixels*/);  //TODO requires separator widget
 				//item_panel_separator->id = STR8("demo.window_content.item_panel.separator");
 				//item_panel_separator->style.background_color = Color_DarkCyan;
 				//item_panel_separator->style.positioning = pos_draggable_relative;
 				
-				uiItem* item_settings = uiItemB();{
+				uiItem* item_settings = ui_begin_item(0);{
 					item_settings->id = STR8("demo.window_content.item_panel.item_settings");
 					item_settings->style.sizing = size_flex/*| size_resizeable_y*/; //TODO requires item resizing //NOTE(delle) resizeable here in addition to item_tree for extended resize hover region
 					item_settings->style.size = {1/*ratio of 1*/,2/*ratio of 3*/};
@@ -1560,15 +1558,15 @@ void ui_demo(){
 					//TODO overflow  combobox
 					//TODO content_align  input_vec2
 					//TODO hover_passthrough  checkbox
-				}uiItemE();//item_settings
-			}uiItemE();//item_panel
+				}ui_end_item();//item_settings
+			}ui_end_item();//item_panel
 			
 			//uiItem* window_content_separator = uiSeparator(1/*pixels*/);  //TODO requires separator widget
 			//window_content_separator->id = STR8("demo.window_content.item_panel.separator");
 			//window_content_separator->style.background_color = Color_DarkCyan;
 			//window_content_separator->style.positioning = pos_draggable_relative;
 			
-			uiItem* item_preview = uiItemB();{
+			uiItem* item_preview = ui_begin_item(0);{
 				item_preview->id = STR8("demo.window_content.item_preview");
 				item_preview->style.sizing = size_flex/*| size_resizeable_x*/; //TODO requires item resizing //NOTE(delle) resizeable here in addition to item_panel for extended resize hover region
 				item_preview->style.size = {2/*ratio of 3*/,1/*ratio of 1*/};
@@ -1577,12 +1575,12 @@ void ui_demo(){
 				item_preview->style.border_width = 1/*pixels*/; //TODO remove this once separators are added
 				
 				//TODO requires dynamically-added items
-			}uiItemE();//item_preview
-		}uiItemE();//window_content
-	}uiItemE();//window
+			}ui_end_item();//item_preview
+		}ui_end_item();//window_content
+	}ui_end_item();//window
 	/*
 	{//test sizer
-		uiItem* container = uiItemB();{
+		uiItem* container = ui_begin_item(0);{
 			container->style.size = {200, 100};
 			container->style.display = display_flex | display_horizontal;
 			container->style.background_color = color(50,60,100);
@@ -1607,30 +1605,30 @@ void ui_demo(){
 					item->style.width = BoundTimeOsc(1,3);
 				};
 				c0->action_trigger = action_act_always;
-			}uiItemE();
+			}ui_end_item();
 			uiItem* c1 = uiItemBS(&flex_style);{
 				c1->style.background_color = Color_Green;
 				c1->style.width = 2;
 				c1->id = STR8("c1");
-			}uiItemE();
+			}ui_end_item();
 			uiItem* c2 = uiItemBS(&flex_style);{
 				c2->style.background_color = Color_Blue;
 				c2->style.width = 1;
 				c2->id = STR8("c2");
-			}uiItemE();
-		}uiItemE();
+			}ui_end_item();
+		}ui_end_item();
 	}
 	*/
 	/*
 	{//test scaling
-		uiItem* test = uiItemB();{
+		uiItem* test = ui_begin_item(0);{
 			test->style.size = {200, 200};
 			test->style.positioning = pos_draggable_absolute;
 			test->style.background_color = Color_White;
 			test->style.paddingtl = {10,10};
 			test->style.paddingbr = {10,10};
 			
-			uiItem* test2 = uiItemB();{
+			uiItem* test2 = ui_begin_item(0);{
 				test2->style.positioning = pos_absolute;
 				test2->style.pos = {50, 50};
 				test2->style.size = {48, 48};
@@ -1639,15 +1637,15 @@ void ui_demo(){
 				test2->style.border_width = 1;
 				test2->style.scale = {1.5,1.5};
 				test2->style.background_color = Color_Green;
-			}uiItemE();
+			}ui_end_item();
 			
-			uiItem* test3 = uiItemB();{
+			uiItem* test3 = ui_begin_item(0);{
 				test3->style.positioning = pos_absolute;
 				test3->style.pos = {50, 50};
 				test3->style.size = {50, 50};
 				test3->style.background_color = Color_Blue;
-			}uiItemE();
-		}uiItemE();
+			}ui_end_item();
+		}ui_end_item();
 	}
 	*/
 }
