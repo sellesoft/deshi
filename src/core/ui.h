@@ -913,6 +913,8 @@ deshi__ui_memory_release(void* ptr) {
 
 global void* 
 deshi__ui_memory_resize(void* ptr, upt size) {
+	// TODO(sushi) for some reason this causes a heap error in memory
+	FixMe;
 	uiMemoryHeader* header = ui_memory_header(ptr);
 	Assert(header->magic == ui_memory_magic, "attempted to resize memory that does not belong to ui.");
 	NodeRemove(&header->node);
