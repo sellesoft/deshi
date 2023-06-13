@@ -334,6 +334,44 @@ key_released(u32 mod_key){
 
 FORCE_INLINE void
 simulate_key_press(u32 key){
+	printf("%s\n", KeyCodeStrings[key & INPUT_KEY_MASK].str);
+	printf("%s\n", KeyCodeStrings[key & INPUT_MOD_MASK].str);
+#define setkeyf(key) DeshInput->newKeyState[key] = 0;
+#define setkeyt(key) DeshInput->newKeyState[key] = 1;
+	switch(key&INPUT_MOD_MASK) {
+		case(InputMod_None):            setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Lctrl):           setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Rctrl):           setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Lshift):          setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Rshift):          setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Lalt):            setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Ralt):            setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_AnyShift):        setkeyt(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_AnyAlt):          setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_AnyCtrl):         setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlLshift):     setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlRshift):     setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlLshift):     setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlRshift):     setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlLalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlRalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RctrlLalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlRalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_LshiftLalt):      setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LshiftRalt):      setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RshiftLalt):      setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RshiftRalt):      setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_LctrlLshiftLalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlLshiftRalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_LctrlRshiftLalt): setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlRshiftRalt): setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RctrlLshiftLalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlLshiftRalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RctrlRshiftLalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlRshiftRalt): setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+	}
+#undef setkeyt
+#undef setkeyf
 	DeshInput->newKeyState[key & INPUT_KEY_MASK] = true;
 	DeshInput->newKeyState[key & INPUT_MOD_MASK] = true;
 	char c = input_keycode_to_char(key);

@@ -244,7 +244,6 @@ local DeshiStage deshiStage = DS_NONE;
 #include "kigu/arrayT.h"
 #include "kigu/array_utils.h"
 #include "kigu/color.h"
-#include "kigu/debug.h"
 #include "kigu/hash.h"
 #include "kigu/map.h"
 #include "kigu/optional.h"
@@ -282,17 +281,17 @@ local DeshiStage deshiStage = DS_NONE;
 
 //// core implementations ////
 #define DESHI_IMPLEMENTATION
-#include "deshi.h"
+//#include "deshi.h"
 #include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"
-#include "core/config.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
 #endif // DESHI_DISABLE_CONSOLE
 #include "core/input.h"
 #include "core/logger.h"
 #include "core/file.h"
+#include "core/config.h"
 #include "core/memory.h"
 #include "core/networking.h"
 #include "core/platform.h"
@@ -374,7 +373,7 @@ namespace X11{
         // I have no idea why, but glx should be defining this on its own
         // but it guards that definition behind a define that gl.h defines
         // and glx.h includes gl.h, so i have no idea what to do other than this.
-        #define GLAD_UNUSED(x) (void)(x)
+#       define GLAD_UNUSED(x) (void)(x)
 #       include <glad/glx.h>
     }
 }
