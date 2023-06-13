@@ -472,8 +472,12 @@ render_init(){DPZoneScoped;
 #elif DESHI_LINUX 
 		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
 		
+		X11::XFlush(linux.x11.display);
+		X11::XDrawString(linux.x11.display, (X11::Window)DeshWindow->handle, (X11::GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
+
 		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
+		
 		gladInstallGLXDebug();
 
 		// get restore points 
@@ -518,8 +522,6 @@ render_init(){DPZoneScoped;
 #else
 #  error "unhandled platform"
 #endif
-		
-		/// !!!!!!!
 		
 		if(opengl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
 		Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));

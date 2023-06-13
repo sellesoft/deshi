@@ -17,7 +17,7 @@ typedef Type KeyCode; enum{
 	Key_0, Key_1, Key_2, Key_3, Key_4, Key_5, Key_6, Key_7, Key_8, Key_9,
 	Key_F1, Key_F2, Key_F3, Key_F4, Key_F5, Key_F6, Key_F7, Key_F8, Key_F9, Key_F10, Key_F11, Key_F12,
 	Key_UP, Key_DOWN, Key_LEFT, Key_RIGHT,
-	Key_ESCAPE, Key_TILDE, Key_TAB, Key_CAPSLOCK, Key_MINUS, Key_EQUALS, Key_BACKSPACE, Key_LBRACKET, Key_RBRACKET,
+	Key_ESCAPE, Key_BACKQUOTE, Key_TAB, Key_CAPSLOCK, Key_MINUS, Key_EQUALS, Key_BACKSPACE, Key_LBRACKET, Key_RBRACKET,
 	Key_BACKSLASH, Key_SEMICOLON, Key_APOSTROPHE, Key_ENTER, Key_COMMA, Key_PERIOD, Key_FORWARDSLASH, Key_SPACE,
 	Key_LSHIFT, Key_RSHIFT, Key_LCTRL, Key_RCTRL, Key_LMETA, Key_RMETA, Key_LALT, Key_RALT, Key_APPS,
 	Key_INSERT, Key_DELETE, Key_HOME, Key_END, Key_PAGEUP, Key_PAGEDOWN, Key_PRINTSCREEN, Key_SCROLLLOCK, Key_PAUSEBREAK,
@@ -39,6 +39,24 @@ global str8 KeyCodeStrings[] = { //NOTE(delle) gotta love uncounted string liter
 	STR8("Numpad 0"),STR8("Numpad 1"),STR8("Numpad 2"),STR8("Numpad 3"),STR8("Numpad 4"),STR8("Numpad 5"),STR8("Numpad 6"),STR8("Numpad 7"),STR8("Numpad 8"),STR8("Numpad 9"),
 	STR8("Numpad Multiply"),STR8("Numpad Divide"),STR8("Numpad Plus"),STR8("Numpad Minus"),STR8("Numpad Period"),STR8("Num Lock"),
 	STR8("Mouse Left"),STR8("Mouse Right"),STR8("Mouse Middle"),STR8("Mouse 4"),STR8("Mouse 5"),STR8("Mouse 6"),STR8("Mouse 7"),STR8("Mouse 8"),
+};
+
+
+// for getting the character of a key if it representable by one 
+global char KeyCodeChars[] = {
+	0,
+	'a','b','c','d','e','f','g','h','i','j','k','l','m',
+	'n','o','p','q','r','s','t','u','v','w','x','y','z',
+	'0','1','2','3','4','5','6','7','8','9',
+	0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,
+	0,'~',0,0,'-','=',0,'[',']',
+	'\\',';','\'',0,',','.','/',' ',
+	0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,
+	'0','1','2','3','4','5','6','7','8','9',
+	'*','/','+','-','.',0,
+	0,0,0,0,0,0,0,0,
 };
 
 //NOTE(delle) the first 8bits of a keymod are reserved for the Key enum
@@ -79,6 +97,119 @@ typedef Type InputMod; enum{
 	InputMod_RctrlRshiftLalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Lalt,
 	InputMod_RctrlRshiftRalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Ralt,
 };
+
+global char input_keycode_to_char(KeyCode key) {
+	switch(key) {
+		case Key_A: return 'a';
+		case Key_B: return 'b';
+		case Key_C: return 'c';
+		case Key_D: return 'd';
+		case Key_E: return 'e';
+		case Key_F: return 'f';
+		case Key_G: return 'g';
+		case Key_H: return 'h';
+		case Key_I: return 'i';
+		case Key_J: return 'j';
+		case Key_K: return 'k';
+		case Key_L: return 'l';
+		case Key_M: return 'm';
+		case Key_N: return 'n';
+		case Key_O: return 'o';
+		case Key_P: return 'p';
+		case Key_Q: return 'q';
+		case Key_R: return 'r';
+		case Key_S: return 's';
+		case Key_T: return 't';
+		case Key_U: return 'u';
+		case Key_V: return 'v';
+		case Key_W: return 'w';
+		case Key_X: return 'x';
+		case Key_Y: return 'y';
+		case Key_Z: return 'z';
+		case Key_A|InputMod_AnyShift: return 'A';
+		case Key_B|InputMod_AnyShift: return 'B';
+		case Key_C|InputMod_AnyShift: return 'C';
+		case Key_D|InputMod_AnyShift: return 'D';
+		case Key_E|InputMod_AnyShift: return 'E';
+		case Key_F|InputMod_AnyShift: return 'F';
+		case Key_G|InputMod_AnyShift: return 'G';
+		case Key_H|InputMod_AnyShift: return 'H';
+		case Key_I|InputMod_AnyShift: return 'I';
+		case Key_J|InputMod_AnyShift: return 'J';
+		case Key_K|InputMod_AnyShift: return 'K';
+		case Key_L|InputMod_AnyShift: return 'L';
+		case Key_M|InputMod_AnyShift: return 'M';
+		case Key_N|InputMod_AnyShift: return 'N';
+		case Key_O|InputMod_AnyShift: return 'O';
+		case Key_P|InputMod_AnyShift: return 'P';
+		case Key_Q|InputMod_AnyShift: return 'Q';
+		case Key_R|InputMod_AnyShift: return 'R';
+		case Key_S|InputMod_AnyShift: return 'S';
+		case Key_T|InputMod_AnyShift: return 'T';
+		case Key_U|InputMod_AnyShift: return 'U';
+		case Key_V|InputMod_AnyShift: return 'V';
+		case Key_W|InputMod_AnyShift: return 'W';
+		case Key_X|InputMod_AnyShift: return 'X';
+		case Key_Y|InputMod_AnyShift: return 'Y';
+		case Key_Z|InputMod_AnyShift: return 'Z';
+
+		case Key_0: return '0';
+		case Key_1: return '1';
+		case Key_2: return '2';
+		case Key_3: return '3';
+		case Key_4: return '4';
+		case Key_5: return '5';
+		case Key_6: return '6';
+		case Key_7: return '7';
+		case Key_8: return '8';
+		case Key_9: return '9';
+
+		case Key_BACKQUOTE: return '`';
+		case Key_BACKQUOTE|InputMod_AnyShift: return '~';
+
+		case Key_MINUS: return '-';
+		case Key_MINUS|InputMod_AnyShift: return '_';
+		case Key_EQUALS: return '=';
+		case Key_EQUALS|InputMod_AnyShift: return '+';
+		case Key_LBRACKET: return '[';
+		case Key_LBRACKET|InputMod_AnyShift: return '{';
+		case Key_RBRACKET: return ']';
+		case Key_RBRACKET|InputMod_AnyShift: return '}';
+
+		case Key_BACKSLASH: return '\\';
+		case Key_BACKSLASH|InputMod_AnyShift: return '|';
+		case Key_SEMICOLON: return ';';
+		case Key_SEMICOLON|InputMod_AnyShift: return ':';
+		case Key_APOSTROPHE: return '\'';
+		case Key_APOSTROPHE|InputMod_AnyShift: return '"';
+		case Key_COMMA: return ',';
+		case Key_COMMA|InputMod_AnyShift: return '<';
+		case Key_PERIOD: return '.';
+		case Key_PERIOD|InputMod_AnyShift: return '>';
+		case Key_FORWARDSLASH: return '/';
+		case Key_FORWARDSLASH|InputMod_AnyShift: return '?'; 
+		case Key_SPACE: return ' ';
+
+		case Key_NP0: return '0';
+		case Key_NP1: return '1';
+		case Key_NP2: return '2';
+		case Key_NP3: return '3';
+		case Key_NP4: return '4';
+		case Key_NP5: return '5';
+		case Key_NP6: return '6';
+		case Key_NP7: return '7';
+		case Key_NP8: return '8';
+		case Key_NP9: return '9';
+
+		case Key_NPMULTIPLY: return '*';
+		case Key_NPDIVIDE: return '/';
+		case Key_NPPLUS: return '+';
+		case Key_NPMINUS: return '-';
+		case Key_NPPERIOD: return '.';
+	}
+	return 0;
+}
+
 
 struct Input{
 	b32 oldKeyState[MAX_KEYBOARD_KEYS];
@@ -183,7 +314,7 @@ input_mods_down(u32 mods){
 #define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
 FORCE_INLINE b32
 key_down(u32 mod_key){ 
-	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK]&& input_mods_down(mod_key & INPUT_MOD_MASK);
+	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
 }
 
 FORCE_INLINE b32
@@ -203,7 +334,10 @@ key_released(u32 mod_key){
 
 FORCE_INLINE void
 simulate_key_press(u32 key){
-	DeshInput->newKeyState[key] = true;
+	DeshInput->newKeyState[key & INPUT_KEY_MASK] = true;
+	DeshInput->newKeyState[key & INPUT_MOD_MASK] = true;
+	char c = input_keycode_to_char(key);
+	if(c) DeshInput->charIn[DeshInput->charCount++] = c;
 }
 
 FORCE_INLINE b32 any_key_pressed() { return  key_released(Key_NONE); }

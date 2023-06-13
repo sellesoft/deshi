@@ -77,7 +77,7 @@ linux_keysym_to_key(X11::KeySym k) {
 		case XK_F5: return Key_F5; case XK_F6:  return Key_F6;  case XK_F7:  return Key_F7;  case XK_F8:  return Key_F8;
 		case XK_F9: return Key_F9; case XK_F10: return Key_F10; case XK_F11: return Key_F11; case XK_F12: return Key_F12;
 		case XK_Up: return Key_UP; case XK_Down: return Key_DOWN; case XK_Left: return Key_LEFT; case XK_Right: return Key_RIGHT;
-		case XK_Escape:       return Key_ESCAPE;     case XK_asciitilde: return Key_TILDE;        case XK_Tab:         return Key_TAB;
+		case XK_Escape:       return Key_ESCAPE;     case XK_asciitilde: return Key_BACKQUOTE;    case XK_Tab:         return Key_TAB;
 		case XK_Caps_Lock:    return Key_CAPSLOCK;   case XK_Shift_L:    return Key_LSHIFT;       case XK_Control_L:   return Key_LCTRL;
 		case XK_Alt_L:        return Key_LALT;       case XK_BackSpace:  return Key_BACKSPACE;    case XK_Return:      return Key_ENTER;
 		case XK_Shift_R:      return Key_RSHIFT;     case XK_Control_R:  return Key_RCTRL;        case XK_Alt_R:       return Key_RALT;
@@ -620,7 +620,6 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 		EndFileErrnoHandler()
 	}
 
-
 	struct dirent* entry;
 	while((entry = readdir(dir))){
 		if(!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, ".")) continue;
@@ -1015,12 +1014,11 @@ platform_update() {
 		DeshInput->anyKeyDown = 1;
 	}
 
-	// TODO(sushi) figure out how to support this on linux
-	// if(!DeshInput->realCharCount){
-	// 	reset_stopwatch(&DeshInput->time_since_char_hold);
-	// }else{
-	// 	DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
-	// }
+	if(!DeshInput->realCharCount){
+		reset_stopwatch(&DeshInput->time_since_char_hold);
+	}else{
+		DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
+	}
 
 	DeshInput->mouseX        = DeshInput->realMouseX;
 	DeshInput->mouseY        = DeshInput->realMouseY;
@@ -1031,6 +1029,10 @@ platform_update() {
 	DeshInput->charCount     = DeshInput->realCharCount;
 	DeshInput->realCharCount = 0;
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
+
+	forI(MAX_KEYBOARD_KEYS) {
+		if(i && DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
+	}
 
 	return !platform_exit_application;
 }

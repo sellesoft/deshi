@@ -208,7 +208,7 @@ void console_init(){DPZoneScoped;
 
 void console_update(){DPZoneScoped;
 	//check for console state changing inputs
-	if(key_pressed(Key_TILDE)){
+	if(key_pressed(Key_BACKQUOTE)){
 		if      (input_shift_down()){
 			console_change_state(ConsoleState_OpenBig);
 		}else if(input_ctrl_down()){
