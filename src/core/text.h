@@ -273,5 +273,16 @@ text_clear_and_replace(Text* t, str8 str){
     text_insert_string(t,str);
 }
 
+// returns true if the cursor is at the beginning of the buffer
+FORCE_INLINE global b32 
+text_cursor_at_start(Text* t) {
+    return !t->cursor.pos;
+}
+
+// returns true if the cursor is at the end of the buffer
+FORCE_INLINE global b32
+text_cursor_at_end(Text* t){
+    return t->cursor.pos == t->buffer.count;
+}
 
 #endif
