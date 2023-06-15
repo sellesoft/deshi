@@ -81,7 +81,7 @@ linux_keysym_to_key(X11::KeySym k) {
 		case XK_Caps_Lock:    return Key_CAPSLOCK;   case XK_Shift_L:    return Key_LSHIFT;       case XK_Control_L:   return Key_LCTRL;
 		case XK_Alt_L:        return Key_LALT;       case XK_BackSpace:  return Key_BACKSPACE;    case XK_Return:      return Key_ENTER;
 		case XK_Shift_R:      return Key_RSHIFT;     case XK_Control_R:  return Key_RCTRL;        case XK_Alt_R:       return Key_RALT;
-		case XK_minus:        return Key_MINUS;      case XK_plus:       return Key_EQUALS;       case XK_bracketleft: return Key_LBRACKET;
+		case XK_minus:        return Key_MINUS;      case XK_equal:      return Key_EQUALS;       case XK_bracketleft: return Key_LBRACKET;
 		case XK_bracketright: return Key_RBRACKET;   case XK_slash:      return Key_FORWARDSLASH; case XK_semicolon:   return Key_SEMICOLON;
 		case XK_apostrophe:   return Key_APOSTROPHE; case XK_comma:      return Key_COMMA;        case XK_period:      return Key_PERIOD;
 		case XK_backslash:    return Key_BACKSLASH;  case XK_space:      return Key_SPACE;        case XK_Insert:      return Key_INSERT;
@@ -1007,7 +1007,7 @@ platform_update() {
 	CopyMemory(&DeshInput->oldKeyState, &DeshInput->newKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
 	CopyMemory(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
 
-	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS * sizeof(b32))){
 		reset_stopwatch(&DeshInput->time_since_key_hold);
 		DeshInput->newKeyState[0] = 1;
 		DeshInput->anyKeyDown = 0;
@@ -1033,7 +1033,7 @@ platform_update() {
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
 
 	// forI(MAX_KEYBOARD_KEYS) {
-	// 	if(i && DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
+	// 	if(DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
 	// }
 
 	return !platform_exit_application;

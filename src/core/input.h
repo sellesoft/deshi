@@ -332,7 +332,12 @@ key_released(u32 mod_key){
 	return !DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] &&  DeshInput->oldKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
 }
 
-FORCE_INLINE void
+
+FORCE_INLINE b32 any_key_pressed() { return  key_released(Key_NONE); }
+FORCE_INLINE b32 any_key_down()    { return !key_down(Key_NONE); }
+FORCE_INLINE b32 any_key_released(){ return  key_pressed(Key_NONE); }
+
+static void
 simulate_key_press(u32 key){
 #define setkeyf(key) DeshInput->newKeyState[key] = 0;
 #define setkeyt(key) DeshInput->newKeyState[key] = 1;
@@ -373,10 +378,10 @@ simulate_key_press(u32 key){
 	DeshInput->newKeyState[key & INPUT_KEY_MASK] = true;
 	char c = input_keycode_to_char(key);
 	if(c) DeshInput->charIn[DeshInput->charCount++] = c;
+	if(DeshInput->newKeyState[0]) {
+		DeshInput->newKeyState[Key_NONE] = false;
+	}
 }
 
-FORCE_INLINE b32 any_key_pressed() { return  key_released(Key_NONE); }
-FORCE_INLINE b32 any_key_down()    { return !key_down(Key_NONE); }
-FORCE_INLINE b32 any_key_released(){ return  key_pressed(Key_NONE); }
 
 #endif //DESHI_INPUT_H

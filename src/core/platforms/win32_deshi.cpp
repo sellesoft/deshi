@@ -587,7 +587,7 @@ platform_update(){DPZoneScoped; DPFrameMark;
 		memcpy(&DeshInput->oldKeyState, &DeshInput->newKeyState,  sizeof(b32)*MAX_KEYBOARD_KEYS);
 		memcpy(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
 		
-		if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+		if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS * sizeof(b32))){
 			reset_stopwatch(&DeshInput->time_since_key_hold);
 			DeshInput->newKeyState[0] = 1;
 			DeshInput->anyKeyDown = 0;
