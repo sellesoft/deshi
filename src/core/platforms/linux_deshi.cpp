@@ -923,6 +923,8 @@ platform_init() {
 	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);
 	X11::Window root = linux.x11.root = X11::XRootWindow(display, screen);
 
+	ZeroMemory(DeshInput->zero, sizeof(b32) * MAX_KEYBOARD_KEYS); 
+
 	DeshiStageInitEnd(DS_PLATFORM);
 }
 
@@ -1030,9 +1032,9 @@ platform_update() {
 	DeshInput->realCharCount = 0;
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
 
-	forI(MAX_KEYBOARD_KEYS) {
-		if(i && DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
-	}
+	// forI(MAX_KEYBOARD_KEYS) {
+	// 	if(i && DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
+	// }
 
 	return !platform_exit_application;
 }

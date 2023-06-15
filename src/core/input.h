@@ -334,8 +334,6 @@ key_released(u32 mod_key){
 
 FORCE_INLINE void
 simulate_key_press(u32 key){
-	printf("%s\n", KeyCodeStrings[key & INPUT_KEY_MASK].str);
-	printf("%s\n", KeyCodeStrings[key & INPUT_MOD_MASK].str);
 #define setkeyf(key) DeshInput->newKeyState[key] = 0;
 #define setkeyt(key) DeshInput->newKeyState[key] = 1;
 	switch(key&INPUT_MOD_MASK) {
@@ -373,7 +371,6 @@ simulate_key_press(u32 key){
 #undef setkeyt
 #undef setkeyf
 	DeshInput->newKeyState[key & INPUT_KEY_MASK] = true;
-	DeshInput->newKeyState[key & INPUT_MOD_MASK] = true;
 	char c = input_keycode_to_char(key);
 	if(c) DeshInput->charIn[DeshInput->charCount++] = c;
 }
