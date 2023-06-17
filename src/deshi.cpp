@@ -84,6 +84,9 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!  ,** ,22/09/17,Tweak]   use memory_heap interface internally for the arena and generic heaps
 [!!!,*  ,23/06/17,Tweak]   memory's debug stuff doesn't work before we initialize logger, so we cannot properly debug issues that occur before then. 
                            need to change its logging to either use printf, or ideally choose which to use based on if Logger is initialzed
+[!! ,***,23/06/17,Bug]     memory_pool seems to be broken. memory_pool_init was pointing to its header incorrectly and would overwrite previous data
+                           so I fixed this, but then later usage of memory_pool_push caused something to break in the generic heap, so i am going to leave
+                           it for later as I don't feel like diving into fixing it.
 
 `Render`
 --------
