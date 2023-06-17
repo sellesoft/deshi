@@ -42,13 +42,13 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 `File`
 ------
 [0  ,** ,21/09/16,Feature]  data folder specified on launch (in launch args)
-[!!!,***,21/10/20,System]   linux/mac file IO
 [!  ,*  ,21/12/28,Feature]  add file locking and determination
 [!  ,*  ,21/12/28,Feature]  add hard/symbolic link creation/deletion
 [!  ,*  ,21/12/28,Feature]  add file hard/symbolic link determination
 [!  ,*  ,21/12/28,Feature]  add drive statistics
 [0  ,*  ,22/04/28,Optimize] maybe wrap error checking in #if debug clauses?
 [!! ,** ,22/06/05,Bug]      config may keep a file locked even after loading it
+[0  ,***,23/06/17,System]   mac file IO
 
 `Fun`
 -----
@@ -82,6 +82,8 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,*  ,22/09/17,Tweak]   fix and test the memory_heap interface, memory_heap_add() isnt even valid
 [!!!,*  ,22/09/17,Docs]    write descriptions for generic allocation, temp allocation, memory chunk, memory heap, and memory arena
 [!  ,** ,22/09/17,Tweak]   use memory_heap interface internally for the arena and generic heaps
+[!!!,*  ,23/06/17,Tweak]   memory's debug stuff doesn't work before we initialize logger, so we cannot properly debug issues that occur before then. 
+                           need to change its logging to either use printf, or ideally choose which to use based on if Logger is initialzed
 
 `Render`
 --------
@@ -126,7 +128,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 -------
 [!!!,***,21/04/05,System] remake the sound system
 
-`Storage`
+`Assets`
 ---------
 [!!!,*  ,21/07/10,Bug]     the program crashes if default asset files are not present
     maybe store the text in the actual source and create the file from the code (null128.png, gohufont-11.bdf)
@@ -138,7 +140,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,21/10/20,Feature] add OBJ MTL parsing
 [!!!,** ,21/12/31,Feature] data streaming (load in parts)
 [!!!,*  ,22/01/12,Feature] make an interface for updating textures that have already been created
-[!  ,*  ,22/09/04,Tweak]   rename to Assets
 [!!!,** ,22/09/08,Feature] use worker threads to load in the background
 
 `Time`
@@ -151,8 +152,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `UI`
 ----
-[!!!,** ,22/08/09,System]  remove the old ui system 
-[!!!,***,22/08/09,PWide]   replace usage of the old ui with new ui or just disable it so it doesnt error
 [!!!,*  ,22/08/09,Tweak]   reimplement slider and checkbox
 [!!!,** ,22/08/09,Feature] add tabs widget
 [!! ,** ,22/08/09,Feature] add tables widget
@@ -161,13 +160,15 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!  ,*  ,22/08/09,Feature] add spinner widget
 [0  ,*  ,22/08/09,Feature] add radio widget
 [0  ,***,22/08/09,Feature] add color picker widget
-[!! ,*  ,22/08/09,Tweak]   remove widget stuff from ui.h (ui2.h as of right now) and put it in its own file 
-[!! ,*  ,22/08/12,Tweak]   either finish the hot loading setup for ui or remove it
 [!!!,** ,22/08/13,Tweak]   ui's memory needs trimmed a LOT. to display little text on screen it takes over 500 bytes due to it being represented by uiItem who uses uiStyle
 [!!!,** ,22/09/04,Bug]     there seems to be a bug with drawcmd removal when reallocating text drawinfo. 
     it triggers the assert that checks that the drawcmd being removed does not have the same offset as one that is already removed
     this check may just be invalid. this happens when clicking on text sometimes.
 [!!!,***,22/12/11,Feature] add z-layering (siblings could maybe be sorted so that higher z-level is last)
+                           NOTE(sushi) this can be implemented locally by just creating your own 
+                                       uiItems representing layers in the order you want them, and then appending 
+                                       to those layers when you want to add to them.
+                                       this requires manually pushing items though
 [!!!,** ,22/12/11,Feature] add side-specific border styling (left, right, top, bottom)
 [!! ,** ,22/12/11,Feature] add the ability to add child items after ending an item (dynamically added items)
 [!! ,** ,22/12/11,Feature] add texture support (non-widget like text might be?)
@@ -185,8 +186,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 `Ungrouped`
 -----------
 [!! ,** ,21/07/19,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-[!!!,***,21/12/31,System]  remove GLFW and add linux/mac platform specifics
-[!  ,*  ,22/02/01,Tweak]   remove commit/decommit from Allocator
 [!  ,*  ,23/01/15,Feature] add regression testing for examples (and a github precommit to run it)
 
 */
