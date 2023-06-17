@@ -336,7 +336,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	
 	u8 path_buffer[256];
 	log_count = ClampMin(log_count, 1);
-	File* log_files = file_search_directory(str8_lit("data/logs/"));
+	FileArray log_files = file_search_directory(str8_lit("data/logs/"));
 	if(!log_files) return;
 
 	//rename previous log.txt
@@ -345,6 +345,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 			int len = stbsp_snprintf((char*)path_buffer, ArrayCount(path_buffer), "data/logs/log_%lld.txt", file->last_write_time);
 			file_rename(file->path, (str8{path_buffer, (s64)len}));
 			file->path = str8{path_buffer, (s64)len}; //NOTE(delle) correcting path on temp memory so it's valid for deletion
+			break;
 		}
 	}
 	

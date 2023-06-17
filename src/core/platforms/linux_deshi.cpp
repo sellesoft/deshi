@@ -281,6 +281,7 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 }
 
 void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
+	DebugBreakpoint;
 	dstr8 r = get_errno_print(err, tag, funcname, message);
 	if(HasFlag(deshiStage, DS_LOGGER)){
 		LogE("linux", r.fin);
@@ -691,13 +692,24 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access
 	b32 exists = file_exists(path);
 
 	if(exists) forX_array(f, file_shared.files) {
-		if(file_path_equal(path, f->path)){
+		if(file_path_equal(path, f->path)) {
 			if(!file_change_access_result(f, access, result)) return 0;
 			return f;
 		}
 	}
 
-	File* out = memory_pool_push(file_shared.files);
+	// !Issue(Pool)
+	// if(exists) for_pool(file_shared.files) {
+	// 	if(it->type == FileType_ERROR) continue;
+	// 	if(file_path_equal(path, it->path)){
+	// 		if(!file_change_access_result(it, access, result)) return 0;
+	// 		return it;
+	// 	}
+	// }
+
+	File* out = array_push(file_shared.files);
+	
+	// !Issue(Pool) File* out = memory_pool_push(file_shared.files);
 
 	if(HasFlag(access, FileAccess_Create)) {
 		if(!file_create_result(path, result)) return 0;
@@ -718,6 +730,7 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* re
 	memzfree(file->path.str);
 
 	if(file->handle) fclose(file->handle);
+	// !Issue(pool) memory_pool_delete(file_shared.files, file);
 	forI(array_count(file_shared.files)){
 		if(file_shared.files + i == file){
 			array_remove_unordered(file_shared.files, i);
@@ -907,7 +920,13 @@ platform_init() {
 
 	DeshTime->stopwatch = start_stopwatch();
 
-	memory_pool_init(file_shared.files, 16);
+	// because memory_pool doesn't work here and file handles are given as File*
+	// we need to try and make it unlikely that this array will move, so we 
+	// allocate space for 128 of them, which should be enough for our current projects
+	array_init(file_shared.files, 128, deshi_allocator);
+
+	// !Issue(Pool) memory_pool_init(file_shared.files, 16);
+
 	file_create(STR8("data/"));
 	file_create(STR8("data/cfg/"));
 	file_create(STR8("data/temp/"));
@@ -917,7 +936,7 @@ platform_init() {
 	// initialize display and screen
 	X11::Display* display = linux.x11.display = X11::XOpenDisplay(0);
 	if(!display) {
-		printf("platform_init(): " ErrorFormat("failed to open X11 display"));
+		printf("platform_init(): " ErrorFormat("failed to open X11 display") "\n");
 		return;
 	}
 	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);

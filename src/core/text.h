@@ -54,6 +54,7 @@ text_init(str8 init, Allocator* allocator = deshi_allocator){
 global void 
 text_deinit(Text* t) {
     dstr8_deinit(&t->buffer);
+    *t = {0};
 }
 
 //moves the cursor right by one codepoint

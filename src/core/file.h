@@ -119,6 +119,8 @@ struct File{
 	u64 cursor;
 };
 
+typedef File* FileArray;
+
 // TODO(sushi) move this somewhere else
 // we reserve a name for internal use, so that the separate case defines use the right name without needing to define it repeatedly
 #define StartErrorHandler(name, errtype, err) { \
@@ -259,7 +261,7 @@ external File deshi__file_info(str8 caller_file, upt caller_line, str8 path, Fil
 // NOTE when constructing filepaths for storage on the File, we dynamically allocate the names
 // meaning that if you use this, you have to make sure that the name is freed
 // the allocated string is JUST 'path', all of the following str8's are views on this str8
-external File* deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result);
+external FileArray deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result);
 #define file_search_directory(directory) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),0)
 #define file_search_directory_result(directory,res) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),(res))
 
@@ -475,7 +477,7 @@ external FileType deshi__file_get_type_of_path(str8 caller_file, upt caller_line
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_shared_variables
 local struct{
-	File* files;
+	FileArray files;
 	b32 crash_on_error;
 } file_shared;
 
