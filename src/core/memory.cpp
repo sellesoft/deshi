@@ -867,6 +867,32 @@ deshi__memory_pool_init(void* pool, upt type_size, upt count){
 	
 	//return pool so the macro can assign to var
 	return pool;
+	
+	/*
+
+	NOTE(sushi) my fix to this function, though I don't know if it's actually correct because later calls
+	            on a memory_pool also break
+
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(PoolHeader) + (chunk_size * count);
+	
+	//allocate space for chunks and header
+	PoolHeader* header = (PoolHeader*)memory_alloc(alloc_size);
+	pool = header + sizeof(PoolHeader);
+	header->chunks_per_block = count;
+	
+	//set free chunk equal to the first chunk
+	header->free_chunk = (void**)(pool);
+	
+	//setup the rest of the free chunk linked list
+	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}
+	
+	//return pool so the macro can assign to var
+	return pool;
+	*/
 }
 
 
