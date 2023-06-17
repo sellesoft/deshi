@@ -283,7 +283,7 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
 	dstr8 r = get_errno_print(err, tag, funcname, message);
 	if(HasFlag(deshiStage, DS_LOGGER)){
-		LogE("linux", r);
+		LogE("linux", r.fin);
 	}else{
 		printf("%s\n", (u8*)r.str);
 	}
@@ -697,7 +697,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access
 		}
 	}
 
-	File* out = array_push(file_shared.files);
+	File* out = memory_pool_push(file_shared.files);
 
 	if(HasFlag(access, FileAccess_Create)) {
 		if(!file_create_result(path, result)) return 0;
@@ -907,7 +907,7 @@ platform_init() {
 
 	DeshTime->stopwatch = start_stopwatch();
 
-	array_init(file_shared.files, 16, deshi_allocator);
+	memory_pool_init(file_shared.files, 16);
 	file_create(STR8("data/"));
 	file_create(STR8("data/cfg/"));
 	file_create(STR8("data/temp/"));

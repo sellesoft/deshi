@@ -380,6 +380,7 @@ simulate_key_press(u32 key){
 	if(c) DeshInput->charIn[DeshInput->charCount++] = c;
 	if(DeshInput->newKeyState[0]) {
 		DeshInput->newKeyState[Key_NONE] = false;
+		DeshInput->oldKeyState[Key_NONE] = true;
 	}
 }
 

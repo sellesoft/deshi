@@ -51,6 +51,11 @@ text_init(str8 init, Allocator* allocator = deshi_allocator){
     return out;
 }
 
+global void 
+text_deinit(Text* t) {
+    dstr8_deinit(&t->buffer);
+}
+
 //moves the cursor right by one codepoint
 //returns how many bytes the cursor moved
 global u64
