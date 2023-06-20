@@ -325,20 +325,33 @@ local DeshiStage deshiStage = DS_NONE;
 #  include "fcntl.h" // creat
 #  include "dirent.h"
 #  include "dlfcn.h"
-namespace X11 { 
-    // windowing api. for whatever reason, X defines a lot of things with very simple names
-    // such as Window, Font, etc. which conflict with our stuff, so we need to put it in a namespace
+// namespace X11 { 
+//     // windowing api. for whatever reason, X defines a lot of things with very simple names
+//     // such as Window, Font, etc. which conflict with our stuff, so we need to put it in a namespace
+// #  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
+// #  include "X11/Xutil.h"
+// #  include "X11/Xos.h"
+//    // I don't know why, but when we query Xlib for the screens of 
+//    // a display, it will give a screen which covers all monitors
+//    // if you have multiple, so we use the xrandr extenstion to get 
+//    // proper information.
+//    // this is possibly a problem with using WSL, so we'll
+//    // need to check if this is necessary outside of that
+// #  include "X11/extensions/Xrandr.h"
+// }
+#define Window X11Window
+#define Font X11Font
+#define Time X11Time
+#define KeyCode X11KeyCode
 #  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
 #  include "X11/Xutil.h"
 #  include "X11/Xos.h"
-   // I don't know why, but when we query Xlib for the screens of 
-   // a display, it will give a screen which covers all monitors
-   // if you have multiple, so we use the xrandr extenstion to get 
-   // proper information.
-   // this is possibly a problem with using WSL, so we'll
-   // need to check if this is necessary outside of that
 #  include "X11/extensions/Xrandr.h"
-}
+#undef Window
+#undef Font
+#undef Time
+#undef KeyCode
+
 #  undef None // X defines this for whatever reason
 #  include "core/platforms/linux_deshi.cpp" 
 
@@ -351,10 +364,16 @@ namespace X11 {
 
 //// renderer cpp (and libs) ////
 #if DESHI_VULKAN
+#define VK_USE_PLATFORM_XLIB_KHR
+namespace X11 {
+    namespace Vulkan{
 #  include <vulkan/vulkan.h>
 #  include <shaderc/shaderc.h>
+    }
+}
+using namespace X11::Vulkan;
 #if DESHI_LINUX
-#  include "external/vulkan/vulkan_xlib.h"
+//#  include "external/vulkan/vulkan_xlib.h"
 #endif 
 #  include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
@@ -370,16 +389,26 @@ namespace X11 {
 // so we wrap it in the same namespace we wrap those headers in
 // we also wrap glad in another header so that we may 
 // use 'using namespace' on it and only get glad and not x11 functions.
-namespace X11{
-    namespace GLAD {
-        // I have no idea why, but glx should be defining this on its own
-        // but it guards that definition behind a define that gl.h defines
-        // and glx.h includes gl.h, so i have no idea what to do other than this.
+// namespace X11{
+//     namespace GLAD {
+//         // I have no idea why, but glx should be defining this on its own
+//         // but it guards that definition behind a define that gl.h defines
+//         // and glx.h includes gl.h, so i have no idea what to do other than this.
+// #       define GLAD_UNUSED(x) (void)(x)
+// #       include <glad/glx.h>
+//     }
+// }
+//using namespace X11::GLAD;
+#define Window X11Window
+#define Font X11Font
+#define Time X11Time
+#define KeyCode X11KeyCode
 #       define GLAD_UNUSED(x) (void)(x)
 #       include <glad/glx.h>
-    }
-}
-using namespace X11::GLAD;
+#undef Window
+#undef Font
+#undef Time
+#undef KeyCode
 #  endif
 #  include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12

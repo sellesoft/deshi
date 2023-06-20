@@ -472,8 +472,8 @@ render_init(){DPZoneScoped;
 #elif DESHI_LINUX 
 		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
 		
-		X11::XFlush(linux.x11.display);
-		X11::XDrawString(linux.x11.display, (X11::Window)DeshWindow->handle, (X11::GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
+		XFlush(linux.x11.display);
+		XDrawString(linux.x11.display, (X11Window)DeshWindow->handle, (GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
 
 		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
@@ -481,7 +481,7 @@ render_init(){DPZoneScoped;
 		gladInstallGLXDebug();
 
 		// get restore points 
-		X11::Display* prev_display = glXGetCurrentDisplay();
+		Display* prev_display = glXGetCurrentDisplay();
 		GLXContext prev_context = glXGetCurrentContext();
 		
 		// list of attributes to ask of GLX
@@ -495,13 +495,13 @@ render_init(){DPZoneScoped;
 		};
 		
 		// get the best visual for our chosen attributes
-		X11::XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
+		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
 		if(!vi) {
 			LogE("opengl", "Cannot find an appropriate visual for the given attributes");
 			Assert(0);
 		}
 		
-		X11::Colormap cm = X11::XCreateColormap(linux.x11.display, (X11::Window)DeshWindow->handle, vi->visual, AllocNone);
+		Colormap cm = XCreateColormap(linux.x11.display, (X11Window)DeshWindow->handle, vi->visual, AllocNone);
 		// X11::XSetWindowColormap(linux.x11.display, (X11::Window)DeshWindow->handle, cm);
 
 		// X11::XSetWindowAttributes swa;
@@ -514,7 +514,7 @@ render_init(){DPZoneScoped;
 		// DeshWindow->handle = (void*)win;
 		
 		GLXContext context = glXCreateContext(linux.x11.display, vi, 0, 1);
-		if(!glXMakeCurrent(linux.x11.display, (X11::Window)DeshWindow->handle, context)) {
+		if(!glXMakeCurrent(linux.x11.display, (X11Window)DeshWindow->handle, context)) {
 			Log("", "unable to set glx context");
 		}
 		
@@ -531,7 +531,7 @@ render_init(){DPZoneScoped;
 #if DESHI_WINDOWS
 		UpdateWindow((HWND)DeshWindow->handle);
 #elif DESHI_LINUX
-		X11::XFlush(linux.x11.display);
+		XFlush(linux.x11.display);
 #else
 #  error "unhandled platform"
 #endif
@@ -853,7 +853,7 @@ render_update(){DPZoneScoped;
 	//// present frame
 	{
 #if DESHI_LINUX
-		glXSwapBuffers(linux.x11.display, (X11::Window)DeshWindow->handle);
+		glXSwapBuffers(linux.x11.display, (X11Window)DeshWindow->handle);
 #else 
 		window_swap_buffers(DeshWindow);
 #endif

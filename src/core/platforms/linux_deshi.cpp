@@ -20,18 +20,18 @@ Index:
 struct{
 	struct{
 		// points to the X server
-		X11::Display* display;
+		Display* display;
 		// which screen of the display are we using
 		int screen;
 		// the root window of the X windowing system
-		X11::Window root;
+		X11Window root;
 	}x11;
 }linux;
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
 
-int linux_error_handler(X11::Display* display, X11::XErrorEvent* event) {
+int linux_error_handler(Display* display, XErrorEvent* event) {
 	switch(event->error_code){
 		case BadAccess: 			printf("A client attempts to grab a key/button combination already grabbed by another client.\n"
 							                "A client attempts to free a colormap entry that it had not already allocated or to free an entry in a colormap that was created with all entries writable.\n"
@@ -63,7 +63,7 @@ int linux_error_handler(X11::Display* display, X11::XErrorEvent* event) {
 }
 
 FORCE_INLINE KeyCode
-linux_keysym_to_key(X11::KeySym k) {
+linux_keysym_to_key(KeySym k) {
 	switch(k){
 		case XK_a: return Key_A; case XK_b: return Key_B; case XK_c: return Key_C; case XK_d: return Key_D; case XK_e: return Key_E;
 		case XK_f: return Key_F; case XK_g: return Key_G; case XK_h: return Key_H; case XK_i: return Key_I; case XK_j: return Key_J;
@@ -931,16 +931,16 @@ platform_init() {
 	file_create(STR8("data/cfg/"));
 	file_create(STR8("data/temp/"));
 
-	X11::XSetErrorHandler(&linux_error_handler);
+	XSetErrorHandler(&linux_error_handler);
 	
 	// initialize display and screen
-	X11::Display* display = linux.x11.display = X11::XOpenDisplay(0);
+	Display* display = linux.x11.display = XOpenDisplay(0);
 	if(!display) {
 		printf("platform_init(): " ErrorFormat("failed to open X11 display") "\n");
 		return;
 	}
-	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);
-	X11::Window root = linux.x11.root = X11::XRootWindow(display, screen);
+	s32 screen = linux.x11.screen = XDefaultScreen(display);
+	X11Window root = linux.x11.root = XRootWindow(display, screen);
 
 	ZeroMemory(DeshInput->zero, sizeof(b32) * MAX_KEYBOARD_KEYS); 
 
@@ -957,15 +957,15 @@ platform_update() {
 	DeshTime->frame        += 1;
 	DeshTime->timeTime = reset_stopwatch(&update_stopwatch);
 	
-	X11::XEvent event;
-	X11::KeySym key;
+	XEvent event;
+	KeySym key;
 	char text[255];
 
 	// get the current amount of events in queue
-	u64 events_to_handle = X11::XEventsQueued(linux.x11.display, QueuedAlready);
+	u64 events_to_handle = XEventsQueued(linux.x11.display, QueuedAlready);
 
 	forI(events_to_handle){
-		X11::XNextEvent(linux.x11.display, &event);
+		XNextEvent(linux.x11.display, &event);
 		switch(event.type) {
 			case Expose: {
 				
@@ -973,7 +973,7 @@ platform_update() {
 
 			case ButtonPress:
 			case ButtonRelease: {
-				X11::XButtonEvent bev = event.xbutton;
+				XButtonEvent bev = event.xbutton;
 				KeyCode mbutton;
 				switch(bev.button){
 					case Button1: mbutton = Mouse_LEFT; break;
@@ -994,7 +994,7 @@ platform_update() {
 			}break;	
 
 			case MotionNotify: {
-				X11::XMotionEvent motion = event.xmotion;
+				XMotionEvent motion = event.xmotion;
 				DeshInput->realMouseX = motion.x;
 				DeshInput->realMouseY = motion.y;
 				DeshInput->realScreenMouseX = motion.x_root;
@@ -1002,17 +1002,17 @@ platform_update() {
 			}break;
 
 			case KeyPress: {
-				X11::KeySym ks = XLookupKeysym(&event.xkey, 0);
+				KeySym ks = XLookupKeysym(&event.xkey, 0);
 				KeyCode key = linux_keysym_to_key(ks);
 				if(key != Key_NONE) {
 					DeshInput->realKeyState[key] = 1;
 				}
-				X11::KeySym ret;
-				DeshInput->realCharCount += X11::XLookupString(&event.xkey, (char*)DeshInput->charIn + DeshInput->charCount, 256, &ret, 0);
+				KeySym ret;
+				DeshInput->realCharCount += XLookupString(&event.xkey, (char*)DeshInput->charIn + DeshInput->charCount, 256, &ret, 0);
 			}break;
 
 			case KeyRelease: {
-				X11::KeySym ks = XLookupKeysym(&event.xkey,  0);
+				KeySym ks = XLookupKeysym(&event.xkey,  0);
 				KeyCode key = linux_keysym_to_key(ks);
 				if(key != Key_NONE) {
 					DeshInput->realKeyState[key] = 0;
@@ -1147,18 +1147,18 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
 	
 	// we'll create the window in the monitor that the user's cursor is in 
-	X11::Window root,child;
+	X11Window root,child;
 	s32 root_x, root_y;
 	s32 win_x, win_y;
 	u32 mask;
-	X11::XQueryPointer(linux.x11.display, linux.x11.root, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+	XQueryPointer(linux.x11.display, linux.x11.root, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
 
 	s32 n_monitors;
-	X11::XRRMonitorInfo* monitors = X11::XRRGetMonitors(linux.x11.display, linux.x11.root, 1, &n_monitors);
+	XRRMonitorInfo* monitors = XRRGetMonitors(linux.x11.display, linux.x11.root, 1, &n_monitors);
 
-	X11::XRRMonitorInfo selection;
+	XRRMonitorInfo selection;
 	forI(n_monitors){
-		X11::XRRMonitorInfo monitor = monitors[i];
+		XRRMonitorInfo monitor = monitors[i];
 		if(Math::PointInRectangle(Vec2(root_x,root_y), Vec2(monitor.x,monitor.y), Vec2(monitor.width,monitor.height))) {
 			selection = monitor;
 			break;
@@ -1170,19 +1170,19 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	if(x == -1)      x = selection.x + width / 2;
 	if(y == -1)      y = selection.y + height / 2;
 
-	u32 black = X11::XBlackPixel(linux.x11.display, linux.x11.screen);
-	u32 white = X11::XWhitePixel(linux.x11.display, linux.x11.screen);
+	u32 black = XBlackPixel(linux.x11.display, linux.x11.screen);
+	u32 white = XWhitePixel(linux.x11.display, linux.x11.screen);
 
-	linux.x11.root = X11::XRootWindow(linux.x11.display, linux.x11.screen);
+	linux.x11.root = XRootWindow(linux.x11.display, linux.x11.screen);
 
 	Window* window = (Window*)memalloc(sizeof(Window));
-	X11::Window handle = X11::XCreateSimpleWindow(linux.x11.display, linux.x11.root, x, y, width, height, 0, white, black);
+	X11Window handle = XCreateSimpleWindow(linux.x11.display, linux.x11.root, x, y, width, height, 0, white, black);
 	window->handle = (void*)handle;
 	if(!DeshWindow) DeshWindow = window;
 
-	X11::XSetStandardProperties(linux.x11.display, (X11::Window)window->handle, (const char*)title.str, 0,0,0,0,0);
+	XSetStandardProperties(linux.x11.display, (X11Window)window->handle, (const char*)title.str, 0,0,0,0,0);
 
-	X11::XSelectInput(linux.x11.display, (X11::Window)window->handle, 
+	XSelectInput(linux.x11.display, (X11Window)window->handle, 
 		  ExposureMask      // caused when an invisible window becomes visible, or when a hidden part of a window becomes visible
 		| ButtonPressMask   // mouse button pressed
 		| ButtonReleaseMask // mouse button released
@@ -1192,16 +1192,16 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 		| LeaveWindowMask
 		| PointerMotionMask // mouse movement event
 	);
-	window->context = X11::XCreateGC(linux.x11.display, (X11::Window)window->handle, 0, 0);
-	X11::XSetBackground(linux.x11.display, (X11::GC)window->context, black);
-	X11::XSetForeground(linux.x11.display, (X11::GC)window->context, white);
+	window->context = XCreateGC(linux.x11.display, (X11Window)window->handle, 0, 0);
+	XSetBackground(linux.x11.display, (GC)window->context, black);
+	XSetForeground(linux.x11.display, (GC)window->context, white);
 
-	X11::XClearWindow(linux.x11.display, (X11::Window)window->handle);
-	X11::XMapRaised(linux.x11.display, (X11::Window)window->handle);
+	XClearWindow(linux.x11.display, (X11Window)window->handle);
+	XMapRaised(linux.x11.display, (X11Window)window->handle);
 
 	u32 bw,d;
-	X11::Window groot,gchild;
-	X11::XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
+	X11Window groot,gchild;
+	XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
 
 	window_windows.add(window);
 
@@ -1217,7 +1217,7 @@ void window_close(Window* window){
 
 void
 window_swap_buffers(Window* window){
-	X11::XFlush(linux.x11.display);
+	XFlush(linux.x11.display);
 	//X11::XSync(linux.x11.display, 0);
 }
 

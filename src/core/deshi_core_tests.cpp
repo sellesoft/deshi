@@ -193,7 +193,7 @@ local void TEST_deshi_core_memory(){
 	
 	//TODO(delle) temp alloc testing
 	
-	if(0){//// memory pool ////
+	{//// memory pool ////
 		//pool init (test that the pool was alloced and setup correctly)
 		MemChunk* pool = 0;
 		memory_pool_init(pool, 64);

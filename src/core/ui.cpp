@@ -1058,6 +1058,8 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
+
+	if(str8_equal(item->id, str8l("hiii"))) DebugBreakpoint;
 	
 	if(g_ui->hovered == item && item->style.focus && input_lmouse_pressed()){
 		move_to_parent_last(&item->node);
