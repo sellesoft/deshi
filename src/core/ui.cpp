@@ -298,9 +298,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 		if(retrieved) *retrieved = 1;
 	}
 	
-	uiItem* curitem = *g_ui->item_stack.last;
-	
-	insert_last(&curitem->node, &item->node);
+	insert_last(&parent->node, &item->node);
 	
 	if(!retrieved_){
 		if(setup.style) memcpy(&item->style, setup.style, sizeof(uiStyle));
@@ -345,6 +343,18 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 		}
 	}
 	return item;
+}
+
+void deshi__ui_push_item(uiItem* item, str8 file, upt line) {
+	g_ui->item_stack.add(item);
+}
+
+uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line) {
+	if(count >= g_ui->item_stack.count) {
+		LogE("ui", "too many items requested for popping. There are ", g_ui->item_stack.count, " items on the stack and ", count, " items were requested to be popped.");
+		LogE("ui", "Note: called from ", file, ":", line);
+	}
+	return g_ui->item_stack.pop(count);
 }
 
 vec2i ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
@@ -1059,7 +1069,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
 
-	if(str8_equal(item->id, str8l("hiii"))) DebugBreakpoint;
+	//if(str8_begins_with(item->id, str8l("suugu.canvas.element"))) DebugBreakpoint;
 	
 	if(g_ui->hovered == item && item->style.focus && input_lmouse_pressed()){
 		move_to_parent_last(&item->node);

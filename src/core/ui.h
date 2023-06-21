@@ -782,6 +782,14 @@ void deshi__ui_remove_item(uiItem* item, str8 file, upt line);
 
 uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0);
 
+// pushes an item onto the global item stack for appending to windows that have already been ended.
+void deshi__ui_push_item(uiItem* item, str8 file, upt line);
+#define ui_push_item(item) deshi__ui_push_item((item), str8l(__FILE__), __LINE__)
+
+// pops 'count' items from the global item stack and returns the last item popped.
+uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line);
+#define ui_pop_item(count) deshi__ui_pop_item((count), str8l(__FILE__), __LINE__)
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_generate
@@ -860,6 +868,8 @@ struct uiContext{
 	Arena* vertex_arena; // arena of Vertex2
 	Arena* index_arena; // arena of u32
 	RenderTwodBuffer render_buffer;
+	// TODO(sushi) because we have item_push/pop now, we should store file/line that pushed the item
+	//             so that we can report it where things go wrong
 	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 	
 	struct{

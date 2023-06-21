@@ -383,6 +383,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 		//}
 	}
 	
+	// check how much draw data we need for the text and reallocate the drawcmd if needed
 	vec2i nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
 	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
 	    item->drawcmds = ui_make_drawcmd(1);
