@@ -11,6 +11,10 @@ Index:
 @threading
 @window
 @networking
+
+	GLFW was referenced for some of the windowing code
+		* Getting window state to determine if it is minimized
+
 */
 
 
@@ -25,6 +29,8 @@ struct{
 		int screen;
 		// the root window of the X windowing system
 		X11Window root;
+
+		Atom WM_STATE;
 	}x11;
 }linux;
 
@@ -942,6 +948,8 @@ platform_init() {
 	s32 screen = linux.x11.screen = XDefaultScreen(display);
 	X11Window root = linux.x11.root = XRootWindow(display, screen);
 
+	linux.x11.WM_STATE = XInternAtom(display, "WM_STATE", 0);
+
 	ZeroMemory(DeshInput->zero, sizeof(b32) * MAX_KEYBOARD_KEYS); 
 
 	DeshiStageInitEnd(DS_PLATFORM);
@@ -967,8 +975,51 @@ platform_update() {
 	forI(events_to_handle){
 		XNextEvent(linux.x11.display, &event);
 		switch(event.type) {
-			case Expose: {
+			case ConfigureNotify: {
+				XConfigureEvent cev = event.xconfigure;
+				DeshWindow->width = cev.width;
+				DeshWindow->height = cev.height;
+				DeshWindow->resized = 1;
+				DeshWindow->center = {cev.width/2,cev.height/2};
+				// ref: glfw x11_window.c _glfwGetWindowPropertyX11
+				// TODO(sushi) set DeshWindow->minimized
+				//             this is how glfw seems to check for this, but I'm not sure what
+				//             Xlib event is actually triggered when the window is minimized
+				//             I don't need this for now, so I'll implement it later
+				// Atom actual_type;
+				// s32 actual_format;
+				// unsigned long n_items;
+				// unsigned long bytes_after;
 				
+				// struct{
+				// 	u64 state;
+				// 	X11Window icon;
+				// }*state=0;
+
+				// int res = XGetWindowProperty(
+				// 		linux.x11.display, 
+				// 		(X11Window)DeshWindow->handle, 
+				// 		linux.x11.WM_STATE, 
+				// 		0, 
+				// 		LONG_MAX, 
+				// 		0, 
+				// 		linux.x11.WM_STATE, 
+				// 		&actual_type,
+				// 		&actual_format,
+				// 		&n_items,
+				// 		&bytes_after,
+				// 		(unsigned char**)&state
+				// 	);
+				// if(n_items >= 2) {
+				// 	DeshWindow->minimized = state->state == IconicState;
+				// 	Log("", "erm ", DeshWindow->minimized);
+				// }
+
+				
+			}break;	
+
+			case Expose: {
+				// TODO(sushi) if this ever seems useful
 			}break;
 
 			case ButtonPress:
@@ -1021,6 +1072,8 @@ platform_update() {
 		}
 	}
 	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
+
+
 
 	//// update input ////
 	CopyMemory(&DeshInput->oldKeyState, &DeshInput->newKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
@@ -1191,6 +1244,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 		| EnterWindowMask
 		| LeaveWindowMask
 		| PointerMotionMask // mouse movement event
+		| StructureNotifyMask // window change events
 	);
 	window->context = XCreateGC(linux.x11.display, (X11Window)window->handle, 0, 0);
 	XSetBackground(linux.x11.display, (GC)window->context, black);
