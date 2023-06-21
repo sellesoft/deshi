@@ -187,6 +187,30 @@ typedef struct RenderTwodBuffer{
 	void* index_handle;
 }RenderTwodBuffer;
 
+enum{
+	RenderBookKeeper_Vertex,
+	RenderBookKeeper_Index,
+	RenderBookKeeper_Cmd,
+};
+
+// keeps track of vertex, index, and cmd changes
+typedef struct RenderBookKeeper{
+	Type type;
+	str8 file;
+	u32  line;
+	union {
+		struct{
+			Vertex2* start;
+			u32 count;
+		}vertex;
+		struct{
+			u32* start;
+			u32 count;
+		}index;
+		RenderTwodCmd* cmd;
+	};
+}RenderBookKeeper;
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_status
 //Initializes the `Render` module
@@ -443,7 +467,8 @@ void render_debug_line3(vec3 p0, vec3 p1,  color c);
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 //Starts a new `RenderTwodCmd` on `layer` with the specified values
-void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+void deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+#define render_start_cmd2(layer, texture, scissorOffset, scissorExtent) deshi__render_start_cmd2(str8l(__FILE__), __LINE__, (layer), (texture), (scissorOffset), (scissorExtent))
 
 //Starts a new RenderTwodCmd with the specified values using externally allocated buffers
 //NOTE: these buffers must have been mapped using render_update_external_2d_buffer()
@@ -457,7 +482,8 @@ void render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, Ren
 
 //Adds `vertices` and `indices` to the active `RenderTwodCmd` on `layer`
 //  `indices` values should be local to the addition (start at 0) since they are added to the offset internally
-void render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
+void deshi__render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
+#define render_add_vertices2(layer, vertices, vcount, indices, icount) deshi__render_add_vertices2(str8l(__FILE__), __LINE__, layer, vertices, vcount, indices, icount)
 
 //Returns the top-most layer for 2D rendering
 u32  render_top_layer_index();
@@ -1026,6 +1052,8 @@ local Vertex2         renderTwodVertexArray[MAX_TWOD_VERTICES];
 local RenderTwodIndex renderTwodIndexArray [MAX_TWOD_INDICES];
 local RenderTwodIndex renderTwodCmdCounts[MAX_SURFACES][TWOD_LAYERS+1]; //these always start with 1
 local RenderTwodCmd   renderTwodCmdArrays[MAX_SURFACES][TWOD_LAYERS+1][MAX_TWOD_CMDS]; //different UI cmd per texture
+local RenderBookKeeper renderBookKeeperArray[MAX_TWOD_CMDS]; // keeps track of different kinds of allocations
+local u32 renderBookKeeperCount = 0;
 local u32 renderActiveLayer = 5;
 
 //external buffers
@@ -1034,22 +1062,43 @@ local RenderTwodIndex renderExternalCmdCounts[MAX_EXTERNAL_BUFFERS];
 local RenderTwodCmd   renderExternalCmdArrays[MAX_EXTERNAL_BUFFERS][MAX_TWOD_CMDS]; 
 
 void
-render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) {DPZoneScoped;
+deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) {DPZoneScoped;
 	Assert(vCount + renderTwodVertexCount < MAX_TWOD_VERTICES);
 	Assert(iCount + renderTwodIndexCount  < MAX_TWOD_INDICES);
 	
 	Vertex2* vp         = renderTwodVertexArray + renderTwodVertexCount;
 	RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
 	
+
+
 	CopyMemory(vp, vertices, vCount*sizeof(Vertex2));
 	forI(iCount){
 		Assert(indices[i] < vCount, "Index out of range of given number of vertices!\nMake sure your indices weren't overwritten by something.");
 		ip[i] = renderTwodVertexCount + indices[i];
 	} 
+
+#ifdef BUILD_INTERNAL
+	RenderBookKeeper keeper;
+	keeper.type = RenderBookKeeper_Vertex;
+	keeper.vertex.start = vp;
+	keeper.vertex.count = vCount;
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+
+	keeper.type = RenderBookKeeper_Index;
+	keeper.index.start = ip;
+	keeper.index.count = iCount;
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+#endif
 	
 	renderTwodVertexCount += vCount;
 	renderTwodIndexCount  += iCount;
 	renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1].indexCount += iCount;
+
+
 }
 
 u32

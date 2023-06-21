@@ -2637,6 +2637,11 @@ ResetCommands(){DPZoneScoped;
 	{//model commands
 		renderModelCmdCount = 0;
 	}
+	
+#ifdef BUILD_INTERNAL
+	renderBookKeeperCount = 0;
+#endif
+	
 }
 
 
@@ -3663,7 +3668,7 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 void
-render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
+deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != textures[(texture) ? texture->render_idx : 1].descriptorSet)
@@ -3675,6 +3680,15 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
+
+#if BUILD_INTERNAL
+	RenderBookKeeper keeper; 
+	keeper.type = RenderBookKeeper_Cmd;
+	keeper.cmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]];
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+#endif
 }
 
 void
