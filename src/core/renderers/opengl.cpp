@@ -494,6 +494,17 @@ render_init(){DPZoneScoped;
 			0,
 		};
 		
+		int n_elem;
+		GLXFBConfig* config = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes, &n_elem);
+		
+		if(!config || !n_elem) {
+			LogE("opengl", "Cannot find an appropriate framebuffer configuration with glXChooseFBConfig");
+			Assert(0);
+		}
+
+		GLXFBConfig fbconfig = config[0];
+		XFree(config);
+
 		// get the best visual for our chosen attributes
 		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
 		if(!vi) {
@@ -502,18 +513,19 @@ render_init(){DPZoneScoped;
 		}
 		
 		Colormap cm = XCreateColormap(linux.x11.display, (X11Window)DeshWindow->handle, vi->visual, AllocNone);
-		// X11::XSetWindowColormap(linux.x11.display, (X11::Window)DeshWindow->handle, cm);
+		
+		int contextAttribs[] = {
+			GLX_CONTEXT_MAJOR_VERSION_ARB, 3, 
+			GLX_CONTEXT_MINOR_VERSION_ARB, 2, 
+#if BUILD_INTERNAL
+			GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | GLX_CONTEXT_DEBUG_BIT_ARB,
+#else
+			GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB, 
+#endif
+			0 // Terminate the attribute list
+		};
 
-		// X11::XSetWindowAttributes swa;
-		// swa.colormap = cm;
-		// swa.event_mask = ExposureMask | KeyPressMask;
-		
-		// X11::Window win = X11::XCreateWindow(linux.x11.display, linux.x11.root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
-		// X11::XMapWindow(linux.x11.display, win);
-		
-		// DeshWindow->handle = (void*)win;
-		
-		GLXContext context = glXCreateContext(linux.x11.display, vi, 0, 1);
+		GLXContext context = glXCreateContextAttribsARB(linux.x11.display, fbconfig, 0, True, contextAttribs);
 		if(!glXMakeCurrent(linux.x11.display, (X11Window)DeshWindow->handle, context)) {
 			Log("", "unable to set glx context");
 		}

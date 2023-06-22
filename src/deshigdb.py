@@ -3,7 +3,7 @@
 #
 
 import gdb
-# import tkinter as tk
+import tkinter as tk
 pp = gdb.printing.RegexpCollectionPrettyPrinter("deshi")
 
 class vec2printer:
@@ -67,12 +67,25 @@ class render_bookkeeper(gdb.Command):
 render_bookkeeper()
         
 
-# class debug_ui(gdb.Command):
-#     def __init__(self):
-#         super(debug_ui, self).__init__("debug_ui", gdb.COMMAND_USER, gdb.COMPLETE_COMMAND)
+class debug_ui(gdb.Command):
+    def __init__(self):
+        super(debug_ui, self).__init__("debug_ui", gdb.COMMAND_USER, gdb.COMPLETE_COMMAND)
     
-#     def invoke(self, arg, tty):
-#         window = tk.Tk()
-#         greet = tk.Label(text="hi")
-#         greet.pack()
-# debug_ui()
+    def invoke(self, arg, tty):
+        g_ui = gdb.parse_and_eval("g_ui")
+        idxarena = gdb.parse_and_eval("(u32*)g_ui->index_arena->start")
+        items = []
+
+        for i in range(g_ui['items']['count']):
+            items.append(gdb.parse_and_eval(f"g_ui->items[{i}]"))
+        for i in range(g_ui['immediate_items']['count']):
+            items.append(gdb.parse_and_eval(f"g_ui->immediate_items[{i}]"))
+
+        for item in items:
+            print(f"{item['id']}--------------------------->")
+            print(f" size: {item['size']}")
+            print(f"scale: {item['scale']}")
+            print(f"  pos:")
+            print(f"     local: {item['pos_local']}")
+            print(f"    screen: {item['pos_screen']}")
+debug_ui()
