@@ -162,6 +162,26 @@ text_move_cursor_left_wordpart(Text* t, b32 select = 0){
     return abs(start-t->cursor.pos);
 }
 
+// moves the cursor to the start of the buffer
+// returns how many bytes the cursor moved
+global u64
+text_move_cursor_to_start(Text* t, b32 select = 0) {
+    u64 dist = t->cursor.pos;
+    if(select) t->cursor.count = dist;
+    t->cursor.pos = 0;
+    return dist;
+}
+
+// moves the cursor to the end of the buffer
+// returns how many bytes the cursor moved
+global u64
+text_move_cursor_to_end(Text* t, b32 select = 0) {
+    u64 dist = t->buffer.count - t->cursor.pos;
+    if(select) t->cursor.count = -dist;
+    t->cursor.pos = t->buffer.count;
+    return dist;
+}
+
 //deletes the selection
 global void
 text_delete_selection(Text* t){
