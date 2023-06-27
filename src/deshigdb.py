@@ -89,3 +89,46 @@ class debug_ui(gdb.Command):
             print(f"     local: {item['pos_local']}")
             print(f"    screen: {item['pos_screen']}")
 debug_ui()
+
+class show_generic_heap(gdb.Command):
+    def __init__(self):
+        super(show_generic_heap, self).__init__("show_generic_heap", gdb.COMMAND_USER, gdb.COMPLETE_COMMAND)
+        
+    def invoke(self, arg, tty):
+        heap = gdb.parse_and_eval("deshi__memory_generic_expose()")
+        node = heap['last_chunk']
+        out = []
+        while 1:
+            out.append(f"{node} : {node['size']}")
+            node = node['prev']
+            if not node: break
+        print("\n".join(out))
+show_generic_heap()
+
+class get_closest_generic_header(gdb.Command):
+    def __init__(self):
+        super(get_closest_generic_header, self).__init__("get_closest_generic_header", gdb.COMMAND_USER, gdb.COMPLETE_EXPRESSION)
+
+    def invoke(self, arg, tty):
+        val = gdb.parse_and_eval(arg)
+        if val == None:
+            print("invalid expression")
+            return
+        heap = gdb.parse_and_eval("deshi__memory_generic_expose()")
+        node = heap['last_chunk']
+        mindist = 999999999999999
+        minnode = None
+        print(val.type)
+        u8type = gdb.lookup_type("u8").pointer()
+        val = val.cast(u8type)
+        while 1:
+            dist = abs(val - node.cast(u8type))
+            if dist < mindist:
+                mindist = dist
+                minnode = node
+            node = node['prev']
+            if not node: break
+        # gdb.add_history(minnode)
+        gdb.execute(f"p (MemChunk*){minnode}")
+get_closest_generic_header()
+        
