@@ -1797,7 +1797,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	u64   total_size   = main_size + temp_size + sizeof(MemoryContext);
 	
 #if BUILD_INTERNAL //NOTE(delle) when debugging, always allocate to the same address so addresses stay the same across sessions
-	base_address = (void*)Terabytes(2);
+	base_address = (void*)(Gigabytes(1)/2);
 #endif //BUILD_INTERNAL
 	
 	u32 retries = 0;
