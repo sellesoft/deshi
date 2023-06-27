@@ -167,6 +167,17 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_8: return '8';
 		case Key_9: return '9';
 
+		case Key_0|InputMod_AnyShift: return ')';
+		case Key_1|InputMod_AnyShift: return '!';
+		case Key_2|InputMod_AnyShift: return '@';
+		case Key_3|InputMod_AnyShift: return '#';
+		case Key_4|InputMod_AnyShift: return '$';
+		case Key_5|InputMod_AnyShift: return '%';
+		case Key_6|InputMod_AnyShift: return '^';
+		case Key_7|InputMod_AnyShift: return '&';
+		case Key_8|InputMod_AnyShift: return '*';
+		case Key_9|InputMod_AnyShift: return '(';
+
 		case Key_BACKQUOTE: return '`';
 		case Key_BACKQUOTE|InputMod_AnyShift: return '~';
 
