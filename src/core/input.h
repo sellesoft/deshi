@@ -10,6 +10,9 @@
 #define MAX_KEYBOARD_KEYS 256
 #define MAX_MOUSE_BUTTONS 7
 
+#define INPUT_KEY_MASK 0x000000FF //mod_key & 0x000000FF extract the key
+#define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
+
 typedef Type KeyCode; enum{
 	Key_NONE,
 	Key_A, Key_B, Key_C, Key_D, Key_E, Key_F, Key_G, Key_H, Key_I, Key_J, Key_K, Key_L, Key_M,
@@ -210,6 +213,192 @@ global char input_keycode_to_char(KeyCode key) {
 	return 0;
 }
 
+global str8 input_keycode_to_str8(KeyCode key) {
+	switch(key) {
+		case Key_A|InputMod_None:
+		case Key_A: return str8l("a");
+		case Key_B|InputMod_None:
+		case Key_B: return str8l("b");
+		case Key_C|InputMod_None:
+		case Key_C: return str8l("c");
+		case Key_D|InputMod_None:
+		case Key_D: return str8l("d");
+		case Key_E|InputMod_None:
+		case Key_E: return str8l("e");
+		case Key_F|InputMod_None:
+		case Key_F: return str8l("f");
+		case Key_G|InputMod_None:
+		case Key_G: return str8l("g");
+		case Key_H|InputMod_None:
+		case Key_H: return str8l("h");
+		case Key_I|InputMod_None:
+		case Key_I: return str8l("i");
+		case Key_J|InputMod_None:
+		case Key_J: return str8l("j");
+		case Key_K|InputMod_None:
+		case Key_K: return str8l("k");
+		case Key_L|InputMod_None:
+		case Key_L: return str8l("l");
+		case Key_M|InputMod_None:
+		case Key_M: return str8l("m");
+		case Key_N|InputMod_None:
+		case Key_N: return str8l("n");
+		case Key_O|InputMod_None:
+		case Key_O: return str8l("o");
+		case Key_P|InputMod_None:
+		case Key_P: return str8l("p");
+		case Key_Q|InputMod_None:
+		case Key_Q: return str8l("q");
+		case Key_R|InputMod_None:
+		case Key_R: return str8l("r");
+		case Key_S|InputMod_None:
+		case Key_S: return str8l("s");
+		case Key_T|InputMod_None:
+		case Key_T: return str8l("t");
+		case Key_U|InputMod_None:
+		case Key_U: return str8l("u");
+		case Key_V|InputMod_None:
+		case Key_V: return str8l("v");
+		case Key_W|InputMod_None:
+		case Key_W: return str8l("w");
+		case Key_X|InputMod_None:
+		case Key_X: return str8l("x");
+		case Key_Y|InputMod_None:
+		case Key_Y: return str8l("y");
+		case Key_Z|InputMod_None:
+		case Key_Z: return str8l("z");
+		case Key_A|InputMod_AnyShift: return str8l("A");
+		case Key_B|InputMod_AnyShift: return str8l("B");
+		case Key_C|InputMod_AnyShift: return str8l("C");
+		case Key_D|InputMod_AnyShift: return str8l("D");
+		case Key_E|InputMod_AnyShift: return str8l("E");
+		case Key_F|InputMod_AnyShift: return str8l("F");
+		case Key_G|InputMod_AnyShift: return str8l("G");
+		case Key_H|InputMod_AnyShift: return str8l("H");
+		case Key_I|InputMod_AnyShift: return str8l("I");
+		case Key_J|InputMod_AnyShift: return str8l("J");
+		case Key_K|InputMod_AnyShift: return str8l("K");
+		case Key_L|InputMod_AnyShift: return str8l("L");
+		case Key_M|InputMod_AnyShift: return str8l("M");
+		case Key_N|InputMod_AnyShift: return str8l("N");
+		case Key_O|InputMod_AnyShift: return str8l("O");
+		case Key_P|InputMod_AnyShift: return str8l("P");
+		case Key_Q|InputMod_AnyShift: return str8l("Q");
+		case Key_R|InputMod_AnyShift: return str8l("R");
+		case Key_S|InputMod_AnyShift: return str8l("S");
+		case Key_T|InputMod_AnyShift: return str8l("T");
+		case Key_U|InputMod_AnyShift: return str8l("U");
+		case Key_V|InputMod_AnyShift: return str8l("V");
+		case Key_W|InputMod_AnyShift: return str8l("W");
+		case Key_X|InputMod_AnyShift: return str8l("X");
+		case Key_Y|InputMod_AnyShift: return str8l("Y");
+		case Key_Z|InputMod_AnyShift: return str8l("Z");
+
+		case Key_0|InputMod_None:
+		case Key_0: return str8l("0");
+		case Key_1|InputMod_None:
+		case Key_1: return str8l("1");
+		case Key_2|InputMod_None:
+		case Key_2: return str8l("2");
+		case Key_3|InputMod_None:
+		case Key_3: return str8l("3");
+		case Key_4|InputMod_None:
+		case Key_4: return str8l("4");
+		case Key_5|InputMod_None:
+		case Key_5: return str8l("5");
+		case Key_6|InputMod_None:
+		case Key_6: return str8l("6");
+		case Key_7|InputMod_None:
+		case Key_7: return str8l("7");
+		case Key_8|InputMod_None:
+		case Key_8: return str8l("8");
+		case Key_9|InputMod_None:
+		case Key_9: return str8l("9");
+
+		case Key_0|InputMod_AnyShift: return str8l(")");
+		case Key_1|InputMod_AnyShift: return str8l("!");
+		case Key_2|InputMod_AnyShift: return str8l("@");
+		case Key_3|InputMod_AnyShift: return str8l("#");
+		case Key_4|InputMod_AnyShift: return str8l("#");
+		case Key_5|InputMod_AnyShift: return str8l("$");
+		case Key_6|InputMod_AnyShift: return str8l("%");
+		case Key_7|InputMod_AnyShift: return str8l("^");
+		case Key_8|InputMod_AnyShift: return str8l("*");
+		case Key_9|InputMod_AnyShift: return str8l("(");
+
+		case Key_BACKQUOTE|InputMod_None:
+		case Key_BACKQUOTE: return str8l("`");
+		case Key_BACKQUOTE|InputMod_AnyShift: return str8l("~");
+
+		case Key_MINUS|InputMod_None:
+		case Key_MINUS: return str8l("-");
+		case Key_MINUS|InputMod_AnyShift: return str8l("_");
+		case Key_EQUALS|InputMod_None:
+		case Key_EQUALS: return str8l("=");
+		case Key_EQUALS|InputMod_AnyShift: return str8l("+");
+		case Key_LBRACKET|InputMod_None:
+		case Key_LBRACKET: return str8l("[");
+		case Key_LBRACKET|InputMod_AnyShift: return str8l("{");
+		case Key_RBRACKET|InputMod_None:
+		case Key_RBRACKET: return str8l("]");
+		case Key_RBRACKET|InputMod_AnyShift: return str8l("}");
+
+		case Key_BACKSLASH|InputMod_None:
+		case Key_BACKSLASH: return str8l("\\");
+		case Key_BACKSLASH|InputMod_AnyShift: return str8l("|");
+		case Key_SEMICOLON|InputMod_None:
+		case Key_SEMICOLON: return str8l(";");
+		case Key_SEMICOLON|InputMod_AnyShift: return str8l(":");
+		case Key_APOSTROPHE|InputMod_None:
+		case Key_APOSTROPHE: return str8l("'");
+		case Key_APOSTROPHE|InputMod_AnyShift: return str8l("\"");
+		case Key_COMMA|InputMod_None:
+		case Key_COMMA: return str8l(",");
+		case Key_COMMA|InputMod_AnyShift: return str8l("<");
+		case Key_PERIOD|InputMod_None:
+		case Key_PERIOD: return str8l(".");
+		case Key_PERIOD|InputMod_AnyShift: return str8l(">");
+		case Key_FORWARDSLASH|InputMod_None:
+		case Key_FORWARDSLASH: return str8l("/");
+		case Key_FORWARDSLASH|InputMod_AnyShift: return str8l("?"); 
+		case Key_SPACE|InputMod_None:
+		case Key_SPACE: return str8l(" ");
+
+		case Key_NP0|InputMod_None:
+		case Key_NP0: return str8l("0");
+		case Key_NP1|InputMod_None:
+		case Key_NP1: return str8l("1");
+		case Key_NP2|InputMod_None:
+		case Key_NP2: return str8l("2");
+		case Key_NP3|InputMod_None:
+		case Key_NP3: return str8l("3");
+		case Key_NP4|InputMod_None:
+		case Key_NP4: return str8l("4");
+		case Key_NP5|InputMod_None:
+		case Key_NP5: return str8l("5");
+		case Key_NP6|InputMod_None:
+		case Key_NP6: return str8l("6");
+		case Key_NP7|InputMod_None:
+		case Key_NP7: return str8l("7");
+		case Key_NP8|InputMod_None:
+		case Key_NP8: return str8l("8");
+		case Key_NP9|InputMod_None:
+		case Key_NP9: return str8l("9");
+
+		case Key_NPMULTIPLY|InputMod_None:
+		case Key_NPMULTIPLY: return str8l("*");
+		case Key_NPDIVIDE|InputMod_None:
+		case Key_NPDIVIDE: return str8l("/");
+		case Key_NPPLUS|InputMod_None:
+		case Key_NPPLUS: return str8l("+");
+		case Key_NPMINUS|InputMod_None:
+		case Key_NPMINUS: return str8l("-");
+		case Key_NPPERIOD|InputMod_None:
+		case Key_NPPERIOD: return str8l(".");
+		default: return KeyCodeStrings[key & INPUT_KEY_MASK];
+	}
+	return {};
+}
 
 struct Input{
 	b32 oldKeyState[MAX_KEYBOARD_KEYS];
@@ -310,8 +499,7 @@ input_mods_down(u32 mods){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @input_key_states
-#define INPUT_KEY_MASK 0x000000FF //mod_key & 0x000000FF extract the key
-#define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
+
 FORCE_INLINE b32
 key_down(u32 mod_key){ 
 	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
