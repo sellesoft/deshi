@@ -2237,14 +2237,15 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
 	// Cyrillic         1024 - 1279 ~ 256 chars
-	// Super/Subscripts 8304 - 8348 ~  44 chars (we will want our own method for doing super/subscripts in suugu)
+	// Super/Subscripts 8304 - 8348 ~  44 chars
 	// Currency Symbols 8352 - 8384 ~  32 chars
 	// Arrows           8592 - 8703 ~ 111 chars
 	// Math Symbols     8704 - 8959 ~ 255 chars
+	// Drawing Symbols  9472 - 9727 ~ 255 chars
 	// ...and maybe more to come in the future.
 	
 	//TODO(sushi) maybe implement taking in ranges
-	u32 num_ranges = 7;
+	u32 num_ranges = 8;
 	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(num_ranges*sizeof(*ranges));
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
@@ -2253,6 +2254,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
 	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
 	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
+	ranges[7].num_chars = 255;  ranges[7].first_unicode_codepoint_in_range = 9472;
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
 	ranges[2].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[2].num_chars*sizeof(stbtt_packedchar));
@@ -2260,6 +2262,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
 	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
+	ranges[7].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[7].num_chars*sizeof(stbtt_packedchar));
 	ranges[0].font_size = (f32)size;
 	ranges[1].font_size = (f32)size;
 	ranges[2].font_size = (f32)size;
@@ -2267,6 +2270,8 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[4].font_size = (f32)size;
 	ranges[5].font_size = (f32)size;
 	ranges[6].font_size = (f32)size;
+	ranges[7].font_size = (f32)size;
+
 	
 	/*
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together

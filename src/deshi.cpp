@@ -426,7 +426,6 @@ using namespace X11::Vulkan;
 
 //// core cpp ////
 #include "core/memory.cpp"
-//#include "core/logger.cpp"
 #include "core/console.cpp"
 #include "core/assets.cpp"
 #include "core/ui.cpp"
