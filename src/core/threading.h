@@ -2,13 +2,24 @@
 #ifndef DESHI_THREADING_H
 #define DESHI_THREADING_H
 
-#include "kigu/arrayT.h"
+#ifndef DESHI_THREAD_PRIORITY_LAYERS
+#define DESHI_THREAD_PRIORITY_LAYERS 4 
+#endif
+
 #include "kigu/common.h"
-#include "kigu/map.h"
-#include "kigu/string.h"
 #include "kigu/unicode.h"
 #include "kigu/ring_array.h"
 StartLinkageC();
+
+enum MutexResult {
+    MutexResult_Ok,
+    MutexResult_NotInitialized,
+    MutexResult_InsufficientResources,
+    MutexResult_OutOfMemory,
+    MutexResult_NoPerms,
+    MutexResult_StillLocked,
+    MutexResult_TooManyRecursiveLocks,
+};
 
 // used for thread syncronization. 
 // when a thread wants to use a resource that is not guaranteed not to be changed by another thread          
@@ -19,8 +30,8 @@ StartLinkageC();
 // Linux: TODO
 // Mac: TODO
 struct mutex{
-    void* handle = 0;
-    b32 is_locked = 0;
+    void* handle;
+    b32 is_locked;
 };
 
 // initialize a mutex and returns it
@@ -38,10 +49,14 @@ void mutex_lock(mutex* m);
 b32 mutex_try_lock(mutex* m);
 
 // attempts to lock the given mutex for a given amount of milliseconds, returns true if it was sucessful
-b32 mutex_try_lock_for(u64 millis);
+b32 mutex_try_lock_for(mutex* m, u64 millis);
 
 // unlocks the given mutex
 void mutex_unlock(mutex* m);
+
+enum CondVarResult {
+    CondVarResult_Ok,
+};
 
 // sed for thread syncronization
 // this struct allows for making threads go to sleep until notified.
@@ -81,7 +96,7 @@ struct semaphore{
 };
 
 // initializes a semaphore and returns it 
-semaphore semaphore_init(u64 initial_val, u64 max_val);
+semaphore semaphore_init(u64 max_val);
 
 // deinitializes a semaphore
 void semaphore_deinit(semaphore* se);
@@ -92,6 +107,7 @@ void semaphore_leave(semaphore* se);
 // a job that a thread attempts to take upon waking up.
 //TODO job priorities
 struct ThreadJob{
+    Node node;
     void (*ThreadFunction)(void*); //job function pointer
     void* data;
 };
@@ -104,31 +120,51 @@ struct Thread{
     str8 name; //for debugging. 
 };
 
+enum ThreadResult {
+    ThreadResult_Ok,
+    ThreadResult_InsufficientResourcesOrSysLimitReached,
+    ThreadResult_NoPermissions,
+    ThreadResult_CouldntDetach,
+    
+};
+
 struct ThreadManager{
-	mutex job_ring_lock;
+    // locked by a thread who wants to take a new job
+	mutex find_job_lock;
+    // prevents > max_awake_threads from running at the same time
     semaphore wake_up_barrier;
-    condvar idle; //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
-    u64 idle_count; //count of idling threads. NOTE(sushi) this is a count of threads waiting on the idle condition variable and does not represent how many threads are sleeping overall
+    //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
+    condvar idle; 
+    //count of idling threads. NOTE(sushi) this is a count of threads waiting on the idle condition variable and does not represent how many threads are sleeping overall
+    u64 idle_count;
     mutex idle_count_lock; 
-    ring_array<ThreadJob> job_ring; 
-    arrayT<Thread*> threads; //TODO arena threads instead of using memalloc
+    ThreadJob* jobs;
+    Node free_jobs;
+    Thread* threads;
 
     //queue of threads that are waiting to be woken up 
     ring_array<condvar*> wake_up_queue;
 
-    u32 max_threads = 0; // a value of 0 indiciates no limit to created threads
-    u32 max_awake_threads = 8; // how many threads are allowed to be awake at one time
+    u32 max_threads;
+    u32 max_awake_threads;
+    u32 max_jobs;
 
     u32 awake_threads = 1; //main thread counts towards awake threads 
+
+    ThreadJob* priorities[DESHI_THREAD_PRIORITY_LAYERS];
 };
 
 //global ThreadManager
-extern ThreadManager* g_tmanager;
-#define DeshThreadManager g_tmanager
+extern ThreadManager* g_threader;
+#define DeshThreader g_threader
 
 // initializes the thread manager
 // this must be done after loading memory
-void threader_init(u32 max_jobs = 255);
+// the number of total threads you want available at all times
+// must be specified here and cannot be changed 
+// max_awake_threads is the amount of threads that the manager
+// will allow to run at the same time 
+void threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs = 255);
 
 // spawns a new thread 
 void threader_spawn_thread(u32 count = 1);  
@@ -137,10 +173,7 @@ void threader_spawn_thread(u32 count = 1);
 void threader_close_all_threads(); 
 
 // adds a new ThreadJob to the job ring.
-void threader_add_job(ThreadJob job); 
-
-// adds a collection of jobs to the job ring.
-void threader_add_jobs(carray<ThreadJob> jobs); 
+void threader_add_job(ThreadJob job, u8 priority = 0);
 
 // removes all jobs from the job ring
 void threader_cancel_all_jobs(); 
@@ -158,7 +191,7 @@ void threader_set_thread_name(str8 name);
 // of how many threads are running
 // NOTE(sushi) waking up waiting threads is handled when this thread goes to sleep when it calls going_to_sleep
 static b32 threader_worker_should_continue() {
-    if(DeshThreadManager->wake_up_queue.count) return 0;
+    if(DeshThreader->wake_up_queue.count) return 0;
     return 1;
 }
 
