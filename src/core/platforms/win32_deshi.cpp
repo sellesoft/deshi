@@ -1782,13 +1782,13 @@ void condition_variable_notify_all(condvar* cv){DPZoneScoped;
 
 void 
 condition_variable_wait(condvar* cv){DPZoneScoped;
-	semaphore_leave(&DeshThreadManager->wake_up_barrier);
+	semaphore_leave(&DeshThreader->wake_up_barrier);
 	::EnterCriticalSection((CRITICAL_SECTION*)cv->cshandle);
 	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cv->cvhandle, (CRITICAL_SECTION*)cv->cshandle, INFINITE)){
 		win32_log_last_error("SleepConditionVariableCS");
 	}
 	::LeaveCriticalSection((CRITICAL_SECTION*)cv->cshandle);
-	semaphore_enter(&DeshThreadManager->wake_up_barrier);
+	semaphore_enter(&DeshThreader->wake_up_barrier);
 }
 
 void 
@@ -1800,9 +1800,9 @@ condition_variable_wait_for(condvar* cv, u64 milliseconds){DPZoneScoped;
 
 
 semaphore
-semaphore_init(u64 ival, u64 mval){
+semaphore_init(u64 mval){
 	semaphore se;
-	if(se.handle = CreateSemaphore(0, mval, ival, 0); !se.handle){
+	if(se.handle = CreateSemaphore(0, mval, 0, 0); !se.handle){
 		win32_log_last_error("CreateSemaphore");
 	}
 	return se;
@@ -1848,7 +1848,7 @@ semaphore_leave(semaphore* se){
 // if it can't find any jobs to run it just goes to sleep
 void
 deshi__thread_worker(Thread* me){DPZoneScoped;
-	ThreadManager* man = DeshThreadManager;
+	ThreadManager* man = DeshThreader;
 	WorkerLog("spawned");
 	semaphore_enter(&man->wake_up_barrier);
 	SetThreadDescription(GetCurrentThread(), wchar_from_str8(to_dstr8v(deshi_temp_allocator, "worker ", me->idx), 0, deshi_temp_allocator));
@@ -1858,12 +1858,12 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			ThreadJob tj;
 			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
 			
-			mutex_lock(&man->job_ring_lock);
+			mutex_lock(&man->find_job_lock);
 			
 			//check once more that there are jobs since the locking thread could have taken the last one
 			//im sure theres a better way to do this
 			if(!man->job_ring.count){
-				mutex_unlock(&man->job_ring_lock);
+				mutex_unlock(&man->find_job_lock);
 				break; 
 			} 	
 			WorkerLog("locked job ring and taking a job");
@@ -1871,7 +1871,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj = man->job_ring[0];
 			man->job_ring.remove(1);
 			
-			mutex_unlock(&man->job_ring_lock);
+			mutex_unlock(&man->find_job_lock);
 			
 			//run the function
 			WorkerLog("running job");
@@ -1901,64 +1901,64 @@ deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
 void 
 threader_init(u32 max_jobs){DPZoneScoped;
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
-	g_tmanager->job_ring.init(max_jobs, deshi_allocator);
-	DeshThreadManager->wake_up_queue.init(DeshThreadManager->max_awake_threads*4);
+	g_threader->job_ring.init(max_jobs, deshi_allocator);
+	DeshThreader->wake_up_queue.init(DeshThreader->max_awake_threads*4);
 	//TODO(sushi) query for max amount of threads 
-	DeshThreadManager->wake_up_barrier = semaphore_init(8,8);
-	semaphore_enter(&DeshThreadManager->wake_up_barrier);
-	DeshThreadManager->idle = condition_variable_init();
-	DeshThreadManager->job_ring_lock = mutex_init();
+	DeshThreader->wake_up_barrier = semaphore_init(8,8);
+	semaphore_enter(&DeshThreader->wake_up_barrier);
+	DeshThreader->idle = condition_variable_init();
+	DeshThreader->find_job_lock = mutex_init();
 	DeshiStageInitEnd(DS_THREAD);
 }
 
 void 
 threader_spawn_thread(u32 count){DPZoneScoped;
-	if(DeshThreadManager->max_threads && DeshThreadManager->threads.count + count > DeshThreadManager->max_threads){
-		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", DeshThreadManager->max_threads);
+	if(DeshThreader->max_threads && DeshThreader->threads.count + count > DeshThreader->max_threads){
+		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", DeshThreader->max_threads);
 	}
 	forI(count){
-		DeshThreadManager->awake_threads++;
+		DeshThreader->awake_threads++;
 		Thread* t = (Thread*)memalloc(sizeof(Thread));
-		if(DeshThreadManager->threads.count)
-			t->idx = (*DeshThreadManager->threads.last)->idx + 1;
+		if(DeshThreader->threads.count)
+			t->idx = (*DeshThreader->threads.last)->idx + 1;
 		else
 			t->idx = 0;
-		DeshThreadManager->threads.add(t);
+		DeshThreader->threads.add(t);
 		::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
 	}
 }
 
 void 
 threader_close_all_threads(){DPZoneScoped;
-	forI(DeshThreadManager->threads.count) DeshThreadManager->threads[i]->close = true;
+	forI(DeshThreader->threads.count) DeshThreader->threads[i]->close = true;
 	threader_wake_threads(0);
-	DeshThreadManager->threads.clear();
+	DeshThreader->threads.clear();
 }
 
 void 
 threader_add_job(ThreadJob job){DPZoneScoped;
-	DeshThreadManager->job_ring.add(job);
+	DeshThreader->job_ring.add(job);
 }
 
 void 
 threader_add_jobs(carray<ThreadJob> jobs){DPZoneScoped;
-	forI(jobs.count) DeshThreadManager->job_ring.add(jobs[i]);
+	forI(jobs.count) DeshThreader->job_ring.add(jobs[i]);
 }
 
 void 
 threader_cancel_all_jobs(){DPZoneScoped;
-	DeshThreadManager->job_ring.clear();
+	DeshThreader->job_ring.clear();
 } 
 
 void 
 threader_wake_threads(u32 count){DPZoneScoped;
-	if(!DeshThreadManager->threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
+	if(!DeshThreader->threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
 	else if(!count){
-		condition_variable_notify_all(&DeshThreadManager->idle);
+		condition_variable_notify_all(&DeshThreader->idle);
 	}  
 	else{
 		forI(count) 
-			condition_variable_notify_one(&DeshThreadManager->idle);
+			condition_variable_notify_one(&DeshThreader->idle);
 	}
 }
 

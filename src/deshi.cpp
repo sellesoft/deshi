@@ -325,20 +325,8 @@ local DeshiStage deshiStage = DS_NONE;
 #  include "fcntl.h" // creat
 #  include "dirent.h"
 #  include "dlfcn.h"
-// namespace X11 { 
-//     // windowing api. for whatever reason, X defines a lot of things with very simple names
-//     // such as Window, Font, etc. which conflict with our stuff, so we need to put it in a namespace
-// #  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
-// #  include "X11/Xutil.h"
-// #  include "X11/Xos.h"
-//    // I don't know why, but when we query Xlib for the screens of 
-//    // a display, it will give a screen which covers all monitors
-//    // if you have multiple, so we use the xrandr extenstion to get 
-//    // proper information.
-//    // this is possibly a problem with using WSL, so we'll
-//    // need to check if this is necessary outside of that
-// #  include "X11/extensions/Xrandr.h"
-// }
+#  include "pthread.h"
+#  include "semaphore.h"
 #define Window X11Window
 #define Font X11Font
 #define Time X11Time
@@ -385,20 +373,6 @@ using namespace X11::Vulkan;
 #  elif DESHI_LINUX
 #    define GLAD_GL_IMPLEMENTATION
 #    define GLAD_GLX_IMPLEMENTATION
-// GLX relies on X11 , and so it needs to see it
-// so we wrap it in the same namespace we wrap those headers in
-// we also wrap glad in another header so that we may 
-// use 'using namespace' on it and only get glad and not x11 functions.
-// namespace X11{
-//     namespace GLAD {
-//         // I have no idea why, but glx should be defining this on its own
-//         // but it guards that definition behind a define that gl.h defines
-//         // and glx.h includes gl.h, so i have no idea what to do other than this.
-// #       define GLAD_UNUSED(x) (void)(x)
-// #       include <glad/glx.h>
-//     }
-// }
-//using namespace X11::GLAD;
 #define Window X11Window
 #define Font X11Font
 #define Time X11Time
@@ -441,8 +415,8 @@ Input *g_input = &deshi_input;
 local Assets deshi_assets;
 Assets *g_assets = &deshi_assets;
 
-local ThreadManager deshi_thread_manager;
-ThreadManager *g_tmanager = &deshi_thread_manager;
+local ThreadManager deshi_threader;
+ThreadManager *g_threader = &deshi_threader;
 
 local uiContext deshi_ui{};
 uiContext *g_ui = &deshi_ui;

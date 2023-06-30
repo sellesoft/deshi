@@ -1152,34 +1152,321 @@ platform_set_clipboard(str8 text) {
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @threading
 
+
+mutex
+mutex_init() {
+	mutex out;
+	pthread_mutex_t* m = (pthread_mutex_t*)memalloc(sizeof(pthread_mutex_t));
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE); // allow recursive locking
+
+	// initialize mutex
+	switch(pthread_mutex_init(m, &attr)) {
+		case EAGAIN: {
+			LogE("threader", "The system lacks resources to initialize this mutex");
+			memzfree(m);
+			return {};
+		}break; 
+		case ENOMEM: {
+			LogE("threader", "The system does not have enough memory to initialize this mutex.");
+			memzfree(m);
+			return {};
+		}break;
+		case EPERM: {
+			LogE("threader", "The caller does not have permissions to initialize this mutex.");
+			memzfree(m);
+			return {};
+		}break;
+	}
+	out.handle = m;
+	out.is_locked = 0;
+
+	return out;
+}
+
+void
+mutex_deinit(mutex* m) {
+	switch(pthread_mutex_destroy((pthread_mutex_t*)m->handle)) {
+		case EBUSY: {
+			LogE("threader", "This mutex is still locked by some thread and cannot be destroyed.");
+			return;
+		}break;
+	}
+	memzfree(m->handle);
+}
+
+void
+mutex_lock(mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex."); 
+		return;
+	}
+
+	switch(pthread_mutex_lock((pthread_mutex_t*)m->handle)) {
+		case EAGAIN: {
+			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
+			return;
+		}break;
+	}
+}
+
+b32
+mutex_try_lock(mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex."); 
+		return 0;
+	}
+
+	switch(pthread_mutex_trylock((pthread_mutex_t*)m->handle)) {
+		case EAGAIN: {
+			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
+			return false;
+		}break;
+		case EBUSY: {
+			return false;
+		} break;
+	}
+
+	return true;
+}
+
+b32
+mutex_try_lock_for(mutex* m, u64 millis) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return false;
+	}
+
+	timespec ts;
+	ts.tv_nsec = millis * (u64)1e6;
+
+	switch(pthread_mutex_timedlock((pthread_mutex_t*)m->handle, &ts)) {
+		case EAGAIN: {
+			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
+			return false;
+		}break;
+		case EBUSY: {
+			return false;
+		} break;
+	}
+	return true;
+}
+
+void
+mutex_unlock(mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return;
+	}
+
+	pthread_mutex_unlock((pthread_mutex_t*)m->handle);
+}
+
+condition_variable
+condition_variable_init() {
+	condition_variable out;
+	pthread_cond_t* cond = (pthread_cond_t*)memalloc(sizeof(pthread_cond_t));
+	
+	int ret = pthread_cond_init(cond, 0);
+	if(!ret) {
+		LogE("threader", "failed to initialize pthread_cond_t, errno: ", ret);
+		return {};
+	}
+	out.cvhandle = cond;
+	return out;
+}
+
+void
+condition_variable_deinit(condition_variable* cv) {
+	switch(pthread_cond_destroy((pthread_cond_t*)cv->cvhandle)) {
+		case EBUSY: {
+			LogE("threader", "This condition variable cannot be deinitialized because it is still being waited on.");
+			return;
+		} break;
+	}
+	memzfree(cv->cshandle);
+}
+
+void
+condition_variable_notify_one(condition_variable* cv) {
+	int ret = pthread_cond_signal((pthread_cond_t*)cv->cvhandle);
+	if(!ret) {
+		LogE("failed to notify one on condition variable, errno: ", ret);
+	}
+}
+
+void
+condition_variable_notify_all(condition_variable* cv) {
+	int ret = pthread_cond_broadcast((pthread_cond_t*)cv->cvhandle);
+	if(!ret) {
+		LogE("failed to broadcast to condition variable, errno: ", ret);
+	}
+}
+
+void
+condition_variable_wait(condition_variable* cv) {
+	pthread_mutex_t cvm;
+	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
+	int ret = pthread_cond_wait((pthread_cond_t*)cv->cvhandle, &cvm);
+	if(!ret) {
+		LogE("threader", "failed to wait on condition variable, errno: ", ret);
+	}
+}
+
+void
+condition_variable_wait_for(condition_variable* cv, u64 milliseconds) {
+	pthread_mutex_t cvm;
+	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
+	timespec ts;
+	ts.tv_nsec = milliseconds * int(1e6);
+	int ret = pthread_cond_timedwait((pthread_cond_t*)cv->cvhandle, &cvm, &ts);
+	if(ret && ret != ETIMEDOUT) {
+		LogE("threader", "failed to wait on condition variable, errno: ", ret);
+	}
+}
+
+semaphore 
+semaphore_init(u64 initial_val, u64 max_val) {
+	semaphore out;
+	out.handle = memalloc(sizeof(sem_t));
+	if(!sem_init((sem_t*)out.handle, 0, max_val)) {
+		LogE("threader", "failed to initialize a semaphore, errno: ", errno);
+		return {};
+	}
+
+	return out;
+}
+
 void 
-threader_init(u32 max_jobs) {
-	NotImplemented;
+semaphore_deinit(semaphore* se) {
+	if(!sem_destroy((sem_t*)se->handle)) {
+		LogE("threader", "failed to destroy a semaphore, errno: ", errno);
+		return;
+	}
+	memzfree(se->handle);
+}
+
+void 
+semaphore_enter(semaphore* se) {
+	int ret = sem_wait((sem_t*)se->handle);
+	if(!ret) {
+		LogE("threader", "failed to wait on semaphore, errno: ", errno);
+	}
+}
+
+void 
+semaphore_leave(semaphore* se) {
+	int ret = sem_post((sem_t*)se->handle);
+	if(!ret) {
+		LogE("threader", "failed to release a semaphore, errno: ", errno);
+	}
+}
+
+void* deshi__thread_worker(void* in) {
+	Thread* me = (Thread*)in;
+	ThreadManager* man = DeshThreader;
+	semaphore_enter(&man->wake_up_barrier);
+	while(!me->close) {
+		mutex_lock(&man->find_job_lock);
+		ThreadJob* tj;
+		forI(DESHI_THREAD_PRIORITY_LAYERS) {
+			if(man->priorities[i]) {
+				tj = man->priorities[i];
+				man->priorities[i] = (tj->node.next==&tj->node? 0 : (ThreadJob*)tj->node.next); 
+				NodeRemove(&tj->node);
+				NodeInsertPrev(&man->free_jobs, &tj->node);
+				break;
+			}
+		}
+		mutex_unlock(&man->find_job_lock);
+
+		if(tj) {
+			me->running = true;
+			tj->ThreadFunction(tj->data);
+			me->running = false;
+		} else {
+			condition_variable_wait(&man->idle);
+		}
+	}
+
+	return 0;
+}
+
+void 
+threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
+	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
+	
+	DeshThreader->max_threads = max_threads;
+	DeshThreader->max_awake_threads = max_awake_threads;
+	DeshThreader->threads = (Thread*)memalloc(sizeof(Thread)*max_threads);
+
+	DeshThreader->jobs = (ThreadJob*)memalloc(max_jobs*sizeof(ThreadJob));
+
+	DeshThreader->free_jobs.next = &DeshThreader->free_jobs;
+	DeshThreader->free_jobs.prev = &DeshThreader->free_jobs;
+	ThreadJob* iter = DeshThreader->jobs;
+	forI(max_jobs) {
+		NodeInsertNext((Node*)iter, (Node*)(iter+1));
+		iter += 1;
+	}
+	
+	//TODO(sushi) query for max amount of threads 
+	DeshThreader->wake_up_barrier = semaphore_init(8,8);
+	semaphore_enter(&DeshThreader->wake_up_barrier);
+	
+	DeshThreader->idle = condition_variable_init();
+	DeshThreader->find_job_lock = mutex_init();
+
+	// create requested amount of threads
+	forI(max_threads) {
+		Thread* current = DeshThreader->threads + i;
+		// create a worker thread
+		switch(pthread_create((pthread_t*)current->handle, 0, deshi__thread_worker, (void*)current)) {
+			case EAGAIN: {
+				LogE("threader", "Insufficient resources to spawn thread ", i);
+				return;
+			}break;
+			case EPERM: {
+				LogE("threader", "No permissions to spawn threads.");
+				return;
+			} break;
+		}
+	}
+	DeshiStageInitEnd(DS_THREAD);
+}
+
+void threader_deinit() {
+	forI(DeshThreader->max_threads) {
+		Thread* current = DeshThreader->threads + i;
+		
+	}
 }
 
 void
-threader_spawn_thread(u32 count){
-	NotImplemented;
-}
+threader_add_job(ThreadJob job, u8 priority){
+	Assert(priority <= DESHI_THREAD_PRIORITY_LAYERS, "only DESHI_THREAD_PRIORITY_LAYERS priority levels are allowed");
+	ThreadJob* current = (ThreadJob*)DeshThreader->free_jobs.next;
+	NodeRemove(&current->node);
+	*current = job;
 
-void
-threader_close_all_threads(){
-	NotImplemented;
-}
+	if(!DeshThreader->priorities[priority]) { 
+		DeshThreader->priorities[priority] = current;
+		current->node.next = &current->node;
+		current->node.prev = &current->node;
+	}
 
-void
-threader_add_job(ThreadJob job){
-	NotImplemented;
-}
-
-void
-threader_add_jobs(carray<ThreadJob> jobs){
-	NotImplemented;
+	NodeInsertPrev(&DeshThreader->priorities[priority]->node, &current->node);
 }
 
 void
 threader_cancel_all_jobs(){
-	NotImplemented;
+	DeshThreader->free_jobs.next = &DeshThreader->free_jobs;
+	DeshThreader->free_jobs.prev = &DeshThreader->free_jobs;
+	ThreadJob* iter = DeshThreader->jobs;
+	forI(DeshThreader->max_jobs) {
+		NodeInsertNext((Node*)iter, (Node*)(iter+1));
+		iter += 1;
+	}
 }
 
 void
