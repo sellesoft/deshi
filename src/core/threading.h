@@ -11,16 +11,6 @@
 #include "kigu/ring_array.h"
 StartLinkageC();
 
-enum MutexResult {
-    MutexResult_Ok,
-    MutexResult_NotInitialized,
-    MutexResult_InsufficientResources,
-    MutexResult_OutOfMemory,
-    MutexResult_NoPerms,
-    MutexResult_StillLocked,
-    MutexResult_TooManyRecursiveLocks,
-};
-
 // used for thread syncronization. 
 // when a thread wants to use a resource that is not guaranteed not to be changed by another thread          
 // it locks it using a mutex 
@@ -38,7 +28,8 @@ struct mutex{
 mutex mutex_init();
 
 // deinitializes a mutex
-// this does NOT unlock the mutex!
+// if the mutex is still locked, it's possible this function will fail
+// and will need to be called again
 void mutex_deinit(mutex* m);
 
 // the calling thread locks the given mutex 
@@ -54,11 +45,51 @@ b32 mutex_try_lock_for(mutex* m, u64 millis);
 // unlocks the given mutex
 void mutex_unlock(mutex* m);
 
-enum CondVarResult {
-    CondVarResult_Ok,
+// similar to a normal mutex, but allows you to do a 'shared' lock
+// along with the normal locking. When a mutex is free and is shared_lock'd
+// any other thread may also call shared_lock on the same mutex and not block.
+// however, if a mutex has been shared_lock'd, a thread that tries to lock it normally
+// will block until all threads who have shared_lock'd it release their locks
+// the primary application of this is read-write mutexes, where any number
+// of threads can read some data at one time, but only one thread may access
+// the data when writing. 
+struct shared_mutex {
+    void* handle;
 };
+typedef shared_mutex shmutex;
 
-// sed for thread syncronization
+// initializes a shared mutex and returns it 
+shared_mutex shared_mutex_init();
+
+// deinitializes a shared mutex
+// if the mutex is still locked, it's possible this function will fail
+// and will need to be called again
+void shared_mutex_deinit(shared_mutex* m);
+
+// the calling thread locks the given mutex 
+// if another thread has already locked the given mutex in any way, it will block until it is unlocked
+void shared_mutex_lock(shared_mutex* m);
+
+// attempts to lock the given mutex and returns true if it is sucessful
+b32 shared_mutex_try_lock(shared_mutex* m);
+
+// attempts to lock the given mutex for a given amount of milliseconds, returns true if it was sucessful
+b32 shared_mutex_try_lock_for(shared_mutex* m, u64 millis);
+
+// the calling thread locks the given mutex 
+// if another thread has already locked the given mutex in any way, it will block until it is unlocked
+void shared_mutex_lock_shared(shared_mutex* m);
+
+// attempts to lock the given mutex and returns true if it is sucessful
+b32 shared_mutex_try_lock_shared(shared_mutex* m);
+
+// attempts to lock the given mutex for a given amount of milliseconds, returns true if it was sucessful
+b32 shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis);
+
+// unlocks the given mutex
+void shared_mutex_unlock(shared_mutex* m);
+
+// used for thread syncronization
 // this struct allows for making threads go to sleep until notified.
 // a thread calls wait() on a condition variable and doesn't wake up until 
 // another thread calls notify on the same condition variable
@@ -118,14 +149,6 @@ struct Thread{
     b32 close = 0; //this is only set by the thread manager
     u32 idx;
     str8 name; //for debugging. 
-};
-
-enum ThreadResult {
-    ThreadResult_Ok,
-    ThreadResult_InsufficientResourcesOrSysLimitReached,
-    ThreadResult_NoPermissions,
-    ThreadResult_CouldntDetach,
-    
 };
 
 struct ThreadManager{

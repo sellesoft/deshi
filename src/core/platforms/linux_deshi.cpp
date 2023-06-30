@@ -1198,6 +1198,7 @@ mutex_deinit(mutex* m) {
 void
 mutex_lock(mutex* m) {
 	if(!m->handle) {
+		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex."); 
 		return;
 	}
@@ -1213,6 +1214,7 @@ mutex_lock(mutex* m) {
 b32
 mutex_try_lock(mutex* m) {
 	if(!m->handle) {
+		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex."); 
 		return 0;
 	}
@@ -1233,6 +1235,7 @@ mutex_try_lock(mutex* m) {
 b32
 mutex_try_lock_for(mutex* m, u64 millis) {
 	if(!m->handle) {
+		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		return false;
 	}
@@ -1262,13 +1265,147 @@ mutex_unlock(mutex* m) {
 	pthread_mutex_unlock((pthread_mutex_t*)m->handle);
 }
 
+shared_mutex 
+shared_mutex_init() {
+	shared_mutex out;
+	out.handle = (pthread_rwlock_t*)memalloc(sizeof(pthread_rwlock_t));
+	switch(pthread_rwlock_init((pthread_rwlock_t*)out.handle, 0))  {
+		case EAGAIN: {
+			LogE("threader", "The system lacks necessary resources to initialize this shared_mutex.");
+			return {};
+		} break;
+		case ENOMEM: {
+			LogE("threader", "The system lacks the memory required to initialize this shared_mutex.");
+			return {};
+		} break;
+		case EPERM: {
+			LogE("threader", "The user does not have the privileges to initialize this shared_mutex.");
+			return {};
+		} break;
+	}
+	return out;
+}
+
+void
+shared_mutex_deinit(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to deinit an uninitialized mutex.");
+		return;
+	}
+
+
+	if(pthread_rwlock_destroy((pthread_rwlock_t*)m->handle) == EBUSY) {
+		LogE("threader", "Cannot deinit this shared_mutex because it is still locked.");
+		return;
+	}
+	memzfree(m->handle);
+}
+
+void
+shared_mutex_lock(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return;
+	}
+
+	pthread_rwlock_wrlock((pthread_rwlock_t*)m->handle);
+}
+
+b32
+shared_mutex_try_lock(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return false;
+	}
+
+
+	if(!pthread_rwlock_trywrlock((pthread_rwlock_t*)m->handle)) {
+		return true;
+	} 
+
+	return false;
+}
+
+b32
+shared_mutex_try_lock_for(shared_mutex* m, u64 millis) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return false;
+	}
+
+	timespec ts;
+	ts.tv_nsec = millis * int(1e6);
+
+	if(!pthread_rwlock_timedwrlock((pthread_rwlock_t*)m->handle, &ts)) {
+		return true;
+	}
+	return false;
+}
+
+void
+shared_mutex_lock_shared(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return;
+	}
+
+	pthread_rwlock_rdlock((pthread_rwlock_t*)m->handle);
+}
+
+b32
+shared_mutex_try_lock_shared(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return false;
+	}
+
+	if(!pthread_rwlock_tryrdlock((pthread_rwlock_t*)m->handle)) {
+		return true;
+	}
+	return false;
+}
+
+b32
+shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return false;
+	}
+
+	timespec ts;
+	ts.tv_nsec = millis * int(1e6);
+
+	if(!pthread_rwlock_timedrdlock((pthread_rwlock_t*)m->handle, &ts)) {
+		return true;
+	}
+	return false;
+}
+
+void
+shared_mutex_unlock(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to unlock an uninitialized mutex.");
+		return;
+	}
+
+	pthread_rwlock_unlock((pthread_rwlock_t*)m->handle);
+}
+
 condition_variable
 condition_variable_init() {
 	condition_variable out;
 	pthread_cond_t* cond = (pthread_cond_t*)memalloc(sizeof(pthread_cond_t));
 	
 	int ret = pthread_cond_init(cond, 0);
-	if(!ret) {
+	if(ret) {
 		LogE("threader", "failed to initialize pthread_cond_t, errno: ", ret);
 		return {};
 	}
@@ -1290,7 +1427,7 @@ condition_variable_deinit(condition_variable* cv) {
 void
 condition_variable_notify_one(condition_variable* cv) {
 	int ret = pthread_cond_signal((pthread_cond_t*)cv->cvhandle);
-	if(!ret) {
+	if(ret) {
 		LogE("failed to notify one on condition variable, errno: ", ret);
 	}
 }
@@ -1298,7 +1435,7 @@ condition_variable_notify_one(condition_variable* cv) {
 void
 condition_variable_notify_all(condition_variable* cv) {
 	int ret = pthread_cond_broadcast((pthread_cond_t*)cv->cvhandle);
-	if(!ret) {
+	if(ret) {
 		LogE("failed to broadcast to condition variable, errno: ", ret);
 	}
 }
@@ -1308,7 +1445,7 @@ condition_variable_wait(condition_variable* cv) {
 	pthread_mutex_t cvm;
 	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
 	int ret = pthread_cond_wait((pthread_cond_t*)cv->cvhandle, &cvm);
-	if(!ret) {
+	if(ret) {
 		LogE("threader", "failed to wait on condition variable, errno: ", ret);
 	}
 }
@@ -1329,7 +1466,7 @@ semaphore
 semaphore_init(u64 initial_val, u64 max_val) {
 	semaphore out;
 	out.handle = memalloc(sizeof(sem_t));
-	if(!sem_init((sem_t*)out.handle, 0, max_val)) {
+	if(sem_init((sem_t*)out.handle, 0, max_val)) {
 		LogE("threader", "failed to initialize a semaphore, errno: ", errno);
 		return {};
 	}
@@ -1339,7 +1476,7 @@ semaphore_init(u64 initial_val, u64 max_val) {
 
 void 
 semaphore_deinit(semaphore* se) {
-	if(!sem_destroy((sem_t*)se->handle)) {
+	if(sem_destroy((sem_t*)se->handle)) {
 		LogE("threader", "failed to destroy a semaphore, errno: ", errno);
 		return;
 	}
@@ -1349,7 +1486,7 @@ semaphore_deinit(semaphore* se) {
 void 
 semaphore_enter(semaphore* se) {
 	int ret = sem_wait((sem_t*)se->handle);
-	if(!ret) {
+	if(ret) {
 		LogE("threader", "failed to wait on semaphore, errno: ", errno);
 	}
 }
@@ -1357,7 +1494,7 @@ semaphore_enter(semaphore* se) {
 void 
 semaphore_leave(semaphore* se) {
 	int ret = sem_post((sem_t*)se->handle);
-	if(!ret) {
+	if(ret) {
 		LogE("threader", "failed to release a semaphore, errno: ", errno);
 	}
 }
@@ -1368,7 +1505,7 @@ void* deshi__thread_worker(void* in) {
 	semaphore_enter(&man->wake_up_barrier);
 	while(!me->close) {
 		mutex_lock(&man->find_job_lock);
-		ThreadJob* tj;
+		ThreadJob* tj = 0;
 		forI(DESHI_THREAD_PRIORITY_LAYERS) {
 			if(man->priorities[i]) {
 				tj = man->priorities[i];
@@ -1406,7 +1543,7 @@ threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
 	DeshThreader->free_jobs.prev = &DeshThreader->free_jobs;
 	ThreadJob* iter = DeshThreader->jobs;
 	forI(max_jobs) {
-		NodeInsertNext((Node*)iter, (Node*)(iter+1));
+		NodeInsertPrev(&DeshThreader->free_jobs, (Node*)iter);
 		iter += 1;
 	}
 	
@@ -1420,6 +1557,7 @@ threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
 	// create requested amount of threads
 	forI(max_threads) {
 		Thread* current = DeshThreader->threads + i;
+		current->handle = (pthread_t*)memalloc(sizeof(pthread_t));
 		// create a worker thread
 		switch(pthread_create((pthread_t*)current->handle, 0, deshi__thread_worker, (void*)current)) {
 			case EAGAIN: {
@@ -1453,9 +1591,7 @@ threader_add_job(ThreadJob job, u8 priority){
 		DeshThreader->priorities[priority] = current;
 		current->node.next = &current->node;
 		current->node.prev = &current->node;
-	}
-
-	NodeInsertPrev(&DeshThreader->priorities[priority]->node, &current->node);
+	} else NodeInsertPrev(&DeshThreader->priorities[priority]->node, &current->node);
 }
 
 void
@@ -1471,7 +1607,11 @@ threader_cancel_all_jobs(){
 
 void
 threader_wake_threads(u32 count){
-	NotImplemented;
+	if(count) {
+		forI(count) {
+			condition_variable_notify_one(&DeshThreader->idle);
+		}
+	} else condition_variable_notify_all(&DeshThreader->idle);
 }
 
 void
