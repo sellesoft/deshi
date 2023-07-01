@@ -53,6 +53,9 @@ void mutex_unlock(mutex* m);
 // the primary application of this is read-write mutexes, where any number
 // of threads can read some data at one time, but only one thread may access
 // the data when writing. 
+// !!!! A shared_mutex CANNOT be used recursively like a normal mutex can
+//      eg. you cannot lock normally and then, with the same thread, try to 
+//          to lock the same mutex again. There are no checks for this!
 struct shared_mutex {
     void* handle;
 };

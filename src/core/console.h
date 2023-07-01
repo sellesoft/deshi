@@ -128,7 +128,7 @@ void console_parse_message(str8 message, str8 tag = STR8(""), Type type = Consol
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
 #define console_log(...)                                                                   \
   {                                                                                        \
-    string message##__LINE__ = ToString(__VA_ARGS__);                                      \
+    dstr8 message##__LINE__ = to_dstr8v(deshi_temp_allocator, __VA_ARGS__);                \
     console_parse_message(str8{(u8*)message##__LINE__.str, (s64)message##__LINE__.count}); \
   }(void)0
 

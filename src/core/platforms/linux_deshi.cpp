@@ -1198,8 +1198,8 @@ mutex_deinit(mutex* m) {
 void
 mutex_lock(mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex."); 
+		DebugBreakpoint;
 		return;
 	}
 
@@ -1214,8 +1214,8 @@ mutex_lock(mutex* m) {
 b32
 mutex_try_lock(mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex."); 
+		DebugBreakpoint;
 		return 0;
 	}
 
@@ -1235,8 +1235,8 @@ mutex_try_lock(mutex* m) {
 b32
 mutex_try_lock_for(mutex* m, u64 millis) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return false;
 	}
 
@@ -1289,8 +1289,8 @@ shared_mutex_init() {
 void
 shared_mutex_deinit(shared_mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to deinit an uninitialized mutex.");
+		DebugBreakpoint;
 		return;
 	}
 
@@ -1305,8 +1305,8 @@ shared_mutex_deinit(shared_mutex* m) {
 void
 shared_mutex_lock(shared_mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return;
 	}
 
@@ -1316,11 +1316,10 @@ shared_mutex_lock(shared_mutex* m) {
 b32
 shared_mutex_try_lock(shared_mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return false;
 	}
-
 
 	if(!pthread_rwlock_trywrlock((pthread_rwlock_t*)m->handle)) {
 		return true;
@@ -1332,8 +1331,8 @@ shared_mutex_try_lock(shared_mutex* m) {
 b32
 shared_mutex_try_lock_for(shared_mutex* m, u64 millis) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return false;
 	}
 
@@ -1349,8 +1348,8 @@ shared_mutex_try_lock_for(shared_mutex* m, u64 millis) {
 void
 shared_mutex_lock_shared(shared_mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return;
 	}
 
@@ -1360,8 +1359,8 @@ shared_mutex_lock_shared(shared_mutex* m) {
 b32
 shared_mutex_try_lock_shared(shared_mutex* m) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return false;
 	}
 
@@ -1374,8 +1373,8 @@ shared_mutex_try_lock_shared(shared_mutex* m) {
 b32
 shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) {
 	if(!m->handle) {
-		DebugBreakpoint;
 		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
 		return false;
 	}
 
@@ -1617,6 +1616,11 @@ threader_wake_threads(u32 count){
 void
 threader_set_thread_name(str8 name){
 	NotImplemented;
+}
+
+upt 
+threader_get_thread_id() {
+	return gettid();
 }
 
 

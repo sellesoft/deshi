@@ -66,7 +66,6 @@ https://en.cppreference.com/w/cpp/filesystem
 #include "kigu/common.h"
 #include "kigu/unicode.h"
 
-
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_types
 typedef Flags FileAccess; enum{
