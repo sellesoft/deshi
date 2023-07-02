@@ -24,7 +24,6 @@
   render_init();                               \
   assets_init();                               \
   uiInit(g_memory,0);                          \
-  UI::Init();                                  \
   console_init();                              \
   cmd_init();                                  \
   window_show(DeshWindow);                     \
@@ -40,7 +39,6 @@
   render_init();                                     \
   assets_init();                                     \
   uiInit(g_memory,0);                                \
-  UI::Init();                                        \
   console_init();                                    \
   cmd_init();                                        \
   window_show(DeshWindow);                           \
@@ -52,7 +50,6 @@
 
 #define deshi_loop_end() \
     console_update();    \
-    UI::Update();        \
     uiUpdate();          \
     render_update();     \
     logger_update();     \

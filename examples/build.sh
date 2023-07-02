@@ -241,18 +241,35 @@ app_sources="examples/$app_name/$app_name.cpp"
 lib_paths=(
   $vulkan_folder/lib
 )
-libs=(
-  #win32 libs
-  gdi32
-  shell32
-  ws2_32
-  winmm
+libs=()
 
-  #graphics libs
-  opengl32
-  vulkan-1
-  shaderc_combined    #required for vulkan shader compilation at runtime
-)
+if [ $build_platform == "win32" ]; then
+  libs+=(
+    #win32 libs
+    user32
+    gdi32
+    shell32
+    ws2_32
+    winmm
+    
+    #graphics libs
+    opengl32
+    vulkan-1
+    shaderc_combined    #required for vulkan shader compilation at runtime
+  )
+elif [ $build_platform == "mac" ]; then
+  echo "Libs not setup for platform: $build_platform"
+elif [ $build_platform == "linux" ]; then
+  libs+=(
+    X11
+    GL
+    vulkan
+    shaderc_combined    #required for vulkan shader compilation at runtime
+  )
+else
+  echo "Libs not setup for platform: $build_platform"
+  exit 1
+fi
 #_____________________________________________________________________________________________________
 #                                         Global Defines
 #_____________________________________________________________________________________________________

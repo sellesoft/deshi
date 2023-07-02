@@ -209,7 +209,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 	persist u8 line_buffer[256];
 	persist Allocator load_allocator{
 		[](upt bytes){
-			if(bytes > 256){
+			if(bytes >= 256){
 				return memory_talloc(bytes);
 			}else{
 				line_buffer[bytes-1] = '\0'; //NOTE(delle) file_read_line_alloc() requests an extra byte for null-terminator

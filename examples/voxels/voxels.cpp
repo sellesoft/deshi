@@ -3,8 +3,10 @@
 #include "core/camera.h"
 #include "external/stb/stb_ds.h"
 
+#include "core/deshi_core_tests.cpp"
 int main(int args_count, char** args){
 	deshi_init();
+	TEST_deshi_core();
 	
 	//init ui
 	{
@@ -208,7 +210,7 @@ int main(int args_count, char** args){
 		uiImmediateB();{
 			persist Type anchor = anchor_top_left;
 			uiItem* window = uiItemB();
-			if(Math::PointInRectangle(input_mouse_position(),window->spos,window->size)) anchor = (anchor+1) % (anchor_bottom_left+1);
+			if(Math::PointInRectangle(input_mouse_position(),window->pos_screen,window->size)) anchor = (anchor+1) % (anchor_bottom_left+1);
 			window->style.sizing           = size_auto;
 			window->style.background_color = Color_Black;
 			window->style.positioning      = pos_absolute;
