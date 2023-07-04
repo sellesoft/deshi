@@ -207,25 +207,25 @@ int main(int args_count, char** args){
 		}
 		
 		//update ui
-		uiImmediateB();{
+		ui_begin_immediate_branch(&g_ui->base);{
 			persist Type anchor = anchor_top_left;
-			uiItem* window = uiItemB();
+			uiItem* window = ui_begin_item(0);
 			if(Math::PointInRectangle(input_mouse_position(),window->pos_screen,window->size)) anchor = (anchor+1) % (anchor_bottom_left+1);
 			window->style.sizing           = size_auto;
 			window->style.background_color = Color_Black;
 			window->style.positioning      = pos_absolute;
 			window->style.anchor           = anchor;
 			window->id                     = STR8("voxels.info_window");
-			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime),        " fps"));
-			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,render_get_stats()->renderTimeMS)," ms render"));
-			uiTextM(ToString8(deshi_temp_allocator, render_get_stats()->totalVoxels,                 " voxels"));
-			uiTextM(ToString8(deshi_temp_allocator, render_get_stats()->totalTriangles,              " triangles"));
-			uiTextM(ToString8(deshi_temp_allocator, render_get_stats()->totalVertices,               " vertices"));
-			uiTextM(ToString8(deshi_temp_allocator, render_get_stats()->totalIndices,                " indices"));
-			uiTextM(ToString8(deshi_temp_allocator, camera.position));
-			uiTextM(ToString8(deshi_temp_allocator, camera.rotation));
-			uiItemE();
-		}uiImmediateE();
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime),        " fps").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,render_get_stats()->renderTimeMS)," ms render").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalVoxels,                 " voxels").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalTriangles,              " triangles").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalVertices,               " vertices").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalIndices,                " indices").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, camera.position).fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, camera.rotation).fin, 0);
+			ui_end_item();
+		}ui_end_immediate_branch();
 	}deshi_loop_end();
 	deshi_cleanup();
 }

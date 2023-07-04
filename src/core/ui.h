@@ -397,6 +397,7 @@ TODO(sushi) example
 #define DESHI_UI2_H
 #include "kigu/color.h"
 #include "kigu/common.h"
+#include "kigu/map.h"
 #include "kigu/node.h"
 #include "kigu/unicode.h"
 #include "math/vector.h"
@@ -407,30 +408,6 @@ TODO(sushi) example
 struct Font;
 struct Texture;
 
-
-#if DESHI_RELOADABLE_UI
-#  if DESHI_DLL
-#    define UI_FUNC_API(sig__return_type, sig__name, ...) \
-external __declspec(dllexport) sig__return_type sig__name(__VA_ARGS__); \
-typedef sig__return_type GLUE(sig__name,__sig)(__VA_ARGS__); \
-sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__);
-#  else
-#    define UI_FUNC_API(sig__return_type, sig__name, ...) \
-external __declspec(dllexport) sig__return_type sig__name(__VA_ARGS__); \
-typedef sig__return_type GLUE(sig__name,__sig)(__VA_ARGS__); \
-sig__return_type GLUE(sig__name,__stub)(__VA_ARGS__){return (sig__return_type)0;}
-#  endif //DESHI_DLL
-#  define UI_DEF(x) GLUE(g_ui->, x)
-#else
-#  define UI_FUNC_API(sig__return_type, sig__name, ...) external sig__return_type sig__name(__VA_ARGS__)
-#  define UI_DEF(x) GLUE(ui_, x)
-#endif //DESHI_RELOADABLE_UI
-
-//NOTE(sushi) idea to allow custom prefixing of ui stuff at compile time
-#ifndef UI_PREFIX
-#define UI_PREFIX 
-#endif
-#define UI_PRE(x) GLUE(UI_PREFIX, x)
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
@@ -708,6 +685,7 @@ struct uiItem{
 	void (*__evaluate)(uiItem*);
 	void (*__generate)(uiItem*);
 	u32  (*__hash)(uiItem*);
+	void (*__cleanup)(uiItem*);
 	
 	str8 file_created;
 	upt  line_created;
@@ -726,6 +704,7 @@ struct uiItem{
 	
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
+
 
 struct uiItemSetup{
 	upt size; 
@@ -790,21 +769,27 @@ inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
 //just checks if the mouse is within the items bounds
 b32 ui_item_hovered(uiItem* item, b32 strict = 1);
 
-UI_FUNC_API(uiItem*, ui_make_item, uiStyle* style, str8 file, upt line);
-#define uiItemM()       UI_DEF(make_item( 0,STR8(__FILE__),__LINE__))
-#define uiItemMS(style) UI_DEF(make_item((style),STR8(__FILE__),__LINE__))
+uiItem* deshi__ui_make_item(uiStyle* style, str8 file, upt line);
+#define ui_make_item(style) deshi__ui_make_item((style), str8l(__FILE__), __LINE__)
 
-UI_FUNC_API(uiItem*, ui_begin_item, uiStyle* style, str8 file, upt line);
-#define uiItemB()       UI_DEF(begin_item(0,STR8(__FILE__),__LINE__))
-#define uiItemBS(style) UI_DEF(begin_item((style),STR8(__FILE__),__LINE__))
+uiItem* deshi__ui_begin_item(uiStyle* style, str8 file, upt line);
+#define ui_begin_item(style) deshi__ui_begin_item((style), str8l(__FILE__), __LINE__)
 
-UI_FUNC_API(void, ui_end_item, str8 file, upt line);
-#define uiItemE() UI_DEF(end_item(STR8(__FILE__),__LINE__))
+void deshi__ui_end_item(str8 file, upt line);
+#define ui_end_item() deshi__ui_end_item(STR8(__FILE__),__LINE__)
 
-UI_FUNC_API(void, ui_remove_item, uiItem* item, str8 file, upt line);
-#define uiItemR(item) UI_DEF(remove_item((item), STR8(__FILE__),__LINE__))
+void deshi__ui_remove_item(uiItem* item, str8 file, upt line);
+#define ui_remove_item(item) deshi__ui_remove_item((item), str8l(__FILE__), __LINE__)
 
 uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0);
+
+// pushes an item onto the global item stack for appending to windows that have already been ended.
+void deshi__ui_push_item(uiItem* item, str8 file, upt line);
+#define ui_push_item(item) deshi__ui_push_item((item), str8l(__FILE__), __LINE__)
+
+// pops 'count' items from the global item stack and returns the last item popped.
+uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line);
+#define ui_pop_item(count) deshi__ui_pop_item((count), str8l(__FILE__), __LINE__)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -820,15 +805,17 @@ vec2i ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
 // @ui_immediate
 
 
-UI_FUNC_API(void, ui_begin_immediate_branch, uiItem* parent, str8 file, upt line);
-UI_FUNC_API(void, ui_end_immediate_branch, str8 file, upt line);
-UI_FUNC_API(void, ui_push_id, s64 x, str8 file, upt line);
-UI_FUNC_API(void, ui_pop_id, str8 file, upt line);
-#define uiImmediateB()        UI_DEF(begin_immediate_branch(       0, STR8(__FILE__),__LINE__))
-#define uiImmediateBP(parent) UI_DEF(begin_immediate_branch((parent), STR8(__FILE__),__LINE__))
-#define uiImmediateE()        UI_DEF(end_immediate_branch(STR8(__FILE__),__LINE__))
-#define uiPushID(x)           UI_DEF(push_id(x, STR8(__FILE__),__LINE__))
-#define uiPopID()             UI_DEF(pop_id(STR8(__FILE__),__LINE__))
+void deshi__ui_begin_immediate_branch(uiItem* parent, str8 file, upt line);
+#define ui_begin_immediate_branch(parent) deshi__ui_begin_immediate_branch((parent), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_immediate_branch(str8 file, upt line);
+#define ui_end_immediate_branch() deshi__ui_end_immediate_branch(str8l(__FILE__), __LINE__)
+
+void deshi__ui_push_id(s64 x, str8 file, upt line);
+#define ui_push_id(x) deshi__ui_push_id((x), str8l(__FILE__), __LINE__)
+
+void deshi__ui_pop_id(str8 file, upt line);
+#define ui_pop_id() deshi__ui_pop_id(str8l(__FILE__), __LINE__)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -837,19 +824,11 @@ UI_FUNC_API(void, ui_pop_id, str8 file, upt line);
 
 struct MemoryContext;
 struct uiContext;
-UI_FUNC_API(void, ui_init, MemoryContext* memctx, uiContext* uictx);
-#define uiInit(memctx,uictx) UI_DEF(init((memctx),(uictx)))
+void deshi__ui_init();
+#define ui_init() deshi__ui_init()
 
-UI_FUNC_API(void, ui_update);
-#define uiUpdate() UI_DEF(update())
-
-//we cant grow the arena because it will move the memory, so we must chunk 
-struct Arena;
-struct ArenaList{
-	Node node;   
-	Arena* arena;
-};
-#define ArenaListFromNode(x) CastFromMember(ArenaList, node, x);
+void deshi__ui_update();
+#define ui_update() deshi__ui_update();
 
 typedef u32 uiInputState; enum{
 	uiISNone,
@@ -861,21 +840,6 @@ typedef u32 uiInputState; enum{
 };
 
 struct uiContext{
-#if DESHI_RELOADABLE_UI
-	//// functions ////
-	void* module;
-	b32   module_valid;
-	ui_make_item__sig*         make_item;
-	ui_begin_item__sig*        begin_item;
-	ui_end_item__sig*          end_item;
-	ui_make_window__sig*       make_window;
-	ui_begin_window__sig*      begin_window;
-	ui_end_window__sig*        end_window;
-	ui_make_button__sig*       make_button;
-	ui_make_text__sig*         make_text;
-	ui_init__sig*              init;
-	ui_update__sig*            update;
-#endif //#if DESHI_RELOADABLE_UI
 	
 	//// state ////
 	uiItem base;
@@ -905,6 +869,8 @@ struct uiContext{
 	Arena* vertex_arena; // arena of Vertex2
 	Arena* index_arena; // arena of u32
 	RenderTwodBuffer render_buffer;
+	// TODO(sushi) because we have item_push/pop now, we should store file/line that pushed the item
+	//             so that we can report it where things go wrong
 	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 	
 	struct{
@@ -920,11 +886,67 @@ struct uiContext{
 		u64 indices_reserved;  
 	}stats;
 	
+	// root of nodes used to track memory that ui has allocated
+	Node allocator_root;
+	
 	//// other ////
 	uiKeybinds keys;
 };
 extern uiContext* g_ui; //global UI pointer
 
+// header for things allocated with deshi_ui_allocator
+// allows things in ui to detect if certain things were allocated using 
+// this allocator and to remove it if so 
+struct uiMemoryHeader {
+	Node node;
+	u32 magic;
+};
+#define ui_memory_header(ptr) ((uiMemoryHeader*)(ptr) - 1)
+#define is_ui_memory(ptr) (ui_memory_header(ptr)->magic == g_ui->memory_\magic)
+
+const u32 ui_memory_magic = 0xf00f00f0;
+
+global void* 
+deshi__ui_memory_reserve(upt size) {
+	uiMemoryHeader* header = (uiMemoryHeader*)memalloc(sizeof(uiMemoryHeader) + size);
+	header->magic = ui_memory_magic;
+	NodeInsertPrev(&g_ui->allocator_root, &header->node);
+	return (void*)(header+1);
+}
+
+global void 
+deshi__ui_memory_release(void* ptr) {
+	uiMemoryHeader* header = ui_memory_header(ptr);
+	Assert(header->magic == ui_memory_magic, "attempted to release memory that does not belong to ui.");
+	NodeRemove(&header->node);
+	memzfree(header);
+}
+
+global void* 
+deshi__ui_memory_resize(void* ptr, upt size) {
+	// TODO(sushi) for some reason this causes a heap error in memory
+	FixMe;
+	uiMemoryHeader* header = ui_memory_header(ptr);
+	Assert(header->magic == ui_memory_magic, "attempted to resize memory that does not belong to ui.");
+	NodeRemove(&header->node);
+	header = (uiMemoryHeader*)memrealloc(header, sizeof(uiMemoryHeader)+size);
+	return (void*)(header+1);
+}
+
+// A generic allocator for memory that should be considered owned and managed by
+// the ui system. Currently the main use of this is for dynamically allocated uiItem ids. 
+// This prefixes the memory with a header used to identify memory belonging to ui. If a uiItem's
+// id is found to be a string allocated by this allocator, it will be released when the item is 
+// deleted.
+global Allocator _deshi_ui_allocator {
+	deshi__ui_memory_reserve,
+	deshi__ui_memory_release,
+	deshi__ui_memory_resize
+};
+global Allocator* deshi_ui_allocator = &_deshi_ui_allocator;
+
+// Creates a window containing information and tools for debugging ui
+// Very far from finished. 
 void ui_debug();
 
 //Creates the demo window (or destroys if already created)

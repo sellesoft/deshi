@@ -66,7 +66,6 @@ https://en.cppreference.com/w/cpp/filesystem
 #include "kigu/common.h"
 #include "kigu/unicode.h"
 
-
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_types
 typedef Flags FileAccess; enum{
@@ -119,6 +118,8 @@ struct File{
 	u64 cursor;
 };
 
+typedef File* FileArray;
+
 // TODO(sushi) move this somewhere else
 // we reserve a name for internal use, so that the separate case defines use the right name without needing to define it repeatedly
 #define StartErrorHandler(name, errtype, err) { \
@@ -127,12 +128,14 @@ struct File{
 
 #define ErrorCaseF(err) case err:
 #define ErrorCaseL(err, resulttag, message, extra) case err: *__errhandler__internal__pointer = {resulttag, STR8(message)}; extra; break;
-#define ErrorCaseD(err, resulttag, extra, ...) case err: *__errhandler__internal__pointer = {resulttag, ToString8(deshi_temp_allocator, __VA_ARGS__ )}; extra; break;
+// !LEAK: this makes a dynamic string with deshi's temp allocator, so if an app doesn't use that, then we're in trouble
+// TODO(sushi) decide to remove this or not 
+#define ErrorCaseD(err, resulttag, extra, ...) case err: *__errhandler__internal__pointer = {resulttag, to_dstr8v(deshi_temp_allocator, __VA_ARGS__ ).fin}; extra; break;
 
 
 #define EndErrorHandlerAndCatch(tag, err, unhandlederr_code) default: {LogE(tag, "unhandled errno in ", __func__, "(): ", err); unhandlederr_code} } }
 
-#define SetResultInfoD(resulttag, ...) *result = {resulttag, ToString8(deshi_temp_allocator, __VA_ARGS__)}
+#define SetResultInfoD(resulttag, ...) *result = {resulttag, to_dstr8v(deshi_temp_allocator, __VA_ARGS__).fin}
 #define SetResultInfoL(resulttag, message) *result = {resulttag, STR8(message)}
 
 
@@ -257,7 +260,7 @@ external File deshi__file_info(str8 caller_file, upt caller_line, str8 path, Fil
 // NOTE when constructing filepaths for storage on the File, we dynamically allocate the names
 // meaning that if you use this, you have to make sure that the name is freed
 // the allocated string is JUST 'path', all of the following str8's are views on this str8
-external File* deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result);
+external FileArray deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result);
 #define file_search_directory(directory) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),0)
 #define file_search_directory_result(directory,res) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),(res))
 
@@ -459,19 +462,21 @@ external FileType deshi__file_get_type_of_path(str8 caller_file, upt caller_line
 
 // handles a single error, usually one that doesn't have to do with the system
 // dynamic version
+// !LEAK: this makes a dynamic string with deshi's temp allocator, so if an app doesn't use that, then we're in trouble
+// TODO(sushi) decide to remove this or not 
 #define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)\
 	if(!result_name){                                                            \
 		LogE("file", __func__, "(): ", __VA_ARGS__);                             \
 		return return_error_value;                                               \
 	}                                                                            \
-	*result_name = {result_tag, ToString8(deshi_temp_allocator,__VA_ARGS__)};    \
+	*result_name = {result_tag, to_dstr8v(deshi_temp_allocator,__VA_ARGS__).fin};\
 	extra                                                                        \
 	return return_error_value; 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_shared_variables
 local struct{
-	File* files;
+	FileArray files;
 	b32 crash_on_error;
 } file_shared;
 

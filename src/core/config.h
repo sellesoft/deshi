@@ -72,8 +72,8 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 	if(!file) return;
 	defer{ file_deinit(file); };
 	
-	persist u8 padding_buffer[33] = u8"                                ";
-	string conversion;
+	persist u8 padding_buffer[33] = "                                ";
+	dstr8 conversion;
 	
 	s64 pad_amount = 1;
 	forI(config_count){
@@ -99,39 +99,39 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 				}
 			}break;
 			case ConfigValueType_S32:{
-				conversion = to_string(*(s32*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(s32*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_U8:{
-				conversion = to_string((u32)(*(s8*)config_map[i].var), deshi_temp_allocator);
+				conversion = to_dstr8((u32)(*(s8*)config_map[i].var), deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_U32:{
-				conversion = to_string(*(u32*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(u32*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_F32:{
-				conversion = to_string(*(f32*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(f32*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_F64:{
-				conversion = to_string(*(f64*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(f64*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_FV2:{
-				conversion = to_string(*(vec2*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(vec2*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_FV3:{
-				conversion = to_string(*(vec3*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(vec3*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_FV4:{
-				conversion = to_string(*(vec4*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(vec4*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_Col:{
-				conversion = to_string(*(color*)config_map[i].var, deshi_temp_allocator);
+				conversion = to_dstr8(*(color*)config_map[i].var, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_Str8:{
@@ -143,7 +143,7 @@ config_save(str8 path, ConfigMapItem* config_map, u64 config_count){
 				Font* font = *(Font**)config_map[i].var;
 				file_write(file, font->name.str, font->name.count);
 				file_write(file, (void*)",", 1);
-				conversion = to_string(font->max_height, deshi_temp_allocator);
+				conversion = to_dstr8(font->max_height, deshi_temp_allocator);
 				file_write(file, conversion.str, conversion.count);
 			}break;
 			case ConfigValueType_KeyMod:{
@@ -216,8 +216,6 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 				return (void*)line_buffer;
 			}
 		},
-		Allocator_ChangeMemory_Noop,
-		Allocator_ChangeMemory_Noop,
 		Allocator_ReleaseMemory_Noop,
 		Allocator_ResizeMemory_Noop
 	};
@@ -321,7 +319,7 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 						col->a = strtol(cursor+4,0,10);
 					}
 				}break;
-				case ConfigValueType_Str8:{ //TODO(delle) !Leak can't free if we don't know if str8 is based on a literal (use str8_builder)
+				case ConfigValueType_Str8:{ //TODO(delle) !Leak can't free if we don't know if str8 is based on a literal (use dstr8)
 					//if the value starts with a double-quote, parse until next double-quote, else parse until end of line
 					if(decoded_codepoint_from_utf8(line.str,4).codepoint == '\"'){
 						str8_increment(&line, 1);

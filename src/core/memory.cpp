@@ -867,6 +867,32 @@ deshi__memory_pool_init(void* pool, upt type_size, upt count){
 
 	//return pool so the macro can assign to var
 	return pool;
+	
+	/*
+
+	NOTE(sushi) my fix to this function, though I don't know if it's actually correct because later calls
+	            on a memory_pool also break
+
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(PoolHeader) + (chunk_size * count);
+	
+	//allocate space for chunks and header
+	PoolHeader* header = (PoolHeader*)memory_alloc(alloc_size);
+	pool = header + sizeof(PoolHeader);
+	header->chunks_per_block = count;
+	
+	//set free chunk equal to the first chunk
+	header->free_chunk = (void**)(pool);
+	
+	//setup the rest of the free chunk linked list
+	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}
+	
+	//return pool so the macro can assign to var
+	return pool;
+	*/
 }
 
 
@@ -1771,7 +1797,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	u64   total_size   = main_size + temp_size + sizeof(MemoryContext);
 
 #if BUILD_INTERNAL //NOTE(delle) when debugging, always allocate to the same address so addresses stay the same across sessions
-	base_address = (void*)Terabytes(2);
+	base_address = (void*)(Gigabytes(1)/2);
 #endif //BUILD_INTERNAL
 
 	u32 retries = 0;
@@ -1783,9 +1809,9 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 		// TODO(sushi) confirm that MAP_PRIVATE is the behavoir we want
 		allocation = (u8*)mmap(base_address, total_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
 		if((s64)allocation == -1) {
-			str8 o = get_errno_print(errno, "memory", __func__, {0});
+			dstr8 o = get_errno_print(errno, "memory", __func__, {0});
 			printf("%s", (char*)o.str);
-			free(o.str);
+			dstr8_deinit(&o);
 			allocation = 0;
 		}
 #elif DESHI_MAC   //DESHI_LINUX

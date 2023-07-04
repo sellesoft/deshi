@@ -155,7 +155,7 @@ void console_init(){DPZoneScoped;
 	base.sizing = size_normal;
 	
 	//initialize ui elements
-	console.ui.main = uiItemBS(&base);
+	console.ui.main = ui_begin_item(&base);
 	uiItem*  main  = console.ui.main;
 	uiStyle* mains = &main->style;
 	main->id = STR8("console.main");
@@ -170,7 +170,7 @@ void console_init(){DPZoneScoped;
 	mains->          paddingbr = {2,2};
 	mains->      positioning = pos_fixed;
 	
-	console.ui.buffer = uiItemBS(&base);
+	console.ui.buffer = ui_begin_item(&base);
 	uiItem*  buffer  = console.ui.buffer;
 	uiStyle* buffers = &buffer->style;
 	buffer->id = STR8("console.buffer");
@@ -179,9 +179,9 @@ void console_init(){DPZoneScoped;
 	buffers->            width = 100; //100% the width of the container
 	buffers-> background_color = Color_Black;
 	buffers->          padding = {2,2,2,2};
-	uiItemE();
+	ui_end_item();
 	
-	console.ui.inputbox = uiItemBS(&base);
+	console.ui.inputbox = ui_begin_item(&base);
 	uiItem*  inputb  = console.ui.inputbox;
 	uiStyle* inputbs = &inputb->style;
 	inputb->id = STR8("console.inputbox");
@@ -192,15 +192,15 @@ void console_init(){DPZoneScoped;
 	inputbs->content_align = {0.5,0.5};
 	inputbs->tab_spaces = 2;
 	inputbs->padding = {2,2,2,2};
-	console.ui.inputtext = uiInputTextM();
+	console.ui.inputtext = ui_make_input_text(str8null, 0);
 	uiItem* inputt = console.ui.inputtext;
 	uiStyle* inputts = &inputt->style;
 	inputt->id = STR8("console.inputtext");
 	inputts->sizing = size_percent;
 	inputts->size = {100,100};
-	uiInputText* it = uiGetInputText(inputt);	
-	uiItemE();
-	uiItemE();
+	uiInputText* it = (uiInputText*)inputt;	
+	ui_end_item();
+	ui_end_item();
 	
 	console.initialized = true;
 	DeshiStageInitEnd(DS_CONSOLE);
@@ -208,7 +208,7 @@ void console_init(){DPZoneScoped;
 
 void console_update(){DPZoneScoped;
 	//check for console state changing inputs
-	if(key_pressed(Key_TILDE)){
+	if(key_pressed(Key_BACKQUOTE)){
 		if      (input_shift_down()){
 			console_change_state(ConsoleState_OpenBig);
 		}else if(input_ctrl_down()){
@@ -234,7 +234,7 @@ void console_update(){DPZoneScoped;
 	}
 	if(change_input){
 		simulate_key_press(Key_END);
-		text_clear(&uiGetInputText(console.ui.inputtext)->text);
+		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 		
 		// if(console.input_history_index != -1){
 		// 	u32 cursor = 0;
@@ -316,7 +316,7 @@ void console_update(){DPZoneScoped;
 	// 		if(console.dictionary[i].newline == 1 && nlines++){
 	// 			uiItemE(); 
 	// 			line = uiItemBS(&line->style);
-	// 			line->id = ToString8(deshi_temp_allocator, "console.line",nlines);
+	// 			line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines);
 	// 		}
 			
 	// 		//get chunk text from the log file
@@ -326,7 +326,7 @@ void console_update(){DPZoneScoped;
 			
 	// 		str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
 	// 		uiItem* text = uiTextMS(&line->style, out);
-	// 		text->id = ToString8(deshi_temp_allocator, "console.text",i);
+	// 		text->id = to_dstr8v(deshi_temp_allocator, "console.text",i);
 	// 		text->style.text_color = console.dictionary[i].fg;
 			
 			
@@ -339,7 +339,7 @@ void console_update(){DPZoneScoped;
 	// 	debug->style.anchor = anchor_bottom_right;
 	// 	debug->style.sizing = size_auto;
 	// 	debug->id = STR8("console.debug");
-	// 	uiTextM(ToString8(deshi_temp_allocator,
+	// 	uiTextM(to_dstr8v(deshi_temp_allocator,
 	// 					  "      show tags: ", console.tag_show, "\n",
 	// 					  " highlight tags: ", console.tag_highlighting, "\n",
 	// 					  "   outline tags: ", console.tag_outlines, "\n",
@@ -357,10 +357,10 @@ void console_update(){DPZoneScoped;
 	// }uiImmediateE();
 	
 	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
-		str8 command = uiGetInputText(console.ui.inputtext)->text.buffer.fin;
+		str8 command = ui_get_input_text(console.ui.inputtext)->text.buffer.fin;
 		Log("", CyanFormat("> "), command);
 		cmd_run(command);
-		text_clear(&uiGetInputText(console.ui.inputtext)->text);
+		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 		console.scroll_to_bottom = 1;
 	}
 }

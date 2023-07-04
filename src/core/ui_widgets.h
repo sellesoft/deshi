@@ -68,16 +68,10 @@ struct uiText{
 	//TODO(sushi) get rid of array here
 	arrayT<pair<s64,vec2>> breaks;
 };
+#define ui_get_text(x) ((uiText*)(x))
 
-#define uiGetText(x) CastFromMember(uiText, item, x)
-
-UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
-//NOTE(sushi) does not automatically make a str8, use uiTextML for that.
-#define uiTextM(text)          UI_DEF(make_text((text),           0, STR8(__FILE__),__LINE__))
-#define uiTextMS(style, text)  UI_DEF(make_text((text),     (style), STR8(__FILE__),__LINE__))
-//NOTE(sushi) this automatically applies STR8() to text, so you can only use literals with this macro
-#define uiTextML(text)         UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
-#define uiTextMSL(style, text) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
+uiItem* deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line);
+#define ui_make_text(text, style) deshi__ui_make_text((text), (style), str8l(__FILE__), __LINE__)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,14 +108,10 @@ struct uiInputText{
 	}style;
 };
 
-#define uiGetInputText(x) CastFromMember(uiInputText, item, x)
+#define ui_get_input_text(x) ((uiInputText*)(x))
 
-UI_FUNC_API(uiItem*, ui_make_input_text, str8 preview, uiStyle* style, str8 file, upt line);
-#define uiInputTextM()                UI_DEF(make_input_text(    {0},       0, STR8(__FILE__),__LINE__))
-#define uiInputTextMS(style)          UI_DEF(make_input_text(    {0}, (style), STR8(__FILE__),__LINE__))
-#define uiInputTextMP(preview)        UI_DEF(make_input_text(preview,       0, STR8(__FILE__),__LINE__))
-#define uiInputTextMSP(style,preview) UI_DEF(make_input_text(preview, (style), STR8(__FILE__),__LINE__))
-
+uiItem* deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line);
+#define ui_make_input_text(preview, style) deshi__ui_make_input_text((preview), (style), str8l(__FILE__), __LINE__)
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @ui2_widgets_slider
@@ -166,11 +156,10 @@ struct uiSlider{
 		f32 rail_thickness; //percentage of full thickness, 0-1
 	}style;
 };
-
-#define uiGetSlider(x) CastFromMember(uiSlider, item, x)
+#define ui_get_slider(x) ((uiSlider*)(x))
 
 inline u32 slider_style_hash(uiItem* item){
-	uiSlider* data = uiGetSlider(item);
+	uiSlider* data = ui_get_slider(item);
 	
 	u32 seed = UI_HASH_SEED;
 	seed ^= data->style.colors.rail.rgba;       seed *= UI_HASH_PRIME;
@@ -181,17 +170,13 @@ inline u32 slider_style_hash(uiItem* item){
 	return seed;
 } 
 
-UI_FUNC_API(uiItem*, ui_make_slider_f32, f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
-#define uiSliderf32(min,max,var)        UI_DEF(make_slider_f32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSliderf32S(min,max,var,style) UI_DEF(make_slider_f32(min,max,var,(style),STR8(__FILE__),__LINE__));
+uiItem* deshi__ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
+uiItem* deshi__ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line);
+uiItem* deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line);
 
-UI_FUNC_API(uiItem*, ui_make_slider_u32, u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line);
-#define uiSlideru32(min,max,var)        UI_DEF(make_slider_u32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSlideru32S(min,max,var,style) UI_DEF(make_slider_u32(min,max,var,(style),STR8(__FILE__),__LINE__));
-
-UI_FUNC_API(uiItem*, ui_make_slider_s32, s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line);
-#define uiSliders32(min,max,var)        UI_DEF(make_slider_s32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSliders32S(min,max,var,style) UI_DEF(make_slider_s32(min,max,var,(style),STR8(__FILE__),__LINE__));
+#define ui_make_slider_f32(min, max, var, style) deshi__ui_make_slider_f32(min, max, (var), (style), str8l(__FILE__), __LINE__)
+#define ui_make_slider_u32(min, max, var, style) deshi__ui_make_slider_u32(min, max, (var), (style), str8l(__FILE__), __LINE__)
+#define ui_make_slider_s32(min, max, var, style) deshi__ui_make_slider_s32(min, max, (var), (style), str8l(__FILE__), __LINE__)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,10 +205,10 @@ struct uiCheckbox{
 };
 
 
-#define uiGetCheckbox(x) CastFromMember(uiCheckbox, item, x)
+#define ui_get_checkbox(x) (uiCheckbox*)(x)
 
 inline u32 checkbox_style_hash(uiItem* item){
-	uiCheckbox* data = uiGetCheckbox(item);
+	uiCheckbox* data = ui_get_checkbox(item);
 	
 	u32 seed = UI_HASH_SEED;
 	seed ^= data->style.colors.filling.rgba; seed *= UI_HASH_PRIME;
@@ -231,9 +216,8 @@ inline u32 checkbox_style_hash(uiItem* item){
 	return seed;
 }
 
-UI_FUNC_API(uiItem*, ui_make_checkbox, b32* var, uiStyle* style, str8 file, upt line);
-#define uiCheckboxM(var)         UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
-#define uiCheckboxMS(var, style) UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
+uiItem* deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line);
+#define ui_make_checkbox(var, style) deshi__ui_make_checkbox((var), (style), str8l(__FILE__), __LINE__)
 
 
 #endif //DESHI_UI2_WIDGETS_H
@@ -380,7 +364,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiText* data = uiGetText(item);
+	uiText* data = (uiText*)item;
 	
 	dc->texture = item->style.font->tex;
 	
@@ -399,6 +383,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 		//}
 	}
 	
+	// check how much draw data we need for the text and reallocate the drawcmd if needed
 	vec2i nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
 	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
 	    item->drawcmds = ui_make_drawcmd(1);
@@ -440,7 +425,7 @@ ui_eval_text(uiItem* item){DPZoneScoped;
 		return;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
-	uiText* data = uiGetText(item);
+	uiText* data = (uiText*)item;
 	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 1);
 }
 
@@ -448,7 +433,7 @@ ui_eval_text(uiItem* item){DPZoneScoped;
 //and copy when a selection is active
 void
 ui_update_text(uiItem* item){DPZoneScoped;
-	uiText* data = uiGetText(item);
+	uiText* data = (uiText*)item;
 	if(g_ui->hovered == item && input_lmouse_pressed()){
 		data->text.cursor.pos = find_hovered_offset({data->breaks.data,data->breaks.count},item,data->text);
 		data->selecting = 1;
@@ -468,7 +453,7 @@ ui_update_text(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
-ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiText);
 	setup.style = style;
@@ -506,7 +491,7 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = (uiInputText*)item;
 	
 	dc->texture = item->style.font->tex;
 	
@@ -570,14 +555,14 @@ ui_eval_input_text(uiItem* item){DPZoneScoped;
 		return;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = (uiInputText*)item;
 	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 0);
 }
 
 void
 ui_update_input_text(uiItem* item){DPZoneScoped;
 	if(g_ui->active != item) return;
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = ui_get_input_text(item);
 	Text* t = &data->text;
 	
 	b32 repeat = 0;
@@ -639,7 +624,7 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
-ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiInputText);
 	setup.style = style;
@@ -654,7 +639,7 @@ ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScop
 	
 	b32 retrieved = 0;
 	uiItem*      item = ui_setup_item(setup, &retrieved);
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = ui_get_input_text(item);
 	
 	if(!retrieved)
 		data->text = text_init({0}, deshi_allocator);
@@ -785,40 +770,40 @@ ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 }
 
 uiItem*
-ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	uiGetSlider(item)->minf32 = min;
-	uiGetSlider(item)->maxf32 = max;
-	uiGetSlider(item)->varf32 = var;
-	uiGetSlider(item)->type = 0;
+	ui_get_slider(item)->minf32 = min;
+	ui_get_slider(item)->maxf32 = max;
+	ui_get_slider(item)->varf32 = var;
+	ui_get_slider(item)->type = 0;
 	
 	return item;
 }
 
 uiItem*
-ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	uiGetSlider(item)->minu32 = min;
-	uiGetSlider(item)->maxu32 = max;
-	uiGetSlider(item)->varu32 = var;
-	uiGetSlider(item)->type = 1;
+	ui_get_slider(item)->minu32 = min;
+	ui_get_slider(item)->maxu32 = max;
+	ui_get_slider(item)->varu32 = var;
+	ui_get_slider(item)->type = 1;
 	
 	return item;
 }
 
 uiItem*
-ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	uiGetSlider(item)->mins32 = max;
-	uiGetSlider(item)->maxs32 = max;
-	uiGetSlider(item)->vars32 = var;
-	uiGetSlider(item)->type = 2;
+	ui_get_slider(item)->mins32 = max;
+	ui_get_slider(item)->maxs32 = max;
+	ui_get_slider(item)->vars32 = var;
+	ui_get_slider(item)->type = 2;
 	
 	return item;
 }
@@ -867,7 +852,7 @@ ui_checkbox_callback(uiItem* item){
 }
 
 uiItem*
-ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
+deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	FixMe;
 	// auto [item, datav] = init_item(sizeof(uiCheckbox), offsetof(uiCheckbox, item), file, line);
 	// uiCheckbox* data = (uiCheckbox*)datav;

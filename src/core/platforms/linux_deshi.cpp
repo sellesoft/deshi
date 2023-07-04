@@ -11,6 +11,10 @@ Index:
 @threading
 @window
 @networking
+
+	GLFW was referenced for some of the windowing code
+		* Getting window state to determine if it is minimized
+
 */
 
 
@@ -20,18 +24,20 @@ Index:
 struct{
 	struct{
 		// points to the X server
-		X11::Display* display;
+		Display* display;
 		// which screen of the display are we using
 		int screen;
 		// the root window of the X windowing system
-		X11::Window root;
+		X11Window root;
+
+		Atom WM_STATE;
 	}x11;
 }linux;
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
 
-int linux_error_handler(X11::Display* display, X11::XErrorEvent* event) {
+int linux_error_handler(Display* display, XErrorEvent* event) {
 	switch(event->error_code){
 		case BadAccess: 			printf("A client attempts to grab a key/button combination already grabbed by another client.\n"
 							                "A client attempts to free a colormap entry that it had not already allocated or to free an entry in a colormap that was created with all entries writable.\n"
@@ -63,7 +69,7 @@ int linux_error_handler(X11::Display* display, X11::XErrorEvent* event) {
 }
 
 FORCE_INLINE KeyCode
-linux_keysym_to_key(X11::KeySym k) {
+linux_keysym_to_key(KeySym k) {
 	switch(k){
 		case XK_a: return Key_A; case XK_b: return Key_B; case XK_c: return Key_C; case XK_d: return Key_D; case XK_e: return Key_E;
 		case XK_f: return Key_F; case XK_g: return Key_G; case XK_h: return Key_H; case XK_i: return Key_I; case XK_j: return Key_J;
@@ -77,11 +83,11 @@ linux_keysym_to_key(X11::KeySym k) {
 		case XK_F5: return Key_F5; case XK_F6:  return Key_F6;  case XK_F7:  return Key_F7;  case XK_F8:  return Key_F8;
 		case XK_F9: return Key_F9; case XK_F10: return Key_F10; case XK_F11: return Key_F11; case XK_F12: return Key_F12;
 		case XK_Up: return Key_UP; case XK_Down: return Key_DOWN; case XK_Left: return Key_LEFT; case XK_Right: return Key_RIGHT;
-		case XK_Escape:       return Key_ESCAPE;     case XK_asciitilde: return Key_TILDE;        case XK_Tab:         return Key_TAB;
+		case XK_Escape:       return Key_ESCAPE;     case XK_asciitilde: return Key_BACKQUOTE;    case XK_Tab:         return Key_TAB;
 		case XK_Caps_Lock:    return Key_CAPSLOCK;   case XK_Shift_L:    return Key_LSHIFT;       case XK_Control_L:   return Key_LCTRL;
 		case XK_Alt_L:        return Key_LALT;       case XK_BackSpace:  return Key_BACKSPACE;    case XK_Return:      return Key_ENTER;
 		case XK_Shift_R:      return Key_RSHIFT;     case XK_Control_R:  return Key_RCTRL;        case XK_Alt_R:       return Key_RALT;
-		case XK_minus:        return Key_MINUS;      case XK_plus:       return Key_EQUALS;       case XK_bracketleft: return Key_LBRACKET;
+		case XK_minus:        return Key_MINUS;      case XK_equal:      return Key_EQUALS;       case XK_bracketleft: return Key_LBRACKET;
 		case XK_bracketright: return Key_RBRACKET;   case XK_slash:      return Key_FORWARDSLASH; case XK_semicolon:   return Key_SEMICOLON;
 		case XK_apostrophe:   return Key_APOSTROPHE; case XK_comma:      return Key_COMMA;        case XK_period:      return Key_PERIOD;
 		case XK_backslash:    return Key_BACKSLASH;  case XK_space:      return Key_SPACE;        case XK_Insert:      return Key_INSERT;
@@ -134,16 +140,16 @@ linux_keysym_to_key(X11::KeySym k) {
 // dynamic version
 #define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)do{\
 	if(!result_name){                                                            \
-		printf("%s\n", ToString8(deshi_temp_allocator, __func__, "(): ", __VA_ARGS__).str); \
+		printf("%s\n", to_dstr8v(deshi_temp_allocator, __func__, "(): ", __VA_ARGS__).str); \
 		return return_error_value;                                               \
 	}                                                                            \
-	*result_name = {result_tag, ToString8(deshi_temp_allocator,__VA_ARGS__)};    \
+	*result_name = {result_tag, to_dstr8v(deshi_temp_allocator,__VA_ARGS__).fin};\
 	extra                                                                        \
 	return return_error_value; } while(0)
 
-str8
+dstr8
 get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
-#define errcase(errname, info) case errname: return ToString8(stl_allocator, tag, ": ", funcname, "() encountered errno ", errname, ": ", info, " ", message, "\n"); break;
+#define errcase(errname, info) case errname: return to_dstr8v(stl_allocator, tag, ": ", funcname, "() encountered errno ", errname, ": ", info, " ", message, "\n"); break;
 	switch(err){
 		errcase(EPERM,          "operation not permitted")
 		errcase(ENOENT,         "no such file or directory")
@@ -281,13 +287,14 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 }
 
 void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
-	str8 r = get_errno_print(err, tag, funcname, message);
+	DebugBreakpoint;
+	dstr8 r = get_errno_print(err, tag, funcname, message);
 	if(HasFlag(deshiStage, DS_LOGGER)){
-		LogE("linux", r);
+		LogE("linux", r.fin);
 	}else{
 		printf("%s\n", (u8*)r.str);
 	}
-	free(r.str);
+	dstr8_deinit(&r);
 }
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -321,8 +328,8 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 		// we have to make a copy of each iteration
 		// we could also temporarily set a 0 after the end of 'scan'
 		// and replace it when done, but I think that would come with other problems
-		str8b temp;
-		str8_builder_init(&temp, scan, deshi_allocator);
+		dstr8 temp;
+		dstr8_init(&temp, scan, deshi_allocator);
 
 		if(!file_exists(temp.fin)){
 			if(str8_ends_with(temp.fin, STR8("/")) || str8_ends_with(temp.fin, STR8("\\"))) {
@@ -385,7 +392,7 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* res
 				close(handle);
 			}
 		}
-		str8_builder_deinit(&temp);
+		dstr8_deinit(&temp);
 	} 
 
 	
@@ -620,14 +627,13 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 		EndFileErrnoHandler()
 	}
 
-
 	struct dirent* entry;
 	while((entry = readdir(dir))){
 		if(!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, ".")) continue;
-		str8 filepath = ToString8(deshi_allocator, directory, "/", entry->d_name);
-		defer {memzfree(filepath.str);};
+		dstr8 filepath = to_dstr8v(deshi_allocator, directory, "/", entry->d_name);
+		defer {dstr8_deinit(&filepath);};
 
-		File file = file_info_result(filepath, result);
+		File file = file_info_result(filepath.fin, result);
 		if(!file.creation_time) return 0;
 
 		*array_push(out) = file;
@@ -663,15 +669,15 @@ deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2
 	if(!path1 || *path1.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path1` at ",caller_file,"(",caller_line,")");
 	if(!path2 || *path2.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path2` at ",caller_file,"(",caller_line,")");
 
-	str8b path1b;
-	str8_builder_init(&path1b, path1, deshi_allocator);
-	str8_builder_replace_codepoint(&path1b, '\\', '/');
-	defer {str8_builder_deinit(&path1b);};
+	dstr8 path1b;
+	dstr8_init(&path1b, path1, deshi_allocator);
+	dstr8_replace_codepoint(&path1b, '\\', '/');
+	defer {dstr8_deinit(&path1b);};
 
-	str8b path2b;
-	str8_builder_init(&path2b, path2, deshi_allocator);
-	str8_builder_replace_codepoint(&path2b, '\\', '/');
-	defer {str8_builder_deinit(&path2b);};
+	dstr8 path2b;
+	dstr8_init(&path2b, path2, deshi_allocator);
+	dstr8_replace_codepoint(&path2b, '\\', '/');
+	defer {dstr8_deinit(&path2b);};
 
 	str8 p1normalized = file_path_absolute_result(path1b.fin, result);
 	if(!p1normalized) return 0;
@@ -692,13 +698,24 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access
 	b32 exists = file_exists(path);
 
 	if(exists) forX_array(f, file_shared.files) {
-		if(file_path_equal(path, f->path)){
+		if(file_path_equal(path, f->path)) {
 			if(!file_change_access_result(f, access, result)) return 0;
 			return f;
 		}
 	}
 
+	// !Issue(Pool)
+	// if(exists) for_pool(file_shared.files) {
+	// 	if(it->type == FileType_ERROR) continue;
+	// 	if(file_path_equal(path, it->path)){
+	// 		if(!file_change_access_result(it, access, result)) return 0;
+	// 		return it;
+	// 	}
+	// }
+
 	File* out = array_push(file_shared.files);
+	
+	// !Issue(Pool) File* out = memory_pool_push(file_shared.files);
 
 	if(HasFlag(access, FileAccess_Create)) {
 		if(!file_create_result(path, result)) return 0;
@@ -719,6 +736,7 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* re
 	memzfree(file->path.str);
 
 	if(file->handle) fclose(file->handle);
+	// !Issue(pool) memory_pool_delete(file_shared.files, file);
 	forI(array_count(file_shared.files)){
 		if(file_shared.files + i == file){
 			array_remove_unordered(file_shared.files, i);
@@ -908,21 +926,31 @@ platform_init() {
 
 	DeshTime->stopwatch = start_stopwatch();
 
-	array_init(file_shared.files, 16, deshi_allocator);
+	// because memory_pool doesn't work here and file handles are given as File*
+	// we need to try and make it unlikely that this array will move, so we 
+	// allocate space for 128 of them, which should be enough for our current projects
+	array_init(file_shared.files, 128, deshi_allocator);
+
+	// !Issue(Pool) memory_pool_init(file_shared.files, 16);
+
 	file_create(STR8("data/"));
 	file_create(STR8("data/cfg/"));
 	file_create(STR8("data/temp/"));
 
-	X11::XSetErrorHandler(&linux_error_handler);
+	XSetErrorHandler(&linux_error_handler);
 	
 	// initialize display and screen
-	X11::Display* display = linux.x11.display = X11::XOpenDisplay(0);
+	Display* display = linux.x11.display = XOpenDisplay(0);
 	if(!display) {
-		printf("platform_init(): " ErrorFormat("failed to open X11 display"));
+		printf("platform_init(): " ErrorFormat("failed to open X11 display") "\n");
 		return;
 	}
-	s32 screen = linux.x11.screen = X11::XDefaultScreen(display);
-	X11::Window root = linux.x11.root = X11::XRootWindow(display, screen);
+	s32 screen = linux.x11.screen = XDefaultScreen(display);
+	X11Window root = linux.x11.root = XRootWindow(display, screen);
+
+	linux.x11.WM_STATE = XInternAtom(display, "WM_STATE", 0);
+
+	ZeroMemory(DeshInput->zero, sizeof(b32) * MAX_KEYBOARD_KEYS); 
 
 	DeshiStageInitEnd(DS_PLATFORM);
 }
@@ -937,23 +965,66 @@ platform_update() {
 	DeshTime->frame        += 1;
 	DeshTime->timeTime = reset_stopwatch(&update_stopwatch);
 	
-	X11::XEvent event;
-	X11::KeySym key;
+	XEvent event;
+	KeySym key;
 	char text[255];
 
 	// get the current amount of events in queue
-	u64 events_to_handle = X11::XEventsQueued(linux.x11.display, QueuedAlready);
+	u64 events_to_handle = XEventsQueued(linux.x11.display, QueuedAlready);
 
 	forI(events_to_handle){
-		X11::XNextEvent(linux.x11.display, &event);
+		XNextEvent(linux.x11.display, &event);
 		switch(event.type) {
-			case Expose: {
+			case ConfigureNotify: {
+				XConfigureEvent cev = event.xconfigure;
+				DeshWindow->width = cev.width;
+				DeshWindow->height = cev.height;
+				DeshWindow->resized = 1;
+				DeshWindow->center = {cev.width/2,cev.height/2};
+				// ref: glfw x11_window.c _glfwGetWindowPropertyX11
+				// TODO(sushi) set DeshWindow->minimized
+				//             this is how glfw seems to check for this, but I'm not sure what
+				//             Xlib event is actually triggered when the window is minimized
+				//             I don't need this for now, so I'll implement it later
+				// Atom actual_type;
+				// s32 actual_format;
+				// unsigned long n_items;
+				// unsigned long bytes_after;
 				
+				// struct{
+				// 	u64 state;
+				// 	X11Window icon;
+				// }*state=0;
+
+				// int res = XGetWindowProperty(
+				// 		linux.x11.display, 
+				// 		(X11Window)DeshWindow->handle, 
+				// 		linux.x11.WM_STATE, 
+				// 		0, 
+				// 		LONG_MAX, 
+				// 		0, 
+				// 		linux.x11.WM_STATE, 
+				// 		&actual_type,
+				// 		&actual_format,
+				// 		&n_items,
+				// 		&bytes_after,
+				// 		(unsigned char**)&state
+				// 	);
+				// if(n_items >= 2) {
+				// 	DeshWindow->minimized = state->state == IconicState;
+				// 	Log("", "erm ", DeshWindow->minimized);
+				// }
+
+				
+			}break;	
+
+			case Expose: {
+				// TODO(sushi) if this ever seems useful
 			}break;
 
 			case ButtonPress:
 			case ButtonRelease: {
-				X11::XButtonEvent bev = event.xbutton;
+				XButtonEvent bev = event.xbutton;
 				KeyCode mbutton;
 				switch(bev.button){
 					case Button1: mbutton = Mouse_LEFT; break;
@@ -974,7 +1045,7 @@ platform_update() {
 			}break;	
 
 			case MotionNotify: {
-				X11::XMotionEvent motion = event.xmotion;
+				XMotionEvent motion = event.xmotion;
 				DeshInput->realMouseX = motion.x;
 				DeshInput->realMouseY = motion.y;
 				DeshInput->realScreenMouseX = motion.x_root;
@@ -982,17 +1053,17 @@ platform_update() {
 			}break;
 
 			case KeyPress: {
-				X11::KeySym ks = XLookupKeysym(&event.xkey, 0);
+				KeySym ks = XLookupKeysym(&event.xkey, 0);
 				KeyCode key = linux_keysym_to_key(ks);
 				if(key != Key_NONE) {
 					DeshInput->realKeyState[key] = 1;
 				}
-				X11::KeySym ret;
-				DeshInput->realCharCount += X11::XLookupString(&event.xkey, (char*)DeshInput->charIn + DeshInput->charCount, 256, &ret, 0);
+				KeySym ret;
+				DeshInput->realCharCount += XLookupString(&event.xkey, (char*)DeshInput->charIn + DeshInput->charCount, 256, &ret, 0);
 			}break;
 
 			case KeyRelease: {
-				X11::KeySym ks = XLookupKeysym(&event.xkey,  0);
+				KeySym ks = XLookupKeysym(&event.xkey,  0);
 				KeyCode key = linux_keysym_to_key(ks);
 				if(key != Key_NONE) {
 					DeshInput->realKeyState[key] = 0;
@@ -1002,11 +1073,13 @@ platform_update() {
 	}
 	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
 
+
+
 	//// update input ////
 	CopyMemory(&DeshInput->oldKeyState, &DeshInput->newKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
 	CopyMemory(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
 
-	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+	if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS * sizeof(b32))){
 		reset_stopwatch(&DeshInput->time_since_key_hold);
 		DeshInput->newKeyState[0] = 1;
 		DeshInput->anyKeyDown = 0;
@@ -1015,12 +1088,11 @@ platform_update() {
 		DeshInput->anyKeyDown = 1;
 	}
 
-	// TODO(sushi) figure out how to support this on linux
-	// if(!DeshInput->realCharCount){
-	// 	reset_stopwatch(&DeshInput->time_since_char_hold);
-	// }else{
-	// 	DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
-	// }
+	if(!DeshInput->realCharCount){
+		reset_stopwatch(&DeshInput->time_since_char_hold);
+	}else{
+		DeshInput->time_char_held = peek_stopwatch(DeshInput->time_since_char_hold);
+	}
 
 	DeshInput->mouseX        = DeshInput->realMouseX;
 	DeshInput->mouseY        = DeshInput->realMouseY;
@@ -1031,6 +1103,10 @@ platform_update() {
 	DeshInput->charCount     = DeshInput->realCharCount;
 	DeshInput->realCharCount = 0;
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
+
+	// forI(MAX_KEYBOARD_KEYS) {
+	// 	if(DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
+	// }
 
 	return !platform_exit_application;
 }
@@ -1076,44 +1152,475 @@ platform_set_clipboard(str8 text) {
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @threading
 
+
+mutex
+mutex_init() {
+	mutex out;
+	pthread_mutex_t* m = (pthread_mutex_t*)memalloc(sizeof(pthread_mutex_t));
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE); // allow recursive locking
+
+	// initialize mutex
+	switch(pthread_mutex_init(m, &attr)) {
+		case EAGAIN: {
+			LogE("threader", "The system lacks resources to initialize this mutex");
+			memzfree(m);
+			return {};
+		}break; 
+		case ENOMEM: {
+			LogE("threader", "The system does not have enough memory to initialize this mutex.");
+			memzfree(m);
+			return {};
+		}break;
+		case EPERM: {
+			LogE("threader", "The caller does not have permissions to initialize this mutex.");
+			memzfree(m);
+			return {};
+		}break;
+	}
+	out.handle = m;
+	out.is_locked = 0;
+
+	return out;
+}
+
+void
+mutex_deinit(mutex* m) {
+	switch(pthread_mutex_destroy((pthread_mutex_t*)m->handle)) {
+		case EBUSY: {
+			LogE("threader", "This mutex is still locked by some thread and cannot be destroyed.");
+			return;
+		}break;
+	}
+	memzfree(m->handle);
+}
+
+void
+mutex_lock(mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex."); 
+		DebugBreakpoint;
+		return;
+	}
+
+	switch(pthread_mutex_lock((pthread_mutex_t*)m->handle)) {
+		case EAGAIN: {
+			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
+			return;
+		}break;
+	}
+}
+
+b32
+mutex_try_lock(mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex."); 
+		DebugBreakpoint;
+		return 0;
+	}
+
+	switch(pthread_mutex_trylock((pthread_mutex_t*)m->handle)) {
+		case EAGAIN: {
+			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
+			return false;
+		}break;
+		case EBUSY: {
+			return false;
+		} break;
+	}
+
+	return true;
+}
+
+b32
+mutex_try_lock_for(mutex* m, u64 millis) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return false;
+	}
+
+	timespec ts;
+	ts.tv_nsec = millis * (u64)1e6;
+
+	switch(pthread_mutex_timedlock((pthread_mutex_t*)m->handle, &ts)) {
+		case EAGAIN: {
+			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
+			return false;
+		}break;
+		case EBUSY: {
+			return false;
+		} break;
+	}
+	return true;
+}
+
+void
+mutex_unlock(mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		return;
+	}
+
+	pthread_mutex_unlock((pthread_mutex_t*)m->handle);
+}
+
+shared_mutex 
+shared_mutex_init() {
+	shared_mutex out;
+	out.handle = (pthread_rwlock_t*)memalloc(sizeof(pthread_rwlock_t));
+	switch(pthread_rwlock_init((pthread_rwlock_t*)out.handle, 0))  {
+		case EAGAIN: {
+			LogE("threader", "The system lacks necessary resources to initialize this shared_mutex.");
+			return {};
+		} break;
+		case ENOMEM: {
+			LogE("threader", "The system lacks the memory required to initialize this shared_mutex.");
+			return {};
+		} break;
+		case EPERM: {
+			LogE("threader", "The user does not have the privileges to initialize this shared_mutex.");
+			return {};
+		} break;
+	}
+	return out;
+}
+
+void
+shared_mutex_deinit(shared_mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to deinit an uninitialized mutex.");
+		DebugBreakpoint;
+		return;
+	}
+
+
+	if(pthread_rwlock_destroy((pthread_rwlock_t*)m->handle) == EBUSY) {
+		LogE("threader", "Cannot deinit this shared_mutex because it is still locked.");
+		return;
+	}
+	memzfree(m->handle);
+}
+
+void
+shared_mutex_lock(shared_mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return;
+	}
+
+	pthread_rwlock_wrlock((pthread_rwlock_t*)m->handle);
+}
+
+b32
+shared_mutex_try_lock(shared_mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return false;
+	}
+
+	if(!pthread_rwlock_trywrlock((pthread_rwlock_t*)m->handle)) {
+		return true;
+	} 
+
+	return false;
+}
+
+b32
+shared_mutex_try_lock_for(shared_mutex* m, u64 millis) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return false;
+	}
+
+	timespec ts;
+	ts.tv_nsec = millis * int(1e6);
+
+	if(!pthread_rwlock_timedwrlock((pthread_rwlock_t*)m->handle, &ts)) {
+		return true;
+	}
+	return false;
+}
+
+void
+shared_mutex_lock_shared(shared_mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return;
+	}
+
+	pthread_rwlock_rdlock((pthread_rwlock_t*)m->handle);
+}
+
+b32
+shared_mutex_try_lock_shared(shared_mutex* m) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return false;
+	}
+
+	if(!pthread_rwlock_tryrdlock((pthread_rwlock_t*)m->handle)) {
+		return true;
+	}
+	return false;
+}
+
+b32
+shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) {
+	if(!m->handle) {
+		LogE("threader", "attempt to lock an uninitialized mutex.");
+		DebugBreakpoint;
+		return false;
+	}
+
+	timespec ts;
+	ts.tv_nsec = millis * int(1e6);
+
+	if(!pthread_rwlock_timedrdlock((pthread_rwlock_t*)m->handle, &ts)) {
+		return true;
+	}
+	return false;
+}
+
+void
+shared_mutex_unlock(shared_mutex* m) {
+	if(!m->handle) {
+		DebugBreakpoint;
+		LogE("threader", "attempt to unlock an uninitialized mutex.");
+		return;
+	}
+
+	pthread_rwlock_unlock((pthread_rwlock_t*)m->handle);
+}
+
+condition_variable
+condition_variable_init() {
+	condition_variable out;
+	pthread_cond_t* cond = (pthread_cond_t*)memalloc(sizeof(pthread_cond_t));
+	
+	int ret = pthread_cond_init(cond, 0);
+	if(ret) {
+		LogE("threader", "failed to initialize pthread_cond_t, errno: ", ret);
+		return {};
+	}
+	out.cvhandle = cond;
+	return out;
+}
+
+void
+condition_variable_deinit(condition_variable* cv) {
+	switch(pthread_cond_destroy((pthread_cond_t*)cv->cvhandle)) {
+		case EBUSY: {
+			LogE("threader", "This condition variable cannot be deinitialized because it is still being waited on.");
+			return;
+		} break;
+	}
+	memzfree(cv->cshandle);
+}
+
+void
+condition_variable_notify_one(condition_variable* cv) {
+	int ret = pthread_cond_signal((pthread_cond_t*)cv->cvhandle);
+	if(ret) {
+		LogE("failed to notify one on condition variable, errno: ", ret);
+	}
+}
+
+void
+condition_variable_notify_all(condition_variable* cv) {
+	int ret = pthread_cond_broadcast((pthread_cond_t*)cv->cvhandle);
+	if(ret) {
+		LogE("failed to broadcast to condition variable, errno: ", ret);
+	}
+}
+
+void
+condition_variable_wait(condition_variable* cv) {
+	pthread_mutex_t cvm;
+	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
+	int ret = pthread_cond_wait((pthread_cond_t*)cv->cvhandle, &cvm);
+	if(ret) {
+		LogE("threader", "failed to wait on condition variable, errno: ", ret);
+	}
+}
+
+void
+condition_variable_wait_for(condition_variable* cv, u64 milliseconds) {
+	pthread_mutex_t cvm;
+	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
+	timespec ts;
+	ts.tv_nsec = milliseconds * int(1e6);
+	int ret = pthread_cond_timedwait((pthread_cond_t*)cv->cvhandle, &cvm, &ts);
+	if(ret && ret != ETIMEDOUT) {
+		LogE("threader", "failed to wait on condition variable, errno: ", ret);
+	}
+}
+
+semaphore 
+semaphore_init(u64 initial_val, u64 max_val) {
+	semaphore out;
+	out.handle = memalloc(sizeof(sem_t));
+	if(sem_init((sem_t*)out.handle, 0, max_val)) {
+		LogE("threader", "failed to initialize a semaphore, errno: ", errno);
+		return {};
+	}
+
+	return out;
+}
+
 void 
-threader_init(u32 max_jobs) {
-	NotImplemented;
+semaphore_deinit(semaphore* se) {
+	if(sem_destroy((sem_t*)se->handle)) {
+		LogE("threader", "failed to destroy a semaphore, errno: ", errno);
+		return;
+	}
+	memzfree(se->handle);
+}
+
+void 
+semaphore_enter(semaphore* se) {
+	int ret = sem_wait((sem_t*)se->handle);
+	if(ret) {
+		LogE("threader", "failed to wait on semaphore, errno: ", errno);
+	}
+}
+
+void 
+semaphore_leave(semaphore* se) {
+	int ret = sem_post((sem_t*)se->handle);
+	if(ret) {
+		LogE("threader", "failed to release a semaphore, errno: ", errno);
+	}
+}
+
+void* deshi__thread_worker(void* in) {
+	Thread* me = (Thread*)in;
+	ThreadManager* man = DeshThreader;
+	semaphore_enter(&man->wake_up_barrier);
+	while(!me->close) {
+		mutex_lock(&man->find_job_lock);
+		ThreadJob* tj = 0;
+		forI(DESHI_THREAD_PRIORITY_LAYERS) {
+			if(man->priorities[i]) {
+				tj = man->priorities[i];
+				man->priorities[i] = (tj->node.next==&tj->node? 0 : (ThreadJob*)tj->node.next); 
+				NodeRemove(&tj->node);
+				NodeInsertPrev(&man->free_jobs, &tj->node);
+				break;
+			}
+		}
+		mutex_unlock(&man->find_job_lock);
+
+		if(tj) {
+			me->running = true;
+			tj->ThreadFunction(tj->data);
+			me->running = false;
+		} else {
+			condition_variable_wait(&man->idle);
+		}
+	}
+
+	return 0;
+}
+
+void 
+threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
+	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
+	
+	DeshThreader->max_threads = max_threads;
+	DeshThreader->max_awake_threads = max_awake_threads;
+	DeshThreader->threads = (Thread*)memalloc(sizeof(Thread)*max_threads);
+
+	DeshThreader->jobs = (ThreadJob*)memalloc(max_jobs*sizeof(ThreadJob));
+
+	DeshThreader->free_jobs.next = &DeshThreader->free_jobs;
+	DeshThreader->free_jobs.prev = &DeshThreader->free_jobs;
+	ThreadJob* iter = DeshThreader->jobs;
+	forI(max_jobs) {
+		NodeInsertPrev(&DeshThreader->free_jobs, (Node*)iter);
+		iter += 1;
+	}
+	
+	//TODO(sushi) query for max amount of threads 
+	DeshThreader->wake_up_barrier = semaphore_init(8,8);
+	semaphore_enter(&DeshThreader->wake_up_barrier);
+	
+	DeshThreader->idle = condition_variable_init();
+	DeshThreader->find_job_lock = mutex_init();
+
+	// create requested amount of threads
+	forI(max_threads) {
+		Thread* current = DeshThreader->threads + i;
+		current->handle = (pthread_t*)memalloc(sizeof(pthread_t));
+		// create a worker thread
+		switch(pthread_create((pthread_t*)current->handle, 0, deshi__thread_worker, (void*)current)) {
+			case EAGAIN: {
+				LogE("threader", "Insufficient resources to spawn thread ", i);
+				return;
+			}break;
+			case EPERM: {
+				LogE("threader", "No permissions to spawn threads.");
+				return;
+			} break;
+		}
+	}
+	DeshiStageInitEnd(DS_THREAD);
+}
+
+void threader_deinit() {
+	forI(DeshThreader->max_threads) {
+		Thread* current = DeshThreader->threads + i;
+		
+	}
 }
 
 void
-threader_spawn_thread(u32 count){
-	NotImplemented;
-}
+threader_add_job(ThreadJob job, u8 priority){
+	Assert(priority <= DESHI_THREAD_PRIORITY_LAYERS, "only DESHI_THREAD_PRIORITY_LAYERS priority levels are allowed");
+	ThreadJob* current = (ThreadJob*)DeshThreader->free_jobs.next;
+	NodeRemove(&current->node);
+	*current = job;
 
-void
-threader_close_all_threads(){
-	NotImplemented;
-}
-
-void
-threader_add_job(ThreadJob job){
-	NotImplemented;
-}
-
-void
-threader_add_jobs(carray<ThreadJob> jobs){
-	NotImplemented;
+	if(!DeshThreader->priorities[priority]) { 
+		DeshThreader->priorities[priority] = current;
+		current->node.next = &current->node;
+		current->node.prev = &current->node;
+	} else NodeInsertPrev(&DeshThreader->priorities[priority]->node, &current->node);
 }
 
 void
 threader_cancel_all_jobs(){
-	NotImplemented;
+	DeshThreader->free_jobs.next = &DeshThreader->free_jobs;
+	DeshThreader->free_jobs.prev = &DeshThreader->free_jobs;
+	ThreadJob* iter = DeshThreader->jobs;
+	forI(DeshThreader->max_jobs) {
+		NodeInsertNext((Node*)iter, (Node*)(iter+1));
+		iter += 1;
+	}
 }
 
 void
 threader_wake_threads(u32 count){
-	NotImplemented;
+	if(count) {
+		forI(count) {
+			condition_variable_notify_one(&DeshThreader->idle);
+		}
+	} else condition_variable_notify_all(&DeshThreader->idle);
 }
 
 void
 threader_set_thread_name(str8 name){
 	NotImplemented;
+}
+
+upt 
+threader_get_thread_id() {
+	return gettid();
 }
 
 
@@ -1124,18 +1631,18 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
 	
 	// we'll create the window in the monitor that the user's cursor is in 
-	X11::Window root,child;
+	X11Window root,child;
 	s32 root_x, root_y;
 	s32 win_x, win_y;
 	u32 mask;
-	X11::XQueryPointer(linux.x11.display, linux.x11.root, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+	XQueryPointer(linux.x11.display, linux.x11.root, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
 
 	s32 n_monitors;
-	X11::XRRMonitorInfo* monitors = X11::XRRGetMonitors(linux.x11.display, linux.x11.root, 1, &n_monitors);
+	XRRMonitorInfo* monitors = XRRGetMonitors(linux.x11.display, linux.x11.root, 1, &n_monitors);
 
-	X11::XRRMonitorInfo selection;
+	XRRMonitorInfo selection;
 	forI(n_monitors){
-		X11::XRRMonitorInfo monitor = monitors[i];
+		XRRMonitorInfo monitor = monitors[i];
 		if(Math::PointInRectangle(Vec2(root_x,root_y), Vec2(monitor.x,monitor.y), Vec2(monitor.width,monitor.height))) {
 			selection = monitor;
 			break;
@@ -1147,19 +1654,19 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	if(x == -1)      x = selection.x + width / 2;
 	if(y == -1)      y = selection.y + height / 2;
 
-	u32 black = X11::XBlackPixel(linux.x11.display, linux.x11.screen);
-	u32 white = X11::XWhitePixel(linux.x11.display, linux.x11.screen);
+	u32 black = XBlackPixel(linux.x11.display, linux.x11.screen);
+	u32 white = XWhitePixel(linux.x11.display, linux.x11.screen);
 
-	linux.x11.root = X11::XRootWindow(linux.x11.display, linux.x11.screen);
+	linux.x11.root = XRootWindow(linux.x11.display, linux.x11.screen);
 
 	Window* window = (Window*)memalloc(sizeof(Window));
-	X11::Window handle = X11::XCreateSimpleWindow(linux.x11.display, linux.x11.root, x, y, width, height, 0, white, black);
+	X11Window handle = XCreateSimpleWindow(linux.x11.display, linux.x11.root, x, y, width, height, 0, white, black);
 	window->handle = (void*)handle;
 	if(!DeshWindow) DeshWindow = window;
 
-	X11::XSetStandardProperties(linux.x11.display, (X11::Window)window->handle, (const char*)title.str, 0,0,0,0,0);
+	XSetStandardProperties(linux.x11.display, (X11Window)window->handle, (const char*)title.str, 0,0,0,0,0);
 
-	X11::XSelectInput(linux.x11.display, (X11::Window)window->handle, 
+	XSelectInput(linux.x11.display, (X11Window)window->handle, 
 		  ExposureMask      // caused when an invisible window becomes visible, or when a hidden part of a window becomes visible
 		| ButtonPressMask   // mouse button pressed
 		| ButtonReleaseMask // mouse button released
@@ -1168,17 +1675,18 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 		| EnterWindowMask
 		| LeaveWindowMask
 		| PointerMotionMask // mouse movement event
+		| StructureNotifyMask // window change events
 	);
-	window->context = X11::XCreateGC(linux.x11.display, (X11::Window)window->handle, 0, 0);
-	X11::XSetBackground(linux.x11.display, (X11::GC)window->context, black);
-	X11::XSetForeground(linux.x11.display, (X11::GC)window->context, white);
+	window->context = XCreateGC(linux.x11.display, (X11Window)window->handle, 0, 0);
+	XSetBackground(linux.x11.display, (GC)window->context, black);
+	XSetForeground(linux.x11.display, (GC)window->context, white);
 
-	X11::XClearWindow(linux.x11.display, (X11::Window)window->handle);
-	X11::XMapRaised(linux.x11.display, (X11::Window)window->handle);
+	XClearWindow(linux.x11.display, (X11Window)window->handle);
+	XMapRaised(linux.x11.display, (X11Window)window->handle);
 
 	u32 bw,d;
-	X11::Window groot,gchild;
-	X11::XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
+	X11Window groot,gchild;
+	XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
 
 	window_windows.add(window);
 
@@ -1194,7 +1702,7 @@ void window_close(Window* window){
 
 void
 window_swap_buffers(Window* window){
-	X11::XFlush(linux.x11.display);
+	XFlush(linux.x11.display);
 	//X11::XSync(linux.x11.display, 0);
 }
 

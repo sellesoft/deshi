@@ -10,6 +10,9 @@
 #define MAX_KEYBOARD_KEYS 256
 #define MAX_MOUSE_BUTTONS 7
 
+#define INPUT_KEY_MASK 0x000000FF //mod_key & 0x000000FF extract the key
+#define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
+
 typedef Type KeyCode; enum{
 	Key_NONE,
 	Key_A, Key_B, Key_C, Key_D, Key_E, Key_F, Key_G, Key_H, Key_I, Key_J, Key_K, Key_L, Key_M,
@@ -17,7 +20,7 @@ typedef Type KeyCode; enum{
 	Key_0, Key_1, Key_2, Key_3, Key_4, Key_5, Key_6, Key_7, Key_8, Key_9,
 	Key_F1, Key_F2, Key_F3, Key_F4, Key_F5, Key_F6, Key_F7, Key_F8, Key_F9, Key_F10, Key_F11, Key_F12,
 	Key_UP, Key_DOWN, Key_LEFT, Key_RIGHT,
-	Key_ESCAPE, Key_TILDE, Key_TAB, Key_CAPSLOCK, Key_MINUS, Key_EQUALS, Key_BACKSPACE, Key_LBRACKET, Key_RBRACKET,
+	Key_ESCAPE, Key_BACKQUOTE, Key_TAB, Key_CAPSLOCK, Key_MINUS, Key_EQUALS, Key_BACKSPACE, Key_LBRACKET, Key_RBRACKET,
 	Key_BACKSLASH, Key_SEMICOLON, Key_APOSTROPHE, Key_ENTER, Key_COMMA, Key_PERIOD, Key_FORWARDSLASH, Key_SPACE,
 	Key_LSHIFT, Key_RSHIFT, Key_LCTRL, Key_RCTRL, Key_LMETA, Key_RMETA, Key_LALT, Key_RALT, Key_APPS,
 	Key_INSERT, Key_DELETE, Key_HOME, Key_END, Key_PAGEUP, Key_PAGEDOWN, Key_PRINTSCREEN, Key_SCROLLLOCK, Key_PAUSEBREAK,
@@ -39,6 +42,24 @@ global str8 KeyCodeStrings[] = { //NOTE(delle) gotta love uncounted string liter
 	STR8("Numpad 0"),STR8("Numpad 1"),STR8("Numpad 2"),STR8("Numpad 3"),STR8("Numpad 4"),STR8("Numpad 5"),STR8("Numpad 6"),STR8("Numpad 7"),STR8("Numpad 8"),STR8("Numpad 9"),
 	STR8("Numpad Multiply"),STR8("Numpad Divide"),STR8("Numpad Plus"),STR8("Numpad Minus"),STR8("Numpad Period"),STR8("Num Lock"),
 	STR8("Mouse Left"),STR8("Mouse Right"),STR8("Mouse Middle"),STR8("Mouse 4"),STR8("Mouse 5"),STR8("Mouse 6"),STR8("Mouse 7"),STR8("Mouse 8"),
+};
+
+
+// for getting the character of a key if it representable by one 
+global char KeyCodeChars[] = {
+	0,
+	'a','b','c','d','e','f','g','h','i','j','k','l','m',
+	'n','o','p','q','r','s','t','u','v','w','x','y','z',
+	'0','1','2','3','4','5','6','7','8','9',
+	0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,
+	0,'~',0,0,'-','=',0,'[',']',
+	'\\',';','\'',0,',','.','/',' ',
+	0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,
+	'0','1','2','3','4','5','6','7','8','9',
+	'*','/','+','-','.',0,
+	0,0,0,0,0,0,0,0,
 };
 
 //NOTE(delle) the first 8bits of a keymod are reserved for the Key enum
@@ -79,6 +100,316 @@ typedef Type InputMod; enum{
 	InputMod_RctrlRshiftLalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Lalt,
 	InputMod_RctrlRshiftRalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Ralt,
 };
+
+global char input_keycode_to_char(KeyCode key) {
+	switch(key) {
+		case Key_A: return 'a';
+		case Key_B: return 'b';
+		case Key_C: return 'c';
+		case Key_D: return 'd';
+		case Key_E: return 'e';
+		case Key_F: return 'f';
+		case Key_G: return 'g';
+		case Key_H: return 'h';
+		case Key_I: return 'i';
+		case Key_J: return 'j';
+		case Key_K: return 'k';
+		case Key_L: return 'l';
+		case Key_M: return 'm';
+		case Key_N: return 'n';
+		case Key_O: return 'o';
+		case Key_P: return 'p';
+		case Key_Q: return 'q';
+		case Key_R: return 'r';
+		case Key_S: return 's';
+		case Key_T: return 't';
+		case Key_U: return 'u';
+		case Key_V: return 'v';
+		case Key_W: return 'w';
+		case Key_X: return 'x';
+		case Key_Y: return 'y';
+		case Key_Z: return 'z';
+		case Key_A|InputMod_AnyShift: return 'A';
+		case Key_B|InputMod_AnyShift: return 'B';
+		case Key_C|InputMod_AnyShift: return 'C';
+		case Key_D|InputMod_AnyShift: return 'D';
+		case Key_E|InputMod_AnyShift: return 'E';
+		case Key_F|InputMod_AnyShift: return 'F';
+		case Key_G|InputMod_AnyShift: return 'G';
+		case Key_H|InputMod_AnyShift: return 'H';
+		case Key_I|InputMod_AnyShift: return 'I';
+		case Key_J|InputMod_AnyShift: return 'J';
+		case Key_K|InputMod_AnyShift: return 'K';
+		case Key_L|InputMod_AnyShift: return 'L';
+		case Key_M|InputMod_AnyShift: return 'M';
+		case Key_N|InputMod_AnyShift: return 'N';
+		case Key_O|InputMod_AnyShift: return 'O';
+		case Key_P|InputMod_AnyShift: return 'P';
+		case Key_Q|InputMod_AnyShift: return 'Q';
+		case Key_R|InputMod_AnyShift: return 'R';
+		case Key_S|InputMod_AnyShift: return 'S';
+		case Key_T|InputMod_AnyShift: return 'T';
+		case Key_U|InputMod_AnyShift: return 'U';
+		case Key_V|InputMod_AnyShift: return 'V';
+		case Key_W|InputMod_AnyShift: return 'W';
+		case Key_X|InputMod_AnyShift: return 'X';
+		case Key_Y|InputMod_AnyShift: return 'Y';
+		case Key_Z|InputMod_AnyShift: return 'Z';
+
+		case Key_0: return '0';
+		case Key_1: return '1';
+		case Key_2: return '2';
+		case Key_3: return '3';
+		case Key_4: return '4';
+		case Key_5: return '5';
+		case Key_6: return '6';
+		case Key_7: return '7';
+		case Key_8: return '8';
+		case Key_9: return '9';
+
+		case Key_0|InputMod_AnyShift: return ')';
+		case Key_1|InputMod_AnyShift: return '!';
+		case Key_2|InputMod_AnyShift: return '@';
+		case Key_3|InputMod_AnyShift: return '#';
+		case Key_4|InputMod_AnyShift: return '$';
+		case Key_5|InputMod_AnyShift: return '%';
+		case Key_6|InputMod_AnyShift: return '^';
+		case Key_7|InputMod_AnyShift: return '&';
+		case Key_8|InputMod_AnyShift: return '*';
+		case Key_9|InputMod_AnyShift: return '(';
+
+		case Key_BACKQUOTE: return '`';
+		case Key_BACKQUOTE|InputMod_AnyShift: return '~';
+
+		case Key_MINUS: return '-';
+		case Key_MINUS|InputMod_AnyShift: return '_';
+		case Key_EQUALS: return '=';
+		case Key_EQUALS|InputMod_AnyShift: return '+';
+		case Key_LBRACKET: return '[';
+		case Key_LBRACKET|InputMod_AnyShift: return '{';
+		case Key_RBRACKET: return ']';
+		case Key_RBRACKET|InputMod_AnyShift: return '}';
+
+		case Key_BACKSLASH: return '\\';
+		case Key_BACKSLASH|InputMod_AnyShift: return '|';
+		case Key_SEMICOLON: return ';';
+		case Key_SEMICOLON|InputMod_AnyShift: return ':';
+		case Key_APOSTROPHE: return '\'';
+		case Key_APOSTROPHE|InputMod_AnyShift: return '"';
+		case Key_COMMA: return ',';
+		case Key_COMMA|InputMod_AnyShift: return '<';
+		case Key_PERIOD: return '.';
+		case Key_PERIOD|InputMod_AnyShift: return '>';
+		case Key_FORWARDSLASH: return '/';
+		case Key_FORWARDSLASH|InputMod_AnyShift: return '?'; 
+		case Key_SPACE: return ' ';
+
+		case Key_NP0: return '0';
+		case Key_NP1: return '1';
+		case Key_NP2: return '2';
+		case Key_NP3: return '3';
+		case Key_NP4: return '4';
+		case Key_NP5: return '5';
+		case Key_NP6: return '6';
+		case Key_NP7: return '7';
+		case Key_NP8: return '8';
+		case Key_NP9: return '9';
+
+		case Key_NPMULTIPLY: return '*';
+		case Key_NPDIVIDE: return '/';
+		case Key_NPPLUS: return '+';
+		case Key_NPMINUS: return '-';
+		case Key_NPPERIOD: return '.';
+	}
+	return 0;
+}
+
+global str8 input_keycode_to_str8(KeyCode key) {
+	switch(key) {
+		case Key_A|InputMod_None:
+		case Key_A: return str8l("a");
+		case Key_B|InputMod_None:
+		case Key_B: return str8l("b");
+		case Key_C|InputMod_None:
+		case Key_C: return str8l("c");
+		case Key_D|InputMod_None:
+		case Key_D: return str8l("d");
+		case Key_E|InputMod_None:
+		case Key_E: return str8l("e");
+		case Key_F|InputMod_None:
+		case Key_F: return str8l("f");
+		case Key_G|InputMod_None:
+		case Key_G: return str8l("g");
+		case Key_H|InputMod_None:
+		case Key_H: return str8l("h");
+		case Key_I|InputMod_None:
+		case Key_I: return str8l("i");
+		case Key_J|InputMod_None:
+		case Key_J: return str8l("j");
+		case Key_K|InputMod_None:
+		case Key_K: return str8l("k");
+		case Key_L|InputMod_None:
+		case Key_L: return str8l("l");
+		case Key_M|InputMod_None:
+		case Key_M: return str8l("m");
+		case Key_N|InputMod_None:
+		case Key_N: return str8l("n");
+		case Key_O|InputMod_None:
+		case Key_O: return str8l("o");
+		case Key_P|InputMod_None:
+		case Key_P: return str8l("p");
+		case Key_Q|InputMod_None:
+		case Key_Q: return str8l("q");
+		case Key_R|InputMod_None:
+		case Key_R: return str8l("r");
+		case Key_S|InputMod_None:
+		case Key_S: return str8l("s");
+		case Key_T|InputMod_None:
+		case Key_T: return str8l("t");
+		case Key_U|InputMod_None:
+		case Key_U: return str8l("u");
+		case Key_V|InputMod_None:
+		case Key_V: return str8l("v");
+		case Key_W|InputMod_None:
+		case Key_W: return str8l("w");
+		case Key_X|InputMod_None:
+		case Key_X: return str8l("x");
+		case Key_Y|InputMod_None:
+		case Key_Y: return str8l("y");
+		case Key_Z|InputMod_None:
+		case Key_Z: return str8l("z");
+		case Key_A|InputMod_AnyShift: return str8l("A");
+		case Key_B|InputMod_AnyShift: return str8l("B");
+		case Key_C|InputMod_AnyShift: return str8l("C");
+		case Key_D|InputMod_AnyShift: return str8l("D");
+		case Key_E|InputMod_AnyShift: return str8l("E");
+		case Key_F|InputMod_AnyShift: return str8l("F");
+		case Key_G|InputMod_AnyShift: return str8l("G");
+		case Key_H|InputMod_AnyShift: return str8l("H");
+		case Key_I|InputMod_AnyShift: return str8l("I");
+		case Key_J|InputMod_AnyShift: return str8l("J");
+		case Key_K|InputMod_AnyShift: return str8l("K");
+		case Key_L|InputMod_AnyShift: return str8l("L");
+		case Key_M|InputMod_AnyShift: return str8l("M");
+		case Key_N|InputMod_AnyShift: return str8l("N");
+		case Key_O|InputMod_AnyShift: return str8l("O");
+		case Key_P|InputMod_AnyShift: return str8l("P");
+		case Key_Q|InputMod_AnyShift: return str8l("Q");
+		case Key_R|InputMod_AnyShift: return str8l("R");
+		case Key_S|InputMod_AnyShift: return str8l("S");
+		case Key_T|InputMod_AnyShift: return str8l("T");
+		case Key_U|InputMod_AnyShift: return str8l("U");
+		case Key_V|InputMod_AnyShift: return str8l("V");
+		case Key_W|InputMod_AnyShift: return str8l("W");
+		case Key_X|InputMod_AnyShift: return str8l("X");
+		case Key_Y|InputMod_AnyShift: return str8l("Y");
+		case Key_Z|InputMod_AnyShift: return str8l("Z");
+
+		case Key_0|InputMod_None:
+		case Key_0: return str8l("0");
+		case Key_1|InputMod_None:
+		case Key_1: return str8l("1");
+		case Key_2|InputMod_None:
+		case Key_2: return str8l("2");
+		case Key_3|InputMod_None:
+		case Key_3: return str8l("3");
+		case Key_4|InputMod_None:
+		case Key_4: return str8l("4");
+		case Key_5|InputMod_None:
+		case Key_5: return str8l("5");
+		case Key_6|InputMod_None:
+		case Key_6: return str8l("6");
+		case Key_7|InputMod_None:
+		case Key_7: return str8l("7");
+		case Key_8|InputMod_None:
+		case Key_8: return str8l("8");
+		case Key_9|InputMod_None:
+		case Key_9: return str8l("9");
+
+		case Key_0|InputMod_AnyShift: return str8l(")");
+		case Key_1|InputMod_AnyShift: return str8l("!");
+		case Key_2|InputMod_AnyShift: return str8l("@");
+		case Key_3|InputMod_AnyShift: return str8l("#");
+		case Key_4|InputMod_AnyShift: return str8l("#");
+		case Key_5|InputMod_AnyShift: return str8l("$");
+		case Key_6|InputMod_AnyShift: return str8l("%");
+		case Key_7|InputMod_AnyShift: return str8l("^");
+		case Key_8|InputMod_AnyShift: return str8l("*");
+		case Key_9|InputMod_AnyShift: return str8l("(");
+
+		case Key_BACKQUOTE|InputMod_None:
+		case Key_BACKQUOTE: return str8l("`");
+		case Key_BACKQUOTE|InputMod_AnyShift: return str8l("~");
+
+		case Key_MINUS|InputMod_None:
+		case Key_MINUS: return str8l("-");
+		case Key_MINUS|InputMod_AnyShift: return str8l("_");
+		case Key_EQUALS|InputMod_None:
+		case Key_EQUALS: return str8l("=");
+		case Key_EQUALS|InputMod_AnyShift: return str8l("+");
+		case Key_LBRACKET|InputMod_None:
+		case Key_LBRACKET: return str8l("[");
+		case Key_LBRACKET|InputMod_AnyShift: return str8l("{");
+		case Key_RBRACKET|InputMod_None:
+		case Key_RBRACKET: return str8l("]");
+		case Key_RBRACKET|InputMod_AnyShift: return str8l("}");
+
+		case Key_BACKSLASH|InputMod_None:
+		case Key_BACKSLASH: return str8l("\\");
+		case Key_BACKSLASH|InputMod_AnyShift: return str8l("|");
+		case Key_SEMICOLON|InputMod_None:
+		case Key_SEMICOLON: return str8l(";");
+		case Key_SEMICOLON|InputMod_AnyShift: return str8l(":");
+		case Key_APOSTROPHE|InputMod_None:
+		case Key_APOSTROPHE: return str8l("'");
+		case Key_APOSTROPHE|InputMod_AnyShift: return str8l("\"");
+		case Key_COMMA|InputMod_None:
+		case Key_COMMA: return str8l(",");
+		case Key_COMMA|InputMod_AnyShift: return str8l("<");
+		case Key_PERIOD|InputMod_None:
+		case Key_PERIOD: return str8l(".");
+		case Key_PERIOD|InputMod_AnyShift: return str8l(">");
+		case Key_FORWARDSLASH|InputMod_None:
+		case Key_FORWARDSLASH: return str8l("/");
+		case Key_FORWARDSLASH|InputMod_AnyShift: return str8l("?"); 
+		case Key_SPACE|InputMod_None:
+		case Key_SPACE: return str8l(" ");
+
+		case Key_NP0|InputMod_None:
+		case Key_NP0: return str8l("0");
+		case Key_NP1|InputMod_None:
+		case Key_NP1: return str8l("1");
+		case Key_NP2|InputMod_None:
+		case Key_NP2: return str8l("2");
+		case Key_NP3|InputMod_None:
+		case Key_NP3: return str8l("3");
+		case Key_NP4|InputMod_None:
+		case Key_NP4: return str8l("4");
+		case Key_NP5|InputMod_None:
+		case Key_NP5: return str8l("5");
+		case Key_NP6|InputMod_None:
+		case Key_NP6: return str8l("6");
+		case Key_NP7|InputMod_None:
+		case Key_NP7: return str8l("7");
+		case Key_NP8|InputMod_None:
+		case Key_NP8: return str8l("8");
+		case Key_NP9|InputMod_None:
+		case Key_NP9: return str8l("9");
+
+		case Key_NPMULTIPLY|InputMod_None:
+		case Key_NPMULTIPLY: return str8l("*");
+		case Key_NPDIVIDE|InputMod_None:
+		case Key_NPDIVIDE: return str8l("/");
+		case Key_NPPLUS|InputMod_None:
+		case Key_NPPLUS: return str8l("+");
+		case Key_NPMINUS|InputMod_None:
+		case Key_NPMINUS: return str8l("-");
+		case Key_NPPERIOD|InputMod_None:
+		case Key_NPPERIOD: return str8l(".");
+		default: return KeyCodeStrings[key & INPUT_KEY_MASK];
+	}
+	return {};
+}
 
 struct Input{
 	b32 oldKeyState[MAX_KEYBOARD_KEYS];
@@ -179,11 +510,10 @@ input_mods_down(u32 mods){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @input_key_states
-#define INPUT_KEY_MASK 0x000000FF //mod_key & 0x000000FF extract the key
-#define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
+
 FORCE_INLINE b32
 key_down(u32 mod_key){ 
-	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK]&& input_mods_down(mod_key & INPUT_MOD_MASK);
+	return  DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
 }
 
 FORCE_INLINE b32
@@ -201,13 +531,57 @@ key_released(u32 mod_key){
 	return !DeshInput->newKeyState[mod_key & INPUT_KEY_MASK] &&  DeshInput->oldKeyState[mod_key & INPUT_KEY_MASK] && input_mods_down(mod_key & INPUT_MOD_MASK);
 }
 
-FORCE_INLINE void
-simulate_key_press(u32 key){
-	DeshInput->newKeyState[key] = true;
-}
 
 FORCE_INLINE b32 any_key_pressed() { return  key_released(Key_NONE); }
 FORCE_INLINE b32 any_key_down()    { return !key_down(Key_NONE); }
 FORCE_INLINE b32 any_key_released(){ return  key_pressed(Key_NONE); }
+
+static void
+simulate_key_press(u32 key){
+#define setkeyf(key) DeshInput->newKeyState[key] = 0;
+#define setkeyt(key) DeshInput->newKeyState[key] = 1;
+	switch(key&INPUT_MOD_MASK) {
+		case(InputMod_None):            setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Lctrl):           setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Rctrl):           setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Lshift):          setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Rshift):          setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Lalt):            setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_Ralt):            setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_AnyShift):        setkeyt(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_AnyAlt):          setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_AnyCtrl):         setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlLshift):     setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlRshift):     setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlLshift):     setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlRshift):     setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlLalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlRalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RctrlLalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlRalt):       setkeyf(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_LshiftLalt):      setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LshiftRalt):      setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RshiftLalt):      setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RshiftRalt):      setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_LctrlLshiftLalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlLshiftRalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_LctrlRshiftLalt): setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_LctrlRshiftRalt): setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyt(Key_LCTRL); setkeyf(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RctrlLshiftLalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlLshiftRalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+		case(InputMod_RctrlRshiftLalt): setkeyt(Key_LSHIFT); setkeyf(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyt(Key_LALT); setkeyf(Key_RALT); break;
+		case(InputMod_RctrlRshiftRalt): setkeyf(Key_LSHIFT); setkeyt(Key_RSHIFT); setkeyf(Key_LCTRL); setkeyt(Key_RCTRL); setkeyf(Key_LALT); setkeyt(Key_RALT); break;
+	}
+#undef setkeyt
+#undef setkeyf
+	DeshInput->newKeyState[key & INPUT_KEY_MASK] = true;
+	char c = input_keycode_to_char(key);
+	if(c) DeshInput->charIn[DeshInput->charCount++] = c;
+	if(DeshInput->newKeyState[0]) {
+		DeshInput->newKeyState[Key_NONE] = false;
+		DeshInput->oldKeyState[Key_NONE] = true;
+	}
+}
+
 
 #endif //DESHI_INPUT_H

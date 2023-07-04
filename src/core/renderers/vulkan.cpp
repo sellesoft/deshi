@@ -2637,6 +2637,11 @@ ResetCommands(){DPZoneScoped;
 	{//model commands
 		renderModelCmdCount = 0;
 	}
+	
+#ifdef BUILD_INTERNAL
+	renderBookKeeperCount = 0;
+#endif
+	
 }
 
 
@@ -3663,7 +3668,7 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 void
-render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
+deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != textures[(texture) ? texture->render_idx : 1].descriptorSet)
@@ -3675,6 +3680,15 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
+
+#if BUILD_INTERNAL
+	RenderBookKeeper keeper; 
+	keeper.type = RenderBookKeeper_Cmd;
+	keeper.cmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]];
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+#endif
 }
 
 void
@@ -3739,7 +3753,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		create_info.usage       = usage_flags;
 		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		resultVk = vkCreateBuffer(device, &create_info, allocator, (VkBuffer*)result->buffer_handle); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)result->buffer_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Buffer").str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)result->buffer_handle, (const char*)to_dstr8v(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Buffer").str);
 	}
 	
 	{//allocate the memory
@@ -3761,7 +3775,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
 		resultVk = vkAllocateMemory(device, &alloc_info, allocator, (VkDeviceMemory*)result->memory_handle); AssertVk(resultVk);
 		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)ToString8(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)to_dstr8v(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
 	}
 	
 	//map and upload the data depending on the mapping style

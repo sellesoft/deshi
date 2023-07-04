@@ -42,7 +42,7 @@ win32_vkcode_to_key(s32 vk){
 		case VK_F5: return Key_F5; case VK_F6:  return Key_F6;  case VK_F7:  return Key_F7;  case VK_F8:  return Key_F8;
 		case VK_F9: return Key_F9; case VK_F10: return Key_F10; case VK_F11: return Key_F11; case VK_F12: return Key_F12;
 		case VK_UP: return Key_UP; case VK_DOWN: return Key_DOWN; case VK_LEFT: return Key_LEFT; case VK_RIGHT: return Key_RIGHT;
-		case VK_ESCAPE:    return Key_ESCAPE;     case VK_OEM_3:     return Key_TILDE;        case VK_TAB:        return Key_TAB;
+		case VK_ESCAPE:    return Key_ESCAPE;     case VK_OEM_3:     return Key_APOSTROPHE;   case VK_TAB:        return Key_TAB;
 		case VK_CAPITAL:   return Key_CAPSLOCK;   case VK_LSHIFT:    return Key_LSHIFT;       case VK_LCONTROL:   return Key_LCTRL;
 		case VK_LMENU:     return Key_LALT;       case VK_BACK:      return Key_BACKSPACE;    case VK_RETURN:     return Key_ENTER;
 		case VK_RSHIFT:    return Key_RSHIFT;     case VK_RCONTROL:  return Key_RCTRL;        case VK_RMENU:      return Key_RALT;
@@ -318,15 +318,15 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 				DeshInput->realKeyState[key] = !upFlag;
 				
 #if LOG_INPUTS
-				str8_builder s; str8_builder_init(&s, KeyCodeStrings[key], deshi_temp_allocator);
-				str8_builder_append(&s, (upFlag) ? str8l(" released") : str8l(" pressed"));
-				if(DeshInput->realKeyState[Key_LSHIFT]) str8_builder_append(&s, str8l(" + LSHIFT"));
-				if(DeshInput->realKeyState[Key_RSHIFT]) str8_builder_append(&s, str8l(" + RSHIFT"));
-				if(DeshInput->realKeyState[Key_LCTRL])  str8_builder_append(&s, str8l(" + LCTRL"));
-				if(DeshInput->realKeyState[Key_RCTRL])  str8_builder_append(&s, str8l(" + RCTRL"));
-				if(DeshInput->realKeyState[Key_LALT])   str8_builder_append(&s, str8l(" + LALT"));
-				if(DeshInput->realKeyState[Key_RALT])   str8_builder_append(&s, str8l(" + RALT"));
-				Log("input", str8_builder_peek(&s)); 
+				dstr8 s; dstr8_init(&s, KeyCodeStrings[key], deshi_temp_allocator);
+				dstr8_append(&s, (upFlag) ? str8l(" released") : str8l(" pressed"));
+				if(DeshInput->realKeyState[Key_LSHIFT]) dstr8_append(&s, str8l(" + LSHIFT"));
+				if(DeshInput->realKeyState[Key_RSHIFT]) dstr8_append(&s, str8l(" + RSHIFT"));
+				if(DeshInput->realKeyState[Key_LCTRL])  dstr8_append(&s, str8l(" + LCTRL"));
+				if(DeshInput->realKeyState[Key_RCTRL])  dstr8_append(&s, str8l(" + RCTRL"));
+				if(DeshInput->realKeyState[Key_LALT])   dstr8_append(&s, str8l(" + LALT"));
+				if(DeshInput->realKeyState[Key_RALT])   dstr8_append(&s, str8l(" + RALT"));
+				Log("input", dstr8_peek(&s)); 
 #endif
 			}
 		}break;
@@ -587,7 +587,7 @@ platform_update(){DPZoneScoped; DPFrameMark;
 		memcpy(&DeshInput->oldKeyState, &DeshInput->newKeyState,  sizeof(b32)*MAX_KEYBOARD_KEYS);
 		memcpy(&DeshInput->newKeyState, &DeshInput->realKeyState, sizeof(b32)*MAX_KEYBOARD_KEYS);
 		
-		if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS)){
+		if(!memcmp(DeshInput->newKeyState, DeshInput->zero, MAX_KEYBOARD_KEYS * sizeof(b32))){
 			reset_stopwatch(&DeshInput->time_since_key_hold);
 			DeshInput->newKeyState[0] = 1;
 			DeshInput->anyKeyDown = 0;
@@ -1782,13 +1782,13 @@ void condition_variable_notify_all(condvar* cv){DPZoneScoped;
 
 void 
 condition_variable_wait(condvar* cv){DPZoneScoped;
-	semaphore_leave(&DeshThreadManager->wake_up_barrier);
+	semaphore_leave(&DeshThreader->wake_up_barrier);
 	::EnterCriticalSection((CRITICAL_SECTION*)cv->cshandle);
 	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cv->cvhandle, (CRITICAL_SECTION*)cv->cshandle, INFINITE)){
 		win32_log_last_error("SleepConditionVariableCS");
 	}
 	::LeaveCriticalSection((CRITICAL_SECTION*)cv->cshandle);
-	semaphore_enter(&DeshThreadManager->wake_up_barrier);
+	semaphore_enter(&DeshThreader->wake_up_barrier);
 }
 
 void 
@@ -1800,9 +1800,9 @@ condition_variable_wait_for(condvar* cv, u64 milliseconds){DPZoneScoped;
 
 
 semaphore
-semaphore_init(u64 ival, u64 mval){
+semaphore_init(u64 mval){
 	semaphore se;
-	if(se.handle = CreateSemaphore(0, mval, ival, 0); !se.handle){
+	if(se.handle = CreateSemaphore(0, mval, 0, 0); !se.handle){
 		win32_log_last_error("CreateSemaphore");
 	}
 	return se;
@@ -1848,22 +1848,24 @@ semaphore_leave(semaphore* se){
 // if it can't find any jobs to run it just goes to sleep
 void
 deshi__thread_worker(Thread* me){DPZoneScoped;
-	ThreadManager* man = DeshThreadManager;
+	NotImplemented;
+	/*
+	ThreadManager* man = DeshThreader;
 	WorkerLog("spawned");
 	semaphore_enter(&man->wake_up_barrier);
-	SetThreadDescription(GetCurrentThread(), wchar_from_str8(ToString8(deshi_temp_allocator, "worker ", me->idx), 0, deshi_temp_allocator));
+	SetThreadDescription(GetCurrentThread(), wchar_from_str8(to_dstr8v(deshi_temp_allocator, "worker ", me->idx).fin, 0, deshi_temp_allocator));
 	while(!me->close){
 		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
 			WorkerLog("looking to take a job from job ring");
 			ThreadJob tj;
 			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
 			
-			mutex_lock(&man->job_ring_lock);
+			mutex_lock(&man->find_job_lock);
 			
 			//check once more that there are jobs since the locking thread could have taken the last one
 			//im sure theres a better way to do this
 			if(!man->job_ring.count){
-				mutex_unlock(&man->job_ring_lock);
+				mutex_unlock(&man->find_job_lock);
 				break; 
 			} 	
 			WorkerLog("locked job ring and taking a job");
@@ -1871,7 +1873,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			tj = man->job_ring[0];
 			man->job_ring.remove(1);
 			
-			mutex_unlock(&man->job_ring_lock);
+			mutex_unlock(&man->find_job_lock);
 			
 			//run the function
 			WorkerLog("running job");
@@ -1890,81 +1892,108 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 		
 	}
 	WorkerLog("closing");
+	*/
 }
 
 DWORD WINAPI
 deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
-	deshi__thread_worker((Thread*)in);
+	NotImplemented;
+	/*
+deshi__thread_worker((Thread*)in);
+*/
 	return 0;
 }
 
 void 
 threader_init(u32 max_jobs){DPZoneScoped;
+	NotImplemented;
+	/*
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
-	g_tmanager->job_ring.init(max_jobs, deshi_allocator);
-	DeshThreadManager->wake_up_queue.init(DeshThreadManager->max_awake_threads*4);
+	g_threader->job_ring.init(max_jobs, deshi_allocator);
+	DeshThreader->wake_up_queue.init(DeshThreader->max_awake_threads*4);
 	//TODO(sushi) query for max amount of threads 
-	DeshThreadManager->wake_up_barrier = semaphore_init(8,8);
-	semaphore_enter(&DeshThreadManager->wake_up_barrier);
-	DeshThreadManager->idle = condition_variable_init();
-	DeshThreadManager->job_ring_lock = mutex_init();
+	DeshThreader->wake_up_barrier = semaphore_init(8,8);
+	semaphore_enter(&DeshThreader->wake_up_barrier);
+	DeshThreader->idle = condition_variable_init();
+	DeshThreader->find_job_lock = mutex_init();
 	DeshiStageInitEnd(DS_THREAD);
+*/
 }
 
 void 
 threader_spawn_thread(u32 count){DPZoneScoped;
-	if(DeshThreadManager->max_threads && DeshThreadManager->threads.count + count > DeshThreadManager->max_threads){
-		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", DeshThreadManager->max_threads);
+	NotImplemented;
+	/*
+	if(DeshThreader->max_threads && DeshThreader->threads.count + count > DeshThreader->max_threads){
+		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", DeshThreader->max_threads);
 	}
 	forI(count){
-		DeshThreadManager->awake_threads++;
+		DeshThreader->awake_threads++;
 		Thread* t = (Thread*)memalloc(sizeof(Thread));
-		if(DeshThreadManager->threads.count)
-			t->idx = (*DeshThreadManager->threads.last)->idx + 1;
+		if(DeshThreader->threads.count)
+			t->idx = (*DeshThreader->threads.last)->idx + 1;
 		else
 			t->idx = 0;
-		DeshThreadManager->threads.add(t);
+		DeshThreader->threads.add(t);
 		::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
 	}
+*/
 }
 
 void 
 threader_close_all_threads(){DPZoneScoped;
-	forI(DeshThreadManager->threads.count) DeshThreadManager->threads[i]->close = true;
+	NotImplemented;
+	/*
+	forI(DeshThreader->threads.count) DeshThreader->threads[i]->close = true;
 	threader_wake_threads(0);
-	DeshThreadManager->threads.clear();
+	DeshThreader->threads.clear();
+	*/
 }
 
 void 
 threader_add_job(ThreadJob job){DPZoneScoped;
-	DeshThreadManager->job_ring.add(job);
+	NotImplemented;
+	/*
+	DeshThreader->job_ring.add(job);
+*/
 }
 
 void 
 threader_add_jobs(carray<ThreadJob> jobs){DPZoneScoped;
-	forI(jobs.count) DeshThreadManager->job_ring.add(jobs[i]);
+	NotImplemented;
+	/*
+	forI(jobs.count) DeshThreader->job_ring.add(jobs[i]);
+*/
 }
 
 void 
 threader_cancel_all_jobs(){DPZoneScoped;
-	DeshThreadManager->job_ring.clear();
+	NotImplemented;
+	/*
+	DeshThreader->job_ring.clear();
 } 
 
 void 
 threader_wake_threads(u32 count){DPZoneScoped;
-	if(!DeshThreadManager->threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
+	NotImplemented;
+	/*
+	if(!DeshThreader->threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
 	else if(!count){
-		condition_variable_notify_all(&DeshThreadManager->idle);
+		condition_variable_notify_all(&DeshThreader->idle);
 	}  
 	else{
 		forI(count) 
-			condition_variable_notify_one(&DeshThreadManager->idle);
+			condition_variable_notify_one(&DeshThreader->idle);
 	}
+	*/
 }
 
 void 
 threader_set_thread_name(str8 name){
+	NotImplemented;
+	/*
 	SetThreadDescription(GetCurrentThread(), wchar_from_str8(name, 0, deshi_temp_allocator));
+*/
 }
 
 
@@ -2430,6 +2459,8 @@ u64 net_address_init(netAddress* address, str8 host, str8 port){
 }
 
 str8 net_address_str(netAddress address, b32 incl_port){
+	NotImplemented;
+	/*
 	str8 out = {(u8*)memtalloc(21), 21}; 
 	inet_ntop(AF_INET, &address.host, (PSTR)out.str, out.count);
 	if(incl_port){
@@ -2439,4 +2470,6 @@ str8 net_address_str(netAddress address, b32 incl_port){
 		memcpy(p, c.str, 5);
 	}
 	return out;
+*/
+	return str8{};
 }

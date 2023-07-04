@@ -23,12 +23,11 @@
   window_create(str8l("deshi"));               \
   render_init();                               \
   assets_init();                               \
-  uiInit(g_memory,0);                          \
+  ui_init();                                   \
   console_init();                              \
   cmd_init();                                  \
   window_show(DeshWindow);                     \
-  render_use_default_camera();                 \
-  threader_init();
+  render_use_default_camera();
 
 #define deshi_init_specify(name,main_size,temp_size) \
   profiler_init();                                   \
@@ -38,19 +37,18 @@
   window_create(str8l(name));                        \
   render_init();                                     \
   assets_init();                                     \
-  uiInit(g_memory,0);                                \
+  ui_init();                                         \
   console_init();                                    \
   cmd_init();                                        \
   window_show(DeshWindow);                           \
-  render_use_default_camera();                       \
-  threader_init();
+  render_use_default_camera();
 
 #define deshi_loop_start()   \
   while(platform_update()){
 
 #define deshi_loop_end() \
     console_update();    \
-    uiUpdate();          \
+    ui_update();         \
     render_update();     \
     logger_update();     \
     memory_clear_temp(); \

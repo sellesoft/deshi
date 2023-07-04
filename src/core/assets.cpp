@@ -9,8 +9,6 @@ persist Allocator assets_load_allocator{
 			return (void*)assets_line_buffer;
 		}
 	},
-	Allocator_ChangeMemory_Noop,
-	Allocator_ChangeMemory_Noop,
 	Allocator_ReleaseMemory_Noop,
 	Allocator_ResizeMemory_Noop
 };
@@ -519,15 +517,15 @@ assets_mesh_create_from_file(str8 name){DPZoneScoped;
 	if(str8_equal_lazy(name, STR8("null"))) return assets_mesh_null();
 	
 	//prepend the meshes (models) folder
-	str8_builder builder;
-	str8_builder_init(&builder, STR8("data/models/"), deshi_temp_allocator);
-	str8_builder_append(&builder, name);
+	dstr8 builder;
+	dstr8_init(&builder, STR8("data/models/"), deshi_temp_allocator);
+	dstr8_append(&builder, name);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(name, '.');
-	if(front.count == name.count) str8_builder_append(&builder, STR8(".mesh"));
+	if(front.count == name.count) dstr8_append(&builder, STR8(".mesh"));
 	
-	return assets_mesh_create_from_path(str8_builder_peek(&builder));
+	return assets_mesh_create_from_path(dstr8_peek(&builder));
 }
 
 
@@ -818,15 +816,15 @@ assets_material_create_from_file(str8 name){DPZoneScoped;
 	if(str8_equal_lazy(name, STR8("null"))) return assets_material_null();
 	
 	//prepend the materials (models) folder
-	str8_builder builder;
-	str8_builder_init(&builder, STR8("data/models/"), deshi_temp_allocator);
-	str8_builder_append(&builder, name);
+	dstr8 builder;
+	dstr8_init(&builder, STR8("data/models/"), deshi_temp_allocator);
+	dstr8_append(&builder, name);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(name, '.');
-	if(front.count == name.count) str8_builder_append(&builder, STR8(".mat"));
+	if(front.count == name.count) dstr8_append(&builder, STR8(".mat"));
 	
-	return assets_material_create_from_path(str8_builder_peek(&builder));
+	return assets_material_create_from_path(dstr8_peek(&builder));
 }
 
 
@@ -951,23 +949,23 @@ assets_material_save(Material* material){DPZoneScoped;
 
 void
 assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
-	str8_builder builder;
-	str8_builder_init(&builder,
-					  ToString8(deshi_temp_allocator,
-								">material"
-								"\nname   \"",material->name,"\""
-								"\nshader ",ShaderStrings[material->shader],
-								"\nflags  ",material->flags,
-								"\n"
-								"\n>textures"),
-					  deshi_temp_allocator);
+	dstr8 builder;
+	dstr8_init(&builder,
+			to_dstr8v(deshi_temp_allocator,
+					">material"
+					"\nname   \"",material->name,"\""
+					"\nshader ",ShaderStrings[material->shader],
+					"\nflags  ",material->flags,
+					"\n"
+					"\n>textures").fin,
+			deshi_temp_allocator);
 	if(material->textureArray){
 		for_stb_array(material->textureArray){
-			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
 		}
 	}
-	str8_builder_append(&builder, STR8("\n"));
-	str8 mat_text = str8_builder_peek(&builder);
+	dstr8_append(&builder, STR8("\n"));
+	str8 mat_text = dstr8_peek(&builder);
 	file_write_simple(path, mat_text.str, mat_text.count*sizeof(u8));
 	Log("assets","Successfully saved material: ",path);
 }
@@ -1005,13 +1003,13 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	
 	//prepend the models folder
 	str8 directory = STR8("data/models/");
-	str8_builder builder;
-	str8_builder_init(&builder, directory, deshi_temp_allocator);
-	str8_builder_append(&builder, filename);
+	dstr8 builder;
+	dstr8_init(&builder, directory, deshi_temp_allocator);
+	dstr8_append(&builder, filename);
 	
 	//append extension if not provided
 	str8 front = str8_eat_until_last(filename, '.');
-	if(front.count == filename.count) str8_builder_append(&builder, STR8(".model"));
+	if(front.count == filename.count) dstr8_append(&builder, STR8(".model"));
 	
 	//check if model is already loaded
 	for_stb_array(DeshAssets->model_array){
@@ -1021,7 +1019,7 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	}
 	
 	//check which files need to be parsed
-	str8 model_path = str8_builder_peek(&builder);
+	str8 model_path = dstr8_peek(&builder);
 	str8 obj_path  = str8_concat3(directory, front, STR8(".obj"),  deshi_temp_allocator);
 	str8 mesh_path = str8_concat3(directory, front, STR8(".mesh"), deshi_temp_allocator);
 	b32 parse_obj_mesh  = true;
@@ -1855,25 +1853,25 @@ assets_model_save(Model* model){
 	}
 	
 	str8 path = str8_concat3(directory,str8_from_cstr(model->name),STR8(".model"), deshi_temp_allocator);
-	str8_builder builder;
-	str8_builder_init(&builder,
-					  ToString8(deshi_temp_allocator,
-								">model"
-								"\nname     \"",model->name,"\""
-								"\nflags    ", model->flags,
-								"\nmesh     \"", model->mesh->name,"\""
-								"\narmature ", 0,
-								"\n"
-								"\n>batches"),
-					  deshi_temp_allocator);
+	dstr8 builder;
+	dstr8_init(&builder,
+			to_dstr8v(deshi_temp_allocator,
+					">model"
+					"\nname     \"",model->name,"\""
+					"\nflags    ", model->flags,
+					"\nmesh     \"", model->mesh->name,"\""
+					"\narmature ", 0,
+					"\n"
+					"\n>batches").fin,
+			deshi_temp_allocator);
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save(it->material);
-			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
-	str8_builder_append(&builder, STR8("\n"));
-	str8 model_text = str8_builder_peek(&builder);
+	dstr8_append(&builder, STR8("\n"));
+	str8 model_text = dstr8_peek(&builder);
 	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
 	Log("assets","Successfully saved model: ",path);
 }
@@ -1888,25 +1886,25 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 		assets_mesh_save_to_path(model->mesh, str8_concat3(directory,str8_from_cstr(model->mesh->name),STR8(".mesh"), deshi_temp_allocator));
 	}
 	
-	str8_builder builder;
-	str8_builder_init(&builder,
-					  ToString8(deshi_temp_allocator,
-								">model"
-								"\nname     \"",model->name,"\""
-								"\nflags    ", model->flags,
-								"\nmesh     \"", model->mesh->name,"\""
-								"\narmature ", 0,
-								"\n"
-								"\n>batches"),
-					  deshi_temp_allocator);
+	dstr8 builder;
+	dstr8_init(&builder,
+			to_dstr8v(deshi_temp_allocator,
+					">model"
+					"\nname     \"",model->name,"\""
+					"\nflags    ", model->flags,
+					"\nmesh     \"", model->mesh->name,"\""
+					"\narmature ", 0,
+					"\n"
+					"\n>batches").fin,
+			deshi_temp_allocator);
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
-			str8_builder_append(&builder, ToString8(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
 		}
 	}
-	str8_builder_append(&builder, STR8("\n"));
-	str8 model_text = str8_builder_peek(&builder);
+	dstr8_append(&builder, STR8("\n"));
+	str8 model_text = dstr8_peek(&builder);
 	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
 	Log("assets","Successfully saved model: ",path);
 }
@@ -2239,14 +2237,15 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
 	// Cyrillic         1024 - 1279 ~ 256 chars
-	// Super/Subscripts 8304 - 8348 ~  44 chars (we will want our own method for doing super/subscripts in suugu)
+	// Super/Subscripts 8304 - 8348 ~  44 chars
 	// Currency Symbols 8352 - 8384 ~  32 chars
 	// Arrows           8592 - 8703 ~ 111 chars
 	// Math Symbols     8704 - 8959 ~ 255 chars
+	// Drawing Symbols  9472 - 9727 ~ 255 chars
 	// ...and maybe more to come in the future.
 	
 	//TODO(sushi) maybe implement taking in ranges
-	u32 num_ranges = 7;
+	u32 num_ranges = 8;
 	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(num_ranges*sizeof(*ranges));
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
@@ -2255,6 +2254,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[4].num_chars = 32;   ranges[4].first_unicode_codepoint_in_range = 8352;
 	ranges[5].num_chars = 111;  ranges[5].first_unicode_codepoint_in_range = 8592;
 	ranges[6].num_chars = 255;  ranges[6].first_unicode_codepoint_in_range = 8704;
+	ranges[7].num_chars = 255;  ranges[7].first_unicode_codepoint_in_range = 9472;
 	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
 	ranges[2].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[2].num_chars*sizeof(stbtt_packedchar));
@@ -2262,6 +2262,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
 	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
 	ranges[6].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[6].num_chars*sizeof(stbtt_packedchar));
+	ranges[7].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[7].num_chars*sizeof(stbtt_packedchar));
 	ranges[0].font_size = (f32)size;
 	ranges[1].font_size = (f32)size;
 	ranges[2].font_size = (f32)size;
@@ -2269,6 +2270,8 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[4].font_size = (f32)size;
 	ranges[5].font_size = (f32)size;
 	ranges[6].font_size = (f32)size;
+	ranges[7].font_size = (f32)size;
+
 	
 	/*
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together

@@ -316,16 +316,16 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 	
 	ProgramGl pgl{};
 	pgl.shader_count = shader_count;
-	str8_builder prog_shaders;
-	str8_builder_init(&prog_shaders, str8_lit("|"), deshi_temp_allocator);
+	dstr8 prog_shaders;
+	dstr8_init(&prog_shaders, str8_lit("|"), deshi_temp_allocator);
 	
 	//create program, attach shaders and link
 	pgl.handle = glCreateProgram();
 	forI(shader_count){ 
 		glAttachShader(pgl.handle, glShaders[shader_indexes[i]].handle); 
 		pgl.shaders[i] = shader_indexes[i]; 
-		str8_builder_append(&prog_shaders, glShaders[shader_indexes[i]].filename);
-		str8_builder_append(&prog_shaders, str8_lit("|"));
+		dstr8_append(&prog_shaders, glShaders[shader_indexes[i]].filename);
+		dstr8_append(&prog_shaders, str8_lit("|"));
 	}
 	glLinkProgram(pgl.handle);
 	
@@ -472,12 +472,16 @@ render_init(){DPZoneScoped;
 #elif DESHI_LINUX 
 		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
 		
+		XFlush(linux.x11.display);
+		XDrawString(linux.x11.display, (X11Window)DeshWindow->handle, (GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
+
 		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
+		
 		gladInstallGLXDebug();
 
 		// get restore points 
-		X11::Display* prev_display = glXGetCurrentDisplay();
+		Display* prev_display = glXGetCurrentDisplay();
 		GLXContext prev_context = glXGetCurrentContext();
 		
 		// list of attributes to ask of GLX
@@ -490,27 +494,39 @@ render_init(){DPZoneScoped;
 			0,
 		};
 		
+		int n_elem;
+		GLXFBConfig* config = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes, &n_elem);
+		
+		if(!config || !n_elem) {
+			LogE("opengl", "Cannot find an appropriate framebuffer configuration with glXChooseFBConfig");
+			Assert(0);
+		}
+
+		GLXFBConfig fbconfig = config[0];
+		XFree(config);
+
 		// get the best visual for our chosen attributes
-		X11::XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
+		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
 		if(!vi) {
 			LogE("opengl", "Cannot find an appropriate visual for the given attributes");
 			Assert(0);
 		}
 		
-		X11::Colormap cm = X11::XCreateColormap(linux.x11.display, (X11::Window)DeshWindow->handle, vi->visual, AllocNone);
-		// X11::XSetWindowColormap(linux.x11.display, (X11::Window)DeshWindow->handle, cm);
+		Colormap cm = XCreateColormap(linux.x11.display, (X11Window)DeshWindow->handle, vi->visual, AllocNone);
+		
+		int contextAttribs[] = {
+			GLX_CONTEXT_MAJOR_VERSION_ARB, 3, 
+			GLX_CONTEXT_MINOR_VERSION_ARB, 2, 
+#if BUILD_INTERNAL
+			GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | GLX_CONTEXT_DEBUG_BIT_ARB,
+#else
+			GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB, 
+#endif
+			0 // Terminate the attribute list
+		};
 
-		// X11::XSetWindowAttributes swa;
-		// swa.colormap = cm;
-		// swa.event_mask = ExposureMask | KeyPressMask;
-		
-		// X11::Window win = X11::XCreateWindow(linux.x11.display, linux.x11.root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
-		// X11::XMapWindow(linux.x11.display, win);
-		
-		// DeshWindow->handle = (void*)win;
-		
-		GLXContext context = glXCreateContext(linux.x11.display, vi, 0, 1);
-		if(!glXMakeCurrent(linux.x11.display, (X11::Window)DeshWindow->handle, context)) {
+		GLXContext context = glXCreateContextAttribsARB(linux.x11.display, fbconfig, 0, True, contextAttribs);
+		if(!glXMakeCurrent(linux.x11.display, (X11Window)DeshWindow->handle, context)) {
 			Log("", "unable to set glx context");
 		}
 		
@@ -518,8 +534,6 @@ render_init(){DPZoneScoped;
 #else
 #  error "unhandled platform"
 #endif
-		
-		/// !!!!!!!
 		
 		if(opengl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
 		Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
@@ -529,7 +543,7 @@ render_init(){DPZoneScoped;
 #if DESHI_WINDOWS
 		UpdateWindow((HWND)DeshWindow->handle);
 #elif DESHI_LINUX
-		X11::XFlush(linux.x11.display);
+		XFlush(linux.x11.display);
 #else
 #  error "unhandled platform"
 #endif
@@ -851,7 +865,7 @@ render_update(){DPZoneScoped;
 	//// present frame
 	{
 #if DESHI_LINUX
-		glXSwapBuffers(linux.x11.display, (X11::Window)DeshWindow->handle);
+		glXSwapBuffers(linux.x11.display, (X11Window)DeshWindow->handle);
 #else 
 		window_swap_buffers(DeshWindow);
 #endif
@@ -876,6 +890,10 @@ render_update(){DPZoneScoped;
 		
 		//// model commands ////
 		renderModelCmdCount = 0;
+
+#ifdef BUILD_INTERNAL
+		renderBookKeeperCount = 0;
+#endif
 	}
 	
 	DeshTime->renderTime = peek_stopwatch(update_stopwatch);
@@ -1143,7 +1161,7 @@ render_model_wireframe(Model* model, mat4 matrix, color color){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 void
-render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
+deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != (void*)((texture) ? (u64)texture->render_idx : 1))
@@ -1155,6 +1173,14 @@ render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorE
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
+#if BUILD_INTERNAL
+	RenderBookKeeper keeper; 
+	keeper.type = RenderBookKeeper_Cmd;
+	keeper.cmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]];
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+#endif
 }
 
 

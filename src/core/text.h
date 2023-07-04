@@ -34,7 +34,7 @@ enum{
 };
 
 struct Text{
-    str8b buffer;
+    dstr8 buffer;
 
     struct{
         s64 pos;   //byte offset into buffer
@@ -46,9 +46,15 @@ struct Text{
 global Text
 text_init(str8 init, Allocator* allocator = deshi_allocator){
     Text out = {0};
-    str8_builder_init(&out.buffer, init, allocator);
-    str8_builder_grow(&out.buffer, Max(Kilobytes(1),out.buffer.count));
+    dstr8_init(&out.buffer, init, allocator);
+    dstr8_grow(&out.buffer, Max(Kilobytes(1),out.buffer.count));
     return out;
+}
+
+global void 
+text_deinit(Text* t) {
+    dstr8_deinit(&t->buffer);
+    *t = {0};
 }
 
 //moves the cursor right by one codepoint
@@ -156,6 +162,26 @@ text_move_cursor_left_wordpart(Text* t, b32 select = 0){
     return abs(start-t->cursor.pos);
 }
 
+// moves the cursor to the start of the buffer
+// returns how many bytes the cursor moved
+global u64
+text_move_cursor_to_start(Text* t, b32 select = 0) {
+    u64 dist = t->cursor.pos;
+    if(select) t->cursor.count = dist;
+    t->cursor.pos = 0;
+    return dist;
+}
+
+// moves the cursor to the end of the buffer
+// returns how many bytes the cursor moved
+global u64
+text_move_cursor_to_end(Text* t, b32 select = 0) {
+    u64 dist = t->buffer.count - t->cursor.pos;
+    if(select) t->cursor.count = -dist;
+    t->cursor.pos = t->buffer.count;
+    return dist;
+}
+
 //deletes the selection
 global void
 text_delete_selection(Text* t){
@@ -166,7 +192,7 @@ text_delete_selection(Text* t){
     }
     //u64 offset = Min(t->cursor.pos, t->cursor.pos + t->cursor.count);
     while(t->cursor.count){
-        t->cursor.count -= str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+        t->cursor.count -= dstr8_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
     }
 }
 
@@ -176,7 +202,7 @@ global void
 text_delete_right(Text* t){
     if(t->cursor.count) return (void)text_delete_selection(t);
     if(t->cursor.pos == t->buffer.count) return; 
-    str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+    dstr8_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
 }
 
 //deletes the word to the right of the cursor
@@ -188,7 +214,7 @@ text_delete_right_word(Text* t){
     u64 save = t->cursor.pos;
     u64 ndel = text_move_cursor_right_word(t);
     forI(ndel){
-        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,save);
+        dstr8_remove_codepoint_at_byteoffset(&t->buffer,save);
     }
     t->cursor.pos = save;
 }
@@ -202,7 +228,7 @@ text_delete_right_wordpart(Text* t){
     u64 save = t->cursor.pos;
     u64 ndel = text_move_cursor_right_wordpart(t);
     forI(ndel){
-        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,save);
+        dstr8_remove_codepoint_at_byteoffset(&t->buffer,save);
     }
     t->cursor.pos = save;
 }
@@ -225,7 +251,7 @@ text_delete_left_word(Text* t){
     if(!t->cursor.pos) return;
     u64 ndel = text_move_cursor_left_word(t);
     forI(ndel){
-        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+        dstr8_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
     }
 }
 
@@ -237,7 +263,7 @@ text_delete_left_wordpart(Text* t){
     if(!t->cursor.pos) return;
     u64 ndel = text_move_cursor_left_wordpart(t);
     forI(ndel){
-        str8_builder_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
+        dstr8_remove_codepoint_at_byteoffset(&t->buffer,t->cursor.pos);
     }
 }
 
@@ -247,8 +273,8 @@ text_delete_left_wordpart(Text* t){
 global void
 text_insert_string(Text* t, str8 s){
     if(t->cursor.count) text_delete_selection(t);
-    if(t->buffer.count + s.count > t->buffer.space) str8_builder_grow(&t->buffer, s.count);
-    str8_builder_insert_byteoffset(&t->buffer,t->cursor.pos,s);
+    if(t->buffer.count + s.count > t->buffer.space) dstr8_grow(&t->buffer, s.count);
+    dstr8_insert_byteoffset(&t->buffer,t->cursor.pos,s);
     t->cursor.pos += s.count;
 }
 
@@ -262,7 +288,7 @@ text_get_selection(Text* t){
 //completely clears the Text's buffer and resets its information
 global void
 text_clear(Text* t){
-    str8_builder_clear(&t->buffer);
+    dstr8_clear(&t->buffer);
     t->cursor = {0};
 }
 
@@ -273,5 +299,16 @@ text_clear_and_replace(Text* t, str8 str){
     text_insert_string(t,str);
 }
 
+// returns true if the cursor is at the beginning of the buffer
+FORCE_INLINE global b32 
+text_cursor_at_start(Text* t) {
+    return !t->cursor.pos;
+}
+
+// returns true if the cursor is at the end of the buffer
+FORCE_INLINE global b32
+text_cursor_at_end(Text* t){
+    return t->cursor.pos == t->buffer.count;
+}
 
 #endif
