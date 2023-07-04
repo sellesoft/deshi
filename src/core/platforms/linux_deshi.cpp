@@ -1152,6 +1152,19 @@ platform_set_clipboard(str8 text) {
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @threading
 
+#if 0
+#define LogLock(m)                      \
+logger_push_indent(1);                  \
+Log("mutex", "X locked   " , m->handle);
+
+#define LogUnlock(m)                   \
+logger_pop_indent(1);                  \
+Log("mutex", "O unlocked ", m->handle); 
+#else
+#define LogLock(m) 
+#define LogUnlock(m)
+#endif
+
 
 mutex
 mutex_init() {
@@ -1203,12 +1216,14 @@ mutex_lock(mutex* m) {
 		return;
 	}
 
+
 	switch(pthread_mutex_lock((pthread_mutex_t*)m->handle)) {
 		case EAGAIN: {
 			LogE("threader", "This mutex has reached its maximum number of recursive locks.");
 			return;
 		}break;
 	}
+	LogLock(m);
 }
 
 b32
@@ -1229,6 +1244,7 @@ mutex_try_lock(mutex* m) {
 		} break;
 	}
 
+	LogLock(m);
 	return true;
 }
 
@@ -1252,6 +1268,8 @@ mutex_try_lock_for(mutex* m, u64 millis) {
 			return false;
 		} break;
 	}
+
+	LogLock(m);
 	return true;
 }
 
@@ -1263,6 +1281,7 @@ mutex_unlock(mutex* m) {
 	}
 
 	pthread_mutex_unlock((pthread_mutex_t*)m->handle);
+	LogUnlock(m);
 }
 
 shared_mutex 
@@ -1311,6 +1330,7 @@ shared_mutex_lock(shared_mutex* m) {
 	}
 
 	pthread_rwlock_wrlock((pthread_rwlock_t*)m->handle);
+	LogLock(m);
 }
 
 b32
@@ -1354,6 +1374,7 @@ shared_mutex_lock_shared(shared_mutex* m) {
 	}
 
 	pthread_rwlock_rdlock((pthread_rwlock_t*)m->handle);
+	LogLock(m);
 }
 
 b32
@@ -1365,6 +1386,7 @@ shared_mutex_try_lock_shared(shared_mutex* m) {
 	}
 
 	if(!pthread_rwlock_tryrdlock((pthread_rwlock_t*)m->handle)) {
+		LogLock(m);
 		return true;
 	}
 	return false;
@@ -1382,6 +1404,7 @@ shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) {
 	ts.tv_nsec = millis * int(1e6);
 
 	if(!pthread_rwlock_timedrdlock((pthread_rwlock_t*)m->handle, &ts)) {
+		LogLock(m);
 		return true;
 	}
 	return false;
@@ -1396,6 +1419,7 @@ shared_mutex_unlock(shared_mutex* m) {
 	}
 
 	pthread_rwlock_unlock((pthread_rwlock_t*)m->handle);
+	LogUnlock(m);
 }
 
 condition_variable
