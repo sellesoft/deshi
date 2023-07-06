@@ -1171,6 +1171,7 @@ mutex_init() {
 	mutex out;
 	pthread_mutex_t* m = (pthread_mutex_t*)memalloc(sizeof(pthread_mutex_t));
 	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE); // allow recursive locking
 
 	// initialize mutex
