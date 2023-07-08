@@ -969,7 +969,7 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating X11-Vulkan surface");
-
+	
 	NotImplemented;
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");
@@ -997,7 +997,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 			
 			u32 queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, 0);
-	arrayT<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, deshi_temp_allocator);
+			arrayT<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, deshi_temp_allocator);
 			queueFamilies.count = queueFamilyCount;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data);
 			
@@ -1017,7 +1017,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 		{//check if device supports enabled/required extensions
 			u32 extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, 0, &extensionCount, 0);
-	arrayT<VkExtensionProperties> availableExtensions(extensionCount, deshi_temp_allocator);
+			arrayT<VkExtensionProperties> availableExtensions(extensionCount, deshi_temp_allocator);
 			availableExtensions.count = extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, 0, &extensionCount, availableExtensions.data);
 			
@@ -1460,7 +1460,7 @@ CreateFrames(){DPZoneScoped;
 		//create the framebuffers
 		if(activeSwapchain.frames[i].framebuffer) vkDestroyFramebuffer(device, activeSwapchain.frames[i].framebuffer, allocator);
 		
-	arrayT<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
+		arrayT<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
 		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
 			frameBufferAttachments = { activeSwapchain.attachments.colorImageView, activeSwapchain.attachments.depthImageView, activeSwapchain.frames[i].imageView };
 		}else{
@@ -3680,7 +3680,7 @@ deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
-
+	
 #if BUILD_INTERNAL
 	RenderBookKeeper keeper; 
 	keeper.type = RenderBookKeeper_Cmd;

@@ -702,7 +702,7 @@ void generate_path(Agent* agent, vec2i target){
 	//create the path and give it to the agent
 	if(valid_path){
 		vec2i current = target;
-	arrayT<u8> path(32,&deshi_allocator_no_release);
+		arrayT<u8> path(32,&deshi_allocator_no_release);
 		while(!vec2i_equal(current, agent->entity.pos)){
 			u8 direction = *directions.at(current);
 			path.add(direction);
@@ -1164,7 +1164,7 @@ void update_simulation(){
 			}
 			
 			if(agent->active_advert == 0){
-	arrayT<Advert*> adverts = collect_adverts(agent);
+				arrayT<Advert*> adverts = collect_adverts(agent);
 				agent->active_advert = select_advert(agent, adverts.data, adverts.count);
 			}
 		}

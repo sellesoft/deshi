@@ -178,7 +178,7 @@ void cmd_init(){
 	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
 		FixMe;
-	arrayT<File> files = {};file_search_directory(args[0]);
+		arrayT<File> files = {};file_search_directory(args[0]);
 		char time_str[1024];
 		if(files.count){
 			Log("cmd","Directory of '",args[0],"':");
@@ -518,7 +518,7 @@ void cmd_init(){
 	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window//TODO(sushi) switch to ui2 metrics"){
 		//TODO(sushi) switch to ui2 metrics 
 	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
-
+	
 	DESHI_CMD_START(show_ui_demo, "Toggles the visibility of the UI demo window"){
 		ui_demo();
 	}DESHI_CMD_END_NO_ARGS(show_ui_demo);

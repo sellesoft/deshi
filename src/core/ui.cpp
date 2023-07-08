@@ -47,10 +47,10 @@ Index:
 
 
 #define item_error(item, ...)\
-LogE("ui",CyanFormatComma((item)->file_created), ":", (item)->line_created, ":", RedFormatComma("error"), ": ", __VA_ARGS__)
+  LogE("ui",CyanFormatComma((item)->file_created), ":", (item)->line_created, ":", RedFormatComma("error"), ": ", __VA_ARGS__)
 
 #define gen_error(file,line,...)\
-LogE("ui",CyanFormatComma(file),":",line,":",RedFormatComma("error"),":",__VA_ARGS__)
+  LogE("ui",CyanFormatComma(file),":",line,":",RedFormatComma("error"),":",__VA_ARGS__)
 
 void push_item(uiItem* item){DPZoneScoped;
 	g_ui->item_stack.add(item);
@@ -85,10 +85,10 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		drawcmds, which we organize in arrays sorted by their *memory address*. This allows us to
 		merge bordering drawcmds, preventing waste of memory.
 	*/
-
+	
 	carray<uiDrawCmd*> varr = {g_ui->inactive_drawcmds_vertex_sorted.data, g_ui->inactive_drawcmds_vertex_sorted.count};
 	carray<uiDrawCmd*> iarr = {g_ui->inactive_drawcmds_index_sorted.data, g_ui->inactive_drawcmds_index_sorted.count};
-
+	
 	if(g_ui->inactive_drawcmds_vertex_sorted.count){
 		s32 idx = -1;
 		s32 mid =  0;
@@ -103,9 +103,9 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 				right = mid - 1;
 			}
 		}
-
+		
 		g_ui->inactive_drawcmds_vertex_sorted.insert(drawcmd, mid);
-
+		
 		if(mid != g_ui->inactive_drawcmds_vertex_sorted.count-1){
 			uiDrawCmd* right = g_ui->inactive_drawcmds_vertex_sorted[mid+1];
 			if(right->vertex_offset - drawcmd->counts_reserved.x == drawcmd->vertex_offset){
@@ -133,7 +133,7 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	}else{
 		g_ui->inactive_drawcmds_vertex_sorted.add(drawcmd);
 	}
-
+	
 	if(g_ui->inactive_drawcmds_index_sorted.count){
 		s32 idx = -1;
 		s32 mid =  0;
@@ -148,9 +148,9 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 				right = mid - 1;
 			}
 		}
-
+		
 		g_ui->inactive_drawcmds_index_sorted.insert(drawcmd, mid);
-
+		
 		if(mid != g_ui->inactive_drawcmds_index_sorted.count-1){
 			uiDrawCmd* right = g_ui->inactive_drawcmds_index_sorted[mid+1];
 			if(right->index_offset - drawcmd->counts_reserved.y == drawcmd->index_offset){
@@ -186,7 +186,7 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 	u32 v_place_next = -1;
 	u32 i_place_next = -1;	
-
+	
 	forI(g_ui->inactive_drawcmds_vertex_sorted.count){
 		uiDrawCmd* dc = g_ui->inactive_drawcmds_vertex_sorted[i];
 		s64 vremain = dc->counts_reserved.x - counts.x;
@@ -205,7 +205,7 @@ void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 			break;
 		}
 	}
-
+	
 	forI(g_ui->inactive_drawcmds_index_sorted.count){
 		uiDrawCmd* dc = g_ui->inactive_drawcmds_index_sorted[i];
 		s64 iremain = dc->counts_reserved.y - counts.y;
@@ -259,7 +259,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	}
 	
 	uiItem* parent = *(g_ui->item_stack.last);
-
+	
 	//initialize the item in memory or retrieve it from cache if it already exists
 	uiItem* item;
 	b32 retrieved_ = 0;
@@ -315,7 +315,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	if(!item->style.text_color.a) item->style.text_color  = parent->style.text_color;
 	if(!item->style.text_wrap)    item->style.text_wrap   = parent->style.text_wrap;
 	if(!item->style.tab_spaces)   item->style.tab_spaces  = parent->style.text_wrap;
-
+	
 	item->file_created = setup.file;
 	item->line_created = setup.line;
 	
@@ -542,7 +542,7 @@ deshi__ui_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
 	
 	//g_ui->cleanup = 0;
-
+	
 	g_ui->allocator_root.next = &g_ui->allocator_root;
 	g_ui->allocator_root.prev = &g_ui->allocator_root;
 	
@@ -563,7 +563,7 @@ deshi__ui_init(){DPZoneScoped;
 	g_ui->base.style.height = DeshWindow->height;
 	g_ui->base.style_hash = ui_hash_style(&g_ui->base);
 	push_item(&g_ui->base);
-
+	
 	//setup default keybinds
 	//TODO(sushi) export these to a config file and load them instead
 	g_ui->keys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
@@ -574,7 +574,7 @@ deshi__ui_init(){DPZoneScoped;
 	g_ui->keys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
 	g_ui->keys.inputtext.cursor.            up = Key_UP    | InputMod_None;
 	g_ui->keys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
-
+	
 	g_ui->keys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
 	g_ui->keys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
 	g_ui->keys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
@@ -583,16 +583,16 @@ deshi__ui_init(){DPZoneScoped;
 	g_ui->keys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
 	g_ui->keys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
 	g_ui->keys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
-
+	
 	g_ui->keys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
 	g_ui->keys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
 	g_ui->keys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
 	g_ui->keys.inputtext.del.            right = Key_DELETE    | InputMod_None;
 	g_ui->keys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
 	g_ui->keys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
-
+	
 	g_ui->keys.drag_item = Mouse_LEFT;
-
+	
 	DeshiStageInitEnd(DS_UI);
 }
 
@@ -621,7 +621,7 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 			item->pos_screen = uiItemFromNode(item->node.parent)->pos_screen + item->pos_local;
 		}
 	}
-
+	
 	if(item->drawcmd_count){
 		Assert(item->__generate, "item with no generate function");
 		item->__generate(item);
@@ -657,7 +657,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	
 	item->debug_frame_stats.evals++;
-
+	
 	b32 wauto = HasFlag(item->style.sizing, size_auto_x); 
 	b32 hauto = HasFlag(item->style.sizing, size_auto_y); 
 	f32 wborder = (item->style.border_style ? item->style.border_width : 0);
@@ -725,7 +725,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		else if( wauto && !hauto) item->width = item->height;
 		else item_error(item, "Sizing flag 'size_square' was specifed but width and height are both ", (wauto && hauto ? "unspecified." : "specified."));
 	}
-
+	
 	/*1
 	
 
@@ -781,7 +781,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		}
 		contextout.flex.n_ceils = contextout.flex.effective_size - floored_sum;
 	}
-
+	
 	//// calculate item scale based on parent scale ////
 	item->scale = (parent) ? parent->scale : vec2::ONE;
 	if(item->style.x_scale) item->scale.x *= item->style.x_scale;
@@ -821,7 +821,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				else{
 					cursor.y = child->pos_local.y + child->height;
 				}
-
+				
 				switch(child->style.anchor){
 					case anchor_top_left:{
 						child->pos_local.x += child->style.x;
@@ -954,7 +954,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	if(item->style.max_height) item->height = Min(item->style.max_height, item->height);
 	item->width  = Max(item->style.min_width,  item->width);
 	item->height = Max(item->style.min_height, item->height);
-
+	
 	//// calculate max scroll ////
 	item->max_scroll = Max(vec2{0,0}, cursor - PaddedArea(item));
 	
@@ -1068,14 +1068,14 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
-
+	
 	//if(str8_begins_with(item->id, str8l("suugu.canvas.element"))) DebugBreakpoint;
 	
 	if(g_ui->hovered == item && item->style.focus && input_lmouse_pressed()){
 		move_to_parent_last(&item->node);
 		item->dirty = true;
 	}
-
+	
 	//call the items update function if it exists
 	if(item->__update) item->__update(item);
 	
@@ -1089,7 +1089,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		eval_item_branch(sspar, {});
 		draw_item_branch(sspar);
 	}
-
+	
 	if(item->action && item->action_trigger){
 		if(item->action_trigger == action_act_always)
 			item->action(item);
@@ -1198,7 +1198,7 @@ deshi__ui_update(){DPZoneScoped;
 	
 	if(g_ui->istate == uiISNone) 
 		find_hovered_item(&g_ui->base);
-
+	
 	if(input_lmouse_pressed())
 		g_ui->active = g_ui->hovered;
 	
@@ -1217,7 +1217,7 @@ deshi__ui_update(){DPZoneScoped;
 		remove(&item->node);
 	}
 	g_ui->immediate_items.clear();
-
+	
 	g_ui->updating = 0;
 }
 
@@ -1317,8 +1317,8 @@ void ui_debug(){
 					ui_dwi.internal_info->style.height = 100;
 					ui_dwi.internal_info->style.background_color = color(14,14,14);
 					ui_dwi.internal_info->style.content_align = {0.5, 0.5};
-				
-				
+					
+					
 					ui_end_item();
 				}
 				
@@ -1420,7 +1420,7 @@ void ui_debug(){
 	memsum += g_ui->stats.vertices_reserved * sizeof(Vertex2);
 	memsum += g_ui->stats.indices_reserved * sizeof(u32);
 	memsum += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
-
+	
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
 	dstr8 t = to_dstr8v(deshi_temp_allocator,
 		"visible: \n",
@@ -1438,7 +1438,7 @@ void ui_debug(){
 	defer{dstr8_deinit(&t);};
 	text_clear_and_replace(&ui_get_text(ui_dwi.panel1text)->text, t.fin);
 	ui_dwi.panel1text->dirty = 1;
-
+	
 	if(g_ui->hovered){
 		render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
 		vec2 ipos = g_ui->hovered->pos_screen;

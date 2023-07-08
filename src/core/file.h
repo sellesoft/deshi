@@ -122,9 +122,9 @@ typedef File* FileArray;
 
 // TODO(sushi) move this somewhere else
 // we reserve a name for internal use, so that the separate case defines use the right name without needing to define it repeatedly
-#define StartErrorHandler(name, errtype, err) { \
-	errtype* __errhandler__internal__pointer = name; \
-	switch(err) { \
+#define StartErrorHandler(name, errtype, err) {      \
+    errtype* __errhandler__internal__pointer = name; \
+    switch(err) {                                    \
 
 #define ErrorCaseF(err) case err:
 #define ErrorCaseL(err, resulttag, message, extra) case err: *__errhandler__internal__pointer = {resulttag, STR8(message)}; extra; break;
@@ -437,41 +437,41 @@ external FileType deshi__file_get_type_of_path(str8 caller_file, upt caller_line
 
 // handles a range of errors that can be given from errno
 #define StartFileErrnoHandler(result_name, err, return_error_value) {\
-	if(!result_name) {                                               \
-		LogE("file", "unhandled errno: ", err);                      \
-		return return_error_value;                                   \
-	}                                                                \
-	u32 __feh__errno = err;                                          \
-	StartErrorHandler(result_name, FileResult, __feh__errno)
+    if(!result_name) {                                               \
+        LogE("file", "unhandled errno: ", err);                      \
+        return return_error_value;                                   \
+    }                                                                \
+    u32 __feh__errno = err;                                          \
+    StartErrorHandler(result_name, FileResult, __feh__errno)
 
 #define EndFileErrnoHandler()                            \
-	EndErrorHandlerAndCatch("linux-file", __feh__errno, {\
-		LogE("file", "unhandled errno: ", __feh__errno); \
-		AssertAlways(false);                             \
-	})}
+    EndErrorHandlerAndCatch("linux-file", __feh__errno, {\
+        LogE("file", "unhandled errno: ", __feh__errno); \
+        AssertAlways(false);                             \
+    })}
 
 // handles a single error, usually one that doesn't have to do with the system
 #define FileHandleErrorL(result_name, result_tag, return_error_value, message, extra)\
-	if(!result_name){                                                                \
-		LogE("file", __func__, "(): ", message);                                     \
-		return return_error_value;                                                   \
-	}                                                                                \
-	*result_name = {result_tag, STR8(message)};                                      \
-	extra                                                                            \
-	return return_error_value;
+    if(!result_name){                                                                \
+        LogE("file", __func__, "(): ", message);                                     \
+        return return_error_value;                                                   \
+    }                                                                                \
+    *result_name = {result_tag, STR8(message)};                                      \
+    extra                                                                            \
+    return return_error_value;
 
 // handles a single error, usually one that doesn't have to do with the system
 // dynamic version
 // !LEAK: this makes a dynamic string with deshi's temp allocator, so if an app doesn't use that, then we're in trouble
 // TODO(sushi) decide to remove this or not 
 #define FileHandleErrorD(result_name, result_tag, return_error_value, extra, ...)\
-	if(!result_name){                                                            \
-		LogE("file", __func__, "(): ", __VA_ARGS__);                             \
-		return return_error_value;                                               \
-	}                                                                            \
-	*result_name = {result_tag, to_dstr8v(deshi_temp_allocator,__VA_ARGS__).fin};\
-	extra                                                                        \
-	return return_error_value; 
+    if(!result_name){                                                            \
+        LogE("file", __func__, "(): ", __VA_ARGS__);                             \
+        return return_error_value;                                               \
+    }                                                                            \
+    *result_name = {result_tag, to_dstr8v(deshi_temp_allocator,__VA_ARGS__).fin};\
+    extra                                                                        \
+    return return_error_value; 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_shared_variables
@@ -814,12 +814,12 @@ void TEST_deshi_file(b32 verbose = 0){
 	if(file_exists(str8_lit("data/test_deshi_file"))){
 		file_delete(str8_lit("data/test_deshi_file"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive);
 	}
-
+	
 	TestStartEnvironment(file, FileResult, result, verbose);
-
-	TestStartSection("file/system")
+	
+	TestStartSection("file/system");{
 		//// exists ////
-		TestStartFunction(file_exists)
+		TestStartFunction(file_exists);{
 			TestLog("deshi's data file should already exist.");
 			TestReturn(file_exists(STR8("data")),1);
 			TestReturn(file_exists(STR8("data/")),1);
@@ -833,10 +833,10 @@ void TEST_deshi_file(b32 verbose = 0){
 			TestLog("exists should reject empty paths.");
 			TestResult(file_exists_result(str8{},result), FileResult_EmptyPath);
 			TestResult(file_exists_result(STR8(""), result), FileResult_EmptyPath);
-		TestEndFunction(file_exists)
-
+		}TestEndFunction(file_exists);
+		
 		//// create ////
-		TestStartFunction(file_create)
+		TestStartFunction(file_create);{
 			TestLog("create an already existing file (data/).");
 			TestOk(file_create_result(STR8("data/"), result));
 			TestReturnTrue(file_exists(STR8("data")));
@@ -860,10 +860,10 @@ void TEST_deshi_file(b32 verbose = 0){
 			TestLog("create should reject an empty path.");
 			TestResult(file_create_result(str8{}, result), FileResult_EmptyPath); 
 			TestResult(file_create_result(STR8(""), result), FileResult_EmptyPath); 
-		TestEndFunction(file_create)
-
+		}TestEndFunction(file_create);
+		
 		//// delete ////
-		TestStartFunction(file_delete)
+		TestStartFunction(file_delete);{
 			TestLog("recursively delete the previously created food directory.");
 			TestOk(file_delete_result(STR8("data/test_deshi_file/food"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive, result)); 
 			TestReturn(file_exists(STR8("data/test_deshi_file/food/apple.txt")), 0);
@@ -877,19 +877,19 @@ void TEST_deshi_file(b32 verbose = 0){
 			TestLog("delete should reject empty paths.");
 			TestResult(file_delete_result(str8{}, 0, result), FileResult_EmptyPath); 
 			TestResult(file_delete_result(STR8(""), 0, result), FileResult_EmptyPath); 
-
+			
 			if(!file_create(STR8("data/dummydir/"))) return;
 			if(!file_create(STR8("data/dummydir/dummyfile"))) return;
-
+			
 			TestLog("delete should reject calls that do not give the right flags for the given path.");
 			TestResult(file_delete_result(STR8("data/dummydir"), 0, result), FileResult_IsADirectory); 
 			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_File, result), FileResult_IsADirectory); 
 			TestResult(file_delete_result(STR8("data/dummydir/dummyfile"), FileDeleteFlags_Directory, result), FileResult_InvalidArgument); 
 			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_Directory, result), FileResult_FileExists); 
-		TestEndFunction(file_delete)
-
+		}TestEndFunction(file_delete);
+		
 		//// rename ////
-		TestStartFunction(file_rename)
+		TestStartFunction(file_rename);{
 			TestLog("renaming a file.");
 			file_create(STR8("data/test_deshi_file/food/apple.txt"));
 			TestOk(file_rename_result(STR8("data/test_deshi_file/food/apple.txt"), STR8("data/test_deshi_file/food/banana.txt"), result));
@@ -909,13 +909,13 @@ void TEST_deshi_file(b32 verbose = 0){
 			TestResult(file_rename_result(STR8(""), STR8(""), result), FileResult_EmptyPath);
 			TestResult(file_rename_result(STR8("test"), str8{}, result), FileResult_EmptyPath);
 			TestResult(file_rename_result(STR8("test"), STR8(""), result), FileResult_EmptyPath);
-
+			
 			TestLog("rename should fail when given a non existant path.");
 			TestResult(file_rename_result(STR8("data/test_deshi_file/food/apple.txt"), STR8("data/test_deshi_file/food/banana.txt"), result), FileResult_PathDoesNotExist);
-		TestEndFunction(file_rename)
-
+		}TestEndFunction(file_rename);
+		
 		//// info ////
-		TestStartFunction(file_info)
+		TestStartFunction(file_info);{
 			TestLog("get info about data directory.");
 			// TODO(sushi) TestResult doesn't work on calls that need to be assigned. an expression oriented grammar would solve this :)
 			File file = file_info_result(STR8("data/"), result);
@@ -923,13 +923,13 @@ void TEST_deshi_file(b32 verbose = 0){
 			Test(file.creation_time != 0);
 			Test(file.last_access_time >= file.creation_time);
 			Test(file.last_write_time >= file.creation_time);
-			#if DESHI_WINDOWS
-				Test(file.bytes == 0);
-			#elif DESHI_LINUX
-				Test(file.bytes == 4096); // on linux, directories actually hold a size
-			#else
-			#	error "unhandled platform"
-#			endif
+#if DESHI_WINDOWS
+			Test(file.bytes == 0);
+#elif DESHI_LINUX
+			Test(file.bytes == 4096); // on linux, directories actually hold a size
+#else
+#  error "unhandled platform"
+#endif
 			Test(file.type == FileType_Directory);
 			//TestResult(!file.changed);
 			Test(str8_ends_with(file.path, STR8("data")));
@@ -960,10 +960,10 @@ void TEST_deshi_file(b32 verbose = 0){
 			file = file_info_result(STR8("data/test_deshi_file/fruits/apple.txt"), result);
 			TestResultSeparate(FileResult_PathDoesNotExist);
 			Test(file.creation_time == 0);
-		TestEndFunction(file_info)
-
+		}TestEndFunction(file_info);
+		
 		//// search_directory ////
-		TestStartFunction(file_search_directory)
+		TestStartFunction(file_search_directory);{
 			if(!file_create(STR8("data/test_deshi_file/fruits/apple.bin"))) return;
 			
 			TestLog("create file 'apple.bin' in fruits/ and verify data on it and banana.txt.");
@@ -1000,13 +1000,13 @@ void TEST_deshi_file(b32 verbose = 0){
 			files = file_search_directory_result(STR8("data/test_deshi_file/food/"), result);
 			TestResultSeparate(FileResult_PathDoesNotExist);
 			Test(!files);
-		TestEndFunction(file_search_directory)
+		}TestEndFunction(file_search_directory);
 		
-
+		
 		//// path_absolute ////
-		TestStartFunction(file_path_absolute)
+		TestStartFunction(file_path_absolute);{
 			str8 out;
-
+			
 			TestLog("the returned absolute path should end with what it was provided with.");
 			out = file_path_absolute_result(STR8("data/test_deshi_file/fruits/apple.bin"), result);
 			TestResultSeparate(FileResult_Ok);
@@ -1017,21 +1017,20 @@ void TEST_deshi_file(b32 verbose = 0){
 			out = file_path_absolute_result(STR8("data/test_deshi_file/"), result);
 			TestResultSeparate(FileResult_Ok);
 			Test(str8_ends_with(out, STR8("data/test_deshi_file")));
-
+			
 			TestLog("should return an empty str8 and FileResult_PathDoesNotExist when given a non-existant path.");
 			out = file_path_absolute_result(STR8("data/test_deshi_file/food/"), result);
 			TestResultSeparate(FileResult_PathDoesNotExist);
 			Test(!out);
-
-			#if 0 //NOTE(delle) user specific path testing
-				Test(str8_equal_lazy(file_path_absolute(STR8("data/test_deshi_file/fruits/apple.bin")), STR8("W:/suugu/data/test_deshi_file/fruits/apple.bin")));
-				Test(str8_equal_lazy(file_path_absolute(STR8("data/test_deshi_file/fruits")), STR8("W:/suugu/data/test_deshi_file/fruits/")));
-			#endif
 			
-		TestEndFunction(file_path_absolute)
+#if 0 //NOTE(delle) user specific path testing
+			Test(str8_equal_lazy(file_path_absolute(STR8("data/test_deshi_file/fruits/apple.bin")), STR8("W:/suugu/data/test_deshi_file/fruits/apple.bin")));
+			Test(str8_equal_lazy(file_path_absolute(STR8("data/test_deshi_file/fruits")), STR8("W:/suugu/data/test_deshi_file/fruits/")));
+#endif
+		}TestEndFunction(file_path_absolute);
 		
 		//// path_equal ////
-		TestStartFunction(file_path_equal)
+		TestStartFunction(file_path_equal);{
 			b32 e;
 			
 			TestLog("different variations of paths should be equal.");
@@ -1070,10 +1069,10 @@ void TEST_deshi_file(b32 verbose = 0){
 			e = !file_path_equal_result(STR8("data/test_deshi_file/fruits/apple.bin"), STR8("data/test_deshi_file/fruits/"), result);
 			TestResultSeparate(FileResult_Ok);
 			Test(e);
-		TestEndFunction(file_path_equal)
-	TestEndSection();
+		}TestEndFunction(file_path_equal);
+	}TestEndSection();
 	
-	TestStartSection("file/simple read,write, and append")
+	TestStartSection("file/simple read,write, and append");{
 		File file1 = file_info_result(STR8("data/test_deshi_file/fruits/banana.txt"), result);
 		if(!file1.creation_time) return;
 		
@@ -1083,32 +1082,33 @@ void TEST_deshi_file(b32 verbose = 0){
 		File file2 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
 		Test(count == s1.count);
 		Test(file2.bytes == s1.count);
-
+		
 		TestLog("truncating banana.txt.");
 		str8 s2 = STR8("アクアマン");
 		count = file_write_simple(STR8("data/test_deshi_file/fruits/banana.txt"), s2.str, s2.count);
 		file1 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
 		Test(count == s2.count);
 		Test(file1.bytes == s2.count);
-
+		
 		TestLog("appending banana.txt.");
 		count = file_append_simple(STR8("data/test_deshi_file/fruits/banana.txt"), s1.str, s1.count);
 		file2 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
 		Test(count == s1.count);
 		Test(file2.bytes == s2.count + s1.count);
-
+		
 		str8 read = file_read_simple(STR8("data/test_deshi_file/fruits/banana.txt"), deshi_temp_allocator);
 		file1 = file_info(STR8("data/test_deshi_file/fruits/banana.txt"));
 		Test(read.count == s2.count + s1.count);
 		Test(str8_begins_with(read, s2));
 		Test(str8_ends_with(read, s1));
 		Test(file1.bytes == s2.count + s1.count);
-	TestEndSection();
-
-	TestStartSection("file/init")
-		TestStartFunction(file_init)
+	}TestEndSection();
+	
+	File* file = 0;
+	TestStartSection("file/init");{
+		TestStartFunction(file_init);{
 			TestLog("initializing a new file and checking its info.");
-			File* file = file_init_result(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate, result);
+			file = file_init_result(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate, result);
 			TestResultSeparate(FileResult_Ok);
 			Test(file->handle != 0);
 			Test(file->creation_time != 0);
@@ -1123,7 +1123,7 @@ void TEST_deshi_file(b32 verbose = 0){
 			Test(str8_equal_lazy(file->ext, STR8("市")));
 			Test(file->access == FileAccess_ReadWrite);
 			Test(file->cursor == 0);
-
+			
 			TestLog("initializing the same file again.");
 			file = file_init_result(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_ReadWriteCreate, result);
 			TestResultSeparate(FileResult_Ok);
@@ -1140,14 +1140,14 @@ void TEST_deshi_file(b32 verbose = 0){
 			Test(str8_equal_lazy(file->ext, STR8("市")));
 			Test(file->access == FileAccess_ReadWrite);
 			Test(file->cursor == 0);
-
+			
 			TestLog("file_init should error when given a non-existant path and isn't given FileAccess_Create");
 			File* file2 = file_init_result(STR8("data/test_deshi_file/fruits/apple.txt"), FileAccess_ReadWrite, result);
 			TestResultSeparate(FileResult_PathDoesNotExist);
-	 		Test(file2 == 0);
-		TestEndFunction(file_init)
-
-		TestStartFunction(file_change_access)
+			Test(file2 == 0);
+		}TestEndFunction(file_init);
+		
+		TestStartFunction(file_change_access);{
 			TestLog("changing access to read/append.");
 			TestOk(file_change_access_result(file, FileAccess_ReadAppend, result));
 			Test(file->handle != 0);
@@ -1159,12 +1159,12 @@ void TEST_deshi_file(b32 verbose = 0){
 			Test(file->handle != 0);
 			Test(file->access == FileAccess_Write);
 			Test(file->cursor == 0);
-		TestEndFunction(file_change_access)
+		}TestEndFunction(file_change_access);
 		
-		TestStartFunction(file_deinit)
+		TestStartFunction(file_deinit);{
 			TestLog("deinitializing file normally.");
 			TestOk(file_deinit_result(file, result));
-		TestEndFunction(file_deinit)
+		}TestEndFunction(file_deinit);
 		
 		//// append ////
 		TestLog("appending.");
@@ -1187,7 +1187,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->access == FileAccess_Write);
 		Test(file->cursor == 0);
 		file_deinit(file);
-			
+		
 		//// cursor ////
 		TestLog("testing cursor movement.");
 		file_write_simple(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), s1.str, s1.count);
@@ -1203,9 +1203,9 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->cursor == 9);
 		
 		if(!file_deinit(file)) return;
-	TestEndSection();
-
-	File* file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_WriteTruncateCreate);
+	}TestEndSection();
+	
+	file = file_init(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), FileAccess_WriteTruncateCreate);
 	str8 s1 = STR8("If death is what it seems");
 	str8 s2 = STR8("なぜ夢の中でこんなに鮮明に描かれているのか");
 	str8 s3 = STR8("理解することへの恐れ");
@@ -1217,7 +1217,7 @@ void TEST_deshi_file(b32 verbose = 0){
 				   "悪魔の仕業だ\n"
 				   "Hatred's not received, it's coming straight from the source");
 	
-	TestStartSection("file/writing");
+	TestStartSection("file/writing");{
 		TestLog("checking that file is empty and cursor is at beginning.");
 		Test(file->bytes == 0);
 		Test(file->cursor == 0);
@@ -1228,7 +1228,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(count == s1.count);
 		Test(file->bytes  == s1.count);
 		Test(file->cursor == s1.count);
-
+		
 		TestLog("writing newline.");
 		count = file_write_result(file, "\n", 1, result);
 		TestResultSeparate(FileResult_Ok);
@@ -1236,7 +1236,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->bytes  == s1.count+1);
 		Test(file->cursor == s1.count+1);
 		fflush(file->handle);
-
+		
 		TestLog("writing third string as a line: \"", s3, "\"");
 		count = file_write_line_result(file, s3, result);
 		TestResultSeparate(FileResult_Ok);
@@ -1244,7 +1244,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->bytes  == s1.count+1+s3.count+1);
 		Test(file->cursor == s1.count+1+s3.count+1);
 		fflush(file->handle);
-
+		
 		TestLog("setting cursor to after first string and writing the second one: \"", s2, "\"");
 		file_set_cursor(file, s1.count+1);
 		Test(file->cursor == s1.count+1);
@@ -1253,7 +1253,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->bytes  == s1.count+1+s2.count+1);
 		Test(file->cursor == s1.count+1+s2.count+1);
 		fflush(file->handle);
-
+		
 		TestLog("moving cursor to the end of the file and writing the third string again.");
 		file_set_cursor(file, -1);
 		count = file_write_line(file, s3);
@@ -1261,7 +1261,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1);
 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
 		fflush(file->handle);
-
+		
 		TestLog("using append_line to write the fourth string: \"", s4, "\"");
 		count = file_append_line(file, s4);
 		Test(count == s4.count+1);
@@ -1275,13 +1275,13 @@ void TEST_deshi_file(b32 verbose = 0){
 		Test(file->bytes  == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
 		fflush(file->handle);
-
+		
 		TestLog("verifying that the file was written to properly.");
 		if(!file_change_access(file, FileAccess_Read)) return;
 		file_set_cursor(file, 0);
 		str8 sanity = file_read_simple(file->path, deshi_temp_allocator);
 		Test(str8_equal_lazy(sanity, s));
-
+		
 		TestLog("testing invalid Files.");
 		File invalid{};
 		invalid.path = STR8("an/invalid/path");
@@ -1297,15 +1297,15 @@ void TEST_deshi_file(b32 verbose = 0){
 		count = file_append_line_result(&invalid, s1, result);
 		TestResultSeparate(FileResult_FileNotOpen);
 		Test(!count);
-	TestEndSection();
+	}TestEndSection();
 	
-	TestStartSection("file/reading");
+	TestStartSection("file/reading");{
 		TestLog("reopening file for reading.");
 		file_change_access(file, FileAccess_ReadAppend);
 		Test(file->cursor == file->bytes);
 		Test(file->cursor == s.count);
 		file_set_cursor(file, 0);
-
+		
 		TestLog("reading first line of file into preallocated buffer.");
 		u8 buffer[256];
 		str8 read = file_read(file, buffer, s1.count);
@@ -1314,7 +1314,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		read = file_read(file, buffer, 1);
 		Test(str8_equal_lazy(read, STR8("\n")));
 		Test(file->cursor == s1.count+1);
-
+		
 		TestLog("reading second line of file with file_read_alloc.");
 		read = file_read_alloc(file, s2.count, deshi_temp_allocator);
 		Test(str8_equal_lazy(read, s2));
@@ -1322,29 +1322,29 @@ void TEST_deshi_file(b32 verbose = 0){
 		read = file_read_alloc(file, 1, deshi_temp_allocator);
 		Test(str8_equal_lazy(read, STR8("\n")));
 		Test(file->cursor == s1.count+1+s2.count+1);
-
+		
 		TestLog("reading third line using file_read_line.");
 		read = file_read_line(file, buffer, 255);
 		Test(str8_equal_lazy(read, s3));
 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1);
-
+		
 		TestLog("reading third line using file_read_line_alloc.");
 		read = file_read_line_alloc(file, deshi_temp_allocator);
 		Test(str8_equal_lazy(read, s4));
 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1);
-
+		
 		TestLog("reading entire file into preallocated buffer.");
 		read = file_read(file, buffer, -1);
 		Test(str8_equal_lazy(read, s5));
 		Test(file->cursor == s1.count+1+s2.count+1+s3.count+1+s4.count+1+s5.count);
 		Test(file->cursor == file->bytes);
-
+		
 		TestLog("reading entire file using file_read_alloc.");
 		file_set_cursor(file, 0);
 		read = file_read_alloc(file, s.count, deshi_temp_allocator);
 		Test(str8_equal_lazy(read, s));
 		Test(file->cursor == file->bytes);
-
+		
 		TestLog("testing a File with an invalid path.");
 		File invalid{};
 		invalid.path = STR8("an/invalid/path");
@@ -1360,7 +1360,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		read = file_read_line_alloc_result(&invalid, deshi_temp_allocator, result);
 		TestResultSeparate(FileResult_FileNotOpen);
 		Test(!read.count && !read.str);
-	TestEndSection();
+	}TestEndSection();
 	
 	file_deinit(file);
 	file_delete(STR8("data/test_deshi_file"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive);

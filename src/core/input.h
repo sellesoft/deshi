@@ -155,7 +155,7 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_X|InputMod_AnyShift: return 'X';
 		case Key_Y|InputMod_AnyShift: return 'Y';
 		case Key_Z|InputMod_AnyShift: return 'Z';
-
+		
 		case Key_0: return '0';
 		case Key_1: return '1';
 		case Key_2: return '2';
@@ -166,7 +166,7 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_7: return '7';
 		case Key_8: return '8';
 		case Key_9: return '9';
-
+		
 		case Key_0|InputMod_AnyShift: return ')';
 		case Key_1|InputMod_AnyShift: return '!';
 		case Key_2|InputMod_AnyShift: return '@';
@@ -177,10 +177,10 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_7|InputMod_AnyShift: return '&';
 		case Key_8|InputMod_AnyShift: return '*';
 		case Key_9|InputMod_AnyShift: return '(';
-
+		
 		case Key_BACKQUOTE: return '`';
 		case Key_BACKQUOTE|InputMod_AnyShift: return '~';
-
+		
 		case Key_MINUS: return '-';
 		case Key_MINUS|InputMod_AnyShift: return '_';
 		case Key_EQUALS: return '=';
@@ -189,7 +189,7 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_LBRACKET|InputMod_AnyShift: return '{';
 		case Key_RBRACKET: return ']';
 		case Key_RBRACKET|InputMod_AnyShift: return '}';
-
+		
 		case Key_BACKSLASH: return '\\';
 		case Key_BACKSLASH|InputMod_AnyShift: return '|';
 		case Key_SEMICOLON: return ';';
@@ -203,7 +203,7 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_FORWARDSLASH: return '/';
 		case Key_FORWARDSLASH|InputMod_AnyShift: return '?'; 
 		case Key_SPACE: return ' ';
-
+		
 		case Key_NP0: return '0';
 		case Key_NP1: return '1';
 		case Key_NP2: return '2';
@@ -214,7 +214,7 @@ global char input_keycode_to_char(KeyCode key) {
 		case Key_NP7: return '7';
 		case Key_NP8: return '8';
 		case Key_NP9: return '9';
-
+		
 		case Key_NPMULTIPLY: return '*';
 		case Key_NPDIVIDE: return '/';
 		case Key_NPPLUS: return '+';
@@ -304,7 +304,7 @@ global str8 input_keycode_to_str8(KeyCode key) {
 		case Key_X|InputMod_AnyShift: return str8l("X");
 		case Key_Y|InputMod_AnyShift: return str8l("Y");
 		case Key_Z|InputMod_AnyShift: return str8l("Z");
-
+		
 		case Key_0|InputMod_None:
 		case Key_0: return str8l("0");
 		case Key_1|InputMod_None:
@@ -325,7 +325,7 @@ global str8 input_keycode_to_str8(KeyCode key) {
 		case Key_8: return str8l("8");
 		case Key_9|InputMod_None:
 		case Key_9: return str8l("9");
-
+		
 		case Key_0|InputMod_AnyShift: return str8l(")");
 		case Key_1|InputMod_AnyShift: return str8l("!");
 		case Key_2|InputMod_AnyShift: return str8l("@");
@@ -336,11 +336,11 @@ global str8 input_keycode_to_str8(KeyCode key) {
 		case Key_7|InputMod_AnyShift: return str8l("^");
 		case Key_8|InputMod_AnyShift: return str8l("*");
 		case Key_9|InputMod_AnyShift: return str8l("(");
-
+		
 		case Key_BACKQUOTE|InputMod_None:
 		case Key_BACKQUOTE: return str8l("`");
 		case Key_BACKQUOTE|InputMod_AnyShift: return str8l("~");
-
+		
 		case Key_MINUS|InputMod_None:
 		case Key_MINUS: return str8l("-");
 		case Key_MINUS|InputMod_AnyShift: return str8l("_");
@@ -353,7 +353,7 @@ global str8 input_keycode_to_str8(KeyCode key) {
 		case Key_RBRACKET|InputMod_None:
 		case Key_RBRACKET: return str8l("]");
 		case Key_RBRACKET|InputMod_AnyShift: return str8l("}");
-
+		
 		case Key_BACKSLASH|InputMod_None:
 		case Key_BACKSLASH: return str8l("\\");
 		case Key_BACKSLASH|InputMod_AnyShift: return str8l("|");
@@ -374,7 +374,7 @@ global str8 input_keycode_to_str8(KeyCode key) {
 		case Key_FORWARDSLASH|InputMod_AnyShift: return str8l("?"); 
 		case Key_SPACE|InputMod_None:
 		case Key_SPACE: return str8l(" ");
-
+		
 		case Key_NP0|InputMod_None:
 		case Key_NP0: return str8l("0");
 		case Key_NP1|InputMod_None:
@@ -395,7 +395,7 @@ global str8 input_keycode_to_str8(KeyCode key) {
 		case Key_NP8: return str8l("8");
 		case Key_NP9|InputMod_None:
 		case Key_NP9: return str8l("9");
-
+		
 		case Key_NPMULTIPLY|InputMod_None:
 		case Key_NPMULTIPLY: return str8l("*");
 		case Key_NPDIVIDE|InputMod_None:

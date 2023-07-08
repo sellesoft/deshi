@@ -74,14 +74,14 @@ struct Console{
 	b32 initialized;
 	
 	ring_array<ConsoleChunk> dictionary;
-
+	
 	Logger* logger;
 	
 #define CONSOLE_INPUT_BUFFER_SIZE 1024
 	u8  prev_input[CONSOLE_INPUT_BUFFER_SIZE]{};
 	u32 input_history_index = -1;
 	ring_array<pair<u32,u32>> input_history;
-
+	
 	Arena* chunk_render_arena;
 	
 	b32 tag_show         = true;
@@ -89,7 +89,7 @@ struct Console{
 	b32 tag_outlines     = true;
 	b32 line_highlighing = true;
 	b32 automatic_scroll = true;
-
+	
 	ConsoleState state = ConsoleState_Closed;
 	f32 open_small_percent = 0.2f;   //percentage of the height of the window to open to in small mode
 	f32 open_max_percent   = 0.7f;   //percentage of the height of the window to open to
@@ -102,9 +102,9 @@ struct Console{
 	vec2 console_dim;
 	b32 open_pressed     = false;
 	b32 scroll_to_bottom = false;
-
+	
 	s64 scroll = 0;
-
+	
 	struct{
 		uiItem* main;
 		uiItem* buffer;

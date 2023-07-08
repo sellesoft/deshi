@@ -35,7 +35,7 @@ enum{
 
 struct Text{
     dstr8 buffer;
-
+	
     struct{
         s64 pos;   //byte offset into buffer
         s64 count; //selection size in byte count
@@ -311,4 +311,4 @@ text_cursor_at_end(Text* t){
     return t->cursor.pos == t->buffer.count;
 }
 
-#endif
+#endif //DESHI_TEXTEDIT_H

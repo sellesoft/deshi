@@ -191,7 +191,7 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #define CyanFormatDyn(str)     toStr8(VTS_CyanFg,     str, VTS_Default)
 
 #endif //DESHI_LOGGER_H
-
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_LOGGER_IMPL)
 #define DESHI_LOGGER_IMPL
 
@@ -338,7 +338,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	log_count = ClampMin(log_count, 1);
 	FileArray log_files = file_search_directory(str8_lit("data/logs/"));
 	if(!log_files) return;
-
+	
 	//rename previous log.txt
 	forX_array(file, log_files){
 		if(str8_equal(file->name, str8_lit("log.txt"))){
@@ -369,7 +369,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	}
 	
 	array_deinit(log_files);
-
+	
 	//create log file named as current time
 	logger.file = file_init(str8_lit("data/logs/log.txt"), FileAccess_ReadWriteAppendCreate);
 	Assert(logger.file, "logger failed to open file");
@@ -466,4 +466,4 @@ logger_comma_log_internal(str8 caller_file, upt caller_line, str8 tag, Type log_
 	logger_message_postfix(cursor, tag, log_type);
 }
 
-#endif
+#endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_LOGGER_IMPL)

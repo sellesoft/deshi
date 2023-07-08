@@ -312,28 +312,28 @@ void console_update(){DPZoneScoped;
 	// 		if(console.dictionary[i].size >= console.chunk_render_arena->size){
 	// 			console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
 	// 		}
-			
+	
 	// 		if(console.dictionary[i].newline == 1 && nlines++){
 	// 			uiItemE(); 
 	// 			line = uiItemBS(&line->style);
 	// 			line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines);
 	// 		}
-			
+	
 	// 		//get chunk text from the log file
 	// 		file_set_cursor(console.logger->file, console.dictionary[i].start);
 	// 		file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
 	// 		console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
-			
+	
 	// 		str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
 	// 		uiItem* text = uiTextMS(&line->style, out);
 	// 		text->id = to_dstr8v(deshi_temp_allocator, "console.text",i);
 	// 		text->style.text_color = console.dictionary[i].fg;
-			
-			
+	
+	
 	// 		i++;
 	// 	}
 	// 	uiItemE();
-		
+	
 	// 	uiItem* debug = uiItemB();
 	// 	debug->style.positioning = pos_absolute;
 	// 	debug->style.anchor = anchor_bottom_right;

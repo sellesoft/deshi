@@ -95,7 +95,7 @@ assets_browser(){DPZoneScoped;
 	// 	BeginChild(STR8("AssetsBrowserUIMeshes"), Vec2(MAX_F32, MAX_F32));
 	// 	TextOld(STR8("TODO"));
 	// 	EndChild();
-		
+	
 	// 	EndTab();
 	// }
 	// if(BeginTab(STR8("Textures")))
@@ -103,34 +103,34 @@ assets_browser(){DPZoneScoped;
 	// 	//TODO make all of this stuff get checked only when necessary
 	// 	b32 new_selected = 0;
 	// 	persist Texture* selected = 0;
-		
+	
 	// 	Texture* largest = DeshAssets->texture_array[0];
 	// 	Texture* smallest = DeshAssets->texture_array[0];
-		
+	
 	// 	//gather size of textures in memory
 	// 	upt texture_bytes = 0;
-		
-		
+	
+	
 	// 	for_stb_array(DeshAssets->texture_array){
 	// 		texture_bytes += (*it)->width * (*it)->height * u8size;
 	// 		if((*it)->width * (*it)->height > largest->width * largest->height)   largest = (*it);
 	// 		if((*it)->width * (*it)->height < smallest->width * smallest->height) smallest = (*it);
 	// 	}
-		
+	
 	// 	AddItemFlags(UIItemType_Header, UIHeaderFlags_NoBorder);
-		
-		
+	
+	
 	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	// 	BeginChild(STR8("AssetsBrowserUI_Textures"), vec2::ZERO, UIWindowFlags_NoBorder);
-		
+	
 	// 	BeginRow(STR8("AssetsBrowserUI_Row1"),2, 0, UIRowFlags_AutoSize);
 	// 	RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-		
+	
 	// 	TextF(STR8("Textures Loaded: %d"),       arrlenu(DeshAssets->texture_array));
 	// 	TextF(STR8("Memory Occupied: %lld %cB"), texture_bytes / bytesDivisor(texture_bytes), bytesUnit(texture_bytes));
-		
+	
 	// 	EndRow();
-		
+	
 	// 	if(BeginCombo(STR8("AssetsBrowserUI_Texture_Selection_Combo"), (selected ? str8_from_cstr(selected->name) : STR8("select texture")))){
 	// 		for_stb_array(DeshAssets->texture_array){
 	// 			if(Selectable(str8_from_cstr((*it)->name), (*it) == selected)){
@@ -140,32 +140,32 @@ assets_browser(){DPZoneScoped;
 	// 		}
 	// 		EndCombo();
 	// 	}
-		
+	
 	// 	Separator(9);
-		
+	
 	// 	if(BeginHeader(STR8("Stats"))){
 	// 		BeginRow(STR8("AssetsBrowserUI_Row2"), 3, 0, UIRowFlags_AutoSize);
 	// 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5}, {0.5, 0.5} });
-			
+	
 	// 		TextF(STR8("Largest Texture: %s"), largest->name);
 	// 		if(Button(STR8("select"))){ selected = largest; new_selected = 1;}
-			
+	
 	// 		TextF(STR8("Smallest Texture: %s"), smallest->name);
 	// 		if(Button(STR8("select"))){ selected = smallest; new_selected = 1; }
-			
+	
 	// 		EndRow();
-			
+	
 	// 		EndHeader();
 	// 	}
-		
+	
 	// 	Separator(9);
-		
+	
 	// 	if(selected){
 	// 		BeginRow(STR8("AssetsBrowserUI_Texture_Selected"), 2, 0, UIRowFlags_AutoSize);
 	// 		RowSetupColumnAlignments({ {0, 0.5}, {0, 0.5} });
-			
+	
 	// 		u32 texbytes = selected->width * selected->height * u8size;
-			
+	
 	// 		TextF(STR8("Name: %s"), selected->name);
 	// 		TextF(STR8("Render Index: %d"), selected->render_idx);
 	// 		TextF(STR8("Width: %d"), selected->width);
@@ -177,10 +177,10 @@ assets_browser(){DPZoneScoped;
 	// 		TextF(STR8("Filter: %s"), TextureFilterStrings[selected->filter].str);
 	// 		TextF(STR8("UV Mode: %s"), TextureAddressModeStrings[selected->uvMode].str);
 	// 		TextF(STR8("Memory Used: %lld %cB"), texbytes / bytesDivisor(texbytes), bytesUnit(texbytes));
-			
+	
 	// 		EndRow();
 	// 		PushColor(UIStyleCol_WindowBg, 0x073030ff);
-			
+	
 	// 		SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	// 		BeginChild(STR8("AssetsBrowserUI_Texture_ImageInspector"), vec2::ZERO, UIWindowFlags_NoInteract);
 	// 		persist f32  zoom = 300;
@@ -188,15 +188,15 @@ assets_browser(){DPZoneScoped;
 	// 		persist vec2 imagepos;
 	// 		persist vec2 imageposlatch;
 	// 		persist UIImageFlags flags;
-			
+	
 	// 		vec2 mp = input_mouse_position();
-			
+	
 	// 		if(Button(STR8("Flip x"))) 
 	// 			ToggleFlag(flags, UIImageFlags_FlipX);
 	// 		SameLine();
 	// 		if(Button(STR8("Flip y"))) 
 	// 			ToggleFlag(flags, UIImageFlags_FlipY);
-			
+	
 	// 		if(new_selected){
 	// 			zoom = f32(GetWindow()->width) / selected->width ;
 	// 			//imagepos = Vec2(
@@ -205,13 +205,13 @@ assets_browser(){DPZoneScoped;
 	// 			//				);
 	// 			imagepos = vec2::ZERO;
 	// 		}
-			
+	
 	// 		string z = toStr(zoom);
 	// 		TextOld(str8{(u8*)z.str, (s64)z.count});
-			
+	
 	// 		if(IsWinHovered()){
 	// 			SetPreventInputs();
-				
+	
 	// 			if(DeshInput->scrollY){
 	// 				f32 val = 10 * DeshInput->scrollY;
 	// 				zoom += zoom / val;
@@ -226,49 +226,49 @@ assets_browser(){DPZoneScoped;
 	// 			if(input_lmouse_down()){
 	// 				imagepos = imageposlatch - (mpl - mp);
 	// 			}
-				
+	
 	// 		}
 	// 		else SetAllowInputs();
-			
+	
 	// 		SetNextItemSize(Vec2(zoom * selected->width, zoom * selected->height));
 	// 		Image(selected, imagepos, 1, flags);
-			
+	
 	// 		EndChild();
 	// 		PopColor();
 	// 	}
-		
-		
+	
+	
 	// 	EndChild();
 	// 	ResetItemFlags(UIItemType_Header);
-		
+	
 	// 	EndTab();
 	// }
 	// if(BeginTab(STR8("Materials")))
 	// {
 	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	// 	BeginChild(STR8("AssetsBrowserUI_Materials"), vec2::ZERO, UIWindowFlags_NoBorder);
-		
+	
 	// 	Separator(5);
-		
+	
 	// 	SetNextWindowSize(Vec2(MAX_F32, 200));
 	// 	BeginChild(STR8("AssetsBrowserUI_Materials_List"), vec2::ZERO, UIWindowFlags_NoInteract); {
 	// 		BeginRow(STR8("AssetsBrowserUI_Materials_List"), 2, 0, UIRowFlags_AutoSize);
 	// 		RowSetupColumnAlignments({ {1, 0.5}, {0, 0.5} });
-			
+	
 	// 		forI(arrlenu(DeshAssets->material_array)){
 	// 			string s = toStr(i, "  ");
 	// 			TextOld(str8{(u8*)s.str, (s64)s.count});
 	// 			TextOld(str8_from_cstr(DeshAssets->material_array[i]->name));
 	// 		}
-			
+	
 	// 		EndRow();
 	// 	}EndChild();
-		
+	
 	// 	Separator(5);
-		
-		
+	
+	
 	// 	EndChild();
-		
+	
 	// 	EndTab();
 	// }
 	// if(BeginTab(STR8("Models")))
@@ -277,7 +277,7 @@ assets_browser(){DPZoneScoped;
 	// 	BeginChild(STR8("AssetsBrowserUIModels"), Vec2(MAX_F32, MAX_F32));
 	// 	TextOld(STR8("TODO"));
 	// 	EndChild();
-		
+	
 	// 	EndTab();
 	// }
 	// if(BeginTab(STR8("Fonts")))
@@ -285,7 +285,7 @@ assets_browser(){DPZoneScoped;
 	// 	SetNextWindowSize(Vec2(MAX_F32, MAX_F32));
 	// 	BeginChild(STR8("AssetsBrowserUIFonts"), Vec2(MAX_F32, MAX_F32));
 	// 	TextOld(STR8("TODO"));
-		
+	
 	// 	EndTab();
 	// }
 	// EndTabBar();
@@ -951,14 +951,14 @@ void
 assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 	dstr8 builder;
 	dstr8_init(&builder,
-			to_dstr8v(deshi_temp_allocator,
-					">material"
-					"\nname   \"",material->name,"\""
-					"\nshader ",ShaderStrings[material->shader],
-					"\nflags  ",material->flags,
-					"\n"
-					"\n>textures").fin,
-			deshi_temp_allocator);
+			   to_dstr8v(deshi_temp_allocator,
+						 ">material"
+						 "\nname   \"",material->name,"\""
+						 "\nshader ",ShaderStrings[material->shader],
+						 "\nflags  ",material->flags,
+						 "\n"
+						 "\n>textures").fin,
+			   deshi_temp_allocator);
 	if(material->textureArray){
 		for_stb_array(material->textureArray){
 			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
@@ -1464,7 +1464,7 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		faceVertexes[cfi].add(triangles[bti].v[2],triangles[bti].v[2]);
 		totalFaceVertexes += 3;
 		
-	arrayT<u32> check_tris({(u32)bti});
+		arrayT<u32> check_tris({(u32)bti});
 		forX(check_tri_idx, check_tris.count){
 			u32 cti = check_tris[check_tri_idx];
 			forX(nei_tri_idx, triNeighbors[cti].count){
@@ -1855,15 +1855,15 @@ assets_model_save(Model* model){
 	str8 path = str8_concat3(directory,str8_from_cstr(model->name),STR8(".model"), deshi_temp_allocator);
 	dstr8 builder;
 	dstr8_init(&builder,
-			to_dstr8v(deshi_temp_allocator,
-					">model"
-					"\nname     \"",model->name,"\""
-					"\nflags    ", model->flags,
-					"\nmesh     \"", model->mesh->name,"\""
-					"\narmature ", 0,
-					"\n"
-					"\n>batches").fin,
-			deshi_temp_allocator);
+			   to_dstr8v(deshi_temp_allocator,
+						 ">model"
+						 "\nname     \"",model->name,"\""
+						 "\nflags    ", model->flags,
+						 "\nmesh     \"", model->mesh->name,"\""
+						 "\narmature ", 0,
+						 "\n"
+						 "\n>batches").fin,
+			   deshi_temp_allocator);
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save(it->material);
@@ -1888,15 +1888,15 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 	
 	dstr8 builder;
 	dstr8_init(&builder,
-			to_dstr8v(deshi_temp_allocator,
-					">model"
-					"\nname     \"",model->name,"\""
-					"\nflags    ", model->flags,
-					"\nmesh     \"", model->mesh->name,"\""
-					"\narmature ", 0,
-					"\n"
-					"\n>batches").fin,
-			deshi_temp_allocator);
+			   to_dstr8v(deshi_temp_allocator,
+						 ">model"
+						 "\nname     \"",model->name,"\""
+						 "\nflags    ", model->flags,
+						 "\nmesh     \"", model->mesh->name,"\""
+						 "\narmature ", 0,
+						 "\n"
+						 "\n>batches").fin,
+			   deshi_temp_allocator);
 	if(model->batchArray){
 		for_stb_array(model->batchArray){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
@@ -2271,7 +2271,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	ranges[5].font_size = (f32)size;
 	ranges[6].font_size = (f32)size;
 	ranges[7].font_size = (f32)size;
-
+	
 	
 	/*
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together
