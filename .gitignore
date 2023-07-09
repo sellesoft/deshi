@@ -1,8 +1,11 @@
+#folders
+.vscode/
 examples/*/build
 
-.vscode/
+#extensions
+*.code-workspace
+*.4coder
+*.rdbg
 
 #delle specific
-project.4coder
-remedy.rdbg
 examples/shell.bat
