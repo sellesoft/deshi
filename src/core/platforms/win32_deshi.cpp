@@ -157,7 +157,6 @@ win32_enable_cursor(Window* window){
 	::ClipCursor(0);
 }
 
-
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @callback
 LRESULT CALLBACK
@@ -800,7 +799,11 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 			if(array_count(dir_files) != 0){
 				if(HasFlag(flags, FileDeleteFlags_Recursive)){
 					for_array(dir_files){
-						file_delete(it->path, FileDeleteFlags_Recursive);
+						if(it->type == FileType_Directory){
+							file_delete(it->path, FileDeleteFlags_Directory|FileDeleteFlags_Recursive);
+						}else{
+							file_delete(it->path, FileDeleteFlags_File);
+						}
 					}
 					
 					BOOL success = ::RemoveDirectoryW(wpath);
