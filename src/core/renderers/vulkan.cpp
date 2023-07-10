@@ -887,7 +887,10 @@ CreateInstance(){DPZoneScoped;
 #if DESHI_WINDOWS
 	const char* extensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
-		VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#  if BUILD_INTERNAL
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#  endif //#if BUILD_INTERNAL
 	};
 #elif DESHI_LINUX //#if DESHI_WINDOWS
 	const char* extensions[] = {
@@ -898,7 +901,7 @@ CreateInstance(){DPZoneScoped;
 #  endif //#if BUILD_INTERNAL
 	};
 #else //#elif DESHI_LINUX //#if DESHI_WINDOWS
-#  error "unhandled platform/vulkan interaction"#  error TODO
+#  error "unhandled platform/vulkan interaction"
 #endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
 	
 	//setup instance debug messenger
