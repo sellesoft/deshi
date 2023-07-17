@@ -116,11 +116,11 @@ void condition_variable_notify_all(condition_variable* cv);
 
 //causes a thread to sleep on this condition_variable until some other thread calls
 //one of the notify functions
-void condition_variable_wait(condition_variable* cv);
+void condition_variable_wait(mutex* m, condition_variable* cv);
 
 //causes a thread to sleep on this condition_variable for a specified amount of time
 //or until another thread calls one of the notify functions.
-void condition_variable_wait_for(condition_variable* cv, u64 milliseconds);
+void condition_variable_wait_for(mutex* m, condition_variable* cv, u64 milliseconds);
 
 //TODO(sushi) explain semaphores
 struct semaphore{
@@ -142,7 +142,7 @@ void semaphore_leave(semaphore* se);
 //TODO job priorities
 struct ThreadJob{
     Node node;
-    void (*ThreadFunction)(void*); //job function pointer
+    void (*func)(void*); //job function pointer
     void* data;
 };
 
@@ -155,21 +155,21 @@ struct Thread{
 };
 
 struct ThreadManager{
+    mutex worker_message_lock; // debug, when workers send messages we dont want them to overlap
+
     // locked by a thread who wants to take a new job
 	mutex find_job_lock;
     // prevents > max_awake_threads from running at the same time
     semaphore wake_up_barrier;
     //waited on by threads who could not find jobs to do. these threads are waken up by wake_threads
     condvar idle; 
+    mutex idlemx; 
     //count of idling threads. NOTE(sushi) this is a count of threads waiting on the idle condition variable and does not represent how many threads are sleeping overall
     u64 idle_count;
     mutex idle_count_lock; 
     ThreadJob* jobs;
     Node free_jobs;
     Thread* threads;
-
-    //queue of threads that are waiting to be woken up 
-    ring_array<condvar*> wake_up_queue;
 
     u32 max_threads;
     u32 max_awake_threads;
@@ -212,14 +212,8 @@ void threader_wake_threads(u32 count = 0);
 // sets a name for the calling thread
 void threader_set_thread_name(str8 name);
 
-// called by all worker threads when they finish a job
-// the manager prioritizes workers that want to wake up but cant because 
-// of how many threads are running
-// NOTE(sushi) waking up waiting threads is handled when this thread goes to sleep when it calls going_to_sleep
-static b32 threader_worker_should_continue() {
-    if(DeshThreader->wake_up_queue.count) return 0;
-    return 1;
-}
+upt 
+threader_get_thread_id();
 
 EndLinkageC();
 #endif

@@ -1,4 +1,4 @@
-/* deshi Linux Platform Backend
+﻿/* deshi Linux Platform Backend
 Index:
 @vars
 @helpers
@@ -897,7 +897,7 @@ start_stopwatch() {
 	timespec current;
 	// I am unsure if 'CLOCK_PROCESS_CPUTIME_ID' is appropriate here.
 	// it is the high resolution clock available from Linux
-	if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current) == -1){
+	if(clock_gettime(CLOCK_REALTIME, &current) == -1){
 		switch(errno) {
 			case EFAULT: LogE("stopwatch", "in start_stopwatch(), clock_gettime() was passed a bad address. ERRNO 14: EFAULT"); return 0;
 			case EINVAL: LogE("stopwatch", "in start_stopwatch(), clock_gettime() was given a clk_id that is not supported on this system. ERRNO 22: EINVAL"); return 0;
@@ -908,7 +908,7 @@ start_stopwatch() {
 
 f64 peek_stopwatch(Stopwatch watch) {
 	timespec current;
-	if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current) == -1){
+	if(clock_gettime(CLOCK_REALTIME, &current) == -1){
 		switch(errno) {
 			case EFAULT: LogE("stopwatch", "in peek_stopwatch(), clock_gettime() was passed a bad address. ERRNO 14: EFAULT"); return 0;
 			case EINVAL: LogE("stopwatch", "in peek_stopwatch(), clock_gettime() was given a clk_id that is not supported on this system. ERRNO 22: EINVAL"); return 0;
@@ -1156,11 +1156,12 @@ platform_set_clipboard(str8 text) {
 #if 0
 #define LogLock(m)                      \
 logger_push_indent(1);                  \
-Log("mutex", "X locked   " , m->handle);
+Log("mutex", "X locked " , m->handle, " by ", threader_get_thread_id());
 
 #define LogUnlock(m)                   \
 logger_pop_indent(1);                  \
-Log("mutex", "O unlocked ", m->handle); 
+Log("mutex", "O unlocked ", m->handle, " by ", threader_get_thread_id()); 
+
 #else
 #define LogLock(m) 
 #define LogUnlock(m)
@@ -1168,7 +1169,7 @@ Log("mutex", "O unlocked ", m->handle);
 
 
 mutex
-mutex_init() {
+mutex_init() { DPZoneScoped;
 	mutex out;
 	pthread_mutex_t* m = (pthread_mutex_t*)memalloc(sizeof(pthread_mutex_t));
 	pthread_mutexattr_t attr;
@@ -1200,7 +1201,7 @@ mutex_init() {
 }
 
 void
-mutex_deinit(mutex* m) {
+mutex_deinit(mutex* m) { DPZoneScoped;
 	switch(pthread_mutex_destroy((pthread_mutex_t*)m->handle)) {
 		case EBUSY: {
 			LogE("threader", "This mutex is still locked by some thread and cannot be destroyed.");
@@ -1211,13 +1212,12 @@ mutex_deinit(mutex* m) {
 }
 
 void
-mutex_lock(mutex* m) {
+mutex_lock(mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex."); 
 		DebugBreakpoint;
 		return;
 	}
-
 
 	switch(pthread_mutex_lock((pthread_mutex_t*)m->handle)) {
 		case EAGAIN: {
@@ -1229,7 +1229,7 @@ mutex_lock(mutex* m) {
 }
 
 b32
-mutex_try_lock(mutex* m) {
+mutex_try_lock(mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex."); 
 		DebugBreakpoint;
@@ -1251,7 +1251,7 @@ mutex_try_lock(mutex* m) {
 }
 
 b32
-mutex_try_lock_for(mutex* m, u64 millis) {
+mutex_try_lock_for(mutex* m, u64 millis) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1276,7 +1276,7 @@ mutex_try_lock_for(mutex* m, u64 millis) {
 }
 
 void
-mutex_unlock(mutex* m) {
+mutex_unlock(mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		return;
@@ -1287,7 +1287,7 @@ mutex_unlock(mutex* m) {
 }
 
 shared_mutex 
-shared_mutex_init() {
+shared_mutex_init() { DPZoneScoped;
 	shared_mutex out;
 	out.handle = (pthread_rwlock_t*)memalloc(sizeof(pthread_rwlock_t));
 	switch(pthread_rwlock_init((pthread_rwlock_t*)out.handle, 0))  {
@@ -1308,7 +1308,7 @@ shared_mutex_init() {
 }
 
 void
-shared_mutex_deinit(shared_mutex* m) {
+shared_mutex_deinit(shared_mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to deinit an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1324,7 +1324,7 @@ shared_mutex_deinit(shared_mutex* m) {
 }
 
 void
-shared_mutex_lock(shared_mutex* m) {
+shared_mutex_lock(shared_mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1336,7 +1336,7 @@ shared_mutex_lock(shared_mutex* m) {
 }
 
 b32
-shared_mutex_try_lock(shared_mutex* m) {
+shared_mutex_try_lock(shared_mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1351,7 +1351,7 @@ shared_mutex_try_lock(shared_mutex* m) {
 }
 
 b32
-shared_mutex_try_lock_for(shared_mutex* m, u64 millis) {
+shared_mutex_try_lock_for(shared_mutex* m, u64 millis) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1368,7 +1368,7 @@ shared_mutex_try_lock_for(shared_mutex* m, u64 millis) {
 }
 
 void
-shared_mutex_lock_shared(shared_mutex* m) {
+shared_mutex_lock_shared(shared_mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1380,7 +1380,7 @@ shared_mutex_lock_shared(shared_mutex* m) {
 }
 
 b32
-shared_mutex_try_lock_shared(shared_mutex* m) {
+shared_mutex_try_lock_shared(shared_mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1395,7 +1395,7 @@ shared_mutex_try_lock_shared(shared_mutex* m) {
 }
 
 b32
-shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) {
+shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) { DPZoneScoped;
 	if(!m->handle) {
 		LogE("threader", "attempt to lock an uninitialized mutex.");
 		DebugBreakpoint;
@@ -1413,7 +1413,7 @@ shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis) {
 }
 
 void
-shared_mutex_unlock(shared_mutex* m) {
+shared_mutex_unlock(shared_mutex* m) { DPZoneScoped;
 	if(!m->handle) {
 		DebugBreakpoint;
 		LogE("threader", "attempt to unlock an uninitialized mutex.");
@@ -1425,7 +1425,7 @@ shared_mutex_unlock(shared_mutex* m) {
 }
 
 condition_variable
-condition_variable_init() {
+condition_variable_init() { DPZoneScoped;
 	condition_variable out;
 	pthread_cond_t* cond = (pthread_cond_t*)memalloc(sizeof(pthread_cond_t));
 	
@@ -1435,11 +1435,12 @@ condition_variable_init() {
 		return {};
 	}
 	out.cvhandle = cond;
+
 	return out;
 }
 
 void
-condition_variable_deinit(condition_variable* cv) {
+condition_variable_deinit(condition_variable* cv) { DPZoneScoped;
 	switch(pthread_cond_destroy((pthread_cond_t*)cv->cvhandle)) {
 		case EBUSY: {
 			LogE("threader", "This condition variable cannot be deinitialized because it is still being waited on.");
@@ -1450,7 +1451,7 @@ condition_variable_deinit(condition_variable* cv) {
 }
 
 void
-condition_variable_notify_one(condition_variable* cv) {
+condition_variable_notify_one(condition_variable* cv) { DPZoneScoped;
 	int ret = pthread_cond_signal((pthread_cond_t*)cv->cvhandle);
 	if(ret) {
 		LogE("failed to notify one on condition variable, errno: ", ret);
@@ -1458,7 +1459,7 @@ condition_variable_notify_one(condition_variable* cv) {
 }
 
 void
-condition_variable_notify_all(condition_variable* cv) {
+condition_variable_notify_all(condition_variable* cv) { DPZoneScoped;
 	int ret = pthread_cond_broadcast((pthread_cond_t*)cv->cvhandle);
 	if(ret) {
 		LogE("failed to broadcast to condition variable, errno: ", ret);
@@ -1466,29 +1467,25 @@ condition_variable_notify_all(condition_variable* cv) {
 }
 
 void
-condition_variable_wait(condition_variable* cv) {
-	pthread_mutex_t cvm;
-	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
-	int ret = pthread_cond_wait((pthread_cond_t*)cv->cvhandle, &cvm);
+condition_variable_wait(mutex* m, condition_variable* cv) { DPZoneScoped;
+	int ret = pthread_cond_wait((pthread_cond_t*)cv->cvhandle, (pthread_mutex_t*)m->handle);
 	if(ret) {
 		LogE("threader", "failed to wait on condition variable, errno: ", ret);
 	}
 }
 
 void
-condition_variable_wait_for(condition_variable* cv, u64 milliseconds) {
-	pthread_mutex_t cvm;
-	pthread_mutex_init(&cvm, 0); // TODO(sushi) error handling for this
+condition_variable_wait_for(mutex* m, condition_variable* cv, u64 milliseconds) { DPZoneScoped;
 	timespec ts;
 	ts.tv_nsec = milliseconds * int(1e6);
-	int ret = pthread_cond_timedwait((pthread_cond_t*)cv->cvhandle, &cvm, &ts);
+	int ret = pthread_cond_timedwait((pthread_cond_t*)cv->cvhandle, (pthread_mutex_t*)m->handle, &ts);
 	if(ret && ret != ETIMEDOUT) {
 		LogE("threader", "failed to wait on condition variable, errno: ", ret);
 	}
 }
 
 semaphore 
-semaphore_init(u64 initial_val, u64 max_val) {
+semaphore_init(u64 initial_val, u64 max_val) { DPZoneScoped;
 	semaphore out;
 	out.handle = memalloc(sizeof(sem_t));
 	if(sem_init((sem_t*)out.handle, 0, max_val)) {
@@ -1500,7 +1497,7 @@ semaphore_init(u64 initial_val, u64 max_val) {
 }
 
 void 
-semaphore_deinit(semaphore* se) {
+semaphore_deinit(semaphore* se) { DPZoneScoped;
 	if(sem_destroy((sem_t*)se->handle)) {
 		LogE("threader", "failed to destroy a semaphore, errno: ", errno);
 		return;
@@ -1509,7 +1506,7 @@ semaphore_deinit(semaphore* se) {
 }
 
 void 
-semaphore_enter(semaphore* se) {
+semaphore_enter(semaphore* se) { DPZoneScoped;
 	int ret = sem_wait((sem_t*)se->handle);
 	if(ret) {
 		LogE("threader", "failed to wait on semaphore, errno: ", errno);
@@ -1517,20 +1514,35 @@ semaphore_enter(semaphore* se) {
 }
 
 void 
-semaphore_leave(semaphore* se) {
+semaphore_leave(semaphore* se) { DPZoneScoped;
 	int ret = sem_post((sem_t*)se->handle);
 	if(ret) {
 		LogE("threader", "failed to release a semaphore, errno: ", errno);
 	}
 }
 
-void* deshi__thread_worker(void* in) {
+#if 0
+#define WorkerLog(message)                                                                                       \
+do{                                                                                                              \
+FILE* f = fopen((char*)to_dstr8v(stl_allocator,"temp/",threader_get_thread_id()).str, "a");                      \
+dstr8 out = to_dstr8v(stl_allocator, peek_stopwatch(DeshTime->stopwatch), ": thread ", threader_get_thread_id(), ": ", message, "\n"); \
+fwrite((char*)out.str, out.count, 1, f);                                                                         \
+fclose(f);                                                                                                       \
+}while(0)
+#else
+#define WorkerLog(message)
+#endif
+
+void* 
+deshi__thread_worker(void* in) { DPZoneScoped;
 	Thread* me = (Thread*)in;
 	ThreadManager* man = DeshThreader;
+	WorkerLog("* spawned");
 	semaphore_enter(&man->wake_up_barrier);
 	while(!me->close) {
-		mutex_lock(&man->find_job_lock);
 		ThreadJob* tj = 0;
+		WorkerLog("? looking for a job");
+		mutex_lock(&man->find_job_lock);
 		forI(DESHI_THREAD_PRIORITY_LAYERS) {
 			if(man->priorities[i]) {
 				tj = man->priorities[i];
@@ -1543,11 +1555,19 @@ void* deshi__thread_worker(void* in) {
 		mutex_unlock(&man->find_job_lock);
 
 		if(tj) {
+			WorkerLog("> running job");
+			semaphore_enter(&man->wake_up_barrier);
 			me->running = true;
-			tj->ThreadFunction(tj->data);
+			tj->func(tj->data);
 			me->running = false;
+			semaphore_leave(&man->wake_up_barrier);
+			WorkerLog("! finished job");
 		} else {
-			condition_variable_wait(&man->idle);
+			WorkerLog("# sleeping");
+			mutex_lock(&man->idlemx);
+			condition_variable_wait(&man->idlemx, &man->idle);
+			mutex_unlock(&man->idlemx);
+			WorkerLog("@ waking up");
 		}
 	}
 
@@ -1555,7 +1575,7 @@ void* deshi__thread_worker(void* in) {
 }
 
 void 
-threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
+threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) { DPZoneScoped;
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
 	
 	DeshThreader->max_threads = max_threads;
@@ -1573,11 +1593,13 @@ threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
 	}
 	
 	//TODO(sushi) query for max amount of threads 
-	DeshThreader->wake_up_barrier = semaphore_init(8,8);
+	DeshThreader->wake_up_barrier = semaphore_init(max_awake_threads,max_awake_threads);
 	semaphore_enter(&DeshThreader->wake_up_barrier);
 	
 	DeshThreader->idle = condition_variable_init();
 	DeshThreader->find_job_lock = mutex_init();
+	DeshThreader->worker_message_lock = mutex_init();
+	DeshThreader->idlemx = mutex_init();
 
 	// create requested amount of threads
 	forI(max_threads) {
@@ -1598,7 +1620,8 @@ threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs) {
 	DeshiStageInitEnd(DS_THREAD);
 }
 
-void threader_deinit() {
+void 
+threader_deinit() { DPZoneScoped;
 	forI(DeshThreader->max_threads) {
 		Thread* current = DeshThreader->threads + i;
 		
@@ -1606,7 +1629,7 @@ void threader_deinit() {
 }
 
 void
-threader_add_job(ThreadJob job, u8 priority){
+threader_add_job(ThreadJob job, u8 priority){ DPZoneScoped;
 	Assert(priority <= DESHI_THREAD_PRIORITY_LAYERS, "only DESHI_THREAD_PRIORITY_LAYERS priority levels are allowed");
 	ThreadJob* current = (ThreadJob*)DeshThreader->free_jobs.next;
 	NodeRemove(&current->node);
@@ -1620,7 +1643,7 @@ threader_add_job(ThreadJob job, u8 priority){
 }
 
 void
-threader_cancel_all_jobs(){
+threader_cancel_all_jobs(){ DPZoneScoped;
 	DeshThreader->free_jobs.next = &DeshThreader->free_jobs;
 	DeshThreader->free_jobs.prev = &DeshThreader->free_jobs;
 	ThreadJob* iter = DeshThreader->jobs;
@@ -1631,7 +1654,7 @@ threader_cancel_all_jobs(){
 }
 
 void
-threader_wake_threads(u32 count){
+threader_wake_threads(u32 count){ DPZoneScoped;
 	if(count) {
 		forI(count) {
 			condition_variable_notify_one(&DeshThreader->idle);
@@ -1640,12 +1663,15 @@ threader_wake_threads(u32 count){
 }
 
 void
-threader_set_thread_name(str8 name){
-	NotImplemented;
+threader_set_thread_name(str8 name){ DPZoneScoped;
+	// this cannot be support on linux right now because we do not give out handles to Threads, and since linux 
+	// requires you to allocate the thread, we can't just set the name of the calling thread like we can
+	// on Windows
+	NotImplemented; 
 }
 
 upt 
-threader_get_thread_id() {
+threader_get_thread_id() { DPZoneScoped;
 	return gettid();
 }
 
