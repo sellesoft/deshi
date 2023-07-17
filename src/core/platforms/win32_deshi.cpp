@@ -1878,7 +1878,7 @@ deshi__thread_worker(Thread* me){DPZoneScoped;
 			//run the function
 			WorkerLog("running job");
 			me->running = true;
-			tj.ThreadFunction(tj.data);
+			tj.func(tj.data);
 			me->running = false;
 			WorkerLog("finished running job");
 			if(!threader_worker_should_continue()) break;

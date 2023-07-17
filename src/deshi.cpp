@@ -237,8 +237,12 @@ local DeshiStage deshiStage = DS_NONE;
 
 //// tracy ////
 #ifdef TRACY_ENABLE
+#undef global
+#undef defer
 #  include "TracyClient.cpp"
-#  include "Tracy.hpp"
+#  include "tracy/Tracy.hpp"
+#define global static
+#define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif
 
 //// kigu headers ////"
