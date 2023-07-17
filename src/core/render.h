@@ -1069,14 +1069,14 @@ deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u
 	Vertex2* vp         = renderTwodVertexArray + renderTwodVertexCount;
 	RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
 	
-
-
+	
+	
 	CopyMemory(vp, vertices, vCount*sizeof(Vertex2));
 	forI(iCount){
 		Assert(indices[i] < vCount, "Index out of range of given number of vertices!\nMake sure your indices weren't overwritten by something.");
 		ip[i] = renderTwodVertexCount + indices[i];
 	} 
-
+	
 #ifdef BUILD_INTERNAL
 	RenderBookKeeper keeper;
 	keeper.type = RenderBookKeeper_Vertex;
@@ -1085,7 +1085,7 @@ deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u
 	keeper.file = file;
 	keeper.line = line;
 	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
-
+	
 	keeper.type = RenderBookKeeper_Index;
 	keeper.index.start = ip;
 	keeper.index.count = iCount;
@@ -1097,8 +1097,8 @@ deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u
 	renderTwodVertexCount += vCount;
 	renderTwodIndexCount  += iCount;
 	renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1].indexCount += iCount;
-
-
+	
+	
 }
 
 u32
@@ -1445,7 +1445,7 @@ render_texture2(Texture* texture, vec2 tl, vec2 tr, vec2 bl, vec2 br, f32 transp
 	
 	renderTwodVertexCount += 4;
 	renderTwodIndexCount  += 6;
-
+	
 	RenderTwodCmd* cmd =  &renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]];
 	cmd->indexCount += 6;
 	cmd->handle = (void*)((u64)texture->render_idx);

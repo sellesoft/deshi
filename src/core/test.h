@@ -20,7 +20,7 @@
 		logger_push_indent(1);                     \
 	}  
 
-#define TestEndSection(name)                                                 \
+#define TestEndSection()                                                     \
 	if(__deshi_test_passed){                                                 \
 		if(__deshi_test_verbose) logger_pop_indent(2);                       \
 		Log("", SuccessFormat("passed"), ": ", __deshi_test_section_string); \

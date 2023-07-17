@@ -3,7 +3,7 @@
 #define DESHI_THREADING_H
 
 #ifndef DESHI_THREAD_PRIORITY_LAYERS
-#define DESHI_THREAD_PRIORITY_LAYERS 4 
+#  define DESHI_THREAD_PRIORITY_LAYERS 4 
 #endif
 
 #include "kigu/common.h"
@@ -170,13 +170,12 @@ struct ThreadManager{
     ThreadJob* jobs;
     Node free_jobs;
     Thread* threads;
-
     u32 max_threads;
     u32 max_awake_threads;
     u32 max_jobs;
-
+	
     u32 awake_threads = 1; //main thread counts towards awake threads 
-
+	
     ThreadJob* priorities[DESHI_THREAD_PRIORITY_LAYERS];
 };
 
@@ -216,4 +215,4 @@ upt
 threader_get_thread_id();
 
 EndLinkageC();
-#endif
+#endif //DESHI_THREADING_H

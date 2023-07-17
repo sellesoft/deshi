@@ -3,6 +3,8 @@
 #include <ctime>
 #include "kigu/common.h"
 
+#define DESHI_TESTS
+
 #define DESHI_TEST_CORE_TODO(name) wprintf(L"[DESHI-TEST] TODO:   core/" name "\n")
 #define DESHI_TEST_CORE_PASSED(name) wprintf(L"[DESHI-TEST] PASSED: core/" name "\n")
 
@@ -557,10 +559,12 @@ local void TEST_deshi_core_window(){
 	DESHI_TEST_CORE_TODO("window");
 }
 
+#include "file.h"
 local void TEST_deshi_core(){
 	TEST_deshi_core_camera();
 	TEST_deshi_core_commands();
 	TEST_deshi_core_console();
+	TEST_deshi_file();
 	TEST_deshi_core_input();
 	TEST_deshi_core_logging();
 	TEST_deshi_core_memory();

@@ -474,12 +474,12 @@ render_init(){DPZoneScoped;
 		
 		XFlush(linux.x11.display);
 		XDrawString(linux.x11.display, (X11Window)DeshWindow->handle, (GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
-
+		
 		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		
 		gladInstallGLXDebug();
-
+		
 		// get restore points 
 		Display* prev_display = glXGetCurrentDisplay();
 		GLXContext prev_context = glXGetCurrentContext();
@@ -501,10 +501,10 @@ render_init(){DPZoneScoped;
 			LogE("opengl", "Cannot find an appropriate framebuffer configuration with glXChooseFBConfig");
 			Assert(0);
 		}
-
+		
 		GLXFBConfig fbconfig = config[0];
 		XFree(config);
-
+		
 		// get the best visual for our chosen attributes
 		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
 		if(!vi) {
@@ -524,7 +524,7 @@ render_init(){DPZoneScoped;
 #endif
 			0 // Terminate the attribute list
 		};
-
+		
 		GLXContext context = glXCreateContextAttribsARB(linux.x11.display, fbconfig, 0, True, contextAttribs);
 		if(!glXMakeCurrent(linux.x11.display, (X11Window)DeshWindow->handle, context)) {
 			Log("", "unable to set glx context");
@@ -696,7 +696,7 @@ render_update(){DPZoneScoped;
 				glGenBuffers(1, &uiBuffers.vbo_handle);
 				glGenBuffers(1, &uiBuffers.ibo_handle);
 			}
-
+			
 			//bind buffers
 			glBindVertexArray(uiBuffers.vao_handle);
 			glBindBuffer(GL_ARRAY_BUFFER, uiBuffers.vbo_handle);
@@ -890,7 +890,7 @@ render_update(){DPZoneScoped;
 		
 		//// model commands ////
 		renderModelCmdCount = 0;
-
+		
 #ifdef BUILD_INTERNAL
 		renderBookKeeperCount = 0;
 #endif
@@ -1290,7 +1290,7 @@ render_remake_offscreen(){DPZoneScoped;
 void 
 render_update_texture(Texture* texture, vec2i offset, vec2i size){
 	TextureGl* gltex = &glTextures[texture->render_idx];
-
+	
 	switch(texture->type){
 		case TextureType_2D:{
 			glBindTexture(GL_TEXTURE_2D, gltex->handle); 

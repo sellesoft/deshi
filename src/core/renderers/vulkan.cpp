@@ -142,15 +142,15 @@ local VkPhysicalDeviceFeatures enabledFeatures        = {0};
 local QueueFamilyIndices       physicalQueueFamilies  = {};
 local VkDevice                 device                 = VK_NULL_HANDLE;
 local VkQueue                  graphicsQueue          = VK_NULL_HANDLE;
-local VkQueue                  presentQueue           = VK_NULL_HANDLE; 
+local VkQueue                  presentQueue           = VK_NULL_HANDLE;
 local VkDeviceSize             bufferMemoryAlignment  = 256;
 
 local const char* validationLayers[] = {
 	"VK_LAYER_KHRONOS_validation"
 };
 local char* deviceExtensions[] = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
-	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
 };
 local arrayT<VkValidationFeatureEnableEXT> validationFeaturesEnabled;
 
@@ -212,7 +212,7 @@ local struct{ //uniform buffer for the vertex shaders
 		vec4 viewPos;     //camera pos
 		vec2 screen;      //screen dimensions
 		vec2 mousepos;    //mouse screen pos
-		vec3 mouseWorld;  //point casted out from mouse 
+		vec3 mouseWorld;  //point casted out from mouse
 		f32  time;        //total time
 		mat4 lightVP;     //first light's view projection matrix
 		bool enablePCF;   //whether to blur shadow edges //TODOf(delle,ReVu) convert to specialization constant
@@ -368,7 +368,7 @@ local struct {
 #define LogWVk(msg) LogW("render-vulkan", __func__, "(): " msg)
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
-local inline void 
+local inline void
 DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){DPZoneScoped;
 #ifdef BUILD_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
@@ -382,7 +382,7 @@ DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 c
 }
 
 PFN_vkCmdEndDebugUtilsLabelEXT func_vkCmdEndDebugUtilsLabelEXT;
-local inline void 
+local inline void
 DebugEndLabelVk(VkCommandBuffer command_buffer){DPZoneScoped;
 #ifdef BUILD_INTERNAL
 	func_vkCmdEndDebugUtilsLabelEXT(command_buffer);
@@ -390,7 +390,7 @@ DebugEndLabelVk(VkCommandBuffer command_buffer){DPZoneScoped;
 }
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
-local inline void 
+local inline void
 DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){DPZoneScoped;
 #ifdef BUILD_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
@@ -404,7 +404,7 @@ DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 
 }
 
 PFN_vkSetDebugUtilsObjectNameEXT func_vkSetDebugUtilsObjectNameEXT;
-local inline void 
+local inline void
 DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handle, const char *object_name){DPZoneScoped;
 #ifdef BUILD_INTERNAL
 	if(!object_handle) return;
@@ -451,16 +451,16 @@ EndSingleTimeCommands(VkCommandBuffer commandBuffer){DPZoneScoped;
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-local VKAPI_ATTR VkBool32 VKAPI_CALL 
+local VKAPI_ATTR VkBool32 VKAPI_CALL
 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
 			  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData){
 	switch(messageSeverity){
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:{
-			LogE("vulkan",pCallbackData->pMessage); 
+			LogE("vulkan",pCallbackData->pMessage);
 			if(renderSettings.crashOnError) Assert(!"crashing because of error in vulkan");
 		}break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:{
-			LogW("vulkan",pCallbackData->pMessage); 
+			LogW("vulkan",pCallbackData->pMessage);
 		}break;
 		default:{
 			PrintVk(6, pCallbackData->pMessage);
@@ -491,7 +491,7 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){DPZoneScoped;
 }
 
 //creates a buffer of defined usage and size on the device
-local void 
+local void
 CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSize& buffer_size, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){DPZoneScoped;
 	VkBuffer old_buffer = buffer; buffer = VK_NULL_HANDLE;
 	VkDeviceMemory old_buffer_memory = buffer_memory; buffer_memory = VK_NULL_HANDLE;
@@ -530,23 +530,23 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSi
 	}
 	
 	//delete old buffer
-	if(old_buffer        != VK_NULL_HANDLE) vkDestroyBuffer(device, old_buffer, allocator); 
-	if(old_buffer_memory != VK_NULL_HANDLE) vkFreeMemory(device, old_buffer_memory, allocator); 
+	if(old_buffer        != VK_NULL_HANDLE) vkDestroyBuffer(device, old_buffer, allocator);
+	if(old_buffer_memory != VK_NULL_HANDLE) vkFreeMemory(device, old_buffer_memory, allocator);
 	
 	buffer_size = new_size;
 }
 
-local void 
+local void
 CreateOrResizeBuffer(BufferVk* buffer, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){DPZoneScoped;
 	CreateOrResizeBuffer(buffer->buffer, buffer->memory, buffer->size, new_size, usage, properties);
 }
 
 //creates a buffer and maps provided data to it
-local void 
+local void
 CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){DPZoneScoped;
 	//delete old buffer
-	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator); 
-	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator); 
+	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator);
+	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator);
 	
 	//create buffer
 	VkDeviceSize alignedBufferSize = ((newSize-1) / bufferMemoryAlignment + 1) * bufferMemoryAlignment;
@@ -590,7 +590,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 }
 
 //copies a buffer, we use this to copy from a host-visible staging buffer to device-only buffer
-local void 
+local void
 CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){DPZoneScoped;
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		VkBufferCopy copyRegion{};
@@ -623,7 +623,7 @@ CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
 }
 
 //creates and binds a vulkan image to the GPU
-local void 
+local void
 CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory){DPZoneScoped;
 	PrintVk(4,"Creating image");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateImage called before CreateLogicalDevice");
@@ -654,7 +654,7 @@ CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
 }
 
 //converts a VkImage from one layout to another using an image memory barrier
-local void 
+local void
 TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels){DPZoneScoped;
 	PrintVk(4,"Transitioning image layout");
 	AssertRS(RSVK_LOGICALDEVICE, "TransitionImageLayout called before CreateLogicalDevice");
@@ -696,7 +696,7 @@ TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 }
 
 //scans an image for max possible mipmaps and generates them
-local void 
+local void
 GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels){DPZoneScoped;
 	PrintVk(4,"Creating image mipmaps");
 	// Check if image format supports linear blitting
@@ -767,7 +767,7 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 }
 
 //uses commands to copy a buffer to an image
-local void 
+local void
 CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){DPZoneScoped;
 	PrintVk(4,"Copying buffer to image");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
@@ -788,7 +788,7 @@ CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){DPZoneS
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_init
-local void 
+local void
 SetupAllocator(){DPZoneScoped;
 	//!ref: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkAllocationCallbacks.html
 	PrintVk(2,"Setting up vulkan allocator");
@@ -839,7 +839,7 @@ SetupAllocator(){DPZoneScoped;
 	temp_allocator_.pfnFree = deshi_vulkan_temp_free_func;
 }
 
-local void 
+local void
 CreateInstance(){DPZoneScoped;
 	PrintVk(2,"Creating vulkan instance");
 	Assert(renderStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
@@ -882,34 +882,27 @@ CreateInstance(){DPZoneScoped;
 	validationFeatures.enabledValidationFeatureCount  = validationFeaturesEnabled.count;
 	validationFeatures.pEnabledValidationFeatures     = validationFeaturesEnabled.data;
 	
-	u32 pcount = 0;
-	vkEnumerateInstanceExtensionProperties(0, &pcount, 0);
-	VkExtensionProperties* eprops = (VkExtensionProperties*)memalloc(pcount*sizeof(VkExtensionProperties));
-	vkEnumerateInstanceExtensionProperties(0, &pcount, eprops);
-	/*forI(pcount){
-		PRINTLN(eprops[i].extensionName);
-	}*/
-	
 	//get required extensions
 	PrintVk(3, "Getting required extensions");
-	
 #if DESHI_WINDOWS
-	u32 extensionCount = 2;
-	arrayT<const char*> extensions{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
-#elif DESHI_LINUX
 	const char* extensions[] = {
-		VK_KHR_SURFACE_EXTENSION_NAME, 
-		VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-#if BUILD_INTERNAL
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#  if BUILD_INTERNAL
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-#endif
+#  endif //#if BUILD_INTERNAL
 	};
-#elif DESHI_MAC
-	u32 extensionCount = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-	arrayT<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-#endif
+#elif DESHI_LINUX //#if DESHI_WINDOWS
+	const char* extensions[] = {
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+#  if BUILD_INTERNAL
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#  endif //#if BUILD_INTERNAL
+	};
+#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
+#  error "unhandled platform/vulkan interaction"
+#endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
 	
 	//setup instance debug messenger
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
@@ -920,7 +913,7 @@ CreateInstance(){DPZoneScoped;
 	//create the instance
 	VkInstanceCreateInfo createInfo{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
 	createInfo.pApplicationInfo        = &appInfo;
-	createInfo.enabledExtensionCount   = ArrayCount(extensions);
+	createInfo.enabledExtensionCount   = (u32)ArrayCount(extensions);
 	createInfo.ppEnabledExtensionNames = extensions;
 	if(renderSettings.debugging){
 		createInfo.enabledLayerCount   = (u32)ArrayCount(validationLayers);
@@ -934,7 +927,7 @@ CreateInstance(){DPZoneScoped;
 	resultVk = vkCreateInstance(&createInfo, allocator, &instance); AssertVk(resultVk, "failed to create instance");
 }
 
-local void 
+local void
 SetupDebugMessenger(){DPZoneScoped;
 	PrintVk(2, "Setting up debug messenger");
 	AssertRS(RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
@@ -969,7 +962,7 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating X11-Vulkan surface");
-
+	
 	NotImplemented;
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");
@@ -977,7 +970,7 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 #endif
 }
 
-local void 
+local void
 PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 	PrintVk(2, "Picking physical device");
 	AssertRS(RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
@@ -990,14 +983,14 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data);
 	
 	//test all available GPUs
-	for(VkPhysicalDevice device : devices){ 
+	for(VkPhysicalDevice device : devices){
 		{//find device's queue families
 			physicalQueueFamilies.graphicsFamily.reset();
 			physicalQueueFamilies.presentFamily.reset();
 			
 			u32 queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, 0);
-	arrayT<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, deshi_temp_allocator);
+			arrayT<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, deshi_temp_allocator);
 			queueFamilies.count = queueFamilyCount;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data);
 			
@@ -1017,7 +1010,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 		{//check if device supports enabled/required extensions
 			u32 extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, 0, &extensionCount, 0);
-	arrayT<VkExtensionProperties> availableExtensions(extensionCount, deshi_temp_allocator);
+			arrayT<VkExtensionProperties> availableExtensions(extensionCount, deshi_temp_allocator);
 			availableExtensions.count = extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, 0, &extensionCount, availableExtensions.data);
 			
@@ -1042,8 +1035,8 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 			if(formatCount == 0 || presentModeCount == 0) continue;
 		}
 		
-		physicalDevice = device; 
-		break; 
+		physicalDevice = device;
+		break;
 	}
 	Assert(physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU that supports Vulkan");
 	
@@ -1062,7 +1055,7 @@ PickPhysicalDevice(u32 surface_index = 0){DPZoneScoped;
 	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 }
 
-local void 
+local void
 CreateLogicalDevice(){DPZoneScoped;
 	PrintVk(2, "Creating logical device");
 	AssertRS(RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
@@ -1124,7 +1117,7 @@ CreateLogicalDevice(){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_swapchain
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
-local void 
+local void
 CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 	PrintVk(2, "Creating swapchain");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateSwapchain called before CreateLogicalDevice");
@@ -1201,9 +1194,9 @@ CreateSwapchain(Window* win = DeshWindow, u32 swapchain_idx = 0){DPZoneScoped;
 		activeSwapchain.extent = activeSwapchain.supportDetails.capabilities.currentExtent;
 	}else{
 		activeSwapchain.extent = { (u32)activeSwapchain.width, (u32)activeSwapchain.height };
-		activeSwapchain.extent.width  = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.width,  
+		activeSwapchain.extent.width  = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.width,
 											Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.width,  activeSwapchain.extent.width));
-		activeSwapchain.extent.height = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.height, 
+		activeSwapchain.extent.height = Max(activeSwapchain.supportDetails.capabilities.minImageExtent.height,
 											Min(activeSwapchain.supportDetails.capabilities.maxImageExtent.height, activeSwapchain.extent.height));
 	}
 	
@@ -1289,7 +1282,7 @@ findDepthFormat(){DPZoneScoped;
 							   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-local void 
+local void
 CreateRenderpasses(){DPZoneScoped;
 	PrintVk(2, "Creating render pass");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPasses called before CreateLogicalDevice");
@@ -1299,7 +1292,7 @@ CreateRenderpasses(){DPZoneScoped;
 	if(msaaRenderPass) vkDestroyRenderPass(device, msaaRenderPass, allocator);
 	
 	VkAttachmentDescription attachments[3]{};
-	//attachment 0: color 
+	//attachment 0: color
 	attachments[0].format         = activeSwapchain.surfaceFormat.format;
 	attachments[0].samples        = msaaSamples;
 	attachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -1388,7 +1381,7 @@ CreateRenderpasses(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_frames
-local void 
+local void
 CreateCommandPool(){DPZoneScoped;
 	PrintVk(2, "Creating command pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
@@ -1402,7 +1395,7 @@ CreateCommandPool(){DPZoneScoped;
 }
 
 //creates image views, color/depth resources, framebuffers, commandbuffers
-local void 
+local void
 CreateFrames(){DPZoneScoped;
 	PrintVk(2, "Creating frames");
 	AssertRS(RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
@@ -1422,8 +1415,8 @@ CreateFrames(){DPZoneScoped;
 			vkFreeMemory(device, activeSwapchain.attachments.colorImageMemory, allocator);
 		}
 		VkFormat colorFormat = activeSwapchain.surfaceFormat.format;
-		CreateImage(activeSwapchain.width, activeSwapchain.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
+		CreateImage(activeSwapchain.width, activeSwapchain.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, activeSwapchain.attachments.colorImage, activeSwapchain.attachments.colorImageMemory);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.attachments.colorImage, "Framebuffer color image");
 		activeSwapchain.attachments.colorImageView = CreateImageView(activeSwapchain.attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
@@ -1437,8 +1430,8 @@ CreateFrames(){DPZoneScoped;
 			vkFreeMemory(device, activeSwapchain.attachments.depthImageMemory, allocator);
 		}
 		VkFormat depthFormat = findDepthFormat();
-		CreateImage(activeSwapchain.width, activeSwapchain.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
-					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+		CreateImage(activeSwapchain.width, activeSwapchain.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, activeSwapchain.attachments.depthImage, activeSwapchain.attachments.depthImageMemory);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.attachments.depthImage, "Framebuffer depth image");
 		activeSwapchain.attachments.depthImageView = CreateImageView(activeSwapchain.attachments.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
@@ -1450,17 +1443,17 @@ CreateFrames(){DPZoneScoped;
 		//set the frame images to the swap chain images
 		//NOTE the previous image and its memory gets freed when the swapchain gets destroyed
 		activeSwapchain.frames[i].image = images[i];
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.frames[i].image, ToString("Frame image ", i).str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.frames[i].image, (const char*)to_dstr8v(deshi_temp_allocator, "Frame image ", i).str);
 		
 		//create the image views
 		if(activeSwapchain.frames[i].imageView) vkDestroyImageView(device, activeSwapchain.frames[i].imageView, allocator);
 		activeSwapchain.frames[i].imageView = CreateImageView(activeSwapchain.frames[i].image, activeSwapchain.surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.frames[i].imageView, ToString("Frame imageview ", i).str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.frames[i].imageView, (const char*)to_dstr8v(deshi_temp_allocator, "Frame imageview ", i).str);
 		
 		//create the framebuffers
 		if(activeSwapchain.frames[i].framebuffer) vkDestroyFramebuffer(device, activeSwapchain.frames[i].framebuffer, allocator);
 		
-	arrayT<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
+		arrayT<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
 		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
 			frameBufferAttachments = { activeSwapchain.attachments.colorImageView, activeSwapchain.attachments.depthImageView, activeSwapchain.frames[i].imageView };
 		}else{
@@ -1475,7 +1468,7 @@ CreateFrames(){DPZoneScoped;
 		info.height          = activeSwapchain.height;
 		info.layers          = 1;
 		resultVk = vkCreateFramebuffer(device, &info, allocator, &activeSwapchain.frames[i].framebuffer); AssertVk(resultVk, "failed to create framebuffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)activeSwapchain.frames[i].framebuffer, ToString("Frame framebuffer ", i).str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)activeSwapchain.frames[i].framebuffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame framebuffer ", i).str);
 		
 		//allocate command buffers
 		if(activeSwapchain.frames[i].commandBuffer) vkFreeCommandBuffers(device, commandPool, 1, &activeSwapchain.frames[i].commandBuffer);
@@ -1484,14 +1477,14 @@ CreateFrames(){DPZoneScoped;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
 		resultVk = vkAllocateCommandBuffers(device, &allocInfo, &activeSwapchain.frames[i].commandBuffer); AssertVk(resultVk, "failed to allocate command buffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)activeSwapchain.frames[i].commandBuffer, ToString("Frame command buffer ", i).str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)activeSwapchain.frames[i].commandBuffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame command buffer ", i).str);
 	}
 }
 
 //creates semaphores indicating: image acquired, rendering complete
 //semaphores (GPU-GPU) coordinate operations across command buffers so that they execute in a specified order
 //fences (CPU-GPU) are similar but are waited for in the code itself rather than threads
-local void 
+local void
 CreateSyncObjects(){DPZoneScoped;
 	PrintVk(2, "Creating sync objects");
 	AssertRS(RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
@@ -1514,15 +1507,15 @@ CreateSyncObjects(){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_buffers
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
-local void 
+local void
 UpdateUniformBuffers(){DPZoneScoped;
 	AssertRS(RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
 	//PrintVk(2, "  Updating Uniform Buffer");
 	
 	{//update offscreen vertex shader ubo
 		//calculate light ViewProjection for shadow map based on first light
-		uboVSoffscreen.values.lightVP = 
-			Math::LookAtMatrix(vkLights[0].toVec3(), vec3::ZERO).Inverse() * 
+		uboVSoffscreen.values.lightVP =
+			Math::LookAtMatrix(vkLights[0].toVec3(), vec3::ZERO).Inverse() *
 			Math::PerspectiveProjectionMatrix((f32)renderSettings.shadowResolution, (f32)renderSettings.shadowResolution, 90.0f, renderSettings.shadowNearZ, renderSettings.shadowFarZ);
 		
 		void* data;
@@ -1558,14 +1551,14 @@ UpdateUniformBuffers(){DPZoneScoped;
 	}
 }
 
-local void 
+local void
 CreateUniformBuffers(){DPZoneScoped;
 	PrintVk(2, "Creating uniform buffers");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
 	renderStage |= RSVK_UNIFORMBUFFER;
 	
 	{//create scene vertex shader ubo
-		CreateOrResizeBuffer(uboVS.buffer, uboVS.bufferMemory, uboVS.bufferSize, 
+		CreateOrResizeBuffer(uboVS.buffer, uboVS.bufferMemory, uboVS.bufferSize,
 							 sizeof(uboVS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		uboVS.bufferDescriptor.buffer = uboVS.buffer;
@@ -1576,7 +1569,7 @@ CreateUniformBuffers(){DPZoneScoped;
 	
 	//create normals geometry shader ubo
 	if(enabledFeatures.geometryShader){
-		CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize, 
+		CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize,
 							 sizeof(uboGS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		uboGS.bufferDescriptor.buffer = uboGS.buffer;
@@ -1601,7 +1594,7 @@ CreateUniformBuffers(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_other
-local void 
+local void
 SetupOffscreenRendering(){DPZoneScoped;
 	PrintVk(2, "Creating offscreen rendering stuffs");
 	AssertRS(RSVK_LOGICALDEVICE, "SetupOffscreenRendering called before CreateLogicalDevice");
@@ -1752,12 +1745,12 @@ load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
 	}
 	
 	//check for compile errors
-	if(!compiled){ 
+	if(!compiled){
 		LogE("vulkan",name,": Shader compiler returned a null result");
-		return VkPipelineShaderStageCreateInfo{}; 
+		return VkPipelineShaderStageCreateInfo{};
 	}
 	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success){
-		LogE("vulkan",shaderc_result_get_error_message(compiled)); 
+		LogE("vulkan",shaderc_result_get_error_message(compiled));
 		return VkPipelineShaderStageCreateInfo{};
 	}
 	defer{ shaderc_result_release(compiled); };
@@ -1773,7 +1766,7 @@ load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
 	moduleInfo.codeSize = shaderc_result_get_length(compiled);
 	moduleInfo.pCode    = (u32*)shaderc_result_get_bytes(compiled);
 	resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ",name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, (const char*)to_dstr8v(deshi_temp_allocator, "Shader Module ",name).str);
 	
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
@@ -1805,7 +1798,7 @@ load_shader_file(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 				moduleInfo.codeSize = spv_raw.count;
 				moduleInfo.pCode    = (u32*)spv_raw.str;
 				resultVk = vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule); AssertVk(resultVk, "failed to create shader module");
-				DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, ToString("Shader Module ",name).str);
+				DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, (const char*)to_dstr8v(deshi_temp_allocator, "Shader Module ",name).str);
 				
 				VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
 				shaderStage.stage  = stage;
@@ -1828,7 +1821,7 @@ load_shader_file(str8 name, VkShaderStageFlagBits stage){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_pipelines_setup (descriptor pool, layouts, pipeline cache, pipeline create info structs (rasterizer, depth test, etc))
 //creates descriptor set layouts, push constants for shaders, and the pipeline layout
-local void 
+local void
 CreateLayouts(){DPZoneScoped;
 	PrintVk(2, "Creating layouts");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateLayouts called before CreateLogicalDevice");
@@ -1853,7 +1846,7 @@ CreateLayouts(){DPZoneScoped;
 		
 		descriptorSetLayoutCI.bindingCount = 2;
 		resultVk = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.base); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base,
 							 "Base descriptor set layout");
 	}
 	
@@ -1884,13 +1877,13 @@ CreateLayouts(){DPZoneScoped;
 		
 		descriptorSetLayoutCI.bindingCount = 4;
 		resultVk = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.textures); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures,
 							 "Textures descriptor set layout");
 	}
 	
 	{//create instances descriptor set layout
 		
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.instances, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.instances,
 							 "Instances descriptor set layout");
 	}
 	
@@ -1903,7 +1896,7 @@ CreateLayouts(){DPZoneScoped;
 		
 		descriptorSetLayoutCI.bindingCount = 1;
 		resultVk = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, 0, &descriptorSetLayouts.twod); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod,
 							 "2D descriptor set layout");
 	}
 	
@@ -1922,7 +1915,7 @@ CreateLayouts(){DPZoneScoped;
 		
 		descriptorSetLayoutCI.bindingCount = 2;
 		resultVk = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.geometry); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.geometry, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.geometry,
 							 "Geometry descriptor set layout");
 	}
 	
@@ -1933,7 +1926,7 @@ CreateLayouts(){DPZoneScoped;
 		pushConstantRange.offset     = 0;
 		pushConstantRange.size       = sizeof(mat4);
 		
-		VkDescriptorSetLayout setLayouts[] = { 
+		VkDescriptorSetLayout setLayouts[] = {
 			descriptorSetLayouts.base, descriptorSetLayouts.textures
 		};
 		
@@ -1943,7 +1936,7 @@ CreateLayouts(){DPZoneScoped;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
 		resultVk = vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.base); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base,
 							 "Base pipeline layout");
 	}
 	
@@ -1960,7 +1953,7 @@ CreateLayouts(){DPZoneScoped;
 		createInfo.pushConstantRangeCount = 1;
 		createInfo.pPushConstantRanges    = &pushConstantRange;
 		resultVk = vkCreatePipelineLayout(device, &createInfo, allocator, &pipelineLayouts.twod); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.twod, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.twod,
 							 "2D pipeline layout");
 	}
 	
@@ -1976,14 +1969,14 @@ CreateLayouts(){DPZoneScoped;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
 		resultVk = vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.geometry); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.geometry, 
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.geometry,
 							 "Geometry pipeline layout");
 	}
 }
 
 //creates a pool of descriptors of different types to be sent to shaders
 //TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
-local void 
+local void
 CreateDescriptorPool(){DPZoneScoped;
 	PrintVk(2, "Creating descriptor pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
@@ -2013,7 +2006,7 @@ CreateDescriptorPool(){DPZoneScoped;
 }
 
 //allocates in the descriptor pool and creates the descriptor sets
-local void 
+local void
 CreateDescriptorSets(){DPZoneScoped;
 	AssertRS(RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER, "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
 	renderStage |= RSVK_DESCRIPTORSETS;
@@ -2103,7 +2096,7 @@ CreateDescriptorSets(){DPZoneScoped;
 	}
 }
 
-local void 
+local void
 CreatePipelineCache(){DPZoneScoped;
 	PrintVk(2, "Creating pipeline cache");
 	AssertRS(RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
@@ -2121,7 +2114,7 @@ CreatePipelineCache(){DPZoneScoped;
 	PrintVk(5, "Finished creating pipeline cache in ",peek_stopwatch(watch),"ms");
 }
 
-local void 
+local void
 SetupPipelineCreation(){DPZoneScoped;
 	PrintVk(2, "Setting up pipeline creation");
 	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPasses");
@@ -2228,8 +2221,8 @@ SetupPipelineCreation(){DPZoneScoped;
 	//dynamic states that can vary in the command buffer
 	//https://renderdoc.org/vkspec_chunked/chap11.html#VkPipelineDynamicStateCreateInfo
 	dynamicStates = {
-		VK_DYNAMIC_STATE_VIEWPORT, 
-		VK_DYNAMIC_STATE_SCISSOR, 
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR,
 	};
 	dynamicState.dynamicStateCount = (u32)dynamicStates.count;
 	dynamicState.pDynamicStates    = dynamicStates.data;
@@ -2256,7 +2249,7 @@ SetupPipelineCreation(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_funcs_pipelines_creation
-local void 
+local void
 CreatePipelines(){DPZoneScoped;
 	PrintVk(2, "Creating pipelines");
 	AssertRS(RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
@@ -2458,7 +2451,7 @@ specializationInfo.mapEntryCount = 1;
 	}
 } //CreatePipelines
 
-local VkPipeline 
+local VkPipeline
 GetPipelineFromShader(u32 shader){DPZoneScoped;
 	switch(shader){
 		case(Shader_NULL):default:{ return pipelines.null;      }
@@ -2469,7 +2462,7 @@ GetPipelineFromShader(u32 shader){DPZoneScoped;
 	}
 }
 
-local void 
+local void
 UpdateMaterialPipelines(){DPZoneScoped;
 	PrintVk(5, "Updating material pipelines");
 	for(auto& mat : vkMaterials){
@@ -2652,7 +2645,7 @@ local vec4 draw_group_color  = Vec4(0.50f, 0.76f, 0.34f, 1.0f);
 local vec4 draw_cmd_color    = Vec4(0.40f, 0.61f, 0.27f, 1.0f);
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
-local void 
+local void
 BuildCommands(){DPZoneScoped;
 	//PrintVk(2, "Building Command Buffers");
 	AssertRS(RSVK_DESCRIPTORSETS | RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreateDescriptorSets or CreatePipelines");
@@ -3124,8 +3117,8 @@ render_update(){DPZoneScoped;
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	renderStage = RSVK_RENDER;
 	
-	//TODO this is definitely not the best way to do this, especially if we ever want to have more than 2 windows 
-	//     implement a count of how many surfaces have been made instead, maybe even use array 
+	//TODO this is definitely not the best way to do this, especially if we ever want to have more than 2 windows
+	//     implement a count of how many surfaces have been made instead, maybe even use array
 	Stopwatch render_stopwatch = start_stopwatch();
 	forI(MAX_SURFACES){
 		if(!swapchains[i].swapchain) continue;
@@ -3362,7 +3355,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	//copy the image pixels to a staging buffer
 	BufferVk staging{};
-	CreateAndMapBuffer(staging.buffer, staging.memory, tvk.size, (size_t)tvk.size, texture->pixels, 
+	CreateAndMapBuffer(staging.buffer, staging.memory, tvk.size, (size_t)tvk.size, texture->pixels,
 					   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	//create the texture image
@@ -3385,7 +3378,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	resultVk = vkAllocateMemory(device, &allocInfo, allocator, &tvk.memory); AssertVk(resultVk, "failed to allocate image memory");
 	vkBindImageMemory(device, tvk.image, tvk.memory, 0);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, toStr("Texture image ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, (const char*)to_dstr8v(deshi_temp_allocator, "Texture image ", texture->name).str);
 	
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		//transition image layout to accept memory transfers
@@ -3402,7 +3395,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 		barrier.subresourceRange.levelCount     = texture->mipmaps;
 		barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 		barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 							 0, 0, 0, 0, 0, 1, &barrier);
 		
 		//copy the staging buffer to the image
@@ -3437,8 +3430,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	viewInfo.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 	viewInfo.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
 	resultVk = vkCreateImageView(device, &viewInfo, allocator, &tvk.view); AssertVk(resultVk, "failed to create texture image view");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tvk.view,
-						 toStr("Image View ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tvk.view, (const char*)to_dstr8v(deshi_temp_allocator, "Image View ", texture->name).str);
 	
 	//create texture sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -3505,8 +3497,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	samplerInfo.minLod           = 0.0f;
 	samplerInfo.maxLod           = (f32)texture->mipmaps;
 	resultVk = vkCreateSampler(device, &samplerInfo, 0, &tvk.sampler); AssertVk(resultVk, "failed to create texture sampler");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tvk.sampler,
-						 toStr("Sampler ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tvk.sampler, (const char*)to_dstr8v(deshi_temp_allocator, "Sampler ", texture->name).str);
 	
 	//fill texture descriptor image info
 	tvk.descriptor.imageView   = tvk.view;
@@ -3519,8 +3510,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	setAllocInfo.pSetLayouts = &descriptorSetLayouts.twod;
 	setAllocInfo.descriptorSetCount = 1;
 	resultVk = vkAllocateDescriptorSets(device, &setAllocInfo, &tvk.descriptorSet); AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet,
-						 toStr("Texture descriptor set ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet, (const char*)to_dstr8v(deshi_temp_allocator, "Texture descriptor set ", texture->name).str);
 	
 	VkWriteDescriptorSet set{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 	set.dstSet = tvk.descriptorSet;
@@ -3550,8 +3540,7 @@ render_load_material(Material* material){DPZoneScoped;
 	allocInfo.pSetLayouts        = &descriptorSetLayouts.textures;
 	allocInfo.descriptorSetCount = 1;
 	resultVk = vkAllocateDescriptorSets(device, &allocInfo, &mvk.descriptorSet); AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mvk.descriptorSet,
-						 toStr("Material descriptor set ",material->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mvk.descriptorSet, (const char*)to_dstr8v(deshi_temp_allocator, "Material descriptor set ",material->name).str);
 	
 	//write descriptor set per texture
 	arrayT<VkWriteDescriptorSet> sets;
@@ -3680,9 +3669,9 @@ deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
-
+	
 #if BUILD_INTERNAL
-	RenderBookKeeper keeper; 
+	RenderBookKeeper keeper;
 	keeper.type = RenderBookKeeper_Cmd;
 	keeper.cmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]];
 	keeper.file = file;
@@ -3753,7 +3742,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		create_info.usage       = usage_flags;
 		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		resultVk = vkCreateBuffer(device, &create_info, allocator, (VkBuffer*)result->buffer_handle); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)result->buffer_handle, (const char*)to_dstr8v(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Buffer").str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)result->buffer_handle, (const char*)to_dstr8v(deshi_temp_allocator, "Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Buffer").str);
 	}
 	
 	{//allocate the memory
@@ -3775,7 +3764,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
 		resultVk = vkAllocateMemory(device, &alloc_info, allocator, (VkDeviceMemory*)result->memory_handle); AssertVk(resultVk);
 		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)to_dstr8v(deshi_temp_allocator,"Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)to_dstr8v(deshi_temp_allocator, "Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
 	}
 	
 	//map and upload the data depending on the mapping style
@@ -3966,7 +3955,7 @@ render_buffer_flush(RenderBuffer* buffer){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_surface
-void 
+void
 render_register_surface(Window* window){DPZoneScoped;
 	Assert(DeshiModuleLoaded(DS_RENDER), "Attempted to register a surface for a window without initializaing Render module first");
 	Assert(window->index < MAX_SURFACES);
@@ -4041,14 +4030,14 @@ render_use_default_camera(){DPZoneScoped;
 void
 render_reload_shader(u32 shader){DPZoneScoped;
 	switch(shader){
-		case(Shader_NULL):{ 
+		case(Shader_NULL):{
 			vkDestroyPipeline(device, pipelines.null, 0);
 			shaderStages[0] = load_shader(STR8("null.vert"), baked_shader_null_vert, VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = load_shader(STR8("null.frag"), baked_shader_null_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.null); AssertVk(resultVk);
 		}break;
-		case(Shader_Flat):{ 
+		case(Shader_Flat):{
 			vkDestroyPipeline(device, pipelines.flat, 0);
 			shaderStages[0] = load_shader(STR8("flag.vert"), baked_shader_flat_vert, VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = load_shader(STR8("flag.frag"), baked_shader_flat_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -4077,7 +4066,7 @@ render_reload_shader(u32 shader){DPZoneScoped;
 			pipelineCreateInfo.stageCount = 2;
 			resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, 0, &pipelines.phong); AssertVk(resultVk, "failed to create phong graphics pipeline");
 		}break;
-		case(Shader_PBR):{ 
+		case(Shader_PBR):{
 			vkDestroyPipeline(device, pipelines.pbr, 0);
 			shaderStages[0] = load_shader(STR8("pbr.vert"), baked_shader_pbr_vert, VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = load_shader(STR8("pbr.frag"), baked_shader_pbr_frag, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -4174,7 +4163,7 @@ void render_update_texture(Texture* texture, vec2i offset, vec2i size, u32* data
 	NotImplemented;
 }
 
-void 
+void
 render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, RenderTwodIndex vcount, RenderTwodIndex* ib, RenderTwodIndex icount){
 	BufferVk* vbuff = (BufferVk*)buffer->vertex_handle;
 	BufferVk* ibuff = (BufferVk*)buffer->index_handle;

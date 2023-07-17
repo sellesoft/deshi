@@ -235,6 +235,7 @@ local DeshiStage deshiStage = DS_NONE;
 
 #define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
 
+
 //// tracy ////
 #ifdef TRACY_ENABLE
 #undef global
@@ -244,6 +245,7 @@ local DeshiStage deshiStage = DS_NONE;
 #define global static
 #define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif
+
 
 //// kigu headers ////"
 #include "kigu/profiling.h"
@@ -261,11 +263,13 @@ local DeshiStage deshiStage = DS_NONE;
 #include "kigu/unicode.h"
 #include "math/math.h"
 
+
 //// baked data ////
 #include "core/baked/shaders.h"
 #include "core/baked/textures.h"
 
-//// external for core ////
+
+//// external ////
 // TODO(sushi) remove stb ds once we have our own C map and such 
 #define STBDS_REALLOC(ctx,ptr,newsz) memory_realloc(ptr,newsz)
 #define STBDS_FREE(ctx,ptr) memory_zfree(ptr)
@@ -287,9 +291,9 @@ local DeshiStage deshiStage = DS_NONE;
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb/stb_truetype.h>
 
+
 //// core implementations ////
 #define DESHI_IMPLEMENTATION
-//#include "deshi.h"
 #include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"
@@ -311,6 +315,7 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/ui_graphing.h"
 #include "core/window.h"
 
+
 //// platform ////
 #if DESHI_WINDOWS
 #  define WIN32_LEAN_AND_MEAN
@@ -322,7 +327,7 @@ local DeshiStage deshiStage = DS_NONE;
 #  include <shellapi.h>
 #  include <timeapi.h>
 #  include "core/platforms/win32_deshi.cpp"
-#elif DESHI_LINUX // DESHI_WINDOWS
+#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  include "unistd.h" // misc stuff, apparently. used for file stuff
 #  include "sys/mman.h" // for mapping virtual memory with mmap
 #  include "sys/stat.h"
@@ -333,65 +338,71 @@ local DeshiStage deshiStage = DS_NONE;
 #  include "dlfcn.h"
 #  include "pthread.h"
 #  include "semaphore.h"
-#define Window X11Window
-#define Font X11Font
-#define Time X11Time
-#define KeyCode X11KeyCode
+#  define Window X11Window
+#  define Font X11Font
+#  define Time X11Time
+#  define KeyCode X11KeyCode
 #  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
 #  include "X11/Xutil.h"
 #  include "X11/Xos.h"
 #  include "X11/extensions/Xrandr.h"
-#undef Window
-#undef Font
-#undef Time
-#undef KeyCode
-
+#  undef Window
+#  undef Font
+#  undef Time
+#  undef KeyCode
 #  undef None // X defines this for whatever reason
 #  include "core/platforms/linux_deshi.cpp" 
-
-#elif DESHI_MAC // DESHI_LINUX
+#elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  include <GLFW/glfw3.h>
 #  include "core/platforms/osx_deshi.cpp"
-#else // DESHI_MAC
+#else //#elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  error "unknown platform"
-#endif // DESHI_WINDOWS
+#endif //#else //#elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
+
 
 //// renderer cpp (and libs) ////
 #if DESHI_VULKAN
-#define VK_USE_PLATFORM_XLIB_KHR
+#  if DESHI_WINDOWS
+     #define VK_USE_PLATFORM_WIN32_KHR
+#    include <vulkan/vulkan.h>
+#    include <shaderc/shaderc.h>
+#  elif DESHI_LINUX //#if DESHI_WINDOWS
+#    define VK_USE_PLATFORM_XLIB_KHR
 namespace X11 {
     namespace Vulkan{
-#  include <vulkan/vulkan.h>
-#  include <shaderc/shaderc.h>
+#    include <vulkan/vulkan.h>
+#    include <shaderc/shaderc.h>
     }
 }
 using namespace X11::Vulkan;
-#if DESHI_LINUX
-//#  include "external/vulkan/vulkan_xlib.h"
-#endif 
+#  else
+#    error "unhandled platform/vulkan interaction"
+#  endif
 #  include "core/renderers/vulkan.cpp"
-#elif DESHI_OPENGL
+#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  if DESHI_WINDOWS
 #    define GLAD_WGL_IMPLEMENTATION
 #    include "glad/wgl.h"
 #    define GLAD_GL_IMPLEMENTATION
 #    include <glad/gl.h>
-#  elif DESHI_LINUX
+#  elif DESHI_LINUX //#if DESHI_WINDOWS
 #    define GLAD_GL_IMPLEMENTATION
 #    define GLAD_GLX_IMPLEMENTATION
-#define Window X11Window
-#define Font X11Font
-#define Time X11Time
-#define KeyCode X11KeyCode
+#    define Window X11Window
+#    define Font X11Font
+#    define Time X11Time
+#    define KeyCode X11KeyCode
 #       define GLAD_UNUSED(x) (void)(x)
 #       include <glad/glx.h>
-#undef Window
-#undef Font
-#undef Time
-#undef KeyCode
-#  endif
+#    undef Window
+#    undef Font
+#    undef Time
+#    undef KeyCode
+#  else
+#    error "unhandled platform/opengl interaction"
+#  endif //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  include "core/renderers/opengl.cpp"
-#elif DESHI_DIRECTX12
+#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  include "d3dx12/d3dx12.h"
 #  include <d3d12.h>
 #  include <wrl/client.h> //ComPtr
@@ -400,9 +411,9 @@ using namespace X11::Vulkan;
 // if we do, dont forget to link against d3dcompiler.lib and copy D3dcompiler_47.dll to the same file as our exe
 #  include <DirectXMath.h>
 #  include "core/renderers/directx.cpp"
-#else
+#else //#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "no renderer selected"
-#endif
+#endif //#else //#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 
 //// core cpp ////
 #include "core/memory.cpp"

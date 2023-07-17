@@ -331,7 +331,7 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
 	
     // {//draw data
     //     carray<vec2g> data = g->data;
-        
+	
     //     UIDrawCmd drawCmd;
     //     forI(data.count){
     //         if(drawCmd.counts.x + 4 > UIDRAWCMD_MAX_VERTICES || drawCmd.counts.y + 6 > UIDRAWCMD_MAX_INDICES){
@@ -403,12 +403,12 @@ void draw_graph_final(Graph* g, vec2g position, vec2g dimensions, b32 move_curso
     //                 CustomItem_DCMakeFilledRect(drawCmd, Vec2(pos.x,pos.y), Vec2(textsize.x,textsize.y), GetStyle().colors[UIStyleCol_WindowBg]);
     //                 CustomItem_DCMakeText(drawCmd, g->yAxisLabel, Vec2(pos.x,pos.y),
 	// 									  GetStyle().colors[UIStyleCol_Text], vec2::ONE); //TODO make a label color parameter maybe
-					
+	
     //                 CustomItem_AddDrawCmd(item, drawCmd);
     //             }
     //         }
     //     }
-		
+	
     // }//axes labels
 	
     // EndCustomItem();
