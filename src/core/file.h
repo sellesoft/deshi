@@ -96,6 +96,7 @@ typedef Type FileType; enum {
 	FileType_File,
 	FileType_Directory,
 	FileType_SymbolicLink,
+	FileType_CharacterDevice, // stdin/stdout, etc.
 	FileType_Unknown,
 };
 

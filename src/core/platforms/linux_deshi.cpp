@@ -1,4 +1,4 @@
-﻿/* deshi Linux Platform Backend
+/* deshi Linux Platform Backend
 Index:
 @vars
 @helpers
@@ -593,10 +593,11 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 
 	if     (S_ISREG(s.stx_mode)) out.type = FileType_File;
 	else if(S_ISDIR(s.stx_mode)) out.type = FileType_Directory;
-	else if(S_ISLNK(s.stx_mode)) out.type = FileType_SymbolicLink;	
+	else if(S_ISLNK(s.stx_mode)) out.type = FileType_SymbolicLink;
+	else if(S_ISCHR(s.stx_mode)) out.type = FileType_CharacterDevice;
 	else{
 		FileHandleErrorD(result, FileResult_InvalidArgument,{},, 
-			"attempted to gather info for a path that is not a file, directory, or symbolic link. path: ", path
+			"attempted to gather info for a path that is not a file, directory, symbolic link, or device. path: ", path
 		);
 	}
 
