@@ -9,6 +9,7 @@
 #include "kigu/common.h"
 #include "kigu/unicode.h"
 #include "kigu/ring_array.h"
+#include "kigu/node.h"
 StartLinkageC();
 
 // used for thread syncronization. 
