@@ -208,11 +208,11 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 
 
 //NOTE(delle) customize this as you see fit locally, but it should be 1 on commit
-#if DESHI_INTERNAL
+#if BUILD_INTERNAL
 #  define LOGGER_ASSERT_ON_ERROR 1
 #else
 #  define LOGGER_ASSERT_ON_ERROR 0
-#endif //#if DESHI_INTERNAL
+#endif //#if BUILD_INTERNAL
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @internal
@@ -220,12 +220,6 @@ local Logger logger;
 
 int
 logger_message_prefix(int cursor, str8 caller_file, upt caller_line, str8 tag, Type log_type){DPZoneScoped;
-#if LOGGER_ASSERT_ON_ERROR
-	if(log_type == LogType_Error){
-		Assert(!"assert on error");
-	}
-#endif //#if LOGGER_ASSERT_ON_ERROR
-	
 	//tag
 	if(tag && !logger.ignore_tags){
 		logger.last_message[cursor++] = '[';
@@ -316,6 +310,12 @@ logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 		}
 		console_parse_message({logger.last_message+message_offset,logger.last_message_length-message_offset},tag,type,1,log_file_offset+message_offset);
 	}
+	
+#if LOGGER_ASSERT_ON_ERROR
+	if(log_type == LogType_Error){
+		Assert(!"assert on error");
+	}
+#endif //#if LOGGER_ASSERT_ON_ERROR
 	
 	return cursor;
 }
