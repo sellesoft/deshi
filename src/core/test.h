@@ -40,10 +40,10 @@
 		logger_pop_indent(1);  \
 	}
 
-#define Test(condition)                                                                                     \
-	if(!( condition )) {                                                                                    \
+#define Test(condition)                                                                                    \
+	if(!( condition )) {                                                                                   \
 		Log("", (__deshi_test_verbose ? "" : "  "), ErrorFormat("failed"), ": ", __FILE__, ":", __LINE__); \
-		__deshi_test_passed = 0;                                                                            \
+		__deshi_test_passed = 0;                                                                           \
 	}
 
 #define TestResult(call,expected)                                                                                                                           \

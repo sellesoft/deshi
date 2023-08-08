@@ -435,6 +435,9 @@ local void TEST_deshi_core_memory(){
 	}
 	
 	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");
+	extern b32 g_logger_assert_on_error;
+	b32 logger_assert_on_error_restore = g_logger_assert_on_error;
+	g_logger_assert_on_error = false;
 	logger_push_indent();
 	{//// default to libc when running out of memory in arena heap ////
 		//use up all but 1KB of arena heap for setup
@@ -534,6 +537,7 @@ local void TEST_deshi_core_memory(){
 		free((upt*)alloc3 - 1);
 	}
 	logger_pop_indent();
+	g_logger_assert_on_error = logger_assert_on_error_restore;
 	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
 	DESHI_TEST_CORE_PASSED("memory");

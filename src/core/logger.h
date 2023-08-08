@@ -207,11 +207,9 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 #include "file.h" 
 
 
-//NOTE(delle) customize this as you see fit locally, but it should be 1 on commit
+//NOTE(delle) customize this as you see fit locally, but it should be `true` on commit
 #if BUILD_INTERNAL
-#  define LOGGER_ASSERT_ON_ERROR 1
-#else
-#  define LOGGER_ASSERT_ON_ERROR 0
+b32 g_logger_assert_on_error = true;
 #endif //#if BUILD_INTERNAL
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -311,11 +309,11 @@ logger_message_postfix(int cursor, str8 tag, Type log_type){DPZoneScoped;
 		console_parse_message({logger.last_message+message_offset,logger.last_message_length-message_offset},tag,type,1,log_file_offset+message_offset);
 	}
 	
-#if LOGGER_ASSERT_ON_ERROR
-	if(log_type == LogType_Error){
+#if BUILD_INTERNAL
+	if(g_logger_assert_on_error && log_type == LogType_Error){
 		Assert(!"assert on error");
 	}
-#endif //#if LOGGER_ASSERT_ON_ERROR
+#endif //#if BUILD_INTERNAL
 	
 	return cursor;
 }
