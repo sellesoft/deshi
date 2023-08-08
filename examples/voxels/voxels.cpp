@@ -3,10 +3,8 @@
 #include "core/camera.h"
 #include "external/stb/stb_ds.h"
 
-#include "core/deshi_core_tests.cpp"
 int main(int args_count, char** args){
 	deshi_init();
-	TEST_deshi_core();
 	
 	//init ui
 	{
