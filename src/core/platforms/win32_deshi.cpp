@@ -63,14 +63,23 @@ win32_vkcode_to_key(s32 vk){
 	}
 }
 
+local str8
+win32_error_to_temp_str8(DWORD error){DPZoneScoped;
+	LPVOID msg_buffer;
+	DWORD msg_size = ::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+									  0, error, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), (LPWSTR)&msg_buffer, 0, 0);
+	defer{ ::LocalFree(msg_buffer); };
+	if(msg_size){
+		return str8_from_counted_wchar((wchar_t*)msg_buffer, (s64)msg_size, deshi_temp_allocator);
+	}else{
+		return str8{};
+	}
+}
+
 local void
 win32_log_last_error(const char* func_name, b32 crash_on_error = false, str8 custom = str8{}){DPZoneScoped;
-	LPVOID msg_buffer;
 	DWORD error = ::GetLastError();
-	::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-					 0, error, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), (LPSTR)&msg_buffer, 0, 0);
-	LogE("win32",func_name," failed with error ",(u32)error,": ",(const char*)msg_buffer," ",custom);
-	::LocalFree(msg_buffer);
+	LogE("win32",func_name," failed with error ",(u32)error,": ",win32_error_to_temp_str8(error)," ",custom);
 	if(crash_on_error){
 		Assert(!"assert before exit so we can stack trace in debug mode");
 		::ExitProcess(error);
@@ -692,10 +701,67 @@ peek_stopwatch(Stopwatch watch){DPZoneScoped;
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file
+#define FileLogError(file_result_tag, ...) {\
+	dstr8 error_msg = to_dstr8v(deshi_temp_allocator, __VA_ARGS__);\
+	if(error_result){\
+		*error_result = FileResult{file_result_tag, error_msg.fin};\
+	}else{\
+		LogfE("file","%*s", error_msg.count, error_msg.str);\
+	}\
+	if(file_shared.crash_on_error){\
+		Assert(!"assert before exit so we can stack trace in debug mode");\
+		::ExitProcess(1);\
+	}\
+} (void)0
+
+local FileResultTag
+win32_error_to_file_result_tag(DWORD error)
+{
+	switch(error){
+		case 0x00:  return FileResult_Ok;
+		case 0x02:
+		case 0x03:  return FileResult_PathDoesNotExist;
+		case 0xA0:  return FileResult_InvalidArgument;
+		case 0x05:  return FileResult_AccessDenied;
+		case 0x50:
+		case 0xB7:  return FileResult_FileExists;
+		case 0x476: return FileResult_MaxLinks;
+		case 0xCE:  return FileResult_NameTooLong;
+		case 0x27:
+		case 0x70:
+		case 0x13A: return FileResult_OutOfSpace;
+		case 0x13:  return FileResult_ReadOnly;
+		case 0x6F:
+		case 0xDF:  return FileResult_TooBig;
+		case 0x04:
+		case 0x71:  return FileResult_TooManyHandles;
+		case 0x08:
+		case 0x0E:  return FileResult_SystemOutOfMemory;
+		case 0x94:  return FileResult_PathBusy;
+		case 0x06:
+		case 0x72:  return FileResult_InvalidHandleType;
+		default:    return FileResult_UnspecifiedError;
+	}
+}
+
+#define FileLogWin32Error(win32_func_name, ...) {\
+	DWORD error = ::GetLastError();\
+	dstr8 error_msg = to_dstr8v(deshi_temp_allocator, win32_func_name," failed with error ",(u32)error,": ",win32_error_to_temp_str8(error)," ",__VA_ARGS__);\
+	if(error_result){\
+		*error_result = FileResult{win32_error_to_file_result_tag(error), error_msg.fin};\
+	}else{\
+		LogfE("file-win32","%*s", error_msg.count, error_msg.str);\
+	}\
+	if(file_shared.crash_on_error){\
+		Assert(!"assert before exit so we can stack trace in debug mode");\
+		::ExitProcess(error);\
+	}\
+} (void)0
+
 b32
 deshi__file_exists(str8 caller_file, upt caller_line, str8 path, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		LogE("file","file_exists() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_exists() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
@@ -716,9 +782,8 @@ deshi__file_exists(str8 caller_file, upt caller_line, str8 path, FileResult* err
 
 b32
 deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_create() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_create() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
@@ -727,21 +792,20 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* err
 		str8 part = str8_eat_until_one_of(path, 2, '/', '\\');
 		parts.count += part.count;
 		
-		wchar_t* wpath = win32_path_from_str8(parts, true);
+		wchar_t* prefixed_wpath = win32_path_from_str8(parts, true);
+		wchar_t* wpath = prefixed_wpath+4; //+4 b/c of the extra path length prefix "\\?\"
 		if(part.count < path.count){
 			Assert(part.str[part.count] == '\\' || part.str[part.count] == '/');
 			if((::CreateDirectoryW(wpath, 0) == 0) && (::GetLastError() != ERROR_ALREADY_EXISTS)){
-				//TODO(sushi) error handling stuff
-				win32_log_last_error("CreateDirectoryW", file_shared.crash_on_error, str8_from_wchar(wpath+4,deshi_temp_allocator)); //NOTE(delle) +4 b/c of "\\?\"
+				FileLogWin32Error("CreateDirectoryW", str8_from_wchar(wpath,deshi_temp_allocator));
 				return false;
 			}
 			str8_increment(&path, part.count+1);
 			parts.count += 1;
 		}else{
-			HANDLE handle = ::CreateFileW(wpath, GENERIC_READ|GENERIC_WRITE, 0,0, CREATE_NEW, 0,0);
+			HANDLE handle = ::CreateFileW(prefixed_wpath, GENERIC_READ|GENERIC_WRITE, 0,0, CREATE_NEW, 0,0);
 			if((handle == INVALID_HANDLE_VALUE) && (::GetLastError() != ERROR_FILE_EXISTS)){
-				//TODO(sushi) error handling stuff
-				win32_log_last_error("CreateFileW", file_shared.crash_on_error, str8_from_wchar(wpath+4,deshi_temp_allocator)); //NOTE(delle) +4 b/c of "\\?\"
+				FileLogWin32Error("CreateFileW", str8_from_wchar(wpath,deshi_temp_allocator));
 				return false;
 			}
 			::CloseHandle(handle);
@@ -753,9 +817,12 @@ deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* err
 
 b32
 deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+		return false;
+	}
+	if(!HasFlag(flags, FileDeleteFlags_File|FileDeleteFlags_Directory|FileDeleteFlags_Recursive)){
+		FileLogError(FileResult_InvalidArgument, "file_delete() was passed invalid `flags` (",flags,") at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
@@ -767,7 +834,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 	}
 	
 	//TODO(delle) restrict file stuff to root folder not data folder
-	/*if(memcmp(wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	/*if(memcmp(wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //+4 b/c of "\\?\"
 		//TODO(sushi) error handling stuff
 		LogE("file","File deletion can only occur within the data folder. Input path: ",path);
 		if(file_shared.crash_on_error){
@@ -780,8 +847,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("FindFirstFileW", file_shared.crash_on_error, path);
+		FileLogWin32Error("FindFirstFileW", path);
 		return false;
 	}
 	defer{ ::FindClose(handle); };
@@ -791,8 +857,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 	//if directory, recursively delete all files and directories
 	if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
 		if(HasFlag(flags, FileDeleteFlags_File)){
-			//TODO(sushi) error handling stuff
-			LogE("file","file_delete() called with FileDeleteFlags_File on the directory `",path,"` at ",caller_file,"(",caller_line,")");
+			FileLogError(FileResult_IsADirectory, "file_delete() called with FileDeleteFlags_File on the directory `",path,"` at ",caller_file,"(",caller_line,")");
 			return false;
 		}else if(HasFlag(flags, FileDeleteFlags_Directory)){
 			File* dir_files = file_search_directory(path);
@@ -808,34 +873,29 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 					
 					BOOL success = ::RemoveDirectoryW(wpath);
 					if(!success){
-						//TODO(sushi) error handling stuff
-						win32_log_last_error("RemoveDirectoryW", file_shared.crash_on_error, path);
+						FileLogWin32Error("RemoveDirectoryW", path);
 						return false;
 					}
 				}else{
-					//TODO(sushi) error handling stuff
-					LogE("file","file_delete() called without FileDeleteFlags_Recursive on the non-empty directory `",path,"` at ",caller_file,"(",caller_line,")");
+					FileLogError(FileResult_InvalidArgument, "file_delete() called without FileDeleteFlags_Recursive on the non-empty directory `",path,"` at ",caller_file,"(",caller_line,")");
 					return false;
 				}
 			}else{
 				BOOL success = ::RemoveDirectoryW(wpath);
 				if(!success){
-					//TODO(sushi) error handling stuff
-					win32_log_last_error("RemoveDirectoryW", file_shared.crash_on_error, path);
+					FileLogWin32Error("RemoveDirectoryW", path);
 					return false;
 				}
 			}
 		}
 	}else{
 		if(HasFlag(flags, FileDeleteFlags_Directory)){
-			//TODO(sushi) error handling stuff
-			LogE("file","file_delete() called with FileDeleteFlags_Directory on the file `",path,"` at ",caller_file,"(",caller_line,")");
+			FileLogError(FileResult_InvalidArgument, "file_delete() called with FileDeleteFlags_Directory on the file `",path,"` at ",caller_file,"(",caller_line,")");
 			return false;
 		}else if(HasFlag(flags, FileDeleteFlags_File)){
 			BOOL success = ::DeleteFileW(wpath);
 			if(!success){
-				//TODO(sushi) error handling stuff
-				win32_log_last_error("DeleteFileW", file_shared.crash_on_error, path);
+				FileLogWin32Error("DeleteFileW", path);
 				return false;
 			}
 		}
@@ -846,20 +906,18 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 
 b32
 deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path, FileResult* error_result){DPZoneScoped;
-	if(!old_path || *old_path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_rename() was passed an empty `old_path` at ",caller_file,"(",caller_line,")");
+	if(!old_path){
+		FileLogError(FileResult_EmptyPath, "file_rename() was passed an empty `old_path` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
-	if(!new_path || *new_path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_rename() was passed an empty `new_path` at ",caller_file,"(",caller_line,")");
+	if(!new_path){
+		FileLogError(FileResult_EmptyPath, "file_rename() was passed an empty `new_path` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
 	wchar_t* old_wpath = win32_path_from_str8(old_path, true);
 	//TODO(delle) restrict file stuff to root folder not data folder
-	/*if(memcmp(old_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	/*if(memcmp(old_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //+4 b/c of "\\?\"
 		//TODO(sushi) error handling stuff
 		LogE("file","File renaming can only occur within the data folder. Input old path: ",old_path);
 		if(file_shared.crash_on_error){
@@ -871,7 +929,7 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 	
 	wchar_t* new_wpath = win32_path_from_str8(new_path, true);
 	//TODO(delle) restrict file stuff to root folder not data folder
-	/*if(memcmp(new_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	/*if(memcmp(new_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //+4 b/c of "\\?\"
 		//TODO(sushi) error handling stuff
 		LogE("file","File renaming can only occur within the data folder. Input new path: ",new_path);
 		if(file_shared.crash_on_error){
@@ -885,8 +943,7 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 	
 	BOOL success = ::MoveFileW(old_wpath, new_wpath);
 	if(!success){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("MoveFileW", file_shared.crash_on_error, str8_concat3(old_path,str8_lit("\n"),new_path, deshi_temp_allocator));
+		FileLogWin32Error("MoveFileW", old_path,str8_lit("\n"),new_path);
 		return false;
 	}
 	
@@ -895,20 +952,18 @@ deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_pa
 
 b32
 deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path, FileResult* error_result){DPZoneScoped;
-	if(!src_path || *src_path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_rename() was passed an empty `src_path` at ",caller_file,"(",caller_line,")");
+	if(!src_path){
+		FileLogError(FileResult_EmptyPath, "file_rename() was passed an empty `src_path` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
-	if(!dst_path || *dst_path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_rename() was passed an empty `dst_path` at ",caller_file,"(",caller_line,")");
+	if(!dst_path){
+		FileLogError(FileResult_EmptyPath, "file_rename() was passed an empty `dst_path` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
-	wchar_t* src_wpath = win32_path_from_str8(src_path, true, 1); //NOTE(delle) 1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
+	wchar_t* src_wpath = win32_path_from_str8(src_path, true, 1); //1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
 	//TODO(delle) restrict file stuff to root folder not data folder
-	/*if(memcmp(src_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	/*if(memcmp(src_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //+4 b/c of "\\?\"
 		//TODO(sushi) error handling stuff
 		LogE("file","File renaming can only occur within the data folder. Input src path: ",src_path);
 		if(file_shared.crash_on_error){
@@ -918,9 +973,9 @@ deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path
 		return false;
 	}*/
 	
-	wchar_t* dst_wpath = win32_path_from_str8(dst_path, true, 1); //NOTE(delle) 1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
+	wchar_t* dst_wpath = win32_path_from_str8(dst_path, true, 1); //1 extra byte b/c SHFILEOPSTRUCTW expects double null-termination
 	//TODO(delle) restrict file stuff to root folder not data folder
-	/*if(memcmp(dst_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //NOTE(delle) +4 b/c of "\\?\"
+	/*if(memcmp(dst_wpath+4, win32_file_data_folder, win32_file_data_folder_len*sizeof(wchar_t)) != 0){ //+4 b/c of "\\?\"
 		//TODO(sushi) error handling stuff
 		LogE("file","File renaming can only occur within the data folder. Input dst path: ",dst_path);
 		if(file_shared.crash_on_error){
@@ -935,8 +990,7 @@ deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(src_wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("FindFirstFileW", file_shared.crash_on_error, src_path);
+		FileLogWin32Error("FindFirstFileW", src_path);
 		return false;
 	}
 	defer{ ::FindClose(handle); };
@@ -945,8 +999,7 @@ deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path
 	if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
 		BOOL success = ::CreateDirectoryW(dst_wpath, 0);
 		if(!success){
-			//TODO(sushi) error handling stuff
-			win32_log_last_error("CreateDirectoryW", file_shared.crash_on_error, dst_path);
+			FileLogWin32Error("CreateDirectoryW", dst_path);
 			return false;
 		}
 		
@@ -957,8 +1010,7 @@ deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path
 	}else{
 		BOOL success = ::CopyFileW(src_wpath, dst_wpath, true);
 		if(!success){
-			//TODO(sushi) error handling stuff
-			win32_log_last_error("CopyFileW", file_shared.crash_on_error, src_path);
+			FileLogWin32Error("CopyFileW", src_path);
 			return false;
 		}
 	}
@@ -1016,9 +1068,8 @@ deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path
 
 File
 deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_info() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_info() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return File{};
 	}
 	
@@ -1032,8 +1083,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* error
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("FindFirstFileW", file_shared.crash_on_error, path);
+		FileLogWin32Error("FindFirstFileW", path);
 		return File{};
 	}
 	defer{ ::FindClose(handle); };
@@ -1055,10 +1105,8 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* error
 	result.type             = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? FileType_Directory : FileType_File; //TODO(delle) other filetypes
 	
 	//TODO(delle) reuse the temporary wpath memory for the result //!Optimizable
-	if(result.type == FileType_Directory){
-		wpath[wpath_len++] = L'\\';
-	}
-	result.path = str8_from_wchar(wpath+4, deshi_temp_allocator); //NOTE(delle) +4 b/c of "\\?\"
+	result.path = str8_from_counted_wchar(wpath+4, wpath_len-4+1, deshi_temp_allocator); //+4 b/c of "\\?\", +1 b/c of possible trailing slash
+	result.path.count -= 1;
 	forI(result.path.count){
 		if(result.path.str[i] == '\\'){
 			result.path.str[i] = '/';
@@ -1069,11 +1117,18 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* error
 		result.name = str8_skip_until_last(result.path, '/');
 		if(result.name){
 			str8_increment(&result.name, 1);
-			result.front = str8_eat_until_last(result.name, '.');
-			if(result.front){
-				result.ext = str8{result.front.str+result.front.count+1, result.name.count-(result.front.count+1)};
+			if(result.type != FileType_Directory){
+				result.front = str8_eat_until_last(result.name, '.');
+				if(result.front){
+					result.ext = str8{result.front.str+result.front.count+1, result.name.count-(result.front.count+1)};
+				}
 			}
 		}
+	}
+	
+	if(result.type == FileType_Directory){
+		result.path.str[result.path.count] = '/';
+		result.path.count += 1;
 	}
 	
 	return result;
@@ -1081,9 +1136,8 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* error
 
 File*
 deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* error_result){DPZoneScoped;
-	if(!directory || *directory.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_search_directory() was passed an empty `directory` at ",caller_file,"(",caller_line,")");
+	if(!directory){
+		FileLogError(FileResult_EmptyPath, "file_search_directory() was passed an empty `directory` at ",caller_file,"(",caller_line,")");
 		return 0;
 	}
 	
@@ -1101,8 +1155,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 	WIN32_FIND_DATAW data;
 	HANDLE next = ::FindFirstFileW(wpath, &data);
 	if(next == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("FindFirstFileW", file_shared.crash_on_error, directory);
+		FileLogWin32Error("FindFirstFileW", directory);
 		return 0;
 	}
 	defer{ ::FindClose(next); };
@@ -1152,9 +1205,11 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 			file->name = str8_skip_until_last(file->path, '/');
 			if(file->name){
 				str8_increment(&file->name, 1);
-				file->front = str8_eat_until_last(file->name, '.');
-				if(file->front){
-					file->ext = str8{file->front.str+file->front.count+1, file->name.count-(file->front.count+1)};
+				if(result->type != FileType_Directory){
+					file->front = str8_eat_until_last(file->name, '.');
+					if(file->front){
+						file->ext = str8{file->front.str+file->front.count+1, file->name.count-(file->front.count+1)};
+					}
 				}
 			}
 		}
@@ -1164,8 +1219,7 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 	
 	DWORD error = ::GetLastError();
 	if(error != ERROR_NO_MORE_FILES){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("FindNextFileW", file_shared.crash_on_error, directory);
+		FileLogWin32Error("FindNextFileW", directory);
 	}
 	
 	return result;
@@ -1173,8 +1227,8 @@ deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, 
 
 str8
 deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		LogE("file","file_path_absolute() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_path_absolute() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return str8{};
 	}
 	
@@ -1188,64 +1242,95 @@ deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path, FileResu
 	WIN32_FIND_DATAW data;
 	HANDLE handle = ::FindFirstFileW(wpath, &data);
 	if(handle == INVALID_HANDLE_VALUE){
-		win32_log_last_error("FindFirstFileW", file_shared.crash_on_error, path);
+		FileLogWin32Error("FindFirstFileW", path);
 		return str8{};
 	}
 	defer{ ::FindClose(handle); };
 	
 	//TODO(delle) reuse the temporary wpath memory for the result //!Optimizable
 	if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) wpath[wpath_len++] = L'\\';
-	str8 result = str8_from_wchar(wpath+4, deshi_temp_allocator); //NOTE(delle) +4 b/c of "\\?\"
+	str8 result = str8_from_wchar(wpath+4, deshi_temp_allocator); //+4 b/c of "\\?\"
 	forI(result.count) if(result.str[i] == '\\') result.str[i] = '/';
 	return result;
 }
 
 b32
-deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, FileResult* error_result){DPZoneScoped;
-	if(!path1 || *path1.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_path_equal() was passed an empty `path1` at ",caller_file,"(",caller_line,")");
+deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, b32 ignore_nonexistence, FileResult* error_result){DPZoneScoped;
+	if(!path1){
+		FileLogError(FileResult_EmptyPath, "file_path_equal() was passed an empty `path1` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
-	if(!path2 || *path2.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_path_equal() was passed an empty `path2` at ",caller_file,"(",caller_line,")");
+	if(!path2){
+		FileLogError(FileResult_EmptyPath, "file_path_equal() was passed an empty `path2` at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
 	s32 wpath1_len;
-	wchar_t* wpath1 = win32_path_from_str8(path1, false, 0, &wpath1_len);
-	s32 wpath2_len;
-	wchar_t* wpath2 = win32_path_from_str8(path2, false, 0, &wpath2_len);
-	
-	//strip trailing slashes for comparison
+	wchar_t* wpath1 = win32_path_from_str8(path1, true, 1, &wpath1_len);
 	if(wpath1[wpath1_len-1] == L'\\'){
 		wpath1[wpath1_len-1] = L'\0';
 		wpath1_len -= 1;
 	}
+	
+	HANDLE handle1 = ::CreateFileW(wpath1, 0, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+	if(handle1 == INVALID_HANDLE_VALUE){
+		if(!ignore_nonexistence){
+			FileLogError(FileResult_PathDoesNotExist, "file_equal() was passed `path1` (",path1,") for which no file exists at ",caller_file,"(",caller_line,")");
+		}
+		return false;
+	}
+	defer{ ::CloseHandle(handle1); };
+	
+	BY_HANDLE_FILE_INFORMATION info1;
+	BOOL success = ::GetFileInformationByHandle(handle1, &info1);
+	if(!success){
+		FileLogWin32Error("GetFileInformationByHandle", path1);
+		return false;
+	}
+	
+	s32 wpath2_len;
+	wchar_t* wpath2 = win32_path_from_str8(path2, true, 1, &wpath2_len);
 	if(wpath2[wpath2_len-1] == L'\\'){
 		wpath2[wpath2_len-1] = L'\0';
 		wpath2_len -= 1;
 	}
 	
-	if(wpath1_len != wpath2_len) return false;
-	if(memcmp(wpath1, wpath2, wpath1_len*sizeof(wchar_t)) != 0) return false;
+	HANDLE handle2 = ::CreateFileW(wpath2, 0, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+	if(handle2 == INVALID_HANDLE_VALUE){
+		if(!ignore_nonexistence){
+			FileLogError(FileResult_PathDoesNotExist, "file_equal() was passed `path2` (",path2,") for which no file exists at ",caller_file,"(",caller_line,")");
+		}
+		return false;
+	}
+	defer{ ::CloseHandle(handle2); };
+	
+	BY_HANDLE_FILE_INFORMATION info2;
+	success = ::GetFileInformationByHandle(handle2, &info2);
+	if(!success){
+		FileLogWin32Error("GetFileInformationByHandle", path2);
+		return false;
+	}
+	
+	if(info1.dwVolumeSerialNumber != info2.dwVolumeSerialNumber) return false;
+	if(info1.nFileIndexLow != info2.nFileIndexLow) return false;
+	if(info1.nFileIndexHigh != info2.nFileIndexHigh) return false;
 	return true;
 }
 
 File*
 deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags, b32 ignore_nonexistence, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_init() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_init() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return 0;
 	}
 	
 	//change access and return the file if it's already init
-	for_array(file_shared.files){
-		if(file_path_equal(path, it->path)){
-			file_change_access(it, flags);
-			return it;
+	if(file_exists(path)){
+		for_array(file_shared.files){
+			if(file_path_equal_if_exists(path, it->path)){
+				file_change_access(it, flags);
+				return it;
+			}
 		}
 	}
 	
@@ -1279,10 +1364,8 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 		result->bytes            = (HasFlag(flags, FileAccess_Truncate)) ? 0 : size.QuadPart;
 		result->type             = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? FileType_Directory : FileType_File; //TODO(delle) other filetypes
 		
-		if(result->type == FileType_Directory){
-			wpath[wpath_len++] = L'\\';
-		}
-		result->path = str8_from_wchar(wpath+4, deshi_allocator); //NOTE(delle) +4 b/c of "\\?\"
+		result->path = str8_from_counted_wchar(wpath+4, wpath_len-4+1, deshi_allocator); //+4 b/c of "\\?\", +1 b/c of possible trailing slash
+		result->path.count -= 1;
 		forI(result->path.count){
 			if(result->path.str[i] == '\\'){
 				result->path.str[i] = '/';
@@ -1293,28 +1376,52 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 			result->name = str8_skip_until_last(result->path, '/');
 			if(result->name){
 				str8_increment(&result->name, 1);
-				result->front = str8_eat_until_last(result->name, '.');
-				if(result->front){
-					result->ext = str8{result->front.str+result->front.count+1, result->name.count-(result->front.count+1)};
+				if(result->type != FileType_Directory){
+					result->front = str8_eat_until_last(result->name, '.');
+					if(result->front){
+						result->ext = str8{result->front.str+result->front.count+1, result->name.count-(result->front.count+1)};
+					}
 				}
 			}
+		}
+		
+		if(result->type == FileType_Directory){
+			result->path.str[result->path.count] = '/';
+			result->path.count += 1;
 		}
 	}else{
 		if(HasFlag(flags, FileAccess_Create)){
 			//the file doesn't exist, so create it then gather information with LPBY_HANDLE_FILE_INFORMATION
-			handle = ::CreateFileW(wpath, 0,0,0, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, 0);
-			if(handle == INVALID_HANDLE_VALUE){
-				//TODO(sushi) error handling stuff
-				win32_log_last_error("CreateFileW", file_shared.crash_on_error, path);
-				array_pop(file_shared.files);
-				return 0;
+			str8 temp_path = path;
+			str8 parts{temp_path.str, 0};
+			while(temp_path){
+				str8 part = str8_eat_until_one_of(temp_path, 2, '/', '\\');
+				parts.count += part.count;
+				
+				wchar_t* prefixed_wpath = win32_path_from_str8(parts, true);
+				wchar_t* wpath = prefixed_wpath+4; //+4 b/c of the extra path length prefix "\\?\"
+				if(part.count < temp_path.count){
+					Assert(part.str[part.count] == '\\' || part.str[part.count] == '/');
+					if((::CreateDirectoryW(wpath, 0) == 0) && (::GetLastError() != ERROR_ALREADY_EXISTS)){
+						FileLogWin32Error("CreateDirectoryW", str8_from_wchar(wpath,deshi_temp_allocator));
+						return false;
+					}
+					str8_increment(&temp_path, part.count+1);
+					parts.count += 1;
+				}else{
+					handle = ::CreateFileW(prefixed_wpath, GENERIC_READ|GENERIC_WRITE, 0,0, CREATE_NEW, 0,0);
+					if((handle == INVALID_HANDLE_VALUE) && (::GetLastError() != ERROR_FILE_EXISTS)){
+						FileLogWin32Error("CreateFileW", str8_from_wchar(wpath,deshi_temp_allocator));
+						return false;
+					}
+					break;
+				}
 			}
 			defer{ ::CloseHandle(handle); };
 			
 			BY_HANDLE_FILE_INFORMATION info;
 			if(::GetFileInformationByHandle(handle, &info) == 0){
-				//TODO(sushi) error handling stuff
-				win32_log_last_error("GetFileInformationByHandle", file_shared.crash_on_error, path);
+				FileLogWin32Error("GetFileInformationByHandle", path);
 				array_pop(file_shared.files);
 				return 0;
 			}
@@ -1334,10 +1441,8 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 			result->bytes            = size.QuadPart;
 			result->type             = (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? FileType_Directory : FileType_File; //TODO(delle) other filetypes
 			
-			if(result->type == FileType_Directory){
-				wpath[wpath_len++] = L'\\';
-			}
-			result->path = str8_from_wchar(wpath+4, deshi_allocator); //NOTE(delle) +4 b/c of "\\?\"
+			result->path = str8_from_counted_wchar(wpath+4, wpath_len-4+1, deshi_allocator); //+4 b/c of "\\?\", +1 b/c of possible trailing slash
+			result->path.count -= 1;
 			forI(result->path.count){
 				if(result->path.str[i] == '\\'){
 					result->path.str[i] = '/';
@@ -1348,17 +1453,23 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 				result->name = str8_skip_until_last(result->path, '/');
 				if(result->name){
 					str8_increment(&result->name, 1);
-					result->front = str8_eat_until_last(result->name, '.');
-					if(result->front){
-						result->ext = str8{result->front.str+result->front.count+1, result->name.count-(result->front.count+1)};
+					if(result->type != FileType_Directory){
+						result->front = str8_eat_until_last(result->name, '.');
+						if(result->front){
+							result->ext = str8{result->front.str+result->front.count+1, result->name.count-(result->front.count+1)};
+						}
 					}
 				}
+			}
+			
+			if(result->type == FileType_Directory){
+				result->path.str[result->path.count] = '/';
+				result->path.count += 1;
 			}
 		}else{
 			//the file doesn't exist, and we don't have a creation flag so error out
 			if(!ignore_nonexistence){
-				//TODO(sushi) error handling stuff
-				win32_log_last_error("FindFirstFileW", file_shared.crash_on_error, path);
+				FileLogWin32Error("FindFirstFileW", path);
 			}
 			array_pop(file_shared.files);
 			return 0;
@@ -1379,11 +1490,11 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 	
 	if(open_mode){
 		//open the file
-		result->handle = _wfopen(wpath+4, open_mode); //NOTE(delle) +4 b/c of "\\?\"
+		//TODO use the OS to open files instead of libc
+		result->handle = _wfopen(wpath+4, open_mode); //+4 b/c of "\\?\"
 		if(result->handle == 0){
-			//TODO(sushi) error handling stuff
-			LogE("file", "fopen() failed to open file '",result->path,"' with mode '",str8_from_wchar(open_mode,deshi_temp_allocator),"'");
-			win32_log_last_error("fopen",file_shared.crash_on_error);
+			FileLogError(FileResult_UnspecifiedError, "fopen() failed to open file `",result->path,"` with mode `",str8_from_wchar(open_mode,deshi_temp_allocator),"`");
+			FileLogWin32Error("fopen", result->path);
 			memory_zfree(result->path.str);
 			memory_zfree(result);
 			array_pop(file_shared.files);
@@ -1403,8 +1514,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 b32
 deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* error_result){DPZoneScoped;
 	if(file == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_deinit() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
+		FileLogError(FileResult_InvalidArgument, "file_deinit() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
@@ -1424,8 +1534,7 @@ deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* er
 b32
 deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess flags, FileResult* error_result){DPZoneScoped;
 	if(file == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_change_access() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
+		FileLogError(FileResult_InvalidArgument, "file_change_access() was passed a null `file` pointer at ",caller_file,"(",caller_line,")");
 		return false;
 	}
 	
@@ -1437,18 +1546,18 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 		Flags open_flags = flags & ~(FileAccess_Append);
 		wchar_t* open_mode = 0;
 		switch(open_flags){
-			case FileAccess_Read:              open_mode = (wchar_t*)L"rb";  file->bytes = 0; break;
+			case FileAccess_Read:              open_mode = (wchar_t*)L"rb";  break;
 			case FileAccess_WriteTruncate:     open_mode = (wchar_t*)L"wb";  file->bytes = 0; break;
 			case FileAccess_Write:
 			case FileAccess_ReadWrite:         open_mode = (wchar_t*)L"rb+"; break;
 			case FileAccess_ReadWriteTruncate: open_mode = (wchar_t*)L"wb+"; file->bytes = 0; break;
 		}
 		
+		//TODO use the OS to open files instead of libc
 		file->handle = _wfopen(wpath, open_mode);
 		if(file->handle == 0){
-			//TODO(sushi) error handling stuff
-			LogE("file", "fopen() failed to open file '",file->path,"' with mode '",str8_from_wchar(open_mode,deshi_temp_allocator),"'");
-			win32_log_last_error("fopen",file_shared.crash_on_error);
+			FileLogError(FileResult_UnspecifiedError, "fopen() failed to open file `",file->path,"` with mode `",str8_from_wchar(open_mode,deshi_temp_allocator),"`");
+			FileLogWin32Error("fopen", file->path);
 			return false;
 		}
 	}else if(file->handle != 0 && !HasFlag(flags, FileAccess_ReadWrite)){
@@ -1481,37 +1590,32 @@ deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAcc
 
 str8
 deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator* allocator, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_read_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_read_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return str8{};
 	}
 	if(allocator == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_read_simple() was passed a null `allocator` pointer at ",caller_file,"(",caller_line,")");
+		FileLogError(FileResult_InvalidArgument, "file_read_simple() was passed a null `allocator` pointer at ",caller_file,"(",caller_line,")");
 		return str8{};
 	}
 	
 	wchar_t* wpath = win32_path_from_str8(path, true);
 	HANDLE handle = ::CreateFileW(wpath, GENERIC_READ, 0,0, OPEN_EXISTING, 0,0);
 	if(handle == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("CreateFileW", file_shared.crash_on_error, path);
+		FileLogWin32Error("CreateFileW", path);
 		return str8{};
 	}
 	defer{ ::CloseHandle(handle); };
 	
 	LARGE_INTEGER size;
 	if(::GetFileSizeEx(handle, &size) == 0){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("GetFileSizeEx", file_shared.crash_on_error, path);
+		FileLogWin32Error("GetFileSizeEx", path);
 		return str8{};
 	}
 	
 	str8 result{(u8*)allocator->reserve(size.QuadPart+1), size.QuadPart};
 	if(::ReadFile(handle, result.str, size.QuadPart, 0,0) == 0){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("ReadFile", file_shared.crash_on_error, path);
+		FileLogWin32Error("ReadFile", path);
 		return str8{};
 	}
 	
@@ -1520,30 +1624,26 @@ deshi__file_read_simple(str8 caller_file, upt caller_line, str8 path, Allocator*
 
 u64
 deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_write_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_write_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return 0;
 	}
 	if(data == 0 && bytes > 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_write_simple() was passed a null `data` pointer at ",caller_file,"(",caller_line,")");
+		FileLogError(FileResult_InvalidArgument, "file_write_simple() was passed a null `data` pointer at ",caller_file,"(",caller_line,")");
 		return 0;
 	}
 	
 	wchar_t* wpath = win32_path_from_str8(path, true);
 	HANDLE handle = ::CreateFileW(wpath, GENERIC_WRITE, 0,0, CREATE_ALWAYS, 0,0);
 	if(handle == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("CreateFileW", file_shared.crash_on_error, path);
+		FileLogWin32Error("CreateFileW", path);
 		return 0;
 	}
 	defer{ ::CloseHandle(handle); };
 	
 	DWORD bytes_written = 0;
 	if(::WriteFile(handle, data, bytes, &bytes_written, 0) == 0){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("WriteFile", file_shared.crash_on_error, path);
+		FileLogWin32Error("WriteFile", path);
 		return (u64)bytes_written;
 	}
 	
@@ -1552,36 +1652,31 @@ deshi__file_write_simple(str8 caller_file, upt caller_line, str8 path, void* dat
 
 u64
 deshi__file_append_simple(str8 caller_file, upt caller_line, str8 path, void* data, u64 bytes, FileResult* error_result){DPZoneScoped;
-	if(!path || *path.str == 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_append_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
+	if(!path){
+		FileLogError(FileResult_EmptyPath, "file_append_simple() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 		return 0;
 	}
 	if(data == 0 && bytes > 0){
-		//TODO(sushi) error handling stuff
-		LogE("file","file_append_simple() was passed a null `data` pointer at ",caller_file,"(",caller_line,")");
+		FileLogError(FileResult_InvalidArgument, "file_append_simple() was passed a null `data` pointer at ",caller_file,"(",caller_line,")");
 		return 0;
 	}
 	
 	wchar_t* wpath = win32_path_from_str8(path, true);
 	HANDLE handle = ::CreateFileW(wpath, GENERIC_WRITE, 0,0, OPEN_ALWAYS, 0,0);
 	if(handle == INVALID_HANDLE_VALUE){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("CreateFileW", file_shared.crash_on_error, path);
+		FileLogWin32Error("CreateFileW", path);
 		return 0;
 	}
 	defer{ ::CloseHandle(handle); };
 	
 	if(::SetFilePointerEx(handle, LARGE_INTEGER{0}, 0, SEEK_END) == 0){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("SetFilePointerEx", file_shared.crash_on_error, path);
+		FileLogWin32Error("SetFilePointerEx", path);
 		return 0;
 	}
 	
 	DWORD bytes_written = 0;
 	if(::WriteFile(handle, data, bytes, &bytes_written, 0) == 0){
-		//TODO(sushi) error handling stuff
-		win32_log_last_error("WriteFile", file_shared.crash_on_error, path);
+		FileLogWin32Error("WriteFile", path);
 		return (u64)bytes_written;
 	}
 	

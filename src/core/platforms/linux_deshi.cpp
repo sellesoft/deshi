@@ -404,6 +404,9 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 	if(!path || *path.str == 0){
 		FileHandleErrorD(result, FileResult_EmptyPath,0,,"file_delete() was passed an empty `path` at ",caller_file,"(",caller_line,")");
 	}
+	if(!HasFlag(flags, FileDeleteFlags_File|FileDeleteFlags_Directory|FileDeleteFlags_Recursive)){
+		FileHandleErrorD(result, FileResult_InvalidArgument,0,,"file_delete() was passed invalid `flags` (",flags,") at ",caller_file,"(",caller_line,")");
+	}
 
 	// NOTE(sushi) if the file already doesn't exist, we consider the function
 	//             to have succeeded.
@@ -459,7 +462,7 @@ deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, File
 				ErrorCaseL(EACCES, FileResult_AccessDenied,     "Search permission is denied on some component of the path prefix, or write permission is denied on the parent directory of the directory to be removed.",)
 				ErrorCaseL(EBUSY,  FileResult_PathBusy,         "The directory to be removed is currently in use by the system or some process.",)
 				case ENOTEMPTY:
-				ErrorCaseL(EEXIST, FileResult_FileExists,       "The given directory is not empty and the FileResult_Recursive flag was not set.",)
+				ErrorCaseL(EEXIST, FileResult_InvalidArgument,  "The given directory is not empty and the FileResult_Recursive flag was not set.",)
 				ErrorCaseL(EINVAL, FileResult_InvalidArgument,  "The path ends with a '.'.",)
 				ErrorCaseL(EIO,    FileResult_IOError,          "A physical I/O error has occured.",)
 				ErrorCaseL(ELOOP,  FileResult_SymbolicLinkLoop, "Symbolic link loop encountered.",)
@@ -552,7 +555,9 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 		EndFileErrnoHandler();
 	}
 	out.path.count = strlen((char*)out.path.str);
-	out.path.str = (u8*)memrealloc(out.path.str, out.path.count);
+	out.path.str = (u8*)memrealloc(out.path.str, out.path.count+2); //+1 for a trailing \0 and +1 to add a trailing / for directories
+	out.path.str[out.path.count+0] = '\0';
+	out.path.str[out.path.count+1] = '\0';
 
 	u32 name_length = 0;
 	u8* scan = out.path.str+out.path.count;
@@ -563,18 +568,7 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 		name_length++;
 	}
 	name_length--;
-
 	out.name = {out.path.str + out.path.count - name_length, name_length};
-	out.front = out.name;
-	forI_reverse(name_length) {
-		// on linux, files starting with a '.' are hidden
-		// so we don't want to say the entire name is the extension
-		if(i && out.name.str[i] == '.'){ 
-			out.front.count = i;
-		}
-	}
-	if(out.front.count != out.name.count)
-		out.ext = {out.front.str+out.front.count+1, out.path.str+out.path.count-(out.front.str+out.front.count+1)};
 
 	// get time information
 	struct statx s;
@@ -599,6 +593,11 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 		FileHandleErrorD(result, FileResult_InvalidArgument,{},, 
 			"attempted to gather info for a path that is not a file, directory, symbolic link, or device. path: ", path
 		);
+	}
+	
+	if(out.type == FileType_Directory){
+		out.path.str[out.path.count] = '/';
+		out.path.count += 1;
 	}
 
 	return out;
@@ -666,26 +665,59 @@ deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path, FileResu
 }
 
 b32 
-deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, FileResult* result){
+deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, b32 ignore_nonexistence, FileResult* result){
 	if(!path1 || *path1.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path1` at ",caller_file,"(",caller_line,")");
 	if(!path2 || *path2.str == 0) FileHandleErrorD(result, FileResult_EmptyPath, 0,, "file_path_equal() was passed an empty `path2` at ",caller_file,"(",caller_line,")");
 
 	dstr8 path1b;
-	dstr8_init(&path1b, path1, deshi_allocator);
+	dstr8_init(&path1b, path1, deshi_temp_allocator);
 	dstr8_replace_codepoint(&path1b, '\\', '/');
-	defer {dstr8_deinit(&path1b);};
+
+	char* real_path1 = (char*)memtalloc(PATH_MAX);
+	real_path1 = realpath((char*)path1b.str, real_path1);
+	if(!real_path1){
+		if(!ignore_nonexistence){
+			StartFileErrnoHandler(result, errno, false)
+				ErrorCaseL(EACCES,       FileResult_AccessDenied,      "Read or search permission was denied for a component of the path prefix.",)
+				ErrorCaseL(EIO,          FileResult_IOError,           "An I/O error occurred while reading from the filesystem.",)
+				ErrorCaseL(ELOOP,        FileResult_SymbolicLinkLoop,  "Too many symbolic links were encountered in translating the pathname.",)
+				ErrorCaseL(ENAMETOOLONG, FileResult_NameTooLong,       "A component of a pathname exceeded NAME_MAX characters, or an entire pathname exceeded PATH_MAX characters.",)
+				ErrorCaseL(ENOENT,       FileResult_PathDoesNotExist,  "The named file does not exist.",)
+				ErrorCaseL(ENOMEM,       FileResult_SystemOutOfMemory, "System ran out of memory.",)
+				ErrorCaseL(ENOTDIR,      FileResult_NotADirectory,     "A component of the path prefix is not a directory.",)
+			EndFileErrnoHandler();
+		}
+		return false;
+	}
 
 	dstr8 path2b;
-	dstr8_init(&path2b, path2, deshi_allocator);
+	dstr8_init(&path2b, path2, deshi_temp_allocator);
 	dstr8_replace_codepoint(&path2b, '\\', '/');
-	defer {dstr8_deinit(&path2b);};
+	
+	char* real_path2 = (char*)memtalloc(PATH_MAX);
+	real_path2 = realpath((char*)path2b.str, real_path2);
+	if(!real_path2){
+		if(!ignore_nonexistence){
+			StartFileErrnoHandler(result, errno, false)
+				ErrorCaseL(EACCES,       FileResult_AccessDenied,      "Read or search permission was denied for a component of the path prefix.",)
+				ErrorCaseL(EIO,          FileResult_IOError,           "An I/O error occurred while reading from the filesystem.",)
+				ErrorCaseL(ELOOP,        FileResult_SymbolicLinkLoop,  "Too many symbolic links were encountered in translating the pathname.",)
+				ErrorCaseL(ENAMETOOLONG, FileResult_NameTooLong,       "A component of a pathname exceeded NAME_MAX characters, or an entire pathname exceeded PATH_MAX characters.",)
+				ErrorCaseL(ENOENT,       FileResult_PathDoesNotExist,  "The named file does not exist.",)
+				ErrorCaseL(ENOMEM,       FileResult_SystemOutOfMemory, "System ran out of memory.",)
+				ErrorCaseL(ENOTDIR,      FileResult_NotADirectory,     "A component of the path prefix is not a directory.",)
+			EndFileErrnoHandler();
+		}
+		return false;
+	}
+	
+	size_t real_path1_length = strlen(real_path1);
+	size_t real_path2_length = strlen(real_path2);
+	if(real_path1_length != real_path2_length){
+		return false;
+	}
 
-	str8 p1normalized = file_path_absolute_result(path1b.fin, result);
-	if(!p1normalized) return 0;
-	str8 p2normalized = file_path_absolute_result(path2b.fin, result);
-	if(!p2normalized) return 0;
-
-	return str8_equal(p1normalized, p2normalized);
+	return memcmp(real_path1, real_path2, real_path1_length) == 0;
 }
 
 File* 

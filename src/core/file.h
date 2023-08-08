@@ -51,7 +51,9 @@ TODOs:
 track when files are changed (NOTE its not really safe right now to keep a file open for a long time unless you know nothing will change it)
 use CreateFile instead of FindFirstFile to tell if a file exists (b/c FindFirstFile's returned filename sucks)
 replace win32 error messages with our own
-add _if_exists version of file_delete(), file_info()
+rename "_if_exists" function alternatives to "_noerror"
+add "_noerror" version of file_delete(), file_info()
+add FileResult_PathBusy tests
 
 References:
 https://en.cppreference.com/w/c/io
@@ -153,7 +155,7 @@ typedef Type FileResultTag; enum {
 	// the called function was given an invalid argument
 	// uses 'invalid arg' to indicate which argument was invalid.
 	// more information should be included in the message.
-	FileResult_InvalidArgument, 
+	FileResult_InvalidArgument,
 	// the user does not have access to something
 	FileResult_AccessDenied,
 	// tried to create something, but something with the same name already exists
@@ -204,6 +206,7 @@ struct FileResult{
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_system
 //Returns true if a file/directory exists at `path`
+// PLATFORM
 external b32 deshi__file_exists(str8 caller_file, upt caller_line, str8 path, FileResult* result);
 #define file_exists(path) deshi__file_exists(str8_lit(__FILE__),__LINE__, (path), 0)
 #define file_exists_result(path, result) deshi__file_exists(str8_lit(__FILE__),__LINE__, (path), (result))
@@ -211,7 +214,8 @@ external b32 deshi__file_exists(str8 caller_file, upt caller_line, str8 path, Fi
 //Creates an empty file/directory at `path` if one doesn't exist already
 //    if needed, this will create multiple directories to make the path valid
 //    to create a directory, `path` must end with a '\' or '/'
-// returns 0 if the function fails
+//    returns false if the function fails
+// PLATFORM
 external b32 deshi__file_create(str8 caller_file, upt caller_line, str8 path, FileResult* result);
 #define file_create(path) deshi__file_create(str8_lit(__FILE__),__LINE__, (path), 0)
 #define file_create_result(path,res) deshi__file_create(str8_lit(__FILE__),__LINE__, (path), res)
@@ -224,64 +228,80 @@ enum{
 };
 
 // Deletes the file at the given path.
-// flags:
-//   FileDeleteFlags_File: 
-//      delete only files
-//   FileDeleteFlags_Directory: 
-//		delete only directories if they are empty, or, if the recursive flag is given, 
-//      delete the directory and everything in it
-//   FileDeleteFlags_Recursive:
-//      if directories are set to be deleted, this will allow deletion of non empty
-//      directories. USE RESPONSIBLY!
-// returns false if the function fails
+//    returns false if the function fails
+//    flags:
+//      FileDeleteFlags_File: 
+//        delete only files
+//      FileDeleteFlags_Directory: 
+//        delete only directories if they are empty, or, if the recursive flag is given, 
+//        delete the directory and everything in it
+//     FileDeleteFlags_Recursive:
+//        if directories are set to be deleted, this will allow deletion of non empty
+//        directories. USE RESPONSIBLY!
+// PLATFORM
 external b32 deshi__file_delete(str8 caller_file, upt caller_line, str8 path, u32 flags, FileResult* result);
 #define file_delete(path, flags) deshi__file_delete(str8_lit(__FILE__),__LINE__, (path), flags,0)
 #define file_delete_result(path, flags,res) deshi__file_delete(str8_lit(__FILE__),__LINE__, (path), flags,(res))
 
 //Renames the file/directory at `old_path` if it exists to `new_path`
-// returns false if the function fails
+//    returns false if the function fails
+// PLATFORM
 external b32 deshi__file_rename(str8 caller_file, upt caller_line, str8 old_path, str8 new_path, FileResult* result);
 #define file_rename(old_path,new_path) deshi__file_rename(str8_lit(__FILE__),__LINE__, (old_path),(new_path),0)
 #define file_rename_result(old_path,new_path,res) deshi__file_rename(str8_lit(__FILE__),__LINE__, (old_path),(new_path),(res))
 
 //Copies the file/directory at `src_path` to `dst_path`
 //    does not init the destination file if the source is init
-// returns false if the function fails
+//    returns false if the function fails
+// PLATFORM
 external b32 deshi__file_copy(str8 caller_file, upt caller_line, str8 src_path, str8 dst_path, FileResult* result);
 #define file_copy(src_path,dst_path) deshi__file_copy(str8_lit(__FILE__),__LINE__, (src_path),(dst_path),0)
 #define file_copy_result(src_path,dst_path,res) deshi__file_copy(str8_lit(__FILE__),__LINE__, (src_path),(dst_path),(res))
 
 //Returns a temporary `File` containing information about the file/directory at `path` if it exists
+//    If the file is a directory, `File.path` will have a trailing slash "/", and both `File.front` and `File.ext` will be empty
+// PLATFORM
 external File deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* result);
 #define file_info(path) deshi__file_info(str8_lit(__FILE__),__LINE__, (path),0)
 #define file_info_result(path,res) deshi__file_info(str8_lit(__FILE__),__LINE__, (path),(res))
 
 //Returns a temporary array of files/directories in the `directory` if it exists
-//returns an array compatible with kigu/array.h
-// NOTE when constructing filepaths for storage on the File, we dynamically allocate the names
-// meaning that if you use this, you have to make sure that the name is freed
-// the allocated string is JUST 'path', all of the following str8's are views on this str8
+//    returns an array compatible with kigu/array.h
+//    If a file is a directory, `File.path` will have a trailing slash "/", and both `File.front` and `File.ext` will be empty
+//    NOTE when constructing filepaths for storage on the File, we dynamically allocate the names
+//      meaning that if you use this, you have to make sure that the name is freed
+//      the allocated string is JUST 'path', all of the following str8's are views on this str8
+// PLATFORM
 external FileArray deshi__file_search_directory(str8 caller_file, upt caller_line, str8 directory, FileResult* result);
 #define file_search_directory(directory) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),0)
 #define file_search_directory_result(directory,res) deshi__file_search_directory(str8_lit(__FILE__),__LINE__, (directory),(res))
 
 //Returns a temporary string of the absolute path to the file/directory at `path` if it exists
+//    If the file is a directory, the absolute path will have a trailing slash "/"
+// PLATFORM
 external str8 deshi__file_path_absolute(str8 caller_file, upt caller_line, str8 path, FileResult* result);
 #define file_path_absolute(path) deshi__file_path_absolute(str8_lit(__FILE__),__LINE__, (path),0)
 #define file_path_absolute_result(path,res) deshi__file_path_absolute(str8_lit(__FILE__),__LINE__, (path),(res))
 
 //Returns true if `path1` and `path2` represent the same file/directory on disk
-external b32 deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, FileResult* result);
-#define file_path_equal(path1,path2) deshi__file_path_equal(str8_lit(__FILE__),__LINE__, (path1),(path2),0)
-#define file_path_equal_result(path1,path2,res) deshi__file_path_equal(str8_lit(__FILE__),__LINE__, (path1),(path2),(res))
+//    returns false and the result tag will be `FileResult_PathDoesNotExist` if one of the paths is a not valid file
+//    `ignore_nonexistence` prevents error messages and an error result tag if the file doesn't exist (will still return false)
+// PLATFORM
+external b32 deshi__file_path_equal(str8 caller_file, upt caller_line, str8 path1, str8 path2, b32 ignore_nonexistence, FileResult* result);
+#define file_path_equal(path1,path2) deshi__file_path_equal(str8_lit(__FILE__),__LINE__, (path1),(path2),false,0)
+#define file_path_equal_result(path1,path2,res) deshi__file_path_equal(str8_lit(__FILE__),__LINE__, (path1),(path2),false,(res))
+#define file_path_equal_if_exists(path1,path2) deshi__file_path_equal(str8_lit(__FILE__),__LINE__, (path1),(path2),true,0)
+#define file_path_equal_if_exists_result(path1,path2,res) deshi__file_path_equal(str8_lit(__FILE__),__LINE__, (path1),(path2),true,(res))
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @file_init
 //Returns a `File` pointer initialized with `access`
-//    `FileAccess_Append`, FileAccess_Create`, and `FileAccess_Truncate` do not get applied to `File.access`
+//    `FileAccess_Append`, `FileAccess_Create`, and `FileAccess_Truncate` do not get applied to `File.access`
 //    this call is equivalent to `file_change_access()` if there already is an initialized `File` for `path`
 //    `ignore_nonexistence` just prevents error messages if the file doesn't exist (will still return 0)
+//    If the file is a directory, `File.path` will have a trailing slash "/", and both `File.front` and `File.ext` will be empty
+// PLATFORM
 external File* deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess access, b32 ignore_nonexistence, FileResult* result);
 #define file_init(path,access) deshi__file_init(str8_lit(__FILE__),__LINE__, path,(access),false,0)
 #define file_init_result(path,access,res) deshi__file_init(str8_lit(__FILE__),__LINE__, path,(access),false,(res))
@@ -290,7 +310,8 @@ external File* deshi__file_init(str8 caller_file, upt caller_line, str8 path, Fi
 
 //Closes a previously init `file` if it has `FileAccess_Read` or `FileAccess_Write` and deletes the internal `File` object
 //    this does not delete the file on disk, call `file_delete()` to do that
-// returns false if the function fails
+//    returns false if the function fails
+// PLATFORM
 external b32 deshi__file_deinit(str8 caller_file, upt caller_line, File* file, FileResult* result);
 #define file_deinit(file) deshi__file_deinit(str8_lit(__FILE__),__LINE__, (file),0)
 #define file_deinit_result(file,res) deshi__file_deinit(str8_lit(__FILE__),__LINE__, (file),(res))
@@ -299,20 +320,22 @@ external b32 deshi__file_deinit(str8 caller_file, upt caller_line, File* file, F
 //    if new access includes `FileAccess_Read` or `FileAccess_Write`, the file is opened internally if it wasn't already open
 //    if new access doesn't include `FileAccess_Read` or `FileAccess_Write`, the file is closed internally if it was open
 //    `FileAccess_Append` and `FileAccess_Truncate` are only performed if the file is not already open and does not get applied to `File.access`
-// returns false if the function fails
+//    returns false if the function fails
+// PLATFORM
 external b32 deshi__file_change_access(str8 caller_file, upt caller_line, File* file, FileAccess access, FileResult* result);
 #define file_change_access(file,access) deshi__file_change_access(str8_lit(__FILE__),__LINE__, (file),(access),0)
 #define file_change_access_result(file,access,res) deshi__file_change_access(str8_lit(__FILE__),__LINE__, (file),(access),(res))
 
 //Returns a view over the internally initialized files
-// returns an array compatible with kigu/array.h
-File* file_initted_files(); 
+//    returns an array compatible with kigu/array.h
+// LOCAL
+File* file_initted_files();
 
 //Sets the `File.cursor` of `file` (if it's been init) to `offset` from the beginning if positive
 //    this function prevents the `File.cursor` from going above `File.bytes`
 //    writing in the middle overwrites rather then inserts
+//    returns false if the function fails
 // LOCAL
-// returns false if the function fails
 external b32 deshi__file_set_cursor(str8 caller_file, upt caller_line, File* file, u64 offset, FileResult* result);
 #define file_set_cursor(file,offset) deshi__file_set_cursor(str8_lit(__FILE__),__LINE__, (file),(offset),0)
 #define file_set_cursor_result(file,offset,res) deshi__file_set_cursor(str8_lit(__FILE__),__LINE__, (file),(offset),(res))
@@ -822,9 +845,9 @@ void TEST_deshi_file(b32 verbose = 0){
 		//// exists ////
 		TestStartFunction(file_exists);{
 			TestLog("deshi's data file should already exist.");
-			TestReturn(file_exists(STR8("data")),1);
-			TestReturn(file_exists(STR8("data/")),1);
-			TestReturn(file_exists(STR8("data\\")),0);
+			TestReturn(file_exists(STR8("data")), 1);
+			TestReturn(file_exists(STR8("data/")), 1);
+			TestReturn(file_exists(STR8("data\\")), 1);
 			
 			TestLog("test directories that dont exist.");
 			TestReturn(file_exists(STR8("datadbasjkdabskjdasbkjdasbjkds")), 0);
@@ -847,46 +870,47 @@ void TEST_deshi_file(b32 verbose = 0){
 			TestReturnTrue(file_exists(STR8("data/test_deshi_file")));
 			
 			TestLog("create data/test_deshi_file/food/apple.txt, should create the dir 'food' and the file.");
-			TestOk(file_create_result(STR8("data/test_deshi_file/food/apple.txt"), result)); 
+			TestOk(file_create_result(STR8("data/test_deshi_file/food/apple.txt"), result));
 			TestReturnTrue(file_exists(STR8("data/test_deshi_file/food/apple.txt")));
 			
-			TestLog("create a directory with a unicode name.");		
-			TestOk(file_create_result(STR8("data/test_deshi_file/不明誘惑/"), result)); 
-			TestReturnTrue(file_exists(STR8("data/test_deshi_file/不明誘惑"))); 
+			TestLog("create a directory with a unicode name.");
+			TestOk(file_create_result(STR8("data/test_deshi_file/不明誘惑/"), result));
+			TestReturnTrue(file_exists(STR8("data/test_deshi_file/不明誘惑")));
 			
 			TestLog("create a file with a unicode name.");
-			TestOk(file_create_result(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), result)); 
+			TestOk(file_create_result(STR8("data/test_deshi_file/不明誘惑/悪徳.市"), result));
 			TestReturnTrue(file_exists(STR8("data/test_deshi_file/不明誘惑/悪徳.市")));
 			
 			TestLog("create should reject an empty path.");
-			TestResult(file_create_result(str8{}, result), FileResult_EmptyPath); 
-			TestResult(file_create_result(STR8(""), result), FileResult_EmptyPath); 
+			TestResult(file_create_result(str8{}, result), FileResult_EmptyPath);
+			TestResult(file_create_result(STR8(""), result), FileResult_EmptyPath);
 		}TestEndFunction(file_create);
 		
 		//// delete ////
 		TestStartFunction(file_delete);{
 			TestLog("recursively delete the previously created food directory.");
-			TestOk(file_delete_result(STR8("data/test_deshi_file/food"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive, result)); 
+			TestOk(file_delete_result(STR8("data/test_deshi_file/food"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive, result));
 			TestReturn(file_exists(STR8("data/test_deshi_file/food/apple.txt")), 0);
 			TestReturn(file_exists(STR8("data/test_deshi_file/food")), 0);
 			
 			TestLog("recursively delete the previously created directory with a unicode name.");
-			TestOk(file_delete_result(STR8("data/test_deshi_file/不明誘惑"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive, result)); 
+			TestOk(file_delete_result(STR8("data/test_deshi_file/不明誘惑"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive, result));
 			TestReturn(file_exists(STR8("data/test_deshi_file/不明誘惑/悪徳.市")), 0);
 			TestReturn(file_exists(STR8("data/test_deshi_file/不明誘惑")), 0);
 			
 			TestLog("delete should reject empty paths.");
-			TestResult(file_delete_result(str8{}, 0, result), FileResult_EmptyPath); 
-			TestResult(file_delete_result(STR8(""), 0, result), FileResult_EmptyPath); 
+			TestResult(file_delete_result(str8{}, 0, result), FileResult_EmptyPath);
+			TestResult(file_delete_result(STR8(""), 0, result), FileResult_EmptyPath);
 			
 			if(!file_create(STR8("data/dummydir/"))) return;
 			if(!file_create(STR8("data/dummydir/dummyfile"))) return;
 			
 			TestLog("delete should reject calls that do not give the right flags for the given path.");
-			TestResult(file_delete_result(STR8("data/dummydir"), 0, result), FileResult_IsADirectory); 
-			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_File, result), FileResult_IsADirectory); 
-			TestResult(file_delete_result(STR8("data/dummydir/dummyfile"), FileDeleteFlags_Directory, result), FileResult_InvalidArgument); 
-			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_Directory, result), FileResult_FileExists); 
+			TestResult(file_delete_result(STR8("data/dummydir"), 0, result), FileResult_InvalidArgument);
+			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_File, result), FileResult_IsADirectory);
+			TestResult(file_delete_result(STR8("data/dummydir/dummyfile"), FileDeleteFlags_Directory, result), FileResult_InvalidArgument);
+			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_Directory, result), FileResult_InvalidArgument);
+			TestResult(file_delete_result(STR8("data/dummydir"), FileDeleteFlags_Directory|FileDeleteFlags_Recursive, result), FileResult_Ok);
 		}TestEndFunction(file_delete);
 		
 		//// rename ////
@@ -927,16 +951,17 @@ void TEST_deshi_file(b32 verbose = 0){
 #if DESHI_WINDOWS
 			Test(file.bytes == 0);
 #elif DESHI_LINUX
+			//TODO(delle) the API should not return different values on different platforms
 			Test(file.bytes == 4096); // on linux, directories actually hold a size
 #else
 #  error "unhandled platform"
 #endif
 			Test(file.type == FileType_Directory);
 			//TestResult(!file.changed);
-			Test(str8_ends_with(file.path, STR8("data")));
+			Test(str8_ends_with(file.path, STR8("data/")));
 			Test(str8_equal_lazy(file.name, STR8("data")));
-			Test(str8_equal_lazy(file.front, STR8("data")));
-			Test(!file.ext.count);
+			Test(str8_equal_lazy(file.front, str8{}));
+			Test(str8_equal_lazy(file.ext, str8{}));
 			Test(file.access == 0);
 			Test(file.cursor == 0);
 			
@@ -1014,10 +1039,10 @@ void TEST_deshi_file(b32 verbose = 0){
 			Test(str8_ends_with(out, STR8("data/test_deshi_file/fruits/apple.bin")));
 			out = file_path_absolute_result(STR8("data/test_deshi_file/fruits"), result);
 			TestResultSeparate(FileResult_Ok);
-			Test(str8_ends_with(out, STR8("data/test_deshi_file/fruits")));
+			Test(str8_ends_with(out, STR8("data/test_deshi_file/fruits/")));
 			out = file_path_absolute_result(STR8("data/test_deshi_file/"), result);
 			TestResultSeparate(FileResult_Ok);
-			Test(str8_ends_with(out, STR8("data/test_deshi_file")));
+			Test(str8_ends_with(out, STR8("data/test_deshi_file/")));
 			
 			TestLog("should return an empty str8 and FileResult_PathDoesNotExist when given a non-existant path.");
 			out = file_path_absolute_result(STR8("data/test_deshi_file/food/"), result);
@@ -1160,11 +1185,17 @@ void TEST_deshi_file(b32 verbose = 0){
 			Test(file->handle != 0);
 			Test(file->access == FileAccess_Write);
 			Test(file->cursor == 0);
+			
+			TestLog("changing access on a null File Pointer.");
+			TestResult(file_change_access_result(0, FileAccess_WriteTruncate, result), FileResult_InvalidArgument);
 		}TestEndFunction(file_change_access);
 		
 		TestStartFunction(file_deinit);{
 			TestLog("deinitializing file normally.");
 			TestOk(file_deinit_result(file, result));
+			
+			TestLog("deinitializing a null File pointer.");
+			TestResult(file_deinit_result(0, result), FileResult_InvalidArgument);
 		}TestEndFunction(file_deinit);
 		
 		//// append ////
@@ -1278,8 +1309,7 @@ void TEST_deshi_file(b32 verbose = 0){
 		fflush(file->handle);
 		
 		TestLog("verifying that the file was written to properly.");
-		if(!file_change_access(file, FileAccess_Read)) return;
-		file_set_cursor(file, 0);
+		if(!file_change_access(file, 0)) return;
 		str8 sanity = file_read_simple(file->path, deshi_temp_allocator);
 		Test(str8_equal_lazy(sanity, s));
 		
