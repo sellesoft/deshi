@@ -147,7 +147,7 @@ int main(int args_count, char** args){
 	
 	deshi_loop_start();{
 		//update camera
-		if(g_window->focused){
+		if(g_window->focused && !console_is_open()){
 			vec3 inputs = vec3_ZERO();
 			if(key_down(Key_W))     inputs += camera.forward;
 			if(key_down(Key_S))     inputs -= camera.forward;

@@ -122,6 +122,8 @@ FORCE_INLINE Console* console_expose();
 //begins the transition of `Console.state` to `new_state`, if new state is the same as previous, set state to `ConsoleState_Closed`
 void console_change_state(ConsoleState new_state);
 
+b32 console_is_open();
+
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
 void console_parse_message(str8 message, str8 tag = STR8(""), Type type = ConsoleChunkType_Normal, b32 from_logger = 0, u32 logger_offset = 0);
 

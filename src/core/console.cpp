@@ -406,3 +406,9 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 	console.open_timer = start_stopwatch();
 	console.state = new_state;
 }
+
+b32
+console_is_open()
+{
+	return console.state != ConsoleState_Closed;
+}
