@@ -220,8 +220,8 @@ int main(int args_count, char** args){
 			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalTriangles,              " triangles").fin, 0);
 			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalVertices,               " vertices").fin, 0);
 			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalIndices,                " indices").fin, 0);
-			ui_make_text(to_dstr8v(deshi_temp_allocator, camera.position).fin, 0);
-			ui_make_text(to_dstr8v(deshi_temp_allocator, camera.rotation).fin, 0);
+			ui_make_text(to_dstr8p(camera.position, 2, deshi_temp_allocator).fin, 0);
+			ui_make_text(to_dstr8p(camera.rotation, 2, deshi_temp_allocator).fin, 0);
 			ui_end_item();
 		}ui_end_immediate_branch();
 	}deshi_loop_end();
