@@ -42,7 +42,7 @@ win32_vkcode_to_key(s32 vk){
 		case VK_F5: return Key_F5; case VK_F6:  return Key_F6;  case VK_F7:  return Key_F7;  case VK_F8:  return Key_F8;
 		case VK_F9: return Key_F9; case VK_F10: return Key_F10; case VK_F11: return Key_F11; case VK_F12: return Key_F12;
 		case VK_UP: return Key_UP; case VK_DOWN: return Key_DOWN; case VK_LEFT: return Key_LEFT; case VK_RIGHT: return Key_RIGHT;
-		case VK_ESCAPE:    return Key_ESCAPE;     case VK_OEM_3:     return Key_APOSTROPHE;   case VK_TAB:        return Key_TAB;
+		case VK_ESCAPE:    return Key_ESCAPE;     case VK_OEM_3:     return Key_BACKQUOTE;    case VK_TAB:        return Key_TAB;
 		case VK_CAPITAL:   return Key_CAPSLOCK;   case VK_LSHIFT:    return Key_LSHIFT;       case VK_LCONTROL:   return Key_LCTRL;
 		case VK_LMENU:     return Key_LALT;       case VK_BACK:      return Key_BACKSPACE;    case VK_RETURN:     return Key_ENTER;
 		case VK_RSHIFT:    return Key_RSHIFT;     case VK_RCONTROL:  return Key_RCTRL;        case VK_RMENU:      return Key_RALT;

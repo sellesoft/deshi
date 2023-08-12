@@ -432,10 +432,6 @@ logger_last_message(){DPZoneScoped;
 	return str8{logger.last_message,logger.last_message_length};
 }
 
-int test_add(int a, int b){
-	return a+b;
-}
-
 void
 logger_format_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, str8 fmt, ...){DPZoneScoped;
 	if(!logger.file) return;
