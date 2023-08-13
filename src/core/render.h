@@ -1907,6 +1907,9 @@ render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel*
 
 RenderVoxelChunk*
 render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
+	Assert(dimensions != 0, "Dimensions can not be zero!");
+	Assert(voxels != 0 && voxels_count != 0, "Don't call this with an invalid voxels array!");
+	
 	//alloc and init chunk
 	RenderVoxelChunk* chunk = memory_pool_push(render_voxel_chunk_pool);
 	chunk->position    = position;
@@ -1927,12 +1930,9 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	upt voxels_array_size = dimensions_cubed * sizeof(RenderVoxel*);
 	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
 	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
-	chunk->arena = memory_create_arena(array_header_size + voxels_array_size + max_vertices_size + max_indices_size);
+	chunk->arena = memory_create_arena(voxels_array_size + max_vertices_size + max_indices_size);
 	
 	//init voxels array
-	stbds_array_header* voxels_array_header = memory_arena_pushT(chunk->arena,stbds_array_header);
-	voxels_array_header->length   = dimensions_cubed;
-	voxels_array_header->capacity = dimensions_cubed;
 	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
 	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
 	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
@@ -1943,20 +1943,21 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	//TODO(delle) combine faces across the chunk where possible
 	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(chunk->arena,max_vertices_size);
 	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(chunk->arena,max_indices_size);
+	u32 dimensions_minus_one = dimensions-1;
 	forI(dimensions_cubed){
 		if(chunk->voxels[i] == 0) continue; //skip empty voxels
 		
-		if((chunk->voxels[i]->x >= dimensions) || (chunk->voxels[i + dimensions_stride_x] == 0))
+		if((chunk->voxels[i]->x == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_x] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->x == 0)          || (chunk->voxels[i - dimensions_stride_x] == 0))
+		if((chunk->voxels[i]->x == 0)                    || (chunk->voxels[i - dimensions_stride_x] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y >= dimensions) || (chunk->voxels[i + dimensions_stride_y] == 0))
+		if((chunk->voxels[i]->y == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_y] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y == 0)          || (chunk->voxels[i - dimensions_stride_y] == 0))
+		if((chunk->voxels[i]->y == 0)                    || (chunk->voxels[i - dimensions_stride_y] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z >= dimensions) || (chunk->voxels[i + dimensions_stride_z] == 0))
+		if((chunk->voxels[i]->z == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_z] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z == 0)          || (chunk->voxels[i - dimensions_stride_z] == 0))
+		if((chunk->voxels[i]->z == 0)                    || (chunk->voxels[i - dimensions_stride_z] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
 	}
 	
@@ -1968,7 +1969,7 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	index_array = new_index_array;
 	
 	//fit the arena to its actually used size
-	chunk->arena->used = array_header_size + voxels_array_size + actual_vertices_size + actual_indices_size;
+	chunk->arena->used = voxels_array_size + actual_vertices_size + actual_indices_size;
 	memory_arena_fit(chunk->arena);
 	
 	//create the vertex/index GPU buffers and upload the vertex/index data to them
