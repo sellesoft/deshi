@@ -159,8 +159,8 @@ DESHI_BAKED_SHADERS_COMMON_VERTEX_INPUT_STRING
 DESHI_BAKED_SHADERS_COMMON_VERTEX_OUTPUT_STRING
 "\n"
 "void main(){\n"
-"    gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);\n"
-"    outColor    = inColor;\n"
+"	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);\n"
+"	outColor    = inColor;\n"
 "	outUV       = inUV;\n"
 "	outNormal   = mat3(primitive.model) * inNormal;\n"
 "}\n"
@@ -192,16 +192,15 @@ DESHI_BAKED_SHADERS_PUSHCONST3D_STRING
 "\n"
 DESHI_BAKED_SHADERS_COMMON_VERTEX_INPUT_STRING
 "\n"
-"layout(location = 0) out vec4 outColor;\n"
+"layout(location = 0) out vec3 outLightVectorInverse;\n"
+"layout(location = 1) out vec3 outNormal;\n"
+"layout(location = 2) out vec4 outColor;\n"
 "\n"
 "void main(){\n"
 "	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);\n"
-"\n"
-"	vec3 vertex_to_light = vec3(ubo.viewPos) - gl_Position.xyz;\n" //light is at the camera
-"	vec3 normal = mat3(primitive.model) * inNormal;\n" //rotate the normal by the model's rotation
-"	float light_value = clamp(dot(normalize(vertex_to_light), normal) * 0.7f, 0.1f, 1.0f);\n"
-"\n"
-"	outColor = inColor * vec4(light_value,light_value,light_value,1);\n"
+"	outLightVectorInverse = vec3(ubo.viewPos) - gl_Position.xyz;\n"
+"	outNormal = mat3(primitive.model) * inNormal;\n"
+"	outColor = inColor;\n"
 "}\n"
 );
 
@@ -209,12 +208,15 @@ local str8 baked_shader_flat_frag = STR8(
 DESHI_BAKED_SHADERS_VERSION_STRING
 DESHI_BAKED_SHADERS_EXTENSIONS_FRAGMENT_STRING
 "\n"
-"layout(location = 0) in vec4 inColor;\n"
+"layout(location = 0) in vec3 inLightVectorInverse;\n"
+"layout(location = 1) in vec3 inNormal;\n"
+"layout(location = 2) in vec4 inColor;\n"
 "\n"
 DESHI_BAKED_SHADERS_COMMON_FRAGMENT_OUTPUT_STRING
 "\n"
 "void main(){\n"
 "	outColor = inColor;\n"
+"	outColor.xyz *= clamp(dot(normalize(inLightVectorInverse), normalize(inNormal)) * 0.7, 0.1, 1.0);\n"
 "}\n"
 );
 
@@ -224,7 +226,6 @@ DESHI_BAKED_SHADERS_COMMON_FRAGMENT_OUTPUT_STRING
 local str8 baked_shader_null_vert = STR8(
 DESHI_BAKED_SHADERS_VERSION_STRING
 DESHI_BAKED_SHADERS_EXTENSIONS_VERTEX_STRING
-
 "\n"
 DESHI_BAKED_SHADERS_UBO_STRING
 "\n"
