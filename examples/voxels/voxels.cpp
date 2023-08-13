@@ -1,7 +1,7 @@
 #include <random>
 #include "deshi.h"
 #include "core/camera.h"
-#include "external/stb/stb_ds.h"
+#include "kigu/array.h"
 
 int main(int args_count, char** args){
 	deshi_init();
@@ -31,6 +31,14 @@ int main(int args_count, char** args){
 	//init voxels
 	enum{
 		VoxelType_Empty,
+		VoxelType_0,
+		VoxelType_1,
+		VoxelType_2,
+		VoxelType_3,
+		VoxelType_4,
+		VoxelType_5,
+		VoxelType_6,
+		VoxelType_7,
 		VoxelType_Rock,
 		VoxelType_Ice,
 		VoxelType_Core,
@@ -38,6 +46,14 @@ int main(int args_count, char** args){
 	};
 	RenderVoxelType voxel_types[VoxelType_COUNT] = {
 		{ PackColorU32(  0,  0,  0,255) },
+		{ PackColorU32(200,  0,  0,255) },
+		{ PackColorU32(  0,200,  0,255) },
+		{ PackColorU32(  0,  0,200,255) },
+		{ PackColorU32(200,200,  0,255) },
+		{ PackColorU32(  0,200,200,255) },
+		{ PackColorU32(200,200,200,255) },
+		{ PackColorU32(200,  0,200,255) },
+		{ PackColorU32( 36, 36, 36,255) },
 		{ PackColorU32( 12, 12, 12,255) },
 		{ PackColorU32( 92,166,181,255) },
 		{ PackColorU32(214,107,  0,255) },
@@ -45,16 +61,13 @@ int main(int args_count, char** args){
 	render_voxel_init(voxel_types, VoxelType_COUNT, 1);
 	
 	//generate voxel astroids
-	RenderVoxel** asteroids = 0;
 	{
-#define ASTEROIDS_RING_RADIUS_INNER_SQ 1000*1000
-#define ASTEROIDS_RING_RADIUS_OUTER_SQ 1500*1500
-#define ASTEROIDS_RING_HEIGHT_MAX 64
-#define ASTEROIDS_SIZE_RADIUS_MIN 8
-#define ASTEROIDS_SIZE_RADIUS_MAX 32
-#define ASTEROIDS_COUNT 8192
-		arrsetcap(asteroids, ASTEROIDS_COUNT);
-		
+#define ASTEROIDS_RING_RADIUS_INNER_SQ 50*50//1000*1000
+#define ASTEROIDS_RING_RADIUS_OUTER_SQ 75*75//1500*1500
+#define ASTEROIDS_RING_HEIGHT_MAX 25//64
+#define ASTEROIDS_SIZE_RADIUS_MIN 4
+#define ASTEROIDS_SIZE_RADIUS_MAX 10//32
+#define ASTEROIDS_COUNT 10//8192
 		//setup rng
 		std::random_device rng_device;
 		std::default_random_engine rng_engine(rng_device());
@@ -63,12 +76,9 @@ int main(int args_count, char** args){
 		std::uniform_real_distribution<f32> rng_dist_ring_height(-ASTEROIDS_RING_HEIGHT_MAX, ASTEROIDS_RING_HEIGHT_MAX);
 		std::uniform_int_distribution<s32>  rng_dist_size_radius(ASTEROIDS_SIZE_RADIUS_MIN, ASTEROIDS_SIZE_RADIUS_MAX);
 		
-		//forI(ASTEROIDS_COUNT){
-		forI(1){
-			RenderVoxel* asteroid_voxels = 0;
-			arrsetcap(asteroid_voxels, ASTEROIDS_SIZE_RADIUS_MIN*ASTEROIDS_SIZE_RADIUS_MAX);
-			arrput(asteroids, asteroid_voxels);
-			
+		RenderVoxel* asteroid_voxels = 0;
+		array_init(asteroid_voxels, ASTEROIDS_SIZE_RADIUS_MIN*ASTEROIDS_SIZE_RADIUS_MAX, deshi_allocator);
+		forI(ASTEROIDS_COUNT){
 			//asteroid position
 			f32 ring_theta  = rng_dist_ring_angle(rng_engine);
 			f32 ring_radius_alpha = rng_dist_alpha(rng_engine);
@@ -76,7 +86,7 @@ int main(int args_count, char** args){
 			f32 ring_height = rng_dist_ring_height(rng_engine);
 			vec3 position = Vec3(ring_radius * cos(ring_theta), ring_height, ring_radius * sin(ring_theta));
 			position = vec3_floor(position);
-			position = vec3_ZERO(); //TODO(delle) remove this
+			//position = vec3_ZERO();
 			
 			//asteroid rotation
 			f32 rotation_x = Degrees(rng_dist_ring_angle(rng_engine));
@@ -92,75 +102,57 @@ int main(int args_count, char** args){
 			//s32 radius_z = rng_dist_size_radius(rng_engine);
 			
 			//draw voxel sphere
-			//!ref: https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#C
-			//!ref: https://web.archive.org/web/20120422045142/https://banu.com/blog/7/drawing-circles/
-			//TODO(delle) extend the circle algo to 3D
-			s16 local_radius = 1;
-			for(s16 y = -radius; y <= radius; y += 1){
-				s16 f = 1 - local_radius;
-				s16 ddf_x = 0;
-				s16 ddf_z = -2 * local_radius;
-				s16 x = 0;
-				s16 z = local_radius;
-				
-				RenderVoxel* voxels = arraddnptr(asteroid_voxels, 4);
-				voxels[0] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius+z)};
-				voxels[1] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius-z)};
-				voxels[2] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius+z)};
-				voxels[3] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius-z)};
-				
-				while(x < z){
-					if(f >= 0){
-						z -= 1;
-						ddf_z += 2;
-						f += ddf_z;
+			//TODO(delle) test and draw per-quadrant
+			u16 voxel_type = VoxelType_0;
+			for(u16 y = 0; y <= radius+radius; ++y){
+				for(u16 x = 0; x <= radius+radius; ++x){
+					for(u16 z = 0; z <= radius+radius; ++z){
+						if(radius == (u16)sqrt((radius-x)*(radius-x) + (radius-y)*(radius-y) + (radius-z)*(radius-z))){
+							array_push_value(asteroid_voxels, (RenderVoxel{voxel_type, x, y, z}));
+						}
 					}
-					x += 1;
-					ddf_x += 2;
-					f += ddf_x + 1;
-					
-					RenderVoxel* voxels = arraddnptr(asteroid_voxels, 8);
-					voxels[0] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius+z)};
-					voxels[1] = RenderVoxel{VoxelType_Rock, (u16)(radius+x), (u16)(radius+y), (u16)(radius-z)};
-					voxels[2] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius+z)};
-					voxels[3] = RenderVoxel{VoxelType_Rock, (u16)(radius-x), (u16)(radius+y), (u16)(radius-z)};
-					voxels[4] = RenderVoxel{VoxelType_Rock, (u16)(radius+z), (u16)(radius+y), (u16)(radius+x)};
-					voxels[5] = RenderVoxel{VoxelType_Rock, (u16)(radius+z), (u16)(radius+y), (u16)(radius-x)};
-					voxels[6] = RenderVoxel{VoxelType_Rock, (u16)(radius-z), (u16)(radius+y), (u16)(radius+x)};
-					voxels[7] = RenderVoxel{VoxelType_Rock, (u16)(radius-z), (u16)(radius+y), (u16)(radius-x)};
 				}
 				
-				if(y < 0){
-					local_radius += 1;
-				}else{
-					local_radius -= 1;
-				}
+				//debug coloring
+				voxel_type += 1; //TODO(delle) remove this
+				if(voxel_type > VoxelType_7) voxel_type = VoxelType_0;
 			}
-			
-			//shrink to fit asteroid voxels array
-			arrsetcap(asteroid_voxels, arrlen(asteroid_voxels));
+			Log("test",array_count(asteroid_voxels));
 			
 			//upload voxels to chunk
-			render_voxel_create_chunk(position, rotation, radius+1, asteroid_voxels, arrlen(asteroid_voxels));
+			render_voxel_create_chunk(position, rotation, (radius*2)+1, asteroid_voxels, array_count(asteroid_voxels));
+			array_clear(asteroid_voxels);
 		}
+		array_deinit(asteroid_voxels);
 	}
 	
+	f32 move_speed = 8.0f;
 	deshi_loop_start();{
 		//update camera
 		if(g_window->focused && !console_is_open()){
-			vec3 inputs = vec3_ZERO();
-			if(key_down(Key_W))     inputs += camera.forward;
-			if(key_down(Key_S))     inputs -= camera.forward;
-			if(key_down(Key_D))     inputs += camera.right;
-			if(key_down(Key_A))     inputs -= camera.right;
-			if(key_down(Key_SPACE)) inputs += camera.up;
-			if(key_down(Key_LCTRL)) inputs -= camera.up;
-			if     (input_lshift_down()){ camera.position += inputs * 32.f * (g_time->deltaTime / 1000); }
-			else if(input_lalt_down())  { camera.position += inputs * 4.f  * (g_time->deltaTime / 1000); }
-			else                        { camera.position += inputs * 8.f  * (g_time->deltaTime / 1000); }
-			
 			if(key_down(Mouse_RIGHT)){
 				window_set_cursor_mode(g_window, CursorMode_FirstPerson);
+				
+				if(g_input->scrollY != 0){
+					if(g_input->scrollY > 0){
+						move_speed *= 2;
+					}else{
+						move_speed /= 2;
+					}
+				}
+				
+				vec3 inputs = vec3_ZERO();
+				if(key_down(Key_W))     inputs += camera.forward;
+				if(key_down(Key_S))     inputs -= camera.forward;
+				if(key_down(Key_D))     inputs += camera.right;
+				if(key_down(Key_A))     inputs -= camera.right;
+				if(key_down(Key_SPACE)) inputs += camera.up;
+				if(key_down(Key_LCTRL)) inputs -= camera.up;
+				if     (input_lshift_down()){ camera.position += inputs * move_speed * 8.0f * (g_time->deltaTime / 1000); }
+				else if(input_lalt_down())  { camera.position += inputs * move_speed / 2.0f * (g_time->deltaTime / 1000); }
+				else                        { camera.position += inputs * move_speed * 1.0f * (g_time->deltaTime / 1000); }
+				render_update_camera_position(camera.position);
+				
 				camera.rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
 				camera.rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
 				camera.rotation.x = Clamp(camera.rotation.x, -89.0f, 89.0f);
@@ -170,16 +162,16 @@ int main(int args_count, char** args){
 				camera.forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera.rotation));
 				camera.right   = vec3_normalized(vec3_cross(vec3_UP(), camera.forward));
 				camera.up      = vec3_normalized(vec3_cross(camera.forward, camera.right));
+				
+				camera.viewMat = Math::LookAtMatrix(camera.position, camera.position + camera.forward).Inverse();
+				render_update_camera_view(&camera.viewMat);
 			}else{
 				window_set_cursor_mode(g_window, CursorMode_Default);
 			}
 			
-			camera.viewMat = Math::LookAtMatrix(camera.position, camera.position + camera.forward).Inverse();
 			if(g_window->resized){
 				camera.projMat = Math::PerspectiveProjectionMatrix(g_window->width, g_window->height, camera.fov, camera.nearZ, camera.farZ);
 			}
-			
-			render_update_camera_view(&camera.viewMat);
 		}
 		
 		//draw grid
@@ -215,6 +207,7 @@ int main(int args_count, char** args){
 			window->style.anchor           = anchor;
 			window->id                     = STR8("voxels.info_window");
 			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime),        " fps").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)move_speed,                                 " move speed").fin, 0);
 			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,render_get_stats()->renderTimeMS)," ms render").fin, 0);
 			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalVoxels,                 " voxels").fin, 0);
 			ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalTriangles,              " triangles").fin, 0);
