@@ -216,7 +216,7 @@ DESHI_BAKED_SHADERS_COMMON_FRAGMENT_OUTPUT_STRING
 "\n"
 "void main(){\n"
 "	outColor = inColor;\n"
-"	outColor.xyz *= clamp(dot(normalize(inLightVectorInverse), normalize(inNormal)) * 0.7, 0.1, 1.0);\n"
+"	outColor.xyz *= clamp(dot(normalize(inLightVectorInverse), normalize(inNormal)) * 0.7, 0.25, 1.0);\n"
 "}\n"
 );
 
