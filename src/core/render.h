@@ -293,10 +293,12 @@ typedef Flags RenderBufferUsageFlags; enum{
 //
 // Notes:
 // Choosing a RenderMemoryPropertyFlags can also depend on what GPU is being used, as the different
-// brands organize their device memory in different ways.
+//   brands organize their device memory in different ways.
 // Allocating too many resources with RenderMemoryPropertyFlag_DeviceLocal can result in VRAM
-// oversubscription (running out of memory).
-// 
+//   oversubscription (running out of memory).
+// RenderMemoryPropertyFlag_LazilyAllocated and RenderMemoryPropertyFlag_HostCached are ignored on OpenGL as there
+//   is no way to specify such behaviour in that backend (to my knowledge).
+//
 // References:
 // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkMemoryPropertyFlagBits.html
 // https://asawicki.info/news_1740_vulkan_memory_types_on_pc_and_how_to_use_them
@@ -316,13 +318,13 @@ typedef Flags RenderMemoryPropertyFlags; enum{
 
 typedef Type RenderMemoryMappingType; enum{
 	RenderMemoryMapping_None,          //the memory is never mapped after initial upload (not compatible with RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
-	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time
-	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion
+	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
+	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
 };
 
 typedef struct RenderBuffer{
-	void* buffer_handle; //VkBuffer in vulkan, ... in OpenGL, ... in DirectX
-	void* memory_handle; //VkDeviceMemory in vulkan, ... in OpenGL, ... in DirectX
+	void* buffer_handle; //VkBuffer in vulkan, GLuint in OpenGL, ... in DirectX
+	void* memory_handle; //VkDeviceMemory in vulkan, unused in OpenGL, ... in DirectX
 	
 	u64 size;
 	

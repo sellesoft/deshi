@@ -117,7 +117,6 @@ int main(int args_count, char** args){
 				voxel_type += 1; //TODO(delle) remove this
 				if(voxel_type > VoxelType_7) voxel_type = VoxelType_0;
 			}
-			Log("test",array_count(asteroid_voxels));
 			
 			//upload voxels to chunk
 			render_voxel_create_chunk(position, rotation, (radius*2)+1, asteroid_voxels, array_count(asteroid_voxels));

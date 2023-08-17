@@ -3769,7 +3769,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 	
 	//map and upload the data depending on the mapping style
 	if(mapping == RenderMemoryMapping_None){
-		if(data == 0){
+		if(data == 0){ //TOOD(delle) support reserving device memory for non-host use (compute shaders)
 			LogEVk("Called with RenderMemoryMapping_None but the data pointer was null. This means that the buffer on the device will be empty and cannot be written to.");
 		}else if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible|RenderMemoryPropertyFlag_HostCoherent|RenderMemoryPropertyFlag_HostCached)){
 			LogEVk("Called with incompatible mapping and memory flags, RenderMemoryMapping_None and RenderMemoryPropertyFlag_HostVisible or RenderMemoryPropertyFlag_HostCoherent or RenderMemoryPropertyFlag_HostCached.");
@@ -3818,7 +3818,6 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 			resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 			
 			vkUnmapMemory(device, (VkDeviceMemory)result->memory_handle);
-			
 		}
 	}else if(mapping == RenderMemoryMapping_Persistent){
 		resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
