@@ -94,7 +94,7 @@ global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	}
 	
 	//find three closest vertexes to make a triangle from
-	f32 smallest_distance0 = FLT_MAX, smallest_distance1 = FLT_MAX, smallest_distance2 = FLT_MAX;
+	f32 smallest_distance0 = MAX_F32, smallest_distance1 = MAX_F32, smallest_distance2 = MAX_F32;
 	vec3 closest_vert0{}; vec3 closest_vert1{}; vec3 closest_vert2{};
 	forI(closest_face->outerVertexCount){
 		f32 local_distance = mesh->vertexArray[closest_face->outerVertexArray[i]].pos.distanceTo(target);
