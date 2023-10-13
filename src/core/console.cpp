@@ -166,8 +166,8 @@ void console_init(){DPZoneScoped;
 	mains->           sizing = size_percent;
 	mains->            width = 100;
 	mains->           height = 0;
-	mains->          paddingtl = {2,2};
-	mains->          paddingbr = {2,2};
+	mains->        paddingtl = {2,2};
+	mains->        paddingbr = {2,2};
 	mains->      positioning = pos_fixed;
 	
 	console.ui.buffer = ui_begin_item(&base);
@@ -178,7 +178,8 @@ void console_init(){DPZoneScoped;
 	buffers->           height = 1; //occupy as much vertical space as it can in the container
 	buffers->            width = 100; //100% the width of the container
 	buffers-> background_color = Color_Black;
-	buffers->          padding = {2,2,2,2};
+	buffers->        paddingtl = {2,2};
+	buffers->        paddingbr = {2,2};
 	ui_end_item();
 	
 	console.ui.inputbox = ui_begin_item(&base);
@@ -191,7 +192,8 @@ void console_init(){DPZoneScoped;
 	inputbs->height = inputbs->font->max_height + 2;
 	inputbs->content_align = {0.5,0.5};
 	inputbs->tab_spaces = 2;
-	inputbs->padding = {2,2,2,2};
+	inputbs->paddingtl = {2,2};
+	inputbs->paddingbr = {2,2};
 	console.ui.inputtext = ui_make_input_text(str8null, 0);
 	uiItem* inputt = console.ui.inputtext;
 	uiStyle* inputts = &inputt->style;
