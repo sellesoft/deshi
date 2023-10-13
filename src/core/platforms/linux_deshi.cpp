@@ -1766,8 +1766,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	XSetForeground(linux.x11.display, (GC)window->context, white);
 
 	XClearWindow(linux.x11.display, (X11Window)window->handle);
-	XMapRaised(linux.x11.display, (X11Window)window->handle);
-
+	
 	u32 bw,d;
 	X11Window groot,gchild;
 	XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
@@ -1796,7 +1795,7 @@ void window_display_mode(Window* window, DisplayMode displayMode){
 
 void 
 window_show(Window* window) {
-	NotImplemented;
+	XMapRaised(linux.x11.display, (X11Window)window->handle);
 }
 
 void 
