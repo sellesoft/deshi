@@ -59,18 +59,18 @@ struct MaterialGl{
 #define INDEX_TYPE_GL_TWOD GL_UNSIGNED_INT
 #define INDEX_TYPE_GL_TEMP GL_UNSIGNED_INT
 #define INDEX_TYPE_GL_MESH GL_UNSIGNED_INT
-StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
-StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
+StaticAssertAlways(sizeof(RenderTwodIndex)	== 4);
+StaticAssertAlways(sizeof(RenderTempIndex)	== 4);
 StaticAssertAlways(sizeof(RenderModelIndex) == 4);
 
 local arrayT<RenderMesh> glMeshes(deshi_allocator);
-local arrayT<ShaderGl>   glShaders(deshi_allocator);
+local arrayT<ShaderGl>	 glShaders(deshi_allocator);
 local arrayT<TextureGl>  glTextures(deshi_allocator);
 local arrayT<MaterialGl> glMaterials(deshi_allocator);
 
 local s32  width  = 0;
 local s32  height = 0;
-local b32  initialized  = false;
+local b32  initialized	= false;
 local b32  remake_window = false;
 
 
@@ -121,15 +121,15 @@ local struct{ //vertex shader uniform buffer
 	u32 binding = 1;
 	
 	struct{ //416 bytes
-		mat4 view;        //camera view matrix
-		mat4 proj;        //camera projection matrix
+		mat4 view;		  //camera view matrix
+		mat4 proj;		  //camera projection matrix
 		vec4 lights[10];  //lights
-		vec4 viewPos;     //camera pos
-		vec2 screen;      //screen dimensions
-		vec2 mousepos;    //mouse screen pos
+		vec4 viewPos;	  //camera pos
+		vec2 screen;	  //screen dimensions
+		vec2 mousepos;	  //mouse screen pos
 		vec3 mouseWorld;  //point casted out from mouse 
-		f32  time;        //total time
-		mat4 lightVP;     //first light's view projection matrix
+		f32  time;		  //total time
+		mat4 lightVP;	  //first light's view projection matrix
 		s32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
 		s32  padding[3];
 	} values;
@@ -282,11 +282,11 @@ load_shader(str8 name, str8 source, ShaderStage stage){
 	
 	ShaderGl sgl{};
 	sgl.filename = str8_copy(name, deshi_allocator);
-	sgl.stage    = stage;
+	sgl.stage	 = stage;
 	
 	//create shader
 	switch(stage){ //TODO(delle) opengl4 shader stages
-		case ShaderStage_Vertex:   sgl.handle = glCreateShader(GL_VERTEX_SHADER);   break;
+		case ShaderStage_Vertex:   sgl.handle = glCreateShader(GL_VERTEX_SHADER);	break;
 		case ShaderStage_TessCtrl: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 		case ShaderStage_TessEval: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 		case ShaderStage_Geometry: sgl.handle = glCreateShader(GL_GEOMETRY_SHADER); break;
@@ -442,16 +442,16 @@ render_init(){DPZoneScoped;
 		const int format_attributes[] = {
 			WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
 			WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-			WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-			WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
-			WGL_COLOR_BITS_ARB,     32,
-			WGL_DEPTH_BITS_ARB,     24,
-			WGL_STENCIL_BITS_ARB,   8,
+			WGL_DOUBLE_BUFFER_ARB,	GL_TRUE,
+			WGL_PIXEL_TYPE_ARB,		WGL_TYPE_RGBA_ARB,
+			WGL_COLOR_BITS_ARB,		32,
+			WGL_DEPTH_BITS_ARB,		24,
+			WGL_STENCIL_BITS_ARB,	8,
 			WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
 			0
 		};
 		wglChoosePixelFormatARB((HDC)DeshWindow->context, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
-		if(!DescribePixelFormat((HDC)DeshWindow->context, format, sizeof(pfd), &pfd)){  win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
+		if(!DescribePixelFormat((HDC)DeshWindow->context, format, sizeof(pfd), &pfd)){	win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
 		if(format == 0){ win32_log_last_error("ChoosePixelFormatARB", renderSettings.crashOnError); return; }
 		if(!SetPixelFormat((HDC)DeshWindow->context, format, &pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
@@ -480,29 +480,28 @@ render_init(){DPZoneScoped;
 		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
 		
 		XFlush(linux.x11.display);
+		// print a nice message since loading opengl currently takes long enough for us to be able to see it :D
 		XDrawString(linux.x11.display, (X11Window)DeshWindow->handle, (GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
 		
 		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		
 		gladInstallGLXDebug();
-		
+
 		// get restore points 
 		Display* prev_display = glXGetCurrentDisplay();
 		GLXContext prev_context = glXGetCurrentContext();
-		
+	
 		// list of attributes to ask of GLX
-		int attributes[] = {
-			GLX_RGBA,            // true color
+		int attributes_config[] = {
 			GLX_DEPTH_SIZE, 24,  // 24 bit depth
 			GLX_STENCIL_SIZE, 8, // 8 bit stencil size
-			GLX_DOUBLEBUFFER,    // use a double buffer
-			GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB,
+			GLX_DOUBLEBUFFER,	 // use a double buffer
 			0,
 		};
 		
 		int n_elem;
-		GLXFBConfig* config = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes, &n_elem);
+		GLXFBConfig* config = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes_config, &n_elem);
 		
 		if(!config || !n_elem) {
 			LogEGl("Cannot find an appropriate framebuffer configuration with glXChooseFBConfig");
@@ -511,9 +510,18 @@ render_init(){DPZoneScoped;
 		
 		GLXFBConfig fbconfig = config[0];
 		XFree(config);
+
+		int attributes_visual[] = {
+			GLX_RGBA,
+			GLX_DOUBLEBUFFER,
+			GLX_DEPTH_SIZE, 24,  // 24 bit depth
+			GLX_STENCIL_SIZE, 8, // 8 bit stencil size
+			GLX_DOUBLEBUFFER,	 // use a double buffer
+			0,
+		};
 		
 		// get the best visual for our chosen attributes
-		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes);
+		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes_visual);
 		if(!vi) {
 			LogEGl("Cannot find an appropriate visual for the given attributes");
 			Assert(0);
@@ -683,11 +691,11 @@ render_update(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// update uniform buffers
 	{
-		uboVS.values.screen     = Vec2((f32)width, (f32)height);
-		uboVS.values.mousepos   = input_mouse_position();
+		uboVS.values.screen		= Vec2((f32)width, (f32)height);
+		uboVS.values.mousepos	= input_mouse_position();
 		uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, Vec2(DeshWindow->width,DeshWindow->height));
-		uboVS.values.time       = DeshTime->totalTime;
-		uboVS.values.enablePCF  = renderSettings.shadowPCF;
+		uboVS.values.time		= DeshTime->totalTime;
+		uboVS.values.enablePCF	= renderSettings.shadowPCF;
 		
 		glBindBuffer(GL_UNIFORM_BUFFER, uboVS.handle);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(uboVS.values), &uboVS.values, GL_STREAM_DRAW);
@@ -697,7 +705,7 @@ render_update(){DPZoneScoped;
 	//// build commands
 	{
 		//// ui commands ////
-		u64 ui_vb_size = Max(1000*sizeof(Vertex2),         renderTwodVertexCount * sizeof(Vertex2));
+		u64 ui_vb_size = Max(1000*sizeof(Vertex2),		   renderTwodVertexCount * sizeof(Vertex2));
 		u64 ui_ib_size = Max(3000*sizeof(RenderTwodIndex), renderTwodIndexCount  * sizeof(RenderTwodIndex));
 		if(ui_vb_size && ui_ib_size){
 			//create vertex array object and buffers if they dont exist
@@ -713,8 +721,8 @@ render_update(){DPZoneScoped;
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, uiBuffers.ibo_handle);
 			
 			//specify vertex packing
-			glVertexAttribPointer(0, 2,  GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
-			glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
+			glVertexAttribPointer(0, 2,  GL_FLOAT,		   GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
+			glVertexAttribPointer(1, 2,  GL_FLOAT,		   GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
 			glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
 			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
 			
@@ -729,7 +737,7 @@ render_update(){DPZoneScoped;
 			}
 			
 			//fill buffers
-			glBufferSubData(GL_ARRAY_BUFFER,         0, ui_vb_size, renderTwodVertexArray);
+			glBufferSubData(GL_ARRAY_BUFFER,		 0, ui_vb_size, renderTwodVertexArray);
 			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ui_ib_size, renderTwodIndexArray);
 		}
 		
@@ -756,10 +764,10 @@ render_update(){DPZoneScoped;
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempBuffers.ibo_handle);
 			
 			//specify vertex packing
-			glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
-			glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+			glVertexAttribPointer(0, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+			glVertexAttribPointer(1, 2,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
 			glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
-			glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
+			glVertexAttribPointer(3, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 			
 			//resize buffers if too small and update buffer sizes
@@ -773,9 +781,9 @@ render_update(){DPZoneScoped;
 			}
 			
 			//fill buffers
-			glBufferSubData(GL_ARRAY_BUFFER, 0,                 temp_fill_vb_size, renderTempFilledVertexArray);
+			glBufferSubData(GL_ARRAY_BUFFER, 0,					temp_fill_vb_size, renderTempFilledVertexArray);
 			glBufferSubData(GL_ARRAY_BUFFER, temp_fill_vb_size, temp_wire_vb_size, renderTempWireframeVertexArray);
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,                 temp_fill_ib_size, renderTempFilledIndexArray);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,					temp_fill_ib_size, renderTempFilledIndexArray);
 			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, temp_fill_ib_size, temp_wire_ib_size, renderTempWireframeIndexArray);
 		}
 		
@@ -826,12 +834,12 @@ render_update(){DPZoneScoped;
 			if(it->hidden) continue;
 			
 			//TODO(delle) this really sucks, can we bind once for all voxel buffers somehow?
-			glBindBuffer(GL_ARRAY_BUFFER,         (GLuint)(u64)it->vertex_buffer->buffer_handle);
+			glBindBuffer(GL_ARRAY_BUFFER,		  (GLuint)(u64)it->vertex_buffer->buffer_handle);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)(u64)it->index_buffer->buffer_handle);
-			glVertexAttribPointer(0, 3, GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
-			glVertexAttribPointer(1, 2, GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
-			glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
-			glVertexAttribPointer(3, 3, GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
+			glVertexAttribPointer(0, 3, GL_FLOAT,		  GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+			glVertexAttribPointer(1, 2, GL_FLOAT,		  GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+			glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,	sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
+			glVertexAttribPointer(3, 3, GL_FLOAT,		  GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 			
 			//TODO(delle) cache the chunk's matrix
@@ -872,7 +880,7 @@ render_update(){DPZoneScoped;
 	if(renderTwodVertexCount > 0 && renderTwodIndexCount > 0){
 		glBindVertexArray(uiBuffers.vao_handle);
 		glBindBuffer(GL_UNIFORM_BUFFER, push2D.handle);
-		push2D.values.scale     = {2.0f/f32(width), -2.0f/f32(height)};
+		push2D.values.scale		= {2.0f/f32(width), -2.0f/f32(height)};
 		push2D.values.translate = {-1.f, 1.f};
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(push2D.values), &push2D.values);
 		
@@ -883,7 +891,7 @@ render_update(){DPZoneScoped;
 		glUseProgram(programs.ui.handle);
 		
 		//NOTE I don't think using a 2D array would be any different than having a separate for loop
-		//     for each layer here, if it's worse tell me and ill fix it.
+		//	   for each layer here, if it's worse tell me and ill fix it.
 		forX(layer, TWOD_LAYERS){
 			forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
 				if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount == 0) continue;
@@ -923,7 +931,7 @@ render_update(){DPZoneScoped;
 		renderTempWireframeVertexCount = 0;
 		renderTempWireframeIndexCount  = 0;
 		renderTempFilledVertexCount = 0;
-		renderTempFilledIndexCount  = 0;
+		renderTempFilledIndexCount	= 0;
 		
 		//// model commands ////
 		renderModelCmdCount = 0;
@@ -965,7 +973,7 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	RenderMesh mgl{};
 	mgl.base = mesh;
 	mgl.vertexCount = mesh->vertexCount;
-	mgl.indexCount  = mesh->indexCount;
+	mgl.indexCount	= mesh->indexCount;
 	if(glMeshes.count){
 		mgl.vertexOffset = glMeshes.last->vertexOffset + glMeshes.last->vertexCount;
 		mgl.indexOffset  = glMeshes.last->indexOffset  + glMeshes.last->indexCount;
@@ -1011,16 +1019,16 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	}
 	
 	//copy mesh to buffers
-	glBindBuffer(GL_ARRAY_BUFFER,         meshBuffers.vbo_handle);
+	glBindBuffer(GL_ARRAY_BUFFER,		  meshBuffers.vbo_handle);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_handle);
-	glBufferSubData(GL_ARRAY_BUFFER,         meshBuffers.vbo_size, mesh_vb_size, mesh->vertexArray);
+	glBufferSubData(GL_ARRAY_BUFFER,		 meshBuffers.vbo_size, mesh_vb_size, mesh->vertexArray);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->indexArray);
 	
 	//specify vertex packing
-	glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
-	glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+	glVertexAttribPointer(0, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+	glVertexAttribPointer(1, 2,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
 	glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
-	glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
+	glVertexAttribPointer(3, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 	
 	//update buffer sizes
@@ -1049,12 +1057,12 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	//determine image type
 	switch(texture->type){
-		case TextureType_1D:         tgl.type = GL_TEXTURE_1D; break;
-		case TextureType_2D:         tgl.type = GL_TEXTURE_2D; break;
-		case TextureType_3D:         tgl.type = GL_TEXTURE_3D; break;
-		case TextureType_Cube:       tgl.type = GL_TEXTURE_CUBE_MAP; break;
-		case TextureType_Array_1D:   tgl.type = GL_TEXTURE_1D_ARRAY; break;
-		case TextureType_Array_2D:   tgl.type = GL_TEXTURE_2D_ARRAY; break;
+		case TextureType_1D:		 tgl.type = GL_TEXTURE_1D; break;
+		case TextureType_2D:		 tgl.type = GL_TEXTURE_2D; break;
+		case TextureType_3D:		 tgl.type = GL_TEXTURE_3D; break;
+		case TextureType_Cube:		 tgl.type = GL_TEXTURE_CUBE_MAP; break;
+		case TextureType_Array_1D:	 tgl.type = GL_TEXTURE_1D_ARRAY; break;
+		case TextureType_Array_2D:	 tgl.type = GL_TEXTURE_2D_ARRAY; break;
 		case TextureType_Array_Cube:{
 			if(GL_VERSION_TEST(4,0))
 				tgl.type = GL_TEXTURE_CUBE_MAP_ARRAY;
@@ -1071,7 +1079,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	glBindTexture(tgl.type, tgl.handle);
 	
 	//load texture to GPU
-	if      (texture->type == TextureType_1D){
+	if		(texture->type == TextureType_1D){
 		glTexImage1D(tgl.type, 0, tgl.format, texture->width, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
 	}else if(texture->type == TextureType_2D || texture->type == TextureType_Array_1D){
 		glTexImage2D(tgl.type, 0, tgl.format, texture->width, texture->height, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
@@ -1181,11 +1189,11 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 	forI(arrlenu(model->batchArray)){
 		if(!model->batchArray[i].indexCount) continue;
 		cmd[i].vertexOffset = glMeshes[model->mesh->render_idx].vertexOffset;
-		cmd[i].indexOffset  = glMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
-		cmd[i].indexCount   = model->batchArray[i].indexCount;
-		cmd[i].material     = model->batchArray[i].material->render_idx;
-		cmd[i].name         = model->name;
-		cmd[i].matrix       = *matrix;
+		cmd[i].indexOffset	= glMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
+		cmd[i].indexCount	= model->batchArray[i].indexCount;
+		cmd[i].material		= model->batchArray[i].material->render_idx;
+		cmd[i].name			= model->name;
+		cmd[i].matrix		= *matrix;
 		renderModelCmdCount += 1;
 	}
 }
@@ -1202,10 +1210,10 @@ void
 deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
-	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != (void*)((texture) ? (u64)texture->render_idx : 1))
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle		!= (void*)((texture) ? (u64)texture->render_idx : 1))
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorOffset != scissorOffset)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorExtent != scissorExtent)){
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = (void*)((texture) ? (u64)texture->render_idx : 1);
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle		   = (void*)((texture) ? (u64)texture->render_idx : 1);
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
@@ -1262,7 +1270,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 	u64   mapped_size = 0;
 	if(GL_VERSION_TEST(4,4)){
 		//NOTE: OpenGL4.4 introduced the glBufferStorage() and glNamedBufferStorage() functions which further restrict how
-		//      buffers can be interacted with but allow the driver to (hopefully) optimize the buffer with that knowledge.
+		//		buffers can be interacted with but allow the driver to (hopefully) optimize the buffer with that knowledge.
 		
 		GLbitfield storage_flags = 0;
 		if(mapping == RenderMemoryMapping_None){
@@ -1347,12 +1355,12 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 	
 	RenderBuffer* result = memory_pool_push(deshi__render_buffer_pool);
 	result->buffer_handle = (void*)(u64)buffer_handle;
-	result->size          = size;
+	result->size		  = size;
 	result->mapped_data   = mapped_data;
 	result->mapped_size   = mapped_size;
-	result->usage         = usage;
-	result->properties    = properties;
-	result->mapping       = mapping;
+	result->usage		  = usage;
+	result->properties	  = properties;
+	result->mapping		  = mapping;
 	return result;
 }
 
