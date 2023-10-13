@@ -35,11 +35,13 @@ global vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
 	return Vec3(u*tri0.x + v*tri1.x + w*tri2.x, u*tri0.y + v*tri1.y + w*tri2.y, u*tri0.z + v*tri1.z + w*tri2.z);
 }
 
-inline global vec3 MeshTriangleMidpoint(MeshTriangle* tri){
+inline global vec3 
+MeshTriangleMidpoint(MeshTriangle* tri){
 	return (tri->p[0] + tri->p[1] + tri->p[2]) / 3.f;
 }
 
-global MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
+global MeshFace* 
+FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshFace* closest_face = 0;
 	f32 max_projection = -INFINITY;
 	forI(mesh->faceCount){
@@ -52,7 +54,8 @@ global MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	return closest_face;
 }
 
-global vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
+global vec3 
+FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshVertex* closest_vertex = 0;
 	f32 max_projection = -INFINITY;
 	forI(mesh->vertexCount){
@@ -65,19 +68,23 @@ global vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal
 	return closest_vertex->pos;
 }
 
-inline global vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
+inline global vec3 
+ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
 	return target + (plane_normal * -Math::DistPointToPlane(target, plane_normal, plane_point));
 }
 
-inline global vec3 ClosestPointOnAABB(vec3 halfDims, vec3 target) {
+inline global vec3 
+ClosestPointOnAABB(vec3 halfDims, vec3 target) {
 	return Clamp(target, -halfDims, halfDims);
 }
 
-inline global vec3 ClosestPointOnSphere(float radius, vec3 target) {
+inline global vec3 
+ClosestPointOnSphere(float radius, vec3 target) {
 	return target.normalized() * radius;
 }
 
-global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
+global vec3
+ClosestPointOnHull(Mesh* mesh, vec3 target){
 	//find closest face to target based on the face normal
 	vec3 target_normal = target.normalized();
 	vec3 closest_normal = vec3::ZERO;
@@ -122,7 +129,8 @@ global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 }
 
 //TODO fix this
-global b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
+global b32 
+AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
 	f32 tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if(ray_direction.x > 0){
 		tmin = (aabb_min.x - ray_start.x) / ray_direction.x;

@@ -209,7 +209,7 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 
 //NOTE(delle) customize this as you see fit locally, but it should be `true` on commit
 #if BUILD_INTERNAL
-b32 g_logger_assert_on_error = true;
+b32 g_logger_assert_on_error = false;
 #endif //#if BUILD_INTERNAL
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

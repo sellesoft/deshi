@@ -21,6 +21,11 @@ Index:
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vars
+#include "core/window.h"
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/Xfixes.h>
 struct{
 	struct{
 		// points to the X server
@@ -29,8 +34,15 @@ struct{
 		int screen;
 		// the root window of the X windowing system
 		X11Window root;
+		// context for associating data (such as Window*) to XIDs
+		XContext context;
+
+		Cursor default_cursor;
+		Cursor hidden_cursor;
 
 		Atom WM_STATE;
+		Atom WM_PROTOCOLS;
+		Atom WM_DELETE_WINDOW;
 	}x11;
 }linux;
 
@@ -38,6 +50,7 @@ struct{
 //// @helpers
 
 int linux_error_handler(Display* display, XErrorEvent* event) {
+	NotImplemented; // TODO(sushi) this is quite useless right now, fix it up later if there's ever a need
 	switch(event->error_code){
 		case BadAccess: 			printf("A client attempts to grab a key/button combination already grabbed by another client.\n"
 							                "A client attempts to free a colormap entry that it had not already allocated or to free an entry in a colormap that was created with all entries writable.\n"
@@ -103,8 +116,6 @@ linux_keysym_to_key(KeySym k) {
 		default: return Key_NONE;
 	}
 }
-
-
 
 // handles a range of errors that can be given from errno
 #define StartFileErrnoHandler(result_name, err, return_error_value) {\
@@ -287,7 +298,6 @@ get_errno_print(u64 err, const char* tag, const char* funcname, str8 message) {
 }
 
 void print_errno(u64 err, const char* tag, const char* funcname, str8 message) {
-	DebugBreakpoint;
 	dstr8 r = get_errno_print(err, tag, funcname, message);
 	if(HasFlag(deshiStage, DS_LOGGER)){
 		LogE("linux", r.fin);
@@ -970,8 +980,6 @@ platform_init() {
 	file_create(STR8("data/cfg/"));
 	file_create(STR8("data/temp/"));
 
-	XSetErrorHandler(&linux_error_handler);
-	
 	// initialize display and screen
 	Display* display = linux.x11.display = XOpenDisplay(0);
 	if(!display) {
@@ -982,6 +990,12 @@ platform_init() {
 	X11Window root = linux.x11.root = XRootWindow(display, screen);
 
 	linux.x11.WM_STATE = XInternAtom(display, "WM_STATE", 0);
+	linux.x11.WM_PROTOCOLS = XInternAtom(display, "WM_PROTOCOLS", 0);
+	linux.x11.WM_DELETE_WINDOW = XInternAtom(display, "WM_DELETE_WINDOW", 0);
+
+	linux.x11.context = XUniqueContext();
+
+	linux.x11.default_cursor = XCreateFontCursor(linux.x11.display, XC_left_ptr);
 
 	ZeroMemory(DeshInput->zero, sizeof(b32) * MAX_KEYBOARD_KEYS); 
 
@@ -1003,10 +1017,22 @@ platform_update() {
 	char text[255];
 
 	// get the current amount of events in queue
-	u64 events_to_handle = XEventsQueued(linux.x11.display, QueuedAlready);
+	u64 events_to_handle = XEventsQueued(linux.x11.display, QueuedAfterFlush);
+
+	forI(window_windows.count) {
+		auto win = window_windows[i];
+		if(win->focused && win->cursor_mode == CursorMode_FirstPerson) {
+			XWarpPointer(linux.x11.display, 0, (X11Window)win->handle, 0, 0, 0, 0, win->width/2, win->height/2);
+		}
+	}
 
 	forI(events_to_handle){
 		XNextEvent(linux.x11.display, &event);
+		Window* win = 0;
+		if(XFindContext(linux.x11.display, event.xany.window, linux.x11.context, (XPointer*)&win)) {
+			LogE("linux", "XFindContext failed");
+			return false;
+		}
 		switch(event.type) {
 			case ConfigureNotify: {
 				XConfigureEvent cev = event.xconfigure;
@@ -1047,13 +1073,27 @@ platform_update() {
 				// 	DeshWindow->minimized = state->state == IconicState;
 				// 	Log("", "erm ", DeshWindow->minimized);
 				// }
-
-				
 			}break;	
 
 			case Expose: {
 				// TODO(sushi) if this ever seems useful
 			}break;
+
+			case FocusIn: {
+				XFocusChangeEvent ev = event.xfocus;
+				win->focused = true;
+				if(win->cursor_mode == CursorMode_FirstPerson) {
+					XFixesHideCursor(linux.x11.display, ev.window);
+				}
+			} break;	
+
+			case FocusOut: {
+				XFocusChangeEvent ev = event.xfocus;
+				win->focused = false;
+				if(win->cursor_mode == CursorMode_FirstPerson) {
+					XFixesShowCursor(linux.x11.display, ev.window);
+				}
+			} break;
 
 			case ButtonPress:
 			case ButtonRelease: {
@@ -1102,6 +1142,19 @@ platform_update() {
 					DeshInput->realKeyState[key] = 0;
 				}
 			}break;
+
+			case ClientMessage: {
+				XClientMessageEvent ev = event.xclient;
+				if(ev.message_type == linux.x11.WM_PROTOCOLS) {
+					Atom protocol = ev.data.l[0];
+					if(protocol == linux.x11.WM_DELETE_WINDOW) {
+						// user decided to close the window so exit in next loop and ensure that the cursor
+						// is shown if it was hidden earlier
+						platform_exit();
+						XFixesShowCursor(linux.x11.display, ev.window);
+					}
+				}
+			} break;
 		}
 	}
 	DeshTime->windowTime = reset_stopwatch(&update_stopwatch);
@@ -1137,9 +1190,9 @@ platform_update() {
 	DeshInput->realCharCount = 0;
 	DeshTime->inputTime = peek_stopwatch(update_stopwatch);
 
-	// forI(MAX_KEYBOARD_KEYS) {
-	// 	if(DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
-	// }
+	//forI(MAX_KEYBOARD_KEYS) {
+	//	if(DeshInput->newKeyState[i]) Log("", KeyCodeStrings[i & INPUT_KEY_MASK]);
+	//}
 
 	return !platform_exit_application;
 }
@@ -1724,6 +1777,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	s32 n_monitors;
 	XRRMonitorInfo* monitors = XRRGetMonitors(linux.x11.display, linux.x11.root, 1, &n_monitors);
 
+	// find the monitor that the cursor is current in and create the window in it 
 	XRRMonitorInfo selection;
 	forI(n_monitors){
 		XRRMonitorInfo monitor = monitors[i];
@@ -1750,7 +1804,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 
 	XSetStandardProperties(linux.x11.display, (X11Window)window->handle, (const char*)title.str, 0,0,0,0,0);
 
-	XSelectInput(linux.x11.display, (X11Window)window->handle, 
+	int res = XSelectInput(linux.x11.display, (X11Window)window->handle, 
 		  ExposureMask      // caused when an invisible window becomes visible, or when a hidden part of a window becomes visible
 		| ButtonPressMask   // mouse button pressed
 		| ButtonReleaseMask // mouse button released
@@ -1760,7 +1814,14 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 		| LeaveWindowMask
 		| PointerMotionMask // mouse movement event
 		| StructureNotifyMask // window change events
+		| FocusChangeMask
 	);
+
+	if(res == BadWindow) {
+		LogE("linux-window", "XSelectInput failed with: BadWindow");
+		return 0;
+	}
+
 	window->context = XCreateGC(linux.x11.display, (X11Window)window->handle, 0, 0);
 	XSetBackground(linux.x11.display, (GC)window->context, black);
 	XSetForeground(linux.x11.display, (GC)window->context, white);
@@ -1770,6 +1831,14 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	u32 bw,d;
 	X11Window groot,gchild;
 	XGetGeometry(linux.x11.display, handle, &groot, &window->x, &window->y, (u32*)&window->width, (u32*)&window->height, &bw, &d);
+
+	// save our window pointer into the context
+	XSaveContext(linux.x11.display, handle, linux.x11.context, (char*)window);
+	
+	Atom atoms[] = {
+		linux.x11.WM_DELETE_WINDOW,
+	};
+	XSetWMProtocols(linux.x11.display, handle, atoms, 1);
 
 	window_windows.add(window);
 
@@ -1786,7 +1855,6 @@ void window_close(Window* window){
 void
 window_swap_buffers(Window* window){
 	XFlush(linux.x11.display);
-	//X11::XSync(linux.x11.display, 0);
 }
 
 void window_display_mode(Window* window, DisplayMode displayMode){
@@ -1810,7 +1878,33 @@ window_set_title(Window* window, str8 title) {
 
 void 
 window_set_cursor_mode(Window* window, CursorMode mode){
-	NotImplemented;
+	window->cursor_mode = mode;
+	switch(mode) {
+		case CursorMode_Default: {
+			XUngrabPointer(linux.x11.display, CurrentTime);
+			XFixesShowCursor(linux.x11.display, (X11Window)window->handle);
+		} break;
+		case CursorMode_FirstPerson: {
+			int res = XGrabPointer(
+				linux.x11.display, 	       // display
+				(X11Window)window->handle, // grab window
+				True,                      // owner_events
+				ButtonPressMask | ButtonReleaseMask | PointerMotionMask, // event_mask
+				GrabModeAsync,             // pointer_mode
+				GrabModeAsync,             // keyboard_mode
+				(X11Window)window->handle, // confine_to
+				0,                         // cursor
+				CurrentTime);              // time
+			if(res != GrabSuccess) {
+				switch(res) {
+					case BadCursor: LogE("linux-window", "X11GrabPointer failed with BadCursor"); break;
+					case BadValue:  LogE("linux-window", "X11GrabPointer failed with BadValue");  break;
+					case BadWindow: LogE("linux-window", "X11GrabPointer failed with BadWindow"); break;
+				}
+			}
+			XFixesHideCursor(linux.x11.display, (X11Window)window->handle);
+		} break;	
+	}
 }
 
 void 

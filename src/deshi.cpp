@@ -343,14 +343,18 @@ local DeshiStage deshiStage = DS_NONE;
 #  define Time X11Time
 #  define KeyCode X11KeyCode
 #  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
+#  include "X11/Xatom.h"
+#  include "X11/Xresource.h"
+#  include "X11/cursorfont.h"
 #  include "X11/Xutil.h"
 #  include "X11/Xos.h"
 #  include "X11/extensions/Xrandr.h"
+#  include "X11/extensions/Xfixes.h" // TODO(sushi) this is really just to quickly handle hiding and showing the cursor, which we can do w/o this so handle it manually eventually
 #  undef Window
 #  undef Font
 #  undef Time
 #  undef KeyCode
-#  undef None // X defines this for whatever reason
+#  undef None 
 #  include "core/platforms/linux_deshi.cpp" 
 #elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  include <GLFW/glfw3.h>
