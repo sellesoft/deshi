@@ -23,6 +23,7 @@ Index:
 //// @vars
 #include "core/window.h"
 #include <X11/X.h>
+#include <X11/Xcursor/Xcursor.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
@@ -962,6 +963,42 @@ f64 peek_stopwatch(Stopwatch watch) {
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @platform
 
+void
+hide_cursor(Window* window) {
+	XDefineCursor(linux.x11.display, (X11Window)window->handle, linux.x11.hidden_cursor);
+}
+
+void
+show_cursor(Window* window) {
+	XDefineCursor(linux.x11.display, (X11Window)window->handle, linux.x11.default_cursor);
+}
+
+void
+capture_mouse(Window* window) {
+	int res = XGrabPointer(
+			linux.x11.display, 	       // display
+			(X11Window)window->handle, // grab window
+			True,                      // owner_events
+			ButtonPressMask | ButtonReleaseMask | PointerMotionMask, // event_mask
+			GrabModeAsync,             // pointer_mode
+			GrabModeAsync,             // keyboard_mode
+			(X11Window)window->handle, // confine_to
+			0,                         // cursor
+			CurrentTime);              // time
+	if(res != GrabSuccess) {
+		switch(res) {
+			case BadCursor: LogE("linux-window", "X11GrabPointer failed with BadCursor"); break;
+			case BadValue:  LogE("linux-window", "X11GrabPointer failed with BadValue");  break;
+			case BadWindow: LogE("linux-window", "X11GrabPointer failed with BadWindow"); break;
+		}
+	}
+}
+
+void
+release_mouse() {
+	XUngrabPointer(linux.x11.display, CurrentTime);
+}
+
 
 void
 platform_init() {
@@ -996,6 +1033,15 @@ platform_init() {
 	linux.x11.context = XUniqueContext();
 
 	linux.x11.default_cursor = XCreateFontCursor(linux.x11.display, XC_left_ptr);
+
+	// create a blank cursor for when we'd like to hide it 
+	XcursorImage* native = XcursorImageCreate(16,16);
+	native->xhot = native->yhot = 0;
+	forI(16*16) native->pixels[i] = 0;
+	linux.x11.hidden_cursor = XcursorImageLoadCursor(linux.x11.display, native);
+	XcursorImageDestroy(native);
+
+	// TODO(sushi) load other cursor shapes for various things
 
 	ZeroMemory(DeshInput->zero, sizeof(b32) * MAX_KEYBOARD_KEYS); 
 
@@ -1083,7 +1129,8 @@ platform_update() {
 				XFocusChangeEvent ev = event.xfocus;
 				win->focused = true;
 				if(win->cursor_mode == CursorMode_FirstPerson) {
-					XFixesHideCursor(linux.x11.display, ev.window);
+					hide_cursor(win);
+					capture_mouse(win);
 				}
 			} break;	
 
@@ -1091,7 +1138,8 @@ platform_update() {
 				XFocusChangeEvent ev = event.xfocus;
 				win->focused = false;
 				if(win->cursor_mode == CursorMode_FirstPerson) {
-					XFixesShowCursor(linux.x11.display, ev.window);
+					show_cursor(win);
+					release_mouse();
 				}
 			} break;
 
@@ -1151,7 +1199,7 @@ platform_update() {
 						// user decided to close the window so exit in next loop and ensure that the cursor
 						// is shown if it was hidden earlier
 						platform_exit();
-						XFixesShowCursor(linux.x11.display, ev.window);
+						show_cursor(win);
 					}
 				}
 			} break;
@@ -1881,28 +1929,12 @@ window_set_cursor_mode(Window* window, CursorMode mode){
 	window->cursor_mode = mode;
 	switch(mode) {
 		case CursorMode_Default: {
-			XUngrabPointer(linux.x11.display, CurrentTime);
-			XFixesShowCursor(linux.x11.display, (X11Window)window->handle);
+			release_mouse();
+			show_cursor(window);
 		} break;
 		case CursorMode_FirstPerson: {
-			int res = XGrabPointer(
-				linux.x11.display, 	       // display
-				(X11Window)window->handle, // grab window
-				True,                      // owner_events
-				ButtonPressMask | ButtonReleaseMask | PointerMotionMask, // event_mask
-				GrabModeAsync,             // pointer_mode
-				GrabModeAsync,             // keyboard_mode
-				(X11Window)window->handle, // confine_to
-				0,                         // cursor
-				CurrentTime);              // time
-			if(res != GrabSuccess) {
-				switch(res) {
-					case BadCursor: LogE("linux-window", "X11GrabPointer failed with BadCursor"); break;
-					case BadValue:  LogE("linux-window", "X11GrabPointer failed with BadValue");  break;
-					case BadWindow: LogE("linux-window", "X11GrabPointer failed with BadWindow"); break;
-				}
-			}
-			XFixesHideCursor(linux.x11.display, (X11Window)window->handle);
+			capture_mouse(window);
+			hide_cursor(window);
 		} break;	
 	}
 }
