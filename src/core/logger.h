@@ -209,7 +209,11 @@ logger_comma_log(str8 caller_file, upt caller_line, str8 tag, Type log_type, T..
 
 //NOTE(delle) customize this as you see fit locally, but it should be `true` on commit
 #if BUILD_INTERNAL
+#if DESHI_DISABLE_ASSERT_ON_ERROR
+b32 g_logger_assert_on_error = false;
+#else
 b32 g_logger_assert_on_error = true;
+#endif
 #endif //#if BUILD_INTERNAL
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

@@ -681,11 +681,32 @@ struct uiItem{
 	
 	Type update_trigger;
 	
-	void (*__update)(uiItem*);
-	void (*__evaluate)(uiItem*);
-	void (*__generate)(uiItem*);
-	u32  (*__hash)(uiItem*);
-	void (*__cleanup)(uiItem*);
+	// TODO(sushi) we may want to pull the following functions out into a 
+	//             table stored else where, like vtables. Performance 
+	//             shouldn't take much of a hit since the system is focused
+	//             on retained ui and this stuff shouldn't be invoked 
+	//             very frequenty (probably)
+
+	// called according to 'update_trigger' during ui_update
+	// (optional)
+	void    (*__update)(uiItem*);
+	// determines how the item is sized and positioned 
+	// relative to other items
+	// (optional)
+	void    (*__evaluate)(uiItem*);
+	// generates draw information for rendering the item
+	// (required)
+	void    (*__generate)(uiItem*);
+	// determines how to hash a custom item
+	// (optional) but without this the item won't dynamically respond to style changes 
+	u32     (*__hash)(uiItem*);
+	// cleans up anything the item may leave behind upon deletion
+	// (optional) but please implement this if you allocate data
+	void    (*__cleanup)(uiItem*);
+	// called when an item is copied. it's up to the widget whether
+	// they share certain memory or not (such as two text objects sharing the same text buffer)
+	// (required if you want to use deep_copy)
+	uiItem* (*__copy)(uiItem*);
 	
 	str8 file_created;
 	upt  line_created;
@@ -697,6 +718,10 @@ struct uiItem{
 	//this only applies to immediate mode items 	
 	b32 cached;
 	
+	// breaks the program when this item is encountered in ui_update
+	b32 break_on_update;
+	b32 break_on_evaluate;
+
 	struct{
 		u32 evals;
 		u32 draws;
@@ -711,11 +736,12 @@ struct uiItemSetup{
 	uiStyle* style; 
 	str8 file; 
 	upt line; 
-	void (*update)(uiItem*); 
 	Type update_trigger; 
-	void (*generate)(uiItem*); 
-	void (*evaluate)(uiItem*);
-	u32  (*hash)(uiItem*);
+	void    (*update)(uiItem*); 
+	void    (*generate)(uiItem*); 
+	void    (*evaluate)(uiItem*);
+	u32     (*hash)(uiItem*);
+	uiItem* (*copy)(uiItem*);
 	
 	vec2i* drawinfo_reserve;
 	u32 drawcmd_count;
@@ -780,6 +806,22 @@ inline void
 ui_item_show(uiItem* item) {
 	RemoveFlag(item->style.display, display_hidden);
 }
+
+// base implementation of uiItem copying
+// this should be used by widgets implementing __copy
+// instead of trying to copy the data manually
+// expects the new uiItem to have already been allocated
+// this is a *shallow copy*, it does not copy the items 
+// children, the node of the new item will be zeroed
+// file_created and line_created will be zeroed and it's up
+// to the caller to set them if desired
+void ui_item_copy_base(uiItem* to, uiItem* from);
+
+// copies the given uiItem as well as all of its children exactly
+// and returns a pointer the result. The item is placed as a 
+// sibling of the given item
+// this is invalid to use on immediate items (for now, not sure if that is useful)
+uiItem* ui_deep_copy(uiItem* item);
 
 uiItem* deshi__ui_make_item(uiStyle* style, str8 file, upt line);
 #define ui_make_item(style) deshi__ui_make_item((style), str8l(__FILE__), __LINE__)
@@ -871,7 +913,6 @@ struct uiContext{
 	b32 updating; //set true while ui_update is running
 	
 	//// memory ////
-	//b32 cleanup; //set to true when ui needs to consider cleaning up/organizing its memory 	
 	arrayT<uiItem*> items;
 	arrayT<uiItem*> immediate_items;
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next

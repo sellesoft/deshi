@@ -155,7 +155,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `UI`
 ----
-[!!!,*  ,22/08/09,Tweak]   reimplement slider and checkbox
 [!!!,** ,22/08/09,Feature] add tabs widget
 [!! ,** ,22/08/09,Feature] add tables widget
 [!  ,*  ,22/08/09,Feature] add combo widget (requires z-layering)

@@ -55,6 +55,7 @@ Index:
 #define DESHI_UI2_WIDGETS_H
 #include "core/input.h"
 #include "ui.h"
+#include <cctype>
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,6 +124,12 @@ enum{
 	slider_dragger_round,
 };
 
+// TODO(sushi) currently if there are two sliders on screen that are attached to the same 
+//             variable, the sliders will not move together. This can be fixed by calculating
+//             the position of the dragger in ui_gen_slider instead of in its callback,
+//             but would be less performant as we have to check what kind of slider we're
+//             dealing with in the gen function. We could also have a separate gen for each
+//             type but that's kinda bloated.
 struct uiSlider{
 	uiItem item;
 	
@@ -454,15 +461,27 @@ ui_update_text(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
+ui_copy_text(uiItem* old_item) {DPZoneScoped;
+	auto old_text = ui_get_text(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiText));
+	auto new_text = ui_get_text(new_item);
+	ui_item_copy_base(new_item, old_item);
+	new_text->text = text_init(old_text->text.buffer.fin, old_text->text.buffer.allocator);
+	new_text->text.cursor = old_text->text.cursor;
+	return new_item;
+}
+
+uiItem*
 deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiText);
 	setup.style = style;
 	setup.file = file;
 	setup.line = line;
-	setup.update = &ui_update_text;
-	setup.generate = &ui_gen_text;
-	setup.evaluate = &ui_eval_text;
+	setup.update = ui_update_text;
+	setup.generate = ui_gen_text;
+	setup.evaluate = ui_eval_text;
+	setup.copy = ui_copy_text;
 	vec2i counts[1] = {render_make_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
@@ -575,8 +594,8 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 		repeat = 1;
 	}
 	
-	//allows input on first press, then allows repeats when the repeat bool is set on input
-	//do action depending on bind pressed
+	// allows input on first press, then allows repeats when the repeat bool is set on input
+	// do action depending on bind pressed
 #define CanDoInput(x) (key_pressed(x) || key_down(x) && repeat)
 	if(CanDoInput(g_ui->keys.inputtext.cursor.left))           text_move_cursor_left(t),             item->dirty = 1;
 	if(CanDoInput(g_ui->keys.inputtext.cursor.left_word))      text_move_cursor_left_word(t),        item->dirty = 1;
@@ -599,7 +618,8 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 #undef CanDoInput
 	
 	//text input
-	if(DeshInput->charCount){
+	// NOTE(sushi) manually filter out control characters until I setup linux's input to do so there
+	if(DeshInput->charCount && !iscntrl(DeshInput->charIn[0])){
 		text_insert_string(t, {DeshInput->charIn,(s64)DeshInput->charCount});
 		item->dirty = 1;
 	}
@@ -625,15 +645,30 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
+ui_copy_input_text(uiItem* old_item) {DPZoneScoped;
+	auto old_text = ui_get_input_text(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiText));
+	auto new_text = ui_get_input_text(new_item);
+	ui_item_copy_base(new_item, old_item);
+
+	new_text->style = old_text->style;
+	new_text->text = text_init(new_text->text.buffer.fin, new_text->text.buffer.allocator);
+	new_text->text.cursor = old_text->text.cursor;
+	new_text->preview = old_text->preview;
+	return new_item;
+}
+
+uiItem*
 deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiInputText);
 	setup.style = style;
 	setup.file = file;
 	setup.line = line;
-	setup.update = &ui_update_input_text;
-	setup.generate = &ui_gen_input_text;
-	setup.evaluate = &ui_eval_input_text;
+	setup.update = ui_update_input_text;
+	setup.generate = ui_gen_input_text;
+	setup.evaluate = ui_eval_input_text;
+	setup.copy = ui_copy_input_text;
 	vec2i counts[1] = {render_make_text_counts(str8_length(preview))+render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
@@ -726,13 +761,29 @@ ui_slider_callback(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
+ui_copy_slider(uiItem* old_item) {
+	auto old_slider = ui_get_slider(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiSlider));
+	auto new_slider = ui_get_slider(new_item);
+	ui_item_copy_base(new_item, old_item);
+
+	new_slider->style = old_slider->style;
+	new_slider->maxf32 = old_slider->maxf32;
+	new_slider->minf32 = old_slider->minf32;
+	new_slider->varf32 = old_slider->varf32;
+	new_slider->type = old_slider->type;
+	return new_item;
+}
+
+uiItem*
 ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiSlider);
 	setup.style = style;
 	setup.file = file;
 	setup.line = line;
-	setup.generate = &ui_gen_slider;
+	setup.generate = ui_gen_slider;
+	setup.copy = ui_copy_slider;
 	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
@@ -796,7 +847,7 @@ deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file,
 
 
 void
-ui_gen_checkbox(uiItem* item){
+ui_gen_checkbox(uiItem* item){DPZoneScoped;
 	auto cb = ui_get_checkbox(item);
 	auto dc = item->drawcmds;
 	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
@@ -815,38 +866,25 @@ ui_gen_checkbox(uiItem* item){
 	}
 
 	dc->counts_used = counts;
-
-
-	/*
-	uiCheckbox* data = uiGetCheckbox(item);
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	vec2i counts = {0};	
-	
-	vec2 fillingpos = item->pos_screen + data->style.fill_padding + item->pos_client;
-	vec2 fillingsize = item->csize - data->style.fill_padding * 2;
-	
-	counts+=gen_background(item, vp, ip, counts);
-	counts+=gen_border(item, vp, ip, counts);
-	
-	if(!data->var){
-		item_error(item, "A checkbox was created but was given no boolean to act on.");
-		return;
-	}
-	if(*data->var){
-		counts+=render_make_filledrect(vp,ip,counts,fillingpos,fillingsize,data->style.colors.filling);
-	}
-	
-	dc->counts_used = counts;
-	*/
 }
 
 void
-ui_checkbox_callback(uiItem* item){
+ui_checkbox_callback(uiItem* item){DPZoneScoped;
 	auto cb = ui_get_checkbox(item);
 	*cb->var = !*cb->var;
 	item->dirty = 1;
+}
+
+uiItem*
+ui_copy_checkbox(uiItem* old_item) {DPZoneScoped;
+	auto old_checkbox = ui_get_checkbox(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiCheckbox));
+	auto new_checkbox = ui_get_checkbox(new_item);
+	ui_item_copy_base(new_item, old_item);
+
+	new_checkbox->style = old_checkbox->style;
+	new_checkbox->var = old_checkbox->var;
+	return new_item;
 }
 
 uiItem*
@@ -858,6 +896,7 @@ deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	setup.line = line;
 	setup.generate = ui_gen_checkbox;
 	setup.hash = checkbox_style_hash;
+	setup.copy = ui_copy_checkbox;
 	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;

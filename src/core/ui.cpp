@@ -40,6 +40,7 @@ Index:
 #include "core/memory.h"
 #include "core/render.h"
 #include "core/window.h"
+#include "kigu/common.h"
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -324,6 +325,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	item->__generate     = setup.generate;
 	item->__evaluate     = setup.evaluate;
 	item->__hash         = setup.hash;
+	item->__copy         = setup.copy;
 	
 	//for now, a cached items drawcmds are always regenerated
 	//TODO(sushi) eventually we should only do this if we need to, that or we can put a rule on items that their drawcmd count should never
@@ -408,6 +410,82 @@ b32 ui_item_hovered(uiItem* item, b32 strict){
 	return mouse_in_item(item);
 }
 
+uiItem*
+ui_deep_copy_lower(uiItem* item) {
+	Assert(item->__copy, "deep copied items are required to implemented __copy");
+
+	// allocate a new item with the same size
+	auto nu = (uiItem*)memalloc(item->memsize);
+
+	// copy all memory literally
+	CopyMemory(nu, item, item->memsize);
+
+	// clear the node since we're about to replace all 
+	// children with copies
+	nu->node = {0};
+
+	// invoke deep_copy on all children first
+	for(auto i = (uiItem*)item->node.first_child; i; i = (uiItem*)i->node.next) {
+		insert_last(&nu->node, &ui_deep_copy_lower(i)->node);
+	}
+	
+	nu->drawcmds = ui_make_drawcmd(item->drawcmd_count);
+
+	// allocate drawcmds for this item
+	forI(item->drawcmd_count) {
+		auto dc = item->drawcmds + i;
+		ui_drawcmd_alloc(nu->drawcmds + i, dc->counts_reserved);
+	}
+
+	nu->dirty = true;
+	
+	return nu;
+}
+
+uiItem*
+ui_deep_copy(uiItem* item) {
+	Assert(item, "ui_deep_copy passed a null item");
+	Assert(item != &g_ui->base, "cannot deep copy base item");
+	Assert(!g_ui->updating, "cannot create new items during ui_update");
+
+	auto i = ui_deep_copy_lower(item);
+	insert_last(item->node.parent, &i->node);
+
+	return i;
+}
+
+void
+ui_item_copy_base(uiItem* to, uiItem* from) {DPZoneScoped;
+	// TODO(sushi) consider automatically appending '-copy' to the id here
+	to->id  = from->id;
+	to->userVar = from->userVar;
+	to->style = from->style;
+	to->action = from->action;
+	// should this be copied?
+	to->action_data = from->action_data;
+	to->action_trigger = from->action_trigger;
+	to->update_trigger = from->update_trigger;
+	to->__update = from->__update;
+	to->__evaluate = from->__evaluate;
+	to->__generate = from->__generate;
+	to->__hash = from->__hash;
+	to->__cleanup = from->__cleanup;
+	to->__copy = from->__copy;
+	to->file_created = {};
+	to->line_created = 0;
+	to->memsize = from->memsize;
+}
+
+// internal copy function for plain uiItems
+// this should NOT be used for widgets!!!
+// incorrect behavoir will occur if so!
+uiItem*
+ui_copy_item(uiItem* item) { DPZoneScoped;
+	auto nu = (uiItem*)memalloc(sizeof(uiItem));
+	ui_item_copy_base(nu, item);
+	return nu;
+}
+
 void ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
@@ -428,6 +506,7 @@ deshi__ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	setup.file = file;
 	setup.line = line;
 	setup.generate = &ui_gen_item;
+	setup.copy = ui_copy_item;
 	setup.drawcmd_count = 1;
 	vec2i counts[1] = {
 		render_make_filledrect_counts() + render_make_rect_counts()
@@ -648,6 +727,10 @@ b32 last_flex_floored = 1;
 
 //reevaluates an entire brach of items
 void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
+#if BUILD_SLOW
+	if(item->break_on_evaluate) DebugBreakpoint;
+#endif
+
 	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
 	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically sized child.
 	arrayT<u32> already_evaluated;
@@ -1068,8 +1151,10 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
-	
-	//if(str8_begins_with(item->id, str8l("suugu.canvas.element"))) DebugBreakpoint;
+
+#if BUILD_SLOW
+	if(item->break_on_update) DebugBreakpoint;
+#endif
 	
 	if(g_ui->hovered == item && item->style.focus && input_lmouse_pressed()){
 		move_to_parent_last(&item->node);

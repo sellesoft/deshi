@@ -1186,6 +1186,9 @@ platform_update() {
 					DeshInput->realKeyState[key] = 1;
 				}
 				KeySym ret;
+				// TODO(sushi) filter out control characters here
+				//             idek if this is necessary as im not sure we *really* need to support
+				//             multiple keys being input at the same time 
 				DeshInput->realCharCount += XLookupString(&event.xkey, (char*)DeshInput->charIn + DeshInput->charCount, 256, &ret, 0);
 			}break;
 
