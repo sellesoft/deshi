@@ -769,6 +769,18 @@ inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
 //just checks if the mouse is within the items bounds
 b32 ui_item_hovered(uiItem* item, b32 strict = 1);
 
+// helper to make an item hidden
+inline void 
+ui_item_hide(uiItem* item) {
+	AddFlag(item->style.display, display_hidden);
+}
+
+// helper to reveal an item
+inline void 
+ui_item_show(uiItem* item) {
+	RemoveFlag(item->style.display, display_hidden);
+}
+
 uiItem* deshi__ui_make_item(uiStyle* style, str8 file, upt line);
 #define ui_make_item(style) deshi__ui_make_item((style), str8l(__FILE__), __LINE__)
 

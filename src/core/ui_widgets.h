@@ -53,6 +53,7 @@ Index:
 */
 #ifndef DESHI_UI2_WIDGETS_H
 #define DESHI_UI2_WIDGETS_H
+#include "core/input.h"
 #include "ui.h"
 
 
@@ -205,7 +206,7 @@ struct uiCheckbox{
 };
 
 
-#define ui_get_checkbox(x) (uiCheckbox*)(x)
+#define ui_get_checkbox(x) ((uiCheckbox*)(x))
 
 inline u32 checkbox_style_hash(uiItem* item){
 	uiCheckbox* data = ui_get_checkbox(item);
@@ -659,114 +660,92 @@ deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZ
 
 void
 ui_gen_slider(uiItem* item){DPZoneScoped;
-	FixMe;
-	/*
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	vec2i counts = {0};	
-	uiSlider* data = uiGetSlider(item);
+	auto dc = item->drawcmds;
+	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	vec2i counts = {0};
+	auto s = ui_get_slider(item);
+
+	vec2 pos = item->pos_screen;
+	vec2 size = item->size;
+
+	counts += ui_gen_background(item, vp, ip, counts);
+	counts += ui_gen_border(item, vp, ip, counts);
+
+	counts += render_make_filledrect(vp, ip, counts, 
+			  Vec2(pos.x, pos.y + size.y * (1 - s->style.rail_thickness)/2),
+			  Vec2(size.x, size.y * s->style.rail_thickness),
+			  s->style.colors.rail);
 	
-	vec2 pos = item->pos_screen + item->pos_client;
-	vec2 size = item->csize;
-	
-	counts+=gen_background(item, vp, ip, counts);
-	counts+=gen_border(item, vp, ip, counts);
-	
-	counts+=render_make_filledrect(vp,ip,counts,
-								   Vec2(pos.x, pos.y + size.y*(1 - data->style.rail_thickness)/2),
-								   Vec2(size.x, size.y * data->style.rail_thickness),
-								   data->style.colors.rail
-								   );
-	
-	if(data->style.dragger_shape == slider_dragger_rect){
-		vec2 dragp = Vec2(pos.x+data->pos, pos.y);
-		vec2 drags = Vec2(data->width, size.y);
-		counts+=render_make_filledrect(vp,ip,counts,dragp,drags,data->style.colors.dragger);
-	}else if(data->style.dragger_shape == slider_dragger_round){
+	if(s->style.dragger_shape == slider_dragger_rect) {
+		counts += render_make_filledrect(vp, ip, counts,
+				Vec2(pos.x + s->pos, pos.y),
+				Vec2(s->width, size.y),
+				s->style.colors.dragger);
+	} else {
 		NotImplemented;
 	}
+
 	dc->counts_used = counts;
-	*/
 }
 
 void
 ui_slider_callback(uiItem* item){DPZoneScoped;
-	FixMe;
-	/*
-	uiSlider* data = uiGetSlider(item);
-	vec2 mp = input_mouse_position();
-	vec2 lmp = mp - item->pos_screen;
-	switch(data->type){
-		case 0:{
-			f32 dragpos;
-			f32 dragwidth;
-			f32  min = data->minf32;
-			f32  max = data->maxf32;
-			f32* var = data->varf32;
+	auto s   = ui_get_slider(item);
+	auto mp  = input_mouse_position();
+	auto lmp = mp - item->pos_screen;
+	switch(s->type) {
+		case 0: {
+			f32 dragpos, dragwidth,
+				min = s->minf32,
+				max = s->maxf32,
+			   *var = s->varf32;
+			
 			*var = Clamp(*var, min, max);
-			dragwidth = item->width/8;
-			dragpos = Remap(*var, 0.f, item->cwidth-dragwidth, min, max);
-			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, Vec2(dragpos,0), Vec2(dragwidth, item->cheight))){
-				data->active = 1;
-				data->mouse_offset = -lmp.x + dragpos;
+			dragwidth = item->width / 8;
+			dragpos = Remap(*var, 0.f, item->width-dragwidth, min, max);
+			if(input_lmouse_pressed() && 
+			   Math::PointInRectangle(lmp, Vec2(dragpos, 0), Vec2(dragwidth, item->height))) {
+				s->active = true;
+				s->mouse_offset = -lmp.x + dragpos;
 			}
-			if(data->active){
-				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->cwidth-dragwidth), min, max, 0.f, item->cwidth-dragwidth);
-				item->dirty = 1;
+			if(s->active) {
+				*var = Remap(Clamp(lmp.x + s->mouse_offset, 0.f, item->width - dragwidth), min, max, 0.f, item->width - dragwidth);
+				item->dirty = true;
 				item->action_trigger = action_act_always;
 			}
-			if(input_lmouse_released()){
-				data->active = 0;
+			if(input_lmouse_released()) {
+				s->active = false;
 				item->action_trigger = action_act_mouse_hover;
 			}
-			data->width = dragwidth;
-			data->pos = dragpos;
-		}break;
-		case 1:{NotImplemented;}break;
-		case 2:{NotImplemented;}break;
+			s->width = dragwidth;
+			s->pos = dragpos;
+		} break;
+		default: NotImplemented;
 	}
-	*/
 }
 
 uiItem*
 ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	FixMe;
-	// auto [item, datav] = init_item(sizeof(uiSlider), offsetof(uiSlider, item), file, line);
-	// uiSlider* data = (uiSlider*)datav;
-	// ui_setup_item(item, style, file, line);
-	
-	// if(g_ui->updating){
-	// 	item_error(item, 
-	// 	"\n\tAttempted to make an item during ui_update().\n",
-	// 	  "\tui_update() requires that all items are made outside of it.\n",
-	// 	  "\tDid you try to make an item in another item's action?");
-	// 	Assert(0);	
-	// }
-	
-	// item->memsize = sizeof(uiSlider);
-	// item->__generate = &ui_gen_slider;
-	
-	// vec2i counts = //reserve enough room for slider rail, dragger, and outline
-	// 	render_make_filledrect_counts()*2+
-	// 	render_make_rect_counts();
-	
-	// item->drawcmds = make_drawcmd(1);
-	// item->drawcmd_count = 1;
-	// drawcmd_alloc(item->drawcmds, counts);
-	
-	// item->action_trigger = action_act_mouse_hover;
-	
-	// //setup trailing data 
-	
-	// data->style.dragger_shape = slider_dragger_rect;
-	// data->style.rail_thickness = 1;
-	// data->style.colors.rail = color(80,80,80);
-	// data->style.colors.dragger = color(14,50,100);
-	
-	// item->__hash = &slider_style_hash;
-	// return item;
-	return 0;
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiSlider);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = &ui_gen_slider;
+	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 1;
+
+	auto item = ui_setup_item(setup);
+	item->action_trigger = action_act_mouse_hover;
+
+	auto s = ui_get_slider(item);
+	s->style.colors.rail = color(80,80,80);
+	s->style.colors.dragger = color(14,50,100);
+	item->__hash = slider_style_hash;
+
+	return item;
 }
 
 uiItem*
@@ -774,10 +753,11 @@ deshi__ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file,
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	ui_get_slider(item)->minf32 = min;
-	ui_get_slider(item)->maxf32 = max;
-	ui_get_slider(item)->varf32 = var;
-	ui_get_slider(item)->type = 0;
+	auto s = ui_get_slider(item);
+	s->minf32 = min;
+	s->maxf32 = max;
+	s->varf32 = var;
+	s->type = 0;
 	
 	return item;
 }
@@ -787,10 +767,11 @@ deshi__ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file,
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	ui_get_slider(item)->minu32 = min;
-	ui_get_slider(item)->maxu32 = max;
-	ui_get_slider(item)->varu32 = var;
-	ui_get_slider(item)->type = 1;
+	auto s = ui_get_slider(item);
+	s->minu32 = min;
+	s->maxu32 = max;
+	s->varu32 = var;
+	s->type = 1;
 	
 	return item;
 }
@@ -800,10 +781,11 @@ deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file,
 	uiItem* item = ui_make_slider(style, file, line);
 	
 	item->action = &ui_slider_callback;
-	ui_get_slider(item)->mins32 = max;
-	ui_get_slider(item)->maxs32 = max;
-	ui_get_slider(item)->vars32 = var;
-	ui_get_slider(item)->type = 2;
+	auto s = ui_get_slider(item);
+	s->mins32 = max;
+	s->maxs32 = max;
+	s->vars32 = var;
+	s->type = 2;
 	
 	return item;
 }
@@ -815,7 +797,26 @@ deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file,
 
 void
 ui_gen_checkbox(uiItem* item){
-	FixMe;
+	auto cb = ui_get_checkbox(item);
+	auto dc = item->drawcmds;
+	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	vec2i counts = {0};
+
+	vec2 fillpos = item->pos_screen + cb->style.fill_padding;
+	vec2 fillsiz = item->size - 2 * cb->style.fill_padding;
+
+	counts += ui_gen_background(item, vp, ip, counts);
+	counts += ui_gen_border(item, vp, ip, counts);
+
+	Assert(cb->var, "Null data pointer for checkbox"); 
+	if(*cb->var) {
+		counts += render_make_filledrect(vp, ip, counts, fillpos, fillsiz, cb->style.colors.filling);
+	}
+
+	dc->counts_used = counts;
+
+
 	/*
 	uiCheckbox* data = uiGetCheckbox(item);
 	uiDrawCmd* dc = item->drawcmds;
@@ -843,50 +844,35 @@ ui_gen_checkbox(uiItem* item){
 
 void
 ui_checkbox_callback(uiItem* item){
-	FixMe;
-	/*
-	uiCheckbox* data = uiGetCheckbox(item);
-	*data->var = !*data->var;
+	auto cb = ui_get_checkbox(item);
+	*cb->var = !*cb->var;
 	item->dirty = 1;
-	*/
 }
 
 uiItem*
 deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
-	FixMe;
-	// auto [item, datav] = init_item(sizeof(uiCheckbox), offsetof(uiCheckbox, item), file, line);
-	// uiCheckbox* data = (uiCheckbox*)datav;
-	// ui_setup_item(item, style, file, line);
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiCheckbox);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_checkbox;
+	setup.hash = checkbox_style_hash;
+	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 1;
+
+	auto item = ui_setup_item(setup);
+	item->action = ui_checkbox_callback;
+	item->action_trigger = action_act_mouse_pressed;
+
+	auto cb = ui_get_checkbox(item);
+	cb->style.colors.filling = color(100, 150, 200);
+	cb->style.fill_type = checkbox_fill_box;
+	cb->style.fill_padding = {2,2};
+	cb->var = var;
 	
-	// if(g_ui->updating){
-	// 	item_error(item, 
-	// 	"\n\tAttempted to make an item during ui_update().\n",
-	// 	  "\tui_update() requires that all items are made outside of it.\n",
-	// 	  "\tDid you try to make an item in another item's action?");
-	// 	Assert(0);	
-	// }
-	
-	// ui_setup_item(action, action_trigger, hash, generate, evaluate);
-	
-	// item->action = &ui_checkbox_callback;
-	// item->__hash = &checkbox_style_hash;
-	// item->__generate = *ui_gen_checkbox;
-	// item->action_trigger = action_act_mouse_pressed;
-	
-	// data->style.colors.filling = color(100,150,200);
-	// data->style.fill_type = checkbox_fill_box;
-	// data->style.fill_padding = vec2{2,2};
-	// data->var = var;
-	
-	// vec2i counts = //reserve enough room for background, box filling, and outline
-	// 	render_make_filledrect_counts()*2+
-	// 	render_make_rect_counts();
-	
-	// item->drawcmds = make_drawcmd(1);
-	// item->drawcmd_count = 1;
-	// drawcmd_alloc(item->drawcmds, counts);
-	
-	return 0;
+	return item;
 }
 
 
