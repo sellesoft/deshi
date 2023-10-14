@@ -1819,7 +1819,10 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 		allocation = (u8*)calloc(1, total_size);
 #endif            //DESHI_MAC
 		retries++;
-		if(!allocation) printf("[MEMORY-ERROR] Failed to allocate memory from OS. Retrying (%u)", retries);
+		if(!allocation){
+			base_address = 0; //give up on specifying the address if we failed since it's a likely cause
+			printf("[\x1b[31mMEMORY-ERROR\x1b[0m] Failed to allocate memory from OS. Retrying (%u)\n", retries);
+		}
 	}
 	Assert(allocation, "Failed to allocate memory from the OS");
 	

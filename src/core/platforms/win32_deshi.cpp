@@ -2003,7 +2003,7 @@ deshi__thread_worker((Thread*)in);
 }
 
 void 
-threader_init(u32 max_jobs){DPZoneScoped;
+threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs){DPZoneScoped;
 	NotImplemented;
 	/*
 	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");

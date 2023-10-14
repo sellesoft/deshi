@@ -367,7 +367,7 @@ local DeshiStage deshiStage = DS_NONE;
 //// renderer cpp (and libs) ////
 #if DESHI_VULKAN
 #  if DESHI_WINDOWS
-     #define VK_USE_PLATFORM_WIN32_KHR
+#    define VK_USE_PLATFORM_WIN32_KHR
 #    include <vulkan/vulkan.h>
 #    include <shaderc/shaderc.h>
 #  elif DESHI_LINUX //#if DESHI_WINDOWS

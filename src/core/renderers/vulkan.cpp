@@ -43,9 +43,6 @@ Index:
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_types
-#include "math/math.h"
-#include <vulkan/vulkan_core.h>
-#include <vulkan/vulkan_xlib.h>
 struct TextureVk{
 	Texture*       base;
 	VkImage        image;
@@ -515,14 +512,10 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSi
 	resultVk = vkAllocateMemory(device, &allocInfo, allocator, &buffer_memory); AssertVk(resultVk);
 	resultVk = vkBindBufferMemory(device, buffer, buffer_memory, 0); AssertVk(resultVk);
 	
-	const auto align_to = physicalDeviceProperties.limits.nonCoherentAtomSize;
-
-	new_size = RoundUpTo(new_size, align_to);
-
 	if(buffer_size){
 		void* old_buffer_data; void* new_buffer_data;
-		resultVk = vkMapMemory(device, old_buffer_memory, 0, buffer_size, 0, &old_buffer_data); AssertVk(resultVk);
-		resultVk = vkMapMemory(device, buffer_memory,     0, new_size,    0, &new_buffer_data); AssertVk(resultVk);
+		resultVk = vkMapMemory(device, old_buffer_memory, 0, buffer_size,         0, &old_buffer_data); AssertVk(resultVk);
+		resultVk = vkMapMemory(device, buffer_memory,     0, aligned_buffer_size, 0, &new_buffer_data); AssertVk(resultVk);
 		
 		memcpy(new_buffer_data, old_buffer_data, buffer_size);
 		
@@ -540,7 +533,7 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSi
 	if(old_buffer        != VK_NULL_HANDLE) vkDestroyBuffer(device, old_buffer, allocator);
 	if(old_buffer_memory != VK_NULL_HANDLE) vkFreeMemory(device, old_buffer_memory, allocator);
 	
-	buffer_size = new_size;
+	buffer_size = aligned_buffer_size;
 }
 
 local void
@@ -969,10 +962,8 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating X11-Vulkan surface");
-	VkXlibSurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
-	info.window = (X11Window)win->handle;
-	info.dpy = linux.x11.display;
-	resultVk = vkCreateXlibSurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create X11 surface");
+	
+	NotImplemented;
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");
 	resultVk = glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surfaces[renderActiveSurface]); AssertVk(resultVk, "failed to create glfw surface");
@@ -2484,12 +2475,11 @@ UpdateMaterialPipelines(){DPZoneScoped;
 //// @vk_funcs_commands_setup
 local void
 SetupCommands(){DPZoneScoped;
-	const auto align_to = physicalDeviceProperties.limits.nonCoherentAtomSize;
-
 	//create 2D vertex and index buffers
-	size_t ui_vb_size = Max(1000*sizeof(Vertex2),         renderTwodVertexCount * sizeof(Vertex2));
-	size_t ui_ib_size = Max(3000*sizeof(RenderTwodIndex), renderTwodIndexCount  * sizeof(RenderTwodIndex));
-	if(ui_vb_size && ui_ib_size){
+	if(renderTwodIndexCount){
+		size_t ui_vb_size = RoundUpTo(Max(1000*sizeof(Vertex2),         renderTwodVertexCount * sizeof(Vertex2)), physicalDeviceProperties.limits.nonCoherentAtomSize);
+		size_t ui_ib_size = RoundUpTo(Max(3000*sizeof(RenderTwodIndex), renderTwodIndexCount  * sizeof(RenderTwodIndex)), physicalDeviceProperties.limits.nonCoherentAtomSize);
+		
 		//create/resize buffers if they are too small
 		if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < ui_vb_size){
 			CreateOrResizeBuffer(uiVertexBuffer.buffer, uiVertexBuffer.memory, uiVertexBuffer.size, ui_vb_size,
@@ -2499,9 +2489,6 @@ SetupCommands(){DPZoneScoped;
 			CreateOrResizeBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ui_ib_size,
 								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		}
-		
-		ui_vb_size = ceil((f32)ui_vb_size/align_to)*align_to;
-		ui_ib_size = ceil((f32)ui_ib_size/align_to)*align_to;
 		
 		//copy memory to the GPU
 		void* vb_data; void* ib_data;
@@ -2529,15 +2516,14 @@ SetupCommands(){DPZoneScoped;
 	}
 	
 	//create temp vertex and index buffers
-	size_t temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(MeshVertex);
-	size_t temp_fill_vb_size = renderTempFilledVertexCount*sizeof(MeshVertex);
-	size_t temp_wire_ib_size = renderTempWireframeIndexCount*sizeof(RenderTempIndex);
-	size_t temp_fill_ib_size = renderTempFilledIndexCount*sizeof(RenderTempIndex);
-	size_t temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
-	size_t temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
-	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(MeshVertex);
-	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(RenderTempIndex);
-	if(temp_vb_size && temp_ib_size){
+	if(renderTempWireframeIndexCount || renderTempFilledIndexCount){
+		size_t temp_wire_vb_size = renderTempWireframeVertexCount*sizeof(MeshVertex);
+		size_t temp_fill_vb_size = renderTempFilledVertexCount*sizeof(MeshVertex);
+		size_t temp_wire_ib_size = renderTempWireframeIndexCount*sizeof(RenderTempIndex);
+		size_t temp_fill_ib_size = renderTempFilledIndexCount*sizeof(RenderTempIndex);
+		size_t temp_vb_size = RoundUpTo(Max(1000*sizeof(MeshVertex), temp_wire_vb_size+temp_fill_vb_size), physicalDeviceProperties.limits.nonCoherentAtomSize);
+		size_t temp_ib_size = RoundUpTo(Max(3000*sizeof(RenderTempIndex), temp_wire_ib_size+temp_fill_ib_size), physicalDeviceProperties.limits.nonCoherentAtomSize);
+		
 		//create/resize buffers if they are too small
 		if(tempVertexBuffer.buffer == VK_NULL_HANDLE || tempVertexBuffer.size < temp_vb_size){
 			CreateOrResizeBuffer(tempVertexBuffer.buffer, tempVertexBuffer.memory, tempVertexBuffer.size, temp_vb_size,
@@ -2548,13 +2534,6 @@ SetupCommands(){DPZoneScoped;
 								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		}
 		
-		temp_wire_vb_size = RoundUpTo(temp_wire_vb_size, align_to);
-		temp_wire_ib_size = RoundUpTo(temp_wire_ib_size, align_to);
-		temp_fill_vb_size = RoundUpTo(temp_fill_vb_size, align_to);
-		temp_fill_ib_size = RoundUpTo(temp_fill_ib_size, align_to);
-		temp_vb_size = RoundUpTo(temp_vb_size, align_to);
-		temp_ib_size = RoundUpTo(temp_ib_size, align_to);
-
 		//copy memory to the GPU
 		void* vb_data; void* ib_data;
 		resultVk = vkMapMemory(device, tempVertexBuffer.memory, 0, temp_vb_size, 0, &vb_data); AssertVk(resultVk);
@@ -2583,15 +2562,14 @@ SetupCommands(){DPZoneScoped;
 	}
 	
 	//create debug vertex and index buffers
-	size_t debug_wire_vb_size = renderDebugWireframeVertexCount*sizeof(MeshVertex);
-	size_t debug_fill_vb_size = renderDebugFilledVertexCount*sizeof(MeshVertex);
-	size_t debug_wire_ib_size = renderDebugWireframeIndexCount*sizeof(RenderTempIndex);
-	size_t debug_fill_ib_size = renderDebugFilledIndexCount*sizeof(RenderTempIndex);
-	size_t debug_vb_size = debug_wire_vb_size+debug_fill_vb_size;
-	size_t debug_ib_size = debug_wire_ib_size+debug_fill_ib_size;
-	if(debugVertexBuffer.size == 0) debug_vb_size = 1000*sizeof(MeshVertex);
-	if(debugIndexBuffer.size == 0)  debug_ib_size = 3000*sizeof(RenderTempIndex);
-	if(debug_vb_size && debug_ib_size){
+	if(renderDebugWireframeIndexCount || renderDebugFilledIndexCount){
+		size_t debug_wire_vb_size = renderDebugWireframeVertexCount*sizeof(MeshVertex);
+		size_t debug_fill_vb_size = renderDebugFilledVertexCount*sizeof(MeshVertex);
+		size_t debug_wire_ib_size = renderDebugWireframeIndexCount*sizeof(RenderTempIndex);
+		size_t debug_fill_ib_size = renderDebugFilledIndexCount*sizeof(RenderTempIndex);
+		size_t debug_vb_size = RoundUpTo(Max(1000*sizeof(MeshVertex), debug_wire_vb_size+debug_fill_vb_size), physicalDeviceProperties.limits.nonCoherentAtomSize);
+		size_t debug_ib_size = RoundUpTo(Max(3000*sizeof(RenderTempIndex), debug_wire_ib_size+debug_fill_ib_size), physicalDeviceProperties.limits.nonCoherentAtomSize);
+		
 		//create/resize buffers if they are too small
 		if(debugVertexBuffer.buffer == VK_NULL_HANDLE || debugVertexBuffer.size < debug_vb_size){
 			CreateOrResizeBuffer(debugVertexBuffer.buffer, debugVertexBuffer.memory, debugVertexBuffer.size, debug_vb_size,
@@ -2601,14 +2579,6 @@ SetupCommands(){DPZoneScoped;
 			CreateOrResizeBuffer(debugIndexBuffer.buffer, debugIndexBuffer.memory, debugIndexBuffer.size, debug_ib_size,
 								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		}
-
-		debug_wire_vb_size = RoundUpTo(debug_wire_vb_size, align_to);
-		debug_wire_ib_size = RoundUpTo(debug_wire_ib_size, align_to);
-		debug_fill_vb_size = RoundUpTo(debug_fill_vb_size, align_to);
-		debug_fill_ib_size = RoundUpTo(debug_fill_ib_size, align_to);
-		debug_vb_size = RoundUpTo(debug_vb_size, align_to);
-		debug_ib_size = RoundUpTo(debug_ib_size, align_to);
-
 		
 		//copy memory to the GPU
 		void* vb_data; void* ib_data;
@@ -3308,12 +3278,14 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 		mvk.indexOffset = vkMeshes.last->indexOffset + vkMeshes.last->indexCount;
 	}
 	
-	u64 mesh_vb_size   = mesh->vertexCount*sizeof(MeshVertex);
-	u64 mesh_ib_size   = mesh->indexCount*sizeof(MeshIndex);
-	u64 mesh_vb_offset = meshVertexBuffer.size;
-	u64 mesh_ib_offset = meshIndexBuffer.size;
-	u64 total_vb_size  = meshVertexBuffer.size + mesh_vb_size;
-	u64 total_ib_size  = meshIndexBuffer.size  + mesh_ib_size;
+	u64 mesh_vb_size   = mesh->vertexCount * sizeof(MeshVertex);
+	u64 mesh_ib_size   = mesh->indexCount * sizeof(MeshIndex);
+	u64 mesh_vb_offset = mvk.vertexOffset * sizeof(MeshVertex);
+	u64 mesh_ib_offset = mvk.indexOffset * sizeof(MeshIndex);
+	u64 total_vb_size  = RoundUpTo(mesh_vb_offset + mesh_vb_size, physicalDeviceProperties.limits.nonCoherentAtomSize);
+	u64 total_ib_size  = RoundUpTo(mesh_ib_offset + mesh_ib_size, physicalDeviceProperties.limits.nonCoherentAtomSize);
+	u64 vb_mapping_offset = RoundDownTo(mesh_vb_offset, physicalDeviceProperties.limits.nonCoherentAtomSize);
+	u64 ib_mapping_offset = RoundDownTo(mesh_ib_offset, physicalDeviceProperties.limits.nonCoherentAtomSize);
 	
 	//create/resize buffers
 	if(meshVertexBuffer.buffer == VK_NULL_HANDLE || meshVertexBuffer.size < total_vb_size){
@@ -3325,33 +3297,22 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer,  "Mesh index buffer");
 	}
 	
-	// we need to align the end of mapped memory to a multiple of 
-	// VkPhysicalDeviceLimits::nonCoherentAtomSize when VK_WHOLE_SIZE is used 
-	const auto align_to = physicalDeviceProperties.limits.nonCoherentAtomSize;
-
-	mesh_vb_size = RoundUpTo(mesh_vb_size, align_to);
-	mesh_ib_size = RoundUpTo(mesh_ib_size, align_to);
-	mesh_vb_offset = RoundUpTo(mesh_vb_offset, align_to);
-	mesh_ib_offset = RoundUpTo(mesh_ib_offset, align_to);
-	total_vb_size = RoundUpTo(total_vb_size, align_to);
-	total_ib_size = RoundUpTo(total_ib_size, align_to);
-	
 	//copy memory to the GPU
 	void* vb_data; void* ib_data;
-	resultVk = vkMapMemory(device, meshVertexBuffer.memory, mesh_vb_offset, mesh_vb_size, 0, &vb_data); AssertVk(resultVk);
-	resultVk = vkMapMemory(device, meshIndexBuffer.memory,  mesh_ib_offset, mesh_ib_size, 0, &ib_data); AssertVk(resultVk);
+	resultVk = vkMapMemory(device, meshVertexBuffer.memory, vb_mapping_offset, VK_WHOLE_SIZE, 0, &vb_data); AssertVk(resultVk);
+	resultVk = vkMapMemory(device, meshIndexBuffer.memory,  ib_mapping_offset, VK_WHOLE_SIZE, 0, &ib_data); AssertVk(resultVk);
 	{
-		memcpy(vb_data, mesh->vertexArray, mesh_vb_size);
-		memcpy(ib_data, mesh->indexArray,  mesh_ib_size);
+		memcpy((u8*)vb_data + (mesh_vb_offset - vb_mapping_offset), mesh->vertexArray, mesh_vb_size);
+		memcpy((u8*)ib_data + (mesh_ib_offset - ib_mapping_offset), mesh->indexArray,  mesh_ib_size);
 		
 		VkMappedMemoryRange range[2] = {};
 		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range[0].memory = meshVertexBuffer.memory;
-		range[0].offset = RoundUpTo(mesh_vb_offset, physicalDeviceProperties.limits.nonCoherentAtomSize);
+		range[0].offset = vb_mapping_offset;
 		range[0].size   = VK_WHOLE_SIZE;
 		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range[1].memory = meshIndexBuffer.memory;
-		range[1].offset = RoundUpTo(mesh_ib_offset, physicalDeviceProperties.limits.nonCoherentAtomSize);
+		range[1].offset = ib_mapping_offset;
 		range[1].size   = VK_WHOLE_SIZE;
 		resultVk = vkFlushMappedMemoryRanges(device, 2, range); AssertVk(resultVk);
 	}
