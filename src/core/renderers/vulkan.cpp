@@ -43,6 +43,7 @@ Index:
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_types
+#include "math/math.h"
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_xlib.h>
 struct TextureVk{
@@ -514,6 +515,10 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSi
 	resultVk = vkAllocateMemory(device, &allocInfo, allocator, &buffer_memory); AssertVk(resultVk);
 	resultVk = vkBindBufferMemory(device, buffer, buffer_memory, 0); AssertVk(resultVk);
 	
+	const auto align_to = physicalDeviceProperties.limits.nonCoherentAtomSize;
+
+	new_size = RoundUpTo(new_size, align_to);
+
 	if(buffer_size){
 		void* old_buffer_data; void* new_buffer_data;
 		resultVk = vkMapMemory(device, old_buffer_memory, 0, buffer_size, 0, &old_buffer_data); AssertVk(resultVk);
@@ -2479,6 +2484,8 @@ UpdateMaterialPipelines(){DPZoneScoped;
 //// @vk_funcs_commands_setup
 local void
 SetupCommands(){DPZoneScoped;
+	const auto align_to = physicalDeviceProperties.limits.nonCoherentAtomSize;
+
 	//create 2D vertex and index buffers
 	size_t ui_vb_size = Max(1000*sizeof(Vertex2),         renderTwodVertexCount * sizeof(Vertex2));
 	size_t ui_ib_size = Max(3000*sizeof(RenderTwodIndex), renderTwodIndexCount  * sizeof(RenderTwodIndex));
@@ -2492,6 +2499,9 @@ SetupCommands(){DPZoneScoped;
 			CreateOrResizeBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ui_ib_size,
 								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		}
+		
+		ui_vb_size = ceil((f32)ui_vb_size/align_to)*align_to;
+		ui_ib_size = ceil((f32)ui_ib_size/align_to)*align_to;
 		
 		//copy memory to the GPU
 		void* vb_data; void* ib_data;
@@ -2538,6 +2548,13 @@ SetupCommands(){DPZoneScoped;
 								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		}
 		
+		temp_wire_vb_size = RoundUpTo(temp_wire_vb_size, align_to);
+		temp_wire_ib_size = RoundUpTo(temp_wire_ib_size, align_to);
+		temp_fill_vb_size = RoundUpTo(temp_fill_vb_size, align_to);
+		temp_fill_ib_size = RoundUpTo(temp_fill_ib_size, align_to);
+		temp_vb_size = RoundUpTo(temp_vb_size, align_to);
+		temp_ib_size = RoundUpTo(temp_ib_size, align_to);
+
 		//copy memory to the GPU
 		void* vb_data; void* ib_data;
 		resultVk = vkMapMemory(device, tempVertexBuffer.memory, 0, temp_vb_size, 0, &vb_data); AssertVk(resultVk);
@@ -2584,6 +2601,14 @@ SetupCommands(){DPZoneScoped;
 			CreateOrResizeBuffer(debugIndexBuffer.buffer, debugIndexBuffer.memory, debugIndexBuffer.size, debug_ib_size,
 								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		}
+
+		debug_wire_vb_size = RoundUpTo(debug_wire_vb_size, align_to);
+		debug_wire_ib_size = RoundUpTo(debug_wire_ib_size, align_to);
+		debug_fill_vb_size = RoundUpTo(debug_fill_vb_size, align_to);
+		debug_fill_ib_size = RoundUpTo(debug_fill_ib_size, align_to);
+		debug_vb_size = RoundUpTo(debug_vb_size, align_to);
+		debug_ib_size = RoundUpTo(debug_ib_size, align_to);
+
 		
 		//copy memory to the GPU
 		void* vb_data; void* ib_data;
@@ -3299,6 +3324,17 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 		CreateOrResizeBuffer(&meshIndexBuffer,  total_ib_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer,  "Mesh index buffer");
 	}
+	
+	// we need to align the end of mapped memory to a multiple of 
+	// VkPhysicalDeviceLimits::nonCoherentAtomSize when VK_WHOLE_SIZE is used 
+	const auto align_to = physicalDeviceProperties.limits.nonCoherentAtomSize;
+
+	mesh_vb_size = RoundUpTo(mesh_vb_size, align_to);
+	mesh_ib_size = RoundUpTo(mesh_ib_size, align_to);
+	mesh_vb_offset = RoundUpTo(mesh_vb_offset, align_to);
+	mesh_ib_offset = RoundUpTo(mesh_ib_offset, align_to);
+	total_vb_size = RoundUpTo(total_vb_size, align_to);
+	total_ib_size = RoundUpTo(total_ib_size, align_to);
 	
 	//copy memory to the GPU
 	void* vb_data; void* ib_data;
