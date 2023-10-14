@@ -571,15 +571,21 @@ deshi__file_info(str8 caller_file, upt caller_line, str8 path, FileResult* resul
 	out.path.str[out.path.count+1] = '\0';
 
 	u32 name_length = 0;
+	u32 ext_length = 0;
 	u8* scan = out.path.str+out.path.count;
 	while(name_length != out.path.count && 
 		 *scan != '\\' && 
 		 *scan != '/') {
+		if(!ext_length && *scan == '.') {
+			ext_length = name_length;
+		}
 		scan--;
 		name_length++;
 	}
 	name_length--;
-	out.name = {out.path.str + out.path.count - name_length, name_length};
+	out.name  = {out.path.str + out.path.count - name_length, name_length};
+	out.front = {out.name.str, name_length - ext_length};
+	out.ext   = {out.name.str + out.front.count + 1, ext_length - 1};
 
 	// get time information
 	struct statx s;
