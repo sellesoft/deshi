@@ -372,13 +372,16 @@ local DeshiStage deshiStage = DS_NONE;
 #    include <shaderc/shaderc.h>
 #  elif DESHI_LINUX //#if DESHI_WINDOWS
 #    define VK_USE_PLATFORM_XLIB_KHR
-namespace X11 {
-    namespace Vulkan{
+#    define Window  X11Window
+#    define Font    X11Font
+#    define Time    X11Time
+#    define KeyCode X11KeyCode
 #    include <vulkan/vulkan.h>
 #    include <shaderc/shaderc.h>
-    }
-}
-using namespace X11::Vulkan;
+#    undef Window
+#    undef Font
+#    undef Time
+#    undef KeyCode
 #  else
 #    error "unhandled platform/vulkan interaction"
 #  endif

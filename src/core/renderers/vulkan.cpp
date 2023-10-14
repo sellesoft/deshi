@@ -43,6 +43,8 @@ Index:
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @vk_types
+#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_xlib.h>
 struct TextureVk{
 	Texture*       base;
 	VkImage        image;
@@ -962,8 +964,10 @@ CreateSurface(Window* win = DeshWindow, u32 surface_idx = 0){DPZoneScoped;
 	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create win32 surface");
 #elif DESHI_LINUX
 	PrintVk(2, "Creating X11-Vulkan surface");
-	
-	NotImplemented;
+	VkXlibSurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
+	info.window = (X11Window)win->handle;
+	info.dpy = linux.x11.display;
+	resultVk = vkCreateXlibSurfaceKHR(instance, &info, 0, &surfaces[surface_idx]); AssertVk(resultVk, "failed to create X11 surface");
 #elif DESHI_MAC
 	PrintVk(2, "Creating glfw-Vulkan surface");
 	resultVk = glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surfaces[renderActiveSurface]); AssertVk(resultVk, "failed to create glfw surface");

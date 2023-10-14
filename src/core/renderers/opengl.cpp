@@ -1157,21 +1157,25 @@ render_load_texture(Texture* texture){DPZoneScoped;
 void
 render_load_material(Material* material){DPZoneScoped;
 	//!Incomplete
+	NotImplemented;
 }
 
 void
 render_unload_mesh(Mesh* mesh){
 	//!NotImplemented
+	NotImplemented;
 }
 
 void
 render_unload_texture(Texture* texture){
 	//!NotImplemented
+	NotImplemented;
 }
 
 void
 render_unload_material(Material* material){
 	//!NotImplemented
+	NotImplemented;
 }
 
 void
