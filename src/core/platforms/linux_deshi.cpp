@@ -1152,22 +1152,24 @@ platform_update() {
 			case ButtonPress:
 			case ButtonRelease: {
 				XButtonEvent bev = event.xbutton;
-				KeyCode mbutton;
+				KeyCode mbutton = 0;
 				switch(bev.button){
 					case Button1: mbutton = Mouse_LEFT; break;
 					case Button2: mbutton = Mouse_MIDDLE; break;
 					case Button3: mbutton = Mouse_RIGHT; break;
-					case Button4: mbutton = Mouse_4; break;
-					case Button5: mbutton = Mouse_5; break;
+					case Button4: g_input->realScrollY += 1.0; break;
+					case Button5: g_input->realScrollY -= 1.0; break;
 					default: {
 						// TODO(sushi) there's a bug here when I press either mouse 4 or 5 on my mouse, it gives a value of 8, which is
 						//             not defined by linux's button stuff
 						LogE("input", "unknown button given by linux event: ", bev.button);
 					}break;
 				}
-				DeshInput->realKeyState[mbutton] = (event.type == ButtonPress? 1 : 0);
+				if(mbutton)
+					DeshInput->realKeyState[mbutton] = (event.type == ButtonPress? 1 : 0);
 #if LOG_INPUTS
-				Log("input", KeyCodeStrings[mbutton], (event.type==ButtonPress? " pressed" : " released"));
+				if(mbutton)
+					Log("input", KeyCodeStrings[mbutton], (event.type==ButtonPress? " pressed" : " released"));
 #endif
 			}break;	
 
