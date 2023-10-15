@@ -296,6 +296,8 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 		g_ui->stats.items_reserved++;
 		item = (uiItem*)memalloc(setup.size);
 		g_ui->items.add(item);
+		item->link.prev = item->link.next = &item->link;
+		NodeInsertPrev(&g_ui->base.link, &item->link);
 	}
 	item->memsize = setup.size;
 	
@@ -545,7 +547,8 @@ deshi__ui_end_item(str8 file, upt line){DPZoneScoped;
 
 void 
 deshi__ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
-	//TODO(sushi) check for contiguous regions of memory in the drawcmds' vertex and index regions so we can combine drawcmds into one 
+	NodeRemove(&item->link);
+
 	forI(item->drawcmd_count){
 		ui_drawcmd_remove(item->drawcmds + i);
 	}
@@ -626,10 +629,7 @@ void
 deshi__ui_init(){DPZoneScoped;
 	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
 	
-	//g_ui->cleanup = 0;
-	
-	g_ui->allocator_root.next = &g_ui->allocator_root;
-	g_ui->allocator_root.prev = &g_ui->allocator_root;
+	g_ui->allocator_root.next = g_ui->allocator_root.prev = &g_ui->allocator_root;
 	
 	g_ui->immediate.active = 0;
 	g_ui->immediate.pushed = 0;
@@ -647,6 +647,7 @@ deshi__ui_init(){DPZoneScoped;
 	g_ui->base.style.width = DeshWindow->width;
 	g_ui->base.style.height = DeshWindow->height;
 	g_ui->base.style_hash = ui_hash_style(&g_ui->base);
+	g_ui->base.link.prev = g_ui->base.link.next = &g_ui->base.link;
 	push_item(&g_ui->base);
 	
 	//setup default keybinds
@@ -1266,7 +1267,8 @@ deshi__ui_update(){DPZoneScoped;
 	g_ui->stats.items_visible = 0;
 	g_ui->stats.vertices_visible = 0;
 	
-	for(auto item : g_ui->items){
+	for(auto n = g_ui->base.link.next; n != &g_ui->base.link; n = n->next){
+		auto item = ui_item_from_link(n);
 #if 0
 		Log("", 
 			item->id, ".draws: ", item->debug_frame_stats.draws, "\n",
@@ -1502,8 +1504,8 @@ void ui_debug(){
 	}ui_end_immediate_branch();
 	
 	u64 memsum = 0;
-	forI(g_ui->items.count){
-		memsum += g_ui->items[i]->memsize;
+	for(auto n = g_ui->base.link.next; n != &g_ui->base.link; n = n->next){
+		memsum += ui_item_from_link(n)->memsize;
 	}
 	forI(g_ui->immediate_items.count){
 		memsum += g_ui->immediate_items[i]->memsize;

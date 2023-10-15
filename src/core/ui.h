@@ -84,9 +84,12 @@ Item Style
 
 -   Example: in code: uiStyle style; style.positioning = pos_fixed; in string: positioning: static;
 
--   Values: pos_static  |  static Default value. The item will be placed normally and top, bottom, left, and right values dont affect it. The first
-        item placed in this manner will just be positioned at 0,0 plus its margin and borders, then items placed after it are placed below it, as it
-        would be in HTML or ImGui.
+-   Values: 
+		pos_static  |  static 
+			Default value. 
+			The item will be placed normally and top, bottom, left, and right values dont affect it. The first
+        	item placed in this manner will be positioned at 0,0 plus its margin and borders, then items placed
+			after it are placed below it, as it would be in HTML or ImGui.
 
         pos_relative  |  relative
             The position values will position the item relative to where it would have 
@@ -411,8 +414,8 @@ struct Texture;
 
 #define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
 
-#define UI_HASH_SEED 2166136261 //32bit FNV_offset_basis (FNV-1a)
-#define UI_HASH_PRIME 16777619 //32bit FNV_prime (FNV-1a)
+#define UI_HASH_SEED 2166136261 // 32bit FNV_offset_basis (FNV-1a)
+#define UI_HASH_PRIME 16777619 // 32bit FNV_prime (FNV-1a)
 #define UI_HASH_VAR(x) seed ^= (u64)(x); seed *= UI_HASH_PRIME
 
 
@@ -636,6 +639,7 @@ external struct uiStyle{
 
 struct uiItem{
 	TNode node;
+	Node  link; // circular list connecting all existing items to base for iterating
 	str8 id; //NOTE(sushi) mostly for debugging, not sure if this will have any other use in the interface
 	uiStyle style;
 	u64 userVar; // variable never touched internally, for user use;
@@ -747,7 +751,14 @@ struct uiItemSetup{
 	u32 drawcmd_count;
 };
 
+
+
 #define uiItemFromNode(x) CastFromMember(uiItem, node, x)
+
+global uiItem* 
+ui_item_from_link(Node* n) {
+	return CastFromMember(uiItem, link, n);
+}
 
 //Hashes the uiItem's style and merges it with the result of a custom hash function if one is set
 inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
@@ -817,10 +828,6 @@ ui_item_show(uiItem* item) {
 // to the caller to set them if desired
 void ui_item_copy_base(uiItem* to, uiItem* from);
 
-// copies the given uiItem as well as all of its children exactly
-// and returns a pointer the result. The item is placed as a 
-// sibling of the given item
-// this is invalid to use on immediate items (for now, not sure if that is useful)
 uiItem* ui_deep_copy(uiItem* item);
 
 uiItem* deshi__ui_make_item(uiStyle* style, str8 file, upt line);
@@ -876,8 +883,6 @@ void deshi__ui_pop_id(str8 file, upt line);
 // @ui_context
 
 
-struct MemoryContext;
-struct uiContext;
 void deshi__ui_init();
 #define ui_init() deshi__ui_init()
 
@@ -896,6 +901,10 @@ typedef u32 uiInputState; enum{
 struct uiContext{
 	
 	//// state ////
+	// ultimate parent of any uiItem in the tree.
+	// 'link' on base serves as a circular list connecting 
+	// all uiItems in a linear fashion for easy iteration.
+	// However, this list is in no specific order.
 	uiItem base;
 	uiItem* hovered; //item currently hovered by the mouse
 	uiItem* active;  //item last interacted with
@@ -913,7 +922,6 @@ struct uiContext{
 	b32 updating; //set true while ui_update is running
 	
 	//// memory ////
-	arrayT<uiItem*> items;
 	arrayT<uiItem*> immediate_items;
 	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
 	arrayT<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
