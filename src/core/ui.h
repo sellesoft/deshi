@@ -532,12 +532,21 @@ enum{
 	display_reverse     = 1 << 2,
 	display_hidden      = 1 << 3,
 	
-	action_act_never = 0,
-	action_act_mouse_hover,    // call action when the mouse is positioned over the item
-	action_act_mouse_pressed,  // call action when the mouse is pressed over the item
-	action_act_mouse_released, // call action when the mouse is released over the item
-	action_act_mouse_down,     // call action when the mouse is down over the item
-	action_act_always,         // call action every frame
+	// NOTE(sushi) I've changed these to be flagged due to needing to support hash_change
+	//             and mouse actions on the same item. Be careful working with these since now 
+	//             setting one flag could totally override another. This is also nice 
+	//             because you can do something on just press and release.
+	// TODO(sushi) update documentation to reflect this
+	action_act_never                = 0,
+	action_act_mouse_hover          = 1 << 0, // call action when the mouse is positioned visually over the item
+	action_act_mouse_hover_children = 1 << 1, // call action when the mouse is positioned over any of the children of the item
+	action_act_mouse_pressed        = 1 << 1, // call action when the mouse is pressed over the item
+	action_act_mouse_released       = 1 << 2, // call action when the mouse is released over the item
+	action_act_mouse_down           = 1 << 3, // call action when the mouse is down over the item
+	action_act_mouse_scroll         = 1 << 4, // call action when the mouse wheel is moved in either direction
+	action_act_always               = 1 << 5, // call action every frame
+	action_act_hash_change          = 1 << 6, // call action when the item's hash changes
+	
 };
 
 external struct uiStyle{
@@ -801,10 +810,18 @@ inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
 	return seed;
 }
 
-//calling this with strict = 1 means it will only return hovered if the mouse is 
-//visibly over it and not blocked by anything else. calling this with strict = 0 
-//just checks if the mouse is within the items bounds
-b32 ui_item_hovered(uiItem* item, b32 strict = 1);
+enum {
+	// returns true only if the mouse is in the area
+	// of the item and isn't blocked by anything else
+	hovered_strict,
+	// returns true if the mouse is over any of the
+	// children of the item
+	hovered_child,
+	// returns true if the mouse is in the item's
+	// area at all
+	hovered_area,
+};
+b32 ui_item_hovered(uiItem* item, u32 mode = hovered_strict);
 
 // helper to make an item hidden
 inline void 

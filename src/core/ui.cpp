@@ -295,7 +295,6 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	}else{
 		g_ui->stats.items_reserved++;
 		item = (uiItem*)memalloc(setup.size);
-		g_ui->items.add(item);
 		item->link.prev = item->link.next = &item->link;
 		NodeInsertPrev(&g_ui->base.link, &item->link);
 	}
@@ -413,9 +412,21 @@ b32 mouse_in_item(uiItem* item){
 	return Math::PointInRectangle(input_mouse_position(), item->pos_screen, item->size * item->scale);
 }
 
-b32 ui_item_hovered(uiItem* item, b32 strict){
-	if(strict) return g_ui->hovered == item;
-	return mouse_in_item(item);
+b32 ui_item_hovered(uiItem* item, u32 mode){
+	switch(mode) {
+		case hovered_strict: return g_ui->hovered == item;
+		case hovered_area: return mouse_in_item(item);
+		case hovered_child: {
+			auto i = g_ui->hovered;
+			while(i) {
+				if(i == item) return true;
+				if(i == &g_ui->base) return false;
+				i = (uiItem*)i->node.parent;
+			}
+			Assert(0, "an item given to ui_item_hovered must be a part of the active item tree (ie. it must be an ancestor of g_ui->base)");
+		} break;
+	}
+	return false;
 }
 
 uiItem*
