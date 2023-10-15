@@ -32,8 +32,8 @@ local arrayT<AllocInfo> alloc_infos_inactive(stl_allocator);
 
 
 #if MEMORY_CHECK_HEAPS
-local void
-DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
+void
+DEBUG_CheckHeap(Heap* heap){//DPZoneScoped;
 	Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
 	Assert(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
 	Assert(heap->empty_nodes.next != 0 && heap->empty_nodes.prev != 0, "First heap empty node is invalid");

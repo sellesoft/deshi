@@ -86,6 +86,7 @@ typedef struct MemChunk{
 #define ChunkIsLibc(chunk_ptr) ((chunk_ptr)->size & MEMORY_LIBC_FLAG)
 
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
 typedef struct Heap{
@@ -126,6 +127,8 @@ void deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line);
 void deshi__memory_heap_clear(Heap* heap, str8 file, upt line);
 #define memory_heap_clear(heap) deshi__memory_heap_clear(heap, str8_lit(__FILE__), __LINE__)
 
+void
+DEBUG_CheckHeap(Heap* heap);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena
