@@ -174,6 +174,9 @@ inline u32 slider_style_hash(uiItem* item){
 	seed ^= data->style.colors.dragger.rgba;    seed *= UI_HASH_PRIME;
 	seed ^= data->style.dragger_shape;          seed *= UI_HASH_PRIME;
 	seed ^= *(u32*)&data->style.rail_thickness; seed *= UI_HASH_PRIME;
+	if(data->varf32) {
+		seed ^= *data->varu32; seed *= UI_HASH_PRIME;
+	}
 	
 	return seed;
 } 
@@ -429,12 +432,12 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 void
 ui_eval_text(uiItem* item){DPZoneScoped;
 	if(!item->style.font){
-		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on one of its ancestors.");
+		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle or on one of its ancestors.");
 		return;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	uiText* data = (uiText*)item;
-	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 1);
+	find_text_breaks(&data->breaks, item, data->text, ui_padded_width(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 1);
 }
 
 //performs checks on the text element for things like mouse selection
@@ -576,7 +579,7 @@ ui_eval_input_text(uiItem* item){DPZoneScoped;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
 	uiInputText* data = (uiInputText*)item;
-	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 0);
+	find_text_breaks(&data->breaks, item, data->text, ui_padded_width(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 0);
 }
 
 void
@@ -783,18 +786,19 @@ ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	setup.file = file;
 	setup.line = line;
 	setup.generate = ui_gen_slider;
+	setup.hash = slider_style_hash;
 	setup.copy = ui_copy_slider;
+	setup.update = ui_slider_callback;
+	setup.update_trigger = action_act_mouse_hover | action_act_hash_change;
 	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 
 	auto item = ui_setup_item(setup);
-	item->action_trigger = action_act_mouse_hover;
 
 	auto s = ui_get_slider(item);
 	s->style.colors.rail = color(80,80,80);
 	s->style.colors.dragger = color(14,50,100);
-	item->__hash = slider_style_hash;
 
 	return item;
 }
@@ -803,7 +807,6 @@ uiItem*
 deshi__ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &ui_slider_callback;
 	auto s = ui_get_slider(item);
 	s->minf32 = min;
 	s->maxf32 = max;
@@ -817,7 +820,6 @@ uiItem*
 deshi__ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &ui_slider_callback;
 	auto s = ui_get_slider(item);
 	s->minu32 = min;
 	s->maxu32 = max;
@@ -831,7 +833,6 @@ uiItem*
 deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &ui_slider_callback;
 	auto s = ui_get_slider(item);
 	s->mins32 = max;
 	s->maxs32 = max;

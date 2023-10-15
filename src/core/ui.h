@@ -622,25 +622,6 @@ external struct uiStyle{
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
 };
 
-#define MarginedWidth(item)       ((item)->width - (item)->style.margin_left - (item)->style.margin_right)
-#define MarginedHeight(item)      ((item)->height - (item)->style.margin_top - (item)->style.margin_bottom)
-#define MarginedArea(item)        (vec2{MarginedWidth(item), MarginedHeight(item)})
-#define MarginedStyleWidth(item)  ((item)->style.width + (item)->style.margin_left + (item)->style.margin_right)
-#define MarginedStyleHeight(item) ((item)->style.height + (item)->style.margin_top + (item)->style.margin_bottom)
-#define MarginedStyleArea(item)   (vec2{MarginedStyleWidth(item), MarginedStyleHeight(item)})
-#define BorderedWidth(item)       (MarginedWidth(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedHeight(item)      (MarginedHeight(item) - ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedArea(item)        (vec2{BorderedWidth(item), BorderedHeight(item)})
-#define BorderedStyleWidth(item)  ((item)->style.width + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedStyleHeight(item) ((item)->style.height + ((item)->style.border_style ? 2*(item)->style.border_width : 0))
-#define BorderedStyleArea(item)   (vec2{BorderedStyleWidth(item), BorderedStyleHeight(item)})
-#define PaddedWidth(item)         (BorderedWidth(item) - (item)->style.padding_left - (item)->style.padding_right)
-#define PaddedHeight(item)        (BorderedHeight(item) - (item)->style.padding_top - (item)->style.padding_bottom)
-#define PaddedArea(item)          (vec2{PaddedWidth(item), PaddedHeight(item)})
-#define PaddedStyleWidth(item)    ((item)->style.width - (item)->style.padding_left - (item)->style.padding_right)
-#define PaddedStyleHeight(item)   ((item)->style.height - (item)->style.padding_top - (item)->style.padding_bottom)
-#define PaddedStyleArea(item)     (vec2{PaddedStyleWidth(item), PaddedStyleHeight(item)})
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_item
@@ -743,7 +724,6 @@ struct uiItem{
 	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
 
-
 struct uiItemSetup{
 	upt size; 
 	uiStyle* style; 
@@ -845,6 +825,111 @@ ui_item_show(uiItem* item) {
 // to the caller to set them if desired
 void ui_item_copy_base(uiItem* to, uiItem* from);
 
+
+#if BUILD_SLOW
+#define RELEASE_INLINE
+#else
+#define RELEASE_INLINE FORCE_INLINE
+#endif
+
+
+RELEASE_INLINE global f32 
+ui_margined_width(uiItem* item) {
+	return item->width - item->style.margin_left - item->style.margin_right;
+}
+
+RELEASE_INLINE global f32
+ui_margined_height(uiItem* item) {
+	return item->height - item->style.margin_top - item->style.margin_bottom;
+}
+
+RELEASE_INLINE global vec2
+ui_margined_area(uiItem* item) {
+	return {ui_margined_width(item), ui_margined_height(item)};
+}
+
+RELEASE_INLINE global f32 
+ui_margined_style_width(uiItem* item) {
+	return item->style.width - item->style.margin_left - item->style.margin_right;
+}
+
+RELEASE_INLINE global f32
+ui_margined_style_height(uiItem* item) {
+	return item->style.height - item->style.margin_top - item->style.margin_bottom;
+}
+
+RELEASE_INLINE global vec2
+ui_margined_style_area(uiItem* item) {
+	return vec2{ui_margined_style_width(item), ui_margined_style_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_bordered_width(uiItem* item) {
+	return ui_margined_width(item) - (item->style.border_style ?  2 * item->style.border_width : 0);
+}
+
+RELEASE_INLINE global f32
+ui_bordered_height(uiItem* item) {
+	return ui_margined_height(item) - (item->style.border_style ? 2 * item->style.border_width : 0);
+}
+
+RELEASE_INLINE global vec2
+ui_bordered_area(uiItem* item) {
+	return vec2{ui_bordered_width(item), ui_bordered_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_bordered_style_width(uiItem* item) {
+	return item->style.width + (item->style.border_style ? 2 * item->style.border_width : 0);
+}
+
+
+RELEASE_INLINE global f32
+ui_bordered_style_height(uiItem* item) {
+	return item->style.height + (item->style.border_style ? 2 * item->style.border_width : 0);
+}
+
+RELEASE_INLINE global vec2
+ui_bordered_style_area(uiItem* item) {
+	return vec2{ui_bordered_style_width(item), ui_bordered_style_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_padded_width(uiItem* item) {
+	return ui_bordered_width(item) - item->style.padding_left - item->style.padding_right;
+}
+
+RELEASE_INLINE global f32
+ui_padded_height(uiItem* item) {
+	return ui_bordered_height(item) - item->style.padding_top - item->style.padding_bottom;
+}
+
+RELEASE_INLINE global vec2
+ui_padded_area(uiItem* item) {
+	return vec2{ui_padded_width(item), ui_padded_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_padded_style_width(uiItem* item) {
+	return item->style.width - item->style.padding_left - item->style.padding_right;
+}
+
+RELEASE_INLINE global f32
+ui_padded_style_height(uiItem* item) {
+	return item->style.height - item->style.padding_top - item->style.padding_top;
+}
+
+RELEASE_INLINE global vec2
+ui_padded_style_area(uiItem* item) {
+	return vec2{ui_padded_style_width(item), ui_padded_style_height(item)};
+}
+
+
+// invokes __copy recursively on the item's children and finally 
+// itself to produce a full copy of the item's branch.
+// when finished the new item appends itself to the original
+// item's parent.
+// returns the newly created item
 uiItem* ui_deep_copy(uiItem* item);
 
 uiItem* deshi__ui_make_item(uiStyle* style, str8 file, upt line);

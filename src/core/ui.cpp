@@ -713,7 +713,24 @@ void draw_item_branch(uiItem* item){DPZoneScoped;
 	
 	if(item != &g_ui->base){
 		if(match_any(item->style.positioning, pos_fixed, pos_draggable_fixed)){
-			item->pos_screen = item->style.pos;
+			switch(item->style.anchor) {
+				case anchor_top_left:{
+					item->pos_screen.x = item->style.x;
+					item->pos_screen.y = item->style.y;
+				}break;
+				case anchor_top_right:{
+					item->pos_screen.x = g_ui->base.width - item->style.x - item->width;
+					item->pos_screen.y = item->style.y;
+				}break;
+				case anchor_bottom_right:{
+					item->pos_screen.x = g_ui->base.width - item->style.x - item->width;
+					item->pos_screen.y = g_ui->base.height - item->style.y - item->height;
+				}break;
+				case anchor_bottom_left:{
+					item->pos_screen.x = item->style.x;
+					item->pos_screen.y = g_ui->base.height - item->style.y - item->height;
+				}break;
+			}
 		}else{
 			item->pos_screen = uiItemFromNode(item->node.parent)->pos_screen + item->pos_local;
 		}
@@ -785,9 +802,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 			if(item->style.height < 0){
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the given value for height '", item->style.height, "' is negative.");
 			}else if(HasFlag(parent->style.sizing, size_percent_y)){ //if the parent's sizing is also set to percentage, we know it is already sized
-				item->height = item->style.height/100.f * PaddedHeight(parent);
+				item->height = item->style.height/100.f * ui_padded_height(parent);
 			}else if (parent->style.height >= 0){ 
-				item->height = item->style.height/100.f * PaddedStyleHeight(parent);
+				item->height = item->style.height/100.f * ui_padded_style_height(parent);
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
 				item_error(item, "Sizing flag 'size_percent_y' was specified, but the item's parent's height is not explicitly sized.");
@@ -810,9 +827,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 			if(item->style.width < 0) 
 				item_error(item, "Sizing value was specified with size_percent_x, but the given value for width '", item->style.width, "' is negative.");
 			if(HasFlag(parent->style.sizing, size_percent_x) || HasFlag(parent->style.sizing, size_flex)){
-				item->width = item->style.width/100.f * PaddedWidth(parent);
+				item->width = item->style.width/100.f * ui_padded_width(parent);
 			}else if (parent->style.width >= 0){
-				item->width = item->style.width/100.f * PaddedStyleWidth(parent);
+				item->width = item->style.width/100.f * ui_padded_style_width(parent);
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
 				item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
@@ -837,7 +854,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	
 	if(HasFlag(item->style.display, display_flex)){
 		contextout.flex.flex_container = 1;
-		contextout.flex.effective_size = (disprow ? ((((item)->width - (item)->style.margin_left - (item)->style.margin_right) - ((item)->style.border_style ? 2*(item)->style.border_width : 0)) - (item)->style.padding_left - (item)->style.padding_right) : PaddedHeight(item));
+		contextout.flex.effective_size = (disprow ? ((((item)->width - (item)->style.margin_left - (item)->style.margin_right) - ((item)->style.border_style ? 2*(item)->style.border_width : 0)) - (item)->style.padding_left - (item)->style.padding_right) : ui_padded_height(item));
 		contextout.flex.ratio_sum = 0;
 		contextout.flex.disprow = disprow;
 		
@@ -929,22 +946,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->pos_local.x += child->style.x;
 						
-						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -968,22 +985,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->pos_local.y += child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->pos_local.x += child->style.x;
 						
-						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -1002,22 +1019,22 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->pos_local.y = child->style.y;
 					}break;
 					case anchor_top_right:{
-						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->pos_local.y = child->style.y;
 					}break;
 					case anchor_bottom_right:{
-						if(!wauto) child->pos_local.x = (PaddedWidth(item) - child->width) - child->style.x;
+						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
 						
-						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 					case anchor_bottom_left:{
 						child->pos_local.x = child->style.x;
 						
-						if(!hauto) child->pos_local.y = (PaddedHeight(item) - child->height) - child->style.y;
+						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
@@ -1057,7 +1074,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 	item->height = Max(item->style.min_height, item->height);
 	
 	//// calculate max scroll ////
-	item->max_scroll = Max(vec2{0,0}, cursor - PaddedArea(item));
+	item->max_scroll = Max(vec2{0,0}, cursor - ui_padded_area(item));
 	
 	//// calculate content alignment ////
 	//TODO(sushi) I'm pretty sure the x part of this can be moved into the child loop above, so we dont have to do a second
@@ -1153,7 +1170,7 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 	//TODO(sushi) come up with a way around this
 	//if(!Math::PointInRectangle(input_mouse_position(),item->children_bbx_pos,item->children_bbx_size)) return false;
 	for_node_reverse(item->node.last_child){
-		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden)) continue;
+		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden) || item->style.positioning == pos_fixed) continue;
 		if(find_hovered_item(uiItemFromNode(it))) return 1;
 	}
 	if(mouse_in_item(item)){
@@ -1218,7 +1235,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	vec2 scext;
 	if (parent && parent->style.overflow != overflow_visible) {
 		vec2 cpos = item->pos_screen + item->style.margintl + (item->style.border_style ? item->style.border_width : 0) * vec2::ONE;
-		vec2 csiz = BorderedArea(item);
+		vec2 csiz = ui_bordered_area(item);
 		
 		scoff = Max(vec2{0,0}, Max(parent->visible_start, Min(item->pos_screen, parent->visible_start+parent->visible_size)));
 		vec2 br = Max(parent->visible_start, Min(item->pos_screen + (item->size * item->scale), parent->visible_start+parent->visible_size));
@@ -1551,9 +1568,9 @@ void ui_debug(){
 		vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
 		
 		render_quad2(ipos, g_ui->hovered->size, Color_Red);
-		render_quad2(mpos, MarginedArea(g_ui->hovered), Color_Magenta);
-		render_quad2(bpos, BorderedArea(g_ui->hovered), Color_Blue);
-		render_quad2(ppos, PaddedArea(g_ui->hovered), Color_Green);
+		render_quad2(mpos, ui_margined_area(g_ui->hovered), Color_Magenta);
+		render_quad2(bpos, ui_bordered_area(g_ui->hovered), Color_Blue);
+		render_quad2(ppos, ui_padded_area(g_ui->hovered), Color_Green);
 	}
 }
 
