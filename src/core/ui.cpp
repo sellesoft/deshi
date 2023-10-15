@@ -68,12 +68,14 @@ uiItem* pop_item(){DPZoneScoped;
 // @ui_drawcmd
 
 
-uiDrawCmd* ui_make_drawcmd(upt count){
+uiDrawCmd* 
+ui_make_drawcmd(upt count){
 	g_ui->stats.drawcmds_reserved += count;
 	return (uiDrawCmd*)memalloc(count*sizeof(uiDrawCmd));
 }
 
-void ui_drawcmd_delete(uiDrawCmd* dc){
+void 
+ui_drawcmd_delete(uiDrawCmd* dc){
 	memzfree(dc);
 	g_ui->stats.drawcmds_reserved--;
 }
@@ -84,7 +86,7 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		we need to keep track of the drawinfo that a drawcmd releases when it is not needed anymore
 		so that later drawcmds may come and use it. We do this by storing a linked list of inactive
 		drawcmds, which we organize in arrays sorted by their *memory address*. This allows us to
-		merge bordering drawcmds, preventing waste of memory.
+		merge bordering drawcmds.
 	*/
 	
 	carray<uiDrawCmd*> varr = {g_ui->inactive_drawcmds_vertex_sorted.data, g_ui->inactive_drawcmds_vertex_sorted.count};
@@ -250,14 +252,18 @@ void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 
 //optionally takes a pointer to a boolean to indicate if the item was retrieved from the cache
 uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
-	if(g_ui->updating){
-		LogE("ui", 
-			 "In file, ", setup.file, " on line ", setup.line, ": ui_setup_item() was called during ui_update().\n",
-			 "\tui_update() requires that all items are made outside of it.\n",
-			 "\tA possible cause of this is trying to make an item in another item's action, update, generate, or evaluate function."
-			 );
-		Assert(0);
-	}
+	// NOTE(sushi) disabling this for now, because I've found a situation in which it is useful to create
+	//             subitems in an item's evaluation callback 
+	//             I also don't remember exactly why I disallowed this, so it may come to needing to 
+	//             reenable this at some point 
+//	if(g_ui->updating){
+//		LogE("ui", 
+//			 "In file, ", setup.file, " on line ", setup.line, ": ui_setup_item() was called during ui_update().\n",
+//			 "\tui_update() requires that all items are made outside of it.\n",
+//			 "\tA possible cause of this is trying to make an item in another item's action, update, generate, or evaluate function."
+//			 );
+//		Assert(0);
+//	}
 	
 	uiItem* parent = *(g_ui->item_stack.last);
 	
@@ -295,7 +301,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	
 	if(retrieved_){
 		//at this time, a retrieved item must always be reevaluated and regenerated.
-		item->dirty = 1;
+		item->style_hash = 0;
 		if(retrieved) *retrieved = 1;
 	}
 	

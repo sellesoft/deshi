@@ -3,7 +3,6 @@
 #
 
 import gdb
-import tkinter as tk
 pp = gdb.printing.RegexpCollectionPrettyPrinter("deshi")
 
 class vec2printer:
@@ -140,4 +139,26 @@ class get_closest_generic_header(gdb.Command):
         except Exception as e:
             print(f"error: {e}")
 get_closest_generic_header()
+
+class catch_heap_corruption(gdb.Command):
+    def __init__(self):
+        super(catch_heap_corruption, self).__init__("chc", gdb.COMMAND_USER, gdb.COMPLETE_EXPRESSION)
+    
+    def invoke(self, arg, tty):
+        try:
+            gdb.rbreak(r"*")
+            for b in gdb.breakpoints():
+                print(b.location)
+                if "DEBUG" in b.location or "unicode" in b.location:
+                    b.delete()
+            
+            while 1:
+                gdb.execute("continue")
+                if gdb.parse_and_eval("g_memory->generic_heap") != 0:
+                    gdb.execute("call DEBUG_CheckHeap(g_memory->generic_heap)")
+                
+
+        except Exception as e:
+            print(f"{self.__class__.__name__} error: {e}")
+catch_heap_corruption()
         
