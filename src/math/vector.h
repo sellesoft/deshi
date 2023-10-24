@@ -859,13 +859,13 @@ FORCE_INLINE vec2 Vec2(f32 x, f32 y){
 
 //// nonmember constants ////
 FORCE_INLINE vec2 vec2_ZERO() { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_ONE()  { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_UP()   { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_DOWN() { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_LEFT() { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_RIGHT(){ return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_UNITX(){ return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_UNITY(){ return vec2{ 0, 0}; }
+FORCE_INLINE vec2 vec2_ONE()  { return vec2{ 1, 1}; }
+FORCE_INLINE vec2 vec2_UP()   { return vec2{ 0, 1}; }
+FORCE_INLINE vec2 vec2_DOWN() { return vec2{ 0,-1}; }
+FORCE_INLINE vec2 vec2_LEFT() { return vec2{-1, 0}; }
+FORCE_INLINE vec2 vec2_RIGHT(){ return vec2{ 1, 0}; }
+FORCE_INLINE vec2 vec2_UNITX(){ return vec2{ 1, 0}; }
+FORCE_INLINE vec2 vec2_UNITY(){ return vec2{ 0, 1}; }
 
 
 //// nonmember operators ////
