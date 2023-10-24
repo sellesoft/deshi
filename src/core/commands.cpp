@@ -406,8 +406,8 @@ void cmd_init(){
 			dstr8_append(&builder, str8_lit("\t"));
 			dstr8_append(&builder, ShaderStrings[mat->shader]);
 			dstr8_append(&builder, str8_lit("\t"));
-			if(mat->textureArray){
-				for_stb_array(mat->textureArray){
+			if(mat->texture_array){
+				for_stb_array(mat->texture_array){
 					dstr8_append(&builder, str8_lit(" "));
 					dstr8_append(&builder, str8_from_cstr((*it)->name));
 				}
@@ -431,12 +431,12 @@ void cmd_init(){
 		}
 		
 		s32 texSlot = atoi(temp_str8_cstr(args[1]));
-		if(mat->textureArray == 0){
+		if(mat->texture_array == 0){
 			LogE("cmd","Failed to update material texture. The material '",args[0],"' has no textures.");
 			return;
 		}
-		if(texSlot < 0 || texSlot >= arrlen(mat->textureArray)){
-			LogE("cmd","Failed to update material texture. The supplied texture index '",texSlot,"' is outside of bounds '0..",arrlen(mat->textureArray),"'.");
+		if(texSlot < 0 || texSlot >= arrlen(mat->texture_array)){
+			LogE("cmd","Failed to update material texture. The supplied texture index '",texSlot,"' is outside of bounds '0..",arrlen(mat->texture_array),"'.");
 			return;
 		}
 		
@@ -453,7 +453,7 @@ void cmd_init(){
 			return;
 		}
 		
-		mat->textureArray[texSlot] = tex;
+		mat->texture_array[texSlot] = tex;
 		Log("cmd", "Updated material ",mat->name,"'s texture",texSlot," to ",tex->name);
 	}DESHI_CMD_END(mat_texture, CmdArgument_String, CmdArgument_S32, CmdArgument_String);
 	

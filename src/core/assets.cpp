@@ -38,7 +38,7 @@ assets_init(){DPZoneScoped;
 	assets_mesh_create_box(1.0f, 1.0f, 1.0f, Color_White.rgba); cpystr(assets_mesh_null()->name, "null", 64);
 	int null_x, null_y, null_channels;
 	unsigned char* null_data = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &null_x, &null_y, &null_channels, STBI_rgb_alpha);
-	assets_texture_create_from_memory(null_data, STR8("null"), 128, 128, ImageFormat_RGBA, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_Repeat, false);
+	assets_texture_create_from_memory(null_data, STR8("null"), 128, 128, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest, TextureAddressMode_Repeat, false);
 	stbi_image_free(null_data);
 	assets_material_create(STR8("null"), Shader_NULL, MaterialFlags_NONE, DeshAssets->texture_array, 1);
 	assets_model_create_from_mesh(assets_mesh_null(), ModelFlags_NONE); cpystr(assets_model_null()->name, "null", 64);
@@ -51,7 +51,7 @@ assets_init(){DPZoneScoped;
 	null_font->count = 1;
 	null_font->name = STR8("null");
 	u8 white_pixels[4] = {255,255,255,255};
-	Texture* nf_tex = assets_texture_create_from_memory(white_pixels, STR8("null_font"), 2, 2, ImageFormat_BW, TextureType_2D,
+	Texture* nf_tex = assets_texture_create_from_memory(white_pixels, STR8("null_font"), 2, 2, ImageFormat_BW, TextureType_TwoDimensional,
 														TextureFilter_Nearest, TextureAddressMode_ClampToWhite, false);
 	assets_texture_delete(nf_tex);
 	
@@ -317,19 +317,19 @@ assets_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 triangl
 	
 	Mesh* mesh = (Mesh*)memory_alloc(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	mesh->bytes         = bytes;
-	mesh->indexCount    = indexCount;
-	mesh->vertexCount   = vertexCount;
-	mesh->triangleCount = triangleCount;
-	mesh->faceCount     = faceCount;
-	mesh->totalTriNeighborCount      = trianglesNeighborCount;
-	mesh->totalFaceVertexCount       = facesVertexCount;
-	mesh->totalFaceOuterVertexCount  = facesOuterVertexCount;
-	mesh->totalFaceTriNeighborCount  = facesNeighborTriangleCount;
-	mesh->totalFaceFaceNeighborCount = facesNeighborFaceCount;
-	mesh->vertexArray   = (MeshVertex*)cursor;    cursor +=   vertexCount*sizeof(MeshVertex);
-	mesh->indexArray    = (MeshIndex*)cursor;     cursor +=    indexCount*sizeof(MeshIndex);
-	mesh->triangleArray = (MeshTriangle*)cursor;  cursor += triangleCount*sizeof(MeshTriangle);
-	mesh->faceArray     = (MeshFace*)cursor;      cursor +=     faceCount*sizeof(MeshFace);
+	mesh->index_count    = indexCount;
+	mesh->vertex_count   = vertexCount;
+	mesh->triangle_count = triangleCount;
+	mesh->face_count     = faceCount;
+	mesh->total_tri_neighbor_count      = trianglesNeighborCount;
+	mesh->total_face_vertex_count       = facesVertexCount;
+	mesh->total_face_outer_vertex_count  = facesOuterVertexCount;
+	mesh->total_face_tri_neighbor_count  = facesNeighborTriangleCount;
+	mesh->total_face_face_neighbor_count = facesNeighborFaceCount;
+	mesh->vertex_array   = (MeshVertex*)cursor;    cursor +=   vertexCount*sizeof(MeshVertex);
+	mesh->index_array    = (MeshIndex*)cursor;     cursor +=    indexCount*sizeof(MeshIndex);
+	mesh->triangle_array = (MeshTriangle*)cursor;  cursor += triangleCount*sizeof(MeshTriangle);
+	mesh->face_array     = (MeshFace*)cursor;      cursor +=     faceCount*sizeof(MeshFace);
 	return mesh;
 }
 
@@ -344,21 +344,21 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	
 	//check if created already
 	for_stb_array(DeshAssets->mesh_array){
-		if((strcmp((*it)->name, "box_mesh") == 0) && vec3_equal((*it)->aabbMax, Vec3(width,height,depth))){
+		if((strcmp((*it)->name, "box_mesh") == 0) && vec3_equal((*it)->aabb_max, Vec3(width,height,depth))){
 			return *it;
 		}
 	}
 	
 	Mesh* mesh = assets_mesh_allocate(36, 8, 6, 36, 24, 24, 24, 24);
 	cpystr(mesh->name, "box_mesh", 64);
-	mesh->aabbMin  = {-width,-height,-depth};
-	mesh->aabbMax  = { width, height, depth};
+	mesh->aabb_min  = {-width,-height,-depth};
+	mesh->aabb_max  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
 	
-	MeshVertex*   va = mesh->vertexArray;
-	MeshIndex*    ia = mesh->indexArray;
-	MeshTriangle* ta = mesh->triangleArray;
-	MeshFace*     fa = mesh->faceArray;
+	MeshVertex*   va = mesh->vertex_array;
+	MeshIndex*    ia = mesh->index_array;
+	MeshTriangle* ta = mesh->triangle_array;
+	MeshFace*     fa = mesh->face_array;
 	vec3 p{width, height, depth};
 	vec2 uv{0.0f, 0.0f};
 	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
@@ -395,116 +395,116 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 		ta[i].v[0] = ia[(i*3)+0];
 		ta[i].v[1] = ia[(i*3)+1];
 		ta[i].v[2] = ia[(i*3)+2];
-		ta[i].neighborCount = 3;
+		ta[i].neighbor_count= 3;
 		ta[i].face = i / 2;
 	}
 	
 	//triangle array neighbor array offsets
-	ta[0].neighborArray = (u32*)(fa + 6);
-	ta[0].edgeArray     = (u8*)(ta[0].neighborArray + 36);
+	ta[0].neighbor_array = (u32*)(fa + 6);
+	ta[0].edge_array     = (u8*)(ta[0].neighbor_array + 36);
 	for(s32 i = 1; i < 12; ++i){
-		ta[i].neighborArray = ta[i-1].neighborArray+3;
-		ta[i].edgeArray     = ta[i-1].edgeArray+3;
+		ta[i].neighbor_array = ta[i-1].neighbor_array+3;
+		ta[i].edge_array     = ta[i-1].edge_array+3;
 	}
 	
 	//triangle array neighbors array
-	ta[ 0].neighborArray[0]= 1; ta[ 0].neighborArray[1]=11; ta[ 0].neighborArray[2]= 9;
-	ta[ 1].neighborArray[0]= 0; ta[ 1].neighborArray[1]= 3; ta[ 1].neighborArray[2]= 5;
-	ta[ 2].neighborArray[0]= 3; ta[ 2].neighborArray[1]= 9; ta[ 2].neighborArray[2]= 7;
-	ta[ 3].neighborArray[0]= 2; ta[ 3].neighborArray[1]= 1; ta[ 3].neighborArray[2]= 4;
-	ta[ 4].neighborArray[0]= 5; ta[ 4].neighborArray[1]= 3; ta[ 4].neighborArray[2]= 6;
-	ta[ 5].neighborArray[0]= 4; ta[ 5].neighborArray[1]= 1; ta[ 5].neighborArray[2]=10;
-	ta[ 6].neighborArray[0]= 7; ta[ 6].neighborArray[1]= 4; ta[ 6].neighborArray[2]=10;
-	ta[ 7].neighborArray[0]= 6; ta[ 7].neighborArray[1]= 2; ta[ 7].neighborArray[2]= 8;
-	ta[ 8].neighborArray[0]= 9; ta[ 8].neighborArray[1]=11; ta[ 8].neighborArray[2]= 7;
-	ta[ 9].neighborArray[0]= 8; ta[ 9].neighborArray[1]= 0; ta[ 9].neighborArray[2]= 2;
-	ta[10].neighborArray[0]=11; ta[10].neighborArray[1]= 5; ta[10].neighborArray[2]= 6;
-	ta[11].neighborArray[0]=10; ta[11].neighborArray[1]= 0; ta[11].neighborArray[2]= 8;
+	ta[ 0].neighbor_array[0]= 1; ta[ 0].neighbor_array[1]=11; ta[ 0].neighbor_array[2]= 9;
+	ta[ 1].neighbor_array[0]= 0; ta[ 1].neighbor_array[1]= 3; ta[ 1].neighbor_array[2]= 5;
+	ta[ 2].neighbor_array[0]= 3; ta[ 2].neighbor_array[1]= 9; ta[ 2].neighbor_array[2]= 7;
+	ta[ 3].neighbor_array[0]= 2; ta[ 3].neighbor_array[1]= 1; ta[ 3].neighbor_array[2]= 4;
+	ta[ 4].neighbor_array[0]= 5; ta[ 4].neighbor_array[1]= 3; ta[ 4].neighbor_array[2]= 6;
+	ta[ 5].neighbor_array[0]= 4; ta[ 5].neighbor_array[1]= 1; ta[ 5].neighbor_array[2]=10;
+	ta[ 6].neighbor_array[0]= 7; ta[ 6].neighbor_array[1]= 4; ta[ 6].neighbor_array[2]=10;
+	ta[ 7].neighbor_array[0]= 6; ta[ 7].neighbor_array[1]= 2; ta[ 7].neighbor_array[2]= 8;
+	ta[ 8].neighbor_array[0]= 9; ta[ 8].neighbor_array[1]=11; ta[ 8].neighbor_array[2]= 7;
+	ta[ 9].neighbor_array[0]= 8; ta[ 9].neighbor_array[1]= 0; ta[ 9].neighbor_array[2]= 2;
+	ta[10].neighbor_array[0]=11; ta[10].neighbor_array[1]= 5; ta[10].neighbor_array[2]= 6;
+	ta[11].neighbor_array[0]=10; ta[11].neighbor_array[1]= 0; ta[11].neighbor_array[2]= 8;
 	
 	//triangle array edges array
-	ta[ 0].edgeArray[0]=0; ta[ 0].edgeArray[1]=2; ta[ 0].edgeArray[2]=1;
-	ta[ 1].edgeArray[0]=2; ta[ 1].edgeArray[1]=1; ta[ 1].edgeArray[2]=0;
-	ta[ 2].edgeArray[0]=0; ta[ 2].edgeArray[1]=2; ta[ 2].edgeArray[2]=1;
-	ta[ 3].edgeArray[0]=2; ta[ 3].edgeArray[1]=0; ta[ 3].edgeArray[2]=1;
-	ta[ 4].edgeArray[0]=0; ta[ 4].edgeArray[1]=2; ta[ 4].edgeArray[2]=1;
-	ta[ 5].edgeArray[0]=2; ta[ 5].edgeArray[1]=0; ta[ 5].edgeArray[2]=1;
-	ta[ 6].edgeArray[0]=0; ta[ 6].edgeArray[1]=1; ta[ 6].edgeArray[2]=2;
-	ta[ 7].edgeArray[0]=2; ta[ 7].edgeArray[1]=1; ta[ 7].edgeArray[2]=0;
-	ta[ 8].edgeArray[0]=0; ta[ 8].edgeArray[1]=2; ta[ 8].edgeArray[2]=1;
-	ta[ 9].edgeArray[0]=2; ta[ 9].edgeArray[1]=0; ta[ 9].edgeArray[2]=1;
-	ta[10].edgeArray[0]=0; ta[10].edgeArray[1]=2; ta[10].edgeArray[2]=1;
-	ta[11].edgeArray[0]=2; ta[11].edgeArray[1]=0; ta[11].edgeArray[2]=1;
+	ta[ 0].edge_array[0]=0; ta[ 0].edge_array[1]=2; ta[ 0].edge_array[2]=1;
+	ta[ 1].edge_array[0]=2; ta[ 1].edge_array[1]=1; ta[ 1].edge_array[2]=0;
+	ta[ 2].edge_array[0]=0; ta[ 2].edge_array[1]=2; ta[ 2].edge_array[2]=1;
+	ta[ 3].edge_array[0]=2; ta[ 3].edge_array[1]=0; ta[ 3].edge_array[2]=1;
+	ta[ 4].edge_array[0]=0; ta[ 4].edge_array[1]=2; ta[ 4].edge_array[2]=1;
+	ta[ 5].edge_array[0]=2; ta[ 5].edge_array[1]=0; ta[ 5].edge_array[2]=1;
+	ta[ 6].edge_array[0]=0; ta[ 6].edge_array[1]=1; ta[ 6].edge_array[2]=2;
+	ta[ 7].edge_array[0]=2; ta[ 7].edge_array[1]=1; ta[ 7].edge_array[2]=0;
+	ta[ 8].edge_array[0]=0; ta[ 8].edge_array[1]=2; ta[ 8].edge_array[2]=1;
+	ta[ 9].edge_array[0]=2; ta[ 9].edge_array[1]=0; ta[ 9].edge_array[2]=1;
+	ta[10].edge_array[0]=0; ta[10].edge_array[1]=2; ta[10].edge_array[2]=1;
+	ta[11].edge_array[0]=2; ta[11].edge_array[1]=0; ta[11].edge_array[2]=1;
 	
 	//face array  0=up, 1=back, 2=right, 3=down, 4=left, 5=forward
 	for(s32 i = 0; i < 6; ++i){
 		fa[i].normal                = ta[i*2].normal;
 		fa[i].center                = ta[i*2].normal * p;
-		fa[i].triangleCount         = 2;
-		fa[i].vertexCount           = 4;
-		fa[i].outerVertexCount      = 4;
-		fa[i].neighborTriangleCount = 4;
-		fa[i].neighborFaceCount     = 4;
+		fa[i].triangle_count         = 2;
+		fa[i].vertex_count           = 4;
+		fa[i].outer_vertex_count      = 4;
+		fa[i].neighbor_triangle_count = 4;
+		fa[i].neighbor_face_count     = 4;
 	}
 	
 	//face array triangle array offsets
-	fa[0].triangleArray = (u32*)(ta[0].edgeArray + 36);
+	fa[0].triangle_array = (u32*)(ta[0].edge_array + 36);
 	for(s32 i = 1; i < 6; ++i){
-		fa[i].triangleArray = fa[i-1].triangleArray+2;
+		fa[i].triangle_array = fa[i-1].triangle_array+2;
 	}
 	
 	//face array triangle arrays
 	for(s32 i = 0; i < 6; ++i){
-		fa[i].triangleArray[0]= i*2;
-		fa[i].triangleArray[1]=(i*2)+1;
+		fa[i].triangle_array[0]= i*2;
+		fa[i].triangle_array[1]=(i*2)+1;
 	}
 	
 	//face array vertex array offsets
-	fa[0].vertexArray      = (u32*)(fa[0].triangleArray+12);
-	fa[0].outerVertexArray = (u32*)(fa[0].vertexArray+24);
+	fa[0].vertex_array      = (u32*)(fa[0].triangle_array+12);
+	fa[0].outer_vertex_array = (u32*)(fa[0].vertex_array+24);
 	for(s32 i = 1; i < 6; ++i){
-		fa[i].vertexArray      = fa[i-1].vertexArray+4;
-		fa[i].outerVertexArray = fa[i-1].outerVertexArray+4;
+		fa[i].vertex_array      = fa[i-1].vertex_array+4;
+		fa[i].outer_vertex_array = fa[i-1].outer_vertex_array+4;
 	}
 	
 	//face array vertex array
-	fa[0].vertexArray[0]=0; fa[0].vertexArray[1]=4; fa[0].vertexArray[2]=6; fa[0].vertexArray[3]=2; // +y
-	fa[1].vertexArray[0]=2; fa[1].vertexArray[1]=6; fa[1].vertexArray[2]=7; fa[1].vertexArray[3]=3; // -z
-	fa[2].vertexArray[0]=6; fa[2].vertexArray[1]=4; fa[2].vertexArray[2]=5; fa[2].vertexArray[3]=7; // +x
-	fa[3].vertexArray[0]=3; fa[3].vertexArray[1]=7; fa[3].vertexArray[2]=5; fa[3].vertexArray[3]=1; // -y
-	fa[4].vertexArray[0]=0; fa[4].vertexArray[1]=2; fa[4].vertexArray[2]=3; fa[4].vertexArray[3]=1; // -x
-	fa[5].vertexArray[0]=4; fa[5].vertexArray[1]=0; fa[5].vertexArray[2]=1; fa[5].vertexArray[3]=5; // +z
+	fa[0].vertex_array[0]=0; fa[0].vertex_array[1]=4; fa[0].vertex_array[2]=6; fa[0].vertex_array[3]=2; // +y
+	fa[1].vertex_array[0]=2; fa[1].vertex_array[1]=6; fa[1].vertex_array[2]=7; fa[1].vertex_array[3]=3; // -z
+	fa[2].vertex_array[0]=6; fa[2].vertex_array[1]=4; fa[2].vertex_array[2]=5; fa[2].vertex_array[3]=7; // +x
+	fa[3].vertex_array[0]=3; fa[3].vertex_array[1]=7; fa[3].vertex_array[2]=5; fa[3].vertex_array[3]=1; // -y
+	fa[4].vertex_array[0]=0; fa[4].vertex_array[1]=2; fa[4].vertex_array[2]=3; fa[4].vertex_array[3]=1; // -x
+	fa[5].vertex_array[0]=4; fa[5].vertex_array[1]=0; fa[5].vertex_array[2]=1; fa[5].vertex_array[3]=5; // +z
 	
 	//face array outer vertex array
-	fa[0].outerVertexArray[0]=0; fa[0].outerVertexArray[1]=4; fa[0].outerVertexArray[2]=6; fa[0].outerVertexArray[3]=2; // +y
-	fa[1].outerVertexArray[0]=2; fa[1].outerVertexArray[1]=6; fa[1].outerVertexArray[2]=7; fa[1].outerVertexArray[3]=3; // -z
-	fa[2].outerVertexArray[0]=6; fa[2].outerVertexArray[1]=4; fa[2].outerVertexArray[2]=5; fa[2].outerVertexArray[3]=7; // +x
-	fa[3].outerVertexArray[0]=3; fa[3].outerVertexArray[1]=7; fa[3].outerVertexArray[2]=5; fa[3].outerVertexArray[3]=1; // -y
-	fa[4].outerVertexArray[0]=0; fa[4].outerVertexArray[1]=2; fa[4].outerVertexArray[2]=3; fa[4].outerVertexArray[3]=1; // -x
-	fa[5].outerVertexArray[0]=4; fa[5].outerVertexArray[1]=0; fa[5].outerVertexArray[2]=1; fa[5].outerVertexArray[3]=5; // +z
+	fa[0].outer_vertex_array[0]=0; fa[0].outer_vertex_array[1]=4; fa[0].outer_vertex_array[2]=6; fa[0].outer_vertex_array[3]=2; // +y
+	fa[1].outer_vertex_array[0]=2; fa[1].outer_vertex_array[1]=6; fa[1].outer_vertex_array[2]=7; fa[1].outer_vertex_array[3]=3; // -z
+	fa[2].outer_vertex_array[0]=6; fa[2].outer_vertex_array[1]=4; fa[2].outer_vertex_array[2]=5; fa[2].outer_vertex_array[3]=7; // +x
+	fa[3].outer_vertex_array[0]=3; fa[3].outer_vertex_array[1]=7; fa[3].outer_vertex_array[2]=5; fa[3].outer_vertex_array[3]=1; // -y
+	fa[4].outer_vertex_array[0]=0; fa[4].outer_vertex_array[1]=2; fa[4].outer_vertex_array[2]=3; fa[4].outer_vertex_array[3]=1; // -x
+	fa[5].outer_vertex_array[0]=4; fa[5].outer_vertex_array[1]=0; fa[5].outer_vertex_array[2]=1; fa[5].outer_vertex_array[3]=5; // +z
 	
 	//face array neighbor array offsets
-	fa[0].neighborTriangleArray = (u32*)(fa[0].outerVertexArray+24);
-	fa[0].neighborFaceArray     = (u32*)(fa[0].neighborTriangleArray+24);
+	fa[0].neighbor_triangle_array = (u32*)(fa[0].outer_vertex_array+24);
+	fa[0].neighbor_face_array     = (u32*)(fa[0].neighbor_triangle_array+24);
 	for(s32 i = 1; i < 6; ++i){
-		fa[i].neighborTriangleArray = fa[i-1].neighborTriangleArray+4;
-		fa[i].neighborFaceArray     = fa[i-1].neighborFaceArray+4;
+		fa[i].neighbor_triangle_array = fa[i-1].neighbor_triangle_array+4;
+		fa[i].neighbor_face_array     = fa[i-1].neighbor_face_array+4;
 	}
 	
 	//face array neighbor triangle array
-	fa[0].neighborTriangleArray[0]= 9; fa[0].neighborTriangleArray[1]= 3; fa[0].neighborTriangleArray[2]= 5; fa[0].neighborTriangleArray[3]=11;
-	fa[1].neighborTriangleArray[0]= 1; fa[1].neighborTriangleArray[1]= 4; fa[1].neighborTriangleArray[2]= 7; fa[1].neighborTriangleArray[3]= 9;
-	fa[2].neighborTriangleArray[0]= 1; fa[2].neighborTriangleArray[1]=10; fa[2].neighborTriangleArray[2]= 6; fa[2].neighborTriangleArray[3]= 3;
-	fa[3].neighborTriangleArray[0]= 4; fa[3].neighborTriangleArray[1]=10; fa[3].neighborTriangleArray[2]= 8; fa[3].neighborTriangleArray[3]= 2;
-	fa[4].neighborTriangleArray[0]= 0; fa[4].neighborTriangleArray[1]= 2; fa[4].neighborTriangleArray[2]= 7; fa[4].neighborTriangleArray[3]=11;
-	fa[5].neighborTriangleArray[0]= 0; fa[5].neighborTriangleArray[1]= 8; fa[5].neighborTriangleArray[2]= 6; fa[5].neighborTriangleArray[3]= 5;
+	fa[0].neighbor_triangle_array[0]= 9; fa[0].neighbor_triangle_array[1]= 3; fa[0].neighbor_triangle_array[2]= 5; fa[0].neighbor_triangle_array[3]=11;
+	fa[1].neighbor_triangle_array[0]= 1; fa[1].neighbor_triangle_array[1]= 4; fa[1].neighbor_triangle_array[2]= 7; fa[1].neighbor_triangle_array[3]= 9;
+	fa[2].neighbor_triangle_array[0]= 1; fa[2].neighbor_triangle_array[1]=10; fa[2].neighbor_triangle_array[2]= 6; fa[2].neighbor_triangle_array[3]= 3;
+	fa[3].neighbor_triangle_array[0]= 4; fa[3].neighbor_triangle_array[1]=10; fa[3].neighbor_triangle_array[2]= 8; fa[3].neighbor_triangle_array[3]= 2;
+	fa[4].neighbor_triangle_array[0]= 0; fa[4].neighbor_triangle_array[1]= 2; fa[4].neighbor_triangle_array[2]= 7; fa[4].neighbor_triangle_array[3]=11;
+	fa[5].neighbor_triangle_array[0]= 0; fa[5].neighbor_triangle_array[1]= 8; fa[5].neighbor_triangle_array[2]= 6; fa[5].neighbor_triangle_array[3]= 5;
 	
 	//face array neighbor face array
-	fa[0].neighborFaceArray[0]=1; fa[0].neighborFaceArray[1]=2; fa[0].neighborFaceArray[2]=4; fa[0].neighborFaceArray[3]=5;
-	fa[1].neighborFaceArray[0]=0; fa[1].neighborFaceArray[1]=2; fa[1].neighborFaceArray[2]=3; fa[1].neighborFaceArray[3]=4;
-	fa[2].neighborFaceArray[0]=0; fa[2].neighborFaceArray[1]=1; fa[2].neighborFaceArray[2]=3; fa[2].neighborFaceArray[3]=5;
-	fa[3].neighborFaceArray[0]=1; fa[3].neighborFaceArray[1]=2; fa[3].neighborFaceArray[2]=4; fa[3].neighborFaceArray[3]=5;
-	fa[4].neighborFaceArray[0]=0; fa[4].neighborFaceArray[1]=1; fa[4].neighborFaceArray[2]=3; fa[4].neighborFaceArray[3]=5;
-	fa[5].neighborFaceArray[0]=0; fa[5].neighborFaceArray[1]=2; fa[5].neighborFaceArray[2]=3; fa[5].neighborFaceArray[3]=4;
+	fa[0].neighbor_face_array[0]=1; fa[0].neighbor_face_array[1]=2; fa[0].neighbor_face_array[2]=4; fa[0].neighbor_face_array[3]=5;
+	fa[1].neighbor_face_array[0]=0; fa[1].neighbor_face_array[1]=2; fa[1].neighbor_face_array[2]=3; fa[1].neighbor_face_array[3]=4;
+	fa[2].neighbor_face_array[0]=0; fa[2].neighbor_face_array[1]=1; fa[2].neighbor_face_array[2]=3; fa[2].neighbor_face_array[3]=5;
+	fa[3].neighbor_face_array[0]=1; fa[3].neighbor_face_array[1]=2; fa[3].neighbor_face_array[2]=4; fa[3].neighbor_face_array[3]=5;
+	fa[4].neighbor_face_array[0]=0; fa[4].neighbor_face_array[1]=1; fa[4].neighbor_face_array[2]=3; fa[4].neighbor_face_array[3]=5;
+	fa[5].neighbor_face_array[0]=0; fa[5].neighbor_face_array[1]=2; fa[5].neighbor_face_array[2]=3; fa[5].neighbor_face_array[3]=4;
 	
 	render_load_mesh(mesh);
 	arrput(DeshAssets->mesh_array, mesh);
@@ -560,27 +560,27 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 	
 	//setup arrays
 	u8* cursor  = (u8*)mesh + (1*sizeof(Mesh));
-	mesh->vertexArray   = (MeshVertex*)cursor;    cursor +=   mesh->vertexCount*sizeof(MeshVertex);
-	mesh->indexArray    = (MeshIndex*)cursor;     cursor +=    mesh->indexCount*sizeof(MeshIndex);
-	mesh->triangleArray = (MeshTriangle*)cursor;  cursor += mesh->triangleCount*sizeof(MeshTriangle);
-	mesh->faceArray     = (MeshFace*)cursor;      cursor +=     mesh->faceCount*sizeof(MeshFace);
-	mesh->triangleArray[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
-	mesh->triangleArray[0].edgeArray     = (u8*) (mesh->triangleArray[0].neighborArray + mesh->totalTriNeighborCount);
-	for(s32 ti = 1; ti < mesh->triangleCount; ++ti){
-		mesh->triangleArray[ti].neighborArray = (u32*)(mesh->triangleArray[ti-1].neighborArray + mesh->triangleArray[ti-1].neighborCount);
-		mesh->triangleArray[ti].edgeArray     = (u8*) (mesh->triangleArray[ti-1].edgeArray + mesh->triangleArray[ti-1].neighborCount);
+	mesh->vertex_array   = (MeshVertex*)cursor;    cursor +=   mesh->vertex_count*sizeof(MeshVertex);
+	mesh->index_array    = (MeshIndex*)cursor;     cursor +=    mesh->index_count*sizeof(MeshIndex);
+	mesh->triangle_array = (MeshTriangle*)cursor;  cursor += mesh->triangle_count*sizeof(MeshTriangle);
+	mesh->face_array     = (MeshFace*)cursor;      cursor +=     mesh->face_count*sizeof(MeshFace);
+	mesh->triangle_array[0].neighbor_array = (u32*)(mesh->face_array + mesh->face_count);
+	mesh->triangle_array[0].edge_array     = (u8*) (mesh->triangle_array[0].neighbor_array + mesh->total_tri_neighbor_count);
+	for(s32 ti = 1; ti < mesh->triangle_count; ++ti){
+		mesh->triangle_array[ti].neighbor_array = (u32*)(mesh->triangle_array[ti-1].neighbor_array + mesh->triangle_array[ti-1].neighbor_count);
+		mesh->triangle_array[ti].edge_array     = (u8*) (mesh->triangle_array[ti-1].edge_array + mesh->triangle_array[ti-1].neighbor_count);
 	}
-	mesh->faceArray[0].triangleArray         = (u32*)(mesh->triangleArray[0].edgeArray         + mesh->totalTriNeighborCount);
-	mesh->faceArray[0].vertexArray           = (u32*)(mesh->faceArray[0].triangleArray         + mesh->triangleCount);
-	mesh->faceArray[0].outerVertexArray      = (u32*)(mesh->faceArray[0].vertexArray           + mesh->totalFaceVertexCount);
-	mesh->faceArray[0].neighborTriangleArray = (u32*)(mesh->faceArray[0].outerVertexArray      + mesh->totalFaceOuterVertexCount);
-	mesh->faceArray[0].neighborFaceArray     = (u32*)(mesh->faceArray[0].neighborTriangleArray + mesh->totalFaceTriNeighborCount);
-	for(s32 fi = 1; fi < mesh->faceCount; ++fi){
-		mesh->faceArray[fi].triangleArray         = (u32*)(mesh->faceArray[fi-1].triangleArray         + mesh->faceArray[fi-1].triangleCount);
-		mesh->faceArray[fi].vertexArray           = (u32*)(mesh->faceArray[fi-1].vertexArray           + mesh->faceArray[fi-1].vertexCount);
-		mesh->faceArray[fi].outerVertexArray      = (u32*)(mesh->faceArray[fi-1].outerVertexArray      + mesh->faceArray[fi-1].outerVertexCount);
-		mesh->faceArray[fi].neighborTriangleArray = (u32*)(mesh->faceArray[fi-1].neighborTriangleArray + mesh->faceArray[fi-1].neighborTriangleCount);
-		mesh->faceArray[fi].neighborFaceArray     = (u32*)(mesh->faceArray[fi-1].neighborFaceArray     + mesh->faceArray[fi-1].neighborFaceCount);
+	mesh->face_array[0].triangle_array         = (u32*)(mesh->triangle_array[0].edge_array         + mesh->total_tri_neighbor_count);
+	mesh->face_array[0].vertex_array           = (u32*)(mesh->face_array[0].triangle_array         + mesh->triangle_count);
+	mesh->face_array[0].outer_vertex_array      = (u32*)(mesh->face_array[0].vertex_array           + mesh->total_face_vertex_count);
+	mesh->face_array[0].neighbor_triangle_array = (u32*)(mesh->face_array[0].outer_vertex_array      + mesh->total_face_outer_vertex_count);
+	mesh->face_array[0].neighbor_face_array     = (u32*)(mesh->face_array[0].neighbor_triangle_array + mesh->total_face_tri_neighbor_count);
+	for(s32 fi = 1; fi < mesh->face_count; ++fi){
+		mesh->face_array[fi].triangle_array         = (u32*)(mesh->face_array[fi-1].triangle_array         + mesh->face_array[fi-1].triangle_count);
+		mesh->face_array[fi].vertex_array           = (u32*)(mesh->face_array[fi-1].vertex_array           + mesh->face_array[fi-1].vertex_count);
+		mesh->face_array[fi].outer_vertex_array      = (u32*)(mesh->face_array[fi-1].outer_vertex_array      + mesh->face_array[fi-1].outer_vertex_count);
+		mesh->face_array[fi].neighbor_triangle_array = (u32*)(mesh->face_array[fi-1].neighbor_triangle_array + mesh->face_array[fi-1].neighbor_triangle_count);
+		mesh->face_array[fi].neighbor_face_array     = (u32*)(mesh->face_array[fi-1].neighbor_face_array     + mesh->face_array[fi-1].neighbor_face_count);
 	}
 	
 	render_load_mesh(mesh);
@@ -631,7 +631,7 @@ assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type,
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
-	texture->uvMode  = uvMode;
+	texture->uv_mode  = uvMode;
 	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	if(texture->pixels == 0){
 		LogE("assets","Failed to create texture '",path,"': ",stbi_failure_reason()); 
@@ -671,7 +671,7 @@ assets_texture_create_from_path(str8 path, ImageFormat format, TextureType type,
 	texture->format  = format; //TODO(delle) handle non RGBA formats properly
 	texture->type    = type;
 	texture->filter  = filter;
-	texture->uvMode  = uvMode;
+	texture->uv_mode  = uvMode;
 	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	if(texture->pixels == 0){
 		LogE("assets","Failed to create texture '",path,"': ",stbi_failure_reason()); 
@@ -715,7 +715,7 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
-	texture->uvMode  = uvMode;
+	texture->uv_mode  = uvMode;
 	texture->width   = width;
 	texture->height  = height;
 	texture->depth   = 4;
@@ -785,7 +785,7 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 Material*
 assets_material_allocate(u32 textureCount){DPZoneScoped;
 	Material* material = (Material*)memory_alloc(sizeof(Material));
-	arrsetlen(material->textureArray, textureCount);
+	arrsetlen(material->texture_array, textureCount);
 	return material;
 }
 
@@ -803,7 +803,7 @@ assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** 
 	CopyMemory(material->name, name.str, ClampMax(name.count,63));
 	material->shader = shader;
 	material->flags  = flags;
-	forI(texture_count) material->textureArray[i] = textures[i];
+	forI(texture_count) material->texture_array[i] = textures[i];
 	
 	render_load_material(material);
 	arrput(DeshAssets->material_array, material);
@@ -933,7 +933,7 @@ assets_material_create_from_path(str8 path){DPZoneScoped;
 	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
 	material->shader = mat_shader;
 	material->flags  = mat_flags;
-	forI(mat_textures.count) material->textureArray[i] = assets_texture_create_from_file_simple(mat_textures[i]);
+	forI(mat_textures.count) material->texture_array[i] = assets_texture_create_from_file_simple(mat_textures[i]);
 	
 	render_load_material(material);
 	arrput(DeshAssets->material_array, material);
@@ -959,8 +959,8 @@ assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 						 "\n"
 						 "\n>textures").fin,
 			   deshi_temp_allocator);
-	if(material->textureArray){
-		for_stb_array(material->textureArray){
+	if(material->texture_array){
+		for_stb_array(material->texture_array){
 			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
 		}
 	}
@@ -981,7 +981,7 @@ assets_material_delete(Material* material){DPZoneScoped;
 		}
 	}
 	render_unload_material(material);
-	arrfree(material->textureArray);
+	arrfree(material->texture_array);
 	memory_zfree(material);
 }
 
@@ -993,7 +993,7 @@ assets_material_delete(Material* material){DPZoneScoped;
 Model*
 assets_model_allocate(u32 batchCount){DPZoneScoped;
 	Model* model = (Model*)memory_alloc(sizeof(Model));
-	arrsetlen(model->batchArray, (batchCount) ? batchCount : 1);
+	arrsetlen(model->batch_array, (batchCount) ? batchCount : 1);
 	return model;
 }
 
@@ -1147,7 +1147,7 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 	model->mesh     = assets_mesh_create_from_file(model_mesh);
 	model->armature = 0;
 	forI(model_batches.count){
-		model->batchArray[i] = ModelBatch{
+		model->batch_array[i] = ModelBatch{
 			model_batches[i].second,
 			model_batches[i].third,
 			assets_material_create_from_file(model_batches[i].first)
@@ -1377,7 +1377,7 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 						if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 					}
 				}
-				triangles[cti].neighborCount = triNeighbors[cti].count;
+				triangles[cti].neighbor_count= triNeighbors[cti].count;
 				f64 load_watch = peek_stopwatch(load_stopwatch);
 				if(((u64)(load_watch / 1000.0) % 10 == 0) && ((u64)(load_watch / 1000.0) != 0)){
 					Log("assets",obj_path," face ",faces.count," on line ",line_number," finished creation in ",peek_stopwatch(face_stopwatch),"ms");
@@ -1561,65 +1561,65 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 									totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
 		cpystr(mesh->name, (char*)file->front.str, 64);
-		mesh->aabbMin  = aabb_min;
-		mesh->aabbMax  = aabb_max;
+		mesh->aabb_min  = aabb_min;
+		mesh->aabb_max  = aabb_max;
 		mesh->center   = {(aabb_max.x+aabb_min.x)/2.0f, (aabb_max.y+aabb_min.y)/2.0f, (aabb_max.z+aabb_min.z)/2.0f};
-		memcpy(mesh->vertexArray,   vUnique.data.data, vUnique.count*sizeof(MeshVertex));
-		memcpy(mesh->indexArray,    indexes.data,      indexes.count*sizeof(MeshIndex));
-		memcpy(mesh->triangleArray, triangles.data,    triangles.count*sizeof(MeshTriangle));
-		memcpy(mesh->faceArray,     faces.data,        faces.count*sizeof(MeshFace));
+		memcpy(mesh->vertex_array,   vUnique.data.data, vUnique.count*sizeof(MeshVertex));
+		memcpy(mesh->index_array,    indexes.data,      indexes.count*sizeof(MeshIndex));
+		memcpy(mesh->triangle_array, triangles.data,    triangles.count*sizeof(MeshTriangle));
+		memcpy(mesh->face_array,     faces.data,        faces.count*sizeof(MeshFace));
 		
 		//setup pointers
-		mesh->triangleArray[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
-		mesh->triangleArray[0].edgeArray     = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
-		for(s32 ti = 1; ti < mesh->triangleCount; ++ti){
-			mesh->triangleArray[ti].neighborArray = (u32*)(mesh->triangleArray[ti-1].neighborArray + triNeighbors[ti-1].count);
-			mesh->triangleArray[ti].edgeArray     =  (u8*)(mesh->triangleArray[ti-1].edgeArray     + triNeighbors[ti-1].count);
+		mesh->triangle_array[0].neighbor_array = (u32*)(mesh->face_array + mesh->face_count);
+		mesh->triangle_array[0].edge_array     = (u8*)(mesh->triangle_array[0].neighbor_array + totalTriNeighbors);
+		for(s32 ti = 1; ti < mesh->triangle_count; ++ti){
+			mesh->triangle_array[ti].neighbor_array = (u32*)(mesh->triangle_array[ti-1].neighbor_array + triNeighbors[ti-1].count);
+			mesh->triangle_array[ti].edge_array     =  (u8*)(mesh->triangle_array[ti-1].edge_array     + triNeighbors[ti-1].count);
 		}
-		mesh->faceArray[0].triangleArray         = (u32*)(mesh->triangleArray[0].edgeArray     + totalTriNeighbors);
-		mesh->faceArray[0].vertexArray           = (u32*)(mesh->faceArray[0].triangleArray         + triangles.count);
-		mesh->faceArray[0].outerVertexArray      = (u32*)(mesh->faceArray[0].vertexArray           + totalFaceVertexes);
-		mesh->faceArray[0].neighborTriangleArray = (u32*)(mesh->faceArray[0].outerVertexArray      + totalFaceOuterVertexes);
-		mesh->faceArray[0].neighborFaceArray     = (u32*)(mesh->faceArray[0].neighborTriangleArray + totalFaceTriNeighbors);
-		for(s32 fi = 1; fi < mesh->faceCount; ++fi){
-			mesh->faceArray[fi].triangleArray         = (u32*)(mesh->faceArray[fi-1].triangleArray         + faceTriangles[fi-1].count);
-			mesh->faceArray[fi].vertexArray           = (u32*)(mesh->faceArray[fi-1].vertexArray           + faceVertexes[fi-1].count);
-			mesh->faceArray[fi].outerVertexArray      = (u32*)(mesh->faceArray[fi-1].outerVertexArray      + faceOuterVertexes[fi-1].count);
-			mesh->faceArray[fi].neighborTriangleArray = (u32*)(mesh->faceArray[fi-1].neighborTriangleArray + faceTriNeighbors[fi-1].count);
-			mesh->faceArray[fi].neighborFaceArray     = (u32*)(mesh->faceArray[fi-1].neighborFaceArray     + faceFaceNeighbors[fi-1].count);
+		mesh->face_array[0].triangle_array         = (u32*)(mesh->triangle_array[0].edge_array     + totalTriNeighbors);
+		mesh->face_array[0].vertex_array           = (u32*)(mesh->face_array[0].triangle_array         + triangles.count);
+		mesh->face_array[0].outer_vertex_array      = (u32*)(mesh->face_array[0].vertex_array           + totalFaceVertexes);
+		mesh->face_array[0].neighbor_triangle_array = (u32*)(mesh->face_array[0].outer_vertex_array      + totalFaceOuterVertexes);
+		mesh->face_array[0].neighbor_face_array     = (u32*)(mesh->face_array[0].neighbor_triangle_array + totalFaceTriNeighbors);
+		for(s32 fi = 1; fi < mesh->face_count; ++fi){
+			mesh->face_array[fi].triangle_array         = (u32*)(mesh->face_array[fi-1].triangle_array         + faceTriangles[fi-1].count);
+			mesh->face_array[fi].vertex_array           = (u32*)(mesh->face_array[fi-1].vertex_array           + faceVertexes[fi-1].count);
+			mesh->face_array[fi].outer_vertex_array      = (u32*)(mesh->face_array[fi-1].outer_vertex_array      + faceOuterVertexes[fi-1].count);
+			mesh->face_array[fi].neighbor_triangle_array = (u32*)(mesh->face_array[fi-1].neighbor_triangle_array + faceTriNeighbors[fi-1].count);
+			mesh->face_array[fi].neighbor_face_array     = (u32*)(mesh->face_array[fi-1].neighbor_face_array     + faceFaceNeighbors[fi-1].count);
 		}
 		
 		//fill triangle neighbors/edges
 		forX(ti, triangles.count){
 			forX(ni, triNeighbors[ti].count){
-				mesh->triangleArray[ti].neighborArray[ni] = triNeighbors[ti][ni].first;
-				mesh->triangleArray[ti].edgeArray[ni]     = triNeighbors[ti][ni].second;
+				mesh->triangle_array[ti].neighbor_array[ni] = triNeighbors[ti][ni].first;
+				mesh->triangle_array[ti].edge_array[ni]     = triNeighbors[ti][ni].second;
 			}
-			mesh->triangleArray[ti].neighborCount = triNeighbors[ti].count;
+			mesh->triangle_array[ti].neighbor_count= triNeighbors[ti].count;
 		}
 		
 		//fill face tris/vertexes/neighbors
-		forX(fi, mesh->faceCount){
-			mesh->faceArray[fi].triangleCount = faceTriangles[fi].count;
-			mesh->faceArray[fi].vertexCount   = faceVertexes[fi].count;
-			mesh->faceArray[fi].outerVertexCount = faceOuterVertexes[fi].count;
-			mesh->faceArray[fi].neighborTriangleCount = faceTriNeighbors[fi].count;
-			mesh->faceArray[fi].neighborFaceCount = faceFaceNeighbors[fi].count;
-			mesh->faceArray[fi].center = faces[fi].center / (f32)faceOuterVertexes[fi].count;
-			forX(fti, mesh->faceArray[fi].triangleCount){
-				mesh->faceArray[fi].triangleArray[fti] = faceTriangles[fi][fti];
+		forX(fi, mesh->face_count){
+			mesh->face_array[fi].triangle_count = faceTriangles[fi].count;
+			mesh->face_array[fi].vertex_count   = faceVertexes[fi].count;
+			mesh->face_array[fi].outer_vertex_count = faceOuterVertexes[fi].count;
+			mesh->face_array[fi].neighbor_triangle_count = faceTriNeighbors[fi].count;
+			mesh->face_array[fi].neighbor_face_count = faceFaceNeighbors[fi].count;
+			mesh->face_array[fi].center = faces[fi].center / (f32)faceOuterVertexes[fi].count;
+			forX(fti, mesh->face_array[fi].triangle_count){
+				mesh->face_array[fi].triangle_array[fti] = faceTriangles[fi][fti];
 			}
-			forX(fvi, mesh->faceArray[fi].vertexCount){
-				mesh->faceArray[fi].vertexArray[fvi] = faceVertexes[fi].data[fvi];
+			forX(fvi, mesh->face_array[fi].vertex_count){
+				mesh->face_array[fi].vertex_array[fvi] = faceVertexes[fi].data[fvi];
 			}
-			forX(fvi, mesh->faceArray[fi].outerVertexCount){
-				mesh->faceArray[fi].outerVertexArray[fvi] = faceOuterVertexes[fi][fvi];
+			forX(fvi, mesh->face_array[fi].outer_vertex_count){
+				mesh->face_array[fi].outer_vertex_array[fvi] = faceOuterVertexes[fi][fvi];
 			}
-			forX(fvi, mesh->faceArray[fi].neighborTriangleCount){
-				mesh->faceArray[fi].neighborTriangleArray[fvi] = faceTriNeighbors[fi][fvi];
+			forX(fvi, mesh->face_array[fi].neighbor_triangle_count){
+				mesh->face_array[fi].neighbor_triangle_array[fvi] = faceTriNeighbors[fi][fvi];
 			}
-			forX(fvi, mesh->faceArray[fi].neighborFaceCount){
-				mesh->faceArray[fi].neighborFaceArray[fvi] = faceFaceNeighbors[fi][fvi];
+			forX(fvi, mesh->face_array[fi].neighbor_face_count){
+				mesh->face_array[fi].neighbor_face_array[fvi] = faceFaceNeighbors[fi][fvi];
 			}
 		}
 		
@@ -1645,18 +1645,18 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 	
 	//!Incomplete batch materials
 	if(mArray.count > 1){
-		model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-		model->batchArray[mArray.count-1].indexCount  = indexes.count - model->batchArray[mArray.count-1].indexOffset;
-		model->batchArray[mArray.count-1].material    = assets_material_null();
+		model->batch_array[mArray.count-1].index_offset = mUnique.data[mArray[mArray.count-1]].first;
+		model->batch_array[mArray.count-1].index_count  = indexes.count - model->batch_array[mArray.count-1].index_offset;
+		model->batch_array[mArray.count-1].material    = assets_material_null();
 		for(u32 bi = mArray.count-2; bi >= 0; --bi){
-			model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
-			model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
-			model->batchArray[bi].material    = assets_material_null();
+			model->batch_array[bi].index_offset = mUnique.data[mArray[bi]].first;
+			model->batch_array[bi].index_count  = model->batch_array[bi+1].index_offset - model->batch_array[bi].index_offset;
+			model->batch_array[bi].material    = assets_material_null();
 		}
 	}else{
-		model->batchArray[0].indexOffset = 0;
-		model->batchArray[0].indexCount  = indexes.count;
-		model->batchArray[0].material    = assets_material_null();
+		model->batch_array[0].index_offset = 0;
+		model->batch_array[0].index_count  = indexes.count;
+		model->batch_array[0].material    = assets_material_null();
 	}
 	
 	arrput(DeshAssets->model_array, model);
@@ -1675,11 +1675,11 @@ assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 		if(   (*it)->mesh == mesh
 		   && strncmp((*it)->name, (char*)model_name.str, 64) == 0
 		   && (*it)->flags == flags
-		   && (*it)->batchArray != 0
-		   && arrlenu((*it)->batchArray) == 1
-		   && (*it)->batchArray[0].indexOffset == 0
-		   && (*it)->batchArray[0].indexCount == mesh->indexCount
-		   && (*it)->batchArray[0].material == assets_material_null())
+		   && (*it)->batch_array != 0
+		   && arrlenu((*it)->batch_array) == 1
+		   && (*it)->batch_array[0].index_offset == 0
+		   && (*it)->batch_array[0].index_count == mesh->index_count
+		   && (*it)->batch_array[0].material == assets_material_null())
 		{
 			return *it;
 		}
@@ -1689,7 +1689,7 @@ assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	cpystr(model->name, (char*)model_name.str, 64);
 	model->mesh     = mesh;
 	model->armature = 0;
-	model->batchArray[0] = ModelBatch{0, mesh->indexCount, assets_material_null()};
+	model->batch_array[0] = ModelBatch{0, mesh->index_count, assets_material_null()};
 	
 	arrput(DeshAssets->model_array, model);
 	Log("assets","Finished loading model '",model_name,"' in ",peek_stopwatch(load_stopwatch),"ms");
@@ -1807,18 +1807,18 @@ assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){D
 	
 	//!Incomplete batch materials
 	if(mArray.count > 1){
-		model->batchArray[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-		model->batchArray[mArray.count-1].indexCount  = index_count - model->batchArray[mArray.count-1].indexOffset;
-		model->batchArray[mArray.count-1].material    = assets_material_null();
+		model->batch_array[mArray.count-1].index_offset = mUnique.data[mArray[mArray.count-1]].first;
+		model->batch_array[mArray.count-1].index_count  = index_count - model->batch_array[mArray.count-1].index_offset;
+		model->batch_array[mArray.count-1].material    = assets_material_null();
 		for(u32 bi = mArray.count-2; bi >= 0; --bi){
-			model->batchArray[bi].indexOffset = mUnique.data[mArray[bi]].first;
-			model->batchArray[bi].indexCount  = model->batchArray[bi+1].indexOffset - model->batchArray[bi].indexOffset;
-			model->batchArray[bi].material    = assets_material_null();
+			model->batch_array[bi].index_offset = mUnique.data[mArray[bi]].first;
+			model->batch_array[bi].index_count  = model->batch_array[bi+1].index_offset - model->batch_array[bi].index_offset;
+			model->batch_array[bi].material    = assets_material_null();
 		}
 	}else{
-		model->batchArray[0].indexOffset = 0;
-		model->batchArray[0].indexCount  = index_count;
-		model->batchArray[0].material    = assets_material_null();
+		model->batch_array[0].index_offset = 0;
+		model->batch_array[0].index_count  = index_count;
+		model->batch_array[0].material    = assets_material_null();
 	}
 	
 	arrput(DeshAssets->model_array, model);
@@ -1828,15 +1828,15 @@ assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){D
 
 
 Model* assets_model_copy(Model* base){DPZoneScoped;
-	Model* model = assets_model_allocate(arrlenu(base->batchArray));
+	Model* model = assets_model_allocate(arrlenu(base->batch_array));
 	cpystr(model->name, base->name, 64);
 	model->flags    = base->flags;
 	model->mesh     = base->mesh;
 	model->armature = base->armature;
-	forI(arrlenu(base->batchArray)){
-		model->batchArray[i].indexOffset = base->batchArray[i].indexOffset;
-		model->batchArray[i].indexCount  = base->batchArray[i].indexCount;
-		model->batchArray[i].material    = base->batchArray[i].material;
+	forI(arrlenu(base->batch_array)){
+		model->batch_array[i].index_offset = base->batch_array[i].index_offset;
+		model->batch_array[i].index_count  = base->batch_array[i].index_count;
+		model->batch_array[i].material    = base->batch_array[i].material;
 	}
 	
 	arrput(DeshAssets->model_array, model);
@@ -1864,10 +1864,10 @@ assets_model_save(Model* model){
 						 "\n"
 						 "\n>batches").fin,
 			   deshi_temp_allocator);
-	if(model->batchArray){
-		for_stb_array(model->batchArray){
+	if(model->batch_array){
+		for_stb_array(model->batch_array){
 			assets_material_save(it->material);
-			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->index_offset," ",it->index_count));
 		}
 	}
 	dstr8_append(&builder, STR8("\n"));
@@ -1897,10 +1897,10 @@ assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
 						 "\n"
 						 "\n>batches").fin,
 			   deshi_temp_allocator);
-	if(model->batchArray){
-		for_stb_array(model->batchArray){
+	if(model->batch_array){
+		for_stb_array(model->batch_array){
 			assets_material_save_to_path(it->material, str8_concat3(directory,str8_from_cstr(it->material->name),STR8(".mat"), deshi_temp_allocator));
-			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->indexOffset," ",it->indexCount));
+			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->index_offset," ",it->index_count));
 		}
 	}
 	dstr8_append(&builder, STR8("\n"));
@@ -1919,7 +1919,7 @@ assets_model_delete(Model* model){
 			arrdelswap(DeshAssets->model_array, it - DeshAssets->model_array);
 		}
 	}
-	arrfree(model->batchArray);
+	arrfree(model->batch_array);
 	memory_zfree(model);
 }
 
@@ -2199,7 +2199,7 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	}
 	
 	Texture* texture = assets_texture_create_from_memory(pixels, filename, font->max_width, font->max_height*font->count,
-														 ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+														 ImageFormat_BW, TextureType_TwoDimensional, TextureFilter_Nearest,
 														 TextureAddressMode_ClampToWhite, false);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
@@ -2352,7 +2352,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	f32 aspect_ratio = (f32)max_height / (f32)max_width;
 	
 	Texture* texture = assets_texture_create_from_memory(pixels, filename, texture_size_x, texture_size_y,
-														 ImageFormat_BW, TextureType_2D, TextureFilter_Nearest,
+														 ImageFormat_BW, TextureType_TwoDimensional, TextureFilter_Nearest,
 														 TextureAddressMode_ClampToWhite, false);
 	
 	Font* font = (Font*)memory_alloc(sizeof(Font));

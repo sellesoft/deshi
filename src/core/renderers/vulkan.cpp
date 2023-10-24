@@ -3273,15 +3273,15 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	AssertRS(RSVK_LOGICALDEVICE, "LoadMesh called before CreateLogicalDevice");
 	RenderMesh mvk{};
 	mvk.base = mesh;
-	mvk.vertexCount = mesh->vertexCount;
-	mvk.indexCount = mesh->indexCount;
+	mvk.vertexCount = mesh->vertex_count;
+	mvk.indexCount = mesh->index_count;
 	if(vkMeshes.count){
 		mvk.vertexOffset = vkMeshes.last->vertexOffset + vkMeshes.last->vertexCount;
 		mvk.indexOffset = vkMeshes.last->indexOffset + vkMeshes.last->indexCount;
 	}
 	
-	u64 mesh_vb_size   = mesh->vertexCount * sizeof(MeshVertex);
-	u64 mesh_ib_size   = mesh->indexCount * sizeof(MeshIndex);
+	u64 mesh_vb_size   = mesh->vertex_count * sizeof(MeshVertex);
+	u64 mesh_ib_size   = mesh->index_count * sizeof(MeshIndex);
 	u64 mesh_vb_offset = mvk.vertexOffset * sizeof(MeshVertex);
 	u64 mesh_ib_offset = mvk.indexOffset * sizeof(MeshIndex);
 	u64 total_vb_size  = RoundUpTo(mesh_vb_offset + mesh_vb_size, physicalDeviceProperties.limits.nonCoherentAtomSize);
@@ -3304,8 +3304,8 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	resultVk = vkMapMemory(device, meshVertexBuffer.memory, vb_mapping_offset, VK_WHOLE_SIZE, 0, &vb_data); AssertVk(resultVk);
 	resultVk = vkMapMemory(device, meshIndexBuffer.memory,  ib_mapping_offset, VK_WHOLE_SIZE, 0, &ib_data); AssertVk(resultVk);
 	{
-		memcpy((u8*)vb_data + (mesh_vb_offset - vb_mapping_offset), mesh->vertexArray, mesh_vb_size);
-		memcpy((u8*)ib_data + (mesh_ib_offset - ib_mapping_offset), mesh->indexArray,  mesh_ib_size);
+		memcpy((u8*)vb_data + (mesh_vb_offset - vb_mapping_offset), mesh->vertex_array, mesh_vb_size);
+		memcpy((u8*)ib_data + (mesh_ib_offset - ib_mapping_offset), mesh->index_array,  mesh_ib_size);
 		
 		VkMappedMemoryRange range[2] = {};
 		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -3346,13 +3346,13 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	VkImageType     image_type;
 	VkImageViewType view_type;
 	switch(texture->type){ //TODO(delle) handle non 2D image types
-		case TextureType_1D:         image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D;         Assert(!"not implemented yet"); break;
-		case TextureType_2D:         image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D;         break;
-		case TextureType_3D:         image_type = VK_IMAGE_TYPE_3D; view_type = VK_IMAGE_VIEW_TYPE_3D;         Assert(!"not implemented yet"); break;
-		case TextureType_Cube:       image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE;       Assert(!"not implemented yet"); break;
-		case TextureType_Array_1D:   image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;   Assert(!"not implemented yet"); break;
-		case TextureType_Array_2D:   image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;   Assert(!"not implemented yet"); break;
-		case TextureType_Array_Cube: image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; Assert(!"not implemented yet"); break;
+		case TextureType_OneDimensional:       image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D;         Assert(!"not implemented yet"); break;
+		case TextureType_TwoDimensional:       image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_2D;         break;
+		case TextureType_ThreeDimensional:     image_type = VK_IMAGE_TYPE_3D; view_type = VK_IMAGE_VIEW_TYPE_3D;         Assert(!"not implemented yet"); break;
+		case TextureType_Cube:                 image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE;       Assert(!"not implemented yet"); break;
+		case TextureType_Array_OneDimensional: image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;   Assert(!"not implemented yet"); break;
+		case TextureType_Array_TwoDimensional: image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;   Assert(!"not implemented yet"); break;
+		case TextureType_Array_Cube:           image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; Assert(!"not implemented yet"); break;
 		default: PrintVk(0,"Failed to load texture '",texture->name,"' because of unknown image type"); return;
 	}
 	
@@ -3455,7 +3455,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 		}break;
 		default: LogE("vulkan", "Unhandled texture filter: ", texture->filter); break;
 	}
-	switch(texture->uvMode){
+	switch(texture->uv_mode){
 		case TextureAddressMode_Repeat:{
 			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -3489,7 +3489,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 		}break;
-		default: LogE("vulkan", "Unhandled texture address mode: ", texture->uvMode); break;
+		default: LogE("vulkan", "Unhandled texture address mode: ", texture->uv_mode); break;
 	}
 	samplerInfo.anisotropyEnable = renderSettings.anistropicFiltering;
 	samplerInfo.maxAnisotropy    = (renderSettings.anistropicFiltering) ?  physicalDeviceProperties.limits.maxSamplerAnisotropy : 1.0f;
@@ -3547,8 +3547,8 @@ render_load_material(Material* material){DPZoneScoped;
 	
 	//write descriptor set per texture
 	arrayT<VkWriteDescriptorSet> sets;
-	if(material->textureArray){
-		for_stb_array(material->textureArray){
+	if(material->texture_array){
+		for_stb_array(material->texture_array){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk.descriptorSet;
 			set.dstArrayElement = 0;
@@ -3562,7 +3562,7 @@ render_load_material(Material* material){DPZoneScoped;
 	}
 	
 	//HACK to fix materials with no textures
-	if(material->textureArray == 0 || arrlenu(material->textureArray) < 4){
+	if(material->texture_array == 0 || arrlenu(material->texture_array) < 4){
 		forI(4 - sets.size()){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk.descriptorSet;
@@ -3602,8 +3602,8 @@ render_update_material(Material* material){DPZoneScoped;
 	
 	//update descriptor set per texture
 	arrayT<VkWriteDescriptorSet> sets;
-	if(material->textureArray){
-		for_stb_array(material->textureArray){
+	if(material->texture_array){
+		for_stb_array(material->texture_array){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk->descriptorSet;
 			set.dstArrayElement = 0;
@@ -3617,7 +3617,7 @@ render_update_material(Material* material){DPZoneScoped;
 	}
 	
 	//HACK to fix materials with no textures
-	if(material->shader == Shader_PBR && (material->textureArray == 0 || arrlenu(material->textureArray) < 4)){
+	if(material->shader == Shader_PBR && (material->texture_array == 0 || arrlenu(material->texture_array) < 4)){
 		forI(4 - sets.size()){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk->descriptorSet;
@@ -3642,14 +3642,14 @@ render_update_material(Material* material){DPZoneScoped;
 //      3. this relies on scene mesh indexes matching renderer mesh indexes
 void
 render_model(Model* model, mat4* matrix){DPZoneScoped;
-	Assert(renderModelCmdCount + arrlenu(model->batchArray) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
+	Assert(renderModelCmdCount + arrlenu(model->batch_array) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	RenderModelCmd* cmd = renderModelCmdArray + renderModelCmdCount;
-	forI(arrlenu(model->batchArray)){
-		if(!model->batchArray[i].indexCount) continue;
+	forI(arrlenu(model->batch_array)){
+		if(!model->batch_array[i].index_count) continue;
 		cmd[i].vertexOffset = vkMeshes[model->mesh->render_idx].vertexOffset;
-		cmd[i].indexOffset  = vkMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
-		cmd[i].indexCount   = model->batchArray[i].indexCount;
-		cmd[i].material     = model->batchArray[i].material->render_idx;
+		cmd[i].indexOffset  = vkMeshes[model->mesh->render_idx].indexOffset + model->batch_array[i].index_offset;
+		cmd[i].indexCount   = model->batch_array[i].index_count;
+		cmd[i].material     = model->batch_array[i].material->render_idx;
 		cmd[i].name         = (char*)model->name;
 		cmd[i].matrix       = *matrix;
 		renderModelCmdCount += 1;

@@ -630,7 +630,7 @@ external struct uiStyle{
 struct uiItem{
 	TNode node;
 	Node  link; // circular list connecting all existing items to base for iterating
-	str8 id; //NOTE(sushi) mostly for debugging, not sure if this will have any other use in the interface
+	str8  id; //NOTE(sushi) mostly for debugging, not sure if this will have any other use in the interface
 	uiStyle style;
 	u64 userVar; // variable never touched internally, for user use;
 	

@@ -1210,6 +1210,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		draw_item_branch(sspar);
 	}
 	
+	// TODO(sushi) rewrite this to be the way it was before git lost my files (totally not my fault)
 	if(item->action && item->action_trigger){
 		if(item->action_trigger == action_act_always)
 			item->action(item);
