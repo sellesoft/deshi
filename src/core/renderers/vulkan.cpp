@@ -3347,7 +3347,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	VkImageViewType view_type;
 	switch(texture->type){ //TODO(delle) handle non 2D image types
 		case TextureType_OneDimensional:       image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D;         Assert(!"not implemented yet"); break;
-		case TextureType_TwoDimensional:       image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_2D;         break;
+		case TextureType_TwoDimensional:       image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D;         break;
 		case TextureType_ThreeDimensional:     image_type = VK_IMAGE_TYPE_3D; view_type = VK_IMAGE_VIEW_TYPE_3D;         Assert(!"not implemented yet"); break;
 		case TextureType_Cube:                 image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE;       Assert(!"not implemented yet"); break;
 		case TextureType_Array_OneDimensional: image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;   Assert(!"not implemented yet"); break;
