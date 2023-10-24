@@ -538,7 +538,7 @@ namespace Math {
 	
 	//oscillates between a given upper and lower value based on a given x value
 	inline global float BoundedOscillation(float lower, float upper, float x){
-		Assert(upper > lower);
+		Assert(upper >= lower);
 		return ((upper - lower) * cosf(x) + (upper + lower)) / 2;
 	}
 	

@@ -465,7 +465,6 @@ uiItem*
 ui_deep_copy(uiItem* item) {
 	Assert(item, "ui_deep_copy passed a null item");
 	Assert(item != &g_ui->base, "cannot deep copy base item");
-	Assert(!g_ui->updating, "cannot create new items during ui_update");
 
 	auto i = ui_deep_copy_lower(item);
 	insert_last(item->node.parent, &i->node);

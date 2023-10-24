@@ -231,6 +231,90 @@ uiItem* deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line);
 #define ui_make_checkbox(var, style) deshi__ui_make_checkbox((var), (style), str8l(__FILE__), __LINE__)
 
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @tab
+struct uiTabbed {
+	uiItem item;
+
+	struct { // style
+		struct { // colors
+			struct { // active, inactive
+				color text;
+				color background;
+				color border;
+			} active, inactive;
+			struct {
+				color border;
+			} body;
+		} colors;
+		vec4 body_margins;
+		// minimum width of tabs, once this is reached 
+		// we rely on scrolling
+		f32 min_tab_width;
+		// draw a scrollbar when min_tab_width is reached 
+		b32 draw_scrollbar;
+		// tab size in the direction perpendicular to the direction
+		// the tabs run, for example if the tabs are displayed horizontally
+		// this will be their height
+		// TODO(sushi) vertical tabs and bottom tabs 
+		f32 tab_size;
+	} style;
+
+	u32 selected;
+	f32 scroll;
+	f32 max_scroll;
+};
+
+// NOTE(sushi) I am not implementing hashing for uiTab as I don't have an immediate use case for dynamically changing tab names
+
+#define ui_get_tabbed(x) ((uiTabbed*)(x))
+
+uiItem* deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line);
+#define ui_make_tabbed(style) deshi__ui_make_tabbed((style), str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_tabbed(uiStyle* style, str8 file, upt line);
+#define ui_begin_tabbed(style) deshi__ui_begin_tabbed((style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_tabbed(str8 file, upt line);
+#define ui_end_tabbed() deshi__ui_end_tabbed(str8l(__FILE__), __LINE__)
+
+inline u32
+ui_tabs_style_hash(uiItem* item) {
+	uiTabbed* tabs = ui_get_tabbed(item);
+	u32 seed = UI_HASH_SEED;
+#define hash(x) seed ^= *(u32*)&(tabs->style. x); seed *= UI_HASH_PRIME;
+	hash(colors.body.border.rgba);
+	hash(colors.active.border.rgba);
+	hash(colors.active.text.rgba);
+	hash(colors.active.background.rgba);
+	hash(colors.inactive.border.rgba);
+	hash(colors.inactive.text.rgba);
+	hash(colors.inactive.background.rgba);
+	hash(body_margins.x);
+	hash(body_margins.y);
+	hash(body_margins.z);
+	hash(body_margins.w);
+#undef hash
+	return seed;
+}
+
+struct uiTab {
+	uiItem item;
+	str8 name;
+};
+
+#define ui_get_tab(x) ((uiTab*)(x))
+
+uiItem* deshi__ui_make_tab(uiStyle* style, str8 file, upt line);
+#define ui_make_tab(style) deshi__ui_make_tab((style), str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_tab(uiStyle* style, str8 file, upt line);
+#define ui_begin_tab(style) deshi__ui_begin_tab((style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_tab(str8 file, upt line);
+#define ui_end_tab() deshi__ui_end_tab(str8l(__FILE__), __LINE__)
+
+
 #endif //DESHI_UI2_WIDGETS_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)
@@ -914,6 +998,84 @@ deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	
 	return item;
 }
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @tabs_implementation
+
+void
+ui_gen_tabbed(uiItem* item) {
+	auto t  = ui_get_tabbed(item);
+	auto dc = item->drawcmds;
+	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	vec2i counts = {0};
+	
+	u32 n_tabs = item->node.child_count;
+	f32 w = item->width;
+	f32 tw = w / n_tabs;
+	b32 need_scroll = tw < t->style.min_tab_width;
+	tw = Max(t->style.min_tab_width, tw);
+	f32 th = t->style.tab_size;
+
+	t->scroll = Math::BoundedOscillation(0, n_tabs * tw - w, g_time->totalTime/1000);
+
+	u32 can_fit = ceil(w / tw);
+	u32 start   = floor(t->scroll / tw);
+	f32 loffset = start - t->scroll;
+	
+	vec2i nucounts = can_fit * render_make_filledrect_counts();
+	if(nucounts != dc->counts_reserved) {
+		item->drawcmds = ui_make_drawcmd(1);
+		ui_drawcmd_remove(dc);
+		dc = item->drawcmds;
+		ui_drawcmd_alloc(dc, nucounts);
+		vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	}
+
+	forI(can_fit) {
+		counts += render_make_filledrect(vp, ip, counts, {item->pos_screen.x + i*tw + loffset, item->pos_screen.y}, {tw*0.98f, th}, t->style.colors.inactive.background);
+	}
+
+	dc->counts_used = counts;
+}
+
+void
+ui_update_tabbed(uiItem* item) {
+	item->dirty = true;
+}
+
+uiItem*
+deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line) {
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiTabbed);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_tabbed;
+	setup.update = ui_update_tabbed;
+	setup.update_trigger = action_act_always;
+	setup.drawcmd_count = 1;
+	vec2i counts[1] = {render_make_filledrect_counts()};
+	setup.drawinfo_reserve = counts;
+	
+	uiItem* item = ui_setup_item(setup);
+	return item;
+}
+
+uiItem*
+deshi__ui_begin_tabbed(uiStyle* style, str8 file, upt line) {
+	auto i = deshi__ui_make_tabbed(style, file, line);
+	ui_push_item(i);
+	return i;
+}
+
+void
+deshi__ui_end_tabbed(str8 file, upt line) {
+	deshi__ui_end_item(file, line);
+}
+
+
 
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)
