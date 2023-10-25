@@ -1239,7 +1239,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			HasFlag(item->update_trigger, action_act_always) ||
 			HasFlag(item->update_trigger, action_act_hash_change) && changed ||
 			ui_item_hovered(item, hovered_area) && (
-			HasFlag(item->update_trigger, action_act_mouse_hover) ||
+			HasFlag(item->update_trigger, action_act_mouse_hover) && ui_item_hovered(item, hovered_strict) ||
 			HasFlag(item->update_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
 			HasFlag(item->update_trigger, action_act_mouse_scroll) && g_input->scrollY ||
 			HasFlag(item->update_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
@@ -1252,7 +1252,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			HasFlag(item->action_trigger, action_act_always) ||
 			HasFlag(item->action_trigger, action_act_hash_change) && changed ||
 			ui_item_hovered(item, hovered_area) && (
-			HasFlag(item->action_trigger, action_act_mouse_hover) ||
+			HasFlag(item->action_trigger, action_act_mouse_hover) && ui_item_hovered(item, hovered_strict) ||
 			HasFlag(item->action_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
 			HasFlag(item->action_trigger, action_act_mouse_scroll) && g_input->scrollY ||
 			HasFlag(item->action_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 

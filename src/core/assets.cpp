@@ -736,7 +736,10 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 			case ImageFormat_BW:{
 				for(s32 i = width*height; i > 0; i--){
 					u8 value = *src++;
-					*dst++ = PackColorU32(value, value, value, 0xFF);
+					// HACK(sushi) I am temporarily defining black pixels to be transparent here as it fixes an issue with bdf fonts
+					//             using black where it should be transparent, and that's the only place (along with the null texture) 
+					//             that actually use it. We need to decide a better fix eventually, though.
+					*dst++ = PackColorU32(value, value, value, (value? 0xFF : 0x00));
 				}
 			}break;
 			case ImageFormat_BWA:{
@@ -2200,11 +2203,11 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	
 	Texture* texture = assets_texture_create_from_memory(pixels, filename, font->max_width, font->max_height*font->count,
 														 ImageFormat_BW, TextureType_TwoDimensional, TextureFilter_Nearest,
-														 TextureAddressMode_ClampToWhite, false);
+														 TextureAddressMode_ClampToBlack, false);
 	
 	font->aspect_ratio = (f32)font->max_height / font->max_width;
 	font->tex = texture;
-	
+
 	arrput(DeshAssets->font_array, font);
 	return font;
 }
