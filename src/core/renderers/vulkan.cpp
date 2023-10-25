@@ -2891,11 +2891,16 @@ BuildCommands(){DPZoneScoped;
 					forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
 						if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount == 0) continue;
 						
-						scissor.offset.x = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.x;
-						scissor.offset.y = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorOffset.y;
-						scissor.extent.width  = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.x;
-						scissor.extent.height = (u32)renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].scissorExtent.y;
+						auto cmd = renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx];
+
+						scissor.offset.x = (u32)cmd.scissorOffset.x;
+						scissor.offset.y = (u32)cmd.scissorOffset.y;
+						scissor.extent.width  = (u32)cmd.scissorExtent.x;
+						scissor.extent.height = (u32)cmd.scissorExtent.y;
 						vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+						if(cmd.debug_info.count) 
+							DebugInsertLabelVk(cmdBuffer, (char*)cmd.debug_info.str, draw_cmd_color);
 						
 						if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].handle){
 							vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1,

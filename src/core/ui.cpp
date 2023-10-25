@@ -80,6 +80,7 @@ ui_drawcmd_delete(uiDrawCmd* dc){
 	g_ui->stats.drawcmds_reserved--;
 }
 
+
 void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	/*
 		Because we store our vertexes and indexes (here on as drawinfo) in manually managed Arenas,
@@ -246,6 +247,25 @@ void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 }
 
 
+uiDrawCmdPtrs
+ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
+	if(dc->counts_reserved.x > counts.x && dc->counts_reserved.y > counts.y) return ui_drawcmd_get_ptrs(dc);
+	// the given drawcmd needs to release its drawinfo but still be usable by whatever is calling 
+	// this function, so we make a copy of it, call remove on that drawcmd, then reallocate this one
+	auto dummy = (uiDrawCmd*)memalloc(sizeof(uiDrawCmd));
+	*dummy = *dc;
+	ui_drawcmd_remove(dummy);
+	*dc = {0};
+	ui_drawcmd_alloc(dc, counts);
+	return ui_drawcmd_get_ptrs(dc);
+}
+
+uiDrawCmdPtrs 
+ui_drawcmd_get_ptrs(uiDrawCmd* dc) {
+	return {(Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset, (u32*)g_ui->index_arena->start + dc->index_offset};
+}
+
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_item
 
@@ -351,6 +371,8 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 			ui_drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
 		}
 	}
+
+	item->since_last_update = start_stopwatch();
 	return item;
 }
 
@@ -1195,34 +1217,48 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		item->dirty = true;
 	}
 	
+
 	//call the items update function if it exists
 	if(item->__update) item->__update(item);
 	
 	//check if an item's style was modified, if so reevaluate the item,
 	//its children, and every child of its parents until a manually sized parent is found
 	u32 nuhash = ui_hash_style(item);
+	b32 changed = false;
 	if(item->dirty || nuhash!=item->style_hash){
+		changed = true;
 		item->dirty = 0;
 		item->style_hash = nuhash; 
+		reset_stopwatch(&item->since_last_update);
 		uiItem* sspar = uiItemFromNode(ui_find_static_sized_parent(&item->node, 0));
 		eval_item_branch(sspar, {});
 		draw_item_branch(sspar);
 	}
-	
-	// TODO(sushi) rewrite this to be the way it was before git lost my files (totally not my fault)
-	if(item->action && item->action_trigger){
-		if(item->action_trigger == action_act_always)
-			item->action(item);
-		else if(g_ui->hovered == item){
-			if     (item->action_trigger == action_act_mouse_hover)
-				item->action(item);
-			else if(item->action_trigger == action_act_mouse_pressed && input_lmouse_pressed())
-				item->action(item);
-			else if(item->action_trigger == action_act_mouse_released && input_lmouse_released())
-				item->action(item);
-			else if(item->action_trigger == action_act_mouse_down && input_lmouse_down())
-				item->action(item);
-		}
+
+	if(item->__update && (
+			HasFlag(item->update_trigger, action_act_always) ||
+			HasFlag(item->update_trigger, action_act_hash_change) && changed ||
+			ui_item_hovered(item, hovered_area) && (
+			HasFlag(item->update_trigger, action_act_mouse_hover) ||
+			HasFlag(item->update_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
+			HasFlag(item->update_trigger, action_act_mouse_scroll) && g_input->scrollY ||
+			HasFlag(item->update_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
+			HasFlag(item->update_trigger, action_act_mouse_released) && input_lmouse_released() ||
+			HasFlag(item->update_trigger, action_act_mouse_down) && input_lmouse_down()))) {
+		item->__update(item);
+	}
+
+	if(item->action && (
+			HasFlag(item->action_trigger, action_act_always) ||
+			HasFlag(item->action_trigger, action_act_hash_change) && changed ||
+			ui_item_hovered(item, hovered_area) && (
+			HasFlag(item->action_trigger, action_act_mouse_hover) ||
+			HasFlag(item->action_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
+			HasFlag(item->action_trigger, action_act_mouse_scroll) && g_input->scrollY ||
+			HasFlag(item->action_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
+			HasFlag(item->action_trigger, action_act_mouse_released) && input_lmouse_released() ||
+			HasFlag(item->action_trigger, action_act_mouse_down) && input_lmouse_down()))) {
+		item->action(item);
 	}
 	
 	// -MAX_F32 signals the function that the node is hidden and not to consider it 
@@ -1781,4 +1817,52 @@ void ui_demo(){
 		}ui_end_item();
 	}
 	*/
+}
+
+
+dstr8
+indent(str8 s) {
+	dstr8 out; dstr8_init(&out, {}, deshi_temp_allocator);
+	auto do_indent = [&]() { dstr8_append(&out, "  "); };
+	do_indent();
+	while(s) {
+		dstr8_append(&out, *s.str);
+		if(*s.str == '\n') {
+			do_indent();
+		} 
+		str8_advance(&s);
+	}
+	return out;
+}
+
+dstr8
+ui_print_tree_recur(uiItem* item, void (*info)(dstr8*, uiItem*)) {
+	dstr8 out; dstr8_init(&out, {}, deshi_temp_allocator);
+	if(item->node.child_count) {
+		dstr8_append(&out, "(");
+	}
+
+	if(item->id.count) {
+		dstr8_append(&out, item->id);
+	} else {
+		dstr8_append(&out, (void*)item);
+	}
+
+	dstr8_append(&out, " ");
+	if(info) {
+		info(&out, item);
+	}
+
+	dstr8_append(&out, "\n  ");
+
+	for(uiItem* child = (uiItem*)item->node.first_child; child; child = (uiItem*)child->node.next) {
+		dstr8_append(&out, indent(ui_print_tree_recur(child, info).fin));
+	}
+
+	return out;
+}
+
+void 
+ui_print_tree(void (*info)(dstr8*, uiItem*)) {
+	Log("", ui_print_tree_recur(&g_ui->base, info));	
 }

@@ -242,7 +242,7 @@ struct uiTabbed {
 				color text;
 				color background;
 				color border;
-			} active, inactive;
+			} active, inactive, hovered;
 			struct {
 				color border;
 			} body;
@@ -258,6 +258,9 @@ struct uiTabbed {
 		// this will be their height
 		// TODO(sushi) vertical tabs and bottom tabs 
 		f32 tab_size;
+		
+		// values between 0-1 determining how to align the text in each tab
+		vec2 tab_text_alignment;
 	} style;
 
 	u32 selected;
@@ -290,6 +293,9 @@ ui_tabs_style_hash(uiItem* item) {
 	hash(colors.inactive.border.rgba);
 	hash(colors.inactive.text.rgba);
 	hash(colors.inactive.background.rgba);
+	hash(colors.hovered.border.rgba);
+	hash(colors.hovered.text.rgba);
+	hash(colors.hovered.background.rgba);
 	hash(body_margins.x);
 	hash(body_margins.y);
 	hash(body_margins.z);
@@ -305,11 +311,11 @@ struct uiTab {
 
 #define ui_get_tab(x) ((uiTab*)(x))
 
-uiItem* deshi__ui_make_tab(uiStyle* style, str8 file, upt line);
-#define ui_make_tab(style) deshi__ui_make_tab((style), str8l(__FILE__), __LINE__)
+uiItem* deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line);
+#define ui_make_tab(title, style) deshi__ui_make_tab((title), (style), str8l(__FILE__), __LINE__)
 
-uiItem* deshi__ui_begin_tab(uiStyle* style, str8 file, upt line);
-#define ui_begin_tab(style) deshi__ui_begin_tab((style), str8l(__FILE__), __LINE__)
+uiItem* deshi__ui_begin_tab(str8 title, uiStyle* style, str8 file, upt line);
+#define ui_begin_tab(title, style) deshi__ui_begin_tab((title), (style), str8l(__FILE__), __LINE__)
 
 void deshi__ui_end_tab(str8 file, upt line);
 #define ui_end_tab() deshi__ui_end_tab(str8l(__FILE__), __LINE__)
@@ -448,6 +454,11 @@ find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){DPZo
 	return -1;
 }
 
+void
+ui_draw_text_into_region(str8 text, vec2 pos, vec2 size, uiDrawCmd* dc) {
+	
+}
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @ui2_widgets_text_impl
@@ -480,15 +491,18 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	
 	// check how much draw data we need for the text and reallocate the drawcmd if needed
 	vec2i nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
-	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
-	    item->drawcmds = ui_make_drawcmd(1);
-		ui_drawcmd_remove(dc);
-		dc = item->drawcmds;
-		ui_drawcmd_alloc(dc, nucounts);
-		dc->texture = item->style.font->tex;
-	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	}
+	auto p = ui_drawcmd_realloc(dc, nucounts);
+	vp = p.vertexes;
+	ip = p.indexes;
+	//if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
+	//    item->drawcmds = ui_make_drawcmd(1);
+	//	ui_drawcmd_remove(dc);
+	//	dc = item->drawcmds;
+	//	ui_drawcmd_alloc(dc, nucounts);
+	//	dc->texture = item->style.font->tex;
+	//    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	//	ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	//}
 	
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	vec2 cursor = item->pos_screen;
@@ -1002,47 +1016,129 @@ deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @tabs_implementation
 
+struct TabbedInfo {
+	u32 n_tabs;
+	f32 width;
+	f32 tab_width;
+	b32 need_scroll;
+	f32 tab_height;
+	u32 n_can_fit;
+	u32 start;
+	f32 loffset;
+};
+
+TabbedInfo
+ui_tabbed_get_info(uiTabbed* tabbed) {
+	TabbedInfo out;
+	out.n_tabs = tabbed->item.node.child_count;
+	out.width = tabbed->item.width;
+	out.tab_width = out.width / out.n_tabs;
+	out.need_scroll = out.tab_width < tabbed->style.min_tab_width;
+	out.tab_width = Max(out.tab_width, tabbed->style.min_tab_width);
+	out.tab_height = tabbed->style.tab_size;
+	out.n_can_fit = ceil(out.width / out.tab_width) + 1;
+	out.start = floor(tabbed->scroll / out.tab_width);
+	out.loffset = out.start * out.tab_width - tabbed->scroll;
+	return out;
+}
+
+u32
+ui_get_hovered_tab(uiTabbed* tabbed) {
+	uiItem* item = &tabbed->item;
+	if(!ui_item_hovered(item, hovered_area)) return -1;
+	TabbedInfo ti = ui_tabbed_get_info(tabbed);
+	vec2 local_mouse = input_mouse_position() - item->pos_screen;
+	if(local_mouse.y > ti.tab_height) return -1;
+	f32 first_split = ti.tab_width + ti.loffset;
+	forI(ti.n_can_fit) {
+		if(local_mouse.x < first_split + i * ti.tab_width) return ti.start + i;
+	}
+	return -1;
+}
 void
 ui_gen_tabbed(uiItem* item) {
 	auto t  = ui_get_tabbed(item);
-	auto dc = item->drawcmds;
-	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	vec2i counts = {0};
+	auto tabs_dc = item->drawcmds;
+	auto tabs_ptrs = ui_drawcmd_get_ptrs(tabs_dc);
+	auto text_dc = item->drawcmds + 1;
+	auto text_ptrs = ui_drawcmd_get_ptrs(text_dc);
+	vec2i text_counts = {0};
+	vec2i tabs_counts = {0};
 	
-	u32 n_tabs = item->node.child_count;
-	f32 w = item->width;
-	f32 tw = w / n_tabs;
-	b32 need_scroll = tw < t->style.min_tab_width;
-	tw = Max(t->style.min_tab_width, tw);
-	f32 th = t->style.tab_size;
-
-	t->scroll = Math::BoundedOscillation(0, n_tabs * tw - w, g_time->totalTime/1000);
-
-	u32 can_fit = ceil(w / tw);
-	u32 start   = floor(t->scroll / tw);
-	f32 loffset = start - t->scroll;
+	TabbedInfo ti = ui_tabbed_get_info(t);
 	
-	vec2i nucounts = can_fit * render_make_filledrect_counts();
-	if(nucounts != dc->counts_reserved) {
-		item->drawcmds = ui_make_drawcmd(1);
-		ui_drawcmd_remove(dc);
-		dc = item->drawcmds;
-		ui_drawcmd_alloc(dc, nucounts);
-		vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	u32 max_chars = ti.tab_width / item->style.font->max_width;
+	
+	// figure out how much room we need for text
+	// TODO(sushi) do this better sometime
+	uiTab* scan = (uiTab*)item->node.first_child;
+	uiTab* start = 0;
+	vec2i text_counts_needed = {0};
+	forI(ti.n_tabs) { 
+		text_counts_needed += render_make_text_counts(Min(max_chars, str8_length(scan->name)));
+		if(i == ti.start) start = scan;
+		scan = (uiTab*)scan->item.node.next;
+	}
+	text_ptrs = ui_drawcmd_realloc(text_dc, text_counts_needed);
+	text_dc->texture = item->style.font->tex;
+
+	vec2i tab_counts_needed = ti.n_can_fit * render_make_filledrect_counts();
+	tabs_ptrs = ui_drawcmd_realloc(tabs_dc, tab_counts_needed);
+	tabs_dc->texture = 0;
+
+	uiTab* iter = start;
+	forI(ti.n_can_fit) {
+		color bg;
+		if(i + ti.start == t->selected) {
+			bg = t->style.colors.active.background;
+		} else if(i + ti.start == ui_get_hovered_tab(t)) {
+			bg = t->style.colors.hovered.background;
+		}else {
+			bg = t->style.colors.inactive.background;
+		}
+		vec2 pos = item->pos_screen;
+		pos.x += i * ti.tab_width + ti.loffset;
+		vec2 size = {ti.tab_width, ti.tab_height};
+		tabs_counts += render_make_filledrect(tabs_ptrs.vertexes, tabs_ptrs.indexes, tabs_counts, pos, size, bg);
+		text_counts += render_make_text(text_ptrs.vertexes, text_ptrs.indexes, text_counts, str8{iter->name.str, Min(max_chars, iter->name.count)}, item->style.font, pos, Color_White, vec2_ONE());
+		iter = (uiTab*)iter->item.node.next;
+		if(!iter) break;
 	}
 
-	forI(can_fit) {
-		counts += render_make_filledrect(vp, ip, counts, {item->pos_screen.x + i*tw + loffset, item->pos_screen.y}, {tw*0.98f, th}, t->style.colors.inactive.background);
-	}
+	tabs_dc->counts_used = tabs_counts;
+	text_dc->counts_used = text_counts;
+}
 
-	dc->counts_used = counts;
+void
+ui_eval_tabbed(uiItem* item) {
+	auto t = ui_get_tabbed(item);
+	
 }
 
 void
 ui_update_tabbed(uiItem* item) {
-	item->dirty = true;
+	if(input_lmouse_pressed()) {
+		uiTabbed* t = ui_get_tabbed(item);
+		u32 s = ui_get_hovered_tab(t);
+		if(s!=-1) {
+			TabbedInfo ti = ui_tabbed_get_info(t);
+			ui_get_tabbed(item)->selected = s;
+			u32 i = 0;
+			for_node(item->node.first_child) {
+				uiItem* child = (uiItem*)it;
+				if(i == t->selected) {
+					RemoveFlag(child->style.display, display_hidden);
+					child->style.sizing = size_normal;
+					child->style.width = item->width;
+					child->style.height = item->height - ti.tab_height;
+					child->style.positioning = pos_relative;
+					child->style.pos = Vec2(0, ti.tab_height);
+					child->dirty = true;
+				} else AddFlag(child->style.display, display_hidden);
+				i += 1;
+			}
+		}
+	}
 }
 
 uiItem*
@@ -1053,10 +1149,11 @@ deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line) {
 	setup.file = file;
 	setup.line = line;
 	setup.generate = ui_gen_tabbed;
+	setup.evaluate = ui_eval_tabbed;
 	setup.update = ui_update_tabbed;
-	setup.update_trigger = action_act_always;
-	setup.drawcmd_count = 1;
-	vec2i counts[1] = {render_make_filledrect_counts()};
+	setup.update_trigger = action_act_mouse_pressed;
+	setup.drawcmd_count = 2;
+	vec2i counts[2] = {render_make_filledrect_counts(), render_make_filledrect_counts()};
 	setup.drawinfo_reserve = counts;
 	
 	uiItem* item = ui_setup_item(setup);
@@ -1075,7 +1172,50 @@ deshi__ui_end_tabbed(str8 file, upt line) {
 	deshi__ui_end_item(file, line);
 }
 
+void
+ui_gen_tab(uiItem* item) {
+	auto t  = ui_get_tab(item);
+	auto dc = item->drawcmds;
+	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	vec2i counts = {0};
+}
+
+void
+ui_eval_tab(uiItem* item) {
+	auto t = ui_get_tab(item);
+
+}
 
 
+uiItem* 
+deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line) {
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiTab);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_tab;
+	setup.drawcmd_count = 1;
+	vec2i counts[1] = {render_make_text_counts(str8_length(title))};
+	setup.drawinfo_reserve = counts;
+
+	uiItem* item = ui_setup_item(setup);
+	uiTab* tab = ui_get_tab(item);
+	tab->name = title;
+	return item;
+}
+
+uiItem* 
+deshi__ui_begin_tab(str8 title, uiStyle* style, str8 file, upt line) {
+	auto i = deshi__ui_make_tab(title, style, file, line);
+	ui_push_item(i);
+	return i;
+}
+
+void 
+deshi__ui_end_tab(str8 file, upt line) {
+	deshi__ui_end_item(file, line);
+}
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)

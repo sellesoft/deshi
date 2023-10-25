@@ -170,6 +170,7 @@ typedef struct RenderTwodCmd{
 	u64      indexCount;
 	vec2     scissorOffset;
 	vec2     scissorExtent;
+	str8     debug_info;
 }RenderTwodCmd;
 
 typedef struct RenderMesh{
@@ -1715,7 +1716,7 @@ vec2i
 render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
-	
+
 	vec2i sum={0};
 	switch (font->type){
 		//// BDF (and NULL) font rendering ////
@@ -1742,7 +1743,6 @@ render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, F
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col; //top right
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col; //bot right
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col; //bot left
-				
 				pos.x += font->max_width * scale.x;
 				i += 1;
 				sum+=render_make_text_counts(1);

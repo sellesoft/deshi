@@ -484,6 +484,20 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd);
 
 void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts);
 
+struct uiDrawCmdPtrs {
+	Vertex2* vertexes;
+	u32* indexes;
+};
+
+// retrieves the start of the given drawcmds drawinfo in 
+// ui's drawinfo arenas
+uiDrawCmdPtrs ui_drawcmd_get_ptrs(uiDrawCmd* dc);
+
+// if needed, reallocates the drawinfo of the given drawcmd
+// this does not copy the previous information and is meant to be used 
+// in cases where you are regenerating an item and need more memory for
+// its drawinfo
+uiDrawCmdPtrs ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_style
@@ -540,12 +554,12 @@ enum{
 	action_act_never                = 0,
 	action_act_mouse_hover          = 1 << 0, // call action when the mouse is positioned visually over the item
 	action_act_mouse_hover_children = 1 << 1, // call action when the mouse is positioned over any of the children of the item
-	action_act_mouse_pressed        = 1 << 1, // call action when the mouse is pressed over the item
-	action_act_mouse_released       = 1 << 2, // call action when the mouse is released over the item
-	action_act_mouse_down           = 1 << 3, // call action when the mouse is down over the item
-	action_act_mouse_scroll         = 1 << 4, // call action when the mouse wheel is moved in either direction
-	action_act_always               = 1 << 5, // call action every frame
-	action_act_hash_change          = 1 << 6, // call action when the item's hash changes
+	action_act_mouse_pressed        = 1 << 2, // call action when the mouse is pressed over the item
+	action_act_mouse_released       = 1 << 3, // call action when the mouse is released over the item
+	action_act_mouse_down           = 1 << 4, // call action when the mouse is down over the item
+	action_act_mouse_scroll         = 1 << 5, // call action when the mouse wheel is moved in either direction
+	action_act_always               = 1 << 6, // call action every frame
+	action_act_hash_change          = 1 << 7, // call action when the item's hash changes
 	
 };
 
@@ -716,6 +730,8 @@ struct uiItem{
 	b32 break_on_update;
 	b32 break_on_evaluate;
 
+	Stopwatch since_last_update;
+		
 	struct{
 		u32 evals;
 		u32 draws;
@@ -739,8 +755,6 @@ struct uiItemSetup{
 	vec2i* drawinfo_reserve;
 	u32 drawcmd_count;
 };
-
-
 
 #define uiItemFromNode(x) CastFromMember(uiItem, node, x)
 
@@ -1114,6 +1128,8 @@ void ui_debug();
 
 //Creates the demo window (or destroys if already created)
 void ui_demo();
+
+void ui_print_tree(void (*info)(dstr8*,uiItem*));
 
 
 #endif //DESHI_UI2_H

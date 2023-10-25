@@ -62,8 +62,8 @@ class render_bookkeeper(gdb.Command):
                     start = str((int(book['index']['start']) - index_start)/index_size)
                     count = float(book['index']['count'])
                     print(f" index: s{start} c{count} from {file}:{line}")
-                # elif int(book["type"]) == int(gdb.parse_and_eval("RenderBookKeeper_Cmd")):
-                #     print(f"   cmd: c{book['cmd']} from {book['file']}:{book['line']}")
+                elif int(book["type"]) == int(gdb.parse_and_eval("RenderBookKeeper_Cmd")):
+                    print(f"   cmd: c{book['cmd']} from {book['file']}:{book['line']}")
         except Exception as e:
             print(f"error: {e}")
 render_bookkeeper()
