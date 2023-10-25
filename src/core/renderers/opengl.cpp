@@ -972,15 +972,15 @@ void
 render_load_mesh(Mesh* mesh){DPZoneScoped;
 	RenderMesh mgl{};
 	mgl.base = mesh;
-	mgl.vertexCount = mesh->vertexCount;
-	mgl.indexCount	= mesh->indexCount;
+	mgl.vertexCount = mesh->vertex_count;
+	mgl.indexCount	= mesh->index_count;
 	if(glMeshes.count){
 		mgl.vertexOffset = glMeshes.last->vertexOffset + glMeshes.last->vertexCount;
 		mgl.indexOffset  = glMeshes.last->indexOffset  + glMeshes.last->indexCount;
 	}
 	
-	u64 mesh_vb_size   = mesh->vertexCount*sizeof(MeshVertex);
-	u64 mesh_ib_size   = mesh->indexCount*sizeof(MeshIndex);
+	u64 mesh_vb_size   = mesh->vertex_count*sizeof(MeshVertex);
+	u64 mesh_ib_size   = mesh->index_count*sizeof(MeshIndex);
 	u64 total_vb_size  = meshBuffers.vbo_size + mesh_vb_size;
 	u64 total_ib_size  = meshBuffers.ibo_size + mesh_ib_size;
 	total_vb_size = Max(1024*sizeof(MeshVertex), total_vb_size); //minimum of 1024 vertexes to avoid early growths
@@ -1021,8 +1021,8 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	//copy mesh to buffers
 	glBindBuffer(GL_ARRAY_BUFFER,		  meshBuffers.vbo_handle);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_handle);
-	glBufferSubData(GL_ARRAY_BUFFER,		 meshBuffers.vbo_size, mesh_vb_size, mesh->vertexArray);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->indexArray);
+	glBufferSubData(GL_ARRAY_BUFFER,		 meshBuffers.vbo_size, mesh_vb_size, mesh->vertex_array);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->index_array);
 	
 	//specify vertex packing
 	glVertexAttribPointer(0, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
@@ -1057,12 +1057,12 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	//determine image type
 	switch(texture->type){
-		case TextureType_1D:		 tgl.type = GL_TEXTURE_1D; break;
-		case TextureType_2D:		 tgl.type = GL_TEXTURE_2D; break;
-		case TextureType_3D:		 tgl.type = GL_TEXTURE_3D; break;
-		case TextureType_Cube:		 tgl.type = GL_TEXTURE_CUBE_MAP; break;
-		case TextureType_Array_1D:	 tgl.type = GL_TEXTURE_1D_ARRAY; break;
-		case TextureType_Array_2D:	 tgl.type = GL_TEXTURE_2D_ARRAY; break;
+		case TextureType_OneDimensional:		 tgl.type = GL_TEXTURE_1D; break;
+		case TextureType_TwoDimensional:		 tgl.type = GL_TEXTURE_2D; break;
+		case TextureType_ThreeDimensional:		 tgl.type = GL_TEXTURE_3D; break;
+		case TextureType_Cube:		             tgl.type = GL_TEXTURE_CUBE_MAP; break;
+		case TextureType_Array_OneDimensional:	 tgl.type = GL_TEXTURE_1D_ARRAY; break;
+		case TextureType_Array_TwoDimensional:	 tgl.type = GL_TEXTURE_2D_ARRAY; break;
 		case TextureType_Array_Cube:{
 			if(GL_VERSION_TEST(4,0))
 				tgl.type = GL_TEXTURE_CUBE_MAP_ARRAY;
@@ -1079,12 +1079,12 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	glBindTexture(tgl.type, tgl.handle);
 	
 	//load texture to GPU
-	if		(texture->type == TextureType_1D){
+	if		(texture->type == TextureType_OneDimensional){
 		glTexImage1D(tgl.type, 0, tgl.format, texture->width, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
-	}else if(texture->type == TextureType_2D || texture->type == TextureType_Array_1D){
+	}else if(texture->type == TextureType_TwoDimensional || texture->type == TextureType_Array_OneDimensional){
 		glTexImage2D(tgl.type, 0, tgl.format, texture->width, texture->height, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
 	}else if(texture->type == TextureType_Cube || texture->type == TextureType_Array_Cube || 
-			 texture->type== TextureType_3D   || texture->type == TextureType_Array_2D){
+			 texture->type== TextureType_ThreeDimensional   || texture->type == TextureType_Array_TwoDimensional){
 		glTexImage3D(tgl.type, 0, tgl.format, texture->width, texture->height, texture->depth, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
 	}
 	
@@ -1114,7 +1114,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	}
 	
 	//setup texture address mode
-	switch(texture->uvMode){
+	switch(texture->uv_mode){
 		case TextureAddressMode_Repeat:{
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1145,7 +1145,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		}break;
-		default: LogEGl("Unhandled texture address mode: ", texture->uvMode); break;
+		default: LogEGl("Unhandled texture address mode: ", texture->uv_mode); break;
 	}
 	
 	//TODO(delle) EXT_texture_filter_anisotropic
@@ -1188,14 +1188,14 @@ render_update_material(Material* material){DPZoneScoped;
 //// @render_draw_3d
 void
 render_model(Model* model, mat4* matrix){DPZoneScoped;
-	Assert(renderModelCmdCount + arrlenu(model->batchArray) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
+	Assert(renderModelCmdCount + arrlenu(model->batch_array) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	RenderModelCmd* cmd = renderModelCmdArray + renderModelCmdCount;
-	forI(arrlenu(model->batchArray)){
-		if(!model->batchArray[i].indexCount) continue;
+	forI(arrlenu(model->batch_array)){
+		if(!model->batch_array[i].index_count) continue;
 		cmd[i].vertexOffset = glMeshes[model->mesh->render_idx].vertexOffset;
-		cmd[i].indexOffset	= glMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
-		cmd[i].indexCount	= model->batchArray[i].indexCount;
-		cmd[i].material		= model->batchArray[i].material->render_idx;
+		cmd[i].indexOffset	= glMeshes[model->mesh->render_idx].indexOffset + model->batch_array[i].index_offset;
+		cmd[i].indexCount	= model->batch_array[i].index_count;
+		cmd[i].material		= model->batch_array[i].material->render_idx;
 		cmd[i].name			= model->name;
 		cmd[i].matrix		= *matrix;
 		renderModelCmdCount += 1;
@@ -1553,7 +1553,7 @@ render_update_texture(Texture* texture, vec2i offset, vec2i size){
 	TextureGl* gltex = &glTextures[texture->render_idx];
 	
 	switch(texture->type){
-		case TextureType_2D:{
+		case TextureType_TwoDimensional:{
 			glBindTexture(GL_TEXTURE_2D, gltex->handle); 
 			glTexSubImage2D(GL_TEXTURE_2D, 0, offset.x, offset.y, size.x, size.y, gltex->format, GL_UNSIGNED_BYTE, texture->pixels);
 			glBindTexture(GL_TEXTURE_2D, 0);
