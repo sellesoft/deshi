@@ -494,15 +494,6 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	auto p = ui_drawcmd_realloc(dc, nucounts);
 	vp = p.vertexes;
 	ip = p.indexes;
-	//if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
-	//    item->drawcmds = ui_make_drawcmd(1);
-	//	ui_drawcmd_remove(dc);
-	//	dc = item->drawcmds;
-	//	ui_drawcmd_alloc(dc, nucounts);
-	//	dc->texture = item->style.font->tex;
-	//    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	//	ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	//}
 	
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	vec2 cursor = item->pos_screen;
@@ -1100,19 +1091,17 @@ ui_gen_tabbed(uiItem* item) {
 		pos.x += i * ti.tab_width + ti.loffset;
 		vec2 size = {ti.tab_width, ti.tab_height};
 		tabs_counts += render_make_filledrect(tabs_ptrs.vertexes, tabs_ptrs.indexes, tabs_counts, pos, size, bg);
-		text_counts += render_make_text(text_ptrs.vertexes, text_ptrs.indexes, text_counts, str8{iter->name.str, Min(max_chars, iter->name.count)}, item->style.font, pos, Color_White, vec2_ONE());
+		str8 displayed_text = str8{iter->name.str, Min(max_chars, iter->name.count)};
+		vec2 text_size = font_visual_size(item->style.font, displayed_text) * item->style.font_height / item->style.font->max_height;
+		vec2 diff = size - text_size;
+		vec2 text_pos = ceil(t->style.tab_text_alignment * diff + pos);
+		text_counts += render_make_text(text_ptrs.vertexes, text_ptrs.indexes, text_counts, str8{iter->name.str, Min(max_chars, iter->name.count)}, item->style.font, text_pos, Color_White, vec2_ONE());
 		iter = (uiTab*)iter->item.node.next;
 		if(!iter) break;
 	}
 
 	tabs_dc->counts_used = tabs_counts;
 	text_dc->counts_used = text_counts;
-}
-
-void
-ui_eval_tabbed(uiItem* item) {
-	auto t = ui_get_tabbed(item);
-	
 }
 
 void
@@ -1139,6 +1128,7 @@ ui_update_tabbed(uiItem* item) {
 			}
 		}
 	}
+	item->dirty = true; // regen so the hovered tab is colored
 }
 
 uiItem*
@@ -1149,9 +1139,8 @@ deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line) {
 	setup.file = file;
 	setup.line = line;
 	setup.generate = ui_gen_tabbed;
-	setup.evaluate = ui_eval_tabbed;
 	setup.update = ui_update_tabbed;
-	setup.update_trigger = action_act_mouse_pressed;
+	setup.update_trigger = action_act_mouse_hover;
 	setup.drawcmd_count = 2;
 	vec2i counts[2] = {render_make_filledrect_counts(), render_make_filledrect_counts()};
 	setup.drawinfo_reserve = counts;
@@ -1174,19 +1163,11 @@ deshi__ui_end_tabbed(str8 file, upt line) {
 
 void
 ui_gen_tab(uiItem* item) {
-	auto t  = ui_get_tab(item);
-	auto dc = item->drawcmds;
-	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	vec2i counts = {0};
+	auto ptrs = ui_drawcmd_get_ptrs(item->drawcmds);
+	item->drawcmds->counts_used = {0};
+	item->drawcmds->counts_used += ui_gen_background(item, ptrs.vertexes, ptrs.indexes, item->drawcmds->counts_used);
+	item->drawcmds->counts_used += ui_gen_border(item, ptrs.vertexes, ptrs.indexes, item->drawcmds->counts_used);
 }
-
-void
-ui_eval_tab(uiItem* item) {
-	auto t = ui_get_tab(item);
-
-}
-
 
 uiItem* 
 deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line) {
@@ -1197,12 +1178,13 @@ deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line) {
 	setup.line = line;
 	setup.generate = ui_gen_tab;
 	setup.drawcmd_count = 1;
-	vec2i counts[1] = {render_make_text_counts(str8_length(title))};
+	vec2i counts[1] = {render_make_filledrect_counts() + render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 
 	uiItem* item = ui_setup_item(setup);
 	uiTab* tab = ui_get_tab(item);
 	tab->name = title;
+	item->dirty = true;
 	return item;
 }
 
