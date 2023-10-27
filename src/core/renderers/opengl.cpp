@@ -487,11 +487,11 @@ render_init(){DPZoneScoped;
 		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		
 		gladInstallGLXDebug();
-
+		
 		// get restore points 
 		Display* prev_display = glXGetCurrentDisplay();
 		GLXContext prev_context = glXGetCurrentContext();
-	
+		
 		// list of attributes to ask of GLX
 		int attributes_config[] = {
 			GLX_DEPTH_SIZE, 24,  // 24 bit depth
@@ -510,7 +510,7 @@ render_init(){DPZoneScoped;
 		
 		GLXFBConfig fbconfig = config[0];
 		XFree(config);
-
+		
 		int attributes_visual[] = {
 			GLX_RGBA,
 			GLX_DOUBLEBUFFER,
@@ -1156,26 +1156,22 @@ render_load_texture(Texture* texture){DPZoneScoped;
 
 void
 render_load_material(Material* material){DPZoneScoped;
-	//!Incomplete
-	NotImplemented;
+	//NotImplemented; //!Incomplete
 }
 
 void
 render_unload_mesh(Mesh* mesh){
-	//!NotImplemented
-	NotImplemented;
+	NotImplemented; //!Incomplete
 }
 
 void
 render_unload_texture(Texture* texture){
-	//!NotImplemented
-	NotImplemented;
+	//NotImplemented; //!Incomplete
 }
 
 void
 render_unload_material(Material* material){
-	//!NotImplemented
-	NotImplemented;
+	NotImplemented; //!Incomplete
 }
 
 void
