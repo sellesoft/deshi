@@ -188,6 +188,176 @@ typedef struct RenderTwodBuffer{
 	void* index_handle;
 }RenderTwodBuffer;
 
+enum RenderShaderKind {
+	RenderShaderKind_Vertex,
+	// TODO(sushi) if it ever seems necessary
+	// RenderShaderKind_Tesselation,
+	RenderShaderKind_Geometry,
+	RenderShaderKind_Fragment,
+	RenderShaderKind_Compute,
+};
+
+// a shader to be compiled and used as a stage in a RenderPipeline
+typedef struct RenderShader {
+	RenderShaderKind kind;
+	str8 name;
+	str8 source;
+} RenderShader;
+
+enum RenderPipelineCulling {
+	RenderPipelineCulling_None,
+	RenderPipelineCulling_Front,
+	RenderPipelineCulling_Back,
+	RenderPipelineCulling_Front_Back,
+};
+
+enum RenderPipelineFrontFace {
+	RenderPipelineFrontFace_CCW,
+	RenderPipelineFrontFace_CW,
+};
+
+enum RenderPipelinePolygonMode {
+	RenderPipelinePolygonMode_Point,
+	RenderPipelinePolygonMode_Line,
+	RenderPipelinePolygonMode_Fill,
+};
+
+enum RenderCompareOp {
+	RenderCompareOp_Never,
+	RenderCompareOp_Less,
+	RenderCompareOp_Equal,
+	RenderCompareOp_Less_Or_Equal,
+	RenderCompareOp_Greater,
+	RenderCompareOp_Not_Equal,
+	RenderCompareOp_Greater_Or_Equal,
+	RenderCompareOp_Always,
+};
+
+enum RenderBlendOp {
+	RenderBlendOp_Add,
+	RenderBlendOp_Sub,
+	RenderBlendOp_Reverse_Sub,
+	RenderBlendOp_Min,
+	RenderBlendOp_Max,
+};
+
+// TODO(sushi) write some explanation for what this is doing
+//             and some examples
+enum RenderBlendFactor {
+	RenderBlendFactor_Zero,
+	RenderBlendFactor_One,
+	RenderBlendFactor_Source_Color,
+	RenderBlendFactor_One_Minus_Source_Color,
+	RenderBlendFactor_Destination_Color,
+	RenderBlendFactor_One_Minus_Destination_Color,
+	RenderBlendFactor_Source_Alpha,
+	RenderBlendFactor_One_Minus_Source_Alpha,
+	RenderBlendFactor_Destination_Alpha,
+	RenderBlendFactor_One_Minus_Destination_Alpha,
+	RenderBlendFactor_Constant_Color,
+	RenderBlendFactor_One_Minus_Constant_Color,
+	RenderBlendFactor_Constant_Alpha,
+	RenderBlendFactor_One_Minus_Constant_Alpha,
+	// TODO(sushi) implement the other blend factors described at 
+	// https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#framebuffer-blendfactors
+	// if they seem useful
+};
+
+enum RenderSampleCount {
+	RenderSampleCount_1,
+	RenderSampleCount_2,
+	RenderSampleCount_4,
+	RenderSampleCount_8,
+	RenderSampleCount_16,
+	RenderSampleCount_32,
+	RenderSampleCount_64,
+};
+
+typedef struct RenderPipeline {
+	str8 name;
+	// kigu array of shaders 
+	RenderShader* shader_stages;
+
+	//// rasterization settings ////
+
+	// How the front facing direction of a triangle is determined
+	RenderPipelineFrontFace front_face;
+	// How faces should be culled before fragments are produced
+	// NOTE(sushi) set when creating pipelines in vulkan
+	//             for opengl:
+	//             		glCullFace(...)
+	//             		glEnable/Disable(GL_CULL_FACE)
+	RenderPipelineCulling culling;
+	// how polygons are drawn, as points, lines, or filled faces
+	RenderPipelinePolygonMode polygon_mode;
+	// whether or not to perform depth testing
+	b32 depth_test;
+	// how depth values are compared
+	RenderCompareOp depth_compare_op;
+	// whether or not to apply a bias to depth testing 
+	// for opengl: https://stackoverflow.com/questions/45314290/depth-offset-in-opengl
+	b32 depth_bias;
+	f32 depth_bias_constant;
+	f32 depth_bias_clamp;
+	f32 depth_bias_slope;
+	// the width of lines drawn when using line polygon mode (maybe)
+	f32 line_width;
+
+	//// MSAA ////
+	RenderSampleCount msaa_samples;
+	b32 sample_shading;
+	// TODO(sushi) more settings if seems useful
+
+	//// color blending ////
+
+	// perform color blending?
+	b32 color_blend;
+	// how colors are blended
+	RenderBlendOp color_blend_op;
+	RenderBlendFactor color_src_blend_factor;
+	RenderBlendFactor color_dst_blend_factor;
+	RenderBlendOp alpha_blend_op;
+	RenderBlendFactor alpha_src_blend_factor;
+	RenderBlendFactor alpha_dst_blend_factor;
+	// a constant color to blend with 
+	color blend_constant;
+	// TODO(sushi) logical ops for color blending if it ever seems useful
+} RenderPipeline;
+
+// compute pipelines seem to be distinct from graphics pipelines 
+// so we'll use a separate type for them
+typedef struct RenderComputePipeline {
+
+} RenderComputePipeline;
+
+// possibly elements of RenderPasses?
+typedef struct RenderAttachment {
+
+} RenderAttachment;
+
+enum RenderPassKind {
+	RenderPassKind_
+};
+
+// a collection of buffers and commands using those buffers
+typedef struct RenderPass {
+
+} RenderPass;
+
+// representation of a framebuffer
+typedef struct RenderFrame {
+
+} RenderFrame;
+
+// interface for swapchains, which to us will likely just be a collection of framebuffers 
+// there's no such thing as a swapchain in opengl, but you can define multiple 
+// framebuffers, so in that backend this will just serve as a collection of those
+// buffers
+typedef struct RenderSwapchain {
+	s32 width;
+	s32 height;
+} RenderSwapchain;
+
 enum{
 	RenderBookKeeper_Vertex,
 	RenderBookKeeper_Index,
