@@ -6,6 +6,9 @@ examples/*/build
 *.code-workspace
 *.4coder
 *.rdbg
+*.cap
+*.ctm
 
 #delle specific
 examples/shell.bat
+examples/ctime.exe
