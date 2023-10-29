@@ -249,7 +249,7 @@ void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 
 uiDrawCmdPtrs
 ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
-	if(dc->counts_reserved.x > counts.x && dc->counts_reserved.y > counts.y){
+	if(dc->counts_reserved.x >= counts.x && dc->counts_reserved.y >= counts.y){
 		return ui_drawcmd_get_ptrs(dc);
 	}
 	
