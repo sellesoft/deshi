@@ -19,11 +19,11 @@ Index:
   window_decorations(Window* window, Decoration decorations) -> void
   window_show(Window* window) -> void
   window_hide(Window* window) -> void
-  window_title(str8 title) -> void
+  window_set_title(str8 title) -> void
 @window_cursor
-  window_cursor_mode(Window* window, CursorMode mode) -> void
-  window_cursor_type(Window* window, CursorType type) -> void
-  window_cursor_position(Window* window, s32 x, s32 y) -> void
+  window_set_cursor_mode(Window* window, CursorMode mode) -> void
+  window_set_cursor_type(Window* window, CursorType type) -> void
+  window_set_cursor_position(Window* window, s32 x, s32 y) -> void
 @window_shared_variables
 
 TODOs:
@@ -35,7 +35,6 @@ TODOs:
 [05/18/22,MEDI,Feature] add custom resolution and refresh rate
 */
 
-#pragma once
 #ifndef DESHI_WINDOW_H
 #define DESHI_WINDOW_H
 #include "kigu/common.h"
@@ -106,10 +105,8 @@ struct Window{
 	u32 index;
 	str8 title;
 	
-	void* handle; //win32: HWND; linux/mac not implemented
-	void* dc; //win32: HDC; linux/mac not implemented
-	void* glwf_window; //GLFWwindow
-	void* glwf_monitor; //GLFWmonitor
+	void* handle; //win32: HWND; linux: X11::Window; mac not implemented
+	void* context; //win32: HDC; linux: X11::GC; linux/mac not implemented
 	
 	union{
 		vec2i position;
@@ -157,7 +154,7 @@ extern Window* g_window;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_management
 //Creates an `OS` window with the specified values
-//The first time this function is called, g_window (also DeshWindow, the global window pointer), is set to the created window
+//The first time this function is called, g_window (aka DeshWindow, the global window pointer), is set to the created window
 external Window* window_create(str8 title, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode display_mode = DisplayMode_Windowed, Decoration decorations = Decoration_SystemDecorations);
 FORCE_INLINE Window* window_create(const char* title, s32 width = 0xFFFFFFFF, s32 height = 0xFFFFFFFF, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode display_mode = DisplayMode_Windowed, Decoration decorations = Decoration_SystemDecorations){ return window_create(str8{(u8*)title,(s64)strlen(title)},width,height,x,y,display_mode,decorations); }
 
@@ -183,35 +180,34 @@ external void window_show(Window* window);
 external void window_hide(Window* window);
 
 //Updates the title of the `window` to `title`
-external void window_title(str8 title);
-FORCE_INLINE void window_title(const char* title){ window_title(str8{(u8*)title, (s64)strlen(title)}); }
+external void window_set_title(Window* window, str8 title);
+FORCE_INLINE void window_set_title(Window* window, const char* title){ window_set_title(window, str8{(u8*)title, (s64)strlen(title)}); }
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_cursor
 //Sets the `CursorMode` of `window` to `mode`
-external void window_cursor_mode(Window* window, CursorMode mode);
+external void window_set_cursor_mode(Window* window, CursorMode mode);
 
 //Sets the `CursorType` of `window` to `type`
-external void window_cursor_type(Window* window, CursorType type);
+external void window_set_cursor_type(Window* window, CursorType type);
 
 //Sets the cursor position in `Client Space` of `window`
-external void window_cursor_position(Window* window, s32 x, s32 y);
-FORCE_INLINE void window_cursor_position(Window* window, vec2i position){ window_cursor_position(window, position.x, position.y); }
-FORCE_INLINE void window_cursor_position(Window* window, vec2 position){ window_cursor_position(window, (s32)position.x, (s32)position.y); }
+external void window_set_cursor_position(Window* window, s32 x, s32 y);
+FORCE_INLINE void window_set_cursor_position(Window* window, vec2i position){ window_set_cursor_position(window, position.x, position.y); }
+FORCE_INLINE void window_set_cursor_position(Window* window, vec2 position){ window_set_cursor_position(window, (s32)position.x, (s32)position.y); }
 
 
 #endif //DESHI_WINDOW_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ifdef DESHI_IMPLEMENTATION
-#include "kigu/array.h"
-
+#if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_WINDOW_IMPL)
+#define DESHI_WINDOW_IMPL
+#include "kigu/arrayT.h"
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window_shared_variables
 local Window window_helper{};
-local array<Window*> window_windows;
+local arrayT<Window*> window_windows;
 local Window* window_active;
-
 
 #endif //DESHI_IMPLEMENTATION

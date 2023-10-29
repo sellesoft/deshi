@@ -59,28 +59,28 @@ struct MaterialGl{
 #define INDEX_TYPE_GL_TWOD GL_UNSIGNED_INT
 #define INDEX_TYPE_GL_TEMP GL_UNSIGNED_INT
 #define INDEX_TYPE_GL_MESH GL_UNSIGNED_INT
-StaticAssertAlways(sizeof(RenderTwodIndex)  == 4);
-StaticAssertAlways(sizeof(RenderTempIndex)  == 4);
+StaticAssertAlways(sizeof(RenderTwodIndex)	== 4);
+StaticAssertAlways(sizeof(RenderTempIndex)	== 4);
 StaticAssertAlways(sizeof(RenderModelIndex) == 4);
 
-local array<RenderMesh> glMeshes(deshi_allocator);
-local array<ShaderGl>   glShaders(deshi_allocator);
-local array<TextureGl>  glTextures(deshi_allocator);
-local array<MaterialGl> glMaterials(deshi_allocator);
+local arrayT<RenderMesh> glMeshes(deshi_allocator);
+local arrayT<ShaderGl>	 glShaders(deshi_allocator);
+local arrayT<TextureGl>  glTextures(deshi_allocator);
+local arrayT<MaterialGl> glMaterials(deshi_allocator);
 
 local s32  width  = 0;
 local s32  height = 0;
-local b32  initialized  = false;
+local b32  initialized	= false;
 local b32  remake_window = false;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @gl_vars_instance
-local void* opengl_module = 0;
 local void* opengl_context = 0;
 local s32 opengl_success = 0;
+local GLenum opengl_error = 0;
 local int opengl_version = 0;
-local int wgl_version = 0;
+local int backend_version = 0;
 #define OPENGL_INFOLOG_SIZE 512
 local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 
@@ -95,6 +95,8 @@ local struct{
 	u32 ibo_size;
 	u32 ibo_alloc;
 } meshBuffers{};
+
+local u32 voxel_vao_handle;
 
 local struct{
 	u32 vao_handle;
@@ -119,15 +121,15 @@ local struct{ //vertex shader uniform buffer
 	u32 binding = 1;
 	
 	struct{ //416 bytes
-		mat4 view;        //camera view matrix
-		mat4 proj;        //camera projection matrix
+		mat4 view;		  //camera view matrix
+		mat4 proj;		  //camera projection matrix
 		vec4 lights[10];  //lights
-		vec4 viewPos;     //camera pos
-		vec2 screen;      //screen dimensions
-		vec2 mousepos;    //mouse screen pos
+		vec4 viewPos;	  //camera pos
+		vec2 screen;	  //screen dimensions
+		vec2 mousepos;	  //mouse screen pos
 		vec3 mouseWorld;  //point casted out from mouse 
-		f32  time;        //total time
-		mat4 lightVP;     //first light's view projection matrix
+		f32  time;		  //total time
+		mat4 lightVP;	  //first light's view projection matrix
 		s32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
 		s32  padding[3];
 	} values;
@@ -189,6 +191,10 @@ local struct{
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @gl_funcs_utils
 #define PrintGl(level, ...) if(renderSettings.loggingLevel >= level){ logger_push_indent(level); Log("opengl", __VA_ARGS__); logger_pop_indent(level); }(void)0
+#define LogEGl(...) LogE("render-opengl", __func__, "(): ", __VA_ARGS__)
+#define LogWGl(...) LogW("render-opengl", __func__, "(): ", __VA_ARGS__)
+#define GL_VERSION_TEST(major,minor) (opengl_version >= GLAD_MAKE_VERSION(major,minor))
+#define GL_LAST_ERROR
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,7 +202,7 @@ local struct{
 #if DESHI_WINDOWS
 local void
 WGLDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){
-	DWORD error_code = GetLastError();
+	DWORD error_code = ::GetLastError();
 	const char* error_flag = 0;
 	const char* error_msg  = 0;
 	switch(error_code){
@@ -213,18 +219,18 @@ WGLDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_a
 			error_msg  = "?";
 		}break;
 	}
-	LogE("wgl","ERROR_",(u32)error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
-	if(renderSettings.crashOnError) Assert(!"crashing because of error in opengl");
+	LogE("render-wgl","ERROR_",(u32)error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
+	if(renderSettings.crashOnError) Assert(!"crashing because of error in opengl"); //TODO(delle) remove this in favor of logger assert on error
 }
 #endif //DESHI_WINDOWS
 
 local void
 GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){DPZoneScoped;
-	GLenum error_code = glad_glGetError();
-	if(error_code != GL_NO_ERROR){
+	opengl_error = glad_glGetError();
+	if(opengl_error != GL_NO_ERROR){
 		const char* error_flag = 0;
 		const char* error_msg  = 0;
-		switch(error_code){
+		switch(opengl_error){
 			case GL_INVALID_ENUM:{
 				error_flag = "GL_INVALID_ENUM";
 				error_msg  = "Set when an enumeration parameter is not legal.";
@@ -254,8 +260,8 @@ GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_
 				error_msg = "Set when reading or writing to a framebuffer that is not complete.";
 			}break;
 		}
-		LogE("opengl","ERROR_",error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg,"; Info: http://docs.gl/gl3/",name);
-		if(renderSettings.crashOnError) Assert(!"crashing because of error in opengl");
+		LogEGl("ERROR_",opengl_error," '",error_flag,"' on ",name,"(); Reason: ",error_msg,"; Info: http://docs.gl/gl3/",name);
+		if(renderSettings.crashOnError) Assert(!"crashing because of error in opengl"); //TODO(delle) remove this in favor of logger assert on error
 	}
 }
 
@@ -276,11 +282,11 @@ load_shader(str8 name, str8 source, ShaderStage stage){
 	
 	ShaderGl sgl{};
 	sgl.filename = str8_copy(name, deshi_allocator);
-	sgl.stage    = stage;
+	sgl.stage	 = stage;
 	
 	//create shader
 	switch(stage){ //TODO(delle) opengl4 shader stages
-		case ShaderStage_Vertex:   sgl.handle = glCreateShader(GL_VERTEX_SHADER);   break;
+		case ShaderStage_Vertex:   sgl.handle = glCreateShader(GL_VERTEX_SHADER);	break;
 		case ShaderStage_TessCtrl: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 		case ShaderStage_TessEval: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
 		case ShaderStage_Geometry: sgl.handle = glCreateShader(GL_GEOMETRY_SHADER); break;
@@ -317,16 +323,16 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 	
 	ProgramGl pgl{};
 	pgl.shader_count = shader_count;
-	str8_builder prog_shaders;
-	str8_builder_init(&prog_shaders, str8_lit("|"), deshi_temp_allocator);
+	dstr8 prog_shaders;
+	dstr8_init(&prog_shaders, str8_lit("|"), deshi_temp_allocator);
 	
 	//create program, attach shaders and link
 	pgl.handle = glCreateProgram();
 	forI(shader_count){ 
 		glAttachShader(pgl.handle, glShaders[shader_indexes[i]].handle); 
 		pgl.shaders[i] = shader_indexes[i]; 
-		str8_builder_append(&prog_shaders, glShaders[shader_indexes[i]].filename);
-		str8_builder_append(&prog_shaders, str8_lit("|"));
+		dstr8_append(&prog_shaders, glShaders[shader_indexes[i]].filename);
+		dstr8_append(&prog_shaders, str8_lit("|"));
 	}
 	glLinkProgram(pgl.handle);
 	
@@ -381,63 +387,6 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
 }
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @gl_funcs_imgui
-local char iniFilepath[256] = {};
-void DeshiImGui::
-Init(){
-	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
-	
-	//Setup Dear ImGui context
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, "data/config/imgui.ini", 256);
-	io.IniFilename = iniFilepath;
-	
-	//Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
-	
-	//Setup Platform/Renderer backends
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_Init((HWND)DeshWindow->handle);
-#elif DESHI_LINUX
-	ImGui_ImplGlfw_InitForopenGl(DeshWindow->glfw_window, true);
-#elif DESHI_MAC
-	ImGui_ImplGlfw_InitForopenGl(DeshWindow->glfw_window, true);
-#endif
-	ImGui_ImplOpenGL3_Init();
-	
-	DeshiStageInitEnd(DS_IMGUI);
-}
-
-void DeshiImGui::
-Cleanup(){
-	ImGui_ImplOpenGL3_Shutdown();
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_Shutdown();
-#elif DESHI_LINUX
-	ImGui_ImplGlfw_Shutdown();
-#elif DESHI_MAC
-	ImGui_ImplGlfw_Shutdown();
-#endif
-	ImGui::DestroyContext();
-}
-
-void DeshiImGui::
-NewFrame(){
-	ImGui_ImplOpenGL3_NewFrame();
-#if DESHI_WINDOWS
-	ImGui_ImplWin32_NewFrame();
-#elif DESHI_LINUX
-	ImGui_ImplGlfw_Shutdown();
-#elif DESHI_MAC
-	ImGui_ImplGlfw_NewFrame();
-#endif
-	ImGui::NewFrame();
-}
-
-
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_init
 void
@@ -458,15 +407,7 @@ render_init(){DPZoneScoped;
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup WGL and glad
-	{
-		opengl_module = platform_load_module(str8_lit("opengl32.dll"));
-		if(!opengl_module){
-			LogE("opengl", "Failed to load module opengl32.dll");
-			Assert(false);
-			deshiStage = RemoveFlag(deshiStage, DS_RENDER);
-			return;
-		}
-		
+	{ 
 #if DESHI_WINDOWS
 		//restore point for contexts
 		HDC   prev_dc = wglGetCurrentDC();
@@ -474,19 +415,19 @@ render_init(){DPZoneScoped;
 		
 		//setup pixel format for dummy device context
 		PIXELFORMATDESCRIPTOR temp_pfd{sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER};
-		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8; temp_pfd.iLayerType = PFD_MAIN_PLANE;
-		int temp_format = ChoosePixelFormat((HDC)window_helper.dc, &temp_pfd);
-		if(!SetPixelFormat((HDC)window_helper.dc, temp_format, &temp_pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
+		temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8;
+		int temp_format = ChoosePixelFormat((HDC)window_helper.context, &temp_pfd);
+		if(!SetPixelFormat((HDC)window_helper.context, temp_format, &temp_pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
 		//create and enable dummy render context
-		HGLRC temp_context = wglCreateContext((HDC)window_helper.dc);
+		HGLRC temp_context = wglCreateContext((HDC)window_helper.context);
 		if(!temp_context){ win32_log_last_error("wglCreateContext", renderSettings.crashOnError); return; }
-		wglMakeCurrent((HDC)window_helper.dc, temp_context);
+		wglMakeCurrent((HDC)window_helper.context, temp_context);
 		
 		//load wgl extensions
-		wgl_version = gladLoaderLoadWGL((HDC)window_helper.dc);
-		if(wgl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
-		Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(wgl_version), GLAD_VERSION_MINOR(wgl_version));
+		backend_version = gladLoaderLoadWGL((HDC)window_helper.context);
+		if(backend_version == 0){ LogEGl("Failed to load OpenGL"); return; }
+		Logf("render-opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 		gladInstallWGLDebug();
 		gladSetWGLPostCallback(WGLDebugPostCallback);
 		
@@ -501,55 +442,130 @@ render_init(){DPZoneScoped;
 		const int format_attributes[] = {
 			WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
 			WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-			WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-			WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
-			WGL_COLOR_BITS_ARB,     32,
-			WGL_DEPTH_BITS_ARB,     24,
-			WGL_STENCIL_BITS_ARB,   8,
+			WGL_DOUBLE_BUFFER_ARB,	GL_TRUE,
+			WGL_PIXEL_TYPE_ARB,		WGL_TYPE_RGBA_ARB,
+			WGL_COLOR_BITS_ARB,		32,
+			WGL_DEPTH_BITS_ARB,		24,
+			WGL_STENCIL_BITS_ARB,	8,
 			WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
 			0
 		};
-		wglChoosePixelFormatARB((HDC)DeshWindow->dc, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
-		if(!DescribePixelFormat((HDC)DeshWindow->dc, format, sizeof(pfd), &pfd)){  win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
+		wglChoosePixelFormatARB((HDC)DeshWindow->context, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
+		if(!DescribePixelFormat((HDC)DeshWindow->context, format, sizeof(pfd), &pfd)){	win32_log_last_error("DescribePixelFormat", renderSettings.crashOnError); return;  }
 		if(format == 0){ win32_log_last_error("ChoosePixelFormatARB", renderSettings.crashOnError); return; }
-		if(!SetPixelFormat((HDC)DeshWindow->dc, format, &pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
+		if(!SetPixelFormat((HDC)DeshWindow->context, format, &pfd)){ win32_log_last_error("SetPixelFormat", renderSettings.crashOnError); return; }
 		
 		//set the desired OpenGL version and render context settings
 		int context_attributes[] = {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
 			WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-#if BUILD_INTERNAL
+#  if BUILD_INTERNAL
 			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
-#else
+#  else
 			WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-#endif
+#  endif
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 			0
 		};
 		
 		//create actual render context and delete temporary one
-		opengl_context = wglCreateContextAttribsARB((HDC)DeshWindow->dc, 0, context_attributes); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt
+		opengl_context = wglCreateContextAttribsARB((HDC)DeshWindow->context, 0, context_attributes); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt
 		if(!opengl_context){ win32_log_last_error("wglCreateContextAttribsARB", renderSettings.crashOnError); return; }
-		wglMakeCurrent((HDC)DeshWindow->dc, (HGLRC)opengl_context);
+		wglMakeCurrent((HDC)DeshWindow->context, (HGLRC)opengl_context);
 		
 		//load glad extensions
 		opengl_version = gladLoaderLoadGL();
 		
+#elif DESHI_LINUX 
+		// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
+		
+		XFlush(linux.x11.display);
+		// print a nice message since loading opengl currently takes long enough for us to be able to see it :D
+		XDrawString(linux.x11.display, (X11Window)DeshWindow->handle, (GC)DeshWindow->context, 50, 50, "Loading OpenGL...", 17);
+		
+		backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
+		Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
+		
+		gladInstallGLXDebug();
+		
+		// get restore points 
+		Display* prev_display = glXGetCurrentDisplay();
+		GLXContext prev_context = glXGetCurrentContext();
+		
+		// list of attributes to ask of GLX
+		int attributes_config[] = {
+			GLX_DEPTH_SIZE, 24,  // 24 bit depth
+			GLX_STENCIL_SIZE, 8, // 8 bit stencil size
+			GLX_DOUBLEBUFFER,	 // use a double buffer
+			0,
+		};
+		
+		int n_elem;
+		GLXFBConfig* config = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes_config, &n_elem);
+		
+		if(!config || !n_elem) {
+			LogEGl("Cannot find an appropriate framebuffer configuration with glXChooseFBConfig");
+			Assert(0);
+		}
+		
+		GLXFBConfig fbconfig = config[0];
+		XFree(config);
+		
+		int attributes_visual[] = {
+			GLX_RGBA,
+			GLX_DOUBLEBUFFER,
+			GLX_DEPTH_SIZE, 24,  // 24 bit depth
+			GLX_STENCIL_SIZE, 8, // 8 bit stencil size
+			GLX_DOUBLEBUFFER,	 // use a double buffer
+			0,
+		};
+		
+		// get the best visual for our chosen attributes
+		XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes_visual);
+		if(!vi) {
+			LogEGl("Cannot find an appropriate visual for the given attributes");
+			Assert(0);
+		}
+		
+		Colormap cm = XCreateColormap(linux.x11.display, (X11Window)DeshWindow->handle, vi->visual, AllocNone);
+		
+		int contextAttribs[] = {
+			GLX_CONTEXT_MAJOR_VERSION_ARB, 3, 
+			GLX_CONTEXT_MINOR_VERSION_ARB, 2, 
+#if BUILD_INTERNAL
+			GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | GLX_CONTEXT_DEBUG_BIT_ARB,
 #else
-		glfwMakeContextCurrent((HWND)DeshWindow->handle);
-		opengl_version = gladLoadGL(glfwGetProcAddress);
+			GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB, 
+#endif
+			0 // Terminate the attribute list
+		};
+		
+		GLXContext context = glXCreateContextAttribsARB(linux.x11.display, fbconfig, 0, True, contextAttribs);
+		if(!glXMakeCurrent(linux.x11.display, (X11Window)DeshWindow->handle, context)) {
+			Log("", "unable to set glx context");
+		}
+		
+		opengl_version = gladLoaderLoadGL();
+#else
+#  error "unhandled platform"
 #endif
 		
-		if(opengl_version == 0){ LogE("opengl","Failed to load OpenGL"); return; }
-		Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
+		if(opengl_version == 0){ LogEGl("Failed to load OpenGL"); return; }
+		Logf("render-opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 		gladInstallGLDebug();
 		gladSetGLPostCallback(GladDebugPostCallback);
 		
+#if DESHI_WINDOWS
 		UpdateWindow((HWND)DeshWindow->handle);
+#elif DESHI_LINUX
+		XFlush(linux.x11.display);
+#else
+#  error "unhandled platform"
+#endif
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// setup uniform buffers
+	//// setup persistant buffers
 	{
 		//vertex shader ubo
 		glGenBuffers(1, &uboVS.handle);
@@ -564,6 +580,9 @@ render_init(){DPZoneScoped;
 		glGenBuffers(1, &push2D.handle);
 		glBindBufferRange(GL_UNIFORM_BUFFER, push2D.binding, push2D.handle, 0, sizeof(push2D.values));
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(push2D.values), 0, GL_DYNAMIC_DRAW);
+		
+		//voxel vertex array
+		glGenVertexArrays(1, &voxel_vao_handle);
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
@@ -664,7 +683,7 @@ render_update(){DPZoneScoped;
 	if(DeshWindow->resized || remake_window){
 		width  = DeshWindow->width;
 		height = DeshWindow->height;
-		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
+		if(width <= 0 || height <= 0){ return; }
 		glViewport(0,0,width,height);
 		remake_window = false;
 	}
@@ -672,11 +691,11 @@ render_update(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// update uniform buffers
 	{
-		uboVS.values.screen     = Vec2((f32)width, (f32)height);
-		uboVS.values.mousepos   = input_mouse_position();
+		uboVS.values.screen		= Vec2((f32)width, (f32)height);
+		uboVS.values.mousepos	= input_mouse_position();
 		uboVS.values.mouseWorld = Math::ScreenToWorld(input_mouse_position(), uboVS.values.proj, uboVS.values.view, Vec2(DeshWindow->width,DeshWindow->height));
-		uboVS.values.time       = DeshTime->totalTime;
-		uboVS.values.enablePCF  = renderSettings.shadowPCF;
+		uboVS.values.time		= DeshTime->totalTime;
+		uboVS.values.enablePCF	= renderSettings.shadowPCF;
 		
 		glBindBuffer(GL_UNIFORM_BUFFER, uboVS.handle);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(uboVS.values), &uboVS.values, GL_STREAM_DRAW);
@@ -686,7 +705,7 @@ render_update(){DPZoneScoped;
 	//// build commands
 	{
 		//// ui commands ////
-		u64 ui_vb_size = Max(1000*sizeof(Vertex2),         renderTwodVertexCount * sizeof(Vertex2));
+		u64 ui_vb_size = Max(1000*sizeof(Vertex2),		   renderTwodVertexCount * sizeof(Vertex2));
 		u64 ui_ib_size = Max(3000*sizeof(RenderTwodIndex), renderTwodIndexCount  * sizeof(RenderTwodIndex));
 		if(ui_vb_size && ui_ib_size){
 			//create vertex array object and buffers if they dont exist
@@ -695,15 +714,15 @@ render_update(){DPZoneScoped;
 				glGenBuffers(1, &uiBuffers.vbo_handle);
 				glGenBuffers(1, &uiBuffers.ibo_handle);
 			}
-
+			
 			//bind buffers
 			glBindVertexArray(uiBuffers.vao_handle);
 			glBindBuffer(GL_ARRAY_BUFFER, uiBuffers.vbo_handle);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, uiBuffers.ibo_handle);
 			
 			//specify vertex packing
-			glVertexAttribPointer(0, 2,  GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
-			glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
+			glVertexAttribPointer(0, 2,  GL_FLOAT,		   GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
+			glVertexAttribPointer(1, 2,  GL_FLOAT,		   GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
 			glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
 			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
 			
@@ -718,7 +737,7 @@ render_update(){DPZoneScoped;
 			}
 			
 			//fill buffers
-			glBufferSubData(GL_ARRAY_BUFFER,         0, ui_vb_size, renderTwodVertexArray);
+			glBufferSubData(GL_ARRAY_BUFFER,		 0, ui_vb_size, renderTwodVertexArray);
 			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ui_ib_size, renderTwodIndexArray);
 		}
 		
@@ -745,10 +764,10 @@ render_update(){DPZoneScoped;
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempBuffers.ibo_handle);
 			
 			//specify vertex packing
-			glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
-			glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+			glVertexAttribPointer(0, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+			glVertexAttribPointer(1, 2,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
 			glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
-			glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
+			glVertexAttribPointer(3, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 			
 			//resize buffers if too small and update buffer sizes
@@ -762,16 +781,12 @@ render_update(){DPZoneScoped;
 			}
 			
 			//fill buffers
-			glBufferSubData(GL_ARRAY_BUFFER, 0,                 temp_fill_vb_size, renderTempFilledVertexArray);
+			glBufferSubData(GL_ARRAY_BUFFER, 0,					temp_fill_vb_size, renderTempFilledVertexArray);
 			glBufferSubData(GL_ARRAY_BUFFER, temp_fill_vb_size, temp_wire_vb_size, renderTempWireframeVertexArray);
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,                 temp_fill_ib_size, renderTempFilledIndexArray);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,					temp_fill_ib_size, renderTempFilledIndexArray);
 			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, temp_fill_ib_size, temp_wire_ib_size, renderTempWireframeIndexArray);
 		}
 		
-		//// imgui commands ////
-		if(DeshiModuleLoaded(DS_IMGUI)){
-			ImGui::Render();
-		}
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
@@ -792,6 +807,7 @@ render_update(){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// draw first renderpass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLenum polygon_mode = (renderSettings.wireframeOnly) ? GL_LINE : GL_FILL;
 	
 	//// draw meshes ////
 	glActiveTexture(GL_TEXTURE0);
@@ -805,9 +821,35 @@ render_update(){DPZoneScoped;
 		
 		glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &renderModelCmdArray[i].matrix);
-		glPolygonMode(GL_FRONT_AND_BACK, (renderSettings.wireframeOnly) ? GL_LINE : GL_FILL);
+		glPolygonMode(GL_FRONT_AND_BACK, polygon_mode);
 		glDrawElementsBaseVertex(GL_TRIANGLES, renderModelCmdArray[i].indexCount, INDEX_TYPE_GL_MESH,
 								 (void*)(renderModelCmdArray[i].indexOffset*sizeof(MeshIndex)), renderModelCmdArray[i].vertexOffset);
+	}
+	
+	//// draw voxels ////
+	if(render_voxel_chunk_pool && memory_pool_count(render_voxel_chunk_pool)){
+		glBindVertexArray(voxel_vao_handle);
+		glUseProgram(programs.flat.handle);
+		for_pool(render_voxel_chunk_pool){
+			if(it->hidden) continue;
+			
+			//TODO(delle) this really sucks, can we bind once for all voxel buffers somehow?
+			glBindBuffer(GL_ARRAY_BUFFER,		  (GLuint)(u64)it->vertex_buffer->buffer_handle);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)(u64)it->index_buffer->buffer_handle);
+			glVertexAttribPointer(0, 3, GL_FLOAT,		  GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+			glVertexAttribPointer(1, 2, GL_FLOAT,		  GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+			glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,	sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
+			glVertexAttribPointer(3, 3, GL_FLOAT,		  GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
+			glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
+			
+			//TODO(delle) cache the chunk's matrix
+			mat4 matrix = mat4::TransformationMatrix(it->position, it->rotation, vec3_ONE());
+			glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
+			glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &matrix);
+			
+			glPolygonMode(GL_FRONT_AND_BACK, polygon_mode);
+			glDrawElements(GL_TRIANGLES, it->index_count, INDEX_TYPE_GL_MESH, 0);
+		}
 	}
 	
 	//// draw temp ///
@@ -838,7 +880,7 @@ render_update(){DPZoneScoped;
 	if(renderTwodVertexCount > 0 && renderTwodIndexCount > 0){
 		glBindVertexArray(uiBuffers.vao_handle);
 		glBindBuffer(GL_UNIFORM_BUFFER, push2D.handle);
-		push2D.values.scale     = {2.0f/f32(width), -2.0f/f32(height)};
+		push2D.values.scale		= {2.0f/f32(width), -2.0f/f32(height)};
 		push2D.values.translate = {-1.f, 1.f};
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(push2D.values), &push2D.values);
 		
@@ -849,7 +891,7 @@ render_update(){DPZoneScoped;
 		glUseProgram(programs.ui.handle);
 		
 		//NOTE I don't think using a 2D array would be any different than having a separate for loop
-		//     for each layer here, if it's worse tell me and ill fix it.
+		//	   for each layer here, if it's worse tell me and ill fix it.
 		forX(layer, TWOD_LAYERS){
 			forX(cmd_idx, renderTwodCmdCounts[renderActiveSurface][layer]){
 				if(renderTwodCmdArrays[renderActiveSurface][layer][cmd_idx].indexCount == 0) continue;
@@ -864,15 +906,14 @@ render_update(){DPZoneScoped;
 		glScissor(0, 0, width, height);
 	}
 	
-	//// draw imgui ////
-	if(DeshiModuleLoaded(DS_IMGUI)){
-		if(ImDrawData* imDrawData = ImGui::GetDrawData()) ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
-	}
-	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// present frame
 	{
+#if DESHI_LINUX
+		glXSwapBuffers(linux.x11.display, (X11Window)DeshWindow->handle);
+#else 
 		window_swap_buffers(DeshWindow);
+#endif
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
@@ -890,10 +931,14 @@ render_update(){DPZoneScoped;
 		renderTempWireframeVertexCount = 0;
 		renderTempWireframeIndexCount  = 0;
 		renderTempFilledVertexCount = 0;
-		renderTempFilledIndexCount  = 0;
+		renderTempFilledIndexCount	= 0;
 		
 		//// model commands ////
 		renderModelCmdCount = 0;
+		
+#ifdef BUILD_INTERNAL
+		renderBookKeeperCount = 0;
+#endif
 	}
 	
 	DeshTime->renderTime = peek_stopwatch(update_stopwatch);
@@ -927,15 +972,15 @@ void
 render_load_mesh(Mesh* mesh){DPZoneScoped;
 	RenderMesh mgl{};
 	mgl.base = mesh;
-	mgl.vertexCount = mesh->vertexCount;
-	mgl.indexCount  = mesh->indexCount;
+	mgl.vertexCount = mesh->vertex_count;
+	mgl.indexCount	= mesh->index_count;
 	if(glMeshes.count){
 		mgl.vertexOffset = glMeshes.last->vertexOffset + glMeshes.last->vertexCount;
 		mgl.indexOffset  = glMeshes.last->indexOffset  + glMeshes.last->indexCount;
 	}
 	
-	u64 mesh_vb_size   = mesh->vertexCount*sizeof(MeshVertex);
-	u64 mesh_ib_size   = mesh->indexCount*sizeof(MeshIndex);
+	u64 mesh_vb_size   = mesh->vertex_count*sizeof(MeshVertex);
+	u64 mesh_ib_size   = mesh->index_count*sizeof(MeshIndex);
 	u64 total_vb_size  = meshBuffers.vbo_size + mesh_vb_size;
 	u64 total_ib_size  = meshBuffers.ibo_size + mesh_ib_size;
 	total_vb_size = Max(1024*sizeof(MeshVertex), total_vb_size); //minimum of 1024 vertexes to avoid early growths
@@ -974,16 +1019,16 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 	}
 	
 	//copy mesh to buffers
-	glBindBuffer(GL_ARRAY_BUFFER,         meshBuffers.vbo_handle);
+	glBindBuffer(GL_ARRAY_BUFFER,		  meshBuffers.vbo_handle);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_handle);
-	glBufferSubData(GL_ARRAY_BUFFER,         meshBuffers.vbo_size, mesh_vb_size, mesh->vertexArray);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->indexArray);
+	glBufferSubData(GL_ARRAY_BUFFER,		 meshBuffers.vbo_size, mesh_vb_size, mesh->vertex_array);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->index_array);
 	
 	//specify vertex packing
-	glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
-	glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
+	glVertexAttribPointer(0, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,pos));
+	glVertexAttribPointer(1, 2,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,uv));
 	glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(MeshVertex), (void*)offsetof(MeshVertex,color));
-	glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
+	glVertexAttribPointer(3, 3,  GL_FLOAT,		   GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex,normal));
 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
 	
 	//update buffer sizes
@@ -1007,25 +1052,26 @@ render_load_texture(Texture* texture){DPZoneScoped;
 		case ImageFormat_BWA:  tgl.format = GL_RGBA; break;
 		case ImageFormat_RGB:  tgl.format = GL_RGBA; break;
 		case ImageFormat_RGBA: tgl.format = GL_RGBA; break;
-		default: PrintGl(0,"Unhandled image format when loading texture: ", texture->name); return;
+		default: LogEGl("Unhandled image format (",texture->format,") when loading texture: ", texture->name); return;
 	}
 	
 	//determine image type
 	switch(texture->type){
-		case TextureType_1D:         tgl.type = GL_TEXTURE_1D; break;
-		case TextureType_2D:         tgl.type = GL_TEXTURE_2D; break;
-		case TextureType_3D:         tgl.type = GL_TEXTURE_3D; break;
-		case TextureType_Cube:       tgl.type = GL_TEXTURE_CUBE_MAP; break;
-		case TextureType_Array_1D:   tgl.type = GL_TEXTURE_1D_ARRAY; break;
-		case TextureType_Array_2D:   tgl.type = GL_TEXTURE_2D_ARRAY; break;
+		case TextureType_OneDimensional:		 tgl.type = GL_TEXTURE_1D; break;
+		case TextureType_TwoDimensional:		 tgl.type = GL_TEXTURE_2D; break;
+		case TextureType_ThreeDimensional:		 tgl.type = GL_TEXTURE_3D; break;
+		case TextureType_Cube:		             tgl.type = GL_TEXTURE_CUBE_MAP; break;
+		case TextureType_Array_OneDimensional:	 tgl.type = GL_TEXTURE_1D_ARRAY; break;
+		case TextureType_Array_TwoDimensional:	 tgl.type = GL_TEXTURE_2D_ARRAY; break;
 		case TextureType_Array_Cube:{
-			if(GLAD_VERSION_MAJOR(opengl_version) >= 4)
+			if(GL_VERSION_TEST(4,0))
 				tgl.type = GL_TEXTURE_CUBE_MAP_ARRAY;
 			else{
-				Assert(!"GL_TEXTURE_CUBE_MAP_ARRAY requires OpenGL4");
+				LogEGl("GL_TEXTURE_CUBE_MAP_ARRAY requires OpenGL4");
+				return;
 			}
 		}break;
-		default: PrintGl(0,"Uknown image type when loading texture: ", texture->name); return;
+		default: LogEGl("Uknown image type when loading texture: ", texture->name); return;
 	}
 	
 	//create texture
@@ -1033,12 +1079,12 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	glBindTexture(tgl.type, tgl.handle);
 	
 	//load texture to GPU
-	if      (texture->type == TextureType_1D){
+	if		(texture->type == TextureType_OneDimensional){
 		glTexImage1D(tgl.type, 0, tgl.format, texture->width, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
-	}else if(texture->type == TextureType_2D || texture->type == TextureType_Array_1D){
+	}else if(texture->type == TextureType_TwoDimensional || texture->type == TextureType_Array_OneDimensional){
 		glTexImage2D(tgl.type, 0, tgl.format, texture->width, texture->height, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
 	}else if(texture->type == TextureType_Cube || texture->type == TextureType_Array_Cube || 
-			 texture->type== TextureType_3D   || texture->type == TextureType_Array_2D){
+			 texture->type== TextureType_ThreeDimensional   || texture->type == TextureType_Array_TwoDimensional){
 		glTexImage3D(tgl.type, 0, tgl.format, texture->width, texture->height, texture->depth, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
 	}
 	
@@ -1064,11 +1110,11 @@ render_load_texture(Texture* texture){DPZoneScoped;
 				glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			}
 		}break;
-		default: LogE("opengl", "Unhandled texture filter: ", texture->filter); break;
+		default: LogEGl("Unhandled texture filter: ", texture->filter); break;
 	}
 	
 	//setup texture address mode
-	switch(texture->uvMode){
+	switch(texture->uv_mode){
 		case TextureAddressMode_Repeat:{
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1099,7 +1145,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 			glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		}break;
-		default: LogE("vulkan", "Unhandled texture address mode: ", texture->uvMode); break;
+		default: LogEGl("Unhandled texture address mode: ", texture->uv_mode); break;
 	}
 	
 	//TODO(delle) EXT_texture_filter_anisotropic
@@ -1110,22 +1156,22 @@ render_load_texture(Texture* texture){DPZoneScoped;
 
 void
 render_load_material(Material* material){DPZoneScoped;
-	//!Incomplete
+	//NotImplemented; //!Incomplete
 }
 
 void
 render_unload_mesh(Mesh* mesh){
-	//!NotImplemented
+	NotImplemented; //!Incomplete
 }
 
 void
 render_unload_texture(Texture* texture){
-	//!NotImplemented
+	//NotImplemented; //!Incomplete
 }
 
 void
 render_unload_material(Material* material){
-	//!NotImplemented
+	NotImplemented; //!Incomplete
 }
 
 void
@@ -1138,16 +1184,16 @@ render_update_material(Material* material){DPZoneScoped;
 //// @render_draw_3d
 void
 render_model(Model* model, mat4* matrix){DPZoneScoped;
-	Assert(renderModelCmdCount + arrlenu(model->batchArray) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
+	Assert(renderModelCmdCount + arrlenu(model->batch_array) < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	RenderModelCmd* cmd = renderModelCmdArray + renderModelCmdCount;
-	forI(arrlenu(model->batchArray)){
-		if(!model->batchArray[i].indexCount) continue;
+	forI(arrlenu(model->batch_array)){
+		if(!model->batch_array[i].index_count) continue;
 		cmd[i].vertexOffset = glMeshes[model->mesh->render_idx].vertexOffset;
-		cmd[i].indexOffset  = glMeshes[model->mesh->render_idx].indexOffset + model->batchArray[i].indexOffset;
-		cmd[i].indexCount   = model->batchArray[i].indexCount;
-		cmd[i].material     = model->batchArray[i].material->render_idx;
-		cmd[i].name         = model->name;
-		cmd[i].matrix       = *matrix;
+		cmd[i].indexOffset	= glMeshes[model->mesh->render_idx].indexOffset + model->batch_array[i].index_offset;
+		cmd[i].indexCount	= model->batch_array[i].index_count;
+		cmd[i].material		= model->batch_array[i].material->render_idx;
+		cmd[i].name			= model->name;
+		cmd[i].matrix		= *matrix;
 		renderModelCmdCount += 1;
 	}
 }
@@ -1161,47 +1207,266 @@ render_model_wireframe(Model* model, mat4 matrix, color color){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 void
-render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
+deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent){DPZoneScoped;
 	renderActiveLayer = layer;
 	if(   (renderTwodCmdCounts[renderActiveSurface][layer] == 0)
-	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle        != (void*)((texture) ? (u64)texture->render_idx : 1))
+	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].handle		!= (void*)((texture) ? (u64)texture->render_idx : 1))
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorOffset != scissorOffset)
 	   || (renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]-1].scissorExtent != scissorExtent)){
-		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle        = (void*)((texture) ? (u64)texture->render_idx : 1);
+		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].handle		   = (void*)((texture) ? (u64)texture->render_idx : 1);
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].indexOffset   = renderTwodIndexCount;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorOffset = scissorOffset;
 		renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]].scissorExtent = scissorExtent;
 		renderTwodCmdCounts[renderActiveSurface][layer] += 1;
 	}
+#if BUILD_INTERNAL
+	RenderBookKeeper keeper; 
+	keeper.type = RenderBookKeeper_Cmd;
+	keeper.cmd = &renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer]];
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+#endif
 }
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_buffer
+//!ref: https://www.khronos.org/opengl/wiki/Buffer_Object
+#define OPENGL_RENDER_BUFFER_TARGET GL_ARRAY_BUFFER
 RenderBuffer*
-render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping){
-	NotImplemented; //!Incomplete: https://www.khronos.org/opengl/wiki/Buffer_Object
-	return 0;
+render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping){DPZoneScoped;
+	if(!deshi__render_buffer_pool){
+		LogEGl("Must not be called before deshi__render_buffer_pool is init.");
+		return 0;
+	}
+	if(size == 0){
+		LogEGl("Must not be called with zero size.");
+		return 0;
+	}
+	if(HasFlag(properties,RenderMemoryProperty_HostStreamed) && HasFlag(properties,RenderMemoryPropertyFlag_LazilyAllocated)){
+		LogEGl("The flags RenderMemoryPropertyFlag_HostVisible and RenderMemoryPropertyFlag_LazilyAllocated are incompatible.");
+		return 0;
+	}
+	if(HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent) && mapping != RenderMemoryMapping_Persistent){
+		LogEGl("OpenGL requires that RenderMemoryPropertyFlag_HostCoherent must use the RenderMemoryMapping_Persistent mapping.");
+		return 0;
+	}
+	
+	//create the buffer
+	GLuint buffer_handle;
+	glGenBuffers(1, &buffer_handle);
+	if(opengl_error){
+		return 0;
+	}
+	glBindBuffer(OPENGL_RENDER_BUFFER_TARGET, buffer_handle); //NOTE: the target we bind it to doesn't matter for creation
+	if(opengl_error){
+		glDeleteBuffers(1, &buffer_handle);
+		return 0;
+	}
+	
+	//allocate and upload data to the buffer memory
+	void* mapped_data = 0;
+	u64   mapped_size = 0;
+	if(GL_VERSION_TEST(4,4)){
+		//NOTE: OpenGL4.4 introduced the glBufferStorage() and glNamedBufferStorage() functions which further restrict how
+		//		buffers can be interacted with but allow the driver to (hopefully) optimize the buffer with that knowledge.
+		
+		GLbitfield storage_flags = 0;
+		if(mapping == RenderMemoryMapping_None){
+			if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible|RenderMemoryPropertyFlag_HostCoherent|RenderMemoryPropertyFlag_HostCached)){
+				LogEGl("Called with incompatible mapping and memory flags, RenderMemoryMapping_None and RenderMemoryPropertyFlag_HostVisible or RenderMemoryPropertyFlag_HostCoherent or RenderMemoryPropertyFlag_HostCached.");
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}else if(mapping == RenderMemoryMapping_MapWriteUnmap){
+			if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible) && !HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent)){
+				storage_flags = GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT|GL_CLIENT_STORAGE_BIT; 
+			}else{
+				LogEGl("Called with incompatible mapping and memory flags, RenderMemoryMapping_MapWriteUnmap and not RenderMemoryPropertyFlag_HostVisible.");
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}else if(mapping == RenderMemoryMapping_Persistent){
+			if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible)){
+				storage_flags = GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT;
+			}else if(HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent)){
+				storage_flags = GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT|GL_CLIENT_STORAGE_BIT;
+			}else{
+				LogEGl("Called with incompatible mapping and memory flags, RenderMemoryMapping_Persistent and not RenderMemoryPropertyFlag_HostVisible or RenderMemoryPropertyFlag_HostCoherent.");
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}
+		
+		glBufferStorage(OPENGL_RENDER_BUFFER_TARGET, size, data, storage_flags);
+		if(opengl_error){
+			glDeleteBuffers(1, &buffer_handle);
+			return 0;
+		}
+	}else{
+		//TODO(delle) better buffer usage determination
+		if(mapping == RenderMemoryMapping_None){
+			glBufferData(OPENGL_RENDER_BUFFER_TARGET, size, data, GL_STATIC_DRAW);
+			if(opengl_error){
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}else if(mapping == RenderMemoryMapping_Persistent){
+			glBufferData(OPENGL_RENDER_BUFFER_TARGET, size, data, GL_STREAM_DRAW);
+			if(opengl_error){
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+			
+			if(HasFlag(properties,RenderMemoryPropertyFlag_HostVisible)){
+				mapped_size = size;
+				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
+				if(opengl_error){
+					glDeleteBuffers(1, &buffer_handle);
+					return 0;
+				}
+			}else if(HasFlag(properties,RenderMemoryPropertyFlag_HostCoherent)){
+				mapped_size = size;
+				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT);
+				if(opengl_error){
+					glDeleteBuffers(1, &buffer_handle);
+					return 0;
+				}
+			}else{
+				LogEGl("Called with incompatible mapping and memory flags, RenderMemoryMapping_Persistent and not RenderMemoryPropertyFlag_HostVisible or RenderMemoryPropertyFlag_HostCoherent.");
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}else if(HasFlag(usage, RenderBufferUsage_UniformBuffer)){
+			glBufferData(OPENGL_RENDER_BUFFER_TARGET, size, data, GL_STREAM_DRAW);
+			if(opengl_error){
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}else{
+			glBufferData(OPENGL_RENDER_BUFFER_TARGET, size, data, GL_DYNAMIC_DRAW);
+			if(opengl_error){
+				glDeleteBuffers(1, &buffer_handle);
+				return 0;
+			}
+		}
+	}
+	
+	RenderBuffer* result = memory_pool_push(deshi__render_buffer_pool);
+	result->buffer_handle = (void*)(u64)buffer_handle;
+	result->size		  = size;
+	result->mapped_data   = mapped_data;
+	result->mapped_size   = mapped_size;
+	result->usage		  = usage;
+	result->properties	  = properties;
+	result->mapping		  = mapping;
+	return result;
 }
 
 void
-render_buffer_delete(RenderBuffer* buffer){
-	NotImplemented; //!Incomplete
+render_buffer_delete(RenderBuffer* buffer){DPZoneScoped;
+	if(!deshi__render_buffer_pool){
+		LogEGl("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle){
+		LogEGl("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	
+	//unmap before deletion
+	if(buffer->mapped_data){
+		glUnmapBuffer(OPENGL_RENDER_BUFFER_TARGET);
+	}
+	
+	GLuint buffer_handle = (GLuint)(u64)buffer->buffer_handle;
+	glDeleteBuffers(1, &buffer_handle);
+	
+	memory_pool_delete(deshi__render_buffer_pool, buffer);
 }
 
 void
-render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size){
-	NotImplemented; //!Incomplete
+render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size){DPZoneScoped;
+	if(!deshi__render_buffer_pool){
+		LogEGl("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle){
+		LogEGl("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	if(buffer->mapped_data){
+		if(buffer->mapping == RenderMemoryMapping_Persistent){
+			LogWGl("Cannot map a persistently mapped buffer since it's always actively mapped.");
+		}else{
+			LogWGl("Cannot map an actively mapped buffer.");
+		}
+		return;
+	}
+	if(buffer->mapping != RenderMemoryMapping_MapWriteUnmap){
+		LogEGl("A buffer must have the mapping RenderMemoryMapping_MapWriteUnmap in order to be mapped in the middle of its lifetime.");
+		return;
+	}
+	
+	buffer->mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, (GLintptr)offset, (GLsizeiptr)size, GL_MAP_WRITE_BIT|GL_MAP_FLUSH_EXPLICIT_BIT);
+	if(opengl_error) return;
+	
+	buffer->mapped_offset = offset;
+	buffer->mapped_size   = size;
 }
 
 void
-render_buffer_unmap(RenderBuffer* buffer, b32 flush){
-	NotImplemented; //!Incomplete
+render_buffer_unmap(RenderBuffer* buffer, b32 flush){DPZoneScoped;
+	if(!deshi__render_buffer_pool){
+		LogEGl("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle){
+		LogEGl("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	if(!buffer->mapped_data){
+		LogEGl("The input buffer is not actively mapped.");
+		return;
+	}
+	if(buffer->mapping != RenderMemoryMapping_MapWriteUnmap){
+		LogEGl("A buffer must have the mapping RenderMemoryMapping_MapWriteUnmap in order to be unmapped in the middle of its lifetime.");
+		return;
+	}
+	
+	if(flush){
+		if(GL_VERSION_TEST(3,0)){
+			glFlushMappedBufferRange(OPENGL_RENDER_BUFFER_TARGET, buffer->mapped_offset, buffer->mapped_size);
+		}else{
+			LogEGl("glFlushMappedBufferRange() requires OpenGL3.0");
+		}
+	}
+	
+	glUnmapBuffer(OPENGL_RENDER_BUFFER_TARGET);
+	buffer->mapped_data = 0;
 }
 
 void
-render_buffer_flush(RenderBuffer* buffer){
-	NotImplemented; //!Incomplete
+render_buffer_flush(RenderBuffer* buffer){DPZoneScoped;
+	if(!deshi__render_buffer_pool){
+		LogEGl("Must not be called before deshi__render_buffer_pool is init.");
+		return;
+	}
+	if(!buffer || !buffer->buffer_handle){
+		LogEGl("The input buffer was not properly created with render_buffer_create() or was previously deleted.");
+		return;
+	}
+	if(!buffer->mapped_data){
+		LogEGl("The input buffer is not actively mapped.");
+		return;
+	}
+	
+	if(GL_VERSION_TEST(3,0)){
+		glFlushMappedBufferRange(OPENGL_RENDER_BUFFER_TARGET, buffer->mapped_offset, buffer->mapped_size);
+	}else{
+		LogEGl("glFlushMappedBufferRange() requires OpenGL3.0");
+	}
 }
 
 
@@ -1282,9 +1547,9 @@ render_remake_offscreen(){DPZoneScoped;
 void 
 render_update_texture(Texture* texture, vec2i offset, vec2i size){
 	TextureGl* gltex = &glTextures[texture->render_idx];
-
+	
 	switch(texture->type){
-		case TextureType_2D:{
+		case TextureType_TwoDimensional:{
 			glBindTexture(GL_TEXTURE_2D, gltex->handle); 
 			glTexSubImage2D(GL_TEXTURE_2D, 0, offset.x, offset.y, size.x, size.y, gltex->format, GL_UNSIGNED_BYTE, texture->pixels);
 			glBindTexture(GL_TEXTURE_2D, 0);

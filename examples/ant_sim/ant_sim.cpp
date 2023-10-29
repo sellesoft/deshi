@@ -676,7 +676,7 @@ void generate_path(Agent* agent, vec2i target){
 	//BEGIN_ALGORITHM: A* with uniform tile movement cost
 	b32 valid_path = false;
 	map<vec2i,u8> directions(deshi_temp_allocator); //<pos,direction> (direction = previous path tile -> this tile)
-	array<pair<vec2i,u32>> frontier(128,deshi_temp_allocator); //priority stack (lowest prio -> highest prio)
+	arrayT<pair<vec2i,u32>> frontier(128,deshi_temp_allocator); //priority stack (lowest prio -> highest prio)
 	frontier.add({agent->entity.pos,0});
 	
 	//iterate frontier (tiles not yet assigned a direction towards the path start)
@@ -718,7 +718,7 @@ void generate_path(Agent* agent, vec2i target){
 	//create the path and give it to the agent
 	if(valid_path){
 		vec2i current = target;
-		array<u8> path(32,&deshi_allocator_no_release);
+		arrayT<u8> path(32,&deshi_allocator_no_release);
 		while(!vec2i_equal(current, agent->entity.pos)){
 			u8 direction = *directions.at(current);
 			path.add(direction);
@@ -818,8 +818,8 @@ void delete_entity(Entity* entity){
 	}
 }
 
-array<Advert*> collect_adverts(Agent* agent){
-	array<Advert*> adverts(deshi_temp_allocator);
+arrayT<Advert*> collect_adverts(Agent* agent){
+	arrayT<Advert*> adverts(deshi_temp_allocator);
 	for_pool(adverts_pool){
 		if(!it->def) continue;
 		if(vec2i_distanceToSq(agent->entity.pos,it->owner->pos) <= it->def->rangeSq){
@@ -1220,7 +1220,7 @@ void update_simulation(){
 			}
 			
 			if(agent->active_advert == 0){
-				array<Advert*> adverts = collect_adverts(agent);
+				arrayT<Advert*> adverts = collect_adverts(agent);
 				agent->active_advert = select_advert(agent, adverts.data, adverts.count);
 			}
 		}
@@ -1327,9 +1327,9 @@ Entity* get_entity_under_mouse(){
 }
 
 // allocates a temporary string
-str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
-	str8b build;
-	str8_builder_init(&build, {0}, deshi_temp_allocator);
+str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
+	dstr8 build;
+	dstr8_init(&build, {0}, deshi_temp_allocator);
 	
 	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
 	memset(max, 0, sizeof(u32)*columns);
@@ -1341,11 +1341,11 @@ str8 aligned_text(u32 rows, u32 columns, array<str8> texts){
 	
 	forI(rows*columns) {
 		u32 len = max[i%rows];
-		str8_builder_grow(&build, len);
+		dstr8_grow(&build, len);
 		memcpy(build.str+build.count, texts[i].str, texts[i].count);
 		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
 		build.count += len;
-		if(i%columns == columns-1)  str8_builder_append(&build, STR8("\n"));
+		if(i%columns == columns-1)  dstr8_append(&build, STR8("\n"));
 	}
 	
 	return build.fin;
@@ -1489,10 +1489,22 @@ void setup_ui(){
 				ui.entity_list->style.padding = {5,5,5,5};
 				ui.entity_list->style.background_color = Color_DarkGrey;
 				
+<<<<<<< HEAD
 				forI(Entity_COUNT){
 					if(i == Entity_Agent) continue; //handle agent races below
 					
 					uiItem* item = uiItemB();{ item->id = ToString8(deshi_allocator, "ant_sim.info.entity_list.", EntityStrings[i]);
+=======
+				uiItem* entity_list = uiItemB();{
+					entity_list->id = STR8("ant_sim.main.info.draw_menu.entity_list");
+					entity_list->style.width = 100/*percent*/;
+					entity_list->style.sizing = size_auto_y | size_percent_x;
+					forI(Entity_COUNT){
+						if(i == Entity_Agent) continue; //handle agent races below
+						
+						uiItem* item = uiItemB();
+						item->id = to_dstr8v(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.", EntityStrings[i]);
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 						item->userVar = i;
 						item->style.background_color = Color_VeryDarkCyan;
 						item->style.margin_bottom = 2;
@@ -1517,6 +1529,7 @@ void setup_ui(){
 							}else{
 								item->style.background_color = Color_VeryDarkCyan;
 							}
+<<<<<<< HEAD
 						};
 					}uiItemE();
 				}
@@ -1550,6 +1563,37 @@ void setup_ui(){
 						};
 					}uiItemE();
 				}
+=======
+						}; item->update_trigger = action_act_always;
+						uiItemE();
+					}
+					forI(Race_COUNT){
+						uiItem* item = uiItemB();{
+							item->id = to_dstr8v(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.Agent.", RaceStrings[i]);
+							item->userVar = i;
+							item->style.background_color = Color_VeryDarkCyan;
+							item->style.margin_bottom = 2;
+							item->style.content_align = {0.0,0.5};
+							item->style.width = 100/*percent*/;
+							item->style.sizing = size_auto_y | size_percent_x;
+							item->style.padding_left = 1;
+							uiTextM(RaceStrings[i])->style.hover_passthrough = 1;
+							item->action = [](uiItem* item){
+								sim.drawing.entity_type = Entity_Agent;
+								sim.drawing.agent_race = item->userVar;
+								item->dirty = 1;
+							}; item->action_trigger = action_act_mouse_released;
+							item->__update = [](uiItem* item){
+								if(sim.drawing.entity_type == Entity_Agent && sim.drawing.agent_race == item->userVar){
+									item->style.background_color = Color_DarkRed;
+								}else{
+									item->style.background_color = Color_VeryDarkCyan;
+								}
+							}; item->update_trigger = action_act_always;
+						}uiItemE();
+					}
+				}uiItemE();
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 			}uiItemE();
 			
 			uiTextML("Keys ---------------"); //TODO replace with header widget
@@ -1615,6 +1659,7 @@ void update_ui(){
 	
 	uiImmediateB();{
 		persist Type anchor = anchor_top_left;
+<<<<<<< HEAD
 		uiItem* window = uiItemB();{ window->id = STR8("ant_sim.info_window");
 			if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
 			window->style.positioning = pos_absolute;
@@ -1632,6 +1677,26 @@ void update_ui(){
 				}uiItemE();
 			}
 		}uiItemE();
+=======
+		uiItem* window = uiItemB();
+		if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
+		window->style.positioning      = pos_absolute;
+		window->style.anchor           = anchor;
+		window->style.sizing           = size_auto;
+		window->style.background_color = Color_DarkGrey;
+		window->id                     = STR8("ant_sim.info_window");
+		uiTextM(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"))->id = STR8("ant_sim.info_window.fps");
+		if(sim.paused){ 
+			uiItem* pausebox = uiItemB();{
+				pausebox->style.anchor = anchor_bottom_right;
+				pausebox->style.sizing = size_auto;
+				pausebox->style.padding = {2,2,2,2};
+				pausebox->style.background_color = color(255*(sin(1.5*DeshTime->totalTime/1000 + cos(1.5*DeshTime->totalTime/1000))+1)/2, 0, 0, 255);
+				uiTextML("paused")->id = STR8("ant_sim.info_window.paused");
+			}uiItemE();
+		}
+		uiItemE();
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 	}uiImmediateE();
 	
 	render_update_texture(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
@@ -1649,20 +1714,33 @@ void update_ui(){
 	}
 	
 	uiImmediateBP(ui.hover_container);{
+<<<<<<< HEAD
 		uiTextM(ToString8(deshi_temp_allocator, STR8("entity: "), (hovered) ? hovered->name : STR8("nothing")))->id = STR8("ant_sim.info.hovered_container.entity");
 		
 		auto [tile_pos,valid_tile] = get_tile_under_mouse();
 		if(valid_tile){
 			uiTextM(ToString8(deshi_temp_allocator, STR8("tile  : "), tile_pos))->id = STR8("ant_sim.info.hovered_container.tile");
+=======
+		uiTextM(to_dstr8v(deshi_temp_allocator, STR8("entity: "), (hovered) ? hovered->name : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.entity");
+		
+		auto [tile_pos,valid_tile] = get_tile_under_mouse();
+		if(valid_tile){
+			uiTextM(to_dstr8v(deshi_temp_allocator, STR8("tile  : "), tile_pos))->id = STR8("ant_sim.main.info.hovered_container.tile");
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 		}else{
 			uiTextML("tile  : nothing")->id = STR8("ant_sim.info.hovered_container.tile");
 		}
 		
+<<<<<<< HEAD
 		uiTextM(ToString8(deshi_temp_allocator, STR8("ui    : "), (g_ui->hovered) ? g_ui->hovered->id : STR8("nothing")))->id = STR8("ant_sim.info.hovered_container.ui");
+=======
+		uiTextM(to_dstr8v(deshi_temp_allocator, STR8("ui    : "), (g_ui->hovered) ? g_ui->hovered->id : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.ui");
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 	}uiImmediateE();
 	
 	uiImmediateBP(ui.entity.container);{
 		if(sim.selected_entity){
+<<<<<<< HEAD
 			uiTextM(ToString8(deshi_temp_allocator, "name: ", sim.selected_entity->name))->id = STR8("ant_sim.info.entity.name");
 			uiTextM(ToString8(deshi_temp_allocator, "type: ", EntityStrings[sim.selected_entity->type]))->id = STR8("ant_sim.info.entity.type");
 			uiTextM(ToString8(deshi_temp_allocator, "age : ", sim.selected_entity->age))->id = STR8("ant_sim.info.entity.age");
@@ -1674,27 +1752,46 @@ void update_ui(){
 					uiTextM(ToString8(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]))->id = STR8("ant_sim.info.entity.agent.species");
 					uiTextM(ToString8(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.info.entity.agent.race");
 					uiTextML("Needs ----------")->id = STR8("ant_sim.info.entity.agent.needs_header");
+=======
+			uiTextM(to_dstr8v(deshi_temp_allocator, "name: ", sim.selected_entity->name))->id = STR8("ant_sim.main.info.selected_container.name");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "type: ", EntityStrings[sim.selected_entity->type]))->id = STR8("ant_sim.main.info.selected_container.type");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "age : ", sim.selected_entity->age))->id = STR8("ant_sim.main.info.selected_container.age");
+			uiTextM(to_dstr8v(deshi_temp_allocator, "pos : ", sim.selected_entity->pos))->id = STR8("ant_sim.main.info.selected_container.pos");
+			switch(sim.selected_entity->type){
+				case Entity_Agent:{
+					Agent* agent = AgentFromEntity(sim.selected_entity);
+					uiTextM(to_dstr8v(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.species");
+					uiTextM(to_dstr8v(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.race");
+					uiTextML("needs  : ")->id = STR8("ant_sim.main.info.selected_container.agent.needs_header");
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 					
-					str8_builder needs_builder;
-					str8_builder_init(&needs_builder, str8{}, deshi_temp_allocator);
+					dstr8 needs_builder;
+					dstr8_init(&needs_builder, str8{}, deshi_temp_allocator);
 					ForX(need,agent->needs_array,agent->needs_count){
-						str8_builder_append(&needs_builder, STR8("["));
+						dstr8_append(&needs_builder, STR8("["));
 						f32 need_percent = need->value / MAX_NEED_VALUE;
 						u32 need_percent_whole = (u32)(need_percent * 100.f);
 						u32 dash_count = (u32)(need_percent / 10.f);
 						u32 space_count = 10 - dash_count;
-						forI(dash_count) str8_builder_append(&needs_builder, STR8("-"));
-						forI(space_count) str8_builder_append(&needs_builder, STR8(" "));
-						str8_builder_append(&needs_builder, STR8("] ("));
-						str8_builder_append(&needs_builder, to_str8(need_percent_whole, deshi_temp_allocator));
-						str8_builder_append(&needs_builder, STR8("%) "));
-						str8_builder_append(&needs_builder, NeedStrings[need->type]);
-						str8_builder_append(&needs_builder, STR8("\n"));
+						forI(dash_count) dstr8_append(&needs_builder, STR8("-"));
+						forI(space_count) dstr8_append(&needs_builder, STR8(" "));
+						dstr8_append(&needs_builder, STR8("] ("));
+						dstr8_append(&needs_builder, to_dstr8(need_percent_whole, deshi_temp_allocator));
+						dstr8_append(&needs_builder, STR8("%) "));
+						dstr8_append(&needs_builder, NeedStrings[need->type]);
+						dstr8_append(&needs_builder, STR8("\n"));
 					}
+<<<<<<< HEAD
 					uiTextM(str8_builder_peek(&needs_builder))->id = STR8("ant_sim.info.entity.agent.needs_list");
 				}break;
 				case Entity_Water:{
 					uiTextM(ToString8(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.info.entity.water.pressure");
+=======
+					uiTextM(dstr8_peek(&needs_builder))->id = STR8("ant_sim.main.info.selected_container.agent.needs_list");
+				}break;
+				case Entity_Water:{
+					uiTextM(to_dstr8v(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.main.info.selected_container.water.pressure");
+>>>>>>> 0dcedf8c3cfe76b431d9e839f026052928df9068
 				}break;
 			}
 		}else{

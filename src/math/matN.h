@@ -76,14 +76,14 @@ The transformation matrix will follow the format to the right:                  
 #define DESHI_matN_H
 
 #include "vector.h"
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include <cstring> //memcpy
 
 struct matN {
 	u32 rows;
 	u32 cols;
 	u32 elementCount;
-	array<f64> data;
+	arrayT<f64> data;
 	
 	matN() { rows = 0; cols = 0; elementCount = 0; }
 	matN(u32 _rows, u32 _cols) {
@@ -91,7 +91,7 @@ struct matN {
 		elementCount = _rows * _cols;
 		forI(elementCount) data.add(0);
 	};
-	matN(u32 _rows, u32 _cols, array<f64> list) {
+	matN(u32 _rows, u32 _cols, arrayT<f64> list) {
 		Assert(list.count == _rows * _cols);
 		rows = _rows; cols = _cols;
 		elementCount = _rows * _cols;
@@ -122,7 +122,7 @@ struct matN {
 	friend matN operator * (const f64& lhs, const matN& rhs) { return rhs * lhs; }
 	
 	matN Transpose() const;
-	matN Submatrix(array<u32> inRows, array<u32> inCols) const;
+	matN Submatrix(arrayT<u32> inRows, arrayT<u32> inCols) const;
 	f64  Minor(int row, int col) const;
 	f64  Cofactor(int row, int col) const;
 	matN Adjoint() const;
@@ -162,7 +162,7 @@ struct matN {
 
 //matN::matN(u32 _rows, u32 _cols)
 //
-//matN::matN(u32 _rows, u32 _cols, array<f64> list)
+//matN::matN(u32 _rows, u32 _cols, arrayT<f64> list)
 
 
 //// Operators ////
@@ -396,7 +396,7 @@ Transpose() const {
 //returns a matrix only with the specified rows and cols
 //NOTE 0...n-1 not 1...n
 inline matN matN::
-Submatrix(array<u32> inRows, array<u32> inCols) const {
+Submatrix(arrayT<u32> inRows, arrayT<u32> inCols) const {
 	Assert(inRows.size() != 0 && inCols.size() > 0, "matN submatrix cant be performed with zero dimensions");
 	matN newMatrix(inRows.size(), inCols.size());
 	for (int i = 0; i < inRows.size(); ++i) {
@@ -426,8 +426,6 @@ Minor(int row, int col) const {
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
 inline f64 matN::
-
-
 Cofactor(int row, int col) const {
 	if ((row + col) % 2) {
 		return -Minor(row, col);
@@ -506,7 +504,6 @@ Inverse() const {
 	matN nu = matN::Identity(rows);
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
-			
 			if (i != j && this->operator()(i, j)) {
 				diag = 0;
 				goto diagbreak;
@@ -787,46 +784,5 @@ inline matN matN::Diag(const matN& m){
 //	this->rows = 1; this->cols = 4; this->elementCount = 4;
 //	this->data = {v.x, v.y, v.z, w};
 //}
-
-///////////////////
-//// to_string ////
-///////////////////
-#include "kigu/string_utils.h"
-
-global string
-to_string(const matN& x, bool trunc = true) {
-	if (x.rows == 0 || x.cols == 0) {
-		return "|Zero dimension matrix|";
-	}
-	
-	string str = to_string(x.rows) + "x" + to_string(x.cols) + " matN<n,m>:\n|";
-	if (x.rows == 1) {
-		for (u32 i = 0; i < x.cols - 1; ++i) {
-			char buffer[15];
-			snprintf(buffer, 15, "%+g", x.data[i]);
-			str += string(buffer) + ", ";
-		}
-		char buffer[15];
-		snprintf(buffer, 15, "%+g", x.data[x.elementCount - 1]);
-		str += string(buffer) + "|";
-		return str;
-	}
-	
-	for (u32 i = 0; i < x.elementCount - 1; ++i) {
-		char buffer[15];
-		snprintf(buffer, 15, "%+g", x.data[i]);
-		str += string(buffer);
-		if ((i + 1) % x.cols != 0) {
-			str += ", ";
-		}
-		else {
-			str += "|\n|";
-		}
-	}
-	char buffer[15];
-	snprintf(buffer, 15, "%+g", x.data[x.elementCount - 1]);
-	str += string(buffer) + "|";
-	return str;
-}
 
 #endif //DESHI_matN_H

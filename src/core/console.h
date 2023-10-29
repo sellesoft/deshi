@@ -74,14 +74,14 @@ struct Console{
 	b32 initialized;
 	
 	ring_array<ConsoleChunk> dictionary;
-
+	
 	Logger* logger;
 	
 #define CONSOLE_INPUT_BUFFER_SIZE 1024
 	u8  prev_input[CONSOLE_INPUT_BUFFER_SIZE]{};
 	u32 input_history_index = -1;
 	ring_array<pair<u32,u32>> input_history;
-
+	
 	Arena* chunk_render_arena;
 	
 	b32 tag_show         = true;
@@ -89,7 +89,7 @@ struct Console{
 	b32 tag_outlines     = true;
 	b32 line_highlighing = true;
 	b32 automatic_scroll = true;
-
+	
 	ConsoleState state = ConsoleState_Closed;
 	f32 open_small_percent = 0.2f;   //percentage of the height of the window to open to in small mode
 	f32 open_max_percent   = 0.7f;   //percentage of the height of the window to open to
@@ -102,9 +102,9 @@ struct Console{
 	vec2 console_dim;
 	b32 open_pressed     = false;
 	b32 scroll_to_bottom = false;
-
+	
 	s64 scroll = 0;
-
+	
 	struct{
 		uiItem* main;
 		uiItem* buffer;
@@ -122,13 +122,15 @@ FORCE_INLINE Console* console_expose();
 //begins the transition of `Console.state` to `new_state`, if new state is the same as previous, set state to `ConsoleState_Closed`
 void console_change_state(ConsoleState new_state);
 
+b32 console_is_open();
+
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
 void console_parse_message(str8 message, str8 tag = STR8(""), Type type = ConsoleChunkType_Normal, b32 from_logger = 0, u32 logger_offset = 0);
 
 //parses a message into console chunks then logs that message after stripping it of any console-specific formatting
 #define console_log(...)                                                                   \
   {                                                                                        \
-    string message##__LINE__ = ToString(__VA_ARGS__);                                      \
+    dstr8 message##__LINE__ = to_dstr8v(deshi_temp_allocator, __VA_ARGS__);                \
     console_parse_message(str8{(u8*)message##__LINE__.str, (s64)message##__LINE__.count}); \
   }(void)0
 

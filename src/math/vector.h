@@ -37,7 +37,7 @@ StartLinkageC();
 typedef struct vec2i{
 	//// data ////
 	union{
-		s32 arr[2] = {0};
+		s32 arr[2];
 		struct{ s32 x, y; };
 		struct{ s32 r, g; };
 		struct{ s32 w, h; };
@@ -541,15 +541,15 @@ inline vec2i vec2i_yAdd(vec2i lhs, s32 a){DPZoneScoped;
 typedef struct vec2{
 	//// data ////
 	union{
-		f32 arr[2] = {};
+		f32 arr[2];
 		struct{ f32 x, y; };
 		struct{ f32 r, g; };
 		struct{ f32 w, h; };
 		struct{ f32 u, v; };
 	};
 	
-	
 #ifdef __cplusplus
+
 	//// member constants ////
 	static const vec2 ZERO;
 	static const vec2 ONE;
@@ -859,13 +859,13 @@ FORCE_INLINE vec2 Vec2(f32 x, f32 y){
 
 //// nonmember constants ////
 FORCE_INLINE vec2 vec2_ZERO() { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_ONE()  { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_UP()   { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_DOWN() { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_LEFT() { return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_RIGHT(){ return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_UNITX(){ return vec2{ 0, 0}; }
-FORCE_INLINE vec2 vec2_UNITY(){ return vec2{ 0, 0}; }
+FORCE_INLINE vec2 vec2_ONE()  { return vec2{ 1, 1}; }
+FORCE_INLINE vec2 vec2_UP()   { return vec2{ 0, 1}; }
+FORCE_INLINE vec2 vec2_DOWN() { return vec2{ 0,-1}; }
+FORCE_INLINE vec2 vec2_LEFT() { return vec2{-1, 0}; }
+FORCE_INLINE vec2 vec2_RIGHT(){ return vec2{ 1, 0}; }
+FORCE_INLINE vec2 vec2_UNITX(){ return vec2{ 1, 0}; }
+FORCE_INLINE vec2 vec2_UNITY(){ return vec2{ 0, 1}; }
 
 
 //// nonmember operators ////
@@ -1101,7 +1101,7 @@ typedef struct vec3i{
 typedef struct vec3{
 	//// data ////
 	union{
-		f32 arr[3] = {};
+		f32 arr[3];
 		struct{ f32 x, y, z; };
 		struct{ f32 r, g, b; };
 		struct{ vec2 xy; f32 _unusedZ0; };
@@ -1854,7 +1854,7 @@ typedef struct vec4i{
 typedef struct vec4{
 	//// data ////
 	union{
-		f32 arr[4] = {};
+		f32 arr[4];
 		struct{ 
 			union{
 				vec3 xyz;
@@ -2766,131 +2766,120 @@ struct hash<vec4>{
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @vec_tostring
-#include "kigu/string.h"
+// #include "kigu/string.h"
 
-global string 
-to_string(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	string s(a);
-	if(trunc){
-		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
-		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf(s.str, s.count+1, "(%g, %g)", x.x, x.y);
-	}else{
-		s.count = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
-		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf(s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
-	}
+// global string 
+// to_string(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+// 	string s(a);
+// 	if(trunc){
+// 		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
+// 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+// 		s.space = s.count+1;
+// 		snprintf(s.str, s.count+1, "(%g, %g)", x.x, x.y);
+// 	}else{
+// 		s.count = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
+// 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+// 		s.space = s.count+1;
+// 		snprintf(s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
+// 	}
+// 	return s;
+// }
+
+// global string 
+// to_string(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
+// 	string s(a);
+// 	if(trunc){
+// 		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
+// 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+// 		s.space = s.count+1;
+// 		snprintf(s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
+// 	}else{
+// 		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
+// 		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+// 		s.space = s.count+1;
+// 		snprintf(s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
+// 	}
+// 	return s;
+// }
+
+// global string 
+// to_string(const vec4& x, Allocator* a = KIGU_STRING_ALLOCATOR){
+// 	string s(a);
+// 	s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+// 	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+// 	s.space = s.count+1;
+// 	snprintf(s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+// 	return s;
+// }
+
+global dstr8
+to_dstr8(const vec2& x, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%g, %g)", x.x, x.y);
 	return s;
 }
 
-global string 
-to_string(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	string s(a);
-	if(trunc){
-		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
-		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf(s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
-	}else{
-		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
-		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf(s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
-	}
+global dstr8
+to_dstr8p(const vec2& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%.*f, %.*f)", precision, x.x, precision, x.y);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%.*f, %.*f)", precision, x.x, precision, x.y);
 	return s;
 }
 
-global string 
-to_string(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	string s(a);
-	if(trunc){
-		s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
-		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf(s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
-	}else{
-		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
-		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf(s.str, s.count+1, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
-	}
-	return s;
-}
-
-global str8
-to_str8(const vec2& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	str8b s; s.allocator = a;
-	if(trunc){
-		s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
-		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf((char*)s.str, s.count+1, "(%g, %g)", x.x, x.y);
-	}else{
-		s.count = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
-		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf((char*)s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
-	}
-	return s.fin;
-}
-
-global str8
-to_str8(const vec2i& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	str8b s; s.allocator = a;
+global dstr8
+to_dstr8(const vec2i& x, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
 	s.count = snprintf(nullptr, 0, "(%i, %i)", x.x, x.y);
 	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-	s.allocator->commit(s.str, s.count+1);
 	s.space = s.count+1;
 	snprintf((char*)s.str, s.count+1, "(%i, %i)", x.x, x.y);
-	return s.fin;
+	return s;
 }
 
-global str8
-to_str8(const vec3& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	str8b s; s.allocator = a;
-	if(trunc){
-		s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
-		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf((char*)s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
-	}else{
-		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
-		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf((char*)s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
-	}
-	return s.fin;
+global dstr8
+to_dstr8(const vec3& x, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
+	return s;
 }
 
-global str8
-to_str8(const vec4& x, bool trunc = true, Allocator* a = KIGU_STRING_ALLOCATOR){
-	str8b s; s.allocator = a;
-	if(trunc){
-		s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
-		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf((char*)s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
-	}else{
-		s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
-		s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
-		s.allocator->commit(s.str, s.count+1);
-		s.space = s.count+1;
-		snprintf((char*)s.str, s.count+1, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
-	}
-	return s.fin;
+global dstr8
+to_dstr8p(const vec3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z);
+	return s;
+}
+
+global dstr8
+to_dstr8(const vec4& x, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
+	return s;
+}
+
+global dstr8
+to_dstr8p(const vec4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){
+	dstr8 s; s.allocator = a;
+	s.count = snprintf(nullptr, 0, "(%.*f, %.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z, precision, x.w);
+	s.str   = (u8*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "(%.*f, %.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z, precision, x.w);
+	return s;
 }
 
 #endif //DESHI_VECTOR_H

@@ -35,84 +35,91 @@ global vec3 ClampPointToTriangle(vec3 point, vec3 tri0, vec3 tri1, vec3 tri2){
 	return Vec3(u*tri0.x + v*tri1.x + w*tri2.x, u*tri0.y + v*tri1.y + w*tri2.y, u*tri0.z + v*tri1.z + w*tri2.z);
 }
 
-inline global vec3 MeshTriangleMidpoint(MeshTriangle* tri){
+inline global vec3 
+MeshTriangleMidpoint(MeshTriangle* tri){
 	return (tri->p[0] + tri->p[1] + tri->p[2]) / 3.f;
 }
 
-global MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
+global MeshFace* 
+FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshFace* closest_face = 0;
 	f32 max_projection = -INFINITY;
-	forI(mesh->faceCount){
-		f32 local_dot = target_normal.dot(mesh->faceArray[i].normal);
+	forI(mesh->face_count){
+		f32 local_dot = target_normal.dot(mesh->face_array[i].normal);
 		if(local_dot > max_projection){
 			max_projection = local_dot;
-			closest_face = mesh->faceArray + i;
+			closest_face = mesh->face_array + i;
 		}
 	}
 	return closest_face;
 }
 
-global vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
+global vec3 
+FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshVertex* closest_vertex = 0;
 	f32 max_projection = -INFINITY;
-	forI(mesh->vertexCount){
-		f32 local_dot = target_normal.dot(mesh->vertexArray[i].pos);
+	forI(mesh->vertex_count){
+		f32 local_dot = target_normal.dot(mesh->vertex_array[i].pos);
 		if(local_dot > max_projection){
 			max_projection = local_dot;
-			closest_vertex = mesh->vertexArray + i;
+			closest_vertex = mesh->vertex_array + i;
 		}
 	}
 	return closest_vertex->pos;
 }
 
-inline global vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
+inline global vec3 
+ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
 	return target + (plane_normal * -Math::DistPointToPlane(target, plane_normal, plane_point));
 }
 
-inline global vec3 ClosestPointOnAABB(vec3 halfDims, vec3 target) {
+inline global vec3 
+ClosestPointOnAABB(vec3 halfDims, vec3 target) {
 	return Clamp(target, -halfDims, halfDims);
 }
 
-inline global vec3 ClosestPointOnSphere(float radius, vec3 target) {
+inline global vec3 
+ClosestPointOnSphere(float radius, vec3 target) {
 	return target.normalized() * radius;
 }
 
-global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
+global vec3
+ClosestPointOnHull(Mesh* mesh, vec3 target){
 	//find closest face to target based on the face normal
 	vec3 target_normal = target.normalized();
 	vec3 closest_normal = vec3::ZERO;
 	f32  max_projection = -INFINITY;
-	MeshFace* closest_face = &mesh->faceArray[0];
-	forI(mesh->faceCount){
-		vec3 face_normal = mesh->faceArray[i].normal;
+	MeshFace* closest_face = &mesh->face_array[0];
+	forI(mesh->face_count){
+		vec3 face_normal = mesh->face_array[i].normal;
 		f32  local_dot = target_normal.dot(face_normal);
 		if(local_dot > max_projection){
 			max_projection = local_dot;
-			closest_face = mesh->faceArray + i;
+			closest_face = mesh->face_array + i;
 			closest_normal = face_normal;
 		}
 	}
 	
 	//find three closest vertexes to make a triangle from
-	f32 smallest_distance0 = FLT_MAX, smallest_distance1 = FLT_MAX, smallest_distance2 = FLT_MAX;
+	f32 smallest_distance0 = MAX_F32, smallest_distance1 = MAX_F32, smallest_distance2 = MAX_F32;
 	vec3 closest_vert0{}; vec3 closest_vert1{}; vec3 closest_vert2{};
-	forI(closest_face->outerVertexCount){
-		f32 local_distance = mesh->vertexArray[closest_face->outerVertexArray[i]].pos.distanceTo(target);
+	forI(closest_face->outer_vertex_count){
+		f32 local_distance = mesh->vertex_array[closest_face->outer_vertex_array[i]].pos.distanceTo(target);
 		if(local_distance < smallest_distance0){
 			smallest_distance2 = smallest_distance1;
 			smallest_distance1 = smallest_distance0;
 			smallest_distance0 = local_distance;
 			closest_vert2 = closest_vert1;
 			closest_vert1 = closest_vert0;
-			closest_vert0 = mesh->vertexArray[closest_face->outerVertexArray[i]].pos;
+			closest_vert0 = mesh->vertex_array[closest_face->outer_vertex_array[i]].pos;
 		}else if(local_distance < smallest_distance1){
 			smallest_distance2 = smallest_distance1;
 			smallest_distance1 = local_distance;
 			closest_vert2 = closest_vert1;
-			closest_vert1 = mesh->vertexArray[closest_face->outerVertexArray[i]].pos;
+			closest_vert1 = mesh->vertex_array[closest_face->outer_vertex_array[i]].pos;
 		}else if(local_distance < smallest_distance2){
 			smallest_distance2 = local_distance;
-			closest_vert2 = mesh->vertexArray[closest_face->outerVertexArray[i]].pos;
+			closest_vert2 = mesh->vertex_array[closest_face->outer_vertex_array[i]].pos;
 		}
 	}
 	
@@ -122,7 +129,8 @@ global vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 }
 
 //TODO fix this
-global b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
+global b32 
+AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
 	f32 tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if(ray_direction.x > 0){
 		tmin = (aabb_min.x - ray_start.x) / ray_direction.x;

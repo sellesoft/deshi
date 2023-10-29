@@ -3,8 +3,10 @@
 #include <ctime>
 #include "kigu/common.h"
 
-#define DESHI_TEST_CORE_TODO(name) wprintf(L"[DESHI-TEST] TODO:   core/"name"\n")
-#define DESHI_TEST_CORE_PASSED(name) wprintf(L"[DESHI-TEST] PASSED: core/"name"\n")
+#define DESHI_TESTS
+
+#define DESHI_TEST_CORE_TODO(name) wprintf(L"[DESHI-TEST] TODO:   core/" name "\n")
+#define DESHI_TEST_CORE_PASSED(name) wprintf(L"[DESHI-TEST] PASSED: core/" name "\n")
 
 #include "camera.h"
 local void TEST_deshi_core_camera(){
@@ -24,11 +26,6 @@ local void TEST_deshi_core_console(){
 #include "input.h"
 local void TEST_deshi_core_input(){
 	DESHI_TEST_CORE_TODO("input");
-}
-
-#include "io.h"
-local void TEST_deshi_core_io(){
-	DESHI_TEST_CORE_TODO("io");
 }
 
 #include "logger.h"
@@ -197,7 +194,6 @@ local void TEST_deshi_core_memory(){
 	//TODO(delle) memory heap testing
 	
 	//TODO(delle) temp alloc testing
-	
 	{//// memory pool ////
 		//pool init (test that the pool was alloced and setup correctly)
 		MemChunk* pool = 0;
@@ -439,6 +435,9 @@ local void TEST_deshi_core_memory(){
 	}
 	
 	Log("memory-testing","Start  expecting testing errors starting here -----------------------------------------");
+	extern b32 g_logger_assert_on_error;
+	b32 logger_assert_on_error_restore = g_logger_assert_on_error;
+	g_logger_assert_on_error = false;
 	logger_push_indent();
 	{//// default to libc when running out of memory in arena heap ////
 		//use up all but 1KB of arena heap for setup
@@ -469,7 +468,7 @@ local void TEST_deshi_core_memory(){
 	}
 	
 	{//// default to libc when running out of memory in generic heap ////
-		array<void*> setup;
+		arrayT<void*> setup;
 		void *alloc2, *alloc3;
 		
 		//use up all but 1KB of generic heap for setup
@@ -538,6 +537,7 @@ local void TEST_deshi_core_memory(){
 		free((upt*)alloc3 - 1);
 	}
 	logger_pop_indent();
+	g_logger_assert_on_error = logger_assert_on_error_restore;
 	Log("memory-testing","Finish expecting testing errors starting here -----------------------------------------");
 	
 	DESHI_TEST_CORE_PASSED("memory");
@@ -546,11 +546,6 @@ local void TEST_deshi_core_memory(){
 #include "render.h"
 local void TEST_deshi_core_renderer(){
 	DESHI_TEST_CORE_TODO("renderer");
-}
-
-#include "storage.h"
-local void TEST_deshi_core_storage(){
-	DESHI_TEST_CORE_TODO("storage");
 }
 
 #include "time.h"
@@ -568,16 +563,16 @@ local void TEST_deshi_core_window(){
 	DESHI_TEST_CORE_TODO("window");
 }
 
+#include "file.h"
 local void TEST_deshi_core(){
 	TEST_deshi_core_camera();
 	TEST_deshi_core_commands();
 	TEST_deshi_core_console();
+	TEST_deshi_file();
 	TEST_deshi_core_input();
-	TEST_deshi_core_io();
 	TEST_deshi_core_logging();
 	TEST_deshi_core_memory();
 	TEST_deshi_core_renderer();
-	TEST_deshi_core_storage();
 	TEST_deshi_core_time();
 	TEST_deshi_core_ui();
 	TEST_deshi_core_window();

@@ -11,7 +11,7 @@ TODO:
 */
 #ifndef UI2_GRAPHING_H
 #define UI2_GRAPHING_H
-#include "ui2.h"
+#include "ui.h"
 #include "kigu/unicode.h"
 
 
@@ -143,21 +143,22 @@ ui_graph_gen_cartesian(uiItem* item){
 	scalar_t y_cam_pos_oom_rounded   = floor(cam_pos.y   / power_of_ten) * power_of_ten;
 	
 	vec2g    center_item_space   = vec2g{dims.x / 2.0, dims.y / 2.0};
-	scalar_t x_origin_item_space = center_item_space.x - (cam_pos.x * graph->unit_length.x);
-	scalar_t y_origin_item_space = center_item_space.y - (cam_pos.y * graph->unit_length.y * aspect_ratio);
+	scalar_t x_origin_item_space = round(center_item_space.x - (cam_pos.x * graph->unit_length.x));
+	scalar_t y_origin_item_space = round(center_item_space.y - (cam_pos.y * graph->unit_length.y * aspect_ratio));
 	
 	scalar_t x_minor_increment_scaled = graph->x_minor_gridline_increment * power_of_ten;
 	scalar_t y_minor_increment_scaled = graph->y_minor_gridline_increment * power_of_ten;
 	scalar_t minor_left_edge_rounded = ceil(top_left.x / x_minor_increment_scaled) * x_minor_increment_scaled;
 	scalar_t minor_top_edge_rounded  = ceil(top_left.y / y_minor_increment_scaled) * y_minor_increment_scaled;
 	
+	u64 x_minor_line_count = (u64)floor((bot_right.x - minor_left_edge_rounded) / x_minor_increment_scaled);
+	u64 y_minor_line_count = (u64)floor((bot_right.y - minor_top_edge_rounded ) / y_minor_increment_scaled);
+	
 	scalar_t x_major_increment_scaled = graph->x_major_gridline_increment * power_of_ten;
 	scalar_t y_major_increment_scaled = graph->y_major_gridline_increment * power_of_ten;
 	scalar_t major_left_edge_rounded = ceil(top_left.x / x_major_increment_scaled) * x_major_increment_scaled;
 	scalar_t major_top_edge_rounded  = ceil(top_left.y / y_major_increment_scaled) * y_major_increment_scaled;
 	
-	u64 x_minor_line_count = (u64)floor((bot_right.x - minor_left_edge_rounded) / x_minor_increment_scaled);
-	u64 y_minor_line_count = (u64)floor((bot_right.y - minor_top_edge_rounded ) / y_minor_increment_scaled);
 	u64 x_major_line_count = (u64)floor((bot_right.x - major_left_edge_rounded) / x_major_increment_scaled);
 	u64 y_major_line_count = (u64)floor((bot_right.y - major_top_edge_rounded ) / y_major_increment_scaled);
 	
@@ -258,6 +259,8 @@ ui_graph_gen_cartesian(uiItem* item){
 		vec2 item_content_top_left  = item->pos_screen + item_margin_top_left + item_border_size;
 		vec2 item_content_bot_right = item->pos_screen + floor(item->style.size) - item_margin_bot_right - item_border_size;
 		
+		// Log("graph","tl: ",item_content_top_left," br: ",item_content_bot_right);
+		
 		//background
 		counts += ui_gen_background(item, vp, ip, counts);
 		
@@ -307,28 +310,32 @@ ui_graph_gen_cartesian(uiItem* item){
 			}
 		}
 		if(graph->x_major_gridline_coords_shown){
+			//TODO coordinates
 		}
 		if(graph->y_major_gridline_coords_shown){
+			//TODO coordinates
 		}
 		
 		//x axis
 		if(graph->x_axis_shown){
-			scalar_t offset = round((0 - item_content_top_left.y) * graph->unit_length.y);
-			vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
+			vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + y_origin_item_space);
 			vec2 size = Vec2(dims.x, 1);
 			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_axis_color);
+			// Log("graph","x axis: ",pos);
 		}
 		if(graph->x_axis_coords_shown){
+			//TODO coordinates
 		}
 		
 		//y axis
 		if(graph->y_axis_shown){
-			scalar_t offset = round((0 - item_content_top_left.x) * graph->unit_length.x);
-			vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
+			vec2 pos  = Vec2(item_content_top_left.x + x_origin_item_space, item_content_top_left.y);
 			vec2 size = Vec2(1, dims.y);
 			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_axis_color);
+			// Log("graph","y axis: ",pos);
 		}
 		if(graph->y_axis_coords_shown){
+			//TODO coordinates
 		}
 		
 		//axes labels
@@ -345,6 +352,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		
 		//data
 		if(graph->points_array){
+			//TODO data graphing
 		}
 		
 		//border
@@ -357,7 +365,7 @@ ui_graph_gen_cartesian(uiItem* item){
 u32
 ui_graph_hash_cartesian(uiItem* item){ //TODO(delle) consider using a 64bit hash for ui_graph_hash()
 	uiGraphCartesian* graph = uiGetGraphCartesian(item);
-	u32 seed = UI_HASH_SEED;
+	u64 seed = UI_HASH_SEED;
 	UI_HASH_VAR(graph->x_axis_shown);
 	UI_HASH_VAR(graph->y_axis_shown);
 	UI_HASH_VAR(graph->x_axis_coords_shown);

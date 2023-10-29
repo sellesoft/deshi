@@ -9,8 +9,8 @@
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@vars
-local array<Command> deshi__cmd_commands(deshi_allocator);
-local array<Alias> deshi__cmd_aliases(deshi_allocator);
+local arrayT<Command> deshi__cmd_commands(deshi_allocator);
+local arrayT<Alias> deshi__cmd_aliases(deshi_allocator);
 local str8 deshi__last_cmd_desc;
 
 
@@ -46,34 +46,34 @@ void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
 	cmd->min_args  = 0;
 	cmd->max_args  = 0;
 	
-	str8_builder builder;
-	str8_builder_init(&builder, name, deshi_allocator);
+	dstr8 builder;
+	dstr8_init(&builder, name, deshi_allocator);
 	forI(arg_count){
 		cmd->max_args++;
-		str8_builder_append(&builder, str8_lit(" "));
+		dstr8_append(&builder, str8_lit(" "));
 		if(args[i] & CmdArgument_OPTIONAL){
-			str8_builder_append(&builder, str8_lit("["));
+			dstr8_append(&builder, str8_lit("["));
 		}else{
-			str8_builder_append(&builder, str8_lit("<"));
+			dstr8_append(&builder, str8_lit("<"));
 			cmd->min_args++;
 		}
 		
 		if      (args[i] & CmdArgument_S32){
-			str8_builder_append(&builder, str8_lit("S32"));
+			dstr8_append(&builder, str8_lit("S32"));
 		}else if(args[i] & CmdArgument_String){
-			str8_builder_append(&builder, str8_lit("String"));
+			dstr8_append(&builder, str8_lit("String"));
 		}else{
 			Assert(!"unhandled command arguent");
 			NotImplemented;
 		}
 		
 		if(args[i] & CmdArgument_OPTIONAL){
-			str8_builder_append(&builder, str8_lit("]"));
+			dstr8_append(&builder, str8_lit("]"));
 		}else{
-			str8_builder_append(&builder, str8_lit(">"));
+			dstr8_append(&builder, str8_lit(">"));
 		}
 	}
-	str8_builder_fit(&builder);
+	dstr8_fit(&builder);
 	cmd->usage.str   = builder.str;
 	cmd->usage.count = builder.count;
 }
@@ -82,7 +82,7 @@ void cmd_add(CmdFunc func, str8 name, str8 desc, Type* args, u32 arg_count){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //@run
 void cmd_run(str8 input){
-	array<str8> args(deshi_temp_allocator);
+	arrayT<str8> args(deshi_temp_allocator);
 	
 	//split input by spaces (treating double quoted strings as one item)
 	//TODO nested aliases
@@ -177,20 +177,21 @@ void cmd_init(){
 	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
 	
 	DESHI_CMD_START(dir, "List the contents of a directory"){
-		array<File> files = file_search_directory(args[0]);
+		FixMe;
+		arrayT<File> files = {};file_search_directory(args[0]);
 		char time_str[1024];
 		if(files.count){
 			Log("cmd","Directory of '",args[0],"':");
 			forE(files){
 				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->last_write_time));
-				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),
+				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->type == FileType_Directory)?"<DIR> ":"<FILE>"),
 					 (const char*)it->name.str,it->bytes);
 			}
 		}
 	}DESHI_CMD_END(dir, CmdArgument_String);
 	
 	DESHI_CMD_START(rm, "Remove a file"){
-		file_delete(args[0]);
+		file_delete(args[0], FileDeleteFlags_File);
 	}DESHI_CMD_END(rm, CmdArgument_String);
 	
 	DESHI_CMD_START(cp, "Copies a file/directory to a new location"){
@@ -220,13 +221,13 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(daytime);
 	
 	DESHI_CMD_START(list, "Lists available commands"){
-		str8_builder builder;
-		str8_builder_init(&builder, {}, deshi_temp_allocator);
+		dstr8 builder;
+		dstr8_init(&builder, {}, deshi_temp_allocator);
 		forE(deshi__cmd_commands){
-			str8_builder_append(&builder, it->name);
-			str8_builder_append(&builder, str8_lit(": "));
-			str8_builder_append(&builder, it->desc);
-			str8_builder_append(&builder, str8_lit("\n"));
+			dstr8_append(&builder, it->name);
+			dstr8_append(&builder, str8_lit(": "));
+			dstr8_append(&builder, it->desc);
+			dstr8_append(&builder, str8_lit("\n"));
 		}
 		Log("cmd", (const char*)builder.str);
 	}DESHI_CMD_END_NO_ARGS(list);
@@ -327,27 +328,27 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END(window_display_mode, CmdArgument_S32);
 	
-	DESHI_CMD_START(window_title, "Changes the title of the active window"){
-		window_title(window_active, args[0]);
+	DESHI_CMD_START(window_set_title, "Changes the title of the active window"){
+		window_set_title(window_active, args[0]);
 		Log("cmd","Updated active window's title to: ",args[0]);
-	}DESHI_CMD_END(window_title, CmdArgument_String);
+	}DESHI_CMD_END(window_set_title, CmdArgument_String);
 	
-	DESHI_CMD_START(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
+	DESHI_CMD_START(window_set_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
 		s32 mode = atoi((const char*)args[0].str);
 		switch(mode){
 			case 0:{
-				window_cursor_mode(window_active, CursorMode_Default);
+				window_set_cursor_mode(window_active, CursorMode_Default);
 				Log("cmd", "Cursor mode updated to 'default'");
 			}break;
 			case 1:{
-				window_cursor_mode(window_active, CursorMode_FirstPerson);
+				window_set_cursor_mode(window_active, CursorMode_FirstPerson);
 				Log("cmd", "Cursor mode updated to 'first person'");
 			}break;
 			default:{
 				Log("cmd", "Cursor Modes: 0=Default, 1=First Person");
 			}break;
 		}
-	}DESHI_CMD_END(window_cursor_mode, CmdArgument_S32);
+	}DESHI_CMD_END(window_set_cursor_mode, CmdArgument_S32);
 	
 	DESHI_CMD_START(window_raw_input, "Changes whether the window uses raw input"){
 		LogE("cmd","Raw Input not setup yet");
@@ -400,15 +401,15 @@ void cmd_init(){
 		Log("cmd", "Material List:\nName\tShader\tTextures");
 		forI(arrlenu(assets_material_array())){
 			Material* mat = assets_material_array()[i];
-			str8_builder builder;
-			str8_builder_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
-			str8_builder_append(&builder, str8_lit("\t"));
-			str8_builder_append(&builder, ShaderStrings[mat->shader]);
-			str8_builder_append(&builder, str8_lit("\t"));
-			if(mat->textureArray){
-				for_array(mat->textureArray){
-					str8_builder_append(&builder, str8_lit(" "));
-					str8_builder_append(&builder, str8_from_cstr((*it)->name));
+			dstr8 builder;
+			dstr8_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
+			dstr8_append(&builder, str8_lit("\t"));
+			dstr8_append(&builder, ShaderStrings[mat->shader]);
+			dstr8_append(&builder, str8_lit("\t"));
+			if(mat->texture_array){
+				for_stb_array(mat->texture_array){
+					dstr8_append(&builder, str8_lit(" "));
+					dstr8_append(&builder, str8_from_cstr((*it)->name));
 				}
 			}
 			Log("cmd", (const char*)builder.str);
@@ -418,7 +419,7 @@ void cmd_init(){
 	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
 		Material* mat = 0;
 		const char* mat_name = temp_str8_cstr(args[0]);
-		for_array(assets_material_array()){
+		for_stb_array(assets_material_array()){
 			if(strcmp((*it)->name, mat_name) == 0){
 				mat = *it;
 				break;
@@ -430,18 +431,18 @@ void cmd_init(){
 		}
 		
 		s32 texSlot = atoi(temp_str8_cstr(args[1]));
-		if(mat->textureArray == 0){
+		if(mat->texture_array == 0){
 			LogE("cmd","Failed to update material texture. The material '",args[0],"' has no textures.");
 			return;
 		}
-		if(texSlot < 0 || texSlot >= arrlen(mat->textureArray)){
-			LogE("cmd","Failed to update material texture. The supplied texture index '",texSlot,"' is outside of bounds '0..",arrlen(mat->textureArray),"'.");
+		if(texSlot < 0 || texSlot >= arrlen(mat->texture_array)){
+			LogE("cmd","Failed to update material texture. The supplied texture index '",texSlot,"' is outside of bounds '0..",arrlen(mat->texture_array),"'.");
 			return;
 		}
 		
 		Texture* tex = 0;
 		const char* tex_name = temp_str8_cstr(args[2]);
-		for_array(assets_texture_array()){
+		for_stb_array(assets_texture_array()){
 			if(strcmp((*it)->name, tex_name) == 0){
 				tex = *it;
 				break;
@@ -452,14 +453,14 @@ void cmd_init(){
 			return;
 		}
 		
-		mat->textureArray[texSlot] = tex;
+		mat->texture_array[texSlot] = tex;
 		Log("cmd", "Updated material ",mat->name,"'s texture",texSlot," to ",tex->name);
 	}DESHI_CMD_END(mat_texture, CmdArgument_String, CmdArgument_S32, CmdArgument_String);
 	
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
 		Material* mat = 0;
 		const char* mat_name = temp_str8_cstr(args[0]);
-		for_array(assets_material_array()){
+		for_stb_array(assets_material_array()){
 			if(strcmp((*it)->name, mat_name) == 0){
 				mat = *it;
 				break;
@@ -508,16 +509,16 @@ void cmd_init(){
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("cmd", "Texture List:\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
-		for_array(assets_texture_array()){
+		for_stb_array(assets_texture_array()){
 			Texture* tex = *it;
 			Log("cmd", '\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth, '\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
 		}
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
-	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window"){
-		ToggleBool(show_metrics); //show_metrics defined in ui.cpp
+	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window//TODO(sushi) switch to ui2 metrics"){
+		//TODO(sushi) switch to ui2 metrics 
 	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
-
+	
 	DESHI_CMD_START(show_ui_demo, "Toggles the visibility of the UI demo window"){
 		ui_demo();
 	}DESHI_CMD_END_NO_ARGS(show_ui_demo);

@@ -14,8 +14,8 @@
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_vars
 #if MEMORY_TRACK_ALLOCS
-local array<AllocInfo> alloc_infos_active(stl_allocator); //uses libc so it is external the system
-local array<AllocInfo> alloc_infos_inactive(stl_allocator);
+local arrayT<AllocInfo> alloc_infos_active(stl_allocator); //uses libc so it is external the system
+local arrayT<AllocInfo> alloc_infos_inactive(stl_allocator);
 #endif //MEMORY_TRACK_ALLOCS
 
 
@@ -32,8 +32,8 @@ local array<AllocInfo> alloc_infos_inactive(stl_allocator);
 
 
 #if MEMORY_CHECK_HEAPS
-local void
-DEBUG_CheckHeap(Heap* heap){DPZoneScoped;
+void
+DEBUG_CheckHeap(Heap* heap){//DPZoneScoped;
 	Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
 	Assert(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
 	Assert(heap->empty_nodes.next != 0 && heap->empty_nodes.prev != 0, "First heap empty node is invalid");
@@ -129,11 +129,11 @@ DEBUG_AllocInfo_Creation(void* address, str8 file, upt line){DPZoneScoped;
 	return &alloc_infos_active[middle];
 }
 
+b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
+b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
+
 local void
 DEBUG_AllocInfo_Deletion(void* address){DPZoneScoped;
-	b32 AllocInfo_LessThan(const AllocInfo& a, const AllocInfo& b){ return a.address < b.address; }
-	b32 AllocInfo_GreaterThan(const AllocInfo& a, const AllocInfo& b){ return a.address > b.address; }
-	
 	if(address == 0) return;
 	upt index = binary_search(alloc_infos_active, AllocInfo{address}, AllocInfo_LessThan);
 	if(index != -1){
@@ -430,7 +430,7 @@ deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped
 	
 	//if we cant replace an empty node, make a new order node for the allocation (if there is space)
 	if(g_memory->arena_heap.cursor + aligned_size > g_memory->arena_heap.start + g_memory->arena_heap.size){
-		LogfE("memory","Deshi ran out of main memory when attempting to create an arena with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", result->size, file.str, line);
+		LogfE("memory","Deshi ran out of main memory when attempting to create an arena with %zu bytes (triggered at %s:%zu); defaulting to libc calloc.", aligned_size, file.str, line);
 		
 		MemChunk* chunk = (MemChunk*)calloc(1, aligned_size);
 		Assert(chunk, "libc failed to allocate memory");
@@ -846,6 +846,74 @@ deshi__memory_arena_expose(){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_pool
+void*
+deshi__memory_pool_init(void* pool, upt type_size, upt count){
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(PoolHeader) + (chunk_size * count);
+	
+	//allocate space for chunks and header
+	PoolHeader* header = (PoolHeader*)memory_alloc(alloc_size);
+	pool = header+1;
+	header->chunks_per_block = count;
+	
+	//set free chunk equal to the first chunk
+	header->free_chunk = (void**)(pool);
+	
+	//setup the rest of the free chunk linked list
+	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}
+	
+	//return pool so the macro can assign to var
+	return pool;
+	
+	/*
+
+	NOTE(sushi) my fix to this function, though I don't know if it's actually correct because later calls
+	            on a memory_pool also break
+
+	//calc chunk and alloc size
+	upt chunk_size = Max(type_size, sizeof(void*));
+	upt alloc_size = sizeof(PoolHeader) + (chunk_size * count);
+	
+	//allocate space for chunks and header
+	PoolHeader* header = (PoolHeader*)memory_alloc(alloc_size);
+	pool = header + sizeof(PoolHeader);
+	header->chunks_per_block = count;
+	
+	//set free chunk equal to the first chunk
+	header->free_chunk = (void**)(pool);
+	
+	//setup the rest of the free chunk linked list
+	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
+		*(void**)chunk = chunk + chunk_size;
+	}
+	
+	//return pool so the macro can assign to var
+	return pool;
+	*/
+}
+
+
+void
+memory_pool_deinit(void* pool){
+	//zfree the first block (and header)
+	PoolHeader* header = memory_pool_header(pool);
+	void** next_block = header->next_block;
+	memory_zfree(header);
+	
+	//zfree the rest of the blocks by iterating the linked list
+	if(next_block){
+		while(*next_block){
+			void* block = (void*)next_block;
+			next_block = (void**)(*next_block);
+			memory_zfree(block);
+		}
+	}
+}
+
+
 void
 deshi__memory_pool_grow(void* pool, upt type_size, upt count){
 	PoolHeader* header = memory_pool_header(pool);
@@ -879,48 +947,6 @@ deshi__memory_pool_grow(void* pool, upt type_size, upt count){
 	//setup the rest of the free chunk single linked list
 	for(u8* chunk = (u8*)header->free_chunk; chunk < (u8*)last_block + alloc_size - chunk_size; chunk += chunk_size){
 		*(void**)chunk = chunk + chunk_size;
-	}    
-}
-
-
-void*
-deshi__memory_pool_init(void* pool, upt type_size, upt count){
-	//calc chunk and alloc size
-	upt chunk_size = Max(type_size, sizeof(void*));
-	upt alloc_size = sizeof(PoolHeader) + (chunk_size * (count));
-	
-	//allocate space for chunks and header
-	pool = (u8*)memory_alloc(alloc_size) + sizeof(PoolHeader);
-	PoolHeader* header = memory_pool_header(pool);
-	header->chunks_per_block = (count);
-	
-	//set free chunk equal to the first chunk
-	header->free_chunk = (void**)(pool);
-	
-	//setup the rest of the free chunk linked list
-	for(u8* chunk = (u8*)(pool); chunk < (u8*)header + alloc_size - chunk_size; chunk += chunk_size){
-		*(void**)chunk = chunk + chunk_size;
-	}
-	
-	//return pool so the macro can assign to var
-	return pool;
-}
-
-
-void
-memory_pool_deinit(void* pool){
-	//zfree the first block (and header)
-	PoolHeader* header = memory_pool_header(pool);
-	void** next_block = header->next_block;
-	memory_zfree(header);
-	
-	//zfree the rest of the blocks by iterating the linked list
-	if(next_block){
-		while(*next_block){
-			void* block = (void*)next_block;
-			next_block = (void**)(*next_block);
-			memory_zfree(block);
-		}
 	}
 }
 
@@ -984,7 +1010,7 @@ AllocateLibc(upt aligned_size){DPZoneScoped; //NOTE(delle) expects pre-aligned s
 }
 
 
-local void* 
+local void*
 ReallocateLibc(void* ptr, upt aligned_size){DPZoneScoped; //NOTE(delle) expects pre-aligned size with chunk
 	MemChunk* chunk = MemoryToChunk(ptr);
 	
@@ -1151,7 +1177,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 	//previous allocation was an arena, so grow arena if new size is greater
 	//NOTE(delle) when generic allocations use arena, the layout ends up like Chunk -> Arena -> Chunk
 	//  where the first chunk is for the arena and the second is for the generic allocation
-	if(ChunkIsArenad(chunk)){ 
+	if(ChunkIsArenad(chunk)){
 		if(aligned_size <= GetChunkSize(chunk)) return ptr; //do nothing if less than previous size
 		
 		Arena* arena = (Arena*)(chunk-1);
@@ -1293,7 +1319,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 		}else{
 			aligned_size += leftover_size;
 			
-			//zero next's overhead for use by current chunk 
+			//zero next's overhead for use by current chunk
 			NodeRemove(&next->node);
 			next->prev = 0;
 			next->size = 0;
@@ -1494,7 +1520,7 @@ deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneSc
 	
 	//if its greater, then move the memory to a new allocation
 	void* new_ptr = deshi__memory_temp_allocate(size, file, line);
-	memcpy(new_ptr, ptr, prev_size - sizeof(upt)); 
+	memcpy(new_ptr, ptr, prev_size - sizeof(upt));
 	return new_ptr;
 }
 
@@ -1612,150 +1638,153 @@ deshi__memory_allocinfo_inactive_expose(AllocInfo** out_array, upt* out_size){DP
 
 void
 deshi__memory_draw(){DPZoneScoped;
-	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
-		if(bytes >= Kilobytes(1)){
-			character = 'K'; divisor = Kilobytes(1);
-			if(bytes >= Megabytes(1)){
-				character = 'M'; divisor = Megabytes(1);
-			}
-		}
-	};
+	FixMe;
+	// 	auto bytes_sigfigs = [](upt bytes, char& character, f32& divisor){
+	// 		if(bytes >= Kilobytes(1)){
+	// 			character = 'K'; divisor = Kilobytes(1);
+	// 			if(bytes >= Megabytes(1)){
+	// 				character = 'M'; divisor = Megabytes(1);
+	// 			}
+	// 		}
+	// 	};
 	
-	UI::PushColor(UIStyleCol_Border,             Color_Grey);
-	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
-	UI::Begin(str8_lit("deshi_memory"), Vec2(DeshWindow->width,DeshWindow->height)/4.f, Vec2(DeshWindow->width,DeshWindow->height)/2.f, UIWindowFlags_NoScroll);{
-		UIWindow* window = UI::GetWindow();
-		UIStyle_old& style = UI::GetStyle();
-		char used_char = ' ', size_char = ' ';
-		f32  used_divisor = 1.f, size_divisor = 1.f;
-		
-		//UI::SetNextItemSize({MAX_F32, window->height*.9f});
-		UI::BeginTabBar(str8_lit("deshi_memory_top_panel"), UITabBarFlags_NoIndent);{
-			//left panel: generic heap
-			if(UI::BeginTab(str8_lit("deshi_memory_generic"))){
-				bytes_sigfigs(g_memory->generic_heap->used, used_char, used_divisor);
-				bytes_sigfigs(g_memory->generic_heap->size, size_char, size_divisor);
-				UI::Separator(style.fontHeight / 2.f);
-				UI::TextF(str8_lit("Generic Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->generic_heap->used / used_divisor, used_char, (f32)g_memory->generic_heap->size / size_divisor, size_char);
-				UI::Separator(style.fontHeight/2.f);
-				
-				UI::PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
-				UI::PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
-				UI::PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
-				UI::PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
-				UI::PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
-				UI::PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
-				UI::PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
-				UI::SetNextWindowSize({MAX_F32, MAX_F32});
-				UI::BeginChild(str8_lit("deshi_memory_generic_timeline"), vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
-#if 0 //MEMORY_TRACK_ALLOCS //TODO update this to new alloc info arrays
-					f32 alloc_height = 10.f;
-					f32 frame_width  = 5.f;
-					
-					forI(alloc_infos.count){
-						UI::TextF(str8_lit("0x%p"), alloc_infos[i].address);
-						if(UI::IsLastItemHovered()){
-							UI::PushColor(UIStyleCol_WindowBg, color(32,0,0,255));
-							UI::BeginPopOut(str8_lit("deshi_memory_generic_hovered"), input_mouse_position - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
-								UI::TextF(str8_lit("Trigger: %s:%u"), alloc_infos[i].trigger.file.str, alloc_infos[i].trigger.line);
-								UI::TextF(str8_lit("Name: %s"), alloc_infos[i].name.str);
-								UI::TextF(str8_lit("Type: %u"), alloc_infos[i].type);
-							}UI::EndPopOut();
-							UI::PopColor();
-						}
-						
-						//TODO draw rect for time the alloc has been alive
-					}
-#endif //MEMORY_TRACK_ALLOCS
-				}UI::EndChild();
-				UI::PopColor(7);
-				
-				UI::EndTab();
-			}
-			
-			//right panel: arena heap
-			if(UI::BeginTab(str8_lit("deshi_memory_arena"))){
-				bytes_sigfigs(g_memory->arena_heap.used, used_char, used_divisor);
-				bytes_sigfigs(g_memory->arena_heap.size, size_char, size_divisor);
-				UI::Separator(style.fontHeight / 2.f);
-				UI::TextF(str8_lit("Arena Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->arena_heap.used / used_divisor, used_char, (f32)g_memory->arena_heap.size / size_divisor, size_char);
-				UI::Separator(style.fontHeight/2.f);
-				
-				UI::PushColor(UIStyleCol_WindowBg, Color_VeryDarkGreen);
-				UI::SetNextWindowSize({MAX_F32, MAX_F32});
-				UI::BeginChild(str8_lit("deshi_memory_arena_treemap"), vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
-					//TODO this
-				}UI::EndChild();
-				UI::PopColor();
-				
-				UI::EndTab();
-			}
-		}UI::EndTabBar();
-		/*
-		//bottom panel: temp arena
-		UI::SetNextWindowSize({MAX_F32, window->height*.1f});
-		UI::BeginChild("deshi_memory_bottom_panel", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
-			bytes_sigfigs(temp_arena->used, used_char, used_divisor);
-			bytes_sigfigs(temp_arena->size, size_char, size_divisor);
-			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)temp_arena->used / used_divisor, used_char, (f32)temp_arena->size / size_divisor, size_char);
-			
-			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
-			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace() * vec2{((f32)temp_arena->used / (f32)temp_arena->size), 1.f}, Color_DarkCyan);
-		}UI::EndChild();
-		*/
-	}UI::End();
-	UI::PopColor(2);
+	// 	UI::PushColor(UIStyleCol_Border,             Color_Grey);
+	// 	UI::PushColor(UIStyleCol_Separator,          Color_Grey);
+	// 	UI::Begin(str8_lit("deshi_memory"), Vec2(DeshWindow->width,DeshWindow->height)/4.f, Vec2(DeshWindow->width,DeshWindow->height)/2.f, UIWindowFlags_NoScroll);{
+	// 		UIWindow* window = UI::GetWindow();
+	// 		UIStyle_old& style = UI::GetStyle();
+	// 		char used_char = ' ', size_char = ' ';
+	// 		f32  used_divisor = 1.f, size_divisor = 1.f;
+	
+	// 		//UI::SetNextItemSize({MAX_F32, window->height*.9f});
+	// 		UI::BeginTabBar(str8_lit("deshi_memory_top_panel"), UITabBarFlags_NoIndent);{
+	// 			//left panel: generic heap
+	// 			if(UI::BeginTab(str8_lit("deshi_memory_generic"))){
+	// 				bytes_sigfigs(g_memory->generic_heap->used, used_char, used_divisor);
+	// 				bytes_sigfigs(g_memory->generic_heap->size, size_char, size_divisor);
+	// 				UI::Separator(style.fontHeight / 2.f);
+	// 				UI::TextF(str8_lit("Generic Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->generic_heap->used / used_divisor, used_char, (f32)g_memory->generic_heap->size / size_divisor, size_char);
+	// 				UI::Separator(style.fontHeight/2.f);
+	
+	// 				UI::PushColor(UIStyleCol_WindowBg,                Color_VeryDarkRed);
+	// 				UI::PushColor(UIStyleCol_ScrollBarDragger,        Color_DarkGrey);
+	// 				UI::PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_Grey);
+	// 				UI::PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_LightGrey);
+	// 				UI::PushColor(UIStyleCol_ScrollBarBg,             Color_VeryDarkRed);
+	// 				UI::PushColor(UIStyleCol_ScrollBarBgHovered,      Color_Grey);
+	// 				UI::PushColor(UIStyleCol_ScrollBarBgActive,       Color_LightGrey);
+	// 				UI::SetNextWindowSize({MAX_F32, MAX_F32});
+	// 				UI::BeginChild(str8_lit("deshi_memory_generic_timeline"), vec2::ZERO, UIWindowFlags_NoBorder | UIWindowFlags_NoResize | UIWindowFlags_NoMove);{
+	// #if 0 //MEMORY_TRACK_ALLOCS //TODO update this to new alloc info arrays
+	// 					f32 alloc_height = 10.f;
+	// 					f32 frame_width  = 5.f;
+	
+	// 					forI(alloc_infos.count){
+	// 						UI::TextF(str8_lit("0x%p"), alloc_infos[i].address);
+	// 						if(UI::IsLastItemHovered()){
+	// 							UI::PushColor(UIStyleCol_WindowBg, color(32,0,0,255));
+	// 							UI::BeginPopOut(str8_lit("deshi_memory_generic_hovered"), input_mouse_position - UI::GetWindow()->position, vec2::ZERO, UIWindowFlags_FitAllElements | UIWindowFlags_NoBorder | UIWindowFlags_NoInteract);{
+	// 								UI::TextF(str8_lit("Trigger: %s:%u"), alloc_infos[i].trigger.file.str, alloc_infos[i].trigger.line);
+	// 								UI::TextF(str8_lit("Name: %s"), alloc_infos[i].name.str);
+	// 								UI::TextF(str8_lit("Type: %u"), alloc_infos[i].type);
+	// 							}UI::EndPopOut();
+	// 							UI::PopColor();
+	// 						}
+	
+	// 						//TODO draw rect for time the alloc has been alive
+	// 					}
+	// #endif //MEMORY_TRACK_ALLOCS
+	// 				}UI::EndChild();
+	// 				UI::PopColor(7);
+	
+	// 				UI::EndTab();
+	// 			}
+	
+	// 			//right panel: arena heap
+	// 			if(UI::BeginTab(str8_lit("deshi_memory_arena"))){
+	// 				bytes_sigfigs(g_memory->arena_heap.used, used_char, used_divisor);
+	// 				bytes_sigfigs(g_memory->arena_heap.size, size_char, size_divisor);
+	// 				UI::Separator(style.fontHeight / 2.f);
+	// 				UI::TextF(str8_lit("Arena Heap    %.2f %cB / %.2f %cB"), (f32)g_memory->arena_heap.used / used_divisor, used_char, (f32)g_memory->arena_heap.size / size_divisor, size_char);
+	// 				UI::Separator(style.fontHeight/2.f);
+	
+	// 				UI::PushColor(UIStyleCol_WindowBg, Color_VeryDarkGreen);
+	// 				UI::SetNextWindowSize({MAX_F32, MAX_F32});
+	// 				UI::BeginChild(str8_lit("deshi_memory_arena_treemap"), vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
+	// 					//TODO this
+	// 				}UI::EndChild();
+	// 				UI::PopColor();
+	
+	// 				UI::EndTab();
+	// 			}
+	// 		}UI::EndTabBar();
+	// 		/*
+	// 		//bottom panel: temp arena
+	// 		UI::SetNextWindowSize({MAX_F32, window->height*.1f});
+	// 		UI::BeginChild("deshi_memory_bottom_panel", vec2::ZERO, UIWindowFlags_NoScroll | UIWindowFlags_NoBorder | UIWindowFlags_NoResize);{
+	// 			bytes_sigfigs(temp_arena->used, used_char, used_divisor);
+	// 			bytes_sigfigs(temp_arena->size, size_char, size_divisor);
+	// 			UI::TextF("Temporary Memory    %.2f %cB / %.2f %cB", (f32)temp_arena->used / used_divisor, used_char, (f32)temp_arena->size / size_divisor, size_char);
+	
+	// 			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace(), Color_VeryDarkCyan);
+	// 			UI::RectFilled(UI::GetWinCursor(), UI::GetWindowRemainingSpace() * vec2{((f32)temp_arena->used / (f32)temp_arena->size), 1.f}, Color_DarkCyan);
+	// 		}UI::EndChild();
+	// 		*/
+	// 	}UI::End();
+	// 	UI::PopColor(2);
 }
 
 
-void 
+void
 deshi__memory_bytes_draw() {
-	using namespace UI;
+	FixMe;
 	
-	Heap* heap = g_memory->generic_heap;
-	u32 scale = 8;
+	// using namespace UI;
 	
-	Begin(str8_lit("memory_bytes_draw"));
+	// Heap* heap = g_memory->generic_heap;
+	// u32 scale = 8;
 	
-	u32 winw = GetMarginedRight() - GetMarginedLeft();
+	// Begin(str8_lit("memory_bytes_draw"));
 	
-	persist f32 selected_chunk = 0;
+	// u32 winw = GetMarginedRight() - GetMarginedLeft();
 	
-	Slider(str8_lit("chunksel"), &selected_chunk, 0, 450);
-	SameLine();
-	if (Button(str8_lit("<-"))) selected_chunk = Max(--selected_chunk, 0.f);
-	SameLine();
-	if (Button(str8_lit("->"))) selected_chunk++;
+	// persist f32 selected_chunk = 0;
 	
-	MemChunk* chunk = (MemChunk*)heap->start;
-	forI(s32(selected_chunk)) chunk = GetNextOrderChunk(chunk);
+	// Slider(str8_lit("chunksel"), &selected_chunk, 0, 450);
+	// SameLine();
+	// if (Button(str8_lit("<-"))) selected_chunk = Max(--selected_chunk, 0.f);
+	// SameLine();
+	// if (Button(str8_lit("->"))) selected_chunk++;
 	
-	u8* mem = (u8*)ChunkToMemory(chunk);
-	u32 count = GetChunkSize(chunk);
+	// MemChunk* chunk = (MemChunk*)heap->start;
+	// forI(s32(selected_chunk)) chunk = GetNextOrderChunk(chunk);
 	
-	forI(Min(count, u32(5000))) {
-		u8 val = mem[i]; 
-		u32 canfit = winw / scale;
-		
-		vec2 pos = Vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
-		RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
-		if (Math::PointInRectangle(input_mouse_position(), GetLastItemScreenPos(), GetLastItemSize())) {
-			PushLayer(GetCenterLayer() + 1);
-			vec2 mp = (input_mouse_position() - GetWindow()->position);
-			string m = toStr(mem + i);
-			RectFilled(mp + Vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
-			TextOld(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
-			string v = toStr(val);
-			RectFilled(mp + Vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
-			TextOld(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
-			PopLayer();
-		}
-	}
+	// u8* mem = (u8*)ChunkToMemory(chunk);
+	// u32 count = GetChunkSize(chunk);
 	
-	//Texture* memsnap = Storage::CreateTextureFromMemory(mem, (char*)chunk, ceil(sqrt(count)), ceil(sqrt(count)), ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToBlack, 1).second;
-	//Image(memsnap);
+	// forI(Min(count, u32(5000))) {
+	// 	u8 val = mem[i];
+	// 	u32 canfit = winw / scale;
 	
-	End();
+	// 	vec2 pos = Vec2((i % canfit) * scale, i * scale / winw * scale) + UI::GetWinCursor();
+	// 	RectFilled(pos, vec2::ONE * scale, color(val, val, val, 255));
+	// 	if (Math::PointInRectangle(input_mouse_position(), GetLastItemScreenPos(), GetLastItemSize())) {
+	// 		PushLayer(GetCenterLayer() + 1);
+	// 		vec2 mp = (input_mouse_position() - GetWindow()->position);
+	// 		string m = toStr(mem + i);
+	// 		RectFilled(mp + Vec2(0, -GetStyle().fontHeight * 2), CalcTextSize(str8{(u8*)m.str, (s64)m.count}), Color_VeryDarkGrey);
+	// 		TextOld(str8{(u8*)m.str, (s64)m.count}, mp + Vec2(0, -GetStyle().fontHeight * 2), UITextFlags_NoWrap);
+	// 		string v = toStr(val);
+	// 		RectFilled(mp + Vec2(0, -GetStyle().fontHeight), CalcTextSize(str8{(u8*)v.str, (s64)v.count}), Color_VeryDarkGrey);
+	// 		TextOld(str8{(u8*)v.str, (s64)v.count}, mp + Vec2(0, -GetStyle().fontHeight), UITextFlags_NoWrap);
+	// 		PopLayer();
+	// 	}
+	// }
+	
+	// //Texture* memsnap = Storage::CreateTextureFromMemory(mem, (char*)chunk, ceil(sqrt(count)), ceil(sqrt(count)), ImageFormat_BW, TextureType_2D, TextureFilter_Nearest, TextureAddressMode_ClampToBlack, 1).second;
+	// //Image(memsnap);
+	
+	// End();
 }
 
 
@@ -1768,7 +1797,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	u64   total_size   = main_size + temp_size + sizeof(MemoryContext);
 	
 #if BUILD_INTERNAL //NOTE(delle) when debugging, always allocate to the same address so addresses stay the same across sessions
-	base_address = (void*)Terabytes(2);
+	base_address = (void*)(Gigabytes(1)/2);
 #endif //BUILD_INTERNAL
 	
 	u32 retries = 0;
@@ -1777,14 +1806,23 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 #if   DESHI_WINDOWS
 		allocation = (u8*)VirtualAlloc((LPVOID)base_address, (SIZE_T)total_size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 #elif DESHI_LINUX //DESHI_WINDOWS
-#  error not implemented
-		allocation = (u8*)calloc(1, total_size);
+		// TODO(sushi) confirm that MAP_PRIVATE is the behavoir we want
+		allocation = (u8*)mmap(base_address, total_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+		if((s64)allocation == -1) {
+			dstr8 o = get_errno_print(errno, "memory", __func__, {0});
+			printf("%s", (char*)o.str);
+			dstr8_deinit(&o);
+			allocation = 0;
+		}
 #elif DESHI_MAC   //DESHI_LINUX
 #  error not implemented
 		allocation = (u8*)calloc(1, total_size);
 #endif            //DESHI_MAC
 		retries++;
-		if(!allocation) printf("[MEMORY-ERROR] Failed to allocate memory from OS. Retrying (%u)", retries);
+		if(!allocation){
+			base_address = 0; //give up on specifying the address if we failed since it's a likely cause
+			printf("[\x1b[31mMEMORY-ERROR\x1b[0m] Failed to allocate memory from OS. Retrying (%u)\n", retries);
+		}
 	}
 	Assert(allocation, "Failed to allocate memory from the OS");
 	

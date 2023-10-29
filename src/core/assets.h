@@ -69,54 +69,54 @@ typedef struct MeshTriangle{
 	vec3 normal;
 	vec3 p[3];
 	u32  v[3];
-	u32  neighborCount;
+	u32  neighbor_count;
 	u32  face;
 	b32 removed;
 	b32 checked;
 	
-	u32* neighborArray;
-	u8*  edgeArray;
+	u32* neighbor_array;
+	u8*  edge_array;
 }MeshTriangle;
 
 typedef struct MeshFace{
 	vec3 normal;
 	vec3 center;
-	u32  triangleCount;
-	u32  vertexCount;
-	u32  outerVertexCount;
-	u32  neighborTriangleCount;
-	u32  neighborFaceCount;
+	u32  triangle_count;
+	u32  vertex_count;
+	u32  outer_vertex_count;
+	u32  neighbor_triangle_count;
+	u32  neighbor_face_count;
 	
-	u32* triangleArray;
-	u32* vertexArray;
-	u32* outerVertexArray;
-	u32* neighborTriangleArray;
-	u32* neighborFaceArray;
+	u32* triangle_array;
+	u32* vertex_array;
+	u32* outer_vertex_array;
+	u32* neighbor_triangle_array;
+	u32* neighbor_face_array;
 }MeshFace;
 
 typedef struct Mesh{
 	u32 bytes;
 	char name[64];
 	u32 render_idx; //filled when render_load_mesh() is called
-	vec3 aabbMin;
-	vec3 aabbMax;
+	vec3 aabb_min;
+	vec3 aabb_max;
 	vec3 center;
 	
-	u32 vertexCount;
-	u32 indexCount;
-	u32 triangleCount;
-	u32 faceCount;
-	u32 totalTriNeighborCount;
-	u32 totalFaceVertexCount;
-	u32 totalFaceOuterVertexCount;
-	u32 totalFaceTriNeighborCount;
-	u32 totalFaceFaceNeighborCount;
+	u32 vertex_count;
+	u32 index_count;
+	u32 triangle_count;
+	u32 face_count;
+	u32 total_tri_neighbor_count;
+	u32 total_face_vertex_count;
+	u32 total_face_outer_vertex_count;
+	u32 total_face_tri_neighbor_count;
+	u32 total_face_face_neighbor_count;
 	
-	MeshVertex*   vertexArray;
+	MeshVertex*   vertex_array;
 	//MeshVertexEx* vertexExArray;
-	MeshIndex*    indexArray;
-	MeshTriangle* triangleArray;
-	MeshFace*     faceArray;
+	MeshIndex*    index_array;
+	MeshTriangle* triangle_array;
+	MeshFace*     face_array;
 }Mesh;
 
 //Returns a pointer to the allocated `Mesh` object (with arrays setup)
@@ -183,12 +183,12 @@ typedef Type TextureAddressMode; enum{ //what happens when uv values are beyond 
 }; global const str8 TextureAddressModeStrings[] = { STR8("Repeat"), STR8("Mirrored Repeat"), STR8("Clamp To Edge"), STR8("Clamp To White"), STR8("Clamp To Black"), STR8("Clamp To Transparent") };
 
 typedef Type TextureType; enum{
-	TextureType_1D,
-	TextureType_2D,
-	TextureType_3D,
+	TextureType_OneDimensional,
+	TextureType_TwoDimensional,
+	TextureType_ThreeDimensional,
 	TextureType_Cube,
-	TextureType_Array_1D,
-	TextureType_Array_2D,
+	TextureType_Array_OneDimensional,
+	TextureType_Array_TwoDimensional,
 	TextureType_Array_Cube,
 	TextureType_COUNT
 }; global const str8 TextureTypeStrings[] = { STR8("1D"), STR8("2D"), STR8("3D"), STR8("Cube"), STR8("1D Array"), STR8("2D Array"), STR8("Cube Array"), };
@@ -205,7 +205,7 @@ typedef struct Texture{
 	ImageFormat format;
 	TextureType type;
 	TextureFilter filter;
-	TextureAddressMode uvMode;
+	TextureAddressMode uv_mode;
 }Texture;
 
 //Returns a pointer to the created `Texture` object from an image file named `name` in the `data/textures` folder
@@ -222,7 +222,7 @@ Texture* assets_texture_create_from_file(str8 name, ImageFormat format, TextureT
 //  `name` should include the extension
 //  calls `render_load_texture()` after creation
 FORCE_INLINE Texture* assets_texture_create_from_file_simple(str8 name){
-	return assets_texture_create_from_file(name, ImageFormat_RGBA, TextureType_2D, TextureFilter_Nearest,
+	return assets_texture_create_from_file(name, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest,
 										   TextureAddressMode_Repeat, false, true);
 }
 
@@ -238,7 +238,7 @@ Texture* assets_texture_create_from_path(str8 path, ImageFormat format, TextureT
 //Returns a pointer to the created `Texture` object from an image file at `path`
 //  calls `render_load_texture()` after creation
 FORCE_INLINE Texture* assets_texture_create_from_path_simple(str8 path){
-	return assets_texture_create_from_path(path, ImageFormat_RGBA, TextureType_2D, TextureFilter_Nearest,
+	return assets_texture_create_from_path(path, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest,
 										   TextureAddressMode_Repeat, false, true);
 }
 
@@ -255,7 +255,7 @@ Texture* assets_texture_create_from_memory(void* data, str8 name, u32 width, u32
 //  `format` determines the image format after loading it
 //  calls `render_load_texture()` after creation
 FORCE_INLINE Texture* assets_texture_create_from_memory_simple(void* data, str8 name, u32 width, u32 height, ImageFormat format){
-	return assets_texture_create_from_memory(data, name, width, height, format, TextureType_2D, TextureFilter_Nearest,
+	return assets_texture_create_from_memory(data, name, width, height, format, TextureType_TwoDimensional, TextureFilter_Nearest,
 											 TextureAddressMode_Repeat, true);
 }
 
@@ -292,7 +292,7 @@ typedef struct Material{
 	u32 render_idx; //filled when render_load_material() is called
 	Shader shader;
 	MaterialFlags flags;
-	Texture** textureArray;
+	Texture** texture_array;
 }Material;
 
 //Returns a pointer to the allocated `Material` object (with texture array reserved)
@@ -338,8 +338,8 @@ typedef Flags ModelFlags; enum{
 };
 
 typedef struct ModelBatch{
-	u32 indexOffset;
-	u32 indexCount;
+	u32 index_offset;
+	u32 index_count;
 	Material* material;
 }ModelBatch;
 
@@ -348,7 +348,7 @@ typedef struct Model{
 	ModelFlags flags;
 	Mesh* mesh;
 	Armature* armature;
-	ModelBatch* batchArray;
+	ModelBatch* batch_array;
 }Model;
 
 //Returns a pointer to the allocated `Model` object (with batch array reserved)

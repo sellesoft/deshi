@@ -47,11 +47,11 @@
 builder_platform="unknown"
 builder_compiler="unknown"
 builder_linker="unknown"
-if [ "$OSTYPE" == "linux-gnu"* ]; then
+if [ "$OSTYPE" == "linux-gnu" ]; then
   builder_platform="linux"
   builder_compiler="gcc"
   builder_linker="ld"
-elif [ "$OSTYPE" == "darwin"* ]; then
+elif [ "$OSTYPE" == "darwin" ]; then
   builder_platform="mac"
   builder_compiler="gcc"
   builder_linker="ld"
@@ -67,7 +67,7 @@ elif [ "$OSTYPE" == "win32" ]; then
   builder_platform="win32"
   builder_compiler="cl"
   builder_linker="link"
-elif [ "$OSTYPE" == "freebsd"* ]; then
+elif [ "$OSTYPE" == "freebsd" ]; then
   builder_platform="linux"
   builder_compiler="gcc"
   builder_linker="ld"
@@ -178,10 +178,10 @@ for (( i=1; i<=$#; i++)); do
   elif [ "${!i}" == "-compiler" ]; then
     skip_arg=1
     next_arg=$((i+1))
-    if [ "${!next_arg}" == "cl" ] || [ "${!next_arg}" == "gcc" ] || [ "${!next_arg}" == "clang" ] || [ "${!next_arg}" == "clang-cl" ]; then
+    if [ "${!next_arg}" == "cl" ] || [ "${!next_arg}" == "gcc" ] || [ "${!next_arg}" == "clang++" ] || [ "${!next_arg}" == "clang-cl" ]; then
       build_compiler="${!next_arg}"
     else
-      echo "Unknown compiler: ${!next_arg}; Valid options: cl, gcc, clang, clang-cl"
+      echo "Unknown compiler: ${!next_arg}; Valid options: cl, gcc, clang++, clang-cl"
     fi
   elif [ "${!i}" == "-linker" ]; then
     skip_arg=1
@@ -241,18 +241,47 @@ app_sources="examples/$app_name/$app_name.cpp"
 lib_paths=(
   $vulkan_folder/lib
 )
-libs=(
-  #win32 libs
-  gdi32
-  shell32
-  ws2_32
-  winmm
+libs=()
 
-  #graphics libs
-  opengl32
-  vulkan-1
-  shaderc_combined    #required for vulkan shader compilation at runtime
-)
+if [ $build_platform == "win32" ]; then
+  if [ $build_graphics == "vulkan" ]; then
+    libs+=(
+      user32
+      gdi32
+      shell32
+      ws2_32
+      winmm
+      vulkan-1
+      shaderc_combined    #required for vulkan shader compilation at runtime
+    )
+  elif [ $build_graphics == "opengl" ]; then
+    libs+=(
+      user32
+      gdi32
+      shell32
+      ws2_32
+      winmm
+      opengl32
+    )
+  else
+    echo "Libs not setup for the '$build_graphics' graphics backend on the '$build_platform' platform"
+  fi
+elif [ $build_platform == "mac" ]; then
+  echo "Libs not setup for platform: $build_platform"
+elif [ $build_platform == "linux" ]; then
+  if [ $build_graphics == "opengl" ]; then
+    libs+=(
+      X11
+      Xrandr
+      GL
+    )
+  else
+    echo "Libs not setup for the '$build_graphics' graphics backend on the '$build_platform' platform"
+  fi
+else
+  echo "Libs not setup for platform: $build_platform"
+  exit 1
+fi
 #_____________________________________________________________________________________________________
 #                                         Global Defines
 #_____________________________________________________________________________________________________
@@ -381,7 +410,7 @@ elif [ $build_compiler == "gcc" ]; then #_______________________________________
     #### -fanalyzer (enables static analysis) TODO(sushi) look into other analyzer settings
     compile_flags="$compile_flags -fanalysis"
   fi
-elif [ $build_compiler == "clang" ]; then #__________________________________________________________________________clang
+elif [ $build_compiler == "clang++" ]; then #________________________________________________________________________clang++
   #### -std=c++17 (specifies to use the C++17 standard)
   #### -fexceptions ()
   #### -fcxx-exceptions ()
@@ -469,8 +498,8 @@ fi
 if ([ $build_compiler == "cl" ] || [ $build_compiler == "clang-cl" ]) && ([ $build_linker == "ld" ] || [ $build_linker == "lld" ]); then
   echo "[31mcl/clang-cl compilers are not compatible with ld/lld linkers.[0m"
   exit 1
-elif ([ $build_compiler == "gcc" ] || [ $build_compiler == "clang" ]) && ([ $build_linker == "link" ] || [ $build_linker == "lld-link" ]); then
-  echo "[31mgcc/clang compilers are not compatible with link/lld-link linkers.[0m"
+elif ([ $build_compiler == "gcc" ] || [ $build_compiler == "clang++" ]) && ([ $build_linker == "link" ] || [ $build_linker == "lld-link" ]); then
+  echo "[31mgcc/clang++ compilers are not compatible with link/lld-link linkers.[0m"
   exit 1
 fi
 #_____________________________________________________________________________________________________
@@ -493,7 +522,7 @@ build_dir="examples/$app_name/build/$build_dir"
 if [ $builder_platform == "win32" ]; then #_________________________________________________________________________________win32
   if [ -e examples/ctime.exe ]; then ctime -begin examples/$app_name/$app_name.ctm; fi
   if [ $build_time == 1 ]; then start_time=$(date +%s.%3N); fi
-  echo ---------------------------------
+  echo "---------------------------------"
   
   if [ $build_compiler == "cl" ] || [ $build_compiler == "clang-cl" ]; then #______________________________________cl
     #### delete previous debug info
@@ -510,7 +539,7 @@ if [ $builder_platform == "win32" ]; then #_____________________________________
     fi
   elif [ $build_compiler == "gcc" ]; then #________________________________________________________________________gcc
     echo "Execute commands not setup for compiler: $builder_compiler"
-  elif [ $build_compiler == "clang" ]; then #______________________________________________________________________clang
+  elif [ $build_compiler == "clang++" ]; then #____________________________________________________________________clang++
     #### compile app (generates app_name.exe)
     exe $build_compiler $app_sources $deshi_sources $includes $compile_flags $defines -Fo"$build_dir/" $link_flags $link_libs -o"$build_dir/$app_name.exe"
 
@@ -519,15 +548,32 @@ if [ $builder_platform == "win32" ]; then #_____________________________________
     else
       echo "[93mFailed to build: $app_name.exe[0m"
     fi
+  else
+    echo "[93mExecute commands not setup for the '$build_compiler' compiler on the 'win32' platform[0m"
   fi
 
-  echo ---------------------------------
+  echo "---------------------------------"
   if [ -e examples/ctime.exe ]; then ctime -end examples/$app_name/$app_name.ctm; fi
   if [ $build_time == 1 ]; then printf "time: %f seconds" $(awk "BEGIN {print $(date +%s.%3N) - $start_time}"); fi
 elif [ $builder_platform == "mac" ]; then #_________________________________________________________________________________mac
   echo "Execute commands not setup for platform: $builder_platform"
 elif [ $builder_platform == "linux" ]; then #_______________________________________________________________________________linux
-  echo "Execute commands not setup for platform: $builder_platform"
+  echo "---------------------------------"
+  
+  if [ $build_compiler == "clang++" ]; then #____________________________________________________________________clang++
+    #### compile app (generates app_name.exe)
+    exe $build_compiler $app_sources $deshi_sources $includes $compile_flags $defines -Fo"$build_dir/" $link_flags $link_libs -o"$build_dir/$app_name"
+
+    if [ $? == 0 ] && [ -e $build_dir/$app_name ]; then
+      echo "[32m  $app_name[0m"
+    else
+      echo "[93mFailed to build: $app_name[0m"
+    fi
+  else
+    echo "[93mExecute commands not setup for the '$build_compiler' compiler on the 'linux' platform[0m"
+  fi
+  
+  echo "---------------------------------"
 else
   echo "Execute commands not setup for platform: $builder_platform"
 fi

@@ -132,7 +132,7 @@ void console_parse_message(str8 message, str8 tag, Type type, b32 from_logger, u
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @interface
 void console_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_CONSOLE, DS_UI2|DS_ASSETS, "Attempted to initialize Console module before initializing the UI2 or Assets modules");
+	DeshiStageInitStart(DS_CONSOLE, DS_UI|DS_ASSETS, "Attempted to initialize Console module before initializing the UI or Assets module");
 	Assert(window_windows.count > 0, "Attempted to initialize Console module before a window was created");
 	
 	console.logger = logger_expose();
@@ -155,7 +155,7 @@ void console_init(){DPZoneScoped;
 	base.sizing = size_normal;
 	
 	//initialize ui elements
-	console.ui.main = uiItemBS(&base);
+	console.ui.main = ui_begin_item(&base);
 	uiItem*  main  = console.ui.main;
 	uiStyle* mains = &main->style;
 	main->id = STR8("console.main");
@@ -166,10 +166,11 @@ void console_init(){DPZoneScoped;
 	mains->           sizing = size_percent;
 	mains->            width = 100;
 	mains->           height = 0;
-	mains->          padding = {2,2,2,2};
+	mains->        paddingtl = {2,2};
+	mains->        paddingbr = {2,2};
 	mains->      positioning = pos_fixed;
 	
-	console.ui.buffer = uiItemBS(&base);
+	console.ui.buffer = ui_begin_item(&base);
 	uiItem*  buffer  = console.ui.buffer;
 	uiStyle* buffers = &buffer->style;
 	buffer->id = STR8("console.buffer");
@@ -177,10 +178,11 @@ void console_init(){DPZoneScoped;
 	buffers->           height = 1; //occupy as much vertical space as it can in the container
 	buffers->            width = 100; //100% the width of the container
 	buffers-> background_color = Color_Black;
-	buffers->          padding = {2,2,2,2};
-	uiItemE();
+	buffers->        paddingtl = {2,2};
+	buffers->        paddingbr = {2,2};
+	ui_end_item();
 	
-	console.ui.inputbox = uiItemBS(&base);
+	console.ui.inputbox = ui_begin_item(&base);
 	uiItem*  inputb  = console.ui.inputbox;
 	uiStyle* inputbs = &inputb->style;
 	inputb->id = STR8("console.inputbox");
@@ -190,16 +192,17 @@ void console_init(){DPZoneScoped;
 	inputbs->height = inputbs->font->max_height + 2;
 	inputbs->content_align = {0.5,0.5};
 	inputbs->tab_spaces = 2;
-	inputbs->padding = {2,2,2,2};
-	console.ui.inputtext = uiInputTextM();
+	inputbs->paddingtl = {2,2};
+	inputbs->paddingbr = {2,2};
+	console.ui.inputtext = ui_make_input_text(str8null, 0);
 	uiItem* inputt = console.ui.inputtext;
 	uiStyle* inputts = &inputt->style;
 	inputt->id = STR8("console.inputtext");
 	inputts->sizing = size_percent;
 	inputts->size = {100,100};
-	uiInputText* it = uiGetInputText(inputt);	
-	uiItemE();
-	uiItemE();
+	uiInputText* it = (uiInputText*)inputt;	
+	ui_end_item();
+	ui_end_item();
 	
 	console.initialized = true;
 	DeshiStageInitEnd(DS_CONSOLE);
@@ -207,7 +210,7 @@ void console_init(){DPZoneScoped;
 
 void console_update(){DPZoneScoped;
 	//check for console state changing inputs
-	if(key_pressed(Key_TILDE)){
+	if(key_pressed(Key_BACKQUOTE)){
 		if      (input_shift_down()){
 			console_change_state(ConsoleState_OpenBig);
 		}else if(input_ctrl_down()){
@@ -233,7 +236,7 @@ void console_update(){DPZoneScoped;
 	}
 	if(change_input){
 		simulate_key_press(Key_END);
-		text_clear(&uiGetInputText(console.ui.inputtext)->text);
+		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 		
 		// if(console.input_history_index != -1){
 		// 	u32 cursor = 0;
@@ -244,7 +247,7 @@ void console_update(){DPZoneScoped;
 		// 	for(;;){
 		// 		u32 characters = (cursor + chunk.size > CONSOLE_INPUT_BUFFER_SIZE)
 		// 			? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.size) : chunk.size;
-		// 		file_cursor(console.logger->file, chunk.start);
+		// 		file_set_cursor(console.logger->file, chunk.start);
 		// 		file_read(console.logger->file, console.input_buffer, characters);
 		// 		console.input_length += characters;
 		// 		cursor += characters;
@@ -255,7 +258,7 @@ void console_update(){DPZoneScoped;
 		// 			chunk = console.dictionary[++chunk_idx];
 		// 		}
 		// 	}
-		// 	file_cursor(console.logger->file, restore);
+		// 	file_set_cursor(console.logger->file, restore);
 		// }
 	}
 	
@@ -311,34 +314,34 @@ void console_update(){DPZoneScoped;
 	// 		if(console.dictionary[i].size >= console.chunk_render_arena->size){
 	// 			console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
 	// 		}
-			
+	
 	// 		if(console.dictionary[i].newline == 1 && nlines++){
 	// 			uiItemE(); 
 	// 			line = uiItemBS(&line->style);
-	// 			line->id = ToString8(deshi_temp_allocator, "console.line",nlines);
+	// 			line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines);
 	// 		}
-			
+	
 	// 		//get chunk text from the log file
-	// 		file_cursor(console.logger->file, console.dictionary[i].start);
+	// 		file_set_cursor(console.logger->file, console.dictionary[i].start);
 	// 		file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
 	// 		console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
-			
+	
 	// 		str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
 	// 		uiItem* text = uiTextMS(&line->style, out);
-	// 		text->id = ToString8(deshi_temp_allocator, "console.text",i);
+	// 		text->id = to_dstr8v(deshi_temp_allocator, "console.text",i);
 	// 		text->style.text_color = console.dictionary[i].fg;
-			
-			
+	
+	
 	// 		i++;
 	// 	}
 	// 	uiItemE();
-		
+	
 	// 	uiItem* debug = uiItemB();
 	// 	debug->style.positioning = pos_absolute;
 	// 	debug->style.anchor = anchor_bottom_right;
 	// 	debug->style.sizing = size_auto;
 	// 	debug->id = STR8("console.debug");
-	// 	uiTextM(ToString8(deshi_temp_allocator,
+	// 	uiTextM(to_dstr8v(deshi_temp_allocator,
 	// 					  "      show tags: ", console.tag_show, "\n",
 	// 					  " highlight tags: ", console.tag_highlighting, "\n",
 	// 					  "   outline tags: ", console.tag_outlines, "\n",
@@ -356,10 +359,10 @@ void console_update(){DPZoneScoped;
 	// }uiImmediateE();
 	
 	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
-		str8 command = uiGetInputText(console.ui.inputtext)->text.buffer.fin;
+		str8 command = ui_get_input_text(console.ui.inputtext)->text.buffer.fin;
 		Log("", CyanFormat("> "), command);
 		cmd_run(command);
-		text_clear(&uiGetInputText(console.ui.inputtext)->text);
+		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 		console.scroll_to_bottom = 1;
 	}
 }
@@ -379,7 +382,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 		case ConsoleState_Closed:{
 			console.open_target = 0;
 			console.open_amount = console.ui.main->style.height;
-			window_cursor_mode(g_window, restore_cursor_mode);
+			window_set_cursor_mode(g_window, restore_cursor_mode);
 		}break;
 		case ConsoleState_OpenSmall:{
 			console.open_target = 100 * console.open_small_percent;
@@ -387,7 +390,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 			g_ui->active = console.ui.inputtext;
-			window_cursor_mode(g_window, CursorMode_Default);
+			window_set_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		case ConsoleState_OpenBig:{
 			console.open_target = 100 * console.open_max_percent;
@@ -395,7 +398,7 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 			console.console_pos = Vec2(0, -1);
 			console.console_dim.x = (f32)DeshWindow->width;
 			g_ui->active = console.ui.inputtext;
-			window_cursor_mode(g_window, CursorMode_Default);
+			window_set_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		// case ConsoleState_Popout:{
 		// 	console.open_target = console.console_dim.y;
@@ -404,4 +407,10 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 	}
 	console.open_timer = start_stopwatch();
 	console.state = new_state;
+}
+
+b32
+console_is_open()
+{
+	return console.state != ConsoleState_Closed;
 }

@@ -27,7 +27,7 @@ Index:
 @ui2_widgets_shared_impl
   item_error(uiItem* item, ...) -> void
   gen_error(str8 file, upt line, ...) -> void
-  find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size) -> void
+  find_text_breaks(arrayT<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size) -> void
   find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text) -> s64
   render_ui_text(vec2i counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks) -> vec2i
 @ui2_widgets_text_impl
@@ -53,7 +53,9 @@ Index:
 */
 #ifndef DESHI_UI2_WIDGETS_H
 #define DESHI_UI2_WIDGETS_H
-#include "ui2.h"
+#include "core/input.h"
+#include "ui.h"
+#include <cctype>
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,18 +68,12 @@ struct uiText{
 	Text text;
 	b32 selecting;
 	//TODO(sushi) get rid of array here
-	array<pair<s64,vec2>> breaks;
+	arrayT<pair<s64,vec2>> breaks;
 };
+#define ui_get_text(x) ((uiText*)(x))
 
-#define uiGetText(x) CastFromMember(uiText, item, x)
-
-UI_FUNC_API(uiItem*, ui_make_text, str8 text, uiStyle* style, str8 file, upt line);
-//NOTE(sushi) does not automatically make a str8, use uiTextML for that.
-#define uiTextM(text)          UI_DEF(make_text((text),           0, STR8(__FILE__),__LINE__))
-#define uiTextMS(style, text)  UI_DEF(make_text((text),     (style), STR8(__FILE__),__LINE__))
-//NOTE(sushi) this automatically applies STR8() to text, so you can only use literals with this macro
-#define uiTextML(text)         UI_DEF(make_text(STR8(text),       0, STR8(__FILE__),__LINE__))
-#define uiTextMSL(style, text) UI_DEF(make_text(STR8(text), (style), STR8(__FILE__), __LINE__))
+uiItem* deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line);
+#define ui_make_text(text, style) deshi__ui_make_text((text), (style), str8l(__FILE__), __LINE__)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +93,7 @@ struct uiInputText{
 	Text   text;
 	b32    selecting;
 	//TODO(sushi) get rid of array here
-	array<pair<s64,vec2>> breaks;
+	arrayT<pair<s64,vec2>> breaks;
 	
 	Stopwatch repeat_hold;
 	Stopwatch repeat_throttle;
@@ -114,14 +110,10 @@ struct uiInputText{
 	}style;
 };
 
-#define uiGetInputText(x) CastFromMember(uiInputText, item, x)
+#define ui_get_input_text(x) ((uiInputText*)(x))
 
-UI_FUNC_API(uiItem*, ui_make_input_text, str8 preview, uiStyle* style, str8 file, upt line);
-#define uiInputTextM()                UI_DEF(make_input_text(    {0},       0, STR8(__FILE__),__LINE__))
-#define uiInputTextMS(style)          UI_DEF(make_input_text(    {0}, (style), STR8(__FILE__),__LINE__))
-#define uiInputTextMP(preview)        UI_DEF(make_input_text(preview,       0, STR8(__FILE__),__LINE__))
-#define uiInputTextMSP(style,preview) UI_DEF(make_input_text(preview, (style), STR8(__FILE__),__LINE__))
-
+uiItem* deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line);
+#define ui_make_input_text(preview, style) deshi__ui_make_input_text((preview), (style), str8l(__FILE__), __LINE__)
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @ui2_widgets_slider
@@ -132,6 +124,12 @@ enum{
 	slider_dragger_round,
 };
 
+// TODO(sushi) currently if there are two sliders on screen that are attached to the same 
+//             variable, the sliders will not move together. This can be fixed by calculating
+//             the position of the dragger in ui_gen_slider instead of in its callback,
+//             but would be less performant as we have to check what kind of slider we're
+//             dealing with in the gen function. We could also have a separate gen for each
+//             type but that's kinda bloated.
 struct uiSlider{
 	uiItem item;
 	
@@ -166,32 +164,30 @@ struct uiSlider{
 		f32 rail_thickness; //percentage of full thickness, 0-1
 	}style;
 };
-
-#define uiGetSlider(x) CastFromMember(uiSlider, item, x)
+#define ui_get_slider(x) ((uiSlider*)(x))
 
 inline u32 slider_style_hash(uiItem* item){
-	uiSlider* data = uiGetSlider(item);
+	uiSlider* data = ui_get_slider(item);
 	
 	u32 seed = UI_HASH_SEED;
 	seed ^= data->style.colors.rail.rgba;       seed *= UI_HASH_PRIME;
 	seed ^= data->style.colors.dragger.rgba;    seed *= UI_HASH_PRIME;
 	seed ^= data->style.dragger_shape;          seed *= UI_HASH_PRIME;
 	seed ^= *(u32*)&data->style.rail_thickness; seed *= UI_HASH_PRIME;
+	if(data->varf32) {
+		seed ^= *data->varu32; seed *= UI_HASH_PRIME;
+	}
 	
 	return seed;
 } 
 
-UI_FUNC_API(uiItem*, ui_make_slider_f32, f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
-#define uiSliderf32(min,max,var)        UI_DEF(make_slider_f32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSliderf32S(min,max,var,style) UI_DEF(make_slider_f32(min,max,var,(style),STR8(__FILE__),__LINE__));
+uiItem* deshi__ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line);
+uiItem* deshi__ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line);
+uiItem* deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line);
 
-UI_FUNC_API(uiItem*, ui_make_slider_u32, u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line);
-#define uiSlideru32(min,max,var)        UI_DEF(make_slider_u32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSlideru32S(min,max,var,style) UI_DEF(make_slider_u32(min,max,var,(style),STR8(__FILE__),__LINE__));
-
-UI_FUNC_API(uiItem*, ui_make_slider_s32, s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line);
-#define uiSliders32(min,max,var)        UI_DEF(make_slider_s32(min,max,var,0,STR8(__FILE__),__LINE__));
-#define uiSliders32S(min,max,var,style) UI_DEF(make_slider_s32(min,max,var,(style),STR8(__FILE__),__LINE__));
+#define ui_make_slider_f32(min, max, var, style) deshi__ui_make_slider_f32(min, max, (var), (style), str8l(__FILE__), __LINE__)
+#define ui_make_slider_u32(min, max, var, style) deshi__ui_make_slider_u32(min, max, (var), (style), str8l(__FILE__), __LINE__)
+#define ui_make_slider_s32(min, max, var, style) deshi__ui_make_slider_s32(min, max, (var), (style), str8l(__FILE__), __LINE__)
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,10 +216,10 @@ struct uiCheckbox{
 };
 
 
-#define uiGetCheckbox(x) CastFromMember(uiCheckbox, item, x)
+#define ui_get_checkbox(x) ((uiCheckbox*)(x))
 
 inline u32 checkbox_style_hash(uiItem* item){
-	uiCheckbox* data = uiGetCheckbox(item);
+	uiCheckbox* data = ui_get_checkbox(item);
 	
 	u32 seed = UI_HASH_SEED;
 	seed ^= data->style.colors.filling.rgba; seed *= UI_HASH_PRIME;
@@ -231,9 +227,98 @@ inline u32 checkbox_style_hash(uiItem* item){
 	return seed;
 }
 
-UI_FUNC_API(uiItem*, ui_make_checkbox, b32* var, uiStyle* style, str8 file, upt line);
-#define uiCheckboxM(var)         UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
-#define uiCheckboxMS(var, style) UI_DEF(make_checkbox((var), 0, STR8(__FILE__),__LINE__))
+uiItem* deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line);
+#define ui_make_checkbox(var, style) deshi__ui_make_checkbox((var), (style), str8l(__FILE__), __LINE__)
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @tab
+struct uiTabbed {
+	uiItem item;
+
+	struct { // style
+		struct { // colors
+			struct { // active, inactive
+				color text;
+				color background;
+				color border;
+			} active, inactive, hovered;
+			struct {
+				color border;
+			} body;
+		} colors;
+		vec4 body_margins;
+		// minimum width of tabs, once this is reached 
+		// we rely on scrolling
+		f32 min_tab_width;
+		// draw a scrollbar when min_tab_width is reached 
+		b32 draw_scrollbar;
+		// tab size in the direction perpendicular to the direction
+		// the tabs run, for example if the tabs are displayed horizontally
+		// this will be their height
+		// TODO(sushi) vertical tabs and bottom tabs 
+		f32 tab_size;
+		
+		// values between 0-1 determining how to align the text in each tab
+		vec2 tab_text_alignment;
+	} style;
+
+	u32 selected;
+	f32 scroll;
+	f32 max_scroll;
+};
+
+// NOTE(sushi) I am not implementing hashing for uiTab as I don't have an immediate use case for dynamically changing tab names
+
+#define ui_get_tabbed(x) ((uiTabbed*)(x))
+
+uiItem* deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line);
+#define ui_make_tabbed(style) deshi__ui_make_tabbed((style), str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_tabbed(uiStyle* style, str8 file, upt line);
+#define ui_begin_tabbed(style) deshi__ui_begin_tabbed((style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_tabbed(str8 file, upt line);
+#define ui_end_tabbed() deshi__ui_end_tabbed(str8l(__FILE__), __LINE__)
+
+inline u32
+ui_tabs_style_hash(uiItem* item) {
+	uiTabbed* tabs = ui_get_tabbed(item);
+	u32 seed = UI_HASH_SEED;
+#define hash(x) seed ^= *(u32*)&(tabs->style. x); seed *= UI_HASH_PRIME;
+	hash(colors.body.border.rgba);
+	hash(colors.active.border.rgba);
+	hash(colors.active.text.rgba);
+	hash(colors.active.background.rgba);
+	hash(colors.inactive.border.rgba);
+	hash(colors.inactive.text.rgba);
+	hash(colors.inactive.background.rgba);
+	hash(colors.hovered.border.rgba);
+	hash(colors.hovered.text.rgba);
+	hash(colors.hovered.background.rgba);
+	hash(body_margins.x);
+	hash(body_margins.y);
+	hash(body_margins.z);
+	hash(body_margins.w);
+#undef hash
+	return seed;
+}
+
+struct uiTab {
+	uiItem item;
+	str8 name;
+};
+
+#define ui_get_tab(x) ((uiTab*)(x))
+
+uiItem* deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line);
+#define ui_make_tab(title, style) deshi__ui_make_tab((title), (style), str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_tab(str8 title, uiStyle* style, str8 file, upt line);
+#define ui_begin_tab(title, style) deshi__ui_begin_tab((title), (style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_tab(str8 file, upt line);
+#define ui_end_tab() deshi__ui_end_tab(str8l(__FILE__), __LINE__)
 
 
 #endif //DESHI_UI2_WIDGETS_H
@@ -259,7 +344,7 @@ LogE("ui",CyanFormatComma(file),":",line,":",RedFormatComma("error"),":",__VA_AR
 //            of uiText. The way the API is setup right now doesn't really allow for this, at least not in any nice way.
 //            It may be better to keep them separate however.
 void
-find_text_breaks(array<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size = 0){DPZoneScoped;
+find_text_breaks(arrayT<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size = 0){DPZoneScoped;
 	breaks->clear();
 	breaks->add({0,{0,0}});
 	str8 last_space_or_tab = text.buffer.fin;
@@ -369,6 +454,11 @@ find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text){DPZo
 	return -1;
 }
 
+void
+ui_draw_text_into_region(str8 text, vec2 pos, vec2 size, uiDrawCmd* dc) {
+	
+}
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @ui2_widgets_text_impl
@@ -380,7 +470,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiText* data = uiGetText(item);
+	uiText* data = (uiText*)item;
 	
 	dc->texture = item->style.font->tex;
 	
@@ -399,16 +489,11 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 		//}
 	}
 	
+	// check how much draw data we need for the text and reallocate the drawcmd if needed
 	vec2i nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
-	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
-	    item->drawcmds = ui_make_drawcmd(1);
-		ui_drawcmd_remove(dc);
-		dc = item->drawcmds;
-		ui_drawcmd_alloc(dc, nucounts);
-		dc->texture = item->style.font->tex;
-	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	}
+	auto p = ui_drawcmd_realloc(dc, nucounts);
+	vp = p.vertexes;
+	ip = p.indexes;
 	
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	vec2 cursor = item->pos_screen;
@@ -417,7 +502,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 		cursor = pos+item->pos_screen;
 		forX(j,data->breaks[i+1].first-idx){
 			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
-			if(   (idx + j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count))
+			if(   (idx + j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)) // make selected text red 
 			   && (idx + j < Max(data->text.cursor.pos, data->text.cursor.pos + data->text.cursor.count))){
 				counts += render_make_text(vp,ip,counts, {data->text.buffer.str + idx + j, 1}, item->style.font, cursor, Color_Red,
 										   vec2::ONE * item->style.font_height / item->style.font->max_height);
@@ -436,19 +521,19 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 void
 ui_eval_text(uiItem* item){DPZoneScoped;
 	if(!item->style.font){
-		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle, or on one of its ancestors.");
+		item_error(item, "uiText's evaluation function was called, but no font was specified for the item. You must either specify a font on the uiText's item handle or on one of its ancestors.");
 		return;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
-	uiText* data = uiGetText(item);
-	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 1);
+	uiText* data = (uiText*)item;
+	find_text_breaks(&data->breaks, item, data->text, ui_padded_width(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 1);
 }
 
 //performs checks on the text element for things like mouse selection
 //and copy when a selection is active
 void
 ui_update_text(uiItem* item){DPZoneScoped;
-	uiText* data = uiGetText(item);
+	uiText* data = (uiText*)item;
 	if(g_ui->hovered == item && input_lmouse_pressed()){
 		data->text.cursor.pos = find_hovered_offset({data->breaks.data,data->breaks.count},item,data->text);
 		data->selecting = 1;
@@ -468,15 +553,27 @@ ui_update_text(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
-ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
+ui_copy_text(uiItem* old_item) {DPZoneScoped;
+	auto old_text = ui_get_text(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiText));
+	auto new_text = ui_get_text(new_item);
+	ui_item_copy_base(new_item, old_item);
+	new_text->text = text_init(old_text->text.buffer.fin, old_text->text.buffer.allocator);
+	new_text->text.cursor = old_text->text.cursor;
+	return new_item;
+}
+
+uiItem*
+deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiText);
 	setup.style = style;
 	setup.file = file;
 	setup.line = line;
-	setup.update = &ui_update_text;
-	setup.generate = &ui_gen_text;
-	setup.evaluate = &ui_eval_text;
+	setup.update = ui_update_text;
+	setup.generate = ui_gen_text;
+	setup.evaluate = ui_eval_text;
+	setup.copy = ui_copy_text;
 	vec2i counts[1] = {render_make_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
@@ -506,7 +603,7 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = (uiInputText*)item;
 	
 	dc->texture = item->style.font->tex;
 	
@@ -570,14 +667,14 @@ ui_eval_input_text(uiItem* item){DPZoneScoped;
 		return;
 	}
 	uiItem* parent = uiItemFromNode(item->node.parent);
-	uiInputText* data = uiGetInputText(item);
-	find_text_breaks(&data->breaks, item, data->text, PaddedWidth(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 0);
+	uiInputText* data = (uiInputText*)item;
+	find_text_breaks(&data->breaks, item, data->text, ui_padded_width(parent), (item->style.text_wrap != text_wrap_none) && (!HasFlag(parent->style.sizing, size_auto)), 0);
 }
 
 void
 ui_update_input_text(uiItem* item){DPZoneScoped;
 	if(g_ui->active != item) return;
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = ui_get_input_text(item);
 	Text* t = &data->text;
 	
 	b32 repeat = 0;
@@ -589,8 +686,8 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 		repeat = 1;
 	}
 	
-	//allows input on first press, then allows repeats when the repeat bool is set on input
-	//do action depending on bind pressed
+	// allows input on first press, then allows repeats when the repeat bool is set on input
+	// do action depending on bind pressed
 #define CanDoInput(x) (key_pressed(x) || key_down(x) && repeat)
 	if(CanDoInput(g_ui->keys.inputtext.cursor.left))           text_move_cursor_left(t),             item->dirty = 1;
 	if(CanDoInput(g_ui->keys.inputtext.cursor.left_word))      text_move_cursor_left_word(t),        item->dirty = 1;
@@ -613,7 +710,8 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 #undef CanDoInput
 	
 	//text input
-	if(DeshInput->charCount){
+	// NOTE(sushi) manually filter out control characters until I setup linux's input to do so there
+	if(DeshInput->charCount && !iscntrl(DeshInput->charIn[0])){
 		text_insert_string(t, {DeshInput->charIn,(s64)DeshInput->charCount});
 		item->dirty = 1;
 	}
@@ -639,22 +737,37 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 }
 
 uiItem*
-ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;
+ui_copy_input_text(uiItem* old_item) {DPZoneScoped;
+	auto old_text = ui_get_input_text(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiText));
+	auto new_text = ui_get_input_text(new_item);
+	ui_item_copy_base(new_item, old_item);
+
+	new_text->style = old_text->style;
+	new_text->text = text_init(new_text->text.buffer.fin, new_text->text.buffer.allocator);
+	new_text->text.cursor = old_text->text.cursor;
+	new_text->preview = old_text->preview;
+	return new_item;
+}
+
+uiItem*
+deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiInputText);
 	setup.style = style;
 	setup.file = file;
 	setup.line = line;
-	setup.update = &ui_update_input_text;
-	setup.generate = &ui_gen_input_text;
-	setup.evaluate = &ui_eval_input_text;
+	setup.update = ui_update_input_text;
+	setup.generate = ui_gen_input_text;
+	setup.evaluate = ui_eval_input_text;
+	setup.copy = ui_copy_input_text;
 	vec2i counts[1] = {render_make_text_counts(str8_length(preview))+render_make_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 	
 	b32 retrieved = 0;
 	uiItem*      item = ui_setup_item(setup, &retrieved);
-	uiInputText* data = uiGetInputText(item);
+	uiInputText* data = ui_get_input_text(item);
 	
 	if(!retrieved)
 		data->text = text_init({0}, deshi_allocator);
@@ -674,151 +787,146 @@ ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZoneScop
 
 void
 ui_gen_slider(uiItem* item){DPZoneScoped;
-	FixMe;
-	/*
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	vec2i counts = {0};	
-	uiSlider* data = uiGetSlider(item);
+	auto dc = item->drawcmds;
+	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	vec2i counts = {0};
+	auto s = ui_get_slider(item);
+
+	vec2 pos = item->pos_screen;
+	vec2 size = item->size;
+
+	counts += ui_gen_background(item, vp, ip, counts);
+	counts += ui_gen_border(item, vp, ip, counts);
+
+	counts += render_make_filledrect(vp, ip, counts, 
+			  Vec2(pos.x, pos.y + size.y * (1 - s->style.rail_thickness)/2),
+			  Vec2(size.x, size.y * s->style.rail_thickness),
+			  s->style.colors.rail);
 	
-	vec2 pos = item->pos_screen + item->pos_client;
-	vec2 size = item->csize;
-	
-	counts+=gen_background(item, vp, ip, counts);
-	counts+=gen_border(item, vp, ip, counts);
-	
-	counts+=render_make_filledrect(vp,ip,counts,
-								   Vec2(pos.x, pos.y + size.y*(1 - data->style.rail_thickness)/2),
-								   Vec2(size.x, size.y * data->style.rail_thickness),
-								   data->style.colors.rail
-								   );
-	
-	if(data->style.dragger_shape == slider_dragger_rect){
-		vec2 dragp = Vec2(pos.x+data->pos, pos.y);
-		vec2 drags = Vec2(data->width, size.y);
-		counts+=render_make_filledrect(vp,ip,counts,dragp,drags,data->style.colors.dragger);
-	}else if(data->style.dragger_shape == slider_dragger_round){
+	if(s->style.dragger_shape == slider_dragger_rect) {
+		counts += render_make_filledrect(vp, ip, counts,
+				Vec2(pos.x + s->pos, pos.y),
+				Vec2(s->width, size.y),
+				s->style.colors.dragger);
+	} else {
 		NotImplemented;
 	}
+
 	dc->counts_used = counts;
-	*/
 }
 
 void
 ui_slider_callback(uiItem* item){DPZoneScoped;
-	FixMe;
-	/*
-	uiSlider* data = uiGetSlider(item);
-	vec2 mp = input_mouse_position();
-	vec2 lmp = mp - item->pos_screen;
-	switch(data->type){
-		case 0:{
-			f32 dragpos;
-			f32 dragwidth;
-			f32  min = data->minf32;
-			f32  max = data->maxf32;
-			f32* var = data->varf32;
+	auto s   = ui_get_slider(item);
+	auto mp  = input_mouse_position();
+	auto lmp = mp - item->pos_screen;
+	switch(s->type) {
+		case 0: {
+			f32 dragpos, dragwidth,
+				min = s->minf32,
+				max = s->maxf32,
+			   *var = s->varf32;
+			
 			*var = Clamp(*var, min, max);
-			dragwidth = item->width/8;
-			dragpos = Remap(*var, 0.f, item->cwidth-dragwidth, min, max);
-			if(input_lmouse_pressed() && Math::PointInRectangle(lmp, Vec2(dragpos,0), Vec2(dragwidth, item->cheight))){
-				data->active = 1;
-				data->mouse_offset = -lmp.x + dragpos;
+			dragwidth = item->width / 8;
+			dragpos = Remap(*var, 0.f, item->width-dragwidth, min, max);
+			if(input_lmouse_pressed() && 
+			   Math::PointInRectangle(lmp, Vec2(dragpos, 0), Vec2(dragwidth, item->height))) {
+				s->active = true;
+				s->mouse_offset = -lmp.x + dragpos;
 			}
-			if(data->active){
-				*var = Remap(Clamp(lmp.x + data->mouse_offset, 0.f, item->cwidth-dragwidth), min, max, 0.f, item->cwidth-dragwidth);
-				item->dirty = 1;
+			if(s->active) {
+				*var = Remap(Clamp(lmp.x + s->mouse_offset, 0.f, item->width - dragwidth), min, max, 0.f, item->width - dragwidth);
+				item->dirty = true;
 				item->action_trigger = action_act_always;
 			}
-			if(input_lmouse_released()){
-				data->active = 0;
+			if(input_lmouse_released()) {
+				s->active = false;
 				item->action_trigger = action_act_mouse_hover;
 			}
-			data->width = dragwidth;
-			data->pos = dragpos;
-		}break;
-		case 1:{NotImplemented;}break;
-		case 2:{NotImplemented;}break;
+			s->width = dragwidth;
+			s->pos = dragpos;
+		} break;
+		default: NotImplemented;
 	}
-	*/
+}
+
+uiItem*
+ui_copy_slider(uiItem* old_item) {
+	auto old_slider = ui_get_slider(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiSlider));
+	auto new_slider = ui_get_slider(new_item);
+	ui_item_copy_base(new_item, old_item);
+
+	new_slider->style = old_slider->style;
+	new_slider->maxf32 = old_slider->maxf32;
+	new_slider->minf32 = old_slider->minf32;
+	new_slider->varf32 = old_slider->varf32;
+	new_slider->type = old_slider->type;
+	return new_item;
 }
 
 uiItem*
 ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	FixMe;
-	// auto [item, datav] = init_item(sizeof(uiSlider), offsetof(uiSlider, item), file, line);
-	// uiSlider* data = (uiSlider*)datav;
-	// ui_setup_item(item, style, file, line);
-	
-	// if(g_ui->updating){
-	// 	item_error(item, 
-	// 	"\n\tAttempted to make an item during ui_update().\n",
-	// 	  "\tui_update() requires that all items are made outside of it.\n",
-	// 	  "\tDid you try to make an item in another item's action?");
-	// 	Assert(0);	
-	// }
-	
-	// item->memsize = sizeof(uiSlider);
-	// item->__generate = &ui_gen_slider;
-	
-	// vec2i counts = //reserve enough room for slider rail, dragger, and outline
-	// 	render_make_filledrect_counts()*2+
-	// 	render_make_rect_counts();
-	
-	// item->drawcmds = make_drawcmd(1);
-	// item->drawcmd_count = 1;
-	// drawcmd_alloc(item->drawcmds, counts);
-	
-	// item->action_trigger = action_act_mouse_hover;
-	
-	// //setup trailing data 
-	
-	// data->style.dragger_shape = slider_dragger_rect;
-	// data->style.rail_thickness = 1;
-	// data->style.colors.rail = color(80,80,80);
-	// data->style.colors.dragger = color(14,50,100);
-	
-	// item->__hash = &slider_style_hash;
-	// return item;
-	return 0;
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiSlider);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_slider;
+	setup.hash = slider_style_hash;
+	setup.copy = ui_copy_slider;
+	setup.update = ui_slider_callback;
+	setup.update_trigger = action_act_mouse_hover | action_act_hash_change;
+	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 1;
+
+	auto item = ui_setup_item(setup);
+
+	auto s = ui_get_slider(item);
+	s->style.colors.rail = color(80,80,80);
+	s->style.colors.dragger = color(14,50,100);
+
+	return item;
 }
 
 uiItem*
-ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &ui_slider_callback;
-	uiGetSlider(item)->minf32 = min;
-	uiGetSlider(item)->maxf32 = max;
-	uiGetSlider(item)->varf32 = var;
-	uiGetSlider(item)->type = 0;
+	auto s = ui_get_slider(item);
+	s->minf32 = min;
+	s->maxf32 = max;
+	s->varf32 = var;
+	s->type = 0;
 	
 	return item;
 }
 
 uiItem*
-ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &ui_slider_callback;
-	uiGetSlider(item)->minu32 = min;
-	uiGetSlider(item)->maxu32 = max;
-	uiGetSlider(item)->varu32 = var;
-	uiGetSlider(item)->type = 1;
+	auto s = ui_get_slider(item);
+	s->minu32 = min;
+	s->maxu32 = max;
+	s->varu32 = var;
+	s->type = 1;
 	
 	return item;
 }
 
 uiItem*
-ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
+deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line){DPZoneScoped;
 	uiItem* item = ui_make_slider(style, file, line);
 	
-	item->action = &ui_slider_callback;
-	uiGetSlider(item)->mins32 = max;
-	uiGetSlider(item)->maxs32 = max;
-	uiGetSlider(item)->vars32 = var;
-	uiGetSlider(item)->type = 2;
+	auto s = ui_get_slider(item);
+	s->mins32 = max;
+	s->maxs32 = max;
+	s->vars32 = var;
+	s->type = 2;
 	
 	return item;
 }
@@ -829,80 +937,267 @@ ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt li
 
 
 void
-ui_gen_checkbox(uiItem* item){
-	FixMe;
-	/*
-	uiCheckbox* data = uiGetCheckbox(item);
-	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
-	vec2i counts = {0};	
-	
-	vec2 fillingpos = item->pos_screen + data->style.fill_padding + item->pos_client;
-	vec2 fillingsize = item->csize - data->style.fill_padding * 2;
-	
-	counts+=gen_background(item, vp, ip, counts);
-	counts+=gen_border(item, vp, ip, counts);
-	
-	if(!data->var){
-		item_error(item, "A checkbox was created but was given no boolean to act on.");
-		return;
+ui_gen_checkbox(uiItem* item){DPZoneScoped;
+	auto cb = ui_get_checkbox(item);
+	auto dc = item->drawcmds;
+	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
+	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	vec2i counts = {0};
+
+	vec2 fillpos = item->pos_screen + cb->style.fill_padding;
+	vec2 fillsiz = item->size - 2 * cb->style.fill_padding;
+
+	counts += ui_gen_background(item, vp, ip, counts);
+	counts += ui_gen_border(item, vp, ip, counts);
+
+	Assert(cb->var, "Null data pointer for checkbox"); 
+	if(*cb->var) {
+		counts += render_make_filledrect(vp, ip, counts, fillpos, fillsiz, cb->style.colors.filling);
 	}
-	if(*data->var){
-		counts+=render_make_filledrect(vp,ip,counts,fillingpos,fillingsize,data->style.colors.filling);
-	}
-	
+
 	dc->counts_used = counts;
-	*/
 }
 
 void
-ui_checkbox_callback(uiItem* item){
-	FixMe;
-	/*
-	uiCheckbox* data = uiGetCheckbox(item);
-	*data->var = !*data->var;
+ui_checkbox_callback(uiItem* item){DPZoneScoped;
+	auto cb = ui_get_checkbox(item);
+	*cb->var = !*cb->var;
 	item->dirty = 1;
-	*/
 }
 
 uiItem*
-ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
-	FixMe;
-	// auto [item, datav] = init_item(sizeof(uiCheckbox), offsetof(uiCheckbox, item), file, line);
-	// uiCheckbox* data = (uiCheckbox*)datav;
-	// ui_setup_item(item, style, file, line);
-	
-	// if(g_ui->updating){
-	// 	item_error(item, 
-	// 	"\n\tAttempted to make an item during ui_update().\n",
-	// 	  "\tui_update() requires that all items are made outside of it.\n",
-	// 	  "\tDid you try to make an item in another item's action?");
-	// 	Assert(0);	
-	// }
-	
-	// ui_setup_item(action, action_trigger, hash, generate, evaluate);
-	
-	// item->action = &ui_checkbox_callback;
-	// item->__hash = &checkbox_style_hash;
-	// item->__generate = *ui_gen_checkbox;
-	// item->action_trigger = action_act_mouse_pressed;
-	
-	// data->style.colors.filling = color(100,150,200);
-	// data->style.fill_type = checkbox_fill_box;
-	// data->style.fill_padding = vec2{2,2};
-	// data->var = var;
-	
-	// vec2i counts = //reserve enough room for background, box filling, and outline
-	// 	render_make_filledrect_counts()*2+
-	// 	render_make_rect_counts();
-	
-	// item->drawcmds = make_drawcmd(1);
-	// item->drawcmd_count = 1;
-	// drawcmd_alloc(item->drawcmds, counts);
-	
-	return 0;
+ui_copy_checkbox(uiItem* old_item) {DPZoneScoped;
+	auto old_checkbox = ui_get_checkbox(old_item);
+	auto new_item = (uiItem*)memalloc(sizeof(uiCheckbox));
+	auto new_checkbox = ui_get_checkbox(new_item);
+	ui_item_copy_base(new_item, old_item);
+
+	new_checkbox->style = old_checkbox->style;
+	new_checkbox->var = old_checkbox->var;
+	return new_item;
 }
 
+uiItem*
+deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiCheckbox);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_checkbox;
+	setup.hash = checkbox_style_hash;
+	setup.copy = ui_copy_checkbox;
+	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 1;
+
+	auto item = ui_setup_item(setup);
+	item->action = ui_checkbox_callback;
+	item->action_trigger = action_act_mouse_pressed;
+
+	auto cb = ui_get_checkbox(item);
+	cb->style.colors.filling = color(100, 150, 200);
+	cb->style.fill_type = checkbox_fill_box;
+	cb->style.fill_padding = {2,2};
+	cb->var = var;
+	
+	return item;
+}
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @tabs_implementation
+
+struct TabbedInfo {
+	u32 n_tabs;
+	f32 width;
+	f32 tab_width;
+	b32 need_scroll;
+	f32 tab_height;
+	u32 n_can_fit;
+	u32 start;
+	f32 loffset;
+};
+
+TabbedInfo
+ui_tabbed_get_info(uiTabbed* tabbed) {
+	TabbedInfo out;
+	out.n_tabs = tabbed->item.node.child_count;
+	out.width = tabbed->item.width;
+	out.tab_width = out.width / out.n_tabs;
+	out.need_scroll = out.tab_width < tabbed->style.min_tab_width;
+	out.tab_width = Max(out.tab_width, tabbed->style.min_tab_width);
+	out.tab_height = tabbed->style.tab_size;
+	out.n_can_fit = ceil(out.width / out.tab_width) + 1;
+	out.start = floor(tabbed->scroll / out.tab_width);
+	out.loffset = out.start * out.tab_width - tabbed->scroll;
+	return out;
+}
+
+u32
+ui_get_hovered_tab(uiTabbed* tabbed) {
+	uiItem* item = &tabbed->item;
+	if(!ui_item_hovered(item, hovered_area)) return -1;
+	TabbedInfo ti = ui_tabbed_get_info(tabbed);
+	vec2 local_mouse = input_mouse_position() - item->pos_screen;
+	if(local_mouse.y > ti.tab_height) return -1;
+	f32 first_split = ti.tab_width + ti.loffset;
+	forI(ti.n_can_fit) {
+		if(local_mouse.x < first_split + i * ti.tab_width) return ti.start + i;
+	}
+	return -1;
+}
+void
+ui_gen_tabbed(uiItem* item) {
+	auto t  = ui_get_tabbed(item);
+	auto tabs_dc = item->drawcmds;
+	auto tabs_ptrs = ui_drawcmd_get_ptrs(tabs_dc);
+	auto text_dc = item->drawcmds + 1;
+	auto text_ptrs = ui_drawcmd_get_ptrs(text_dc);
+	vec2i text_counts = {0};
+	vec2i tabs_counts = {0};
+	
+	TabbedInfo ti = ui_tabbed_get_info(t);
+	
+	u32 max_chars = ti.tab_width / item->style.font->max_width;
+	
+	// figure out how much room we need for text
+	// TODO(sushi) do this better sometime
+	uiTab* scan = (uiTab*)item->node.first_child;
+	uiTab* start = 0;
+	vec2i text_counts_needed = {0};
+	forI(ti.n_tabs) { 
+		text_counts_needed += render_make_text_counts(Min(max_chars, str8_length(scan->name)));
+		if(i == ti.start) start = scan;
+		scan = (uiTab*)scan->item.node.next;
+	}
+	text_ptrs = ui_drawcmd_realloc(text_dc, text_counts_needed);
+	text_dc->texture = item->style.font->tex;
+
+	vec2i tab_counts_needed = ti.n_can_fit * render_make_filledrect_counts();
+	tabs_ptrs = ui_drawcmd_realloc(tabs_dc, tab_counts_needed);
+	tabs_dc->texture = 0;
+
+	uiTab* iter = start;
+	forI(ti.n_can_fit) {
+		color bg;
+		if(i + ti.start == t->selected) {
+			bg = t->style.colors.active.background;
+		} else if(i + ti.start == ui_get_hovered_tab(t)) {
+			bg = t->style.colors.hovered.background;
+		}else {
+			bg = t->style.colors.inactive.background;
+		}
+		vec2 pos = item->pos_screen;
+		pos.x += i * ti.tab_width + ti.loffset;
+		vec2 size = {ti.tab_width, ti.tab_height};
+		tabs_counts += render_make_filledrect(tabs_ptrs.vertexes, tabs_ptrs.indexes, tabs_counts, pos, size, bg);
+		str8 displayed_text = str8{iter->name.str, Min(max_chars, iter->name.count)};
+		vec2 text_size = font_visual_size(item->style.font, displayed_text) * item->style.font_height / item->style.font->max_height;
+		vec2 diff = size - text_size;
+		vec2 text_pos = ceil(t->style.tab_text_alignment * diff + pos);
+		text_counts += render_make_text(text_ptrs.vertexes, text_ptrs.indexes, text_counts, str8{iter->name.str, Min(max_chars, iter->name.count)}, item->style.font, text_pos, Color_White, vec2_ONE());
+		iter = (uiTab*)iter->item.node.next;
+		if(!iter) break;
+	}
+
+	tabs_dc->counts_used = tabs_counts;
+	text_dc->counts_used = text_counts;
+}
+
+void
+ui_update_tabbed(uiItem* item) {
+	if(input_lmouse_pressed()) {
+		uiTabbed* t = ui_get_tabbed(item);
+		u32 s = ui_get_hovered_tab(t);
+		if(s!=-1) {
+			TabbedInfo ti = ui_tabbed_get_info(t);
+			ui_get_tabbed(item)->selected = s;
+			u32 i = 0;
+			for_node(item->node.first_child) {
+				uiItem* child = (uiItem*)it;
+				if(i == t->selected) {
+					RemoveFlag(child->style.display, display_hidden);
+					child->style.sizing = size_normal;
+					child->style.width = item->width;
+					child->style.height = item->height - ti.tab_height;
+					child->style.positioning = pos_relative;
+					child->style.pos = Vec2(0, ti.tab_height);
+					child->dirty = true;
+				} else AddFlag(child->style.display, display_hidden);
+				i += 1;
+			}
+		}
+	}
+	item->dirty = true; // regen so the hovered tab is colored
+}
+
+uiItem*
+deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line) {
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiTabbed);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_tabbed;
+	setup.update = ui_update_tabbed;
+	setup.update_trigger = action_act_mouse_hover;
+	setup.drawcmd_count = 2;
+	vec2i counts[2] = {render_make_filledrect_counts(), render_make_filledrect_counts()};
+	setup.drawinfo_reserve = counts;
+	
+	uiItem* item = ui_setup_item(setup);
+	return item;
+}
+
+uiItem*
+deshi__ui_begin_tabbed(uiStyle* style, str8 file, upt line) {
+	auto i = deshi__ui_make_tabbed(style, file, line);
+	ui_push_item(i);
+	return i;
+}
+
+void
+deshi__ui_end_tabbed(str8 file, upt line) {
+	deshi__ui_end_item(file, line);
+}
+
+void
+ui_gen_tab(uiItem* item) {
+	auto ptrs = ui_drawcmd_get_ptrs(item->drawcmds);
+	item->drawcmds->counts_used = {0};
+	item->drawcmds->counts_used += ui_gen_background(item, ptrs.vertexes, ptrs.indexes, item->drawcmds->counts_used);
+	item->drawcmds->counts_used += ui_gen_border(item, ptrs.vertexes, ptrs.indexes, item->drawcmds->counts_used);
+}
+
+uiItem* 
+deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line) {
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiTab);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_tab;
+	setup.drawcmd_count = 1;
+	vec2i counts[1] = {render_make_filledrect_counts() + render_make_rect_counts()};
+	setup.drawinfo_reserve = counts;
+
+	uiItem* item = ui_setup_item(setup);
+	uiTab* tab = ui_get_tab(item);
+	tab->name = title;
+	item->dirty = true;
+	return item;
+}
+
+uiItem* 
+deshi__ui_begin_tab(str8 title, uiStyle* style, str8 file, upt line) {
+	auto i = deshi__ui_make_tab(title, style, file, line);
+	ui_push_item(i);
+	return i;
+}
+
+void 
+deshi__ui_end_tab(str8 file, upt line) {
+	deshi__ui_end_item(file, line);
+}
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)

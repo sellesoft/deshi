@@ -1,6 +1,6 @@
 [deshi](https://github.com/sellesoft/deshi)
 ===
-A 3D graphics and realtime utilities library, originally [P3DPGE](https://github.com/SushiSalad/P3DPGE).
+A 3D graphics and realtime utilities library, originally [P3DPGE](https://github.com/e-sushi/P3DPGE).
 
 ### [Features](https://github.com/sellesoft/deshi/wiki)
 * Vulkan/OpenGL3 rendering
@@ -8,23 +8,26 @@ A 3D graphics and realtime utilities library, originally [P3DPGE](https://github
 * UI and math libraries
 * BDF/TTF font loading and rendering
 * Importing and processing OBJ models
-* Win32 platform layer (File I/O, Input, Threading, Windowing)
+* Win32/Linux (X11) platform layers (File I/O, Input, Threading, Windowing)
 
 ### Major TODOs
+* Tests
+* UI widgets
+* Convert interface to C
+* Voxel rendering
 * Lighting and shadows
 * Sound module
 * Materials rewrite
 * DirectX12 rendering
-* Multithreaded rendering and asset loading
-* Linux and OSX platform layers
+* Threaded rendering and asset loading
+* OSX platform layer
 
 ### Build Dependencies
-* [GLFW 3.3.2](https://github.com/glfw/glfw/releases/tag/3.3.2) on Linux/Mac platforms
-* [VulkanSDK 1.2.162.1](https://vulkan.lunarg.com/sdk/home) or OpenGL 3 or higher
+* [GLFW 3.3.2](https://github.com/glfw/glfw/releases/tag/3.3.2) on Mac platform
+* [VulkanSDK 1.2.162.1](https://vulkan.lunarg.com/sdk/home) or OpenGL 3+
 * [Vulkan Debug Shader Libs 1.2.162.1](https://vulkan.lunarg.com/sdk/home) if building debug with Vulkan
 
 ### [Externals](https://github.com/sellesoft/deshi/tree/main/src/external)
-* [Dear ImGui](https://github.com/ocornut/imgui)
 * [dr_libs](https://github.com/mackron/dr_libs)
 * [stb](https://github.com/nothings/stb)
 * [glad](https://github.com/Dav1dde/glad)

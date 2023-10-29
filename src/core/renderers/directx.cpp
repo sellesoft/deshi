@@ -470,7 +470,7 @@ DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
 }
 
 void Render::
-DrawPoly(array<vec3>& points, color color){
+DrawPoly(arrayT<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
@@ -478,7 +478,7 @@ DrawPoly(array<vec3>& points, color color){
 }
 
 void Render::
-DrawPolyFilled(array<vec3>& points, color color){
+DrawPolyFilled(arrayT<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);

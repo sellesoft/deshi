@@ -35,7 +35,7 @@ Index:
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifndef DESHI_RENDER_H
 #define DESHI_RENDER_H
-#include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "math/math.h"
@@ -170,6 +170,7 @@ typedef struct RenderTwodCmd{
 	u64      indexCount;
 	vec2     scissorOffset;
 	vec2     scissorExtent;
+	str8     debug_info;
 }RenderTwodCmd;
 
 typedef struct RenderMesh{
@@ -186,6 +187,200 @@ typedef struct RenderTwodBuffer{
 	void* vertex_handle;
 	void* index_handle;
 }RenderTwodBuffer;
+
+enum RenderShaderKind {
+	RenderShaderKind_Vertex,
+	// TODO(sushi) if it ever seems necessary
+	// RenderShaderKind_Tesselation,
+	RenderShaderKind_Geometry,
+	RenderShaderKind_Fragment,
+	RenderShaderKind_Compute,
+};
+
+// a shader to be compiled and used as a stage in a RenderPipeline
+typedef struct RenderShader {
+	RenderShaderKind kind;
+	str8 name;
+	str8 source;
+} RenderShader;
+
+enum RenderPipelineCulling {
+	RenderPipelineCulling_None,
+	RenderPipelineCulling_Front,
+	RenderPipelineCulling_Back,
+	RenderPipelineCulling_Front_Back,
+};
+
+enum RenderPipelineFrontFace {
+	RenderPipelineFrontFace_CCW,
+	RenderPipelineFrontFace_CW,
+};
+
+enum RenderPipelinePolygonMode {
+	RenderPipelinePolygonMode_Point,
+	RenderPipelinePolygonMode_Line,
+	RenderPipelinePolygonMode_Fill,
+};
+
+enum RenderCompareOp {
+	RenderCompareOp_Never,
+	RenderCompareOp_Less,
+	RenderCompareOp_Equal,
+	RenderCompareOp_Less_Or_Equal,
+	RenderCompareOp_Greater,
+	RenderCompareOp_Not_Equal,
+	RenderCompareOp_Greater_Or_Equal,
+	RenderCompareOp_Always,
+};
+
+enum RenderBlendOp {
+	RenderBlendOp_Add,
+	RenderBlendOp_Sub,
+	RenderBlendOp_Reverse_Sub,
+	RenderBlendOp_Min,
+	RenderBlendOp_Max,
+};
+
+// TODO(sushi) write some explanation for what this is doing
+//             and some examples
+enum RenderBlendFactor {
+	RenderBlendFactor_Zero,
+	RenderBlendFactor_One,
+	RenderBlendFactor_Source_Color,
+	RenderBlendFactor_One_Minus_Source_Color,
+	RenderBlendFactor_Destination_Color,
+	RenderBlendFactor_One_Minus_Destination_Color,
+	RenderBlendFactor_Source_Alpha,
+	RenderBlendFactor_One_Minus_Source_Alpha,
+	RenderBlendFactor_Destination_Alpha,
+	RenderBlendFactor_One_Minus_Destination_Alpha,
+	RenderBlendFactor_Constant_Color,
+	RenderBlendFactor_One_Minus_Constant_Color,
+	RenderBlendFactor_Constant_Alpha,
+	RenderBlendFactor_One_Minus_Constant_Alpha,
+	// TODO(sushi) implement the other blend factors described at 
+	// https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#framebuffer-blendfactors
+	// if they seem useful
+};
+
+enum RenderSampleCount {
+	RenderSampleCount_1,
+	RenderSampleCount_2,
+	RenderSampleCount_4,
+	RenderSampleCount_8,
+	RenderSampleCount_16,
+	RenderSampleCount_32,
+	RenderSampleCount_64,
+};
+
+typedef struct RenderPipeline {
+	str8 name;
+	// kigu array of shaders 
+	RenderShader* shader_stages;
+
+	//// rasterization settings ////
+
+	// How the front facing direction of a triangle is determined
+	RenderPipelineFrontFace front_face;
+	// How faces should be culled before fragments are produced
+	// NOTE(sushi) set when creating pipelines in vulkan
+	//             for opengl:
+	//             		glCullFace(...)
+	//             		glEnable/Disable(GL_CULL_FACE)
+	RenderPipelineCulling culling;
+	// how polygons are drawn, as points, lines, or filled faces
+	RenderPipelinePolygonMode polygon_mode;
+	// whether or not to perform depth testing
+	b32 depth_test;
+	// how depth values are compared
+	RenderCompareOp depth_compare_op;
+	// whether or not to apply a bias to depth testing 
+	// for opengl: https://stackoverflow.com/questions/45314290/depth-offset-in-opengl
+	b32 depth_bias;
+	f32 depth_bias_constant;
+	f32 depth_bias_clamp;
+	f32 depth_bias_slope;
+	// the width of lines drawn when using line polygon mode (maybe)
+	f32 line_width;
+
+	//// MSAA ////
+	RenderSampleCount msaa_samples;
+	b32 sample_shading;
+	// TODO(sushi) more settings if seems useful
+
+	//// color blending ////
+
+	// perform color blending?
+	b32 color_blend;
+	// how colors are blended
+	RenderBlendOp color_blend_op;
+	RenderBlendFactor color_src_blend_factor;
+	RenderBlendFactor color_dst_blend_factor;
+	RenderBlendOp alpha_blend_op;
+	RenderBlendFactor alpha_src_blend_factor;
+	RenderBlendFactor alpha_dst_blend_factor;
+	// a constant color to blend with 
+	color blend_constant;
+	// TODO(sushi) logical ops for color blending if it ever seems useful
+} RenderPipeline;
+
+// compute pipelines seem to be distinct from graphics pipelines 
+// so we'll use a separate type for them
+typedef struct RenderComputePipeline {
+
+} RenderComputePipeline;
+
+// possibly elements of RenderPasses?
+typedef struct RenderAttachment {
+
+} RenderAttachment;
+
+enum RenderPassKind {
+	RenderPassKind_
+};
+
+// a collection of buffers and commands using those buffers
+typedef struct RenderPass {
+
+} RenderPass;
+
+// representation of a framebuffer
+typedef struct RenderFrame {
+
+} RenderFrame;
+
+// interface for swapchains, which to us will likely just be a collection of framebuffers 
+// there's no such thing as a swapchain in opengl, but you can define multiple 
+// framebuffers, so in that backend this will just serve as a collection of those
+// buffers
+typedef struct RenderSwapchain {
+	s32 width;
+	s32 height;
+} RenderSwapchain;
+
+enum{
+	RenderBookKeeper_Vertex,
+	RenderBookKeeper_Index,
+	RenderBookKeeper_Cmd,
+};
+
+// keeps track of vertex, index, and cmd changes
+typedef struct RenderBookKeeper{
+	Type type;
+	str8 file;
+	u32  line;
+	union {
+		struct{
+			Vertex2* start;
+			u32 count;
+		}vertex;
+		struct{
+			u32* start;
+			u32 count;
+		}index;
+		RenderTwodCmd* cmd;
+	};
+}RenderBookKeeper;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_status
@@ -269,10 +464,12 @@ typedef Flags RenderBufferUsageFlags; enum{
 //
 // Notes:
 // Choosing a RenderMemoryPropertyFlags can also depend on what GPU is being used, as the different
-// brands organize their device memory in different ways.
+//   brands organize their device memory in different ways.
 // Allocating too many resources with RenderMemoryPropertyFlag_DeviceLocal can result in VRAM
-// oversubscription (running out of memory).
-// 
+//   oversubscription (running out of memory).
+// RenderMemoryPropertyFlag_LazilyAllocated and RenderMemoryPropertyFlag_HostCached are ignored on OpenGL as there
+//   is no way to specify such behaviour in that backend (to my knowledge).
+//
 // References:
 // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkMemoryPropertyFlagBits.html
 // https://asawicki.info/news_1740_vulkan_memory_types_on_pc_and_how_to_use_them
@@ -292,13 +489,13 @@ typedef Flags RenderMemoryPropertyFlags; enum{
 
 typedef Type RenderMemoryMappingType; enum{
 	RenderMemoryMapping_None,          //the memory is never mapped after initial upload (not compatible with RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
-	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time
-	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion
+	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
+	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
 };
 
 typedef struct RenderBuffer{
-	void* buffer_handle; //VkBuffer in vulkan, ... in OpenGL, ... in DirectX
-	void* memory_handle; //VkDeviceMemory in vulkan, ... in OpenGL, ... in DirectX
+	void* buffer_handle; //VkBuffer in vulkan, GLuint in OpenGL, ... in DirectX
+	void* memory_handle; //VkDeviceMemory in vulkan, unused in OpenGL, ... in DirectX
 	
 	u64 size;
 	
@@ -422,8 +619,8 @@ void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, c
 #if COMPILER_FEATURE_CPP
 EndLinkageC();
 FORCE_INLINE void render_model(Model* model, vec3 position, vec3 rotation, vec3 scale){ mat4 transform = mat4::TransformationMatrix(position,rotation,scale); render_model(model,&transform); }
-FORCE_INLINE void render_poly3(const array<vec3>& points, color c = Color_White){ render_poly3(points.data, points.count, c); }
-FORCE_INLINE void render_poly_filled3(const array<vec3>& points, color c = Color_White){ render_poly_filled3(points.data, points.count, c); }
+FORCE_INLINE void render_poly3(const arrayT<vec3>& points, color c = Color_White){ render_poly3(points.data, points.count, c); }
+FORCE_INLINE void render_poly_filled3(const arrayT<vec3>& points, color c = Color_White){ render_poly_filled3(points.data, points.count, c); }
 FORCE_INLINE void render_box(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ mat4 transform = mat4::TransformationMatrix(position, rotation, scale); render_box(&transform,c); }
 FORCE_INLINE void render_box_filled(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ mat4 transform = mat4::TransformationMatrix(position, rotation, scale); render_box_filled(&transform,c); }
 FORCE_INLINE void render_sphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White){ render_sphere(position,rotation,radius,subdivisions,c,c,c); }
@@ -443,7 +640,8 @@ void render_debug_line3(vec3 p0, vec3 p1,  color c);
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
 //Starts a new `RenderTwodCmd` on `layer` with the specified values
-void render_start_cmd2(u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+void deshi__render_start_cmd2(str8 file, u32 line, u32 layer, Texture* texture, vec2 scissorOffset, vec2 scissorExtent);
+#define render_start_cmd2(layer, texture, scissorOffset, scissorExtent) deshi__render_start_cmd2(str8l(__FILE__), __LINE__, (layer), (texture), (scissorOffset), (scissorExtent))
 
 //Starts a new RenderTwodCmd with the specified values using externally allocated buffers
 //NOTE: these buffers must have been mapped using render_update_external_2d_buffer()
@@ -457,7 +655,8 @@ void render_update_external_2d_buffer(RenderTwodBuffer* buffer, Vertex2* vb, Ren
 
 //Adds `vertices` and `indices` to the active `RenderTwodCmd` on `layer`
 //  `indices` values should be local to the addition (start at 0) since they are added to the offset internally
-void render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
+void deshi__render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount);
+#define render_add_vertices2(layer, vertices, vcount, indices, icount) deshi__render_add_vertices2(str8l(__FILE__), __LINE__, layer, vertices, vcount, indices, icount)
 
 //Returns the top-most layer for 2D rendering
 u32  render_top_layer_index();
@@ -500,12 +699,12 @@ void render_poly_filled2(vec2* points, u64 count, color c);
 
 #if COMPILER_FEATURE_CPP
 EndLinkageC();
-FORCE_INLINE void render_lines2(array<vec2>& points, f32 thickness = 1, color c = Color_White){ render_lines2(points.data,points.count,thickness,c); }
+FORCE_INLINE void render_lines2(arrayT<vec2>& points, f32 thickness = 1, color c = Color_White){ render_lines2(points.data,points.count,thickness,c); }
 FORCE_INLINE void render_quad2(vec2 position, vec2 dimensions, color c = Color_White){ render_quad2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c); }
 FORCE_INLINE void render_quad_thick2(vec2 position, vec2 dimensions, f32 thickness = 1, color c = Color_White){ render_quad_thick2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,thickness,c); }
 FORCE_INLINE void render_quad_filled2(vec2 position, vec2 dimensions, color c = Color_White){ render_quad_filled2(position,position+dimensions.xComp(),position+dimensions.yComp(),position+dimensions,c); }
-FORCE_INLINE void render_poly2(array<vec2>& points, color c = Color_White){ render_poly2(points.data,points.count,c); }
-FORCE_INLINE void render_poly_filled2(array<vec2>& points, color c = Color_White){render_poly_filled2(points.data,points.count,c); }
+FORCE_INLINE void render_poly2(arrayT<vec2>& points, color c = Color_White){ render_poly2(points.data,points.count,c); }
+FORCE_INLINE void render_poly_filled2(arrayT<vec2>& points, color c = Color_White){render_poly_filled2(points.data,points.count,c); }
 StartLinkageC();
 #endif //COMPILER_FEATURE_CPP
 
@@ -660,8 +859,6 @@ EndLinkageC();
 #define DESHI_RENDER_IMPL
 #include "assets.h"
 #include "config.h"
-#include "ui.h"
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_status
@@ -1028,6 +1225,8 @@ local Vertex2         renderTwodVertexArray[MAX_TWOD_VERTICES];
 local RenderTwodIndex renderTwodIndexArray [MAX_TWOD_INDICES];
 local RenderTwodIndex renderTwodCmdCounts[MAX_SURFACES][TWOD_LAYERS+1]; //these always start with 1
 local RenderTwodCmd   renderTwodCmdArrays[MAX_SURFACES][TWOD_LAYERS+1][MAX_TWOD_CMDS]; //different UI cmd per texture
+local RenderBookKeeper renderBookKeeperArray[MAX_TWOD_CMDS]; // keeps track of different kinds of allocations
+local u32 renderBookKeeperCount = 0;
 local u32 renderActiveLayer = 5;
 
 //external buffers
@@ -1036,12 +1235,14 @@ local RenderTwodIndex renderExternalCmdCounts[MAX_EXTERNAL_BUFFERS];
 local RenderTwodCmd   renderExternalCmdArrays[MAX_EXTERNAL_BUFFERS][MAX_TWOD_CMDS]; 
 
 void
-render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) {DPZoneScoped;
+deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) {DPZoneScoped;
 	Assert(vCount + renderTwodVertexCount < MAX_TWOD_VERTICES);
 	Assert(iCount + renderTwodIndexCount  < MAX_TWOD_INDICES);
 	
 	Vertex2* vp         = renderTwodVertexArray + renderTwodVertexCount;
 	RenderTwodIndex* ip = renderTwodIndexArray  + renderTwodIndexCount;
+	
+	
 	
 	CopyMemory(vp, vertices, vCount*sizeof(Vertex2));
 	forI(iCount){
@@ -1049,9 +1250,28 @@ render_add_vertices2(u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32
 		ip[i] = renderTwodVertexCount + indices[i];
 	} 
 	
+#ifdef BUILD_INTERNAL
+	RenderBookKeeper keeper;
+	keeper.type = RenderBookKeeper_Vertex;
+	keeper.vertex.start = vp;
+	keeper.vertex.count = vCount;
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+	
+	keeper.type = RenderBookKeeper_Index;
+	keeper.index.start = ip;
+	keeper.index.count = iCount;
+	keeper.file = file;
+	keeper.line = line;
+	renderBookKeeperArray[renderBookKeeperCount++] = keeper;
+#endif
+	
 	renderTwodVertexCount += vCount;
 	renderTwodIndexCount  += iCount;
 	renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1].indexCount += iCount;
+	
+	
 }
 
 u32
@@ -1398,7 +1618,7 @@ render_texture2(Texture* texture, vec2 tl, vec2 tr, vec2 bl, vec2 br, f32 transp
 	
 	renderTwodVertexCount += 4;
 	renderTwodIndexCount  += 6;
-
+	
 	RenderTwodCmd* cmd =  &renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]];
 	cmd->indexCount += 6;
 	cmd->handle = (void*)((u64)texture->render_idx);
@@ -1666,7 +1886,7 @@ vec2i
 render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
-	
+
 	vec2i sum={0};
 	switch (font->type){
 		//// BDF (and NULL) font rendering ////
@@ -1693,7 +1913,6 @@ render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, F
 				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col; //top right
 				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col; //bot right
 				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col; //bot left
-				
 				pos.x += font->max_width * scale.x;
 				i += 1;
 				sum+=render_make_text_counts(1);
@@ -1860,6 +2079,9 @@ render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel*
 
 RenderVoxelChunk*
 render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
+	Assert(dimensions != 0, "Dimensions can not be zero!");
+	Assert(voxels != 0 && voxels_count != 0, "Don't call this with an invalid voxels array!");
+	
 	//alloc and init chunk
 	RenderVoxelChunk* chunk = memory_pool_push(render_voxel_chunk_pool);
 	chunk->position    = position;
@@ -1880,12 +2102,9 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	upt voxels_array_size = dimensions_cubed * sizeof(RenderVoxel*);
 	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
 	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
-	chunk->arena = memory_create_arena(array_header_size + voxels_array_size + max_vertices_size + max_indices_size);
+	chunk->arena = memory_create_arena(voxels_array_size + max_vertices_size + max_indices_size);
 	
 	//init voxels array
-	stbds_array_header* voxels_array_header = memory_arena_pushT(chunk->arena,stbds_array_header);
-	voxels_array_header->length   = dimensions_cubed;
-	voxels_array_header->capacity = dimensions_cubed;
 	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
 	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
 	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
@@ -1896,20 +2115,21 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	//TODO(delle) combine faces across the chunk where possible
 	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(chunk->arena,max_vertices_size);
 	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(chunk->arena,max_indices_size);
+	u32 dimensions_minus_one = dimensions-1;
 	forI(dimensions_cubed){
 		if(chunk->voxels[i] == 0) continue; //skip empty voxels
 		
-		if((chunk->voxels[i]->x >= dimensions) || (chunk->voxels[i + dimensions_stride_x] == 0))
+		if((chunk->voxels[i]->x == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_x] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->x == 0)          || (chunk->voxels[i - dimensions_stride_x] == 0))
+		if((chunk->voxels[i]->x == 0)                    || (chunk->voxels[i - dimensions_stride_x] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y >= dimensions) || (chunk->voxels[i + dimensions_stride_y] == 0))
+		if((chunk->voxels[i]->y == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_y] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y == 0)          || (chunk->voxels[i - dimensions_stride_y] == 0))
+		if((chunk->voxels[i]->y == 0)                    || (chunk->voxels[i - dimensions_stride_y] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z >= dimensions) || (chunk->voxels[i + dimensions_stride_z] == 0))
+		if((chunk->voxels[i]->z == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_z] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z == 0)          || (chunk->voxels[i - dimensions_stride_z] == 0))
+		if((chunk->voxels[i]->z == 0)                    || (chunk->voxels[i - dimensions_stride_z] == 0))
 			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
 	}
 	
@@ -1921,7 +2141,7 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	index_array = new_index_array;
 	
 	//fit the arena to its actually used size
-	chunk->arena->used = array_header_size + voxels_array_size + actual_vertices_size + actual_indices_size;
+	chunk->arena->used = voxels_array_size + actual_vertices_size + actual_indices_size;
 	memory_arena_fit(chunk->arena);
 	
 	//create the vertex/index GPU buffers and upload the vertex/index data to them
@@ -1960,16 +2180,17 @@ render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 //// @render_shared_other
 void
 render_display_stats(){
-    using namespace UI;
-    BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
-        RowSetupColumnAlignments({{0,0.5},{1,0.5}});
-        TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
-        TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
-        TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
-        TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
-        TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
-        TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
-    }EndRow();
+	FixMe;
+    // using namespace UI;
+    // BeginRow(str8_lit("renderstatsaligned"), 2, 0, UIRowFlags_AutoSize);{
+    //     RowSetupColumnAlignments({{0,0.5},{1,0.5}});
+    //     TextF(str8_lit("total triangles: %d"), renderStats.totalTriangles);
+    //     TextF(str8_lit("total vertices: %d"),  renderStats.totalVertices);
+    //     TextF(str8_lit("total indices: %d"),   renderStats.totalIndices);
+    //     TextF(str8_lit("drawn triangles: %d"), renderStats.drawnTriangles);
+    //     TextF(str8_lit("drawn indicies: %d"),  renderStats.drawnIndices);
+    //     TextF(str8_lit("render time: %g"),     renderStats.renderTimeMS);
+    // }EndRow();
 }
 
 

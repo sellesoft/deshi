@@ -42,13 +42,13 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 `File`
 ------
 [0  ,** ,21/09/16,Feature]  data folder specified on launch (in launch args)
-[!!!,***,21/10/20,System]   linux/mac file IO
 [!  ,*  ,21/12/28,Feature]  add file locking and determination
 [!  ,*  ,21/12/28,Feature]  add hard/symbolic link creation/deletion
 [!  ,*  ,21/12/28,Feature]  add file hard/symbolic link determination
 [!  ,*  ,21/12/28,Feature]  add drive statistics
 [0  ,*  ,22/04/28,Optimize] maybe wrap error checking in #if debug clauses?
 [!! ,** ,22/06/05,Bug]      config may keep a file locked even after loading it
+[0  ,***,23/06/17,System]   mac file IO
 
 `Fun`
 -----
@@ -82,6 +82,11 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,*  ,22/09/17,Tweak]   fix and test the memory_heap interface, memory_heap_add() isnt even valid
 [!!!,*  ,22/09/17,Docs]    write descriptions for generic allocation, temp allocation, memory chunk, memory heap, and memory arena
 [!  ,** ,22/09/17,Tweak]   use memory_heap interface internally for the arena and generic heaps
+[!!!,*  ,23/06/17,Tweak]   memory's debug stuff doesn't work before we initialize logger, so we cannot properly debug issues that occur before then. 
+                           need to change its logging to either use printf, or ideally choose which to use based on if Logger is initialzed
+[!! ,***,23/06/17,Bug]     memory_pool seems to be broken. memory_pool_init was pointing to its header incorrectly and would overwrite previous data
+                           so I fixed this, but then later usage of memory_pool_push caused something to break in the generic heap, so i am going to leave
+                           it for later as I don't feel like diving into fixing it.
 
 `Render`
 --------
@@ -126,7 +131,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 -------
 [!!!,***,21/04/05,System] remake the sound system
 
-`Storage`
+`Assets`
 ---------
 [!!!,*  ,21/07/10,Bug]     the program crashes if default asset files are not present
     maybe store the text in the actual source and create the file from the code (null128.png, gohufont-11.bdf)
@@ -138,7 +143,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,21/10/20,Feature] add OBJ MTL parsing
 [!!!,** ,21/12/31,Feature] data streaming (load in parts)
 [!!!,*  ,22/01/12,Feature] make an interface for updating textures that have already been created
-[!  ,*  ,22/09/04,Tweak]   rename to Assets
 [!!!,** ,22/09/08,Feature] use worker threads to load in the background
 
 `Time`
@@ -151,9 +155,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 `UI`
 ----
-[!!!,** ,22/08/09,System]  remove the old ui system 
-[!!!,***,22/08/09,PWide]   replace usage of the old ui with new ui or just disable it so it doesnt error
-[!!!,*  ,22/08/09,Tweak]   reimplement slider and checkbox
 [!!!,** ,22/08/09,Feature] add tabs widget
 [!! ,** ,22/08/09,Feature] add tables widget
 [!  ,*  ,22/08/09,Feature] add combo widget (requires z-layering)
@@ -161,13 +162,15 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!  ,*  ,22/08/09,Feature] add spinner widget
 [0  ,*  ,22/08/09,Feature] add radio widget
 [0  ,***,22/08/09,Feature] add color picker widget
-[!! ,*  ,22/08/09,Tweak]   remove widget stuff from ui.h (ui2.h as of right now) and put it in its own file 
-[!! ,*  ,22/08/12,Tweak]   either finish the hot loading setup for ui or remove it
 [!!!,** ,22/08/13,Tweak]   ui's memory needs trimmed a LOT. to display little text on screen it takes over 500 bytes due to it being represented by uiItem who uses uiStyle
 [!!!,** ,22/09/04,Bug]     there seems to be a bug with drawcmd removal when reallocating text drawinfo. 
     it triggers the assert that checks that the drawcmd being removed does not have the same offset as one that is already removed
     this check may just be invalid. this happens when clicking on text sometimes.
 [!!!,***,22/12/11,Feature] add z-layering (siblings could maybe be sorted so that higher z-level is last)
+                           NOTE(sushi) this can be implemented locally by just creating your own 
+                                       uiItems representing layers in the order you want them, and then appending 
+                                       to those layers when you want to add to them.
+                                       this requires manually pushing items though
 [!!!,** ,22/12/11,Feature] add side-specific border styling (left, right, top, bottom)
 [!! ,** ,22/12/11,Feature] add the ability to add child items after ending an item (dynamically added items)
 [!! ,** ,22/12/11,Feature] add texture support (non-widget like text might be?)
@@ -185,8 +188,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 `Ungrouped`
 -----------
 [!! ,** ,21/07/19,Feature] centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-[!!!,***,21/12/31,System]  remove GLFW and add linux/mac platform specifics
-[!  ,*  ,22/02/01,Tweak]   remove commit/decommit from Allocator
 [!  ,*  ,23/01/15,Feature] add regression testing for examples (and a github precommit to run it)
 
 */
@@ -195,6 +196,9 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 #define UNICODE
 #define _UNICODE
 
+
+
+#include <ctime>
 #include "kigu/common.h"
 #include "core/memory.h" //NOTE(delle) this is included above everything so things can reference deshi_allocator
 
@@ -213,35 +217,42 @@ enum
     DS_IMGUI    = 1 << 7,
     DS_ASSETS   = 1 << 8,
     DS_UI       = 1 << 9,
-    DS_UI2      = 1 << 10,
-    DS_CONSOLE  = 1 << 11,
-    DS_CMD      = 1 << 12,
+    DS_CONSOLE  = 1 << 10,
+    DS_CMD      = 1 << 11,
 };
 local DeshiStage deshiStage = DS_NONE;
 
 #define DeshiStageInitStart(stage, dependencies, ...)      \
   Assert((deshiStage & (dependencies)) == (dependencies)); \
-  deshiStage |= stage;                                     \
   Stopwatch stopwatch##stage = start_stopwatch()
 
-#define DeshiStageInitEnd(stage) \
-  LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
+#if DESHI_LOG_MODULE_INIT
+#  define DeshiStageInitEnd(stage) deshiStage |= stage; LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
+#else
+#  define DeshiStageInitEnd(stage) deshiStage |= stage;
+#endif
 
 #define DeshiModuleLoaded(stages) ((deshiStage & (stages)) == (stages))
 
+
 //// tracy ////
 #ifdef TRACY_ENABLE
+#undef global
+#undef defer
 #  include "TracyClient.cpp"
-#  include "Tracy.hpp"
+#  include "tracy/Tracy.hpp"
+#define global static
+#define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif
+
 
 //// kigu headers ////"
 #include "kigu/profiling.h"
+//#define KIGU_ARRAY_SHORTHANDS
 #include "kigu/array.h"
+#include "kigu/arrayT.h"
 #include "kigu/array_utils.h"
-#include "kigu/carray.h"
 #include "kigu/color.h"
-#include "kigu/debug.h"
 #include "kigu/hash.h"
 #include "kigu/map.h"
 #include "kigu/optional.h"
@@ -251,11 +262,14 @@ local DeshiStage deshiStage = DS_NONE;
 #include "kigu/unicode.h"
 #include "math/math.h"
 
+
 //// baked data ////
 #include "core/baked/shaders.h"
 #include "core/baked/textures.h"
 
-//// external for core ////
+
+//// external ////
+// TODO(sushi) remove stb ds once we have our own C map and such 
 #define STBDS_REALLOC(ctx,ptr,newsz) memory_realloc(ptr,newsz)
 #define STBDS_FREE(ctx,ptr) memory_zfree(ptr)
 #define STB_DS_IMPLEMENTATION
@@ -276,23 +290,19 @@ local DeshiStage deshiStage = DS_NONE;
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb/stb_truetype.h>
 
-//// core headers ////
+
+//// core implementations ////
 #define DESHI_IMPLEMENTATION
-#include "deshi.h"
 #include "core/assets.h"
 #include "core/camera.h"
 #include "core/commands.h"
-#include "core/config.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
 #endif // DESHI_DISABLE_CONSOLE
-#ifndef DESHI_DISABLE_IMGUI
-#  define IMGUI_DEFINE_MATH_OPERATORS
-#  include "core/imgui.h"
-#endif // DESHI_DISABLE_IMGUI
 #include "core/input.h"
-#include "core/file.h"
 #include "core/logger.h"
+#include "core/file.h"
+#include "core/config.h"
 #include "core/memory.h"
 #include "core/networking.h"
 #include "core/platform.h"
@@ -300,10 +310,10 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
-#include "core/ui2.h"
-#include "core/ui2_widgets.h"
-#include "core/ui2_graphing.h"
+#include "core/ui_widgets.h"
+#include "core/ui_graphing.h"
 #include "core/window.h"
+
 
 //// platform ////
 #if DESHI_WINDOWS
@@ -316,46 +326,89 @@ local DeshiStage deshiStage = DS_NONE;
 #  include <shellapi.h>
 #  include <timeapi.h>
 #  include "core/platforms/win32_deshi.cpp"
-#elif DESHI_LINUX // DESHI_WINDOWS
-#  include <GLFW/glfw3.h>
-#  include "core/platforms/linux_deshi.cpp"
-#elif DESHI_MAC // DESHI_LINUX
+#elif DESHI_LINUX //#if DESHI_WINDOWS
+#  include "unistd.h" // misc stuff, apparently. used for file stuff
+#  include "sys/mman.h" // for mapping virtual memory with mmap
+#  include "sys/stat.h"
+#  include "sys/types.h"
+#  include "wctype.h" // unicode string manip functions that we should probably replace
+#  include "fcntl.h" // creat
+#  include "dirent.h"
+#  include "dlfcn.h"
+#  include "pthread.h"
+#  include "semaphore.h"
+#  define Window X11Window
+#  define Font X11Font
+#  define Time X11Time
+#  define KeyCode X11KeyCode
+#  include "X11/Xlib.h" // TODO(sushi) Wayland implementation, maybe
+#  include "X11/Xatom.h"
+#  include "X11/Xresource.h"
+#  include "X11/cursorfont.h"
+#  include "X11/Xcursor/Xcursor.h"
+#  include "X11/Xutil.h"
+#  include "X11/Xos.h"
+#  include "X11/extensions/Xrandr.h"
+#  undef Window
+#  undef Font
+#  undef Time
+#  undef KeyCode
+#  undef None 
+#  include "core/platforms/linux_deshi.cpp" 
+#elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  include <GLFW/glfw3.h>
 #  include "core/platforms/osx_deshi.cpp"
-#else // DESHI_MAC
+#else //#elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  error "unknown platform"
-#endif // DESHI_WINDOWS
+#endif //#else //#elif DESHI_MAC //#elif DESHI_LINUX //#if DESHI_WINDOWS
 
-#ifndef DESHI_DISABLE_IMGUI
-#  define IMGUI_USE_STB_SPRINTF
-#  include <imgui/imgui.cpp>
-#  include <imgui/imgui_demo.cpp>
-#  include <imgui/imgui_draw.cpp>
-#  include <imgui/imgui_tables.cpp>
-#  include <imgui/imgui_widgets.cpp>
-#  if DESHI_WINDOWS
-#    define VK_USE_PLATFORM_WIN32_KHR
-#    include <imgui/imgui_impl_win32.cpp>
-#  else
-#    include <imgui/imgui_impl_glfw.cpp>
-#  endif
-#endif
 
 //// renderer cpp (and libs) ////
 #if DESHI_VULKAN
-#  include <vulkan/vulkan.h>
-#  include <shaderc/shaderc.h>
-#  include <imgui/imgui_impl_vulkan.cpp>
+#  if DESHI_WINDOWS
+#    define VK_USE_PLATFORM_WIN32_KHR
+#    include <vulkan/vulkan.h>
+#    include <shaderc/shaderc.h>
+#  elif DESHI_LINUX //#if DESHI_WINDOWS
+#    define VK_USE_PLATFORM_XLIB_KHR
+#    define Window  X11Window
+#    define Font    X11Font
+#    define Time    X11Time
+#    define KeyCode X11KeyCode
+#    include <vulkan/vulkan.h>
+#    include <shaderc/shaderc.h>
+#    undef Window
+#    undef Font
+#    undef Time
+#    undef KeyCode
+#  else
+#    error "unhandled platform/vulkan interaction"
+#  endif
 #  include "core/renderers/vulkan.cpp"
-#elif DESHI_OPENGL
-#  define GLAD_WGL_IMPLEMENTATION
-#  include <glad/wgl.h>
-#  define GLAD_GL_IMPLEMENTATION
-#  include <glad/gl.h>
-#  define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#  include <imgui/imgui_impl_opengl3.cpp>
+#elif DESHI_OPENGL //#if DESHI_VULKAN
+#  if DESHI_WINDOWS
+#    define GLAD_WGL_IMPLEMENTATION
+#    include "glad/wgl.h"
+#    define GLAD_GL_IMPLEMENTATION
+#    include <glad/gl.h>
+#  elif DESHI_LINUX //#if DESHI_WINDOWS
+#    define GLAD_GL_IMPLEMENTATION
+#    define GLAD_GLX_IMPLEMENTATION
+#    define Window X11Window
+#    define Font X11Font
+#    define Time X11Time
+#    define KeyCode X11KeyCode
+#       define GLAD_UNUSED(x) (void)(x)
+#       include <glad/glx.h>
+#    undef Window
+#    undef Font
+#    undef Time
+#    undef KeyCode
+#  else
+#    error "unhandled platform/opengl interaction"
+#  endif //#elif DESHI_LINUX //#if DESHI_WINDOWS
 #  include "core/renderers/opengl.cpp"
-#elif DESHI_DIRECTX12
+#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  include "d3dx12/d3dx12.h"
 #  include <d3d12.h>
 #  include <wrl/client.h> //ComPtr
@@ -364,17 +417,15 @@ local DeshiStage deshiStage = DS_NONE;
 // if we do, dont forget to link against d3dcompiler.lib and copy D3dcompiler_47.dll to the same file as our exe
 #  include <DirectXMath.h>
 #  include "core/renderers/directx.cpp"
-#else
+#else //#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "no renderer selected"
-#endif
+#endif //#else //#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 
 //// core cpp ////
 #include "core/memory.cpp"
-#include "core/logger.cpp"
 #include "core/console.cpp"
 #include "core/assets.cpp"
 #include "core/ui.cpp"
-#include "core/ui2.cpp"
 #include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
 
 //// global definitions ////
@@ -387,8 +438,8 @@ Input *g_input = &deshi_input;
 local Assets deshi_assets;
 Assets *g_assets = &deshi_assets;
 
-local ThreadManager deshi_thread_manager;
-ThreadManager *g_tmanager = &deshi_thread_manager;
+local ThreadManager deshi_threader;
+ThreadManager *g_threader = &deshi_threader;
 
 local uiContext deshi_ui{};
 uiContext *g_ui = &deshi_ui;

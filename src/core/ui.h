@@ -1,1051 +1,1135 @@
-#pragma once
-#ifndef DESHI_UI_H
-#define DESHI_UI_H
+/* deshi UI Module Index
+-----
+@ui_keybinds @ui_drawcmd @ui_style @ui_item @ui_generate @ui_immediate @ui_context
 
-/*
+Introduction
+------------
 
-  
-  UI functions are Immediate Mode, so they only last 1 frame
-  UI was initially designed almost entirely after ImGui in order to allow us to use it like you would ImGui
-  but without all the stuff from ImGui we don't really need in an engine
-  most of the code is written using ImGui as reference however some design is different and I may
-  come back here and write out what is and isnt
+    The ui system represents all ui elements using a single struct, uiItem. These items can be created and nested much like in HTML, and styled
+    much like in CSS. 
+
+Items, Technical
+----------------
+
+    The ui system deals exclusively with the uiItem struct. When an item is created using either ui_begin_item() or ui_make_item(), the system will
+    perform setup of the item using the ui_setup_item() function. Regardless of whether the user is making a normal item or a custom item, this 
+    function should be used to create it internally. It serves 4 main purposes: it ensures that an item is not made during ui_update(), it retrieves 
+    immediate mode items from the immediate mode cache, inherits text style properties when appropriate, and allocates an item's draw commands. 
+
+    This is all that is done when making a plain uiItem with ui. If ui_begin_item() is called, then the item is also added to the item stack for 
+    nesting and requires that ui_end_item() is called for every ui_begin_item() before ui_update(). After this, the item still needs to be
+    evaluated and generated. 
+
+    When ui_update() is called, the style for all items in ui are hashed and checked for changes. If an item's hash is different, ui evaluates and 
+    redraws the item, as well as any other item that would be affected by that item changing. An item's hash is 0 when it is first made and so a new
+    item will always be 'reevaluated'. When an item is found to be 'dirty', ui first looks for the closest static sized ancestor (an item whose sizing
+    style is not set to 'size_auto'), then reevaluates every single decendent of that item.
+
+    This goes through two steps, evaluation and generation. Evaluation is where ui will position and size the item based on its style, as well as all 
+    of the item's children, recursively. This stage is handled entirely in the function eval_item_branch(). This stage sets the uiItem's internal 
+    size and position information. Immediately after, we regenerate all the items that were changed. Generate is where ui renders each item, and this
+    is performed in draw_item_branch().
+
+Custom Items
+------------
+
+    The ui system allows you to set function pointers on uiItem to change its behavoir. The two main function pointers are '__evaluate()' and 
+    '__generate()'.
+
+    __generate():
+        This function is REQUIRED by ALL uiItems, as this is what tells ui how to render an item. This function is expected to use the drawcmds and 
+        allocated memory to create vertexes and indexes that ui will pass to the renderer.
+
+    __evaluate():
+        This optional function will be called during an item's evaluation, just after its sizing (with scale) has been determined and right before 
+        it begins to call evaluate on its children. The purpose of this function is to allow the user to adjust an item's size and bounds, affecting 
+		how other items position and size themselves relative to it. Generally, this is where you will tell ui how large the item is due to any custom 
+        rendering you may implement. Unless you know what you're doing, you should size the item so that it contains all custom rendering within
+        itself.
+
+    There are a couple other optional function pointers as well:
+
+    __update():
+        This function pointer behaves just like the 'action' function pointer. When update_trigger is set to a value other than 'action_act_never', 
+		ui will call the function when the trigger is satified. This function serves as a way for a custom item to define custom functionality without
+		using the action point, so that a user may use it instead.
+
+	__hash():
+		If you make a custom item that has variables you'd like to act as style properties, you can tell ui how to hash these properties using 
+		the __hash function pointer. 
 
 
-  some ui design guidelines im going to collect:
+TODOs
+-----
+possibly implement a system for suppressing certain errors on some behavoirs or just for suppressing all errors
 
-	ui should never add items to a window internally, only the user adds items, and interally
-	we add drawcalls to build the items that the user requests. 
-	basically, never use items to build other items.
+Implement a system for trimming down how much we have to do to check every item. Currently we have to walk the entire item tree to check every item,
+    but this can be linearized into an array that stores uiItem*'s in the order we would have walked it. This also reduces the potentially massive
+    amount of recursion that ui can go into.
 
-	it is VERY important that a UIItem_old function calls AdvanceCursor before ANY functionality involving
-	the user interacting with the item visually, as well as after setting the item's size.
-	for example in Button we have to make sure we call AdvanceCursor before querying if the user 
-	has clicked it or not. this is because Row moves items and if you attempt to query for any 
-	interaction before AdvanceCursor correctly positions the item, it will not be in the correct 
-	place when the user attempts to interact with it 
 
-	be careful of non-integer positions as they influence other positions as floats even though
-	they get converted to integer positions in the end.
+Item Style
+----------
 
-be careful of pushing vars before creating child windows for the window internals, as it will also affect the window itself
+    uiItems may be passed a uiStyle object or a css-style string to determine
+    the style an item takes on. Following is docs about each property. Each property
+    lists it's valid vaules in both programmatic and string form followed by an example.
 
-metrics window: (partially in order, since some later ones remove the need for previous ones)
-move window debug visual header with the other headers rather than with window vars
-combine window items and children then move them under windows header (so moving thru windows/items is seamless)
+    //TODO(sushi) eventually convert this to HTML or markdown for easier viewing
 
-//sushi: selected item is difficult since items disppear every frame
-selected item rather than selected window (with contextual vars rather than just window vars)
+------------------------------------------------------------------------------------------------------------
+*   positioning 
+    ---
+    Determines how a uiItem is positioned.
 
-simulate hovered/clicked/toggled on items
+-   Example: in code: uiStyle style; style.positioning = pos_fixed; in string: positioning: static;
 
+-   Values: 
+		pos_static  |  static 
+			Default value. 
+			The item will be placed normally and top, bottom, left, and right values dont affect it. The first
+        	item placed in this manner will be positioned at 0,0 plus its margin and borders, then items placed
+			after it are placed below it, as it would be in HTML or ImGui.
+
+        pos_relative  |  relative
+            The position values will position the item relative to where it would have 
+            normally been placed with pos_static. This removes the item from the normal flow, 
+            but items added after it will be placed as if the item was where it would have been. 
+
+        pos_absolute  |  absolute
+            The position values will position the item relative to where its parent will
+            be placed. If its parent's position is dynamically determined then it finds
+            the closest ancestor whose position is static and positions relative to it.
+            This removes the item from the normal flow.
+
+        pos_fixed  |  fixed
+            The item is positioned relative to the viewport and does not move.
+
+        pos_sticky  |  sticy
+            The item is positioned just as it would be in relative, but if the item
+            were to go out of view by the user scrolling the item will stick to the edge
+
+        pos_draggable_relative | draggable_relative
+            The item is positioned the same as relative, but its position may be changed
+            by dragging it with the mouse.
+
+        pos_draggable_absolute | draggable_relative
+            The item is positioned the same as absolute, but its position may be 
+            changed by dragging it with the mouse.
+
+        pos_draggable_fixed | draggable_fixed
+            The item is positioned the same as fixed, but its position may be changed by 
+            dragging it with the mouse
+
+------------------------------------------------------------------------------------------------------------
+*   sizing 
+    ---
+    Determines how an item is sized. This is a flagged value, meaning it can take on multiple of these properties. 
+
+    Percent only applies when the parent's sizing is not size_auto, otherwise the item will fallback to normal sizing.
+
+    Since structs default to 0, this means an item's size is also 0 both ways, so an item must always be either given an explicit size, or have it's
+    sizing set to size_auto to be able to see it and its children! 
+
+-   Values: size_normal (default) The item's width and height will be set to its style 'size' property.
+
+        size_auto_x
+            The item will automatically set its width to contain all of its children.
+
+        size_auto_y
+            The item will automatically set its height to contain all of its children.
+
+        size_auto
+            Combination of size_auto_x and size_auto_y
+
+        size_percent_x 
+            Sets the items width as a percentage of its parents width.
+
+        size_percent_y 
+            Sets the items height as a percentage of its parent's height.
+
+        size_percent   
+            Combination of size_percent_x and size_percent_y.
+
+        size_square
+            Keeps the item at a 1:1 aspect ratio. This requires that either height or width are set to auto, while
+            the other has a specified value. If both values are specified, then this value is ignored
+
+        size_flex
+            Indicates that the item is to be considered in a flex container. This overrides the item's width or height
+            (depending on if display is set to row or column) to be a ratio to other flex items in the container.
+
+------------------------------------------------------------------------------------------------------------
+*   size, width, height
+    ---
+    Determines the size of the item. Note that text is not affected by this property, and its size is always as it appears on the screen. If you want
+    to change text size use font_height.
+
+    This is the size of the area in which items can be placed minus padding. Note that if margins or borders are specified, this increases the total
+    area an item takes up visually.
+
+    If sizing is set to size_flex, then one of these values represents a flux ratio. If display is set to display_vertical, then height is the ratio
+    of this item's height to any other flex item in the container's height, and similarly for display_horizontal and width. See display for more
+    information.
+
+-   Example: uiStyle style; style.width = 30; // width of 30 pixels style.height = 20; // height of 20 pixels
+
+------------------------------------------------------------------------------------------------------------
+*   min_width, min_height, max_width, max_height
+    ---
+    Determins the minimum and maximum size of the item. The minimum and maximum are applied to the the final size of the item including: padding,
+    border, and margin.
+
+    Note, max_width overrides width, and min_width overrides max_width. Same with height.
+
+-   Defaults: max_width and max_height both default to 0, meaning they are not applied. min_width and min_height both default to 0.
+
+-   Example: in code: uiStyle style; style.size = Vec2(10, 6); style.margin = Vec4(1, 0, 1, 0); style.border_width = 1; style.max_width = 10; //final
+        content width will be 6 style.min_height = 10; //final content height will be 10 in string: size: 10px 6px; margin: 1px 0px 1px 0px;
+        border_width: 1px; max_width: 10px; //content width will be 6px, overall width will be 10px min_height: 10px; //content height will be 10px,
+        overall height will be 10px
+
+
+------------------------------------------------------------------------------------------------------------
+*   margin, margintl, marginbr, margin_top, margin_bottom, margin_left, margin_right
+    ---
+    Determines the spacing between a child's edges and its parents edges. 
+
+    margin is a vec4 that represents all sides, and so can be used to set all values on a single line 
+
+        margin = {margin_top, margin_left, margin_bottom, margin_right};
+
+    margintl is margin_top and margin_left, and marginbr is similar.
+
+     ┌----------------------------┑ |     |─────────────────────────── margin_top |    ┌------------------┑    | |━━━━|                  |    | |  | |
+     child item    |    |
+     |  | |                  |    |
+     |  | |                  |    |
+     |  | |                  |    |
+     |  | └------------------┙    |
+     |  |                         |
+     └--|-------------------------┙
+        |
+       margin_left
+
+
+------------------------------------------------------------------------------------------------------------
+*   padding, paddingtl, paddingbr, padding_top, padding_bottom, padding_left, padding_right
+    ---
+    Determines the spacing between an item's edges and its content's edges. 
+
+    padding is a vec4 that represents all sides, so it can be used to set all values on a single line
+
+        padding = {padding_top, padding_left, padding_bottom, padding_right};
+
+    paddingtl is padding_top and padding_left, and paddingbr is similar.
+
+
+     ┌----------------------------┑
+     |                            |
+     |    ┌------------------┑    | |    |    |─────────────────────────── padding_top |    |----text in item  |    |
+     |    | |                |    |
+     |    | |                |    |
+     |    | |                |    |
+     |    └-|----------------┙    |
+     |      |                     |
+     └------|---------------------┙
+            |
+            padding_left
+
+
+------------------------------------------------------------------------------------------------------------
+*   scale, x_scale, y_scale
+    ---
+    Scales an item's size, padding, border, margin, and children items. TODO(delle) scale item parts individually, currently scales everything at the
+    end (size{48,48},border{1,1,1,1} results in total size of {75,75} when it should be {74,74})
+
+-   Notes: y_scale affects text.  TODO(delle) support x_scale on text scale ignores minimum or maximum size.  TODO(delle) respect min and max size
+       when scaling scale on children items is scaled before application by its parent's scale. scale applies from the anchor, not from the center.
+       User is responsible for handling scale in custom __generate functions.
+
+-   Dev Notes: scale is applied during the generation step of UI. Sizes after scaling should be floored for pixel consistency.
+
+-   Defaults: x_scale and y_scale both default to 0, meaning don't scale
+
+-   Example: in code: uiStyle style; style.size = Vec2(20, 20); style.max_height = 25; //final total height will 32px style.border_style =
+        border_solid; style.border_color = Color_Black; style.border_width = 1; //final border width will be 1px style.scale = Vec2(1.5, 1.5); //final
+        total width will be 32px, content width will be 30px in string: size: 20px 20px; max_height: 25px; //final total height will 32px border:
+        solid 1px; //final border width will be 1px scale: 1.5 1.5; //final total width will be 32px
+
+
+------------------------------------------------------------------------------------------------------------
+*   scroll, scrollx, scrolly
+    ---
+    Scrolls the window when items overflow if overflow is set to allow it.
+
+-   Defaults: Both values default to 0
+
+-   Catches: Scrolling conflicts with setting content_align.
+
+TODO(sushi) examples
+
+------------------------------------------------------------------------------------------------------------
+*   content_align
+    ---
+    Determines how to align an item's contents over each axis. This only works on children who's positioning is static or relative. This respects
+    margins and padding, content will only be aligned within their valid space. Negative values are not valid. Values larger than 1 are not valid.
+    NotImplemented -- This does not apply when alignment is set to inline.
+
+-   Performance: In order to properly do this (as far as I can tell), we must reevaluate all children of an item after having already evaluated them
+        because the size of the group of items is not known until all of them have been evaluated. So this more or less doubles the evaluation time of
+        every item that uses it.
+
+-   Defaults: Defaults to 0
+
+TODO(sushi) example
+
+------------------------------------------------------------------------------------------------------------
+*   font
+    ---
+    Determines the font to use when rendering text. Being a text property, this property is inherited from the item's parent if another style is not
+    provided at creation.
+
+TODO(sushi) example
+
+------------------------------------------------------------------------------------------------------------
+*   font_height
+    ---
+    Determines the visible height in pixels of rendered text. Note that this does not have to be the same height the font was loaded at, though it may
+    not render as pretty if it isnt.
+
+TODO(sushi) example
+
+------------------------------------------------------------------------------------------------------------
+*   background_color
+    ---
+    Determines the background color of a uiItem. Custom items don't have to implement this and may not.
+
+------------------------------------------------------------------------------------------------------------
+*   border_style
+    ---
+    Determines the style of border a uiItem has
+
+    //TODO(sushi) border_style docs
+
+------------------------------------------------------------------------------------------------------------
+*   border_width
+    ---
+    Determines the width of a uiItem's border. This has no affect if border_style is not set.
+
+------------------------------------------------------------------------------------------------------------
+*   text_color
+    ---
+    Determines the color of text
+
+    //TODO(sushi) text_color docs
+
+------------------------------------------------------------------------------------------------------------
+*   overflow
+    ---
+    Determines how items that go out of their parent's bounds are displayed.
+
+-  Values: overflow_scroll (default) When items extend beyond the parents borders, the items are cut off and scroll bars are shown.
+
+        overflow_scroll_hidden | scroll_hidden
+            Same as overflow_scroll, but scrollbars are not shown
+
+        overflow_hidden | hidden
+            The overflowing items are cut off, but the user cannot scroll.
+            In this case you can still manually change the scroll value on the item it just 
+            prevents the user from scrolling the item. Good for scrolling things you
+            dont want the user to mess with.
+
+        overflow_visible | visible
+            The overflowing items are shown and there is no scrolling.
+
+------------------------------------------------------------------------------------------------------------
+*   focus
+    ---
+    Flag that determines if an item should focus over its siblings when clicked by the mouse.
+
+-   Catches: When using this on an item whose positioning is not fixed, it will affect the positioning of items in the same item as it.. This is
+        because focusing an item will make it the last child of the parent, so that it is rendered on top of its siblings.
+
+
+------------------------------------------------------------------------------------------------------------
+*   display
+    ---
+    Determines how to display an item's children. This is a flagged value, meaning it can take on several different values. For example using
+    'display_vertical | display_reverse' will display children in a column but in the reverse order that they were added.
+
+-   Values: display_vertical (default) Displays children from top to bottom. This is mutually exclusive with display_horizontal.
+
+        display_horizontal
+            Displays children from left to right. This is mutually exclusive with display_vertical.
+
+        display_flex 
+            Sets the item to act as a flex container. This makes the container able to manually set the size
+            of its children whose sizing property is set to size_flex.
+
+            When this flag is set the container will treat its children's width or height value (depending on 
+            if row or column is set) as a ratio of how large it should be relative to other items in the container.
+            For example, if you have 3 children and their ratios are set as 3, 1, 1, then the first child will be 
+            3 times as large as the other two and the last two will be the same size. 
+            You may also use floating point values as ratios.
+
+            Not all items in a flex container have to use size_flex. If an item is not sized in this way
+            flex will size its items around it. (TODO(sushi) flex demo) See the flex demo for examples.
+
+        display_reverse
+            Displays the containers items in reverse order, eg with display_horizontal it will display items from 
+            right to left. Not from the right side of the container to the left though, this just specifies to
+            draw items in the reverse order they were added. If you want to draw items from the right side consider using
+            anchors or content align.
+
+        display_hidden
+            Doesnt display the parent or its children.
+
+-   Technical: Since we require uiStyle's default to be 0, and I dont want to explicitly set display to column every single time I make an item,
+        display_vertical is equal to 0. This sort of makes it so that the first bit is a boolean determining if we are drawing a row or column. This
+        is beneficial because it enforces row and column being mutually exclusive.
+
+------------------------------------------------------------------------------------------------------------
+*   hover_passthrough
+    ---
+    Flag that determines if an item should pass its hover status to its parent.
+
+-   Defaults: Defaults to false.
 */
-
-#include "input.h"
-#include "render.h"
-#include "memory.h"
+#ifndef DESHI_UI2_H
+#define DESHI_UI2_H
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "kigu/map.h"
-#include "math/math.h"
+#include "kigu/node.h"
+#include "kigu/unicode.h"
+#include "math/vector.h"
+#include "core/render.h"
+#include "core/text.h"
+#include "core/input.h"
+#include "kigu/hash.h"
+struct Font;
+struct Texture;
 
-struct UIDrawCmd;
-struct UIItem_old;
-struct UIWindow;
 
-enum UIStyleVar : u32 {
-	UIStyleVar_WindowMargins,             // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,               // default vec2(1, 1)        spacing between items within a window
-	UIStyleVar_WindowBorderSize,          // default 1                 border size in pixels
-	UIStyleVar_ButtonBorderSize,          // default 1
-	UIStyleVar_TitleBarHeight,            // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,            // default vec2(0, 0.5)      how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,              // default vec2(5, 5)        amount to scroll in pixels             
-	UIStyleVar_CheckboxSize,              // default vec2(10, 10)      
-	UIStyleVar_CheckboxFillPadding,       // default 2                 how far from the edge a checkbox's true filling is padding
-	UIStyleVar_InputTextTextAlign,        // default vec2(0,   0.5)    how text is aligned within InputText boxes
-	UIStyleVar_ButtonTextAlign,           // default vec2(0.5, 0.5)    how text is aligned within buttons
-	UIStyleVar_HeaderTextAlign,           // default vec2(0,   0.5)
-	UIStyleVar_SelectableTextAlign,       // default vec2(0.5, 0.5)
-	UIStyleVar_TabTextAlign,              // default vec2(0.5, 0.5)
-	UIStyleVar_ButtonHeightRelToFont,     // default 1.3                height of header box relative to the font height
-	UIStyleVar_HeaderHeightRelToFont,     // default 1.3
-	UIStyleVar_InputTextHeightRelToFont,  // default 1.3
-	UIStyleVar_CheckboxHeightRelToFont,   // default 1.3
-	UIStyleVar_SelectableHeightRelToFont, // default 1.3 
-	UIStyleVar_TabHeightRelToFont,        // default 1.3 
-	UIStyleVar_RowItemAlign,              // default vec2(0.5, 0.5)    determines how rows align their items within their cells
-	UIStyleVar_RowCellPadding,            // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_ScrollBarYWidth,           // default 5
-	UIStyleVar_ScrollBarXHeight,          // default 5
-	UIStyleVar_IndentAmount,              // default 8
-	UIStyleVar_TabSpacing,                // default 5                 the spacing between tabs
-	UIStyleVar_FontHeight,                // default font->height      height of font in pixels
-	UIStyleVar_WindowSnappingTolerance,   // default vec2(5, 5)        how close a window has to be to another window's edge to snap to it.
-	UIStyleVar_Font,                      // default "gohufont-11.bdf" 
-	UIStyleVar_COUNT
+#define UI_UNIQUE_ID(str) str8_static_hash64({str,sizeof(str)})
+
+#define UI_HASH_SEED 2166136261 // 32bit FNV_offset_basis (FNV-1a)
+#define UI_HASH_PRIME 16777619 // 32bit FNV_prime (FNV-1a)
+#define UI_HASH_VAR(x) seed ^= (u64)(x); seed *= UI_HASH_PRIME
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_keybinds
+
+
+struct uiKeybinds{
+	struct{
+		struct{
+			KeyCode left;
+			KeyCode left_word;
+			KeyCode left_wordpart;
+			
+			KeyCode right;
+			KeyCode right_word;
+			KeyCode right_wordpart;
+			
+			KeyCode up;
+			KeyCode down;
+			
+			//KeyCode anchor;
+		}cursor, select;
+		
+		struct{
+			KeyCode left;
+			KeyCode left_word;
+			KeyCode left_wordpart;
+			
+			KeyCode right;
+			KeyCode right_word;
+			KeyCode right_wordpart;
+		}del;
+	}inputtext;
+	
+	KeyCode drag_item;
 };
 
-global str8 styleVarStr[] = {
-	str8_lit("WindowPadding"),
-	str8_lit("ItemSpacing"),
-	str8_lit("WindowBorderSize"),
-	str8_lit("ButtonBorderSize"),
-	str8_lit("TitleBarHeight"),
-	str8_lit("TitleTextAlign"),
-	str8_lit("ScrollAmount"),
-	str8_lit("CheckboxSize"),
-	str8_lit("CheckboxFillPadding"),
-	str8_lit("InputTextTextAlign"),
-	str8_lit("ButtonTextAlign"),
-	str8_lit("HeaderTextAlign"),
-	str8_lit("SelectableTextAlign"),
-	str8_lit("TabTextAlign"),
-	str8_lit("ButtonHeightRelToFont"),
-	str8_lit("HeaderHeightRelToFont"),
-	str8_lit("InputTextHeightRelToFont"),
-	str8_lit("CheckboxHeightRelToFont"),
-	str8_lit("SelectableHeightRelToFont"),
-	str8_lit("TabHeightRelToFont"),
-	str8_lit("RowItemAlign"),
-	str8_lit("RowCellPadding"),
-	str8_lit("ScrollBarYWidth"),
-	str8_lit("ScrollBarXHeight"),
-	str8_lit("IndentAmount"),
-	str8_lit("TabSpacing"),
-	str8_lit("FontHeight"),
-	str8_lit("Font"),
-	str8_lit("COUNT")
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_drawcmd
+
+
+struct uiDrawCmd{
+	Node node;
+	Texture* texture;
+	u32 vertex_offset; 
+	u32 index_offset;
+	vec2i counts_reserved; //x: vertex, y: index
+	vec2i counts_used; //x: vertex, y: index
 };
 
-enum UIStyleCol : u32 {
-	UIStyleCol_Text,
-	UIStyleCol_Separator,
-	
-	UIStyleCol_WindowBg,
-	UIStyleCol_Border,
-	
-	UIStyleCol_FrameBg,
-	UIStyleCol_FrameBgHovered,
-	UIStyleCol_FrameBgActive,  
-	
-	UIStyleCol_ScrollBarBg,
-	UIStyleCol_ScrollBarBgHovered,
-	UIStyleCol_ScrollBarBgActive,
-	UIStyleCol_ScrollBarDragger,
-	UIStyleCol_ScrollBarDraggerHovered,
-	UIStyleCol_ScrollBarDraggerActive,
-	
-	UIStyleCol_ButtonBg,
-	UIStyleCol_ButtonBgActive,
-	UIStyleCol_ButtonBgHovered,
-	UIStyleCol_ButtonBorder,
-	
-	UIStyleCol_CheckboxBg,
-	UIStyleCol_CheckboxBgActive,
-	UIStyleCol_CheckboxBgHovered,
-	UIStyleCol_CheckboxFilling,
-	UIStyleCol_CheckboxBorder,
-	
-	UIStyleCol_HeaderBg,
-	UIStyleCol_HeaderBgActive,
-	UIStyleCol_HeaderBgHovered,
-	UIStyleCol_HeaderButton,
-	UIStyleCol_HeaderButtonActive,
-	UIStyleCol_HeaderButtonHovered,
-	UIStyleCol_HeaderBorder,
-	
-	UIStyleCol_SliderBg,
-	UIStyleCol_SliderBgActive,
-	UIStyleCol_SliderBgHovered,
-	UIStyleCol_SliderBar,
-	UIStyleCol_SliderBarActive,
-	UIStyleCol_SliderBarHovered,
-	UIStyleCol_SliderBorder,
-	
-	UIStyleCol_InputTextBg,
-	UIStyleCol_InputTextBgActive,
-	UIStyleCol_InputTextBgHovered,
-	UIStyleCol_InputTextBorder,
-	
-	UIStyleCol_SelectableBg,
-	UIStyleCol_SelectableBgActive,
-	UIStyleCol_SelectableBgHovered,
-	
-	UIStyleCol_TabBar,
-	UIStyleCol_TabBg,
-	UIStyleCol_TabBgActive,
-	UIStyleCol_TabBgHovered,
-	UIStyleCol_TabBorder,
-	
-	UIStyleCol_TitleBg,
-	UIStyleCol_TitleBgHovered,
-	UIStyleCol_TitleBgActive,
-	UIStyleCol_COUNT
+// allocates `count amount of uiDrawCmds generically 
+uiDrawCmd* ui_make_drawcmd(upt count);
+
+// deletes the given uiDrawCmd
+// it is not recommended to call this on any drawcmd that
+// you do not have total control over, eg. if it is a drawcmd from an 
+// item that you did not explicitly construct yourself
+// you should use ui_drawcmd_remove instead
+void ui_drawcmd_delete(uiDrawCmd* dc);
+
+// removes the given uiDrawCmd, reserving the memory it points to 
+// for use with later drawcmds. See the implementation function
+// for further info.
+void ui_drawcmd_remove(uiDrawCmd* drawcmd);
+
+void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts);
+
+struct uiDrawCmdPtrs {
+	Vertex2* vertexes;
+	u32* indexes;
 };
 
-struct UIStyle_old {
-	vec2 windowMargins;
-	vec2 itemSpacing;
-	f32  windowBorderSize;
-	f32  buttonBorderSize;
-	f32  titleBarHeight;
-	vec2 titleTextAlign;
-	vec2 scrollAmount;
-	vec2 checkboxSize;
-	f32  checkboxFillPadding;
-	vec2 inputTextTextAlign;
-	vec2 buttonTextAlign;
-	vec2 headerTextAlign;
-	vec2 selectableTextAlign;
-	vec2 tabTextAlign;
-	f32  buttonHeightRelToFont;
-	f32  headerHeightRelToFont;
-	f32  inputTextHeightRelToFont;
-	f32  checkboxHeightRelToFont;
-	f32  selectableHeightRelToFont;
-	f32  tabHeightRelToFont;
-	vec2 rowItemAlign;
-	vec2 rowCellPadding;
-	f32  scrollBarYWidth;
-	f32  scrollBarXHeight;
-	f32  indentAmount;
-	f32  tabSpacing;
-	f32  fontHeight;
-	vec2 windowSnappingTolerance;
-	//special vars that have special push/pop functions
-	vec2  globalScale;
-	Font* font;
-	color colors[UIStyleCol_COUNT];
+// retrieves the start of the given drawcmds drawinfo in 
+// ui's drawinfo arenas
+uiDrawCmdPtrs ui_drawcmd_get_ptrs(uiDrawCmd* dc);
+
+// if needed, reallocates the drawinfo of the given drawcmd
+// this does not copy the previous information and is meant to be used 
+// in cases where you are regenerating an item and need more memory for
+// its drawinfo
+uiDrawCmdPtrs ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts);
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_style
+
+
+enum{
+	pos_static=0,
+	pos_relative,
+	pos_absolute,
+	pos_fixed,
+	pos_sticky,
+	pos_draggable_relative,
+	pos_draggable_absolute,
+	pos_draggable_fixed,
+	
+	anchor_top_left = 0,
+	anchor_top_right,
+	anchor_bottom_right,
+	anchor_bottom_left,
+	
+	size_normal    = 0,
+	size_auto_y    = 1 << 0,
+	size_auto_x    = 1 << 1,
+	size_auto      = size_auto_x | size_auto_y,
+	size_percent_x = 1 << 2,
+	size_percent_y = 1 << 3,
+	size_percent   = size_percent_x | size_percent_y,
+	size_square    = 1 << 4,
+	size_flex      = 1 << 5,
+	
+	border_none = 0,
+	border_solid,
+	
+	overflow_scroll = 0,
+	overflow_scroll_hidden,
+	overflow_hidden,
+	overflow_visible,
+	
+	text_wrap_none = 0,
+	text_wrap_char, 
+	text_wrap_word,
+	
+	display_vertical    = 0,
+	display_horizontal  = 1 << 0,
+	display_flex        = 1 << 1,
+	display_reverse     = 1 << 2,
+	display_hidden      = 1 << 3,
+	
+	// NOTE(sushi) I've changed these to be flagged due to needing to support hash_change
+	//             and mouse actions on the same item. Be careful working with these since now 
+	//             setting one flag could totally override another. This is also nice 
+	//             because you can do something on just press and release.
+	// TODO(sushi) update documentation to reflect this
+	action_act_never                = 0,
+	action_act_mouse_hover          = 1 << 0, // call action when the mouse is positioned visually over the item
+	action_act_mouse_hover_children = 1 << 1, // call action when the mouse is positioned over any of the children of the item
+	action_act_mouse_pressed        = 1 << 2, // call action when the mouse is pressed over the item
+	action_act_mouse_released       = 1 << 3, // call action when the mouse is released over the item
+	action_act_mouse_down           = 1 << 4, // call action when the mouse is down over the item
+	action_act_mouse_scroll         = 1 << 5, // call action when the mouse wheel is moved in either direction
+	action_act_always               = 1 << 6, // call action every frame
+	action_act_hash_change          = 1 << 7, // call action when the item's hash changes
+	
 };
 
-//TODO implement this or remove it 
-struct UIContextInfo {
-	UIWindow* hovered_window = 0;
-	UIWindow* focused_window = 0;
-	UIItem_old* last_placed_item = 0;
-};
-
-enum UITextFlags_ {
-	UITextFlags_None = 0,
-	UITextFlags_NoWrap = 1 << 0,
-}; typedef u32 UITextFlags;
-
-enum UIWindowFlags_ {
-	UIWindowFlags_None                   = 0,
-	UIWindowFlags_NoResize               = 1 << 0, //prevents the user from resizing with the edges 
-	UIWindowFlags_NoMove                 = 1 << 1, //prevents the user from moving the window
-	//TODO UIWindowFlags_NoTitleBar             = 1 << 2,
-	UIWindowFlags_NoBorder               = 1 << 3, //doesnt draw a border
-	UIWindowFlags_NoBackground           = 1 << 4, //doesnt draw a background
-	UIWindowFlags_NoScrollBarX           = 1 << 5, //doesnt draw a horizonal scrollbar, but can still scroll
-	UIWindowFlags_NoScrollBarY           = 1 << 6, //doesnt draw a vertical scrollbar, but can still scroll
-	UIWindowFlags_NoScrollBars           = UIWindowFlags_NoScrollBarX | UIWindowFlags_NoScrollBarY, 
-	UIWindowFlags_NoScrollX              = 1 << 7 | UIWindowFlags_NoScrollBarX, 
-	UIWindowFlags_NoScrollY              = 1 << 8 | UIWindowFlags_NoScrollBarY,
-	UIWindowFlags_NoScroll               = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
-	UIWindowFlags_NoFocus                = 1 << 9, 
-	UIWindowFlags_FocusOnHover           = 1 << 10,
-	//TODO UIWindowFlags_NoMinimize             = 1 << 11,
-	//TODO UIWindowFlags_NoMinimizeButton       = 1 << 12,
-	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 13,
-	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
-	UIWindowFlags_SnapToOtherWindows     = 1 << 15, //makes this window snap to the edges of other windows
-	
-	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
-	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus //| UIWindowFlags_NoTitleBar
-}; typedef u32 UIWindowFlags;
-
-enum UIInputTextFlags_ {
-	UIInputTextFlags_NONE                  = 0,
-	UIInputTextFlags_EnterReturnsTrue      = 1 << 0,
-	UIInputTextFlags_AnyChangeReturnsTrue  = 1 << 1,
-	UIInputTextFlags_CallbackTab           = 1 << 2,  //calls the given callback function when tab is pressed
-	UIInputTextFlags_CallbackEnter         = 1 << 3,  //calls the given callback function when enter is pressed
-	UIInputTextFlags_CallbackAlways        = 1 << 4,  //calls the given callback function when any key is pressed
-	UIInputTextFlags_CallbackUpDown        = 1 << 5,  //calls the given callback function when up or down are pressed
-	UIInputTextFlags_NoBackground          = 1 << 6,  
-	UIInputTextFlags_FitSizeToText         = 1 << 7, 
-	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8, 
-	UIInputTextFlags_Numerical             = 1 << 9,  //only allows input of [0-9|.]
-	UIInputTextFlags_NoEdit                = 1 << 10, //prevents editing of the buffer
-	
-}; typedef u32 UIInputTextFlags;
-
-struct UIInputTextCallbackData {
-	UIInputTextFlags eventFlag; //the flag that caused the call back
-	UIInputTextFlags flags;     //the flags that the input text item has
-	void* userData;             //custom user data
-	
-	u32      character;         //character that was input | r
-	KeyCode  eventKey;          //key pressed on callback  | r
-	u8*      buffer;            //buffer pointer           | r/w
-	size_t   bufferSize;        //                         | r
-	u32      cursorPos;         //cursor position (bytes)  | r/w
-	u32      selectionStart;    //                         | r/w -- == selection end when no selection
-	u32      selectionEnd;      //                         | r/w
-};
-typedef u32 (*UIInputTextCallback)(UIInputTextCallbackData* data);
-
-struct UIInputTextState {
-	u32 id;                       //id the state belongs to
-	u32 cursor = 0;               //what character in the buffer the cursor is infront of, 0 being all the way to the left (byte offset)
-	f32 cursorBlinkTime;          //time it takes for the cursor to blink
-	f32 scroll;                   //scroll offset on x
-	u32 selectStart;              //beginning of text selection (byte offset)
-	u32 selectEnd;                //end of text selection (byte offset)
-	UIInputTextCallback callback;
-	Stopwatch timeSinceTyped;     //timer to time how long its been since typing, for cursor
-};
-
-
-enum UITabBarFlags_ {
-	UITabBarFlags_NONE = 0,
-	UITabBarFlags_NoRightIndent = 1 << 0,
-	UITabBarFlags_NoLeftIndent  = 1 << 1,
-	UITabBarFlags_NoIndent      = UITabBarFlags_NoRightIndent | UITabBarFlags_NoLeftIndent,
-}; typedef u32 UITabBarFlags;
-
-struct UITab {
-	f32    width = 0;
-	f32   height = 0;
-	UIItem_old* item = 0;
-};
-
-struct UITabBar {
-	UITabBarFlags flags;
-	map<str8, UITab> tabs;
-	u32  selected = 0;
-	f32 tabHeight = 0;
-	u32   xoffset = 0; //how far along the bar we've placed tabs 
-	UIItem_old*  item = 0; //item representing this tabbar
-};
-
-enum UISliderFlags_ {
-	UISliderFlags_NONE     = 0,
-	//TODO UISliderFlags_Vertical = 1,
-}; typedef u32 UISliderFlags;
-
-enum UIImageFlags_ {
-	UIImageFlags_NONE   = 0,
-	//TODO UIImageFlags_RestrictAspectRatio = 1 << 0,
-	//TODO UIImageFlags_Invert = 1 << 1,
-	UIImageFlags_FlipX  = 1 << 2,
-	UIImageFlags_FlipY  = 1 << 3,
-	
-}; typedef u32 UIImageFlags;
-
-enum UIButtonFlags_ {
-	UIButtonFlags_NONE = 0,
-	UIButtonFlags_ReturnTrueOnHold    	       = 1 << 0,
-	UIButtonFlags_ReturnTrueOnRelease 	       = 1 << 1,
-	UIButtonFlags_ReturnTrueOnReleaseIfHovered = 1 << 2,
-	UIButtonFlags_NoBorder            	       = 1 << 3,
-	
-}; typedef u32 UIButtonFlags;
-
-enum UIHeaderFlags_ {
-	UIHeaderFlags_NONE          = 0,
-	UIHeaderFlags_NoIndentLeft  = 1 << 0,
-	UIHeaderFlags_NoIndentRight = 1 << 1,
-	UIHeaderFlags_NoIndent      = UIHeaderFlags_NoIndentLeft | UIHeaderFlags_NoIndentRight,
-	UIHeaderFlags_NoBorder      = 1 << 2,
-}; typedef u32 UIHeaderFlags;
-
-struct UIHeader{
-	b32 open = false;
-	UIHeaderFlags flags;
-};
-
-enum UIMenuFlags_ {
-	UIMenuFlags_NONE                   = 0,
-	UIMenuFlags_AppearAtMouse          = 1 << 0, //makes the menu's initial position where the mouse is when called
-	UIMenuFlags_AutoFitElements        = 1 << 1, //the menu will autofit the width and height of all contained items. you must have at least one item that is manually sized for this to work properly eg. you can't use vec2(MAX_F32,MAX_F32) to size all of the items. this flag is default when no size argument is given
-	UIMenuFlags_KeepOpenOnScroll       = 1 << 2, //keeps the menu open if the user scrolls 
-	UIMenuFlags_MoveWithScroll         = 1 << 3, //follows the scrolling of the parent window
-	UIMenuFlags_KeepOpenOnClick        = 1 << 4, //keeps the menu open when an element it holds is clicked
-	UIMenuFlags_KeepOpenOnOutsideClick = 1 << 5, //keeps the menu open even when the user clicks outside of it 
-}; typedef u32 UIMenuFlags;
-
-struct UIMenu {
-	UIMenuFlags flags;
-	vec2 pos;
-	vec2 size;
-};
-
-enum UIDrawType : u32 {
-	UIDrawType_Triangle,
-	UIDrawType_FilledTriangle,
-	UIDrawType_Rectangle,
-	UIDrawType_FilledRectangle,
-	UIDrawType_Line,
-	UIDrawType_Circle,
-	UIDrawType_FilledCircle,
-	UIDrawType_Text,
-	UIDrawType_WText,
-	UIDrawType_Image,
-};
-
-global str8 UIDrawTypeStrs[] = {
-	str8_lit("Triangle"),
-	str8_lit("FilledTriangle"),
-	str8_lit("Rectangle"),
-	str8_lit("FilledRectangle"),
-	str8_lit("Line"),
-	str8_lit("Circle"),
-	str8_lit("CircleFilled"),
-	str8_lit("Text"),
-	str8_lit("WText"),
-	str8_lit("Image"),
-};
-
-#define UIDRAWCMD_MAX_VERTICES 0x3FF
-#define UIDRAWCMD_MAX_INDICES UIDRAWCMD_MAX_VERTICES * 3
-
-//draw commands store what kind of command it is, and info relative to that command
-//this is to be stored on an array on UIWindow and determines what elements it draws when
-//we do the rendering pass
-struct UIDrawCmd {
-	UIDrawType type;
-	
-	//because of how much drawCmds move around, we have to store these things on the heap
-	Vertex2* vertices = 0;
-	u32*     indices = 0;
-	vec2i    counts{}; //x = vertices, y = indices
-	
-	Texture* tex = 0;
-	
-	//the surface this drawCmd draws to in the renderer
-	u32 render_surface_target_idx = 0;
-	
-	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
-	b32 trackedForMinSize = 1;
-	
-	vec2 scissorOffset = vec2::ZERO;
-	vec2 scissorExtent = vec2::ZERO;
-	b32  useWindowScissor = true;
-	b32  overrideScissorRules = false;
-	
-	//for matching draw cmds in debug
-	u32 hash = 0;
-	
-	UIItem_old* parent = 0;
-	
-	UIDrawCmd(){
-		vertices = (Vertex2*)memtalloc(UIDRAWCMD_MAX_VERTICES * sizeof(Vertex2));
-		indices = (u32*)memtalloc(UIDRAWCMD_MAX_INDICES * u32size);
-	}
-	UIDrawCmd(b32 dontdefaultinitwithdeshistuff){}
-};
-
-//attempt to uniquely hash a UIDrawCmd for debug purposes
-template<>
-struct hash<UIDrawCmd> {
-	inline u32 operator()(const UIDrawCmd& s) {
-		u32 seed = 2166134;
-		forI(s.counts.x){
-			seed ^= u32(s.vertices[i].pos.x) << u32(s.vertices[i].pos.y); 
-		}
-		seed ^= (u32)s.counts.x | (u32)s.counts.y << (u32)(u64)s.tex | (u32)s.useWindowScissor | (u32)(u64)s.parent
-			<<u32(s.scissorOffset.x)|u32(s.scissorExtent.x) << u32(s.scissorOffset.y)|u32(s.scissorExtent.y);
-		return seed;
-	}
-};
-
-enum UIItemType : u32 {
-	UIItemType_PreItems,  // internal items drawn before user items
-	UIItemType_PostItems, // ditto, but afterwards
-	UIItemType_Custom,    // BeginCustomItem()
-	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
-	UIItemType_Window,    // an item that holds a pointer to a window to be drawn
-	UIItemType_PopOutWindow,    // an item that holds a pointer to a window to be drawn
-	UIItemType_Text,      // Text()
-	UIItemType_InputText, // InputText()
-	UIItemType_Button,    // Button()
-	UIItemType_Checkbox,  // Checkbox()
-	UIItemType_DropDown,  // DropDown()
-	UIItemType_Slider,    // Slider()
-	UIItemType_Header,    // Header()
-	UIItemType_Selectable,// Selectable()
-	UIItemType_Combo,     // BeginCombo()
-	UIItemType_Image,     // Image()
-	UIItemType_Separator, // Separator()
-	UIItemType_TabBar,    // BeginTabBar()
-	UIItemType_Tab,       // BeginTab()
-	UIItemType_Menu,      // BeginMenu()
-	UIItemType_COUNT
-};
-
-global str8 UIItemTypeStrs[] = {
-	str8_lit("PreItems"),
-	str8_lit("PostItems"),
-	str8_lit("Custom"),
-	str8_lit("Abstract"),
-	str8_lit("ChildWin"),
-	str8_lit("PopOutWindow"),
-	str8_lit("Text"),
-	str8_lit("InputText"),
-	str8_lit("Button"),
-	str8_lit("Checkbox"),
-	str8_lit("DropDown"),
-	str8_lit("Slider"),
-	str8_lit("Header"),
-	str8_lit("Selectable"),
-	str8_lit("Combo"),
-	str8_lit("Image"),
-	str8_lit("Separator"),
-	str8_lit("TabBar"),
-	str8_lit("Tab"),
-};
-
-//an item such as a button, checkbox, or input text
-// this is meant to group draw commands and provide a bounding box for them, using a position
-// and overall size. an items position is relative to the window it was created in and all of its
-// drawcall positions are relative to itself
-// 
-// it also keeps track of certain things when it was created such as where the cursor 
-// was before it moved it and all the style options it used to create itself.
-// this is useful for when we have to look back at previous items to position a new one
-struct UIWindow;
-struct UIItem_old {
-	UIItemType type;
-	vec2       initialCurPos; //cursor position before this item moved it 
-	UIStyle_old    style;         //style at the time of making the item
-	
-	Flags flags; 
-	
-	vec2 position; //relative to the window its being held in
-	vec2 size;
-	
-	//all draw command positions are relative to the items position
-	array<UIDrawCmd> drawCmds;
-	
-	//this is only used when the item is a child window
-	UIWindow* child = 0;
-	
-	//set false when you dont want the item to affect scrolling or fitting all elements
-	b32 trackedForMinSize = 1;
-	b32 visible = 1; //TODO check items for visibility when they're created so we can opt drawing them
-	
-	//DEBUG info
-	u32 item_idx;
-	u32 item_layer;
-};
-
-#define UI_WINDOW_ITEM_LAYERS 11
-
-//for resizing inputs, but could maybe be used for other things later
-enum WinActiveSide {
-	wNone,
-	wLeft, wRight, wTop, wBottom,
-};
-
-enum UIWindowState_ {
-	UIWSNone          = 0,
-	UIWSBegan         = 1 << 0,
-	UIWSEnded         = 1 << 1,
-	UIWSFocused       = 1 << 2,
-	UIWSHovered       = 1 << 3,
-	UIWSChildHovered  = 1 << 4,
-	UIWSLatch         = 1 << 5,
-	UIWSBeingScrolled = 1 << 6,
-	UIWSBeingResized  = 1 << 7,
-	UIWSBeingDragged  = 1 << 8,
-}; typedef u32 UIWindowState;
-
-enum UIWindowType_ {
-	UIWindowType_Normal,
-	UIWindowType_Child,  //stays embedded within a parent window
-	UIWindowType_PopOut, //is able to leave the parent windows boundries
-}; typedef u32 UIWindowType;
-
-// a window is a collection of items and items are a collection of drawcalls.
-// item positions are relative to the window's upper left corner.
-// drawcall positions are relative to the item's upper left corner.
-struct UIWindow {
-	str8 name;
-	UIWindowType type;
-	
-	union {
-		vec2 position;
-		struct { f32 x, y; };
+external struct uiStyle{
+	Type positioning; 
+	Type anchor;
+	Type sizing;
+	union{
+		struct{f32 x, y;};
+		vec2 pos;
 	};
-	//TODO differenciate between client and non client area like in win32
-	union {
-		vec2 dimensions;
-		struct { f32 width, height; };
+	union{
+		struct{f32 width, height;};
+		vec2 size;
 	};
-	
-	union {
+	union{
+		struct{f32 min_width, min_height;};
+		vec2 min_size;
+	};
+	union{
+		struct{f32 max_width, max_height;};
+		vec2 max_size;
+	};
+	union{
+		vec4 margin;
+		struct{
+			union{
+				struct{f32 margin_left, margin_top;};	
+				vec2 margintl;
+			};
+			union{
+				struct{f32 margin_right, margin_bottom;};
+				vec2 marginbr; 
+			};
+		};
+	};
+	union{
+		vec4 padding;
+		struct{
+			union{
+				struct{f32 padding_left, padding_top;};
+				vec2 paddingtl;
+			};
+			union{
+				struct{f32 padding_right, padding_bottom;};
+				vec2 paddingbr;        
+			};
+		};
+	};
+	union{
+		struct{f32 x_scale, y_scale;};
+		vec2 scale;
+	};
+	union{
+		struct{f32 scrx, scry;};
 		vec2 scroll;
-		struct { f32 scx, scy; };
 	};
+	color background_color;
+	Texture* background_image;
+	Type  border_style;
+	color border_color;
+	f32   border_width;
+	Font* font;
+	u32   font_height;
+	Type  text_wrap;
+	color text_color;
+	u64   tab_spaces;
+	b32   focus;
+	Type  display;
+	Type  overflow;
+	vec2  content_align; 
+	b32   hover_passthrough;
 	
-	vec2 maxScroll;
+	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
+};
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_item
+
+
+struct uiItem{
+	TNode node;
+	Node  link; // circular list connecting all existing items to base for iterating
+	str8  id; //NOTE(sushi) mostly for debugging, not sure if this will have any other use in the interface
+	uiStyle style;
+	u64 userVar; // variable never touched internally, for user use;
 	
-	//interior window cursor that's relative to its upper left corner
-	//this places items and not draw calls
-	union {
-		vec2 cursor;
-		struct { f32 curx, cury; };
+	//an items action call back function 
+	//this function is called in situations defined by the flags in the in the uiStyle enum
+	//and is always called before anything happens to the item in ui_update
+	void (*action)(uiItem*);
+	void* action_data; //a pointer to arbitrary data to be accessed in the action callback
+	Type action_trigger; //how the action is triggered
+	
+	//// INTERNAL ////
+	u32 style_hash;
+	
+	vec2 pos_local;  // position relative to parent
+	vec2 pos_screen; // position relative to screen
+	
+	union{ // size that the item visually takes up on the screen (before scaling)
+		struct{ f32 width, height; };
+		vec2 size;
 	};
+	union{ // scale after applying parent scale
+		struct{ f32 x_scale, y_scale; };
+		vec2 scale;
+	};
+	vec2 max_scroll;
 	
-	UIWindowFlags flags;
+	//screen position and size of the bounding box containing all of an items
+	//children, this is used to optimize things later, such as finding the hovered item
+	vec2 children_bbx_pos;
+	vec2 children_bbx_size;
 	
-	struct {
-		UIWindowState flags = UIWSNone;
-		WinActiveSide active_side = wNone;
-	} win_state;
+	//the visible size of the item after being cut by overflow
+	vec2 visible_start;
+	vec2 visible_size; 
 	
-	//base items are always drawn before items and is just a way to defer drawing 
-	//base window stuff to End(), so we can do dynamic sizing
-	array<UIItem_old> items[UI_WINDOW_ITEM_LAYERS];
-	array<UIItem_old> preItems;
-	array<UIItem_old> postItems;
-	array<UIItem_old> popOuts;
+	u64 drawcmd_count;
+	//TODO(sushi) make this an index into the drawcmds arena
+	uiDrawCmd* drawcmds;
 	
-	u32 layer = 5;
+	//set to manually force the item to regenerate
+	b32 dirty;
 	
-	//a collection of child windows
-	UIWindow* parent = 0;
-	map<str8, UIWindow*> children;
-	pair<UIWindow*, UIItem_old*> hoveredChild;
+	Type update_trigger;
 	
+	// TODO(sushi) we may want to pull the following functions out into a 
+	//             table stored else where, like vtables. Performance 
+	//             shouldn't take much of a hit since the system is focused
+	//             on retained ui and this stuff shouldn't be invoked 
+	//             very frequenty (probably)
+
+	// called according to 'update_trigger' during ui_update
+	// (optional)
+	void    (*__update)(uiItem*);
+	// determines how the item is sized and positioned 
+	// relative to other items
+	// (optional)
+	void    (*__evaluate)(uiItem*);
+	// generates draw information for rendering the item
+	// (required)
+	void    (*__generate)(uiItem*);
+	// determines how to hash a custom item
+	// (optional) but without this the item won't dynamically respond to style changes 
+	u32     (*__hash)(uiItem*);
+	// cleans up anything the item may leave behind upon deletion
+	// (optional) but please implement this if you allocate data
+	void    (*__cleanup)(uiItem*);
+	// called when an item is copied. it's up to the widget whether
+	// they share certain memory or not (such as two text objects sharing the same text buffer)
+	// (required if you want to use deep_copy)
+	uiItem* (*__copy)(uiItem*);
 	
-	vec2 minSizeForFit;
+	str8 file_created;
+	upt  line_created;
 	
-	vec2 visibleRegionStart;
-	vec2 visibleRegionSize;
+	//size of the item in memory and the offset of the item member on widgets 
+	u64 memsize;
 	
-	//the state of style when Begin and End are called
-	UIStyle_old style;
+	//indicates if the item has been cached or not.
+	//this only applies to immediate mode items 	
+	b32 cached;
 	
+	// breaks the program when this item is encountered in ui_update
+	b32 break_on_update;
+	b32 break_on_evaluate;
+
+	Stopwatch since_last_update;
+		
+	struct{
+		u32 evals;
+		u32 draws;
+	}debug_frame_stats;
 	
-	//debug information for use with metrics
-	//#ifdef BUILD_INTERNAL
-	f32 render_time = 0;
-	f32 creation_time = 0;
-	u32 items_count = 0;
-	
-	
-	//#endif
-	
-	UIWindow() {};
-	
+	void operator=(const uiItem& rhs){memcpy(this, &rhs, sizeof(uiItem));}
 };
 
-enum UIRowFlags_ {
-	UIRowFlags_NONE = 0,
-	//TODO UIRowFlags_FitWidthOfArea         = 1 << 0,  
-	//TODO UIRowFlags_DrawCellBackground     = 1 << 1,
-	UIRowFlags_AutoSize               = 1 << 2, 
-	//TODO UIRowFlags_CellBorderTop          = 1 << 3,
-	//TODO UIRowFlags_CellBorderBottom       = 1 << 4,
-	//TODO UIRowFlags_CellBorderLeft         = 1 << 5,
-	//TODO UIRowFlags_CellBorderRight        = 1 << 6,
-	//TODO UIRowFlags_CallBorderFull         = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
-}; typedef u32 UIRowFlags;
-
-struct UIColumn {
-	f32  width = 0;
-	b32  relative_width = 0;
-	f32  max_width = 0;
-	b32  reeval_width = 0;
-	vec2 alignment = Vec2(-1,-1);
-	array<UIItem_old*> items;
+struct uiItemSetup{
+	upt size; 
+	uiStyle* style; 
+	str8 file; 
+	upt line; 
+	Type update_trigger; 
+	void    (*update)(uiItem*); 
+	void    (*generate)(uiItem*); 
+	void    (*evaluate)(uiItem*);
+	u32     (*hash)(uiItem*);
+	uiItem* (*copy)(uiItem*);
+	
+	vec2i* drawinfo_reserve;
+	u32 drawcmd_count;
 };
 
-struct UIRow {
-	UIRowFlags flags = 0;
+#define uiItemFromNode(x) CastFromMember(uiItem, node, x)
+
+global uiItem* 
+ui_item_from_link(Node* n) {
+	return CastFromMember(uiItem, link, n);
+}
+
+//Hashes the uiItem's style and merges it with the result of a custom hash function if one is set
+inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
+	uiStyle* s = &item->style;
+	u32 seed = UI_HASH_SEED;
+	seed ^= *(u32*)&s->positioning;     seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->sizing;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->anchor;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->x;               seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->y;               seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->width;           seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->height;          seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_left;     seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_top;      seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_bottom;   seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->margin_right;    seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_left;    seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_top;     seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_bottom;  seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->padding_right;   seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->x_scale;         seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->y_scale;         seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->content_align.x; seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->content_align.y; seed *= UI_HASH_PRIME;
+	seed ^= (u64)s->font;               seed *= UI_HASH_PRIME;
+	seed ^= s->font_height;             seed *= UI_HASH_PRIME;
+	seed ^= s->background_color.rgba;   seed *= UI_HASH_PRIME;
+	seed ^= s->border_style;            seed *= UI_HASH_PRIME;
+	seed ^= s->border_color.rgba;       seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->border_width;    seed *= UI_HASH_PRIME;
+	seed ^= s->text_color.rgba;         seed *= UI_HASH_PRIME;
+	seed ^= s->overflow;                seed *= UI_HASH_PRIME;
+	seed ^= s->focus;                   seed *= UI_HASH_PRIME;
 	
-	str8 label;
+	if(item->__hash){
+		seed ^= item->__hash(item);
+		seed *= UI_HASH_PRIME;
+	}
 	
-	f32 left_edge = 0;
-	f32 right_edge = 0;
-	
-	f32 height = 0;
-	f32 width = 0; 
-	f32 xoffset = 0;
-	f32 yoffset = 0; //used when using Row to make several rows
-	
-	f32 max_height = 0;
-	f32 max_height_frame = 0;
-	
-	b32 reeval_height = 0;
-	
-	//the position of the row to base offsets of items off of.
-	vec2 position;
-	
-	u32 item_count = 0;
-	array<UIColumn> columns;
+	return seed;
+}
+
+enum {
+	// returns true only if the mouse is in the area
+	// of the item and isn't blocked by anything else
+	hovered_strict,
+	// returns true if the mouse is over any of the
+	// children of the item
+	hovered_child,
+	// returns true if the mouse is in the item's
+	// area at all
+	hovered_area,
+};
+b32 ui_item_hovered(uiItem* item, u32 mode = hovered_strict);
+
+// helper to make an item hidden
+inline void 
+ui_item_hide(uiItem* item) {
+	AddFlag(item->style.display, display_hidden);
+}
+
+// helper to reveal an item
+inline void 
+ui_item_show(uiItem* item) {
+	RemoveFlag(item->style.display, display_hidden);
+}
+
+// base implementation of uiItem copying
+// this should be used by widgets implementing __copy
+// instead of trying to copy the data manually
+// expects the new uiItem to have already been allocated
+// this is a *shallow copy*, it does not copy the items 
+// children, the node of the new item will be zeroed
+// file_created and line_created will be zeroed and it's up
+// to the caller to set them if desired
+void ui_item_copy_base(uiItem* to, uiItem* from);
+
+
+#if BUILD_SLOW
+#define RELEASE_INLINE
+#else
+#define RELEASE_INLINE FORCE_INLINE
+#endif
+
+
+RELEASE_INLINE global f32 
+ui_margined_width(uiItem* item) {
+	return item->width - item->style.margin_left - item->style.margin_right;
+}
+
+RELEASE_INLINE global f32
+ui_margined_height(uiItem* item) {
+	return item->height - item->style.margin_top - item->style.margin_bottom;
+}
+
+RELEASE_INLINE global vec2
+ui_margined_area(uiItem* item) {
+	return {ui_margined_width(item), ui_margined_height(item)};
+}
+
+RELEASE_INLINE global f32 
+ui_margined_style_width(uiItem* item) {
+	return item->style.width - item->style.margin_left - item->style.margin_right;
+}
+
+RELEASE_INLINE global f32
+ui_margined_style_height(uiItem* item) {
+	return item->style.height - item->style.margin_top - item->style.margin_bottom;
+}
+
+RELEASE_INLINE global vec2
+ui_margined_style_area(uiItem* item) {
+	return vec2{ui_margined_style_width(item), ui_margined_style_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_bordered_width(uiItem* item) {
+	return ui_margined_width(item) - (item->style.border_style ?  2 * item->style.border_width : 0);
+}
+
+RELEASE_INLINE global f32
+ui_bordered_height(uiItem* item) {
+	return ui_margined_height(item) - (item->style.border_style ? 2 * item->style.border_width : 0);
+}
+
+RELEASE_INLINE global vec2
+ui_bordered_area(uiItem* item) {
+	return vec2{ui_bordered_width(item), ui_bordered_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_bordered_style_width(uiItem* item) {
+	return item->style.width + (item->style.border_style ? 2 * item->style.border_width : 0);
+}
+
+
+RELEASE_INLINE global f32
+ui_bordered_style_height(uiItem* item) {
+	return item->style.height + (item->style.border_style ? 2 * item->style.border_width : 0);
+}
+
+RELEASE_INLINE global vec2
+ui_bordered_style_area(uiItem* item) {
+	return vec2{ui_bordered_style_width(item), ui_bordered_style_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_padded_width(uiItem* item) {
+	return ui_bordered_width(item) - item->style.padding_left - item->style.padding_right;
+}
+
+RELEASE_INLINE global f32
+ui_padded_height(uiItem* item) {
+	return ui_bordered_height(item) - item->style.padding_top - item->style.padding_bottom;
+}
+
+RELEASE_INLINE global vec2
+ui_padded_area(uiItem* item) {
+	return vec2{ui_padded_width(item), ui_padded_height(item)};
+}
+
+RELEASE_INLINE global f32
+ui_padded_style_width(uiItem* item) {
+	return item->style.width - item->style.padding_left - item->style.padding_right;
+}
+
+RELEASE_INLINE global f32
+ui_padded_style_height(uiItem* item) {
+	return item->style.height - item->style.padding_top - item->style.padding_top;
+}
+
+RELEASE_INLINE global vec2
+ui_padded_style_area(uiItem* item) {
+	return vec2{ui_padded_style_width(item), ui_padded_style_height(item)};
+}
+
+
+// invokes __copy recursively on the item's children and finally 
+// itself to produce a full copy of the item's branch.
+// when finished the new item appends itself to the original
+// item's parent.
+// returns the newly created item
+uiItem* ui_deep_copy(uiItem* item);
+
+uiItem* deshi__ui_make_item(uiStyle* style, str8 file, upt line);
+#define ui_make_item(style) deshi__ui_make_item((style), str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_item(uiStyle* style, str8 file, upt line);
+#define ui_begin_item(style) deshi__ui_begin_item((style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_item(str8 file, upt line);
+#define ui_end_item() deshi__ui_end_item(STR8(__FILE__),__LINE__)
+
+void deshi__ui_remove_item(uiItem* item, str8 file, upt line);
+#define ui_remove_item(item) deshi__ui_remove_item((item), str8l(__FILE__), __LINE__)
+
+uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved = 0);
+
+// pushes an item onto the global item stack for appending to windows that have already been ended.
+void deshi__ui_push_item(uiItem* item, str8 file, upt line);
+#define ui_push_item(item) deshi__ui_push_item((item), str8l(__FILE__), __LINE__)
+
+// pops 'count' items from the global item stack and returns the last item popped.
+uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line);
+#define ui_pop_item(count) deshi__ui_pop_item((count), str8l(__FILE__), __LINE__)
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_generate
+
+
+vec2i ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
+
+vec2i ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_immediate
+
+
+void deshi__ui_begin_immediate_branch(uiItem* parent, str8 file, upt line);
+#define ui_begin_immediate_branch(parent) deshi__ui_begin_immediate_branch((parent), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_immediate_branch(str8 file, upt line);
+#define ui_end_immediate_branch() deshi__ui_end_immediate_branch(str8l(__FILE__), __LINE__)
+
+void deshi__ui_push_id(s64 x, str8 file, upt line);
+#define ui_push_id(x) deshi__ui_push_id((x), str8l(__FILE__), __LINE__)
+
+void deshi__ui_pop_id(str8 file, upt line);
+#define ui_pop_id() deshi__ui_pop_id(str8l(__FILE__), __LINE__)
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_context
+
+
+void deshi__ui_init();
+#define ui_init() deshi__ui_init()
+
+void deshi__ui_update();
+#define ui_update() deshi__ui_update();
+
+typedef u32 uiInputState; enum{
+	uiISNone,
+	uiISScrolling,
+	uiISDragging,
+	uiISResizing,
+	uiISPreventInputs,
+	uiISExternalPreventInputs,
 };
 
-struct UIStats {
-	u32 vertices  = 0;
-	u32 indices   = 0;
+struct uiContext{
 	
-	u32 draw_cmds = 0;
-	u32 items     = 0;
-	u32 windows   = 0;
+	//// state ////
+	// ultimate parent of any uiItem in the tree.
+	// 'link' on base serves as a circular list connecting 
+	// all uiItems in a linear fashion for easy iteration.
+	// However, this list is in no specific order.
+	uiItem base;
+	uiItem* hovered; //item currently hovered by the mouse
+	uiItem* active;  //item last interacted with
+	uiInputState istate;
+	
+	struct{
+		b32  active;
+		b32  pushed;
+		str8 file;
+		upt  line;
+		map<u64, uiItem*> cache;
+		u32 id; 
+	}immediate;
+	
+	b32 updating; //set true while ui_update is running
+	
+	//// memory ////
+	arrayT<uiItem*> immediate_items;
+	Node inactive_drawcmds; //list of drawcmds that have been removed and contain info about where we can allocate data next
+	arrayT<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
+	arrayT<uiDrawCmd*> inactive_drawcmds_index_sorted;
+	
+	Arena* vertex_arena; // arena of Vertex2
+	Arena* index_arena; // arena of u32
+	RenderTwodBuffer render_buffer;
+	// TODO(sushi) because we have item_push/pop now, we should store file/line that pushed the item
+	//             so that we can report it where things go wrong
+	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
+	
+	struct{
+		//visible on screen
+		u64 items_visible;
+		u64 drawcmds_visible;
+		u64 vertices_visible; 
+		u64 indices_visible;  
+		//reserved in memory
+		u64 items_reserved;
+		u64 drawcmds_reserved;
+		u64 vertices_reserved; 
+		u64 indices_reserved;  
+	}stats;
+	
+	// root of nodes used to track memory that ui has allocated
+	Node allocator_root;
+	
+	//// other ////
+	uiKeybinds keys;
 };
+extern uiContext* g_ui; //global UI pointer
 
-namespace UI {
-	
-	//// helpers ////
-	
-	//calculates the given text size as it would appear onscreen with the current font pointed to by the style var
-	vec2      CalcTextSize(str8 text);
-	
-	//returns a reference to the global ui style var. beware manually modifying this, you should use the Push/Pop system instead
-	UIStyle_old&  GetStyle();
-	
-	//returns a pointer to the current working window (eg. the window who's begin was last called, if no begins have been called this returns the base window)
-	UIWindow* GetWindow();
-	
-	//returns a pointer to the last placed item
-	UIItem_old*   GetLastItem(u32 layeroffset = 0);
-	
-	//returns the position of the last placed item
-	vec2      GetLastItemPos();
-	
-	//returns the size of the last placed item
-	vec2      GetLastItemSize();
-	
-	//returns the position of the last placed item in screen space
-	vec2      GetLastItemScreenPos();
-	
-	//returns the remaining space left in a window. TODO test this function
-	vec2      GetWindowRemainingSpace();
-	
-	//returns where ui will automatically place the next item.
-	vec2      GetWinCursor();
-	
-	//returns the center layer between 0 and UI_LAYERS
-	u32       GetCenterLayer();
-	
-	//returns the current working layer
-	u32       GetCurrentLayer();
-	
-	//returns UI_LAYERS, the highest layer something may be on
-	u32       GetTopMostLayer();
-	
-	//returns the x coordinate (in window space) of the right side of the window, taking into account the borders
-	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
-	f32       GetBorderedRight();
-	
-	//returns the x coordinate (in window space) of the left side of the window, taking into account the borders 
-	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
-	f32       GetBorderedLeft();  
-	
-	//returns the y coordinate (in window space) of the top of the window, taking into account the borders
-	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
-	f32       GetBorderedTop();   
-	
-	//returns the y coordinate (in window space) of the bottom of the window, taking into account the borders
-	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
-	f32       GetBorderedBottom();
-	
-	//returns the x coordinate (in window space) of the right side of the window, taking into account the margin
-	//margined area is the area inside the window that items automatically align themselves within. 
-	f32       GetMarginedRight();
-	
-	//returns the x coordinate (in window space) of the left side of the window, taking into account the margin
-	//margined area is the area inside the window that items automatically align themselves within. 
-	f32       GetMarginedLeft();
-	
-	//returns the y coordinate (in window space) of the top of the window, taking into account the margin
-	//margined area is the area inside the window that items automatically align themselves within. 
-	f32       GetMarginedTop();
-	
-	//returns the y coordinate (in window space) of the bottom of the window, taking into account the margin
-	//margined area is the area inside the window that items automatically align themselves within. 
-	f32       GetMarginedBottom();
-	
-	//returns the x coordinate (in window space) of the right side of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
-	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
-	f32       GetClientRight();
-	
-	//returns the x coordinate (in window space) of the left side of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
-	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
-	f32       GetClientLeft();
-	
-	//returns the y coordinate (in window space) of the top of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
-	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
-	f32       GetClientTop();
-	
-	//returns the y coordinate (in window space) of the bottom of the window, taking into account the windows decorations (border, titlebar, scrollbar, etc.)
-	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
-	f32       GetClientBottom();
-	
-	//returns a pair of vec2s, the first being the position in window space and second the area. 
-	//bordered area is the area that is inside the borders of the window, meaning this area includes the scroll bar and titlebar
-	pair<vec2, vec2> GetBorderedArea();
-	
-	//returns a pair of vec2s, the first being the position in window space and second the area. 
-	//margined area is the area inside the window that items automatically align themselves within. 
-	//its size is controlled by the style var UIStyleVar_WindowMargins.
-	pair<vec2, vec2> GetMarginedArea();
-	
-	//returns a pair of vec2s, the first being the position in window space and second the area. 
-	//client area is the area unobstructed by window decorations. so the area that excludes the titlebar, scrollbar, and borders.
-	pair<vec2, vec2> GetClientArea();
-	
-	//returns a UIStats object containing information about UI
-	UIStats GetStats();
-	
-	//returns a pointer to an InputText's state by label
-	UIInputTextState* GetInputTextState(str8 label);
-	
-	
-	f32 GetRightIndent();
-	f32 GetLeftIndent();
-	
-	//// control functions ////
-	
-	//positions the window's cursor to be on the same level as the last placed item. if you wish to have more advanced functionality with this see BeginRow
-	void SameLine();
-	
-	//manaully set the windows cursor to a specified position. 
-	//after the next item is placed the cursor goes back to default placement behavoir, this means that it will return to the MarginedLeft part of the window, below the y level of the last placed item
-	//TODO better name than SetWinCursor that doesnt conflict with win32's SetCursor
-	void SetWinCursor(vec2 pos);
-	//dont know why this doesnt work 
-	//void SetWinCursor(s32 x, s32 y) {SetWinCursor(vec2(x,y));}
-	
-	//manually set the cursor's X position
-	void SetWinCursorX(f32 x);
-	//manually set the cursors Y position
-	void SetWinCursorY(f32 y);
-	//sets the window's scroll values
-	//use MAX_F32 to set it to max scroll
-	void SetScroll(vec2 scroll); 
-	//sets the window's X scroll
-	//use MAX_F32 to set it to max X scroll
-	void SetScrollX(f32 scroll); 
-	//sets the window's Y scroll
-	//use MAX_F32 to set it to max Y scroll
-	void SetScrollY(f32 scroll); 
-	//sets the next item to be 'active'
-	//TODO I think I need to make this work with things other than InputText
-	//InputText: sets keyboard focus (maybe make this its own function?)
-	void SetNextItemActive();
-	//sets the size of the next item
-	void SetNextItemSize(vec2 size);
-	FORCE_INLINE void SetNextItemSize(f32 x, f32 y){ SetNextItemSize(vec2{x,y}); }
-	//sets the `width` of the next item
-	void SetNextItemWidth(f32 width);
-	//sets the `height` of the next item
-	void SetNextItemHeight(f32 height);
-	//offsets the margin's position (see GetMarginedArea for what this area is)
-	void SetMarginPositionOffset(vec2 offset);
-	//offsets the margin's size (see GetMarginedArea for what this area is)
-	void SetMarginSizeOffset(vec2 offset);
-	//tells UI that this item does not affect the windows size when the flag UIWindowFlags_FitAllElements is used
-	void SetNextItemMinSizeIgnored();
-	//sets UI's internal input state to PreventInputs, this prevents any window from receiving any input, such as scrolling, dragging, resizing, and any action that could be taken on any item. this is undone using SetAllowInputs
-	void SetPreventInputs();
-	//sets UI's internal unput state to AllowInputs. undoing SetPreventInputs
-	void SetAllowInputs();
-	
-	
-	//// @rows ////
-	//  a row is a collection of columns used to align a number of items nicely
-	//  you are required to specify the width of each column when using Row, as it removes the complicated
-	//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
-	//  so you are required to define a static height upon calling the function
-	//
-	//  NOTE primitives/abstracts are not considered in rows
-	void BeginRow(str8 label, u32 columns, f32 rowHeight, UIRowFlags flags = 0);
-	void EndRow();
-	//takes an array of size equal to the number of columns specified and sets their widths to the specified sizes in pixels
-	void RowSetupColumnWidths(array<f32> widths);
-	//sets one columns width in pixels
-	void RowSetupColumnWidth(u32 column, f32 width);
-	//sets a columns width relative to the size of the item it holds. 
-	//for example 1 will make the columns width 30 when it holds an item of width 30, 2 will make the columns width 60
-	void RowSetupRelativeColumnWidth(u32 column, f32 width);
-	//takes an array of size equal to the number of columns specified and sets their widths relative to the item they hold 
-	void RowSetupRelativeColumnWidths(array<f32> widths);
-	//TODO
-	void RowFitBetweenEdges(array<f32> ratios, f32 left_edge, f32 right_edge);
-	//sets individual item alignments for each column
-	void RowSetupColumnAlignments(array<vec2> alignments);
-	
-	
-	//// drawing ////
-	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
-	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
-	void Line(vec2 start, vec2 end, f32 thickness = 1, color color = Color_White);
-	void Circle(vec2 pos, f32 radius, f32 thickness = 1, u32 subdivisions = 30, color color = Color_White);
-	void CircleFilled(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
-	
-	
-	//// text ////
-	
-	//wraps by default
-	void TextOld(str8 text, UITextFlags flags = 0);
-	void TextOld(str8 text, vec2 pos, UITextFlags flags = 0);
-	void TextF(str8 fmt, ...);
-	
-	
-	//// items ////
-	
-	//a simple clickable button. the condition it returns true for depends on the flag given, if no behavoir flag is given it returns true on click by default
-	b32 Button(str8 text, UIButtonFlags flags = 0);
-	b32 Button(str8 text, vec2 pos, UIButtonFlags flags = 0);
-	
-	//a checkbox with a label. you must provide the boolean it changes
-	void Checkbox(str8 label, b32* b);
-	
-	//TODO 
-	b32 BeginCombo(str8 label, str8 preview_val);
-	b32 BeginCombo(str8 label, str8 preview_val, vec2 pos);
-	void EndCombo();
-	
-	//a selectable that takes in a boolean that determines if its selected or not. it returns true if it has been clicked on
-	b32 Selectable(str8 label, b32 selected); 
-	b32 Selectable(str8 label, vec2 pos, b32 selected);
-	
-	//a collapsable header that groups items and lets you hide them. by default it indents the content, but this can be disabled with flags
-	//by default the header spans the whole width of the window
-	//TODO different header styles, including one that is empty and takes a clickable area for custom graphix
-	b32  BeginHeader(str8 label, UIHeaderFlags flags = 0);
-	void EndHeader();
-	
-	//begins the bar a tab sits on. this must be called before BeginTab
-	void BeginTabBar(str8 label, UITabBarFlags flags = 0);
-	//begins a tab, this must be called after BeginTabBar
-	b32  BeginTab(str8 label);
-	//ends a tab, this must be called if BeginTab is called, calling it otherwise will assert
-	void EndTab(); 
-	//this must be called if BeginTabBar is called, calling it otherwise will assert
-	void EndTabBar();
-	
-	//a slider that modifies a given value using the mouse
-	void Slider(str8 label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
-	
-	//displays an image. set the size using SetNextItemSize
-	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
-	void Image(Texture* image, f32 alpha = 1, UIImageFlags flags = 0);
-	
-	//makes a horizontal rule across the window
-	//TODO vertical separators
-	//TODO text in a separator 
-	//text------------
-	//-----text-------
-	//with arbitrary placing like this
-	void Separator(f32 height);
-	
-	//these overloads are kind of silly change them eventually
-	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
-	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
-	//InputText item. This should only be used if you have a good reason to!
-	b32 InputText(str8 label, u8* buffer, u32 buffSize, str8 preview = str8{}, UIInputTextFlags flags = 0);
-	b32 InputText(str8 label, u8* buffer, u32 buffSize, UIInputTextCallback callbackFunc, str8 preview = str8{}, UIInputTextFlags flags = 0);
-	b32 InputText(str8 label, u8* buffer, u32 buffSize, vec2 pos, str8 preview = str8{}, UIInputTextFlags flags = 0);
-	b32 InputText(str8 label, u8* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, str8 preview = str8{}, UIInputTextFlags flags = 0);
-	
-	//begins a menu, which is just a wrapper around BeginPopOut
-	//its purpose is to provide an easy way to have lists of options such as in a context menu as well
-	//as provide a way to autosize the popout
-	//TODO void BeginMenu(vec2 pos, UIMenuFlags flags); //default autosize overload
-	//TODO void BeginMenu(vec2 pos, vec2 size, UIMenuFlags flags);
-	//TODO void EndMenu();
-	
-	//API for making custom items externally
-	//TODO decide if it would be better to just expose the internal functions instead
-	//TODO reformat this eventually since im currently making it to suit a specific purpose and am not considering polishing it atm
-	//TODO write up examples/a guide on how to use this
-	//some knowledge about how UI works internally is somewhat required to work this
-	UIItem_old* BeginCustomItem();
-	void    CustomItem_AdvanceCursor(UIItem_old* item, b32 move_cursor = 1);
-	void    EndCustomItem();
-	
-	//TODO decide if we should just expose the internal drawing commands 
-	void CustomItem_DCMakeLine(UIDrawCmd& drawCmd, vec2 start, vec2 end, f32 thickness, color color);
-	void CustomItem_DCMakeFilledTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, color color);
-	void CustomItem_DCMakeTriangle(UIDrawCmd& drawCmd, vec2 p1, vec2 p2, vec2 p3, f32 thickness, color color);
-	void CustomItem_DCMakeFilledRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, color color);
-	void CustomItem_DCMakeRect(UIDrawCmd& drawCmd, vec2 pos, vec2 size, f32 thickness, color color);
-	void CustomItem_DCMakeCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions, f32 thickness, color color);
-	void CustomItem_DCMakeFilledCircle(Vertex2* putverts, u32* putindices, vec2 offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
-	void CustomItem_DCMakeFilledCircle(UIDrawCmd& drawCmd, vec2 pos, f32 radius, u32 subdivisions_int, color color);
-	void CustomItem_DCMakeText(UIDrawCmd& drawCmd, str8 text, vec2 pos, color color, vec2 scale);
-	void CustomItem_DCMakeTexture(UIDrawCmd& drawCmd, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
-	void CustomItem_AddDrawCmd(UIItem_old* item, UIDrawCmd& drawCmd);
-	
-	//returns if the last placed item is hovered or not
-	b32 IsLastItemHovered();
-	
-	//allows adding flags to an item so you dont have to keep specifying them everytime you make one.
-	//you are required to either remove all the added flags or reset a modified items flags by the time UI::Update is called
-	void AddItemFlags(UIItemType type, Flags flags);
-	void RemoveItemFlags(UIItemType type, Flags flags);
-	void ResetItemFlags(UIItemType type);
-	
-	
-	//// push/pop ////
-	void PushColor(UIStyleCol idx, color color);
-	void PushVar(UIStyleVar idx, f32 style);
-	void PushVar(UIStyleVar idx, vec2 style);
-	void PushFont(Font* font);
-	void PushScale(vec2 scale);
-	void PushLayer(u32 layer); //NOTE default layer is 5
-	void PushWindowLayer(u32 layer);
-	void PushLeftIndent(f32 indent);
-	void PushRightIndent(f32 indent);
-	void PushDrawTarget(u32 idx);
-	void PushDrawTarget(Window* idx);
-	
-	void PopColor(u32 count = 1);
-	void PopVar(u32 count = 1);
-	void PopFont(u32 count = 1);
-	void PopScale(u32 count = 1);
-	void PopLayer(u32 count = 1);
-	void PopWindowLayer(u32 count = 1);
-	void PopLeftIndent(u32 count = 1);
-	void PopRightIndent(u32 count = 1);
-	void PopDrawTarget(u32 count = 1);
-	
-	//// windows ////
-	void Begin(str8 name, UIWindowFlags flags = 0);
-	void Begin(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void BeginChild(str8 name, vec2 dimensions, UIWindowFlags flags = 0);
-	void BeginChild(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void BeginPopOut(str8 name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void End();
-	void EndChild();
-	void EndPopOut();
-	//continues a given window. to access child windows use '/'
-	//for example: 
-	//parent/child
-	//parent/child/childofchild 
-	void Continue(str8 name);
-	void EndContinue();
-	void SetNextWindowPos(vec2 pos);
-	void SetNextWindowPos(f32 x, f32 y);
-	void SetNextWindowSize(vec2 size);	 
-	void SetNextWindowSize(f32 x, f32 y);  
-	void SetWindowName(str8 name);
-	b32 IsWinHovered();
-	b32 AnyWinHovered();
-	void ShowMetricsWindow();
-	void DemoWindow();
-	
-	
-	//// init and update ////
-	void Init();
-	void Update();
-	
-	
-	//// debug ////
-	void DrawDebugRect(vec2 pos, vec2 size, color color = Color_Red);
-	void DrawDebugRectFilled(vec2 pos, vec2 size, color color = Color_Red);
-	void DrawDebugCircle(vec2 pos, f32 radius, color color = Color_Red);
-	void DrawDebugCircleFilled(vec2 pos, f32 radius, color color = Color_Red);
-	void DrawDebugLine(vec2 pos1, vec2 pos2, color color = Color_Red);
-	void DrawDebugTriangle(vec2 p0, vec2 p1, vec2 p2, color color = Color_Red);
-	
-}; //namespace UI
+// header for things allocated with deshi_ui_allocator
+// allows things in ui to detect if certain things were allocated using 
+// this allocator and to remove it if so 
+struct uiMemoryHeader {
+	Node node;
+	u32 magic;
+};
+#define ui_memory_header(ptr) ((uiMemoryHeader*)(ptr) - 1)
+#define is_ui_memory(ptr) (ui_memory_header(ptr)->magic == g_ui->memory_\magic)
 
-#endif //DESHI_UI_H
+const u32 ui_memory_magic = 0xf00f00f0;
+
+global void* 
+deshi__ui_memory_reserve(upt size) {
+	uiMemoryHeader* header = (uiMemoryHeader*)memalloc(sizeof(uiMemoryHeader) + size);
+	header->magic = ui_memory_magic;
+	NodeInsertPrev(&g_ui->allocator_root, &header->node);
+	return (void*)(header+1);
+}
+
+global void 
+deshi__ui_memory_release(void* ptr) {
+	uiMemoryHeader* header = ui_memory_header(ptr);
+	Assert(header->magic == ui_memory_magic, "attempted to release memory that does not belong to ui.");
+	NodeRemove(&header->node);
+	memzfree(header);
+}
+
+global void* 
+deshi__ui_memory_resize(void* ptr, upt size) {
+	// TODO(sushi) for some reason this causes a heap error in memory
+	FixMe;
+	uiMemoryHeader* header = ui_memory_header(ptr);
+	Assert(header->magic == ui_memory_magic, "attempted to resize memory that does not belong to ui.");
+	NodeRemove(&header->node);
+	header = (uiMemoryHeader*)memrealloc(header, sizeof(uiMemoryHeader)+size);
+	return (void*)(header+1);
+}
+
+// A generic allocator for memory that should be considered owned and managed by
+// the ui system. Currently the main use of this is for dynamically allocated uiItem ids. 
+// This prefixes the memory with a header used to identify memory belonging to ui. If a uiItem's
+// id is found to be a string allocated by this allocator, it will be released when the item is 
+// deleted.
+global Allocator _deshi_ui_allocator {
+	deshi__ui_memory_reserve,
+	deshi__ui_memory_release,
+	deshi__ui_memory_resize
+};
+global Allocator* deshi_ui_allocator = &_deshi_ui_allocator;
+
+// Creates a window containing information and tools for debugging ui
+// Very far from finished. 
+void ui_debug();
+
+//Creates the demo window (or destroys if already created)
+void ui_demo();
+
+void ui_print_tree(void (*info)(dstr8*,uiItem*));
+
+
+#endif //DESHI_UI2_H

@@ -36,7 +36,7 @@ References:
 #include "kigu/node.h"
 StartLinkageC();
 
-#define MEMORY_CHECK_HEAPS DESHI_INTERNAL
+#define MEMORY_CHECK_HEAPS BUILD_INTERNAL
 #define MEMORY_TRACK_ALLOCS false
 
 #define MEMORY_PRINT_ARENA_CHUNKS false
@@ -86,6 +86,7 @@ typedef struct MemChunk{
 #define ChunkIsLibc(chunk_ptr) ((chunk_ptr)->size & MEMORY_LIBC_FLAG)
 
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_heap
 typedef struct Heap{
@@ -126,6 +127,8 @@ void deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line);
 void deshi__memory_heap_clear(Heap* heap, str8 file, upt line);
 #define memory_heap_clear(heap) deshi__memory_heap_clear(heap, str8_lit(__FILE__), __LINE__)
 
+void
+DEBUG_CheckHeap(Heap* heap);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_arena
@@ -212,11 +215,7 @@ typedef struct PoolHeader{
 //Returns the number of items (not chunks) in the pooled arena `pool`
 #define memory_pool_count(pool) (memory_pool_header(pool)->count)
 
-//Allocates a block of `count` chunks for the pooled arena `pool` and sets `PoolHeader.free_chunk` to the first new chunk
-#define memory_pool_grow(pool,count) deshi__memory_pool_grow((pool), sizeof(*(pool)), (count))
-void deshi__memory_pool_grow(void* pool, upt type_size, upt count);
-
-//Creates a pooled arena with `count` chunks-per-block (item slots) and sets `pool` equal to the first chunk
+//Creates a pooled arena with `count` chunks-per-block (item slots) and assigns `pool` equal to the first chunk
 #define memory_pool_init(pool,count) ((pool) = deshi__memory_pool_init_wrapper((pool), sizeof(*(pool)), (count)))
 void* deshi__memory_pool_init(void* pool, upt type_size, upt count);
 
@@ -231,23 +230,27 @@ FORCE_INLINE                 void* deshi__memory_pool_init_wrapper(void* pool, u
 //Deletes the pooled arena `pool`
 void memory_pool_deinit(void* pool);
 
+//Allocates a block of `count` chunks for the pooled arena `pool` and sets `PoolHeader.free_chunk` to the first new chunk
+#define memory_pool_grow(pool,count) deshi__memory_pool_grow((pool), sizeof(*(pool)), (count))
+void deshi__memory_pool_grow(void* pool, upt type_size, upt count);
+
 //Returns a free chunk in `pool`, growing if necessary
 #define memory_pool_push(pool) deshi__memory_pool_push_wrapper((pool), sizeof(*(pool)))
 void* deshi__memory_pool_push(void* pool, upt type_size);
 
-#if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't so templates are required
+#if COMPILER_FEATURE_CPP //NOTE(delle) C can implicitly cast from void* to T*, but C++ can't, so templates are required
 EndLinkageC();
 template<class T> global inline T* deshi__memory_pool_push_wrapper(T*    pool, upt type_size){ return (T*)deshi__memory_pool_push(pool, type_size); }
 StartLinkageC();
 #else
-FORCE_INLINE                 void* deshi__memory_pool_push_wrapper(void* pool, upt type_size){ return     deshi__memory_pool_init(pool, type_size); }
+FORCE_INLINE                 void* deshi__memory_pool_push_wrapper(void* pool, upt type_size){ return     deshi__memory_pool_push(pool, type_size); }
 #endif //COMPILER_FEATURE_CPP
 
 //Deletes the chunk at `ptr` in the pooled arena `pool`
 #define memory_pool_delete(pool,ptr) deshi__memory_pool_delete((pool), sizeof(*(pool)), (ptr))
 void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 
-//for-loop macro (iterates all chunks, regardless of emptiness)
+//for loop macro (iterates all chunks, regardless of emptiness)
 #if   COMPILER_FEATURE_TYPEOF
 #define for_pool(pool)                                                                                                                     \
   for(typeof(*(pool))* it = (pool), typeof(*(pool))* it_start = (pool), it_block = (typeof(*(pool))*)memory_pool_header(pool)->next_block; \
@@ -268,6 +271,7 @@ void deshi__memory_pool_delete(void* pool, upt type_size, void* ptr);
 //Allocates AT LEAST `size` bytes with all memory zeroed
 void* deshi__memory_generic_allocate(upt size, str8 file, upt line);
 #define memory_alloc(size) deshi__memory_generic_allocate(size, str8_lit(__FILE__), __LINE__)
+#define memory_allocT(type) (type*)memory_alloc(sizeof(type))
 #define memalloc(size) memory_alloc(size)
 
 //Resizes the allocation at `ptr` to AT LEAST `new_size` bytes
@@ -365,8 +369,6 @@ FORCE_INLINE void* deshi__memory_generic_reallocate_allocator(void* ptr, upt new
 FORCE_INLINE void deshi__memory_generic_zero_free_allocator(void* ptr){return deshi__memory_generic_zero_free(ptr, str8_lit("deshi_allocator"), 0);}
 global Allocator deshi_allocator_{
 	deshi__memory_generic_allocate_allocator,
-	Allocator_ChangeMemory_Noop,
-	Allocator_ChangeMemory_Noop,
 	deshi__memory_generic_zero_free_allocator,
 	deshi__memory_generic_reallocate_allocator
 };
@@ -376,8 +378,6 @@ FORCE_INLINE void* deshi__memory_temp_allocate_allocator(upt size){return deshi_
 FORCE_INLINE void* deshi__memory_temp_reallocate_allocator(void* ptr, upt size){return deshi__memory_temp_reallocate(ptr, size, str8_lit("deshi_allocator"), 0);}
 global Allocator deshi_temp_allocator_{
 	deshi__memory_temp_allocate_allocator,
-	Allocator_ChangeMemory_Noop,
-	Allocator_ChangeMemory_Noop,
 	Allocator_ReleaseMemory_Noop,
 	deshi__memory_temp_reallocate_allocator
 };

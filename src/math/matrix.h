@@ -264,29 +264,4 @@ struct hash<mat4>{
 	}
 };
 
-///////////////////
-//// to_string ////
-///////////////////
-#include "kigu/string.h"
-
-global string 
-to_string(const mat3& x, bool trunc = true){
-	string s;
-	forI(3){ 
-		s += to_string(*((vec3*)(x.arr+(i*3))), trunc);
-		s += "\n";
-	}
-	return s;
-}
-
-global string 
-to_string(const mat4& x, bool trunc = true){
-	string s;
-	forI(4){ 
-		s += to_string(*((vec4*)(x.arr+(i*4))), trunc);
-		s += "\n";
-	}
-	return s;
-}
-
 #endif //DESHI_MATRIX_H
