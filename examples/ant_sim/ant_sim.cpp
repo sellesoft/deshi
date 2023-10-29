@@ -92,6 +92,9 @@ typedef struct Entity{
 	vec2i pos;
 	Flags flags;
 	
+	Advert* adverts_array[4]; //TODO make this dynamic
+	u64 adverts_count;
+	
 	union{
 		struct{
 			b32 evaluating;
@@ -155,6 +158,8 @@ constexpr u32 NeedStringsMaxWidth(){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @action
+#define UNKNOWN_ACTION_COMPLETION_TIME 0
+
 enum{
 	Action_Idle,
 	Action_Walk,
@@ -167,28 +172,33 @@ enum{
 typedef struct ActionDef{
 	Type type;
 	str8 name;
+	u32 time;
 	f32 costs[Need_COUNT];
 }ActionDef;
 
 typedef struct Action{
 	ActionDef* def;
 	vec2i target;
-	u32 completion_time;
 	f32 progress; //0-1; 1 is complete
 }Action;
 
 ActionDef ActionDefinitions[] = {
 	{Action_Idle,
-		/*name   */ STR8("Idle"),
-		/*costs  */ {},
+		/*name */ STR8("Idle"),
+		/*time */ 1*TICKS_PER_WORLD_SECOND,
+		/*costs*/ {},
 	},
+	
 	{Action_Walk,
-		/*name   */ STR8("Walk"),
-		/*costs  */ {},
+		/*name */ STR8("Walk"),
+		/*time */ UNKNOWN_ACTION_COMPLETION_TIME,
+		/*costs*/ {},
 	},
+	
 	{Action_Dig,
-		/*name   */ STR8("Dig"),
-		/*costs  */ {
+		/*name */ STR8("Dig"),
+		/*time */ 90*TICKS_PER_WORLD_SECOND,
+		/*costs*/ {
 			/*bladder*/ .00f*MAX_NEED_VALUE,
 			/*food   */ .00f*MAX_NEED_VALUE,
 			/*health */ .00f*MAX_NEED_VALUE,
@@ -197,9 +207,11 @@ ActionDef ActionDefinitions[] = {
 			/*water  */ .00f*MAX_NEED_VALUE,
 		},
 	},
+	
 	{Action_EatLeaf,
-		/*name   */ STR8("Eat Leaf"),
-		/*costs  */ {
+		/*name */ STR8("Eat Leaf"),
+		/*time */ 60*TICKS_PER_WORLD_SECOND,
+		/*costs*/ {
 			/*bladder*/ .30f*MAX_NEED_VALUE,
 			/*food   */ .30f*MAX_NEED_VALUE,
 			/*health */ .00f*MAX_NEED_VALUE,
@@ -208,9 +220,11 @@ ActionDef ActionDefinitions[] = {
 			/*water  */ .10f*MAX_NEED_VALUE,
 		},
 	},
+	
 	{Action_DrinkWater,
-		/*name   */ STR8("Drink Water"),
-		/*costs  */ {
+		/*name */ STR8("Drink Water"),
+		/*time */ 30*TICKS_PER_WORLD_SECOND,
+		/*costs*/ {
 			/*bladder*/ .30f*MAX_NEED_VALUE,
 			/*food   */ .00f*MAX_NEED_VALUE,
 			/*health */ .00f*MAX_NEED_VALUE,
@@ -275,7 +289,7 @@ typedef struct Agent{
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @advert
-#define MAX_ADVERT_DEF_ACTIONS 8 //arbitrary value, increase if needed
+#define MAX_ADVERT_DEF_ACTIONS 4 //arbitrary value, increase if needed
 #define ADVERT_COST_DELTA_EPSILON (10)
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
 
@@ -552,6 +566,7 @@ struct{
 	}drawing;
 	Entity* break_on_me;
 	Entity* selected_entity;
+	Advert* selected_advert;
 	u64 ticks;
 	b32 paused;
 	b32 step;
@@ -562,6 +577,7 @@ struct{
 	u32 entities; // total entities
 	u32 agents; // sub count of entities
 	u32 actions;
+	u32 advert[Advert_COUNT];
 	u32 adverts;
 }counts = {0};
 
@@ -716,6 +732,35 @@ void generate_path(Agent* agent, vec2i target){
 	}
 }
 
+Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
+	Assert(type < Advert_COUNT);
+	AdvertDef* def = &AdvertDefinitions[type];
+	Advert* advert = memory_pool_push(adverts_pool);
+	advert->def = def;
+	advert->owner = owner;
+	advert->actions_array = (Action*)memory_alloc(MAX_ADVERT_DEF_ACTIONS*sizeof(Action));
+	forI(MAX_ADVERT_DEF_ACTIONS){
+		if(def->actions[i] == 0) break;
+		
+		advert->actions_array[i].def = def->actions[i];
+		advert->actions_array[i].target = target;
+		advert->actions_array[i].progress = 0;
+		
+		advert->completion_time += def->actions[i]->time;
+		advert->actions_count   += 1;
+	}
+	
+	if(owner){
+		Assert(owner->adverts_count < 4); //TODO make adverts_array dynamic
+		owner->adverts_array[owner->adverts_count] = advert;
+		owner->adverts_count += 1;
+	}
+	
+	counts.adverts += 1;
+	counts.advert[type] += 1;
+	return advert;
+}
+
 template<typename... Args>
 Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
 	constexpr u32 arg_count = sizeof...(Args);
@@ -740,6 +785,17 @@ Entity* make_entity(Type type, vec2i pos, u32 age){
 	entity->age  = age;
 	entity->pos  = pos;
 	entity->name = str8{0};
+	switch(type){
+		case Entity_Leaf:{
+			make_advert(Advert_EatLeaf, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
+		}break;
+		case Entity_Dirt:{
+			make_advert(Advert_Dig, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
+		}break;
+		case Entity_Water:{
+			make_advert(Advert_DrinkWater, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
+		}break;
+	}
 	counts.entities++;
 	counts.entity[type]++;
 	return entity;
@@ -781,7 +837,7 @@ void perform_actions(Agent* agent){
 	Action* action = &advert->actions_array[agent->action_index];
 	switch(action->def->type){
 		case Action_Idle:{
-			action->progress += (1.0f / (f32)action->completion_time);
+			action->progress += (1.0f / (f32)action->def->time);
 		}break;
 		
 		case Action_Walk:{
@@ -1225,15 +1281,26 @@ void update_simulation(){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @ui
 struct{
-	uiItem* main;
-	uiItem* worldwin;
-	uiItem* worldholder;
+	uiItem* universe;
+	uiItem* world;
 	uiItem* background; // NOTE(sushi) the foreground is a child of the background so that it follows it and always draws over
 	uiItem* foreground;
+	
 	uiItem* info;
-	uiItem* draw_menu;
+	uiItem* entity_list;
 	uiItem* hover_container;
-	uiItem* selected_container;
+	struct{
+		uiItem* header;
+		uiItem* container;
+		
+		struct{
+			uiItem* header;
+			b32 collapsed;
+			
+			uiItem* list;
+			Advert* selected;
+		}adverts;
+	}entity;
 }ui;
 
 // returns a boolean indicating if the mouse is actually over the world 
@@ -1289,32 +1356,33 @@ void setup_ui(){
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
 	
-	ui.main = uiItemB();{
-		ui.main->id = STR8("ant_sim.main");
-		ui.main->style.background_color = {20,20,20,255};
-		ui.main->style.sizing = size_percent;
-		ui.main->style.size = {100,100};
-		ui.main->style.display = display_flex | display_horizontal;
-		ui.worldwin = uiItemB();{
-			ui.worldwin->id = STR8("ant_sim.main.worldwin");
-			ui.worldwin->style.sizing = size_percent_y | size_flex;
-			ui.worldwin->style.size = {512, 100};
-			ui.worldwin->style.background_color = {5,5,5,255};
-			ui.worldholder = uiItemB();{
-				ui.worldholder->style.sizing = size_auto;
-				ui.worldholder->style.positioning = pos_draggable_fixed;
-				ui.worldholder->style.padding = {10,10,10,10};
-				ui.worldholder->style.border_style = border_solid;
-				ui.worldholder->style.border_width = 4;
-				ui.worldholder->style.border_color = Color_White;
-				ui.background = uiItemB();{
-					ui.background->id = STR8("ant_sim.main.background");
+	uiItem* main = uiItemB();{ main->id = STR8("ant_sim.main");
+		main->style.sizing = size_percent;
+		main->style.size = {100,100};
+		main->style.display = display_flex | display_horizontal;
+		main->style.background_color = {20,20,20,255};
+		
+		ui.universe = uiItemB();{ ui.universe->id = STR8("ant_sim.universe");
+			ui.universe->style.sizing = size_flex | size_percent_y;
+			ui.universe->style.size = {512, 100};
+			ui.universe->style.background_color = {5,5,5,255};
+			
+			//TODO multiple views on the world
+			ui.world = uiItemB();{ ui.world->id = STR8("ant_sim.universe.world");
+				ui.world->style.sizing = size_auto;
+				ui.world->style.positioning = pos_draggable_fixed;
+				ui.world->style.padding = {10,10,10,10};
+				ui.world->style.border_style = border_solid;
+				ui.world->style.border_width = 4;
+				ui.world->style.border_color = Color_White;
+				
+				ui.background = uiItemB();{ ui.background->id = STR8("ant_sim.universe.world.background");
 					ui.background->style.background_image = rendering.background.texture;
 					ui.background->style.background_color = Color_White;
 					ui.background->style.size = {100,100};
 					ui.background->style.hover_passthrough = 1;
-					ui.foreground = uiItemB();{
-						ui.foreground->id = STR8("ant_sim.main.foreground");
+					
+					ui.foreground = uiItemB();{ ui.foreground->id = STR8("ant_sim.universe.world.foreground");
 						ui.foreground->style.background_image = rendering.foreground.texture;
 						ui.foreground->style.background_color = Color_White;
 						ui.foreground->style.sizing = size_percent;
@@ -1325,63 +1393,74 @@ void setup_ui(){
 			}uiItemE();
 		}uiItemE();
 		
-		ui.info = uiItemB();{
-			ui.info->id = STR8("ant_sim.main.info");
+		ui.info = uiItemB();{ ui.info->id = STR8("ant_sim.info");
 			ui.info->style.sizing = size_percent;
 			ui.info->style.size = {40, 100};
 			ui.info->style.padding = {10,10,10,10};
 			
-			uiItem* tool_select = uiItemB();{
-				tool_select->id = STR8("ant_sim.main.info.tool_select");
+			//TODO replace with tab widget
+			uiItem* tool_select = uiItemB();{ tool_select->id = STR8("ant_sim.info.tool_select");
 				tool_select->style.background_color = Color_DarkGrey;
 				tool_select->style.sizing = size_auto;
 				tool_select->style.padding = {2,2,2,2};
 				tool_select->style.display = display_horizontal;
 				
 				//TODO(sushi) add visual feedback to these buttons
-				uiItem* navigate = uiItemB();{
-					navigate->id = STR8("ant_sim.main.info.tool_select.navigate");
+				uiItem* navigate = uiItemB();{ navigate->id = STR8("ant_sim.info.tool_select.navigate");
 					navigate->style.sizing = size_auto;
 					navigate->style.padding = {2,2,2,2};
+					
 					uiTextML("Nav")->style.hover_passthrough = 1;
+					
+					navigate->action_trigger = action_act_mouse_released;
 					navigate->action = [](uiItem* item){
 						change_mode(Mode_Navigate);
-					}; navigate->action_trigger = action_act_mouse_released;
+					};
+					
+					navigate->update_trigger = action_act_always;
 					navigate->__update = [](uiItem* item){
 						if(sim.mode == Mode_Navigate){
 							item->style.background_color = Color_DarkRed;
 						}else{
 							item->style.background_color = {0};
 						}
-					}; navigate->update_trigger = action_act_always;
+					};
 				}uiItemE();
 				
-				uiItem* draw = uiItemB();{
-					draw->id = STR8("ant_sim.main.info.tool_select.draw");
+				uiItem* draw = uiItemB();{ draw->id = STR8("ant_sim.info.tool_select.draw");
 					draw->style.sizing = size_auto;
 					draw->style.padding = {2,2,2,2};
+					
 					uiTextML("Draw")->style.hover_passthrough = 1;
+					
+					draw->action_trigger = action_act_mouse_released;
 					draw->action = [](uiItem* item){
 						change_mode(Mode_Draw);
-					}; draw->action_trigger = action_act_mouse_released;
+					};
+					
+					draw->update_trigger = action_act_always;
 					draw->__update = [](uiItem* item){
 						if(sim.mode == Mode_Draw){
 							item->style.background_color = Color_DarkRed;
 						}else{
 							item->style.background_color = {0};
 						}
-					}; draw->update_trigger = action_act_always;
+					};
 				}uiItemE();
 			}uiItemE();
 			
-			uiItem* break_button = uiItemB();{
-				break_button->id = STR8("ant_sim.main.info.break_button");
+			uiItem* break_button = uiItemB();{ //TODO replace with button widget
+				break_button->id = STR8("ant_sim.info.break_button");
 				break_button->style.sizing = size_auto;
 				break_button->style.background_color = Color_VeryDarkCyan;
 				break_button->style.border_color = Color_White;
 				break_button->style.border_width = 1;
 				break_button->style.border_style = border_solid;
 				break_button->style.padding = {2,2,2,2};
+				
+				uiTextML("break on click")->style.hover_passthrough=1;
+				
+				break_button->action_trigger = action_act_mouse_released;
 				break_button->action = [](uiItem* item){
 					if(item->action_trigger == action_act_mouse_released){
 						item->action_trigger = action_act_always;
@@ -1401,26 +1480,19 @@ void setup_ui(){
 						item->style.background_color = Color_VeryDarkCyan;
 					}
 				};
-				break_button->action_trigger = action_act_mouse_released;
-				uiTextML("break on click")->style.hover_passthrough=1;
 			}uiItemE();
 			
-			ui.draw_menu = uiItemB();{
-				ui.draw_menu->id = STR8("ant_sim.main.info.draw_menu");
-				ui.draw_menu->style.sizing = size_percent_x | size_auto_y;
-				ui.draw_menu->style.size = {100,0};
-				ui.draw_menu->style.padding = {5,5,5,5};
-				ui.draw_menu->style.background_color = Color_DarkGrey;
+			//TODO replace with list widget
+			ui.entity_list = uiItemB();{ ui.entity_list->id = STR8("ant_sim.info.entity_list");
+				ui.entity_list->style.sizing = size_percent_x | size_auto_y;
+				ui.entity_list->style.width = 100/*percent*/;
+				ui.entity_list->style.padding = {5,5,5,5};
+				ui.entity_list->style.background_color = Color_DarkGrey;
 				
-				uiItem* entity_list = uiItemB();{
-					entity_list->id = STR8("ant_sim.main.info.draw_menu.entity_list");
-					entity_list->style.width = 100/*percent*/;
-					entity_list->style.sizing = size_auto_y | size_percent_x;
-					forI(Entity_COUNT){
-						if(i == Entity_Agent) continue; //handle agent races below
-						
-						uiItem* item = uiItemB();
-						item->id = ToString8(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.", EntityStrings[i]);
+				forI(Entity_COUNT){
+					if(i == Entity_Agent) continue; //handle agent races below
+					
+					uiItem* item = uiItemB();{ item->id = ToString8(deshi_allocator, "ant_sim.info.entity_list.", EntityStrings[i]);
 						item->userVar = i;
 						item->style.background_color = Color_VeryDarkCyan;
 						item->style.margin_bottom = 2;
@@ -1428,70 +1500,111 @@ void setup_ui(){
 						item->style.width = 100/*percent*/;
 						item->style.sizing = size_auto_y | size_percent_x;
 						item->style.padding_left = 1;
+						
 						uiTextM(EntityStrings[i])->style.hover_passthrough = 1;
+						
+						item->action_trigger = action_act_mouse_released;
 						item->action = [](uiItem* item){
 							sim.drawing.entity_type = item->userVar;
 							sim.drawing.agent_race = Race_COUNT;
 							item->dirty = 1;
-						}; item->action_trigger = action_act_mouse_released;
+						};
+						
+						item->update_trigger = action_act_always;
 						item->__update = [](uiItem* item){
 							if(sim.drawing.entity_type == item->userVar){
 								item->style.background_color = Color_DarkRed;
 							}else{
 								item->style.background_color = Color_VeryDarkCyan;
 							}
-						}; item->update_trigger = action_act_always;
-						uiItemE();
-					}
-					forI(Race_COUNT){
-						uiItem* item = uiItemB();{
-							item->id = ToString8(deshi_allocator, "ant_sim.main.info.draw_menu.entity_list.Agent.", RaceStrings[i]);
-							item->userVar = i;
-							item->style.background_color = Color_VeryDarkCyan;
-							item->style.margin_bottom = 2;
-							item->style.content_align = {0.0,0.5};
-							item->style.width = 100/*percent*/;
-							item->style.sizing = size_auto_y | size_percent_x;
-							item->style.padding_left = 1;
-							uiTextM(RaceStrings[i])->style.hover_passthrough = 1;
-							item->action = [](uiItem* item){
-								sim.drawing.entity_type = Entity_Agent;
-								sim.drawing.agent_race = item->userVar;
-								item->dirty = 1;
-							}; item->action_trigger = action_act_mouse_released;
-							item->__update = [](uiItem* item){
-								if(sim.drawing.entity_type == Entity_Agent && sim.drawing.agent_race == item->userVar){
-									item->style.background_color = Color_DarkRed;
-								}else{
-									item->style.background_color = Color_VeryDarkCyan;
-								}
-							}; item->update_trigger = action_act_always;
-						}uiItemE();
-					}
-				}uiItemE();
+						};
+					}uiItemE();
+				}
+				
+				forI(Race_COUNT){
+					uiItem* item = uiItemB();{ item->id = ToString8(deshi_allocator, "ant_sim.info.draw_menu.entity_list.Agent.", RaceStrings[i]);
+						item->userVar = i;
+						item->style.background_color = Color_VeryDarkCyan;
+						item->style.margin_bottom = 2;
+						item->style.content_align = {0.0,0.5};
+						item->style.width = 100/*percent*/;
+						item->style.sizing = size_auto_y | size_percent_x;
+						item->style.padding_left = 1;
+						
+						uiTextM(RaceStrings[i])->style.hover_passthrough = 1;
+						
+						item->action_trigger = action_act_mouse_released;
+						item->action = [](uiItem* item){
+							sim.drawing.entity_type = Entity_Agent;
+							sim.drawing.agent_race = item->userVar;
+							item->dirty = 1;
+						};
+						
+						item->update_trigger = action_act_always;
+						item->__update = [](uiItem* item){
+							if(sim.drawing.entity_type == Entity_Agent && sim.drawing.agent_race == item->userVar){
+								item->style.background_color = Color_DarkRed;
+							}else{
+								item->style.background_color = Color_VeryDarkCyan;
+							}
+						};
+					}uiItemE();
+				}
 			}uiItemE();
 			
-			uiTextML("Keys     ---------------"); //TODO replace with header
-			
+			uiTextML("Keys ---------------"); //TODO replace with header widget
 			uiTextM(aligned_text(3,3,{
 									 STR8("pause"),    STR8(" - "), STR8("space"),
 									 STR8("draw"),     STR8(" - "), STR8("lshift + d"),
 									 STR8("navigate"), STR8(" - "), STR8("lshift + n"),
 									 STR8("select"),   STR8(" - "), STR8("right click"),
-								 }));
+								 }))->id = STR8("ant_sim.info.keys");
 			
-			uiTextML("Hovered  ---------------"); //TODO replace with header
-			
-			ui.hover_container = uiItemB();{
-				ui.hover_container->id = STR8("ant_sim.main.info.hover_container");
-				ui.hover_container->style.sizing = size_auto;
+			uiTextML("Hovered ---------------"); //TODO replace with header widget
+			ui.hover_container = uiItemB();{ ui.hover_container->id = STR8("ant_sim.info.hover_container");
+				ui.hover_container->style.sizing = size_percent_x | size_auto_y;
+				ui.hover_container->style.width = 100/*percent*/;
+				ui.hover_container->style.padding_left = 5/*pixels*/;
 			}uiItemE();
 			
-			uiTextML("Selected ---------------"); //TODO replace with header
-			
-			ui.selected_container = uiItemB();{
-				ui.selected_container->id = STR8("ant_sim.main.info.selected_container");
-				ui.selected_container->style.sizing = size_auto;
+			uiTextML("Selected Entity ---------------"); //TODO replace with header widget
+			ui.entity.header = uiItemB();{ ui.entity.header->id = STR8("ant_sim.info.entity.header");
+				ui.entity.header->style.sizing = size_percent_x | size_auto_y;
+				ui.entity.header->style.width = 100/*percent*/;
+				
+				ui.entity.container = uiItemB();{ ui.entity.container->id = STR8("ant_sim.info.entity.container");
+					ui.entity.container->style.sizing = size_percent_x | size_auto_y;
+					ui.entity.container->style.width = 100/*percent*/;
+					ui.entity.container->style.padding_left = 5/*pixels*/;
+				}uiItemE();
+				
+				//TODO replace with header widget
+				ui.entity.adverts.collapsed = false;
+				ui.entity.adverts.header = uiItemB();{ ui.entity.adverts.header->id = STR8("ant_sim.info.entity.adverts.header");
+					ui.entity.adverts.header->style.sizing = size_percent_x | size_auto_y;
+					ui.entity.adverts.header->style.width = 100/*percent*/;
+					ui.entity.adverts.header->style.padding_left = 5/*pixels*/;
+					ui.entity.adverts.header->style.background_color = Color_DarkGrey;
+					
+					uiTextML("Adverts ---------------")->style.hover_passthrough = 1;
+					
+					ui.entity.adverts.header->action_trigger = action_act_mouse_released;
+					ui.entity.adverts.header->action = [](uiItem* item){
+						ToggleBool(ui.entity.adverts.collapsed);
+						if(HasFlag(ui.entity.adverts.list->style.display, display_hidden)){
+							RemoveFlag(ui.entity.adverts.list->style.display, display_hidden);
+						}else{
+							AddFlag(ui.entity.adverts.list->style.display, display_hidden);
+						}
+					};
+				}uiItemE();
+				
+				ui.entity.adverts.list = uiItemB();{ ui.entity.adverts.list->id = STR8("ant_sim.info.entity.adverts.body");
+					ui.entity.adverts.list->style.sizing = size_percent_x | size_auto_y;
+					ui.entity.adverts.list->style.width = 100/*percent*/;
+					ui.entity.adverts.list->style.padding_left = 5/*pixels*/;
+					ui.entity.adverts.list->style.background_color = Color_DarkGrey;
+				}uiItemE();
 			}uiItemE();
 		}uiItemE();
 	}uiItemE();
@@ -1502,24 +1615,23 @@ void update_ui(){
 	
 	uiImmediateB();{
 		persist Type anchor = anchor_top_left;
-		uiItem* window = uiItemB();
-		if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
-		window->style.positioning      = pos_absolute;
-		window->style.anchor           = anchor;
-		window->style.sizing           = size_auto;
-		window->style.background_color = Color_DarkGrey;
-		window->id                     = STR8("ant_sim.info_window");
-		uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"))->id = STR8("ant_sim.info_window.fps");
-		if(sim.paused){ 
-			uiItem* pausebox = uiItemB();{
-				pausebox->style.anchor = anchor_bottom_right;
-				pausebox->style.sizing = size_auto;
-				pausebox->style.padding = {2,2,2,2};
-				pausebox->style.background_color = color(255*(sin(1.5*DeshTime->totalTime/1000 + cos(1.5*DeshTime->totalTime/1000))+1)/2, 0, 0, 255);
-				uiTextML("paused")->id = STR8("ant_sim.info_window.paused");
-			}uiItemE();
-		}
-		uiItemE();
+		uiItem* window = uiItemB();{ window->id = STR8("ant_sim.info_window");
+			if(ui_item_hovered(window,false)) anchor = (anchor+1) % (anchor_bottom_left+1);
+			window->style.positioning = pos_absolute;
+			window->style.anchor = anchor;
+			window->style.sizing = size_auto;
+			window->style.background_color = Color_DarkGrey;
+			uiTextM(ToString8(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps"))->id = STR8("ant_sim.info_window.fps");
+			if(sim.paused){ 
+				uiItem* pausebox = uiItemB();{
+					pausebox->style.anchor = anchor_bottom_right;
+					pausebox->style.sizing = size_auto;
+					pausebox->style.padding = {2,2,2,2};
+					pausebox->style.background_color = color(255*(sin(1.5*DeshTime->totalTime/1000 + cos(1.5*DeshTime->totalTime/1000))+1)/2, 0, 0, 255);
+					uiTextML("paused")->id = STR8("ant_sim.info_window.paused");
+				}uiItemE();
+			}
+		}uiItemE();
 	}uiImmediateE();
 	
 	render_update_texture(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
@@ -1527,40 +1639,41 @@ void update_ui(){
 	
 	//zooming (even though ui handles moving the world for us, we still need to handle zooming)
 	vec2 cursize = ui.background->style.size;
-	vec2 local_mouse = input_mouse_position() - ui.worldholder->pos_screen;
+	vec2 local_mouse = input_mouse_position() - ui.world->pos_screen;
 	ui.background->style.size.x += DeshInput->scrollY / 10.0 * cursize.x;
 	ui.background->style.size.y += DeshInput->scrollY / 10.0 * cursize.y;
 	vec2 diff = ui.background->style.size - cursize;
 	if(DeshInput->scrollY){
-		ui.worldholder->style.pos.x -= local_mouse.x * ((ui.background->style.size.x / cursize.x) - 1);
-		ui.worldholder->style.pos.y -= local_mouse.y * ((ui.background->style.size.y / cursize.y) - 1);
+		ui.world->style.pos.x -= local_mouse.x * ((ui.background->style.size.x / cursize.x) - 1);
+		ui.world->style.pos.y -= local_mouse.y * ((ui.background->style.size.y / cursize.y) - 1);
 	}
 	
 	uiImmediateBP(ui.hover_container);{
-		uiTextM(ToString8(deshi_temp_allocator, STR8("entity: "), (hovered) ? hovered->name : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.entity");
+		uiTextM(ToString8(deshi_temp_allocator, STR8("entity: "), (hovered) ? hovered->name : STR8("nothing")))->id = STR8("ant_sim.info.hovered_container.entity");
 		
 		auto [tile_pos,valid_tile] = get_tile_under_mouse();
 		if(valid_tile){
-			uiTextM(ToString8(deshi_temp_allocator, STR8("tile  : "), tile_pos))->id = STR8("ant_sim.main.info.hovered_container.tile");
+			uiTextM(ToString8(deshi_temp_allocator, STR8("tile  : "), tile_pos))->id = STR8("ant_sim.info.hovered_container.tile");
 		}else{
-			uiTextML("tile  : nothing")->id = STR8("ant_sim.main.info.hovered_container.tile");
+			uiTextML("tile  : nothing")->id = STR8("ant_sim.info.hovered_container.tile");
 		}
 		
-		uiTextM(ToString8(deshi_temp_allocator, STR8("ui    : "), (g_ui->hovered) ? g_ui->hovered->id : STR8("nothing")))->id = STR8("ant_sim.main.info.hovered_container.ui");
+		uiTextM(ToString8(deshi_temp_allocator, STR8("ui    : "), (g_ui->hovered) ? g_ui->hovered->id : STR8("nothing")))->id = STR8("ant_sim.info.hovered_container.ui");
 	}uiImmediateE();
 	
-	uiImmediateBP(ui.selected_container);{
+	uiImmediateBP(ui.entity.container);{
 		if(sim.selected_entity){
-			uiTextM(ToString8(deshi_temp_allocator, "name: ", sim.selected_entity->name))->id = STR8("ant_sim.main.info.selected_container.name");
-			uiTextM(ToString8(deshi_temp_allocator, "type: ", EntityStrings[sim.selected_entity->type]))->id = STR8("ant_sim.main.info.selected_container.type");
-			uiTextM(ToString8(deshi_temp_allocator, "age : ", sim.selected_entity->age))->id = STR8("ant_sim.main.info.selected_container.age");
-			uiTextM(ToString8(deshi_temp_allocator, "pos : ", sim.selected_entity->pos))->id = STR8("ant_sim.main.info.selected_container.pos");
+			uiTextM(ToString8(deshi_temp_allocator, "name: ", sim.selected_entity->name))->id = STR8("ant_sim.info.entity.name");
+			uiTextM(ToString8(deshi_temp_allocator, "type: ", EntityStrings[sim.selected_entity->type]))->id = STR8("ant_sim.info.entity.type");
+			uiTextM(ToString8(deshi_temp_allocator, "age : ", sim.selected_entity->age))->id = STR8("ant_sim.info.entity.age");
+			uiTextM(ToString8(deshi_temp_allocator, "pos : ", sim.selected_entity->pos))->id = STR8("ant_sim.info.entity.pos");
+			
 			switch(sim.selected_entity->type){
 				case Entity_Agent:{
 					Agent* agent = AgentFromEntity(sim.selected_entity);
-					uiTextM(ToString8(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.species");
-					uiTextM(ToString8(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.main.info.selected_container.agent.race");
-					uiTextML("needs  : ")->id = STR8("ant_sim.main.info.selected_container.agent.needs_header");
+					uiTextM(ToString8(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]))->id = STR8("ant_sim.info.entity.agent.species");
+					uiTextM(ToString8(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]))->id = STR8("ant_sim.info.entity.agent.race");
+					uiTextML("Needs ----------")->id = STR8("ant_sim.info.entity.agent.needs_header");
 					
 					str8_builder needs_builder;
 					str8_builder_init(&needs_builder, str8{}, deshi_temp_allocator);
@@ -1578,14 +1691,55 @@ void update_ui(){
 						str8_builder_append(&needs_builder, NeedStrings[need->type]);
 						str8_builder_append(&needs_builder, STR8("\n"));
 					}
-					uiTextM(str8_builder_peek(&needs_builder))->id = STR8("ant_sim.main.info.selected_container.agent.needs_list");
+					uiTextM(str8_builder_peek(&needs_builder))->id = STR8("ant_sim.info.entity.agent.needs_list");
 				}break;
 				case Entity_Water:{
-					uiTextM(ToString8(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.main.info.selected_container.water.pressure");
+					uiTextM(ToString8(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure))->id = STR8("ant_sim.info.entity.water.pressure");
 				}break;
 			}
 		}else{
-			uiTextML("nothing selected")->id = STR8("ant_sim.main.info.selected_container.nothing");
+			uiTextML("nothing selected")->id = STR8("ant_sim.info.entity.nothing");
+		}
+	}uiImmediateE();
+	
+	uiImmediateBP(ui.entity.adverts.list);{
+		if(sim.selected_entity){
+			if(sim.selected_entity->adverts_count == 0){
+				uiTextML("no adverts");
+			}else{
+				forX(advert_idx,sim.selected_entity->adverts_count){
+					Advert* advert = sim.selected_entity->adverts_array[advert_idx];
+					
+					uiItem* item = uiItemB();{
+						str8 advert_name = ToString8(deshi_temp_allocator, advert_idx, STR8("_"), advert->def->name);
+						item->id = ToString8(deshi_temp_allocator, STR8("ant_sim.info.entity.adverts.list."), advert_name);
+						item->userVar = (u64)advert;
+						item->style.background_color = Color_VeryDarkCyan;
+						item->style.margin_bottom = 2;
+						item->style.content_align = {0.0,0.5};
+						item->style.sizing = size_auto_y | size_percent_x;
+						item->style.width = 100/*percent*/;
+						item->style.padding_left = 1;
+						
+						uiTextM(advert_name)->style.hover_passthrough = 1;
+						
+						item->action_trigger = action_act_mouse_released;
+						item->action = [](uiItem* item){
+							ui.entity.adverts.selected = (Advert*)item->userVar;
+							item->dirty = 1;
+						};
+						
+						item->update_trigger = action_act_always;
+						item->__update = [](uiItem* item){
+							if(ui.entity.adverts.selected == (Advert*)item->userVar){
+								item->style.background_color = Color_DarkRed;
+							}else{
+								item->style.background_color = Color_VeryDarkCyan;
+							}
+						};
+					}uiItemE();
+				}
+			}
 		}
 	}uiImmediateE();
 }
@@ -1600,7 +1754,7 @@ void update_input(){
 	if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
 	if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
 	
-	if(input_rmouse_pressed()) sim.selected_entity = get_entity_under_mouse();
+	if(input_rmouse_released()) sim.selected_entity = get_entity_under_mouse();
 	
 	switch(sim.mode){
 		case Mode_Navigate:{
@@ -1623,17 +1777,6 @@ void update_input(){
 							e->color = EntityColors[sim.drawing.entity_type][rand()%7];
 							e->name = EntityStrings[sim.drawing.entity_type];
 							set_entity(pos.x,pos.y, e);
-							switch(sim.drawing.entity_type){
-								case Entity_Leaf:{
-									//TODO make leaf adverts
-								}break;
-								case Entity_Dirt:{
-									//TODO make dirt adverts
-								}break;
-								case Entity_Water:{
-									//TODO make water adverts
-								}break;
-							}
 						}else{
 							//TODO make agents
 						}
@@ -1651,7 +1794,7 @@ void update_input(){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @main
 int main(int args_count, char** args){
-	deshi_init();
+	deshi_init_specify("ant_sim",Megabytes(256),Megabytes(512));
 	
 	setup_rendering();
 	setup_simulation();
