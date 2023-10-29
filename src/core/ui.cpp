@@ -249,7 +249,7 @@ void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 
 uiDrawCmdPtrs
 ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
-	if(dc->counts_reserved.x > counts.x && dc->counts_reserved.y > counts.y) return ui_drawcmd_get_ptrs(dc);
+	if(dc->counts_reserved.x >= counts.x && dc->counts_reserved.y >= counts.y) return ui_drawcmd_get_ptrs(dc);
 	// the given drawcmd needs to release its drawinfo but still be usable by whatever is calling 
 	// this function, so we make a copy of it, call remove on that drawcmd, then reallocate this one
 	auto dummy = (uiDrawCmd*)memalloc(sizeof(uiDrawCmd));
