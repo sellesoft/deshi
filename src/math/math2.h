@@ -104,12 +104,13 @@ struct mat4;
 #if DESHI_USE_SSE
 
 
+#define m128_shuffle_mask(x,y,z,w) ((x) | ((y) << 2) | ((z) << 4) | ((w) << 6))
+#define m128_shuffle(a,b, x,y,z,w) _mm_shuffle_ps((a), (b), m128_shuffle_mask((x),(y),(z),(w)))
+
 #define m128_add_4f32(lhs,rhs) _mm_add_ps((lhs), (rhs))
 #define m128_sub_4f32(lhs,rhs) _mm_sub_ps((lhs), (rhs))
 #define m128_mul_4f32(lhs,rhs) _mm_mul_ps((lhs), (rhs))
-#define m128_mul_constant_4f32(lhs,rhs) _mm_mul_ps((lhs), _mm_set1_ps(rhs))
 #define m128_div_4f32(lhs,rhs) _mm_div_ps((lhs), (rhs))
-#define m128_div_constant_4f32(lhs,rhs) _mm_div_ps((lhs), _mm_set1_ps(rhs))
 #define m128_abs_4f32(lhs) _mm_andnot_ps(_mm_set1_ps(-0.0f), (lhs))
 #define m128_negate_4f32(lhs) _mm_sub_ps(_mm_set1_ps(0.0f), (lhs))
 #define m128_floor_4f32(lhs) _mm_floor_ps((lhs))
@@ -123,9 +124,7 @@ struct mat4;
 #define m128_add_2f64(lhs,rhs) _mm_add_pd((lhs), (rhs))
 #define m128_sub_2f64(lhs,rhs) _mm_sub_pd((lhs), (rhs))
 #define m128_mul_2f64(lhs,rhs) _mm_mul_pd((lhs), (rhs))
-#define m128_mul_constant_2f64(lhs,rhs) _mm_mul_pd((lhs), _mm_set1_pd(rhs))
 #define m128_div_2f64(lhs,rhs) _mm_div_pd((lhs), (rhs))
-#define m128_div_constant_2f64(lhs,rhs) _mm_div_pd((lhs), _mm_set1_pd(rhs))
 #define m128_abs_2f64(lhs) _mm_andnot_pd(_mm_set1_pd(-0.0), (lhs))
 #define m128_negate_2f64(lhs) _mm_sub_pd(_mm_set1_pd(0.0), (lhs))
 #define m128_floor_2f64(lhs) _mm_floor_pd((lhs))
@@ -139,7 +138,6 @@ struct mat4;
 #define m128_add_4s32(lhs,rhs) _mm_add_epi32((lhs), (rhs))
 #define m128_sub_4s32(lhs,rhs) _mm_sub_epi32((lhs), (rhs))
 #define m128_mul_4s32(lhs,rhs) _mm_mullo_epi32((lhs), (rhs))
-#define m128_mul_constant_4s32(lhs,rhs) _mm_mullo_epi32((lhs), _mm_set1_epi32(rhs))
 #define m128_abs_4s32(lhs)_mm_abs_epi32((lhs))
 #define m128_negate_4s32(lhs) _mm_sub_epi32(_mm_set1_epi32(0), (lhs))
 #define m128_min_4s32(lhs) _mm_min_epi32((lhs))
@@ -566,7 +564,7 @@ mag_sq()const{DPZoneScoped;
 EXTERN_C inline vec2
 vec2_normalize(vec2 lhs){DPZoneScoped;
 	if(lhs.x > m_EPSILON || lhs.y > m_EPSILON){
-		return vec2_divide_constant(lhs, vec2_mag(lhs));
+		return vec2_div_f32(lhs, vec2_mag(lhs));
 	}else{
 		return lhs;
 	}
@@ -631,7 +629,7 @@ projection(const vec2& rhs)const{DPZoneScoped;
 
 EXTERN_C inline vec2
 vec2_component(vec2 lhs, vec2 rhs){DPZoneScoped;
-	return vec2_multiply_constant(vec2_normalize(rhs), vec2_projection(lhs,rhs));
+	return vec2_mul_f32(vec2_normalize(rhs), vec2_projection(lhs,rhs));
 }
 
 #ifdef __cplusplus
@@ -927,9 +925,9 @@ EXTERN_C inline vec2
 vec2_clamp_mag(vec2 lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec2_mag(lhs);
 	if      (m < min){
-		return vec2_multiply_constant(vec2_normalized(lhs), min);
+		return vec2_mul_f32(vec2_normalized(lhs), min);
 	}else if(m > max){
-		return vec2_multiply_constant(vec2_normalized(lhs), max);
+		return vec2_mul_f32(vec2_normalized(lhs), max);
 	}else{
 		return lhs;
 	}
@@ -1549,7 +1547,7 @@ mag_sq()const{DPZoneScoped;
 EXTERN_C inline vec2i
 vec2i_normalize(vec2i lhs){DPZoneScoped;
 	if(lhs.x != 0 || lhs.y != 0){
-		return vec2i_divide_constant(lhs, vec2i_mag(lhs));
+		return vec2i_div_f32(lhs, vec2i_mag(lhs));
 	}else{
 		return lhs;
 	}
@@ -1614,7 +1612,7 @@ projection(const vec2i& rhs)const{DPZoneScoped;
 
 EXTERN_C inline vec2i
 vec2i_component(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return vec2i_multiply_constant(vec2i_normalize(rhs), vec2i_projection(lhs,rhs));
+	return vec2i_mul_f32(vec2i_normalize(rhs), vec2i_projection(lhs,rhs));
 }
 
 #ifdef __cplusplus
@@ -1808,9 +1806,9 @@ EXTERN_C inline vec2i
 vec2i_clamp_mag(vec2i lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec2i_mag(lhs);
 	if      (m < min){
-		return vec2i_multiply_constant(vec2i_normalize(lhs), min);
+		return vec2i_mul_f32(vec2i_normalize(lhs), min);
 	}else if(m > max){
-		return vec2i_multiply_constant(vec2i_normalize(lhs), max);
+		return vec2i_mul_f32(vec2i_normalize(lhs), max);
 	}else{
 		return lhs;
 	}
@@ -2476,7 +2474,7 @@ mag_sq()const{DPZoneScoped;
 EXTERN_C inline vec3
 vec3_normalize(vec3 lhs){DPZoneScoped;
 	if(lhs.x > M_EPSILON || lhs.y > M_EPSILON || lhs.z > M_EPSILON){
-		return vec3_divide_constant(lhs, vec3_mag(lhs));
+		return vec3_div_f32(lhs, vec3_mag(lhs));
 	}else{
 		return lhs;
 	}
@@ -2541,7 +2539,7 @@ projection(const vec3& rhs)const{DPZoneScoped;
 
 EXTERN_C inline vec3
 vec3_component(vec3 lhs, vec3 rhs){DPZoneScoped;
-	return vec3_multiply_constant(vec3_normalize(rhs), vec3_projection(lhs,rhs));
+	return vec3_mul_f32(vec3_normalize(rhs), vec3_projection(lhs,rhs));
 }
 
 #ifdef __cplusplus
@@ -2865,9 +2863,9 @@ EXTERN_C inline vec3
 vec3_clamp_mag(vec3 lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec3_mag(lhs);
 	if      (m < min){
-		return vec3_multiply_constant(vec3_normalize(lhs), min);
+		return vec3_mul_f32(vec3_normalize(lhs), min);
 	}else if(m > max){
-		return vec3_multiply_constant(vec3_normalize(lhs), max);
+		return vec3_mul_f32(vec3_normalize(lhs), max);
 	}else{
 		return lhs;
 	}
@@ -3649,7 +3647,7 @@ mag_sq()const{DPZoneScoped;
 EXTERN_C inline vec3i
 vec3i_normalize(vec3i lhs){DPZoneScoped;
 	if(lhs.x != 0 || lhs.y != 0 || lhs.z != 0){
-		return vec3i_divide_constant(lhs, vec3i_mag(lhs));
+		return vec3i_div_f32(lhs, vec3i_mag(lhs));
 	}else{
 		return lhs;
 	}
@@ -3714,7 +3712,7 @@ projection(const vec3i& rhs)const{DPZoneScoped;
 
 EXTERN_C inline vec3i
 vec3i_component(vec3i lhs, vec3i rhs){DPZoneScoped;
-	return vec3i_multiply_constant(vec3i_normalize(rhs), vec3i_projection(lhs,rhs));
+	return vec3i_mul_f32(vec3i_normalize(rhs), vec3i_projection(lhs,rhs));
 }
 
 #ifdef __cplusplus
@@ -3925,9 +3923,9 @@ EXTERN_C inline vec3i
 vec3i_clamp_mag(vec3i lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec3i_mag(lhs);
 	if      (m < min){
-		return vec3i_multiply_constant(vec3i_normalize(lhs), min);
+		return vec3i_mul_f32(vec3i_normalize(lhs), min);
 	}else if(m > max){
-		return vec3i_multiply_constant(vec3i_normalize(lhs), max);
+		return vec3i_mul_f32(vec3i_normalize(lhs), max);
 	}else{
 		return lhs;
 	}
@@ -4658,7 +4656,7 @@ EXTERN_C inline vec4
 vec4_div_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_USE_SSE
-	v.sse = m128_div_constant_4f32(lhs.sse, m128_fill_4f32(rhs));
+	v.sse = m128_div_4f32(lhs.sse, m128_fill_4f32(rhs));
 #else //#if DESHI_USE_SSE
 	v.x = lhs.x / rhs;
 	v.y = lhs.y / rhs;
@@ -4673,7 +4671,7 @@ inline vec4 vec4::
 operator/ (const f32& rhs)const{DPZoneScoped;
 	vec4 v;
 #if DESHI_USE_SSE
-	v.sse = m128_div_constant_4f32(this->sse, m128_fill_4f32(rhs));
+	v.sse = m128_div_4f32(this->sse, m128_fill_4f32(rhs));
 #else //#if DESHI_USE_SSE
 	v.x = this->x / rhs;
 	v.y = this->y / rhs;
@@ -4688,7 +4686,7 @@ operator/ (const f32& rhs)const{DPZoneScoped;
 inline void vec4::
 operator/=(const f32& rhs){DPZoneScoped;
 #if DESHI_USE_SSE
-	this->sse = m128_div_constant_4f32(this->sse, m128_fill_4f32(rhs));
+	this->sse = m128_div_4f32(this->sse, m128_fill_4f32(rhs));
 #else //#if DESHI_USE_SSE
 	this->x /= rhs;
 	this->y /= rhs;
@@ -4917,7 +4915,7 @@ mag_sq()const{DPZoneScoped;
 EXTERN_C inline vec4
 vec4_normalize(vec4 lhs){DPZoneScoped;
 	if(lhs.x > M_EPSILON || lhs.y > M_EPSILON || lhs.z > M_EPSILON || lhs.w > M_EPSILON){
-		return vec4_divide_constant(lhs, vec4_mag(lhs));
+		return vec4_div_f32(lhs, vec4_mag(lhs));
 	}else{
 		return lhs;
 	}
@@ -4937,7 +4935,7 @@ normalize()const{DPZoneScoped;
 EXTERN_C inline vec4
 vec4_wnormalize(vec4 lhs){DPZoneScoped;
 	if(lhs.w > M_EPSILON){
-		return vec4_divide_constant(lhs, lhs.w);
+		return vec4_div_f32(lhs, lhs.w);
 	}else{
 		return lhs;
 	}
@@ -5003,7 +5001,7 @@ projection(const vec4& rhs)const{DPZoneScoped;
 
 EXTERN_C inline vec4
 vec4_component(vec4 lhs, vec4 rhs){DPZoneScoped;
-	return vec4_multiply_constant(vec4_normalize(rhs), vec4_projection(lhs,rhs));
+	return vec4_mul_f32(vec4_normalize(rhs), vec4_projection(lhs,rhs));
 }
 
 #ifdef __cplusplus
@@ -5447,9 +5445,9 @@ EXTERN_C inline vec4
 vec4_clamp_mag(vec4 lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec4_mag(lhs);
 	if      (m < min){
-		return vec4_multiply_constant(vec4_normalize(lhs), min);
+		return vec4_mul_f32(vec4_normalize(lhs), min);
 	}else if(m > max){
-		return vec4_multiply_constant(vec4_normalize(lhs), max);
+		return vec4_mul_f32(vec4_normalize(lhs), max);
 	}else{
 		return lhs;
 	}
@@ -6217,7 +6215,7 @@ EXTERN_C inline vec4i
 vec4i_mul_f32(vec4i lhs, f32 rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_USE_SSE
-	v.sse = m128_mul_constant_4s32(lhs.sse, rhs);
+	v.sse = m128_mul_4s32(lhs.sse, m128_fill_4s32(rhs));
 #else //#if DESHI_USE_SSE
 	v.x = lhs.x * rhs;
 	v.y = lhs.y * rhs;
@@ -6232,7 +6230,7 @@ inline vec4i vec4i::
 operator* (const f32& rhs)const{DPZoneScoped;
 	vec4i v;
 #if DESHI_USE_SSE
-	v.sse = m128_mul_constant_4s32(this->sse, rhs);
+	v.sse = m128_mul_4s32(this->sse, m128_fill_4s32(rhs));
 #else //#if DESHI_USE_SSE
 	v.x = this->x * rhs;
 	v.y = this->y * rhs;
@@ -6247,7 +6245,7 @@ operator* (const f32& rhs)const{DPZoneScoped;
 inline void vec4i::
 operator*=(const f32& rhs){DPZoneScoped;
 #if DESHI_USE_SSE
-	sse = m128_mul_constant_4s32(this->sse, rhs);
+	this->sse = m128_mul_4s32(this->sse, m128_fill_4s32(rhs));
 #else //#if DESHI_USE_SSE
 	this->x *= rhs;
 	this->y *= rhs;
@@ -6545,7 +6543,7 @@ mag_sq()const{DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_normalize(vec4i lhs){DPZoneScoped;
 	if(lhs.x != 0 || lhs.y != 0 || lhs.z != 0 || lhs.w != 0){
-		return vec4i_divide_constant(lhs, vec4i_mag(lhs));
+		return vec4i_div_f32(lhs, vec4i_mag(lhs));
 	}else{
 		return lhs;
 	}
@@ -6565,7 +6563,7 @@ normalize()const{DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_wnormalize(vec4i lhs){DPZoneScoped;
 	if(lhs.w != 0){
-		return vec4i_divide_constant(lhs, lhs.w);
+		return vec4i_div_f32(lhs, lhs.w);
 	}else{
 		return lhs;
 	}
@@ -6630,7 +6628,7 @@ projection(const vec4i& rhs)const{DPZoneScoped;
 
 EXTERN_C inline vec4i
 vec4i_component(vec4i lhs, vec4i rhs){DPZoneScoped;
-	return vec4i_multiply_constant(vec4i_normalize(rhs), vec4i_projection(lhs,rhs));
+	return vec4i_mul_f32(vec4i_normalize(rhs), vec4i_projection(lhs,rhs));
 }
 
 #ifdef __cplusplus
@@ -6906,9 +6904,9 @@ EXTERN_C inline vec4i
 vec4i_clamp_mag(vec4i lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec4i_mag(lhs);
 	if(m < min){
-		return vec4i_multiply_constant(vec4i_normalize(lhs), min);
+		return vec4i_mul_f32(vec4i_normalize(lhs), min);
 	}else if(m > max){
-		return vec4i_multiply_constant(vec4i_normalize(lhs), max);
+		return vec4i_mul_f32(vec4i_normalize(lhs), max);
 	}else{
 		return lhs;
 	}
@@ -8227,7 +8225,7 @@ mat3_sub_elements(mat3 lhs, mat3 rhs){DPZoneScoped;
 
 #ifdef __cplusplus
 inline mat3 mat3::
-operator+ (const mat3& rhs)const{DPZoneScoped;
+operator- (const mat3& rhs)const{DPZoneScoped;
 	mat3 result;
 	result.arr[0] = this->arr[0] - rhs.arr[0];
 	result.arr[1] = this->arr[1] - rhs.arr[1];
@@ -8244,7 +8242,7 @@ operator+ (const mat3& rhs)const{DPZoneScoped;
 
 #ifdef __cplusplus
 inline void mat3::
-operator+=(const mat3& rhs){DPZoneScoped;
+operator-=(const mat3& rhs){DPZoneScoped;
 	this->arr[0] -= rhs.arr[0];
 	this->arr[1] -= rhs.arr[1];
 	this->arr[2] -= rhs.arr[2];
@@ -8575,33 +8573,17 @@ operator!=(const mat3& rhs)const{DPZoneScoped;
 
 EXTERN_C inline b32
 mat3_transpose(mat3 lhs){DPZoneScoped;
-	mat3 result;
-	result.arr[0] = lhs.arr[0];
-	result.arr[1] = lhs.arr[3];
-	result.arr[2] = lhs.arr[6];
-	result.arr[3] = lhs.arr[1];
-	result.arr[4] = lhs.arr[4];
-	result.arr[5] = lhs.arr[7];
-	result.arr[6] = lhs.arr[2];
-	result.arr[7] = lhs.arr[5];
-	result.arr[8] = lhs.arr[8];
-	return result;
+	return Mat3(lhs.arr[0], lhs.arr[3], lhs.arr[6],
+				lhs.arr[1], lhs.arr[4], lhs.arr[7],
+				lhs.arr[2], lhs.arr[5], lhs.arr[8]);
 }
 
 #ifdef __cplusplus
 inline mat3 mat3::
 transpose()const{DPZoneScoped;
-	mat3 result;
-	result.arr[0] = this->arr[0];
-	result.arr[1] = this->arr[3];
-	result.arr[2] = this->arr[6];
-	result.arr[3] = this->arr[1];
-	result.arr[4] = this->arr[4];
-	result.arr[5] = this->arr[7];
-	result.arr[6] = this->arr[2];
-	result.arr[7] = this->arr[5];
-	result.arr[8] = this->arr[8];
-	return result;
+	return Mat3(this->arr[0], this->arr[3], this->arr[6],
+				this->arr[1], this->arr[4], this->arr[7],
+				this->arr[2], this->arr[5], this->arr[8]);
 }
 #endif //#ifdef __cplusplus
 
@@ -8795,7 +8777,7 @@ mat3_inverse(mat3 lhs){DPZoneScoped;
 
 #ifdef __cplusplus
 inline mat3 mat3::
-Inverse()const{DPZoneScoped;
+inverse()const{DPZoneScoped;
 	f32 d = this->determinant(lhs);
 	mat3 result;
 	result.arr[0] = ((lhs.arr[4] * lhs.arr[5]) - (lhs.arr[7] * lhs.arr[8])) / d;
@@ -8874,12 +8856,17 @@ mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	f32 cX = cosf(x); f32 sX = sinf(x);
 	f32 cY = cosf(y); f32 sY = sinf(y);
 	f32 cZ = cosf(z); f32 sZ = sinf(z);
-	f32 r00 = cZ*cY;            f32 r01 = cY*sZ;            f32 r02 = -sY;
-	f32 r10 = cZ*sX*sY - cX*sZ; f32 r11 = cZ*cX + sX*sY*sZ; f32 r12 = sX*cY;
-	f32 r20 = cZ*cX*sY + sX*sZ; f32 r21 = cX*sY*sZ - cZ*sX; f32 r22 = cX*cY;
-	return Mat3(r00, r01, r02,
-				r10, r11, r12,
-				r20, r21, r22);
+	mat3 result;
+	result.arr[0] = cZ*cY;
+	result.arr[1] = cY*sZ;
+	result.arr[2] = -sY;
+	result.arr[3] = cZ*sX*sY - cX*sZ;
+	result.arr[4] = cZ*cX + sX*sY*sZ;
+	result.arr[5] = sX*cY;
+	result.arr[6] = cZ*cX*sY + sX*sZ;
+	result.arr[7] = cX*sY*sZ - cZ*sX;
+	result.arr[8] = cX*cY;
+	return result;
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -8889,12 +8876,17 @@ mat3_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 	f32 cX = cosf(x); f32 sX = sinf(x);
 	f32 cY = cosf(y); f32 sY = sinf(y);
 	f32 cZ = cosf(z); f32 sZ = sinf(z);
-	f32 r00 = cZ*cY;            f32 r01 = cY*sZ;            f32 r02 = -sY;
-	f32 r10 = cZ*sX*sY - cX*sZ; f32 r11 = cZ*cX + sX*sY*sZ; f32 r12 = sX*cY;
-	f32 r20 = cZ*cX*sY + sX*sZ; f32 r21 = cX*sY*sZ - cZ*sX; f32 r22 = cX*cY;
-	return Mat3(r00, r01, r02,
-				r10, r11, r12,
-				r20, r21, r22);
+	mat3 result;
+	result.arr[0] = cZ*cY;
+	result.arr[1] = cY*sZ;
+	result.arr[2] = -sY;
+	result.arr[3] = cZ*sX*sY - cX*sZ;
+	result.arr[4] = cZ*cX + sX*sY*sZ;
+	result.arr[5] = sX*cY;
+	result.arr[6] = cZ*cX*sY + sX*sZ;
+	result.arr[7] = cX*sY*sZ - cZ*sX;
+	result.arr[8] = cX*cY;
+	return result;
 }
 
 
@@ -8902,8 +8894,1719 @@ mat3_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 // @mat4
 
 
+EXTERN_C typedef struct mat4{
+	union{
+		f32 arr[16];
+		struct{
+			vec4 row0;
+			vec4 row1;
+			vec4 row2;
+			vec4 row3;
+		};
+#if DESHI_USE_SSE
+		struct{
+			__m128 sse_row0;
+			__m128 sse_row1;
+			__m128 sse_row2;
+			__m128 sse_row3;
+		};
+#endif
+	};
+	
+#ifdef __cplusplus
+	static constexpr mat4 ZERO     = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	static constexpr mat4 ONE      = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+	static constexpr mat4 IDENTITY = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+	f32  operator()(u32 row, u32 col)const;
+	f32& operator()(u32 row, u32 col);
+	f32  operator[](u32 index)const;
+	f32& operator[](u32 index);
+	mat4 operator+ (const mat4& rhs)const;
+	void operator+=(const mat4& rhs);
+	mat4 operator- (const mat4& rhs)const;
+	void operator-=(const mat4& rhs);
+	mat4 operator* (const f32& rhs)const;
+	void operator*=(const f32& rhs);
+	mat4 operator* (const mat4& rhs)const;
+	void operator*=(const mat4& rhs);
+	mat4 operator^ (const mat4& rhs)const;
+	void operator^=(const mat4& rhs);
+	mat4 operator/ (const f32& rhs)const;
+	void operator/=(const f32& rhs);
+	mat4 operator% (const mat4& rhs)const;
+	void operator%=(const mat4& rhs);
+	b32  operator==(const mat4& rhs)const;
+	b32  operator!=(const mat4& rhs)const;
+	mat4 transpose()const;
+	f32  determinant()const;
+	f32  minor(u32 row, u32 col)const;
+	f32  cofactor(u32 row, u32 col)const;
+	mat4 adjoint()const;
+	mat4 inverse()const;
+	mat3 to_mat3()const;
+	vec4 row(u32 row)const;
+	vec4 col(u32 col)const;
+#endif //#ifdef __cplusplus
+} mat4;
 
+EXTERN_C inline mat4
+Mat4(f32 _00, f32 _10, f32 _20, f32 _30
+	 f32 _01, f32 _11, f32 _21, f32 _31
+	 f32 _02, f32 _12, f32 _22, f32 _32,
+	 f32 _03, f32 _13, f32 _23, f32 _33){
+	return mat3{_00, _10, _20, _30, _01, _11, _21, _31, _02, _12, _22, _32, _03, _13, _23, _33};
+}
 
+EXTERN_C inline mat4
+array_to_mat4(f32* arr){
+	return mat4{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7], arr[8], arr[9], arr[10], arr[11], arr[12], arr[13], arr[14], arr[15]};
+}
+
+EXTERN_C inline mat4 mat4_ZERO()    { return mat4{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; }
+EXTERN_C inline mat4 mat4_ONE()     { return mat4{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}; }
+EXTERN_C inline mat4 mat4_IDENTITY(){ return mat4{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}; }
+
+#define mat4_coord(m,row,col) m.arr[4*row + col]
+
+#ifdef __cplusplus
+inline f32 mat4::
+operator()(u32 row, u32 col)const{DPZoneScoped;
+	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
+	return this->arr[4*row + col];
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline f32& mat4::
+operator()(u32 row, u32 col){DPZoneScoped;
+	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
+	return this->arr[4*row + col];
+}
+#endif //#ifdef __cplusplus
+
+#define mat3_index(m,index) m.arr[index]
+
+#ifdef __cplusplus
+inline f32 mat4::
+operator[](u32 index)const{DPZoneScoped;
+	Assert(index < 16, "mat4 subscript out of bounds");
+	return this->arr[index];
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline f32& mat4::
+operator[](u32 index)const{DPZoneScoped;
+	Assert(index < 16, "mat4 subscript out of bounds");
+	return this->arr[index];
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_add_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_add_4f32(lhs.sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_add_4f32(lhs.sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_add_4f32(lhs.sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_add_4f32(lhs.sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = lhs.arr[0] + rhs.arr[0];
+	result.arr[1] = lhs.arr[1] + rhs.arr[1];
+	result.arr[2] = lhs.arr[2] + rhs.arr[2];
+	result.arr[3] = lhs.arr[3] + rhs.arr[3];
+	result.arr[4] = lhs.arr[4] + rhs.arr[4];
+	result.arr[5] = lhs.arr[5] + rhs.arr[5];
+	result.arr[6] = lhs.arr[6] + rhs.arr[6];
+	result.arr[7] = lhs.arr[7] + rhs.arr[7];
+	result.arr[8] = lhs.arr[8] + rhs.arr[8];
+	result.arr[9] = lhs.arr[9] + rhs.arr[9];
+	result.arr[10] = lhs.arr[10] + rhs.arr[10];
+	result.arr[11] = lhs.arr[11] + rhs.arr[11];
+	result.arr[12] = lhs.arr[12] + rhs.arr[12];
+	result.arr[13] = lhs.arr[13] + rhs.arr[13];
+	result.arr[14] = lhs.arr[14] + rhs.arr[14];
+	result.arr[15] = lhs.arr[15] + rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator+ (const mat4& rhs)const{DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_add_4f32(this->sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_add_4f32(this->sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_add_4f32(this->sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_add_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = this->arr[0] + rhs.arr[0];
+	result.arr[1] = this->arr[1] + rhs.arr[1];
+	result.arr[2] = this->arr[2] + rhs.arr[2];
+	result.arr[3] = this->arr[3] + rhs.arr[3];
+	result.arr[4] = this->arr[4] + rhs.arr[4];
+	result.arr[5] = this->arr[5] + rhs.arr[5];
+	result.arr[6] = this->arr[6] + rhs.arr[6];
+	result.arr[7] = this->arr[7] + rhs.arr[7];
+	result.arr[8] = this->arr[8] + rhs.arr[8];
+	result.arr[9] = this->arr[9] + rhs.arr[9];
+	result.arr[10] = this->arr[10] + rhs.arr[10];
+	result.arr[11] = this->arr[11] + rhs.arr[11];
+	result.arr[12] = this->arr[12] + rhs.arr[12];
+	result.arr[13] = this->arr[13] + rhs.arr[13];
+	result.arr[14] = this->arr[14] + rhs.arr[14];
+	result.arr[15] = this->arr[15] + rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator+=(const mat4& rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	this->sse_row0 = m128_add_4f32(this->sse_row0, rhs.sse_row0);
+	this->sse_row1 = m128_add_4f32(this->sse_row1, rhs.sse_row1);
+	this->sse_row2 = m128_add_4f32(this->sse_row2, rhs.sse_row2);
+	this->sse_row3 = m128_add_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	this->arr[0] += rhs.arr[0];
+	this->arr[1] += rhs.arr[1];
+	this->arr[2] += rhs.arr[2];
+	this->arr[3] += rhs.arr[3];
+	this->arr[4] += rhs.arr[4];
+	this->arr[5] += rhs.arr[5];
+	this->arr[6] += rhs.arr[6];
+	this->arr[7] += rhs.arr[7];
+	this->arr[8] += rhs.arr[8];
+	this->arr[9] += rhs.arr[9];
+	this->arr[10] += rhs.arr[10];
+	this->arr[11] += rhs.arr[11];
+	this->arr[12] += rhs.arr[12];
+	this->arr[13] += rhs.arr[13];
+	this->arr[14] += rhs.arr[14];
+	this->arr[15] += rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_sub_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_sub_4f32(lhs.sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_sub_4f32(lhs.sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_sub_4f32(lhs.sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_sub_4f32(lhs.sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = lhs.arr[0] - rhs.arr[0];
+	result.arr[1] = lhs.arr[1] - rhs.arr[1];
+	result.arr[2] = lhs.arr[2] - rhs.arr[2];
+	result.arr[3] = lhs.arr[3] - rhs.arr[3];
+	result.arr[4] = lhs.arr[4] - rhs.arr[4];
+	result.arr[5] = lhs.arr[5] - rhs.arr[5];
+	result.arr[6] = lhs.arr[6] - rhs.arr[6];
+	result.arr[7] = lhs.arr[7] - rhs.arr[7];
+	result.arr[8] = lhs.arr[8] - rhs.arr[8];
+	result.arr[9] = lhs.arr[9] - rhs.arr[9];
+	result.arr[10] = lhs.arr[10] - rhs.arr[10];
+	result.arr[11] = lhs.arr[11] - rhs.arr[11];
+	result.arr[12] = lhs.arr[12] - rhs.arr[12];
+	result.arr[13] = lhs.arr[13] - rhs.arr[13];
+	result.arr[14] = lhs.arr[14] - rhs.arr[14];
+	result.arr[15] = lhs.arr[15] - rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator- (const mat4& rhs)const{DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_sub_4f32(this->sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_sub_4f32(this->sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_sub_4f32(this->sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_sub_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = this->arr[0] - rhs.arr[0];
+	result.arr[1] = this->arr[1] - rhs.arr[1];
+	result.arr[2] = this->arr[2] - rhs.arr[2];
+	result.arr[3] = this->arr[3] - rhs.arr[3];
+	result.arr[4] = this->arr[4] - rhs.arr[4];
+	result.arr[5] = this->arr[5] - rhs.arr[5];
+	result.arr[6] = this->arr[6] - rhs.arr[6];
+	result.arr[7] = this->arr[7] - rhs.arr[7];
+	result.arr[8] = this->arr[8] - rhs.arr[8];
+	result.arr[9] = this->arr[9] - rhs.arr[9];
+	result.arr[10] = this->arr[10] - rhs.arr[10];
+	result.arr[11] = this->arr[11] - rhs.arr[11];
+	result.arr[12] = this->arr[12] - rhs.arr[12];
+	result.arr[13] = this->arr[13] - rhs.arr[13];
+	result.arr[14] = this->arr[14] - rhs.arr[14];
+	result.arr[15] = this->arr[15] - rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator-=(const mat4& rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	this->sse_row0 = m128_sub_4f32(this->sse_row0, rhs.sse_row0);
+	this->sse_row1 = m128_sub_4f32(this->sse_row1, rhs.sse_row1);
+	this->sse_row2 = m128_sub_4f32(this->sse_row2, rhs.sse_row2);
+	this->sse_row3 = m128_sub_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	this->arr[0] -= rhs.arr[0];
+	this->arr[1] -= rhs.arr[1];
+	this->arr[2] -= rhs.arr[2];
+	this->arr[3] -= rhs.arr[3];
+	this->arr[4] -= rhs.arr[4];
+	this->arr[5] -= rhs.arr[5];
+	this->arr[6] -= rhs.arr[6];
+	this->arr[7] -= rhs.arr[7];
+	this->arr[8] -= rhs.arr[8];
+	this->arr[9] -= rhs.arr[9];
+	this->arr[10] -= rhs.arr[10];
+	this->arr[11] -= rhs.arr[11];
+	this->arr[12] -= rhs.arr[12];
+	this->arr[13] -= rhs.arr[13];
+	this->arr[14] -= rhs.arr[14];
+	this->arr[15] -= rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_mul_f32(mat4 lhs, f32 rhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	__m128 scalar = m128_fill_4f32(rhs);
+	result.sse_row0 = m128_mul_4f32(lhs.sse_row0, scalar);
+	result.sse_row1 = m128_mul_4f32(lhs.sse_row1, scalar);
+	result.sse_row2 = m128_mul_4f32(lhs.sse_row2, scalar);
+	result.sse_row3 = m128_mul_4f32(lhs.sse_row3, scalar);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = lhs.arr[0] * rhs;
+	result.arr[1] = lhs.arr[1] * rhs;
+	result.arr[2] = lhs.arr[2] * rhs;
+	result.arr[3] = lhs.arr[3] * rhs;
+	result.arr[4] = lhs.arr[4] * rhs;
+	result.arr[5] = lhs.arr[5] * rhs;
+	result.arr[6] = lhs.arr[6] * rhs;
+	result.arr[7] = lhs.arr[7] * rhs;
+	result.arr[8] = lhs.arr[8] * rhs;
+	result.arr[9] = lhs.arr[9] * rhs;
+	result.arr[10] = lhs.arr[10] * rhs;
+	result.arr[11] = lhs.arr[11] * rhs;
+	result.arr[12] = lhs.arr[12] * rhs;
+	result.arr[13] = lhs.arr[13] * rhs;
+	result.arr[14] = lhs.arr[14] * rhs;
+	result.arr[15] = lhs.arr[15] * rhs;
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator* (const f32& rhs)const{DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	__m128 scalar = m128_fill_4f32(rhs);
+	result.sse_row0 = m128_mul_4f32(this->sse_row0, scalar);
+	result.sse_row1 = m128_mul_4f32(this->sse_row1, scalar);
+	result.sse_row2 = m128_mul_4f32(this->sse_row2, scalar);
+	result.sse_row3 = m128_mul_4f32(this->sse_row3, scalar);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = this->arr[0] * rhs;
+	result.arr[1] = this->arr[1] * rhs;
+	result.arr[2] = this->arr[2] * rhs;
+	result.arr[3] = this->arr[3] * rhs;
+	result.arr[4] = this->arr[4] * rhs;
+	result.arr[5] = this->arr[5] * rhs;
+	result.arr[6] = this->arr[6] * rhs;
+	result.arr[7] = this->arr[7] * rhs;
+	result.arr[8] = this->arr[8] * rhs;
+	result.arr[9] = this->arr[9] * rhs;
+	result.arr[10] = this->arr[10] * rhs;
+	result.arr[11] = this->arr[11] * rhs;
+	result.arr[12] = this->arr[12] * rhs;
+	result.arr[13] = this->arr[13] * rhs;
+	result.arr[14] = this->arr[14] * rhs;
+	result.arr[15] = this->arr[15] * rhs;
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator*=(const f32& rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	__m128 scalar = m128_fill_4f32(rhs);
+	this->sse_row0 = m128_mul_4f32(this->sse_row0, scalar);
+	this->sse_row1 = m128_mul_4f32(this->sse_row1, scalar);
+	this->sse_row2 = m128_mul_4f32(this->sse_row2, scalar);
+	this->sse_row3 = m128_mul_4f32(this->sse_row3, scalar);
+#else //#if DESHI_USE_SSE
+	this->arr[0] *= rhs;
+	this->arr[1] *= rhs;
+	this->arr[2] *= rhs;
+	this->arr[3] *= rhs;
+	this->arr[4] *= rhs;
+	this->arr[5] *= rhs;
+	this->arr[6] *= rhs;
+	this->arr[7] *= rhs;
+	this->arr[8] *= rhs;
+	this->arr[9] *= rhs;
+	this->arr[10] *= rhs;
+	this->arr[11] *= rhs;
+	this->arr[12] *= rhs;
+	this->arr[13] *= rhs;
+	this->arr[14] *= rhs;
+	this->arr[15] *= rhs;
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator* (const f32& lhs, const mat4& rhs)const{
+	return rhs * lhs;
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_mul_mat4(mat4 lhs, mat4 rhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_linear_combine(lhs.sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row1 = m128_linear_combine(lhs.sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row2 = m128_linear_combine(lhs.sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row3 = m128_linear_combine(lhs.sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[ 0] = lhs.arr[ 0]*rhs.arr[ 0] + lhs.arr[ 1]*rhs.arr[ 4] + lhs.arr[ 2]*rhs.arr[ 8] + lhs.arr[ 3]*rhs.arr[12];
+	result.arr[ 1] = lhs.arr[ 0]*rhs.arr[ 1] + lhs.arr[ 1]*rhs.arr[ 5] + lhs.arr[ 2]*rhs.arr[ 9] + lhs.arr[ 3]*rhs.arr[13];
+	result.arr[ 2] = lhs.arr[ 0]*rhs.arr[ 2] + lhs.arr[ 1]*rhs.arr[ 6] + lhs.arr[ 2]*rhs.arr[10] + lhs.arr[ 3]*rhs.arr[14];
+	result.arr[ 3] = lhs.arr[ 0]*rhs.arr[ 3] + lhs.arr[ 1]*rhs.arr[ 7] + lhs.arr[ 2]*rhs.arr[11] + lhs.arr[ 3]*rhs.arr[15];
+	result.arr[ 4] = lhs.arr[ 4]*rhs.arr[ 0] + lhs.arr[ 5]*rhs.arr[ 4] + lhs.arr[ 6]*rhs.arr[ 8] + lhs.arr[ 7]*rhs.arr[12];
+	result.arr[ 5] = lhs.arr[ 4]*rhs.arr[ 1] + lhs.arr[ 5]*rhs.arr[ 5] + lhs.arr[ 6]*rhs.arr[ 9] + lhs.arr[ 7]*rhs.arr[13];
+	result.arr[ 6] = lhs.arr[ 4]*rhs.arr[ 2] + lhs.arr[ 5]*rhs.arr[ 6] + lhs.arr[ 6]*rhs.arr[10] + lhs.arr[ 7]*rhs.arr[14];
+	result.arr[ 7] = lhs.arr[ 4]*rhs.arr[ 3] + lhs.arr[ 5]*rhs.arr[ 7] + lhs.arr[ 6]*rhs.arr[11] + lhs.arr[ 7]*rhs.arr[15];
+	result.arr[ 8] = lhs.arr[ 8]*rhs.arr[ 0] + lhs.arr[ 9]*rhs.arr[ 4] + lhs.arr[10]*rhs.arr[ 8] + lhs.arr[11]*rhs.arr[12];
+	result.arr[ 9] = lhs.arr[ 8]*rhs.arr[ 1] + lhs.arr[ 9]*rhs.arr[ 5] + lhs.arr[10]*rhs.arr[ 9] + lhs.arr[11]*rhs.arr[13];
+	result.arr[10] = lhs.arr[ 8]*rhs.arr[ 2] + lhs.arr[ 9]*rhs.arr[ 6] + lhs.arr[10]*rhs.arr[10] + lhs.arr[11]*rhs.arr[14];
+	result.arr[11] = lhs.arr[ 8]*rhs.arr[ 3] + lhs.arr[ 9]*rhs.arr[ 7] + lhs.arr[10]*rhs.arr[11] + lhs.arr[11]*rhs.arr[15];
+	result.arr[12] = lhs.arr[12]*rhs.arr[ 0] + lhs.arr[13]*rhs.arr[ 4] + lhs.arr[14]*rhs.arr[ 8] + lhs.arr[15]*rhs.arr[12];
+	result.arr[13] = lhs.arr[12]*rhs.arr[ 1] + lhs.arr[13]*rhs.arr[ 5] + lhs.arr[14]*rhs.arr[ 9] + lhs.arr[16]*rhs.arr[13];
+	result.arr[14] = lhs.arr[12]*rhs.arr[ 2] + lhs.arr[13]*rhs.arr[ 6] + lhs.arr[14]*rhs.arr[10] + lhs.arr[16]*rhs.arr[14];
+	result.arr[15] = lhs.arr[12]*rhs.arr[ 3] + lhs.arr[13]*rhs.arr[ 7] + lhs.arr[14]*rhs.arr[11] + lhs.arr[16]*rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator* (const mat4& rhs)const{DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_linear_combine(this->sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row1 = m128_linear_combine(this->sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row2 = m128_linear_combine(this->sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row3 = m128_linear_combine(this->sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[ 0] = this->arr[ 0]*rhs.arr[ 0] + this->arr[ 1]*rhs.arr[ 4] + this->arr[ 2]*rhs.arr[ 8] + this->arr[ 3]*rhs.arr[12];
+	result.arr[ 1] = this->arr[ 0]*rhs.arr[ 1] + this->arr[ 1]*rhs.arr[ 5] + this->arr[ 2]*rhs.arr[ 9] + this->arr[ 3]*rhs.arr[13];
+	result.arr[ 2] = this->arr[ 0]*rhs.arr[ 2] + this->arr[ 1]*rhs.arr[ 6] + this->arr[ 2]*rhs.arr[10] + this->arr[ 3]*rhs.arr[14];
+	result.arr[ 3] = this->arr[ 0]*rhs.arr[ 3] + this->arr[ 1]*rhs.arr[ 7] + this->arr[ 2]*rhs.arr[11] + this->arr[ 3]*rhs.arr[15];
+	result.arr[ 4] = this->arr[ 4]*rhs.arr[ 0] + this->arr[ 5]*rhs.arr[ 4] + this->arr[ 6]*rhs.arr[ 8] + this->arr[ 7]*rhs.arr[12];
+	result.arr[ 5] = this->arr[ 4]*rhs.arr[ 1] + this->arr[ 5]*rhs.arr[ 5] + this->arr[ 6]*rhs.arr[ 9] + this->arr[ 7]*rhs.arr[13];
+	result.arr[ 6] = this->arr[ 4]*rhs.arr[ 2] + this->arr[ 5]*rhs.arr[ 6] + this->arr[ 6]*rhs.arr[10] + this->arr[ 7]*rhs.arr[14];
+	result.arr[ 7] = this->arr[ 4]*rhs.arr[ 3] + this->arr[ 5]*rhs.arr[ 7] + this->arr[ 6]*rhs.arr[11] + this->arr[ 7]*rhs.arr[15];
+	result.arr[ 8] = this->arr[ 8]*rhs.arr[ 0] + this->arr[ 9]*rhs.arr[ 4] + this->arr[10]*rhs.arr[ 8] + this->arr[11]*rhs.arr[12];
+	result.arr[ 9] = this->arr[ 8]*rhs.arr[ 1] + this->arr[ 9]*rhs.arr[ 5] + this->arr[10]*rhs.arr[ 9] + this->arr[11]*rhs.arr[13];
+	result.arr[10] = this->arr[ 8]*rhs.arr[ 2] + this->arr[ 9]*rhs.arr[ 6] + this->arr[10]*rhs.arr[10] + this->arr[11]*rhs.arr[14];
+	result.arr[11] = this->arr[ 8]*rhs.arr[ 3] + this->arr[ 9]*rhs.arr[ 7] + this->arr[10]*rhs.arr[11] + this->arr[11]*rhs.arr[15];
+	result.arr[12] = this->arr[12]*rhs.arr[ 0] + this->arr[13]*rhs.arr[ 4] + this->arr[14]*rhs.arr[ 8] + this->arr[15]*rhs.arr[12];
+	result.arr[13] = this->arr[12]*rhs.arr[ 1] + this->arr[13]*rhs.arr[ 5] + this->arr[14]*rhs.arr[ 9] + this->arr[16]*rhs.arr[13];
+	result.arr[14] = this->arr[12]*rhs.arr[ 2] + this->arr[13]*rhs.arr[ 6] + this->arr[14]*rhs.arr[10] + this->arr[16]*rhs.arr[14];
+	result.arr[15] = this->arr[12]*rhs.arr[ 3] + this->arr[13]*rhs.arr[ 7] + this->arr[14]*rhs.arr[11] + this->arr[16]*rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator*=(const mat4& rhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_linear_combine(this->sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row1 = m128_linear_combine(this->sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row2 = m128_linear_combine(this->sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row3 = m128_linear_combine(this->sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[ 0] = this->arr[ 0]*rhs.arr[ 0] + this->arr[ 1]*rhs.arr[ 4] + this->arr[ 2]*rhs.arr[ 8] + this->arr[ 3]*rhs.arr[12];
+	result.arr[ 1] = this->arr[ 0]*rhs.arr[ 1] + this->arr[ 1]*rhs.arr[ 5] + this->arr[ 2]*rhs.arr[ 9] + this->arr[ 3]*rhs.arr[13];
+	result.arr[ 2] = this->arr[ 0]*rhs.arr[ 2] + this->arr[ 1]*rhs.arr[ 6] + this->arr[ 2]*rhs.arr[10] + this->arr[ 3]*rhs.arr[14];
+	result.arr[ 3] = this->arr[ 0]*rhs.arr[ 3] + this->arr[ 1]*rhs.arr[ 7] + this->arr[ 2]*rhs.arr[11] + this->arr[ 3]*rhs.arr[15];
+	result.arr[ 4] = this->arr[ 4]*rhs.arr[ 0] + this->arr[ 5]*rhs.arr[ 4] + this->arr[ 6]*rhs.arr[ 8] + this->arr[ 7]*rhs.arr[12];
+	result.arr[ 5] = this->arr[ 4]*rhs.arr[ 1] + this->arr[ 5]*rhs.arr[ 5] + this->arr[ 6]*rhs.arr[ 9] + this->arr[ 7]*rhs.arr[13];
+	result.arr[ 6] = this->arr[ 4]*rhs.arr[ 2] + this->arr[ 5]*rhs.arr[ 6] + this->arr[ 6]*rhs.arr[10] + this->arr[ 7]*rhs.arr[14];
+	result.arr[ 7] = this->arr[ 4]*rhs.arr[ 3] + this->arr[ 5]*rhs.arr[ 7] + this->arr[ 6]*rhs.arr[11] + this->arr[ 7]*rhs.arr[15];
+	result.arr[ 8] = this->arr[ 8]*rhs.arr[ 0] + this->arr[ 9]*rhs.arr[ 4] + this->arr[10]*rhs.arr[ 8] + this->arr[11]*rhs.arr[12];
+	result.arr[ 9] = this->arr[ 8]*rhs.arr[ 1] + this->arr[ 9]*rhs.arr[ 5] + this->arr[10]*rhs.arr[ 9] + this->arr[11]*rhs.arr[13];
+	result.arr[10] = this->arr[ 8]*rhs.arr[ 2] + this->arr[ 9]*rhs.arr[ 6] + this->arr[10]*rhs.arr[10] + this->arr[11]*rhs.arr[14];
+	result.arr[11] = this->arr[ 8]*rhs.arr[ 3] + this->arr[ 9]*rhs.arr[ 7] + this->arr[10]*rhs.arr[11] + this->arr[11]*rhs.arr[15];
+	result.arr[12] = this->arr[12]*rhs.arr[ 0] + this->arr[13]*rhs.arr[ 4] + this->arr[14]*rhs.arr[ 8] + this->arr[15]*rhs.arr[12];
+	result.arr[13] = this->arr[12]*rhs.arr[ 1] + this->arr[13]*rhs.arr[ 5] + this->arr[14]*rhs.arr[ 9] + this->arr[16]*rhs.arr[13];
+	result.arr[14] = this->arr[12]*rhs.arr[ 2] + this->arr[13]*rhs.arr[ 6] + this->arr[14]*rhs.arr[10] + this->arr[16]*rhs.arr[14];
+	result.arr[15] = this->arr[12]*rhs.arr[ 3] + this->arr[13]*rhs.arr[ 7] + this->arr[14]*rhs.arr[11] + this->arr[16]*rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	*this = result;
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_mul_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_mul_4f32(lhs.sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_mul_4f32(lhs.sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_mul_4f32(lhs.sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_mul_4f32(lhs.sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = lhs.arr[0] * rhs.arr[0];
+	result.arr[1] = lhs.arr[1] * rhs.arr[1];
+	result.arr[2] = lhs.arr[2] * rhs.arr[2];
+	result.arr[3] = lhs.arr[3] * rhs.arr[3];
+	result.arr[4] = lhs.arr[4] * rhs.arr[4];
+	result.arr[5] = lhs.arr[5] * rhs.arr[5];
+	result.arr[6] = lhs.arr[6] * rhs.arr[6];
+	result.arr[7] = lhs.arr[7] * rhs.arr[7];
+	result.arr[8] = lhs.arr[8] * rhs.arr[8];
+	result.arr[9] = lhs.arr[9] * rhs.arr[9];
+	result.arr[10] = lhs.arr[10] * rhs.arr[10];
+	result.arr[11] = lhs.arr[11] * rhs.arr[11];
+	result.arr[12] = lhs.arr[12] * rhs.arr[12];
+	result.arr[13] = lhs.arr[13] * rhs.arr[13];
+	result.arr[14] = lhs.arr[14] * rhs.arr[14];
+	result.arr[15] = lhs.arr[15] * rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator^ (const mat4& rhs)const{DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_mul_4f32(this->sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_mul_4f32(this->sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_mul_4f32(this->sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_mul_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = this->arr[0] * rhs.arr[0];
+	result.arr[1] = this->arr[1] * rhs.arr[1];
+	result.arr[2] = this->arr[2] * rhs.arr[2];
+	result.arr[3] = this->arr[3] * rhs.arr[3];
+	result.arr[4] = this->arr[4] * rhs.arr[4];
+	result.arr[5] = this->arr[5] * rhs.arr[5];
+	result.arr[6] = this->arr[6] * rhs.arr[6];
+	result.arr[7] = this->arr[7] * rhs.arr[7];
+	result.arr[8] = this->arr[8] * rhs.arr[8];
+	result.arr[9] = this->arr[9] * rhs.arr[9];
+	result.arr[10] = this->arr[10] * rhs.arr[10];
+	result.arr[11] = this->arr[11] * rhs.arr[11];
+	result.arr[12] = this->arr[12] * rhs.arr[12];
+	result.arr[13] = this->arr[13] * rhs.arr[13];
+	result.arr[14] = this->arr[14] * rhs.arr[14];
+	result.arr[15] = this->arr[15] * rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+} 
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator^=(const mat4& rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	this->sse_row0 = m128_mul_4f32(this->sse_row0, rhs.sse_row0);
+	this->sse_row1 = m128_mul_4f32(this->sse_row1, rhs.sse_row1);
+	this->sse_row2 = m128_mul_4f32(this->sse_row2, rhs.sse_row2);
+	this->sse_row3 = m128_mul_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	this->arr[0] *= rhs.arr[0];
+	this->arr[1] *= rhs.arr[1];
+	this->arr[2] *= rhs.arr[2];
+	this->arr[3] *= rhs.arr[3];
+	this->arr[4] *= rhs.arr[4];
+	this->arr[5] *= rhs.arr[5];
+	this->arr[6] *= rhs.arr[6];
+	this->arr[7] *= rhs.arr[7];
+	this->arr[8] *= rhs.arr[8];
+	this->arr[9] *= rhs.arr[9];
+	this->arr[10] *= rhs.arr[10];
+	this->arr[11] *= rhs.arr[11];
+	this->arr[12] *= rhs.arr[12];
+	this->arr[13] *= rhs.arr[13];
+	this->arr[14] *= rhs.arr[14];
+	this->arr[15] *= rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_div_f32(mat4 lhs, f32 rhs){DPZoneScoped;
+	Assert(rhs != 0, "mat4 elements cant be divided by zero");
+	mat4 result;
+#if DESHI_USE_SSE
+	__m128 scalar = m128_fill_4f32(rhs);
+	result.sse_row0 = m128_div_4f32(lhs.sse_row0, scalar);
+	result.sse_row1 = m128_div_4f32(lhs.sse_row1, scalar);
+	result.sse_row2 = m128_div_4f32(lhs.sse_row2, scalar);
+	result.sse_row3 = m128_div_4f32(lhs.sse_row3, scalar);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = lhs.arr[0] / rhs;
+	result.arr[1] = lhs.arr[1] / rhs;
+	result.arr[2] = lhs.arr[2] / rhs;
+	result.arr[3] = lhs.arr[3] / rhs;
+	result.arr[4] = lhs.arr[4] / rhs;
+	result.arr[5] = lhs.arr[5] / rhs;
+	result.arr[6] = lhs.arr[6] / rhs;
+	result.arr[7] = lhs.arr[7] / rhs;
+	result.arr[8] = lhs.arr[8] / rhs;
+	result.arr[9] = lhs.arr[9] / rhs;
+	result.arr[10] = lhs.arr[10] / rhs;
+	result.arr[11] = lhs.arr[11] / rhs;
+	result.arr[12] = lhs.arr[12] / rhs;
+	result.arr[13] = lhs.arr[13] / rhs;
+	result.arr[14] = lhs.arr[14] / rhs;
+	result.arr[15] = lhs.arr[15] / rhs;
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator/ (const f32& rhs)const{DPZoneScoped;
+	Assert(rhs != 0, "mat4 elements cant be divided by zero");
+	mat4 result;
+#if DESHI_USE_SSE
+	__m128 scalar = m128_fill_4f32(rhs);
+	result.sse_row0 = m128_div_4f32(this->sse_row0, scalar);
+	result.sse_row1 = m128_div_4f32(this->sse_row1, scalar);
+	result.sse_row2 = m128_div_4f32(this->sse_row2, scalar);
+	result.sse_row3 = m128_div_4f32(this->sse_row3, scalar);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = this->arr[0] / rhs;
+	result.arr[1] = this->arr[1] / rhs;
+	result.arr[2] = this->arr[2] / rhs;
+	result.arr[3] = this->arr[3] / rhs;
+	result.arr[4] = this->arr[4] / rhs;
+	result.arr[5] = this->arr[5] / rhs;
+	result.arr[6] = this->arr[6] / rhs;
+	result.arr[7] = this->arr[7] / rhs;
+	result.arr[8] = this->arr[8] / rhs;
+	result.arr[9] = this->arr[9] / rhs;
+	result.arr[10] = this->arr[10] / rhs;
+	result.arr[11] = this->arr[11] / rhs;
+	result.arr[12] = this->arr[12] / rhs;
+	result.arr[13] = this->arr[13] / rhs;
+	result.arr[14] = this->arr[14] / rhs;
+	result.arr[15] = this->arr[15] / rhs;
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator/=(const f32& rhs){DPZoneScoped;
+	Assert(rhs != 0, "mat4 elements cant be divided by zero");
+#if DESHI_USE_SSE
+	__m128 scalar = m128_fill_4f32(rhs);
+	this->sse_row0 = m128_div_4f32(this->sse_row0, scalar);
+	this->sse_row1 = m128_div_4f32(this->sse_row1, scalar);
+	this->sse_row2 = m128_div_4f32(this->sse_row2, scalar);
+	this->sse_row3 = m128_div_4f32(this->sse_row3, scalar);
+#else //#if DESHI_USE_SSE
+	this->arr[0] /= rhs;
+	this->arr[1] /= rhs;
+	this->arr[2] /= rhs;
+	this->arr[3] /= rhs;
+	this->arr[4] /= rhs;
+	this->arr[5] /= rhs;
+	this->arr[6] /= rhs;
+	this->arr[7] /= rhs;
+	this->arr[8] /= rhs;
+	this->arr[9] /= rhs;
+	this->arr[10] /= rhs;
+	this->arr[11] /= rhs;
+	this->arr[12] /= rhs;
+	this->arr[13] /= rhs;
+	this->arr[14] /= rhs;
+	this->arr[15] /= rhs;
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_div_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
+	Assert(rhs.arr[ 0] != 0 && rhs.arr[ 1] != 0 && rhs.arr[ 2] != 0 && rhs.arr[ 3] != 0
+		   rhs.arr[ 4] != 0 && rhs.arr[ 5] != 0 && rhs.arr[ 6] != 0 && rhs.arr[ 7] != 0
+		   rhs.arr[ 8] != 0 && rhs.arr[ 9] != 0 && rhs.arr[10] != 0 && rhs.arr[11] != 0
+		   rhs.arr[12] != 0 && rhs.arr[13] != 0 && rhs.arr[14] != 0 && rhs.arr[15] != 0,
+		   "mat4 elements cant be divided by zero");
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_div_4f32(lhs.sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_div_4f32(lhs.sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_div_4f32(lhs.sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_div_4f32(lhs.sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = lhs.arr[0] / rhs.arr[0];
+	result.arr[1] = lhs.arr[1] / rhs.arr[1];
+	result.arr[2] = lhs.arr[2] / rhs.arr[2];
+	result.arr[3] = lhs.arr[3] / rhs.arr[3];
+	result.arr[4] = lhs.arr[4] / rhs.arr[4];
+	result.arr[5] = lhs.arr[5] / rhs.arr[5];
+	result.arr[6] = lhs.arr[6] / rhs.arr[6];
+	result.arr[7] = lhs.arr[7] / rhs.arr[7];
+	result.arr[8] = lhs.arr[8] / rhs.arr[8];
+	result.arr[9] = lhs.arr[9] / rhs.arr[9];
+	result.arr[10] = lhs.arr[10] / rhs.arr[10];
+	result.arr[11] = lhs.arr[11] / rhs.arr[11];
+	result.arr[12] = lhs.arr[12] / rhs.arr[12];
+	result.arr[13] = lhs.arr[13] / rhs.arr[13];
+	result.arr[14] = lhs.arr[14] / rhs.arr[14];
+	result.arr[15] = lhs.arr[15] / rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+operator% (const mat4& rhs)const{DPZoneScoped;
+	Assert(rhs.arr[ 0] != 0 && rhs.arr[ 1] != 0 && rhs.arr[ 2] != 0 && rhs.arr[ 3] != 0
+		   rhs.arr[ 4] != 0 && rhs.arr[ 5] != 0 && rhs.arr[ 6] != 0 && rhs.arr[ 7] != 0
+		   rhs.arr[ 8] != 0 && rhs.arr[ 9] != 0 && rhs.arr[10] != 0 && rhs.arr[11] != 0
+		   rhs.arr[12] != 0 && rhs.arr[13] != 0 && rhs.arr[14] != 0 && rhs.arr[15] != 0,
+		   "mat4 elements cant be divided by zero");
+	mat4 result;
+#if DESHI_USE_SSE
+	result.sse_row0 = m128_div_4f32(this->sse_row0, rhs.sse_row0);
+	result.sse_row1 = m128_div_4f32(this->sse_row1, rhs.sse_row1);
+	result.sse_row2 = m128_div_4f32(this->sse_row2, rhs.sse_row2);
+	result.sse_row3 = m128_div_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.arr[0] = this->arr[0] / rhs.arr[0];
+	result.arr[1] = this->arr[1] / rhs.arr[1];
+	result.arr[2] = this->arr[2] / rhs.arr[2];
+	result.arr[3] = this->arr[3] / rhs.arr[3];
+	result.arr[4] = this->arr[4] / rhs.arr[4];
+	result.arr[5] = this->arr[5] / rhs.arr[5];
+	result.arr[6] = this->arr[6] / rhs.arr[6];
+	result.arr[7] = this->arr[7] / rhs.arr[7];
+	result.arr[8] = this->arr[8] / rhs.arr[8];
+	result.arr[9] = this->arr[9] / rhs.arr[9];
+	result.arr[10] = this->arr[10] / rhs.arr[10];
+	result.arr[11] = this->arr[11] / rhs.arr[11];
+	result.arr[12] = this->arr[12] / rhs.arr[12];
+	result.arr[13] = this->arr[13] / rhs.arr[13];
+	result.arr[14] = this->arr[14] / rhs.arr[14];
+	result.arr[15] = this->arr[15] / rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void mat4::
+operator%=(const mat4& rhs){DPZoneScoped;
+	Assert(rhs.arr[ 0] != 0 && rhs.arr[ 1] != 0 && rhs.arr[ 2] != 0 && rhs.arr[ 3] != 0
+		   rhs.arr[ 4] != 0 && rhs.arr[ 5] != 0 && rhs.arr[ 6] != 0 && rhs.arr[ 7] != 0
+		   rhs.arr[ 8] != 0 && rhs.arr[ 9] != 0 && rhs.arr[10] != 0 && rhs.arr[11] != 0
+		   rhs.arr[12] != 0 && rhs.arr[13] != 0 && rhs.arr[14] != 0 && rhs.arr[15] != 0,
+		   "mat4 elements cant be divided by zero");
+#if DESHI_USE_SSE
+	this->sse_row0 = m128_div_4f32(this->sse_row0, rhs.sse_row0);
+	this->sse_row1 = m128_div_4f32(this->sse_row1, rhs.sse_row1);
+	this->sse_row2 = m128_div_4f32(this->sse_row2, rhs.sse_row2);
+	this->sse_row3 = m128_div_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	this->arr[0] /= rhs.arr[0];
+	this->arr[1] /= rhs.arr[1];
+	this->arr[2] /= rhs.arr[2];
+	this->arr[3] /= rhs.arr[3];
+	this->arr[4] /= rhs.arr[4];
+	this->arr[5] /= rhs.arr[5];
+	this->arr[6] /= rhs.arr[6];
+	this->arr[7] /= rhs.arr[7];
+	this->arr[8] /= rhs.arr[8];
+	this->arr[9] /= rhs.arr[9];
+	this->arr[10] /= rhs.arr[10];
+	this->arr[11] /= rhs.arr[11];
+	this->arr[12] /= rhs.arr[12];
+	this->arr[13] /= rhs.arr[13];
+	this->arr[14] /= rhs.arr[14];
+	this->arr[15] /= rhs.arr[15];
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline b32
+mat4_equal(mat4 lhs, mat4 rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	return m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
+		&& m128_equal_4f32(lhs.sse_row1, rhs.sse_row1)
+		&& m128_equal_4f32(lhs.sse_row2, rhs.sse_row2)
+		&& m128_equal_4f32(lhs.sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	return fabs(lhs.arr[0] - rhs.arr[0]) > M_EPSILON
+		&& fabs(lhs.arr[1] - rhs.arr[1]) > M_EPSILON
+		&& fabs(lhs.arr[2] - rhs.arr[2]) > M_EPSILON
+		&& fabs(lhs.arr[3] - rhs.arr[3]) > M_EPSILON
+		&& fabs(lhs.arr[4] - rhs.arr[4]) > M_EPSILON
+		&& fabs(lhs.arr[5] - rhs.arr[5]) > M_EPSILON
+		&& fabs(lhs.arr[6] - rhs.arr[6]) > M_EPSILON
+		&& fabs(lhs.arr[7] - rhs.arr[7]) > M_EPSILON
+		&& fabs(lhs.arr[8] - rhs.arr[8]) > M_EPSILON
+		&& fabs(lhs.arr[9] - rhs.arr[9]) > M_EPSILON
+		&& fabs(lhs.arr[10] - rhs.arr[10]) > M_EPSILON
+		&& fabs(lhs.arr[11] - rhs.arr[11]) > M_EPSILON
+		&& fabs(lhs.arr[12] - rhs.arr[12]) > M_EPSILON
+		&& fabs(lhs.arr[13] - rhs.arr[13]) > M_EPSILON
+		&& fabs(lhs.arr[14] - rhs.arr[14]) > M_EPSILON
+		&& fabs(lhs.arr[15] - rhs.arr[15]) > M_EPSILON;
+#endif //#else //#if DESHI_USE_SSE
+}
+
+#ifdef __cplusplus
+inline b32 mat4::
+operator==(const mat4& rhs)const{DPZoneScoped;
+#if DESHI_USE_SSE
+	return m128_equal_4f32(this->sse_row0, rhs.sse_row0)
+		&& m128_equal_4f32(this->sse_row1, rhs.sse_row1)
+		&& m128_equal_4f32(this->sse_row2, rhs.sse_row2)
+		&& m128_equal_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	return fabs(this->arr[0] - rhs.arr[0]) > M_EPSILON
+		&& fabs(this->arr[1] - rhs.arr[1]) > M_EPSILON
+		&& fabs(this->arr[2] - rhs.arr[2]) > M_EPSILON
+		&& fabs(this->arr[3] - rhs.arr[3]) > M_EPSILON
+		&& fabs(this->arr[4] - rhs.arr[4]) > M_EPSILON
+		&& fabs(this->arr[5] - rhs.arr[5]) > M_EPSILON
+		&& fabs(this->arr[6] - rhs.arr[6]) > M_EPSILON
+		&& fabs(this->arr[7] - rhs.arr[7]) > M_EPSILON
+		&& fabs(this->arr[8] - rhs.arr[8]) > M_EPSILON
+		&& fabs(this->arr[9] - rhs.arr[9]) > M_EPSILON
+		&& fabs(this->arr[10] - rhs.arr[10]) > M_EPSILON
+		&& fabs(this->arr[11] - rhs.arr[11]) > M_EPSILON
+		&& fabs(this->arr[12] - rhs.arr[12]) > M_EPSILON
+		&& fabs(this->arr[13] - rhs.arr[13]) > M_EPSILON
+		&& fabs(this->arr[14] - rhs.arr[14]) > M_EPSILON
+		&& fabs(this->arr[15] - rhs.arr[15]) > M_EPSILON;
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline b32
+mat3_nequal(mat4 lhs, mat4 rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	return !m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
+		&& !m128_equal_4f32(lhs.sse_row1, rhs.sse_row1)
+		&& !m128_equal_4f32(lhs.sse_row2, rhs.sse_row2)
+		&& !m128_equal_4f32(lhs.sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	return fabs(lhs.arr[0] - rhs.arr[0]) < M_EPSILON
+		|| fabs(lhs.arr[1] - rhs.arr[1]) < M_EPSILON
+		|| fabs(lhs.arr[2] - rhs.arr[2]) < M_EPSILON
+		|| fabs(lhs.arr[3] - rhs.arr[3]) < M_EPSILON
+		|| fabs(lhs.arr[4] - rhs.arr[4]) < M_EPSILON
+		|| fabs(lhs.arr[5] - rhs.arr[5]) < M_EPSILON
+		|| fabs(lhs.arr[6] - rhs.arr[6]) < M_EPSILON
+		|| fabs(lhs.arr[7] - rhs.arr[7]) < M_EPSILON
+		|| fabs(lhs.arr[8] - rhs.arr[8]) < M_EPSILON
+		|| fabs(lhs.arr[9] - rhs.arr[9]) < M_EPSILON
+		|| fabs(lhs.arr[10] - rhs.arr[10]) < M_EPSILON
+		|| fabs(lhs.arr[11] - rhs.arr[11]) < M_EPSILON
+		|| fabs(lhs.arr[12] - rhs.arr[12]) < M_EPSILON
+		|| fabs(lhs.arr[13] - rhs.arr[13]) < M_EPSILON
+		|| fabs(lhs.arr[14] - rhs.arr[14]) < M_EPSILON
+		|| fabs(lhs.arr[15] - rhs.arr[15]) < M_EPSILON:
+#endif //#else //#if DESHI_USE_SSE
+}
+
+#ifdef __cplusplus
+inline b32 mat4::
+operator!=(const mat4& rhs)const{DPZoneScoped;
+	#if DESHI_USE_SSE
+	return !m128_equal_4f32(this->sse_row0, rhs.sse_row0)
+		&& !m128_equal_4f32(this->sse_row1, rhs.sse_row1)
+		&& !m128_equal_4f32(this->sse_row2, rhs.sse_row2)
+		&& !m128_equal_4f32(this->sse_row3, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	return fabs(this->arr[0] - rhs.arr[0]) < M_EPSILON
+		|| fabs(this->arr[1] - rhs.arr[1]) < M_EPSILON
+		|| fabs(this->arr[2] - rhs.arr[2]) < M_EPSILON
+		|| fabs(this->arr[3] - rhs.arr[3]) < M_EPSILON
+		|| fabs(this->arr[4] - rhs.arr[4]) < M_EPSILON
+		|| fabs(this->arr[5] - rhs.arr[5]) < M_EPSILON
+		|| fabs(this->arr[6] - rhs.arr[6]) < M_EPSILON
+		|| fabs(this->arr[7] - rhs.arr[7]) < M_EPSILON
+		|| fabs(this->arr[8] - rhs.arr[8]) < M_EPSILON
+		|| fabs(this->arr[9] - rhs.arr[9]) < M_EPSILON
+		|| fabs(this->arr[10] - rhs.arr[10]) < M_EPSILON
+		|| fabs(this->arr[11] - rhs.arr[11]) < M_EPSILON
+		|| fabs(this->arr[12] - rhs.arr[12]) < M_EPSILON
+		|| fabs(this->arr[13] - rhs.arr[13]) < M_EPSILON
+		|| fabs(this->arr[14] - rhs.arr[14]) < M_EPSILON
+		|| fabs(this->arr[15] - rhs.arr[15]) < M_EPSILON:
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline b32
+mat4_transpose(mat4 lhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	_MM_TRANSPOSE4_PS(lhs.sse_row0, lhs.sse_row1, lhs.sse_row2, lhs.sse_row3);
+	return lhs;
+#else //#if DESHI_USE_SSE
+	return Mat4(lhs.arr[0], lhs.arr[4], lhs.arr[ 8], lhs.arr[12],
+				lhs.arr[1], lhs.arr[5], lhs.arr[ 9], lhs.arr[13],
+				lhs.arr[2], lhs.arr[6], lhs.arr[10], lhs.arr[14],
+				lhs.arr[3], lhs.arr[7], lhs.arr[11], lhs.arr[15]);
+#endif //#else //#if DESHI_USE_SSE
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+transpose()const{DPZoneScoped;
+	#if DESHI_USE_SSE
+	mat4 result = *this;
+	_MM_TRANSPOSE4_PS(result.sse_row0, result.sse_row1, result.sse_row2, result.sse_row3);
+	return result;
+#else //#if DESHI_USE_SSE
+	return Mat4(this->arr[0], this->arr[4], this->arr[ 8], this->arr[12],
+				this->arr[1], this->arr[5], this->arr[ 9], this->arr[13],
+				this->arr[2], this->arr[6], this->arr[10], this->arr[14],
+				this->arr[3], this->arr[7], this->arr[11], this->arr[15]);
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline f32
+mat4_determinant(mat4 lhs){DPZoneScoped;
+	return
+		lhs.arr[ 0] * (lhs.arr[ 5] * (lhs.arr[10] * lhs.arr[15] - lhs.arr[11] * lhs.arr[14]) -
+					   lhs.arr[ 9] * (lhs.arr[ 6] * lhs.arr[15] - lhs.arr[ 7] * lhs.arr[14]) + 
+					   lhs.arr[13] * (lhs.arr[ 6] * lhs.arr[11] - lhs.arr[ 7] * lhs.arr[10]))
+		-
+		lhs.arr[ 4] * (lhs.arr[ 1] * (lhs.arr[10] * lhs.arr[15] - lhs.arr[11] * lhs.arr[14]) -
+					   lhs.arr[ 9] * (lhs.arr[ 2] * lhs.arr[15] - lhs.arr[ 3] * lhs.arr[14]) +
+					   lhs.arr[13] * (lhs.arr[ 2] * lhs.arr[11] - lhs.arr[ 3] * lhs.arr[10]))
+		+
+		lhs.arr[ 8] * (lhs.arr[ 1] * (lhs.arr[ 6] * lhs.arr[15] - lhs.arr[ 7] * lhs.arr[14]) -
+					   lhs.arr[ 5] * (lhs.arr[ 2] * lhs.arr[15] - lhs.arr[ 3] * lhs.arr[14]) +
+					   lhs.arr[13] * (lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]))
+		-
+		lhs.arr[12] * (lhs.arr[ 1] * (lhs.arr[ 6] * lhs.arr[11] - lhs.arr[ 7] * lhs.arr[10]) -
+					   lhs.arr[ 5] * (lhs.arr[ 2] * lhs.arr[11] - lhs.arr[ 3] * lhs.arr[10]) +
+					   lhs.arr[ 9] * (lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]));
+}
+
+#ifdef __cplusplus
+inline f32 mat4::
+determinant()const{DPZoneScoped;
+	return
+		this->arr[ 0] * (this->arr[ 5] * (this->arr[10] * this->arr[15] - this->arr[11] * this->arr[14]) -
+						 this->arr[ 9] * (this->arr[ 6] * this->arr[15] - this->arr[ 7] * this->arr[14]) + 
+						 this->arr[13] * (this->arr[ 6] * this->arr[11] - this->arr[ 7] * this->arr[10]))
+		-
+		this->arr[ 4] * (this->arr[ 1] * (this->arr[10] * this->arr[15] - this->arr[11] * this->arr[14]) -
+						 this->arr[ 9] * (this->arr[ 2] * this->arr[15] - this->arr[ 3] * this->arr[14]) +
+						 this->arr[13] * (this->arr[ 2] * this->arr[11] - this->arr[ 3] * this->arr[10]))
+		+
+		this->arr[ 8] * (this->arr[ 1] * (this->arr[ 6] * this->arr[15] - this->arr[ 7] * this->arr[14]) -
+						 this->arr[ 5] * (this->arr[ 2] * this->arr[15] - this->arr[ 3] * this->arr[14]) +
+						 this->arr[13] * (this->arr[ 2] * this->arr[ 7] - this->arr[ 3] * this->arr[ 6]))
+		-
+		this->arr[12] * (this->arr[ 1] * (this->arr[ 6] * this->arr[11] - this->arr[ 7] * this->arr[10]) -
+						 this->arr[ 5] * (this->arr[ 2] * this->arr[11] - this->arr[ 3] * this->arr[10]) +
+						 this->arr[ 9] * (this->arr[ 2] * this->arr[ 7] - this->arr[ 3] * this->arr[ 6]));
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline f32
+mat4_minor(mat4 lhs, u32 row, u32 col){DPZoneScoped;
+	//NOTE(delle) I wonder if all this is really better than a loop
+	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
+	switch(row){
+		case 0:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
+								+ (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14])
+								- (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
+								- (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
+								- (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
+								- (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
+								+ (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
+								+ (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
+								+ (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13]));
+			}
+		}break;
+		case 1:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
+								+ (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
+								- (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
+								- (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
+								+ (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
+								+ (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
+								+ (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13]));
+			}
+		}break;
+		case 2:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
+								+ (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
+								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
+								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
+								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13])
+								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
+								+ (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
+								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
+								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13]));
+			}
+		}break;
+		case 3:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
+								+ (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
+								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10]));
+				case 1: return (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
+								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10]));
+				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
+								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9])
+								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9]));
+				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
+								+ (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
+								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
+								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9]));
+			}
+		}break;
+	}
+}
+
+#ifdef __cplusplus
+inline f32 mat4::
+minor(u32 row, u32 col)const{DPZoneScoped;
+	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
+	switch(row){
+		case 0:{
+			switch(col){
+				case 0: return (  (this->arr[ 5] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 6] * this->arr[11] * this->arr[13])
+								+ (this->arr[ 7] * this->arr[ 9] * this->arr[14])
+								- (this->arr[ 7] * this->arr[10] * this->arr[13])
+								- (this->arr[ 6] * this->arr[ 9] * this->arr[15])
+								- (this->arr[ 5] * this->arr[11] * this->arr[14]));
+				case 1: return (  (this->arr[ 4] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 6] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 7] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 7] * this->arr[10] * this->arr[12])
+								- (this->arr[ 6] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 4] * this->arr[11] * this->arr[14]));
+				case 2: return (  (this->arr[ 4] * this->arr[ 9] * this->arr[15])
+								+ (this->arr[ 5] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 7] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 7] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 5] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 4] * this->arr[11] * this->arr[13]));
+				case 3: return (  (this->arr[ 4] * this->arr[ 9] * this->arr[14])
+								+ (this->arr[ 5] * this->arr[10] * this->arr[12])
+								+ (this->arr[ 6] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 6] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 5] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 4] * this->arr[10] * this->arr[13]));
+			}
+		}break;
+		case 1:{
+			switch(col){
+				case 0: return (  (this->arr[ 1] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[11] * this->arr[13])
+								+ (this->arr[ 3] * this->arr[ 9] * this->arr[14])
+								- (this->arr[ 3] * this->arr[10] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 9] * this->arr[15])
+								- (this->arr[ 1] * this->arr[11] * this->arr[14]));
+				case 1: return (  (this->arr[ 0] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 3] * this->arr[10] * this->arr[12])
+								- (this->arr[ 2] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 0] * this->arr[11] * this->arr[14]));
+				case 2: return (  (this->arr[ 0] * this->arr[ 9] * this->arr[15])
+								+ (this->arr[ 1] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 3] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 0] * this->arr[11] * this->arr[13]));
+				case 3: return (  (this->arr[ 0] * this->arr[ 9] * this->arr[14])
+								+ (this->arr[ 1] * this->arr[10] * this->arr[12])
+								+ (this->arr[ 2] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 0] * this->arr[10] * this->arr[13]));
+			}
+		}break;
+		case 2:{
+			switch(col){
+				case 0: return (  (this->arr[ 1] * this->arr[ 6] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[13])
+								+ (this->arr[ 3] * this->arr[ 5] * this->arr[14])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[15])
+								- (this->arr[ 1] * this->arr[ 7] * this->arr[14]));
+				case 1: return (  (this->arr[ 0] * this->arr[ 6] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[14])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[12])
+								- (this->arr[ 2] * this->arr[ 4] * this->arr[15])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[14]));
+				case 2: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[15])
+								+ (this->arr[ 1] * this->arr[ 7] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[13])
+								- (this->arr[ 3] * this->arr[ 5] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[15])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[13]));
+				case 3: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[14])
+								+ (this->arr[ 1] * this->arr[ 6] * this->arr[12])
+								+ (this->arr[ 2] * this->arr[ 4] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[14])
+								- (this->arr[ 0] * this->arr[ 6] * this->arr[13]));
+			}
+		}break;
+		case 3:{
+			switch(col){
+				case 0: return (  (this->arr[ 1] * this->arr[ 6] * this->arr[11])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
+								+ (this->arr[ 3] * this->arr[ 5] * this->arr[10])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[11])
+								- (this->arr[ 1] * this->arr[ 7] * this->arr[10]));
+				case 1: return (  (this->arr[ 0] * this->arr[ 6] * this->arr[11])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[10])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
+								- (this->arr[ 2] * this->arr[ 4] * this->arr[11])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[10]));
+				case 2: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[11])
+								+ (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[ 9])
+								- (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[11])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[ 9]));
+				case 3: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[10])
+								+ (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
+								+ (this->arr[ 2] * this->arr[ 4] * this->arr[ 9])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[10])
+								- (this->arr[ 0] * this->arr[ 6] * this->arr[ 9]));
+			}
+		}break;
+	}
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline f32
+mat4_cofactor(mat4 lhs, u32 row, u32 col){DPZoneScoped;
+	//NOTE(delle) Maybe it makes some sense here since it's dependent on the column/row pairing
+	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
+	switch(row){
+		case 0:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
+								+ (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
+								+ (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14])
+								- (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
+								- (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
+								- (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
+								- (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
+								+ (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
+								+ (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13])
+								- (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
+								- (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
+								- (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
+								+ (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
+								+ (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13]));
+			}
+		}break;
+		case 1:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
+								+ (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
+								- (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
+								+ (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
+								+ (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14])
+								- (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
+								- (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
+								- (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
+								+ (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
+								+ (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
+								+ (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13])
+								- (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
+								- (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
+								- (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13]));
+			}
+		}break;
+		case 2:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
+								+ (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
+								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14])
+								- (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
+								- (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
+								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
+								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
+								+ (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
+								+ (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13])
+								- (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
+								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
+								- (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
+								+ (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
+								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
+								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13]));
+			}
+		}break;
+		case 3:{
+			switch(col){
+				case 0: return (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
+								+ (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
+								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10]));
+				case 1: return (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
+								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
+								+ (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10])
+								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
+								- (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
+								- (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10]));
+				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
+								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9])
+								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9]));
+				case 3: return (  (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
+								+ (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
+								+ (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9])
+								- (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
+								- (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
+								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9]));
+			}
+		}break;
+	}
+}
+
+#ifdef __cplusplus
+inline f32 mat3::
+cofactor(u32 row, u32 col)const{DPZoneScoped;
+	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
+	switch(row){
+		case 0:{
+			switch(col){
+				case 0: return (  (this->arr[ 7] * this->arr[10] * this->arr[13])
+								+ (this->arr[ 6] * this->arr[ 9] * this->arr[15])
+								+ (this->arr[ 5] * this->arr[11] * this->arr[14])
+								- (this->arr[ 5] * this->arr[10] * this->arr[15])
+								- (this->arr[ 6] * this->arr[11] * this->arr[13])
+								- (this->arr[ 7] * this->arr[ 9] * this->arr[14]));
+				case 1: return (  (this->arr[ 4] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 6] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 7] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 7] * this->arr[10] * this->arr[12])
+								- (this->arr[ 6] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 4] * this->arr[11] * this->arr[14]));
+				case 2: return (  (this->arr[ 7] * this->arr[ 9] * this->arr[12])
+								+ (this->arr[ 5] * this->arr[ 8] * this->arr[15])
+								+ (this->arr[ 4] * this->arr[11] * this->arr[13])
+								- (this->arr[ 4] * this->arr[ 9] * this->arr[15])
+								- (this->arr[ 5] * this->arr[11] * this->arr[12])
+								- (this->arr[ 7] * this->arr[ 8] * this->arr[13]));
+				case 3: return (  (this->arr[ 4] * this->arr[ 9] * this->arr[14])
+								+ (this->arr[ 5] * this->arr[10] * this->arr[12])
+								+ (this->arr[ 6] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 6] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 5] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 4] * this->arr[10] * this->arr[13]));
+			}
+		}break;
+		case 1:{
+			switch(col){
+				case 0: return (  (this->arr[ 1] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[11] * this->arr[13])
+								+ (this->arr[ 3] * this->arr[ 9] * this->arr[14])
+								- (this->arr[ 3] * this->arr[10] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 9] * this->arr[15])
+								- (this->arr[ 1] * this->arr[11] * this->arr[14]));
+				case 1: return (  (this->arr[ 3] * this->arr[10] * this->arr[12])
+								+ (this->arr[ 2] * this->arr[ 8] * this->arr[15])
+								+ (this->arr[ 0] * this->arr[11] * this->arr[14])
+								- (this->arr[ 0] * this->arr[10] * this->arr[15])
+								- (this->arr[ 2] * this->arr[11] * this->arr[12])
+								- (this->arr[ 3] * this->arr[ 8] * this->arr[14]));
+				case 2: return (  (this->arr[ 0] * this->arr[ 9] * this->arr[15])
+								+ (this->arr[ 1] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 3] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 0] * this->arr[11] * this->arr[13]));
+				case 3: return (  (this->arr[ 2] * this->arr[ 9] * this->arr[12])
+								+ (this->arr[ 1] * this->arr[ 8] * this->arr[14])
+								+ (this->arr[ 0] * this->arr[10] * this->arr[13])
+								- (this->arr[ 0] * this->arr[ 9] * this->arr[14])
+								- (this->arr[ 1] * this->arr[10] * this->arr[12])
+								- (this->arr[ 2] * this->arr[ 8] * this->arr[13]));
+			}
+		}break;
+		case 2:{
+			switch(col){
+				case 0: return (  (this->arr[ 3] * this->arr[ 6] * this->arr[13])
+								+ (this->arr[ 2] * this->arr[ 5] * this->arr[15])
+								+ (this->arr[ 1] * this->arr[ 7] * this->arr[14])
+								- (this->arr[ 1] * this->arr[ 6] * this->arr[15])
+								- (this->arr[ 2] * this->arr[ 7] * this->arr[13])
+								- (this->arr[ 3] * this->arr[ 5] * this->arr[14]));
+				case 1: return (  (this->arr[ 0] * this->arr[ 6] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[14])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[12])
+								- (this->arr[ 2] * this->arr[ 4] * this->arr[15])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[14]));
+				case 2: return (  (this->arr[ 3] * this->arr[ 5] * this->arr[12])
+								+ (this->arr[ 1] * this->arr[ 4] * this->arr[15])
+								+ (this->arr[ 0] * this->arr[ 7] * this->arr[13])
+								- (this->arr[ 0] * this->arr[ 5] * this->arr[15])
+								- (this->arr[ 1] * this->arr[ 7] * this->arr[12])
+								- (this->arr[ 3] * this->arr[ 4] * this->arr[13]));
+				case 3: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[14])
+								+ (this->arr[ 1] * this->arr[ 6] * this->arr[12])
+								+ (this->arr[ 2] * this->arr[ 4] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[14])
+								- (this->arr[ 0] * this->arr[ 6] * this->arr[13]));
+			}
+		}break;
+		case 3:{
+			switch(col){
+				case 0: return (  (this->arr[ 1] * this->arr[ 6] * this->arr[11])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
+								+ (this->arr[ 3] * this->arr[ 5] * this->arr[10])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[11])
+								- (this->arr[ 1] * this->arr[ 7] * this->arr[10]));
+				case 1: return (  (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
+								+ (this->arr[ 2] * this->arr[ 4] * this->arr[11])
+								+ (this->arr[ 0] * this->arr[ 7] * this->arr[10])
+								- (this->arr[ 0] * this->arr[ 6] * this->arr[11])
+								- (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
+								- (this->arr[ 3] * this->arr[ 4] * this->arr[10]));
+				case 2: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[11])
+								+ (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[ 9])
+								- (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[11])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[ 9]));
+				case 3: return (  (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
+								+ (this->arr[ 1] * this->arr[ 4] * this->arr[10])
+								+ (this->arr[ 0] * this->arr[ 6] * this->arr[ 9])
+								- (this->arr[ 0] * this->arr[ 5] * this->arr[10])
+								- (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
+								- (this->arr[ 2] * this->arr[ 4] * this->arr[ 9]));
+			}
+		}break;
+	}
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_adjoint(mat4 lhs){DPZoneScoped;
+	//NOTE(delle) I guess in this case it really shows how expensive this operation is
+	mat4 result;
+	result.arr[ 0] = (  (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
+					  + (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
+					  + (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14])
+					  - (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
+					  - (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
+					  - (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14]));
+	result.arr[ 1] = (  (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
+					  + (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
+					  + (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14])
+					  - (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
+					  - (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
+					  - (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14]));
+	result.arr[ 2] = (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
+					  + (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
+					  + (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14])
+					  - (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
+					  - (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
+					  - (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14]));
+	result.arr[ 3] = (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
+					  + (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
+					  + (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10])
+					  - (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
+					  - (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
+					  - (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10]));
+	result.arr[ 4] = (  (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
+					  + (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
+					  + (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14])
+					  - (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
+					  - (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
+					  - (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14]));
+	result.arr[ 5] = (  (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
+					  + (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
+					  + (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14])
+					  - (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
+					  - (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
+					  - (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14]));
+	result.arr[ 6] = (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
+					  + (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
+					  + (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14])
+					  - (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
+					  - (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
+					  - (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14]));
+	result.arr[ 7] = (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
+					  + (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
+					  + (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10])
+					  - (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
+					  - (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
+					  - (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10]));
+	result.arr[ 8] = (  (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
+					  + (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
+					  + (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13])
+					  - (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
+					  - (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
+					  - (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13]));;
+	result.arr[ 9] = (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
+					  + (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
+					  + (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13])
+					  - (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
+					  - (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
+					  - (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13]));
+	result.arr[10] = (  (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
+					  + (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
+					  + (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13])
+					  - (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
+					  - (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
+					  - (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13]));
+	result.arr[11] = (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
+					  + (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
+					  + (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9])
+					  - (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
+					  - (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
+					  - (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9]));
+	result.arr[12] = (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
+					  + (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
+					  + (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13])
+					  - (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
+					  - (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
+					  - (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13]));
+	result.arr[13] = (  (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
+					  + (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
+					  + (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13])
+					  - (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
+					  - (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
+					  - (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13]));
+	result.arr[14] = (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
+					  + (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
+					  + (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13])
+					  - (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
+					  - (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
+					  - (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13]));
+	result.arr[15] = (  (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
+					  + (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
+					  + (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9])
+					  - (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
+					  - (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
+					  - (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9]));
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat3 mat3::
+adjoint()const{DPZoneScoped;
+	mat4 result;
+	result.arr[ 0] = (  (this->arr[ 7] * this->arr[10] * this->arr[13])
+					  + (this->arr[ 6] * this->arr[ 9] * this->arr[15])
+					  + (this->arr[ 5] * this->arr[11] * this->arr[14])
+					  - (this->arr[ 5] * this->arr[10] * this->arr[15])
+					  - (this->arr[ 6] * this->arr[11] * this->arr[13])
+					  - (this->arr[ 7] * this->arr[ 9] * this->arr[14]));
+	result.arr[ 1] = (  (this->arr[ 1] * this->arr[10] * this->arr[15])
+					  + (this->arr[ 2] * this->arr[11] * this->arr[13])
+					  + (this->arr[ 3] * this->arr[ 9] * this->arr[14])
+					  - (this->arr[ 3] * this->arr[10] * this->arr[13])
+					  - (this->arr[ 2] * this->arr[ 9] * this->arr[15])
+					  - (this->arr[ 1] * this->arr[11] * this->arr[14]));
+	result.arr[ 2] = (  (this->arr[ 3] * this->arr[ 6] * this->arr[13])
+					  + (this->arr[ 2] * this->arr[ 5] * this->arr[15])
+					  + (this->arr[ 1] * this->arr[ 7] * this->arr[14])
+					  - (this->arr[ 1] * this->arr[ 6] * this->arr[15])
+					  - (this->arr[ 2] * this->arr[ 7] * this->arr[13])
+					  - (this->arr[ 3] * this->arr[ 5] * this->arr[14]));
+	result.arr[ 3] = (  (this->arr[ 1] * this->arr[ 6] * this->arr[11])
+					  + (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
+					  + (this->arr[ 3] * this->arr[ 5] * this->arr[10])
+					  - (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
+					  - (this->arr[ 2] * this->arr[ 5] * this->arr[11])
+					  - (this->arr[ 1] * this->arr[ 7] * this->arr[10]));
+	result.arr[ 4] = (  (this->arr[ 4] * this->arr[10] * this->arr[15])
+					  + (this->arr[ 6] * this->arr[11] * this->arr[12])
+					  + (this->arr[ 7] * this->arr[ 8] * this->arr[14])
+					  - (this->arr[ 7] * this->arr[10] * this->arr[12])
+					  - (this->arr[ 6] * this->arr[ 8] * this->arr[15])
+					  - (this->arr[ 4] * this->arr[11] * this->arr[14]));
+	result.arr[ 5] = (  (this->arr[ 3] * this->arr[10] * this->arr[12])
+					  + (this->arr[ 2] * this->arr[ 8] * this->arr[15])
+					  + (this->arr[ 0] * this->arr[11] * this->arr[14])
+					  - (this->arr[ 0] * this->arr[10] * this->arr[15])
+					  - (this->arr[ 2] * this->arr[11] * this->arr[12])
+					  - (this->arr[ 3] * this->arr[ 8] * this->arr[14]));
+	result.arr[ 6] = (  (this->arr[ 0] * this->arr[ 6] * this->arr[15])
+					  + (this->arr[ 2] * this->arr[ 7] * this->arr[12])
+					  + (this->arr[ 3] * this->arr[ 4] * this->arr[14])
+					  - (this->arr[ 3] * this->arr[ 6] * this->arr[12])
+					  - (this->arr[ 2] * this->arr[ 4] * this->arr[15])
+					  - (this->arr[ 0] * this->arr[ 7] * this->arr[14]));
+	result.arr[ 7] = (  (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
+					  + (this->arr[ 2] * this->arr[ 4] * this->arr[11])
+					  + (this->arr[ 0] * this->arr[ 7] * this->arr[10])
+					  - (this->arr[ 0] * this->arr[ 6] * this->arr[11])
+					  - (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
+					  - (this->arr[ 3] * this->arr[ 4] * this->arr[10]));
+	result.arr[ 8] = (  (this->arr[ 7] * this->arr[ 9] * this->arr[12])
+					  + (this->arr[ 5] * this->arr[ 8] * this->arr[15])
+					  + (this->arr[ 4] * this->arr[11] * this->arr[13])
+					  - (this->arr[ 4] * this->arr[ 9] * this->arr[15])
+					  - (this->arr[ 5] * this->arr[11] * this->arr[12])
+					  - (this->arr[ 7] * this->arr[ 8] * this->arr[13]));;
+	result.arr[ 9] = (  (this->arr[ 0] * this->arr[ 9] * this->arr[15])
+					  + (this->arr[ 1] * this->arr[11] * this->arr[12])
+					  + (this->arr[ 3] * this->arr[ 8] * this->arr[13])
+					  - (this->arr[ 3] * this->arr[ 9] * this->arr[12])
+					  - (this->arr[ 1] * this->arr[ 8] * this->arr[15])
+					  - (this->arr[ 0] * this->arr[11] * this->arr[13]));
+	result.arr[10] = (  (this->arr[ 3] * this->arr[ 5] * this->arr[12])
+					  + (this->arr[ 1] * this->arr[ 4] * this->arr[15])
+					  + (this->arr[ 0] * this->arr[ 7] * this->arr[13])
+					  - (this->arr[ 0] * this->arr[ 5] * this->arr[15])
+					  - (this->arr[ 1] * this->arr[ 7] * this->arr[12])
+					  - (this->arr[ 3] * this->arr[ 4] * this->arr[13]));
+	result.arr[11] = (  (this->arr[ 0] * this->arr[ 5] * this->arr[11])
+					  + (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
+					  + (this->arr[ 3] * this->arr[ 4] * this->arr[ 9])
+					  - (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
+					  - (this->arr[ 1] * this->arr[ 4] * this->arr[11])
+					  - (this->arr[ 0] * this->arr[ 7] * this->arr[ 9]));
+	result.arr[12] = (  (this->arr[ 4] * this->arr[ 9] * this->arr[14])
+					  + (this->arr[ 5] * this->arr[10] * this->arr[12])
+					  + (this->arr[ 6] * this->arr[ 8] * this->arr[13])
+					  - (this->arr[ 6] * this->arr[ 9] * this->arr[12])
+					  - (this->arr[ 5] * this->arr[ 8] * this->arr[14])
+					  - (this->arr[ 4] * this->arr[10] * this->arr[13]));
+	result.arr[13] = (  (this->arr[ 2] * this->arr[ 9] * this->arr[12])
+					  + (this->arr[ 1] * this->arr[ 8] * this->arr[14])
+					  + (this->arr[ 0] * this->arr[10] * this->arr[13])
+					  - (this->arr[ 0] * this->arr[ 9] * this->arr[14])
+					  - (this->arr[ 1] * this->arr[10] * this->arr[12])
+					  - (this->arr[ 2] * this->arr[ 8] * this->arr[13]));
+	result.arr[14] = (  (this->arr[ 0] * this->arr[ 5] * this->arr[14])
+					  + (this->arr[ 1] * this->arr[ 6] * this->arr[12])
+					  + (this->arr[ 2] * this->arr[ 4] * this->arr[13])
+					  - (this->arr[ 2] * this->arr[ 5] * this->arr[12])
+					  - (this->arr[ 1] * this->arr[ 4] * this->arr[14])
+					  - (this->arr[ 0] * this->arr[ 6] * this->arr[13]));
+	result.arr[15] = (  (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
+					  + (this->arr[ 1] * this->arr[ 4] * this->arr[10])
+					  + (this->arr[ 0] * this->arr[ 6] * this->arr[ 9])
+					  - (this->arr[ 0] * this->arr[ 5] * this->arr[10])
+					  - (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
+					  - (this->arr[ 2] * this->arr[ 4] * this->arr[ 9]));
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_inverse(mat4 lhs){DPZoneScoped;
+	mat4 result;
+#if DESHI_USE_SSE
+#define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_shuffle(b,b, 0,3,0,3)), m128_mul_4f32(m128_shuffle(a,a, 1,0,3,2), m128_shuffle(b,b, 2,1,2,1)))
+#define mat2_adj_mul_mat2(a,b) m128_sub_4f32(m128_mul_4f32(m128_shuffle(a,a, 3,3,0,0), b), m128_mul_4f32(m128_shuffle(a,a, 1,1,2,2), m128_shuffle(b,b, 2,3,0,1)))
+#define mat2_mul_adj_mat2(a,b) m128_sub_4f32(m128_mul_4f32(a, m128_shuffle(b,b, 3,0,3,0)), m128_mul_4f32(m128_shuffle(a,a, 1,0,3,2), m128_shuffle(b,b, 2,1,2,1)))
+	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
+	
+	//calculate determinants (and broadcast across m128)
+#if 1
+	__m128 det_A = _mm_set1_ps(lhs.arr[ 0] * lhs.arr[ 5] - lhs.arr[ 1] * lhs.arr[ 4]);
+	__m128 det_B = _mm_set1_ps(lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]);
+	__m128 det_C = _mm_set1_ps(lhs.arr[ 8] * lhs.arr[13] - lhs.arr[ 9] * lhs.arr[12]);
+	__m128 det_D = _mm_set1_ps(lhs.arr[10] * lhs.arr[15] - lhs.arr[11] * lhs.arr[14]);
+#else //NOTE alternate method with using shuffle instead of float set
+	__m128 det_sub = _mm_sub_ps(__mm_mul_ps(m128_shuffle(lhs.sse_row0,lhs.sse_row2, 0,2,0,2), m128_shuffle(lhs.sse_row1,lhs.sse_row3, 1,3,1,3)), 
+								__mm_mul_ps(m128_shuffle(lhs.sse_row0,lhs.sse_row2, 1,3,1,3), m128_shuffle(lhs.sse_row1,lhs.sse_row3, 0,2,0,2)));
+	__m128 det_A = m128_shuffle(det_sub,det_sub, 0,0,0,0);
+	__m128 det_B = m128_shuffle(det_sub,det_sub, 1,1,1,1);
+	__m128 det_C = m128_shuffle(det_sub,det_sub, 2,2,2,2);
+	__m128 det_D = m128_shuffle(det_sub,det_sub, 3,3,3,3);
+#endif
+	
+	//let inverse M = 1/|M| * |X Y|
+	//                        |Z W|
+	
+	//2x2 sub matrices (ordered internally tl->tr->bl->br)
+	__m128 A = _mm_movelh_ps(lhs.sse_row0, lhs.sse_row1); //top left
+	__m128 B = _mm_movehl_ps(lhs.sse_row1, lhs.sse_row0); //top right
+	__m128 C = _mm_movelh_ps(lhs.sse_row2, lhs.sse_row3); //bot left
+	__m128 D = _mm_movehl_ps(lhs.sse_row3, lhs.sse_row2); //bot right
+	
+	//calculate adjugates and determinant //NOTE A# = adjugate A; |A| = determinant A; Atr = trace A
+	__m128 D_C  = mat2_adj_mul_mat2(D, C); //D#*C
+	__m128 A_B  = mat2_adj_mul_mat2(A, B); //A#*B
+	__m128 X_   = _mm_sub_ps(_mm_mul_ps(detD, A), mat2_mul_mat2(B, D_C)); //|D|*A - B*(D#*C)
+	__m128 W_   = _mm_sub_ps(_mm_mul_ps(detA, D), mat2_mul_mat2(C, A_B)); //|A|*D - C*(A#*B)
+	__m128 detM = _mm_mul_ps(detA, detD); //|A|*|D| ... (to be continued)
+	
+	__m128 Y_   = _mm_sub_ps(_mm_mul_ps(detB, C), mat2_mul_adj_mat2(D, A_B)); //|B|*C - D*((A#*B)#)
+	__m128 Z_   = _mm_sub_ps(_mm_mul_ps(detC, B), mat2_mul_adj_mat2(A, D_C)); //|C|*B - A*((D#*C)#)
+	detM        = _mm_add_ps(detM, _mm_mul_ps(detB, detC)); //|A|*|D| + |B|*|C| ... (to be continued)
+	
+	__m128 tr   = _mm_mul_ps(A_B, m128_shuffle(D_C,D_C, 0,2,1,3)); //((A#*B)*(D#*C))tr
+	tr          = _mm_hadd_ps(tr, tr);
+	tr          = _mm_hadd_ps(tr, tr);
+	detM        = _mm_sub_ps(detM, tr); //|A|*|D| + |B|*|C| - ((A#*B)*(D#*C))tr
+	
+	const __m128 adjSignMask = _mm_setr_ps(1.f, -1.f, -1.f, 1.f);
+	__m128 rDetM = _mm_div_ps(adjSignMask, detM); //(1/|M|, -1/|M|, -1/|M|, 1/|M|)
+	
+	X_ = _mm_mul_ps(X_, rDetM);
+	Y_ = _mm_mul_ps(Y_, rDetM);
+	Z_ = _mm_mul_ps(Z_, rDetM);
+	W_ = _mm_mul_ps(W_, rDetM);
+	
+	result.sse_row0 = m128_shuffle(X_, Y_, 3,1,3,1);
+	result.sse_row1 = m128_shuffle(X_, Y_, 2,0,2,0);
+	result.sse_row2 = m128_shuffle(Z_, W_, 3,1,3,1);
+	result.sse_row3 = m128_shuffle(Z_, W_, 2,0,2,0);
+	
+#undef mat2_mul_adj_mat2
+#undef mat2_adj_mul_mat2
+#undef mat2_mul_mat2
+#else //#if DESHI_USE_SSE
+	return mat4_div_f32(mat4_adjoint(lhs), mat3_determinant(lhs));
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline mat4 mat4::
+inverse()const{DPZoneScoped;
+	
+}
+#endif //#ifdef __cplusplus
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
