@@ -153,9 +153,9 @@ typedef struct Vertex2{
 typedef u32 RenderTempIndex;  //NOTE(delle) changing this also requires changing defines in the backend
 typedef u32 RenderModelIndex; //NOTE(delle) changing this also requires changing defines in the backend
 typedef struct RenderModelCmd{
-	u32   vertexOffset;
-	u32   indexOffset;
-	u32   indexCount;
+	u32   vertex_offset;
+	u32   index_offset;
+	u32   index_count;
 	u32   material;
 	char* name;
 	mat4  matrix;
@@ -164,12 +164,12 @@ typedef struct RenderModelCmd{
 typedef u32 RenderTwodIndex;  //NOTE(delle) changing this also requires changing defines in the backend
 typedef struct RenderTwodCmd{
 	void*    handle; //NOTE(delle) VkDescriptorSet in vulkan, texture index in OpenGl
-	Vertex2* vertexBuffer;
-	u32*     indexBuffer; // pointer to used index buffer
-	u64      indexOffset;
-	u64      indexCount;
-	vec2     scissorOffset;
-	vec2     scissorExtent;
+	Vertex2* vertex_buffer;
+	u32*     index_buffer; // pointer to used index buffer
+	u64      index_offset;
+	u64      index_count;
+	vec2     scissor_offset;
+	vec2     scissor_extent;
 	str8     debug_info;
 }RenderTwodCmd;
 
@@ -188,14 +188,53 @@ typedef struct RenderTwodBuffer{
 	void* index_handle;
 }RenderTwodBuffer;
 
+typedef struct RenderCommand {
+
+} RenderCommand;
+
+// these are flags because in some usecases we are able to specify 
+// multiple stages, such as in specifying descriptors
 enum RenderShaderKind {
-	RenderShaderKind_Vertex,
-	// TODO(sushi) if it ever seems necessary
-	// RenderShaderKind_Tesselation,
-	RenderShaderKind_Geometry,
-	RenderShaderKind_Fragment,
-	RenderShaderKind_Compute,
+	RenderShaderKind_Vertex   = 1 << 0,
+	RenderShaderKind_Geometry = 1 << 1, 
+	RenderShaderKind_Fragment = 1 << 2,
+	RenderShaderKind_Compute  = 1 << 3,
+	// add more stages as we come across uses for them
 };
+
+enum RenderDescriptorKind {
+	RenderDescriptorKind_Combined_Image_Sampler,
+	RenderDescriptorKind_Uniform_Buffer,
+	// these two seem to be the only ones used for now
+	// add more as they seem useful later
+};
+
+// an interface to describing the data that a shader
+// takes in
+typedef struct RenderDescriptor {
+	RenderDescriptorKind kind;
+	// what stages this 
+	RenderShaderKind shader_stage_flags;
+} RenderDescriptor;
+
+typedef struct RenderPushConstant {
+	// what sort of shader this constant will be pushed to
+	RenderShaderKind shader_stage_flags;
+	u64 size; // the size of the constant
+} RenderPushConstant;
+
+// it is useful to reuse this information in several pipelines
+typedef struct RenderDescriptorSetLayout {
+	str8 name; // name used for debugging
+
+	RenderDescriptor* descriptors;
+	RenderPushConstant* push_constants;
+	
+	// handle to backend's represenatation of descriptor set layouts
+	void* handle;
+} RenderDescriptorSetLayout;
+
+global RenderDescriptorSetLayout* __render_pool_descriptor_set_layout;
 
 // a shader to be compiled and used as a stage in a RenderPipeline
 typedef struct RenderShader {
@@ -273,6 +312,22 @@ enum RenderSampleCount {
 	RenderSampleCount_64,
 };
 
+// TODO(sushi) this may not be necessary but I'm including it for now 
+//             just so that migrating is simpler
+// All this does is tell the renderer that we aren't using values stored on the pipeline
+// and are instead setting them immediately using some function. 
+// This currently only applies to Vulkan (in OpenGL everything is immediate)
+// and I don't know if DirectX does anything similar, so we'll probably want to 
+// remove this eventually
+enum RenderDynamicState {
+	RenderDynamicState_Viewport,
+	RenderDynamicState_Scissor,
+	RenderDynamicState_Line_Width,
+	RenderDynamicState_Depth_Bias,
+	RenderDynamicState_Blend_Constants,
+	RenderDynamicState_Depth_Bounds,
+};
+
 typedef struct RenderPipeline {
 	str8 name;
 	// kigu array of shaders 
@@ -322,7 +377,16 @@ typedef struct RenderPipeline {
 	// a constant color to blend with 
 	color blend_constant;
 	// TODO(sushi) logical ops for color blending if it ever seems useful
+	
+	RenderDynamicState* dynamic_states;
+
+	RenderDescriptorSet* descriptor_sets;	
+	
+	// handle the to backends representation of a pipeline
+	void* handle;
 } RenderPipeline;
+
+local RenderPipeline* __render_pipeline_pool;
 
 // compute pipelines seem to be distinct from graphics pipelines 
 // so we'll use a separate type for them
@@ -341,6 +405,19 @@ enum RenderPassKind {
 
 // a collection of buffers and commands using those buffers
 typedef struct RenderPass {
+	str8 debug_name;
+	color debug_color;
+
+	color clear_color;
+	
+	struct { // viewport
+		vec2 offset, dimensions;
+	} viewport;
+
+	struct { // scissor
+		vec2 offset, dimensions;
+	} scissor;
+
 
 } RenderPass;
 
@@ -354,9 +431,14 @@ typedef struct RenderFrame {
 // framebuffers, so in that backend this will just serve as a collection of those
 // buffers
 typedef struct RenderSwapchain {
+	// dimensions of this swapchain (which may not match the window)
 	s32 width;
 	s32 height;
+	// the window this swapchain belongs to
+	Window* window;
 } RenderSwapchain;
+
+void render_register_window(Window* window);
 
 enum{
 	RenderBookKeeper_Vertex,
@@ -386,6 +468,11 @@ typedef struct RenderBookKeeper{
 //// @render_status
 //Initializes the `Render` module
 void render_init();
+
+// initializes the backend with the given window
+// 0 may be passed 
+// TODO(sushi) explain what 0 implies
+void render_init_x(Window* window);
 
 //Updates the `Render` module
 void render_update();
@@ -1269,7 +1356,7 @@ deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u
 	
 	renderTwodVertexCount += vCount;
 	renderTwodIndexCount  += iCount;
-	renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1].indexCount += iCount;
+	renderTwodCmdArrays[renderActiveSurface][layer][renderTwodCmdCounts[renderActiveSurface][layer] - 1].index_count += iCount;
 	
 	
 }
@@ -1319,7 +1406,7 @@ render_line_thick2(vec2 start, vec2 end, f32 thickness, color c){DPZoneScoped;
 	
 	renderTwodVertexCount += 4;
 	renderTwodIndexCount  += 6;
-	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 6;
 }
 
 //TODO(sushi) this function needs to be made more robust as well as cleaned up. currently, if 2 line segments form a
@@ -1351,7 +1438,7 @@ render_lines2(vec2* points, u64 count, f32 thickness, color c){DPZoneScoped;
 		ip[1] = renderTwodVertexCount + 1;
 		ip[3] = renderTwodVertexCount;
 		
-		renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 3;
+		renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 3;
 		
 		renderTwodVertexCount += 2;
 		renderTwodIndexCount  += 3;
@@ -1416,7 +1503,7 @@ render_lines2(vec2* points, u64 count, f32 thickness, color c){DPZoneScoped;
 		renderTwodIndexCount  += 6;
 		vp += 2;
 		
-		renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+		renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 6;
 		
 	}
 	
@@ -1433,7 +1520,7 @@ render_lines2(vec2* points, u64 count, f32 thickness, color c){DPZoneScoped;
 		ip[ipidx + 2] = renderTwodVertexCount;
 		ip[ipidx + 3] = renderTwodVertexCount + 1;
 		
-		renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 3;
+		renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 3;
 		
 		renderTwodVertexCount += 2;
 		renderTwodIndexCount  += 3;
@@ -1465,7 +1552,7 @@ render_triangle_filled2(vec2 p1, vec2 p2, vec2 p3, color c){DPZoneScoped;
 	
 	renderTwodVertexCount += 3;
 	renderTwodIndexCount  += 3;
-	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 3;
+	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 3;
 }
 
 void
@@ -1505,7 +1592,7 @@ render_quad_filled2(vec2 top_left, vec2 top_right, vec2 bot_left, vec2 bot_right
 	
 	renderTwodVertexCount += 4;
 	renderTwodIndexCount  += 6;
-	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+	renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 6;
 }
 
 void
@@ -1570,7 +1657,7 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				
 				renderTwodVertexCount += 4;
 				renderTwodIndexCount  += 6;
-				renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]].indexCount += 6;
+				renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]].index_count += 6;
 				pos.x += font->max_width * scale.x;
 			}
 		}break;
@@ -1594,7 +1681,7 @@ render_text2(Font* font, str8 text, vec2 pos, vec2 scale, color c){DPZoneScoped;
 				
 				renderTwodVertexCount += 4;
 				renderTwodIndexCount  += 6;
-				renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].indexCount += 6;
+				renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] - 1].index_count += 6;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -1620,10 +1707,10 @@ render_texture2(Texture* texture, vec2 tl, vec2 tr, vec2 bl, vec2 br, f32 transp
 	renderTwodIndexCount  += 6;
 	
 	RenderTwodCmd* cmd =  &renderTwodCmdArrays[renderActiveSurface][renderActiveLayer][renderTwodCmdCounts[renderActiveSurface][renderActiveLayer]];
-	cmd->indexCount += 6;
+	cmd->index_count += 6;
 	cmd->handle = (void*)((u64)texture->render_idx);
-	cmd->scissorExtent = DeshWindow->dimensions.toVec2();
-	cmd->scissorOffset = Vec2(0,0);
+	cmd->scissor_extent = DeshWindow->dimensions.toVec2();
+	cmd->scissor_offset = Vec2(0,0);
 	renderTwodCmdCounts[renderActiveSurface][renderActiveLayer] += 1;
 }
 
