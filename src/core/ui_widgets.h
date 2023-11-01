@@ -321,6 +321,45 @@ void deshi__ui_end_tab(str8 file, upt line);
 #define ui_end_tab() deshi__ui_end_tab(str8l(__FILE__), __LINE__)
 
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @tree
+
+struct uiTree {
+	uiItem item;
+
+	struct {
+		f32 indent;
+		b32 hlines;
+		b32 vlines;
+		b32 open_circle;
+	} style;
+};
+
+uiItem* deshi__ui_make_tree(uiStyle* style, str8 file, upt line);
+#define ui_make_tree(style) deshi__ui_make_tree((style) str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_tree(uiStyle* style, str8 file, upt line);
+#define ui_begin_tree(style) deshi__ui_begin_tree((style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_tree(str8 file, upt line);
+#define ui_end_tree() deshi__ui_end_tree(str8l(__FILE__), __LINE__)
+
+struct uiTreeNode {
+	uiItem item;
+
+	b32 open;
+	str8 title;
+};
+
+uiItem* deshi__ui_make_tree_node(str8 title, uiStyle* style, str8 file, upt line);
+#define ui_make_tree_node(title,style) deshi__ui_make_tree_node((title), (style) str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_tree_node(str8 title, uiStyle* style, str8 file, upt line);
+#define ui_begin_tree_node(title, style) deshi__ui_begin_tree_node((title), (style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_tree_node(str8 file, upt line);
+#define ui_end_tree_node() deshi__ui_end_tree_node(str8l(__FILE__), __LINE__)
+
 #endif //DESHI_UI2_WIDGETS_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)
@@ -1198,6 +1237,65 @@ deshi__ui_begin_tab(str8 title, uiStyle* style, str8 file, upt line) {
 void 
 deshi__ui_end_tab(str8 file, upt line) {
 	deshi__ui_end_item(file, line);
+}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @tree_implementation
+
+void
+ui_gen_tree(uiItem* item) {
+	
+}
+
+void
+ui_eval_tree(uiItem* item) {
+
+}
+
+uiItem* 
+deshi__ui_make_tree(uiStyle* style, str8 file, upt line) {
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiTree);
+	setup.file = file;
+	setup.line = line;
+	setup.generate = ui_gen_tree;
+	setup.drawcmd_count = 1;
+	vec2i counts[1] = {render_make_filledrect_counts()};
+	setup.drawinfo_reserve = counts;
+
+	uiItem* item = ui_setup_item(setup);
+	return item;
+}
+
+uiItem* 
+deshi__ui_begin_tree(uiStyle* style, str8 file, upt line) {
+	auto i = deshi__ui_begin_tree(style, file, line);
+	ui_push_item(i);
+	return i;
+}
+
+void 
+deshi__ui_end_tree(str8 file, upt line) {
+	deshi__ui_end_item(file, line);
+}
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @tree_node_implementation
+
+uiItem* 
+deshi__ui_make_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
+
+}
+
+uiItem* 
+deshi__ui_begin_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
+
+}
+
+void 
+deshi__ui_end_tree_node(str8 file, upt line) {
+
 }
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)

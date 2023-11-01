@@ -108,6 +108,12 @@ struct Window{
 	void* handle; //win32: HWND; linux: X11::Window; mac not implemented
 	void* context; //win32: HDC; linux: X11::GC; linux/mac not implemented
 	
+	// opaque handle to the info needed by the current render backend 
+	// to properly draw things to this window
+	// for Vulkan this should be VkSwapchain
+	// for OpenGL this will probaby be the context created for the window
+	void* render_info;
+
 	union{
 		vec2i position;
 		struct{ s32 x, y; };
