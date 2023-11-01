@@ -325,7 +325,7 @@ local struct{
 	VkPipelineLayout geometry;
 } pipelineLayouts{};
 
-local VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
+local VkPipelineCache pipelineCache  = VK_NULL_HANDLE;
 local VkPipelineInputAssemblyStateCreateInfo input_assembly_state{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
 local VkPipelineRasterizationStateCreateInfo rasterization_state{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
 local VkPipelineColorBlendAttachmentState    color_blend_attachment_state{};
@@ -342,6 +342,11 @@ local arrayT<VkVertexInputBindingDescription>   vertex_input_bindings(deshi_allo
 local arrayT<VkVertexInputAttributeDescription> vertex_input_attributes(deshi_allocator);
 local arrayT<VkVertexInputBindingDescription>   twod_vertex_input_bindings(deshi_allocator);
 local arrayT<VkVertexInputAttributeDescription> twod_vertex_input_attributes(deshi_allocator);
+
+local VkVertexInputBindingDescription*  vertex_input_bindings_x;
+local VkVertexInputAttributeDescription* vertex_input_attributes_x;
+local VkVertexInputBindingDescription*   twod_vertex_input_bindings_x;
+local VkVertexInputAttributeDescription* twod_vertex_input_attributes_x;
 
 local struct{ //pipelines
 	union{
@@ -3833,7 +3838,7 @@ create_layouts() {
 	set_layout_bindings[3].descriptorCount = 1;
 
 	descriptor_set_layout_info.bindingCount = 4;
-	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptorSetLayouts.base);
+	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptorSetLayouts.textures);
 	AssertVk(resultVk, "failed to create descriptor set layout");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures,
 							 "Textures descriptor set layout");
@@ -3986,34 +3991,33 @@ setup_pipeline_creation() {
 
 	Stopwatch watch = start_stopwatch();
 
-	//vertex input flow control
-	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
-	vertex_input_bindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
-		{0, sizeof(MeshVertex), VK_VERTEX_INPUT_RATE_VERTEX},
-	};
-	vertex_input_attributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MeshVertex, pos)},
-		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(MeshVertex, uv)},
-		{2, 0, VK_FORMAT_R8G8B8A8_UNORM,   offsetof(MeshVertex, color)},
-		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MeshVertex, normal)},
-	};
+	array_init(vertex_input_bindings_x, 1, deshi_allocator);
+	array_init(vertex_input_attributes_x, 4, deshi_allocator);
+	array_init(twod_vertex_input_bindings_x, 1, deshi_allocator);
+	array_init(twod_vertex_input_attributes_x, 3, deshi_allocator);
+
+	*array_push(vertex_input_bindings_x) = {0, sizeof(MeshVertex), VK_VERTEX_INPUT_RATE_VERTEX};
+
+	*array_push(vertex_input_attributes_x) = {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MeshVertex, pos)};
+	*array_push(vertex_input_attributes_x) = {1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(MeshVertex, uv)};
+	*array_push(vertex_input_attributes_x) = {2, 0, VK_FORMAT_R8G8B8A8_UNORM,   offsetof(MeshVertex, color)};
+	*array_push(vertex_input_attributes_x) = {3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MeshVertex, normal)};
+
 	vertex_input_state.vertexBindingDescriptionCount   = (u32)vertex_input_bindings.count;
 	vertex_input_state.pVertexBindingDescriptions      = vertex_input_bindings.data;
 	vertex_input_state.vertexAttributeDescriptionCount = (u32)vertex_input_attributes.count;
 	vertex_input_state.pVertexAttributeDescriptions    = vertex_input_attributes.data;
 	
-	twod_vertex_input_bindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
-		{0, sizeof(Vertex2), VK_VERTEX_INPUT_RATE_VERTEX},
-	};
-	twod_vertex_input_attributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
-		{0, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2, pos)},
-		{1, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2, uv)},
-		{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(Vertex2, color)},
-	};
-	twod_vertex_input_state.vertexBindingDescriptionCount   = (u32)twod_vertex_input_bindings.count;
-	twod_vertex_input_state.pVertexBindingDescriptions      = twod_vertex_input_bindings.data;
-	twod_vertex_input_state.vertexAttributeDescriptionCount = (u32)twod_vertex_input_attributes.count;
-	twod_vertex_input_state.pVertexAttributeDescriptions    = twod_vertex_input_attributes.data;
+	*array_push(twod_vertex_input_bindings_x) = {0, sizeof(Vertex2), VK_VERTEX_INPUT_RATE_VERTEX};
+
+	*array_push(twod_vertex_input_attributes_x) = {0, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2, pos)};
+	*array_push(twod_vertex_input_attributes_x) = {1, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2, uv)};
+	*array_push(twod_vertex_input_attributes_x) = {2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(Vertex2, color)};
+
+	twod_vertex_input_state.vertexBindingDescriptionCount   = (u32)array_count(twod_vertex_input_bindings_x);
+	twod_vertex_input_state.pVertexBindingDescriptions      = twod_vertex_input_bindings_x;
+	twod_vertex_input_state.vertexAttributeDescriptionCount = (u32)array_count(twod_vertex_input_attributes_x);
+	twod_vertex_input_state.pVertexAttributeDescriptions    = twod_vertex_input_attributes_x;
 	
 	//determines how to group vertices together
 	//https://renderdoc.org/vkspec_chunked/chap22.html#VkPipelineInputAssemblyStateCreateInfo
@@ -4318,6 +4322,19 @@ specializationInfo.mapEntryCount = 1;
 	PrintVk(2, "Finished creating pipelines in ", peek_stopwatch(watch), "ms");
 }
 
+RenderDescriptorSetLayout
+render_create_descriptor_set_layout() {
+	RenderDescriptorSetLayout out = {0};
+	array_init(out.push_constants, 1, deshi_allocator);
+	array_init(out.descriptors, 1, deshi_allocator);
+	return out;
+}
+
+void
+render_update_descriptor_set_layout(RenderDescriptorSetLayout* x) {
+	PrintVk(2, "Updating descriptor set layout ", x->name);
+}
+
 // creates a pipeline and returns a handle to it
 // the user is expected to modify this handle then call render_update_pipeline
 // later
@@ -4325,14 +4342,208 @@ RenderPipeline*
 render_create_pipeline() {
 	auto rp = memory_pool_push(__render_pipeline_pool);
 	array_init(rp->shader_stages, 1 , deshi_allocator);
-	array_init(rp->constants, 1, deshi_allocator);
-	array_init(rp->descriptors, 1, deshi_allocator);
+	array_init(rp->descriptor_sets, 1, deshi_allocator);
+	array_init(rp->dynamic_states, 2, deshi_allocator);
+	array_push_value(rp->dynamic_states, RenderDynamicState_Viewport);
+	array_push_value(rp->dynamic_states, RenderDynamicState_Scissor);
 	return rp;
+}
+
+VkCompareOp
+render_compare_op_to_vulkan(RenderCompareOp x) {
+	switch(x) {
+		case RenderCompareOp_Never: return VK_COMPARE_OP_NEVER;
+		case RenderCompareOp_Less: return VK_COMPARE_OP_LESS;
+		case RenderCompareOp_Equal: return VK_COMPARE_OP_EQUAL;
+		case RenderCompareOp_Less_Or_Equal: return VK_COMPARE_OP_LESS_OR_EQUAL;
+		case RenderCompareOp_Greater: return VK_COMPARE_OP_GREATER;
+		case RenderCompareOp_Not_Equal: return VK_COMPARE_OP_NOT_EQUAL;
+		case RenderCompareOp_Greater_Or_Equal: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+		case RenderCompareOp_Always: return VK_COMPARE_OP_ALWAYS;
+	}
+}
+
+VkShaderStageFlagBits
+render_shader_kind_to_vulkan(RenderShaderKind x) {
+	VkShaderStageFlags out = 0;
+	if(HasFlag(x, RenderShaderKind_Vertex))   AddFlag(out, VK_SHADER_STAGE_VERTEX_BIT);
+	if(HasFlag(x, RenderShaderKind_Fragment)) AddFlag(out, VK_SHADER_STAGE_FRAGMENT_BIT);
+	if(HasFlag(x, RenderShaderKind_Geometry)) AddFlag(out, VK_SHADER_STAGE_GEOMETRY_BIT);
+	if(HasFlag(x, RenderShaderKind_Compute))  AddFlag(out, VK_SHADER_STAGE_COMPUTE_BIT);
+	return (VkShaderStageFlagBits)out;
+}
+
+VkDescriptorType
+render_descriptor_kind_to_vulkan(RenderDescriptorKind x) {
+	switch(x) {
+		case RenderDescriptorKind_Uniform_Buffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case RenderDescriptorKind_Combined_Image_Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	}
 }
 
 void
 render_update_pipeline(RenderPipeline* pipeline) {
+	// here we copy all of the default values onto the stack
+	// then adjust the values based on what's in the given pipeline
 
+	u64 n_stages = array_count(pipeline->shader_stages);
+
+	VkPipelineShaderStageCreateInfo* shader_stages;
+	array_init(shader_stages, n_stages, deshi_temp_allocator);
+	forI(n_stages) {
+		*array_push(shader_stages) = load_shader(
+				pipeline->shader_stages[i].name, 
+				pipeline->shader_stages[i].source, 
+				render_shader_kind_to_vulkan(pipeline->shader_stages[i].kind));
+	}
+	
+	u64 n_descriptor_sets = array_count(pipeline->descriptor_sets);
+	
+
+
+	VkDescriptorSetLayoutBinding* layout_bindings;
+	u64 n_descriptors = array_count(pipeline->descriptors);
+	array_init(layout_bindings, n_descriptors, deshi_temp_allocator);
+	array_count(layout_bindings) = n_descriptors;
+
+	forI(n_descriptors) {
+		layout_bindings[i].descriptorType = render_descriptor_kind_to_vulkan(pipeline->descriptors[i].kind);
+		layout_bindings[i].stageFlags = render_shader_kind_to_vulkan(pipeline->descriptors[i].shader_stage_flags);
+		layout_bindings[i].binding = i;
+		layout_bindings[i].descriptorCount = 1;
+	}
+
+	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+	descriptor_set_layout_info.bindingCount = n_descriptors;
+	descriptor_set_layout_info.pBindings = layout_bindings;
+	VkDescriptorSetLayout descriptor_set_layout;
+	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptor_set_layout);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)&descriptor_set_layout_info, 
+			(char*)to_dstr8v(deshi_temp_allocator, pipeline->name, "descriptor set layout").str);
+
+
+	u64 n_constants = array_count(pipeline->push_constants);
+	u64 offset = 0;
+	VkPushConstantRange* ranges;
+	array_init(ranges, n_constants, deshi_temp_allocator);
+	array_count(ranges) = n_constants;
+	forI(n_constants) {
+		ranges[i].stageFlags = render_shader_kind_to_vulkan(pipeline->push_constants[i].shader_stage_flags);
+		ranges[i].offset = offset;
+		ranges[i].size = pipeline->push_constants[i].size;
+		offset += pipeline->push_constants[i].size;
+	}
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	
+		
+
+    auto ias = input_assembly_state;
+
+    auto rs = rasterization_state;
+	switch(pipeline->culling) {
+		case RenderPipelineCulling_None: rs.cullMode = VK_CULL_MODE_NONE; break;
+		case RenderPipelineCulling_Back: rs.cullMode = VK_CULL_MODE_BACK_BIT; break;
+		case RenderPipelineCulling_Front: rs.cullMode = VK_CULL_MODE_FRONT_BIT; break;
+		case RenderPipelineCulling_Front_Back: rs.cullMode = VK_CULL_MODE_FRONT_AND_BACK; break;
+	}
+	switch(pipeline->front_face) {
+		case RenderPipelineFrontFace_CW: rs.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
+		case RenderPipelineFrontFace_CCW: rs.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; break;
+	}
+	switch(pipeline->polygon_mode) {
+		case RenderPipelinePolygonMode_Point: rs.polygonMode = VK_POLYGON_MODE_POINT; break;
+		case RenderPipelinePolygonMode_Fill: rs.polygonMode = VK_POLYGON_MODE_FILL; break;
+		case RenderPipelinePolygonMode_Line: rs.polygonMode = VK_POLYGON_MODE_LINE; break;
+	}
+	rs.depthBiasEnable = (pipeline->depth_bias? VK_TRUE : VK_FALSE);
+
+    auto cbas = color_blend_attachment_state;
+	cbas.blendEnable = (pipeline->color_blend? VK_TRUE : VK_FALSE);
+	switch(pipeline->color_src_blend_factor) {
+		case RenderBlendFactor_Zero: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO; break;
+		case RenderBlendFactor_One: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; break;
+		case RenderBlendFactor_Source_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR; break;
+		case RenderBlendFactor_One_Minus_Source_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR; break;
+		case RenderBlendFactor_Destination_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR; break;
+		case RenderBlendFactor_One_Minus_Destination_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR; break;
+		case RenderBlendFactor_Source_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; break;
+		case RenderBlendFactor_One_Minus_Source_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; break;
+		case RenderBlendFactor_Destination_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_DST_ALPHA; break;
+		case RenderBlendFactor_One_Minus_Destination_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA; break;
+		case RenderBlendFactor_Constant_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR; break;
+		case RenderBlendFactor_One_Minus_Constant_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR; break;
+		case RenderBlendFactor_Constant_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA; break;
+		case RenderBlendFactor_One_Minus_Constant_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA; break;
+	}
+	switch(pipeline->alpha_src_blend_factor) {
+		case RenderBlendFactor_Zero: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; break;
+		case RenderBlendFactor_One: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; break;
+		case RenderBlendFactor_Source_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_COLOR; break;
+		case RenderBlendFactor_One_Minus_Source_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR; break;
+		case RenderBlendFactor_Destination_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_DST_COLOR; break;
+		case RenderBlendFactor_One_Minus_Destination_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR; break;
+		case RenderBlendFactor_Source_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; break;
+		case RenderBlendFactor_One_Minus_Source_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; break;
+		case RenderBlendFactor_Destination_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA; break;
+		case RenderBlendFactor_One_Minus_Destination_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA; break;
+		case RenderBlendFactor_Constant_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR; break;
+		case RenderBlendFactor_One_Minus_Constant_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR; break;
+		case RenderBlendFactor_Constant_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA; break;
+		case RenderBlendFactor_One_Minus_Constant_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA; break;
+	}
+
+    auto cbs = color_blend_state;
+	cbs.blendConstants[0] = pipeline->blend_constant.r/255.f;
+	cbs.blendConstants[1] = pipeline->blend_constant.g/255.f;
+	cbs.blendConstants[2] = pipeline->blend_constant.b/255.f;
+	cbs.blendConstants[3] = pipeline->blend_constant.a/255.f;
+	// TODO(sushi) setup a flag to disable this 
+	cbs.attachmentCount = 1;
+
+    auto dss  = depth_stencil_state;
+	dss.depthTestEnable = (pipeline->depth_test? VK_TRUE : VK_FALSE);
+	// TODO(sushi) this will not be set to the default if the user does not set this variable
+	//             setup new pipelines to take on all the default values we use in setup_pipeline_creation
+	dss.depthCompareOp = render_compare_op_to_vulkan(pipeline->depth_compare_op);
+
+    auto vs   = viewport_state;
+    auto ms   = multisample_state;
+	// TODO(sushi) multisample settings
+    auto vis  = vertex_input_state;
+    auto tvis = twod_vertex_input_state;
+
+    auto ds = dynamic_state;
+	VkDynamicState* dynamic_states;
+	array_init(dynamic_states, array_count(pipeline->dynamic_states), deshi_temp_allocator);
+	forI(array_count(pipeline->dynamic_states)) {
+		switch(pipeline->dynamic_states[i]) {
+			case RenderDynamicState_Viewport: array_push_value(dynamic_states, VK_DYNAMIC_STATE_VIEWPORT); break;
+			case RenderDynamicState_Scissor: array_push_value(dynamic_states, VK_DYNAMIC_STATE_SCISSOR); break;
+			case RenderDynamicState_Line_Width: array_push_value(dynamic_states, VK_DYNAMIC_STATE_LINE_WIDTH); break;
+			case RenderDynamicState_Depth_Bias: array_push_value(dynamic_states, VK_DYNAMIC_STATE_DEPTH_BIAS); break;
+			case RenderDynamicState_Blend_Constants: array_push_value(dynamic_states, VK_DYNAMIC_STATE_BLEND_CONSTANTS); break;
+			case RenderDynamicState_Depth_Bounds: array_push_value(dynamic_states, VK_DYNAMIC_STATE_DEPTH_BOUNDS); break;
+		}
+	}
+	ds.pDynamicStates = dynamic_states;
+	ds.dynamicStateCount = array_count(pipeline->dynamic_states);
+
+	
+
+	VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+	info.stageCount          = array_count(pipeline->shader_stages);
+	info.pStages             = shader_stages;
+	info.pVertexInputState   = &vis;
+	info.pInputAssemblyState = &ias;
+	info.pTessellationState  = 0;
+	info.pViewportState      = &vs;
+	info.pRasterizationState = &rs;
+	info.pMultisampleState   = &ms;
+	info.pDepthStencilState  = &dss;
+	info.pColorBlendState    = &cbs;
+	info.pDynamicState       = &ds;
 }
 
 void
@@ -4404,8 +4615,6 @@ create_swapchain(Window* window) {
 		renderSettings.vsync = VSyncType_Fifo;
 		wininf->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	}
-
-	
 
 	// find actual extent of the swapchain
 	auto capabilities = wininf->support_details.capabilities;
