@@ -3296,10 +3296,10 @@ create_image(u32 width, u32 height,
 	VkMemoryRequirements mem_reqs;
 	vkGetImageMemoryRequirements(device, *image, &mem_reqs);
 	
-	VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-	allocInfo.allocationSize = mem_reqs.size;
-	allocInfo.memoryTypeIndex = find_memory_type(mem_reqs.memoryTypeBits, properties);
-	resultVk = vkAllocateMemory(device, &allocInfo, allocator, image_memory); AssertVk(resultVk, "failed to allocate image memory");
+	VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	alloc_info.allocationSize = mem_reqs.size;
+	alloc_info.memoryTypeIndex = find_memory_type(mem_reqs.memoryTypeBits, properties);
+	resultVk = vkAllocateMemory(device, &alloc_info, allocator, image_memory); AssertVk(resultVk, "failed to allocate image memory");
 	
 	vkBindImageMemory(device, *image, *image_memory, 0);
 }
@@ -4322,33 +4322,6 @@ specializationInfo.mapEntryCount = 1;
 	PrintVk(2, "Finished creating pipelines in ", peek_stopwatch(watch), "ms");
 }
 
-RenderDescriptorSetLayout
-render_create_descriptor_set_layout() {
-	RenderDescriptorSetLayout out = {0};
-	array_init(out.push_constants, 1, deshi_allocator);
-	array_init(out.descriptors, 1, deshi_allocator);
-	return out;
-}
-
-void
-render_update_descriptor_set_layout(RenderDescriptorSetLayout* x) {
-	PrintVk(2, "Updating descriptor set layout ", x->name);
-}
-
-// creates a pipeline and returns a handle to it
-// the user is expected to modify this handle then call render_update_pipeline
-// later
-RenderPipeline*
-render_create_pipeline() {
-	auto rp = memory_pool_push(__render_pipeline_pool);
-	array_init(rp->shader_stages, 1 , deshi_allocator);
-	array_init(rp->descriptor_sets, 1, deshi_allocator);
-	array_init(rp->dynamic_states, 2, deshi_allocator);
-	array_push_value(rp->dynamic_states, RenderDynamicState_Viewport);
-	array_push_value(rp->dynamic_states, RenderDynamicState_Scissor);
-	return rp;
-}
-
 VkCompareOp
 render_compare_op_to_vulkan(RenderCompareOp x) {
 	switch(x) {
@@ -4381,10 +4354,148 @@ render_descriptor_kind_to_vulkan(RenderDescriptorKind x) {
 	}
 }
 
+RenderPipelineLayout*
+render_create_pipeline_layout() {
+	auto out = memory_pool_push(__render_pool_descriptor_set_layout);
+	array_init(out->push_constants, 1, deshi_allocator);
+	array_init(out->descriptors, 1, deshi_allocator);
+	return out;
+}
+
+RenderPipelineLayout*
+render_create_base_pipeline_layout() {
+	auto pl = render_create_pipeline_layout();
+	
+	auto d = array_push(pl->descriptors);
+	d->shader_stage_flags = RenderShaderKind_Vertex;
+	d->              kind = RenderDescriptorKind_Uniform_Buffer;
+
+	forI(5) {
+		d = array_push(pl->descriptors);
+		d->shader_stage_flags = RenderShaderKind_Fragment;
+		d->              kind = RenderDescriptorKind_Combined_Image_Sampler;
+	}
+
+	auto p = array_push(pl->push_constants);
+	p->shader_stage_flags = RenderShaderKind_Vertex;
+	p->              size = sizeof(mat4);
+
+	render_update_pipeline_layout(pl);
+
+	return pl;
+}
+
+void
+render_update_pipeline_layout(RenderPipelineLayout* x) {
+	PrintVk(2, "Updating descriptor set layout ", x->name);
+
+	Stopwatch watch = start_stopwatch();
+	
+	// destroy any possibly existing layout
+	vkDestroyPipelineLayout(device, (VkPipelineLayout)x->handle, allocator);
+
+	u64 n_bindings = array_count(x->descriptors);
+
+	VkDescriptorSetLayoutBinding* bindings;
+	array_init(bindings, n_bindings, deshi_temp_allocator);
+	array_count(bindings) = n_bindings;
+
+	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+	descriptor_set_layout_info.pBindings = bindings;
+	descriptor_set_layout_info.bindingCount = n_bindings;
+
+	forI(n_bindings) {
+		bindings[i].descriptorType = render_descriptor_kind_to_vulkan(x->descriptors[i].kind);
+		bindings[i].stageFlags = render_shader_kind_to_vulkan(x->descriptors[i].shader_stage_flags);
+		bindings[i].binding = i;
+		bindings[i].descriptorCount = 1;
+	}
+
+	VkDescriptorSetLayout descriptor_set_layout;
+	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptor_set_layout);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptor_set_layout, 
+			(char*)to_dstr8v(deshi_temp_allocator, x->name, " descriptor set layout").str);
+	
+	u64 n_push_constants = array_count(x->push_constants);
+
+	VkPushConstantRange* ranges;
+	array_init(ranges, n_push_constants, deshi_temp_allocator);
+	array_count(ranges) = n_push_constants;
+	
+	forI(n_push_constants) {
+		ranges[i].stageFlags = render_shader_kind_to_vulkan(x->push_constants[i].shader_stage_flags);
+		ranges[i].offset = x->push_constants[i].offset;
+		ranges[i].size = x->push_constants[i].size;
+	}
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
+	pipeline_layout_info.pushConstantRangeCount = n_push_constants;
+	pipeline_layout_info.pPushConstantRanges = ranges;
+	resultVk = vkCreatePipelineLayout(device, &pipeline_layout_info, allocator, (VkPipelineLayout*)&x->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
+			(char*)to_dstr8v(deshi_temp_allocator, x->name, " pipeline layout").str);
+
+	PrintVk(2, "Finished updating ", x->name, " layout in ", peek_stopwatch(watch), "ms");
+}
+
+// creates a pipeline and returns a handle to it
+// the user is expected to modify this handle then call render_update_pipeline
+// later
+RenderPipeline*
+render_create_pipeline() {
+	auto rp = memory_pool_push(__render_pipeline_pool);
+	array_init(rp->shader_stages, 1, deshi_allocator);
+	array_init(rp->dynamic_states, 1, deshi_allocator);
+	return rp;
+}
+
+RenderPipeline*
+render_create_default_pipeline() {
+	RenderPipeline* p = render_create_pipeline();
+	
+	p->         front_face = RenderPipelineFrontFace_CW;
+	p->            culling = RenderPipelineCulling_Back;
+	p->       polygon_mode = RenderPipelinePolygonMode_Fill;
+	p->         depth_test = true;
+	p->   depth_compare_op = RenderCompareOp_Less_Or_Equal;
+	p->         depth_bias = false;
+	p->depth_bias_constant = 0.f;
+	p->   depth_bias_clamp = 0.f;
+	p->   depth_bias_slope = 0.f;
+	p->         line_width = 1.f;
+
+	// TODO(sushi) msaa
+	
+	p->           color_blend = true;
+	p->        color_blend_op = RenderBlendOp_Add;
+	p->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
+	p->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	p->        alpha_blend_op = RenderBlendOp_Add;
+	p->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	p->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+
+	p->blend_constant = color(0,0,0,0);
+
+	*array_push(p->dynamic_states) = RenderDynamicState_Viewport;
+	*array_push(p->dynamic_states) = RenderDynamicState_Scissor;
+
+	p->layout = render_create_base_pipeline_layout();
+
+	render_update_pipeline(p);
+
+	return p;
+}
+
 void
 render_update_pipeline(RenderPipeline* pipeline) {
-	// here we copy all of the default values onto the stack
-	// then adjust the values based on what's in the given pipeline
+	PrintVk(2, "Updating ", pipeline->name, " pipeline");
+
+	Stopwatch watch = start_stopwatch();
 
 	u64 n_stages = array_count(pipeline->shader_stages);
 
@@ -4397,48 +4508,6 @@ render_update_pipeline(RenderPipeline* pipeline) {
 				render_shader_kind_to_vulkan(pipeline->shader_stages[i].kind));
 	}
 	
-	u64 n_descriptor_sets = array_count(pipeline->descriptor_sets);
-	
-
-
-	VkDescriptorSetLayoutBinding* layout_bindings;
-	u64 n_descriptors = array_count(pipeline->descriptors);
-	array_init(layout_bindings, n_descriptors, deshi_temp_allocator);
-	array_count(layout_bindings) = n_descriptors;
-
-	forI(n_descriptors) {
-		layout_bindings[i].descriptorType = render_descriptor_kind_to_vulkan(pipeline->descriptors[i].kind);
-		layout_bindings[i].stageFlags = render_shader_kind_to_vulkan(pipeline->descriptors[i].shader_stage_flags);
-		layout_bindings[i].binding = i;
-		layout_bindings[i].descriptorCount = 1;
-	}
-
-	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-	descriptor_set_layout_info.bindingCount = n_descriptors;
-	descriptor_set_layout_info.pBindings = layout_bindings;
-	VkDescriptorSetLayout descriptor_set_layout;
-	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptor_set_layout);
-	AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)&descriptor_set_layout_info, 
-			(char*)to_dstr8v(deshi_temp_allocator, pipeline->name, "descriptor set layout").str);
-
-
-	u64 n_constants = array_count(pipeline->push_constants);
-	u64 offset = 0;
-	VkPushConstantRange* ranges;
-	array_init(ranges, n_constants, deshi_temp_allocator);
-	array_count(ranges) = n_constants;
-	forI(n_constants) {
-		ranges[i].stageFlags = render_shader_kind_to_vulkan(pipeline->push_constants[i].shader_stage_flags);
-		ranges[i].offset = offset;
-		ranges[i].size = pipeline->push_constants[i].size;
-		offset += pipeline->push_constants[i].size;
-	}
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-	
-		
-
     auto ias = input_assembly_state;
 
     auto rs = rasterization_state;
@@ -4544,6 +4613,106 @@ render_update_pipeline(RenderPipeline* pipeline) {
 	info.pDepthStencilState  = &dss;
 	info.pColorBlendState    = &cbs;
 	info.pDynamicState       = &ds;
+	info.layout              = (VkPipelineLayout)pipeline->layout->handle;
+
+	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, allocator, (VkPipeline*)&pipeline->handle);
+	Assert(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipeline->handle, 
+			(char*)to_dstr8v(deshi_temp_allocator, pipeline->name, " pipeline").str);
+
+	PrintVk(2, "Finished creating ", pipeline->name, " pipeline in ", peek_stopwatch(watch), "ms");
+}
+
+RenderImage*
+render_create_image() {
+	auto out = memory_pool_push(__render_pool_images);
+	return out;
+}
+
+VkImageType
+render_image_type_to_vulkan(RenderImageType x) {
+	switch(x) {
+		case RenderImageType_OneD:   return VK_IMAGE_TYPE_1D;
+		case RenderImageType_TwoD:   return VK_IMAGE_TYPE_2D;
+		case RenderImageType_ThreeD: return VK_IMAGE_TYPE_3D;
+	}
+	Assert(0);
+}
+
+VkImageUsageFlags
+render_image_usage_to_vulkan(RenderImageUsage x) {
+	VkImageUsageFlags out;
+	if(HasFlag(x, RenderImageUsage_Transfer_Source)) AddFlag(out, VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	if(HasFlag(x, RenderImageUsage_Transfer_Destination)) AddFlag(out, VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	if(HasFlag(x, RenderImageUsage_Sampled)) AddFlag(out, VK_IMAGE_USAGE_SAMPLED_BIT);
+	if(HasFlag(x, RenderImageUsage_Storage)) AddFlag(out, VK_IMAGE_USAGE_STORAGE_BIT);
+	if(HasFlag(x, RenderImageUsage_Color_Attachment)) AddFlag(out, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	if(HasFlag(x, RenderImageUsage_Depth_Stencil_Attachment)) AddFlag(out, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	return out;
+}
+
+VkSampleCountFlags
+render_sample_count_to_vulkan(RenderSampleCount x) {
+	VkSampleCountFlags out;
+	if(HasFlag(x, RenderSampleCount_1)) AddFlag(out, VK_SAMPLE_COUNT_1_BIT);
+	if(HasFlag(x, RenderSampleCount_2)) AddFlag(out, VK_SAMPLE_COUNT_2_BIT);
+	if(HasFlag(x, RenderSampleCount_4)) AddFlag(out, VK_SAMPLE_COUNT_4_BIT);
+	if(HasFlag(x, RenderSampleCount_8)) AddFlag(out, VK_SAMPLE_COUNT_8_BIT);
+	if(HasFlag(x, RenderSampleCount_16)) AddFlag(out, VK_SAMPLE_COUNT_16_BIT);
+	if(HasFlag(x, RenderSampleCount_32)) AddFlag(out, VK_SAMPLE_COUNT_32_BIT);
+	if(HasFlag(x, RenderSampleCount_64)) AddFlag(out, VK_SAMPLE_COUNT_64_BIT);
+	return out;
+}
+
+VkFormat
+render_format_to_vulkan(RenderFormat x) {
+	switch(x) {
+		case RenderFormat_R8G8B8_StandardRGB:                              return VK_FORMAT_R8G8B8_SRGB;
+		case RenderFormat_Depth16_UnsignedNoramlized:                      return VK_FORMAT_D16_UNORM;
+		case RenderFormat_Depth32_SignedFloat:                             return VK_FORMAT_D32_SFLOAT;
+		case RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt:        return VK_FORMAT_D32_SFLOAT_S8_UINT;
+		case RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt: return VK_FORMAT_D24_UNORM_S8_UINT;
+	}
+	Assert(0);
+}
+
+VkMemoryPropertyFlags
+render_memory_properties_to_vulkan(RenderMemoryPropertyFlags x) {
+	VkMemoryPropertyFlags out;
+	if(HasFlag(x, RenderMemoryPropertyFlag_DeviceLocal     
+	if(HasFlag(x, RenderMemoryPropertyFlag_HostVisible     
+	if(HasFlag(x, RenderMemoryPropertyFlag_HostCoherent    
+	if(HasFlag(x, RenderMemoryPropertyFlag_HostCached      
+	if(HasFlag(x, RenderMemoryPropertyFlag_LazilyAllocated 
+}
+
+void
+render_update_image(RenderImage* x) {
+	PrintVk(4, "Updating RenderImage");
+
+	vkDestroyImage(device, (VkImage)x->handle, allocator);
+	
+	create_image(
+			x->extent.x, x->extent.y, 
+			1, 
+			render_sample_count_to_vulkan(x->samples),
+			render_format_to_vulkan(x->format),
+			(x->linear_tiling? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
+			render_image_usage_to_vulkan(x->usage),
+			
+			)
+
+}
+
+RenderPass*
+render_create_render_pass() {
+	auto out = memory_pool_push(__render_pool_render_passes);
+	return out;
+}
+
+void 
+render_update_render_pass(RenderPass* x) {
+	
 }
 
 void

@@ -188,10 +188,6 @@ typedef struct RenderTwodBuffer{
 	void* index_handle;
 }RenderTwodBuffer;
 
-typedef struct RenderCommand {
-
-} RenderCommand;
-
 // these are flags because in some usecases we are able to specify 
 // multiple stages, such as in specifying descriptors
 enum RenderShaderKind {
@@ -217,14 +213,23 @@ typedef struct RenderDescriptor {
 	RenderShaderKind shader_stage_flags;
 } RenderDescriptor;
 
+/*
+	A set of descriptors which 
+
+*/
+typedef struct RenderDescriptorSet {
+
+} RenderDescriptorSet;
+
 typedef struct RenderPushConstant {
 	// what sort of shader this constant will be pushed to
 	RenderShaderKind shader_stage_flags;
-	u64 size; // the size of the constant
+	u64 size; // the size of the constant in bytes
+	u64 offset; // offset of the constant in bytes
 } RenderPushConstant;
 
 // it is useful to reuse this information in several pipelines
-typedef struct RenderDescriptorSetLayout {
+typedef struct RenderPipelineLayout {
 	str8 name; // name used for debugging
 
 	RenderDescriptor* descriptors;
@@ -232,9 +237,13 @@ typedef struct RenderDescriptorSetLayout {
 	
 	// handle to backend's represenatation of descriptor set layouts
 	void* handle;
-} RenderDescriptorSetLayout;
+} RenderPipelineLayout;
 
-global RenderDescriptorSetLayout* __render_pool_descriptor_set_layout;
+global RenderPipelineLayout* __render_pool_descriptor_set_layout;
+
+RenderPipelineLayout* render_create_pipeline_layout();
+RenderPipelineLayout* render_create_base_pipeline_layout();
+void render_update_pipeline_layout(RenderPipelineLayout* x);
 
 // a shader to be compiled and used as a stage in a RenderPipeline
 typedef struct RenderShader {
@@ -242,6 +251,22 @@ typedef struct RenderShader {
 	str8 name;
 	str8 source;
 } RenderShader;
+
+// collection of image formats that deshi's renderer supports
+// TODO(sushi) more formats	
+enum RenderFormat {
+	// three components, 8 bits for red, blue, and green, encoded in standard rgb format
+	RenderFormat_R8G8B8_StandardRGB,
+	// one component, a 16 bit unsigned normalized integer depth component
+	RenderFormat_Depth16_UnsignedNoramlized,
+	// one component, 32 bit signed floating point format with 32 bits in the depth component
+	RenderFormat_Depth32_SignedFloat,
+	// two components, a 32 bit floating point depth component and 8 bit unsigned int stencil component
+	RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt,
+	// two components, a 24 bit unsigned normalized integer depth component and 8 bit unsigned int stencil component
+	RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt,
+
+};
 
 enum RenderPipelineCulling {
 	RenderPipelineCulling_None,
@@ -303,13 +328,13 @@ enum RenderBlendFactor {
 };
 
 enum RenderSampleCount {
-	RenderSampleCount_1,
-	RenderSampleCount_2,
-	RenderSampleCount_4,
-	RenderSampleCount_8,
-	RenderSampleCount_16,
-	RenderSampleCount_32,
-	RenderSampleCount_64,
+	RenderSampleCount_1  = 1 << 0,
+	RenderSampleCount_2  = 1 << 1,
+	RenderSampleCount_4  = 1 << 2,
+	RenderSampleCount_8  = 1 << 3,
+	RenderSampleCount_16 = 1 << 4,
+	RenderSampleCount_32 = 1 << 5,
+	RenderSampleCount_64 = 1 << 6,
 };
 
 // TODO(sushi) this may not be necessary but I'm including it for now 
@@ -379,20 +404,216 @@ typedef struct RenderPipeline {
 	// TODO(sushi) logical ops for color blending if it ever seems useful
 	
 	RenderDynamicState* dynamic_states;
-
-	RenderDescriptorSet* descriptor_sets;	
+	// pointer to a RenderPipelineLayout object retrieved from render
+	RenderPipelineLayout* layout;	
 	
-	// handle the to backends representation of a pipeline
+	// handle the to backend's representation of a pipeline
 	void* handle;
 } RenderPipeline;
 
 local RenderPipeline* __render_pipeline_pool;
 
+RenderPipeline* render_create_pipeline();
+RenderPipeline* render_create_default_pipeline();
+void render_update_pipeline(RenderPipeline* pipeline);
+
+enum RenderCommandType {
+	RenderCommandType_Bind_Pipeline,
+	RenderCommandType_Bind_Vertex_Buffer,
+	RenderCommandType_Bind_Index_Buffer,
+	RenderCommandType_Bind_Descriptor_Set,
+	RenderCommandType_Push_Constant,
+	RenderCommandType_Draw,
+};
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @render_buffer
+typedef Flags RenderBufferUsageFlags; enum{
+	RenderBufferUsage_TransferSource      = (1 << 0),
+	RenderBufferUsage_TransferDestination = (1 << 1),
+	RenderBufferUsage_UniformTexelBuffer  = (1 << 2),
+	RenderBufferUsage_StorageTexelBuffer  = (1 << 3),
+	RenderBufferUsage_UniformBuffer       = (1 << 4),
+	RenderBufferUsage_StorageBuffer       = (1 << 5),
+	RenderBufferUsage_IndexBuffer         = (1 << 6),
+	RenderBufferUsage_VertexBuffer        = (1 << 7),
+	RenderBufferUsage_IndirectBuffer      = (1 << 8),
+};
+
+// Choosing the correct RenderMemoryPropertyFlags is pretty important for performance and usability.
+// The correct choice of course depends on use case, but there are tiers of speed and access patterns
+// that can be understood to better make that choice. I will attempt to explain those here.
+// 
+// Speed:
+// RenderMemoryPropertyFlag_DeviceLocal has the fastest device access because the memory is stored on
+// the device. RenderMemoryPropertyFlag_HostVisible allows mapping memory between the host and device,
+// but that means the device has to send the memory to the host before the host can make any changes,
+// which it will have to send back to the device. A possible way to alleviate part of that transfer time
+// is to use RenderMemoryPropertyFlag_HostCached, which will keep a copy of the memory on the host and
+// only update the memory that has changed on the device. But, that also means you have two copies of
+// the memory at no benefit to sending updates to the device, so it's often useful for host readback
+// of data that's being written by the device.
+//
+// Access:
+// If you never need to update the data, then it's simplest to just upload the memory to the device
+// and disallow mapping it back to the host. RenderMemoryProperty_DeviceOnly and 
+// RenderMemoryProperty_DeviceOnlyLazy are the choices for that, where lazy allocation means that the
+// memory is only allocated as needed. Lazy allocation is mainly useful on tiled architectures
+// (render tile-by-tile) with large render targets that don't need to save their result after rendering,
+// like MSAA images or depth images, since the memory space for a finished tile can be reused. However,
+// if you do need to update the data, then the choices differentiate based on how often it's
+// necessary to update that data. RenderMemoryProperty_DeviceOnly might still be preferable if the
+// memory has a high degree of random access, like with dynamic textures or large storage buffers.
+// RenderMemoryProperty_DeviceMappable is ideal for frequent updates, like uniform buffers or dynamic
+// vertex/index buffers, since you can map specific sections of the memory and it doesn't require going
+// thru a staging buffer like RenderMemoryProperty_DeviceOnly. RenderMemoryProperty_HostStreamed is mainly
+// used for staging buffers, but should probably be used in the above use case if
+// RenderMemoryProperty_DeviceMappable is not available.
+//
+// Examples:
+// RenderMemoryProperty_DeviceOnly:     static textures, large storage buffers, randomly accessed dynamic textures
+// RenderMemoryProperty_DeviceOnlyLazy: MSAA image, depth image
+// RenderMemoryProperty_DeviceMappable: uniform buffers, dynamic vertex/index buffers
+// RenderMemoryProperty_HostStreamed:   staging buffers
+//
+// Notes:
+// Choosing a RenderMemoryPropertyFlags can also depend on what GPU is being used, as the different
+//   brands organize their device memory in different ways.
+// Allocating too many resources with RenderMemoryPropertyFlag_DeviceLocal can result in VRAM
+//   oversubscription (running out of memory).
+// RenderMemoryPropertyFlag_LazilyAllocated and RenderMemoryPropertyFlag_HostCached are ignored on OpenGL as there
+//   is no way to specify such behaviour in that backend (to my knowledge).
+//
+// References:
+// https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkMemoryPropertyFlagBits.html
+// https://asawicki.info/news_1740_vulkan_memory_types_on_pc_and_how_to_use_them
+// https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer
+enum RenderMemoryPropertyFlags{
+	RenderMemoryPropertyFlag_DeviceLocal     = (1 << 0), //device memory, fastest device access
+	RenderMemoryPropertyFlag_HostVisible     = (1 << 1), //device memory that can be mapped for host access (not compatible with RenderMemoryPropertyFlag_LazilyAllocated)
+	RenderMemoryPropertyFlag_HostCoherent    = (1 << 2), //host memory that can be read by device over PCIe as needed, changes don't need to be flushed (implies RenderMemoryPropertyFlag_HostVisible)
+	RenderMemoryPropertyFlag_HostCached      = (1 << 3), //device memory that is also cached on the host (requires RenderMemoryPropertyFlag_HostVisible)
+	RenderMemoryPropertyFlag_LazilyAllocated = (1 << 4), //device only access, commits memory as needed (not compatible with RenderMemoryPropertyFlag_HostVisible)
+	
+	RenderMemoryProperty_DeviceOnly     = RenderMemoryPropertyFlag_DeviceLocal,                                            //not mappable, uses staging buffers (must have RenderMemoryMapping_None)
+	RenderMemoryProperty_DeviceOnlyLazy = RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_LazilyAllocated, //device only committed as used (must have RenderMemoryMapping_None)
+	RenderMemoryProperty_DeviceMappable = RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible,     //device-dependent, changes must be flushed
+	RenderMemoryProperty_HostStreamed   = RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,    //host local memory, read by device over PCIe
+};
+
+typedef Type RenderMemoryMappingType; enum{
+	RenderMemoryMapping_None,          //the memory is never mapped after initial upload (not compatible with RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
+	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
+	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
+};
+
+typedef struct RenderBuffer{
+	void* buffer_handle; //VkBuffer in vulkan, GLuint in OpenGL, ... in DirectX
+	void* memory_handle; //VkDeviceMemory in vulkan, unused in OpenGL, ... in DirectX
+	
+	u64 size;
+	
+	void* mapped_data; //null if not mapped
+	u64 mapped_offset;
+	u64 mapped_size;
+	
+	RenderBufferUsageFlags usage;
+	RenderMemoryPropertyFlags properties;
+	RenderMemoryMappingType mapping;
+}RenderBuffer;
+
+//Creates a `RenderBuffer*`, allocates at least `size` bytes on the device, and uploads `size` bytes at `data` to the device
+//  `data` can be a null pointer, in which case the buffer memory will be allocated but nothing will be uploaded
+//  `usage` determines how the buffer can be used
+//  `properties` determines how the buffer memory can be accessed
+//  `mapping` determines the duration a buffer will be mapped between the device and host
+RenderBuffer* render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping);
+
+//Deletes the `buffer` from the device and host
+void render_buffer_delete(RenderBuffer* buffer);
+
+//Maps `size` bytes at `offset` from an unmapped `buffer` with host-visible memory
+//  allows the host to modify memory at `buffer.mapped_data` which can be flushed back to the device
+//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
+//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
+void render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size);
+
+//Unmaps a mapped `buffer` with host-visible memory
+//  `flush` will flush the mapped data back to the device before unmapping
+//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
+//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
+void render_buffer_unmap(RenderBuffer* buffer, b32 flush);
+
+//Flushes the contents of a mapped `buffer` back to the device
+//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
+//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
+void render_buffer_flush(RenderBuffer* buffer);
+
+typedef struct RenderCommand {
+	RenderCommandType type;
+	union {
+
+	struct { // bind_pipeline
+		RenderPipeline* handle;
+	} bind_pipeline;
+
+	struct { // bind_vertex_buffer, bind_index_buffer
+		RenderBuffer* handle;
+	} bind_vertex_buffer, bind_index_buffer;
+
+	}; // union
+} RenderCommand;
+
+enum RenderImageType {
+	RenderImageType_OneD,
+	RenderImageType_TwoD,
+	RenderImageType_ThreeD,
+};
+
+// TODO(sushi) explain how each flag allows the image to be used 
+//             with other parts of the api
+enum RenderImageUsage {
+	RenderImageUsage_Transfer_Source          = 1 << 0,
+	RenderImageUsage_Transfer_Destination     = 1 << 1,
+	RenderImageUsage_Sampled                  = 1 << 2, 
+	RenderImageUsage_Storage                  = 1 << 3,
+	RenderImageUsage_Color_Attachment         = 1 << 4,
+	RenderImageUsage_Depth_Stencil_Attachment = 1 << 5,
+};
+
+// unlike a texture from assets, this represents an arbitrary image on the 
+// GPU which can be used for things like offscreen rendering
+// this is very similar to RenderBuffer, but multidimensional
+typedef struct RenderImage {
+	RenderImageType   type;
+	RenderFormat      format;
+	RenderImageUsage  usage;
+	RenderSampleCount samples;
+	vec3i             extent;
+	b32               linear_tiling;
+
+
+	// how the memory of the image is intended to be used 
+	RenderMemoryPropertyFlags memory_properties;
+
+	// TODO(sushi)
+	//u64 mip_levels;
+	//u64 array_layers;
+	
+	void* handle;
+} RenderImage;
+ 
+RenderImage* render_create_image();
+void render_update_image(RenderImage* x);
+
+global RenderImage* __render_pool_images;
+
+// TODO(sushi)
 // compute pipelines seem to be distinct from graphics pipelines 
 // so we'll use a separate type for them
-typedef struct RenderComputePipeline {
-
-} RenderComputePipeline;
+//typedef struct RenderComputePipeline {
+//
+//} RenderComputePipeline;
 
 // possibly elements of RenderPasses?
 typedef struct RenderAttachment {
@@ -403,6 +624,44 @@ enum RenderPassKind {
 	RenderPassKind_
 };
 
+enum RenderAttachmentStoreOp {
+	RenderAttachmentStoreOp_Store,
+	RenderAttachmentStoreOp_Dont_Care,
+};
+
+enum RenderAttachmentLoadOp {
+	RenderAttachmentLoadOp_Load,
+	RenderAttachmentLoadOp_Clear,
+	RenderAttachmentLoadOp_Dont_Care,
+};
+
+enum RenderImageLayout {
+	RenderImageLayout_Undefined,
+	RenderImageLayout_General,
+	RenderImageLayout_Color_Attachment_Optional,
+	RenderImageLayout_Depth_Stencil_Attachment_Optional,
+	RenderImageLayout_Present,
+};
+
+// TODO(sushi) for now I am calling this an attachment as that's how it is in Vulkan
+//             but eventually it should be renamed to something that clearly indicates what this 
+//             is actually used for
+//             It's also possible this should not be presented in this way at all
+//             We may want to simplify it to make it more obvious what it's doing
+//             and this may not be able to be translated to opengl
+//             I think the basic functionality should be setting up subpasses so that
+//             post processing may be achieved
+typedef struct RenderPassAttachment {
+	RenderFormat            format;
+	RenderSampleCount       samples;
+	RenderAttachmentLoadOp  loadOp;
+	RenderAttachmentStoreOp storeOp;
+	RenderAttachmentLoadOp  stencilLoadOp;
+	RenderAttachmentStoreOp stencilStoreOp;
+	RenderImageLayout       initial_layout;
+	RenderImageLayout       final_layout;
+} RenderPassAttachment;
+
 // a collection of buffers and commands using those buffers
 typedef struct RenderPass {
 	str8 debug_name;
@@ -410,6 +669,9 @@ typedef struct RenderPass {
 
 	color clear_color;
 	
+	// NOTE(sushi) in Vulkan, viewport and scissor are only considered if they are 
+	//             set in the dynamic states array of the pipeline associated with
+	//             this renderpass
 	struct { // viewport
 		vec2 offset, dimensions;
 	} viewport;
@@ -418,8 +680,22 @@ typedef struct RenderPass {
 		vec2 offset, dimensions;
 	} scissor;
 
+	// currently only support one of each attachment
+	b32 use_depth_attachment;
+	RenderPassAttachment depth_attachment;
+	b32 use_color_attachment;
+	RenderPassAttachment color_attachment;
+	b32 use_resolve_attachment;
+	RenderPassAttachment resolve_attachment;
+
+	void* handle;
 
 } RenderPass;
+
+global RenderPass* __render_pool_render_passes;
+
+RenderPass* render_create_render_pass();
+void render_update_render_pass(RenderPass* x);
 
 // representation of a framebuffer
 typedef struct RenderFrame {
@@ -499,128 +775,7 @@ RenderStats* render_get_stats();
 RenderStage* render_get_stage();
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @render_buffer
-typedef Flags RenderBufferUsageFlags; enum{
-	RenderBufferUsage_TransferSource      = (1 << 0),
-	RenderBufferUsage_TransferDestination = (1 << 1),
-	RenderBufferUsage_UniformTexelBuffer  = (1 << 2),
-	RenderBufferUsage_StorageTexelBuffer  = (1 << 3),
-	RenderBufferUsage_UniformBuffer       = (1 << 4),
-	RenderBufferUsage_StorageBuffer       = (1 << 5),
-	RenderBufferUsage_IndexBuffer         = (1 << 6),
-	RenderBufferUsage_VertexBuffer        = (1 << 7),
-	RenderBufferUsage_IndirectBuffer      = (1 << 8),
-};
 
-// Choosing the correct RenderMemoryPropertyFlags is pretty important for performance and usability.
-// The correct choice of course depends on use case, but there are tiers of speed and access patterns
-// that can be understood to better make that choice. I will attempt to explain those here.
-// 
-// Speed:
-// RenderMemoryPropertyFlag_DeviceLocal has the fastest device access because the memory is stored on
-// the device. RenderMemoryPropertyFlag_HostVisible allows mapping memory between the host and device,
-// but that means the device has to send the memory to the host before the host can make any changes,
-// which it will have to send back to the device. A possible way to alleviate part of that transfer time
-// is to use RenderMemoryPropertyFlag_HostCached, which will keep a copy of the memory on the host and
-// only update the memory that has changed on the device. But, that also means you have two copies of
-// the memory at no benefit to sending updates to the device, so it's often useful for host readback
-// of data that's being written by the device.
-//
-// Access:
-// If you never need to update the data, then it's simplest to just upload the memory to the device
-// and disallow mapping it back to the host. RenderMemoryProperty_DeviceOnly and 
-// RenderMemoryProperty_DeviceOnlyLazy are the choices for that, where lazy allocation means that the
-// memory is only allocated as needed. Lazy allocation is mainly useful on tiled architectures
-// (render tile-by-tile) with large render targets that don't need to save their result after rendering,
-// like MSAA images or depth images, since the memory space for a finished tile can be reused. However,
-// if you do need to update the data, then the choices differentiate based on how often it's
-// necessary to update that data. RenderMemoryProperty_DeviceOnly might still be preferable if the
-// memory has a high degree of random access, like with dynamic textures or large storage buffers.
-// RenderMemoryProperty_DeviceMappable is ideal for frequent updates, like uniform buffers or dynamic
-// vertex/index buffers, since you can map specific sections of the memory and it doesn't require going
-// thru a staging buffer like RenderMemoryProperty_DeviceOnly. RenderMemoryProperty_HostStreamed is mainly
-// used for staging buffers, but should probably be used in the above use case if
-// RenderMemoryProperty_DeviceMappable is not available.
-//
-// Examples:
-// RenderMemoryProperty_DeviceOnly:     static textures, large storage buffers, randomly accessed dynamic textures
-// RenderMemoryProperty_DeviceOnlyLazy: MSAA image, depth image
-// RenderMemoryProperty_DeviceMappable: uniform buffers, dynamic vertex/index buffers
-// RenderMemoryProperty_HostStreamed:   staging buffers
-//
-// Notes:
-// Choosing a RenderMemoryPropertyFlags can also depend on what GPU is being used, as the different
-//   brands organize their device memory in different ways.
-// Allocating too many resources with RenderMemoryPropertyFlag_DeviceLocal can result in VRAM
-//   oversubscription (running out of memory).
-// RenderMemoryPropertyFlag_LazilyAllocated and RenderMemoryPropertyFlag_HostCached are ignored on OpenGL as there
-//   is no way to specify such behaviour in that backend (to my knowledge).
-//
-// References:
-// https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkMemoryPropertyFlagBits.html
-// https://asawicki.info/news_1740_vulkan_memory_types_on_pc_and_how_to_use_them
-// https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer
-typedef Flags RenderMemoryPropertyFlags; enum{
-	RenderMemoryPropertyFlag_DeviceLocal     = (1 << 0), //device memory, fastest device access
-	RenderMemoryPropertyFlag_HostVisible     = (1 << 1), //device memory that can be mapped for host access (not compatible with RenderMemoryPropertyFlag_LazilyAllocated)
-	RenderMemoryPropertyFlag_HostCoherent    = (1 << 2), //host memory that can be read by device over PCIe as needed, changes don't need to be flushed (implies RenderMemoryPropertyFlag_HostVisible)
-	RenderMemoryPropertyFlag_HostCached      = (1 << 3), //device memory that is also cached on the host (requires RenderMemoryPropertyFlag_HostVisible)
-	RenderMemoryPropertyFlag_LazilyAllocated = (1 << 4), //device only access, commits memory as needed (not compatible with RenderMemoryPropertyFlag_HostVisible)
-	
-	RenderMemoryProperty_DeviceOnly     = RenderMemoryPropertyFlag_DeviceLocal,                                            //not mappable, uses staging buffers (must have RenderMemoryMapping_None)
-	RenderMemoryProperty_DeviceOnlyLazy = RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_LazilyAllocated, //device only committed as used (must have RenderMemoryMapping_None)
-	RenderMemoryProperty_DeviceMappable = RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible,     //device-dependent, changes must be flushed
-	RenderMemoryProperty_HostStreamed   = RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,    //host local memory, read by device over PCIe
-};
-
-typedef Type RenderMemoryMappingType; enum{
-	RenderMemoryMapping_None,          //the memory is never mapped after initial upload (not compatible with RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
-	RenderMemoryMapping_MapWriteUnmap, //map the memory to the host, write data to the allocation, and unmap the memory every time (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
-	RenderMemoryMapping_Persistent,    //map the memory to the host right after it is allocated, and don't unmap until deletion (must have RenderMemoryPropertyFlag_HostVisible, RenderMemoryPropertyFlag_HostCoherent, or RenderMemoryPropertyFlag_HostCached)
-};
-
-typedef struct RenderBuffer{
-	void* buffer_handle; //VkBuffer in vulkan, GLuint in OpenGL, ... in DirectX
-	void* memory_handle; //VkDeviceMemory in vulkan, unused in OpenGL, ... in DirectX
-	
-	u64 size;
-	
-	void* mapped_data; //null if not mapped
-	u64 mapped_offset;
-	u64 mapped_size;
-	
-	RenderBufferUsageFlags usage;
-	RenderMemoryPropertyFlags properties;
-	RenderMemoryMappingType mapping;
-}RenderBuffer;
-
-//Creates a `RenderBuffer*`, allocates at least `size` bytes on the device, and uploads `size` bytes at `data` to the device
-//  `data` can be a null pointer, in which case the buffer memory will be allocated but nothing will be uploaded
-//  `usage` determines how the buffer can be used
-//  `properties` determines how the buffer memory can be accessed
-//  `mapping` determines the duration a buffer will be mapped between the device and host
-RenderBuffer* render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderMemoryPropertyFlags properties, RenderMemoryMappingType mapping);
-
-//Deletes the `buffer` from the device and host
-void render_buffer_delete(RenderBuffer* buffer);
-
-//Maps `size` bytes at `offset` from an unmapped `buffer` with host-visible memory
-//  allows the host to modify memory at `buffer.mapped_data` which can be flushed back to the device
-//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
-//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
-void render_buffer_map(RenderBuffer* buffer, u64 offset, u64 size);
-
-//Unmaps a mapped `buffer` with host-visible memory
-//  `flush` will flush the mapped data back to the device before unmapping
-//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
-//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
-void render_buffer_unmap(RenderBuffer* buffer, b32 flush);
-
-//Flushes the contents of a mapped `buffer` back to the device
-//  `buffer.properties` must have these flags set: RenderMemoryPropertyFlag_DeviceLocal | RenderMemoryPropertyFlag_HostVisible
-//  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
-void render_buffer_flush(RenderBuffer* buffer);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
