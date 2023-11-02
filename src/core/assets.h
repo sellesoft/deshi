@@ -16,21 +16,37 @@ Index:
 #define DESHI_ASSETS_H
 #include "math/vector.h"
 struct Mesh;
+typedef u32 MeshIndex;
+struct MeshVertex;
 struct Texture;
 struct Material;
 struct Model;
 struct Font;
+struct RenderBuffer;
 StartLinkageC();
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets
+
 typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is no real need to iterate thru them
+					   // NOTE(sushi) these arrays are interated to check if they have already been loaded
+	// TODO(sushi) convert to pools
 	Mesh**     mesh_array;
 	Texture**  texture_array;
 	Material** material_array;
 	Model**    model_array;
 	Font**     font_array;
+	
+	
+	u64 mesh_vertexes_cursor;
+	u64 mesh_vertexes_reserved;
+	u64 mesh_indexes_cursor;
+	u64 mesh_indexes_reserved;
+	Mesh** inactive_meshes_vertex_sorted;
+	Mesh** inactive_meshes_index_sorted;
+	// GPU equivalents
+	RenderBuffer* mesh_vertex_buffer;
+	RenderBuffer* mesh_index_buffer;
 }Assets;
 extern Assets* g_assets; //global assets pointer
 #define DeshAssets g_assets
@@ -49,7 +65,6 @@ void assets_browser();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @mesh  //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
-typedef u32 MeshIndex;
 
 typedef struct MeshVertex{ //36 bytes
 	vec3 pos;
@@ -117,6 +132,9 @@ typedef struct Mesh{
 	MeshIndex*    index_array;
 	MeshTriangle* triangle_array;
 	MeshFace*     face_array;
+
+	u64 vertex_offset;
+	u64 index_offset;
 }Mesh;
 
 //Returns a pointer to the allocated `Mesh` object (with arrays setup)

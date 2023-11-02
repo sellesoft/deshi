@@ -298,42 +298,126 @@ assets_browser(){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_mesh
 Mesh*
-assets_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){DPZoneScoped;
-	Assert(indexCount && vertexCount && faceCount);
+assets_mesh_allocate(u32 index_count, 
+		             u32 vertex_count, 
+					 u32 face_count, 
+					 u32 triangles_neighbor_count, 
+					 u32 faces_vertex_count, 
+					 u32 faces_outer_vertex_count, 
+					 u32 faces_neighbor_triangle_count, 
+					 u32 faces_neighbor_face_count){DPZoneScoped;
+	Assert(index_count && vertex_count && face_count);
 	
-	u32 triangleCount = indexCount/3;
+	u32 triangleCount = index_count/3;
 	u32 bytes =                    1*sizeof(Mesh)
-		+                vertexCount*sizeof(MeshVertex)
-		+                 indexCount*sizeof(MeshIndex)
+		+                vertex_count*sizeof(MeshVertex)
+		+                 index_count*sizeof(MeshIndex)
 		+              triangleCount*sizeof(MeshTriangle)
-		+                  faceCount*sizeof(MeshFace)
-		+     trianglesNeighborCount*sizeof(u32) //triangle neighbors
-		+     trianglesNeighborCount*sizeof(u8)  //triangle edges
+		+                  face_count*sizeof(MeshFace)
+		+     triangles_neighbor_count*sizeof(u32) //triangle neighbors
+		+     triangles_neighbor_count*sizeof(u8)  //triangle edges
 		+              triangleCount*sizeof(u32) //face triangles
-		+           facesVertexCount*sizeof(u32)
-		+      facesOuterVertexCount*sizeof(u32)
-		+ facesNeighborTriangleCount*sizeof(u32)
-		+     facesNeighborFaceCount*sizeof(u32);
+		+           faces_vertex_count*sizeof(u32)
+		+      faces_outer_vertex_count*sizeof(u32)
+		+ faces_neighbor_triangle_count*sizeof(u32)
+		+     faces_neighbor_face_count*sizeof(u32);
 	
 	Mesh* mesh = (Mesh*)memory_alloc(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	mesh->bytes         = bytes;
-	mesh->index_count    = indexCount;
-	mesh->vertex_count   = vertexCount;
+	mesh->index_count    = index_count;
+	mesh->vertex_count   = vertex_count;
 	mesh->triangle_count = triangleCount;
-	mesh->face_count     = faceCount;
-	mesh->total_tri_neighbor_count      = trianglesNeighborCount;
-	mesh->total_face_vertex_count       = facesVertexCount;
-	mesh->total_face_outer_vertex_count  = facesOuterVertexCount;
-	mesh->total_face_tri_neighbor_count  = facesNeighborTriangleCount;
-	mesh->total_face_face_neighbor_count = facesNeighborFaceCount;
-	mesh->vertex_array   = (MeshVertex*)cursor;    cursor +=   vertexCount*sizeof(MeshVertex);
-	mesh->index_array    = (MeshIndex*)cursor;     cursor +=    indexCount*sizeof(MeshIndex);
+	mesh->face_count     = face_count;
+	mesh->total_tri_neighbor_count      = triangles_neighbor_count;
+	mesh->total_face_vertex_count       = faces_vertex_count;
+	mesh->total_face_outer_vertex_count  = faces_outer_vertex_count;
+	mesh->total_face_tri_neighbor_count  = faces_neighbor_triangle_count;
+	mesh->total_face_face_neighbor_count = faces_neighbor_face_count;
+
+#ifndef RENDER_REWRITE
+	mesh->vertex_array   = (MeshVertex*)cursor;    cursor +=   vertex_count*sizeof(MeshVertex);
+	mesh->index_array    = (MeshIndex*)cursor;     cursor +=    index_count*sizeof(MeshIndex);
+#else
+	u64 v_place_next = -1;
+	forI(array_count(g_assets->inactive_meshes_vertex_sorted)) {
+		Mesh* m = g_assets->inactive_meshes_vertex_sorted[i];
+		s64 vremain = m->vertex_count - vertex_count;
+		if(vremain >= 0) {
+			v_place_next = m->vertex_offset;
+			if(!vremain) {
+				array_remove_ordered(g_assets->inactive_meshes_vertex_sorted, i);
+				m->vertex_count = 0;
+				if(!m->index_count) {
+					memzfree(m);
+				}
+			} else {
+				m->vertex_offset += vertex_count;
+				m->vertex_count -= vertex_count;
+			}
+			break;
+		}
+	}
+
+	u64 i_place_next = -1;
+	forI(array_count(g_assets->inactive_meshes_index_sorted)) {
+		Mesh* m = g_assets->inactive_meshes_index_sorted[i];
+		s64 iremain = m->index_count - index_count;
+		if(iremain >= 0) {
+			i_place_next = m->index_offset;
+			if(!iremain) {
+				array_remove_ordered(g_assets->inactive_meshes_index_sorted, i);
+				m->index_count = 0;
+				if(!m->vertex_count) {
+					memzfree(m);
+				}
+			} else {
+				m->index_offset += index_count;
+				m->index_count -= index_count;
+			}
+			break;
+		}
+	}
+
+	if(v_place_next == -1) {
+		// couldn't find a slot for our vertexes so we need to allocate at the end
+		// TODO(sushi) it's possible the reallocation is not enough still
+		if(g_assets->mesh_vertexes_cursor + vertex_count > g_assets->mesh_vertexes_reserved) {
+			// TODO(sushi) allow setting limits by the app
+			g_assets->mesh_vertexes_reserved *= 2; // TODO(sushi) decide a better growth scheme at some point
+			g_assets->mesh_vertexes = (MeshVertex*)memrealloc(g_assets->mesh_vertexes, g_assets->mesh_vertexes_reserved);
+		}
+		mesh->vertex_offset = g_assets->mesh_vertexes_cursor;
+		g_assets->mesh_vertexes_cursor += vertex_count;
+	} else mesh->vertex_offset = v_place_next;
+
+	if(i_place_next == -1) {
+		if(g_assets->mesh_indexes_cursor + index_count > g_assets->mesh_indexes_reserved) {
+			g_assets->mesh_indexes_reserved *= 2;
+			g_assets->mesh_indexes = (MeshIndex*)memrealloc(g_assets->mesh_indexes, g_assets->mesh_indexes_reserved);
+		}
+		mesh->index_offset = g_assets->mesh_indexes_cursor;
+		g_assets->mesh_indexes_cursor += index_count;
+	} else mesh->index_offset = i_place_next;
+#endif
+
 	mesh->triangle_array = (MeshTriangle*)cursor;  cursor += triangleCount*sizeof(MeshTriangle);
-	mesh->face_array     = (MeshFace*)cursor;      cursor +=     faceCount*sizeof(MeshFace);
+	mesh->face_array     = (MeshFace*)cursor;      cursor +=     face_count*sizeof(MeshFace);
+
+
 	return mesh;
 }
 
+void
+assets_mesh_delete(Mesh* mesh) {
 
+}
+
+void
+map_mesh(Mesh* m) {
+	
+		
+}
+ 
 Mesh*
 assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped;
 	//TODO(delle) change this to take in 8 points
@@ -355,6 +439,7 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	mesh->aabb_max  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
 	
+
 	MeshVertex*   va = mesh->vertex_array;
 	MeshIndex*    ia = mesh->index_array;
 	MeshTriangle* ta = mesh->triangle_array;
@@ -506,7 +591,11 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	fa[4].neighbor_face_array[0]=0; fa[4].neighbor_face_array[1]=1; fa[4].neighbor_face_array[2]=3; fa[4].neighbor_face_array[3]=5;
 	fa[5].neighbor_face_array[0]=0; fa[5].neighbor_face_array[1]=2; fa[5].neighbor_face_array[2]=3; fa[5].neighbor_face_array[3]=4;
 	
+#ifdef RENDER_REWRITE
+	if(g_assets->mesh_vertexes->used + mesh->vertex_count)
+#else
 	render_load_mesh(mesh);
+#endif
 	arrput(DeshAssets->mesh_array, mesh);
 	return mesh;
 }
