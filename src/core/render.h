@@ -205,21 +205,49 @@ enum RenderDescriptorKind {
 	// add more as they seem useful later
 };
 
-// an interface to describing the data that a shader
-// takes in
+struct RenderImageView;
+struct RenderSampler;
+struct RenderBuffer;
+
 typedef struct RenderDescriptor {
 	RenderDescriptorKind kind;
-	// what stages this 
 	RenderShaderKind shader_stage_flags;
+
+	union {
+		struct {
+			RenderImageView* view;
+			RenderSampler* sampler;
+		} image;
+
+		struct {
+			RenderBuffer* handle;
+			u64 offset;
+			u64 range;
+		} buffer;
+	};
 } RenderDescriptor;
 
-/*
-	A set of descriptors which 
+typedef struct RenderDescriptorLayout {
+	RenderDescriptor* descriptors;
 
-*/
+	void* handle;
+} RenderDescriptorLayout;
+
+RenderDescriptorLayout* render_create_descriptor_layout();
+void render_update_descriptor_layout(RenderDescriptorLayout* x);
+
+global RenderDescriptorLayout* __render_pool_descriptor_layouts;
+
 typedef struct RenderDescriptorSet {
+	RenderDescriptorLayout** layouts;
 
+	void* handle;
 } RenderDescriptorSet;
+
+RenderDescriptorSet* render_descriptor_set_create();
+void render_descriptor_set_update(RenderDescriptorSet* x);
+
+global RenderDescriptorSet* __render_pool_descriptor_sets;
 
 typedef struct RenderPushConstant {
 	// what sort of shader this constant will be pushed to
@@ -232,7 +260,7 @@ typedef struct RenderPushConstant {
 typedef struct RenderPipelineLayout {
 	str8 name; // name used for debugging
 
-	RenderDescriptor* descriptors;
+	RenderDescriptorLayout* descriptor_layout;
 	RenderPushConstant* push_constants;
 	
 	// handle to backend's represenatation of descriptor set layouts
@@ -488,7 +516,7 @@ typedef Flags RenderBufferUsageFlags; enum{
 // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkMemoryPropertyFlagBits.html
 // https://asawicki.info/news_1740_vulkan_memory_types_on_pc_and_how_to_use_them
 // https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer
-enum RenderMemoryPropertyFlags{
+typedef Flags RenderMemoryPropertyFlags; enum {
 	RenderMemoryPropertyFlag_DeviceLocal     = (1 << 0), //device memory, fastest device access
 	RenderMemoryPropertyFlag_HostVisible     = (1 << 1), //device memory that can be mapped for host access (not compatible with RenderMemoryPropertyFlag_LazilyAllocated)
 	RenderMemoryPropertyFlag_HostCoherent    = (1 << 2), //host memory that can be read by device over PCIe as needed, changes don't need to be flushed (implies RenderMemoryPropertyFlag_HostVisible)
@@ -585,13 +613,13 @@ enum RenderImageUsage {
 // GPU which can be used for things like offscreen rendering
 // this is very similar to RenderBuffer, but multidimensional
 typedef struct RenderImage {
-	RenderImageType   type;
+	// TODO(sushi) support other image types
+	// RenderImageType   type;
 	RenderFormat      format;
 	RenderImageUsage  usage;
 	RenderSampleCount samples;
 	vec3i             extent;
 	b32               linear_tiling;
-
 
 	// how the memory of the image is intended to be used 
 	RenderMemoryPropertyFlags memory_properties;
@@ -601,12 +629,74 @@ typedef struct RenderImage {
 	//u64 array_layers;
 	
 	void* handle;
+	void* memory_handle;
 } RenderImage;
  
 RenderImage* render_create_image();
 void render_update_image(RenderImage* x);
 
 global RenderImage* __render_pool_images;
+
+enum RenderImageViewType {
+	RenderImageViewType_OneD,
+	RenderImageViewType_TwoD,
+	RenderImageViewType_ThreeD,
+	RenderImageViewType_Cube,
+	RenderImageViewType_OneD_Array,
+	RenderImageViewType_TwoD_Array,
+	RenderImageViewType_Cube_Array,
+};
+
+enum RenderImageViewAspectFlags {
+	RenderImageViewAspectFlags_Color   = 1 << 0,
+	RenderImageViewAspectFlags_Depth   = 1 << 1,
+	RenderImageViewAspectFlags_Stencil = 1 << 2,
+};
+
+typedef struct RenderImageView {
+	// TODO(sushi) support other image types
+	// RenderImageViewType type;
+	RenderFormat format;
+	RenderImageViewAspectFlags aspect_flags;
+
+	RenderImage* image;
+
+	void* handle;
+} RenderImageView;
+
+RenderImageView* render_create_image_view();
+void render_update_image_view(RenderImageView* x);
+
+global RenderImageView* __render_pool_image_views;
+
+enum RenderFilter {
+	RenderFilter_Nearest,
+	RenderFilter_Linear,
+};
+
+enum RenderSamplerAddressMode {
+	RenderSamplerAddressMode_Repeat,
+	RenderSamplerAddressMode_Mirrored_Repeat,
+	RenderSamplerAddressMode_Clamp_To_Edge,
+	RenderSamplerAddressMode_Clamp_To_Border,
+};
+
+typedef struct RenderSampler {
+	RenderFilter mag_filter;
+	RenderFilter min_filter;
+
+	RenderSamplerAddressMode address_mode_u;
+	RenderSamplerAddressMode address_mode_v;
+	RenderSamplerAddressMode address_mode_w;
+	color border_color;
+
+	u64 mipmaps;
+} RenderSampler;
+
+RenderSampler* render_create_sampler();
+void render_update_sampler(RenderSampler* x);
+
+global RenderSampler* __render_pool_samplers;
 
 // TODO(sushi)
 // compute pipelines seem to be distinct from graphics pipelines 

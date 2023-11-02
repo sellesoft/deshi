@@ -3244,7 +3244,10 @@ create_or_resize_buffer(VkBuffer* buffer,
 }
 
 VkImageView
-create_image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, u32 mip_levels) {
+create_image_view(VkImage image, 
+		          VkFormat format, 
+				  VkImageAspectFlags aspect_flags, 
+				  u32 mip_levels) {
 	PrintVk(4, "Creating image view");
 	Assert(device != VK_NULL_HANDLE, "create_image_view called before logical device creation");
 
@@ -3265,6 +3268,8 @@ create_image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag
 	return view;
 }
 
+
+// TODO(sushi) support 3D images once we have a reason to 
 void
 create_image(u32 width, u32 height,
 		     u32 mip_levels,
@@ -4358,89 +4363,91 @@ RenderPipelineLayout*
 render_create_pipeline_layout() {
 	auto out = memory_pool_push(__render_pool_descriptor_set_layout);
 	array_init(out->push_constants, 1, deshi_allocator);
-	array_init(out->descriptors, 1, deshi_allocator);
 	return out;
 }
 
 RenderPipelineLayout*
 render_create_base_pipeline_layout() {
-	auto pl = render_create_pipeline_layout();
-	
-	auto d = array_push(pl->descriptors);
-	d->shader_stage_flags = RenderShaderKind_Vertex;
-	d->              kind = RenderDescriptorKind_Uniform_Buffer;
+	NotImplemented;
+//	auto pl = render_create_pipeline_layout();
+//	
+//	auto d = array_push(pl->descriptors);
+//	d->shader_stage_flags = RenderShaderKind_Vertex;
+//	d->              kind = RenderDescriptorKind_Uniform_Buffer;
+//
+//	forI(5) {
+//		d = array_push(pl->descriptors);
+//		d->shader_stage_flags = RenderShaderKind_Fragment;
+//		d->              kind = RenderDescriptorKind_Combined_Image_Sampler;
+//	}
+//
+//	auto p = array_push(pl->push_constants);
+//	p->shader_stage_flags = RenderShaderKind_Vertex;
+//	p->              size = sizeof(mat4);
+//
+//	render_update_pipeline_layout(pl);
 
-	forI(5) {
-		d = array_push(pl->descriptors);
-		d->shader_stage_flags = RenderShaderKind_Fragment;
-		d->              kind = RenderDescriptorKind_Combined_Image_Sampler;
-	}
-
-	auto p = array_push(pl->push_constants);
-	p->shader_stage_flags = RenderShaderKind_Vertex;
-	p->              size = sizeof(mat4);
-
-	render_update_pipeline_layout(pl);
-
-	return pl;
+	//return pl;
+	return 0;
 }
 
 void
 render_update_pipeline_layout(RenderPipelineLayout* x) {
-	PrintVk(2, "Updating descriptor set layout ", x->name);
-
-	Stopwatch watch = start_stopwatch();
-	
-	// destroy any possibly existing layout
-	vkDestroyPipelineLayout(device, (VkPipelineLayout)x->handle, allocator);
-
-	u64 n_bindings = array_count(x->descriptors);
-
-	VkDescriptorSetLayoutBinding* bindings;
-	array_init(bindings, n_bindings, deshi_temp_allocator);
-	array_count(bindings) = n_bindings;
-
-	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-	descriptor_set_layout_info.pBindings = bindings;
-	descriptor_set_layout_info.bindingCount = n_bindings;
-
-	forI(n_bindings) {
-		bindings[i].descriptorType = render_descriptor_kind_to_vulkan(x->descriptors[i].kind);
-		bindings[i].stageFlags = render_shader_kind_to_vulkan(x->descriptors[i].shader_stage_flags);
-		bindings[i].binding = i;
-		bindings[i].descriptorCount = 1;
-	}
-
-	VkDescriptorSetLayout descriptor_set_layout;
-	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptor_set_layout);
-	AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptor_set_layout, 
-			(char*)to_dstr8v(deshi_temp_allocator, x->name, " descriptor set layout").str);
-	
-	u64 n_push_constants = array_count(x->push_constants);
-
-	VkPushConstantRange* ranges;
-	array_init(ranges, n_push_constants, deshi_temp_allocator);
-	array_count(ranges) = n_push_constants;
-	
-	forI(n_push_constants) {
-		ranges[i].stageFlags = render_shader_kind_to_vulkan(x->push_constants[i].shader_stage_flags);
-		ranges[i].offset = x->push_constants[i].offset;
-		ranges[i].size = x->push_constants[i].size;
-	}
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-
-	pipeline_layout_info.setLayoutCount = 1;
-	pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
-	pipeline_layout_info.pushConstantRangeCount = n_push_constants;
-	pipeline_layout_info.pPushConstantRanges = ranges;
-	resultVk = vkCreatePipelineLayout(device, &pipeline_layout_info, allocator, (VkPipelineLayout*)&x->handle);
-	AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, x->name, " pipeline layout").str);
-
-	PrintVk(2, "Finished updating ", x->name, " layout in ", peek_stopwatch(watch), "ms");
+	FixMe;
+//	PrintVk(2, "Updating descriptor set layout ", x->name);
+//
+//	Stopwatch watch = start_stopwatch();
+//	
+//	// destroy any possibly existing layout
+//	vkDestroyPipelineLayout(device, (VkPipelineLayout)x->handle, allocator);
+//
+//	u64 n_bindings = array_count(x->descriptors);
+//
+//	VkDescriptorSetLayoutBinding* bindings;
+//	array_init(bindings, n_bindings, deshi_temp_allocator);
+//	array_count(bindings) = n_bindings;
+//
+//	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+//	descriptor_set_layout_info.pBindings = bindings;
+//	descriptor_set_layout_info.bindingCount = n_bindings;
+//
+//	forI(n_bindings) {
+//		bindings[i].descriptorType = render_descriptor_kind_to_vulkan(x->descriptors[i].kind);
+//		bindings[i].stageFlags = render_shader_kind_to_vulkan(x->descriptors[i].shader_stage_flags);
+//		bindings[i].binding = i;
+//		bindings[i].descriptorCount = 1;
+//	}
+//
+//	VkDescriptorSetLayout descriptor_set_layout;
+//	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptor_set_layout);
+//	AssertVk(resultVk);
+//	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptor_set_layout, 
+//			(char*)to_dstr8v(deshi_temp_allocator, x->name, " descriptor set layout").str);
+//	
+//	u64 n_push_constants = array_count(x->push_constants);
+//
+//	VkPushConstantRange* ranges;
+//	array_init(ranges, n_push_constants, deshi_temp_allocator);
+//	array_count(ranges) = n_push_constants;
+//	
+//	forI(n_push_constants) {
+//		ranges[i].stageFlags = render_shader_kind_to_vulkan(x->push_constants[i].shader_stage_flags);
+//		ranges[i].offset = x->push_constants[i].offset;
+//		ranges[i].size = x->push_constants[i].size;
+//	}
+//
+//	VkPipelineLayoutCreateInfo pipeline_layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+//
+//	pipeline_layout_info.setLayoutCount = 1;
+//	pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
+//	pipeline_layout_info.pushConstantRangeCount = n_push_constants;
+//	pipeline_layout_info.pPushConstantRanges = ranges;
+//	resultVk = vkCreatePipelineLayout(device, &pipeline_layout_info, allocator, (VkPipelineLayout*)&x->handle);
+//	AssertVk(resultVk);
+//	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
+//			(char*)to_dstr8v(deshi_temp_allocator, x->name, " pipeline layout").str);
+//
+//	PrintVk(2, "Finished updating ", x->name, " layout in ", peek_stopwatch(watch), "ms");
 }
 
 // creates a pipeline and returns a handle to it
@@ -4491,6 +4498,27 @@ render_create_default_pipeline() {
 	return p;
 }
 
+VkBlendFactor
+render_blend_factor_to_vulkan(RenderBlendFactor x) {
+	switch(x) {
+		case RenderBlendFactor_Zero: return VK_BLEND_FACTOR_ZERO;
+		case RenderBlendFactor_One: return VK_BLEND_FACTOR_ONE;
+		case RenderBlendFactor_Source_Color: return VK_BLEND_FACTOR_SRC_COLOR;
+		case RenderBlendFactor_One_Minus_Source_Color: return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		case RenderBlendFactor_Destination_Color: return VK_BLEND_FACTOR_DST_COLOR;
+		case RenderBlendFactor_One_Minus_Destination_Color: return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		case RenderBlendFactor_Source_Alpha: return VK_BLEND_FACTOR_SRC_ALPHA;
+		case RenderBlendFactor_One_Minus_Source_Alpha: return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		case RenderBlendFactor_Destination_Alpha: return VK_BLEND_FACTOR_DST_ALPHA;
+		case RenderBlendFactor_One_Minus_Destination_Alpha: return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		case RenderBlendFactor_Constant_Color: return VK_BLEND_FACTOR_CONSTANT_COLOR;
+		case RenderBlendFactor_One_Minus_Constant_Color: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+		case RenderBlendFactor_Constant_Alpha: return VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		case RenderBlendFactor_One_Minus_Constant_Alpha: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+	}
+	Assert(0);
+}
+
 void
 render_update_pipeline(RenderPipeline* pipeline) {
 	PrintVk(2, "Updating ", pipeline->name, " pipeline");
@@ -4530,38 +4558,10 @@ render_update_pipeline(RenderPipeline* pipeline) {
 
     auto cbas = color_blend_attachment_state;
 	cbas.blendEnable = (pipeline->color_blend? VK_TRUE : VK_FALSE);
-	switch(pipeline->color_src_blend_factor) {
-		case RenderBlendFactor_Zero: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO; break;
-		case RenderBlendFactor_One: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; break;
-		case RenderBlendFactor_Source_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR; break;
-		case RenderBlendFactor_One_Minus_Source_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR; break;
-		case RenderBlendFactor_Destination_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR; break;
-		case RenderBlendFactor_One_Minus_Destination_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR; break;
-		case RenderBlendFactor_Source_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; break;
-		case RenderBlendFactor_One_Minus_Source_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; break;
-		case RenderBlendFactor_Destination_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_DST_ALPHA; break;
-		case RenderBlendFactor_One_Minus_Destination_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA; break;
-		case RenderBlendFactor_Constant_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR; break;
-		case RenderBlendFactor_One_Minus_Constant_Color: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR; break;
-		case RenderBlendFactor_Constant_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA; break;
-		case RenderBlendFactor_One_Minus_Constant_Alpha: cbas.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA; break;
-	}
-	switch(pipeline->alpha_src_blend_factor) {
-		case RenderBlendFactor_Zero: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; break;
-		case RenderBlendFactor_One: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; break;
-		case RenderBlendFactor_Source_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_COLOR; break;
-		case RenderBlendFactor_One_Minus_Source_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR; break;
-		case RenderBlendFactor_Destination_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_DST_COLOR; break;
-		case RenderBlendFactor_One_Minus_Destination_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR; break;
-		case RenderBlendFactor_Source_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; break;
-		case RenderBlendFactor_One_Minus_Source_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; break;
-		case RenderBlendFactor_Destination_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA; break;
-		case RenderBlendFactor_One_Minus_Destination_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA; break;
-		case RenderBlendFactor_Constant_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR; break;
-		case RenderBlendFactor_One_Minus_Constant_Color: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR; break;
-		case RenderBlendFactor_Constant_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA; break;
-		case RenderBlendFactor_One_Minus_Constant_Alpha: cbas.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA; break;
-	}
+	cbas.srcColorBlendFactor = render_blend_factor_to_vulkan(pipeline->color_src_blend_factor);
+	cbas.srcAlphaBlendFactor = render_blend_factor_to_vulkan(pipeline->alpha_src_blend_factor);
+	cbas.dstColorBlendFactor = render_blend_factor_to_vulkan(pipeline->color_dst_blend_factor);
+	cbas.dstAlphaBlendFactor = render_blend_factor_to_vulkan(pipeline->alpha_dst_blend_factor);
 
     auto cbs = color_blend_state;
 	cbs.blendConstants[0] = pipeline->blend_constant.r/255.f;
@@ -4598,8 +4598,6 @@ render_update_pipeline(RenderPipeline* pipeline) {
 	}
 	ds.pDynamicStates = dynamic_states;
 	ds.dynamicStateCount = array_count(pipeline->dynamic_states);
-
-	
 
 	VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
 	info.stageCount          = array_count(pipeline->shader_stages);
@@ -4651,7 +4649,7 @@ render_image_usage_to_vulkan(RenderImageUsage x) {
 	return out;
 }
 
-VkSampleCountFlags
+VkSampleCountFlagBits
 render_sample_count_to_vulkan(RenderSampleCount x) {
 	VkSampleCountFlags out;
 	if(HasFlag(x, RenderSampleCount_1)) AddFlag(out, VK_SAMPLE_COUNT_1_BIT);
@@ -4661,7 +4659,7 @@ render_sample_count_to_vulkan(RenderSampleCount x) {
 	if(HasFlag(x, RenderSampleCount_16)) AddFlag(out, VK_SAMPLE_COUNT_16_BIT);
 	if(HasFlag(x, RenderSampleCount_32)) AddFlag(out, VK_SAMPLE_COUNT_32_BIT);
 	if(HasFlag(x, RenderSampleCount_64)) AddFlag(out, VK_SAMPLE_COUNT_64_BIT);
-	return out;
+	return (VkSampleCountFlagBits)out;
 }
 
 VkFormat
@@ -4678,12 +4676,17 @@ render_format_to_vulkan(RenderFormat x) {
 
 VkMemoryPropertyFlags
 render_memory_properties_to_vulkan(RenderMemoryPropertyFlags x) {
-	VkMemoryPropertyFlags out;
-	if(HasFlag(x, RenderMemoryPropertyFlag_DeviceLocal     
-	if(HasFlag(x, RenderMemoryPropertyFlag_HostVisible     
-	if(HasFlag(x, RenderMemoryPropertyFlag_HostCoherent    
-	if(HasFlag(x, RenderMemoryPropertyFlag_HostCached      
-	if(HasFlag(x, RenderMemoryPropertyFlag_LazilyAllocated 
+	VkBufferUsageFlags usage_flags = 0;
+	if(HasFlag(x,RenderBufferUsage_TransferSource))      usage_flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	if(HasFlag(x,RenderBufferUsage_TransferDestination)) usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	if(HasFlag(x,RenderBufferUsage_UniformTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+	if(HasFlag(x,RenderBufferUsage_StorageTexelBuffer))  usage_flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+	if(HasFlag(x,RenderBufferUsage_UniformBuffer))       usage_flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	if(HasFlag(x,RenderBufferUsage_StorageBuffer))       usage_flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	if(HasFlag(x,RenderBufferUsage_IndexBuffer))         usage_flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	if(HasFlag(x,RenderBufferUsage_VertexBuffer))        usage_flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	if(HasFlag(x,RenderBufferUsage_IndirectBuffer))      usage_flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+	return usage_flags;
 }
 
 void
@@ -4691,16 +4694,47 @@ render_update_image(RenderImage* x) {
 	PrintVk(4, "Updating RenderImage");
 
 	vkDestroyImage(device, (VkImage)x->handle, allocator);
+	vkFreeMemory(device, (VkDeviceMemory)x->memory_handle, allocator);
 	
 	create_image(
-			x->extent.x, x->extent.y, 
-			1, 
-			render_sample_count_to_vulkan(x->samples),
-			render_format_to_vulkan(x->format),
-			(x->linear_tiling? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
-			render_image_usage_to_vulkan(x->usage),
-			
-			)
+		x->extent.x, x->extent.y, 
+		1, 
+		render_sample_count_to_vulkan(x->samples),
+		render_format_to_vulkan(x->format),
+		(x->linear_tiling? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
+		render_image_usage_to_vulkan(x->usage),
+		render_memory_properties_to_vulkan(x->memory_properties),
+		(VkImage*)&x->handle,
+		(VkDeviceMemory*)&x->memory_handle
+	);
+}
+
+RenderImageView*
+render_create_image_view() {
+	return memory_pool_push(__render_pool_image_views);
+}
+
+VkImageAspectFlags
+render_image_view_aspect_to_vulkan(RenderImageViewAspectFlags x) {
+	VkImageAspectFlags out;
+	if(HasFlag(x, RenderImageViewAspectFlags_Color)) AddFlag(out, VK_IMAGE_ASPECT_COLOR_BIT);
+	if(HasFlag(x, RenderImageViewAspectFlags_Depth)) AddFlag(out, VK_IMAGE_ASPECT_DEPTH_BIT);
+	if(HasFlag(x, RenderImageViewAspectFlags_Stencil)) AddFlag(out, VK_IMAGE_ASPECT_STENCIL_BIT);
+	return out;
+}
+
+void
+render_update_image_view(RenderImageView* x) {
+	PrintVk(4, "Updating RenderView");
+
+	vkDestroyImageView(device, (VkImageView)x->handle, allocator);
+
+	x->handle = (void*)create_image_view(
+		(VkImage)x->image->handle,
+		render_format_to_vulkan(x->format),
+		render_image_view_aspect_to_vulkan(x->aspect_flags),
+		1
+	);
 
 }
 
