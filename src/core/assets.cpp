@@ -308,15 +308,15 @@ assets_mesh_allocate(u32 index_count,
 					 u32 faces_neighbor_face_count){DPZoneScoped;
 	Assert(index_count && vertex_count && face_count);
 	
-	u32 triangleCount = index_count/3;
+	u32 triangle_count = index_count/3;
 	u32 bytes =                    1*sizeof(Mesh)
 		+                vertex_count*sizeof(MeshVertex)
 		+                 index_count*sizeof(MeshIndex)
-		+              triangleCount*sizeof(MeshTriangle)
+		+              triangle_count*sizeof(MeshTriangle)
 		+                  face_count*sizeof(MeshFace)
 		+     triangles_neighbor_count*sizeof(u32) //triangle neighbors
 		+     triangles_neighbor_count*sizeof(u8)  //triangle edges
-		+              triangleCount*sizeof(u32) //face triangles
+		+              triangle_count*sizeof(u32) //face triangles
 		+           faces_vertex_count*sizeof(u32)
 		+      faces_outer_vertex_count*sizeof(u32)
 		+ faces_neighbor_triangle_count*sizeof(u32)
@@ -326,7 +326,7 @@ assets_mesh_allocate(u32 index_count,
 	mesh->bytes         = bytes;
 	mesh->index_count    = index_count;
 	mesh->vertex_count   = vertex_count;
-	mesh->triangle_count = triangleCount;
+	mesh->triangle_count = triangle_count;
 	mesh->face_count     = face_count;
 	mesh->total_tri_neighbor_count      = triangles_neighbor_count;
 	mesh->total_face_vertex_count       = faces_vertex_count;
@@ -334,88 +334,30 @@ assets_mesh_allocate(u32 index_count,
 	mesh->total_face_tri_neighbor_count  = faces_neighbor_triangle_count;
 	mesh->total_face_face_neighbor_count = faces_neighbor_face_count;
 
-#ifndef RENDER_REWRITE
 	mesh->vertex_array   = (MeshVertex*)cursor;    cursor +=   vertex_count*sizeof(MeshVertex);
 	mesh->index_array    = (MeshIndex*)cursor;     cursor +=    index_count*sizeof(MeshIndex);
-#else
-	u64 v_place_next = -1;
-	forI(array_count(g_assets->inactive_meshes_vertex_sorted)) {
-		Mesh* m = g_assets->inactive_meshes_vertex_sorted[i];
-		s64 vremain = m->vertex_count - vertex_count;
-		if(vremain >= 0) {
-			v_place_next = m->vertex_offset;
-			if(!vremain) {
-				array_remove_ordered(g_assets->inactive_meshes_vertex_sorted, i);
-				m->vertex_count = 0;
-				if(!m->index_count) {
-					memzfree(m);
-				}
-			} else {
-				m->vertex_offset += vertex_count;
-				m->vertex_count -= vertex_count;
-			}
-			break;
-		}
-	}
-
-	u64 i_place_next = -1;
-	forI(array_count(g_assets->inactive_meshes_index_sorted)) {
-		Mesh* m = g_assets->inactive_meshes_index_sorted[i];
-		s64 iremain = m->index_count - index_count;
-		if(iremain >= 0) {
-			i_place_next = m->index_offset;
-			if(!iremain) {
-				array_remove_ordered(g_assets->inactive_meshes_index_sorted, i);
-				m->index_count = 0;
-				if(!m->vertex_count) {
-					memzfree(m);
-				}
-			} else {
-				m->index_offset += index_count;
-				m->index_count -= index_count;
-			}
-			break;
-		}
-	}
-
-	if(v_place_next == -1) {
-		// couldn't find a slot for our vertexes so we need to allocate at the end
-		// TODO(sushi) it's possible the reallocation is not enough still
-		if(g_assets->mesh_vertexes_cursor + vertex_count > g_assets->mesh_vertexes_reserved) {
-			// TODO(sushi) allow setting limits by the app
-			g_assets->mesh_vertexes_reserved *= 2; // TODO(sushi) decide a better growth scheme at some point
-			g_assets->mesh_vertexes = (MeshVertex*)memrealloc(g_assets->mesh_vertexes, g_assets->mesh_vertexes_reserved);
-		}
-		mesh->vertex_offset = g_assets->mesh_vertexes_cursor;
-		g_assets->mesh_vertexes_cursor += vertex_count;
-	} else mesh->vertex_offset = v_place_next;
-
-	if(i_place_next == -1) {
-		if(g_assets->mesh_indexes_cursor + index_count > g_assets->mesh_indexes_reserved) {
-			g_assets->mesh_indexes_reserved *= 2;
-			g_assets->mesh_indexes = (MeshIndex*)memrealloc(g_assets->mesh_indexes, g_assets->mesh_indexes_reserved);
-		}
-		mesh->index_offset = g_assets->mesh_indexes_cursor;
-		g_assets->mesh_indexes_cursor += index_count;
-	} else mesh->index_offset = i_place_next;
-#endif
-
-	mesh->triangle_array = (MeshTriangle*)cursor;  cursor += triangleCount*sizeof(MeshTriangle);
+	mesh->triangle_array = (MeshTriangle*)cursor;  cursor += triangle_count*sizeof(MeshTriangle);
 	mesh->face_array     = (MeshFace*)cursor;      cursor +=     face_count*sizeof(MeshFace);
-
 
 	return mesh;
 }
 
-void
-assets_mesh_delete(Mesh* mesh) {
-
-}
-
+// Create RenderBuffers for the mesh and then writes
+// their vertex/index data to them.
 void
 map_mesh(Mesh* m) {
-	
-		
+	render_buffer_create(
+		m->vertex_array, 
+		sizeof(MeshVertex) * m->vertex_count,
+		RenderBufferUsage_VertexBuffer,
+		RenderMemoryPropertyFlag_DeviceLocal,
+		RenderMemoryMapping_None);
+	render_buffer_create(
+		m->index_array,
+		sizeof(MeshIndex) * m->index_count,
+		RenderBufferUsage_IndexBuffer,
+		RenderMemoryPropertyFlag_DeviceLocal,
+		RenderMemoryMapping_None);
 }
  
 Mesh*
@@ -592,7 +534,7 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	fa[5].neighbor_face_array[0]=0; fa[5].neighbor_face_array[1]=2; fa[5].neighbor_face_array[2]=3; fa[5].neighbor_face_array[3]=4;
 	
 #ifdef RENDER_REWRITE
-	if(g_assets->mesh_vertexes->used + mesh->vertex_count)
+	map_mesh(mesh);
 #else
 	render_load_mesh(mesh);
 #endif
@@ -896,8 +838,41 @@ assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** 
 	material->shader = shader;
 	material->flags  = flags;
 	forI(texture_count) material->texture_array[i] = textures[i];
-	
 	render_load_material(material);
+	arrput(DeshAssets->material_array, material);
+	return material;
+}
+
+Material*
+assets_material_create_x(str8 name, RenderPipeline* pipeline, MaterialFlags flags, Texture** textures) {	
+	//check if material is already loaded
+	for_stb_array(DeshAssets->material_array){
+		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			return *it;
+		}
+	}
+
+	u64 n_textures = (textures? array_count(textures) : 0);
+	
+	Material* material = assets_material_allocate(n_textures);
+	CopyMemory(material->name, name.str, ClampMax(name.count,63));
+	material->pipeline = pipeline;
+	material->flags    = flags;
+	forI(n_textures) material->texture_array[i] = textures[i];
+
+	material->descriptor_set = render_descriptor_set_create();
+	*array_push(material->descriptor_set->layouts) = render_create_descriptor_layout();
+	auto layout = material->descriptor_set->layouts[0];
+	forI(n_textures) {
+		RenderDescriptor d;
+		d.kind = RenderDescriptorKind_Combined_Image_Sampler;
+		d.image.view = textures[i]->image_view;
+		d.image.sampler = textures[i]->sampler;
+		array_push_value(layout->descriptors, d);
+	}
+
+	render_update_descriptor_layout(layout);
+	render_descriptor_set_update(material->descriptor_set);
 	arrput(DeshAssets->material_array, material);
 	return material;
 }

@@ -3293,7 +3293,7 @@ create_image(u32 width, u32 height,
 	image_info.tiling        = tiling;
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image_info.usage         = usage;
-	image_info.samples       = num_samples;
+	image_info.samples       = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) more samples
 	image_info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 	resultVk = vkCreateImage(device, &image_info, allocator, image); 
 	AssertVk(resultVk, "failed to create image");
@@ -3398,12 +3398,7 @@ create_instance(Window* window) {
 	
 	//set instance's application info
 	VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO};
-	if(window) {
-		app_info.pApplicationName = (char*)window->title.str;
-	} else {
-		// TODO(sushi) need a way to set this if a Window is not provided
-		app_info.pApplicationName = "unknown_app_name";
-	}
+	app_info.pApplicationName   = (char*)window->title.str;
 	app_info.applicationVersion = VK_MAKE_VERSION(1,0,0);
 	app_info.pEngineName        = "deshi";
 	app_info.engineVersion      = VK_MAKE_VERSION(1,0,0);
@@ -3545,19 +3540,16 @@ pick_physical_device(Window* window) {
 			if(HasFlag(family.queueFlags, VK_QUEUE_GRAPHICS_BIT)) {
 				physical_queue_families.found_graphics_family = true;
 				physical_queue_families.graphics_family = i;
-				if(!window) break;
 			}
-			
-			if(window) {
-				VkBool32 present_support = false;
-				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, ((VkWindowInfo*)window->render_info)->surface, &present_support);
-				if(present_support) {
-					physical_queue_families.found_present_family = true;
-					physical_queue_families.present_family = i;
-				}
+		
+			VkBool32 present_support = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, ((VkWindowInfo*)window->render_info)->surface, &present_support);
+			if(present_support) {
+				physical_queue_families.found_present_family = true;
+				physical_queue_families.present_family = i;
+			}
 
-				if(physical_queue_families.found_graphics_family && physical_queue_families.found_graphics_family) break;
-			}
+			if(physical_queue_families.found_graphics_family && physical_queue_families.found_graphics_family) break;
 		}
 
 		if(!physical_queue_families.found_graphics_family) continue;
@@ -3583,17 +3575,15 @@ pick_physical_device(Window* window) {
 			if(count == ArrayCount(deviceExtensions)) break;
 		}
 
-		if(count != ArrayCount(deviceExtensions)) continue;
+		if(count == ArrayCount(deviceExtensions)) continue;
 
-		if(window) {
-			u32 format_count;
-			u32 present_mode_count;
-			auto surface = ((VkWindowInfo*)window->render_info)->surface;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, 0);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, 0);
-			if(!(present_mode_count&&format_count)) continue;
-		}
-
+		u32 format_count;
+		u32 present_mode_count;
+		auto surface = ((VkWindowInfo*)window->render_info)->surface;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, 0);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, 0);
+		if(!(present_mode_count&&format_count)) continue;
+		
 		physical_device = device;
 		break;
 	}
@@ -3604,8 +3594,10 @@ pick_physical_device(Window* window) {
 	}
 
 	vkGetPhysicalDeviceFeatures(physical_device, &deviceFeatures);
+	vkGetPhysicalDeviceProperties(physical_device, &physicalDeviceProperties);
 
 	PrintVk(2, "Finished picking physical device in ",peek_stopwatch(watch),"ms");
+	PrintVk(3, "Chose device ", physicalDeviceProperties.deviceName);
 }
 
 void
@@ -3623,7 +3615,7 @@ create_logical_device(Window* window) {
 	queue_create_info.pQueuePriorities = &queue_priority;
 	array_push_value(queue_create_infos, queue_create_info);
 
-	if(window && physical_queue_families.present_family != physical_queue_families.graphics_family) {
+	if(physical_queue_families.present_family != physical_queue_families.graphics_family) {
 		queue_create_info.queueFamilyIndex = physical_queue_families.present_family;
 		array_push_value(queue_create_infos, queue_create_info);
 	}
@@ -3664,8 +3656,7 @@ create_logical_device(Window* window) {
 	AssertVk(resultVk, "failed to create logical device");
 
 	vkGetDeviceQueue(device, physical_queue_families.graphics_family, 0, &graphicsQueue);
-	if(window)
-		vkGetDeviceQueue(device, physical_queue_families.present_family, 0, &presentQueue);
+	vkGetDeviceQueue(device, physical_queue_families.present_family, 0, &presentQueue);
 
 	PrintVk(2, "Finished creating logical device in ",peek_stopwatch(watch),"ms");
 }
@@ -3815,7 +3806,6 @@ create_layouts() {
 	AssertVk(resultVk, "failed to create descriptor set layout");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base,
 							 "Base descriptor set layout");
-
 
 	// textures descriptor set layout
 	// binding 0: fragment shader color/albedo map
@@ -4327,6 +4317,59 @@ specializationInfo.mapEntryCount = 1;
 	PrintVk(2, "Finished creating pipelines in ", peek_stopwatch(watch), "ms");
 }
 
+VkShaderStageFlagBits
+render_shader_kind_to_vulkan(RenderShaderKind x) {
+	VkShaderStageFlags out = 0;
+	if(HasFlag(x, RenderShaderKind_Vertex))   AddFlag(out, VK_SHADER_STAGE_VERTEX_BIT);
+	if(HasFlag(x, RenderShaderKind_Fragment)) AddFlag(out, VK_SHADER_STAGE_FRAGMENT_BIT);
+	if(HasFlag(x, RenderShaderKind_Geometry)) AddFlag(out, VK_SHADER_STAGE_GEOMETRY_BIT);
+	if(HasFlag(x, RenderShaderKind_Compute))  AddFlag(out, VK_SHADER_STAGE_COMPUTE_BIT);
+	return (VkShaderStageFlagBits)out;
+}
+
+RenderDescriptorLayout*
+render_create_descriptor_layout() {
+	auto out = memory_pool_push(__render_pool_descriptor_layouts);
+	array_init(out->descriptors, 1, deshi_allocator);
+	return out;
+}
+
+void
+render_update_descriptor_layout(RenderDescriptorLayout* x) {
+	PrintVk(4, "Updating descriptor set layout");
+
+	u64 n_descriptors = array_count(x->descriptors);
+
+	VkDescriptorSetLayoutBinding* bindings;
+	array_init(bindings, n_descriptors, deshi_temp_allocator);
+	array_count(bindings) = n_descriptors;
+
+	VkDescriptorSetLayoutCreateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+	info.pBindings = bindings;
+	info.bindingCount = n_descriptors;
+
+	forI(n_descriptors) {
+		auto b = x->descriptors[i];
+		switch(b.kind) {
+			case RenderDescriptorKind_Combined_Image_Sampler: {
+				bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			} break;
+			case RenderDescriptorKind_Uniform_Buffer: {
+				bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			} break;
+		}
+
+		bindings[i].stageFlags = render_shader_kind_to_vulkan(b.shader_stage_flags);
+		bindings[i].binding = i;
+		bindings[i].descriptorCount = 1;
+	}
+
+	resultVk = vkCreateDescriptorSetLayout(device, &info, allocator, (VkDescriptorSetLayout*)&x->handle);
+	Assert(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)x->handle,
+			(char*)to_dstr8v(deshi_temp_allocator, "descriptor set layout ", x->handle).str);
+}
+
 VkCompareOp
 render_compare_op_to_vulkan(RenderCompareOp x) {
 	switch(x) {
@@ -4341,15 +4384,7 @@ render_compare_op_to_vulkan(RenderCompareOp x) {
 	}
 }
 
-VkShaderStageFlagBits
-render_shader_kind_to_vulkan(RenderShaderKind x) {
-	VkShaderStageFlags out = 0;
-	if(HasFlag(x, RenderShaderKind_Vertex))   AddFlag(out, VK_SHADER_STAGE_VERTEX_BIT);
-	if(HasFlag(x, RenderShaderKind_Fragment)) AddFlag(out, VK_SHADER_STAGE_FRAGMENT_BIT);
-	if(HasFlag(x, RenderShaderKind_Geometry)) AddFlag(out, VK_SHADER_STAGE_GEOMETRY_BIT);
-	if(HasFlag(x, RenderShaderKind_Compute))  AddFlag(out, VK_SHADER_STAGE_COMPUTE_BIT);
-	return (VkShaderStageFlagBits)out;
-}
+
 
 VkDescriptorType
 render_descriptor_kind_to_vulkan(RenderDescriptorKind x) {
@@ -4357,6 +4392,33 @@ render_descriptor_kind_to_vulkan(RenderDescriptorKind x) {
 		case RenderDescriptorKind_Uniform_Buffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case RenderDescriptorKind_Combined_Image_Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	}
+}
+
+RenderDescriptorSet* 
+render_descriptor_set_create() {
+	auto out = memory_pool_push(__render_pool_descriptor_sets);
+	array_init(out->layouts, 1, deshi_allocator);
+	return out;
+}
+
+void
+render_descriptor_set_update(RenderDescriptorSet* x) {
+	PrintVk(4, "Updating descriptor set");
+
+	u64 n_layouts = array_count(x->layouts);
+
+	VkDescriptorSetLayout* layouts;
+	array_init(layouts, n_layouts, deshi_allocator);
+	array_count(layouts) = n_layouts;
+
+	forI(n_layouts) {
+		layouts[i] = (VkDescriptorSetLayout)x->layouts[i]->handle;
+	}
+
+	VkDescriptorSetAllocateInfo alloc_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	alloc_info.descriptorPool = descriptorPool;
+	alloc_info.pSetLayouts = layouts;
+	alloc_info.descriptorSetCount = 1;
 }
 
 RenderPipelineLayout*
@@ -4744,9 +4806,186 @@ render_create_render_pass() {
 	return out;
 }
 
+VkAttachmentLoadOp
+render_load_op_to_vulkan(RenderAttachmentLoadOp x) {
+	switch(x) {
+		case RenderAttachmentLoadOp_Load: return VK_ATTACHMENT_LOAD_OP_LOAD;
+		case RenderAttachmentLoadOp_Clear: return VK_ATTACHMENT_LOAD_OP_CLEAR;
+		case RenderAttachmentLoadOp_Dont_Care: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	}
+	Assert(0);
+}
+
+VkAttachmentStoreOp
+render_store_op_to_vulkan(RenderAttachmentStoreOp x) {
+	switch(x) {
+		case RenderAttachmentStoreOp_Store: return VK_ATTACHMENT_STORE_OP_STORE;
+		case RenderAttachmentStoreOp_Dont_Care: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	}
+	Assert(0);
+}
+
+VkImageLayout
+render_image_layout_to_vulkan(RenderImageLayout x) {
+	switch(x) {
+		case RenderImageLayout_Undefined: return VK_IMAGE_LAYOUT_UNDEFINED;
+		case RenderImageLayout_General: return VK_IMAGE_LAYOUT_GENERAL;
+		case RenderImageLayout_Color_Attachment_Optional: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case RenderImageLayout_Depth_Stencil_Attachment_Optional: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case RenderImageLayout_Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
+	Assert(0);
+}
+
+
 void 
 render_update_render_pass(RenderPass* x) {
+	PrintVk(4, "Updating renderpass ", x->debug_name);
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	
+	VkAttachmentDescription attachments[3]{};
+
+	VkAttachmentReference color_attachment_reference{};
+	VkAttachmentReference depth_attachment_reference{};
+	VkAttachmentReference stencil_attachment_reference{};
+
+	u32 index = 0;
+
+	if(x->use_color_attachment) {
+		auto& a = attachments[index];
+		a.        format = render_format_to_vulkan(x->color_attachment.format);
+		a.       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
+		a.        loadOp = render_load_op_to_vulkan(x->color_attachment.load_op);
+		a.       storeOp = render_store_op_to_vulkan(x->color_attachment.store_op);
+		a. stencilLoadOp = render_load_op_to_vulkan(x->color_attachment.stencil_load_op);
+		a.stencilStoreOp = render_store_op_to_vulkan(x->color_attachment.stencil_store_op);
+		a. initialLayout = render_image_layout_to_vulkan(x->color_attachment.initial_layout);
+		a.   finalLayout = render_image_layout_to_vulkan(x->color_attachment.final_layout);
+
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment_reference;
+		color_attachment_reference.attachment = index;
+		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		index++;
+	}
+
+	if(x->use_depth_attachment) {
+		auto& a = attachments[index];
+		a.        format = render_format_to_vulkan(x->depth_attachment.format);
+		a.       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
+		a.        loadOp = render_load_op_to_vulkan(x->depth_attachment.load_op);
+		a.       storeOp = render_store_op_to_vulkan(x->depth_attachment.store_op);
+		a. stencilLoadOp = render_load_op_to_vulkan(x->depth_attachment.stencil_load_op);
+		a.stencilStoreOp = render_store_op_to_vulkan(x->depth_attachment.stencil_store_op);
+		a. initialLayout = render_image_layout_to_vulkan(x->depth_attachment.initial_layout);
+		a.   finalLayout = render_image_layout_to_vulkan(x->depth_attachment.final_layout);
+
+		subpass.pDepthStencilAttachment = &depth_attachment_reference;
+		depth_attachment_reference.attachment = index;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		index++;
+	}
+
+	if(x->use_resolve_attachment) {
+		// TODO(sushi) msaa
+		NotImplemented;
+	}
+
+	VkRenderPassCreateInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+	info.attachmentCount = index + 1;
+	info.pAttachments = attachments;
+	info.subpassCount = 1;
+	info.pSubpasses = &subpass;
+	info.dependencyCount = 0;
+	info.pDependencies = 0;
+
+	resultVk = vkCreateRenderPass(device, &info, allocator, (VkRenderPass*)&x->handle);
+	Assert(resultVk);
+}
+
+void 
+render_execute_render_pass(RenderPass* x, Window* win) {
+	auto wininf = (VkWindowInfo*)win->render_info;
+
+	VkClearValue clear_value;
+	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+	VkRenderPassBeginInfo render_pass_info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+	VkViewport viewport{};
+	VkRect2D scissor{};
+
+	forX(frameidx, wininf->image_count) {
+		VkCommandBuffer cmdbuf = wininf->frames[frameidx].commandBuffer;
+
+		clear_value.color = {0,0,0,0};
+		render_pass_info.renderPass = (VkRenderPass)x->handle;
+		render_pass_info.framebuffer = wininf->frames[frameidx].framebuffer;
+		render_pass_info.clearValueCount = 1;
+		render_pass_info.pClearValues = &clear_value;
+		render_pass_info.renderArea.offset = {0,0};
+		render_pass_info.renderArea.extent = wininf->extent;
+
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = wininf->extent.width;
+		viewport.height = wininf->extent.height;
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		scissor.extent.width = wininf->width;
+		scissor.extent.height = wininf->height;
+
+		DebugBeginLabelVk(cmdbuf, (char*)x->debug_name.str, {x->debug_color.r/255.f, x->debug_color.g/255.f, x->debug_color.b/255.f, x->debug_color.a/255.f});
+		vkCmdBeginRenderPass(cmdbuf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdSetScissor(cmdbuf, 0, 1, &scissor);
+		vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
+
+		RenderPipeline* currently_bound_pipeline;
+
+		forX(cmdidx, array_count(x->commands)) {
+			RenderCommand cmd = x->commands[cmdidx];
+			switch(cmd.type) {
+				case RenderCommandType_Bind_Pipeline: {
+					currently_bound_pipeline = cmd.bind_pipeline.handle;
+					vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)cmd.bind_pipeline.handle->handle);
+				} break;
+				case RenderCommandType_Bind_Vertex_Buffer: {
+					VkDeviceSize offsets[1] = {0};
+					vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&cmd.bind_vertex_buffer.handle->buffer_handle, offsets);
+				} break;
+				case RenderCommandType_Bind_Index_Buffer: {
+					vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)cmd.bind_index_buffer.handle->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
+				} break;
+				case RenderCommandType_Bind_Descriptor_Set: {
+					vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)currently_bound_pipeline->layout->handle, 0, 1, (VkDescriptorSet*)&cmd.bind_descriptor_set.handle->handle, 0, 0);
+				} break;
+				case RenderCommandType_Push_Constant: {
+					vkCmdPushConstants(cmdbuf, 
+							(VkPipelineLayout)currently_bound_pipeline->layout->handle, 
+							render_shader_kind_to_vulkan(cmd.push_constant.info.shader_stage_flags),
+							cmd.push_constant.info.offset, cmd.push_constant.info.size, cmd.push_constant.data);
+				} break;
+				case RenderCommandType_Draw_Indexed: {
+					vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
+				} break;
+				case RenderCommandType_Draw_Model: {
+					auto model = cmd.draw_model.model;
+					auto mesh = model->mesh;
+					VkDeviceSize offsets[1] = {0};
+					vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&mesh->vertex_buffer->buffer_handle, offsets);
+					vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)mesh->index_buffer->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
+					
+
+				} break;
+			}
+		}
+
+		vkCmdEndRenderPass(cmdbuf);
+		DebugEndLabelVk(cmdbuf);
+	}
+
 }
 
 void
@@ -4885,7 +5124,7 @@ create_swapchain(Window* window) {
 	}
 
 	resultVk = vkCreateSwapchainKHR(device, &info, allocator, &wininf->swapchain);
-	Assert(resultVk);
+	AssertVk(resultVk);
 
 	if(old_swapchain != VK_NULL_HANDLE) vkDestroySwapchainKHR(device, old_swapchain, allocator);
 
@@ -5030,7 +5269,6 @@ create_frames(Window* window) {
 	auto wininf = (VkWindowInfo*)window->render_info;
 
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	// TODO(sushi) consider loosening the second restriction
 	Assert(wininf->image_count >= wininf->min_image_count, "the window should always have at least the min image count");
 	Assert(wininf->image_count < 16, "the window should have less than 16 images, around 2-3 is ideal");
 	VkImage images[16] = {};
@@ -5079,7 +5317,6 @@ create_frames(Window* window) {
 	wininf->attachments.depth_image_view = 
 		create_image_view(wininf->attachments.depth_image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)wininf->attachments.depth_image_view, "Framebuffer depth imageview");
-
 
 	array_grow(wininf->frames, wininf->image_count);
 	array_count(wininf->frames) = wininf->image_count;
@@ -5236,10 +5473,10 @@ create_descriptor_sets() {
 	PrintVk(2, "Finished creating descriptor sets in ", peek_stopwatch(watch), "ms");
 }
 
-
 void
 render_init_x(Window* window) {
-	Log("vulkan","Initializing vulkan renderer");
+	Assert(window, "render_init requires a window");
+	Log("vulkan","Initializing");
 	
 	Stopwatch watch = start_stopwatch();
 	
@@ -5256,11 +5493,18 @@ render_init_x(Window* window) {
 		renderSettings.loggingLevel = 4;
 	}
 
+	renderSettings.loggingLevel = -1;
+
 	if(window) {
 		// create the window info that this window will point to
 		// TODO(sushi) user should be able to control how this is allocated 
 		//             and default should probably be 
 		auto wi = (VkWindowInfo*)(window->render_info = memory_pool_push(window_infos));
+		wi->width = window->width;
+		wi->height = window->height;
+		array_init(wi->frames, 1, deshi_allocator);
+		array_init(wi->support_details.formats, 1, deshi_allocator);
+		array_init(wi->support_details.present_modes, 1, deshi_allocator);
 	}
 
 	// mostly vulkan-os interaction setup
@@ -5268,29 +5512,37 @@ render_init_x(Window* window) {
 	create_instance(window);
 	if(renderSettings.debugging)
 		setup_debug_messenger();
-	if(window)
-		create_surface(window);
+
+	//// grab Vulkan extension functions ////
+#if BUILD_INTERNAL
+	func_vkSetDebugUtilsObjectNameEXT  = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+	func_vkCmdBeginDebugUtilsLabelEXT  = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+	func_vkCmdEndDebugUtilsLabelEXT    = (PFN_vkCmdEndDebugUtilsLabelEXT)   vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
+	func_vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT");
+#endif //BUILD_INTERNAL
+
+	create_surface(window);
 	pick_physical_device(window);
 	create_logical_device(window);
 
 	// setup static vulkan objects
 	create_command_pool();
-	create_uniform_buffers();
+	// create_uniform_buffers();
 	setup_shader_compiler();
-	create_layouts();
+	// create_layouts();
 	create_descriptor_pool();
 	
 	if(window) {
 		create_swapchain(window);
-		create_renderpasses(window);
+		// create_renderpasses(window);
 		create_frames(window);
 	}
 
 	create_sync_objects();
-	create_descriptor_sets();
+	// create_descriptor_sets();
 	create_pipeline_cache();
 	setup_pipeline_creation();
-	create_pipelines();
+	// create_pipelines();
 
 	// init shared render
 	memory_pool_init(deshi__render_buffer_pool, 16);
@@ -5298,10 +5550,8 @@ render_init_x(Window* window) {
 	externalIndexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
 
 	initialized = true;
-	
 
-
-	Log("vulkan", "Finished vulkan renderer initialization in ",peek_stopwatch(watch), "ms");
+	Log("vulkan", "Finished initialization in ",peek_stopwatch(watch), "ms");
 }
 
 void
@@ -5889,10 +6139,36 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 		cmd[i].vertex_offset = vkMeshes[model->mesh->render_idx].vertexOffset;
 		cmd[i].index_offset  = vkMeshes[model->mesh->render_idx].indexOffset + model->batch_array[i].index_offset;
 		cmd[i].index_count   = model->batch_array[i].index_count;
-		cmd[i].material     = model->batch_array[i].material->render_idx;
-		cmd[i].name         = (char*)model->name;
-		cmd[i].matrix       = *matrix;
+		cmd[i].material      = model->batch_array[i].material->render_idx;
+		cmd[i].name          = (char*)model->name;
+		cmd[i].matrix        = *matrix;
 		renderModelCmdCount += 1;
+	}
+}
+
+void
+render_model_x(RenderPass* pass, Model* model, mat4* matrix) {
+	RenderCommand c0{RenderCommandType_Bind_Pipeline};
+	forI(arrlenu(model->batch_array)) {
+		auto ba = model->batch_array[i];
+		if(!ba.index_offset) continue;
+		auto c0 = array_push(pass->commands);
+		c0->type = RenderCommandType_Bind_Pipeline;
+		c0->bind_pipeline.handle = ba.material->pipeline;
+		auto c1 = array_push(pass->commands);
+		c1->type = RenderCommandType_Bind_Vertex_Buffer;
+		c1->bind_vertex_buffer.handle = model->mesh->vertex_buffer;
+		auto c2 = array_push(pass->commands);
+		c2->type = RenderCommandType_Bind_Index_Buffer;
+		c2->bind_index_buffer.handle = model->mesh->index_buffer;
+		auto c3 = array_push(pass->commands);
+		c3->type = RenderCommandType_Bind_Descriptor_Set;
+		c3->bind_descriptor_set.handle = ba.material->descriptor_set;
+		auto c4 = array_push(pass->commands);
+		c4->type = RenderCommandType_Draw_Indexed;
+		c4->draw_indexed.index_offset = ba.index_offset;
+		c4->draw_indexed.index_count = ba.index_count;
+		c4->draw_indexed.vertex_offset = 0;
 	}
 }
 

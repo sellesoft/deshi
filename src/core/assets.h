@@ -23,13 +23,19 @@ struct Material;
 struct Model;
 struct Font;
 struct RenderBuffer;
+struct RenderImage;
+struct RenderImageView;
+struct RenderSampler;
+struct RenderDescriptor;
+struct RenderDescriptorSet;
+struct RenderPipeline;
 StartLinkageC();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets
 
 typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is no real need to iterate thru them
-					   // NOTE(sushi) these arrays are interated to check if they have already been loaded
+					   // NOTE(sushi) these arrays are iterated to check if they have already been loaded
 	// TODO(sushi) convert to pools
 	Mesh**     mesh_array;
 	Texture**  texture_array;
@@ -37,16 +43,17 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	Model**    model_array;
 	Font**     font_array;
 	
-	
-	u64 mesh_vertexes_cursor;
-	u64 mesh_vertexes_reserved;
-	u64 mesh_indexes_cursor;
-	u64 mesh_indexes_reserved;
-	Mesh** inactive_meshes_vertex_sorted;
-	Mesh** inactive_meshes_index_sorted;
-	// GPU equivalents
-	RenderBuffer* mesh_vertex_buffer;
-	RenderBuffer* mesh_index_buffer;
+// TODO(sushi) try using manually managed global buffers 
+//             to see if they are more performant
+//	u64 mesh_vertexes_cursor;
+//	u64 mesh_vertexes_reserved;
+//	u64 mesh_indexes_cursor;
+//	u64 mesh_indexes_reserved;
+//	Mesh** inactive_meshes_vertex_sorted;
+//	Mesh** inactive_meshes_index_sorted;
+//	// GPU equivalents
+//	RenderBuffer* mesh_vertex_buffer;
+//	RenderBuffer* mesh_index_buffer;
 }Assets;
 extern Assets* g_assets; //global assets pointer
 #define DeshAssets g_assets
@@ -112,7 +119,9 @@ typedef struct MeshFace{
 typedef struct Mesh{
 	u32 bytes;
 	char name[64];
-	u32 render_idx; //filled when render_load_mesh() is called
+	u64 render_idx;
+	RenderBuffer* vertex_buffer;
+	RenderBuffer* index_buffer;
 	vec3 aabb_min;
 	vec3 aabb_max;
 	vec3 center;
@@ -132,9 +141,6 @@ typedef struct Mesh{
 	MeshIndex*    index_array;
 	MeshTriangle* triangle_array;
 	MeshFace*     face_array;
-
-	u64 vertex_offset;
-	u64 index_offset;
 }Mesh;
 
 //Returns a pointer to the allocated `Mesh` object (with arrays setup)
@@ -224,6 +230,10 @@ typedef struct Texture{
 	TextureType type;
 	TextureFilter filter;
 	TextureAddressMode uv_mode;
+
+	RenderImage* image;
+	RenderImageView* image_view;
+	RenderSampler* sampler;
 }Texture;
 
 //Returns a pointer to the created `Texture` object from an image file named `name` in the `data/textures` folder
@@ -311,6 +321,10 @@ typedef struct Material{
 	Shader shader;
 	MaterialFlags flags;
 	Texture** texture_array;
+	
+	// the pipeline this Material passes through
+	RenderPipeline* pipeline;
+	RenderDescriptorSet* descriptor_set;
 }Material;
 
 //Returns a pointer to the allocated `Material` object (with texture array reserved)
@@ -319,6 +333,8 @@ Material* assets_material_allocate(u32 textureCount);
 //Returns a pointer to the created `Material` object with `shader`, `flags`, and `textures`; where `textures` are indexes in `Assets`
 //  calls `render_load_material()` after creation
 Material* assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count);
+
+Material* assets_material_create_x(str8 name, RenderPipeline* pipeline, MaterialFlags flags, Texture** textures);
 
 //Returns a pointer to the created `Material` object from a `MAT` file named `name` from the `data/models` folder
 //  calls `render_load_material()` after creation
@@ -387,7 +403,7 @@ Model* assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags);
 //  calls `render_load_mesh()` after creation
 Model* assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags);
 
-//Eeturns a pointer to a new copy in `Assets` of the `Model` object at `base`
+//Returns a pointer to a new copy in `Assets` of the `Model` object at `base`
 Model* assets_model_copy(Model* base);
 
 //Saves the `Model` object at `model` to the `data/models` folder as a `MODEL` file

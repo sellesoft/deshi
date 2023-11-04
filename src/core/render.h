@@ -445,14 +445,7 @@ RenderPipeline* render_create_pipeline();
 RenderPipeline* render_create_default_pipeline();
 void render_update_pipeline(RenderPipeline* pipeline);
 
-enum RenderCommandType {
-	RenderCommandType_Bind_Pipeline,
-	RenderCommandType_Bind_Vertex_Buffer,
-	RenderCommandType_Bind_Index_Buffer,
-	RenderCommandType_Bind_Descriptor_Set,
-	RenderCommandType_Push_Constant,
-	RenderCommandType_Draw,
-};
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_buffer
@@ -577,6 +570,18 @@ void render_buffer_unmap(RenderBuffer* buffer, b32 flush);
 //  `buffer.mapping` must be RenderMemoryMapping_MapWriteUnmap
 void render_buffer_flush(RenderBuffer* buffer);
 
+enum RenderCommandType {
+	RenderCommandType_Bind_Pipeline,
+	// TODO(sushi) vertex/index buffer bind pair
+	RenderCommandType_Bind_Vertex_Buffer,
+	RenderCommandType_Bind_Index_Buffer,
+	RenderCommandType_Bind_Descriptor_Set,
+	RenderCommandType_Push_Constant,
+	// draws a set of indexes from the currently bound index buffer
+	RenderCommandType_Draw_Indexed,
+	RenderCommandType_Draw_Model,
+};
+
 typedef struct RenderCommand {
 	RenderCommandType type;
 	union {
@@ -588,6 +593,25 @@ typedef struct RenderCommand {
 	struct { // bind_vertex_buffer, bind_index_buffer
 		RenderBuffer* handle;
 	} bind_vertex_buffer, bind_index_buffer;
+
+	struct { // bind_descriptor_set
+		RenderDescriptorSet* handle;
+	} bind_descriptor_set;
+
+	struct { // push_constant
+		void* data;
+		RenderPushConstant info;
+	} push_constant;
+
+	struct { // draw_indexed
+		u64 index_count;
+		u64 index_offset;
+		u64 vertex_offset;
+	} draw_indexed;
+
+	struct {
+		Model* model;
+	} draw_model;
 
 	}; // union
 } RenderCommand;
@@ -744,10 +768,10 @@ enum RenderImageLayout {
 typedef struct RenderPassAttachment {
 	RenderFormat            format;
 	RenderSampleCount       samples;
-	RenderAttachmentLoadOp  loadOp;
-	RenderAttachmentStoreOp storeOp;
-	RenderAttachmentLoadOp  stencilLoadOp;
-	RenderAttachmentStoreOp stencilStoreOp;
+	RenderAttachmentLoadOp  load_op;
+	RenderAttachmentStoreOp store_op;
+	RenderAttachmentLoadOp  stencil_load_op;
+	RenderAttachmentStoreOp stencil_store_op;
 	RenderImageLayout       initial_layout;
 	RenderImageLayout       final_layout;
 } RenderPassAttachment;
@@ -778,6 +802,8 @@ typedef struct RenderPass {
 	b32 use_resolve_attachment;
 	RenderPassAttachment resolve_attachment;
 
+	RenderCommand* commands;
+
 	void* handle;
 
 } RenderPass;
@@ -786,6 +812,9 @@ global RenderPass* __render_pool_render_passes;
 
 RenderPass* render_create_render_pass();
 void render_update_render_pass(RenderPass* x);
+
+// NOTE(sushi) temp for testing 
+void render_execute_render_pass(RenderPass* x, Window* win);
 
 // representation of a framebuffer
 typedef struct RenderFrame {
@@ -911,6 +940,8 @@ void render_update_material(Material* material);
 //// @render_draw_3d
 //Renders the `model` with the transform `matrix`
 void render_model(Model* model, mat4* matrix);
+
+void render_model_x(RenderPass* pass, Model* model, mat4* matrix);
 
 //Renders the a wireframe of `model` with the transform `matrix`
 void render_model_wireframe(Model* model, mat4* matrix, color c);
