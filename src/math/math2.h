@@ -106,6 +106,11 @@ struct mat4;
 
 #define m128_shuffle_mask(x,y,z,w) ((x) | ((y) << 2) | ((z) << 4) | ((w) << 6))
 #define m128_shuffle(a,b, x,y,z,w) _mm_shuffle_ps((a), (b), m128_shuffle_mask((x),(y),(z),(w)))
+#define m128_shuffle_0101(a,b) _mm_movelh_ps((a), (b))
+#define m128_shuffle_2323(a,b) _mm_movehl_ps((b), (a))
+#define m128_swizzle(a, x,y,z,w) _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), m128_shuffle_mask((x),(y),(z),(w))))
+#define m128_swizzle_0022(a) _mm_moveldup_ps(a)
+#define m128_swizzle_1133(a) _mm_movehdup_ps(a)
 
 #define m128_add_4f32(lhs,rhs) _mm_add_ps((lhs), (rhs))
 #define m128_sub_4f32(lhs,rhs) _mm_sub_ps((lhs), (rhs))
@@ -8954,7 +8959,7 @@ Mat4(f32 _00, f32 _10, f32 _20, f32 _30
 	 f32 _01, f32 _11, f32 _21, f32 _31
 	 f32 _02, f32 _12, f32 _22, f32 _32,
 	 f32 _03, f32 _13, f32 _23, f32 _33){
-	return mat3{_00, _10, _20, _30, _01, _11, _21, _31, _02, _12, _22, _32, _03, _13, _23, _33};
+	return mat4{_00, _10, _20, _30, _01, _11, _21, _31, _02, _12, _22, _32, _03, _13, _23, _33};
 }
 
 EXTERN_C inline mat4
@@ -8984,7 +8989,7 @@ operator()(u32 row, u32 col){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-#define mat3_index(m,index) m.arr[index]
+#define mat4_index(m,index) m.arr[index]
 
 #ifdef __cplusplus
 inline f32 mat4::
@@ -10532,81 +10537,362 @@ adjoint()const{DPZoneScoped;
 
 EXTERN_C inline mat4
 mat4_inverse(mat4 lhs){DPZoneScoped;
-	mat4 result;
 #if DESHI_USE_SSE
-#define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_shuffle(b,b, 0,3,0,3)), m128_mul_4f32(m128_shuffle(a,a, 1,0,3,2), m128_shuffle(b,b, 2,1,2,1)))
-#define mat2_adj_mul_mat2(a,b) m128_sub_4f32(m128_mul_4f32(m128_shuffle(a,a, 3,3,0,0), b), m128_mul_4f32(m128_shuffle(a,a, 1,1,2,2), m128_shuffle(b,b, 2,3,0,1)))
-#define mat2_mul_adj_mat2(a,b) m128_sub_4f32(m128_mul_4f32(a, m128_shuffle(b,b, 3,0,3,0)), m128_mul_4f32(m128_shuffle(a,a, 1,0,3,2), m128_shuffle(b,b, 2,1,2,1)))
+#define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_swizzle(b, 0,3,0,3)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
+#define mat2_adj_mul_mat2(a,b) m128_sub_4f32(m128_mul_4f32(m128_swizzle(a, 3,3,0,0), b), m128_mul_4f32(m128_swizzle(a, 1,1,2,2), m128_swizzle(b, 2,3,0,1)))
+#define mat2_mul_adj_mat2(a,b) m128_sub_4f32(m128_mul_4f32(a, m128_swizzle(b, 3,0,3,0)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 	
-	//calculate determinants (and broadcast across m128)
-#if 1
-	__m128 det_A = _mm_set1_ps(lhs.arr[ 0] * lhs.arr[ 5] - lhs.arr[ 1] * lhs.arr[ 4]);
-	__m128 det_B = _mm_set1_ps(lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]);
-	__m128 det_C = _mm_set1_ps(lhs.arr[ 8] * lhs.arr[13] - lhs.arr[ 9] * lhs.arr[12]);
-	__m128 det_D = _mm_set1_ps(lhs.arr[10] * lhs.arr[15] - lhs.arr[11] * lhs.arr[14]);
-#else //NOTE alternate method with using shuffle instead of float set
-	__m128 det_sub = _mm_sub_ps(__mm_mul_ps(m128_shuffle(lhs.sse_row0,lhs.sse_row2, 0,2,0,2), m128_shuffle(lhs.sse_row1,lhs.sse_row3, 1,3,1,3)), 
-								__mm_mul_ps(m128_shuffle(lhs.sse_row0,lhs.sse_row2, 1,3,1,3), m128_shuffle(lhs.sse_row1,lhs.sse_row3, 0,2,0,2)));
-	__m128 det_A = m128_shuffle(det_sub,det_sub, 0,0,0,0);
-	__m128 det_B = m128_shuffle(det_sub,det_sub, 1,1,1,1);
-	__m128 det_C = m128_shuffle(det_sub,det_sub, 2,2,2,2);
-	__m128 det_D = m128_shuffle(det_sub,det_sub, 3,3,3,3);
-#endif
-	
-	//let inverse M = 1/|M| * |X Y|
-	//                        |Z W|
-	
 	//2x2 sub matrices (ordered internally tl->tr->bl->br)
-	__m128 A = _mm_movelh_ps(lhs.sse_row0, lhs.sse_row1); //top left
-	__m128 B = _mm_movehl_ps(lhs.sse_row1, lhs.sse_row0); //top right
-	__m128 C = _mm_movelh_ps(lhs.sse_row2, lhs.sse_row3); //bot left
-	__m128 D = _mm_movehl_ps(lhs.sse_row3, lhs.sse_row2); //bot right
+	__m128 A = m128_shuffle_0101(lhs.sse_row0, lhs.sse_row1); //top left
+	__m128 B = m128_shuffle_2323(lhs.sse_row0, lhs.sse_row1); //top right
+	__m128 C = m128_shuffle_0101(lhs.sse_row2, lhs.sse_row3); //bot left
+	__m128 D = m128_shuffle_2323(lhs.sse_row2, lhs.sse_row3); //bot right
+	
+	//calculate determinants (and broadcast across m128)
+	//TODO test the shuffle determinant calculation
+	__m128 detA = _mm_set1_ps(lhs.arr[ 0] * lhs.arr[ 5] - lhs.arr[ 1] * lhs.arr[ 4]);
+	__m128 detB = _mm_set1_ps(lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]);
+	__m128 detC = _mm_set1_ps(lhs.arr[ 8] * lhs.arr[13] - lhs.arr[ 9] * lhs.arr[12]);
+	__m128 detD = _mm_set1_ps(lhs.arr[10] * lhs.arr[15] - lhs.arr[11] * lhs.arr[14]);
 	
 	//calculate adjugates and determinant //NOTE A# = adjugate A; |A| = determinant A; Atr = trace A
-	__m128 D_C  = mat2_adj_mul_mat2(D, C); //D#*C
-	__m128 A_B  = mat2_adj_mul_mat2(A, B); //A#*B
-	__m128 X_   = _mm_sub_ps(_mm_mul_ps(detD, A), mat2_mul_mat2(B, D_C)); //|D|*A - B*(D#*C)
-	__m128 W_   = _mm_sub_ps(_mm_mul_ps(detA, D), mat2_mul_mat2(C, A_B)); //|A|*D - C*(A#*B)
-	__m128 detM = _mm_mul_ps(detA, detD); //|A|*|D| ... (to be continued)
+	__m128 D_C = mat2_adj_mul_mat2(D, C); //D#*C
+	__m128 A_B = mat2_adj_mul_mat2(A, B); //A#*B
+	__m128 X = _mm_sub_ps(_mm_mul_ps(detD, A), mat2_mul_mat2(B, D_C)); //X# = |D|*A - B*(D#*C)
+	__m128 W = _mm_sub_ps(_mm_mul_ps(detA, D), mat2_mul_mat2(C, A_B)); //W# = |A|*D - C*(A#*B)
+	__m128 detM = _mm_mul_ps(detA, detD); //|M| = |A|*|D| ... (to be continued)
 	
-	__m128 Y_   = _mm_sub_ps(_mm_mul_ps(detB, C), mat2_mul_adj_mat2(D, A_B)); //|B|*C - D*((A#*B)#)
-	__m128 Z_   = _mm_sub_ps(_mm_mul_ps(detC, B), mat2_mul_adj_mat2(A, D_C)); //|C|*B - A*((D#*C)#)
-	detM        = _mm_add_ps(detM, _mm_mul_ps(detB, detC)); //|A|*|D| + |B|*|C| ... (to be continued)
+	__m128 Y = _mm_sub_ps(_mm_mul_ps(detB, C), mat2_mul_adj_mat2(D, A_B)); //Y# = |B|*C - D*((A#*B)#)
+	__m128 Z = _mm_sub_ps(_mm_mul_ps(detC, B), mat2_mul_adj_mat2(A, D_C)); //Z# = |C|*B - A*((D#*C)#)
+	detM = _mm_add_ps(detM, _mm_mul_ps(detB, detC)); //|M| = |A|*|D| + |B|*|C| ... (to be continued)
 	
-	__m128 tr   = _mm_mul_ps(A_B, m128_shuffle(D_C,D_C, 0,2,1,3)); //((A#*B)*(D#*C))tr
-	tr          = _mm_hadd_ps(tr, tr);
-	tr          = _mm_hadd_ps(tr, tr);
-	detM        = _mm_sub_ps(detM, tr); //|A|*|D| + |B|*|C| - ((A#*B)*(D#*C))tr
+	//calculate trace
+	__m128 tr = _mm_mul_ps(A_B, m128_shuffle(D_C,D_C, 0,2,1,3)); //((A#*B)*(D#*C))tr
+	tr = _mm_hadd_ps(tr, tr);
+	tr = _mm_hadd_ps(tr, tr);
+	detM = _mm_sub_ps(detM, tr); //|M| = |A|*|D| + |B|*|C| - ((A#*B)*(D#*C))tr
 	
-	const __m128 adjSignMask = _mm_setr_ps(1.f, -1.f, -1.f, 1.f);
-	__m128 rDetM = _mm_div_ps(adjSignMask, detM); //(1/|M|, -1/|M|, -1/|M|, 1/|M|)
+	//inverse M = 1/|M| * |X Y|
+	//                    |Z W|
+	__m128 rDetM = _mm_div_ps(_mm_setr_ps(1.0f, -1.0f, -1.0f, 1.0f), detM); //(1/|M|, -1/|M|, -1/|M|, 1/|M|)
+	X = _mm_mul_ps(X, rDetM);
+	Y = _mm_mul_ps(Y, rDetM);
+	Z = _mm_mul_ps(Z, rDetM);
+	W = _mm_mul_ps(W, rDetM);
 	
-	X_ = _mm_mul_ps(X_, rDetM);
-	Y_ = _mm_mul_ps(Y_, rDetM);
-	Z_ = _mm_mul_ps(Z_, rDetM);
-	W_ = _mm_mul_ps(W_, rDetM);
-	
-	result.sse_row0 = m128_shuffle(X_, Y_, 3,1,3,1);
-	result.sse_row1 = m128_shuffle(X_, Y_, 2,0,2,0);
-	result.sse_row2 = m128_shuffle(Z_, W_, 3,1,3,1);
-	result.sse_row3 = m128_shuffle(Z_, W_, 2,0,2,0);
-	
+	mat4 result;
+	result.sse_row0 = m128_shuffle(X, Y, 3,1,3,1);
+	result.sse_row1 = m128_shuffle(X, Y, 2,0,2,0);
+	result.sse_row2 = m128_shuffle(Z, W, 3,1,3,1);
+	result.sse_row3 = m128_shuffle(Z, W, 2,0,2,0);
+	return result;
 #undef mat2_mul_adj_mat2
 #undef mat2_adj_mul_mat2
 #undef mat2_mul_mat2
 #else //#if DESHI_USE_SSE
-	return mat4_div_f32(mat4_adjoint(lhs), mat3_determinant(lhs));
+	return mat4_div_f32(mat4_adjoint(lhs), mat4_determinant(lhs));
 #endif //#else //#if DESHI_USE_SSE
-	return result;
 }
 
 #ifdef __cplusplus
 inline mat4 mat4::
 inverse()const{DPZoneScoped;
+	#if DESHI_USE_SSE
+#define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_swizzle(b, 0,3,0,3)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
+#define mat2_adj_mul_mat2(a,b) m128_sub_4f32(m128_mul_4f32(m128_swizzle(a, 3,3,0,0), b), m128_mul_4f32(m128_swizzle(a, 1,1,2,2), m128_swizzle(b, 2,3,0,1)))
+#define mat2_mul_adj_mat2(a,b) m128_sub_4f32(m128_mul_4f32(a, m128_swizzle(b, 3,0,3,0)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
+	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 	
+	//2x2 sub matrices (ordered internally tl->tr->bl->br)
+	__m128 A = m128_shuffle_0101(this->sse_row0, this->sse_row1); //top left
+	__m128 B = m128_shuffle_2323(this->sse_row0, this->sse_row1); //top right
+	__m128 C = m128_shuffle_0101(this->sse_row2, this->sse_row3); //bot left
+	__m128 D = m128_shuffle_2323(this->sse_row2, this->sse_row3); //bot right
+	
+	//calculate determinants (and broadcast across m128)
+	//TODO test the shuffle determinant calculation
+	__m128 detA = _mm_set1_ps(this->arr[ 0] * this->arr[ 5] - this->arr[ 1] * this->arr[ 4]);
+	__m128 detB = _mm_set1_ps(this->arr[ 2] * this->arr[ 7] - this->arr[ 3] * this->arr[ 6]);
+	__m128 detC = _mm_set1_ps(this->arr[ 8] * this->arr[13] - this->arr[ 9] * this->arr[12]);
+	__m128 detD = _mm_set1_ps(this->arr[10] * this->arr[15] - this->arr[11] * this->arr[14]);
+	
+	//calculate adjugates and determinant //NOTE A# = adjugate A; |A| = determinant A; Atr = trace A
+	__m128 D_C = mat2_adj_mul_mat2(D, C); //D#*C
+	__m128 A_B = mat2_adj_mul_mat2(A, B); //A#*B
+	__m128 X = _mm_sub_ps(_mm_mul_ps(detD, A), mat2_mul_mat2(B, D_C)); //X# = |D|*A - B*(D#*C)
+	__m128 W = _mm_sub_ps(_mm_mul_ps(detA, D), mat2_mul_mat2(C, A_B)); //W# = |A|*D - C*(A#*B)
+	__m128 detM = _mm_mul_ps(detA, detD); //|M| = |A|*|D| ... (to be continued)
+	
+	__m128 Y = _mm_sub_ps(_mm_mul_ps(detB, C), mat2_mul_adj_mat2(D, A_B)); //Y# = |B|*C - D*((A#*B)#)
+	__m128 Z = _mm_sub_ps(_mm_mul_ps(detC, B), mat2_mul_adj_mat2(A, D_C)); //Z# = |C|*B - A*((D#*C)#)
+	detM = _mm_add_ps(detM, _mm_mul_ps(detB, detC)); //|M| = |A|*|D| + |B|*|C| ... (to be continued)
+	
+	//calculate trace
+	__m128 tr = _mm_mul_ps(A_B, m128_shuffle(D_C,D_C, 0,2,1,3)); //((A#*B)*(D#*C))tr
+	tr = _mm_hadd_ps(tr, tr);
+	tr = _mm_hadd_ps(tr, tr);
+	detM = _mm_sub_ps(detM, tr); //|M| = |A|*|D| + |B|*|C| - ((A#*B)*(D#*C))tr
+	
+	//inverse M = 1/|M| * |X Y|
+	//                    |Z W|
+	__m128 rDetM = _mm_div_ps(_mm_setr_ps(1.0f, -1.0f, -1.0f, 1.0f), detM); //(1/|M|, -1/|M|, -1/|M|, 1/|M|)
+	X = _mm_mul_ps(X, rDetM);
+	Y = _mm_mul_ps(Y, rDetM);
+	Z = _mm_mul_ps(Z, rDetM);
+	W = _mm_mul_ps(W, rDetM);
+	
+	mat4 result;
+	result.sse_row0 = m128_shuffle(X, Y, 3,1,3,1);
+	result.sse_row1 = m128_shuffle(X, Y, 2,0,2,0);
+	result.sse_row2 = m128_shuffle(Z, W, 3,1,3,1);
+	result.sse_row3 = m128_shuffle(Z, W, 2,0,2,0);
+	return result;
+#undef mat2_mul_adj_mat2
+#undef mat2_adj_mul_mat2
+#undef mat2_mul_mat2
+#else //#if DESHI_USE_SSE
+	return this->adjoint() / this->determinant();
+#endif //#else //#if DESHI_USE_SSE
 }
 #endif //#ifdef __cplusplus
+
+EXTERN_C inline mat4
+mat4_inverse_transformation_matrix(mat4 lhs){
+	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
+	mat4 result;
+	
+	//transpose scaled rotation matrix
+	__m128 temp0 = m128_shuffle_0101(lhs.sse_row0, lhs.sse_row1);
+	__m128 temp1 = m128_shuffle_2323(lhs.sse_row0, lhs.sse_row1);
+	result.sse_row0 = m128_shuffle(temp0, lhs.sse_row2, 0,2,0,3);
+	result.sse_row1 = m128_shuffle(temp0, lhs.sse_row2, 1,3,1,3);
+	result.sse_row2 = m128_shuffle(temp1, lhs.sse_row2, 0,2,2,3);
+	
+	//extract the recipricol squared scale (1/|x|^2, 1/|y|^2, 1/|z|^2, 0)
+	__m128 rSizeSq;
+	rSizeSq =                       m128_mul_4f32(result.sse_row0, result.sse_row0);
+	rSizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row1, result.sse_row1));
+	rSizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row2, result.sse_row2));
+	rSizeSq = m128_div_4f32(m128_fill_4f32(1.0f), sizeSq);
+	
+	//divide by squared scale
+	result.sse_row0 = m128_mul_4f32(result.sse_row0, rSizeSq);
+	result.sse_row1 = m128_mul_4f32(result.sse_row1, rSizeSq);
+	result.sse_row2 = m128_mul_4f32(result.sse_row2, rSizeSq);
+	
+	//dot product against the negative translation
+	result.sse_row3 =                                m128_mul_4f32(result.sse_row0, m128_swizzle(lhs.sse_row3, 0,0,0,0));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row1, m128_swizzle(lhs.sse_row3, 1,1,1,1)));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
+	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
+	
+	return resuult;
+}
+
+EXTERN_C inline mat4
+mat4_inverse_transformation_matrix_no_scale(mat4 lhs){
+	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
+	mat4 result;
+	
+	//transpose rotation matrix
+	__m128 temp0 = m128_shuffle_0101(lhs.sse_row0, lhs.sse_row1);
+	__m128 temp1 = m128_shuffle_2323(lhs.sse_row0, lhs.sse_row1);
+	result.sse_row0 = m128_shuffle(temp0, lhs.sse_row2, 0,2,0,3);
+	result.sse_row1 = m128_shuffle(temp0, lhs.sse_row2, 1,3,1,3);
+	result.sse_row2 = m128_shuffle(temp1, lhs.sse_row2, 0,2,2,3);
+	
+	//dot product against the negative translation
+	result.sse_row3 =                                m128_mul_4f32(result.sse_row0, m128_swizzle(lhs.sse_row3, 0,0,0,0));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row1, m128_swizzle(lhs.sse_row3, 1,1,1,1)));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
+	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
+	
+	return resuult;
+}
+
+//returns a LH rotation transformation matrix based on input in radians
+EXTERN_C inline mat4
+mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
+	f32 c = cosf(angle); f32 s = sinf(angle);
+	return Mat4(1, 0, 0, 0,
+				0, c, s, 0,
+				0,-s, c, 0,
+				0, 0, 0, 1);
+}
+
+//returns a LH rotation transformation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
+	angle = Radians(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
+	return Mat4(1, 0, 0, 0,
+				0, c, s, 0,
+				0,-s, c, 0,
+				0, 0, 0, 1);
+}
+
+//returns a LH rotation transformation matrix based on input in radians
+EXTERN_C inline mat4
+mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
+	f32 c = cosf(angle); f32 s = sinf(angle);
+	return Mat4(c, 0,-s, 0,
+				0, 1, 0, 0,
+				s, 0, c, 0,
+				0, 0, 0, 1);
+}
+
+//returns a LH rotation transformation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
+	angle = Radians(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
+	return Mat4(c, 0,-s, 0,
+				0, 1, 0, 0,
+				s, 0, c, 0,
+				0, 0, 0, 1);
+}
+
+//returns a LH rotation transformation matrix based on input in radians
+EXTERN_C inline mat4
+mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
+	f32 c = cosf(angle); f32 s = sinf(angle);
+	return Mat4( c, s, 0, 0,
+				-s, c, 0, 0,
+				0,  0, 1, 0,
+				0,  0, 0, 1);
+}
+
+//returns a LH rotation transformation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
+	angle = Radians(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
+	return Mat4( c, s, 0, 0,
+				-s, c, 0, 0,
+				0,  0, 1, 0,
+				0,  0, 0, 1);
+}
+
+//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in radians
+EXTERN_C inline mat4
+mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
+	f32 cX = cosf(x); f32 sX = sinf(x);
+	f32 cY = cosf(y); f32 sY = sinf(y);
+	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	mat4 result;
+	result.arr[ 0] = cZ*cY;
+	result.arr[ 1] = cY*sZ;
+	result.arr[ 2] = -sY;
+	result.arr[ 3] = 0;
+	result.arr[ 4] = cZ*sX*sY - cX*sZ;
+	result.arr[ 5] = cZ*cX + sX*sY*sZ;
+	result.arr[ 6] = sX*cY;
+	result.arr[ 7] = 0;
+	result.arr[ 8] = cZ*cX*sY + sX*sZ;
+	result.arr[ 9] = cX*sY*sZ - cZ*sX;
+	result.arr[10] = cX*cY;
+	result.arr[11] = 0;
+	result.arr[12] = 0;
+	result.arr[13] = 0;
+	result.arr[14] = 0;
+	result.arr[15] = 1;
+	return result;
+}
+
+//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
+	x = Radians(x); y = Radians(y); z = Radians(z);
+	f32 cX = cosf(x); f32 sX = sinf(x);
+	f32 cY = cosf(y); f32 sY = sinf(y);
+	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	mat4 result;
+	result.arr[ 0] = cZ*cY;
+	result.arr[ 1] = cY*sZ;
+	result.arr[ 2] = -sY;
+	result.arr[ 3] = 0;
+	result.arr[ 4] = cZ*sX*sY - cX*sZ;
+	result.arr[ 5] = cZ*cX + sX*sY*sZ;
+	result.arr[ 6] = sX*cY;
+	result.arr[ 7] = 0;
+	result.arr[ 8] = cZ*cX*sY + sX*sZ;
+	result.arr[ 9] = cX*sY*sZ - cZ*sX;
+	result.arr[10] = cX*cY;
+	result.arr[11] = 0;
+	result.arr[12] = 0;
+	result.arr[13] = 0;
+	result.arr[14] = 0;
+	result.arr[15] = 1;
+	return result;
+}
+
+EXTERN_C inline mat4
+mat4_translation_matrix(f32 x, f32 y, f32 z){
+	return Mat4(1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				x, y, z, 1);
+}
+
+EXTERN_C inline mat4
+mat4_scale_matrix(f32 x, f32 y, f32 z){
+	return Mat4(x, 0, 0, 0,
+				0, y, 0, 0,
+				0, 0, z, 0,
+				0, 0, 0, 1);
+}
+
+EXTERN_C inline mat4
+mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){
+	f32 cX = cosf(rotation_x); f32 sX = sinf(rotation_x);
+	f32 cY = cosf(rotation_y); f32 sY = sinf(rotation_y);
+	f32 cZ = cosf(rotation_z); f32 sZ = sinf(rotation_z);
+	mat4 result;
+	result.arr[ 0] = scale_x * (cZ*cY);
+	result.arr[ 1] = scale_x * (cY*sZ);
+	result.arr[ 2] = scale_x * (-sY);
+	result.arr[ 3] = 0;
+	result.arr[ 4] = scale_y * (cZ*sX*sY - cX*sZ);
+	result.arr[ 5] = scale_y * (cZ*cX + sX*sY*sZ);
+	result.arr[ 6] = scale_y * (sX*cY);
+	result.arr[ 7] = 0;
+	result.arr[ 8] = scale_y * (cZ*cX*sY + sX*sZ);
+	result.arr[ 9] = scale_y * (cX*sY*sZ - cZ*sX);
+	result.arr[10] = scale_z * (cX*cY);
+	result.arr[11] = 0;
+	result.arr[12] = translation_x;
+	result.arr[13] = translation_y;
+	result.arr[14] = translation_z;
+	result.arr[15] = 1;
+	return result;
+}
+
+EXTERN_C inline mat4
+mat4_transformation_matrix_degrees(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){
+	rotation_x = Radians(rotation_x); rotation_y = Radians(rotation_y); rotation_z = Radians(rotation_z);
+	f32 cX = cosf(rotation_x); f32 sX = sinf(rotation_x);
+	f32 cY = cosf(rotation_y); f32 sY = sinf(rotation_y);
+	f32 cZ = cosf(rotation_z); f32 sZ = sinf(rotation_z);
+	mat4 result;
+	result.arr[ 0] = scale_x * (cZ*cY);
+	result.arr[ 1] = scale_x * (cY*sZ);
+	result.arr[ 2] = scale_x * (-sY);
+	result.arr[ 3] = 0;
+	result.arr[ 4] = scale_y * (cZ*sX*sY - cX*sZ);
+	result.arr[ 5] = scale_y * (cZ*cX + sX*sY*sZ);
+	result.arr[ 6] = scale_y * (sX*cY);
+	result.arr[ 7] = 0;
+	result.arr[ 8] = scale_y * (cZ*cX*sY + sX*sZ);
+	result.arr[ 9] = scale_y * (cX*sY*sZ - cZ*sX);
+	result.arr[10] = scale_z * (cX*cY);
+	result.arr[11] = 0;
+	result.arr[12] = translation_x;
+	result.arr[13] = translation_y;
+	result.arr[14] = translation_z;
+	result.arr[15] = 1;
+	return result;
+}
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -10655,11 +10941,11 @@ operator* (const mat4& rhs) const{
 	result.x = temp.x;
 	result.y = temp.y;
 	result.z = temp.z;
-#else
+#else //#if DESHI_USE_SSE
 	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
 	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
 	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + rhs.arr[14];
-#endif
+#endif //#else //#if DESHI_USE_SSE
 	return result;
 }
 
@@ -10672,17 +10958,12 @@ operator*=(const mat4& rhs){
 	result.x = temp.x;
 	result.y = temp.y;
 	result.z = temp.z;
-#else
+#else //#if DESHI_USE_SSE
 	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
 	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
 	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + rhs.arr[14];
-#endif
+#endif //#else //#if DESHI_USE_SSE
 	*this = result;
-}
-
-inline vec3 vec3::
-operator* (const quat& rhs) const{
-	return (quat(x, y, z, 0) * rhs).toVec3();
 }
 
 
