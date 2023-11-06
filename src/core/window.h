@@ -41,6 +41,7 @@ TODOs:
 #include "kigu/unicode.h"
 #include "math/vector.h"
 
+struct RenderPass;
 
 #ifdef DESHI_PROFILE_WINDOW
 #  define DPWinFrameMark DPFrameMark
@@ -110,8 +111,6 @@ struct Window{
 	
 	// opaque handle to the info needed by the current render backend 
 	// to properly draw things to this window
-	// for Vulkan this should be VkSwapchain
-	// for OpenGL this will probaby be the context created for the window
 	void* render_info;
 
 	union{
@@ -145,7 +144,7 @@ struct Window{
 	b32 resized;
 	b32 minimized;
 	b32 close_window;
-	
+
 	Decoration decorations;
 	//HitTest hit_test;
 	//s32 titlebar_height;

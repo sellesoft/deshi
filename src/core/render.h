@@ -283,8 +283,10 @@ typedef struct RenderShader {
 // collection of image formats that deshi's renderer supports
 // TODO(sushi) more formats	
 enum RenderFormat {
-	// three components, 8 bits for red, blue, and green, encoded in standard rgb format
-	RenderFormat_R8G8B8_StandardRGB,
+	// four components, 8 bits for red, green, blue and alpha, encoded in standard rgb format
+	RenderFormat_R8G8B8A8_StandardRGB,
+	// four components, 8 bits for blue, green, red and alpha, unsigned normalized integer depth format
+	RenderFormat_B8G8R8A8_UnsignedNormalized,
 	// one component, a 16 bit unsigned normalized integer depth component
 	RenderFormat_Depth16_UnsignedNoramlized,
 	// one component, 32 bit signed floating point format with 32 bits in the depth component
@@ -749,12 +751,22 @@ enum RenderAttachmentLoadOp {
 	RenderAttachmentLoadOp_Dont_Care,
 };
 
+// This determines how an image is laid out in memory on the gpu.
+// Throughout the rendering process a GPU will shuffle the data of a image
+// around in order to optimize usages of it. Exactly how it does this is 
+// implementation specific but we can hint at (at least in Vulkan) the way
+// that an image will be used by telling the GPU what layout we'd like the 
+// image to be at at certain points.
 enum RenderImageLayout {
 	RenderImageLayout_Undefined,
 	RenderImageLayout_General,
 	RenderImageLayout_Color_Attachment_Optional,
 	RenderImageLayout_Depth_Stencil_Attachment_Optional,
 	RenderImageLayout_Present,
+};
+
+enum RenderPassAttachmentType {
+	RenderPassAttachmentType_
 };
 
 // TODO(sushi) for now I am calling this an attachment as that's how it is in Vulkan
@@ -765,6 +777,7 @@ enum RenderImageLayout {
 //             and this may not be able to be translated to opengl
 //             I think the basic functionality should be setting up subpasses so that
 //             post processing may be achieved
+// An attachement represents an image used in a framebuffer
 typedef struct RenderPassAttachment {
 	RenderFormat            format;
 	RenderSampleCount       samples;
@@ -772,13 +785,21 @@ typedef struct RenderPassAttachment {
 	RenderAttachmentStoreOp store_op;
 	RenderAttachmentLoadOp  stencil_load_op;
 	RenderAttachmentStoreOp stencil_store_op;
+	// the image layout we expect the attachment to be in before we 
+	// start processing it
 	RenderImageLayout       initial_layout;
+	// the image layout we expect the image to be in while 
+	// we are processing it
+	RenderImageLayout       processed_layout;
+	// the image layout we expect the image to be in
+	// once it is done being processed
 	RenderImageLayout       final_layout;
+	
 } RenderPassAttachment;
 
 // a collection of buffers and commands using those buffers
 typedef struct RenderPass {
-	str8 debug_name;
+	str8  debug_name;
 	color debug_color;
 
 	color clear_color;
@@ -793,23 +814,27 @@ typedef struct RenderPass {
 	struct { // scissor
 		vec2 offset, dimensions;
 	} scissor;
-
-	// currently only support one of each attachment
-	b32 use_depth_attachment;
-	RenderPassAttachment depth_attachment;
-	b32 use_color_attachment;
-	RenderPassAttachment color_attachment;
-	b32 use_resolve_attachment;
-	RenderPassAttachment resolve_attachment;
+	
+	// optional pointers to a color/depth attachment
+	// this data must exist during the duration of a call
+	// to render_pass_update and is not copied internally
+	RenderPassAttachment* color_attachment;
+	RenderPassAttachment* depth_attachment;
 
 	RenderCommand* commands;
+	
+	// the window this render pass is bound to
+	Window* window;
 
 	void* handle;
-
+	// currently we just associate a single framebuffer with 
+	// a render pass, but later on we may want multiple
+	void* framebuffer_handle;
 } RenderPass;
 
 global RenderPass* __render_pool_render_passes;
 
+// NOTE(sushi) a renderpass is bound to a window
 RenderPass* render_create_render_pass();
 void render_update_render_pass(RenderPass* x);
 
@@ -818,8 +843,43 @@ void render_execute_render_pass(RenderPass* x, Window* win);
 
 // representation of a framebuffer
 typedef struct RenderFrame {
+	// render pass describing how this frame behaves
+	RenderPass* renderpass;
 
+	u32 width;
+	u32 height;
+
+	RenderCommand* commands;
+
+	Window* window;
+
+	// views over the actual memory the framebuffer works with
+	// NOTE(sushi) these are filled out by the renderer
+	//             they should not be setup by the user
+	//             but are here so that if a later
+	//             renderpass need to refernece an image
+	//             from a previous renderpass, they can just 
+	//             grab these pointers
+	//             Vulkan has no way of querying an object for
+	//             the properties it was created with
+	//             so we can't replace these with something
+	//             that generates the information from opaque pointers
+	RenderImageView* color_image;
+	RenderImageView* depth_image;
+	void* handle;
+	void* command_buffer_handle;
 } RenderFrame;
+
+RenderFrame* render_frame_create(Window* window);
+void render_frame_update(RenderFrame* x);
+
+global RenderFrame* __render_pool_frames;
+
+RenderImageView*
+render_get_window_color_image_view(Window* window);
+
+void
+render_update_window_frame(Window* window, RenderFrame* frame);
 
 // interface for swapchains, which to us will likely just be a collection of framebuffers 
 // there's no such thing as a swapchain in opengl, but you can define multiple 

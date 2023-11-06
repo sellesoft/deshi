@@ -85,10 +85,10 @@ struct SwapchainSupportDetailsX {
 };
 
 struct FrameVk{
-	VkImage         image         = VK_NULL_HANDLE;
-	VkImageView     imageView     = VK_NULL_HANDLE;
-	VkFramebuffer   framebuffer   = VK_NULL_HANDLE;
-	VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+	VkImage         image          = VK_NULL_HANDLE;
+	VkImageView     image_view     = VK_NULL_HANDLE;
+	VkFramebuffer   framebuffer    = VK_NULL_HANDLE;
+	VkCommandBuffer command_buffer = VK_NULL_HANDLE;
 };
 
 struct FramebufferAttachmentsVk{
@@ -217,6 +217,8 @@ struct VkWindowInfo {
 	u32                      frame_index;
 	FrameVk*                 frames;
 	FramebufferAttachmentsVk attachments;
+	
+	RenderFrame* window_frame;
 };
 
 #define WindowFromVkSwapchain(ptr) CastFromMember(Window, render_info, ptr)
@@ -506,6 +508,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 	switch(messageSeverity){
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:{
 			LogE("vulkan",pCallbackData->pMessage);
+			Assert(0);
 			if(renderSettings.crashOnError) Assert(!"crashing because of error in vulkan");
 		}break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:{
@@ -1497,18 +1500,18 @@ CreateFrames(){DPZoneScoped;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)activeSwapchain.frames[i].image, (const char*)to_dstr8v(deshi_temp_allocator, "Frame image ", i).str);
 		
 		//create the image views
-		if(activeSwapchain.frames[i].imageView) vkDestroyImageView(device, activeSwapchain.frames[i].imageView, allocator);
-		activeSwapchain.frames[i].imageView = CreateImageView(activeSwapchain.frames[i].image, activeSwapchain.surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.frames[i].imageView, (const char*)to_dstr8v(deshi_temp_allocator, "Frame imageview ", i).str);
+		if(activeSwapchain.frames[i].image_view) vkDestroyImageView(device, activeSwapchain.frames[i].image_view, allocator);
+		activeSwapchain.frames[i].image_view = CreateImageView(activeSwapchain.frames[i].image, activeSwapchain.surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)activeSwapchain.frames[i].image_view, (const char*)to_dstr8v(deshi_temp_allocator, "Frame imageview ", i).str);
 		
 		//create the framebuffers
 		if(activeSwapchain.frames[i].framebuffer) vkDestroyFramebuffer(device, activeSwapchain.frames[i].framebuffer, allocator);
 		
 		arrayT<VkImageView> frameBufferAttachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
 		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
-			frameBufferAttachments = { activeSwapchain.attachments.color_image_view, activeSwapchain.attachments.depth_image_view, activeSwapchain.frames[i].imageView };
+			frameBufferAttachments = { activeSwapchain.attachments.color_image_view, activeSwapchain.attachments.depth_image_view, activeSwapchain.frames[i].image_view };
 		}else{
-			frameBufferAttachments = { activeSwapchain.frames[i].imageView, activeSwapchain.attachments.depth_image_view, };
+			frameBufferAttachments = { activeSwapchain.frames[i].image_view, activeSwapchain.attachments.depth_image_view, };
 		}
 		
 		VkFramebufferCreateInfo info{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
@@ -1522,13 +1525,13 @@ CreateFrames(){DPZoneScoped;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)activeSwapchain.frames[i].framebuffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame framebuffer ", i).str);
 		
 		//allocate command buffers
-		if(activeSwapchain.frames[i].commandBuffer) vkFreeCommandBuffers(device, commandPool, 1, &activeSwapchain.frames[i].commandBuffer);
+		if(activeSwapchain.frames[i].command_buffer) vkFreeCommandBuffers(device, commandPool, 1, &activeSwapchain.frames[i].command_buffer);
 		VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = commandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
-		resultVk = vkAllocateCommandBuffers(device, &allocInfo, &activeSwapchain.frames[i].commandBuffer); AssertVk(resultVk, "failed to allocate command buffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)activeSwapchain.frames[i].commandBuffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame command buffer ", i).str);
+		resultVk = vkAllocateCommandBuffers(device, &allocInfo, &activeSwapchain.frames[i].command_buffer); AssertVk(resultVk, "failed to allocate command buffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)activeSwapchain.frames[i].command_buffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame command buffer ", i).str);
 	}
 }
 
@@ -2707,7 +2710,7 @@ BuildCommands(){DPZoneScoped;
 	VkRect2D   scissor{};  //cuts the scaled image
 	
 	forI(activeSwapchain.imageCount){
-		VkCommandBuffer cmdBuffer = activeSwapchain.frames[i].commandBuffer;
+		VkCommandBuffer cmdBuffer = activeSwapchain.frames[i].command_buffer;
 		resultVk = vkBeginCommandBuffer(cmdBuffer, &cmdBufferInfo); AssertVk(resultVk, "failed to begin recording command buffer");
 		
 		////////////////////////////
@@ -3567,6 +3570,7 @@ pick_physical_device(Window* window) {
 		forI(extension_count) {
 			auto extension = available_extensions[i];
 			forI(ArrayCount(deviceExtensions)) {
+				Log("", extension.extensionName);
 				if(extension.extensionName == deviceExtensions[i]) {
 					count++;
 					break;
@@ -4727,13 +4731,30 @@ render_sample_count_to_vulkan(RenderSampleCount x) {
 VkFormat
 render_format_to_vulkan(RenderFormat x) {
 	switch(x) {
-		case RenderFormat_R8G8B8_StandardRGB:                              return VK_FORMAT_R8G8B8_SRGB;
+		case RenderFormat_R8G8B8A8_StandardRGB:                            return VK_FORMAT_R8G8B8A8_SRGB;
+		case RenderFormat_B8G8R8A8_UnsignedNormalized:                     return VK_FORMAT_B8G8R8A8_UNORM;
 		case RenderFormat_Depth16_UnsignedNoramlized:                      return VK_FORMAT_D16_UNORM;
 		case RenderFormat_Depth32_SignedFloat:                             return VK_FORMAT_D32_SFLOAT;
 		case RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt:        return VK_FORMAT_D32_SFLOAT_S8_UINT;
 		case RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt: return VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 	Assert(0);
+	return (VkFormat)0;
+}
+
+
+RenderFormat
+vulkan_format_to_render(VkFormat x) {
+	switch(x) {
+		case VK_FORMAT_R8G8B8A8_SRGB:        return RenderFormat_R8G8B8A8_StandardRGB;
+		case VK_FORMAT_B8G8R8A8_UNORM:       return RenderFormat_B8G8R8A8_UnsignedNormalized;
+		case VK_FORMAT_D16_UNORM:          return RenderFormat_Depth16_UnsignedNoramlized;
+		case VK_FORMAT_D32_SFLOAT:         return RenderFormat_Depth32_SignedFloat;
+		case VK_FORMAT_D32_SFLOAT_S8_UINT: return RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt;
+		case VK_FORMAT_D24_UNORM_S8_UINT:  return RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt;
+	}
+	Assert(0);
+	return (RenderFormat)0;
 }
 
 VkMemoryPropertyFlags
@@ -4842,10 +4863,13 @@ void
 render_update_render_pass(RenderPass* x) {
 	PrintVk(4, "Updating renderpass ", x->debug_name);
 
+	// TODO(sushi) cleaning up previous resources
+	Assert(!x->handle);
+
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	
-	VkAttachmentDescription attachments[3]{};
+		
+	VkAttachmentDescription attachments[2] = {};
 
 	VkAttachmentReference color_attachment_reference{};
 	VkAttachmentReference depth_attachment_reference{};
@@ -4853,16 +4877,15 @@ render_update_render_pass(RenderPass* x) {
 
 	u32 index = 0;
 
-	if(x->use_color_attachment) {
-		auto& a = attachments[index];
-		a.        format = render_format_to_vulkan(x->color_attachment.format);
-		a.       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
-		a.        loadOp = render_load_op_to_vulkan(x->color_attachment.load_op);
-		a.       storeOp = render_store_op_to_vulkan(x->color_attachment.store_op);
-		a. stencilLoadOp = render_load_op_to_vulkan(x->color_attachment.stencil_load_op);
-		a.stencilStoreOp = render_store_op_to_vulkan(x->color_attachment.stencil_store_op);
-		a. initialLayout = render_image_layout_to_vulkan(x->color_attachment.initial_layout);
-		a.   finalLayout = render_image_layout_to_vulkan(x->color_attachment.final_layout);
+	if(x->color_attachment) {
+		attachments[index].        format =	render_format_to_vulkan(x->color_attachment->format);
+		attachments[index].       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
+		attachments[index].        loadOp = render_load_op_to_vulkan(x->color_attachment->load_op);
+		attachments[index].       storeOp = render_store_op_to_vulkan(x->color_attachment->store_op);
+		attachments[index]. stencilLoadOp = render_load_op_to_vulkan(x->color_attachment->stencil_load_op);
+		attachments[index].stencilStoreOp = render_store_op_to_vulkan(x->color_attachment->stencil_store_op);
+		attachments[index]. initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[index].   finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_attachment_reference;
@@ -4871,38 +4894,52 @@ render_update_render_pass(RenderPass* x) {
 		index++;
 	}
 
-	if(x->use_depth_attachment) {
-		auto& a = attachments[index];
-		a.        format = render_format_to_vulkan(x->depth_attachment.format);
-		a.       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
-		a.        loadOp = render_load_op_to_vulkan(x->depth_attachment.load_op);
-		a.       storeOp = render_store_op_to_vulkan(x->depth_attachment.store_op);
-		a. stencilLoadOp = render_load_op_to_vulkan(x->depth_attachment.stencil_load_op);
-		a.stencilStoreOp = render_store_op_to_vulkan(x->depth_attachment.stencil_store_op);
-		a. initialLayout = render_image_layout_to_vulkan(x->depth_attachment.initial_layout);
-		a.   finalLayout = render_image_layout_to_vulkan(x->depth_attachment.final_layout);
+	if(x->depth_attachment) {
+		attachments[index].        format = render_format_to_vulkan(x->depth_attachment->format);
+		attachments[index].       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
+		attachments[index].        loadOp = render_load_op_to_vulkan(x->depth_attachment->load_op);
+		attachments[index].       storeOp = render_store_op_to_vulkan(x->depth_attachment->store_op);
+		attachments[index]. stencilLoadOp = render_load_op_to_vulkan(x->depth_attachment->stencil_load_op);
+		attachments[index].stencilStoreOp = render_store_op_to_vulkan(x->depth_attachment->stencil_store_op);
+		attachments[index]. initialLayout =	VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[index].   finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		subpass.pDepthStencilAttachment = &depth_attachment_reference;
 		depth_attachment_reference.attachment = index;
-		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		index++;
 	}
 
-	if(x->use_resolve_attachment) {
-		// TODO(sushi) msaa
-		NotImplemented;
-	}
+	// always define a dependency between render passes
+	// for now.
+	VkSubpassDependency dependencies[2]{};
+	dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass      = 0;
+	dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	dependencies[1].srcSubpass      = 0;
+	dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 	VkRenderPassCreateInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-	info.attachmentCount = index + 1;
+	info.attachmentCount = index;
 	info.pAttachments = attachments;
 	info.subpassCount = 1;
 	info.pSubpasses = &subpass;
-	info.dependencyCount = 0;
-	info.pDependencies = 0;
+	info.dependencyCount = 1;
+	info.pDependencies = dependencies;
 
 	resultVk = vkCreateRenderPass(device, &info, allocator, (VkRenderPass*)&x->handle);
-	Assert(resultVk);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)x->handle, 
+			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name, " render pass").str);
 }
 
 void 
@@ -4916,7 +4953,7 @@ render_execute_render_pass(RenderPass* x, Window* win) {
 	VkRect2D scissor{};
 
 	forX(frameidx, wininf->image_count) {
-		VkCommandBuffer cmdbuf = wininf->frames[frameidx].commandBuffer;
+		VkCommandBuffer cmdbuf = wininf->frames[frameidx].command_buffer;
 
 		clear_value.color = {0,0,0,0};
 		render_pass_info.renderPass = (VkRenderPass)x->handle;
@@ -4988,6 +5025,83 @@ render_execute_render_pass(RenderPass* x, Window* win) {
 
 }
 
+RenderFrame*
+render_frame_create(Window* window) {
+	auto out = memory_pool_push(__render_pool_frames);
+	out->window = window;
+	array_init(out->commands, 1, deshi_allocator);
+	return out;
+}
+
+void
+render_frame_update(RenderFrame* x) {
+	Assert(x->renderpass, "A framebuffer needs a renderpass");
+	
+	PrintVk(4, "Updating frame");
+
+	VkImageView* attachments;
+	array_init(attachments, 1, deshi_temp_allocator);
+
+	if(x->renderpass->color_attachment)
+		array_push_value(attachments, (VkImageView)x->color_image->handle);
+	
+	if(x->renderpass->depth_attachment) 
+		array_push_value(attachments, (VkImageView)x->depth_image->handle);
+	
+	VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+	info.     renderPass = (VkRenderPass)x->renderpass->handle;
+	info.attachmentCount = array_count(attachments);
+	info.   pAttachments = attachments;
+	info.          width = x->width;
+	info.         height = x->height;
+	info.         layers = 1;
+	resultVk = vkCreateFramebuffer(device, &info, allocator, (VkFramebuffer*)&x->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)x->handle,
+			(char*)to_dstr8v(deshi_temp_allocator, "Framebuffer").str);
+}
+
+RenderImageView*
+render_get_window_color_image_view(Window* window) {
+	auto wininf = (VkWindowInfo*)window->render_info;
+
+	auto image = render_create_image();
+	image->format = vulkan_format_to_render(wininf->surface_format.format);
+	image->extent.x = window->width;
+	image->extent.y = window->height;
+	image->usage = RenderImageUsage_Color_Attachment;
+	image->handle = (void*)wininf->frames[0].image;
+
+	auto out = render_create_image_view();
+	out->image = image;
+	out->format = vulkan_format_to_render(wininf->surface_format.format);
+	out->aspect_flags = RenderImageViewAspectFlags_Color;
+	out->handle = (void*)wininf->frames[0].image_view;
+
+	return out;
+}
+
+void
+render_update_window_frame(Window* window, RenderFrame* frame) {
+	auto wininf = (VkWindowInfo*)window->render_info;
+
+	// NOTE(sushi) for now we just assume that we only have one image
+	//             because that's all we support, but later on this 
+	//             will need to be setup to handle multiple.
+	//             reference the old CreateFrames func to see how we should go about it 
+	
+	Assert(wininf->min_image_count == 1);	
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
+	Assert(wininf->image_count == 1);
+	VkImage image;
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
+
+	// The window frame requires a color image for presenting
+	Assert(frame->color_image);
+
+
+}
+
 void
 create_swapchain(Window* window) {
 	PrintVk(2, "Creating swapchain for window ", window->title);
@@ -5011,6 +5125,7 @@ create_swapchain(Window* window) {
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, wininf->surface, &format_count, 0);
 	if(format_count) {
 		array_grow(wininf->support_details.formats, format_count);
+		array_count(wininf->support_details.formats) = format_count;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, wininf->surface, &format_count, wininf->support_details.formats);
 	}
 
@@ -5018,6 +5133,7 @@ create_swapchain(Window* window) {
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, wininf->surface, &present_mode_count, 0);
 	if(present_mode_count) {
 		array_grow(wininf->support_details.present_modes, present_mode_count);
+		array_count(wininf->support_details.present_modes) = present_mode_count;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, wininf->surface, &present_mode_count, wininf->support_details.present_modes);
 	}
 	
@@ -5162,11 +5278,13 @@ find_depth_format() {
 
 void
 create_renderpasses(Window* window) {
-	PrintVk(2, "Creating renderpasses for ", window->title);
+	PrintVk(2, "Creating default renderpasses for ", window->title);
 	
 	Stopwatch watch = start_stopwatch();
 
 	auto wininf = (VkWindowInfo*)window->render_info;
+
+
 
 	if(baseRenderPass) vkDestroyRenderPass(device, baseRenderPass, allocator);
 	if(msaaRenderPass) vkDestroyRenderPass(device, msaaRenderPass, allocator);
@@ -5261,105 +5379,99 @@ create_renderpasses(Window* window) {
 }
 
 void
-create_frames(Window* window) {
+create_render_pass_and_frame(Window* window) {
 	PrintVk(2, "Creating frames for ", window->title);
 
 	Stopwatch watch = start_stopwatch();
 
 	auto wininf = (VkWindowInfo*)window->render_info;
 
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	Assert(wininf->image_count >= wininf->min_image_count, "the window should always have at least the min image count");
-	Assert(wininf->image_count < 16, "the window should have less than 16 images, around 2-3 is ideal");
-	VkImage images[16] = {};
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images);
+	// NOTE(sushi) for now we are assuming swapchains will only have 1 frame
+	//             but later on we'll want to support multiple
 
-	auto attachments = wininf->attachments;
+	wininf->window_frame = render_frame_create(window);
+	wininf->window_frame->renderpass = render_create_render_pass();
 
-	// color framebuffer attachment
-	if(wininf->attachments.color_image) {
-		vkDestroyImageView(device, attachments.color_image_view, allocator);
-		vkDestroyImage(device, attachments.color_image, allocator);
-		vkFreeMemory(device, attachments.color_image_memory, allocator);
-	}
-	create_image(
-			wininf->width, wininf->height, 1, 
-			msaaSamples, 
-			wininf->surface_format.format,
-			VK_IMAGE_TILING_OPTIMAL, 
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			&wininf->attachments.color_image,
-			&wininf->attachments.color_image_memory);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)wininf->attachments.color_image, "Framebuffer color image");
-	wininf->attachments.color_image_view = 
-		create_image_view(wininf->attachments.color_image, wininf->surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)wininf->attachments.color_image_view, "Framebuffer color imageview");
+	RenderPassAttachment color_attachment;
+	color_attachment.          format = vulkan_format_to_render(wininf->surface_format.format);
+	color_attachment.         load_op = RenderAttachmentLoadOp_Dont_Care;
+	color_attachment.        store_op = RenderAttachmentStoreOp_Dont_Care;
+	color_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
+	color_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
 
+	RenderPassAttachment depth_attachment;
+	depth_attachment.          format = vulkan_format_to_render(find_depth_format());
+	depth_attachment.         load_op = RenderAttachmentLoadOp_Dont_Care;
+	depth_attachment.        store_op = RenderAttachmentStoreOp_Dont_Care;
+	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
+	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
+
+	wininf->window_frame->renderpass->color_attachment = &color_attachment;
+	wininf->window_frame->renderpass->depth_attachment = &depth_attachment;
+
+	render_update_render_pass(wininf->window_frame->renderpass);
 	
-	// depth framebuffer attachment
-	if(wininf->attachments.depth_image){
-		vkDestroyImageView(device, wininf->attachments.depth_image_view, allocator);
-		vkDestroyImage(device, wininf->attachments.depth_image, allocator);
-		vkFreeMemory(device, wininf->attachments.depth_image_memory, allocator);
-	}
-	VkFormat depthFormat = findDepthFormat();
-	create_image(
-			wininf->width, wininf->height, 1, 
-			msaaSamples, 
-			depthFormat, 
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-			&wininf->attachments.depth_image, 
-			&wininf->attachments.depth_image_memory);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)wininf->attachments.depth_image, "Framebuffer depth image");
-	wininf->attachments.depth_image_view = 
-		create_image_view(wininf->attachments.depth_image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)wininf->attachments.depth_image_view, "Framebuffer depth imageview");
+	auto color_image_view = wininf->window_frame->color_image = render_create_image_view();
+	auto depth_image_view = wininf->window_frame->depth_image = render_create_image_view();
+	auto color_image      = color_image_view->image           = render_create_image();
+	auto depth_image      = depth_image_view->image           = render_create_image();
 
-	array_grow(wininf->frames, wininf->image_count);
-	array_count(wininf->frames) = wininf->image_count;
-	for(u32 i = 0; i < wininf->image_count; ++i){
-		//set the frame images to the swap chain images
-		//NOTE the previous image and its memory gets freed when the swapchain gets destroyed
-		wininf->frames[i].image = images[i];
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)wininf->frames[i].image, (const char*)to_dstr8v(deshi_temp_allocator, "Frame image ", i).str);
-		
-		//create the image views
-		if(wininf->frames[i].imageView) vkDestroyImageView(device, wininf->frames[i].imageView, allocator);
-		wininf->frames[i].imageView = create_image_view(wininf->frames[i].image, wininf->surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)wininf->frames[i].imageView, (const char*)to_dstr8v(deshi_temp_allocator, "Frame imageview ", i).str);
-		
-		//create the framebuffers
-		if(wininf->frames[i].framebuffer) vkDestroyFramebuffer(device, wininf->frames[i].framebuffer, allocator);
-		
-		arrayT<VkImageView> frame_buffer_attachments(deshi_temp_allocator); //TODO(delle) fix scuffed msaa hack
-		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
-			frame_buffer_attachments = { wininf->attachments.color_image_view, wininf->attachments.depth_image_view, wininf->frames[i].imageView };
-		}else{
-			frame_buffer_attachments = { wininf->frames[i].imageView, wininf->attachments.depth_image_view, };
-		}
-		
-		VkFramebufferCreateInfo info{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-		info.renderPass      = renderPass;
-		info.attachmentCount = frame_buffer_attachments.count;
-		info.pAttachments    = frame_buffer_attachments.data;
-		info.width           = wininf->width;
-		info.height          = wininf->height;
-		info.layers          = 1;
-		resultVk = vkCreateFramebuffer(device, &info, allocator, &wininf->frames[i].framebuffer); AssertVk(resultVk, "failed to create framebuffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)wininf->frames[i].framebuffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame framebuffer ", i).str);
-		
-		//allocate command buffers
-		if(wininf->frames[i].commandBuffer) vkFreeCommandBuffers(device, commandPool, 1, &wininf->frames[i].commandBuffer);
-		VkCommandBufferAllocateInfo alloc_info{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-		alloc_info.commandPool = commandPool;
-		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandBufferCount = 1;
-		resultVk = vkAllocateCommandBuffers(device, &alloc_info, &wininf->frames[i].commandBuffer); AssertVk(resultVk, "failed to allocate command buffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)wininf->frames[i].commandBuffer, (const char*)to_dstr8v(deshi_temp_allocator, "Frame command buffer ", i).str);
-	}
+	color_image->           format = vulkan_format_to_render(wininf->surface_format.format);
+	color_image->           extent = {window->width, window->height};
+	color_image->            usage = RenderImageUsage_Color_Attachment;
+	color_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+
+	// the color image already exists on the swapchain so we just retrieve it from there
+	// note that currently we assume that we only have one frame and that is enforced 
+	// here until we decide to support multiple frames later on
+	Assert(wininf->min_image_count == 1);	
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
+	Assert(wininf->image_count == 1);
+	VkImage image;
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
+	
+	color_image->handle = (void*)image;
+
+	depth_image->           format = vulkan_format_to_render(find_depth_format());
+	depth_image->           extent = {window->width, window->height};
+	depth_image->            usage = RenderImageUsage_Depth_Stencil_Attachment;
+	depth_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+	render_update_image(depth_image);
+
+	color_image_view->format = color_image->format;
+	color_image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+	render_update_image_view(color_image_view);
+
+	depth_image_view->format = depth_image->format;
+	depth_image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
+	render_update_image_view(depth_image_view);
+
+	VkImageView attachments[2] = {
+		(VkImageView)color_image_view->handle,
+		(VkImageView)depth_image_view->handle,
+	};
+
+	VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+	info.renderPass = (VkRenderPass)wininf->window_frame->renderpass->handle;
+	info.width = wininf->width;
+	info.height = wininf->height;
+	info.layers = 1;
+	info.pAttachments = attachments;
+	info.attachmentCount = 2;
+	resultVk = vkCreateFramebuffer(device, &info, allocator, (VkFramebuffer*)&wininf->window_frame->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)wininf->window_frame->handle, 
+			(char*)to_dstr8v(deshi_temp_allocator, "Default framebuffer").str);
+
+	// create a command buffer for the frame
+	VkCommandBufferAllocateInfo cmdbuf_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+	cmdbuf_info.commandPool = commandPool;
+	cmdbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdbuf_info.commandBufferCount = 1;
+	resultVk = vkAllocateCommandBuffers(device, &cmdbuf_info, (VkCommandBuffer*)&wininf->window_frame->command_buffer_handle);
+	Assert(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)wininf->window_frame->command_buffer_handle,
+			(char*)to_dstr8v(deshi_temp_allocator, "Default command buffer").str);
 
 	PrintVk(2, "Finished creating frames in ", peek_stopwatch(watch), "ms");
 }
@@ -5495,6 +5607,14 @@ render_init_x(Window* window) {
 
 	renderSettings.loggingLevel = -1;
 
+	memory_pool_init(__render_pool_images, 8);
+	memory_pool_init(__render_pool_image_views, 8);
+	memory_pool_init(__render_pool_samplers, 8);
+	memory_pool_init(__render_pool_frames, 8);
+	memory_pool_init(__render_pool_render_passes, 8);
+	memory_pool_init(__render_pool_descriptor_sets, 8);
+	memory_pool_init(__render_pool_descriptor_layouts, 8);
+
 	if(window) {
 		// create the window info that this window will point to
 		// TODO(sushi) user should be able to control how this is allocated 
@@ -5532,11 +5652,8 @@ render_init_x(Window* window) {
 	// create_layouts();
 	create_descriptor_pool();
 	
-	if(window) {
-		create_swapchain(window);
-		// create_renderpasses(window);
-		create_frames(window);
-	}
+	create_swapchain(window);
+	create_render_pass_and_frame(window);
 
 	create_sync_objects();
 	// create_descriptor_sets();
@@ -5570,7 +5687,7 @@ render_update_x(Window* window) {
 		if(wininf->width <= 0 || wininf->height <= 0) return;
 		vkDeviceWaitIdle(device);
 		create_swapchain(window);
-		create_frames(window);
+		create_render_pass_and_frame(window);
 		wininf->frame_index = 0;
 		remakeWindow = false;
 	}
@@ -5654,7 +5771,7 @@ render_update(){DPZoneScoped;
 		submitInfo.pWaitSemaphores = &imageAcquiredSemaphore;
 		submitInfo.pWaitDstStageMask = &wait_stage;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &activeSwapchain.frames[imageIndex].commandBuffer;
+		submitInfo.pCommandBuffers = &activeSwapchain.frames[imageIndex].command_buffer;
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
 		resultVk = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE); AssertVk(resultVk, "failed to submit draw command buffer");
