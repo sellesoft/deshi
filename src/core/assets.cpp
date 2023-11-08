@@ -346,13 +346,13 @@ assets_mesh_allocate(u32 index_count,
 // their vertex/index data to them.
 void
 map_mesh(Mesh* m) {
-	render_buffer_create(
+	m->vertex_buffer = render_buffer_create(
 		m->vertex_array, 
 		sizeof(MeshVertex) * m->vertex_count,
 		RenderBufferUsage_VertexBuffer,
 		RenderMemoryPropertyFlag_DeviceLocal,
 		RenderMemoryMapping_None);
-	render_buffer_create(
+	m->index_buffer = render_buffer_create(
 		m->index_array,
 		sizeof(MeshIndex) * m->index_count,
 		RenderBufferUsage_IndexBuffer,
