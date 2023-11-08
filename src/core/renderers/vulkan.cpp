@@ -486,6 +486,23 @@ BeginSingleTimeCommands(){DPZoneScoped;
 	return commandBuffer;
 }
 
+local VkCommandBuffer
+begin_single_time_commands() {
+	VkCommandBuffer cmdbuf;
+
+	VkCommandBufferAllocateInfo alloc_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+	alloc_info.             level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.       commandPool = commandPool;
+	alloc_info.commandBufferCount = 1;
+	vkAllocateCommandBuffers(device, &alloc_info, &cmdbuf);
+
+	VkCommandBufferBeginInfo begin_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	vkBeginCommandBuffer(cmdbuf, &begin_info);
+
+	return cmdbuf;
+}
+
 //ends a command buffer and frees that buffers memory
 local void
 EndSingleTimeCommands(VkCommandBuffer commandBuffer){DPZoneScoped;
@@ -500,6 +517,19 @@ EndSingleTimeCommands(VkCommandBuffer commandBuffer){DPZoneScoped;
 	
 	vkQueueWaitIdle(graphicsQueue);
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
+
+local void
+end_single_time_commands(VkCommandBuffer cmdbuf) {
+	vkEndCommandBuffer(cmdbuf);
+
+	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+	submit_info.commandBufferCount = 1;
+	submit_info.   pCommandBuffers = &cmdbuf;
+	vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
+
+	vkQueueWaitIdle(graphicsQueue);
+	vkFreeCommandBuffers(device, commandPool, 1, &cmdbuf);
 }
 
 local VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -539,6 +569,23 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){DPZoneScoped;
 	}
 	
 	Assert(!"failed to find suitable memory type");
+	return 0;
+}
+
+local u32 
+find_memory_type(u32 type_filter, VkMemoryPropertyFlags properties) {
+	PrintVk(6, "Finding memory types");
+	VkPhysicalDeviceMemoryProperties memprops;
+	vkGetPhysicalDeviceMemoryProperties(physical_device, &memprops);
+
+	for(u32 i = 0; i < memprops.memoryTypeCount; i++) {
+		if(HasFlag(type_filter, (1 << i)) && 
+		   HasAllFlags(memprops.memoryTypes[i].propertyFlags, properties)) {
+			return i;
+		}
+	}
+
+	Assert(0);
 	return 0;
 }
 
@@ -641,6 +688,59 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 	bufferSize = newSize;
 }
 
+local void
+create_and_map_buffer(VkBuffer* buffer,
+				      VkDeviceMemory* buffer_memory,
+					  VkDeviceSize* buffer_size,
+					  size_t new_size,
+					  void* data,
+					  VkBufferUsageFlags usage,
+					  VkMemoryPropertyFlags properties) {
+	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, *buffer, allocator);
+	if(buffer_memory != VK_NULL_HANDLE) vkFreeMemory(device, *buffer_memory, allocator);
+
+	// create buffer
+	VkDeviceSize aligned_buffer_size = ((new_size + 1) / buffer_memory_alignment + 1) * buffer_memory_alignment;
+	VkBufferCreateInfo buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	buffer_info.       size = aligned_buffer_size;
+	buffer_info.      usage = usage;
+	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	resultVk = vkCreateBuffer(device, &buffer_info, allocator, buffer);
+	AssertVk(resultVk);
+
+	VkMemoryRequirements req;
+	vkGetBufferMemoryRequirements(device, *buffer, &req);
+	buffer_memory_alignment = (buffer_memory_alignment > req.alignment? buffer_memory_alignment : req.alignment);
+
+	// allocate buffer
+	VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	alloc_info. allocationSize = req.size;
+	alloc_info.memoryTypeIndex = find_memory_type(req.memoryTypeBits, properties);
+	resultVk = vkAllocateMemory(device, &alloc_info, allocator, buffer_memory);
+	AssertVk(resultVk);
+
+	if(data != 0) {
+		void* mapped = 0;
+		resultVk = vkMapMemory(device, *buffer_memory, 0, new_size, 0, &mapped);
+		AssertVk(resultVk);
+
+		CopyMemory(mapped, data, new_size);
+
+		if(!HasFlag(properties, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+			VkMappedMemoryRange mapped_range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+			mapped_range.memory = *buffer_memory;
+			mapped_range.offset = 0;
+			mapped_range.  size = new_size;
+			vkFlushMappedMemoryRanges(device, 1, &mapped_range);
+
+		}
+		vkUnmapMemory(device, *buffer_memory);
+	}
+
+	vkBindBufferMemory(device, *buffer, *buffer_memory, 0);
+	*buffer_size = new_size;
+}
+
 //copies a buffer, we use this to copy from a host-visible staging buffer to device-only buffer
 local void
 CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){DPZoneScoped;
@@ -649,6 +749,17 @@ CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){DPZoneScop
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 	}EndSingleTimeCommands(commandBuffer);
+}
+
+local void
+copy_buffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) {
+	VkCommandBuffer cb = begin_single_time_commands();
+
+	VkBufferCopy copy_region{};
+	copy_region.size = size;
+	vkCmdCopyBuffer(cb, src, dst, 1, &copy_region);
+
+	end_single_time_commands(cb);
 }
 
 
@@ -818,6 +929,88 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 	EndSingleTimeCommands(commandBuffer);
 }
 
+local void
+generate_mipmaps(VkImage image, VkFormat format, s32 width, s32 height, u32 mip_levels) {
+	PrintVk(4, "Generating image mipmaps");
+	
+	// check if image format supports linear blitting
+	VkFormatProperties format_properties;
+	vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
+	if(!HasFlag(format_properties.optimalTilingFeatures, VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+		Assert(!"texture image format doesn't support linear blitting");
+	}
+
+	VkCommandBuffer cmdbuf = begin_single_time_commands();
+
+	VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+	barrier.            srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.            dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.                          image = image;
+	barrier.    subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.    subresourceRange.layerCount = 1;
+	barrier.    subresourceRange.levelCount = 1;
+
+	s32 mip_width = width;
+	s32 mip_height = height;
+	for(u32 i = 1; i < mip_levels; i++) {
+		barrier.                srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.                dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.                    oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.                    newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.subresourceRange.baseMipLevel = i - 1;
+
+		vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, 0, 0, 0, 1, &barrier);
+
+		VkImageBlit blit{};
+		blit.                srcOffsets[0] = { 0, 0, 0 };
+		blit.                srcOffsets[1] = { mip_width, mip_height, 1 };
+		blit.    srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.      srcSubresource.mipLevel = i - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.    srcSubresource.layerCount = 1;
+		blit.                dstOffsets[0] = { 0, 0, 0 };
+		blit.                dstOffsets[1] = { (mip_width > 1) ? mip_width / 2 : 1, (mip_height > 1) ? mip_height / 2 : 1, 1 };
+		blit.    dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.      dstSubresource.mipLevel = i;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.    dstSubresource.layerCount = 1;
+
+		vkCmdBlitImage(cmdbuf, image, 
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+				image, 
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+				1, &blit, 
+				VK_FILTER_LINEAR);
+
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		barrier.    oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.    newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		
+		vkCmdPipelineBarrier(cmdbuf, 
+				VK_PIPELINE_STAGE_TRANSFER_BIT, 
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 
+				0, 0, 0, 0, 0, 1, &barrier);
+		
+		if(mip_width  > 1) mip_width  /= 2;
+		if(mip_height > 1) mip_height /= 2;
+	}
+	
+	barrier.                srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.                dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	barrier.                    oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.                    newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.subresourceRange.baseMipLevel = mip_levels - 1;
+	
+	vkCmdPipelineBarrier(cmdbuf, 
+			VK_PIPELINE_STAGE_TRANSFER_BIT, 
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 
+			0, 0, 0, 0, 0, 1, &barrier);
+	
+	end_single_time_commands(cmdbuf);
+}
+
 //uses commands to copy a buffer to an image
 local void
 CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){DPZoneScoped;
@@ -835,6 +1028,26 @@ CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){DPZoneS
 		region.imageSubresource.layerCount     = 1;
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}EndSingleTimeCommands(commandBuffer);
+}
+
+local void
+copy_buffer_to_image(VkBuffer buffer, VkImage image, u32 width, u32 height) {
+	PrintVk(4, "Copying buffer to image");
+	VkCommandBuffer cmdbuf = begin_single_time_commands();
+
+	VkBufferImageCopy region{};
+	region.                   bufferOffset = 0;
+	region.                bufferRowLength = 0;
+	region.              bufferImageHeight = 0;
+	region.                    imageOffset = {0, 0, 0};
+	region.                    imageExtent = {width, height, 1};
+	region.    imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.      imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.    imageSubresource.layerCount = 1;
+	vkCmdCopyBufferToImage(cmdbuf, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+	end_single_time_commands(cmdbuf);
 }
 
 
@@ -3168,24 +3381,6 @@ render_init(){DPZoneScoped;
 
 //// ~~~ NEW BACKEND STUFF ~~~ ////
 
-u32
-find_memory_type(u32 type_filter, VkMemoryPropertyFlags properties) {
-	PrintVk(6, "Finding memory types");
-	Assert(physical_device != VK_NULL_HANDLE, "find_memory_type called before picking physical device");
-	VkPhysicalDeviceMemoryProperties mem_props;
-	vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_props);
-
-	forI(mem_props.memoryTypeCount) {
-		if((type_filter & (1 << i)) && HasAllFlags(mem_props.memoryTypes[i].propertyFlags, properties)){
-			return i;
-		}
-	}
-
-	LogE("vulkan", "failed to find suitable memory type");
-	Assert(0);
-	return 0;
-}
-
 void 
 create_or_resize_buffer(VkBuffer* buffer, 
 		                VkDeviceMemory* buffer_memory, 
@@ -3852,7 +4047,7 @@ create_layouts() {
 	set_layout_bindings[0].descriptorCount = 1;
 
 	descriptor_set_layout_info.bindingCount = 4;
-	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptorSetLayouts.base);
+	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptorSetLayouts.twod);
 	AssertVk(resultVk, "failed to create descriptor set layout");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod,
 							 "2D descriptor set layout");
@@ -4369,7 +4564,7 @@ render_update_descriptor_layout(RenderDescriptorLayout* x) {
 	}
 
 	resultVk = vkCreateDescriptorSetLayout(device, &info, allocator, (VkDescriptorSetLayout*)&x->handle);
-	Assert(resultVk);
+	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)x->handle,
 			(char*)to_dstr8v(deshi_temp_allocator, "descriptor set layout ", x->handle).str);
 }
@@ -4427,7 +4622,8 @@ render_descriptor_set_update(RenderDescriptorSet* x) {
 
 RenderPipelineLayout*
 render_create_pipeline_layout() {
-	auto out = memory_pool_push(__render_pool_descriptor_set_layout);
+	auto out = memory_pool_push(__render_pool_pipeline_layouts);
+	array_init(out->descriptor_layouts, 1, deshi_allocator);
 	array_init(out->push_constants, 1, deshi_allocator);
 	return out;
 }
@@ -4459,61 +4655,45 @@ render_create_base_pipeline_layout() {
 
 void
 render_update_pipeline_layout(RenderPipelineLayout* x) {
-	FixMe;
-//	PrintVk(2, "Updating descriptor set layout ", x->name);
-//
-//	Stopwatch watch = start_stopwatch();
-//	
-//	// destroy any possibly existing layout
-//	vkDestroyPipelineLayout(device, (VkPipelineLayout)x->handle, allocator);
-//
-//	u64 n_bindings = array_count(x->descriptors);
-//
-//	VkDescriptorSetLayoutBinding* bindings;
-//	array_init(bindings, n_bindings, deshi_temp_allocator);
-//	array_count(bindings) = n_bindings;
-//
-//	VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-//	descriptor_set_layout_info.pBindings = bindings;
-//	descriptor_set_layout_info.bindingCount = n_bindings;
-//
-//	forI(n_bindings) {
-//		bindings[i].descriptorType = render_descriptor_kind_to_vulkan(x->descriptors[i].kind);
-//		bindings[i].stageFlags = render_shader_kind_to_vulkan(x->descriptors[i].shader_stage_flags);
-//		bindings[i].binding = i;
-//		bindings[i].descriptorCount = 1;
-//	}
-//
-//	VkDescriptorSetLayout descriptor_set_layout;
-//	resultVk = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_info, allocator, &descriptor_set_layout);
-//	AssertVk(resultVk);
-//	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptor_set_layout, 
-//			(char*)to_dstr8v(deshi_temp_allocator, x->name, " descriptor set layout").str);
-//	
-//	u64 n_push_constants = array_count(x->push_constants);
-//
-//	VkPushConstantRange* ranges;
-//	array_init(ranges, n_push_constants, deshi_temp_allocator);
-//	array_count(ranges) = n_push_constants;
-//	
-//	forI(n_push_constants) {
-//		ranges[i].stageFlags = render_shader_kind_to_vulkan(x->push_constants[i].shader_stage_flags);
-//		ranges[i].offset = x->push_constants[i].offset;
-//		ranges[i].size = x->push_constants[i].size;
-//	}
-//
-//	VkPipelineLayoutCreateInfo pipeline_layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-//
-//	pipeline_layout_info.setLayoutCount = 1;
-//	pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
-//	pipeline_layout_info.pushConstantRangeCount = n_push_constants;
-//	pipeline_layout_info.pPushConstantRanges = ranges;
-//	resultVk = vkCreatePipelineLayout(device, &pipeline_layout_info, allocator, (VkPipelineLayout*)&x->handle);
-//	AssertVk(resultVk);
-//	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
-//			(char*)to_dstr8v(deshi_temp_allocator, x->name, " pipeline layout").str);
-//
-//	PrintVk(2, "Finished updating ", x->name, " layout in ", peek_stopwatch(watch), "ms");
+	PrintVk(2, "Updating pipeline layout ", x->name);
+
+	Stopwatch watch = start_stopwatch();
+
+	// destroy any possibly existing layout
+	vkDestroyPipelineLayout(device, (VkPipelineLayout)x->handle, allocator);
+
+	u64 n_layouts = array_count(x->descriptor_layouts);
+	u64 n_constants = array_count(x->push_constants);
+
+	VkDescriptorSetLayout* layouts;
+	array_init(layouts, n_layouts, deshi_temp_allocator);
+	array_count(layouts) = n_layouts;
+
+	forI(n_layouts) {
+		layouts[i] = (VkDescriptorSetLayout)x->descriptor_layouts[i]->handle;
+	}
+
+	VkPushConstantRange* ranges;
+	array_init(ranges, n_constants, deshi_temp_allocator);
+	array_count(ranges) = n_constants;
+
+	forI(n_constants) {
+		ranges[i].size = x->push_constants[i].size;
+		ranges[i].offset = x->push_constants[i].offset;
+		ranges[i].stageFlags = render_shader_kind_to_vulkan(x->push_constants[i].shader_stage_flags);
+	}
+
+	VkPipelineLayoutCreateInfo info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	info.        setLayoutCount = n_layouts;
+	info.           pSetLayouts = layouts;
+	info.pushConstantRangeCount = n_constants;
+	info.   pPushConstantRanges = ranges;
+	resultVk = vkCreatePipelineLayout(device, &info, allocator, (VkPipelineLayout*)&x->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
+			(char*)to_dstr8v(deshi_temp_allocator, x->name, " pipeline layout").str);
+
+	PrintVk(2, "Finished updating ", x->name, " layout in ", peek_stopwatch(watch), "ms");
 }
 
 // creates a pipeline and returns a handle to it
@@ -4524,6 +4704,8 @@ render_create_pipeline() {
 	auto rp = memory_pool_push(__render_pipeline_pool);
 	array_init(rp->shader_stages, 1, deshi_allocator);
 	array_init(rp->dynamic_states, 1, deshi_allocator);
+	array_init(rp->vertex_input_attributes, 1, deshi_allocator);
+	array_init(rp->vertex_input_bindings, 1, deshi_allocator);
 	return rp;
 }
 
@@ -4585,6 +4767,40 @@ render_blend_factor_to_vulkan(RenderBlendFactor x) {
 	Assert(0);
 }
 
+VkFormat
+render_format_to_vulkan(RenderFormat x) {
+	switch(x) {
+		case RenderFormat_R32G32_Signed_Float:                             return VK_FORMAT_R32G32_SFLOAT;
+		case RenderFormat_R32G32B32_Signed_Float:                          return VK_FORMAT_R32G32B32_SFLOAT;
+		case RenderFormat_R8G8B8A8_StandardRGB:                            return VK_FORMAT_R8G8B8A8_SRGB;
+		case RenderFormat_R8G8B8A8_UnsignedNormalized:                     return VK_FORMAT_R8G8B8A8_UNORM;
+		case RenderFormat_B8G8R8A8_UnsignedNormalized:                     return VK_FORMAT_B8G8R8A8_UNORM;
+		case RenderFormat_Depth16_UnsignedNoramlized:                      return VK_FORMAT_D16_UNORM;
+		case RenderFormat_Depth32_SignedFloat:                             return VK_FORMAT_D32_SFLOAT;
+		case RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt:        return VK_FORMAT_D32_SFLOAT_S8_UINT;
+		case RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt: return VK_FORMAT_D24_UNORM_S8_UINT;
+	}
+	Assert(0);
+	return (VkFormat)0;
+}
+
+RenderFormat
+vulkan_format_to_render(VkFormat x) {
+	switch(x) {
+		case VK_FORMAT_R32G32_SFLOAT:      return RenderFormat_R32G32_Signed_Float;
+		case VK_FORMAT_R32G32B32_SFLOAT:   return RenderFormat_R32G32B32_Signed_Float;
+		case VK_FORMAT_R8G8B8A8_SRGB:      return RenderFormat_R8G8B8A8_StandardRGB;
+		case VK_FORMAT_R8G8B8A8_UNORM:     return RenderFormat_R8G8B8A8_UnsignedNormalized;
+		case VK_FORMAT_B8G8R8A8_UNORM:     return RenderFormat_B8G8R8A8_UnsignedNormalized;
+		case VK_FORMAT_D16_UNORM:          return RenderFormat_Depth16_UnsignedNoramlized;
+		case VK_FORMAT_D32_SFLOAT:         return RenderFormat_Depth32_SignedFloat;
+		case VK_FORMAT_D32_SFLOAT_S8_UINT: return RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt;
+		case VK_FORMAT_D24_UNORM_S8_UINT:  return RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt;
+	}
+	Assert(0);
+	return (RenderFormat)0;
+}
+
 void
 render_update_pipeline(RenderPipeline* pipeline) {
 	PrintVk(2, "Updating ", pipeline->name, " pipeline");
@@ -4595,8 +4811,9 @@ render_update_pipeline(RenderPipeline* pipeline) {
 
 	VkPipelineShaderStageCreateInfo* shader_stages;
 	array_init(shader_stages, n_stages, deshi_temp_allocator);
+	array_count(shader_stages) = n_stages;
 	forI(n_stages) {
-		*array_push(shader_stages) = load_shader(
+		shader_stages[i] = load_shader(
 				pipeline->shader_stages[i].name, 
 				pipeline->shader_stages[i].source, 
 				render_shader_kind_to_vulkan(pipeline->shader_stages[i].kind));
@@ -4645,8 +4862,39 @@ render_update_pipeline(RenderPipeline* pipeline) {
 
     auto vs   = viewport_state;
     auto ms   = multisample_state;
+	ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 	// TODO(sushi) multisample settings
     auto vis  = vertex_input_state;
+
+	u64 n_bindings = array_count(pipeline->vertex_input_bindings);
+	u64 n_attributes = array_count(pipeline->vertex_input_attributes);
+	
+	VkVertexInputBindingDescription* vib;
+	array_init(vib, n_bindings, deshi_temp_allocator);
+	array_count(vib) = n_bindings;
+	
+	forI(n_bindings) {
+		vib[i].binding = pipeline->vertex_input_bindings[i].binding;
+		vib[i].stride = pipeline->vertex_input_bindings[i].stride;
+		vib[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	}
+
+	VkVertexInputAttributeDescription* via;
+	array_init(via, n_attributes, deshi_temp_allocator);
+	array_count(via) = n_attributes;
+
+	forI(n_attributes) {
+		via[i].binding = pipeline->vertex_input_attributes[i].binding;
+		via[i].location = pipeline->vertex_input_attributes[i].location;
+		via[i].offset = pipeline->vertex_input_attributes[i].offset;
+		via[i].format = render_format_to_vulkan(pipeline->vertex_input_attributes[i].format);
+	}
+
+	vis.vertexBindingDescriptionCount = n_bindings;
+	vis.pVertexBindingDescriptions = vib;
+	vis.vertexAttributeDescriptionCount = n_attributes;
+	vis.pVertexAttributeDescriptions = via;
+
     auto tvis = twod_vertex_input_state;
 
     auto ds = dynamic_state;
@@ -4678,9 +4926,10 @@ render_update_pipeline(RenderPipeline* pipeline) {
 	info.pColorBlendState    = &cbs;
 	info.pDynamicState       = &ds;
 	info.layout              = (VkPipelineLayout)pipeline->layout->handle;
+	info.renderPass          = (VkRenderPass)pipeline->render_pass->handle;
 
 	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, allocator, (VkPipeline*)&pipeline->handle);
-	Assert(resultVk);
+	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipeline->handle, 
 			(char*)to_dstr8v(deshi_temp_allocator, pipeline->name, " pipeline").str);
 
@@ -4705,7 +4954,7 @@ render_image_type_to_vulkan(RenderImageType x) {
 
 VkImageUsageFlags
 render_image_usage_to_vulkan(RenderImageUsage x) {
-	VkImageUsageFlags out;
+	VkImageUsageFlags out = 0;
 	if(HasFlag(x, RenderImageUsage_Transfer_Source)) AddFlag(out, VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	if(HasFlag(x, RenderImageUsage_Transfer_Destination)) AddFlag(out, VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	if(HasFlag(x, RenderImageUsage_Sampled)) AddFlag(out, VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -4717,7 +4966,7 @@ render_image_usage_to_vulkan(RenderImageUsage x) {
 
 VkSampleCountFlagBits
 render_sample_count_to_vulkan(RenderSampleCount x) {
-	VkSampleCountFlags out;
+	VkSampleCountFlags out = 0;
 	if(HasFlag(x, RenderSampleCount_1)) AddFlag(out, VK_SAMPLE_COUNT_1_BIT);
 	if(HasFlag(x, RenderSampleCount_2)) AddFlag(out, VK_SAMPLE_COUNT_2_BIT);
 	if(HasFlag(x, RenderSampleCount_4)) AddFlag(out, VK_SAMPLE_COUNT_4_BIT);
@@ -4728,34 +4977,10 @@ render_sample_count_to_vulkan(RenderSampleCount x) {
 	return (VkSampleCountFlagBits)out;
 }
 
-VkFormat
-render_format_to_vulkan(RenderFormat x) {
-	switch(x) {
-		case RenderFormat_R8G8B8A8_StandardRGB:                            return VK_FORMAT_R8G8B8A8_SRGB;
-		case RenderFormat_B8G8R8A8_UnsignedNormalized:                     return VK_FORMAT_B8G8R8A8_UNORM;
-		case RenderFormat_Depth16_UnsignedNoramlized:                      return VK_FORMAT_D16_UNORM;
-		case RenderFormat_Depth32_SignedFloat:                             return VK_FORMAT_D32_SFLOAT;
-		case RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt:        return VK_FORMAT_D32_SFLOAT_S8_UINT;
-		case RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt: return VK_FORMAT_D24_UNORM_S8_UINT;
-	}
-	Assert(0);
-	return (VkFormat)0;
-}
 
 
-RenderFormat
-vulkan_format_to_render(VkFormat x) {
-	switch(x) {
-		case VK_FORMAT_R8G8B8A8_SRGB:        return RenderFormat_R8G8B8A8_StandardRGB;
-		case VK_FORMAT_B8G8R8A8_UNORM:       return RenderFormat_B8G8R8A8_UnsignedNormalized;
-		case VK_FORMAT_D16_UNORM:          return RenderFormat_Depth16_UnsignedNoramlized;
-		case VK_FORMAT_D32_SFLOAT:         return RenderFormat_Depth32_SignedFloat;
-		case VK_FORMAT_D32_SFLOAT_S8_UINT: return RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt;
-		case VK_FORMAT_D24_UNORM_S8_UINT:  return RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt;
-	}
-	Assert(0);
-	return (RenderFormat)0;
-}
+
+
 
 VkMemoryPropertyFlags
 render_memory_properties_to_vulkan(RenderMemoryPropertyFlags x) {
@@ -4799,7 +5024,7 @@ render_create_image_view() {
 
 VkImageAspectFlags
 render_image_view_aspect_to_vulkan(RenderImageViewAspectFlags x) {
-	VkImageAspectFlags out;
+	VkImageAspectFlags out = 0;
 	if(HasFlag(x, RenderImageViewAspectFlags_Color)) AddFlag(out, VK_IMAGE_ASPECT_COLOR_BIT);
 	if(HasFlag(x, RenderImageViewAspectFlags_Depth)) AddFlag(out, VK_IMAGE_ASPECT_DEPTH_BIT);
 	if(HasFlag(x, RenderImageViewAspectFlags_Stencil)) AddFlag(out, VK_IMAGE_ASPECT_STENCIL_BIT);
@@ -5025,6 +5250,11 @@ render_execute_render_pass(RenderPass* x, Window* win) {
 
 }
 
+RenderPass*
+render_pass_of_window(Window* window) {
+	return ((VkWindowInfo*)window->render_info)->window_frame->renderpass;
+}
+
 RenderFrame*
 render_frame_create(Window* window) {
 	auto out = memory_pool_push(__render_pool_frames);
@@ -5100,6 +5330,12 @@ render_update_window_frame(Window* window, RenderFrame* frame) {
 	Assert(frame->color_image);
 
 
+}
+
+
+RenderFrame* 
+render_present_frame_of_window(Window* window) {
+	return ((VkWindowInfo*)window->render_info)->window_frame;
 }
 
 void
@@ -5200,6 +5436,13 @@ create_swapchain(Window* window) {
 			} break;
 		}
 	}
+
+	// TODO(sushi) see if there's something I'm missing when it comes to 
+	//             minImageCount with immediate mode presentation.
+	//             Before the rewrite we seemed to have believed that we could just use
+	//             one image, but we actually have to determine this from the surface's reported
+	//             capabilities.
+	wininf->min_image_count = Max(wininf->min_image_count, capabilities.minImageCount);
 
 	u32 queue_family_indices[2] = {
 		physical_queue_families.graphics_family,
@@ -5392,6 +5635,9 @@ create_render_pass_and_frame(Window* window) {
 	wininf->window_frame = render_frame_create(window);
 	wininf->window_frame->renderpass = render_create_render_pass();
 
+	wininf->window_frame->renderpass->debug_name = str8l("Default render pass");
+	wininf->window_frame->renderpass->debug_color = Color_DarkCyan;
+		
 	RenderPassAttachment color_attachment;
 	color_attachment.          format = vulkan_format_to_render(wininf->surface_format.format);
 	color_attachment.         load_op = RenderAttachmentLoadOp_Dont_Care;
@@ -5424,12 +5670,13 @@ create_render_pass_and_frame(Window* window) {
 	// the color image already exists on the swapchain so we just retrieve it from there
 	// note that currently we assume that we only have one frame and that is enforced 
 	// here until we decide to support multiple frames later on
-	Assert(wininf->min_image_count == 1);	
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	Assert(wininf->image_count == 1);
-	VkImage image;
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
-	
+	wininf->image_count = 1;
+	VkImage image = 0;
+	resultVk = vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
+	if(resultVk != VK_SUCCESS && resultVk != VK_INCOMPLETE) {
+		Assert(0);
+	}
+
 	color_image->handle = (void*)image;
 
 	depth_image->           format = vulkan_format_to_render(find_depth_format());
@@ -5469,7 +5716,7 @@ create_render_pass_and_frame(Window* window) {
 	cmdbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	cmdbuf_info.commandBufferCount = 1;
 	resultVk = vkAllocateCommandBuffers(device, &cmdbuf_info, (VkCommandBuffer*)&wininf->window_frame->command_buffer_handle);
-	Assert(resultVk);
+	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)wininf->window_frame->command_buffer_handle,
 			(char*)to_dstr8v(deshi_temp_allocator, "Default command buffer").str);
 
@@ -5614,6 +5861,8 @@ render_init_x(Window* window) {
 	memory_pool_init(__render_pool_render_passes, 8);
 	memory_pool_init(__render_pool_descriptor_sets, 8);
 	memory_pool_init(__render_pool_descriptor_layouts, 8);
+	memory_pool_init(__render_pool_pipeline_layouts, 8);
+	memory_pool_init(__render_pipeline_pool, 8);
 
 	if(window) {
 		// create the window info that this window will point to
@@ -5649,7 +5898,7 @@ render_init_x(Window* window) {
 	create_command_pool();
 	// create_uniform_buffers();
 	setup_shader_compiler();
-	// create_layouts();
+	create_layouts();
 	create_descriptor_pool();
 	
 	create_swapchain(window);
@@ -5669,6 +5918,7 @@ render_init_x(Window* window) {
 	initialized = true;
 
 	Log("vulkan", "Finished initialization in ",peek_stopwatch(watch), "ms");
+	deshiStage |= DS_RENDER;
 }
 
 void
@@ -5676,40 +5926,7 @@ setup_commands() {
 
 }
 
-void 
-render_update_x(Window* window) {
-	Stopwatch watch = start_stopwatch();
-	auto wininf = (VkWindowInfo*)window->render_info;
 
-	if(window->resized || remakeWindow) {
-		wininf->width = window->width;
-		wininf->height = window->height;
-		if(wininf->width <= 0 || wininf->height <= 0) return;
-		vkDeviceWaitIdle(device);
-		create_swapchain(window);
-		create_render_pass_and_frame(window);
-		wininf->frame_index = 0;
-		remakeWindow = false;
-	}
-
-	renderStats = {};
-
-	u32 image_index = 0;
-	VkResult result = vkAcquireNextImageKHR(device, wininf->swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &image_index);
-	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
-		// the surface has changed in some way that makes it no longer compatible with its swapchain
-		// so we need to recreate the swapchain
-		remakeWindow = true;
-		return;
-	} else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		Assert(!"failed to acquire swapchain image");
-	}
-	
-	update_uniform_buffers();
-	setup_commands();
-	
-	
-}
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -5833,9 +6050,159 @@ render_update(){DPZoneScoped;
 	DeshTime->renderTime = peek_stopwatch(update_stopwatch);
 }
 
-void
-render_update_nu(RenderSwapchain* swapchain) {
+void 
+render_update_x(Window* window) {
+	Stopwatch watch = start_stopwatch();
+	auto wininf = (VkWindowInfo*)window->render_info;
+
+	if(window->resized || remakeWindow) {
+		wininf->width = window->width;
+		wininf->height = window->height;
+		if(wininf->width <= 0 || wininf->height <= 0) return;
+		vkDeviceWaitIdle(device);
+		create_swapchain(window);
+		create_render_pass_and_frame(window);
+		wininf->frame_index = 0;
+		remakeWindow = false;
+	}
+
+	renderStats = {};
+
+	u32 image_index = 0;
+	VkResult result = vkAcquireNextImageKHR(device, wininf->swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &image_index);
+	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+		// the surface has changed in some way that makes it no longer compatible with its swapchain
+		// so we need to recreate the swapchain
+		remakeWindow = true;
+		return;
+	} else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		Assert(!"failed to acquire swapchain image");
+	}
 	
+
+	//// build commands ////
+	
+	VkClearValue clear_value;
+	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+	VkRenderPassBeginInfo render_pass_info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+	VkViewport viewport{};
+	VkRect2D scissor{};
+
+	auto cmdbuf = (VkCommandBuffer)wininf->window_frame->command_buffer_handle;
+	resultVk = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
+	AssertVk(resultVk);
+
+	clear_value.color = {0, 0, 0, 0};
+
+	render_pass_info.renderPass = (VkRenderPass)wininf->window_frame->renderpass->handle;
+	render_pass_info.framebuffer = (VkFramebuffer)wininf->window_frame->handle;
+	render_pass_info.clearValueCount = 1;
+	render_pass_info.pClearValues = &clear_value;
+	render_pass_info.renderArea.offset = {0,0};
+	render_pass_info.renderArea.extent = wininf->extent;
+
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = wininf->extent.width;
+	viewport.height = wininf->extent.height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = wininf->width;
+	scissor.extent.height = wininf->height;
+	
+	RenderPass* render_pass = wininf->window_frame->renderpass;
+
+	DebugBeginLabelVk(cmdbuf, (char*)render_pass->debug_name.str, {render_pass->debug_color.r/255.f, render_pass->debug_color.g/255.f, render_pass->debug_color.b/255.f, render_pass->debug_color.a/255.f});
+	vkCmdBeginRenderPass(cmdbuf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdSetScissor(cmdbuf, 0, 1, &scissor);
+	vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
+
+	RenderPipeline* currently_bound_pipeline = 0;
+
+	forI(array_count(wininf->window_frame->commands)) {
+		auto cmd = wininf->window_frame->commands[i];
+		switch(cmd.type) {
+			case RenderCommandType_Bind_Pipeline: {
+				currently_bound_pipeline = cmd.bind_pipeline.handle;
+				vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)cmd.bind_pipeline.handle->handle);
+			} break;
+			case RenderCommandType_Bind_Vertex_Buffer: {
+				VkDeviceSize offsets[1] = {0};
+				vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&cmd.bind_vertex_buffer.handle->buffer_handle, offsets);
+			} break;
+			case RenderCommandType_Bind_Index_Buffer: {
+				vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)cmd.bind_index_buffer.handle->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
+			} break;
+			case RenderCommandType_Bind_Descriptor_Set: {
+				vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)currently_bound_pipeline->layout->handle, 0, 1, (VkDescriptorSet*)&cmd.bind_descriptor_set.handle->handle, 0, 0);
+			} break;
+			case RenderCommandType_Push_Constant: {
+				vkCmdPushConstants(cmdbuf, 
+						(VkPipelineLayout)currently_bound_pipeline->layout->handle, 
+						render_shader_kind_to_vulkan(cmd.push_constant.info.shader_stage_flags),
+						cmd.push_constant.info.offset, cmd.push_constant.info.size, cmd.push_constant.data);
+			} break;
+			case RenderCommandType_Draw_Indexed: {
+				vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
+			} break;
+		}
+	}
+	
+	vkCmdEndRenderPass(cmdbuf);
+	DebugEndLabelVk(cmdbuf);
+	resultVk = vkEndCommandBuffer(cmdbuf);
+	AssertVk(resultVk);
+
+	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+	submit_info.waitSemaphoreCount = 1;
+	submit_info.pWaitSemaphores = &imageAcquiredSemaphore;
+	submit_info.pWaitDstStageMask = &wait_stage;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = (VkCommandBuffer*)&wininf->window_frame->command_buffer_handle;
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = &renderCompleteSemaphore;
+	resultVk = vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
+	AssertVk(resultVk);
+
+	if(remakeWindow) return;
+
+	VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores = &renderCompleteSemaphore;
+	present_info.swapchainCount = 1;
+	present_info.pSwapchains = (VkSwapchainKHR*)&wininf->swapchain;
+	present_info.pImageIndices = &image_index;
+	present_info.pResults = 0;
+	result = vkQueuePresentKHR(presentQueue, &present_info);
+	
+	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {
+		vkDeviceWaitIdle(device);
+		create_swapchain(window);
+		create_render_pass_and_frame(window);
+		remakeWindow = false;
+	} else if(result != VK_SUCCESS) {
+		Assert(0);
+	}
+
+	result = vkQueueWaitIdle(graphicsQueue);
+	switch (result){
+		case VK_ERROR_OUT_OF_HOST_MEMORY:   LogE("vulkan", "OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY: LogE("vulkan", "OUT_OF_DEVICE_MEMORY"); Assert(!"GPU ran out of memory"); break;
+		case VK_ERROR_DEVICE_LOST:          LogE("vulkan", "DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
+		case VK_SUCCESS:default: break;
+	}
+
+	//update renderStats
+	renderStats.drawnTriangles += renderStats.drawnIndices / 3;
+	//renderStats.totalVertices  += (u32)vertexBuffer.size() + renderTwodVertexCount + renderTempWireframeVertexCount;
+	//renderStats.totalIndices   += (u32)indexBuffer.size()  + renderTwodIndexCount  + renderTempWireframeIndexCount; //!Incomplete
+	renderStats.totalTriangles += renderStats.totalIndices / 3;
+	renderStats.renderTimeMS = peek_stopwatch(watch);
+
+	DeshTime->renderTime = peek_stopwatch(watch);
 }
 
 
@@ -5934,7 +6301,7 @@ render_load_mesh(Mesh* mesh){DPZoneScoped;
 
 void
 render_load_texture(Texture* texture){DPZoneScoped;
-	AssertRS(RSVK_COMMANDPOOL, "LoadTexture called before CreateCommandPool");
+	// AssertRS(RSVK_COMMANDPOOL, "LoadTexture called before CreateCommandPool");
 	TextureVk tvk{};
 	tvk.base = texture;
 	tvk.size = texture->width * texture->height * 4;
@@ -5965,7 +6332,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	
 	//copy the image pixels to a staging buffer
 	BufferVk staging{};
-	CreateAndMapBuffer(staging.buffer, staging.memory, tvk.size, (size_t)tvk.size, texture->pixels,
+	create_and_map_buffer(&staging.buffer, &staging.memory, &tvk.size, (size_t)tvk.size, texture->pixels,
 					   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	//create the texture image
@@ -5985,12 +6352,12 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	vkGetImageMemoryRequirements(device, tvk.image, &memRequirements);
 	VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	allocInfo.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	resultVk = vkAllocateMemory(device, &allocInfo, allocator, &tvk.memory); AssertVk(resultVk, "failed to allocate image memory");
 	vkBindImageMemory(device, tvk.image, tvk.memory, 0);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, (const char*)to_dstr8v(deshi_temp_allocator, "Texture image ", texture->name).str);
 	
-	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
+	VkCommandBuffer commandBuffer = begin_single_time_commands();{
 		//transition image layout to accept memory transfers
 		VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
 		barrier.srcAccessMask       = 0;
@@ -6020,14 +6387,14 @@ render_load_texture(Texture* texture){DPZoneScoped;
 		region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 		region.imageSubresource.layerCount     = 1; //NOTE(delle) use image flags here?
 		vkCmdCopyBufferToImage(commandBuffer, staging.buffer, tvk.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-	}EndSingleTimeCommands(commandBuffer);
+	}end_single_time_commands(commandBuffer);
 	
 	//cleanup staging memory
 	vkDestroyBuffer(device, staging.buffer, allocator);
 	vkFreeMemory(device, staging.memory, allocator);
 	
 	//generate texture mipmaps (image layout set to SHADER_READ_ONLY in GenerateMipmaps)
-	GenerateMipmaps(tvk.image, image_format, texture->width, texture->height, texture->mipmaps);
+	generate_mipmaps(tvk.image, image_format, texture->width, texture->height, texture->mipmaps);
 	
 	//create texture imageview
 	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -6139,7 +6506,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 //TODO(delle) this currently requires 4 textures, fix that
 void
 render_load_material(Material* material){DPZoneScoped;
-	AssertRS(RSVK_DESCRIPTORPOOL, "LoadMaterial called before CreateDescriptorPool");
+	//AssertRS(RSVK_DESCRIPTORPOOL, "LoadMaterial called before CreateDescriptorPool");
 	MaterialVk mvk{};
 	mvk.base     = material;
 	mvk.pipeline = GetPipelineFromShader(material->shader);
@@ -6264,24 +6631,24 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 }
 
 void
-render_model_x(RenderPass* pass, Model* model, mat4* matrix) {
+render_model_x(RenderFrame* frame, Model* model, mat4* matrix) {
 	RenderCommand c0{RenderCommandType_Bind_Pipeline};
 	forI(arrlenu(model->batch_array)) {
 		auto ba = model->batch_array[i];
 		if(!ba.index_offset) continue;
-		auto c0 = array_push(pass->commands);
+		auto c0 = array_push(frame->commands);
 		c0->type = RenderCommandType_Bind_Pipeline;
 		c0->bind_pipeline.handle = ba.material->pipeline;
-		auto c1 = array_push(pass->commands);
+		auto c1 = array_push(frame->commands);
 		c1->type = RenderCommandType_Bind_Vertex_Buffer;
 		c1->bind_vertex_buffer.handle = model->mesh->vertex_buffer;
-		auto c2 = array_push(pass->commands);
+		auto c2 = array_push(frame->commands);
 		c2->type = RenderCommandType_Bind_Index_Buffer;
 		c2->bind_index_buffer.handle = model->mesh->index_buffer;
-		auto c3 = array_push(pass->commands);
+		auto c3 = array_push(frame->commands);
 		c3->type = RenderCommandType_Bind_Descriptor_Set;
 		c3->bind_descriptor_set.handle = ba.material->descriptor_set;
-		auto c4 = array_push(pass->commands);
+		auto c4 = array_push(frame->commands);
 		c4->type = RenderCommandType_Draw_Indexed;
 		c4->draw_indexed.index_offset = ba.index_offset;
 		c4->draw_indexed.index_count = ba.index_count;
@@ -6397,7 +6764,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 		//alloc and bind to the buffer
 		VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 		alloc_info.allocationSize  = requirements.size;
-		alloc_info.memoryTypeIndex = FindMemoryType(requirements.memoryTypeBits, property_flags);
+		alloc_info.memoryTypeIndex = find_memory_type(requirements.memoryTypeBits, property_flags);
 		resultVk = vkAllocateMemory(device, &alloc_info, allocator, (VkDeviceMemory*)&result->memory_handle); AssertVk(resultVk);
 		resultVk = vkBindBufferMemory(device, (VkBuffer)result->buffer_handle, (VkDeviceMemory)result->memory_handle, 0); AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)result->memory_handle, (const char*)to_dstr8v(deshi_temp_allocator, "Render Buffer(",memory_pool_count(deshi__render_buffer_pool)-1,") Memory").str);
@@ -6424,7 +6791,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 			vkGetBufferMemoryRequirements(device, staging_buffer_handle, &staging_memory_requirements);
 			VkMemoryAllocateInfo staging_memory_alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 			staging_memory_alloc_info.allocationSize  = staging_memory_requirements.size;
-			staging_memory_alloc_info.memoryTypeIndex = FindMemoryType(staging_memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			staging_memory_alloc_info.memoryTypeIndex = find_memory_type(staging_memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 			resultVk = vkAllocateMemory(device, &staging_memory_alloc_info, allocator, &staging_memory_handle); AssertVk(resultVk);
 			resultVk = vkBindBufferMemory(device, staging_buffer_handle, staging_memory_handle, 0); AssertVk(resultVk);
 			
@@ -6435,7 +6802,7 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 			vkUnmapMemory(device, staging_memory_handle);
 			
 			//copy from the staging buffer to the device-only buffer
-			CopyBuffer(staging_buffer_handle, (VkBuffer)result->buffer_handle, size);
+			copy_buffer(staging_buffer_handle, (VkBuffer)result->buffer_handle, size);
 			
 			//clean up the staging buffer
 			vkDestroyBuffer(device, staging_buffer_handle, allocator);

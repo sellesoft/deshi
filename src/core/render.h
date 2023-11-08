@@ -208,6 +208,7 @@ enum RenderDescriptorKind {
 struct RenderImageView;
 struct RenderSampler;
 struct RenderBuffer;
+struct RenderPass;
 
 typedef struct RenderDescriptor {
 	RenderDescriptorKind kind;
@@ -260,14 +261,14 @@ typedef struct RenderPushConstant {
 typedef struct RenderPipelineLayout {
 	str8 name; // name used for debugging
 
-	RenderDescriptorLayout* descriptor_layout;
+	RenderDescriptorLayout** descriptor_layouts;
 	RenderPushConstant* push_constants;
 	
 	// handle to backend's represenatation of descriptor set layouts
 	void* handle;
 } RenderPipelineLayout;
 
-global RenderPipelineLayout* __render_pool_descriptor_set_layout;
+global RenderPipelineLayout* __render_pool_pipeline_layouts;
 
 RenderPipelineLayout* render_create_pipeline_layout();
 RenderPipelineLayout* render_create_base_pipeline_layout();
@@ -283,17 +284,16 @@ typedef struct RenderShader {
 // collection of image formats that deshi's renderer supports
 // TODO(sushi) more formats	
 enum RenderFormat {
-	// four components, 8 bits for red, green, blue and alpha, encoded in standard rgb format
+	RenderFormat_R32G32_Signed_Float,
+	RenderFormat_R32G32B32_Signed_Float,
 	RenderFormat_R8G8B8A8_StandardRGB,
-	// four components, 8 bits for blue, green, red and alpha, unsigned normalized integer depth format
+	RenderFormat_R8G8B8A8_UnsignedNormalized,
 	RenderFormat_B8G8R8A8_UnsignedNormalized,
 	// one component, a 16 bit unsigned normalized integer depth component
 	RenderFormat_Depth16_UnsignedNoramlized,
-	// one component, 32 bit signed floating point format with 32 bits in the depth component
 	RenderFormat_Depth32_SignedFloat,
 	// two components, a 32 bit floating point depth component and 8 bit unsigned int stencil component
 	RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt,
-	// two components, a 24 bit unsigned normalized integer depth component and 8 bit unsigned int stencil component
 	RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt,
 
 };
@@ -383,6 +383,18 @@ enum RenderDynamicState {
 	RenderDynamicState_Depth_Bounds,
 };
 
+typedef struct RenderVertexInputBindingDescription {
+	u32 binding;
+	u32 stride; // number of bytes between one entry and the next (aka the vertex's size)
+} RenderVertexInputBindingDescription;
+
+typedef struct RenderVertexInputAttributeDescription {
+	u32 location;
+	u32 binding;
+	RenderFormat format;
+	u32 offset;
+} RenderVertexInputAttributeDescription;
+
 typedef struct RenderPipeline {
 	str8 name;
 	// kigu array of shaders 
@@ -433,9 +445,14 @@ typedef struct RenderPipeline {
 	color blend_constant;
 	// TODO(sushi) logical ops for color blending if it ever seems useful
 	
+	RenderVertexInputBindingDescription* vertex_input_bindings;
+	RenderVertexInputAttributeDescription* vertex_input_attributes;
+
 	RenderDynamicState* dynamic_states;
 	// pointer to a RenderPipelineLayout object retrieved from render
 	RenderPipelineLayout* layout;	
+
+	RenderPass* render_pass;
 	
 	// handle the to backend's representation of a pipeline
 	void* handle;
@@ -841,6 +858,8 @@ void render_update_render_pass(RenderPass* x);
 // NOTE(sushi) temp for testing 
 void render_execute_render_pass(RenderPass* x, Window* win);
 
+RenderPass* render_pass_of_window(Window* window);
+
 // representation of a framebuffer
 typedef struct RenderFrame {
 	// render pass describing how this frame behaves
@@ -875,11 +894,10 @@ void render_frame_update(RenderFrame* x);
 
 global RenderFrame* __render_pool_frames;
 
-RenderImageView*
-render_get_window_color_image_view(Window* window);
+RenderImageView* render_get_window_color_image_view(Window* window);
+void render_update_window_frame(Window* window, RenderFrame* frame);
 
-void
-render_update_window_frame(Window* window, RenderFrame* frame);
+RenderFrame* render_present_frame_of_window(Window* window);
 
 // interface for swapchains, which to us will likely just be a collection of framebuffers 
 // there's no such thing as a swapchain in opengl, but you can define multiple 
@@ -932,6 +950,8 @@ void render_init_x(Window* window);
 //Updates the `Render` module
 void render_update();
 
+void render_update_x(Window* window);
+
 //Resets the `Render` module
 void render_reset();
 
@@ -978,6 +998,9 @@ void render_set_active_surface_idx(u32 idx);
 void render_load_mesh(Mesh* mesh);
 
 //Loads the `texture` pixels to the GPU and stores info to the backend for rendering
+// NOTE(sushi) currently this uses the internal twod descriptor layout which is good
+//             for textures but we'll need to see if there are any reasons for allowing
+//             a user defined descriptor set 
 void render_load_texture(Texture* texture);
 
 //Loads the `material` info to the backend for rendering
@@ -1001,7 +1024,7 @@ void render_update_material(Material* material);
 //Renders the `model` with the transform `matrix`
 void render_model(Model* model, mat4* matrix);
 
-void render_model_x(RenderPass* pass, Model* model, mat4* matrix);
+void render_model_x(RenderFrame* frame, Model* model, mat4* matrix);
 
 //Renders the a wireframe of `model` with the transform `matrix`
 void render_model_wireframe(Model* model, mat4* matrix, color c);
