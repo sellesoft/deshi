@@ -198,6 +198,20 @@ enum RenderShaderKind {
 	// add more stages as we come across uses for them
 };
 
+// This determines how an image is laid out in memory on the gpu.
+// Throughout the rendering process a GPU will shuffle the data of a image
+// around in order to optimize usages of it. Exactly how it does this is 
+// implementation specific but we can hint at (at least in Vulkan) the way
+// that an image will be used by telling the GPU what layout we'd like the 
+// image to be at at certain points.
+enum RenderImageLayout {
+	RenderImageLayout_Undefined,
+	RenderImageLayout_General,
+	RenderImageLayout_Color_Attachment_Optional,
+	RenderImageLayout_Depth_Stencil_Attachment_Optional,
+	RenderImageLayout_Present,
+};
+
 enum RenderDescriptorKind {
 	RenderDescriptorKind_Combined_Image_Sampler,
 	RenderDescriptorKind_Uniform_Buffer,
@@ -218,6 +232,7 @@ typedef struct RenderDescriptor {
 		struct {
 			RenderImageView* view;
 			RenderSampler* sampler;
+			RenderImageLayout layout;
 		} image;
 
 		struct {
@@ -734,6 +749,8 @@ typedef struct RenderSampler {
 	color border_color;
 
 	u64 mipmaps;
+
+	void* handle;
 } RenderSampler;
 
 RenderSampler* render_create_sampler();
@@ -768,19 +785,7 @@ enum RenderAttachmentLoadOp {
 	RenderAttachmentLoadOp_Dont_Care,
 };
 
-// This determines how an image is laid out in memory on the gpu.
-// Throughout the rendering process a GPU will shuffle the data of a image
-// around in order to optimize usages of it. Exactly how it does this is 
-// implementation specific but we can hint at (at least in Vulkan) the way
-// that an image will be used by telling the GPU what layout we'd like the 
-// image to be at at certain points.
-enum RenderImageLayout {
-	RenderImageLayout_Undefined,
-	RenderImageLayout_General,
-	RenderImageLayout_Color_Attachment_Optional,
-	RenderImageLayout_Depth_Stencil_Attachment_Optional,
-	RenderImageLayout_Present,
-};
+
 
 enum RenderPassAttachmentType {
 	RenderPassAttachmentType_
@@ -858,12 +863,12 @@ void render_update_render_pass(RenderPass* x);
 // NOTE(sushi) temp for testing 
 void render_execute_render_pass(RenderPass* x, Window* win);
 
-RenderPass* render_pass_of_window(Window* window);
+RenderPass* render_pass_of_window_presentation_frame(Window* window);
 
 // representation of a framebuffer
 typedef struct RenderFrame {
 	// render pass describing how this frame behaves
-	RenderPass* renderpass;
+	RenderPass* render_pass;
 
 	u32 width;
 	u32 height;
@@ -876,15 +881,15 @@ typedef struct RenderFrame {
 	// NOTE(sushi) these are filled out by the renderer
 	//             they should not be setup by the user
 	//             but are here so that if a later
-	//             renderpass need to refernece an image
+	//             renderpass needs to refernece an image
 	//             from a previous renderpass, they can just 
 	//             grab these pointers
 	//             Vulkan has no way of querying an object for
 	//             the properties it was created with
 	//             so we can't replace these with something
 	//             that generates the information from opaque pointers
-	RenderImageView* color_image;
-	RenderImageView* depth_image;
+	RenderImageView* color_image_view;
+	RenderImageView* depth_image_view;
 	void* handle;
 	void* command_buffer_handle;
 } RenderFrame;
@@ -897,7 +902,7 @@ global RenderFrame* __render_pool_frames;
 RenderImageView* render_get_window_color_image_view(Window* window);
 void render_update_window_frame(Window* window, RenderFrame* frame);
 
-RenderFrame* render_present_frame_of_window(Window* window);
+RenderFrame* render_current_present_frame_of_window(Window* window);
 
 // interface for swapchains, which to us will likely just be a collection of framebuffers 
 // there's no such thing as a swapchain in opengl, but you can define multiple 

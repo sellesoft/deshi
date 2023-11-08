@@ -218,7 +218,7 @@ struct VkWindowInfo {
 	FrameVk*                 frames;
 	FramebufferAttachmentsVk attachments;
 	
-	RenderFrame* window_frame;
+	RenderFrame** frames_x;
 };
 
 #define WindowFromVkSwapchain(ptr) CastFromMember(Window, render_info, ptr)
@@ -4600,6 +4600,18 @@ render_descriptor_set_create() {
 	return out;
 }
 
+VkImageLayout
+render_image_layout_to_vulkan(RenderImageLayout x) {
+	switch(x) {
+		case RenderImageLayout_Undefined: return VK_IMAGE_LAYOUT_UNDEFINED;
+		case RenderImageLayout_General: return VK_IMAGE_LAYOUT_GENERAL;
+		case RenderImageLayout_Color_Attachment_Optional: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case RenderImageLayout_Depth_Stencil_Attachment_Optional: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case RenderImageLayout_Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
+	Assert(0);
+}
+
 void
 render_descriptor_set_update(RenderDescriptorSet* x) {
 	PrintVk(4, "Updating descriptor set");
@@ -4614,10 +4626,54 @@ render_descriptor_set_update(RenderDescriptorSet* x) {
 		layouts[i] = (VkDescriptorSetLayout)x->layouts[i]->handle;
 	}
 
+	
 	VkDescriptorSetAllocateInfo alloc_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 	alloc_info.descriptorPool = descriptorPool;
 	alloc_info.pSetLayouts = layouts;
 	alloc_info.descriptorSetCount = 1;
+
+	resultVk = vkAllocateDescriptorSets(device, &alloc_info, (VkDescriptorSet*)&x->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)x->handle, 
+			(char*)to_dstr8v(deshi_temp_allocator, "Descriptor set (", (void*)x, ")").str);
+	
+	VkWriteDescriptorSet* writes;
+	array_init(writes, 1, deshi_temp_allocator);
+	VkDescriptorBufferInfo* buffer_infos;
+	array_init(buffer_infos, 1, deshi_temp_allocator);
+	VkDescriptorImageInfo* image_infos;
+	array_init(image_infos, 1, deshi_temp_allocator);
+
+	forI(n_layouts) {
+		forX(j, array_count(x->layouts[i]->descriptors)) {
+			auto d = x->layouts[i]->descriptors[i];
+        	auto w = array_push(writes);
+			w->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			w->dstSet = (VkDescriptorSet)x->handle;
+			w->dstBinding = i;
+			w->descriptorCount = 1;
+			switch(d.kind) {
+				case RenderDescriptorKind_Uniform_Buffer: {
+					auto x = array_push(buffer_infos);
+					x->buffer = (VkBuffer)d.buffer.handle->buffer_handle;
+					x->range  = d.buffer.range;
+					x->offset = d.buffer.offset;
+					w->pBufferInfo = x;
+					w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				} break;
+				case RenderDescriptorKind_Combined_Image_Sampler: {
+					auto x = array_push(image_infos);
+					x->sampler = (VkSampler)d.image.sampler->handle;
+					x->imageView = (VkImageView)d.image.view;
+					x->imageLayout = render_image_layout_to_vulkan(d.image.layout);
+					w->pImageInfo = x;
+					w->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				} break;
+			}
+		}
+	}
+
+	vkUpdateDescriptorSets(device, array_count(writes), writes, 0, 0);
 }
 
 RenderPipelineLayout*
@@ -5071,17 +5127,7 @@ render_store_op_to_vulkan(RenderAttachmentStoreOp x) {
 	Assert(0);
 }
 
-VkImageLayout
-render_image_layout_to_vulkan(RenderImageLayout x) {
-	switch(x) {
-		case RenderImageLayout_Undefined: return VK_IMAGE_LAYOUT_UNDEFINED;
-		case RenderImageLayout_General: return VK_IMAGE_LAYOUT_GENERAL;
-		case RenderImageLayout_Color_Attachment_Optional: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		case RenderImageLayout_Depth_Stencil_Attachment_Optional: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		case RenderImageLayout_Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	}
-	Assert(0);
-}
+
 
 
 void 
@@ -5251,8 +5297,8 @@ render_execute_render_pass(RenderPass* x, Window* win) {
 }
 
 RenderPass*
-render_pass_of_window(Window* window) {
-	return ((VkWindowInfo*)window->render_info)->window_frame->renderpass;
+render_pass_of_window_presentation_frame(Window* window) {
+	return ((VkWindowInfo*)window->render_info)->frames_x[0]->render_pass;
 }
 
 RenderFrame*
@@ -5265,21 +5311,21 @@ render_frame_create(Window* window) {
 
 void
 render_frame_update(RenderFrame* x) {
-	Assert(x->renderpass, "A framebuffer needs a renderpass");
+	Assert(x->render_pass, "A framebuffer needs a renderpass");
 	
 	PrintVk(4, "Updating frame");
 
 	VkImageView* attachments;
 	array_init(attachments, 1, deshi_temp_allocator);
 
-	if(x->renderpass->color_attachment)
-		array_push_value(attachments, (VkImageView)x->color_image->handle);
+	if(x->render_pass->color_attachment)
+		array_push_value(attachments, (VkImageView)x->color_image_view->handle);
 	
-	if(x->renderpass->depth_attachment) 
-		array_push_value(attachments, (VkImageView)x->depth_image->handle);
+	if(x->render_pass->depth_attachment) 
+		array_push_value(attachments, (VkImageView)x->depth_image_view->handle);
 	
 	VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
-	info.     renderPass = (VkRenderPass)x->renderpass->handle;
+	info.     renderPass = (VkRenderPass)x->render_pass->handle;
 	info.attachmentCount = array_count(attachments);
 	info.   pAttachments = attachments;
 	info.          width = x->width;
@@ -5327,15 +5373,16 @@ render_update_window_frame(Window* window, RenderFrame* frame) {
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
 
 	// The window frame requires a color image for presenting
-	Assert(frame->color_image);
+	Assert(frame->color_image_view);
 
 
 }
 
 
 RenderFrame* 
-render_present_frame_of_window(Window* window) {
-	return ((VkWindowInfo*)window->render_info)->window_frame;
+render_current_present_frame_of_window(Window* window) {
+	auto wininf =  (VkWindowInfo*)window->render_info;
+	return wininf->frames_x[wininf->frame_index];
 }
 
 void
@@ -5632,12 +5679,6 @@ create_render_pass_and_frame(Window* window) {
 	// NOTE(sushi) for now we are assuming swapchains will only have 1 frame
 	//             but later on we'll want to support multiple
 
-	wininf->window_frame = render_frame_create(window);
-	wininf->window_frame->renderpass = render_create_render_pass();
-
-	wininf->window_frame->renderpass->debug_name = str8l("Default render pass");
-	wininf->window_frame->renderpass->debug_color = Color_DarkCyan;
-		
 	RenderPassAttachment color_attachment;
 	color_attachment.          format = vulkan_format_to_render(wininf->surface_format.format);
 	color_attachment.         load_op = RenderAttachmentLoadOp_Dont_Care;
@@ -5652,73 +5693,80 @@ create_render_pass_and_frame(Window* window) {
 	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
 	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
 
-	wininf->window_frame->renderpass->color_attachment = &color_attachment;
-	wininf->window_frame->renderpass->depth_attachment = &depth_attachment;
+	RenderPass* render_pass = render_create_render_pass();
+	render_pass->color_attachment = &color_attachment;
+	render_pass->depth_attachment = &depth_attachment;
+	render_update_render_pass(render_pass);
 
-	render_update_render_pass(wininf->window_frame->renderpass);
+	render_pass->debug_name = str8l("Default render pass");
+	render_pass->debug_color = Color_DarkCyan;
+
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
+	VkImage* images;
+	array_init(images, wininf->image_count, deshi_temp_allocator);
+	array_count(images) = wininf->image_count;
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images);
+
+	array_grow(wininf->frames_x, wininf->image_count);
+	array_count(wininf->frames_x) = wininf->image_count;
+
+	forI(wininf->image_count) {
+		RenderFrame* frame = wininf->frames_x[i] = render_frame_create(window);
+		frame->render_pass = render_pass;
+
+		auto color_image_view = frame->color_image_view = render_create_image_view();
+		auto depth_image_view = frame->depth_image_view = render_create_image_view();
+		auto color_image      = color_image_view->image = render_create_image();
+		auto depth_image      = depth_image_view->image = render_create_image();
+
+		color_image->           format = vulkan_format_to_render(wininf->surface_format.format);
+		color_image->           extent = {wininf->width, wininf->height};
+		color_image->            usage = RenderImageUsage_Color_Attachment;
+		color_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+		color_image->handle = (void*)images[i];
+		// NOTE(sushi) no reason to call render_image_update() here because we get the handle to the image from the swapchain (which is kinda stupid but whatever)
+		
+		depth_image->           format = vulkan_format_to_render(find_depth_format());
+		depth_image->           extent = {wininf->width, wininf->height};
+		depth_image->            usage = RenderImageUsage_Depth_Stencil_Attachment;
+		depth_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+		render_update_image(depth_image);
+
+		color_image_view->format = color_image->format;
+		color_image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+		render_update_image_view(color_image_view);
+
+		depth_image_view->format = depth_image->format;
+		depth_image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
+		render_update_image_view(depth_image_view);
 	
-	auto color_image_view = wininf->window_frame->color_image = render_create_image_view();
-	auto depth_image_view = wininf->window_frame->depth_image = render_create_image_view();
-	auto color_image      = color_image_view->image           = render_create_image();
-	auto depth_image      = depth_image_view->image           = render_create_image();
+		VkImageView attachments[2] = {
+			(VkImageView)color_image_view->handle,
+			(VkImageView)depth_image_view->handle,
+		};
 
-	color_image->           format = vulkan_format_to_render(wininf->surface_format.format);
-	color_image->           extent = {window->width, window->height};
-	color_image->            usage = RenderImageUsage_Color_Attachment;
-	color_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+		info.renderPass = (VkRenderPass)frame->render_pass->handle;
+		info.width = wininf->width;
+		info.height = wininf->height;
+		info.layers = 1;
+		info.pAttachments = attachments;
+		info.attachmentCount = 2;
+		resultVk = vkCreateFramebuffer(device, &info, allocator, (VkFramebuffer*)&frame->handle);
+		AssertVk(resultVk);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)frame->handle, 
+				(char*)to_dstr8v(deshi_temp_allocator, "Default framebuffer").str);
 
-	// the color image already exists on the swapchain so we just retrieve it from there
-	// note that currently we assume that we only have one frame and that is enforced 
-	// here until we decide to support multiple frames later on
-	wininf->image_count = 1;
-	VkImage image = 0;
-	resultVk = vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
-	if(resultVk != VK_SUCCESS && resultVk != VK_INCOMPLETE) {
-		Assert(0);
+		// create a command buffer for the frame
+		VkCommandBufferAllocateInfo cmdbuf_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+		cmdbuf_info.commandPool = commandPool;
+		cmdbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		cmdbuf_info.commandBufferCount = 1;
+		resultVk = vkAllocateCommandBuffers(device, &cmdbuf_info, (VkCommandBuffer*)&frame->command_buffer_handle);
+		AssertVk(resultVk);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)frame->command_buffer_handle,
+				(char*)to_dstr8v(deshi_temp_allocator, "Default command buffer").str);
 	}
-
-	color_image->handle = (void*)image;
-
-	depth_image->           format = vulkan_format_to_render(find_depth_format());
-	depth_image->           extent = {window->width, window->height};
-	depth_image->            usage = RenderImageUsage_Depth_Stencil_Attachment;
-	depth_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
-	render_update_image(depth_image);
-
-	color_image_view->format = color_image->format;
-	color_image_view->aspect_flags = RenderImageViewAspectFlags_Color;
-	render_update_image_view(color_image_view);
-
-	depth_image_view->format = depth_image->format;
-	depth_image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
-	render_update_image_view(depth_image_view);
-
-	VkImageView attachments[2] = {
-		(VkImageView)color_image_view->handle,
-		(VkImageView)depth_image_view->handle,
-	};
-
-	VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
-	info.renderPass = (VkRenderPass)wininf->window_frame->renderpass->handle;
-	info.width = wininf->width;
-	info.height = wininf->height;
-	info.layers = 1;
-	info.pAttachments = attachments;
-	info.attachmentCount = 2;
-	resultVk = vkCreateFramebuffer(device, &info, allocator, (VkFramebuffer*)&wininf->window_frame->handle);
-	AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)wininf->window_frame->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, "Default framebuffer").str);
-
-	// create a command buffer for the frame
-	VkCommandBufferAllocateInfo cmdbuf_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-	cmdbuf_info.commandPool = commandPool;
-	cmdbuf_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdbuf_info.commandBufferCount = 1;
-	resultVk = vkAllocateCommandBuffers(device, &cmdbuf_info, (VkCommandBuffer*)&wininf->window_frame->command_buffer_handle);
-	AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)wininf->window_frame->command_buffer_handle,
-			(char*)to_dstr8v(deshi_temp_allocator, "Default command buffer").str);
 
 	PrintVk(2, "Finished creating frames in ", peek_stopwatch(watch), "ms");
 }
@@ -5864,17 +5912,14 @@ render_init_x(Window* window) {
 	memory_pool_init(__render_pool_pipeline_layouts, 8);
 	memory_pool_init(__render_pipeline_pool, 8);
 
-	if(window) {
-		// create the window info that this window will point to
-		// TODO(sushi) user should be able to control how this is allocated 
-		//             and default should probably be 
-		auto wi = (VkWindowInfo*)(window->render_info = memory_pool_push(window_infos));
-		wi->width = window->width;
-		wi->height = window->height;
-		array_init(wi->frames, 1, deshi_allocator);
-		array_init(wi->support_details.formats, 1, deshi_allocator);
-		array_init(wi->support_details.present_modes, 1, deshi_allocator);
-	}
+	// create the window info that this window will point to
+	auto wi = (VkWindowInfo*)(window->render_info = memory_pool_push(window_infos));
+	wi->width = window->width;
+	wi->height = window->height;
+	array_init(wi->frames, 1, deshi_allocator);
+	array_init(wi->support_details.formats, 1, deshi_allocator);
+	array_init(wi->support_details.present_modes, 1, deshi_allocator);
+	array_init(wi->frames_x, 1, deshi_allocator);
 
 	// mostly vulkan-os interaction setup
 	setup_allocator();
@@ -6068,8 +6113,7 @@ render_update_x(Window* window) {
 
 	renderStats = {};
 
-	u32 image_index = 0;
-	VkResult result = vkAcquireNextImageKHR(device, wininf->swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &image_index);
+	VkResult result = vkAcquireNextImageKHR(device, wininf->swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &wininf->frame_index);
 	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
 		// the surface has changed in some way that makes it no longer compatible with its swapchain
 		// so we need to recreate the swapchain
@@ -6088,14 +6132,14 @@ render_update_x(Window* window) {
 	VkViewport viewport{};
 	VkRect2D scissor{};
 
-	auto cmdbuf = (VkCommandBuffer)wininf->window_frame->command_buffer_handle;
+	auto cmdbuf = (VkCommandBuffer)wininf->frames_x[wininf->frame_index]->command_buffer_handle;
 	resultVk = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
 	AssertVk(resultVk);
 
 	clear_value.color = {0, 0, 0, 0};
 
-	render_pass_info.renderPass = (VkRenderPass)wininf->window_frame->renderpass->handle;
-	render_pass_info.framebuffer = (VkFramebuffer)wininf->window_frame->handle;
+	render_pass_info.renderPass = (VkRenderPass)wininf->frames_x[wininf->frame_index]->render_pass->handle;
+	render_pass_info.framebuffer = (VkFramebuffer)wininf->frames_x[wininf->frame_index]->handle;
 	render_pass_info.clearValueCount = 1;
 	render_pass_info.pClearValues = &clear_value;
 	render_pass_info.renderArea.offset = {0,0};
@@ -6112,7 +6156,8 @@ render_update_x(Window* window) {
 	scissor.extent.width = wininf->width;
 	scissor.extent.height = wininf->height;
 	
-	RenderPass* render_pass = wininf->window_frame->renderpass;
+	RenderPass* render_pass = wininf->frames_x[wininf->frame_index]->render_pass;
+	Log("", wininf->frame_index);
 
 	DebugBeginLabelVk(cmdbuf, (char*)render_pass->debug_name.str, {render_pass->debug_color.r/255.f, render_pass->debug_color.g/255.f, render_pass->debug_color.b/255.f, render_pass->debug_color.a/255.f});
 	vkCmdBeginRenderPass(cmdbuf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -6121,8 +6166,10 @@ render_update_x(Window* window) {
 
 	RenderPipeline* currently_bound_pipeline = 0;
 
-	forI(array_count(wininf->window_frame->commands)) {
-		auto cmd = wininf->window_frame->commands[i];
+	Log("", "updating frame ", (void*)wininf->frames_x[wininf->frame_index]);
+
+	forI(array_count(wininf->frames_x[wininf->frame_index]->commands)) {
+		auto cmd = wininf->frames_x[wininf->frame_index]->commands[i];
 		switch(cmd.type) {
 			case RenderCommandType_Bind_Pipeline: {
 				currently_bound_pipeline = cmd.bind_pipeline.handle;
@@ -6136,7 +6183,11 @@ render_update_x(Window* window) {
 				vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)cmd.bind_index_buffer.handle->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
 			} break;
 			case RenderCommandType_Bind_Descriptor_Set: {
-				vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)currently_bound_pipeline->layout->handle, 0, 1, (VkDescriptorSet*)&cmd.bind_descriptor_set.handle->handle, 0, 0);
+				vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+						(VkPipelineLayout)currently_bound_pipeline->layout->handle, 
+						0, 1, 
+						(VkDescriptorSet*)&cmd.bind_descriptor_set.handle->handle, 
+						0, 0);
 			} break;
 			case RenderCommandType_Push_Constant: {
 				vkCmdPushConstants(cmdbuf, 
@@ -6161,7 +6212,7 @@ render_update_x(Window* window) {
 	submit_info.pWaitSemaphores = &imageAcquiredSemaphore;
 	submit_info.pWaitDstStageMask = &wait_stage;
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = (VkCommandBuffer*)&wininf->window_frame->command_buffer_handle;
+	submit_info.pCommandBuffers = (VkCommandBuffer*)&wininf->frames_x[wininf->frame_index]->command_buffer_handle;
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = &renderCompleteSemaphore;
 	resultVk = vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
@@ -6174,7 +6225,7 @@ render_update_x(Window* window) {
 	present_info.pWaitSemaphores = &renderCompleteSemaphore;
 	present_info.swapchainCount = 1;
 	present_info.pSwapchains = (VkSwapchainKHR*)&wininf->swapchain;
-	present_info.pImageIndices = &image_index;
+	present_info.pImageIndices = &wininf->frame_index;
 	present_info.pResults = 0;
 	result = vkQueuePresentKHR(presentQueue, &present_info);
 	
@@ -6186,6 +6237,10 @@ render_update_x(Window* window) {
 	} else if(result != VK_SUCCESS) {
 		Assert(0);
 	}
+	
+	array_clear(wininf->frames_x[wininf->frame_index]->commands);
+
+	wininf->frame_index = (wininf->frame_index + 1) % wininf->min_image_count;
 
 	result = vkQueueWaitIdle(graphicsQueue);
 	switch (result){
@@ -6201,6 +6256,7 @@ render_update_x(Window* window) {
 	//renderStats.totalIndices   += (u32)indexBuffer.size()  + renderTwodIndexCount  + renderTempWireframeIndexCount; //!Incomplete
 	renderStats.totalTriangles += renderStats.totalIndices / 3;
 	renderStats.renderTimeMS = peek_stopwatch(watch);
+
 
 	DeshTime->renderTime = peek_stopwatch(watch);
 }
@@ -6633,9 +6689,10 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 void
 render_model_x(RenderFrame* frame, Model* model, mat4* matrix) {
 	RenderCommand c0{RenderCommandType_Bind_Pipeline};
+	Log("rendermodel", "rendering model to frame ", (void*)frame);
 	forI(arrlenu(model->batch_array)) {
 		auto ba = model->batch_array[i];
-		if(!ba.index_offset) continue;
+		if(!ba.index_count) continue;
 		auto c0 = array_push(frame->commands);
 		c0->type = RenderCommandType_Bind_Pipeline;
 		c0->bind_pipeline.handle = ba.material->pipeline;
