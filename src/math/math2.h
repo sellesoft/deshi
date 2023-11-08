@@ -40,7 +40,7 @@ Index:
 @mat_hashing
 @mat_tostring
 @mat_vec_interactions
-@...
+@other
 
 Ref:
 https://github.com/HandmadeMath/HandmadeMath
@@ -165,10 +165,10 @@ m128_equal_4s32(__m128i lhs, __m128i rhs){DPZoneScoped;
 
 EXTERN_C inline __m128
 m128_linear_combine(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row2, __m128 mat_row3){DPZoneScoped;
-	__m128 result =                m128_mul_4f32(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0,0,0,0)), mat_row0);
-	result = m128_add_4f32(result, m128_mul_4f32(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1,1,1,1)), mat_row1));
-	result = m128_add_4f32(result, m128_mul_4f32(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2,2,2,2)), mat_row2));
-	result = m128_add_4f32(result, m128_mul_4f32(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(3,3,3,3)), mat_row3));
+	__m128 result =                m128_mul_4f32(m128_swizzle(vec, 0,0,0,0), mat_row0);
+	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 1,1,1,1), mat_row1));
+	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 2,2,2,2), mat_row2));
+	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 3,3,3,3), mat_row3));
 	return result;
 }
 
@@ -8798,7 +8798,7 @@ inverse()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//returns a LH rotation transformation matrix based on input in radians
+//returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 	f32 c = cosf(angle); f32 s = sinf(angle);
@@ -8807,7 +8807,7 @@ mat3_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 				0,-s, c);
 }
 
-//returns a LH rotation transformation matrix based on input in degrees
+//returns a LH rotation matrix based on input in degrees
 EXTERN_C inline mat3
 mat3_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
@@ -8817,7 +8817,7 @@ mat3_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 				0,-s, c);
 }
 
-//returns a LH rotation transformation matrix based on input in radians
+//returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 	f32 c = cosf(angle); f32 s = sinf(angle);
@@ -8826,7 +8826,7 @@ mat3_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 				s, 0, c);
 }
 
-//returns a LH rotation transformation matrix based on input in degrees
+//returns a LH rotation matrix based on input in degrees
 EXTERN_C inline mat3
 mat3_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
@@ -8836,7 +8836,7 @@ mat3_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 				s, 0, c);
 }
 
-//returns a LH rotation transformation matrix based on input in radians
+//returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 	f32 c = cosf(angle); f32 s = sinf(angle);
@@ -8845,7 +8845,7 @@ mat3_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 				0,  0, 1);
 }
 
-//returns a LH rotation transformation matrix based on input in degrees
+//returns a LH rotation matrix based on input in degrees
 EXTERN_C inline mat3
 mat3_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
@@ -8855,7 +8855,7 @@ mat3_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 				0,  0, 1);
 }
 
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in radians
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	f32 cX = cosf(x); f32 sX = sinf(x);
@@ -8874,7 +8874,7 @@ mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	return result;
 }
 
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
 EXTERN_C inline mat3
 mat3_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 	x = Radians(x); y = Radians(y); z = Radians(z);
@@ -8892,6 +8892,13 @@ mat3_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 	result.arr[7] = cX*sY*sZ - cZ*sX;
 	result.arr[8] = cX*cY;
 	return result;
+}
+
+EXTERN_C inline mat3
+mat3_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
+	return Mat3(x, 0, 0,
+				0, y, 0,
+				0, 0, z);
 }
 
 
@@ -8915,7 +8922,7 @@ EXTERN_C typedef struct mat4{
 			__m128 sse_row2;
 			__m128 sse_row3;
 		};
-#endif
+#endif //#if DESHI_USE_SSE
 	};
 	
 #ifdef __cplusplus
@@ -9720,7 +9727,7 @@ operator==(const mat4& rhs)const{DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
-mat3_nequal(mat4 lhs, mat4 rhs){DPZoneScoped;
+mat4_nequal(mat4 lhs, mat4 rhs){DPZoneScoped;
 #if DESHI_USE_SSE
 	return !m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
 		&& !m128_equal_4f32(lhs.sse_row1, rhs.sse_row1)
@@ -10208,7 +10215,7 @@ mat4_cofactor(mat4 lhs, u32 row, u32 col){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-inline f32 mat3::
+inline f32 mat4::
 cofactor(u32 row, u32 col)const{DPZoneScoped;
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
 	switch(row){
@@ -10432,7 +10439,7 @@ mat4_adjoint(mat4 lhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-inline mat3 mat3::
+inline mat4 mat4::
 adjoint()const{DPZoneScoped;
 	mat4 result;
 	result.arr[ 0] = (  (this->arr[ 7] * this->arr[10] * this->arr[13])
@@ -10658,10 +10665,11 @@ inverse()const{DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline mat4
-mat4_inverse_transformation_matrix(mat4 lhs){
+mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 	mat4 result;
 	
+#if DESHI_USE_SSE
 	//transpose scaled rotation matrix
 	__m128 temp0 = m128_shuffle_0101(lhs.sse_row0, lhs.sse_row1);
 	__m128 temp1 = m128_shuffle_2323(lhs.sse_row0, lhs.sse_row1);
@@ -10669,30 +10677,57 @@ mat4_inverse_transformation_matrix(mat4 lhs){
 	result.sse_row1 = m128_shuffle(temp0, lhs.sse_row2, 1,3,1,3);
 	result.sse_row2 = m128_shuffle(temp1, lhs.sse_row2, 0,2,2,3);
 	
-	//extract the recipricol squared scale (1/|x|^2, 1/|y|^2, 1/|z|^2, 0)
-	__m128 rSizeSq;
-	rSizeSq =                       m128_mul_4f32(result.sse_row0, result.sse_row0);
-	rSizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row1, result.sse_row1));
-	rSizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row2, result.sse_row2));
-	rSizeSq = m128_div_4f32(m128_fill_4f32(1.0f), sizeSq);
+	//extract the squared scale
+	__m128 sizeSq;
+	sizeSq =                       m128_mul_4f32(result.sse_row0, result.sse_row0);
+	sizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row1, result.sse_row1));
+	sizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row2, result.sse_row2));
 	
 	//divide by squared scale
-	result.sse_row0 = m128_mul_4f32(result.sse_row0, rSizeSq);
-	result.sse_row1 = m128_mul_4f32(result.sse_row1, rSizeSq);
-	result.sse_row2 = m128_mul_4f32(result.sse_row2, rSizeSq);
+	sizeSq = m128_div_4f32(m128_fill_4f32(1.0f), sizeSq);
+	result.sse_row0 = m128_mul_4f32(result.sse_row0, sizeSq);
+	result.sse_row1 = m128_mul_4f32(result.sse_row1, sizeSq);
+	result.sse_row2 = m128_mul_4f32(result.sse_row2, sizeSq);
 	
 	//dot product against the negative translation
 	result.sse_row3 =                                m128_mul_4f32(result.sse_row0, m128_swizzle(lhs.sse_row3, 0,0,0,0));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row1, m128_swizzle(lhs.sse_row3, 1,1,1,1)));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
 	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
+#else //#if DESHI_USE_SSE
+	//transpose rotation matrix
+	f32 temp;
+	temp = result.arr[1]; result.arr[1] = result.arr[4]; result.arr[4] = temp;
+	temp = result.arr[2]; result.arr[2] = result.arr[8]; result.arr[8] = temp;
+	temp = result.arr[6]; result.arr[6] = result.arr[9]; result.arr[9] = temp;
 	
-	return resuult;
+	//extract and divide by the squared scale
+	temp = (result.arr[0] * result.arr[0]) + (result.arr[4] * result.arr[4]) + (result.arr[8] * result.arr[8]);
+	result.arr[0] /= temp;
+	result.arr[4] /= temp;
+	result.arr[8] /= temp;
+	temp = (result.arr[1] * result.arr[1]) + (result.arr[5] * result.arr[5]) + (result.arr[9] * result.arr[9]);
+	result.arr[1] /= temp;
+	result.arr[5] /= temp;
+	result.arr[9] /= temp;
+	temp = (result.arr[2] * result.arr[2]) + (result.arr[6] * result.arr[6]) + (result.arr[10] * result.arr[10]);
+	result.arr[ 2] /= temp;
+	result.arr[ 6] /= temp;
+	result.arr[10] /= temp;
+	
+	//dot product against the negative translation
+	vec3 negative_translation = vec3(-result.arr[12], -result.arr[13], -result.arr[14]);
+	result.arr[12] = (negative_translation.x * result.arr[0]) + (negative_translation.y * result.arr[4]) + (negative_translation.z * result.arr[ 8]);
+	result.arr[13] = (negative_translation.x * result.arr[1]) + (negative_translation.y * result.arr[5]) + (negative_translation.z * result.arr[ 9]);
+	result.arr[14] = (negative_translation.x * result.arr[2]) + (negative_translation.y * result.arr[6]) + (negative_translation.z * result.arr[10]);
+#endif //#else //#if DESHI_USE_SSE
+	return result;
 }
 
 EXTERN_C inline mat4
-mat4_inverse_transformation_matrix_no_scale(mat4 lhs){
+mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
+#if DESHI_USE_SSE
 	mat4 result;
 	
 	//transpose rotation matrix
@@ -10708,10 +10743,23 @@ mat4_inverse_transformation_matrix_no_scale(mat4 lhs){
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
 	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
 	
-	return resuult;
+	return result;
+#else //#if DESHI_USE_SSE
+	//transpose rotation matrix
+	f32 temp;
+	temp = result.arr[1]; result.arr[1] = result.arr[4]; result.arr[4] = temp;
+	temp = result.arr[2]; result.arr[2] = result.arr[8]; result.arr[8] = temp;
+	temp = result.arr[6]; result.arr[6] = result.arr[9]; result.arr[9] = temp;
+	
+	//dot product against the negative translation
+	vec3 negative_translation = vec3(-result.arr[12], -result.arr[13], -result.arr[14]);
+	result.arr[12] = (negative_translation.x * result.arr[0]) + (negative_translation.y * result.arr[4]) + (negative_translation.z * result.arr[ 8]);
+	result.arr[13] = (negative_translation.x * result.arr[1]) + (negative_translation.y * result.arr[5]) + (negative_translation.z * result.arr[ 9]);
+	result.arr[14] = (negative_translation.x * result.arr[2]) + (negative_translation.y * result.arr[6]) + (negative_translation.z * result.arr[10]);
+#endif //#else //#if DESHI_USE_SSE
 }
 
-//returns a LH rotation transformation matrix based on input in radians
+//returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 	f32 c = cosf(angle); f32 s = sinf(angle);
@@ -10721,7 +10769,7 @@ mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 				0, 0, 0, 1);
 }
 
-//returns a LH rotation transformation matrix based on input in degrees
+//returns a LH rotation matrix based on input in degrees
 EXTERN_C inline mat4
 mat4_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
@@ -10732,7 +10780,7 @@ mat4_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 				0, 0, 0, 1);
 }
 
-//returns a LH rotation transformation matrix based on input in radians
+//returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 	f32 c = cosf(angle); f32 s = sinf(angle);
@@ -10742,7 +10790,7 @@ mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 				0, 0, 0, 1);
 }
 
-//returns a LH rotation transformation matrix based on input in degrees
+//returns a LH rotation matrix based on input in degrees
 EXTERN_C inline mat4
 mat4_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
@@ -10753,7 +10801,7 @@ mat4_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 				0, 0, 0, 1);
 }
 
-//returns a LH rotation transformation matrix based on input in radians
+//returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 	f32 c = cosf(angle); f32 s = sinf(angle);
@@ -10763,7 +10811,7 @@ mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 				0,  0, 0, 1);
 }
 
-//returns a LH rotation transformation matrix based on input in degrees
+//returns a LH rotation matrix based on input in degrees
 EXTERN_C inline mat4
 mat4_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
@@ -10774,7 +10822,7 @@ mat4_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 				0,  0, 0, 1);
 }
 
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in radians
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	f32 cX = cosf(x); f32 sX = sinf(x);
@@ -10800,7 +10848,7 @@ mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	return result;
 }
 
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
 EXTERN_C inline mat4
 mat4_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 	x = Radians(x); y = Radians(y); z = Radians(z);
@@ -10828,7 +10876,7 @@ mat4_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 }
 
 EXTERN_C inline mat4
-mat4_translation_matrix(f32 x, f32 y, f32 z){
+mat4_translation_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 	return Mat4(1, 0, 0, 0,
 				0, 1, 0, 0,
 				0, 0, 1, 0,
@@ -10836,15 +10884,16 @@ mat4_translation_matrix(f32 x, f32 y, f32 z){
 }
 
 EXTERN_C inline mat4
-mat4_scale_matrix(f32 x, f32 y, f32 z){
+mat4_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 	return Mat4(x, 0, 0, 0,
 				0, y, 0, 0,
 				0, 0, z, 0,
 				0, 0, 0, 1);
 }
 
+//returns a pre-multiplied X->Y->Z LH transformation matrix based on input in radians
 EXTERN_C inline mat4
-mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){
+mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){DPZoneScoped;
 	f32 cX = cosf(rotation_x); f32 sX = sinf(rotation_x);
 	f32 cY = cosf(rotation_y); f32 sY = sinf(rotation_y);
 	f32 cZ = cosf(rotation_z); f32 sZ = sinf(rotation_z);
@@ -10868,9 +10917,12 @@ mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 tra
 	return result;
 }
 
+//returns a pre-multiplied X->Y->Z LH transformation matrix based on input in degrees
 EXTERN_C inline mat4
-mat4_transformation_matrix_degrees(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){
-	rotation_x = Radians(rotation_x); rotation_y = Radians(rotation_y); rotation_z = Radians(rotation_z);
+mat4_transformation_matrix_degrees(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){DPZoneScoped;
+	rotation_x = Radians(rotation_x);
+	rotation_y = Radians(rotation_y);
+	rotation_z = Radians(rotation_z);
 	f32 cX = cosf(rotation_x); f32 sX = sinf(rotation_x);
 	f32 cY = cosf(rotation_y); f32 sY = sinf(rotation_y);
 	f32 cZ = cosf(rotation_z); f32 sZ = sinf(rotation_z);
@@ -10900,13 +10952,19 @@ mat4_transformation_matrix_degrees(f32 translation_x, f32 translation_y, f32 tra
 
 
 EXTERN_C inline mat4
-mat3_to_mat4(mat3 lhs){
+mat3_to_mat4(mat3 lhs){DPZoneScoped;
 	return Mat4(lhs.arr[0], lhs.arr[1], lhs.arr[2], 0,
 				lhs.arr[3], lhs.arr[4], lhs.arr[5], 0,
 				lhs.arr[6], lhs.arr[7], lhs.arr[8], 0,
 				0,          0,          0,          1);
 }
 
+EXTERN_C inline mat3
+mat4_to_mat3(mat4 lhs){DPZoneScoped;
+	return Mat4(lhs.arr[0], lhs.arr[1], lhs.arr[ 2]
+				lhs.arr[4], lhs.arr[5], lhs.arr[ 6]
+				lhs.arr[8], lhs.arr[9], lhs.arr[10]);
+}
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -10914,264 +10972,403 @@ mat3_to_mat4(mat3 lhs){
 
 
 EXTERN_C inline mat3
-vec3_rows_to_mat3(vec3 row0, vec3 row1, vec3 row2){
-	return mat3{row0.x, row0.y, row0.z, row1.x, row1.y, row1.z, row2.x, row2.y, row2.z};
+vec3_rows_to_mat3(vec3 row0, vec3 row1, vec3 row2){DPZoneScoped;
+	mat3 result;
+	result.row0 = row0;
+	result.row1 = row1;
+	result.row2 = row2;
+	return result;
 }
 
-inline vec3 vec3::
-operator* (const mat3& rhs) const{
-	return Vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6],
-				x*rhs.arr[1] + y*rhs.arr[4] + z*rhs.arr[7],
-				x*rhs.arr[2] + y*rhs.arr[5] + z*rhs.arr[8]);
-}
-
-inline void vec3::
-operator*=(const mat3& rhs){
-	*this = Vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6],
-				 x*rhs.arr[1] + y*rhs.arr[4] + z*rhs.arr[7],
-				 x*rhs.arr[2] + y*rhs.arr[5] + z*rhs.arr[8]);
-}
-
-inline vec3 vec3::
-operator* (const mat4& rhs) const{
-	vec3 result;
+EXTERN_C inline mat4
+vec4_rows_to_mat4(vec4 row0, vec4 row1, vec4 row2, vec4 row3){DPZoneScoped;
+	mat4 result;
 #if DESHI_USE_SSE
-	vec4 temp = Vec4(x, y, z, 0);
-	temp.sse = m128_linear_combine(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.x = temp.x;
-	result.y = temp.y;
-	result.z = temp.z;
+	result.row0 = row0;
+	result.row1 = row1;
+	result.row2 = row2;
+	result.row3 = row3;
 #else //#if DESHI_USE_SSE
-	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
-	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
-	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + rhs.arr[14];
+	result.sse_row0 = row0.sse;
+	result.sse_row1 = row1.sse;
+	result.sse_row2 = row2.sse;
+	result.sse_row3 = row3.sse;
 #endif //#else //#if DESHI_USE_SSE
 	return result;
 }
 
+EXTERN_C inline vec3
+vec3_mul_mat3(vec3 lhs, mat3 rhs){DPZoneScoped;
+	vec3 result;
+	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[3]) + (lhs.z * rhs.arr[6]);
+	result.y = (lhs.x * rhs.arr[1]) + (lhs.y * rhs.arr[4]) + (lhs.z * rhs.arr[7]);
+	result.z = (lhs.x * rhs.arr[2]) + (lhs.y * rhs.arr[5]) + (lhs.z * rhs.arr[8]);
+	return result;
+}
+
+#ifdef __cplusplus
+inline vec3 vec3::
+operator* (const mat3& rhs)const{DPZoneScoped;
+	vec3 result;
+	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[3]) + (this->z * rhs.arr[6]);
+	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[7]);
+	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[8]);
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
 inline void vec3::
-operator*=(const mat4& rhs){
+operator*=(const mat3& rhs){DPZoneScoped;
+	vec3 result;
+	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[3]) + (this->z * rhs.arr[6]);
+	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[7]);
+	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[8]);
+	*this = result;
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline vec3
+vec3_mul_mat4(vec3 lhs, mat4 rhs){DPZoneScoped;
 	vec3 result;
 #if DESHI_USE_SSE
-	vec4 temp = Vec4(x, y, z, 0);
-	temp.sse = m128_linear_combine(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	vec4 temp.sse =                    m128_mul_4f32(m128_fill_4f32(lhs.x), rhs.sse_row0);
+	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(lhs.y), rhs.sse_row1));
+	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(lhs.z), rhs.sse_row2));
+	temp.sse = m128_add_4f32(temp.sse, rhs.sse_row3);
 	result.x = temp.x;
 	result.y = temp.y;
 	result.z = temp.z;
 #else //#if DESHI_USE_SSE
-	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
-	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
-	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + rhs.arr[14];
+	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[4]) + (lhs.z * rhs.arr[ 8]) + (rhs.arr[12]);
+	result.y = (lhs.x * rhs.arr[1]) + (lhs.y * rhs.arr[5]) + (lhs.z * rhs.arr[ 9]) + (rhs.arr[13]);
+	result.z = (lhs.x * rhs.arr[2]) + (lhs.y * rhs.arr[6]) + (lhs.z * rhs.arr[10]) + (rhs.arr[14]);
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+
+#ifdef __cplusplus
+inline vec3 vec3::
+operator* (const mat4& rhs)const{DPZoneScoped;
+	vec3 result;
+#if DESHI_USE_SSE
+	vec4 temp.sse =                    m128_mul_4f32(m128_fill_4f32(this->x), rhs.sse_row0);
+	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->y), rhs.sse_row1));
+	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->z), rhs.sse_row2));
+	temp.sse = m128_add_4f32(temp.sse, rhs.sse_row3);
+	result.x = temp.x;
+	result.y = temp.y;
+	result.z = temp.z;
+#else //#if DESHI_USE_SSE
+	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (rhs.arr[12]);
+	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (rhs.arr[13]);
+	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (rhs.arr[14]);
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void vec3::
+operator*=(const mat4& rhs){DPZoneScoped;
+	vec3 result;
+#if DESHI_USE_SSE
+	vec4 temp.sse =                    m128_mul_4f32(m128_fill_4f32(this->x), rhs.sse_row0);
+	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->y), rhs.sse_row1));
+	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->z), rhs.sse_row2));
+	temp.sse = m128_add_4f32(temp.sse, rhs.sse_row3);
+	result.x = temp.x;
+	result.y = temp.y;
+	result.z = temp.z;
+#else //#if DESHI_USE_SSE
+	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (rhs.arr[12]);
+	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (rhs.arr[13]);
+	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (rhs.arr[14]);
 #endif //#else //#if DESHI_USE_SSE
 	*this = result;
 }
+#endif //#ifdef __cplusplus
 
+EXTERN_C inline vec4
+vec4_mul_mat4(vec4 lhs, mat4 rhs){DPZoneScoped;
+	vec4 result;
+#if DESHI_USE_SSE
+	result.sse = m128_linear_combine(lhs.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[4]) + (lhs.z * rhs.arr[ 8]) + (lhs.w * rhs.arr[12]);
+	result.y = (lhs.x * rhs.arr[1]) + (lhs.y * rhs.arr[5]) + (lhs.z * rhs.arr[ 9]) + (lhs.w * rhs.arr[13]);
+	result.z = (lhs.x * rhs.arr[2]) + (lhs.y * rhs.arr[6]) + (lhs.z * rhs.arr[10]) + (lhs.w * rhs.arr[14]);
+	result.w = (lhs.x * rhs.arr[3]) + (lhs.y * rhs.arr[7]) + (lhs.z * rhs.arr[11]) + (lhs.w * rhs.arr[15]);
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
 
-//////////////
-//// vec4 ////
-//////////////
+#ifdef __cplusplus
 inline vec4 vec4::
-operator* (const mat4& rhs) const{
+operator* (const mat4& rhs)const{DPZoneScoped;
 	vec4 result;
 #if DESHI_USE_SSE
-	result.sse = m128_linear_combine(sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else
-	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + w*rhs.arr[12];
-	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + w*rhs.arr[13];
-	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + w*rhs.arr[14];
-	result.w = x*rhs.arr[3] + y*rhs.arr[7] + z*rhs.arr[11] + w*rhs.arr[15];
-#endif
+	result.sse = m128_linear_combine(this->sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (this->w * rhs.arr[12]);
+	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (this->w * rhs.arr[13]);
+	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (this->w * rhs.arr[14]);
+	result.w = (this->x * rhs.arr[3]) + (this->y * rhs.arr[7]) + (this->z * rhs.arr[11]) + (this->w * rhs.arr[15]);
+#endif //#else //#if DESHI_USE_SSE
+	return result;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+inline void vec4::
+operator*=(const mat4& rhs){DPZoneScoped;
+#if DESHI_USE_SSE
+	this->sse = m128_linear_combine(this->sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else //#if DESHI_USE_SSE
+	vec4 result;
+	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (this->w * rhs.arr[12]);
+	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (this->w * rhs.arr[13]);
+	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (this->w * rhs.arr[14]);
+	result.w = (this->x * rhs.arr[3]) + (this->y * rhs.arr[7]) + (this->z * rhs.arr[11]) + (this->w * rhs.arr[15]);
+	*this = result;
+#endif //#else //#if DESHI_USE_SSE
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline vec3
+mat3_row(mat3 lhs, u32 row){DPZoneScoped;
+	Assert(row < 3, "mat3 subscript out of bounds");
+	return Vec3(lhs.arr[3*row], lhs.arr[3*row+1], lhs.arr[3*row+2]);
+}
+
+#ifdef __cplusplus
+inline vec3 mat3::
+row(u32 row){DPZoneScoped;
+	Assert(row < 3, "mat3 subscript out of bounds");
+	return Vec3(this->arr[3*row], this->arr[3*row+1], this->arr[3*row+2]);
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline vec3
+mat3_col(mat3 lhs, u32 col){DPZoneScoped;
+	Assert(col < 3, "mat3 subscript out of bounds");
+	return Vec3(lhs.arr[col], lhs.arr[3+col], lhs.arr[6+col]);
+}
+
+#ifdef __cplusplus
+inline vec3 mat3::
+col(u32 col){DPZoneScoped;
+	Assert(col < 3, "mat3 subscript out of bounds");
+	return Vec3(this->arr[col], this->arr[3+col], this->arr[6+col]);
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline vec4
+mat4_row(mat4 lhs, u32 row){DPZoneScoped;
+	Assert(row < 4, "mat4 subscript out of bounds");
+	return Vec3(lhs.arr[4*row], lhs.arr[4*row+1], lhs.arr[4*row+2], lhs.arr[4*row+3]);
+}
+
+#ifdef __cplusplus
+inline vec4 mat4::
+row(u32 row){DPZoneScoped;
+	Assert(row < 4, "mat4 subscript out of bounds");
+	return Vec4(this->arr[4*row], this->arr[4*row+1], this->arr[4*row+2], this->arr[4*row+3]);
+}
+#endif //#ifdef __cplusplus
+
+EXTERN_C inline vec4
+mat4_col(mat4 lhs, u32 col){DPZoneScoped;
+	Assert(col < 4, "mat4 subscript out of bounds");
+	return Vec4(lhs.arr[col], lhs.arr[4+col], lhs.arr[8+col], lhs.arr[12+col]);
+}
+
+#ifdef __cplusplus
+inline vec4 mat4::
+col(u32 col){DPZoneScoped;
+	Assert(col < 4, "mat4 subscript out of bounds");
+	return Vec4(this->arr[col], this->arr[4+col], this->arr[8+col], this->arr[12+col]);
+}
+#endif //#ifdef __cplusplus
+
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
+EXTERN_C inline mat3
+mat3_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
+	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
+	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
+	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	mat3 result;
+	result.arr[0] = cZ*cY;
+	result.arr[1] = cY*sZ;
+	result.arr[2] = -sY;
+	result.arr[3] = cZ*sX*sY - cX*sZ;
+	result.arr[4] = cZ*cX + sX*sY*sZ;
+	result.arr[5] = sX*cY;
+	result.arr[6] = cZ*cX*sY + sX*sZ;
+	result.arr[7] = cX*sY*sZ - cZ*sX;
+	result.arr[8] = cX*cY;
 	return result;
 }
 
-inline void vec4::
-operator*=(const mat4& rhs){
-#if DESHI_USE_SSE
-	sse = m128_linear_combine(sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else
-	vec4 result;
-	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + w*rhs.arr[12];
-	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + w*rhs.arr[13];
-	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + w*rhs.arr[14];
-	result.w = x*rhs.arr[3] + y*rhs.arr[7] + z*rhs.arr[11] + w*rhs.arr[15];
-	*this = result;
-#endif
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_rotation_matrix_degrees_vec3(vec3 rotation){DPZoneScoped;
+	rotation.x = Radians(rotation.x);
+	rotation.y = Radians(rotation.y);
+	rotation.z = Radians(rotation.z);
+	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
+	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
+	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	mat3 result;
+	result.arr[0] = cZ*cY;
+	result.arr[1] = cY*sZ;
+	result.arr[2] = -sY;
+	result.arr[3] = cZ*sX*sY - cX*sZ;
+	result.arr[4] = cZ*cX + sX*sY*sZ;
+	result.arr[5] = sX*cY;
+	result.arr[6] = cZ*cX*sY + sX*sZ;
+	result.arr[7] = cX*sY*sZ - cZ*sX;
+	result.arr[8] = cX*cY;
+	return result;
 }
 
-inline vec3 mat3::
-row(u32 row){
-	Assert(row < 3, "mat3 subscript out of bounds");
-	return Vec3(arr[3*row+0], arr[3*row+1], arr[3*row+2]);
-}
-
-inline vec3 mat3::
-col(u32 col){
-	Assert(col < 3, "mat3 subscript out of bounds");
-	return Vec3(arr[col], arr[3+col], arr[6+col]);
-}
-
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
-inline mat3 mat3::
-RotationMatrix(vec3 rotation){
-	rotation = Radians(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return mat3(r00, r01, r02,
-				r10, r11, r12,
-				r20, r21, r22);
-}
-
-//returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
-inline mat3 mat3::
-ScaleMatrix(vec3 scale){
-	return mat3(scale.x, 0, 0,
+EXTERN_C inline mat3
+mat3_scale_matrix_vec3(vec3 scale){DPZoneScoped;
+	return Mat3(scale.x, 0, 0
 				0, scale.y, 0,
 				0, 0, scale.z);
 }
 
-
-//////////////
-//// mat4 ////
-//////////////
-inline vec4 mat4::
-row(u32 row){
-	Assert(row < 4, "mat4 subscript out of bounds");
-	return Vec4(arr[4*row+0], arr[4*row+1], arr[4*row+2], arr[4*row+3]);
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
+EXTERN_C inline mat4
+mat4_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
+	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
+	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
+	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	mat4 result;
+	result.arr[ 0] = cZ*cY;
+	result.arr[ 1] = cY*sZ;
+	result.arr[ 2] = -sY;
+	result.arr[ 3] = 0;
+	result.arr[ 4] = cZ*sX*sY - cX*sZ;
+	result.arr[ 5] = cZ*cX + sX*sY*sZ;
+	result.arr[ 6] = sX*cY;
+	result.arr[ 7] = 0;
+	result.arr[ 8] = cZ*cX*sY + sX*sZ;
+	result.arr[ 9] = cX*sY*sZ - cZ*sX;
+	result.arr[10] = cX*cY;
+	result.arr[11] = 0;
+	result.arr[12] = 0;
+	result.arr[13] = 0;
+	result.arr[14] = 0;
+	result.arr[15] = 1;
+	return result;
 }
 
-inline vec4 mat4::
-col(u32 col){
-	Assert(col < 4, "mat4 subscript out of bounds");
-	return Vec4(arr[col], arr[4+col], arr[8+col], arr[12+col]);
+//returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_rotation_matrix_degrees_vec3(vec3 rotation){DPZoneScoped;
+	rotation.x = Radians(rotation.x);
+	rotation.y = Radians(rotation.y);
+	rotation.z = Radians(rotation.z);
+	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
+	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
+	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	mat4 result;
+	result.arr[ 0] = cZ*cY;
+	result.arr[ 1] = cY*sZ;
+	result.arr[ 2] = -sY;
+	result.arr[ 3] = 0;
+	result.arr[ 4] = cZ*sX*sY - cX*sZ;
+	result.arr[ 5] = cZ*cX + sX*sY*sZ;
+	result.arr[ 6] = sX*cY;
+	result.arr[ 7] = 0;
+	result.arr[ 8] = cZ*cX*sY + sX*sZ;
+	result.arr[ 9] = cX*sY*sZ - cZ*sX;
+	result.arr[10] = cX*cY;
+	result.arr[11] = 0;
+	result.arr[12] = 0;
+	result.arr[13] = 0;
+	result.arr[14] = 0;
+	result.arr[15] = 1;
+	return result;
 }
 
-inline vec3 mat4::
-Translation(){
-	return Vec3(arr[12], arr[13], arr[14]);
+EXTERN_C inline mat4
+mat4_translation_matrix_vec3(vec3 translation){DPZoneScoped;
+	return Mat4(1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				translation.x, translation.y, translation.z, 1);
 }
 
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
-inline mat4 mat4::
-RotationMatrix(vec3 rotation){
-	rotation = Radians(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return mat4(r00, r01, r02, 0,
-				r10, r11, r12, 0,
-				r20, r21, r22, 0,
-				0,   0,   0,   1);
+EXTERN_C inline mat4
+mat4_scale_matrix_vec3(vec3 scale){DPZoneScoped;
+	return Mat4(scale.x, 0, 0, 0,
+				0, scale.y, 0, 0,
+				0, 0, scale.z, 0,
+				0, 0, 0,       1);
 }
 
-//https://github.com/microsoft/DirectXMath/blob/7c30ba5932e081ca4d64ba4abb8a8986a7444ec9/Inc/DirectXMathMatrix.inl
-//line 1675 i do not know how this works but it does so :D
-//return a matrix to rotate a vector around an arbitrary axis by some angle
-//TODO(sushi, Ma) redo this function, I think its completely wrong around any axis thats not a world axis
-inline mat4 mat4::
-AxisAngleRotationMatrix(float angle, vec4 axis){
-	angle = Radians(angle);
-	float mag = axis.mag();
-	axis = Vec4(axis.x / mag, axis.y / mag, axis.z / mag, axis.w / mag);
-	//axis.normalize();
-	float c = cosf(angle); float s = sinf(angle);
-	
-	vec4 A = Vec4(s, c, 1 - c, 0);
-	
-	vec4 C2 = Vec4(A.z, A.z, A.z, A.z);
-	vec4 C1 = Vec4(A.y, A.y, A.y, A.y);
-	vec4 C0 = Vec4(A.x, A.x, A.x, A.x);
-	
-	vec4 N0 = Vec4(axis.y, axis.z, axis.x, axis.w);
-	vec4 N1 = Vec4(axis.z, axis.x, axis.y, axis.w);
-	
-	vec4 V0 = C2 * N0;
-	V0 *= N1;
-	
-	vec4 R0 = C2 * axis;
-	R0 = R0 * axis + C1;
-	
-	vec4 R1 = C0 * axis + V0;
-	vec4 R2 = (V0 - C0) * axis;
-	
-	V0 = Vec4(R0.x, R0.y, R0.z, A.w);
-	vec4 V1 = Vec4(R1.z, R2.y, R2.z, R1.x);
-	vec4 V2 = Vec4(R1.y, R2.x, R1.y, R2.x);
-	
-	return mat4(V0.x, V1.x, V1.y, V0.w,
-				V1.z, V0.y, V1.w, V0.w,
-				V2.x, V2.y, V0.z, V0.w,
-				0,    0,    0,    1);
+//returns a pre-multiplied X->Y->Z LH transformation matrix based on input in radians
+EXTERN_C inline mat4
+mat4_transformation_matrix_radians_vec3(vec3 translation, vec3 rotation, vec3 scale){DPZoneScoped;
+	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
+	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
+	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	mat4 result;
+	result.arr[ 0] = scale.x * (cZ*cY);
+	result.arr[ 1] = scale.x * (cY*sZ);
+	result.arr[ 2] = scale.x * (-sY);
+	result.arr[ 3] = 0;
+	result.arr[ 4] = scale.y * (cZ*sX*sY - cX*sZ);
+	result.arr[ 5] = scale.y * (cZ*cX + sX*sY*sZ);
+	result.arr[ 6] = scale.y * (sX*cY);
+	result.arr[ 7] = 0;
+	result.arr[ 8] = scale.y * (cZ*cX*sY + sX*sZ);
+	result.arr[ 9] = scale.y * (cX*sY*sZ - cZ*sX);
+	result.arr[10] = scale.z * (cX*cY);
+	result.arr[11] = 0;
+	result.arr[12] = translation.x;
+	result.arr[13] = translation.y;
+	result.arr[14] = translation.z;
+	result.arr[15] = 1;
+	return result;
 }
 
-//returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
-//rotates over the Y, then Z then X, ref: https://www.euclideanspace.com/maths/geometry/affine/aroundPoint/index.htm
-inline mat4 mat4::RotationMatrixAroundPoint(vec3 pivot, vec3 rotation){
-	//pivot = -pivot; //gotta negate this for some reason :)
-	rotation = Radians(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	
-	return mat4(r00, r01, r02, 0,
-				r10, r11, r12, 0,
-				r20, r21, r22, 0,
-				pivot.x - r00*pivot.x - r01*pivot.y - r02*pivot.z, pivot.y - r10*pivot.x - r11*pivot.y - r12*pivot.z, pivot.z - r20*pivot.x - r21*pivot.y - r22*pivot.z, 1);
+//returns a pre-multiplied X->Y->Z LH transformation matrix based on input in degrees
+EXTERN_C inline mat4
+mat4_transformation_matrix_degrees_vec3(vec3 translation, vec3 rotation, vec3 scale){DPZoneScoped;
+	rotation.x = Radians(rotation.x);
+	rotation.y = Radians(rotation.y);
+	rotation.z = Radians(rotation.z);
+	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
+	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
+	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	mat4 result;
+	result.arr[ 0] = scale.x * (cZ*cY);
+	result.arr[ 1] = scale.x * (cY*sZ);
+	result.arr[ 2] = scale.x * (-sY);
+	result.arr[ 3] = 0;
+	result.arr[ 4] = scale.y * (cZ*sX*sY - cX*sZ);
+	result.arr[ 5] = scale.y * (cZ*cX + sX*sY*sZ);
+	result.arr[ 6] = scale.y * (sX*cY);
+	result.arr[ 7] = 0;
+	result.arr[ 8] = scale.y * (cZ*cX*sY + sX*sZ);
+	result.arr[ 9] = scale.y * (cX*sY*sZ - cZ*sX);
+	result.arr[10] = scale.z * (cX*cY);
+	result.arr[11] = 0;
+	result.arr[12] = translation.x;
+	result.arr[13] = translation.y;
+	result.arr[14] = translation.z;
+	result.arr[15] = 1;
+	return result;
 }
 
-//returns a translation matrix where (3,0) = translation.x, (3,1) = translation.y, (3,2) = translation.z
-inline mat4 mat4::
-TranslationMatrix(vec3 translation){
-	return mat4::TranslationMatrix(translation.x, translation.y, translation.z);
-}
 
-//returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
-inline mat4 mat4::
-ScaleMatrix(vec3 scale){
-	return mat4::ScaleMatrix(scale.x, scale.y, scale.z);
-}
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @other
 
-//returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
-inline mat4 mat4::
-TransformationMatrix(vec3 tr, vec3 rot, vec3 scale){
-	rot = Radians(rot);
-	float cX = cosf(rot.x); float sX = sinf(rot.x);
-	float cY = cosf(rot.y); float sY = sinf(rot.y);
-	float cZ = cosf(rot.z); float sZ = sinf(rot.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return mat4(scale.x*r00, scale.x*r01, scale.x*r02, 0,
-				scale.y*r10, scale.y*r11, scale.y*r12, 0,
-				scale.z*r20, scale.z*r21, scale.z*r22, 0,
-				tr.x,        tr.y,        tr.z, 1);
-}
-
-//returns euler angles from a rotation matrix
-//TODO(sushi, Ma) confirm that this works at some point
-inline vec3 mat4::
-Rotation(){
-	if((*this)(0,2) < 1){
-		if((*this)(0,2) > -1){
-			return -Vec3(Degrees(atan2(-(*this)(1,2), (*this)(2,2))), Degrees(asin((*this)(0,2))), Degrees(atan2(-(*this)(0,1), (*this)(0,0))));
-		}else{
-			return -Vec3(Degrees(-atan2((*this)(1,0), (*this)(1,1))), Degrees(-M_HALFPI), 0);
-		}
-	}else{
-		return -Vec3(Degrees(atan2((*this)(1,0), (*this)(1,1))), Degrees(M_HALFPI), 0);
-	}
-	
-	
-}
 
 #define F_AVG(i, f) ([&]{                      \
 persist std::vector<float> floats;           \
