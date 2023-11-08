@@ -368,8 +368,9 @@ if [ $build_compiler == "cl" ] || [ $build_compiler == "clang-cl" ]; then #_____
     #### -wd4189 (disables warning: unused local variables)
     #### -wd4201 (disables warning: nameless union or struct)
     #### -wd4311 (disables warning: pointer truncation)
+    #### -wd4700 (disables warning: uninitialized local variable used)
     #### -wd4706 (disables warning: assignment within conditional expression)
-    compile_flags="$compile_flags -MP -Gm- -W1 -wd4100 -wd4189 -wd4201 -wd4311 -wd4706"
+    compile_flags="$compile_flags -MP -Gm- -W1 -wd4100 -wd4189 -wd4201 -wd4311 -wd4700 -wd4706"
   fi
 
   if [ $build_release == 0 ]; then
