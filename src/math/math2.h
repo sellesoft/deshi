@@ -24,6 +24,7 @@ The transformation matrix will follow the format to the below:
 |translationX, translationY, translationZ, 1|
 
 Index:
+@libc
 @simd
 @vec2
 @vec2i
@@ -47,7 +48,7 @@ https://github.com/HandmadeMath/HandmadeMath
 https://github.com/vectorclass/version2 (Agner Fog)
 
 TODOs:
-- API documentation (types, funcs, macros)
+- API documentation (disables, types, funcs, macros)
 - maybe remove division by zero prevention?
 - maybe remove dependence on kigu?
 */
@@ -57,13 +58,21 @@ TODOs:
 
 #include "kigu/common.h"
 #include "kigu/profiling.h"
-#include <math.h>
 
-#if !defined(DESHI_DISABLE_SSE)
+
+#if !defined(DESHI_MATH_DISABLE_LIBC)
+#  define DESHI_MATH_USE_LIBC 1
+#  include <math.h>
+#else
+#  define DESHI_MATH_USE_LIBC 0
+#endif //#if !defined(DESHI_MATH_DISABLE_LIBC)
+
+
+#if !defined(DESHI_MATH_DISABLE_SSE)
 #  if defined(_MSC_VER)
 /* MSVC supports SSE in amd64 mode or _M_IX86_FP >= 1 (2 means SSE2) */
 #    if defined(_M_AMD64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 1)
-#      define DESHI_USE_SSE 1
+#      define DESHI_MATH_USE_SSE 1
 #      include <xmmintrin.h>
 #      include <pmmintrin.h>
 #      include <smmintrin.h>
@@ -72,14 +81,16 @@ TODOs:
 #  else //#if defined(_MSC_VER)
 /* non-MSVC usually #define __SSE__ if it's supported */
 #    if defined(__SSE__)
-#      define DESHI_USE_SSE 1
+#      define DESHI_MATH_USE_SSE 1
 #      include <xmmintrin.h>
 #      include <pmmintrin.h>
 #      include <smmintrin.h>
 #      include <emmintrin.h>
 #    endif  //#if defined(__SSE__)
 #  endif //#else //#if defined(_MSC_VER)
-#endif //#else //#if !defined(DESHI_DISABLE_SSE)
+#else //#if !defined(DESHI_MATH_DISABLE_SSE)
+#  define DESHI_MATH_USE_SSE 0
+#endif //#else //#if !defined(DESHI_MATH_DISABLE_SSE)
 
 
 #ifdef __cplusplus
@@ -100,8 +111,63 @@ struct mat4;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
+// @libc
+#if DESHI_MATH_USE_LIBC
+
+
+#ifndef DESHI_ABS
+#  define DESHI_ABS abs
+#endif //#ifndef DESHI_ABS
+
+#ifndef DESHI_ABSF
+#  define DESHI_ABSF fabs
+#endif //#ifndef DESHI_ABSF
+
+#ifndef DESHI_SQRTF
+#  define DESHI_SQRTF sqrtf
+#endif //#ifndef DESHI_SQRTF
+
+#ifndef DESHI_SINF
+#  define DESHI_SINF sinf
+#endif //#ifndef DESHI_SINF
+
+#ifndef DESHI_COSF
+#  define DESHI_COSF cosf
+#endif //#ifndef DESHI_COSF
+
+#ifndef DESHI_TANF
+#  define DESHI_TANF tanf
+#endif //#ifndef DESHI_TANF
+
+#ifndef DESHI_ASINF
+#  define DESHI_ASINF asinf
+#endif //#ifndef DESHI_ASINF
+
+#ifndef DESHI_ACOSF
+#  define DESHI_ACOSF acosf
+#endif //#ifndef DESHI_ACOSF
+
+#ifndef DESHI_ATANF
+#  define DESHI_ATANF atanf
+#endif //#ifndef DESHI_ATANF
+
+#ifndef DESHI_CEILF
+#  define DESHI_CEILF ceilf
+#endif //#ifndef DESHI_CEILF
+
+#ifndef DESHI_FLOORF
+#  define DESHI_FLOORF floorf
+#endif //#ifndef DESHI_FLOORF
+
+#ifndef DESHI_ROUNDF
+#  define DESHI_ROUNDF roundf
+#endif //#ifndef DESHI_ROUNDF
+
+
+#endif //#if DESHI_MATH_USE_LIBC
+//~////////////////////////////////////////////////////////////////////////////////////////////////
 // @simd
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 
 
 #define m128_shuffle_mask(x,y,z,w) ((x) | ((y) << 2) | ((z) << 4) | ((w) << 6))
@@ -153,7 +219,7 @@ struct mat4;
 EXTERN_C inline b32
 m128_equal_4f32(__m128 lhs, __m128 rhs){DPZoneScoped;
 	__m128 temp0 = _mm_sub_ps(lhs, rhs);
-	temp0 = m128_abs(temp0);
+	temp0 = _mm_andnot_ps(_mm_set1_ps(-0.0f), temp0);
 	temp0 = _mm_cmpgt_ps(temp0, _mm_set1_ps(M_EPSILON));
 	return !(_mm_movemask_ps(temp0));
 }
@@ -173,7 +239,7 @@ m128_linear_combine(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row
 }
 
 
-#endif //#else //#if DESHI_USE_SSE
+#endif //#if DESHI_MATH_USE_SSE
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @vec2
 
@@ -468,37 +534,37 @@ operator- ()const{DPZoneScoped;
 
 EXTERN_C inline b32
 vec2_equal(vec2 lhs, vec2 rhs){DPZoneScoped;
-	return (fabs(lhs.x - rhs.x) < M_EPSILON)
-		&& (fabs(lhs.y - rhs.y) < M_EPSILON);
+	return (DESHI_ABSF(lhs.x - rhs.x) < M_EPSILON)
+		&& (DESHI_ABSF(lhs.y - rhs.y) < M_EPSILON);
 }
 
 #ifdef __cplusplus
 inline b32 vec2::
 operator==(const vec2& rhs)const{DPZoneScoped;
-	return (fabs(this->x - rhs.x) < M_EPSILON)
-		&& (fabs(this->y - rhs.y) < M_EPSILON);
+	return (DESHI_ABSF(this->x - rhs.x) < M_EPSILON)
+		&& (DESHI_ABSF(this->y - rhs.y) < M_EPSILON);
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 vec2_nequal(vec2 lhs, vec2 rhs){DPZoneScoped;
-	return (fabs(lhs.x - rhs.x) > M_EPSILON)
-		|| (fabs(lhs.y - rhs.y) > M_EPSILON);
+	return (DESHI_ABSF(lhs.x - rhs.x) > M_EPSILON)
+		|| (DESHI_ABSF(lhs.y - rhs.y) > M_EPSILON);
 }
 
 #ifdef __cplusplus
 inline b32 vec2::
 operator!=(const vec2& rhs)const{DPZoneScoped;
-	return (fabs(this->x - rhs.x) > M_EPSILON)
-		|| (fabs(this->y - rhs.y) > M_EPSILON);
+	return (DESHI_ABSF(this->x - rhs.x) > M_EPSILON)
+		|| (DESHI_ABSF(this->y - rhs.y) > M_EPSILON);
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec2
 vec2_abs(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = fabs(lhs.x);
-	v.y = fabs(lhs.y);
+	v.x = DESHI_ABSF(lhs.x);
+	v.y = DESHI_ABSF(lhs.y);
 	return v;
 }
 
@@ -506,8 +572,8 @@ vec2_abs(vec2 lhs){DPZoneScoped;
 inline vec2 vec2::
 abs()const{DPZoneScoped;
 	vec2 v;
-	v.x = fabs(this->x);
-	v.y = fabs(this->y);
+	v.x = DESHI_ABSF(this->x);
+	v.y = DESHI_ABSF(this->y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -544,13 +610,13 @@ cross()const{DPZoneScoped;
 
 EXTERN_C inline f32
 vec2_mag(vec2 lhs){DPZoneScoped;
-	return sqrtf((lhs.x * lhs.x) + (lhs.y * lhs.y));
+	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y));
 }
 
 #ifdef __cplusplus
 inline f32 vec2::
 mag()const{DPZoneScoped;
-	return sqrtf((this->x * this->x) + (this->y * this->y));
+	return DESHI_SQRTF((this->x * this->x) + (this->y * this->y));
 }
 #endif //#ifdef __cplusplus
 
@@ -666,7 +732,7 @@ EXTERN_C inline f32
 vec2_radians_between(vec2 lhs, vec2 rhs){DPZoneScoped;
 	f32 m = vec2_mag(lhs) * vec2_mag(rhs);
 	if(m > M_EPSILON){
-		return acosf(vec2_dot(rhs) / m);
+		return DESHI_ACOSF(vec2_dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -677,7 +743,7 @@ inline f32 vec2::
 radians_between(const vec2& rhs)const{DPZoneScoped;
 	f32 m = this->mag() * rhs.mag();
 	if(m > M_EPSILON){
-		return acosf(this->dot(rhs) / m);
+		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -687,8 +753,8 @@ radians_between(const vec2& rhs)const{DPZoneScoped;
 EXTERN_C inline vec2
 vec2_floor(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = floorf(lhs.x);
-	v.y = floorf(lhs.y);
+	v.x = DESHI_FLOORF(lhs.x);
+	v.y = DESHI_FLOORF(lhs.y);
 	return v;
 }
 
@@ -696,8 +762,8 @@ vec2_floor(vec2 lhs){DPZoneScoped;
 inline vec2 vec2::
 floor()const{DPZoneScoped;
 	vec2 v;
-	v.x = floorf(this->x);
-	v.y = floorf(this->y);
+	v.x = DESHI_FLOORF(this->x);
+	v.y = DESHI_FLOORF(this->y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -706,8 +772,8 @@ floor()const{DPZoneScoped;
 inline vec2
 floor(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = floorf(lhs.x);
-	v.y = floorf(lhs.y);
+	v.x = DESHI_FLOORF(lhs.x);
+	v.y = DESHI_FLOORF(lhs.y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -715,8 +781,8 @@ floor(vec2 lhs){DPZoneScoped;
 EXTERN_C inline vec2
 vec2_ceil(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = ceilf(lhs.x);
-	v.y = ceilf(lhs.y);
+	v.x = DESHI_CEILF(lhs.x);
+	v.y = DESHI_CEILF(lhs.y);
 	return v;
 }
 
@@ -724,8 +790,8 @@ vec2_ceil(vec2 lhs){DPZoneScoped;
 inline vec2 vec2::
 ceil()const{DPZoneScoped;
 	vec2 v;
-	v.x = ceilf(this->x);
-	v.y = ceilf(this->y);
+	v.x = DESHI_CEILF(this->x);
+	v.y = DESHI_CEILF(this->y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -734,8 +800,8 @@ ceil()const{DPZoneScoped;
 inline vec2
 ceil(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = ceilf(lhs.x);
-	v.y = ceilf(lhs.y);
+	v.x = DESHI_CEILF(lhs.x);
+	v.y = DESHI_CEILF(lhs.y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -743,8 +809,8 @@ ceil(vec2 lhs){DPZoneScoped;
 EXTERN_C inline vec2
 vec2_round(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = roundf(lhs.x);
-	v.y = roundf(lhs.y);
+	v.x = DESHI_ROUNDF(lhs.x);
+	v.y = DESHI_ROUNDF(lhs.y);
 	return v;
 }
 
@@ -752,8 +818,8 @@ vec2_round(vec2 lhs){DPZoneScoped;
 inline vec2 vec2::
 round()const{DPZoneScoped;
 	vec2 v;
-	v.x = roundf(this->x);
-	v.y = roundf(this->y);
+	v.x = DESHI_ROUNDF(this->x);
+	v.y = DESHI_ROUNDF(this->y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -762,8 +828,8 @@ round()const{DPZoneScoped;
 inline vec2
 round(vec2 lhs){DPZoneScoped;
 	vec2 v;
-	v.x = roundf(lhs.x);
-	v.y = roundf(lhs.y);
+	v.x = DESHI_ROUNDF(lhs.x);
+	v.y = DESHI_ROUNDF(lhs.y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -771,8 +837,8 @@ round(vec2 lhs){DPZoneScoped;
 EXTERN_C inline vec2
 vec2_round_to(vec2 lhs, s32 place){DPZoneScoped;
 	vec2 v;
-	v.x = floorf(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = floorf(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 
@@ -780,8 +846,8 @@ vec2_round_to(vec2 lhs, s32 place){DPZoneScoped;
 inline vec2 vec2::
 round_to(s32 place)const{DPZoneScoped;
 	vec2 v;
-	v.x = floorf(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = floorf(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -1480,8 +1546,8 @@ operator!=(const vec2i& rhs)const{DPZoneScoped;
 EXTERN_C inline vec2i
 vec2i_abs(vec2i lhs){DPZoneScoped;
 	vec2i v;
-	v.x = abs(lhs.x);
-	v.y = abs(lhs.y);
+	v.x = DESHI_ABS(lhs.x);
+	v.y = DESHI_ABS(lhs.y);
 	return v;
 }
 
@@ -1489,8 +1555,8 @@ vec2i_abs(vec2i lhs){DPZoneScoped;
 inline vec2i vec2i::
 abs()const{DPZoneScoped;
 	vec2i v;
-	v.x = abs(this->x);
-	v.y = abs(this->y);
+	v.x = DESHI_ABS(this->x);
+	v.y = DESHI_ABS(this->y);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -1527,13 +1593,13 @@ cross()const{DPZoneScoped;
 
 EXTERN_C inline f32
 vec2i_mag(vec2i lhs){DPZoneScoped;
-	return sqrtf((f32)((lhs.x * lhs.x) + (lhs.y * lhs.y)));
+	return DESHI_SQRTF((f32)((lhs.x * lhs.x) + (lhs.y * lhs.y)));
 }
 
 #ifdef __cplusplus
 inline f32 vec2i::
 mag()const{DPZoneScoped;
-	return sqrtf((f32)((this->x * this->x) + (this->y * this->y)));
+	return DESHI_SQRTF((f32)((this->x * this->x) + (this->y * this->y)));
 }
 #endif //#ifdef __cplusplus
 
@@ -1649,7 +1715,7 @@ EXTERN_C inline f32
 vec2i_radians_between(vec2i lhs, vec2i rhs){DPZoneScoped;
 	f32 m = vec2i_mag(lhs) * vec2i_mag(rhs);
 	if(m > M_EPSILON){
-		return acosf(vec2i_dot(lhs,rhs) / m);
+		return DESHI_ACOSF(vec2i_dot(lhs,rhs) / m);
 	}else{
 		return 0;
 	}
@@ -1660,7 +1726,7 @@ inline f32 vec2i::
 radians_between(const vec2i& rhs)const{DPZoneScoped;
 	f32 m = this->mag() * rhs.mag();
 	if(m > M_EPSILON){
-		return acosf(this->dot(rhs) / m);
+		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -2050,6 +2116,7 @@ EXTERN_C typedef struct vec3{
 	union{
 		f32 arr[3];
 		struct{ f32 x, y, z; };
+		struct{ f32 u, v, w; };
 		struct{ f32 r, g, b; };
 		struct{ vec2 xy; f32 _z0; };
 		struct{ f32 _x0; vec2 yz; };
@@ -2370,42 +2437,42 @@ operator- ()const{DPZoneScoped;
 
 EXTERN_C inline b32
 vec3_equal(vec3 lhs, vec3 rhs){DPZoneScoped;
-	return (fabs(lhs.x - rhs.x) < M_EPSILON)
-		&& (fabs(lhs.y - rhs.y) < M_EPSILON)
-		&& (fabs(lhs.z - rhs.z) < M_EPSILON);
+	return (DESHI_ABSF(lhs.x - rhs.x) < M_EPSILON)
+		&& (DESHI_ABSF(lhs.y - rhs.y) < M_EPSILON)
+		&& (DESHI_ABSF(lhs.z - rhs.z) < M_EPSILON);
 }
 
 #ifdef __cplusplus
 inline b32 vec3::
 operator==(const vec3& rhs)const{DPZoneScoped;
-	return (fabs(this->x - rhs.x) < M_EPSILON)
-		&& (fabs(this->y - rhs.y) < M_EPSILON)
-		&& (fabs(this->z - rhs.z) < M_EPSILON);
+	return (DESHI_ABSF(this->x - rhs.x) < M_EPSILON)
+		&& (DESHI_ABSF(this->y - rhs.y) < M_EPSILON)
+		&& (DESHI_ABSF(this->z - rhs.z) < M_EPSILON);
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 vec3_nequal(vec3 lhs, vec3 rhs){DPZoneScoped;
-	return (fabs(lhs.x - rhs.x) > M_EPSILON)
-		|| (fabs(lhs.y - rhs.y) > M_EPSILON)
-		|| (fabs(lhs.z - rhs.z) > M_EPSILON);
+	return (DESHI_ABSF(lhs.x - rhs.x) > M_EPSILON)
+		|| (DESHI_ABSF(lhs.y - rhs.y) > M_EPSILON)
+		|| (DESHI_ABSF(lhs.z - rhs.z) > M_EPSILON);
 }
 
 #ifdef __cplusplus
 inline b32 vec3::
 operator!=(const vec3& rhs)const{DPZoneScoped;
-	return (fabs(this->x - rhs.x) > M_EPSILON)
-		|| (fabs(this->y - rhs.y) > M_EPSILON)
-		|| (fabs(this->z - rhs.z) > M_EPSILON);
+	return (DESHI_ABSF(this->x - rhs.x) > M_EPSILON)
+		|| (DESHI_ABSF(this->y - rhs.y) > M_EPSILON)
+		|| (DESHI_ABSF(this->z - rhs.z) > M_EPSILON);
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec3
 vec3_abs(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = fabs(lhs.x);
-	v.y = fabs(lhs.y);
-	v.z = fabs(lhs.z);
+	v.x = DESHI_ABSF(lhs.x);
+	v.y = DESHI_ABSF(lhs.y);
+	v.z = DESHI_ABSF(lhs.z);
 	return v;
 }
 
@@ -2413,9 +2480,9 @@ vec3_abs(vec3 lhs){DPZoneScoped;
 inline vec3 vec3::
 abs()const{DPZoneScoped;
 	vec3 v;
-	v.x = fabs(this->x);
-	v.y = fabs(this->y);
-	v.z = fabs(this->z);
+	v.x = DESHI_ABSF(this->x);
+	v.y = DESHI_ABSF(this->y);
+	v.z = DESHI_ABSF(this->z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2454,13 +2521,13 @@ cross(const vec3& rhs)const{DPZoneScoped;
 
 EXTERN_C inline f32
 vec3_mag(vec3 lhs){DPZoneScoped;
-	return sqrtf((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
+	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
 }
 
 #ifdef __cplusplus
 inline f32 vec3::
 mag()const{DPZoneScoped;
-	return sqrtf((this->x * this->x) + (this->y * this->y) + (this->z * this->z));
+	return DESHI_SQRTF((this->x * this->x) + (this->y * this->y) + (this->z * this->z));
 }
 #endif //#ifdef __cplusplus
 
@@ -2578,7 +2645,7 @@ EXTERN_C inline f32
 vec3_radians_between(vec3 lhs, vec3 rhs){DPZoneScoped;
 	f32 m = vec3_mag(lhs) * vec3_mag(rhs);
 	if(m > M_EPSILON){
-		return acosf(vec3_dot(rhs) / m);
+		return DESHI_ACOSF(vec3_dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -2589,7 +2656,7 @@ inline f32 vec3::
 radians_between(const vec3& rhs)const{DPZoneScoped;
 	f32 m = this->mag() * rhs.mag();
 	if(m > M_EPSILON){
-		return acosf(this->dot(rhs) / m);
+		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -2599,9 +2666,9 @@ radians_between(const vec3& rhs)const{DPZoneScoped;
 EXTERN_C inline vec3
 vec3_floor(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = floorf(lhs.x);
-	v.y = floorf(lhs.y);
-	v.z = floorf(lhs.z);
+	v.x = DESHI_FLOORF(lhs.x);
+	v.y = DESHI_FLOORF(lhs.y);
+	v.z = DESHI_FLOORF(lhs.z);
 	return v;
 }
 
@@ -2609,9 +2676,9 @@ vec3_floor(vec3 lhs){DPZoneScoped;
 inline vec3 vec3::
 floor()const{DPZoneScoped;
 	vec3 v;
-	v.x = floorf(this->x);
-	v.y = floorf(this->y);
-	v.z = floorf(this->z);
+	v.x = DESHI_FLOORF(this->x);
+	v.y = DESHI_FLOORF(this->y);
+	v.z = DESHI_FLOORF(this->z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2620,9 +2687,9 @@ floor()const{DPZoneScoped;
 inline vec3
 floor(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = floorf(lhs.x);
-	v.y = floorf(lhs.y);
-	v.z = floorf(lhs.z);
+	v.x = DESHI_FLOORF(lhs.x);
+	v.y = DESHI_FLOORF(lhs.y);
+	v.z = DESHI_FLOORF(lhs.z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2630,9 +2697,9 @@ floor(vec3 lhs){DPZoneScoped;
 EXTERN_C inline vec3
 vec3_ceil(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = ceilf(lhs.x);
-	v.y = ceilf(lhs.y);
-	v.z = ceilf(lhs.z);
+	v.x = DESHI_CEILF(lhs.x);
+	v.y = DESHI_CEILF(lhs.y);
+	v.z = DESHI_CEILF(lhs.z);
 	return v;
 }
 
@@ -2640,9 +2707,9 @@ vec3_ceil(vec3 lhs){DPZoneScoped;
 inline vec3 vec3::
 ceil()const{DPZoneScoped;
 	vec3 v;
-	v.x = ceilf(this->x);
-	v.y = ceilf(this->y);
-	v.z = ceilf(this->z);
+	v.x = DESHI_CEILF(this->x);
+	v.y = DESHI_CEILF(this->y);
+	v.z = DESHI_CEILF(this->z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2651,9 +2718,9 @@ ceil()const{DPZoneScoped;
 inline vec3
 ceil(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = ceilf(lhs.x);
-	v.y = ceilf(lhs.y);
-	v.z = ceilf(lhs.z);
+	v.x = DESHI_CEILF(lhs.x);
+	v.y = DESHI_CEILF(lhs.y);
+	v.z = DESHI_CEILF(lhs.z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2661,9 +2728,9 @@ ceil(vec3 lhs){DPZoneScoped;
 EXTERN_C inline vec3
 vec3_round(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = roundf(lhs.x);
-	v.y = roundf(lhs.y);
-	v.z = roundf(lhs.z);
+	v.x = DESHI_ROUNDF(lhs.x);
+	v.y = DESHI_ROUNDF(lhs.y);
+	v.z = DESHI_ROUNDF(lhs.z);
 	return v;
 }
 
@@ -2671,9 +2738,9 @@ vec3_round(vec3 lhs){DPZoneScoped;
 inline vec3 vec3::
 round()const{DPZoneScoped;
 	vec3 v;
-	v.x = roundf(this->x);
-	v.y = roundf(this->y);
-	v.z = roundf(this->z);
+	v.x = DESHI_ROUNDF(this->x);
+	v.y = DESHI_ROUNDF(this->y);
+	v.z = DESHI_ROUNDF(this->z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2682,9 +2749,9 @@ round()const{DPZoneScoped;
 inline vec3
 round(vec3 lhs){DPZoneScoped;
 	vec3 v;
-	v.x = roundf(lhs.x);
-	v.y = roundf(lhs.y);
-	v.z = roundf(lhs.z);
+	v.x = DESHI_ROUNDF(lhs.x);
+	v.y = DESHI_ROUNDF(lhs.y);
+	v.z = DESHI_ROUNDF(lhs.z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -2692,9 +2759,9 @@ round(vec3 lhs){DPZoneScoped;
 EXTERN_C inline vec3
 vec3_round_to(vec3 lhs, s32 place){DPZoneScoped;
 	vec3 v;
-	v.x = floorf(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = floorf(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = floorf(lhs.z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.z = DESHI_FLOORF(lhs.z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 
@@ -2702,9 +2769,9 @@ vec3_round_to(vec3 lhs, s32 place){DPZoneScoped;
 inline vec3 vec3::
 round_to(s32 place)const{DPZoneScoped;
 	vec3 v;
-	v.x = floorf(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = floorf(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = floorf(this->z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.z = DESHI_FLOORF(this->z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -3576,9 +3643,9 @@ operator!=(const vec3i& rhs)const{DPZoneScoped;
 EXTERN_C inline vec3i
 vec3i_abs(vec3i lhs){DPZoneScoped;
 	vec3i v;
-	v.x = abs(lhs.x);
-	v.y = abs(lhs.y);
-	v.z = abs(lhs.z);
+	v.x = DESHI_ABS(lhs.x);
+	v.y = DESHI_ABS(lhs.y);
+	v.z = DESHI_ABS(lhs.z);
 	return v;
 }
 
@@ -3586,9 +3653,9 @@ vec3i_abs(vec3i lhs){DPZoneScoped;
 inline vec3i vec3i::
 abs()const{DPZoneScoped;
 	vec3i v;
-	v.x = abs(this->x);
-	v.y = abs(this->y);
-	v.z = abs(this->z);
+	v.x = DESHI_ABS(this->x);
+	v.y = DESHI_ABS(this->y);
+	v.z = DESHI_ABS(this->z);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -3627,13 +3694,13 @@ cross(const vec3i& rhs)const{DPZoneScoped;
 
 EXTERN_C inline f32
 vec3i_mag(vec3i lhs){DPZoneScoped;
-	return sqrtf((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
+	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
 }
 
 #ifdef __cplusplus
 inline f32 vec3i::
 mag()const{DPZoneScoped;
-	return sqrtf((this->x * this->x) + (this->y * this->y) + (this->z * this->z));
+	return DESHI_SQRTF((this->x * this->x) + (this->y * this->y) + (this->z * this->z));
 }
 #endif //#ifdef __cplusplus
 
@@ -3751,7 +3818,7 @@ EXTERN_C inline f32
 vec3i_radians_between(vec3i lhs, vec3i rhs){DPZoneScoped;
 	f32 m = vec3i_mag(lhs) * vec3i_mag(rhs);
 	if(m > M_EPSILON){
-		return acosf(vec3i_dot(rhs) / m);
+		return DESHI_ACOSF(vec3i_dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -3762,7 +3829,7 @@ inline f32 vec3i::
 radians_between(const vec3i& rhs)const{DPZoneScoped;
 	f32 m = this->mag() * rhs.mag();
 	if(m > M_EPSILON){
-		return acosf(this->dot(rhs) / m);
+		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -4318,9 +4385,9 @@ EXTERN_C typedef struct vec4{
 			f32 _y0;
 			vec2 zw;
 		};
-#ifdef DESHI_USE_SSE
+#ifdef DESHI_MATH_USE_SSE
 		__m128 sse;
-#endif //#ifdef DESHI_USE_SSE
+#endif //#ifdef DESHI_MATH_USE_SSE
 	};
 	
 #ifdef __cplusplus
@@ -4433,14 +4500,14 @@ operator[](u32 index){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_add(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_add_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x + rhs.x;
 	v.y = lhs.y + rhs.y;
 	v.z = lhs.z + rhs.z;
 	v.w = lhs.w + rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4448,14 +4515,14 @@ vec4_add(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator+ (const vec4& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_add_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x + rhs.x;
 	v.y = this->y + rhs.y;
 	v.z = this->z + rhs.z;
 	v.w = this->w + rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4463,28 +4530,28 @@ operator+ (const vec4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator+=(const vec4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_add_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x += rhs.x;
 	this->y += rhs.y;
 	this->z += rhs.z;
 	this->w += rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4
 vec4_sub(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_sub_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x - rhs.x;
 	v.y = lhs.y - rhs.y;
 	v.z = lhs.z - rhs.z;
 	v.w = lhs.w - rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4492,14 +4559,14 @@ vec4_sub(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator- (const vec4& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_sub_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x - rhs.x;
 	v.y = this->y - rhs.y;
 	v.z = this->z - rhs.z;
 	v.w = this->w - rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4507,28 +4574,28 @@ operator- (const vec4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator-=(const vec4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_sub_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x -= rhs.x;
 	this->y -= rhs.y;
 	this->z -= rhs.z;
 	this->w -= rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4
 vec4_mul(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x * rhs.x;
 	v.y = lhs.y * rhs.y;
 	v.z = lhs.z * rhs.z;
 	v.w = lhs.w * rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4536,14 +4603,14 @@ vec4_mul(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator* (const vec4& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x * rhs.x;
 	v.y = this->y * rhs.y;
 	v.z = this->z * rhs.z;
 	v.w = this->w * rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4551,28 +4618,28 @@ operator* (const vec4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator*=(const vec4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_mul_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x *= rhs.x;
 	this->y *= rhs.y;
 	this->z *= rhs.z;
 	this->w *= rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4
 vec4_mul_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4f32(lhs.sse, m128_fill_4f32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x * rhs;
 	v.y = lhs.y * rhs;
 	v.z = lhs.z * rhs;
 	v.w = lhs.w * rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4580,14 +4647,14 @@ vec4_mul_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator* (const f32& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4f32(this->sse, m128_fill_4f32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x * rhs;
 	v.y = this->y * rhs;
 	v.z = this->z * rhs;
 	v.w = this->w * rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4595,14 +4662,14 @@ operator* (const f32& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator*=(const f32& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	sse = m128_mul_4f32(this->sse, m128_fill_4f32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x *= rhs;
 	this->y *= rhs;
 	this->z *= rhs;
 	this->w *= rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -4616,14 +4683,14 @@ operator* (s32 lhs, vec4 rhs){
 EXTERN_C inline vec4
 vec4_div(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_div_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x / rhs.x;
 	v.y = lhs.y / rhs.y;
 	v.z = lhs.z / rhs.z;
 	v.w = lhs.w / rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4631,14 +4698,14 @@ vec4_div(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator/ (const vec4& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_div_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x / rhs.x;
 	v.y = this->y / rhs.y;
 	v.z = this->z / rhs.z;
 	v.w = this->w / rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4646,28 +4713,28 @@ operator/ (const vec4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator/=(const vec4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_div_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x /= rhs.x;
 	this->y /= rhs.y;
 	this->z /= rhs.z;
 	this->w /= rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4
 vec4_div_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_div_4f32(lhs.sse, m128_fill_4f32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x / rhs;
 	v.y = lhs.y / rhs;
 	v.z = lhs.z / rhs;
 	v.w = lhs.w / rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4675,14 +4742,14 @@ vec4_div_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator/ (const f32& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_div_4f32(this->sse, m128_fill_4f32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x / rhs;
 	v.y = this->y / rhs;
 	v.z = this->z / rhs;
 	v.w = this->w / rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4690,28 +4757,28 @@ operator/ (const f32& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator/=(const f32& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_div_4f32(this->sse, m128_fill_4f32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x /= rhs;
 	this->y /= rhs;
 	this->z /= rhs;
 	this->w /= rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4
 vec4_negate(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_negate_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = -(lhs.x);
 	v.y = -(lhs.y);
 	v.z = -(lhs.z);
 	v.w = -(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4719,81 +4786,81 @@ vec4_negate(vec4 lhs){DPZoneScoped;
 inline vec4 vec4::
 operator- ()const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_negate_4f32(this->sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = -(this->x);
 	v.y = -(this->y);
 	v.z = -(this->z);
 	v.w = -(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 vec4_equal(vec4 lhs, vec4 rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(lhs.x - rhs.x) < M_EPSILON 
-		&& fabs(lhs.y - rhs.y) < M_EPSILON 
-		&& fabs(lhs.z - rhs.z) < M_EPSILON 
-		&& fabs(lhs.w - rhs.w) < M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(lhs.x - rhs.x) < M_EPSILON 
+		&& DESHI_ABSF(lhs.y - rhs.y) < M_EPSILON 
+		&& DESHI_ABSF(lhs.z - rhs.z) < M_EPSILON 
+		&& DESHI_ABSF(lhs.w - rhs.w) < M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline bool vec4::
 operator==(const vec4& rhs)const{DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(this->x - rhs.x) < M_EPSILON 
-		&& fabs(this->y - rhs.y) < M_EPSILON 
-		&& fabs(this->z - rhs.z) < M_EPSILON 
-		&& fabs(this->w - rhs.w) < M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(this->x - rhs.x) < M_EPSILON 
+		&& DESHI_ABSF(this->y - rhs.y) < M_EPSILON 
+		&& DESHI_ABSF(this->z - rhs.z) < M_EPSILON 
+		&& DESHI_ABSF(this->w - rhs.w) < M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 vec4_nequal(vec4 lhs, vec4 rhs){DPZoneScoped;
-	#if DESHI_USE_SSE
+	#if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(lhs.x - rhs.x) > M_EPSILON 
-		|| fabs(lhs.y - rhs.y) > M_EPSILON 
-		|| fabs(lhs.z - rhs.z) > M_EPSILON 
-		|| fabs(lhs.w - rhs.w) > M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(lhs.x - rhs.x) > M_EPSILON 
+		|| DESHI_ABSF(lhs.y - rhs.y) > M_EPSILON 
+		|| DESHI_ABSF(lhs.z - rhs.z) > M_EPSILON 
+		|| DESHI_ABSF(lhs.w - rhs.w) > M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline bool vec4::
 operator!=(const vec4& rhs)const{DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(this->x - rhs.x) > M_EPSILON 
-		|| fabs(this->y - rhs.y) > M_EPSILON 
-		|| fabs(this->z - rhs.z) > M_EPSILON 
-		|| fabs(this->w - rhs.w) > M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(this->x - rhs.x) > M_EPSILON 
+		|| DESHI_ABSF(this->y - rhs.y) > M_EPSILON 
+		|| DESHI_ABSF(this->z - rhs.z) > M_EPSILON 
+		|| DESHI_ABSF(this->w - rhs.w) > M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4
 vec4_abs(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_abs_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = fabs(lhs.x);
-	v.y = fabs(lhs.y);
-	v.z = fabs(lhs.z);
-	v.w = fabs(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ABSF(lhs.x);
+	v.y = DESHI_ABSF(lhs.y);
+	v.z = DESHI_ABSF(lhs.z);
+	v.w = DESHI_ABSF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -4801,14 +4868,14 @@ vec4_abs(vec4 lhs){DPZoneScoped;
 inline vec4 vec4::
 abs()const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_abs_4f32(this->sse);
-#else //#if DESHI_USE_SSE
-	v.x = fabs(this->x);
-	v.y = fabs(this->y);
-	v.z = fabs(this->z);
-	v.w = fabs(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ABSF(this->x);
+	v.y = DESHI_ABSF(this->y);
+	v.z = DESHI_ABSF(this->z);
+	v.w = DESHI_ABSF(this->w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -4816,16 +4883,16 @@ abs()const{DPZoneScoped;
 EXTERN_C inline f32
 vec4_dot(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mul_ps(lhs.sse, rhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
 	result = _mm_cvtss_f32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z) + (lhs.w * rhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -4833,16 +4900,16 @@ vec4_dot(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline f32 vec4::
 dot(const vec4& rhs)const{DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mul_ps(this->sse, rhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
 	result = _mm_cvtss_f32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (this->x * rhs.x) + (this->y * rhs.y) + (this->z * rhs.z) + (this->w * rhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -4850,7 +4917,7 @@ dot(const vec4& rhs)const{DPZoneScoped;
 EXTERN_C inline f32
 vec4_mag(vec4 lhs){DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mul_ps(lhs.sse, lhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
@@ -4858,9 +4925,9 @@ vec4_mag(vec4 lhs){DPZoneScoped;
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
 	temp0 = _mm_sqrt_ss(temp0);
 	result = _mm_cvtss_f32(temp0);
-#else //#if DESHI_USE_SSE
-	result = sqrtf((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z) + (lhs.w * lhs.w));
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	result = DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z) + (lhs.w * lhs.w));
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -4868,7 +4935,7 @@ vec4_mag(vec4 lhs){DPZoneScoped;
 inline f32 vec4::
 mag()const{DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mul_ps(this->sse, this->sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
@@ -4876,9 +4943,9 @@ mag()const{DPZoneScoped;
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
 	temp0 = _mm_sqrt_ss(temp0);
 	result = _mm_cvtss_f32(temp0);
-#else //#if DESHI_USE_SSE
-	result = sqrtf((this->x * this->x) + (this->y * this->y) + (this->z * this->z) + (this->w * this->w));
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	result = DESHI_SQRTF((this->x * this->x) + (this->y * this->y) + (this->z * this->z) + (this->w * this->w));
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -4886,16 +4953,16 @@ mag()const{DPZoneScoped;
 EXTERN_C inline f32
 vec4_mag_sq(vec4 lhs){DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mul_ps(lhs.sse, lhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
 	result = _mm_cvtss_f32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z) + (lhs.w * lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -4903,16 +4970,16 @@ vec4_mag_sq(vec4 lhs){DPZoneScoped;
 inline f32 vec4::
 mag_sq()const{DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mul_ps(this->sse, this->sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
 	result = _mm_cvtss_f32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (this->x * this->x) + (this->y * this->y) + (this->z * this->z) + (this->w * this->w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -5019,14 +5086,14 @@ component(const vec4& rhs)const{DPZoneScoped;
 EXTERN_C inline vec4
 vec4_midpoint(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_div_4f32(m128_add_4f32(lhs.sse, rhs.sse), m128_fill_4f32(2.0f));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x + rhs.x) / 2.0f;
 	v.y = (lhs.y + rhs.y) / 2.0f;
 	v.z = (lhs.z + rhs.z) / 2.0f;
 	v.w = (lhs.w + rhs.w) / 2.0f;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5034,14 +5101,14 @@ vec4_midpoint(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4
 midpoint(const vec4& rhs)const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_div_4f32(m128_add_4f32(lhs.sse, rhs.sse), m128_fill_4f32(2.0f));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x + rhs.x) / 2.0f;
 	v.y = (lhs.y + rhs.y) / 2.0f;
 	v.z = (lhs.z + rhs.z) / 2.0f;
 	v.w = (lhs.w + rhs.w) / 2.0f;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5050,7 +5117,7 @@ EXTERN_C inline f32
 vec4_radians_between(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 m = vec4_mag(lhs) * vec4_mag(rhs);
 	if(m > M_EPSILON){
-		return acosf(vec4_dot(rhs) / m);
+		return DESHI_ACOSF(vec4_dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -5061,7 +5128,7 @@ inline f32 vec4::
 radians_between(const vec4& rhs)const{DPZoneScoped;
 	f32 m = this->mag() * rhs.mag();
 	if(m > M_EPSILON){
-		return acosf(this->dot(rhs) / m);
+		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -5071,14 +5138,14 @@ radians_between(const vec4& rhs)const{DPZoneScoped;
 EXTERN_C inline vec4
 vec4_floor(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_floor_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = floorf(lhs.x);
-	v.y = floorf(lhs.y);
-	v.z = floorf(lhs.z);
-	v.w = floorf(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_FLOORF(lhs.x);
+	v.y = DESHI_FLOORF(lhs.y);
+	v.z = DESHI_FLOORF(lhs.z);
+	v.w = DESHI_FLOORF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5086,14 +5153,14 @@ vec4_floor(vec4 lhs){DPZoneScoped;
 inline vec4 vec4::
 floor()const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_floor_4f32(this->sse);
-#else //#if DESHI_USE_SSE
-	v.x = floorf(this->x);
-	v.y = floorf(this->y);
-	v.z = floorf(this->z);
-	v.w = floorf(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_FLOORF(this->x);
+	v.y = DESHI_FLOORF(this->y);
+	v.z = DESHI_FLOORF(this->z);
+	v.w = DESHI_FLOORF(this->w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5102,14 +5169,14 @@ floor()const{DPZoneScoped;
 inline vec4
 floor(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_floor_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = floorf(lhs.x);
-	v.y = floorf(lhs.y);
-	v.z = floorf(lhs.z);
-	v.w = floorf(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_FLOORF(lhs.x);
+	v.y = DESHI_FLOORF(lhs.y);
+	v.z = DESHI_FLOORF(lhs.z);
+	v.w = DESHI_FLOORF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5117,14 +5184,14 @@ floor(vec4 lhs){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_ceil(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_ceil_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = ceilf(lhs.x);
-	v.y = ceilf(lhs.y);
-	v.z = ceilf(lhs.z);
-	v.w = ceilf(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_CEILF(lhs.x);
+	v.y = DESHI_CEILF(lhs.y);
+	v.z = DESHI_CEILF(lhs.z);
+	v.w = DESHI_CEILF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5132,14 +5199,14 @@ vec4_ceil(vec4 lhs){DPZoneScoped;
 inline vec4 vec4::
 ceil()const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_ceil_4f32(this->sse);
-#else //#if DESHI_USE_SSE
-	v.x = ceilf(this->x);
-	v.y = ceilf(this->y);
-	v.z = ceilf(this->z);
-	v.w = ceilf(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_CEILF(this->x);
+	v.y = DESHI_CEILF(this->y);
+	v.z = DESHI_CEILF(this->z);
+	v.w = DESHI_CEILF(this->w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5148,14 +5215,14 @@ ceil()const{DPZoneScoped;
 inline vec4
 ceil(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_ceil_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = ceilf(lhs.x);
-	v.y = ceilf(lhs.y);
-	v.z = ceilf(lhs.z);
-	v.w = ceilf(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_CEILF(lhs.x);
+	v.y = DESHI_CEILF(lhs.y);
+	v.z = DESHI_CEILF(lhs.z);
+	v.w = DESHI_CEILF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5163,14 +5230,14 @@ ceil(vec4 lhs){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_round(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_round_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = roundf(lhs.x);
-	v.y = roundf(lhs.y);
-	v.z = roundf(lhs.z);
-	v.w = roundf(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ROUNDF(lhs.x);
+	v.y = DESHI_ROUNDF(lhs.y);
+	v.z = DESHI_ROUNDF(lhs.z);
+	v.w = DESHI_ROUNDF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5178,14 +5245,14 @@ vec4_round(vec4 lhs){DPZoneScoped;
 inline vec4 vec4::
 round()const{DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_round_4f32(this->sse);
-#else //#if DESHI_USE_SSE
-	v.x = roundf(this->x);
-	v.y = roundf(this->y);
-	v.z = roundf(this->z);
-	v.w = roundf(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ROUNDF(this->x);
+	v.y = DESHI_ROUNDF(this->y);
+	v.z = DESHI_ROUNDF(this->z);
+	v.w = DESHI_ROUNDF(this->w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5194,14 +5261,14 @@ round()const{DPZoneScoped;
 inline vec4
 round(vec4 lhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_round_4f32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = roundf(lhs.x);
-	v.y = roundf(lhs.y);
-	v.z = roundf(lhs.z);
-	v.w = roundf(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ROUNDF(lhs.x);
+	v.y = DESHI_ROUNDF(lhs.y);
+	v.z = DESHI_ROUNDF(lhs.z);
+	v.w = DESHI_ROUNDF(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5209,10 +5276,10 @@ round(vec4 lhs){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_round_to(vec4 lhs, s32 place){DPZoneScoped;
 	vec3 v;
-	v.x = floorf(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = floorf(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = floorf(lhs.z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.w = floorf(lhs.w * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.z = DESHI_FLOORF(lhs.z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.w = DESHI_FLOORF(lhs.w * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 
@@ -5220,10 +5287,10 @@ vec4_round_to(vec4 lhs, s32 place){DPZoneScoped;
 inline vec4 vec4::
 round_to(s32 place)const{DPZoneScoped;
 	vec4 v;
-	v.x = floorf(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = floorf(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = floorf(this->z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.w = floorf(this->w * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.z = DESHI_FLOORF(this->z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
+	v.w = DESHI_FLOORF(this->w * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5231,14 +5298,14 @@ round_to(s32 place)const{DPZoneScoped;
 EXTERN_C inline vec4
 vec4_min(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y < rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z < rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w < rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5246,14 +5313,14 @@ vec4_min(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4 vec4::
 min(const vec4& rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x < rhs.x) ? this->x : rhs.x;
 	v.y = (this->y < rhs.y) ? this->y : rhs.y;
 	v.z = (this->z < rhs.z) ? this->z : rhs.z;
 	v.w = (this->w < rhs.w) ? this->w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5262,14 +5329,14 @@ min(const vec4& rhs){DPZoneScoped;
 template<> inline vec4
 min(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y < rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z < rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w < rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5277,14 +5344,14 @@ min(vec4 lhs, vec4 rhs){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_max(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z > rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w > rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5292,14 +5359,14 @@ vec4_max(vec4 lhs, vec4 rhs){DPZoneScoped;
 inline vec4 vec4::
 max(const vec4& rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4f32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x > rhs.x) ? this->x : rhs.x;
 	v.y = (this->y > rhs.y) ? this->y : rhs.y;
 	v.z = (this->z > rhs.z) ? this->z : rhs.z;
 	v.w = (this->w > rhs.w) ? this->w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5308,14 +5375,14 @@ max(const vec4& rhs){DPZoneScoped;
 template<> inline vec4
 max(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4f32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z > rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w > rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5357,14 +5424,14 @@ clamp(vec4 value, vec4 min, vec4 max){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_clamp_min(vec4 value, vec4 min){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4f32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x < min.x) ? min.x : value.x;
 	v.y = (value.y < min.y) ? min.y : value.y;
 	v.z = (value.z < min.z) ? min.z : value.z;
 	v.w = (value.w < min.w) ? min.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5372,14 +5439,14 @@ vec4_clamp_min(vec4 value, vec4 min){DPZoneScoped;
 inline vec4 vec4::
 clamp_min(const vec4& min){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4f32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x < min.x) ? min.x : this->x;
 	v.y = (this->y < min.y) ? min.y : this->y;
 	v.z = (this->z < min.z) ? min.z : this->z;
 	v.w = (this->w < min.w) ? min.w : this->w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5388,14 +5455,14 @@ clamp_min(const vec4& min){DPZoneScoped;
 template<> inline vec4
 clamp_min(vec4 value, vec4 min){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4f32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x < min.x) ? min.x : value.x;
 	v.y = (value.y < min.y) ? min.y : value.y;
 	v.z = (value.z < min.z) ? min.z : value.z;
 	v.w = (value.w < min.w) ? min.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5403,14 +5470,14 @@ clamp_min(vec4 value, vec4 min){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_clamp_max(vec4 value, vec4 max){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4f32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x > max.x) ? max.x : value.x;
 	v.y = (value.y > max.y) ? max.y : value.y;
 	v.z = (value.z > max.z) ? max.z : value.z;
 	v.w = (value.w > max.w) ? max.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -5418,14 +5485,14 @@ vec4_clamp_max(vec4 value, vec4 max){DPZoneScoped;
 inline vec4 vec4::
 clamp_max(const vec4& maX){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4f32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x > max.x) ? max.x : this->x;
 	v.y = (this->y > max.y) ? max.y : this->y;
 	v.z = (this->z > max.z) ? max.z : this->z;
 	v.w = (this->w > max.w) ? max.w : this->w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5434,14 +5501,14 @@ clamp_max(const vec4& maX){DPZoneScoped;
 template<> inline vec4
 clamp_max(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4f32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x > max.x) ? max.x : value.x;
 	v.y = (value.y > max.y) ? max.y : value.y;
 	v.z = (value.z > max.z) ? max.z : value.z;
 	v.w = (value.w > max.w) ? max.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -5983,9 +6050,9 @@ EXTERN_C typedef struct vec4i{
 			s32 _unusedY0;
 			vec2i zw;
 		};
-#ifdef DESHI_USE_SSE
+#ifdef DESHI_MATH_USE_SSE
 		__m128i sse;
-#endif //#ifdef DESHI_USE_SSE
+#endif //#ifdef DESHI_MATH_USE_SSE
 	};
 	
 #ifdef __cplusplus
@@ -6087,14 +6154,14 @@ operator[](u32 index){DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_add(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_add_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x + rhs.x;
 	v.y = lhs.y + rhs.y;
 	v.z = lhs.z + rhs.z;
 	v.w = lhs.w + rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6102,14 +6169,14 @@ vec4i_add(vec4i lhs, vec4i rhs){DPZoneScoped;
 inline vec4i vec4i::
 operator+ (const vec4i& rhs)const{DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_add_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x + rhs.x;
 	v.y = this->y + rhs.y;
 	v.z = this->z + rhs.z;
 	v.w = this->w + rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6117,28 +6184,28 @@ operator+ (const vec4i& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4i::
 operator+=(const vec4i& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_add_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x += rhs.x;
 	this->y += rhs.y;
 	this->z += rhs.z;
 	this->w += rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4i
 vec4i_sub(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_sub_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x - rhs.x;
 	v.y = lhs.y - rhs.y;
 	v.z = lhs.z - rhs.z;
 	v.w = lhs.w - rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6146,14 +6213,14 @@ vec4i_sub(vec4i lhs, vec4i rhs){DPZoneScoped;
 inline vec4i vec4i::
 operator- (const vec4i& rhs)const{DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_sub_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x - rhs.x;
 	v.y = this->y - rhs.y;
 	v.z = this->z - rhs.z;
 	v.w = this->w - rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6161,28 +6228,28 @@ operator- (const vec4i& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4i::
 operator-=(const vec4i& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_sub_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x -= rhs.x;
 	this->y -= rhs.y;
 	this->z -= rhs.z;
 	this->w -= rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4i
 vec4i_mul(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x * rhs.x;
 	v.y = lhs.y * rhs.y;
 	v.z = lhs.z * rhs.z;
 	v.w = lhs.w * rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6190,14 +6257,14 @@ vec4i_mul(vec4i lhs, vec4i rhs){DPZoneScoped;
 inline vec4i vec4i::
 operator* (const vec4i& rhs)const{DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x * rhs.x;
 	v.y = this->y * rhs.y;
 	v.z = this->z * rhs.z;
 	v.w = this->w * rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6205,28 +6272,28 @@ operator* (const vec4i& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4i::
 operator*=(const vec4i& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_mul_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x *= rhs.x;
 	this->y *= rhs.y;
 	this->z *= rhs.z;
 	this->w *= rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4i
 vec4i_mul_f32(vec4i lhs, f32 rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4s32(lhs.sse, m128_fill_4s32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = lhs.x * rhs;
 	v.y = lhs.y * rhs;
 	v.z = lhs.z * rhs;
 	v.w = lhs.w * rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6234,14 +6301,14 @@ vec4i_mul_f32(vec4i lhs, f32 rhs){DPZoneScoped;
 inline vec4i vec4i::
 operator* (const f32& rhs)const{DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_mul_4s32(this->sse, m128_fill_4s32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = this->x * rhs;
 	v.y = this->y * rhs;
 	v.z = this->z * rhs;
 	v.w = this->w * rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6249,14 +6316,14 @@ operator* (const f32& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4i::
 operator*=(const f32& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_mul_4s32(this->sse, m128_fill_4s32(rhs));
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->x *= rhs;
 	this->y *= rhs;
 	this->z *= rhs;
 	this->w *= rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -6334,14 +6401,14 @@ operator/=(const f32& rhs){DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_negate(vec4i lhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_negate_4s32(lhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = -(lhs.x);
 	v.y = -(lhs.y);
 	v.z = -(lhs.z);
 	v.w = -(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6349,81 +6416,81 @@ vec4i_negate(vec4i lhs){DPZoneScoped;
 inline vec4i vec4i::
 operator- ()const{DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_negate_4s32(this->sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = -(this->x);
 	v.y = -(this->y);
 	v.z = -(this->z);
 	v.w = -(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 vec4i_equal(vec4i lhs, vec4i rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return m128_equal_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(lhs.x - rhs.x) < M_EPSILON 
-		&& fabs(lhs.y - rhs.y) < M_EPSILON 
-		&& fabs(lhs.z - rhs.z) < M_EPSILON 
-		&& fabs(lhs.w - rhs.w) < M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(lhs.x - rhs.x) < M_EPSILON 
+		&& DESHI_ABSF(lhs.y - rhs.y) < M_EPSILON 
+		&& DESHI_ABSF(lhs.z - rhs.z) < M_EPSILON 
+		&& DESHI_ABSF(lhs.w - rhs.w) < M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline bool vec4i::
 operator==(const vec4i& rhs)const{DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return m128_equal_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(this->x - rhs.x) < M_EPSILON 
-		&& fabs(this->y - rhs.y) < M_EPSILON 
-		&& fabs(this->z - rhs.z) < M_EPSILON 
-		&& fabs(this->w - rhs.w) < M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(this->x - rhs.x) < M_EPSILON 
+		&& DESHI_ABSF(this->y - rhs.y) < M_EPSILON 
+		&& DESHI_ABSF(this->z - rhs.z) < M_EPSILON 
+		&& DESHI_ABSF(this->w - rhs.w) < M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 vec4i_nequal(vec4i lhs, vec4i rhs){DPZoneScoped;
-	#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return !m128_equal_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(lhs.x - rhs.x) > M_EPSILON 
-		|| fabs(lhs.y - rhs.y) > M_EPSILON 
-		|| fabs(lhs.z - rhs.z) > M_EPSILON 
-		|| fabs(lhs.w - rhs.w) > M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(lhs.x - rhs.x) > M_EPSILON 
+		|| DESHI_ABSF(lhs.y - rhs.y) > M_EPSILON 
+		|| DESHI_ABSF(lhs.z - rhs.z) > M_EPSILON 
+		|| DESHI_ABSF(lhs.w - rhs.w) > M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline bool vec4i::
 operator!=(const vec4i& rhs)const{DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return !m128_equal_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
-	return fabs(this->x - rhs.x) > M_EPSILON 
-		|| fabs(this->y - rhs.y) > M_EPSILON 
-		|| fabs(this->z - rhs.z) > M_EPSILON 
-		|| fabs(this->w - rhs.w) > M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(this->x - rhs.x) > M_EPSILON 
+		|| DESHI_ABSF(this->y - rhs.y) > M_EPSILON 
+		|| DESHI_ABSF(this->z - rhs.z) > M_EPSILON 
+		|| DESHI_ABSF(this->w - rhs.w) > M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline vec4i
 vec4i_abs(vec4i lhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_abs_4s32(lhs.sse);
-#else //#if DESHI_USE_SSE
-	v.x = fabs(lhs.x);
-	v.y = fabs(lhs.y);
-	v.z = fabs(lhs.z);
-	v.w = fabs(lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ABS(lhs.x);
+	v.y = DESHI_ABS(lhs.y);
+	v.z = DESHI_ABS(lhs.z);
+	v.w = DESHI_ABS(lhs.w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6431,14 +6498,14 @@ vec4i_abs(vec4i lhs){DPZoneScoped;
 inline vec4i vec4i::
 abs()const{DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_abs_4s32(this->sse);
-#else //#if DESHI_USE_SSE
-	v.x = fabs(this->x);
-	v.y = fabs(this->y);
-	v.z = fabs(this->z);
-	v.w = fabs(this->w);
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	v.x = DESHI_ABS(this->x);
+	v.y = DESHI_ABS(this->y);
+	v.z = DESHI_ABS(this->z);
+	v.w = DESHI_ABS(this->w);
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6446,16 +6513,16 @@ abs()const{DPZoneScoped;
 EXTERN_C inline f32
 vec4i_dot(vec4i lhs, vec4i rhs){DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mullo_epi32(lhs.sse, rhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x+z with y+w
 	result = (f32)_mm_cvtsi128_si32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z) + (lhs.w * rhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -6463,16 +6530,16 @@ vec4i_dot(vec4i lhs, vec4i rhs){DPZoneScoped;
 inline f32 vec4i::
 dot(const vec4i& rhs)const{DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mullo_epi32(this->sse, rhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x+z with y+w
 	result = (f32)_mm_cvtsi128_si32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (this->x * rhs.x) + (this->y * rhs.y) + (this->z * rhs.z) + (this->w * rhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -6480,16 +6547,16 @@ dot(const vec4i& rhs)const{DPZoneScoped;
 EXTERN_C inline f32
 vec4i_mag(vec4i lhs){DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mullo_epi32(lhs.sse, lhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x+z with y+w
-	result = sqrtf((f32)_mm_cvtsi128_si32(temp0));
-#else //#if DESHI_USE_SSE
-	result = sqrtf((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z) + (lhs.w * lhs.w));
-#endif //#else //#if DESHI_USE_SSE
+	result = DESHI_SQRTF((f32)_mm_cvtsi128_si32(temp0));
+#else //#if DESHI_MATH_USE_SSE
+	result = DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z) + (lhs.w * lhs.w));
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -6497,16 +6564,16 @@ vec4i_mag(vec4i lhs){DPZoneScoped;
 inline f32 vec4i::
 mag()const{DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mullo_epi32(this->sse, this->sse); //multiply together
 	__m128 temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x+z with y+w
-	result = sqrtf((f32)_mm_cvtsi128_si32(temp0));
-#else //#if DESHI_USE_SSE
-	result = sqrtf((this->x * this->x) + (this->y * this->y) + (this->z * this->z) + (this->w * this->w));
-#endif //#else //#if DESHI_USE_SSE
+	result = DESHI_SQRTF((f32)_mm_cvtsi128_si32(temp0));
+#else //#if DESHI_MATH_USE_SSE
+	result = DESHI_SQRTF((this->x * this->x) + (this->y * this->y) + (this->z * this->z) + (this->w * this->w));
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -6514,16 +6581,16 @@ mag()const{DPZoneScoped;
 EXTERN_C inline f32
 vec4i_mag_sq(vec4i lhs){DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mullo_epi32(lhs.sse, lhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x+z with y+w
 	result = (f32)_mm_cvtsi128_si32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z) + (lhs.w * lhs.w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -6531,16 +6598,16 @@ vec4i_mag_sq(vec4i lhs){DPZoneScoped;
 inline f32 vec4i::
 mag_sq()const{DPZoneScoped;
 	f32 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 temp0 = _mm_mullo_epi32(this->sse, this->sse); //multiply together
 	__m128 temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_epi32(temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_epi32(temp0, temp1); //add x+z with y+w
 	result = (f32)_mm_cvtsi128_si32(temp0);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result = (this->x * this->x) + (this->y * this->y) + (this->z * this->z) + (this->w * this->w);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -6669,7 +6736,7 @@ EXTERN_C inline f32
 vec4i_radians_between(vec4i lhs, vec4i rhs){DPZoneScoped;
 	f32 m = vec4i_mag(lhs) * vec4i_mag(rhs);
 	if(m > M_EPSILON){
-		return acosf(vec4i_dot(rhs) / m);
+		return DESHI_ACOSF(vec4i_dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -6680,7 +6747,7 @@ inline f32 vec4i::
 radians_between(const vec4i& rhs)const{DPZoneScoped;
 	f32 m = this->mag() * rhs.mag();
 	if(m > M_EPSILON){
-		return acosf(this->dot(rhs) / m);
+		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
 		return 0;
 	}
@@ -6690,14 +6757,14 @@ radians_between(const vec4i& rhs)const{DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_min(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y < rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z < rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w < rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6705,14 +6772,14 @@ vec4i_min(vec4i lhs, vec4i rhs){DPZoneScoped;
 inline vec4i vec4i::
 min(const vec4i& rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x < rhs.x) ? this->x : rhs.x;
 	v.y = (this->y < rhs.y) ? this->y : rhs.y;
 	v.z = (this->z < rhs.z) ? this->z : rhs.z;
 	v.w = (this->w < rhs.w) ? this->w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6721,14 +6788,14 @@ min(const vec4i& rhs){DPZoneScoped;
 template<> inline vec4i
 min(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y < rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z < rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w < rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6736,14 +6803,14 @@ min(vec4i lhs, vec4i rhs){DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_max(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z > rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w > rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6751,14 +6818,14 @@ vec4i_max(vec4i lhs, vec4i rhs){DPZoneScoped;
 inline vec4i vec4i::
 max(const vec4i& rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(this->sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x > rhs.x) ? this->x : rhs.x;
 	v.y = (this->y > rhs.y) ? this->y : rhs.y;
 	v.z = (this->z > rhs.z) ? this->z : rhs.z;
 	v.w = (this->w > rhs.w) ? this->w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6767,14 +6834,14 @@ max(const vec4i& rhs){DPZoneScoped;
 template<> inline vec4i
 max(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(lhs.sse, rhs.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
 	v.z = (lhs.z > rhs.z) ? lhs.z : rhs.z;
 	v.w = (lhs.w > rhs.w) ? lhs.w : rhs.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6816,14 +6883,14 @@ clamp(vec4i value, vec4i min, vec4i max){DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_clamp_min(vec4i value, vec4i min){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4s32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x < min.x) ? min.x : value.x;
 	v.y = (value.y < min.y) ? min.y : value.y;
 	v.z = (value.z < min.z) ? min.z : value.z;
 	v.w = (value.w < min.w) ? min.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6831,14 +6898,14 @@ vec4i_clamp_min(vec4i value, vec4i min){DPZoneScoped;
 inline vec4i vec4i::
 clamp_min(const vec4i& min){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4s32(this->sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x < min.x) ? min.x : this->x;
 	v.y = (this->y < min.y) ? min.y : this->y;
 	v.z = (this->z < min.z) ? min.z : this->z;
 	v.w = (this->w < min.w) ? min.w : this->w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6847,14 +6914,14 @@ clamp_min(const vec4i& min){DPZoneScoped;
 template<> inline vec4i
 clamp_min(vec4i value, vec4i min){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_max_4s32(value.sse, min.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x < min.x) ? min.x : value.x;
 	v.y = (value.y < min.y) ? min.y : value.y;
 	v.z = (value.z < min.z) ? min.z : value.z;
 	v.w = (value.w < min.w) ? min.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6862,14 +6929,14 @@ clamp_min(vec4i value, vec4i min){DPZoneScoped;
 EXTERN_C inline vec4i
 vec4i_clamp_max(vec4i value, vec4i max){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(value.sse, max.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x > max.x) ? max.x : value.x;
 	v.y = (value.y > max.y) ? max.y : value.y;
 	v.z = (value.z > max.z) ? max.z : value.z;
 	v.w = (value.w > max.w) ? max.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 
@@ -6877,14 +6944,14 @@ vec4i_clamp_max(vec4i value, vec4i max){DPZoneScoped;
 inline vec4i vec4i::
 clamp_max(const vec4i& maX){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(this->sse, max.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x > max.x) ? max.x : this->x;
 	v.y = (this->y > max.y) ? max.y : this->y;
 	v.z = (this->z > max.z) ? max.z : this->z;
 	v.w = (this->w > max.w) ? max.w : this->w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6893,14 +6960,14 @@ clamp_max(const vec4i& maX){DPZoneScoped;
 template<> inline vec4i
 clamp_max(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	v.sse = m128_min_4s32(value.sse, max.sse);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x > max.x) ? max.x : value.x;
 	v.y = (value.y > max.y) ? max.y : value.y;
 	v.z = (value.z > max.z) ? max.z : value.z;
 	v.w = (value.w > max.w) ? max.w : value.w;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -8522,57 +8589,57 @@ operator%=(const mat3& rhs){DPZoneScoped;
 
 EXTERN_C inline b32
 mat3_equal(mat3 lhs, mat3 rhs){DPZoneScoped;
-	return fabs(lhs.arr[0] - rhs.arr[0]) > M_EPSILON
-		&& fabs(lhs.arr[1] - rhs.arr[1]) > M_EPSILON
-		&& fabs(lhs.arr[2] - rhs.arr[2]) > M_EPSILON
-		&& fabs(lhs.arr[3] - rhs.arr[3]) > M_EPSILON
-		&& fabs(lhs.arr[4] - rhs.arr[4]) > M_EPSILON
-		&& fabs(lhs.arr[5] - rhs.arr[5]) > M_EPSILON
-		&& fabs(lhs.arr[6] - rhs.arr[6]) > M_EPSILON
-		&& fabs(lhs.arr[7] - rhs.arr[7]) > M_EPSILON
-		&& fabs(lhs.arr[8] - rhs.arr[8]) > M_EPSILON;
+	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) > M_EPSILON;
 }
 
 #ifdef __cplusplus
 inline b32 mat3::
 operator==(const mat3& rhs)const{DPZoneScoped;
-	return fabs(this->arr[0] - rhs.arr[0]) > M_EPSILON
-		&& fabs(this->arr[1] - rhs.arr[1]) > M_EPSILON
-		&& fabs(this->arr[2] - rhs.arr[2]) > M_EPSILON
-		&& fabs(this->arr[3] - rhs.arr[3]) > M_EPSILON
-		&& fabs(this->arr[4] - rhs.arr[4]) > M_EPSILON
-		&& fabs(this->arr[5] - rhs.arr[5]) > M_EPSILON
-		&& fabs(this->arr[6] - rhs.arr[6]) > M_EPSILON
-		&& fabs(this->arr[7] - rhs.arr[7]) > M_EPSILON
-		&& fabs(this->arr[8] - rhs.arr[8]) > M_EPSILON;
+	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[1] - rhs.arr[1]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[2] - rhs.arr[2]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[3] - rhs.arr[3]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[4] - rhs.arr[4]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[5] - rhs.arr[5]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[6] - rhs.arr[6]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[7] - rhs.arr[7]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[8] - rhs.arr[8]) > M_EPSILON;
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 mat3_nequal(mat3 lhs, mat3 rhs){DPZoneScoped;
-	return fabs(lhs.arr[0] - rhs.arr[0]) < M_EPSILON
-		|| fabs(lhs.arr[1] - rhs.arr[1]) < M_EPSILON
-		|| fabs(lhs.arr[2] - rhs.arr[2]) < M_EPSILON
-		|| fabs(lhs.arr[3] - rhs.arr[3]) < M_EPSILON
-		|| fabs(lhs.arr[4] - rhs.arr[4]) < M_EPSILON
-		|| fabs(lhs.arr[5] - rhs.arr[5]) < M_EPSILON
-		|| fabs(lhs.arr[6] - rhs.arr[6]) < M_EPSILON
-		|| fabs(lhs.arr[7] - rhs.arr[7]) < M_EPSILON
-		|| fabs(lhs.arr[8] - rhs.arr[8]) < M_EPSILON;
+	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) < M_EPSILON;
 }
 
 #ifdef __cplusplus
 inline b32 mat3::
 operator!=(const mat3& rhs)const{DPZoneScoped;
-	return fabs(this->arr[0] - rhs.arr[0]) < M_EPSILON
-		|| fabs(this->arr[1] - rhs.arr[1]) < M_EPSILON
-		|| fabs(this->arr[2] - rhs.arr[2]) < M_EPSILON
-		|| fabs(this->arr[3] - rhs.arr[3]) < M_EPSILON
-		|| fabs(this->arr[4] - rhs.arr[4]) < M_EPSILON
-		|| fabs(this->arr[5] - rhs.arr[5]) < M_EPSILON
-		|| fabs(this->arr[6] - rhs.arr[6]) < M_EPSILON
-		|| fabs(this->arr[7] - rhs.arr[7]) < M_EPSILON
-		|| fabs(this->arr[8] - rhs.arr[8]) < M_EPSILON;
+	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[1] - rhs.arr[1]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[2] - rhs.arr[2]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[3] - rhs.arr[3]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[4] - rhs.arr[4]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[5] - rhs.arr[5]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[6] - rhs.arr[6]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[7] - rhs.arr[7]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[8] - rhs.arr[8]) < M_EPSILON;
 }
 #endif //#ifdef __cplusplus
 
@@ -8801,7 +8868,7 @@ inverse()const{DPZoneScoped;
 //returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3(1, 0, 0,
 				0, c, s,
 				0,-s, c);
@@ -8811,7 +8878,7 @@ mat3_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 EXTERN_C inline mat3
 mat3_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3(1, 0, 0,
 				0, c, s,
 				0,-s, c);
@@ -8820,7 +8887,7 @@ mat3_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 //returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3(c, 0,-s,
 				0, 1, 0,
 				s, 0, c);
@@ -8830,7 +8897,7 @@ mat3_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 EXTERN_C inline mat3
 mat3_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3(c, 0,-s,
 				0, 1, 0,
 				s, 0, c);
@@ -8839,7 +8906,7 @@ mat3_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 //returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3( c, s, 0,
 				-s, c, 0,
 				0,  0, 1);
@@ -8849,7 +8916,7 @@ mat3_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 EXTERN_C inline mat3
 mat3_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3( c, s, 0,
 				-s, c, 0,
 				0,  0, 1);
@@ -8858,9 +8925,9 @@ mat3_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
-	f32 cX = cosf(x); f32 sX = sinf(x);
-	f32 cY = cosf(y); f32 sY = sinf(y);
-	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
+	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
+	f32 cZ = DESHI_COSF(z); f32 sZ = DESHI_SINF(z);
 	mat3 result;
 	result.arr[0] = cZ*cY;
 	result.arr[1] = cY*sZ;
@@ -8878,9 +8945,9 @@ mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 EXTERN_C inline mat3
 mat3_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 	x = Radians(x); y = Radians(y); z = Radians(z);
-	f32 cX = cosf(x); f32 sX = sinf(x);
-	f32 cY = cosf(y); f32 sY = sinf(y);
-	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
+	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
+	f32 cZ = DESHI_COSF(z); f32 sZ = DESHI_SINF(z);
 	mat3 result;
 	result.arr[0] = cZ*cY;
 	result.arr[1] = cY*sZ;
@@ -8915,14 +8982,14 @@ EXTERN_C typedef struct mat4{
 			vec4 row2;
 			vec4 row3;
 		};
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 		struct{
 			__m128 sse_row0;
 			__m128 sse_row1;
 			__m128 sse_row2;
 			__m128 sse_row3;
 		};
-#endif //#if DESHI_USE_SSE
+#endif //#if DESHI_MATH_USE_SSE
 	};
 	
 #ifdef __cplusplus
@@ -9017,12 +9084,12 @@ operator[](u32 index)const{DPZoneScoped;
 EXTERN_C inline mat4
 mat4_add_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_add_4f32(lhs.sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_add_4f32(lhs.sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_add_4f32(lhs.sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_add_4f32(lhs.sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = lhs.arr[0] + rhs.arr[0];
 	result.arr[1] = lhs.arr[1] + rhs.arr[1];
 	result.arr[2] = lhs.arr[2] + rhs.arr[2];
@@ -9039,7 +9106,7 @@ mat4_add_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[13] + rhs.arr[13];
 	result.arr[14] = lhs.arr[14] + rhs.arr[14];
 	result.arr[15] = lhs.arr[15] + rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9047,12 +9114,12 @@ mat4_add_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 inline mat4 mat4::
 operator+ (const mat4& rhs)const{DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_add_4f32(this->sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_add_4f32(this->sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_add_4f32(this->sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_add_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = this->arr[0] + rhs.arr[0];
 	result.arr[1] = this->arr[1] + rhs.arr[1];
 	result.arr[2] = this->arr[2] + rhs.arr[2];
@@ -9069,7 +9136,7 @@ operator+ (const mat4& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[13] + rhs.arr[13];
 	result.arr[14] = this->arr[14] + rhs.arr[14];
 	result.arr[15] = this->arr[15] + rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -9077,12 +9144,12 @@ operator+ (const mat4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void mat4::
 operator+=(const mat4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse_row0 = m128_add_4f32(this->sse_row0, rhs.sse_row0);
 	this->sse_row1 = m128_add_4f32(this->sse_row1, rhs.sse_row1);
 	this->sse_row2 = m128_add_4f32(this->sse_row2, rhs.sse_row2);
 	this->sse_row3 = m128_add_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->arr[0] += rhs.arr[0];
 	this->arr[1] += rhs.arr[1];
 	this->arr[2] += rhs.arr[2];
@@ -9099,19 +9166,19 @@ operator+=(const mat4& rhs){DPZoneScoped;
 	this->arr[13] += rhs.arr[13];
 	this->arr[14] += rhs.arr[14];
 	this->arr[15] += rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline mat4
 mat4_sub_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_sub_4f32(lhs.sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_sub_4f32(lhs.sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_sub_4f32(lhs.sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_sub_4f32(lhs.sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = lhs.arr[0] - rhs.arr[0];
 	result.arr[1] = lhs.arr[1] - rhs.arr[1];
 	result.arr[2] = lhs.arr[2] - rhs.arr[2];
@@ -9128,7 +9195,7 @@ mat4_sub_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[13] - rhs.arr[13];
 	result.arr[14] = lhs.arr[14] - rhs.arr[14];
 	result.arr[15] = lhs.arr[15] - rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9136,12 +9203,12 @@ mat4_sub_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 inline mat4 mat4::
 operator- (const mat4& rhs)const{DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_sub_4f32(this->sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_sub_4f32(this->sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_sub_4f32(this->sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_sub_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = this->arr[0] - rhs.arr[0];
 	result.arr[1] = this->arr[1] - rhs.arr[1];
 	result.arr[2] = this->arr[2] - rhs.arr[2];
@@ -9158,7 +9225,7 @@ operator- (const mat4& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[13] - rhs.arr[13];
 	result.arr[14] = this->arr[14] - rhs.arr[14];
 	result.arr[15] = this->arr[15] - rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -9166,12 +9233,12 @@ operator- (const mat4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void mat4::
 operator-=(const mat4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse_row0 = m128_sub_4f32(this->sse_row0, rhs.sse_row0);
 	this->sse_row1 = m128_sub_4f32(this->sse_row1, rhs.sse_row1);
 	this->sse_row2 = m128_sub_4f32(this->sse_row2, rhs.sse_row2);
 	this->sse_row3 = m128_sub_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->arr[0] -= rhs.arr[0];
 	this->arr[1] -= rhs.arr[1];
 	this->arr[2] -= rhs.arr[2];
@@ -9188,20 +9255,20 @@ operator-=(const mat4& rhs){DPZoneScoped;
 	this->arr[13] -= rhs.arr[13];
 	this->arr[14] -= rhs.arr[14];
 	this->arr[15] -= rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline mat4
 mat4_mul_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 scalar = m128_fill_4f32(rhs);
 	result.sse_row0 = m128_mul_4f32(lhs.sse_row0, scalar);
 	result.sse_row1 = m128_mul_4f32(lhs.sse_row1, scalar);
 	result.sse_row2 = m128_mul_4f32(lhs.sse_row2, scalar);
 	result.sse_row3 = m128_mul_4f32(lhs.sse_row3, scalar);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = lhs.arr[0] * rhs;
 	result.arr[1] = lhs.arr[1] * rhs;
 	result.arr[2] = lhs.arr[2] * rhs;
@@ -9218,7 +9285,7 @@ mat4_mul_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[13] * rhs;
 	result.arr[14] = lhs.arr[14] * rhs;
 	result.arr[15] = lhs.arr[15] * rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9226,13 +9293,13 @@ mat4_mul_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 inline mat4 mat4::
 operator* (const f32& rhs)const{DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 scalar = m128_fill_4f32(rhs);
 	result.sse_row0 = m128_mul_4f32(this->sse_row0, scalar);
 	result.sse_row1 = m128_mul_4f32(this->sse_row1, scalar);
 	result.sse_row2 = m128_mul_4f32(this->sse_row2, scalar);
 	result.sse_row3 = m128_mul_4f32(this->sse_row3, scalar);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = this->arr[0] * rhs;
 	result.arr[1] = this->arr[1] * rhs;
 	result.arr[2] = this->arr[2] * rhs;
@@ -9249,7 +9316,7 @@ operator* (const f32& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[13] * rhs;
 	result.arr[14] = this->arr[14] * rhs;
 	result.arr[15] = this->arr[15] * rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -9257,13 +9324,13 @@ operator* (const f32& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void mat4::
 operator*=(const f32& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 scalar = m128_fill_4f32(rhs);
 	this->sse_row0 = m128_mul_4f32(this->sse_row0, scalar);
 	this->sse_row1 = m128_mul_4f32(this->sse_row1, scalar);
 	this->sse_row2 = m128_mul_4f32(this->sse_row2, scalar);
 	this->sse_row3 = m128_mul_4f32(this->sse_row3, scalar);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->arr[0] *= rhs;
 	this->arr[1] *= rhs;
 	this->arr[2] *= rhs;
@@ -9280,7 +9347,7 @@ operator*=(const f32& rhs){DPZoneScoped;
 	this->arr[13] *= rhs;
 	this->arr[14] *= rhs;
 	this->arr[15] *= rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -9294,12 +9361,12 @@ operator* (const f32& lhs, const mat4& rhs)const{
 EXTERN_C inline mat4
 mat4_mul_mat4(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_linear_combine(lhs.sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row1 = m128_linear_combine(lhs.sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row2 = m128_linear_combine(lhs.sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row3 = m128_linear_combine(lhs.sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[ 0] = lhs.arr[ 0]*rhs.arr[ 0] + lhs.arr[ 1]*rhs.arr[ 4] + lhs.arr[ 2]*rhs.arr[ 8] + lhs.arr[ 3]*rhs.arr[12];
 	result.arr[ 1] = lhs.arr[ 0]*rhs.arr[ 1] + lhs.arr[ 1]*rhs.arr[ 5] + lhs.arr[ 2]*rhs.arr[ 9] + lhs.arr[ 3]*rhs.arr[13];
 	result.arr[ 2] = lhs.arr[ 0]*rhs.arr[ 2] + lhs.arr[ 1]*rhs.arr[ 6] + lhs.arr[ 2]*rhs.arr[10] + lhs.arr[ 3]*rhs.arr[14];
@@ -9316,7 +9383,7 @@ mat4_mul_mat4(mat4 lhs, mat4 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[12]*rhs.arr[ 1] + lhs.arr[13]*rhs.arr[ 5] + lhs.arr[14]*rhs.arr[ 9] + lhs.arr[16]*rhs.arr[13];
 	result.arr[14] = lhs.arr[12]*rhs.arr[ 2] + lhs.arr[13]*rhs.arr[ 6] + lhs.arr[14]*rhs.arr[10] + lhs.arr[16]*rhs.arr[14];
 	result.arr[15] = lhs.arr[12]*rhs.arr[ 3] + lhs.arr[13]*rhs.arr[ 7] + lhs.arr[14]*rhs.arr[11] + lhs.arr[16]*rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9324,12 +9391,12 @@ mat4_mul_mat4(mat4 lhs, mat4 rhs){DPZoneScoped;
 inline mat4 mat4::
 operator* (const mat4& rhs)const{DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_linear_combine(this->sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row1 = m128_linear_combine(this->sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row2 = m128_linear_combine(this->sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row3 = m128_linear_combine(this->sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[ 0] = this->arr[ 0]*rhs.arr[ 0] + this->arr[ 1]*rhs.arr[ 4] + this->arr[ 2]*rhs.arr[ 8] + this->arr[ 3]*rhs.arr[12];
 	result.arr[ 1] = this->arr[ 0]*rhs.arr[ 1] + this->arr[ 1]*rhs.arr[ 5] + this->arr[ 2]*rhs.arr[ 9] + this->arr[ 3]*rhs.arr[13];
 	result.arr[ 2] = this->arr[ 0]*rhs.arr[ 2] + this->arr[ 1]*rhs.arr[ 6] + this->arr[ 2]*rhs.arr[10] + this->arr[ 3]*rhs.arr[14];
@@ -9346,7 +9413,7 @@ operator* (const mat4& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[12]*rhs.arr[ 1] + this->arr[13]*rhs.arr[ 5] + this->arr[14]*rhs.arr[ 9] + this->arr[16]*rhs.arr[13];
 	result.arr[14] = this->arr[12]*rhs.arr[ 2] + this->arr[13]*rhs.arr[ 6] + this->arr[14]*rhs.arr[10] + this->arr[16]*rhs.arr[14];
 	result.arr[15] = this->arr[12]*rhs.arr[ 3] + this->arr[13]*rhs.arr[ 7] + this->arr[14]*rhs.arr[11] + this->arr[16]*rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -9355,12 +9422,12 @@ operator* (const mat4& rhs)const{DPZoneScoped;
 inline void mat4::
 operator*=(const mat4& rhs){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_linear_combine(this->sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row1 = m128_linear_combine(this->sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row2 = m128_linear_combine(this->sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row3 = m128_linear_combine(this->sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[ 0] = this->arr[ 0]*rhs.arr[ 0] + this->arr[ 1]*rhs.arr[ 4] + this->arr[ 2]*rhs.arr[ 8] + this->arr[ 3]*rhs.arr[12];
 	result.arr[ 1] = this->arr[ 0]*rhs.arr[ 1] + this->arr[ 1]*rhs.arr[ 5] + this->arr[ 2]*rhs.arr[ 9] + this->arr[ 3]*rhs.arr[13];
 	result.arr[ 2] = this->arr[ 0]*rhs.arr[ 2] + this->arr[ 1]*rhs.arr[ 6] + this->arr[ 2]*rhs.arr[10] + this->arr[ 3]*rhs.arr[14];
@@ -9377,7 +9444,7 @@ operator*=(const mat4& rhs){DPZoneScoped;
 	result.arr[13] = this->arr[12]*rhs.arr[ 1] + this->arr[13]*rhs.arr[ 5] + this->arr[14]*rhs.arr[ 9] + this->arr[16]*rhs.arr[13];
 	result.arr[14] = this->arr[12]*rhs.arr[ 2] + this->arr[13]*rhs.arr[ 6] + this->arr[14]*rhs.arr[10] + this->arr[16]*rhs.arr[14];
 	result.arr[15] = this->arr[12]*rhs.arr[ 3] + this->arr[13]*rhs.arr[ 7] + this->arr[14]*rhs.arr[11] + this->arr[16]*rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	*this = result;
 }
 #endif //#ifdef __cplusplus
@@ -9385,12 +9452,12 @@ operator*=(const mat4& rhs){DPZoneScoped;
 EXTERN_C inline mat4
 mat4_mul_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_mul_4f32(lhs.sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_mul_4f32(lhs.sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_mul_4f32(lhs.sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_mul_4f32(lhs.sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = lhs.arr[0] * rhs.arr[0];
 	result.arr[1] = lhs.arr[1] * rhs.arr[1];
 	result.arr[2] = lhs.arr[2] * rhs.arr[2];
@@ -9407,7 +9474,7 @@ mat4_mul_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[13] * rhs.arr[13];
 	result.arr[14] = lhs.arr[14] * rhs.arr[14];
 	result.arr[15] = lhs.arr[15] * rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9415,12 +9482,12 @@ mat4_mul_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 inline mat4 mat4::
 operator^ (const mat4& rhs)const{DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_mul_4f32(this->sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_mul_4f32(this->sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_mul_4f32(this->sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_mul_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = this->arr[0] * rhs.arr[0];
 	result.arr[1] = this->arr[1] * rhs.arr[1];
 	result.arr[2] = this->arr[2] * rhs.arr[2];
@@ -9437,7 +9504,7 @@ operator^ (const mat4& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[13] * rhs.arr[13];
 	result.arr[14] = this->arr[14] * rhs.arr[14];
 	result.arr[15] = this->arr[15] * rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 } 
 #endif //#ifdef __cplusplus
@@ -9445,12 +9512,12 @@ operator^ (const mat4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void mat4::
 operator^=(const mat4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse_row0 = m128_mul_4f32(this->sse_row0, rhs.sse_row0);
 	this->sse_row1 = m128_mul_4f32(this->sse_row1, rhs.sse_row1);
 	this->sse_row2 = m128_mul_4f32(this->sse_row2, rhs.sse_row2);
 	this->sse_row3 = m128_mul_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->arr[0] *= rhs.arr[0];
 	this->arr[1] *= rhs.arr[1];
 	this->arr[2] *= rhs.arr[2];
@@ -9467,7 +9534,7 @@ operator^=(const mat4& rhs){DPZoneScoped;
 	this->arr[13] *= rhs.arr[13];
 	this->arr[14] *= rhs.arr[14];
 	this->arr[15] *= rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -9475,13 +9542,13 @@ EXTERN_C inline mat4
 mat4_div_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 scalar = m128_fill_4f32(rhs);
 	result.sse_row0 = m128_div_4f32(lhs.sse_row0, scalar);
 	result.sse_row1 = m128_div_4f32(lhs.sse_row1, scalar);
 	result.sse_row2 = m128_div_4f32(lhs.sse_row2, scalar);
 	result.sse_row3 = m128_div_4f32(lhs.sse_row3, scalar);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = lhs.arr[0] / rhs;
 	result.arr[1] = lhs.arr[1] / rhs;
 	result.arr[2] = lhs.arr[2] / rhs;
@@ -9498,7 +9565,7 @@ mat4_div_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[13] / rhs;
 	result.arr[14] = lhs.arr[14] / rhs;
 	result.arr[15] = lhs.arr[15] / rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9507,13 +9574,13 @@ inline mat4 mat4::
 operator/ (const f32& rhs)const{DPZoneScoped;
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 scalar = m128_fill_4f32(rhs);
 	result.sse_row0 = m128_div_4f32(this->sse_row0, scalar);
 	result.sse_row1 = m128_div_4f32(this->sse_row1, scalar);
 	result.sse_row2 = m128_div_4f32(this->sse_row2, scalar);
 	result.sse_row3 = m128_div_4f32(this->sse_row3, scalar);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = this->arr[0] / rhs;
 	result.arr[1] = this->arr[1] / rhs;
 	result.arr[2] = this->arr[2] / rhs;
@@ -9530,7 +9597,7 @@ operator/ (const f32& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[13] / rhs;
 	result.arr[14] = this->arr[14] / rhs;
 	result.arr[15] = this->arr[15] / rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -9539,13 +9606,13 @@ operator/ (const f32& rhs)const{DPZoneScoped;
 inline void mat4::
 operator/=(const f32& rhs){DPZoneScoped;
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	__m128 scalar = m128_fill_4f32(rhs);
 	this->sse_row0 = m128_div_4f32(this->sse_row0, scalar);
 	this->sse_row1 = m128_div_4f32(this->sse_row1, scalar);
 	this->sse_row2 = m128_div_4f32(this->sse_row2, scalar);
 	this->sse_row3 = m128_div_4f32(this->sse_row3, scalar);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->arr[0] /= rhs;
 	this->arr[1] /= rhs;
 	this->arr[2] /= rhs;
@@ -9562,7 +9629,7 @@ operator/=(const f32& rhs){DPZoneScoped;
 	this->arr[13] /= rhs;
 	this->arr[14] /= rhs;
 	this->arr[15] /= rhs;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -9574,12 +9641,12 @@ mat4_div_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 		   rhs.arr[12] != 0 && rhs.arr[13] != 0 && rhs.arr[14] != 0 && rhs.arr[15] != 0,
 		   "mat4 elements cant be divided by zero");
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_div_4f32(lhs.sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_div_4f32(lhs.sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_div_4f32(lhs.sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_div_4f32(lhs.sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = lhs.arr[0] / rhs.arr[0];
 	result.arr[1] = lhs.arr[1] / rhs.arr[1];
 	result.arr[2] = lhs.arr[2] / rhs.arr[2];
@@ -9596,7 +9663,7 @@ mat4_div_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	result.arr[13] = lhs.arr[13] / rhs.arr[13];
 	result.arr[14] = lhs.arr[14] / rhs.arr[14];
 	result.arr[15] = lhs.arr[15] / rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -9609,12 +9676,12 @@ operator% (const mat4& rhs)const{DPZoneScoped;
 		   rhs.arr[12] != 0 && rhs.arr[13] != 0 && rhs.arr[14] != 0 && rhs.arr[15] != 0,
 		   "mat4 elements cant be divided by zero");
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse_row0 = m128_div_4f32(this->sse_row0, rhs.sse_row0);
 	result.sse_row1 = m128_div_4f32(this->sse_row1, rhs.sse_row1);
 	result.sse_row2 = m128_div_4f32(this->sse_row2, rhs.sse_row2);
 	result.sse_row3 = m128_div_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.arr[0] = this->arr[0] / rhs.arr[0];
 	result.arr[1] = this->arr[1] / rhs.arr[1];
 	result.arr[2] = this->arr[2] / rhs.arr[2];
@@ -9631,7 +9698,7 @@ operator% (const mat4& rhs)const{DPZoneScoped;
 	result.arr[13] = this->arr[13] / rhs.arr[13];
 	result.arr[14] = this->arr[14] / rhs.arr[14];
 	result.arr[15] = this->arr[15] / rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -9644,12 +9711,12 @@ operator%=(const mat4& rhs){DPZoneScoped;
 		   rhs.arr[ 8] != 0 && rhs.arr[ 9] != 0 && rhs.arr[10] != 0 && rhs.arr[11] != 0
 		   rhs.arr[12] != 0 && rhs.arr[13] != 0 && rhs.arr[14] != 0 && rhs.arr[15] != 0,
 		   "mat4 elements cant be divided by zero");
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse_row0 = m128_div_4f32(this->sse_row0, rhs.sse_row0);
 	this->sse_row1 = m128_div_4f32(this->sse_row1, rhs.sse_row1);
 	this->sse_row2 = m128_div_4f32(this->sse_row2, rhs.sse_row2);
 	this->sse_row3 = m128_div_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	this->arr[0] /= rhs.arr[0];
 	this->arr[1] /= rhs.arr[1];
 	this->arr[2] /= rhs.arr[2];
@@ -9666,148 +9733,148 @@ operator%=(const mat4& rhs){DPZoneScoped;
 	this->arr[13] /= rhs.arr[13];
 	this->arr[14] /= rhs.arr[14];
 	this->arr[15] /= rhs.arr[15];
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 mat4_equal(mat4 lhs, mat4 rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
 		&& m128_equal_4f32(lhs.sse_row1, rhs.sse_row1)
 		&& m128_equal_4f32(lhs.sse_row2, rhs.sse_row2)
 		&& m128_equal_4f32(lhs.sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
-	return fabs(lhs.arr[0] - rhs.arr[0]) > M_EPSILON
-		&& fabs(lhs.arr[1] - rhs.arr[1]) > M_EPSILON
-		&& fabs(lhs.arr[2] - rhs.arr[2]) > M_EPSILON
-		&& fabs(lhs.arr[3] - rhs.arr[3]) > M_EPSILON
-		&& fabs(lhs.arr[4] - rhs.arr[4]) > M_EPSILON
-		&& fabs(lhs.arr[5] - rhs.arr[5]) > M_EPSILON
-		&& fabs(lhs.arr[6] - rhs.arr[6]) > M_EPSILON
-		&& fabs(lhs.arr[7] - rhs.arr[7]) > M_EPSILON
-		&& fabs(lhs.arr[8] - rhs.arr[8]) > M_EPSILON
-		&& fabs(lhs.arr[9] - rhs.arr[9]) > M_EPSILON
-		&& fabs(lhs.arr[10] - rhs.arr[10]) > M_EPSILON
-		&& fabs(lhs.arr[11] - rhs.arr[11]) > M_EPSILON
-		&& fabs(lhs.arr[12] - rhs.arr[12]) > M_EPSILON
-		&& fabs(lhs.arr[13] - rhs.arr[13]) > M_EPSILON
-		&& fabs(lhs.arr[14] - rhs.arr[14]) > M_EPSILON
-		&& fabs(lhs.arr[15] - rhs.arr[15]) > M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[9] - rhs.arr[9]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[10] - rhs.arr[10]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[11] - rhs.arr[11]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[12] - rhs.arr[12]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[13] - rhs.arr[13]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[14] - rhs.arr[14]) > M_EPSILON
+		&& DESHI_ABSF(lhs.arr[15] - rhs.arr[15]) > M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline b32 mat4::
 operator==(const mat4& rhs)const{DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(this->sse_row0, rhs.sse_row0)
 		&& m128_equal_4f32(this->sse_row1, rhs.sse_row1)
 		&& m128_equal_4f32(this->sse_row2, rhs.sse_row2)
 		&& m128_equal_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
-	return fabs(this->arr[0] - rhs.arr[0]) > M_EPSILON
-		&& fabs(this->arr[1] - rhs.arr[1]) > M_EPSILON
-		&& fabs(this->arr[2] - rhs.arr[2]) > M_EPSILON
-		&& fabs(this->arr[3] - rhs.arr[3]) > M_EPSILON
-		&& fabs(this->arr[4] - rhs.arr[4]) > M_EPSILON
-		&& fabs(this->arr[5] - rhs.arr[5]) > M_EPSILON
-		&& fabs(this->arr[6] - rhs.arr[6]) > M_EPSILON
-		&& fabs(this->arr[7] - rhs.arr[7]) > M_EPSILON
-		&& fabs(this->arr[8] - rhs.arr[8]) > M_EPSILON
-		&& fabs(this->arr[9] - rhs.arr[9]) > M_EPSILON
-		&& fabs(this->arr[10] - rhs.arr[10]) > M_EPSILON
-		&& fabs(this->arr[11] - rhs.arr[11]) > M_EPSILON
-		&& fabs(this->arr[12] - rhs.arr[12]) > M_EPSILON
-		&& fabs(this->arr[13] - rhs.arr[13]) > M_EPSILON
-		&& fabs(this->arr[14] - rhs.arr[14]) > M_EPSILON
-		&& fabs(this->arr[15] - rhs.arr[15]) > M_EPSILON;
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[1] - rhs.arr[1]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[2] - rhs.arr[2]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[3] - rhs.arr[3]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[4] - rhs.arr[4]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[5] - rhs.arr[5]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[6] - rhs.arr[6]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[7] - rhs.arr[7]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[8] - rhs.arr[8]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[9] - rhs.arr[9]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[10] - rhs.arr[10]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[11] - rhs.arr[11]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[12] - rhs.arr[12]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[13] - rhs.arr[13]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[14] - rhs.arr[14]) > M_EPSILON
+		&& DESHI_ABSF(this->arr[15] - rhs.arr[15]) > M_EPSILON;
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 mat4_nequal(mat4 lhs, mat4 rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
 		&& !m128_equal_4f32(lhs.sse_row1, rhs.sse_row1)
 		&& !m128_equal_4f32(lhs.sse_row2, rhs.sse_row2)
 		&& !m128_equal_4f32(lhs.sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
-	return fabs(lhs.arr[0] - rhs.arr[0]) < M_EPSILON
-		|| fabs(lhs.arr[1] - rhs.arr[1]) < M_EPSILON
-		|| fabs(lhs.arr[2] - rhs.arr[2]) < M_EPSILON
-		|| fabs(lhs.arr[3] - rhs.arr[3]) < M_EPSILON
-		|| fabs(lhs.arr[4] - rhs.arr[4]) < M_EPSILON
-		|| fabs(lhs.arr[5] - rhs.arr[5]) < M_EPSILON
-		|| fabs(lhs.arr[6] - rhs.arr[6]) < M_EPSILON
-		|| fabs(lhs.arr[7] - rhs.arr[7]) < M_EPSILON
-		|| fabs(lhs.arr[8] - rhs.arr[8]) < M_EPSILON
-		|| fabs(lhs.arr[9] - rhs.arr[9]) < M_EPSILON
-		|| fabs(lhs.arr[10] - rhs.arr[10]) < M_EPSILON
-		|| fabs(lhs.arr[11] - rhs.arr[11]) < M_EPSILON
-		|| fabs(lhs.arr[12] - rhs.arr[12]) < M_EPSILON
-		|| fabs(lhs.arr[13] - rhs.arr[13]) < M_EPSILON
-		|| fabs(lhs.arr[14] - rhs.arr[14]) < M_EPSILON
-		|| fabs(lhs.arr[15] - rhs.arr[15]) < M_EPSILON:
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[9] - rhs.arr[9]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[10] - rhs.arr[10]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[11] - rhs.arr[11]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[12] - rhs.arr[12]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[13] - rhs.arr[13]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[14] - rhs.arr[14]) < M_EPSILON
+		|| DESHI_ABSF(lhs.arr[15] - rhs.arr[15]) < M_EPSILON:
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline b32 mat4::
 operator!=(const mat4& rhs)const{DPZoneScoped;
-	#if DESHI_USE_SSE
+	#if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(this->sse_row0, rhs.sse_row0)
 		&& !m128_equal_4f32(this->sse_row1, rhs.sse_row1)
 		&& !m128_equal_4f32(this->sse_row2, rhs.sse_row2)
 		&& !m128_equal_4f32(this->sse_row3, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
-	return fabs(this->arr[0] - rhs.arr[0]) < M_EPSILON
-		|| fabs(this->arr[1] - rhs.arr[1]) < M_EPSILON
-		|| fabs(this->arr[2] - rhs.arr[2]) < M_EPSILON
-		|| fabs(this->arr[3] - rhs.arr[3]) < M_EPSILON
-		|| fabs(this->arr[4] - rhs.arr[4]) < M_EPSILON
-		|| fabs(this->arr[5] - rhs.arr[5]) < M_EPSILON
-		|| fabs(this->arr[6] - rhs.arr[6]) < M_EPSILON
-		|| fabs(this->arr[7] - rhs.arr[7]) < M_EPSILON
-		|| fabs(this->arr[8] - rhs.arr[8]) < M_EPSILON
-		|| fabs(this->arr[9] - rhs.arr[9]) < M_EPSILON
-		|| fabs(this->arr[10] - rhs.arr[10]) < M_EPSILON
-		|| fabs(this->arr[11] - rhs.arr[11]) < M_EPSILON
-		|| fabs(this->arr[12] - rhs.arr[12]) < M_EPSILON
-		|| fabs(this->arr[13] - rhs.arr[13]) < M_EPSILON
-		|| fabs(this->arr[14] - rhs.arr[14]) < M_EPSILON
-		|| fabs(this->arr[15] - rhs.arr[15]) < M_EPSILON:
-#endif //#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
+	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[1] - rhs.arr[1]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[2] - rhs.arr[2]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[3] - rhs.arr[3]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[4] - rhs.arr[4]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[5] - rhs.arr[5]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[6] - rhs.arr[6]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[7] - rhs.arr[7]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[8] - rhs.arr[8]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[9] - rhs.arr[9]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[10] - rhs.arr[10]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[11] - rhs.arr[11]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[12] - rhs.arr[12]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[13] - rhs.arr[13]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[14] - rhs.arr[14]) < M_EPSILON
+		|| DESHI_ABSF(this->arr[15] - rhs.arr[15]) < M_EPSILON:
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
 EXTERN_C inline b32
 mat4_transpose(mat4 lhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	_MM_TRANSPOSE4_PS(lhs.sse_row0, lhs.sse_row1, lhs.sse_row2, lhs.sse_row3);
 	return lhs;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	return Mat4(lhs.arr[0], lhs.arr[4], lhs.arr[ 8], lhs.arr[12],
 				lhs.arr[1], lhs.arr[5], lhs.arr[ 9], lhs.arr[13],
 				lhs.arr[2], lhs.arr[6], lhs.arr[10], lhs.arr[14],
 				lhs.arr[3], lhs.arr[7], lhs.arr[11], lhs.arr[15]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline mat4 mat4::
 transpose()const{DPZoneScoped;
-	#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	mat4 result = *this;
 	_MM_TRANSPOSE4_PS(result.sse_row0, result.sse_row1, result.sse_row2, result.sse_row3);
 	return result;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	return Mat4(this->arr[0], this->arr[4], this->arr[ 8], this->arr[12],
 				this->arr[1], this->arr[5], this->arr[ 9], this->arr[13],
 				this->arr[2], this->arr[6], this->arr[10], this->arr[14],
 				this->arr[3], this->arr[7], this->arr[11], this->arr[15]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -10544,7 +10611,7 @@ adjoint()const{DPZoneScoped;
 
 EXTERN_C inline mat4
 mat4_inverse(mat4 lhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 #define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_swizzle(b, 0,3,0,3)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
 #define mat2_adj_mul_mat2(a,b) m128_sub_4f32(m128_mul_4f32(m128_swizzle(a, 3,3,0,0), b), m128_mul_4f32(m128_swizzle(a, 1,1,2,2), m128_swizzle(b, 2,3,0,1)))
 #define mat2_mul_adj_mat2(a,b) m128_sub_4f32(m128_mul_4f32(a, m128_swizzle(b, 3,0,3,0)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
@@ -10597,15 +10664,15 @@ mat4_inverse(mat4 lhs){DPZoneScoped;
 #undef mat2_mul_adj_mat2
 #undef mat2_adj_mul_mat2
 #undef mat2_mul_mat2
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	return mat4_div_f32(mat4_adjoint(lhs), mat4_determinant(lhs));
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 #ifdef __cplusplus
 inline mat4 mat4::
 inverse()const{DPZoneScoped;
-	#if DESHI_USE_SSE
+	#if DESHI_MATH_USE_SSE
 #define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_swizzle(b, 0,3,0,3)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
 #define mat2_adj_mul_mat2(a,b) m128_sub_4f32(m128_mul_4f32(m128_swizzle(a, 3,3,0,0), b), m128_mul_4f32(m128_swizzle(a, 1,1,2,2), m128_swizzle(b, 2,3,0,1)))
 #define mat2_mul_adj_mat2(a,b) m128_sub_4f32(m128_mul_4f32(a, m128_swizzle(b, 3,0,3,0)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
@@ -10658,9 +10725,9 @@ inverse()const{DPZoneScoped;
 #undef mat2_mul_adj_mat2
 #undef mat2_adj_mul_mat2
 #undef mat2_mul_mat2
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	return this->adjoint() / this->determinant();
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -10669,7 +10736,7 @@ mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 	mat4 result;
 	
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	//transpose scaled rotation matrix
 	__m128 temp0 = m128_shuffle_0101(lhs.sse_row0, lhs.sse_row1);
 	__m128 temp1 = m128_shuffle_2323(lhs.sse_row0, lhs.sse_row1);
@@ -10694,7 +10761,7 @@ mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row1, m128_swizzle(lhs.sse_row3, 1,1,1,1)));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
 	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	//transpose rotation matrix
 	f32 temp;
 	temp = result.arr[1]; result.arr[1] = result.arr[4]; result.arr[4] = temp;
@@ -10720,14 +10787,14 @@ mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	result.arr[12] = (negative_translation.x * result.arr[0]) + (negative_translation.y * result.arr[4]) + (negative_translation.z * result.arr[ 8]);
 	result.arr[13] = (negative_translation.x * result.arr[1]) + (negative_translation.y * result.arr[5]) + (negative_translation.z * result.arr[ 9]);
 	result.arr[14] = (negative_translation.x * result.arr[2]) + (negative_translation.y * result.arr[6]) + (negative_translation.z * result.arr[10]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
 EXTERN_C inline mat4
 mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	mat4 result;
 	
 	//transpose rotation matrix
@@ -10744,7 +10811,7 @@ mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
 	
 	return result;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	//transpose rotation matrix
 	f32 temp;
 	temp = result.arr[1]; result.arr[1] = result.arr[4]; result.arr[4] = temp;
@@ -10756,13 +10823,13 @@ mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 	result.arr[12] = (negative_translation.x * result.arr[0]) + (negative_translation.y * result.arr[4]) + (negative_translation.z * result.arr[ 8]);
 	result.arr[13] = (negative_translation.x * result.arr[1]) + (negative_translation.y * result.arr[5]) + (negative_translation.z * result.arr[ 9]);
 	result.arr[14] = (negative_translation.x * result.arr[2]) + (negative_translation.y * result.arr[6]) + (negative_translation.z * result.arr[10]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 
 //returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4(1, 0, 0, 0,
 				0, c, s, 0,
 				0,-s, c, 0,
@@ -10773,7 +10840,7 @@ mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 EXTERN_C inline mat4
 mat4_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4(1, 0, 0, 0,
 				0, c, s, 0,
 				0,-s, c, 0,
@@ -10783,7 +10850,7 @@ mat4_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
 //returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4(c, 0,-s, 0,
 				0, 1, 0, 0,
 				s, 0, c, 0,
@@ -10794,7 +10861,7 @@ mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 EXTERN_C inline mat4
 mat4_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4(c, 0,-s, 0,
 				0, 1, 0, 0,
 				s, 0, c, 0,
@@ -10804,7 +10871,7 @@ mat4_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
 //returns a LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4( c, s, 0, 0,
 				-s, c, 0, 0,
 				0,  0, 1, 0,
@@ -10815,7 +10882,7 @@ mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 EXTERN_C inline mat4
 mat4_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 	angle = Radians(angle);
-	f32 c = cosf(angle); f32 s = sinf(angle);
+	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4( c, s, 0, 0,
 				-s, c, 0, 0,
 				0,  0, 1, 0,
@@ -10825,9 +10892,9 @@ mat4_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
-	f32 cX = cosf(x); f32 sX = sinf(x);
-	f32 cY = cosf(y); f32 sY = sinf(y);
-	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
+	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
+	f32 cZ = DESHI_COSF(z); f32 sZ = DESHI_SINF(z);
 	mat4 result;
 	result.arr[ 0] = cZ*cY;
 	result.arr[ 1] = cY*sZ;
@@ -10852,9 +10919,9 @@ mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 EXTERN_C inline mat4
 mat4_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
 	x = Radians(x); y = Radians(y); z = Radians(z);
-	f32 cX = cosf(x); f32 sX = sinf(x);
-	f32 cY = cosf(y); f32 sY = sinf(y);
-	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
+	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
+	f32 cZ = DESHI_COSF(z); f32 sZ = DESHI_SINF(z);
 	mat4 result;
 	result.arr[ 0] = cZ*cY;
 	result.arr[ 1] = cY*sZ;
@@ -10894,9 +10961,9 @@ mat4_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){DPZoneScoped;
-	f32 cX = cosf(rotation_x); f32 sX = sinf(rotation_x);
-	f32 cY = cosf(rotation_y); f32 sY = sinf(rotation_y);
-	f32 cZ = cosf(rotation_z); f32 sZ = sinf(rotation_z);
+	f32 cX = DESHI_COSF(rotation_x); f32 sX = DESHI_SINF(rotation_x);
+	f32 cY = DESHI_COSF(rotation_y); f32 sY = DESHI_SINF(rotation_y);
+	f32 cZ = DESHI_COSF(rotation_z); f32 sZ = DESHI_SINF(rotation_z);
 	mat4 result;
 	result.arr[ 0] = scale_x * (cZ*cY);
 	result.arr[ 1] = scale_x * (cY*sZ);
@@ -10923,9 +10990,9 @@ mat4_transformation_matrix_degrees(f32 translation_x, f32 translation_y, f32 tra
 	rotation_x = Radians(rotation_x);
 	rotation_y = Radians(rotation_y);
 	rotation_z = Radians(rotation_z);
-	f32 cX = cosf(rotation_x); f32 sX = sinf(rotation_x);
-	f32 cY = cosf(rotation_y); f32 sY = sinf(rotation_y);
-	f32 cZ = cosf(rotation_z); f32 sZ = sinf(rotation_z);
+	f32 cX = DESHI_COSF(rotation_x); f32 sX = DESHI_SINF(rotation_x);
+	f32 cY = DESHI_COSF(rotation_y); f32 sY = DESHI_SINF(rotation_y);
+	f32 cZ = DESHI_COSF(rotation_z); f32 sZ = DESHI_SINF(rotation_z);
 	mat4 result;
 	result.arr[ 0] = scale_x * (cZ*cY);
 	result.arr[ 1] = scale_x * (cY*sZ);
@@ -10983,17 +11050,17 @@ vec3_rows_to_mat3(vec3 row0, vec3 row1, vec3 row2){DPZoneScoped;
 EXTERN_C inline mat4
 vec4_rows_to_mat4(vec4 row0, vec4 row1, vec4 row2, vec4 row3){DPZoneScoped;
 	mat4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.row0 = row0;
 	result.row1 = row1;
 	result.row2 = row2;
 	result.row3 = row3;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.sse_row0 = row0.sse;
 	result.sse_row1 = row1.sse;
 	result.sse_row2 = row2.sse;
 	result.sse_row3 = row3.sse;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -11031,7 +11098,7 @@ operator*=(const mat3& rhs){DPZoneScoped;
 EXTERN_C inline vec3
 vec3_mul_mat4(vec3 lhs, mat4 rhs){DPZoneScoped;
 	vec3 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	vec4 temp.sse =                    m128_mul_4f32(m128_fill_4f32(lhs.x), rhs.sse_row0);
 	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(lhs.y), rhs.sse_row1));
 	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(lhs.z), rhs.sse_row2));
@@ -11039,11 +11106,11 @@ vec3_mul_mat4(vec3 lhs, mat4 rhs){DPZoneScoped;
 	result.x = temp.x;
 	result.y = temp.y;
 	result.z = temp.z;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[4]) + (lhs.z * rhs.arr[ 8]) + (rhs.arr[12]);
 	result.y = (lhs.x * rhs.arr[1]) + (lhs.y * rhs.arr[5]) + (lhs.z * rhs.arr[ 9]) + (rhs.arr[13]);
 	result.z = (lhs.x * rhs.arr[2]) + (lhs.y * rhs.arr[6]) + (lhs.z * rhs.arr[10]) + (rhs.arr[14]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -11051,7 +11118,7 @@ vec3_mul_mat4(vec3 lhs, mat4 rhs){DPZoneScoped;
 inline vec3 vec3::
 operator* (const mat4& rhs)const{DPZoneScoped;
 	vec3 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	vec4 temp.sse =                    m128_mul_4f32(m128_fill_4f32(this->x), rhs.sse_row0);
 	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->y), rhs.sse_row1));
 	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->z), rhs.sse_row2));
@@ -11059,11 +11126,11 @@ operator* (const mat4& rhs)const{DPZoneScoped;
 	result.x = temp.x;
 	result.y = temp.y;
 	result.z = temp.z;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (rhs.arr[12]);
 	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (rhs.arr[13]);
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (rhs.arr[14]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -11072,7 +11139,7 @@ operator* (const mat4& rhs)const{DPZoneScoped;
 inline void vec3::
 operator*=(const mat4& rhs){DPZoneScoped;
 	vec3 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	vec4 temp.sse =                    m128_mul_4f32(m128_fill_4f32(this->x), rhs.sse_row0);
 	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->y), rhs.sse_row1));
 	temp.sse = m128_add_4f32(temp.sse, m128_mul_4f32(m128_fill_4f32(this->z), rhs.sse_row2));
@@ -11080,11 +11147,11 @@ operator*=(const mat4& rhs){DPZoneScoped;
 	result.x = temp.x;
 	result.y = temp.y;
 	result.z = temp.z;
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (rhs.arr[12]);
 	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (rhs.arr[13]);
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (rhs.arr[14]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	*this = result;
 }
 #endif //#ifdef __cplusplus
@@ -11092,14 +11159,14 @@ operator*=(const mat4& rhs){DPZoneScoped;
 EXTERN_C inline vec4
 vec4_mul_mat4(vec4 lhs, mat4 rhs){DPZoneScoped;
 	vec4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse = m128_linear_combine(lhs.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[4]) + (lhs.z * rhs.arr[ 8]) + (lhs.w * rhs.arr[12]);
 	result.y = (lhs.x * rhs.arr[1]) + (lhs.y * rhs.arr[5]) + (lhs.z * rhs.arr[ 9]) + (lhs.w * rhs.arr[13]);
 	result.z = (lhs.x * rhs.arr[2]) + (lhs.y * rhs.arr[6]) + (lhs.z * rhs.arr[10]) + (lhs.w * rhs.arr[14]);
 	result.w = (lhs.x * rhs.arr[3]) + (lhs.y * rhs.arr[7]) + (lhs.z * rhs.arr[11]) + (lhs.w * rhs.arr[15]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 
@@ -11107,14 +11174,14 @@ vec4_mul_mat4(vec4 lhs, mat4 rhs){DPZoneScoped;
 inline vec4 vec4::
 operator* (const mat4& rhs)const{DPZoneScoped;
 	vec4 result;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	result.sse = m128_linear_combine(this->sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (this->w * rhs.arr[12]);
 	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (this->w * rhs.arr[13]);
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (this->w * rhs.arr[14]);
 	result.w = (this->x * rhs.arr[3]) + (this->y * rhs.arr[7]) + (this->z * rhs.arr[11]) + (this->w * rhs.arr[15]);
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
 #endif //#ifdef __cplusplus
@@ -11122,16 +11189,16 @@ operator* (const mat4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator*=(const mat4& rhs){DPZoneScoped;
-#if DESHI_USE_SSE
+#if DESHI_MATH_USE_SSE
 	this->sse = m128_linear_combine(this->sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_USE_SSE
+#else //#if DESHI_MATH_USE_SSE
 	vec4 result;
 	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (this->w * rhs.arr[12]);
 	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (this->w * rhs.arr[13]);
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (this->w * rhs.arr[14]);
 	result.w = (this->x * rhs.arr[3]) + (this->y * rhs.arr[7]) + (this->z * rhs.arr[11]) + (this->w * rhs.arr[15]);
 	*this = result;
-#endif //#else //#if DESHI_USE_SSE
+#endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
 
@@ -11194,9 +11261,9 @@ col(u32 col){DPZoneScoped;
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 EXTERN_C inline mat3
 mat3_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
-	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
-	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
-	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
 	mat3 result;
 	result.arr[0] = cZ*cY;
 	result.arr[1] = cY*sZ;
@@ -11216,9 +11283,9 @@ mat4_rotation_matrix_degrees_vec3(vec3 rotation){DPZoneScoped;
 	rotation.x = Radians(rotation.x);
 	rotation.y = Radians(rotation.y);
 	rotation.z = Radians(rotation.z);
-	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
-	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
-	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
 	mat3 result;
 	result.arr[0] = cZ*cY;
 	result.arr[1] = cY*sZ;
@@ -11242,9 +11309,9 @@ mat3_scale_matrix_vec3(vec3 scale){DPZoneScoped;
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
-	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
-	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
-	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
 	mat4 result;
 	result.arr[ 0] = cZ*cY;
 	result.arr[ 1] = cY*sZ;
@@ -11271,9 +11338,9 @@ mat4_rotation_matrix_degrees_vec3(vec3 rotation){DPZoneScoped;
 	rotation.x = Radians(rotation.x);
 	rotation.y = Radians(rotation.y);
 	rotation.z = Radians(rotation.z);
-	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
-	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
-	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
 	mat4 result;
 	result.arr[ 0] = cZ*cY;
 	result.arr[ 1] = cY*sZ;
@@ -11313,9 +11380,9 @@ mat4_scale_matrix_vec3(vec3 scale){DPZoneScoped;
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in radians
 EXTERN_C inline mat4
 mat4_transformation_matrix_radians_vec3(vec3 translation, vec3 rotation, vec3 scale){DPZoneScoped;
-	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
-	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
-	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
 	mat4 result;
 	result.arr[ 0] = scale.x * (cZ*cY);
 	result.arr[ 1] = scale.x * (cY*sZ);
@@ -11342,9 +11409,9 @@ mat4_transformation_matrix_degrees_vec3(vec3 translation, vec3 rotation, vec3 sc
 	rotation.x = Radians(rotation.x);
 	rotation.y = Radians(rotation.y);
 	rotation.z = Radians(rotation.z);
-	f32 cX = cosf(rotation.x); f32 sX = sinf(rotation.x);
-	f32 cY = cosf(rotation.y); f32 sY = sinf(rotation.y);
-	f32 cZ = cosf(rotation.z); f32 sZ = sinf(rotation.z);
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
 	mat4 result;
 	result.arr[ 0] = scale.x * (cZ*cY);
 	result.arr[ 1] = scale.x * (cY*sZ);
@@ -11483,7 +11550,7 @@ namespace Math {
 	static vec2 vec2RotateByAngle(float angle, vec2 v){
 		if (!angle) return v;
 		angle = Radians(angle);
-		return Vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
+		return Vec2(v.x * DESHI_COSF(angle) - v.y * DESHI_SINF(angle), v.x * sin(angle) + v.y * cos(angle));
 	}
 	
 	inline global bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims){
@@ -11511,13 +11578,13 @@ namespace Math {
 	//oscillates between a given upper and lower value based on a given x value
 	inline global float BoundedOscillation(float lower, float upper, float x){
 		Assert(upper > lower);
-		return ((upper - lower) * cosf(x) + (upper + lower)) / 2;
+		return ((upper - lower) * DESHI_COSF(x) + (upper + lower)) / 2;
 	}
 	
 	//returns in degrees
 	//this doesn't really work in 3D but this function is here anyways
 	static float AngBetweenVectors(vec3 v1, vec3 v2){
-		return Degrees(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
+		return Degrees(DESHI_ACOSF(v1.dot(v2) / (v1.mag() * v2.mag())));
 	}
 	
 	//returns in degrees
@@ -11535,7 +11602,7 @@ namespace Math {
 	static mat4 PerspectiveProjectionMatrix(f32 width, f32 height, f32 hFOV, f32 nearZ, f32 farZ){
 		float renderDistance = farZ - nearZ;
 		float aspectRatio = (f32)height / (f32)width;
-		float fovRad = 1.0f / tanf(Radians(hFOV / 2.0f));
+		float fovRad = 1.0f / DESHI_TANF(Radians(hFOV / 2.0f));
 		return mat4(aspectRatio * fovRad, 0,	   0,							  0,
 					0,					fovRad,  0,							  0,
 					0,					0,	   farZ / renderDistance,		  1,
@@ -11572,11 +11639,11 @@ namespace Math {
 	static vec3 SphericalToRectangularCoords(vec3 v){
 		float y = Radians(v.y);
 		float z = Radians(v.z);
-		return Vec3(v.x * sinf(z) * cosf(y), v.x * cosf(z), v.x * sinf(z) * sinf(y));
+		return Vec3(v.x * DESHI_SINF(z) * DESHI_COSF(y), v.x * DESHI_COSF(z), v.x * DESHI_SINF(z) * DESHI_SINF(y));
 	}
 	
 	static vec3 RectangularToSphericalCoords(vec3 v){
-		float rho = Radians(sqrtf(v.mag()));
+		float rho = Radians(DESHI_SQRTF(v.mag()));
 		float theta = Radians(atan(v.y / v.z));
 		float phi = acos(v.z / v.mag()); //maybe use v.y instead of v.z because y is our vertical axis
 		return Vec3(rho, theta, phi);
@@ -11584,9 +11651,9 @@ namespace Math {
 	}
 	
 	static float DistTwoPoints(vec3 a, vec3 b){
-		return sqrtf((a.x - b.x) * (a.x - b.x) +
-					 (a.y - b.y) * (a.y - b.y) +
-					 (a.z - b.z) * (a.z - b.z));
+		return DESHI_SQRTF((a.x - b.x) * (a.x - b.x) +
+						   (a.y - b.y) * (a.y - b.y) +
+						   (a.z - b.z) * (a.z - b.z));
 	}
 	
 	static inline float DistPointToPlane(vec3 point, vec3 plane_n, vec3 plane_p){
