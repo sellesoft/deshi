@@ -47,9 +47,9 @@ int main() {
 	platform_init();
 	logger_init();
 	Window* win = window_create(str8l("render_api"));
+	window_show(win);
 	render_init_x(win);
 	assets_init();
-	window_show(win);
 
 	// we need to create a pipeline which describes the path we take
 	// to render the scene
@@ -72,7 +72,7 @@ int main() {
 	pipeline->               culling = RenderPipelineCulling_Back;
 	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
 	pipeline->            depth_test = true;
-	pipeline->      depth_compare_op = RenderCompareOp_Less_Or_Equal;
+	pipeline->      depth_compare_op = RenderCompareOp_Less;
 	pipeline->            depth_bias = false;
 	pipeline->            line_width = 1.f;
 	pipeline->           color_blend = true;
@@ -83,16 +83,15 @@ int main() {
 	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
 	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
 	pipeline->        blend_constant = color(0,0,0,0);
-	pipeline->           render_pass = render_pass_of_window(win);
+	pipeline->           render_pass = render_pass_of_window_presentation_frame(win);
 
 	*array_push(pipeline->dynamic_states) = RenderDynamicState_Viewport;
 	*array_push(pipeline->dynamic_states) = RenderDynamicState_Scissor;
 
 	// We need to give the renderer information about the data we are going to be 
-	// giving to the vertex shader stage through buffers. We only need to do this for the vertex
-	// shader because it is the first stage (well, after input assembly, but we don't
-	// deal with that). We define the binding our data will be delivered on (0) and then
-	// the size of each element of the data. Then we describe how that data is laid out.
+	// giving to the vertex shader stage through buffers. We define the binding our 
+	// data will be delivered on (0) and then the size of each element of the data. 
+	// Finally, we describe how that data is laid out.
 
 	*array_push(pipeline->vertex_input_bindings) = {0, sizeof(MeshVertex)};
 	array_grow(pipeline->vertex_input_attributes, 4);
@@ -133,6 +132,7 @@ int main() {
 	// our UBO.
 	
 	RenderDescriptorLayout* descriptor_layout = render_create_descriptor_layout();
+	descriptor_layout->debug_name = str8l("flat");
 	RenderDescriptor* descriptor = array_push(descriptor_layout->descriptors);
 	descriptor->kind = RenderDescriptorKind_Uniform_Buffer;
 	// point the descriptor to our RenderBuffer we've just created
@@ -196,11 +196,94 @@ int main() {
 	Model* box_model = assets_model_create_from_mesh(box_mesh, 0);
 	box_model->batch_array[0].material = box_material;
 
-	auto t = mat4::TransformationMatrix({0, 0, 0}, {0, 0, 0}, {1, 1, 1});
-	render_model_x(render_present_frame_of_window(win), box_model, &t);
+	render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
 
-	while(1) {
+	ubo.proj = Camera::MakePerspectiveProjectionMatrix(win->width, win->height, 50, 1000, 0.1);
+	ubo.view = Math::LookAtMatrix(vec3{0,0,0}, vec3{0,0,1}).Inverse();
+	ubo.camera_pos = {0,0,0,0};
+	ubo.screen_dim = Vec2(win->width, win->height);
+
+	CopyMemory(ubo_buffer->mapped_data, &ubo, sizeof(ubo));
+
+	render_buffer_unmap(ubo_buffer, true);
+
+	vec3 up       = {0}, 
+		 right    = {0}, 
+		 forward  = {0},
+	     position = {0}, 
+		 rotation = {0};
+
+	forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(rotation));
+	right   = vec3_normalized(vec3_cross(vec3_UP(), forward));
+	up      = vec3_normalized(vec3_cross(forward, right));
+
+	b32 fps = false;
+
+	while(platform_update()) {
+	
+		auto t = mat4::TransformationMatrix(
+			{0, 0, 3}, 
+			{0, 90*f32(g_time->totalTime/3000), 0}, 
+			{1, 1, 1});
+		render_model_x(render_current_present_frame_of_window(win), box_model, &t);
+		auto t1 = mat4::TransformationMatrix(
+			{0.5, 0, 3},
+			{0, 0, 0},
+			{1 ,1, 1});
+		render_model_x(render_current_present_frame_of_window(win), box_model, &t1);
 		render_update_x(win);
-	}
 
+		if(key_pressed(Key_ESCAPE)) {
+			break;
+		}
+
+		if(fps) {
+			vec3 inputs = {0};
+			if(key_down(Key_W))     inputs += forward;
+			if(key_down(Key_S))     inputs -= forward;
+			if(key_down(Key_D))     inputs += right;
+			if(key_down(Key_A))     inputs -= right;
+			if(key_down(Key_SPACE)) inputs += up;
+			if(key_down(Key_LCTRL)) inputs -= up;
+
+			auto rotdiffx = (g_input->mouseY - (f32)g_window->center.y) * 0.3f;
+			auto rotdiffy = (g_input->mouseX - (f32)g_window->center.x) * 0.3f;
+
+			if(rotdiffx || rotdiffy || inputs.x || inputs.y || inputs.z) {
+				rotation.y += rotdiffy;
+				rotation.x += rotdiffx;
+
+				f32 multiplier = 8.f;
+				if(input_lshift_down()) multiplier = 32.f;
+				else if(input_lalt_down()) multiplier = 4.f;
+
+				position += inputs * multiplier * (g_time->deltaTime / 1000);
+				rotation.x = Clamp(rotation.x, -80.f, 80.f);
+				if(rotation.y >  1440.f) rotation.y -= 1440.f;
+				if(rotation.y < -1440.f) rotation.y += 1440.f;
+
+				forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(rotation));
+				right   = vec3_normalized(vec3_cross(vec3_UP(), forward));
+				up      = vec3_normalized(vec3_cross(forward, right));
+				
+				ubo.camera_pos = Vec4(position.x, position.y, position.z, 0);
+				ubo.view = Math::LookAtMatrix(position, position + forward).Inverse();
+				
+				Log("", inputs, ubo.view.arr[0], rotation);
+
+				render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
+				CopyMemory(ubo_buffer->mapped_data, &ubo, sizeof(ubo));
+				render_buffer_unmap(ubo_buffer, true);
+			}
+		}
+
+		if(key_pressed(Key_C)) {
+			if(fps)
+				window_set_cursor_mode(win, CursorMode_Default);
+			else
+				window_set_cursor_mode(win, CursorMode_FirstPerson);
+			fps = !fps;
+		}
+
+	}
 }

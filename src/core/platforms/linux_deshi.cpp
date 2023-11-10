@@ -1068,6 +1068,8 @@ platform_update() {
 	KeySym key;
 	char text[255];
 
+	DeshWindow->resized = 0;
+
 	// get the current amount of events in queue
 	u64 events_to_handle = XEventsQueued(linux.x11.display, QueuedAfterFlush);
 

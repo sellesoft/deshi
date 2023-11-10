@@ -3765,7 +3765,6 @@ pick_physical_device(Window* window) {
 		forI(extension_count) {
 			auto extension = available_extensions[i];
 			forI(ArrayCount(deviceExtensions)) {
-				Log("", extension.extensionName);
 				if(extension.extensionName == deviceExtensions[i]) {
 					count++;
 					break;
@@ -4557,7 +4556,6 @@ render_update_descriptor_layout(RenderDescriptorLayout* x) {
 				bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
 		}
-
 		bindings[i].stageFlags = render_shader_kind_to_vulkan(b.shader_stage_flags);
 		bindings[i].binding = i;
 		bindings[i].descriptorCount = 1;
@@ -4566,7 +4564,7 @@ render_update_descriptor_layout(RenderDescriptorLayout* x) {
 	resultVk = vkCreateDescriptorSetLayout(device, &info, allocator, (VkDescriptorSetLayout*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)x->handle,
-			(char*)to_dstr8v(deshi_temp_allocator, "descriptor set layout ", x->handle).str);
+			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name, " descriptor set layout").str);
 }
 
 VkCompareOp
@@ -5134,8 +5132,7 @@ void
 render_update_render_pass(RenderPass* x) {
 	PrintVk(4, "Updating renderpass ", x->debug_name);
 
-	// TODO(sushi) cleaning up previous resources
-	Assert(!x->handle);
+	vkDestroyRenderPass(device, (VkRenderPass)x->handle, allocator);
 
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -5217,7 +5214,7 @@ void
 render_execute_render_pass(RenderPass* x, Window* win) {
 	auto wininf = (VkWindowInfo*)win->render_info;
 
-	VkClearValue clear_value;
+	VkClearValue clear_values[2];
 	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	VkRenderPassBeginInfo render_pass_info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 	VkViewport viewport{};
@@ -5226,11 +5223,12 @@ render_execute_render_pass(RenderPass* x, Window* win) {
 	forX(frameidx, wininf->image_count) {
 		VkCommandBuffer cmdbuf = wininf->frames[frameidx].command_buffer;
 
-		clear_value.color = {0,0,0,0};
+		clear_values[0].color = {0,0,0,0};
+		clear_values[1].color = {0,0,0,0};
 		render_pass_info.renderPass = (VkRenderPass)x->handle;
 		render_pass_info.framebuffer = wininf->frames[frameidx].framebuffer;
-		render_pass_info.clearValueCount = 1;
-		render_pass_info.pClearValues = &clear_value;
+		render_pass_info.clearValueCount = 2;
+		render_pass_info.pClearValues = clear_values;
 		render_pass_info.renderArea.offset = {0,0};
 		render_pass_info.renderArea.extent = wininf->extent;
 
@@ -5574,8 +5572,6 @@ create_renderpasses(Window* window) {
 
 	auto wininf = (VkWindowInfo*)window->render_info;
 
-
-
 	if(baseRenderPass) vkDestroyRenderPass(device, baseRenderPass, allocator);
 	if(msaaRenderPass) vkDestroyRenderPass(device, msaaRenderPass, allocator);
 
@@ -5681,16 +5677,16 @@ create_render_pass_and_frame(Window* window) {
 
 	RenderPassAttachment color_attachment;
 	color_attachment.          format = vulkan_format_to_render(wininf->surface_format.format);
-	color_attachment.         load_op = RenderAttachmentLoadOp_Dont_Care;
-	color_attachment.        store_op = RenderAttachmentStoreOp_Dont_Care;
+	color_attachment.         load_op = RenderAttachmentLoadOp_Clear;
+	color_attachment.        store_op = RenderAttachmentStoreOp_Store;
 	color_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
 	color_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
 
 	RenderPassAttachment depth_attachment;
 	depth_attachment.          format = vulkan_format_to_render(find_depth_format());
-	depth_attachment.         load_op = RenderAttachmentLoadOp_Dont_Care;
-	depth_attachment.        store_op = RenderAttachmentStoreOp_Dont_Care;
-	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
+	depth_attachment.         load_op = RenderAttachmentLoadOp_Clear;
+	depth_attachment.        store_op = RenderAttachmentStoreOp_Store;
+	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Clear;
 	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
 
 	RenderPass* render_pass = render_create_render_pass();
@@ -6126,7 +6122,7 @@ render_update_x(Window* window) {
 
 	//// build commands ////
 	
-	VkClearValue clear_value;
+	VkClearValue clear_values[2];
 	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	VkRenderPassBeginInfo render_pass_info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 	VkViewport viewport{};
@@ -6136,12 +6132,13 @@ render_update_x(Window* window) {
 	resultVk = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
 	AssertVk(resultVk);
 
-	clear_value.color = {0, 0, 0, 0};
+	clear_values[0].color = {0, 0, 0, 0};
+	clear_values[1].depthStencil = {1.f, 0};
 
 	render_pass_info.renderPass = (VkRenderPass)wininf->frames_x[wininf->frame_index]->render_pass->handle;
 	render_pass_info.framebuffer = (VkFramebuffer)wininf->frames_x[wininf->frame_index]->handle;
-	render_pass_info.clearValueCount = 1;
-	render_pass_info.pClearValues = &clear_value;
+	render_pass_info.clearValueCount = 2;
+	render_pass_info.pClearValues = clear_values;
 	render_pass_info.renderArea.offset = {0,0};
 	render_pass_info.renderArea.extent = wininf->extent;
 
@@ -6157,7 +6154,6 @@ render_update_x(Window* window) {
 	scissor.extent.height = wininf->height;
 	
 	RenderPass* render_pass = wininf->frames_x[wininf->frame_index]->render_pass;
-	Log("", wininf->frame_index);
 
 	DebugBeginLabelVk(cmdbuf, (char*)render_pass->debug_name.str, {render_pass->debug_color.r/255.f, render_pass->debug_color.g/255.f, render_pass->debug_color.b/255.f, render_pass->debug_color.a/255.f});
 	vkCmdBeginRenderPass(cmdbuf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -6165,8 +6161,6 @@ render_update_x(Window* window) {
 	vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
 
 	RenderPipeline* currently_bound_pipeline = 0;
-
-	Log("", "updating frame ", (void*)wininf->frames_x[wininf->frame_index]);
 
 	forI(array_count(wininf->frames_x[wininf->frame_index]->commands)) {
 		auto cmd = wininf->frames_x[wininf->frame_index]->commands[i];
@@ -6689,27 +6683,32 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 void
 render_model_x(RenderFrame* frame, Model* model, mat4* matrix) {
 	RenderCommand c0{RenderCommandType_Bind_Pipeline};
-	Log("rendermodel", "rendering model to frame ", (void*)frame);
 	forI(arrlenu(model->batch_array)) {
 		auto ba = model->batch_array[i];
 		if(!ba.index_count) continue;
-		auto c0 = array_push(frame->commands);
-		c0->type = RenderCommandType_Bind_Pipeline;
-		c0->bind_pipeline.handle = ba.material->pipeline;
-		auto c1 = array_push(frame->commands);
-		c1->type = RenderCommandType_Bind_Vertex_Buffer;
-		c1->bind_vertex_buffer.handle = model->mesh->vertex_buffer;
-		auto c2 = array_push(frame->commands);
-		c2->type = RenderCommandType_Bind_Index_Buffer;
-		c2->bind_index_buffer.handle = model->mesh->index_buffer;
-		auto c3 = array_push(frame->commands);
-		c3->type = RenderCommandType_Bind_Descriptor_Set;
-		c3->bind_descriptor_set.handle = ba.material->descriptor_set;
-		auto c4 = array_push(frame->commands);
-		c4->type = RenderCommandType_Draw_Indexed;
-		c4->draw_indexed.index_offset = ba.index_offset;
-		c4->draw_indexed.index_count = ba.index_count;
-		c4->draw_indexed.vertex_offset = 0;
+		auto c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Pipeline;
+		c->bind_pipeline.handle = ba.material->pipeline;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Push_Constant;
+		c->push_constant.data = matrix;
+		c->push_constant.info.size = sizeof(mat4);
+		c->push_constant.info.offset = 0;
+		c->push_constant.info.shader_stage_flags = RenderShaderKind_Vertex;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Vertex_Buffer;
+		c->bind_vertex_buffer.handle = model->mesh->vertex_buffer;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Index_Buffer;
+		c->bind_index_buffer.handle = model->mesh->index_buffer;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Descriptor_Set;
+		c->bind_descriptor_set.handle = ba.material->descriptor_set;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Draw_Indexed;
+		c->draw_indexed.index_offset = ba.index_offset;
+		c->draw_indexed.index_count = ba.index_count;
+		c->draw_indexed.vertex_offset = 0;
 	}
 }
 
@@ -6879,6 +6878,8 @@ render_buffer_create(void* data, u64 size, RenderBufferUsageFlags usage, RenderM
 			
 			vkUnmapMemory(device, (VkDeviceMemory)result->memory_handle);
 		}
+
+		result->mapped_data = 0;
 	}else if(mapping == RenderMemoryMapping_Persistent){
 		resultVk = vkMapMemory(device, (VkDeviceMemory)result->memory_handle, 0, aligned_buffer_size, 0, &result->mapped_data); AssertVk(resultVk);
 		if(data){
@@ -6985,6 +6986,8 @@ render_buffer_unmap(RenderBuffer* buffer, b32 flush){DPZoneScoped;
 	}
 	
 	vkUnmapMemory(device, (VkDeviceMemory)buffer->memory_handle);
+
+	buffer->mapped_data = 0;
 }
 
 

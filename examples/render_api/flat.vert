@@ -19,12 +19,12 @@ layout(location = 2) in vec4 in_color;
 layout(location = 3) in vec3 in_normal;
 
 layout(location = 0) out vec3 out_light_vector_inverse;
-layout(location = 1) out vec3 out_normal;
+layout(location = 1) flat out vec3 out_normal;
 layout(location = 2) out vec4 out_color;
 
 void main() {
-	gl_Position = ubo.proj * primitive.model * vec4(in_pos.xyz, 1.0);
-	out_light_vector_inverse = vec3(ubo.view) - gl_Position.xyz;
+	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(in_pos.xyz, 1.0);
+	out_light_vector_inverse =  gl_Position.xyz + vec3(2,2,2);
 	out_normal = mat3(primitive.model) * in_normal;
 	out_color = in_color;
 }

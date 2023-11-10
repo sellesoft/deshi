@@ -399,7 +399,7 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	va[5]={{ p.x,-p.y, p.z}, uv, color, { ir3,-ir3, ir3}}; //  x,-y, z  5
 	va[6]={{ p.x, p.y,-p.z}, uv, color, { ir3, ir3,-ir3}}; //  x, y,-z  6
 	va[7]={{ p.x,-p.y,-p.z}, uv, color, { ir3,-ir3,-ir3}}; //  x,-y,-z  7
-	
+
 	//index array
 	ia[ 0]=4; ia[ 1]=2; ia[ 2]=0;    ia[ 3]=4; ia[ 4]=6; ia[ 5]=2; // +y face
 	ia[ 6]=2; ia[ 7]=7; ia[ 8]=3;    ia[ 9]=2; ia[10]=6; ia[11]=7; // -z face
@@ -861,17 +861,22 @@ assets_material_create_x(str8 name, RenderPipeline* pipeline, MaterialFlags flag
 	forI(n_textures) material->texture_array[i] = textures[i];
 
 	material->descriptor_set = render_descriptor_set_create();
-	*array_push(material->descriptor_set->layouts) = render_create_descriptor_layout();
-	auto layout = material->descriptor_set->layouts[0];
-	forI(n_textures) {
-		RenderDescriptor d;
-		d.kind = RenderDescriptorKind_Combined_Image_Sampler;
-		d.image.view = textures[i]->image_view;
-		d.image.sampler = textures[i]->sampler;
-		array_push_value(layout->descriptors, d);
+	// first push the layouts from the pipeline 
+	auto layouts = material->descriptor_set->layouts;
+	forI(array_count(pipeline->layout->descriptor_layouts)) {
+		array_push_value(material->descriptor_set->layouts, pipeline->layout->descriptor_layouts[i]);
 	}
 
-	render_update_descriptor_layout(layout);
+	//auto layout = *array_push(material->descriptor_set->layouts) = render_create_descriptor_layout();
+	//forI(n_textures) {
+	//	RenderDescriptor d;
+	//	d.kind = RenderDescriptorKind_Combined_Image_Sampler;
+	//	d.image.view = textures[i]->image_view;
+	//	d.image.sampler = textures[i]->sampler;
+	//	array_push_value(layout->descriptors, d);
+	//}
+
+	//render_update_descriptor_layout(layout);
 	render_descriptor_set_update(material->descriptor_set);
 	arrput(DeshAssets->material_array, material);
 	return material;

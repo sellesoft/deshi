@@ -244,6 +244,8 @@ typedef struct RenderDescriptor {
 } RenderDescriptor;
 
 typedef struct RenderDescriptorLayout {
+	str8 debug_name;
+
 	RenderDescriptor* descriptors;
 
 	void* handle;
@@ -255,6 +257,8 @@ void render_update_descriptor_layout(RenderDescriptorLayout* x);
 global RenderDescriptorLayout* __render_pool_descriptor_layouts;
 
 typedef struct RenderDescriptorSet {
+	str8 debug_name;
+
 	RenderDescriptorLayout** layouts;
 
 	void* handle;
@@ -465,7 +469,7 @@ typedef struct RenderPipeline {
 
 	RenderDynamicState* dynamic_states;
 	// pointer to a RenderPipelineLayout object retrieved from render
-	RenderPipelineLayout* layout;	
+	RenderPipelineLayout* layout;
 
 	RenderPass* render_pass;
 	
@@ -849,9 +853,6 @@ typedef struct RenderPass {
 	Window* window;
 
 	void* handle;
-	// currently we just associate a single framebuffer with 
-	// a render pass, but later on we may want multiple
-	void* framebuffer_handle;
 } RenderPass;
 
 global RenderPass* __render_pool_render_passes;
