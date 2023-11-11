@@ -4,10 +4,6 @@
 #define KIGU_STRING_ALLOCATOR deshi_temp_allocator
 #include "core/memory.h"
 
-#ifdef TRACY_ENABLE
-#  include "Tracy.hpp"
-#endif
-
 //// kigu includes ////
 #include "kigu/profiling.h"
 #include "kigu/array.h"
@@ -35,6 +31,10 @@
 #include "core/window.h"
 #include "math/math.h"
 
+// We're gonna use stb directly so we can show examples of 
+// RenderImage w/o having to go through assets
+#include "stb/stb_image.h"
+
 struct {
 	mat4 view;
 	mat4 proj;
@@ -56,19 +56,23 @@ int main() {
 	RenderPipeline* pipeline = render_create_pipeline();
 	pipeline->name = str8l("flat");
 	
+	// We'll need a vertex and a fragment shader which we acquire by pushing
+	// them onto the pipeline's shader stages. The backend will handle compilation.
 	*array_push(pipeline->shader_stages) = {
 		RenderShaderKind_Vertex, 
-		str8l("flat_vert"), 
-		file_read_simple(str8l("flat.vert"), deshi_temp_allocator)
+		str8l("test"), 
+		file_read_simple(str8l("test.vert"), deshi_temp_allocator)
 	};
 
 	*array_push(pipeline->shader_stages) = {
 		RenderShaderKind_Fragment,
-		str8l("flat_frag"),
-		file_read_simple(str8l("flat.frag"), deshi_temp_allocator)
+		str8l("test"),
+		file_read_simple(str8l("test.frag"), deshi_temp_allocator)
 	};
 	
-	pipeline->            front_face = RenderPipelineFrontFace_CW;
+	// We need to set all of the properties of the pipeline so that it can correctly
+	// render our scenes.
+	pipeline->            front_face = RenderPipelineFrontFace_CCW;
 	pipeline->               culling = RenderPipelineCulling_Back;
 	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
 	pipeline->            depth_test = true;
@@ -82,7 +86,7 @@ int main() {
 	pipeline->        alpha_blend_op = RenderBlendOp_Add;
 	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
 	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
-	pipeline->        blend_constant = color(0,0,0,0);
+	pipeline->        blend_constant = color(10,10,10,255);
 	pipeline->           render_pass = render_pass_of_window_presentation_frame(win);
 
 	*array_push(pipeline->dynamic_states) = RenderDynamicState_Viewport;
@@ -128,24 +132,30 @@ int main() {
 	);
 
 	// Now we can create the descriptor layout. This describes the layout of data
-	// that we want to give to the shader. We are just adding one descriptor for
-	// our UBO.
+	// that we want to give to the shaders. We're going to need a descriptor for
+	// our UBO and another one for a texture.
 	
 	RenderDescriptorLayout* descriptor_layout = render_create_descriptor_layout();
-	descriptor_layout->debug_name = str8l("flat");
-	RenderDescriptor* descriptor = array_push(descriptor_layout->descriptors);
-	descriptor->kind = RenderDescriptorKind_Uniform_Buffer;
-	// point the descriptor to our RenderBuffer we've just created
-	descriptor->buffer.handle = ubo_buffer;
-	descriptor->buffer.offset = 0;
-	descriptor->buffer.range = ubo_buffer->size;
-	descriptor->shader_stage_flags = RenderShaderKind_Vertex;
+	descriptor_layout->debug_name = str8l("test");
+	
+	// First is the UBO. It is bound to slot 0 of the vertex shader.
+	RenderDescriptorLayoutBinding* binding = array_push(descriptor_layout->bindings);
+	binding->kind = RenderDescriptorType_Uniform_Buffer;
+	binding->shader_stages = RenderShaderKind_Vertex;
+	binding->binding = 0;
+
+	// Then the texture, which we bind to slot 0 of the fragment shader.
+	binding = array_push(descriptor_layout->bindings);
+	binding->kind = RenderDescriptorType_Combined_Image_Sampler;
+	binding->shader_stages = RenderShaderKind_Fragment;
+	binding->binding = 1;
+
 	// update the descriptor layout in the backend
 	render_update_descriptor_layout(descriptor_layout);
 
 	// We'll also be using a push constant, which is a single value that 
 	// we can efficiently upload to the GPU. We will use a push constant 
-	// for the model matrix, since it has to change for every single model
+	// for the model matrix since it has to change for every single model
 	// we wish to update in a frame. If this were stored in the UBO then
 	// we would have to map and unmap the ubo to update one member 
 	// several times per frame, as many times as we have models and as many 
@@ -158,12 +168,11 @@ int main() {
 	model_push_constant.offset = 0;
 	
 	// Now we need to specify the layout of the pipeline's data.
-	// This is just a pair of a descriptor layout and a collection
-	// of push constants.
+	// This is just a pair of a collection descriptor layouts 
+	// and a collection of push constants.
 	
 	RenderPipelineLayout* pipeline_layout = render_create_pipeline_layout();
-	// debug name shown in things like RenderDoc
-	pipeline_layout->name = str8l("flat");
+	pipeline_layout->debug_name = str8l("test");
 	*array_push(pipeline_layout->descriptor_layouts)  = descriptor_layout;
 	*array_push(pipeline_layout->push_constants) = model_push_constant;
 	render_update_pipeline_layout(pipeline_layout);
@@ -179,23 +188,180 @@ int main() {
 	// to tell the backend to allocate this information we need to create a descriptor set. 
 	// A descriptor set is just an array of descriptor layouts.
 	
-	RenderDescriptorSet* descriptor_set = render_descriptor_set_create();
-	*array_push(descriptor_set->layouts) = descriptor_layout;
-	render_descriptor_set_update(descriptor_set);
+	RenderDescriptorSet* descriptor_set0 = render_descriptor_set_create();
+	// It's important that we use the same layouts that we gave to the pipeline.
+	// If we don't, we'll run into problems when we want to bind this set.
+	descriptor_set0->layouts = pipeline->layout->descriptor_layouts;
+	render_descriptor_set_update(descriptor_set0);
 
-	// Now we need a model to render, so we'll ask assets to generate a box for us.
-	// Assets will automatically upload this mesh to the gpu. Next we need 
-	// to create a material and model to actually represent the mesh. A model is composed
-	// of a collection of model batches, which are just parts of the mesh which 
-	// have different materials. This allows us to render part of a mesh with one 
-	// pipeline and part of it with another. For this example we will only have one batch
-	// which we'll assign a material using the pipeline created above.
+	// The descriptor set isn't fully setup yet. We still need to give it the uniform buffer
+	// and the texture we wish to use. We already have the UBO, so now we just need the texture.
 	
-	Mesh* box_mesh = assets_mesh_create_box(1, 1, 1, Color_Grey.rgba);
-	Material* box_material = assets_material_create_x(str8l("box"), pipeline, 0, 0);
-	Model* box_model = assets_model_create_from_mesh(box_mesh, 0);
-	box_model->batch_array[0].material = box_material;
+	// First, we'll load the texture into memory using stb.	
+	s32 width, height, channels;
+	u8* pixels = stbi_load("data/textures/null128.png", &width, &height, &channels, STBI_rgb_alpha);
 
+	// Next, we'll create a RenderImage, which is similar to a RenderBuffer except 
+	// multidimentional.
+	RenderImage* image = render_image_create();
+	image->format = RenderFormat_R8G8B8A8_StandardRGB;
+	// We're going to be sampling this image in our shader and the
+	// image is going to be the destination of a transfer when we upload
+	// our texture pixels to it.
+	image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
+	// We only care for sampling the image once (and atm we only support 1 sample!)
+	image->samples = RenderSampleCount_1;
+	// The size of our image as well as how many channels we have
+	image->extent = {width, height, channels};
+
+	// This call will create the necessary backend information for the information
+	render_image_update(image);
+	// but to actually upload it we call this function
+	render_image_upload(image, pixels);
+
+	// Great, now we just need to create an image view of our image and a sampler
+	// for the shader to use.
+	
+	RenderImageView* image_view = render_image_view_create();
+	image_view->image = image;
+	image_view->format = image->format;
+	image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+	render_image_view_update(image_view);
+
+	RenderSampler* sampler = render_sampler_create();
+	sampler->mipmaps = 1;
+	// This determines how the image is filtered when we get close to it.
+	sampler->mag_filter = RenderFilter_Nearest;
+	// And this when we get far from it.
+	sampler->min_filter = RenderFilter_Nearest;
+	// Here we decide how the sampler behaves when we try to read
+	// beyond [0,1) over each axis. We will just clamp to border
+	// which will just give black outside the bounds of the image.
+	sampler->address_mode_u = 
+	sampler->address_mode_v = 
+	sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	// The color used when we are in clamp to border mode
+	sampler->border_color = Color_Black;
+	render_sampler_update(sampler);
+
+	// Now we have all the information we need to finally setup the descriptor set.
+	// We need to give it an array of RenderDescriptors to write to the set.
+	
+	RenderDescriptor* descriptors;
+	array_init(descriptors, 2, deshi_allocator);
+	array_count(descriptors) = 2;
+
+	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
+	descriptors[0].shader_stages = RenderShaderKind_Vertex;
+	descriptors[0].buffer.offset = 0;
+	descriptors[0]. buffer.range = sizeof(ubo);
+	descriptors[0].buffer.handle = ubo_buffer;
+
+	descriptors[1].         kind = RenderDescriptorType_Combined_Image_Sampler;
+	descriptors[1].shader_stages = RenderShaderKind_Fragment;
+	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+	descriptors[1].image.sampler = sampler;
+	descriptors[1].   image.view = image_view;
+
+	render_descriptor_set_write(descriptor_set0, descriptors);
+
+	// We're actually going to use two textures, to show descriptor set switching.
+	// So we'll do pretty much everything we just did again.
+	
+	RenderDescriptorSet* descriptor_set1 = render_descriptor_set_create();
+	// It's important that we use the same layouts that we gave to the pipeline.
+	// If we don't, we'll run into problems when we want to bind this set.
+	descriptor_set1->layouts = pipeline->layout->descriptor_layouts;
+	render_descriptor_set_update(descriptor_set1);
+
+	pixels = stbi_load("data/textures/alex.png", &width, &height, &channels, STBI_rgb_alpha);
+
+	image = render_image_create();
+	image->format = RenderFormat_R8G8B8A8_StandardRGB;
+	image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
+	image->samples = RenderSampleCount_1;
+	image->extent = {width, height, channels};
+	render_image_update(image);
+	render_image_upload(image, pixels);
+
+	image_view = render_image_view_create();
+	image_view->image = image;
+	image_view->format = image->format;
+	image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+	render_image_view_update(image_view);
+
+	sampler = render_sampler_create();
+	sampler->mipmaps = 1;
+	sampler->mag_filter = RenderFilter_Nearest;
+	sampler->min_filter = RenderFilter_Nearest;
+	sampler->address_mode_u = 
+	sampler->address_mode_v = 
+	sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	sampler->border_color = Color_Black;
+	render_sampler_update(sampler);
+
+	array_clear(descriptors);
+	array_grow(descriptors, 2);
+	array_count(descriptors) = 2;
+
+	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
+	descriptors[0].shader_stages = RenderShaderKind_Vertex;
+	descriptors[0].buffer.offset = 0;
+	descriptors[0]. buffer.range = sizeof(ubo);
+	descriptors[0].buffer.handle = ubo_buffer;
+
+	descriptors[1].         kind = RenderDescriptorType_Combined_Image_Sampler;
+	descriptors[1].shader_stages = RenderShaderKind_Fragment;
+	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+	descriptors[1].image.sampler = sampler;
+	descriptors[1].   image.view = image_view;
+
+	render_descriptor_set_write(descriptor_set1, descriptors);
+
+	// Now we need a model to render. Assets has a full api for generating 
+	// a model without ever needing to touch the render api, but we're going to
+	// manually create a plane mesh which we'll use twice to display two 
+	// overlapping images. The reason we won't be using Assets is because it 
+	// would hide a large part of the usage of the render api, which is what
+	// we're trying to show here.
+		
+	// We'll setup the vertices that our planes will use.
+	// The order of initialization is:
+	// 		pos (vec3), uv (vec2), color (u32), normal (vec3)
+	MeshVertex vertices[4] = {
+		{{ 0.5f,  0.5f, 0.f}, {1.f, 0.f}, 0, {0.f, 1.f, 0.f}},
+		{{-0.5f,  0.5f, 0.f}, {0.f, 0.f}, 0, {0.f, 1.f, 0.f}},
+		{{-0.5f, -0.5f, 0.f}, {0.f, 1.f}, 0, {0.f, 1.f, 0.f}},
+		{{ 0.5f, -0.5f, 0.f}, {1.f, 1.f}, 0, {0.f, 1.f, 0.f}},
+	};
+
+	// Then we need to define the two triangles of the plane with indicies
+	MeshIndex indexes[6] = {0, 2, 1, 0, 3, 2};
+
+	// Next we'll need RenderBuffers so that we can get this 
+	// data onto the gpu. For both buffers, the memory is going 
+	// to be local to the GPU and we don't plan to remap
+	// the memory in this program either. The calls to these functions
+	// map, write, and unmap the buffers automatically, so there's no need
+	// for us to do it manually like we will with our UBOs in a moment.
+	
+	RenderBuffer* vertex_buffer = render_buffer_create(
+			vertices,
+			sizeof(MeshVertex) * 4,
+			RenderBufferUsage_VertexBuffer,
+			RenderMemoryPropertyFlag_DeviceLocal,
+			RenderMemoryMapping_None);
+
+	RenderBuffer* index_buffer = render_buffer_create(
+			indexes,
+			sizeof(MeshIndex) * 6,
+			RenderBufferUsage_IndexBuffer,
+			RenderMemoryPropertyFlag_DeviceLocal,
+			RenderMemoryMapping_None);
+
+	// Now we can start initializing the scene.
+	 
+	// First we'll map our ubo buffer and write some initial information to it.
 	render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
 
 	ubo.proj = Camera::MakePerspectiveProjectionMatrix(win->width, win->height, 50, 1000, 0.1);
@@ -207,6 +373,7 @@ int main() {
 
 	render_buffer_unmap(ubo_buffer, true);
 
+	// Next we'll setup some information needed to have a controllable camera.
 	vec3 up       = {0}, 
 		 right    = {0}, 
 		 forward  = {0},
@@ -219,18 +386,82 @@ int main() {
 
 	b32 fps = false;
 
-	while(platform_update()) {
+	// We need to create some transformation matrices that describe how 
+	// the planes are positioned in the world.
 	
-		auto t = mat4::TransformationMatrix(
-			{0, 0, 3}, 
-			{0, 90*f32(g_time->totalTime/3000), 0}, 
-			{1, 1, 1});
-		render_model_x(render_current_present_frame_of_window(win), box_model, &t);
-		auto t1 = mat4::TransformationMatrix(
-			{0.5, 0, 3},
+	mat4 plane_transform0 = mat4::TransformationMatrix(
+			{0, 0, 2},
 			{0, 0, 0},
-			{1 ,1, 1});
-		render_model_x(render_current_present_frame_of_window(win), box_model, &t1);
+			{1, 1, 1});
+
+	mat4 plane_transform1 = mat4::TransformationMatrix(
+			{1, 0, 3},
+			{0, 0, 0},
+			{1, 1, 1});
+
+	while(platform_update()) {
+		
+		// In order for the backend to know what to draw we need to issue it 
+		// commands. These instruct the backend to do various things such as 
+		// bind a pipeline, a descriptor set, buffers, etc. and to draw from
+		// those buffers.
+		
+		// We need to give commands to the frame that we're currently working with
+		// which the api provides a function for retrieving 
+		RenderFrame* frame = render_current_present_frame_of_window(win);
+		RenderCommand* c;
+
+		// We have to bind the pipeline first.
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Pipeline;
+		c->bind_pipeline.handle = pipeline;
+
+		// Then we push the transformation push constant for our first plane.
+		// Note that this doesn't copy the memory, so it must
+		// still be around by the time we update the renderer.
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Push_Constant;
+		c->push_constant.data = &plane_transform0;
+		c->push_constant.info = model_push_constant;
+
+		// We must bind the vertex and index buffers our model
+		// is using. These were generated when we asked assets to
+		// make our box mesh, so we can get them from it directly.
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Vertex_Buffer;
+		c->bind_vertex_buffer.handle = vertex_buffer;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Index_Buffer;
+		c->bind_index_buffer.handle = index_buffer;
+
+		// We need the descriptor set so we know what data we're actually
+		// going to be using in the shader.
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Descriptor_Set;
+		c->bind_descriptor_set.handle = descriptor_set0;
+
+		// Finally we tell the backend that we want to draw the first plane.
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Draw_Indexed;
+		c->draw_indexed.index_count = 6;
+		c->draw_indexed.index_offset = 0;
+		c->draw_indexed.vertex_offset = 0;
+
+		// Now we change the push constant and descriptor set and draw again
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Push_Constant;
+		c->push_constant.info = model_push_constant;
+		c->push_constant.data = &plane_transform1;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Bind_Descriptor_Set;
+		c->bind_descriptor_set.handle = descriptor_set1;
+		c = array_push(frame->commands);
+		c->type = RenderCommandType_Draw_Indexed;
+		c->draw_indexed.index_count = 6;
+		c->draw_indexed.index_offset = 0;
+		c->draw_indexed.vertex_offset = 0;
+
+
 		render_update_x(win);
 
 		if(key_pressed(Key_ESCAPE)) {
@@ -246,12 +477,12 @@ int main() {
 			if(key_down(Key_SPACE)) inputs += up;
 			if(key_down(Key_LCTRL)) inputs -= up;
 
-			auto rotdiffx = (g_input->mouseY - (f32)g_window->center.y) * 0.3f;
-			auto rotdiffy = (g_input->mouseX - (f32)g_window->center.x) * 0.3f;
+			auto rotdiffx = (g_input->mouseY - (f32)g_window->center.y) * 0.1f;
+			auto rotdiffy = (g_input->mouseX - (f32)g_window->center.x) * 0.1f;
 
 			if(rotdiffx || rotdiffy || inputs.x || inputs.y || inputs.z) {
 				rotation.y += rotdiffy;
-				rotation.x += rotdiffx;
+				rotation.x -= rotdiffx;
 
 				f32 multiplier = 8.f;
 				if(input_lshift_down()) multiplier = 32.f;
