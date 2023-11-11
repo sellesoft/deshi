@@ -207,14 +207,15 @@ enum RenderShaderKind {
 enum RenderImageLayout {
 	RenderImageLayout_Undefined,
 	RenderImageLayout_General,
-	RenderImageLayout_Color_Attachment_Optional,
-	RenderImageLayout_Depth_Stencil_Attachment_Optional,
+	RenderImageLayout_Color_Attachment_Optimal,
+	RenderImageLayout_Depth_Stencil_Attachment_Optimal,
 	RenderImageLayout_Present,
+	RenderImageLayout_Shader_Read_Only_Optimal,
 };
 
-enum RenderDescriptorKind {
-	RenderDescriptorKind_Combined_Image_Sampler,
-	RenderDescriptorKind_Uniform_Buffer,
+enum RenderDescriptorType {
+	RenderDescriptorType_Combined_Image_Sampler,
+	RenderDescriptorType_Uniform_Buffer,
 	// these two seem to be the only ones used for now
 	// add more as they seem useful later
 };
@@ -224,9 +225,18 @@ struct RenderSampler;
 struct RenderBuffer;
 struct RenderPass;
 
+// describes a binding in a descriptor
+// does not represent actual memory that is allocated
+typedef struct RenderDescriptorLayoutBinding {
+	RenderDescriptorType kind;
+	RenderShaderKind shader_stages;
+	u32 binding;
+} RenderDescriptorLayoutBinding;
+
+// represents allocated data used in a descriptor set
 typedef struct RenderDescriptor {
-	RenderDescriptorKind kind;
-	RenderShaderKind shader_stage_flags;
+	RenderDescriptorType kind;
+	RenderShaderKind shader_stages;
 
 	union {
 		struct {
@@ -246,7 +256,7 @@ typedef struct RenderDescriptor {
 typedef struct RenderDescriptorLayout {
 	str8 debug_name;
 
-	RenderDescriptor* descriptors;
+	RenderDescriptorLayoutBinding* bindings;
 
 	void* handle;
 } RenderDescriptorLayout;
@@ -266,6 +276,8 @@ typedef struct RenderDescriptorSet {
 
 RenderDescriptorSet* render_descriptor_set_create();
 void render_descriptor_set_update(RenderDescriptorSet* x);
+// TODO(sushi) writing to a specific binding
+void render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptors);
 
 global RenderDescriptorSet* __render_pool_descriptor_sets;
 
@@ -278,7 +290,7 @@ typedef struct RenderPushConstant {
 
 // it is useful to reuse this information in several pipelines
 typedef struct RenderPipelineLayout {
-	str8 name; // name used for debugging
+	str8 debug_name; // name used for debugging
 
 	RenderDescriptorLayout** descriptor_layouts;
 	RenderPushConstant* push_constants;
@@ -694,8 +706,12 @@ typedef struct RenderImage {
 	void* memory_handle;
 } RenderImage;
  
-RenderImage* render_create_image();
-void render_update_image(RenderImage* x);
+RenderImage* render_image_create();
+void render_image_update(RenderImage* x);
+// TODO(sushi) make the api for this closer to that of RenderBuffer
+//             so the user has more flexibility in modifying 
+//             render images
+void render_image_upload(RenderImage* x, u8* pixels);
 
 global RenderImage* __render_pool_images;
 
@@ -726,8 +742,8 @@ typedef struct RenderImageView {
 	void* handle;
 } RenderImageView;
 
-RenderImageView* render_create_image_view();
-void render_update_image_view(RenderImageView* x);
+RenderImageView* render_image_view_create();
+void render_image_view_update(RenderImageView* x);
 
 global RenderImageView* __render_pool_image_views;
 
@@ -755,16 +771,16 @@ typedef struct RenderSampler {
 	u64 mipmaps;
 
 	void* handle;
+
+	str8 debug_name;
 } RenderSampler;
 
-RenderSampler* render_create_sampler();
-void render_update_sampler(RenderSampler* x);
+RenderSampler* render_sampler_create();
+void render_sampler_update(RenderSampler* x);
 
 global RenderSampler* __render_pool_samplers;
 
 // TODO(sushi)
-// compute pipelines seem to be distinct from graphics pipelines 
-// so we'll use a separate type for them
 //typedef struct RenderComputePipeline {
 //
 //} RenderComputePipeline;

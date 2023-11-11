@@ -542,7 +542,6 @@ assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color){DPZoneScoped
 	return mesh;
 }
 
-
 Mesh*
 assets_mesh_create_from_file(str8 name){DPZoneScoped;
 	if(str8_equal_lazy(name, STR8("null"))) return assets_mesh_null();
@@ -601,14 +600,14 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 		mesh->triangle_array[ti].neighbor_array = (u32*)(mesh->triangle_array[ti-1].neighbor_array + mesh->triangle_array[ti-1].neighbor_count);
 		mesh->triangle_array[ti].edge_array     = (u8*) (mesh->triangle_array[ti-1].edge_array + mesh->triangle_array[ti-1].neighbor_count);
 	}
-	mesh->face_array[0].triangle_array         = (u32*)(mesh->triangle_array[0].edge_array         + mesh->total_tri_neighbor_count);
-	mesh->face_array[0].vertex_array           = (u32*)(mesh->face_array[0].triangle_array         + mesh->triangle_count);
-	mesh->face_array[0].outer_vertex_array      = (u32*)(mesh->face_array[0].vertex_array           + mesh->total_face_vertex_count);
+	mesh->face_array[0].triangle_array          = (u32*)(mesh->triangle_array[0].edge_array          + mesh->total_tri_neighbor_count);
+	mesh->face_array[0].vertex_array            = (u32*)(mesh->face_array[0].triangle_array          + mesh->triangle_count);
+	mesh->face_array[0].outer_vertex_array      = (u32*)(mesh->face_array[0].vertex_array            + mesh->total_face_vertex_count);
 	mesh->face_array[0].neighbor_triangle_array = (u32*)(mesh->face_array[0].outer_vertex_array      + mesh->total_face_outer_vertex_count);
 	mesh->face_array[0].neighbor_face_array     = (u32*)(mesh->face_array[0].neighbor_triangle_array + mesh->total_face_tri_neighbor_count);
 	for(s32 fi = 1; fi < mesh->face_count; ++fi){
-		mesh->face_array[fi].triangle_array         = (u32*)(mesh->face_array[fi-1].triangle_array         + mesh->face_array[fi-1].triangle_count);
-		mesh->face_array[fi].vertex_array           = (u32*)(mesh->face_array[fi-1].vertex_array           + mesh->face_array[fi-1].vertex_count);
+		mesh->face_array[fi].triangle_array          = (u32*)(mesh->face_array[fi-1].triangle_array          + mesh->face_array[fi-1].triangle_count);
+		mesh->face_array[fi].vertex_array            = (u32*)(mesh->face_array[fi-1].vertex_array            + mesh->face_array[fi-1].vertex_count);
 		mesh->face_array[fi].outer_vertex_array      = (u32*)(mesh->face_array[fi-1].outer_vertex_array      + mesh->face_array[fi-1].outer_vertex_count);
 		mesh->face_array[fi].neighbor_triangle_array = (u32*)(mesh->face_array[fi-1].neighbor_triangle_array + mesh->face_array[fi-1].neighbor_triangle_count);
 		mesh->face_array[fi].neighbor_face_array     = (u32*)(mesh->face_array[fi-1].neighbor_face_array     + mesh->face_array[fi-1].neighbor_face_count);
@@ -1694,8 +1693,11 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 				mesh->face_array[fi].neighbor_face_array[fvi] = faceFaceNeighbors[fi][fvi];
 			}
 		}
-		
+#ifdef RENDER_REWRITE
+		map_mesh(mesh);
+#else
 		render_load_mesh(mesh);
+#endif
 		arrput(DeshAssets->mesh_array, mesh);
 	}
 	Log("assets","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");

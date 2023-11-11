@@ -4528,7 +4528,7 @@ render_shader_kind_to_vulkan(RenderShaderKind x) {
 RenderDescriptorLayout*
 render_create_descriptor_layout() {
 	auto out = memory_pool_push(__render_pool_descriptor_layouts);
-	array_init(out->descriptors, 1, deshi_allocator);
+	array_init(out->bindings, 1, deshi_allocator);
 	return out;
 }
 
@@ -4536,28 +4536,28 @@ void
 render_update_descriptor_layout(RenderDescriptorLayout* x) {
 	PrintVk(4, "Updating descriptor set layout");
 
-	u64 n_descriptors = array_count(x->descriptors);
+	u64 n_bindings = array_count(x->bindings);
 
 	VkDescriptorSetLayoutBinding* bindings;
-	array_init(bindings, n_descriptors, deshi_temp_allocator);
-	array_count(bindings) = n_descriptors;
+	array_init(bindings, n_bindings, deshi_temp_allocator);
+	array_count(bindings) = n_bindings;
 
 	VkDescriptorSetLayoutCreateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
 	info.pBindings = bindings;
-	info.bindingCount = n_descriptors;
+	info.bindingCount = n_bindings;
 
-	forI(n_descriptors) {
-		auto b = x->descriptors[i];
+	forI(n_bindings) {
+		auto b = x->bindings[i];
 		switch(b.kind) {
-			case RenderDescriptorKind_Combined_Image_Sampler: {
+			case RenderDescriptorType_Combined_Image_Sampler: {
 				bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			} break;
-			case RenderDescriptorKind_Uniform_Buffer: {
+			case RenderDescriptorType_Uniform_Buffer: {
 				bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
 		}
-		bindings[i].stageFlags = render_shader_kind_to_vulkan(b.shader_stage_flags);
-		bindings[i].binding = i;
+		bindings[i].stageFlags = render_shader_kind_to_vulkan(b.shader_stages);
+		bindings[i].binding = b.binding;
 		bindings[i].descriptorCount = 1;
 	}
 
@@ -4584,10 +4584,10 @@ render_compare_op_to_vulkan(RenderCompareOp x) {
 
 
 VkDescriptorType
-render_descriptor_kind_to_vulkan(RenderDescriptorKind x) {
+render_descriptor_type_to_vulkan(RenderDescriptorType x) {
 	switch(x) {
-		case RenderDescriptorKind_Uniform_Buffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		case RenderDescriptorKind_Combined_Image_Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case RenderDescriptorType_Uniform_Buffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case RenderDescriptorType_Combined_Image_Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	}
 }
 
@@ -4601,20 +4601,26 @@ render_descriptor_set_create() {
 VkImageLayout
 render_image_layout_to_vulkan(RenderImageLayout x) {
 	switch(x) {
-		case RenderImageLayout_Undefined: return VK_IMAGE_LAYOUT_UNDEFINED;
-		case RenderImageLayout_General: return VK_IMAGE_LAYOUT_GENERAL;
-		case RenderImageLayout_Color_Attachment_Optional: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		case RenderImageLayout_Depth_Stencil_Attachment_Optional: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		case RenderImageLayout_Present: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		case RenderImageLayout_Undefined:                        return VK_IMAGE_LAYOUT_UNDEFINED;
+		case RenderImageLayout_General:                          return VK_IMAGE_LAYOUT_GENERAL;
+		case RenderImageLayout_Color_Attachment_Optimal:         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case RenderImageLayout_Depth_Stencil_Attachment_Optimal: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		case RenderImageLayout_Present:                          return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		case RenderImageLayout_Shader_Read_Only_Optimal:         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	}
 	Assert(0);
+	return {};
 }
 
 void
 render_descriptor_set_update(RenderDescriptorSet* x) {
-	PrintVk(4, "Updating descriptor set");
+	PrintVk(4, "Updating descriptor set ", x->debug_name);
 
 	u64 n_layouts = array_count(x->layouts);
+
+	if(!n_layouts) {
+		LogWVk("render_descriptor_set_update() called on a descriptor set with 0 layouts");
+	}
 
 	VkDescriptorSetLayout* layouts;
 	array_init(layouts, n_layouts, deshi_allocator);
@@ -4623,7 +4629,6 @@ render_descriptor_set_update(RenderDescriptorSet* x) {
 	forI(n_layouts) {
 		layouts[i] = (VkDescriptorSetLayout)x->layouts[i]->handle;
 	}
-
 	
 	VkDescriptorSetAllocateInfo alloc_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 	alloc_info.descriptorPool = descriptorPool;
@@ -4633,45 +4638,56 @@ render_descriptor_set_update(RenderDescriptorSet* x) {
 	resultVk = vkAllocateDescriptorSets(device, &alloc_info, (VkDescriptorSet*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)x->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, "Descriptor set (", (void*)x, ")").str);
-	
+			(char*)to_dstr8v(deshi_temp_allocator, "Descriptor set ", x->debug_name).str);
+}
+
+void
+render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptors) {
+	if(!x->handle) {
+		LogEVk("attempt to write to a descriptor set that has a null handle (did you call render_descriptor_set_update()?)");
+		return;
+	}
+
 	VkWriteDescriptorSet* writes;
-	array_init(writes, 1, deshi_temp_allocator);
+	array_init(writes, array_count(descriptors), deshi_temp_allocator);
 	VkDescriptorBufferInfo* buffer_infos;
 	array_init(buffer_infos, 1, deshi_temp_allocator);
 	VkDescriptorImageInfo* image_infos;
 	array_init(image_infos, 1, deshi_temp_allocator);
 
-	forI(n_layouts) {
-		forX(j, array_count(x->layouts[i]->descriptors)) {
-			auto d = x->layouts[i]->descriptors[i];
-        	auto w = array_push(writes);
-			w->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			w->dstSet = (VkDescriptorSet)x->handle;
-			w->dstBinding = i;
-			w->descriptorCount = 1;
-			switch(d.kind) {
-				case RenderDescriptorKind_Uniform_Buffer: {
-					auto x = array_push(buffer_infos);
-					x->buffer = (VkBuffer)d.buffer.handle->buffer_handle;
-					x->range  = d.buffer.range;
-					x->offset = d.buffer.offset;
-					w->pBufferInfo = x;
-					w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				} break;
-				case RenderDescriptorKind_Combined_Image_Sampler: {
-					auto x = array_push(image_infos);
-					x->sampler = (VkSampler)d.image.sampler->handle;
-					x->imageView = (VkImageView)d.image.view;
-					x->imageLayout = render_image_layout_to_vulkan(d.image.layout);
-					w->pImageInfo = x;
-					w->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				} break;
-			}
+	forI(array_count(descriptors)) {
+		auto d = descriptors[i];
+		auto w = array_push(writes);
+		w->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		w->dstSet = (VkDescriptorSet)x->handle;
+		w->dstBinding = i;
+		w->descriptorCount = 1;
+		switch(d.kind) {
+			case RenderDescriptorType_Uniform_Buffer: {
+				auto b = array_push(buffer_infos);
+				b->buffer = (VkBuffer)d.buffer.handle->buffer_handle;
+				b-> range = d.buffer.range;
+				b->offset = d.buffer.offset;
+				w->pBufferInfo = b;
+				w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			} break;
+			case RenderDescriptorType_Combined_Image_Sampler: {
+				auto b = array_push(image_infos);
+				b->imageView = (VkImageView)d.image.view->handle;
+				b->sampler = (VkSampler)d.image.sampler->handle;
+				b->imageLayout = render_image_layout_to_vulkan(d.image.layout);
+				w->pImageInfo = b;
+				w->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			} break;
 		}
 	}
 
 	vkUpdateDescriptorSets(device, array_count(writes), writes, 0, 0);
+
+	// TODO(sushi) no longer necessary when we have module specific temp allocators
+	array_deinit(writes);
+	array_deinit(buffer_infos);
+	array_deinit(image_infos);
 }
 
 RenderPipelineLayout*
@@ -4709,7 +4725,7 @@ render_create_base_pipeline_layout() {
 
 void
 render_update_pipeline_layout(RenderPipelineLayout* x) {
-	PrintVk(2, "Updating pipeline layout ", x->name);
+	PrintVk(2, "Updating pipeline layout ", x->debug_name);
 
 	Stopwatch watch = start_stopwatch();
 
@@ -4745,9 +4761,9 @@ render_update_pipeline_layout(RenderPipelineLayout* x) {
 	resultVk = vkCreatePipelineLayout(device, &info, allocator, (VkPipelineLayout*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, x->name, " pipeline layout").str);
+			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name, " pipeline layout").str);
 
-	PrintVk(2, "Finished updating ", x->name, " layout in ", peek_stopwatch(watch), "ms");
+	PrintVk(2, "Finished updating ", x->debug_name, " layout in ", peek_stopwatch(watch), "ms");
 }
 
 // creates a pipeline and returns a handle to it
@@ -4991,7 +5007,7 @@ render_update_pipeline(RenderPipeline* pipeline) {
 }
 
 RenderImage*
-render_create_image() {
+render_image_create() {
 	auto out = memory_pool_push(__render_pool_images);
 	return out;
 }
@@ -5052,7 +5068,7 @@ render_memory_properties_to_vulkan(RenderMemoryPropertyFlags x) {
 }
 
 void
-render_update_image(RenderImage* x) {
+render_image_update(RenderImage* x) {
 	PrintVk(4, "Updating RenderImage");
 
 	vkDestroyImage(device, (VkImage)x->handle, allocator);
@@ -5071,8 +5087,88 @@ render_update_image(RenderImage* x) {
 	);
 }
 
+void
+render_image_upload(RenderImage* image, u8* pixels) {
+	if(!image->handle) {
+		LogE("render", "render_image_upload() called on a RenderImage that has a null handle (did you forget to call render_image_update()?)");
+		return;
+	}
+
+	VkDeviceSize image_memsize = image->extent.x * image->extent.y * image->extent.z;
+
+	// create a staging buffer so we can map the pixel data from the CPU
+	BufferVk stage{};
+	create_and_map_buffer(
+			&stage.buffer, 
+			&stage.memory, 
+			&image_memsize, 
+			(size_t)image_memsize, 
+			pixels,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	VkCommandBuffer cmdbuf = begin_single_time_commands();
+
+	VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+	barrier.srcAccessMask       = 0;
+	barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image               = (VkImage)image->handle;
+	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel   = 0;
+	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
+	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	vkCmdPipelineBarrier(cmdbuf, 
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,0,0,0,0,1, &barrier);
+
+	VkBufferImageCopy region{};
+	region.bufferOffset      = 0;
+	region.bufferRowLength   = 0;
+	region.bufferImageHeight = 0;
+	region.imageOffset       = {0, 0, 0};
+	region.imageExtent       = {(u32)image->extent.x, (u32)image->extent.y, 1};
+	region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel       = 0;
+	region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	region.imageSubresource.layerCount     = 1; //NOTE(delle) use image flags here?
+	vkCmdCopyBufferToImage(cmdbuf, 
+			stage.buffer, (VkImage)image->handle, 
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+			1, &region);
+
+	barrier.srcAccessMask       = 0;
+	barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image               = (VkImage)image->handle;
+	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel   = 0;
+	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
+	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	vkCmdPipelineBarrier(cmdbuf, 
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,0,0,0,0,1, &barrier);
+
+	
+	end_single_time_commands(cmdbuf);
+
+	vkDestroyBuffer(device, stage.buffer, allocator);
+	vkFreeMemory(device, stage.memory, allocator);
+
+	// TODO(sushi) generate_mipmaps
+}
+
 RenderImageView*
-render_create_image_view() {
+render_image_view_create() {
 	return memory_pool_push(__render_pool_image_views);
 }
 
@@ -5086,7 +5182,7 @@ render_image_view_aspect_to_vulkan(RenderImageViewAspectFlags x) {
 }
 
 void
-render_update_image_view(RenderImageView* x) {
+render_image_view_update(RenderImageView* x) {
 	PrintVk(4, "Updating RenderView");
 
 	vkDestroyImageView(device, (VkImageView)x->handle, allocator);
@@ -5097,6 +5193,58 @@ render_update_image_view(RenderImageView* x) {
 		render_image_view_aspect_to_vulkan(x->aspect_flags),
 		1
 	);
+
+}
+
+RenderSampler*
+render_sampler_create() {
+	auto out = memory_pool_push(__render_pool_samplers);
+	return out;
+}
+
+VkFilter
+render_filter_to_vulkan(RenderFilter x) {
+	switch(x) {
+		case RenderFilter_Nearest: return VK_FILTER_NEAREST;
+		case RenderFilter_Linear:  return VK_FILTER_LINEAR;
+	}
+	Assert(0);
+	return {};
+}
+
+VkSamplerAddressMode
+render_sampler_address_mode_to_vulkan(RenderSamplerAddressMode x) {
+	switch(x) {
+		case RenderSamplerAddressMode_Repeat:          return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		case RenderSamplerAddressMode_Mirrored_Repeat: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		case RenderSamplerAddressMode_Clamp_To_Border: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		case RenderSamplerAddressMode_Clamp_To_Edge:   return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	}
+	Assert(0);
+	return {};
+}
+
+void
+render_sampler_update(RenderSampler* x) {
+	VkSamplerCreateInfo info{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+
+	info.magFilter = render_filter_to_vulkan(x->mag_filter);
+	info.minFilter = render_filter_to_vulkan(x->min_filter);
+	info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; // TODO)(sushi) add this to the api
+	info.addressModeU = render_sampler_address_mode_to_vulkan(x->address_mode_u);
+	info.addressModeV = render_sampler_address_mode_to_vulkan(x->address_mode_v);
+	info.addressModeW = render_sampler_address_mode_to_vulkan(x->address_mode_w);
+	info.mipLodBias = 0.f;
+	info.anisotropyEnable = VK_FALSE; // TODO(sushi) add to api
+	info.unnormalizedCoordinates = VK_FALSE;
+	info.compareEnable = VK_FALSE; // TODO(sushi) possibly add to api
+	info.minLod = 0.f; // TODO(sushi) add to api
+	info.maxLod = 0.f;
+
+	resultVk = vkCreateSampler(device, &info, allocator, (VkSampler*)&x->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)x->handle,
+			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name).str);
 
 }
 
@@ -5339,14 +5487,14 @@ RenderImageView*
 render_get_window_color_image_view(Window* window) {
 	auto wininf = (VkWindowInfo*)window->render_info;
 
-	auto image = render_create_image();
+	auto image = render_image_create();
 	image->format = vulkan_format_to_render(wininf->surface_format.format);
 	image->extent.x = window->width;
 	image->extent.y = window->height;
 	image->usage = RenderImageUsage_Color_Attachment;
 	image->handle = (void*)wininf->frames[0].image;
 
-	auto out = render_create_image_view();
+	auto out = render_image_view_create();
 	out->image = image;
 	out->format = vulkan_format_to_render(wininf->surface_format.format);
 	out->aspect_flags = RenderImageViewAspectFlags_Color;
@@ -5710,10 +5858,10 @@ create_render_pass_and_frame(Window* window) {
 		RenderFrame* frame = wininf->frames_x[i] = render_frame_create(window);
 		frame->render_pass = render_pass;
 
-		auto color_image_view = frame->color_image_view = render_create_image_view();
-		auto depth_image_view = frame->depth_image_view = render_create_image_view();
-		auto color_image      = color_image_view->image = render_create_image();
-		auto depth_image      = depth_image_view->image = render_create_image();
+		auto color_image_view = frame->color_image_view = render_image_view_create();
+		auto depth_image_view = frame->depth_image_view = render_image_view_create();
+		auto color_image      = color_image_view->image = render_image_create();
+		auto depth_image      = depth_image_view->image = render_image_create();
 
 		color_image->           format = vulkan_format_to_render(wininf->surface_format.format);
 		color_image->           extent = {wininf->width, wininf->height};
@@ -5726,15 +5874,15 @@ create_render_pass_and_frame(Window* window) {
 		depth_image->           extent = {wininf->width, wininf->height};
 		depth_image->            usage = RenderImageUsage_Depth_Stencil_Attachment;
 		depth_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
-		render_update_image(depth_image);
+		render_image_update(depth_image);
 
 		color_image_view->format = color_image->format;
 		color_image_view->aspect_flags = RenderImageViewAspectFlags_Color;
-		render_update_image_view(color_image_view);
+		render_image_view_update(color_image_view);
 
 		depth_image_view->format = depth_image->format;
 		depth_image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
-		render_update_image_view(depth_image_view);
+		render_image_view_update(depth_image_view);
 	
 		VkImageView attachments[2] = {
 			(VkImageView)color_image_view->handle,
