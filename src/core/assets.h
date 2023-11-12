@@ -4,6 +4,7 @@ Image pixel data is loaded using stb_image.h
 
 Index:
 @assets
+@helpers
 @mesh
 @texture
 @shader
@@ -28,21 +29,51 @@ struct RenderImageView;
 struct RenderSampler;
 struct RenderDescriptor;
 struct RenderDescriptorSet;
+struct RenderDescriptorLayout;
 struct RenderPipeline;
+struct Window;
 StartLinkageC();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets
 
 typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is no real need to iterate thru them
-					   // NOTE(sushi) these arrays are iterated to check if they have already been loaded
 	// TODO(sushi) convert to pools
 	Mesh**     mesh_array;
 	Texture**  texture_array;
 	Material** material_array;
 	Model**    model_array;
 	Font**     font_array;
+
+	Mesh*     mesh_pool;
+	Texture*  texture_pool;
+	Material* material_pool;
+	Model*    model_pool;
+	Font*     font_pool;
+
+	Texture* null_texture;
+	Font* null_font;
+
+	RenderPipeline* null_pipeline;
 	
+	// standard layout for ubos used with asset models
+	// this is always bound to set 0 binding 0
+	RenderDescriptorLayout* ubo_layout;
+	RenderDescriptor*   ubo_descriptor;
+	RenderDescriptorSet* view_proj_ubo;
+
+	struct {
+		mat4 view;
+		mat4 proj;
+	} base_ubo;
+	
+	// currently this is taken as the render pass that is 
+	// set for the presentation frame of the window 
+	// passed to assets_init
+	// eventually we will want to support drawing to 
+	// multiple windows and so this will need to be changed
+	RenderPass* render_pass;
+
 // TODO(sushi) try using manually managed global buffers 
 //             to see if they are more performant
 //	u64 mesh_vertexes_cursor;
@@ -69,6 +100,19 @@ void assets_reset();
 //  requires the `UI` module to be init
 void assets_browser();
 
+// TODO(sushi) put these somewhere better later
+
+void assets_update_camera_view(mat4* view_matrix);
+
+void assets_update_camera_projection(mat4* projection);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @helpers
+
+// Sets up the given pipeline for rendering assets related things.
+// This does not add any shader stages.
+void assets_setup_pipeline(Window* window, RenderPipeline* pipeline);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @mesh  //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
@@ -308,21 +352,55 @@ typedef Type Shader; enum{
 	Shader_COUNT,
 }; global str8 ShaderStrings[] = { str8_lit("NULL"), str8_lit("Flat"), str8_lit("Phong"), str8_lit("PBR"), str8_lit("Wireframe") };
 
+typedef Type ShaderType; enum {
+	ShaderType_Vertex,
+	ShaderType_Geometry,
+	ShaderType_Fragment,
+};
+
+// TODO(sushi) if this is kept around, it may be worth making it specify 
+//             the actual variables used in the ubo so that we can use 
+//             that information in editors and such
+typedef struct UniformBufferObject {
+	u32 size;
+} UniformBufferObject;
+
+enum ShaderResourceType {
+ 	ShaderResourceType_UBO,
+	ShaderResourceType_Texture,
+};
+
+typedef struct ShaderResource {
+	ShaderResourceType type;
+
+	union {
+		Texture* texture;
+		UniformBufferObject ubo;
+	};
+} ShaderResource;
+
+typedef struct ShaderX {
+	str8 filename;
+	ShaderType type;
+	ShaderResource* resources;
+} ShaderX;
+
+typedef struct ShaderStages {
+	ShaderX vertex;
+	b32 use_geometry_shader;
+	ShaderX geometry;
+	ShaderX fragment;
+} ShaderStages;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @material
-typedef Flags MaterialFlags; enum{
-	MaterialFlags_NONE = 0,
-};
 
 typedef struct Material{
 	char name[64];
 	u32 render_idx; //filled when render_load_material() is called
 	Shader shader;
-	MaterialFlags flags;
 	Texture** texture_array;
 	
-	// the pipeline this Material passes through
 	RenderPipeline* pipeline;
 	RenderDescriptorSet* descriptor_set;
 }Material;
@@ -332,9 +410,11 @@ Material* assets_material_allocate(u32 textureCount);
 
 //Returns a pointer to the created `Material` object with `shader`, `flags`, and `textures`; where `textures` are indexes in `Assets`
 //  calls `render_load_material()` after creation
-Material* assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count);
+Material* assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture_count);
 
-Material* assets_material_create_x(str8 name, RenderPipeline* pipeline, MaterialFlags flags, Texture** textures);
+// NOTE(sushi) currently window is required due to pipeline needing to know what RenderPass they are going to be
+//             used in (which is )
+Material* assets_material_create_x(Window* window, str8 name, ShaderStages shader_stages, Texture** textures);
 
 //Returns a pointer to the created `Material` object from a `MAT` file named `name` from the `data/models` folder
 //  calls `render_load_material()` after creation
@@ -359,6 +439,12 @@ FORCE_INLINE Material*  assets_material_null(){ return DeshAssets->material_arra
 //Returns the material array in `Assets`
 FORCE_INLINE Material** assets_material_array(){ return DeshAssets->material_array; };
 
+// a material with an allocation of its data on the gpu
+// used by models 
+typedef struct MaterialInstance {
+	Material* material;
+	RenderDescriptorSet* descriptor_set;
+} MaterialInstance;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @armature
@@ -420,7 +506,6 @@ FORCE_INLINE Model*  assets_model_null(){ return DeshAssets->model_array[0]; };
 
 //Returns the model array in `Assets`
 FORCE_INLINE Model** assets_model_array(){ return DeshAssets->model_array; };
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @font

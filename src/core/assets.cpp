@@ -13,6 +13,12 @@ persist Allocator assets_load_allocator{
 	Allocator_ResizeMemory_Noop
 };
 
+// default ubo used on all materials for the basic information needed to render them
+struct ModelUniformBufferObject {
+	mat4 view;
+	mat4 proj;
+} __assets_model_ubo;
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_system
 void
@@ -58,6 +64,90 @@ assets_init(){DPZoneScoped;
 	DeshiStageInitEnd(DS_ASSETS);
 }
 
+void
+assets_init_x(Window* window) {
+	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Render module");
+	
+	//create the assets directories if they don't exist already
+	file_create(STR8("data/fonts/"));
+	file_create(STR8("data/models/"));
+	file_create(STR8("data/textures/"));
+	
+	//setup arrays
+	arrsetcap(DeshAssets->mesh_array,256);
+	arrsetcap(DeshAssets->texture_array,256);
+	arrsetcap(DeshAssets->material_array,256);
+	arrsetcap(DeshAssets->model_array,256);
+	arrsetcap(DeshAssets->font_array,8);
+	
+	//setup stb_image.h
+	stbi_set_flip_vertically_on_load(true);
+
+	// setup null assets
+	
+	assets_mesh_create_box(1.f, 1.f, 1.f, Color_White.rgba);
+	cpystr(assets_mesh_null()->name, "null", 64);
+
+	int width, height, channels;
+	u8* pixels = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &width, &height, &channels, STBI_rgb_alpha);
+	assets_texture_create_from_memory(
+			pixels, str8l("null"), 128, 128,
+			ImageFormat_RGBA,
+			TextureType_TwoDimensional,
+			TextureFilter_Nearest,
+			TextureAddressMode_Repeat, 
+			false);
+	stbi_image_free(pixels);
+
+	// create null pipeline 
+	g_assets->null_pipeline = render_pipeline_create();
+	*array_push(g_assets->null_pipeline->shader_stages) = {
+		RenderShaderStage_Vertex,
+		str8l("null.vert"), 
+		baked_shader_null_vert
+	};
+	*array_push(g_assets->null_pipeline->shader_stages) = {
+		RenderShaderStage_Fragment,
+		str8l("null.frag"), 
+		baked_shader_null_frag
+	};
+	assets_setup_pipeline(window, g_assets->null_pipeline);
+
+	// create a descriptor layout for a single uniform buffer
+	// (always set 0 in asset compatible pipelines)
+	g_assets->ubo_layout = render_descriptor_layout_create();
+	g_assets->ubo_layout->debug_name = str8l("ubo descriptor layout");
+
+	auto binding = array_push(g_assets->ubo_layout->bindings);
+	binding->kind = RenderDescriptorType_Uniform_Buffer;
+	binding->shader_stages = RenderShaderStage_Vertex;
+	binding->binding = 0;
+
+	g_assets->view_proj_ubo = render_descriptor_set_create();
+	*array_push(g_assets->view_proj_ubo->layouts) = g_assets->ubo_layout;
+	render_descriptor_set_update(g_assets->view_proj_ubo);
+
+	g_assets->ubo_descriptor->kind = RenderDescriptorType_Uniform_Buffer;
+	g_assets->ubo_descriptor->buffer.handle = render_buffer_create(
+			0, 
+			sizeof(__assets_model_ubo), 
+			RenderBufferUsage_UniformBuffer,
+			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_MapWriteUnmap);
+	g_assets->ubo_descriptor->buffer.offset = 0;
+	g_assets->ubo_descriptor->buffer.range = sizeof(g_assets->base_ubo);
+
+	auto t = assets_texture_null();
+	
+	ShaderX null_shaders[2];
+	array_init(null_shaders[0].resources, 1, deshi_temp_allocator);
+	null_shaders[0].resources[0].type = ShaderResourceType_UBO;
+	null_shaders[0].resources[0].ubo.size = sizeof(g_assets->base_ubo);
+
+	assets_material_create_x(str8l("null"), g_assets->null_pipeline, 0, &t);
+
+	DeshiStageInitEnd(DS_ASSETS);
+}
 
 void
 assets_reset(){DPZoneScoped;
@@ -292,6 +382,37 @@ assets_browser(){DPZoneScoped;
 	
 	// End();
 	// PopColor(11);
+}
+
+void 
+assets_setup_pipeline(Window* window, RenderPipeline* pipeline) {
+	// a pipeline shouldn't have anything in its vertex input arrays when this is called 
+	Assert(!(array_count(pipeline->vertex_input_bindings) || array_count(pipeline->vertex_input_attributes)));
+
+	*array_push(pipeline->vertex_input_bindings) = {0, sizeof(MeshVertex)};
+	array_grow(pipeline->vertex_input_attributes, 4);
+	array_count(pipeline->vertex_input_attributes) = 4;
+	pipeline->vertex_input_attributes[0] = {0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, pos)};
+	pipeline->vertex_input_attributes[1] = {1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(MeshVertex, uv)};
+	pipeline->vertex_input_attributes[2] = {2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(MeshVertex, color)};
+	pipeline->vertex_input_attributes[3] = {3, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, normal)};
+
+	pipeline->            front_face = RenderPipelineFrontFace_CCW;
+	pipeline->               culling = RenderPipelineCulling_Back;
+	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	pipeline->            depth_test = true;
+	pipeline->      depth_compare_op = RenderCompareOp_Less;
+	pipeline->            depth_bias = false;
+	pipeline->            line_width = 1.f;
+	pipeline->           color_blend = true;
+	pipeline->        color_blend_op = RenderBlendOp_Add;
+	pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
+	pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	pipeline->        alpha_blend_op = RenderBlendOp_Add;
+	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	pipeline->        blend_constant = color(10,10,10,255);
+	pipeline->           render_pass = render_pass_of_window_presentation_frame(window);
 }
 
 
@@ -644,6 +765,79 @@ assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_texture
+
+#define TextureError(name, ...) LogE("assets", "In ", __FUNCTION__, " working with texture '", name, "': ")
+#define TextureWarning(name, ...) LogW("assets", "In ", __FUNCTION__, " working with texture '", name, "': ")
+
+RenderFilter
+texture_filter_to_render(TextureFilter x) {
+	switch(x) {
+		case TextureFilter_Nearest: return RenderFilter_Nearest;
+		case TextureFilter_Cubic:   return RenderFilter_Linear;
+	}
+	Assert(0);
+	return {};
+}
+
+void 
+upload_texture(Texture* texture) {
+	texture->image = render_image_create();
+	texture->image->format = RenderFormat_R8G8B8A8_StandardRGB;
+	texture->image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
+	texture->image->samples = RenderSampleCount_1;
+	texture->image->extent = {texture->width, texture->height, 4};
+	render_image_update(texture->image);
+	render_image_upload(texture->image, texture->pixels);
+
+	texture->image_view = render_image_view_create();
+	texture->image_view->image = texture->image;
+	texture->image_view->format = texture->image->format;
+	texture->image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+	render_image_view_update(texture->image_view);
+
+	texture->sampler = render_sampler_create();
+	texture->sampler->mipmaps = 1;
+	texture->sampler->mag_filter = 
+	texture->sampler->min_filter = texture_filter_to_render(texture->filter);
+	switch(texture->uv_mode) {
+		case TextureAddressMode_Repeat: {
+			texture->sampler->address_mode_u = 
+			texture->sampler->address_mode_v = 
+			texture->sampler->address_mode_w = RenderSamplerAddressMode_Repeat;
+		} break;
+		case TextureAddressMode_MirroredRepeat: {
+			texture->sampler->address_mode_u = 
+			texture->sampler->address_mode_v = 
+			texture->sampler->address_mode_w = RenderSamplerAddressMode_Mirrored_Repeat;
+		} break;
+		case TextureAddressMode_ClampToEdge: {
+			texture->sampler->address_mode_u = 
+			texture->sampler->address_mode_v = 
+			texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Edge;
+		} break;
+		case TextureAddressMode_ClampToWhite: {
+			texture->sampler->address_mode_u = 
+			texture->sampler->address_mode_v = 
+			texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+			texture->sampler->border_color = Color_White;
+		} break;
+		case TextureAddressMode_ClampToBlack: {
+			texture->sampler->address_mode_u = 
+			texture->sampler->address_mode_v = 
+			texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+			texture->sampler->border_color = Color_Black;
+		} break;
+		case TextureAddressMode_ClampToTransparent: {
+			texture->sampler->address_mode_u = 
+			texture->sampler->address_mode_v = 
+			texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+			texture->sampler->border_color = Color_NONE;
+		} break;
+	}
+	render_sampler_update(texture->sampler);
+
+}
+
 Texture*
 assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
 	if(str8_equal_lazy(name, STR8("null"))) return assets_texture_null();
@@ -651,21 +845,32 @@ assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type,
 	//check if texture is already loaded
 	for_stb_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			auto t = *it;
+			if(t->format  != format ||
+			   t->type    != type   ||
+			   t->filter  != filter ||
+			   t->uv_mode != uvMode) {
+				TextureWarning(name, "a texture from this file already exists, but this function was called with different parameters. The original texture will be returned, but none of the given parameters will be changed.");
+			}
 			return *it;
 		}
 	}
 	
 	str8 path = str8_concat(STR8("data/textures/"),name, deshi_temp_allocator);
+#ifdef RENDER_REWRITE
+	Texture* texture = memory_pool_push(g_assets->texture_pool);
+#else
 	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
+#endif
 	CopyMemory(texture->name, name.str, ClampMax(name.count,63));
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
-	texture->uv_mode  = uvMode;
+	texture->uv_mode = uvMode;
 	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	if(texture->pixels == 0){
-		LogE("assets","Failed to create texture '",path,"': ",stbi_failure_reason()); 
-		memory_zfree(texture);
+		TextureError(path, "failed to load texture file due to stbi error: ", stbi_failure_reason());
+		memzfree(texture);
 		return assets_texture_null();
 	}
 	
@@ -675,37 +880,60 @@ assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type,
 		texture->mipmaps = 1;
 	}
 	
+#ifdef RENDER_REWRITE
+	upload_texture(texture);
+#else
 	render_load_texture(texture);
+	arrput(DeshAssets->texture_array, texture);
+#endif
+
 	if(!keepLoaded){
 		stbi_image_free(texture->pixels); 
 		texture->pixels = 0;
 	}
 	
-	arrput(DeshAssets->texture_array, texture);
 	return texture;
 }
 
 
 Texture*
-assets_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
+assets_texture_create_from_path(
+		str8 path, 
+		ImageFormat format, 
+		TextureType type, 
+		TextureFilter filter, 
+		TextureAddressMode uvMode, 
+		b32 keepLoaded, 
+		b32 generateMipmaps){DPZoneScoped;
 	//check if texture is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	for_stb_array(DeshAssets->texture_array){
-		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
+		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){	
+			auto t = *it;
+			if(t->format  != format ||
+			   t->type    != type   ||
+			   t->filter  != filter ||
+			   t->uv_mode != uvMode) {
+				TextureWarning(path, "a texture from this file already exists, but this function was called with different parameters. The original texture will be returned, but none of the given parameters will be changed.");
+			}
 			return *it;
 		}
 	}
-	
+
+#ifdef RENDER_REWRITE
+	Texture* texture = memory_pool_push(g_assets->texture_pool);
+#else
 	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
+#endif
 	CopyMemory(texture->name, filename.str, ClampMax(filename.count,63));
 	texture->format  = format; //TODO(delle) handle non RGBA formats properly
 	texture->type    = type;
 	texture->filter  = filter;
-	texture->uv_mode  = uvMode;
+	texture->uv_mode = uvMode;
 	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	if(texture->pixels == 0){
-		LogE("assets","Failed to create texture '",path,"': ",stbi_failure_reason()); 
-		memory_zfree(texture);
+		TextureError(filename, "failed to create texture due to an stbi error: ", stbi_failure_reason());
+		memzfree(texture);
 		return assets_texture_null();
 	}
 	
@@ -714,33 +942,57 @@ assets_texture_create_from_path(str8 path, ImageFormat format, TextureType type,
 	}else{
 		texture->mipmaps = 1;
 	}
-	
+#ifdef RENDER_REWRITE
+	upload_texture(texture);
+#else
 	render_load_texture(texture);
+	arrput(DeshAssets->texture_array, texture);
+#endif
 	if(!keepLoaded){
 		stbi_image_free(texture->pixels); 
 		texture->pixels = 0;
 	}
 	
-	arrput(DeshAssets->texture_array, texture);
 	return texture;
 }
 
 
 Texture*
-assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 generateMipmaps){DPZoneScoped;
+assets_texture_create_from_memory(
+		void* data, 
+		str8 name, 
+		u32 width, u32 height, 
+		ImageFormat format, 
+		TextureType type, 
+		TextureFilter filter, 
+		TextureAddressMode uvMode, 
+		b32 generateMipmaps){DPZoneScoped;
 	if(data == 0){
-		LogE("assets","Failed to create texture '",name,"': No memory passed!");
+		TextureError(name, "null data pointer");
 		return assets_texture_null();
 	}
 	
 	//check if texture is already loaded (with that name)
 	for_stb_array(DeshAssets->texture_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			auto t = *it;
+			if(t->width   != width  || 
+			   t->height  != height ||
+			   t->format  != format ||
+			   t->type    != type   ||
+			   t->filter  != filter ||
+			   t->uv_mode != uvMode) {
+				TextureWarning(name, "a texture with this name already exists, but this function was called with different parameters. The original texture will be returned, but none of the given parameters will be changed.");
+			}
 			return *it;
 		}
 	}
 	
+#ifdef RENDER_REWRITE
+	Texture* texture = memory_pool_push(g_assets->texture_pool);
+#else
 	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
+#endif
 	CopyMemory(texture->name, name.str, ClampMax(name.count,63));
 	texture->format  = format;
 	texture->type    = type;
@@ -758,6 +1010,7 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 	
 	//reinterpret image as RGBA32  //TODO(delle) handle non RGBA formats properly
 	if(format != ImageFormat_RGBA){
+		TextureWarning(name, "non-rgba textures are currently reinterpreted as rgba (TODO(sushi) properly handle non-rgba formats)");
 		texture->pixels = (u8*)memory_alloc(width * height * 4);
 		
 		const u8* src = (const u8*)data;
@@ -792,29 +1045,53 @@ assets_texture_create_from_memory(void* data, str8 name, u32 width, u32 height, 
 		texture->pixels = (u8*)data;
 	}
 	
+#ifdef RENDER_REWRITE
+	upload_texture(texture);
+#else
 	render_load_texture(texture);
 	arrput(DeshAssets->texture_array, texture);
+#endif
+
 	return texture;
 }
 
 
 void
 assets_texture_delete(Texture* texture){DPZoneScoped;
-	if(texture == assets_texture_null()) return;
+	if(texture == assets_texture_null()) {
+		TextureWarning("null", "attempt to delete null texture");
+		return;
+	} 
 	
 	for_stb_array(DeshAssets->texture_array){
 		if(*it == texture){
 			arrdelswap(DeshAssets->texture_array, it - DeshAssets->texture_array);
 		}
 	}
+#ifdef RENDER_REWRITE
+	render_sampler_destroy(texture->sampler);
+	render_image_view_destroy(texture->image_view);
+	render_image_destroy(texture->image);
+#else
 	render_unload_texture(texture);
-	if(texture->pixels) memory_zfree(texture->pixels); //NOTE(delle) stbi_image_free() simply calls STBI_FREE()
-	memory_zfree(texture);
+#endif
+	if(texture->pixels) memzfree(texture->pixels); //NOTE(delle) stbi_image_free() simply calls STBI_FREE()
+#ifdef RENDER_REWRITE
+	memory_pool_delete(g_assets->texture_pool, texture);
+#else
+	memzfree(texture);
+#endif
 }
 
+#undef TextureWarning
+#undef TextureError
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_material
+
+#define MaterialError(name, ...) LogE("assets", "In ", __FUNCTION__, " with material '", name, "': ", __VA_ARGS__)
+#define MaterialWarning(name, ...) LogW("assets", "In ", __FUNCTION__, " with material '", name, "': ", __VA_ARGS__) 
+
 Material*
 assets_material_allocate(u32 textureCount){DPZoneScoped;
 	Material* material = (Material*)memory_alloc(sizeof(Material));
@@ -824,7 +1101,7 @@ assets_material_allocate(u32 textureCount){DPZoneScoped;
 
 
 Material*
-assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** textures, u32 texture_count){DPZoneScoped;
+assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture_count){DPZoneScoped;
 	//check if material is already loaded
 	for_stb_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
@@ -835,7 +1112,6 @@ assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** 
 	Material* material = assets_material_allocate(texture_count);
 	CopyMemory(material->name, name.str, ClampMax(name.count,63));
 	material->shader = shader;
-	material->flags  = flags;
 	forI(texture_count) material->texture_array[i] = textures[i];
 	render_load_material(material);
 	arrput(DeshAssets->material_array, material);
@@ -843,40 +1119,75 @@ assets_material_create(str8 name, Shader shader, MaterialFlags flags, Texture** 
 }
 
 Material*
-assets_material_create_x(str8 name, RenderPipeline* pipeline, MaterialFlags flags, Texture** textures) {	
+assets_material_create_x(str8 name, ShaderStages shaders, Texture** textures) {	
 	//check if material is already loaded
 	for_stb_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
+			Assert(0);
+			// TODO(sushi) check for differences here and emit a warning if there are any
+			//             or write a function that recreates the material with the new stuff
 			return *it;
 		}
 	}
 
-	u64 n_textures = (textures? array_count(textures) : 0);
+	u32 n_textures = (textures? array_count(textures) : 0);
 	
+	b32 got_vertex_shader = false;
+	b32 got_fragment_shader = false;
+
+	auto pipeline = render_pipeline_create();
+	assets_setup_pipeline(pipeline);
+
+	RenderShader* render_shaders;
+	
+
+	forI(n_shaders) {
+		auto s = shaders[i];
+		switch(s.type) {
+			case ShaderType_Fragment: {
+				if(got_fragment_shader) {
+					MaterialError(name, "a material may only have one fragment shader");
+					return assets_material_null();
+				}
+				got_fragment_shader = true;
+
+			} break;
+		}
+	}
+
+
 	Material* material = assets_material_allocate(n_textures);
 	CopyMemory(material->name, name.str, ClampMax(name.count,63));
-	material->pipeline = pipeline;
-	material->flags    = flags;
+	material->flags = flags;
 	forI(n_textures) material->texture_array[i] = textures[i];
 
 	material->descriptor_set = render_descriptor_set_create();
-	// first push the layouts from the pipeline 
-	auto layouts = material->descriptor_set->layouts;
-	forI(array_count(pipeline->layout->descriptor_layouts)) {
-		array_push_value(material->descriptor_set->layouts, pipeline->layout->descriptor_layouts[i]);
+	*array_push(material->descriptor_set->layouts) = pipeline->layout->descriptor_layouts[2];
+	render_descriptor_set_update(material->descriptor_set);
+
+	RenderDescriptor* descriptors;
+	array_init(descriptors, n_textures, deshi_allocator);
+	array_count(descriptors) = n_textures;
+
+	forI(n_textures) {
+		if(!textures[i]) {
+			MaterialError(name, "null texture pointer encountered in given texture array (index ", i, ")");
+			Assert(0); // TODO(sushi) free the resources we've aquired so far once that logic has been rewritten
+			return 0;
+		}
+		if(!(textures[i]->image && textures[i]->image_view && textures[i]->sampler)) {
+			MaterialError(name, "texture at index ", i, " is missing one of (image, image_view, sampler), did you create the texture through assets?");
+			Assert(0); // TODO(sushi) free the resources 
+			return 0;
+		}
+
+		descriptors[i].         kind = RenderDescriptorType_Combined_Image_Sampler;
+		descriptors[i].shader_stages = RenderShaderStage_Fragment;
+		descriptors[i].   image.view = textures[i]->image_view;
+		descriptors[i].image.sampler = textures[i]->sampler;
+		descriptors[i]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
 	}
 
-	//auto layout = *array_push(material->descriptor_set->layouts) = render_create_descriptor_layout();
-	//forI(n_textures) {
-	//	RenderDescriptor d;
-	//	d.kind = RenderDescriptorKind_Combined_Image_Sampler;
-	//	d.image.view = textures[i]->image_view;
-	//	d.image.sampler = textures[i]->sampler;
-	//	array_push_value(layout->descriptors, d);
-	//}
-
-	//render_update_descriptor_layout(layout);
-	render_descriptor_set_update(material->descriptor_set);
 	arrput(DeshAssets->material_array, material);
 	return material;
 }

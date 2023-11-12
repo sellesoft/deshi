@@ -1282,20 +1282,20 @@ deshi__ui_end_tree(str8 file, upt line) {
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @tree_node_implementation
-
-uiItem* 
-deshi__ui_make_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
-
-}
-
-uiItem* 
-deshi__ui_begin_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
-
-}
-
-void 
-deshi__ui_end_tree_node(str8 file, upt line) {
-
-}
+//
+//uiItem* 
+//deshi__ui_make_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
+//
+//}
+//
+//uiItem* 
+//deshi__ui_begin_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
+//
+//}
+//
+//void 
+//deshi__ui_end_tree_node(str8 file, upt line) {
+//
+//}
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)

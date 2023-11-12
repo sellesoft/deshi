@@ -31,18 +31,6 @@ Index:
 */
 
 
-#include "ui.h"
-#include "kigu/arrayT.h"
-#include "kigu/array_utils.h"
-#include "core/assets.h"
-#include "core/input.h"
-#include "core/logger.h"
-#include "core/memory.h"
-#include "core/render.h"
-#include "core/window.h"
-#include "kigu/common.h"
-
-
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_helpers
 
@@ -270,7 +258,11 @@ ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
 
 uiDrawCmdPtrs 
 ui_drawcmd_get_ptrs(uiDrawCmd* dc) {
+#ifdef RENDER_REWRITE
+	return {(Vertex2*)g_ui->vertex_buffer->mapped_data + dc->vertex_offset, (u32*)g_ui->index_buffer->mapped_data + dc->index_offset};
+#else
 	return {(Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset, (u32*)g_ui->index_arena->start + dc->index_offset};
+#endif
 }
 
 
@@ -384,11 +376,13 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	return item;
 }
 
-void deshi__ui_push_item(uiItem* item, str8 file, upt line) {
+void 
+deshi__ui_push_item(uiItem* item, str8 file, upt line) {
 	g_ui->item_stack.add(item);
 }
 
-uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line) {
+uiItem* 
+deshi__ui_pop_item(u32 count, str8 file, upt line) {
 	if(count >= g_ui->item_stack.count) {
 		LogE("ui", "too many items requested for popping. There are ", g_ui->item_stack.count, " items on the stack and ", count, " items were requested to be popped.");
 		LogE("ui", "Note: called from ", file, ":", line);
@@ -396,7 +390,8 @@ uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line) {
 	return g_ui->item_stack.pop(count);
 }
 
-vec2i ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
+vec2i 
+ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	vec2 mtl = floor(item->style.margintl * item->scale);
 	vec2 mbr = floor(item->style.marginbr * item->scale);
 	vec2 bor = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
@@ -405,7 +400,8 @@ vec2i ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	return render_make_filledrect(vp, ip, counts, pos, siz, item->style.background_color);
 }
 
-vec2i ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
+vec2i 
+ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
@@ -438,11 +434,13 @@ vec2i ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 	return {0,0};
 }
 
-b32 mouse_in_item(uiItem* item){
+b32 
+mouse_in_item(uiItem* item){
 	return Math::PointInRectangle(input_mouse_position(), item->pos_screen, item->size * item->scale);
 }
 
-b32 ui_item_hovered(uiItem* item, u32 mode){
+b32 
+ui_item_hovered(uiItem* item, u32 mode){
 	switch(mode) {
 		case hovered_strict: return g_ui->hovered == item;
 		case hovered_area: return mouse_in_item(item);
@@ -534,7 +532,8 @@ ui_copy_item(uiItem* item) { DPZoneScoped;
 	return nu;
 }
 
-void ui_gen_item(uiItem* item){DPZoneScoped;
+void 
+ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
 	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
 	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
@@ -547,7 +546,6 @@ void ui_gen_item(uiItem* item){DPZoneScoped;
 
 uiItem* 
 deshi__ui_make_item(uiStyle* style, str8 file, upt line){DPZoneScoped;
-	
 	uiItemSetup setup = {0};
 	setup.size = sizeof(uiItem);
 	setup.style = style;
@@ -676,7 +674,7 @@ deshi__ui_init(){DPZoneScoped;
 	
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
-	
+
 	g_ui->vertex_arena = memory_create_arena(g_memory->arena_heap.size / 16);
 	g_ui->index_arena  = memory_create_arena(g_memory->arena_heap.size / 16);
 	
@@ -722,6 +720,151 @@ deshi__ui_init(){DPZoneScoped;
 	DeshiStageInitEnd(DS_UI);
 }
 
+void
+deshi__ui_init_x(Window* window) {
+	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
+	
+	g_ui->allocator_root.next = g_ui->allocator_root.prev = &g_ui->allocator_root;
+	
+	g_ui->immediate.active = 0;
+	g_ui->immediate.pushed = 0;
+	
+	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
+	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
+
+	g_ui->pipeline = render_pipeline_create();
+	g_ui->pipeline->name = str8l("ui");
+
+	*array_push(g_ui->pipeline->shader_stages) = {
+		RenderShaderStage_Vertex, 
+		str8l("twod.vert"),
+		file_read_simple(str8l("twod.vert"), deshi_temp_allocator)
+	};
+	*array_push(g_ui->pipeline->shader_stages) = {
+		RenderShaderStage_Fragment,
+		str8l("twod.frag"),
+		file_read_simple(str8l("twod.frag"), deshi_temp_allocator)
+	};
+
+	g_ui->pipeline->            front_face = RenderPipelineFrontFace_CCW;
+	g_ui->pipeline->               culling = RenderPipelineCulling_None;
+	g_ui->pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	g_ui->pipeline->            depth_test = false;
+	g_ui->pipeline->            line_width = 1.f;
+	g_ui->pipeline->           color_blend = true;
+	g_ui->pipeline->        color_blend_op = RenderBlendOp_Add;
+	g_ui->pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
+	g_ui->pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	g_ui->pipeline->        alpha_blend_op = RenderBlendOp_Add;
+	g_ui->pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	g_ui->pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	g_ui->pipeline->        blend_constant = color(10,10,10,255);
+	g_ui->pipeline->           render_pass = render_pass_of_window_presentation_frame(window);
+	
+	*array_push(g_ui->pipeline->dynamic_states) = RenderDynamicState_Viewport;
+	*array_push(g_ui->pipeline->dynamic_states) = RenderDynamicState_Scissor;
+
+	*array_push(g_ui->pipeline->vertex_input_bindings) = {0, sizeof(Vertex2)};
+	array_grow(g_ui->pipeline->vertex_input_attributes, 3);
+	array_count(g_ui->pipeline->vertex_input_attributes) = 3;
+	g_ui->pipeline->vertex_input_attributes[0] = {0, 0, RenderFormat_R32G32_Signed_Float,         offsetof(Vertex2, pos)};
+	g_ui->pipeline->vertex_input_attributes[1] = {1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(Vertex2, uv)};
+	g_ui->pipeline->vertex_input_attributes[2] = {2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(Vertex2, color)};
+
+	auto layout = render_descriptor_layout_create();
+	layout->debug_name = str8l("ui descriptor layout");
+
+	auto binding = array_push(layout->bindings);
+	binding->         kind = RenderDescriptorType_Combined_Image_Sampler;
+	binding->shader_stages = RenderShaderStage_Fragment;
+	binding->      binding = 0;
+	render_descriptor_layout_update(layout);
+
+	g_ui->push_constant.size = 2 * sizeof(vec2);
+	g_ui->push_constant.offset = 0;
+	g_ui->push_constant.shader_stage_flags = RenderShaderStage_Vertex;
+
+	auto pipeline_layout = render_pipeline_layout_create();
+	pipeline_layout->debug_name = str8l("ui pipeline layout");
+	*array_push(pipeline_layout->descriptor_layouts) = layout;
+	*array_push(pipeline_layout->push_constants) = g_ui->push_constant;
+	render_pipeline_layout_update(pipeline_layout);
+
+	g_ui->pipeline->layout = pipeline_layout;
+	render_update_pipeline(g_ui->pipeline);
+
+	g_ui->vertex_buffer = render_buffer_create(
+			0, 
+			g_memory->arena_heap.size / 16,
+			RenderBufferUsage_VertexBuffer,
+			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_Persistent);
+
+	g_ui->index_buffer = render_buffer_create(
+			0, 
+			g_memory->arena_heap.size / 16,
+			RenderBufferUsage_IndexBuffer,
+			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_Persistent);
+
+	g_ui->blank_descriptor_set = render_descriptor_set_create();
+	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
+	*array_push(g_ui->blank_descriptor_set->layouts) = g_ui->pipeline->layout->descriptor_layouts[0];
+	render_descriptor_set_update(g_ui->blank_descriptor_set);
+
+	RenderDescriptor* descriptors;
+	array_init(descriptors, 1, deshi_temp_allocator);
+	auto descriptor = array_push(descriptors);
+	descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+	descriptor->image.view = g_assets->font_array[0]->tex->image_view;
+	descriptor->image.sampler = g_assets->font_array[0]->tex->sampler;
+	descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+	render_descriptor_set_write(g_ui->blank_descriptor_set, descriptors);
+
+	g_ui->base = uiItem{0};
+	g_ui->base.id = STR8("base");
+	g_ui->base.file_created = STR8(__FILE__);
+	g_ui->base.line_created = __LINE__;
+	g_ui->base.style.width = DeshWindow->width;
+	g_ui->base.style.height = DeshWindow->height;
+	g_ui->base.style_hash = ui_hash_style(&g_ui->base);
+	g_ui->base.link.prev = g_ui->base.link.next = &g_ui->base.link;
+	push_item(&g_ui->base);
+	
+	//setup default keybinds
+	//TODO(sushi) export these to a config file and load them instead
+	g_ui->keys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
+	g_ui->keys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
+	g_ui->keys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
+	g_ui->keys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
+	g_ui->keys.inputtext.cursor.            up = Key_UP    | InputMod_None;
+	g_ui->keys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
+	
+	g_ui->keys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
+	g_ui->keys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
+	g_ui->keys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
+	g_ui->keys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
+	
+	g_ui->keys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
+	g_ui->keys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
+	g_ui->keys.inputtext.del.            right = Key_DELETE    | InputMod_None;
+	g_ui->keys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
+	g_ui->keys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
+	
+	g_ui->keys.drag_item = Mouse_LEFT;
+	
+	DeshiStageInitEnd(DS_UI);
+
+
+}
+ 
 //pass 0 for child on first call
 //TODO(sushi) look into caching this while evaluating items
 TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
@@ -1304,6 +1447,14 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			g_ui->stats.drawcmds_visible++;
 			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.x;
 			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.y;
+#ifdef RENDER_REWRITE
+			// TODO(sushi) remove the usage of global window here
+			RenderFrame* frame = render_current_present_frame_of_window(g_ui->updating_window);
+			auto c = array_push(frame->commands);
+			c->type = RenderCommandType_Bind_Descriptor_Set;
+
+			
+#else
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
 			render_add_vertices2(5, 		
@@ -1312,6 +1463,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 				(u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
 				item->drawcmds[i].counts_used.y
 			);
+#endif
 		}
 	}
 	
@@ -1384,6 +1536,38 @@ deshi__ui_update(){DPZoneScoped;
 	g_ui->immediate_items.clear();
 	
 	g_ui->updating = 0;
+}
+
+struct {
+	vec2 scale;
+	vec2 translation;
+} pc;
+
+void 
+deshi__ui_update_x(Window* window) {
+	g_ui->updating_window = window;
+
+	pc = {0};
+
+	auto frame = render_current_present_frame_of_window(g_ui->updating_window);
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Pipeline;
+	c->bind_pipeline.handle = g_ui->pipeline;
+	c = array_push(frame->commands);
+	c->type = RenderCommandType_Push_Constant;
+	c->push_constant.data = &pc;
+	c->push_constant.info.size = sizeof(pc);
+	c->push_constant.info.offset = 0;
+	c->push_constant.info.shader_stage_flags = RenderShaderStage_Vertex;
+	c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Vertex_Buffer;
+	c->bind_vertex_buffer.handle = g_ui->vertex_buffer;
+	c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Index_Buffer;
+	c->bind_index_buffer.handle = g_ui->index_buffer;
+
+	deshi__ui_update();
+	g_ui->updating_window = 0;
 }
 
 

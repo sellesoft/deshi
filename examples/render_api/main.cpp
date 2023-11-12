@@ -50,22 +50,23 @@ int main() {
 	window_show(win);
 	render_init_x(win);
 	assets_init();
+	ui_init_x(win);
 
 	// we need to create a pipeline which describes the path we take
 	// to render the scene
-	RenderPipeline* pipeline = render_create_pipeline();
+	RenderPipeline* pipeline = render_pipeline_create();
 	pipeline->name = str8l("flat");
 	
 	// We'll need a vertex and a fragment shader which we acquire by pushing
 	// them onto the pipeline's shader stages. The backend will handle compilation.
 	*array_push(pipeline->shader_stages) = {
-		RenderShaderKind_Vertex, 
+		RenderShaderStage_Vertex, 
 		str8l("test"), 
 		file_read_simple(str8l("test.vert"), deshi_temp_allocator)
 	};
 
 	*array_push(pipeline->shader_stages) = {
-		RenderShaderKind_Fragment,
+		RenderShaderStage_Fragment,
 		str8l("test"),
 		file_read_simple(str8l("test.frag"), deshi_temp_allocator)
 	};
@@ -135,23 +136,23 @@ int main() {
 	// that we want to give to the shaders. We're going to need a descriptor for
 	// our UBO and another one for a texture.
 	
-	RenderDescriptorLayout* descriptor_layout = render_create_descriptor_layout();
+	RenderDescriptorLayout* descriptor_layout = render_descriptor_layout_create();
 	descriptor_layout->debug_name = str8l("test");
 	
-	// First is the UBO. It is bound to slot 0 of the vertex shader.
+	// First is the UBO. It is bound to slot 0 and used in the vertex shader.
 	RenderDescriptorLayoutBinding* binding = array_push(descriptor_layout->bindings);
 	binding->kind = RenderDescriptorType_Uniform_Buffer;
-	binding->shader_stages = RenderShaderKind_Vertex;
+	binding->shader_stages = RenderShaderStage_Vertex;
 	binding->binding = 0;
 
-	// Then the texture, which we bind to slot 0 of the fragment shader.
+	// Then the texture, which we bind to slot 1 and use in the fragment shader.
 	binding = array_push(descriptor_layout->bindings);
 	binding->kind = RenderDescriptorType_Combined_Image_Sampler;
-	binding->shader_stages = RenderShaderKind_Fragment;
+	binding->shader_stages = RenderShaderStage_Fragment;
 	binding->binding = 1;
 
 	// update the descriptor layout in the backend
-	render_update_descriptor_layout(descriptor_layout);
+	render_descriptor_layout_update(descriptor_layout);
 
 	// We'll also be using a push constant, which is a single value that 
 	// we can efficiently upload to the GPU. We will use a push constant 
@@ -163,7 +164,7 @@ int main() {
 	
 	RenderPushConstant model_push_constant;
 	// we only need the model matrix in the vertex shader
-	model_push_constant.shader_stage_flags = RenderShaderKind_Vertex;
+	model_push_constant.shader_stage_flags = RenderShaderStage_Vertex;
 	model_push_constant.size = sizeof(mat4);
 	model_push_constant.offset = 0;
 	
@@ -171,11 +172,11 @@ int main() {
 	// This is just a pair of a collection descriptor layouts 
 	// and a collection of push constants.
 	
-	RenderPipelineLayout* pipeline_layout = render_create_pipeline_layout();
+	RenderPipelineLayout* pipeline_layout = render_pipeline_layout_create();
 	pipeline_layout->debug_name = str8l("test");
 	*array_push(pipeline_layout->descriptor_layouts)  = descriptor_layout;
 	*array_push(pipeline_layout->push_constants) = model_push_constant;
-	render_update_pipeline_layout(pipeline_layout);
+	render_pipeline_layout_update(pipeline_layout);
 
 	// Now we tell the pipeline what layout to use and update it in the backend.
 	
@@ -252,13 +253,13 @@ int main() {
 	array_count(descriptors) = 2;
 
 	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = RenderShaderKind_Vertex;
+	descriptors[0].shader_stages = RenderShaderStage_Vertex;
 	descriptors[0].buffer.offset = 0;
 	descriptors[0]. buffer.range = sizeof(ubo);
 	descriptors[0].buffer.handle = ubo_buffer;
 
 	descriptors[1].         kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = RenderShaderKind_Fragment;
+	descriptors[1].shader_stages = RenderShaderStage_Fragment;
 	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
 	descriptors[1].image.sampler = sampler;
 	descriptors[1].   image.view = image_view;
@@ -266,11 +267,9 @@ int main() {
 	render_descriptor_set_write(descriptor_set0, descriptors);
 
 	// We're actually going to use two textures, to show descriptor set switching.
-	// So we'll do pretty much everything we just did again.
+	// So we'll do pretty much everything we just did again but with a different texture.
 	
 	RenderDescriptorSet* descriptor_set1 = render_descriptor_set_create();
-	// It's important that we use the same layouts that we gave to the pipeline.
-	// If we don't, we'll run into problems when we want to bind this set.
 	descriptor_set1->layouts = pipeline->layout->descriptor_layouts;
 	render_descriptor_set_update(descriptor_set1);
 
@@ -305,13 +304,13 @@ int main() {
 	array_count(descriptors) = 2;
 
 	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = RenderShaderKind_Vertex;
+	descriptors[0].shader_stages = RenderShaderStage_Vertex;
 	descriptors[0].buffer.offset = 0;
 	descriptors[0]. buffer.range = sizeof(ubo);
 	descriptors[0].buffer.handle = ubo_buffer;
 
 	descriptors[1].         kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = RenderShaderKind_Fragment;
+	descriptors[1].shader_stages = RenderShaderStage_Fragment;
 	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
 	descriptors[1].image.sampler = sampler;
 	descriptors[1].   image.view = image_view;

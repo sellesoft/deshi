@@ -688,6 +688,8 @@ struct uiItem{
 	b32 dirty;
 	
 	Type update_trigger;
+
+	RenderDescriptorSet* descriptor_set;
 	
 	// TODO(sushi) we may want to pull the following functions out into a 
 	//             table stored else where, like vtables. Performance 
@@ -1002,6 +1004,9 @@ void deshi__ui_pop_id(str8 file, upt line);
 void deshi__ui_init();
 #define ui_init() deshi__ui_init()
 
+void deshi__ui_init_x(Window* window);
+#define ui_init_x(window) deshi__ui_init_x(window)
+
 void deshi__ui_update();
 #define ui_update() deshi__ui_update();
 
@@ -1050,6 +1055,17 @@ struct uiContext{
 	//             so that we can report it where things go wrong
 	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 	
+	RenderBuffer* vertex_buffer;
+	RenderBuffer* index_buffer;
+
+	RenderPipeline* pipeline;
+
+	RenderPushConstant push_constant;
+
+	RenderDescriptorSet* blank_descriptor_set;
+
+	Window* updating_window;
+
 	struct{
 		//visible on screen
 		u64 items_visible;

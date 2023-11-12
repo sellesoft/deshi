@@ -13,6 +13,8 @@
 #define INPUT_KEY_MASK 0x000000FF //mod_key & 0x000000FF extract the key
 #define INPUT_MOD_MASK 0xFFFFFF00 //mod_key & 0xFFFFFF00 extract the mods
 
+StartLinkageC()
+
 typedef Type KeyCode; enum{
 	Key_NONE,
 	Key_A, Key_B, Key_C, Key_D, Key_E, Key_F, Key_G, Key_H, Key_I, Key_J, Key_K, Key_L, Key_M,
@@ -583,5 +585,6 @@ simulate_key_press(u32 key){
 	}
 }
 
+EndLinkageC()
 
 #endif //DESHI_INPUT_H

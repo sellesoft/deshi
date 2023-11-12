@@ -319,7 +319,6 @@ parts = {
                 "-finline-functions " # inlines suitable functions
                 "-pipe "              # use pipes between commands when possible
                 "-msse3 "             # enables sse
-                "-fuse-ld=lld "
                 "-Wno-unused-value "
                 "-Wno-implicitly-unsigned-literal "
                 "-Wno-nonportable-include-path "
@@ -329,6 +328,7 @@ parts = {
                 "-Wno-undefined-inline "
                 "-Wno-return-type-c-linkage "
                 "-Wno-switch "
+                "-Wno-deprecated-anon-enum-enum-conversion "
                 "-fno-caret-diagnostics "
             ),
             "release":(
@@ -473,14 +473,14 @@ if config["gen_compcmd"]:
     cfiles = []
     hfiles = []
     with open(sources["app"], "r") as f:
-        includes = re.findall(r'#include\s*?["|<](.*?)["|>]', f.read())
+        includes = re.findall(r'#\s*include\s*?["|<](.*?)["|>]', f.read())
         for include in includes:
             if include.endswith('.cpp'):
                 cfiles.append(include)
             else:
                 hfiles.append(include)
     with open(sources["deshi"], "r") as f:
-        includes = re.findall(r'#include\s*?["|<](.*?)["|>]', f.read())
+        includes = re.findall(r'#\s*include\s*?["|<](.*?)["|>]', f.read())
         for include in includes:
             if include.endswith('.cpp'):
                 cfiles.append(include)
@@ -502,7 +502,7 @@ if config["gen_compcmd"]:
         out += f'"directory": "{folders["root"]}"}},'
     out = out[0:-1]
     out += "]"
-    with open('compile_commands.json', "w") as f:
+    with open('../../../compile_commands.json', "w") as f:
         f.write(out)
 
 full_link = (

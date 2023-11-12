@@ -190,11 +190,11 @@ typedef struct RenderTwodBuffer{
 
 // these are flags because in some usecases we are able to specify 
 // multiple stages, such as in specifying descriptors
-enum RenderShaderKind {
-	RenderShaderKind_Vertex   = 1 << 0,
-	RenderShaderKind_Geometry = 1 << 1, 
-	RenderShaderKind_Fragment = 1 << 2,
-	RenderShaderKind_Compute  = 1 << 3,
+enum RenderShaderStage {
+	RenderShaderStage_Vertex   = 1 << 0,
+	RenderShaderStage_Geometry = 1 << 1, 
+	RenderShaderStage_Fragment = 1 << 2,
+	RenderShaderStage_Compute  = 1 << 3,
 	// add more stages as we come across uses for them
 };
 
@@ -229,14 +229,14 @@ struct RenderPass;
 // does not represent actual memory that is allocated
 typedef struct RenderDescriptorLayoutBinding {
 	RenderDescriptorType kind;
-	RenderShaderKind shader_stages;
+	RenderShaderStage shader_stages;
 	u32 binding;
 } RenderDescriptorLayoutBinding;
 
 // represents allocated data used in a descriptor set
 typedef struct RenderDescriptor {
 	RenderDescriptorType kind;
-	RenderShaderKind shader_stages;
+	RenderShaderStage shader_stages;
 
 	union {
 		struct {
@@ -261,8 +261,8 @@ typedef struct RenderDescriptorLayout {
 	void* handle;
 } RenderDescriptorLayout;
 
-RenderDescriptorLayout* render_create_descriptor_layout();
-void render_update_descriptor_layout(RenderDescriptorLayout* x);
+RenderDescriptorLayout* render_descriptor_layout_create();
+void render_descriptor_layout_update(RenderDescriptorLayout* x);
 
 global RenderDescriptorLayout* __render_pool_descriptor_layouts;
 
@@ -283,7 +283,7 @@ global RenderDescriptorSet* __render_pool_descriptor_sets;
 
 typedef struct RenderPushConstant {
 	// what sort of shader this constant will be pushed to
-	RenderShaderKind shader_stage_flags;
+	RenderShaderStage shader_stage_flags;
 	u64 size; // the size of the constant in bytes
 	u64 offset; // offset of the constant in bytes
 } RenderPushConstant;
@@ -301,13 +301,13 @@ typedef struct RenderPipelineLayout {
 
 global RenderPipelineLayout* __render_pool_pipeline_layouts;
 
-RenderPipelineLayout* render_create_pipeline_layout();
-RenderPipelineLayout* render_create_base_pipeline_layout();
-void render_update_pipeline_layout(RenderPipelineLayout* x);
+RenderPipelineLayout* render_pipeline_layout_create();
+RenderPipelineLayout* render_pipeline_layout_create_default();
+void render_pipeline_layout_update(RenderPipelineLayout* x);
 
 // a shader to be compiled and used as a stage in a RenderPipeline
 typedef struct RenderShader {
-	RenderShaderKind kind;
+	RenderShaderStage kind;
 	str8 name;
 	str8 source;
 } RenderShader;
@@ -317,6 +317,8 @@ typedef struct RenderShader {
 enum RenderFormat {
 	RenderFormat_R32G32_Signed_Float,
 	RenderFormat_R32G32B32_Signed_Float,
+	RenderFormat_R8G8B8_StandardRGB,
+	RenderFormat_R8G8B8_UnsignedNormalized,
 	RenderFormat_R8G8B8A8_StandardRGB,
 	RenderFormat_R8G8B8A8_UnsignedNormalized,
 	RenderFormat_B8G8R8A8_UnsignedNormalized,
@@ -326,7 +328,6 @@ enum RenderFormat {
 	// two components, a 32 bit floating point depth component and 8 bit unsigned int stencil component
 	RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt,
 	RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt,
-
 };
 
 enum RenderPipelineCulling {
@@ -491,7 +492,7 @@ typedef struct RenderPipeline {
 
 local RenderPipeline* __render_pipeline_pool;
 
-RenderPipeline* render_create_pipeline();
+RenderPipeline* render_pipeline_create();
 RenderPipeline* render_create_default_pipeline();
 void render_update_pipeline(RenderPipeline* pipeline);
 
@@ -713,6 +714,8 @@ void render_image_update(RenderImage* x);
 //             render images
 void render_image_upload(RenderImage* x, u8* pixels);
 
+void render_image_destroy(RenderImage* image);
+
 global RenderImage* __render_pool_images;
 
 enum RenderImageViewType {
@@ -744,6 +747,8 @@ typedef struct RenderImageView {
 
 RenderImageView* render_image_view_create();
 void render_image_view_update(RenderImageView* x);
+
+void render_image_view_destroy(RenderImageView* x);
 
 global RenderImageView* __render_pool_image_views;
 
@@ -778,21 +783,9 @@ typedef struct RenderSampler {
 RenderSampler* render_sampler_create();
 void render_sampler_update(RenderSampler* x);
 
+void render_sampler_destroy(RenderSampler* x);
+
 global RenderSampler* __render_pool_samplers;
-
-// TODO(sushi)
-//typedef struct RenderComputePipeline {
-//
-//} RenderComputePipeline;
-
-// possibly elements of RenderPasses?
-typedef struct RenderAttachment {
-
-} RenderAttachment;
-
-enum RenderPassKind {
-	RenderPassKind_
-};
 
 enum RenderAttachmentStoreOp {
 	RenderAttachmentStoreOp_Store,
@@ -804,8 +797,6 @@ enum RenderAttachmentLoadOp {
 	RenderAttachmentLoadOp_Clear,
 	RenderAttachmentLoadOp_Dont_Care,
 };
-
-
 
 enum RenderPassAttachmentType {
 	RenderPassAttachmentType_
@@ -863,11 +854,6 @@ typedef struct RenderPass {
 	RenderPassAttachment* color_attachment;
 	RenderPassAttachment* depth_attachment;
 
-	RenderCommand* commands;
-	
-	// the window this render pass is bound to
-	Window* window;
-
 	void* handle;
 } RenderPass;
 
@@ -876,9 +862,6 @@ global RenderPass* __render_pool_render_passes;
 // NOTE(sushi) a renderpass is bound to a window
 RenderPass* render_create_render_pass();
 void render_update_render_pass(RenderPass* x);
-
-// NOTE(sushi) temp for testing 
-void render_execute_render_pass(RenderPass* x, Window* win);
 
 RenderPass* render_pass_of_window_presentation_frame(Window* window);
 

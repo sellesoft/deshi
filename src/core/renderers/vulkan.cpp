@@ -4037,7 +4037,7 @@ create_layouts() {
 							 "Textures descriptor set layout");
 
 	// TODO(sushi) instances descriptor layout
-	
+
 	// twod descriptor set layout
 	// binding 0: fragment shader font image sampler
 	set_layout_bindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -4516,24 +4516,24 @@ specializationInfo.mapEntryCount = 1;
 }
 
 VkShaderStageFlagBits
-render_shader_kind_to_vulkan(RenderShaderKind x) {
+render_shader_kind_to_vulkan(RenderShaderStage x) {
 	VkShaderStageFlags out = 0;
-	if(HasFlag(x, RenderShaderKind_Vertex))   AddFlag(out, VK_SHADER_STAGE_VERTEX_BIT);
-	if(HasFlag(x, RenderShaderKind_Fragment)) AddFlag(out, VK_SHADER_STAGE_FRAGMENT_BIT);
-	if(HasFlag(x, RenderShaderKind_Geometry)) AddFlag(out, VK_SHADER_STAGE_GEOMETRY_BIT);
-	if(HasFlag(x, RenderShaderKind_Compute))  AddFlag(out, VK_SHADER_STAGE_COMPUTE_BIT);
+	if(HasFlag(x, RenderShaderStage_Vertex))   AddFlag(out, VK_SHADER_STAGE_VERTEX_BIT);
+	if(HasFlag(x, RenderShaderStage_Fragment)) AddFlag(out, VK_SHADER_STAGE_FRAGMENT_BIT);
+	if(HasFlag(x, RenderShaderStage_Geometry)) AddFlag(out, VK_SHADER_STAGE_GEOMETRY_BIT);
+	if(HasFlag(x, RenderShaderStage_Compute))  AddFlag(out, VK_SHADER_STAGE_COMPUTE_BIT);
 	return (VkShaderStageFlagBits)out;
 }
 
 RenderDescriptorLayout*
-render_create_descriptor_layout() {
+render_descriptor_layout_create() {
 	auto out = memory_pool_push(__render_pool_descriptor_layouts);
 	array_init(out->bindings, 1, deshi_allocator);
 	return out;
 }
 
 void
-render_update_descriptor_layout(RenderDescriptorLayout* x) {
+render_descriptor_layout_update(RenderDescriptorLayout* x) {
 	PrintVk(4, "Updating descriptor set layout");
 
 	u64 n_bindings = array_count(x->bindings);
@@ -4691,7 +4691,7 @@ render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptor
 }
 
 RenderPipelineLayout*
-render_create_pipeline_layout() {
+render_pipeline_layout_create() {
 	auto out = memory_pool_push(__render_pool_pipeline_layouts);
 	array_init(out->descriptor_layouts, 1, deshi_allocator);
 	array_init(out->push_constants, 1, deshi_allocator);
@@ -4699,22 +4699,22 @@ render_create_pipeline_layout() {
 }
 
 RenderPipelineLayout*
-render_create_base_pipeline_layout() {
+render_pipeline_layout_create_default() {
 	NotImplemented;
 //	auto pl = render_create_pipeline_layout();
 //	
 //	auto d = array_push(pl->descriptors);
-//	d->shader_stage_flags = RenderShaderKind_Vertex;
+//	d->shader_stage_flags = RenderShaderStage_Vertex;
 //	d->              kind = RenderDescriptorKind_Uniform_Buffer;
 //
 //	forI(5) {
 //		d = array_push(pl->descriptors);
-//		d->shader_stage_flags = RenderShaderKind_Fragment;
+//		d->shader_stage_flags = RenderShaderStage_Fragment;
 //		d->              kind = RenderDescriptorKind_Combined_Image_Sampler;
 //	}
 //
 //	auto p = array_push(pl->push_constants);
-//	p->shader_stage_flags = RenderShaderKind_Vertex;
+//	p->shader_stage_flags = RenderShaderStage_Vertex;
 //	p->              size = sizeof(mat4);
 //
 //	render_update_pipeline_layout(pl);
@@ -4724,7 +4724,7 @@ render_create_base_pipeline_layout() {
 }
 
 void
-render_update_pipeline_layout(RenderPipelineLayout* x) {
+render_pipeline_layout_update(RenderPipelineLayout* x) {
 	PrintVk(2, "Updating pipeline layout ", x->debug_name);
 
 	Stopwatch watch = start_stopwatch();
@@ -4770,7 +4770,7 @@ render_update_pipeline_layout(RenderPipelineLayout* x) {
 // the user is expected to modify this handle then call render_update_pipeline
 // later
 RenderPipeline*
-render_create_pipeline() {
+render_pipeline_create() {
 	auto rp = memory_pool_push(__render_pipeline_pool);
 	array_init(rp->shader_stages, 1, deshi_allocator);
 	array_init(rp->dynamic_states, 1, deshi_allocator);
@@ -4781,7 +4781,7 @@ render_create_pipeline() {
 
 RenderPipeline*
 render_create_default_pipeline() {
-	RenderPipeline* p = render_create_pipeline();
+	RenderPipeline* p = render_pipeline_create();
 	
 	p->         front_face = RenderPipelineFrontFace_CW;
 	p->            culling = RenderPipelineCulling_Back;
@@ -4809,7 +4809,7 @@ render_create_default_pipeline() {
 	*array_push(p->dynamic_states) = RenderDynamicState_Viewport;
 	*array_push(p->dynamic_states) = RenderDynamicState_Scissor;
 
-	p->layout = render_create_base_pipeline_layout();
+	p->layout = render_pipeline_layout_create_default();
 
 	render_update_pipeline(p);
 
@@ -4842,6 +4842,8 @@ render_format_to_vulkan(RenderFormat x) {
 	switch(x) {
 		case RenderFormat_R32G32_Signed_Float:                             return VK_FORMAT_R32G32_SFLOAT;
 		case RenderFormat_R32G32B32_Signed_Float:                          return VK_FORMAT_R32G32B32_SFLOAT;
+		case RenderFormat_R8G8B8_UnsignedNormalized:                       return VK_FORMAT_R8G8B8_UNORM;
+		case RenderFormat_R8G8B8_StandardRGB:                              return VK_FORMAT_R8G8B8_SRGB;
 		case RenderFormat_R8G8B8A8_StandardRGB:                            return VK_FORMAT_R8G8B8A8_SRGB;
 		case RenderFormat_R8G8B8A8_UnsignedNormalized:                     return VK_FORMAT_R8G8B8A8_UNORM;
 		case RenderFormat_B8G8R8A8_UnsignedNormalized:                     return VK_FORMAT_B8G8R8A8_UNORM;
@@ -6842,7 +6844,7 @@ render_model_x(RenderFrame* frame, Model* model, mat4* matrix) {
 		c->push_constant.data = matrix;
 		c->push_constant.info.size = sizeof(mat4);
 		c->push_constant.info.offset = 0;
-		c->push_constant.info.shader_stage_flags = RenderShaderKind_Vertex;
+		c->push_constant.info.shader_stage_flags = RenderShaderStage_Vertex;
 		c = array_push(frame->commands);
 		c->type = RenderCommandType_Bind_Vertex_Buffer;
 		c->bind_vertex_buffer.handle = model->mesh->vertex_buffer;
