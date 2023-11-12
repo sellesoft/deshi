@@ -24,6 +24,7 @@ The transformation matrix will follow the format to the below:
 |translationX, translationY, translationZ, 1|
 
 Index:
+@macros
 @libc
 @simd
 @vec2
@@ -41,16 +42,21 @@ Index:
 @mat_hashing
 @mat_tostring
 @mat_vec_interactions
+@geometry
+@camera
+@cpp_only
 @other
 
 Ref:
 https://github.com/HandmadeMath/HandmadeMath
 https://github.com/vectorclass/version2 (Agner Fog)
+https://intel.com/content/www/us/en/docs/intrinsics-guide/index.html
 
 TODOs:
 - API documentation (disables, types, funcs, macros)
 - maybe remove division by zero prevention?
 - maybe remove dependence on kigu?
+- add mat4_look_at_matrix_inverse if possible
 */
 #ifndef DESHI_MATH_H
 #define DESHI_MATH_H
@@ -58,6 +64,11 @@ TODOs:
 
 #include "kigu/common.h"
 #include "kigu/profiling.h"
+
+
+#ifndef DESHI_MATH_DISABLE_HASHING
+#  include "kigu/hash.h"
+#endif //#ifndef DESHI_MATH_DISABLE_HASHING
 
 
 #if !defined(DESHI_MATH_DISABLE_LIBC)
@@ -68,7 +79,7 @@ TODOs:
 #endif //#if !defined(DESHI_MATH_DISABLE_LIBC)
 
 
-#if !defined(DESHI_MATH_DISABLE_SSE)
+#ifndef DESHI_MATH_DISABLE_SSE
 #  if defined(_MSC_VER)
 /* MSVC supports SSE in amd64 mode or _M_IX86_FP >= 1 (2 means SSE2) */
 #    if defined(_M_AMD64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 1)
@@ -88,16 +99,9 @@ TODOs:
 #      include <emmintrin.h>
 #    endif  //#if defined(__SSE__)
 #  endif //#else //#if defined(_MSC_VER)
-#else //#if !defined(DESHI_MATH_DISABLE_SSE)
+#else //#ifndef DESHI_MATH_DISABLE_SSE
 #  define DESHI_MATH_USE_SSE 0
-#endif //#else //#if !defined(DESHI_MATH_DISABLE_SSE)
-
-
-#ifdef __cplusplus
-#  define EXTERN_C extern "C"
-#else //#ifdef __cplusplus
-#  define EXTERN_C
-#endif //#else //#ifdef __cplusplus
+#endif //#else //#ifndef DESHI_MATH_DISABLE_SSE
 
 
 struct vec2;
@@ -108,6 +112,25 @@ struct vec4;
 struct vec4i;
 struct mat3;
 struct mat4;
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @macros
+
+
+#ifdef __cplusplus
+#  define DESHI_MATH_FUNC extern "C"
+#  define DESHI_MATH_TYPE extern "C"
+#else //#ifdef __cplusplus
+#  define DESHI_MATH_FUNC static
+#  define DESHI_MATH_TYPE
+#endif //#else //#ifdef __cplusplus
+
+#define DESHI_PI_F32 3.14159265359f
+
+#define DESHI_DEGREES_TO_RADIANS_F32(angles) ((angles) * (180.0f / DESHI_PI_F32))
+
+#define DESHI_RADIANS_TO_DEGREES_F32(angles) ((angles) * (DESHI_PI_F32 / 180.0f))
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -216,7 +239,7 @@ struct mat4;
 #define m128_set_4s32(a,b,c,d) _mm_set_epi32((a), (b), (c), (d))
 #define m128_fill_4s32(lhs) _mm_set1_epi32((a))
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC b32
 m128_equal_4f32(__m128 lhs, __m128 rhs){DPZoneScoped;
 	__m128 temp0 = _mm_sub_ps(lhs, rhs);
 	temp0 = _mm_andnot_ps(_mm_set1_ps(-0.0f), temp0);
@@ -224,12 +247,12 @@ m128_equal_4f32(__m128 lhs, __m128 rhs){DPZoneScoped;
 	return !(_mm_movemask_ps(temp0));
 }
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC b32
 m128_equal_4s32(__m128i lhs, __m128i rhs){DPZoneScoped;
 	return !(_mm_movemask_epi8(_mm_cmpeq_epi32(lhs, rhs)));
 }
 
-EXTERN_C inline __m128
+DESHI_MATH_FUNC __m128
 m128_linear_combine(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row2, __m128 mat_row3){DPZoneScoped;
 	__m128 result =                m128_mul_4f32(m128_swizzle(vec, 0,0,0,0), mat_row0);
 	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 1,1,1,1), mat_row1));
@@ -244,7 +267,8 @@ m128_linear_combine(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row
 // @vec2
 
 
-EXTERN_C typedef struct vec2{
+DESHI_MATH_TYPE typedef struct
+vec2{
 	union{
 		f32 arr[2];
 		struct{ f32 x, y; };
@@ -290,17 +314,21 @@ EXTERN_C typedef struct vec2{
 	f32   projection(const vec2& rhs)const;
 	vec2  component(const vec2& rhs)const;
 	vec2  midpoint(const vec2& rhs)const;
+	f32   slope(const vec2& rhs)const;
 	f32   radians_between(const vec2& rhs)const;
 	vec2  floor()const;
 	vec2  ceil()const;
 	vec2  round()const;
-	vec2  round_to(s32 place)const;
+	vec2  round_to(u32 place)const;
 	vec2  min(const vec2& rhs)const;
 	vec2  max(const vec2& rhs)const;
 	vec2  clamp(const vec2& min, const vec2& max)const;
 	vec2  clamp_min(const vec2& min)const;
 	vec2  clamp_max(const vec2& max)const;
 	vec2  clamp_mag(f32 min, f32 max)const;
+	vec2  nudge(vec2 target, vec2 delta);
+	vec2  lerp(vec2 rhs, f32 t);
+	vec2  rotate_radians(f32 angle);
 	vec2  x_zero()const;
 	vec2  y_zero()const;
 	vec2  x_only()const;
@@ -319,21 +347,21 @@ EXTERN_C typedef struct vec2{
 #endif //#ifdef __cplusplus
 } vec2;
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 Vec2(f32 x, f32 y){
 	return vec2{x, y};
 }
 
-EXTERN_C inline vec2 vec2_ZERO() { return vec2{ 0, 0}; }
-EXTERN_C inline vec2 vec2_ONE()  { return vec2{ 1, 1}; }
-EXTERN_C inline vec2 vec2_UP()   { return vec2{ 0, 1}; }
-EXTERN_C inline vec2 vec2_DOWN() { return vec2{ 0,-1}; }
-EXTERN_C inline vec2 vec2_LEFT() { return vec2{-1, 0}; }
-EXTERN_C inline vec2 vec2_RIGHT(){ return vec2{ 1, 0}; }
-EXTERN_C inline vec2 vec2_UNITX(){ return vec2{ 1, 0}; }
-EXTERN_C inline vec2 vec2_UNITY(){ return vec2{ 0, 1}; }
+DESHI_MATH_FUNC inline vec2 vec2_ZERO() { return vec2{ 0, 0}; }
+DESHI_MATH_FUNC inline vec2 vec2_ONE()  { return vec2{ 1, 1}; }
+DESHI_MATH_FUNC inline vec2 vec2_UP()   { return vec2{ 0, 1}; }
+DESHI_MATH_FUNC inline vec2 vec2_DOWN() { return vec2{ 0,-1}; }
+DESHI_MATH_FUNC inline vec2 vec2_LEFT() { return vec2{-1, 0}; }
+DESHI_MATH_FUNC inline vec2 vec2_RIGHT(){ return vec2{ 1, 0}; }
+DESHI_MATH_FUNC inline vec2 vec2_UNITX(){ return vec2{ 1, 0}; }
+DESHI_MATH_FUNC inline vec2 vec2_UNITY(){ return vec2{ 0, 1}; }
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2_index(vec2 lhs, u32 index){DPZoneScoped;
 	return lhs.arr[index];
 }
@@ -352,7 +380,7 @@ operator[](u32 index){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_add(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x + rhs.x;
@@ -378,7 +406,7 @@ operator+=(const vec2& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_sub(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x - rhs.x;
@@ -404,7 +432,7 @@ operator-=(const vec2& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_mul(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x * rhs.x;
@@ -430,7 +458,7 @@ operator*=(const vec2& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_mul_f32(vec2 lhs, f32 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x * rhs;
@@ -462,7 +490,7 @@ operator* (f32 lhs, vec2 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_div(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x / rhs.x;
@@ -488,7 +516,7 @@ operator/=(const vec2& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_div_f32(vec2 lhs, f32 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x / rhs;
@@ -514,7 +542,7 @@ operator/=(f32 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_negate(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = -(lhs.x);
@@ -532,7 +560,7 @@ operator- ()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec2_equal(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return (DESHI_ABSF(lhs.x - rhs.x) < M_EPSILON)
 		&& (DESHI_ABSF(lhs.y - rhs.y) < M_EPSILON);
@@ -546,7 +574,7 @@ operator==(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec2_nequal(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return (DESHI_ABSF(lhs.x - rhs.x) > M_EPSILON)
 		|| (DESHI_ABSF(lhs.y - rhs.y) > M_EPSILON);
@@ -560,7 +588,7 @@ operator!=(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_abs(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_ABSF(lhs.x);
@@ -578,7 +606,7 @@ abs()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2_dot(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return (lhs.x * rhs.x) + (lhs.y * rhs.y);
 }
@@ -590,7 +618,7 @@ dot(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_cross(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = -(lhs.y);
@@ -608,7 +636,7 @@ cross()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2_mag(vec2 lhs){DPZoneScoped;
 	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y));
 }
@@ -620,7 +648,7 @@ mag()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32 
+DESHI_MATH_FUNC inline f32 
 vec2_mag_sq(vec2 lhs){DPZoneScoped;
 	return (lhs.x * lhs.x) + (lhs.y * lhs.y);
 }
@@ -632,7 +660,7 @@ mag_sq()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_normalize(vec2 lhs){DPZoneScoped;
 	if(lhs.x > m_EPSILON || lhs.y > m_EPSILON){
 		return vec2_div_f32(lhs, vec2_mag(lhs));
@@ -652,7 +680,7 @@ normalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2_distance(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return vec2_mag(vec2_subtract(lhs,rhs));
 }
@@ -664,7 +692,7 @@ distance(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2_distance_sq(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return vec2_mag_sq(vec2_subtract(lhs,rhs));
 }
@@ -676,7 +704,7 @@ distance_sq(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2_projection(vec2 lhs, vec2 rhs){DPZoneScoped;
 	f32 m = vec2_mag(lhs);
 	if(m > M_EPSILON){
@@ -698,7 +726,7 @@ projection(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_component(vec2 lhs, vec2 rhs){DPZoneScoped;
 	return vec2_mul_f32(vec2_normalize(rhs), vec2_projection(lhs,rhs));
 }
@@ -710,7 +738,7 @@ component(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_midpoint(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = (lhs.x + rhs.x) / 2.0f;
@@ -728,7 +756,19 @@ midpoint(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
+vec2_slope(vec2 lhs, vec2 rhs){DPZoneScoped;
+	return (rhs.y - lhs.y) / (rhs.x - lhs.x);
+}
+
+#ifdef __cplusplus
+inline f32 vec2::
+slope(const vec2& rhs){DPZoneScoped;
+	return (rhs.y - this->y) / (rhs.x - this->x);
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline f32
 vec2_radians_between(vec2 lhs, vec2 rhs){DPZoneScoped;
 	f32 m = vec2_mag(lhs) * vec2_mag(rhs);
 	if(m > M_EPSILON){
@@ -750,7 +790,7 @@ radians_between(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_floor(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_FLOORF(lhs.x);
@@ -778,7 +818,7 @@ floor(vec2 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_ceil(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_CEILF(lhs.x);
@@ -806,7 +846,7 @@ ceil(vec2 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_round(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_ROUNDF(lhs.x);
@@ -834,8 +874,8 @@ round(vec2 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
-vec2_round_to(vec2 lhs, s32 place){DPZoneScoped;
+DESHI_MATH_FUNC inline vec2
+vec2_round_to(vec2 lhs, u32 place){DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
@@ -844,7 +884,7 @@ vec2_round_to(vec2 lhs, s32 place){DPZoneScoped;
 
 #ifdef __cplusplus
 inline vec2 vec2::
-round_to(s32 place)const{DPZoneScoped;
+round_to(u32 place)const{DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
@@ -852,7 +892,7 @@ round_to(s32 place)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_min(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
@@ -880,7 +920,7 @@ min(vec2 lhs, vec2 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_max(vec2 lhs, vec2 rhs){DPZoneScoped;
 	vec2 v;
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
@@ -908,7 +948,7 @@ max(vec2 lhs, vec2 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_clamp(vec2 value, vec2 min, vec2 max){DPZoneScoped;
 	vec2 v;
 	v.x = (value.x < min.x) ? min.x : ((value.x > max.x) ? max.x : value.x);
@@ -936,7 +976,7 @@ clamp(vec2 value, vec2 min, vec2 max){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_clamp_min(vec2 value, vec2 min){DPZoneScoped;
 	vec2 v;
 	v.x = (value.x < min.x) ? min.x : value.x;
@@ -964,7 +1004,7 @@ clamp_min(vec2 value, vec2 min){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_clamp_max(vec2 value, vec2 max){DPZoneScoped;
 	vec2 v;
 	v.x = (value.x > max.x) ? max.x : value.x;
@@ -992,7 +1032,7 @@ clamp_max(vec2 lhs, vec2 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_clamp_mag(vec2 lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec2_mag(lhs);
 	if      (m < min){
@@ -1018,7 +1058,7 @@ clamp_mag(f32 min, f32 max)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_nudge(vec2 value, vec2 target, vec2 delta){DPZoneScoped;
 	vec2 v;
 	v.x = (value.x < target.x) ? ((value.x + delta.x < target.x) ? value.x + delta.x : target.x) : ((value.x - delta.x > target.x) ? value.x - delta.x : target.x);
@@ -1046,7 +1086,55 @@ nudge(vec2 value, vec2 target, vec2 delta){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
+vec2_lerp(vec2 lhs, vec2 rhs, f32 t){DPZoneScoped;
+	vec2 v;
+	v.x = (lhs.x * (1.0f - t)) + (rhs.x * t);
+	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec2 vec2::
+lerp(vec2 rhs, f32 t){DPZoneScoped;
+	vec2 v;
+	v.x = (this->x * (1.0f - t)) + (rhs.x * t);
+	v.y = (this->y * (1.0f - t)) + (rhs.y * t);
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+template<> inline vec2
+lerp(vec2 lhs, vec2 rhs, f32 t){DPZoneScoped;
+	vec2 v;
+	v.x = (lhs.x * (1.0f - t)) + (rhs.x * t);
+	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline vec2
+vec2_rotate_radians(vec2 lhs, f32 angle){
+	vec2 v;
+	v.x = (lhs.x * DESHI_COSF(angle)) - (lhs.y * DESHI_SINF(angle));
+	v.y = (lhs.x * DESHI_SINF(angle)) - (lhs.y * DESHI_COSF(angle));
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec2 vec2::
+rotate_radians(f32 angle){
+	vec2 v;
+	v.x = (this->x * DESHI_COSF(angle)) - (this->y * DESHI_SINF(angle));
+	v.y = (this->x * DESHI_SINF(angle)) - (this->y * DESHI_COSF(angle));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#define vec2_rotate_degrees(lhs,angle) vec2_rotate_radians((lhs), DESHI_DEGREES_TO_RADIANS_F32(angle))
+
+DESHI_MATH_FUNC inline vec2
 vec2_x_zero(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = 0;
@@ -1064,7 +1152,7 @@ x_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_y_zero(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x;
@@ -1082,7 +1170,7 @@ y_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_x_only(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x;
@@ -1100,7 +1188,7 @@ x_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_y_only(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = 0;
@@ -1118,7 +1206,7 @@ y_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_x_negate(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = -(lhs.x);
@@ -1136,7 +1224,7 @@ x_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_y_negate(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x =   lhs.x;
@@ -1154,7 +1242,7 @@ y_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_x_set(vec2 lhs, f32 a){DPZoneScoped;
 	vec2 v;
 	v.x = a;
@@ -1172,7 +1260,7 @@ x_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_y_set(vec2 lhs, f32 a){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x;
@@ -1190,7 +1278,7 @@ y_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_x_add(vec2 lhs, f32 a){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x + a;
@@ -1208,7 +1296,7 @@ x_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2
+DESHI_MATH_FUNC inline vec2
 vec2_y_add(vec2 lhs, f32 a){DPZoneScoped;
 	vec2 v;
 	v.x = lhs.x;
@@ -1231,7 +1319,8 @@ y_add(f32 a)const{DPZoneScoped;
 // @vec2i
 
 
-EXTERN_C typedef struct vec2i{
+DESHI_MATH_TYPE typedef struct
+vec2i{
 	union{
 		s32 arr[2];
 		struct{ s32 x, y; };
@@ -1284,6 +1373,9 @@ EXTERN_C typedef struct vec2i{
 	vec2i clamp_min(const vec2i& min)const;
 	vec2i clamp_max(const vec2i& max)const;
 	vec2i clamp_mag(f32 min, f32 max)const;
+	vec2i nudge(vec2i target, vec2i delta);
+	vec2i lerp(vec2i rhs, f32 t);
+	vec2i rotate_radians(f32 angle);
 	vec2i x_zero()const;
 	vec2i y_zero()const;
 	vec2i x_only()const;
@@ -1302,21 +1394,21 @@ EXTERN_C typedef struct vec2i{
 #endif //#ifdef __cplusplus
 } vec2i;
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 Vec2i(s32 x, s32 y){
 	return vec2i{x, y};
 }
 
-EXTERN_C inline vec2i vec2i_ZERO() { return vec2i{ 0, 0}; }
-EXTERN_C inline vec2i vec2i_ONE()  { return vec2i{ 1, 1}; }
-EXTERN_C inline vec2i vec2i_UP()   { return vec2i{ 0, 1}; }
-EXTERN_C inline vec2i vec2i_DOWN() { return vec2i{ 0,-1}; }
-EXTERN_C inline vec2i vec2i_LEFT() { return vec2i{-1, 0}; }
-EXTERN_C inline vec2i vec2i_RIGHT(){ return vec2i{ 1, 0}; }
-EXTERN_C inline vec2i vec2i_UNITX(){ return vec2i{ 1, 0}; }
-EXTERN_C inline vec2i vec2i_UNITY(){ return vec2i{ 0, 1}; }
+DESHI_MATH_FUNC inline vec2i vec2i_ZERO() { return vec2i{ 0, 0}; }
+DESHI_MATH_FUNC inline vec2i vec2i_ONE()  { return vec2i{ 1, 1}; }
+DESHI_MATH_FUNC inline vec2i vec2i_UP()   { return vec2i{ 0, 1}; }
+DESHI_MATH_FUNC inline vec2i vec2i_DOWN() { return vec2i{ 0,-1}; }
+DESHI_MATH_FUNC inline vec2i vec2i_LEFT() { return vec2i{-1, 0}; }
+DESHI_MATH_FUNC inline vec2i vec2i_RIGHT(){ return vec2i{ 1, 0}; }
+DESHI_MATH_FUNC inline vec2i vec2i_UNITX(){ return vec2i{ 1, 0}; }
+DESHI_MATH_FUNC inline vec2i vec2i_UNITY(){ return vec2i{ 0, 1}; }
 
-EXTERN_C inline s32
+DESHI_MATH_FUNC inline s32
 vec2i_index(vec2i lhs, u32 index){DPZoneScoped;
 	return lhs.arr[index];
 }
@@ -1335,7 +1427,7 @@ operator[](u32 index){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_add(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x + rhs.x;
@@ -1361,7 +1453,7 @@ operator+=(const vec2i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_sub(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x - rhs.x;
@@ -1387,7 +1479,7 @@ operator-=(const vec2i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_mul(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x * rhs.x;
@@ -1413,7 +1505,7 @@ operator*=(const vec2i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_mul_f32(vec2i lhs, f32 rhs){DPZoneScoped;
 	vec2i v;
 	v.x = (s32)((f32)lhs.x * rhs);
@@ -1445,7 +1537,7 @@ operator* (f32 lhs, vec2i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_div(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x / rhs.x;
@@ -1471,7 +1563,7 @@ operator/=(const vec2i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_div_f32(vec2i lhs, f32 rhs){DPZoneScoped;
 	vec2i v;
 	v.x = (s32)((f32)lhs.x / rhs);
@@ -1497,7 +1589,7 @@ operator/=(f32 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_negate(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = -(lhs.x);
@@ -1515,7 +1607,7 @@ operator- ()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec2i_equal(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return lhs.x == rhs.x
 		&& lhs.y == rhs.y;
@@ -1529,7 +1621,7 @@ operator==(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec2i_nequal(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return lhs.x != rhs.x
 		&& lhs.y != rhs.y;
@@ -1543,7 +1635,7 @@ operator!=(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_abs(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = DESHI_ABS(lhs.x);
@@ -1561,7 +1653,7 @@ abs()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2i_dot(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return (f32)((lhs.x * rhs.x) + (lhs.y * rhs.y));
 }
@@ -1573,7 +1665,7 @@ dot(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_cross(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = -(lhs.y);
@@ -1591,7 +1683,7 @@ cross()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2i_mag(vec2i lhs){DPZoneScoped;
 	return DESHI_SQRTF((f32)((lhs.x * lhs.x) + (lhs.y * lhs.y)));
 }
@@ -1603,7 +1695,7 @@ mag()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2i_mag_sq(vec2i lhs){DPZoneScoped;
 	return (f32)((lhs.x * lhs.x) + (lhs.y * lhs.y));
 }
@@ -1615,7 +1707,7 @@ mag_sq()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_normalize(vec2i lhs){DPZoneScoped;
 	if(lhs.x != 0 || lhs.y != 0){
 		return vec2i_div_f32(lhs, vec2i_mag(lhs));
@@ -1635,7 +1727,7 @@ normalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2i_distance(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return vec2i_mag(vec2i_subtract(lhs,rhs));
 }
@@ -1647,7 +1739,7 @@ distance(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2i_distance_sq(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return vec2i_mag_sq(vec2i_subtract(lhs,rhs));
 }
@@ -1659,7 +1751,7 @@ distance_sq(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec2i_projection(vec2i lhs, vec2i rhs){DPZoneScoped;
 	f32 m = vec2i_mag(lhs);
 	if(m > M_EPSILON){
@@ -1681,7 +1773,7 @@ projection(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_component(vec2i lhs, vec2i rhs){DPZoneScoped;
 	return vec2i_mul_f32(vec2i_normalize(rhs), vec2i_projection(lhs,rhs));
 }
@@ -1693,7 +1785,7 @@ component(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_midpoint(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = (lhs.x + rhs.x) / 2;
@@ -1711,7 +1803,19 @@ midpoint(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
+vec2i_slope(vec2i lhs, vec2i rhs){DPZoneScoped;
+	return (f32)(rhs.y - lhs.y) / (f32)(rhs.x - lhs.x);
+}
+
+#ifdef __cplusplus
+inline f32 vec2i::
+slope(const vec2i& rhs){DPZoneScoped;
+	return (f32)(rhs.y - this->y) / (f32)(rhs.x - this->x);
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline f32
 vec2i_radians_between(vec2i lhs, vec2i rhs){DPZoneScoped;
 	f32 m = vec2i_mag(lhs) * vec2i_mag(rhs);
 	if(m > M_EPSILON){
@@ -1733,7 +1837,7 @@ radians_between(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_min(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
@@ -1761,7 +1865,7 @@ min(vec2i lhs, vec2i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_max(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2i v;
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
@@ -1789,7 +1893,7 @@ max(vec2i lhs, vec2i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_clamp(vec2i value, vec2i min, vec2i max){DPZoneScoped;
 	vec2i v;
 	v.x = (value.x < min.x) ? min.x : ((value.x > max.x) ? max.x : value.x);
@@ -1817,7 +1921,7 @@ clamp(vec2i value, vec2i min, vec2i max){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_clamp_min(vec2i value, vec2i min){DPZoneScoped;
 	vec2i v;
 	v.x = (value.x < min.x) ? min.x : value.x;
@@ -1845,7 +1949,7 @@ clamp_min(vec2i value, vec2i min){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_clamp_max(vec2i value, vec2i max){DPZoneScoped;
 	vec2i v;
 	v.x = (value.x > max.x) ? max.x : value.x;
@@ -1873,7 +1977,7 @@ clamp_max(vec2i lhs, vec2i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_clamp_mag(vec2i lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec2i_mag(lhs);
 	if      (m < min){
@@ -1899,7 +2003,7 @@ clamp_mag(f32 min, f32 max)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_nudge(vec2i value, vec2i target, vec2i delta){DPZoneScoped;
 	vec2i v;
 	v.x = (value.x < target.x) ? ((value.x + delta.x < target.x) ? value.x + delta.x : target.x) : ((value.x - delta.x > target.x) ? value.x - delta.x : target.x);
@@ -1927,7 +2031,55 @@ nudge(vec2i value, vec2i target, vec2i delta){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
+vec2i_lerp(vec2i lhs, vec2i rhs, f32 t){DPZoneScoped;
+	vec2i v;
+	v.x = (s32)(((f32)lhs.x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec2i vec2i::
+lerp(vec2i rhs, f32 t){DPZoneScoped;
+	vec2i v;
+	v.x = (s32)(((f32)this->x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)this->y * (1.0f - t)) + ((f32)rhs.y * t));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+template<> inline vec2i
+lerp(vec2i lhs, vec2i rhs, f32 t){DPZoneScoped;
+	vec2i v;
+	v.x = (s32)(((f32)lhs.x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline vec2i
+vec2i_rotate_radians(vec2i lhs, f32 angle){
+	vec2i v;
+	v.x = (s32)(((f32)lhs.x * DESHI_COSF(angle)) - ((f32)lhs.y * DESHI_SINF(angle)));
+	v.y = (s32)(((f32)lhs.x * DESHI_SINF(angle)) - ((f32)lhs.y * DESHI_COSF(angle)));
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec2i vec2i::
+rotate_radians(f32 angle){
+	vec2i v;
+	v.x = (s32)(((f32)this->x * DESHI_COSF(angle)) - ((f32)this->y * DESHI_SINF(angle)));
+	v.y = (s32)(((f32)this->x * DESHI_SINF(angle)) - ((f32)this->y * DESHI_COSF(angle)));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#define vec2i_rotate_degrees(lhs,angle) vec2i_rotate_radians((lhs), DESHI_DEGREES_TO_RADIANS_F32(angle))
+
+DESHI_MATH_FUNC inline vec2i
 vec2i_x_zero(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = 0;
@@ -1945,7 +2097,7 @@ x_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_y_zero(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x;
@@ -1963,7 +2115,7 @@ y_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_x_only(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x;
@@ -1981,7 +2133,7 @@ x_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_y_only(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = 0;
@@ -1999,7 +2151,7 @@ y_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_x_negate(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x = -(lhs.x);
@@ -2017,7 +2169,7 @@ x_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_y_negate(vec2i lhs){DPZoneScoped;
 	vec2i v;
 	v.x =   lhs.x;
@@ -2035,7 +2187,7 @@ y_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_x_set(vec2i lhs, s32 a){DPZoneScoped;
 	vec2i v;
 	v.x = a;
@@ -2053,7 +2205,7 @@ x_set(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_y_set(vec2i lhs, s32 a){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x;
@@ -2071,7 +2223,7 @@ y_set(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_x_add(vec2i lhs, s32 a){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x + a;
@@ -2089,7 +2241,7 @@ x_add(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec2i
+DESHI_MATH_FUNC inline vec2i
 vec2i_y_add(vec2i lhs, s32 a){DPZoneScoped;
 	vec2i v;
 	v.x = lhs.x;
@@ -2112,7 +2264,8 @@ y_add(s32 a)const{DPZoneScoped;
 // @vec3
 
 
-EXTERN_C typedef struct vec3{
+DESHI_MATH_TYPE typedef struct
+vec3{
 	union{
 		f32 arr[3];
 		struct{ f32 x, y, z; };
@@ -2168,13 +2321,15 @@ EXTERN_C typedef struct vec3{
 	vec3  floor()const;
 	vec3  ceil()const;
 	vec3  round()const;
-	vec3  round_to(s32 place)const;
+	vec3  round_to(u32 place)const;
 	vec3  min(const vec3& rhs)const;
 	vec3  max(const vec3& rhs)const;
 	vec3  clamp(const vec3& min, const vec3& max)const;
 	vec3  clamp_min(const vec3& min)const;
 	vec3  clamp_max(const vec3& max)const;
 	vec3  clamp_mag(f32 min, f32 max)const;
+	vec3  nudge(vec3 target, vec3 delta);
+	vec3  lerp(vec3 rhs, f32 t);
 	vec3  x_zero()const;
 	vec3  y_zero()const;
 	vec3  z_zero()const;
@@ -2198,24 +2353,24 @@ EXTERN_C typedef struct vec3{
 #endif //#ifdef __cplusplus
 } vec3;
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 Vec3(f32 x, f32 y, f32 z){
 	return vec3{x, y, z};
 }
 
-EXTERN_C inline vec3 vec3_ZERO()   { return vec3{ 0, 0, 0}; }
-EXTERN_C inline vec3 vec3_ONE()    { return vec3{ 1, 1, 1}; }
-EXTERN_C inline vec3 vec3_LEFT()   { return vec3{-1, 0, 0}; }
-EXTERN_C inline vec3 vec3_RIGHT()  { return vec3{ 1, 0, 0}; }
-EXTERN_C inline vec3 vec3_DOWN()   { return vec3{ 0,-1, 0}; }
-EXTERN_C inline vec3 vec3_UP()     { return vec3{ 0, 1, 0}; }
-EXTERN_C inline vec3 vec3_BACK()   { return vec3{ 0, 0,-1}; }
-EXTERN_C inline vec3 vec3_FORWARD(){ return vec3{ 0, 0, 1}; }
-EXTERN_C inline vec3 vec3_UNITX()  { return vec3{ 1, 0, 0}; }
-EXTERN_C inline vec3 vec3_UNITY()  { return vec3{ 0, 1, 0}; }
-EXTERN_C inline vec3 vec3_UNITZ()  { return vec3{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3 vec3_ZERO()   { return vec3{ 0, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_ONE()    { return vec3{ 1, 1, 1}; }
+DESHI_MATH_FUNC inline vec3 vec3_LEFT()   { return vec3{-1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_RIGHT()  { return vec3{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_DOWN()   { return vec3{ 0,-1, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_UP()     { return vec3{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_BACK()   { return vec3{ 0, 0,-1}; }
+DESHI_MATH_FUNC inline vec3 vec3_FORWARD(){ return vec3{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3 vec3_UNITX()  { return vec3{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_UNITY()  { return vec3{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_UNITZ()  { return vec3{ 0, 0, 1}; }
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_index(vec3 lhs, u32 index){DPZoneScoped;
 	return lhs.arr[index];
 }
@@ -2234,7 +2389,7 @@ operator[](u32 index){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_add(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x + rhs.x;
@@ -2263,7 +2418,7 @@ operator+=(const vec3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_sub(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x - rhs.x;
@@ -2292,7 +2447,7 @@ operator-=(const vec3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_mul(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x * rhs.x;
@@ -2321,7 +2476,7 @@ operator*=(const vec3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_mul_f32(vec3 lhs, f32 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x * rhs;
@@ -2357,7 +2512,7 @@ operator* (f32 lhs, vec3 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_div(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x / rhs.x;
@@ -2386,7 +2541,7 @@ operator/=(const vec3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_div_f32(vec3 lhs, f32 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x / rhs;
@@ -2415,7 +2570,7 @@ operator/=(f32 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_negate(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = -(lhs.x);
@@ -2435,7 +2590,7 @@ operator- ()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec3_equal(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return (DESHI_ABSF(lhs.x - rhs.x) < M_EPSILON)
 		&& (DESHI_ABSF(lhs.y - rhs.y) < M_EPSILON)
@@ -2451,7 +2606,7 @@ operator==(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec3_nequal(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return (DESHI_ABSF(lhs.x - rhs.x) > M_EPSILON)
 		|| (DESHI_ABSF(lhs.y - rhs.y) > M_EPSILON)
@@ -2467,7 +2622,7 @@ operator!=(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_abs(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_ABSF(lhs.x);
@@ -2487,7 +2642,7 @@ abs()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_dot(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
 }
@@ -2499,7 +2654,7 @@ dot(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_cross(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = (lhs.y * rhs.z) - (lhs.z * rhs.y);
@@ -2519,7 +2674,7 @@ cross(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_mag(vec3 lhs){DPZoneScoped;
 	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
 }
@@ -2531,7 +2686,7 @@ mag()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32 
+DESHI_MATH_FUNC inline f32 
 vec3_mag_sq(vec3 lhs){DPZoneScoped;
 	return (lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z);
 }
@@ -2543,7 +2698,7 @@ mag_sq()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_normalize(vec3 lhs){DPZoneScoped;
 	if(lhs.x > M_EPSILON || lhs.y > M_EPSILON || lhs.z > M_EPSILON){
 		return vec3_div_f32(lhs, vec3_mag(lhs));
@@ -2563,7 +2718,7 @@ normalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_distance(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return vec3_mag(vec3_subtract(lhs,rhs));
 }
@@ -2575,7 +2730,7 @@ distance(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_distance_sq(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return vec3_mag_sq(vec3_subtract(lhs,rhs));
 }
@@ -2587,7 +2742,7 @@ distance_sq(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_projection(vec3 lhs, vec3 rhs){DPZoneScoped;
 	f32 m = vec3_mag(lhs);
 	if(m > M_EPSILON){
@@ -2609,7 +2764,7 @@ projection(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_component(vec3 lhs, vec3 rhs){DPZoneScoped;
 	return vec3_mul_f32(vec3_normalize(rhs), vec3_projection(lhs,rhs));
 }
@@ -2621,7 +2776,7 @@ component(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_midpoint(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = (lhs.x + rhs.x) / 2.0f;
@@ -2641,7 +2796,7 @@ midpoint(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3_radians_between(vec3 lhs, vec3 rhs){DPZoneScoped;
 	f32 m = vec3_mag(lhs) * vec3_mag(rhs);
 	if(m > M_EPSILON){
@@ -2663,7 +2818,7 @@ radians_between(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_floor(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_FLOORF(lhs.x);
@@ -2694,7 +2849,7 @@ floor(vec3 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_ceil(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_CEILF(lhs.x);
@@ -2725,7 +2880,7 @@ ceil(vec3 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_round(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_ROUNDF(lhs.x);
@@ -2756,8 +2911,8 @@ round(vec3 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
-vec3_round_to(vec3 lhs, s32 place){DPZoneScoped;
+DESHI_MATH_FUNC inline vec3
+vec3_round_to(vec3 lhs, u32 place){DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
@@ -2767,7 +2922,7 @@ vec3_round_to(vec3 lhs, s32 place){DPZoneScoped;
 
 #ifdef __cplusplus
 inline vec3 vec3::
-round_to(s32 place)const{DPZoneScoped;
+round_to(u32 place)const{DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
@@ -2776,7 +2931,7 @@ round_to(s32 place)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_min(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
@@ -2807,7 +2962,7 @@ min(vec3 lhs, vec3 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_max(vec3 lhs, vec3 rhs){DPZoneScoped;
 	vec3 v;
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
@@ -2838,7 +2993,7 @@ max(vec3 lhs, vec3 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_clamp(vec3 value, vec3 min, vec3 max){DPZoneScoped;
 	vec3 v;
 	v.x = (value.x < min.x) ? min.x : ((value.x > max.x) ? max.x : value.x);
@@ -2869,7 +3024,7 @@ clamp(vec3 value, vec3 min, vec3 max){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_clamp_min(vec3 value, vec3 min){DPZoneScoped;
 	vec3 v;
 	v.x = (value.x < min.x) ? min.x : value.x;
@@ -2900,7 +3055,7 @@ clamp_min(vec3 value, vec3 min){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_clamp_max(vec3 value, vec3 max){DPZoneScoped;
 	vec3 v;
 	v.x = (value.x > max.x) ? max.x : value.x;
@@ -2931,7 +3086,7 @@ clamp_max(vec3 lhs, vec3 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_clamp_mag(vec3 lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec3_mag(lhs);
 	if      (m < min){
@@ -2957,7 +3112,7 @@ clamp_mag(f32 min, f32 max)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_nudge(vec3 value, vec3 target, vec3 delta){DPZoneScoped;
 	vec3 v;
 	v.x = (value.x < target.x) ? ((value.x + delta.x < target.x) ? value.x + delta.x : target.x) : ((value.x - delta.x > target.x) ? value.x - delta.x : target.x);
@@ -2988,7 +3143,38 @@ nudge(vec3 value, vec3 target, vec3 delta){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
+vec3_lerp(vec3 lhs, vec3 rhs, f32 t){DPZoneScoped;
+	vec3 v;
+	v.x = (lhs.x * (1.0f - t)) + (rhs.x * t);
+	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
+	v.z = (lhs.z * (1.0f - t)) + (rhs.z * t);
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec3 vec3::
+lerp(vec3 rhs, f32 t){DPZoneScoped;
+	vec3 v;
+	v.x = (this->x * (1.0f - t)) + (rhs.x * t);
+	v.y = (this->y * (1.0f - t)) + (rhs.y * t);
+	v.z = (this->z * (1.0f - t)) + (rhs.z * t);
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+template<> inline vec3
+lerp(vec3 lhs, vec3 rhs, f32 t){DPZoneScoped;
+	vec3 v;
+	v.x = (lhs.x * (1.0f - t)) + (rhs.x * t);
+	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
+	v.z = (lhs.z * (1.0f - t)) + (rhs.z * t);
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline vec3
 vec3_x_zero(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = 0;
@@ -3008,7 +3194,7 @@ x_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_y_zero(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3028,7 +3214,7 @@ y_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_z_zero(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3048,7 +3234,7 @@ z_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_x_only(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3068,7 +3254,7 @@ x_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_y_only(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = 0;
@@ -3088,7 +3274,7 @@ y_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_z_only(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = 0;
@@ -3108,7 +3294,7 @@ z_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_x_negate(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x = -(lhs.x);
@@ -3128,7 +3314,7 @@ x_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_y_negate(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x =   lhs.x;
@@ -3148,7 +3334,7 @@ y_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_z_negate(vec3 lhs){DPZoneScoped;
 	vec3 v;
 	v.x =   lhs.x;
@@ -3168,7 +3354,7 @@ z_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_x_set(vec3 lhs, f32 a){DPZoneScoped;
 	vec3 v;
 	v.x = a;
@@ -3188,7 +3374,7 @@ x_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_y_set(vec3 lhs, f32 a){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3208,7 +3394,7 @@ y_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_z_set(vec3 lhs, f32 a){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3228,7 +3414,7 @@ z_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_x_add(vec3 lhs, f32 a){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x + a;
@@ -3248,7 +3434,7 @@ x_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_y_add(vec3 lhs, f32 a){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3268,7 +3454,7 @@ y_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_z_add(vec3 lhs, f32 a){DPZoneScoped;
 	vec3 v;
 	v.x = lhs.x;
@@ -3293,7 +3479,8 @@ z_add(f32 a)const{DPZoneScoped;
 // @vec3i
 
 
-EXTERN_C typedef struct vec3i{
+DESHI_MATH_TYPE typedef struct
+vec3i{
 	union{
 		s32 arr[3] = {};
 		struct{ s32 x, y, z; };
@@ -3349,6 +3536,8 @@ EXTERN_C typedef struct vec3i{
 	vec3i clamp_min(const vec3i& min)const;
 	vec3i clamp_max(const vec3i& max)const;
 	vec3i clamp_mag(f32 min, f32 max)const;
+	vec3i nudge(vec3i target, vec3i delta);
+	vec3i lerp(vec3i rhs, f32 t);
 	vec3i x_zero()const;
 	vec3i y_zero()const;
 	vec3i z_zero()const;
@@ -3372,24 +3561,24 @@ EXTERN_C typedef struct vec3i{
 #endif //#ifdef __cplusplus
 } vec3i;
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 Vec3i(s32 x, s32 y, s32 z){
 	return vec3i{x, y, z};
 }
 
-EXTERN_C inline vec3i vec3i_ZERO()   { return vec3i{ 0, 0, 0}; }
-EXTERN_C inline vec3i vec3i_ONE()    { return vec3i{ 1, 1, 1}; }
-EXTERN_C inline vec3i vec3i_LEFT()   { return vec3i{-1, 0, 0}; }
-EXTERN_C inline vec3i vec3i_RIGHT()  { return vec3i{ 1, 0, 0}; }
-EXTERN_C inline vec3i vec3i_DOWN()   { return vec3i{ 0,-1, 0}; }
-EXTERN_C inline vec3i vec3i_UP()     { return vec3i{ 0, 1, 0}; }
-EXTERN_C inline vec3i vec3i_BACK()   { return vec3i{ 0, 0,-1}; }
-EXTERN_C inline vec3i vec3i_FORWARD(){ return vec3i{ 0, 0, 1}; }
-EXTERN_C inline vec3i vec3i_UNITX()  { return vec3i{ 1, 0, 0}; }
-EXTERN_C inline vec3i vec3i_UNITY()  { return vec3i{ 0, 1, 0}; }
-EXTERN_C inline vec3i vec3i_UNITZ()  { return vec3i{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_ZERO()   { return vec3i{ 0, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_ONE()    { return vec3i{ 1, 1, 1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_LEFT()   { return vec3i{-1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_RIGHT()  { return vec3i{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_DOWN()   { return vec3i{ 0,-1, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UP()     { return vec3i{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_BACK()   { return vec3i{ 0, 0,-1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_FORWARD(){ return vec3i{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UNITX()  { return vec3i{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UNITY()  { return vec3i{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UNITZ()  { return vec3i{ 0, 0, 1}; }
 
-EXTERN_C inline s32
+DESHI_MATH_FUNC inline s32
 vec3i_index(vec3i lhs, u32 index){DPZoneScoped;
 	return lhs.arr[index];
 }
@@ -3408,7 +3597,7 @@ operator[](u32 index){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_add(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x + rhs.x;
@@ -3437,7 +3626,7 @@ operator+=(const vec3i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_sub(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x - rhs.x;
@@ -3466,7 +3655,7 @@ operator-=(const vec3i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_mul(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x * rhs.x;
@@ -3495,7 +3684,7 @@ operator*=(const vec3i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_mul_f32(vec3i lhs, f32 rhs){DPZoneScoped;
 	vec3i v;
 	v.x = (s32)((f32)lhs.x * rhs);
@@ -3530,7 +3719,7 @@ operator* (f32 lhs, vec3i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_div(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x / rhs.x;
@@ -3559,7 +3748,7 @@ operator/=(const vec3i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_div_f32(vec3i lhs, f32 rhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x / rhs;
@@ -3588,7 +3777,7 @@ operator/=(f32 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_negate(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = -(lhs.x);
@@ -3608,7 +3797,7 @@ operator- ()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec3i_equal(vec3i lhs, vec3i rhs){DPZoneScoped;
 	return lhs.x == rhs.x
 		&& lhs.y == rhs.y
@@ -3624,7 +3813,7 @@ operator==(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec3i_nequal(vec3i lhs, vec3i rhs){DPZoneScoped;
 	return lhs.x != rhs.x
 		&& lhs.y != rhs.y
@@ -3640,7 +3829,7 @@ operator!=(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_abs(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = DESHI_ABS(lhs.x);
@@ -3660,7 +3849,7 @@ abs()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3i_dot(vec3i lhs, vec3i rhs){DPZoneScoped;
 	return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
 }
@@ -3672,7 +3861,7 @@ dot(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_cross(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = (lhs.y * rhs.z) - (lhs.z * rhs.y);
@@ -3692,7 +3881,7 @@ cross(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3i_mag(vec3i lhs){DPZoneScoped;
 	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
 }
@@ -3704,7 +3893,7 @@ mag()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32 
+DESHI_MATH_FUNC inline f32 
 vec3i_mag_sq(vec3i lhs){DPZoneScoped;
 	return (lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z);
 }
@@ -3716,7 +3905,7 @@ mag_sq()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_normalize(vec3i lhs){DPZoneScoped;
 	if(lhs.x != 0 || lhs.y != 0 || lhs.z != 0){
 		return vec3i_div_f32(lhs, vec3i_mag(lhs));
@@ -3736,7 +3925,7 @@ normalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3i_distance(vec3i lhs, vec3i rhs){DPZoneScoped;
 	return vec3i_mag(vec3i_subtract(lhs,rhs));
 }
@@ -3748,7 +3937,7 @@ distance(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3i_distance_sq(vec3i lhs, vec3i rhs){DPZoneScoped;
 	return vec3i_mag_sq(vec3i_subtract(lhs,rhs));
 }
@@ -3760,7 +3949,7 @@ distance_sq(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3i_projection(vec3i lhs, vec3i rhs){DPZoneScoped;
 	f32 m = vec3i_mag(lhs);
 	if(m > M_EPSILON){
@@ -3782,7 +3971,7 @@ projection(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_component(vec3i lhs, vec3i rhs){DPZoneScoped;
 	return vec3i_mul_f32(vec3i_normalize(rhs), vec3i_projection(lhs,rhs));
 }
@@ -3794,7 +3983,7 @@ component(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_midpoint(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = (lhs.x + rhs.x) / 2;
@@ -3814,7 +4003,7 @@ midpoint(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec3i_radians_between(vec3i lhs, vec3i rhs){DPZoneScoped;
 	f32 m = vec3i_mag(lhs) * vec3i_mag(rhs);
 	if(m > M_EPSILON){
@@ -3836,7 +4025,7 @@ radians_between(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_min(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = (lhs.x < rhs.x) ? lhs.x : rhs.x;
@@ -3867,7 +4056,7 @@ min(vec3i lhs, vec3i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_max(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3i v;
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
@@ -3898,7 +4087,7 @@ max(vec3i lhs, vec3i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_clamp(vec3i value, vec3i min, vec3i max){DPZoneScoped;
 	vec3i v;
 	v.x = (value.x < min.x) ? min.x : ((value.x > max.x) ? max.x : value.x);
@@ -3929,7 +4118,7 @@ clamp(vec3i value, vec3i min, vec3i max){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_clamp_min(vec3i value, vec3i min){DPZoneScoped;
 	vec3i v;
 	v.x = (value.x < min.x) ? min.x : value.x;
@@ -3960,7 +4149,7 @@ clamp_min(vec3i value, vec3i min){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_clamp_max(vec3i value, vec3i max){DPZoneScoped;
 	vec3i v;
 	v.x = (value.x > max.x) ? max.x : value.x;
@@ -3991,7 +4180,7 @@ clamp_max(vec3i lhs, vec3i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_clamp_mag(vec3i lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec3i_mag(lhs);
 	if      (m < min){
@@ -4017,7 +4206,7 @@ clamp_mag(f32 min, f32 max)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_nudge(vec3i value, vec3i target, vec3i delta){DPZoneScoped;
 	vec3i v;
 	v.x = (value.x < target.x) ? ((value.x + delta.x < target.x) ? value.x + delta.x : target.x) : ((value.x - delta.x > target.x) ? value.x - delta.x : target.x);
@@ -4048,7 +4237,38 @@ nudge(vec3i value, vec3i target, vec3i delta){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
+vec3i_lerp(vec3i lhs, vec3i rhs, f32 t){DPZoneScoped;
+	vec3i v;
+	v.x = (s32)(((f32)lhs.x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
+	v.z = (s32)(((f32)lhs.z * (1.0f - t)) + ((f32)rhs.z * t));
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec3i vec3i::
+lerp(vec3i rhs, f32 t){DPZoneScoped;
+	vec3i v;
+	v.x = (s32)(((f32)this->x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)this->y * (1.0f - t)) + ((f32)rhs.y * t));
+	v.z = (s32)(((f32)this->z * (1.0f - t)) + ((f32)rhs.z * t));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+template<> inline vec3i
+lerp(vec3i lhs, vec3i rhs, f32 t){DPZoneScoped;
+	vec3i v;
+	v.x = (s32)(((f32)lhs.x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
+	v.z = (s32)(((f32)lhs.z * (1.0f - t)) + ((f32)rhs.z * t));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline vec3i
 vec3i_x_zero(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = 0;
@@ -4068,7 +4288,7 @@ x_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_y_zero(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4088,7 +4308,7 @@ y_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_z_zero(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4108,7 +4328,7 @@ z_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_x_only(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4128,7 +4348,7 @@ x_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_y_only(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = 0;
@@ -4148,7 +4368,7 @@ y_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_z_only(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = 0;
@@ -4168,7 +4388,7 @@ z_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_x_negate(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x = -(lhs.x);
@@ -4188,7 +4408,7 @@ x_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_y_negate(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x =   lhs.x;
@@ -4208,7 +4428,7 @@ y_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_z_negate(vec3i lhs){DPZoneScoped;
 	vec3i v;
 	v.x =   lhs.x;
@@ -4228,7 +4448,7 @@ z_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_x_set(vec3i lhs, s32 a){DPZoneScoped;
 	vec3i v;
 	v.x = a;
@@ -4248,7 +4468,7 @@ x_set(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_y_set(vec3i lhs, s32 a){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4268,7 +4488,7 @@ y_set(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_z_set(vec3i lhs, s32 a){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4288,7 +4508,7 @@ z_set(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_x_add(vec3i lhs, s32 a){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x + a;
@@ -4308,7 +4528,7 @@ x_add(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_y_add(vec3i lhs, s32 a){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4328,7 +4548,7 @@ y_add(s32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3i
+DESHI_MATH_FUNC inline vec3i
 vec3i_z_add(vec3i lhs, s32 a){DPZoneScoped;
 	vec3i v;
 	v.x = lhs.x;
@@ -4353,7 +4573,8 @@ z_add(s32 a)const{DPZoneScoped;
 // @vec4
 
 
-EXTERN_C typedef struct vec4{
+DESHI_MATH_TYPE typedef struct
+vec4{
 	union{
 		f32 arr[4];
 		struct{
@@ -4431,13 +4652,15 @@ EXTERN_C typedef struct vec4{
 	vec4  floor()const;
 	vec4  ceil()const;
 	vec4  round()const;
-	vec4  round_to(s32 place)const;
+	vec4  round_to(u32 place)const;
 	vec4  min(const vec4& rhs)const;
 	vec4  max(const vec4& rhs)const;
 	vec4  clamp(const vec4& min, const vec4& max)const;
 	vec4  clamp_min(const vec4& min)const;
 	vec4  clamp_max(const vec4& max)const;
 	vec4  clamp_mag(f32 min, f32 max)const;
+	vec4  nudge(vec4 target, vec4 delta);
+	vec4  lerp(vec4 rhs, f32 t);
 	vec4  x_zero()const;
 	vec4  y_zero()const;
 	vec4  z_zero()const;
@@ -4466,19 +4689,19 @@ EXTERN_C typedef struct vec4{
 #endif //#ifdef __cplusplus
 } vec4;
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 Vec4(f32 x, f32 y, f32 z, f32 w){
 	return vec4{x, y, z, w};
 }
 
-EXTERN_C inline vec4 vec4_ZERO() { return vec4{0,0,0,0}; }
-EXTERN_C inline vec4 vec4_ONE()  { return vec4{1,1,1,1}; }
-EXTERN_C inline vec4 vec4_UNITX(){ return vec4{1,0,0,0}; }
-EXTERN_C inline vec4 vec4_UNITY(){ return vec4{0,1,0,0}; }
-EXTERN_C inline vec4 vec4_UNITZ(){ return vec4{0,0,1,0}; }
-EXTERN_C inline vec4 vec4_UNITW(){ return vec4{0,0,0,1}; }
+DESHI_MATH_FUNC inline vec4 vec4_ZERO() { return vec4{0,0,0,0}; }
+DESHI_MATH_FUNC inline vec4 vec4_ONE()  { return vec4{1,1,1,1}; }
+DESHI_MATH_FUNC inline vec4 vec4_UNITX(){ return vec4{1,0,0,0}; }
+DESHI_MATH_FUNC inline vec4 vec4_UNITY(){ return vec4{0,1,0,0}; }
+DESHI_MATH_FUNC inline vec4 vec4_UNITZ(){ return vec4{0,0,1,0}; }
+DESHI_MATH_FUNC inline vec4 vec4_UNITW(){ return vec4{0,0,0,1}; }
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_index(vec4 lhs, u32 index){DPZoneScoped;
 	return lhs.arr[index];
 }
@@ -4497,7 +4720,7 @@ operator[](u32 index){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_add(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4541,7 +4764,7 @@ operator+=(const vec4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_sub(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4585,7 +4808,7 @@ operator-=(const vec4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_mul(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4629,7 +4852,7 @@ operator*=(const vec4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_mul_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4680,7 +4903,7 @@ operator* (s32 lhs, vec4 rhs){
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_div(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4724,7 +4947,7 @@ operator/=(const vec4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_div_f32(vec4 lhs, f32 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4768,7 +4991,7 @@ operator/=(const f32& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_negate(vec4 lhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4798,7 +5021,7 @@ operator- ()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec4_equal(vec4 lhs, vec4 rhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(lhs.sse, rhs.sse);
@@ -4824,7 +5047,7 @@ operator==(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec4_nequal(vec4 lhs, vec4 rhs){DPZoneScoped;
 	#if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(lhs.sse, rhs.sse);
@@ -4850,7 +5073,7 @@ operator!=(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_abs(vec4 lhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -4880,7 +5103,7 @@ abs()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_dot(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 result;
 #if DESHI_MATH_USE_SSE
@@ -4914,7 +5137,7 @@ dot(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_mag(vec4 lhs){DPZoneScoped;
 	f32 result;
 #if DESHI_MATH_USE_SSE
@@ -4950,7 +5173,7 @@ mag()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_mag_sq(vec4 lhs){DPZoneScoped;
 	f32 result;
 #if DESHI_MATH_USE_SSE
@@ -4984,7 +5207,7 @@ mag_sq()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_normalize(vec4 lhs){DPZoneScoped;
 	if(lhs.x > M_EPSILON || lhs.y > M_EPSILON || lhs.z > M_EPSILON || lhs.w > M_EPSILON){
 		return vec4_div_f32(lhs, vec4_mag(lhs));
@@ -5004,7 +5227,7 @@ normalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_wnormalize(vec4 lhs){DPZoneScoped;
 	if(lhs.w > M_EPSILON){
 		return vec4_div_f32(lhs, lhs.w);
@@ -5025,7 +5248,7 @@ wnormalize()const{DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_distance(vec4 lhs, vec4 rhs){DPZoneScoped;
 	return vec4_mag(vec4_subtract(lhs,rhs));
 }
@@ -5037,7 +5260,7 @@ distance(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_distance_sq(vec4 lhs, vec4 rhs){DPZoneScoped;
 	return vec4_mag_sq(vec4_subtract(lhs,rhs));
 }
@@ -5049,7 +5272,7 @@ distance_sq(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_projection(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 m = vec4_mag(lhs);
 	if(m > M_EPSILON){
@@ -5071,7 +5294,7 @@ projection(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_component(vec4 lhs, vec4 rhs){DPZoneScoped;
 	return vec4_mul_f32(vec4_normalize(rhs), vec4_projection(lhs,rhs));
 }
@@ -5083,7 +5306,7 @@ component(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_midpoint(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5113,7 +5336,7 @@ midpoint(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4_radians_between(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 m = vec4_mag(lhs) * vec4_mag(rhs);
 	if(m > M_EPSILON){
@@ -5135,7 +5358,7 @@ radians_between(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_floor(vec4 lhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5181,7 +5404,7 @@ floor(vec4 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_ceil(vec4 lhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5227,7 +5450,7 @@ ceil(vec4 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_round(vec4 lhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5273,8 +5496,8 @@ round(vec4 lhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
-vec4_round_to(vec4 lhs, s32 place){DPZoneScoped;
+DESHI_MATH_FUNC inline vec4
+vec4_round_to(vec4 lhs, u32 place){DPZoneScoped;
 	vec3 v;
 	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
@@ -5285,7 +5508,7 @@ vec4_round_to(vec4 lhs, s32 place){DPZoneScoped;
 
 #ifdef __cplusplus
 inline vec4 vec4::
-round_to(s32 place)const{DPZoneScoped;
+round_to(u32 place)const{DPZoneScoped;
 	vec4 v;
 	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
@@ -5295,7 +5518,7 @@ round_to(s32 place)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_min(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5341,7 +5564,7 @@ min(vec4 lhs, vec4 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_max(vec4 lhs, vec4 rhs){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5387,7 +5610,7 @@ max(vec4 lhs, vec4 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_clamp(vec4 value, vec4 min, vec4 max){DPZoneScoped;
 	vec4 v;
 	v.x = (value.x < min.x) ? min.x : ((value.x > max.x) ? max.x : value.x);
@@ -5421,7 +5644,7 @@ clamp(vec4 value, vec4 min, vec4 max){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_clamp_min(vec4 value, vec4 min){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5467,7 +5690,7 @@ clamp_min(vec4 value, vec4 min){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_clamp_max(vec4 value, vec4 max){DPZoneScoped;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
@@ -5513,7 +5736,7 @@ clamp_max(vec4 lhs, vec4 rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_clamp_mag(vec4 lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec4_mag(lhs);
 	if      (m < min){
@@ -5539,7 +5762,7 @@ clamp_mag(f32 min, f32 max)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_nudge(vec4 value, vec4 target, vec4 delta){DPZoneScoped;
 	vec4 v;
 	v.x = (value.x < target.x) ? ((value.x + delta.x < target.x) ? value.x + delta.x : target.x) : ((value.x - delta.x > target.x) ? value.x - delta.x : target.x);
@@ -5573,7 +5796,41 @@ nudge(vec4 value, vec4 target, vec4 delta){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
+vec4_lerp(vec4 lhs, vec4 rhs, f32 t){DPZoneScoped;
+	vec4 v;
+	v.x = (lhs.x * (1.0f - t)) + (rhs.x * t);
+	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
+	v.z = (lhs.z * (1.0f - t)) + (rhs.z * t);
+	v.w = (lhs.w * (1.0f - t)) + (rhs.w * t);
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec4 vec4::
+lerp(vec4 rhs, f32 t){DPZoneScoped;
+	vec4 v;
+	v.x = (this->x * (1.0f - t)) + (rhs.x * t);
+	v.y = (this->y * (1.0f - t)) + (rhs.y * t);
+	v.z = (this->z * (1.0f - t)) + (rhs.z * t);
+	v.w = (this->w * (1.0f - t)) + (rhs.w * t);
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+template<> inline vec4
+lerp(vec4 lhs, vec4 rhs, f32 t){DPZoneScoped;
+	vec4 v;
+	v.x = (lhs.x * (1.0f - t)) + (rhs.x * t);
+	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
+	v.z = (lhs.z * (1.0f - t)) + (rhs.z * t);
+	v.w = (lhs.w * (1.0f - t)) + (rhs.w * t);
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline vec4
 vec4_x_zero(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = 0;
@@ -5595,7 +5852,7 @@ x_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_y_zero(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5617,7 +5874,7 @@ y_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_z_zero(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5639,7 +5896,7 @@ z_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_w_zero(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5661,7 +5918,7 @@ w_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_x_only(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5683,7 +5940,7 @@ x_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_y_only(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = 0;
@@ -5705,7 +5962,7 @@ y_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_z_only(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = 0;
@@ -5727,7 +5984,7 @@ z_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_w_only(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = 0;
@@ -5749,7 +6006,7 @@ w_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_x_negate(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x = -(lhs.x);
@@ -5771,7 +6028,7 @@ x_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_y_negate(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x =   lhs.x;
@@ -5793,7 +6050,7 @@ y_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_z_negate(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x =   lhs.x;
@@ -5815,7 +6072,7 @@ z_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_w_negate(vec4 lhs){DPZoneScoped;
 	vec4 v;
 	v.x =   lhs.x;
@@ -5837,7 +6094,7 @@ w_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_x_set(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = a;
@@ -5859,7 +6116,7 @@ x_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_y_set(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5881,7 +6138,7 @@ y_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_z_set(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5903,7 +6160,7 @@ z_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_w_set(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5925,7 +6182,7 @@ w_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_x_add(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x + a;
@@ -5947,7 +6204,7 @@ x_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_y_add(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5969,7 +6226,7 @@ y_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_z_add(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -5991,7 +6248,7 @@ z_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_w_add(vec4 lhs, f32 a){DPZoneScoped;
 	vec4 v;
 	v.x = lhs.x;
@@ -6018,7 +6275,8 @@ w_add(f32 a)const{DPZoneScoped;
 // @vec4i
 
 
-EXTERN_C typedef struct vec4i{
+DESHI_MATH_TYPE typedef struct
+vec4i{
 	union{
 		s32 arr[4] = {};
 		struct{ 
@@ -6097,6 +6355,8 @@ EXTERN_C typedef struct vec4i{
 	vec4i clamp_min(const vec4i& min)const;
 	vec4i clamp_max(const vec4i& max)const;
 	vec4i clamp_mag(f32 min, f32 max)const;
+	vec4i nudge(vec4i target, vec4i delta);
+	vec4i lerp(vec4i rhs, f32 t);
 	vec4i x_zero()const;
 	vec4i y_zero()const;
 	vec4i z_zero()const;
@@ -6120,19 +6380,19 @@ EXTERN_C typedef struct vec4i{
 #endif //#ifdef __cplusplus
 } vec4i;
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 Vec4i(f32 x, f32 y, f32 z, f32 w){
 	return vec4i{x, y, z, w};
 }
 
-EXTERN_C inline vec4i vec4i_ZERO() { return vec4i{0,0,0,0}; }
-EXTERN_C inline vec4i vec4i_ONE()  { return vec4i{1,1,1,1}; }
-EXTERN_C inline vec4i vec4i_UNITX(){ return vec4i{1,0,0,0}; }
-EXTERN_C inline vec4i vec4i_UNITY(){ return vec4i{0,1,0,0}; }
-EXTERN_C inline vec4i vec4i_UNITZ(){ return vec4i{0,0,1,0}; }
-EXTERN_C inline vec4i vec4i_UNITW(){ return vec4i{0,0,0,1}; }
+DESHI_MATH_FUNC inline vec4i vec4i_ZERO() { return vec4i{0,0,0,0}; }
+DESHI_MATH_FUNC inline vec4i vec4i_ONE()  { return vec4i{1,1,1,1}; }
+DESHI_MATH_FUNC inline vec4i vec4i_UNITX(){ return vec4i{1,0,0,0}; }
+DESHI_MATH_FUNC inline vec4i vec4i_UNITY(){ return vec4i{0,1,0,0}; }
+DESHI_MATH_FUNC inline vec4i vec4i_UNITZ(){ return vec4i{0,0,1,0}; }
+DESHI_MATH_FUNC inline vec4i vec4i_UNITW(){ return vec4i{0,0,0,1}; }
 
-EXTERN_C inline s32
+DESHI_MATH_FUNC inline s32
 vec4i_index(vec4i lhs, u32 index){DPZoneScoped;
 	return lhs.arr[index];
 }
@@ -6151,7 +6411,7 @@ operator[](u32 index){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_add(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6195,7 +6455,7 @@ operator+=(const vec4i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_sub(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6239,7 +6499,7 @@ operator-=(const vec4i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_mul(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6283,7 +6543,7 @@ operator*=(const vec4i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_mul_f32(vec4i lhs, f32 rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6334,7 +6594,7 @@ operator* (s32 lhs, vec4i rhs){
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_div(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x / rhs.x;
@@ -6366,7 +6626,7 @@ operator/=(const vec4i& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_div_f32(vec4i lhs, f32 rhs){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x / rhs;
@@ -6398,7 +6658,7 @@ operator/=(const f32& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_negate(vec4i lhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6428,7 +6688,7 @@ operator- ()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec4i_equal(vec4i lhs, vec4i rhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4s32(lhs.sse, rhs.sse);
@@ -6454,7 +6714,7 @@ operator==(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 vec4i_nequal(vec4i lhs, vec4i rhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 	return !m128_equal_4s32(lhs.sse, rhs.sse);
@@ -6480,7 +6740,7 @@ operator!=(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_abs(vec4i lhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6510,7 +6770,7 @@ abs()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_dot(vec4i lhs, vec4i rhs){DPZoneScoped;
 	f32 result;
 #if DESHI_MATH_USE_SSE
@@ -6544,7 +6804,7 @@ dot(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_mag(vec4i lhs){DPZoneScoped;
 	f32 result;
 #if DESHI_MATH_USE_SSE
@@ -6578,7 +6838,7 @@ mag()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_mag_sq(vec4i lhs){DPZoneScoped;
 	f32 result;
 #if DESHI_MATH_USE_SSE
@@ -6612,7 +6872,7 @@ mag_sq()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_normalize(vec4i lhs){DPZoneScoped;
 	if(lhs.x != 0 || lhs.y != 0 || lhs.z != 0 || lhs.w != 0){
 		return vec4i_div_f32(lhs, vec4i_mag(lhs));
@@ -6632,7 +6892,7 @@ normalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_wnormalize(vec4i lhs){DPZoneScoped;
 	if(lhs.w != 0){
 		return vec4i_div_f32(lhs, lhs.w);
@@ -6652,7 +6912,7 @@ wnormalize()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_distance(vec4i lhs, vec4i rhs){DPZoneScoped;
 	return vec4i_mag(vec4i_subtract(lhs,rhs));
 }
@@ -6664,7 +6924,7 @@ distance(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_distance_sq(vec4i lhs, vec4i rhs){DPZoneScoped;
 	return vec4i_mag_sq(vec4i_subtract(lhs,rhs));
 }
@@ -6676,7 +6936,7 @@ distance_sq(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_projection(vec4i lhs, vec4i rhs){DPZoneScoped;
 	f32 m = vec4i_mag(lhs);
 	if(m > M_EPSILON){
@@ -6698,7 +6958,7 @@ projection(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_component(vec4i lhs, vec4i rhs){DPZoneScoped;
 	return vec4i_mul_f32(vec4i_normalize(rhs), vec4i_projection(lhs,rhs));
 }
@@ -6710,7 +6970,7 @@ component(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_midpoint(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 	v.x = (lhs.x + rhs.x) / 2.0f;
@@ -6732,7 +6992,7 @@ midpoint(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 vec4i_radians_between(vec4i lhs, vec4i rhs){DPZoneScoped;
 	f32 m = vec4i_mag(lhs) * vec4i_mag(rhs);
 	if(m > M_EPSILON){
@@ -6754,7 +7014,7 @@ radians_between(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_min(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6800,7 +7060,7 @@ min(vec4i lhs, vec4i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_max(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6846,7 +7106,7 @@ max(vec4i lhs, vec4i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_clamp(vec4i value, vec4i min, vec4i max){DPZoneScoped;
 	vec4i v;
 	v.x = (value.x < min.x) ? min.x : ((value.x > max.x) ? max.x : value.x);
@@ -6880,7 +7140,7 @@ clamp(vec4i value, vec4i min, vec4i max){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_clamp_min(vec4i value, vec4i min){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6926,7 +7186,7 @@ clamp_min(vec4i value, vec4i min){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_clamp_max(vec4i value, vec4i max){DPZoneScoped;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
@@ -6972,7 +7232,7 @@ clamp_max(vec4i lhs, vec4i rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_clamp_mag(vec4i lhs, f32 min, f32 max){DPZoneScoped;
 	f32 m = vec4i_mag(lhs);
 	if(m < min){
@@ -6998,7 +7258,7 @@ clamp_mag(f32 min, f32 max)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_nudge(vec4i value, vec4i target, vec4i delta){DPZoneScoped;
 	vec4i v;
 	v.x = (value.x < target.x) ? ((value.x + delta.x < target.x) ? value.x + delta.x : target.x) : ((value.x - delta.x > target.x) ? value.x - delta.x : target.x);
@@ -7032,7 +7292,41 @@ nudge(vec4i value, vec4i target, vec4i delta){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
+vec3i_lerp(vec4i lhs, vec4i rhs, f32 t){DPZoneScoped;
+	vec4i v;
+	v.x = (s32)(((f32)lhs.x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
+	v.z = (s32)(((f32)lhs.z * (1.0f - t)) + ((f32)rhs.z * t));
+	v.w = (s32)(((f32)lhs.w * (1.0f - t)) + ((f32)rhs.w * t));
+	return v;
+}
+
+#ifdef __cplusplus
+inline vec4i vec4i::
+lerp(vec4i rhs, f32 t){DPZoneScoped;
+	vec4i v;
+	v.x = (s32)(((f32)this->x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)this->y * (1.0f - t)) + ((f32)rhs.y * t));
+	v.z = (s32)(((f32)this->z * (1.0f - t)) + ((f32)rhs.z * t));
+	v.w = (s32)(((f32)this->w * (1.0f - t)) + ((f32)rhs.w * t));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+#ifdef __cplusplus
+template<> inline vec4i
+lerp(vec4i lhs, vec4i rhs, f32 t){DPZoneScoped;
+	vec4i v;
+	v.x = (s32)(((f32)lhs.x * (1.0f - t)) + ((f32)rhs.x * t));
+	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
+	v.z = (s32)(((f32)lhs.z * (1.0f - t)) + ((f32)rhs.z * t));
+	v.w = (s32)(((f32)lhs.w * (1.0f - t)) + ((f32)rhs.w * t));
+	return v;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline vec4i
 vec4i_x_zero(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = 0;
@@ -7054,7 +7348,7 @@ x_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_y_zero(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7076,7 +7370,7 @@ y_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_z_zero(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7098,7 +7392,7 @@ z_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_w_zero(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7120,7 +7414,7 @@ w_zero()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_x_only(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7142,7 +7436,7 @@ x_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_y_only(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = 0;
@@ -7164,7 +7458,7 @@ y_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_z_only(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = 0;
@@ -7186,7 +7480,7 @@ z_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_w_only(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = 0;
@@ -7208,7 +7502,7 @@ w_only()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_x_negate(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x = -(lhs.x);
@@ -7230,7 +7524,7 @@ x_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_y_negate(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x =   lhs.x;
@@ -7252,7 +7546,7 @@ y_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_z_negate(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x =   lhs.x;
@@ -7274,7 +7568,7 @@ z_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_w_negate(vec4i lhs){DPZoneScoped;
 	vec4i v;
 	v.x =   lhs.x;
@@ -7296,7 +7590,7 @@ w_negate()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_x_set(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = a;
@@ -7318,7 +7612,7 @@ x_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_y_set(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7340,7 +7634,7 @@ y_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_z_set(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7362,7 +7656,7 @@ z_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_w_set(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7384,7 +7678,7 @@ w_set(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_x_add(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x + a;
@@ -7406,7 +7700,7 @@ x_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_y_add(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7428,7 +7722,7 @@ y_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_z_add(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7450,7 +7744,7 @@ z_add(f32 a)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4i
+DESHI_MATH_FUNC inline vec4i
 vec4i_w_add(vec4i lhs, f32 a){DPZoneScoped;
 	vec4i v;
 	v.x = lhs.x;
@@ -7479,55 +7773,55 @@ w_add(f32 a)const{DPZoneScoped;
 
 inline vec2i
 vec2_to_vec2i(vec2 a){DPZoneScoped;
-	return Vec2i(a.x, a.y);
+	return Vec2i((s32)a.x, (s32)a.y);
 }
 
 #ifdef __cplusplus
 inline vec2i
 vec2::to_vec2i()const{DPZoneScoped;
-	return Vec2i(this->x, this->y);
+	return Vec2i((s32)this->x, (s32)this->y);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3
 vec2_to_vec3(vec2 a){DPZoneScoped;
-	return Vec3(a.x, a.y, 0);
+	return Vec3(a.x, a.y, 0.0f);
 }
 
 #ifdef __cplusplus
 inline vec3
 vec2::to_vec3()const{DPZoneScoped;
-	return Vec3(this->x, this->y, 0);
+	return Vec3(this->x, this->y, 0.0f);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3i
 vec2_to_vec3i(vec2 a){DPZoneScoped;
-	return Vec3i(a.x, a.y, 0);
+	return Vec3i((s32)a.x, (s32)a.y, 0);
 }
 
 #ifdef __cplusplus
 inline vec3i
 vec2::to_vec3i()const{DPZoneScoped;
-	return Vec3i(this->x, this->y, 0);
+	return Vec3i((s32)this->x, (s32)this->y, 0);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4
 vec2_to_vec4(vec2 a){DPZoneScoped;
-	return Vec4(a.x, a.y, 0, 0);
+	return Vec4(a.x, a.y, 0.0f, 0.0f);
 }
 
 #ifdef __cplusplus
 inline vec4
 vec2::to_vec4()const{DPZoneScoped;
-	return Vec4(this->x, this->y, 0, 0);
+	return Vec4(this->x, this->y, 0.0f, 0.0f);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4i
 vec2_to_vec4i(vec2 a){DPZoneScoped;
-	return Vec4i(a.x, a.y, 0, 0);
+	return Vec4i((s32)a.x, (s32)a.y, 0, 0);
 }
 
 #ifdef __cplusplus
@@ -7539,25 +7833,25 @@ vec2::to_vec4i()const{DPZoneScoped;
 
 inline vec2
 vec2i_to_vec2(vec2i a){DPZoneScoped;
-	return Vec2(a.x, a.y);
+	return Vec2((f32)a.x, (f32)a.y);
 }
 
 #ifdef __cplusplus
 inline vec2
 vec2i::to_vec2()const{DPZoneScoped;
-	return Vec2(this->x, this->y);
+	return Vec2((f32)this->x, (f32)this->y);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3
 vec2i_to_vec3(vec2i a){DPZoneScoped;
-	return Vec3(a.x, a.y, 0);
+	return Vec3((f32)a.x, (f32)a.y, 0.0f);
 }
 
 #ifdef __cplusplus
 inline vec3
 vec2i::to_vec3()const{DPZoneScoped;
-	return Vec3(this->x, this->y, 0);
+	return Vec3((f32)this->x, (f32)this->y, 0.0f);
 }
 #endif //#ifdef __cplusplus
 
@@ -7575,13 +7869,13 @@ vec2i::to_vec3i()const{DPZoneScoped;
 
 inline vec4
 vec2i_to_vec4(vec2i a){DPZoneScoped;
-	return Vec4(a.x, a.y, 0, 0);
+	return Vec4((f32)a.x, (f32)a.y, 0.0f, 0.0f);
 }
 
 #ifdef __cplusplus
 inline vec4
 vec2i::to_vec4()const{DPZoneScoped;
-	return Vec4(this->x, this->y, 0, 0);
+	return Vec4((f32)this->x, (f32)this->y, 0.0f, 0.0f);
 }
 #endif //#ifdef __cplusplus
 
@@ -7611,61 +7905,61 @@ vec3::to_vec2()const{DPZoneScoped;
 
 inline vec2i
 vec3_to_vec2i(vec3 a){DPZoneScoped;
-	return Vec2i(a.x, a.y);
+	return Vec2i((s32)a.x, (s32)a.y);
 }
 
 #ifdef __cplusplus
 inline vec2i
 vec3::to_vec2i()const{DPZoneScoped;
-	return Vec2i(this->x, this->y);
+	return Vec2i((s32)this->x, (s32)this->y);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3i
 vec3_to_vec3i(vec3 a){DPZoneScoped;
-	return Vec3i(a.x, a.y, 0);
+	return Vec3i((s32)a.x, (s32)a.y, (s32)a.z);
 }
 
 #ifdef __cplusplus
 inline vec3i
 vec3::to_vec3i()const{DPZoneScoped;
-	return Vec3i(this->x, this->y, 0);
+	return Vec3i((s32)this->x, (s32)this->y, (s32)this->z);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4
 vec3_to_vec4(vec3 a){DPZoneScoped;
-	return Vec4(a.x, a.y, 0, 0);
+	return Vec4(a.x, a.y, a.z, 0.0f);
 }
 
 #ifdef __cplusplus
 inline vec4
 vec3::to_vec4()const{DPZoneScoped;
-	return Vec4(this->x, this->y, 0, 0);
+	return Vec4(this->x, this->y, this->z, 0.0f);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4i
 vec3_to_vec4i(vec3 a){DPZoneScoped;
-	return Vec4i(a.x, a.y, 0, 0);
+	return Vec4i((s32)a.x, (s32)a.y, (s32)a.z, 0);
 }
 
 #ifdef __cplusplus
 inline vec4i
 vec3::to_vec4i()const{DPZoneScoped;
-	return Vec4i(this->x, this->y, 0, 0);
+	return Vec4i((s32)this->x, (s32)this->y, 0, 0);
 }
 #endif //#ifdef __cplusplus
 
 inline vec2
 vec3i_to_vec2(vec3i a){DPZoneScoped;
-	return Vec2(a.x, a.y);
+	return Vec2((f32)a.x, (f32)a.y);
 }
 
 #ifdef __cplusplus
 inline vec2
 vec3i::to_vec2()const{DPZoneScoped;
-	return Vec2(this->x, this->y);
+	return Vec2((f32)this->x, (f32)this->y);
 }
 #endif //#ifdef __cplusplus
 
@@ -7683,37 +7977,37 @@ vec3i::to_vec2i()const{DPZoneScoped;
 
 inline vec3
 vec3i_to_vec3(vec3i a){DPZoneScoped;
-	return Vec3(a.x, a.y, 0);
+	return Vec3((f32)a.x, (f32)a.y, (f32)a.z);
 }
 
 #ifdef __cplusplus
 inline vec3
 vec3i::to_vec3()const{DPZoneScoped;
-	return Vec3(this->x, this->y, 0);
+	return Vec3((f32)this->x, (f32)this->y, (f32)this->z);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4
 vec3i_to_vec4(vec3i a){DPZoneScoped;
-	return Vec4(a.x, a.y, 0, 0);
+	return Vec4((f32)a.x, (f32)a.y, (f32)a.z, 0.0f);
 }
 
 #ifdef __cplusplus
 inline vec4
 vec3i::to_vec4()const{DPZoneScoped;
-	return Vec4(this->x, this->y, 0, 0);
+	return Vec4((f32)this->x, (f32)this->y, (f32)this->z, 0.0f);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4i
 vec3i_to_vec4i(vec3i a){DPZoneScoped;
-	return Vec4i(a.x, a.y, 0, 0);
+	return Vec4i(a.x, a.y, a.z, 0);
 }
 
 #ifdef __cplusplus
 inline vec4i
 vec3i::to_vec4i()const{DPZoneScoped;
-	return Vec4i(this->x, this->y, 0, 0);
+	return Vec4i(this->x, this->y, this->z, 0);
 }
 #endif //#ifdef __cplusplus
 
@@ -7731,61 +8025,61 @@ vec4::to_vec2()const{DPZoneScoped;
 
 inline vec2i
 vec4_to_vec2i(vec4 a){DPZoneScoped;
-	return Vec2i(a.x, a.y);
+	return Vec2i((s32)a.x, (s32)a.y);
 }
 
 #ifdef __cplusplus
 inline vec2i
 vec4::to_vec2i()const{DPZoneScoped;
-	return Vec2i(this->x, this->y);
+	return Vec2i((s32)this->x, (s32)this->y);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3
 vec4_to_vec3(vec4 a){DPZoneScoped;
-	return Vec3(a.x, a.y, 0);
+	return Vec3(a.x, a.y, a.z);
 }
 
 #ifdef __cplusplus
 inline vec3
 vec4::to_vec3()const{DPZoneScoped;
-	return Vec3(this->x, this->y, 0);
+	return Vec3(this->x, this->y, this->z);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3i
 vec4_to_vec3i(vec4 a){DPZoneScoped;
-	return Vec3i(a.x, a.y, 0);
+	return Vec3i((s32)a.x, (s32)a.y, (s32)a.z);
 }
 
 #ifdef __cplusplus
 inline vec3i
 vec4::to_vec3i()const{DPZoneScoped;
-	return Vec3i(this->x, this->y, 0);
+	return Vec3i((s32)this->x, (s32)this->y, (s32)this->z);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4i
 vec4_to_vec4i(vec4 a){DPZoneScoped;
-	return Vec4i(a.x, a.y, 0, 0);
+	return Vec4i((s32)a.x, (s32)a.y, (s32)a.z, (s32)a.w);
 }
 
 #ifdef __cplusplus
 inline vec4i
 vec4::to_vec4i()const{DPZoneScoped;
-	return Vec4i(this->x, this->y, 0, 0);
+	return Vec4i((s32)this->x, (s32)this->y, (s32)this->z, (s32)this->w);
 }
 #endif //#ifdef __cplusplus
 
 inline vec2
 vec4i_to_vec2(vec4i a){DPZoneScoped;
-	return Vec2(a.x, a.y);
+	return Vec2((f32)a.x, (f32)a.y);
 }
 
 #ifdef __cplusplus
 inline vec2
 vec4i::to_vec2()const{DPZoneScoped;
-	return Vec2(this->x, this->y);
+	return Vec2((f32)this->x, (f32)this->y);
 }
 #endif //#ifdef __cplusplus
 
@@ -7803,37 +8097,37 @@ vec4i::to_vec2i()const{DPZoneScoped;
 
 inline vec3
 vec4i_to_vec3(vec4i a){DPZoneScoped;
-	return Vec3(a.x, a.y, 0);
+	return Vec3((f32)a.x, (f32)a.y, (f32)a.z);
 }
 
 #ifdef __cplusplus
 inline vec3
 vec4i::to_vec3()const{DPZoneScoped;
-	return Vec3(this->x, this->y, 0);
+	return Vec3((f32)this->x, (f32)this->y, (f32)this->z);
 }
 #endif //#ifdef __cplusplus
 
 inline vec3i
 vec4i_to_vec3i(vec4i a){DPZoneScoped;
-	return Vec3i(a.x, a.y, 0);
+	return Vec3i(a.x, a.y, a.z);
 }
 
 #ifdef __cplusplus
 inline vec3i
 vec4i::to_vec3i()const{DPZoneScoped;
-	return Vec3i(this->x, this->y, 0);
+	return Vec3i(this->x, this->y, this->z);
 }
 #endif //#ifdef __cplusplus
 
 inline vec4
 vec4i_to_vec4(vec4i a){DPZoneScoped;
-	return Vec4(a.x, a.y, 0, 0);
+	return Vec4((f32)a.x, (f32)a.y, (f32)a.z, (f32)a.w);
 }
 
 #ifdef __cplusplus
 inline vec4
 vec4i::to_vec4()const{DPZoneScoped;
-	return Vec4(this->x, this->y, 0, 0);
+	return Vec4((f32)this->x, (f32)this->y, (f32)this->z, (f32)this->w);
 }
 #endif //#ifdef __cplusplus
 
@@ -7842,7 +8136,6 @@ vec4i::to_vec4()const{DPZoneScoped;
 // @vec_hashing
 #ifndef DESHI_MATH_DISABLE_HASHING
 #ifdef __cplusplus
-#include "kigu/hash.h"
 
 
 //TODO(sushi) always explain your hashing
@@ -7926,7 +8219,7 @@ struct hash<vec4i>{
 #ifndef DESHI_MATH_DISABLE_TOSTRING
 
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec2_to_dstr8(vec2 x, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%g, %g)", x.x, x.y);
@@ -7948,7 +8241,7 @@ to_dstr8(const vec2& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec2_to_dstr8p(vec2 x, int precision, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%.*f, %.*f)", precision, x.x, precision, x.y);
@@ -7970,7 +8263,7 @@ to_dstr8p(const vec2& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DP
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec2i_to_dstr8(vec2i x, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%i, %i)", x.x, x.y);
@@ -7992,7 +8285,7 @@ to_dstr8(const vec2i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec3_to_dstr8(vec3 x, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%g, %g, %g)", x.x, x.y, x.z);
@@ -8014,7 +8307,7 @@ to_dstr8(const vec3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec3_to_dstr8p(vec3 x, int precision, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z);
@@ -8036,7 +8329,7 @@ to_dstr8p(const vec3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DP
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec3i_to_dstr8(vec3i x, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%i, %i, %i)", x.x, x.y, x.z);
@@ -8058,7 +8351,7 @@ to_dstr8(const vec3i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec4_to_dstr8(vec4 x, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
@@ -8080,7 +8373,7 @@ to_dstr8(const vec4& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec4_to_dstr8p(vec4 x, int precision, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%.*f, %.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z, precision, x.w);
@@ -8102,7 +8395,7 @@ to_dstr8p(const vec4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DP
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C dstr8
+DESHI_MATH_FUNC dstr8
 vec4i_to_dstr8(vec4i x, Allocator* a){DPZoneScoped;
 	dstr8 s; s.allocator = a;
 	s.count = snprintf(0, 0, "(%i, %i, %i, %i)", x.x, x.y, x.z, x.w);
@@ -8130,7 +8423,7 @@ to_dstr8(const vec4i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
 // @mat3
 
 
-EXTERN_C typedef struct mat3{
+DESHI_MATH_FUNC typedef struct mat3{
 	union{
 		f32 arr[9];
 		struct{
@@ -8181,21 +8474,21 @@ EXTERN_C typedef struct mat3{
 #endif //#ifdef __cplusplus
 } mat3;
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 Mat3(f32 _00, f32 _10, f32 _20,
 	 f32 _01, f32 _11, f32 _21,
 	 f32 _02, f32 _12, f32 _22){
 	return mat3{_00, _10, _20, _01, _11, _21, _02, _12, _22};
 }
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 array_to_mat3(f32* arr){
 	return mat3{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7], arr[8]};
 }
 
-EXTERN_C inline mat3 mat3_ZERO()    { return mat3{0,0,0,0,0,0,0,0,0}; }
-EXTERN_C inline mat3 mat3_ONE()     { return mat3{1,1,1,1,1,1,1,1,1}; }
-EXTERN_C inline mat3 mat3_IDENTITY(){ return mat3{1,0,0,0,1,0,0,0,1}; }
+DESHI_MATH_FUNC inline mat3 mat3_ZERO()    { return mat3{0,0,0,0,0,0,0,0,0}; }
+DESHI_MATH_FUNC inline mat3 mat3_ONE()     { return mat3{1,1,1,1,1,1,1,1,1}; }
+DESHI_MATH_FUNC inline mat3 mat3_IDENTITY(){ return mat3{1,0,0,0,1,0,0,0,1}; }
 
 #define mat3_coord(m,row,col) m.arr[3*row + col]
 
@@ -8233,7 +8526,7 @@ operator[](u32 index)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_add_elements(mat3 lhs, mat3 rhs){DPZoneScoped;
 	mat3 result;
 	result.arr[0] = lhs.arr[0] + rhs.arr[0];
@@ -8280,7 +8573,7 @@ operator+=(const mat3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_sub_elements(mat3 lhs, mat3 rhs){DPZoneScoped;
 	mat3 result;
 	result.arr[0] = lhs.arr[0] - rhs.arr[0];
@@ -8327,7 +8620,7 @@ operator-=(const mat3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_mul_f32(mat3 lhs, f32 rhs){DPZoneScoped;
 	mat3 result;
 	result.arr[0] = lhs.arr[0] * rhs;
@@ -8381,7 +8674,7 @@ operator* (const f32& lhs, const mat3& rhs)const{
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_mul_mat3(mat3 lhs, mat3 rhs){DPZoneScoped;
 	mat3 result;
 	result.arr[0] = lhs.arr[0]*rhs.arr[0] + lhs.arr[1]*rhs.arr[3] + lhs.arr[2]*rhs.arr[6];
@@ -8430,7 +8723,7 @@ operator*=(const mat3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_mul_elements(mat3 lhs, mat3 rhs){DPZoneScoped;
 	mat3 result;
 	result.arr[0] = lhs.arr[0] * rhs.arr[0];
@@ -8477,7 +8770,7 @@ operator^=(const mat3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_div_f32(mat3 lhs, f32 rhs){DPZoneScoped;
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
 	mat3 result;
@@ -8527,7 +8820,7 @@ operator/=(const f32& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_div_elements(mat3 lhs, mat3 rhs){DPZoneScoped;
 	Assert(rhs.arr[0] != 0 && rhs.arr[1] != 0 && rhs.arr[2] != 0 &&
 		   rhs.arr[3] != 0 && rhs.arr[4] != 0 && rhs.arr[5] != 0 &&
@@ -8587,7 +8880,7 @@ operator%=(const mat3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 mat3_equal(mat3 lhs, mat3 rhs){DPZoneScoped;
 	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) > M_EPSILON
 		&& DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) > M_EPSILON
@@ -8615,7 +8908,7 @@ operator==(const mat3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 mat3_nequal(mat3 lhs, mat3 rhs){DPZoneScoped;
 	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) < M_EPSILON
 		|| DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) < M_EPSILON
@@ -8643,7 +8936,7 @@ operator!=(const mat3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 mat3_transpose(mat3 lhs){DPZoneScoped;
 	return Mat3(lhs.arr[0], lhs.arr[3], lhs.arr[6],
 				lhs.arr[1], lhs.arr[4], lhs.arr[7],
@@ -8659,7 +8952,7 @@ transpose()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 mat3_determinant(mat3 lhs){DPZoneScoped;
 	f32 aei = lhs.arr[0] * lhs.arr[4] * lhs.arr[8];
 	f32 bfg = lhs.arr[1] * lhs.arr[5] * lhs.arr[6];
@@ -8683,7 +8976,7 @@ determinant()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 mat3_minor(mat3 lhs, u32 row, u32 col){DPZoneScoped;
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	switch(row){
@@ -8741,7 +9034,7 @@ minor(u32 row, u32 col)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 mat3_cofactor(mat3 lhs, u32 row, u32 col){DPZoneScoped;
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	switch(row){
@@ -8799,7 +9092,7 @@ cofactor(u32 row, u32 col)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_adjoint(mat3 lhs){DPZoneScoped;
 	mat3 result;
 	result.arr[0] = (lhs.arr[4] * lhs.arr[5]) - (lhs.arr[7] * lhs.arr[8]);
@@ -8831,7 +9124,7 @@ adjoint()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_inverse(mat3 lhs){DPZoneScoped;
 	f32 d = mat3_determinant(lhs);
 	mat3 result;
@@ -8866,7 +9159,7 @@ inverse()const{DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 //returns a LH rotation matrix based on input in radians
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3(1, 0, 0,
@@ -8875,17 +9168,10 @@ mat3_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in degrees
-EXTERN_C inline mat3
-mat3_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
-	angle = Radians(angle);
-	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
-	return Mat3(1, 0, 0,
-				0, c, s,
-				0,-s, c);
-}
+#define mat3_rotation_matrix_x_degrees(angle) mat3_rotation_matrix_x_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
 //returns a LH rotation matrix based on input in radians
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3(c, 0,-s,
@@ -8894,17 +9180,10 @@ mat3_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in degrees
-EXTERN_C inline mat3
-mat3_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
-	angle = Radians(angle);
-	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
-	return Mat3(c, 0,-s,
-				0, 1, 0,
-				s, 0, c);
-}
+#define mat3_rotation_matrix_y_degrees(angle) mat3_rotation_matrix_y_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
 //returns a LH rotation matrix based on input in radians
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat3( c, s, 0,
@@ -8913,17 +9192,10 @@ mat3_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in degrees
-EXTERN_C inline mat3
-mat3_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
-	angle = Radians(angle);
-	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
-	return Mat3( c, s, 0,
-				-s, c, 0,
-				0,  0, 1);
-}
+#define mat3_rotation_matrix_z_degrees(angle) mat3_rotation_matrix_z_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
 	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
@@ -8942,26 +9214,9 @@ mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
-EXTERN_C inline mat3
-mat3_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
-	x = Radians(x); y = Radians(y); z = Radians(z);
-	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
-	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
-	f32 cZ = DESHI_COSF(z); f32 sZ = DESHI_SINF(z);
-	mat3 result;
-	result.arr[0] = cZ*cY;
-	result.arr[1] = cY*sZ;
-	result.arr[2] = -sY;
-	result.arr[3] = cZ*sX*sY - cX*sZ;
-	result.arr[4] = cZ*cX + sX*sY*sZ;
-	result.arr[5] = sX*cY;
-	result.arr[6] = cZ*cX*sY + sX*sZ;
-	result.arr[7] = cX*sY*sZ - cZ*sX;
-	result.arr[8] = cX*cY;
-	return result;
-}
+#define mat3_rotation_matrix_degrees(x,y,z) mat3_rotation_matrix_radians(DESHI_DEGREES_TO_RADIANS_F32(x), DESHI_DEGREES_TO_RADIANS_F32(y), DESHI_DEGREES_TO_RADIANS_F32(z))
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 	return Mat3(x, 0, 0,
 				0, y, 0,
@@ -8973,7 +9228,7 @@ mat3_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 // @mat4
 
 
-EXTERN_C typedef struct mat4{
+DESHI_MATH_FUNC typedef struct mat4{
 	union{
 		f32 arr[16];
 		struct{
@@ -9028,7 +9283,7 @@ EXTERN_C typedef struct mat4{
 #endif //#ifdef __cplusplus
 } mat4;
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 Mat4(f32 _00, f32 _10, f32 _20, f32 _30
 	 f32 _01, f32 _11, f32 _21, f32 _31
 	 f32 _02, f32 _12, f32 _22, f32 _32,
@@ -9036,14 +9291,14 @@ Mat4(f32 _00, f32 _10, f32 _20, f32 _30
 	return mat4{_00, _10, _20, _30, _01, _11, _21, _31, _02, _12, _22, _32, _03, _13, _23, _33};
 }
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 array_to_mat4(f32* arr){
 	return mat4{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7], arr[8], arr[9], arr[10], arr[11], arr[12], arr[13], arr[14], arr[15]};
 }
 
-EXTERN_C inline mat4 mat4_ZERO()    { return mat4{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; }
-EXTERN_C inline mat4 mat4_ONE()     { return mat4{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}; }
-EXTERN_C inline mat4 mat4_IDENTITY(){ return mat4{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}; }
+DESHI_MATH_FUNC inline mat4 mat4_ZERO()    { return mat4{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; }
+DESHI_MATH_FUNC inline mat4 mat4_ONE()     { return mat4{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}; }
+DESHI_MATH_FUNC inline mat4 mat4_IDENTITY(){ return mat4{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}; }
 
 #define mat4_coord(m,row,col) m.arr[4*row + col]
 
@@ -9081,7 +9336,7 @@ operator[](u32 index)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_add_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
@@ -9170,7 +9425,7 @@ operator+=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_sub_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
@@ -9259,7 +9514,7 @@ operator-=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_mul_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
@@ -9358,7 +9613,7 @@ operator* (const f32& lhs, const mat4& rhs)const{
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_mul_mat4(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
@@ -9449,7 +9704,7 @@ operator*=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_mul_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
@@ -9538,7 +9793,7 @@ operator^=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_div_f32(mat4 lhs, f32 rhs){DPZoneScoped;
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
 	mat4 result;
@@ -9633,7 +9888,7 @@ operator/=(const f32& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_div_elements(mat4 lhs, mat4 rhs){DPZoneScoped;
 	Assert(rhs.arr[ 0] != 0 && rhs.arr[ 1] != 0 && rhs.arr[ 2] != 0 && rhs.arr[ 3] != 0
 		   rhs.arr[ 4] != 0 && rhs.arr[ 5] != 0 && rhs.arr[ 6] != 0 && rhs.arr[ 7] != 0
@@ -9737,7 +9992,7 @@ operator%=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 mat4_equal(mat4 lhs, mat4 rhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
@@ -9793,7 +10048,7 @@ operator==(const mat4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 mat4_nequal(mat4 lhs, mat4 rhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(lhs.sse_row0, rhs.sse_row0)
@@ -9849,7 +10104,7 @@ operator!=(const mat4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline b32
+DESHI_MATH_FUNC inline b32
 mat4_transpose(mat4 lhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 	_MM_TRANSPOSE4_PS(lhs.sse_row0, lhs.sse_row1, lhs.sse_row2, lhs.sse_row3);
@@ -9878,7 +10133,7 @@ transpose()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 mat4_determinant(mat4 lhs){DPZoneScoped;
 	return
 		lhs.arr[ 0] * (lhs.arr[ 5] * (lhs.arr[10] * lhs.arr[15] - lhs.arr[11] * lhs.arr[14]) -
@@ -9920,7 +10175,7 @@ determinant()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 mat4_minor(mat4 lhs, u32 row, u32 col){DPZoneScoped;
 	//NOTE(delle) I wonder if all this is really better than a loop
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
@@ -10161,7 +10416,7 @@ minor(u32 row, u32 col)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline f32
+DESHI_MATH_FUNC inline f32
 mat4_cofactor(mat4 lhs, u32 row, u32 col){DPZoneScoped;
 	//NOTE(delle) Maybe it makes some sense here since it's dependent on the column/row pairing
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
@@ -10402,7 +10657,7 @@ cofactor(u32 row, u32 col)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_adjoint(mat4 lhs){DPZoneScoped;
 	//NOTE(delle) I guess in this case it really shows how expensive this operation is
 	mat4 result;
@@ -10609,7 +10864,7 @@ adjoint()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_inverse(mat4 lhs){DPZoneScoped;
 #if DESHI_MATH_USE_SSE
 #define mat2_mul_mat2(a,b) m128_add_4f32(m128_mul_4f32(a, m128_swizzle(b, 0,3,0,3)), m128_mul_4f32(m128_swizzle(a, 1,0,3,2), m128_swizzle(b, 2,1,2,1)))
@@ -10731,7 +10986,7 @@ inverse()const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 	mat4 result;
@@ -10791,7 +11046,7 @@ mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	return result;
 }
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 	//!ref: https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
 #if DESHI_MATH_USE_SSE
@@ -10827,7 +11082,7 @@ mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4(1, 0, 0, 0,
@@ -10837,18 +11092,10 @@ mat4_rotation_matrix_x_radians(f32 angle){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_rotation_matrix_x_degrees(f32 angle){DPZoneScoped;
-	angle = Radians(angle);
-	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
-	return Mat4(1, 0, 0, 0,
-				0, c, s, 0,
-				0,-s, c, 0,
-				0, 0, 0, 1);
-}
+#define mat4_rotation_matrix_x_degrees(angle) mat4_rotation_matrix_x_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
 //returns a LH rotation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4(c, 0,-s, 0,
@@ -10858,18 +11105,10 @@ mat4_rotation_matrix_y_radians(f32 angle){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_rotation_matrix_y_degrees(f32 angle){DPZoneScoped;
-	angle = Radians(angle);
-	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
-	return Mat4(c, 0,-s, 0,
-				0, 1, 0, 0,
-				s, 0, c, 0,
-				0, 0, 0, 1);
-}
+#define mat4_rotation_matrix_y_degrees(angle) mat4_rotation_matrix_y_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
 //returns a LH rotation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
 	return Mat4( c, s, 0, 0,
@@ -10879,18 +11118,10 @@ mat4_rotation_matrix_z_radians(f32 angle){DPZoneScoped;
 }
 
 //returns a LH rotation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_rotation_matrix_z_degrees(f32 angle){DPZoneScoped;
-	angle = Radians(angle);
-	f32 c = DESHI_COSF(angle); f32 s = DESHI_SINF(angle);
-	return Mat4( c, s, 0, 0,
-				-s, c, 0, 0,
-				0,  0, 1, 0,
-				0,  0, 0, 1);
-}
+#define mat4_rotation_matrix_z_degrees(angle) mat4_rotation_matrix_z_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
 	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
@@ -10916,33 +11147,9 @@ mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_rotation_matrix_degrees(f32 x, f32 y, f32 z){DPZoneScoped;
-	x = Radians(x); y = Radians(y); z = Radians(z);
-	f32 cX = DESHI_COSF(x); f32 sX = DESHI_SINF(x);
-	f32 cY = DESHI_COSF(y); f32 sY = DESHI_SINF(y);
-	f32 cZ = DESHI_COSF(z); f32 sZ = DESHI_SINF(z);
-	mat4 result;
-	result.arr[ 0] = cZ*cY;
-	result.arr[ 1] = cY*sZ;
-	result.arr[ 2] = -sY;
-	result.arr[ 3] = 0;
-	result.arr[ 4] = cZ*sX*sY - cX*sZ;
-	result.arr[ 5] = cZ*cX + sX*sY*sZ;
-	result.arr[ 6] = sX*cY;
-	result.arr[ 7] = 0;
-	result.arr[ 8] = cZ*cX*sY + sX*sZ;
-	result.arr[ 9] = cX*sY*sZ - cZ*sX;
-	result.arr[10] = cX*cY;
-	result.arr[11] = 0;
-	result.arr[12] = 0;
-	result.arr[13] = 0;
-	result.arr[14] = 0;
-	result.arr[15] = 1;
-	return result;
-}
+#define mat4_rotation_matrix_degrees(x,y,z) mat4_rotation_matrix_radians(DESHI_DEGREES_TO_RADIANS_F32(x), DESHI_DEGREES_TO_RADIANS_F32(y), DESHI_DEGREES_TO_RADIANS_F32(z))
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_translation_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 	return Mat4(1, 0, 0, 0,
 				0, 1, 0, 0,
@@ -10950,7 +11157,7 @@ mat4_translation_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 				x, y, z, 1);
 }
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 	return Mat4(x, 0, 0, 0,
 				0, y, 0, 0,
@@ -10959,7 +11166,7 @@ mat4_scale_matrix(f32 x, f32 y, f32 z){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){DPZoneScoped;
 	f32 cX = DESHI_COSF(rotation_x); f32 sX = DESHI_SINF(rotation_x);
 	f32 cY = DESHI_COSF(rotation_y); f32 sY = DESHI_SINF(rotation_y);
@@ -10985,40 +11192,14 @@ mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 tra
 }
 
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_transformation_matrix_degrees(f32 translation_x, f32 translation_y, f32 translation_z, f32 rotation_x, f32 rotation_y, f32 rotation_z, f32 scale_x, f32 scale_y, f32 scale_z){DPZoneScoped;
-	rotation_x = Radians(rotation_x);
-	rotation_y = Radians(rotation_y);
-	rotation_z = Radians(rotation_z);
-	f32 cX = DESHI_COSF(rotation_x); f32 sX = DESHI_SINF(rotation_x);
-	f32 cY = DESHI_COSF(rotation_y); f32 sY = DESHI_SINF(rotation_y);
-	f32 cZ = DESHI_COSF(rotation_z); f32 sZ = DESHI_SINF(rotation_z);
-	mat4 result;
-	result.arr[ 0] = scale_x * (cZ*cY);
-	result.arr[ 1] = scale_x * (cY*sZ);
-	result.arr[ 2] = scale_x * (-sY);
-	result.arr[ 3] = 0;
-	result.arr[ 4] = scale_y * (cZ*sX*sY - cX*sZ);
-	result.arr[ 5] = scale_y * (cZ*cX + sX*sY*sZ);
-	result.arr[ 6] = scale_y * (sX*cY);
-	result.arr[ 7] = 0;
-	result.arr[ 8] = scale_y * (cZ*cX*sY + sX*sZ);
-	result.arr[ 9] = scale_y * (cX*sY*sZ - cZ*sX);
-	result.arr[10] = scale_z * (cX*cY);
-	result.arr[11] = 0;
-	result.arr[12] = translation_x;
-	result.arr[13] = translation_y;
-	result.arr[14] = translation_z;
-	result.arr[15] = 1;
-	return result;
-}
+#define mat4_transformation_matrix_degrees(tx,ty,tz,rx,ry,rz,sx,sy,sz) mat4_transformation_matrix_radians((tx), (ty), (tz), DESHI_DEGREES_TO_RADIANS_F32(rx), DESHI_DEGREES_TO_RADIANS_F32(ry), DESHI_DEGREES_TO_RADIANS_F32(rz), (sx), (sy), (sz))
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @mat_conversions
 
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 mat3_to_mat4(mat3 lhs){DPZoneScoped;
 	return Mat4(lhs.arr[0], lhs.arr[1], lhs.arr[2], 0,
 				lhs.arr[3], lhs.arr[4], lhs.arr[5], 0,
@@ -11026,7 +11207,7 @@ mat3_to_mat4(mat3 lhs){DPZoneScoped;
 				0,          0,          0,          1);
 }
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat4_to_mat3(mat4 lhs){DPZoneScoped;
 	return Mat4(lhs.arr[0], lhs.arr[1], lhs.arr[ 2]
 				lhs.arr[4], lhs.arr[5], lhs.arr[ 6]
@@ -11035,10 +11216,208 @@ mat4_to_mat3(mat4 lhs){DPZoneScoped;
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
+// @mat_hashing
+#ifndef DESHI_MATH_DISABLE_HASHING
+#ifdef __cplusplus
+
+
+template<> 
+struct hash<mat3>{
+	inline size_t operator()(mat3 const& m)const{DPZoneScoped;
+		size_t seed = 0;
+		hash<float> hasher;
+		size_t hash;
+		for(u32 i = 0; i < 9; ++i){
+			hash = hasher(m.arr[i]);
+			hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= hash;
+		}
+		return seed;
+	}
+};
+
+template<> 
+struct hash<mat4>{
+	inline size_t operator()(mat4 const& m)const{DPZoneScoped;
+		size_t seed = 0;
+		hash<float> hasher;
+		size_t hash;
+		for(u32 i = 0; i < 16; ++i){
+			hash = hasher(m.arr[i]);
+			hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= hash;
+		}
+		return seed;
+	}
+};
+
+
+#endif //#ifdef __cplusplus
+#endif //#ifndef DESHI_MATH_DISABLE_HASHING
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @mat_tostring
+#ifndef DESHI_MATH_DISABLE_TOSTRING
+
+
+DESHI_MATH_FUNC inline dstr8
+mat3_to_dstr8(mat3 x, Allocator* a){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%g, %g, %g|\n|%g, %g, %g|\n|%g, %g, %g|",
+					   x.arr[0], x.arr[1], x.arr[2],
+					   x.arr[3], x.arr[4], x.arr[5],
+					   x.arr[6], x.arr[7], x.arr[8]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%g, %g, %g|\n|%g, %g, %g|\n|%g, %g, %g|",
+			 x.arr[0], x.arr[1], x.arr[2],
+			 x.arr[3], x.arr[4], x.arr[5],
+			 x.arr[6], x.arr[7], x.arr[8]);
+	return s;
+}
+
+#ifdef __cplusplus
+inline dstr8
+to_dstr8(const mat3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%g, %g, %g|\n|%g, %g, %g|\n|%g, %g, %g|",
+					   x.arr[0], x.arr[1], x.arr[2],
+					   x.arr[3], x.arr[4], x.arr[5],
+					   x.arr[6], x.arr[7], x.arr[8]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%g, %g, %g|\n|%g, %g, %g|\n|%g, %g, %g|",
+			 x.arr[0], x.arr[1], x.arr[2],
+			 x.arr[3], x.arr[4], x.arr[5],
+			 x.arr[6], x.arr[7], x.arr[8]);
+	return s;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline dstr8
+mat3_to_dstr8p(mat3 x, int precision, Allocator* a){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|",
+					   precision, x.arr[0], precision, x.arr[1], precision, x.arr[2],
+					   precision, x.arr[3], precision, x.arr[4], precision, x.arr[5],
+					   precision, x.arr[6], precision, x.arr[7], precision, x.arr[8]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|",
+			 precision, x.arr[0], precision, x.arr[1], precision, x.arr[2],
+			 precision, x.arr[3], precision, x.arr[4], precision, x.arr[5],
+			 precision, x.arr[6], precision, x.arr[7], precision, x.arr[8]);
+	return s;
+}
+
+#ifdef __cplusplus
+inline dstr8
+to_dstr8p(const mat3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|",
+					   precision, x.arr[0], precision, x.arr[1], precision, x.arr[2],
+					   precision, x.arr[3], precision, x.arr[4], precision, x.arr[5],
+					   precision, x.arr[6], precision, x.arr[7], precision, x.arr[8]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f|",
+			 precision, x.arr[0], precision, x.arr[1], precision, x.arr[2],
+			 precision, x.arr[3], precision, x.arr[4], precision, x.arr[5],
+			 precision, x.arr[6], precision, x.arr[7], precision, x.arr[8]);
+	return s;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC inline dstr8
+mat4_to_dstr8(mat4 x, Allocator* a){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|",
+					   x.arr[ 0], x.arr[ 1], x.arr[ 2], x.arr[ 3],
+					   x.arr[ 4], x.arr[ 5], x.arr[ 6], x.arr[ 7],
+					   x.arr[ 8], x.arr[ 9], x.arr[10], x.arr[11],
+					   x.arr[12], x.arr[13], x.arr[14], x.arr[15]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|",
+			 x.arr[ 0], x.arr[ 1], x.arr[ 2], x.arr[ 3],
+			 x.arr[ 4], x.arr[ 5], x.arr[ 6], x.arr[ 7],
+			 x.arr[ 8], x.arr[ 9], x.arr[10], x.arr[11],
+			 x.arr[12], x.arr[13], x.arr[14], x.arr[15]);
+	return s;
+}
+
+#ifdef __cplusplus
+inline dstr8
+to_dstr8(const mat3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|",
+					   x.arr[ 0], x.arr[ 1], x.arr[ 2], x.arr[ 3],
+					   x.arr[ 4], x.arr[ 5], x.arr[ 6], x.arr[ 7],
+					   x.arr[ 8], x.arr[ 9], x.arr[10], x.arr[11],
+					   x.arr[12], x.arr[13], x.arr[14], x.arr[15]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|\n|%g, %g, %g, %g|",
+			 x.arr[ 0], x.arr[ 1], x.arr[ 2], x.arr[ 3],
+			 x.arr[ 4], x.arr[ 5], x.arr[ 6], x.arr[ 7],
+			 x.arr[ 8], x.arr[ 9], x.arr[10], x.arr[11],
+			 x.arr[12], x.arr[13], x.arr[14], x.arr[15]);
+	return s;
+}
+#endif //#ifdef __cplusplus
+
+DESHI_MATH_FUNC dstr8
+mat3_to_dstr8p(mat4 x, int precision, Allocator* a){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|",
+					   precision, x.arr[ 0], precision, x.arr[ 1], precision, x.arr[ 2], precision, x.arr[ 3],
+					   precision, x.arr[ 4], precision, x.arr[ 5], precision, x.arr[ 6], precision, x.arr[ 7],
+					   precision, x.arr[ 8], precision, x.arr[ 9], precision, x.arr[10], precision, x.arr[11],
+					   precision, x.arr[12], precision, x.arr[13], precision, x.arr[14], precision, x.arr[15]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|",
+			 precision, x.arr[ 0], precision, x.arr[ 1], precision, x.arr[ 2], precision, x.arr[ 3],
+			 precision, x.arr[ 4], precision, x.arr[ 5], precision, x.arr[ 6], precision, x.arr[ 7],
+			 precision, x.arr[ 8], precision, x.arr[ 9], precision, x.arr[10], precision, x.arr[11],
+			 precision, x.arr[12], precision, x.arr[13], precision, x.arr[14], precision, x.arr[15]);
+	return s;
+}
+
+#ifdef __cplusplus
+global dstr8
+to_dstr8p(const mat4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DPZoneScoped;
+	dstr8 s;
+	s.allocator = a;
+	s.count = snprintf(0, 0, "|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|",
+					   precision, x.arr[ 0], precision, x.arr[ 1], precision, x.arr[ 2], precision, x.arr[ 3],
+					   precision, x.arr[ 4], precision, x.arr[ 5], precision, x.arr[ 6], precision, x.arr[ 7],
+					   precision, x.arr[ 8], precision, x.arr[ 9], precision, x.arr[10], precision, x.arr[11],
+					   precision, x.arr[12], precision, x.arr[13], precision, x.arr[14], precision, x.arr[15]);
+	s.str = (u8*)a->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.space = s.count+1;
+	snprintf((char*)s.str, s.count+1, "|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|\n|%.*f, %.*f, %.*f, %.*f|",
+			 precision, x.arr[ 0], precision, x.arr[ 1], precision, x.arr[ 2], precision, x.arr[ 3],
+			 precision, x.arr[ 4], precision, x.arr[ 5], precision, x.arr[ 6], precision, x.arr[ 7],
+			 precision, x.arr[ 8], precision, x.arr[ 9], precision, x.arr[10], precision, x.arr[11],
+			 precision, x.arr[12], precision, x.arr[13], precision, x.arr[14], precision, x.arr[15]);
+	return s;
+}
+#endif //#ifdef __cplusplus
+
+
+#endif //#ifndef DESHI_MATH_DISABLE_TOSTRING
+//~////////////////////////////////////////////////////////////////////////////////////////////////
 // @mat_vec_interactions
 
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 vec3_rows_to_mat3(vec3 row0, vec3 row1, vec3 row2){DPZoneScoped;
 	mat3 result;
 	result.row0 = row0;
@@ -11047,7 +11426,7 @@ vec3_rows_to_mat3(vec3 row0, vec3 row1, vec3 row2){DPZoneScoped;
 	return result;
 }
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC inline mat4
 vec4_rows_to_mat4(vec4 row0, vec4 row1, vec4 row2, vec4 row3){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
@@ -11064,7 +11443,7 @@ vec4_rows_to_mat4(vec4 row0, vec4 row1, vec4 row2, vec4 row3){DPZoneScoped;
 	return result;
 }
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_mul_mat3(vec3 lhs, mat3 rhs){DPZoneScoped;
 	vec3 result;
 	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[3]) + (lhs.z * rhs.arr[6]);
@@ -11095,7 +11474,7 @@ operator*=(const mat3& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 vec3_mul_mat4(vec3 lhs, mat4 rhs){DPZoneScoped;
 	vec3 result;
 #if DESHI_MATH_USE_SSE
@@ -11156,7 +11535,7 @@ operator*=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 vec4_mul_mat4(vec4 lhs, mat4 rhs){DPZoneScoped;
 	vec4 result;
 #if DESHI_MATH_USE_SSE
@@ -11202,7 +11581,7 @@ operator*=(const mat4& rhs){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 mat3_row(mat3 lhs, u32 row){DPZoneScoped;
 	Assert(row < 3, "mat3 subscript out of bounds");
 	return Vec3(lhs.arr[3*row], lhs.arr[3*row+1], lhs.arr[3*row+2]);
@@ -11216,7 +11595,7 @@ row(u32 row){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec3
+DESHI_MATH_FUNC inline vec3
 mat3_col(mat3 lhs, u32 col){DPZoneScoped;
 	Assert(col < 3, "mat3 subscript out of bounds");
 	return Vec3(lhs.arr[col], lhs.arr[3+col], lhs.arr[6+col]);
@@ -11230,7 +11609,7 @@ col(u32 col){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 mat4_row(mat4 lhs, u32 row){DPZoneScoped;
 	Assert(row < 4, "mat4 subscript out of bounds");
 	return Vec3(lhs.arr[4*row], lhs.arr[4*row+1], lhs.arr[4*row+2], lhs.arr[4*row+3]);
@@ -11244,7 +11623,7 @@ row(u32 row){DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-EXTERN_C inline vec4
+DESHI_MATH_FUNC inline vec4
 mat4_col(mat4 lhs, u32 col){DPZoneScoped;
 	Assert(col < 4, "mat4 subscript out of bounds");
 	return Vec4(lhs.arr[col], lhs.arr[4+col], lhs.arr[8+col], lhs.arr[12+col]);
@@ -11259,7 +11638,7 @@ col(u32 col){DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
-EXTERN_C inline mat3
+DESHI_MATH_FUNC mat3
 mat3_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -11278,28 +11657,9 @@ mat3_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_rotation_matrix_degrees_vec3(vec3 rotation){DPZoneScoped;
-	rotation.x = Radians(rotation.x);
-	rotation.y = Radians(rotation.y);
-	rotation.z = Radians(rotation.z);
-	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
-	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
-	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
-	mat3 result;
-	result.arr[0] = cZ*cY;
-	result.arr[1] = cY*sZ;
-	result.arr[2] = -sY;
-	result.arr[3] = cZ*sX*sY - cX*sZ;
-	result.arr[4] = cZ*cX + sX*sY*sZ;
-	result.arr[5] = sX*cY;
-	result.arr[6] = cZ*cX*sY + sX*sZ;
-	result.arr[7] = cX*sY*sZ - cZ*sX;
-	result.arr[8] = cX*cY;
-	return result;
-}
+#define mat3_rotation_matrix_degrees_vec3(rotation) mat3_rotation_matrix_radians_vec3(Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
 
-EXTERN_C inline mat3
+DESHI_MATH_FUNC inline mat3
 mat3_scale_matrix_vec3(vec3 scale){DPZoneScoped;
 	return Mat3(scale.x, 0, 0
 				0, scale.y, 0,
@@ -11307,7 +11667,7 @@ mat3_scale_matrix_vec3(vec3 scale){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC mat4
 mat4_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -11333,35 +11693,9 @@ mat4_rotation_matrix_radians_vec3(vec3 rotation){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_rotation_matrix_degrees_vec3(vec3 rotation){DPZoneScoped;
-	rotation.x = Radians(rotation.x);
-	rotation.y = Radians(rotation.y);
-	rotation.z = Radians(rotation.z);
-	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
-	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
-	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
-	mat4 result;
-	result.arr[ 0] = cZ*cY;
-	result.arr[ 1] = cY*sZ;
-	result.arr[ 2] = -sY;
-	result.arr[ 3] = 0;
-	result.arr[ 4] = cZ*sX*sY - cX*sZ;
-	result.arr[ 5] = cZ*cX + sX*sY*sZ;
-	result.arr[ 6] = sX*cY;
-	result.arr[ 7] = 0;
-	result.arr[ 8] = cZ*cX*sY + sX*sZ;
-	result.arr[ 9] = cX*sY*sZ - cZ*sX;
-	result.arr[10] = cX*cY;
-	result.arr[11] = 0;
-	result.arr[12] = 0;
-	result.arr[13] = 0;
-	result.arr[14] = 0;
-	result.arr[15] = 1;
-	return result;
-}
+#define mat4_rotation_matrix_degrees_vec3(rotation) mat4_rotation_matrix_radians_vec3(Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC mat4
 mat4_translation_matrix_vec3(vec3 translation){DPZoneScoped;
 	return Mat4(1, 0, 0, 0,
 				0, 1, 0, 0,
@@ -11369,7 +11703,7 @@ mat4_translation_matrix_vec3(vec3 translation){DPZoneScoped;
 				translation.x, translation.y, translation.z, 1);
 }
 
-EXTERN_C inline mat4
+DESHI_MATH_FUNC mat4
 mat4_scale_matrix_vec3(vec3 scale){DPZoneScoped;
 	return Mat4(scale.x, 0, 0, 0,
 				0, scale.y, 0, 0,
@@ -11378,7 +11712,7 @@ mat4_scale_matrix_vec3(vec3 scale){DPZoneScoped;
 }
 
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in radians
-EXTERN_C inline mat4
+DESHI_MATH_FUNC mat4
 mat4_transformation_matrix_radians_vec3(vec3 translation, vec3 rotation, vec3 scale){DPZoneScoped;
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -11404,506 +11738,455 @@ mat4_transformation_matrix_radians_vec3(vec3 translation, vec3 rotation, vec3 sc
 }
 
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in degrees
-EXTERN_C inline mat4
-mat4_transformation_matrix_degrees_vec3(vec3 translation, vec3 rotation, vec3 scale){DPZoneScoped;
-	rotation.x = Radians(rotation.x);
-	rotation.y = Radians(rotation.y);
-	rotation.z = Radians(rotation.z);
-	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
-	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
-	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
-	mat4 result;
-	result.arr[ 0] = scale.x * (cZ*cY);
-	result.arr[ 1] = scale.x * (cY*sZ);
-	result.arr[ 2] = scale.x * (-sY);
-	result.arr[ 3] = 0;
-	result.arr[ 4] = scale.y * (cZ*sX*sY - cX*sZ);
-	result.arr[ 5] = scale.y * (cZ*cX + sX*sY*sZ);
-	result.arr[ 6] = scale.y * (sX*cY);
-	result.arr[ 7] = 0;
-	result.arr[ 8] = scale.y * (cZ*cX*sY + sX*sZ);
-	result.arr[ 9] = scale.y * (cX*sY*sZ - cZ*sX);
-	result.arr[10] = scale.z * (cX*cY);
-	result.arr[11] = 0;
-	result.arr[12] = translation.x;
-	result.arr[13] = translation.y;
-	result.arr[14] = translation.z;
-	result.arr[15] = 1;
+#define mat4_transformation_matrix_degrees_vec3(translation,rotation,scale) mat4_rotation_matrix_radians_vec3(translation, Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)), scale)
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @geometry
+
+
+DESHI_MATH_FUNC inline b32
+point_is_in_rectangle(vec2 point, vec2 rect_pos, vec2 rect_size){DPZoneScoped;
+	return point.x >= rect_pos.x
+		&& point.y >= rect_pos.y
+		&& point.x <= rect_pos.x + rect_size.x
+		&& point.y <= rect_pos.y + rect_size.y;
+}
+
+DESHI_MATH_FUNC inline b32
+point_is_in_triangle(vec2 point, vec2 p0, vec2 p1, vec2 p2){DPZoneScoped;
+	vec2 p01 = p1 - p0;
+	vec2 p12 = p2 - p1;
+	b32 b0 = vec2_dot(vec2_sub(point, p0), Vec2(-p01.y, p01.x)) < 0.0f;
+	b32 b1 = vec2_dot(vec2_sub(point, p1), Vec2(-p12.y, p12.x)) < 0.0f;
+	if(b0 != b1){
+		return false;
+	}
+	
+	vec2 p20 = p0 - p2;
+	b32 b2 = vec2_dot(vec2_sub(point, p2), Vec2(-p20.y, p20.x)) < 0.0f;
+	if(b1 != b2){
+		return false;
+	}
+	
+	return true;
+}
+
+DESHI_MATH_FUNC inline vec2
+vec2_line_line_intersect(vec2 line0_start, vec2 line0_end, vec2 line1_start, vec2 line1_end){
+	f32 m0 = vec2_slope(line0_start, line0_end);
+	f32 m1 = vec2_slope(line1_start, line1_end);
+	f32 b0 = line0_end.y - (m0 * line0_end.x);
+	f32 b1 = line1_end.y - (m1 * line1_end.x);
+	f32 x = (b1 - b0) / (m0 - m1);
+	f32 y = (m0 * x) + b0;
+	return Vec2(x, y);
+}
+
+DESHI_MATH_FUNC inline f32
+vec3_distance_between_point_and_plane(vec3 point, vec3 plane_point, vec3 plane_normal){
+	return vec3_dot(vec3_sub(point, plane_point), plane_normal);
+}
+
+//Returns where a line's vector intersects with a plane
+DESHI_MATH_FUNC inline vec3
+line_plane_intersect(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plane_normal){
+	vec3 line_direction = vec3_normalize(vec3_sub(line_end, line_start));
+	vec3 line_start_to_plane_point = vec3_sub(plane_point, line_start);
+	f32 distance_along_line = vec3_dot(line_start_to_plane_point, plane_normal) / vec3_dot(line_direction, plane_normal);
+	return vec3_add(line_start, vec3_mul_f32(line_direction, distance_along_line));
+}
+
+//Returns where a line's vector intersects with a plane and outputs the distance along (or beyond) that line the intersection occurred
+DESHI_MATH_FUNC inline vec3
+line_plane_intersect_output_distance(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plane_normal, f32* out_distance){
+	vec3 line_direction = vec3_normalize(vec3_sub(line_end, line_start));
+	vec3 line_start_to_plane_point = vec3_sub(plane_point, line_start);
+	f32 distance_along_line = vec3_dot(line_start_to_plane_point, plane_normal) / vec3_dot(line_direction, plane_normal);
+	*out_distance = distance_along_line;
+	return vec3_add(line_start, vec3_mul_f32(line_direction, distance_along_line));
+}
+
+DESHI_MATH_FUNC inline f32
+vec3_triangle_area(vec3 p0, vec3 p1, vec3 p3){
+	return vec3_mag(vec3_cross(vec3_sub(p1, p0), vec3_sub(p2, p0))) / 2.0f;
+}
+
+//Returns a triangle's normal based on the order the points are provided
+DESHI_MATH_FUNC inline vec3
+vec3_triangle_normal(vec3 p0, vec3 p1, vec3 p2){
+	return vec2_normalize(vec3_cross(vec3_sub(p2, p0), vec3_sub(p1, p0)));
+}
+
+DESHI_MATH_FUNC inline vec3
+vec3_triangle_midpoint(vec3 p0, vec3 p1, vec3 p2){
+	vec3 result;
+	result.x = (p0.x + p1.x + p2.x) / 3.0f;
+	result.x = (p0.y + p1.y + p2.y) / 3.0f;
+	result.x = (p0.z + p1.z + p2.z) / 3.0f;
 	return result;
+}
+
+DESHI_MATH_FUNC inline vec3
+map_spherical_to_rectangular_radians(vec3 point){
+	vec3 result;
+	f32 cY = DESHI_COSF(point.y); f32 sY = DESHI_SINF(point.y);
+	f32 cZ = DESHI_COSF(point.z); f32 sZ = DESHI_SINF(point.z);
+	result.x = point.x * cY * sZ;
+	result.y = point.x      * cZ;
+	result.z = point.x * sY * sZ;
+	return result;
+}
+
+DESHI_MATH_FUNC inline vec3
+map_spherical_to_rectangular_degrees(vec3 point){
+	vec3 result;
+	f32 rY = DESHI_DEGREES_TO_RADIANS_F32(point.y);
+	f32 rZ = DESHI_DEGREES_TO_RADIANS_F32(point.z);
+	f32 cY = DESHI_COSF(rY); f32 sY = DESHI_SINF(rY);
+	f32 cZ = DESHI_COSF(rZ); f32 sZ = DESHI_SINF(rZ);
+	result.x = point.x * cY * sZ;
+	result.y = point.x      * cZ;
+	result.z = point.x * sY * sZ;
+	return result;
+}
+
+DESHI_MATH_FUNC inline vec3
+map_rectangular_to_spherical_radians(vec3 point){
+	f32 m = vec3_mag(point);
+	f32 rho = DESHI_SQRTF(m);
+	f32 theta = DESHI_ATANF(point.y / point.z);
+	f32 phi = DESHI_ACOSF(point.z / m); //!TESTME maybe use v.y instead of v.z because y is our vertical axis
+	return Vec3(rho, theta, phi);
+}
+
+DESHI_MATH_FUNC inline vec3
+map_rectangular_to_spherical_degrees(vec3 point){
+	f32 m = vec3_mag(point);
+	f32 rho = DESHI_DEGREES_TO_RADIANS_F32(DESHI_SQRTF(m));
+	f32 theta = DESHI_DEGREES_TO_RADIANS_F32(DESHI_ATANF(point.y / point.z));
+	f32 phi = DESHI_ACOSF(point.z / m);
+	return Vec3(rho, theta, phi);
 }
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
+// @camera
+
+
+//Returns a perspective projection matrix for a window with `width` and `height` using `horizontal_fov` in degrees
+//  the clipping planes `near_clip` and `far_clip` are used to determine the overall render distance
+//  the depth range is from 0.0 to 1.0
+DESHI_MATH_FUNC inline mat4
+mat4_perspective_projection_matrix(f32 width, f32 height, f32 horizontal_fov, f32 near_clip, f32 far_clip){
+	float render_distance = far_z - near_z;
+	float fov = 1.0f / DESHI_TANF(DESHI_DEGREES_TO_RADIANS_F32(horizontal_fov / 2.0f));
+	mat4 result;
+	
+	result.arr[ 0] = (height / width) * fov;
+	result.arr[ 1] = 0.0f;
+	result.arr[ 2] = 0.0f;
+	result.arr[ 3] = 0.0f;
+	
+	result.arr[ 4] = 0.0f;
+	result.arr[ 5] = fov;
+	result.arr[ 6] = 0.0f;
+	result.arr[ 7] = 0.0f;
+	
+	result.arr[ 8] = 0.0f;
+	result.arr[ 9] = 0.0f;
+	result.arr[10] = far_z / render_distance;
+	result.arr[11] = 1.0f;
+	
+	result.arr[12] = 0.0f;
+	result.arr[13] = 0.0f;
+	result.arr[14] = -(far_z * near_z) / render_distance;
+	result.arr[15] = 0.0f;
+	
+	return result;
+}
+
+//Returns an orthographic projection matrix
+//  `top`, `bottom`, `left`, and `right` are the scene bounds in screen space with the 2D origin assumed to be the top-left
+//  `near` and `far` are the clipping planes used to determine the overall render distance
+DESHI_MATH_FUNC inline mat4
+mat4_orthographic_projection_matrix(f32 top, f32 bottom, f32 left, f32 right, f32 near, f32 far){
+	mat4 result;
+	
+	result.arr[ 0] = 2.0f / (right - left);
+	result.arr[ 1] = 0.0f;
+	result.arr[ 2] = 0.0f;
+	result.arr[ 3] = 0.0f;
+	
+	result.arr[ 4] = 0.0f;
+	result.arr[ 5] = 2.0f / (bottom - top);
+	result.arr[ 6] = 0.0f;
+	result.arr[ 7] = 0.0f;
+	
+	result.arr[ 8] = 0.0f;
+	result.arr[ 9] = 0.0f;
+	result.arr[10] = 2.0f / (far - near);
+	result.arr[11] = 0.0f;
+	
+	result.arr[12] = -(right + left) / (right - left);
+	result.arr[13] = -(top + bottom) / (bottom - top);
+	result.arr[14] = -(far + near) / (far - near);
+	result.arr[15] = 1.0f;
+	
+	return result;
+}
+
+//Returns a look-at matrix which tells a vector how to look at a specific point
+DESHI_MATH_FUNC inline mat4
+mat4_lookat_matrix(vec3 position, vec3 target){
+	Assert(position != target);
+	vec3 forward = vec3_normalize(vec3_sub(target, position));
+	vec3 right = (vec3_nequal(forward, vec3_UP()) && vec3_nequal(forward, vec3_DOWN())) ? vec3_normalize(vec3_cross(vec3_UP(), forward)) : vec3_RIGHT();
+	vec3 up = vec3_cross(forward, right);
+	return Mat4(right.x,    right.y,    right.z,    0,
+				up.x,       up.y,       up.z,       0,
+				forward.x,  forward.y,  forward.z,  0,
+				position.x, position.y, position.z, 1);
+}
+
+//Returns a look-at matrix which tells a vector how to look at a specific point
+//  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
+DESHI_MATH_FUNC inline mat4
+mat4_lookat_matrix_unsafe(vec3 position, vec3 target){
+	Assert(pos != target);
+	vec3 forward = vec3_normalize(vec3_sub(target, position));
+	vec3 right = vec3_normalize(vec3_cross(vec3_UP(), forward));
+	vec3 up = vec3_cross(forward, right);
+	return Mat4(right.x,    right.y,    right.z,    0,
+				up.x,       up.y,       up.z,       0,
+				forward.x,  forward.y,  forward.z,  0,
+				position.x, position.y, position.z, 1);
+}
+
+//Returns a look-at matrix based on the `position` and `rotation`
+DESHI_MATH_FUNC inline mat4
+mat4_lookat_matrix_from_rotation_radians(vec3 position, vec3 rotation){
+	Assert(pos != target);
+	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
+	vec3 forward = vec3_normalize(Vec3(cZ*cX*sY + sX*sZ, cX*sY*sZ - cZ*sX, cX*cY));
+	vec3 right = (vec3_nequal(forward, vec3_UP()) && vec3_nequal(forward, vec3_DOWN())) ? vec3_normalize(vec3_cross(vec3_UP(), forward)) : vec3_RIGHT();
+	vec3 up = vec3_cross(forward, right);
+	return Mat4(right.x,    right.y,    right.z,    0,
+				up.x,       up.y,       up.z,       0,
+				forward.x,  forward.y,  forward.z,  0,
+				position.x, position.y, position.z, 1);
+}
+
+#define mat4_lookat_matrix_from_rotation_degrees(translation,rotation) mat4_lookat_matrix_from_rotation_radians((translation), Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
+
+//Returns a look-at matrix based on the `position` and `rotation`
+//  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
+DESHI_MATH_FUNC inline mat4
+mat4_lookat_matrix_unsafe_from_rotation_radians(vec3 position, vec3 rotation){
+	Assert(pos != target);
+	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
+	vec3 forward = vec3_normalize(Vec3(cZ*cX*sY + sX*sZ, cX*sY*sZ - cZ*sX, cX*cY));
+	vec3 right = vec3_normalize(vec3_cross(vec3_UP(), forward));
+	vec3 up = vec3_cross(forward, right);
+	return Mat4(right.x,    right.y,    right.z,    0,
+				up.x,       up.y,       up.z,       0,
+				forward.x,  forward.y,  forward.z,  0,
+				position.x, position.y, position.z, 1);
+}
+
+#define mat4_lookat_matrix_unsafe_from_rotation_degrees(translation,rotation) mat4_lookat_matrix_unsafe_from_rotation_radians((translation), Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
+
+//Returns a look-at matrix based on the `position` and `rotation` and outputs the `out_forward`, `out_right`, and `out_up` vectors
+DESHI_MATH_FUNC inline mat4
+mat4_lookat_matrix_from_rotation_radians_output_directions(vec3 position, vec3 rotation, vec3* out_forward, vec3* out_right, vec3* out_up){
+	Assert(pos != target);
+	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
+	vec3 forward = vec3_normalize(Vec3(cZ*cX*sY + sX*sZ, cX*sY*sZ - cZ*sX, cX*cY));
+	vec3 right = (vec3_nequal(forward, vec3_UP()) && vec3_nequal(forward, vec3_DOWN())) ? vec3_normalize(vec3_cross(vec3_UP(), forward)) : vec3_RIGHT();
+	vec3 up = vec3_cross(forward, right);
+	*out_forward = forward;
+	*out_right = right;
+	*out_up = up;
+	mat4 result = Mat4(right.x,    right.y,    right.z,    0,
+					   up.x,       up.y,       up.z,       0,
+					   forward.x,  forward.y,  forward.z,  0,
+					   position.x, position.y, position.z, 1);
+}
+
+#define mat4_lookat_matrix_from_rotation_degrees_output_directions(translation,rotation) mat4_lookat_matrix_from_rotation_radians_output_directions((translation), Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
+
+//Returns a look-at matrix based on the `position` and `rotation` and outputs the `out_forward`, `out_right`, and `out_up` vectors
+//  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
+DESHI_MATH_FUNC inline mat4
+mat4_lookat_matrix_unsafe_from_rotation_radians_output_directions(vec3 position, vec3 rotation, vec3* out_forward, vec3* out_right, vec3* out_up){
+	Assert(pos != target);
+	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
+	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
+	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
+	f32 cZ = DESHI_COSF(rotation.z); f32 sZ = DESHI_SINF(rotation.z);
+	vec3 forward = vec3_normalize(Vec3(cZ*cX*sY + sX*sZ, cX*sY*sZ - cZ*sX, cX*cY));
+	vec3 right = vec3_normalize(vec3_cross(vec3_UP(), forward));
+	vec3 up = vec3_cross(forward, right);
+	*out_forward = forward;
+	*out_right = right;
+	*out_up = up;
+	return Mat4(right.x,    right.y,    right.z,    0,
+				up.x,       up.y,       up.z,       0,
+				forward.x,  forward.y,  forward.z,  0,
+				position.x, position.y, position.z, 1);
+}
+
+#define mat4_lookat_matrix_unsafe_from_rotation_degrees_output_directions(translation,rotation) mat4_lookat_matrix_unsafe_from_rotation_radians_output_directions((translation), Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
+
+DESHI_MATH_FUNC inline vec3
+vec3_projection_multiply(vec3 lhs, mat4 rhs){
+	vec4 result = vec4_mul_mat4(Vec4(lhs.x, lhs.y, lhs.z, 1.0f), rhs); Assert(result.w != 0.0f);
+	result.x /= result.w;
+	result.y /= result.w;
+	result.z /= result.w;
+	return Vec3(result.x, result.y, result.z);
+}
+
+DESHI_MATH_FUNC inline vec4
+vec4_projection_multiply(vec4 lhs, mat4 rhs){
+	vec4 result = vec4_mul_mat4(lhs, rhs); Assert(result.w != 0.0f);
+	result.x /= result.w;
+	result.y /= result.w;
+	result.z /= result.w;
+	return result;
+}
+
+DESHI_MATH_FUNC inline vec3
+map_world_to_camera(vec3 point, mat4 view_matrix){
+	return vec3_projection_multiply(point, view_matrix);
+}
+
+DESHI_MATH_FUNC inline vec3
+map_camera_to_world(vec3 point, mat4 view_matrix){
+	//TODO(delle) can we use the fast matrix inverse functions here?
+	return vec3_projection_multiply(point, mat4_inverse(view_matrix));
+}
+
+DESHI_MATH_FUNC inline vec2
+map_camera_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix){
+	vec3 result = vec3_projection_multiply(point, projection_matrix);
+	result.x = (result.x + 1.0f) * (0.5f * screen_dimensions.x);
+	result.y = (result.y + 1.0f) * (0.5f * screen_dimensions.y);
+	return Vec2(result.x, result.y);
+}
+
+DESHI_MATH_FUNC inline vec2
+map_world_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix, mat4 view_matrix){
+	return map_camera_to_screen(map_world_to_camera(point, view_matrix), screen_dimensions, projection_matrix);
+}
+
+static vec3 ScreenToWorld(vec2 pos, const mat4& ProjMat, const mat4& view, vec2 screenDimensions){
+	vec4 out{
+		2.0f*(pos.x / screenDimensions.x) - 1.0f,
+		2.0f*(pos.y / screenDimensions.y) - 1.0f,
+		-1.0f,
+		1.0f
+	};
+	out = Math::ProjMult(out, ProjMat.Inverse());
+	out = Math::ProjMult(out, view.Inverse());
+	return out.toVec3();
+}
+
+DESHI_MATH_FUNC inline vec3
+map_screen_to_world(vec2 point, vec2 screen_dimensions, mat4 projection_matrix, mat4 view_matrix){
+	//TODO(delle) can we use the fast matrix inverse functions here?
+	vec4 result;
+	result.x = (2.0f * (point.x / screen_dimensions.x)) - 1.0f;
+	result.y = (2.0f * (point.y / screen_dimensions.y)) - 1.0f;
+	result.z = -1.0f;
+	result.w = 1.0f;
+	result = vec4_projection_multiply(result, mat4_inverse(projection_matrix));
+	result = vec4_projection_multiply(result, mat4_inverse(view_matrix));
+	return Vec3(result.x, result.y, result.z);
+}
+
+
+//~////////////////////////////////////////////////////////////////////////////////////////////////
+// @cpp_only
+#ifdef __cplusplus
+
+
+//returns the average of the last `width` values
+#define RUNNING_AVGF(width,value) ([&]{ \
+	persist f32 floats[width] = {0};    \
+	persist f32 average = 0;            \
+	persist f32 sum = 0;                \
+	persist u32 offset = 0;             \
+	if(offset == width) offset = 0;     \
+	sum -= floats[offset];              \
+	floats[offset] = value;             \
+	sum += floats[offset];              \
+	average = sum / width;              \
+	offset += 1;                        \
+	return average;                     \
+}())
+
+template<typename T> global inline T
+lerp(T lhs, T rhs, f32 t){
+	return (lhs * (1.0f - t)) + (rhs * t);
+}
+
+
+#endif //#ifdef __cplusplus
+//~////////////////////////////////////////////////////////////////////////////////////////////////
 // @other
 
 
-#define F_AVG(i, f) ([&]{                      \
-persist std::vector<float> floats;           \
-persist float nf;                            \
-persist int iter = 0;                        \
-if(i == floats.size()){                      \
-floats.erase(floats.begin());              \
-floats.push_back(f);                       \
-iter++;                                    \
-}else{                                       \
-floats.push_back(f);                       \
-iter++;                                    \
-}                                            \
-if(iter == i){                               \
-nf = Math::average(floats, floats.size()); \
-iter = 0;                                  \
-}                                            \
-return nf;                                   \
-}())
-
-//////////////
-//// math ////
-//////////////
-namespace Math {
+DESHI_MATH_FUNC s32
+order_of_magnitude(f32 a){DPZoneScoped;
+	if(a == 0.0f) return 0;
+	if(DESHI_FLOORF(DESHI_ABSF(a)) == 1) return 0;
+	if(DESHI_CEILF(DESHI_ABSF(a)) == 1) return -1;
 	
-	constexpr global s32 pow(s32 base, u32 exp){
-		int result = 1;
+	if(a < 0.0f){
+		a = -a;
+	}
+	
+	s32 order = 0;
+	if(a > 1.0f){
 		for(;;){
-			if(exp & 1) result *= base;
-			exp >>= 1;
-			if(exp == 0) break;
-			base *= base;
-		}
-		return result;
-	}
-	
-	//rounding
-	template<int decimals = 2> inline global f32 round(f32 a){
-		constexpr f32 multiple = f32(pow(10,decimals));
-		return f32(s32(a * multiple + .5f)) / multiple;
-	}
-	
-	template<int decimals = 2> inline global vec3 round(vec3 a){
-		constexpr f32 multiple = f32(pow(10,decimals));
-		return Vec3(f32(s32(a.x * multiple + .5f)) / multiple,
-					f32(s32(a.y * multiple + .5f)) / multiple,
-					f32(s32(a.z * multiple + .5f)) / multiple);
-	}
-	
-	global s32 order_of_magnitude(f32 in){DPZoneScoped;
-		if(in==0) return 0;
-		if(floor(abs(in))==1) return 0;
-		if(ceil(abs(in))==1) return -1;
-		f32 absin = in;
-		if(absin<0) absin=-absin;
-		s32 order = 0;
-		if(absin > 1){
-			while(ceil(absin/10)!=1) order++, absin/=10;
-			return order;
-		}
-		else{
-			while(floor(absin*10)!=1) order--, absin*=10;
-			return order - 1;
-		}
-	}
-	
-	global s32 order_of_magnitude(f64 in){DPZoneScoped;
-		if(in==0) return 0;
-		if(floor(in)==1) return 0;
-		f64 absin = in;
-		if(absin<0) absin=-absin;
-		s32 order = 0;
-		if(absin > 1){
-			while(absin > 1) order++, absin/=10;
-			return order - 1;
-		}
-		else{
-			while(absin < 1) order--, absin*=10;
-			return order;
-		}
-	}
-	
-	template<class FWIt> static float average(FWIt a, const FWIt b, int size){ return std::accumulate(a, b, 0.0) / size; }
-	template<class T> static f64 average(const T& container, int size){ return average(std::begin(container), std::end(container), size); }
-	
-	//interpolating
-	template<typename T> global T lerp(T a, T b, f32 t){ return a*(1.0f-t) + b*t; }
-	
-	//returns how far along a polynomial fit for a set of data you are
-	//you are not allowed to have 2 points with the same x value here
-	//using Lagrange Polynomials
-	//TODO(sushi, Ma) look into maybe implementing Newton's Polynomials at some point idk if they're better but they look more simple
-	static float PolynomialCurveInterpolation(std::vector<vec2> vs, float t){
-		float sum = 0;
-		for (int j = 0; j < vs.size(); j++){
-			float vy = vs[j].y;
-			float jx = vs[j].x;
-			float lbp = 1;
-			for (int m = 0; m < vs.size(); m++){
-				if(lbp != 0){
-					if(m != j){
-						float mx = vs[m].x;
-						lbp *= (t - mx) / (jx - mx);
-					}
-				}else break;
+			f32 temp = a / 10.0f;
+			if(DESHI_CEILF(temp) != 1.0f){
+				break;
 			}
-			sum += vy * lbp;
+			a = temp;
+			order += 1;
 		}
-		return sum;
-	}
-	
-	static vec2 vec2RotateByAngle(float angle, vec2 v){
-		if (!angle) return v;
-		angle = Radians(angle);
-		return Vec2(v.x * DESHI_COSF(angle) - v.y * DESHI_SINF(angle), v.x * sin(angle) + v.y * cos(angle));
-	}
-	
-	inline global bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims){
-		return
-			point.x >= rectPos.x &&
-			point.y >= rectPos.y &&
-			point.x <= rectPos.x + rectDims.x &&
-			point.y <= rectPos.y + rectDims.y;
-	}
-	
-	inline global b32 PointInTriangle(vec2 point, vec2 p0, vec2 p1, vec2 p2) {
-		vec2 p01 = p1 - p0;
-		vec2 p12 = p2 - p1;
-		vec2 p20 = p0 - p2;
-		
-		b32 b0 = (point - p0).dot(-Vec2(p01.y, -p01.x)) < 0;
-		b32 b1 = (point - p1).dot(-Vec2(p12.y, -p12.x)) < 0;
-		b32 b2 = (point - p2).dot(-Vec2(p20.y, -p20.x)) < 0;
-		
-		return b0==b1 && b1==b2;
-	}
-	
-#define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime/1000)
-	
-	//oscillates between a given upper and lower value based on a given x value
-	inline global float BoundedOscillation(float lower, float upper, float x){
-		Assert(upper > lower);
-		return ((upper - lower) * DESHI_COSF(x) + (upper + lower)) / 2;
-	}
-	
-	//returns in degrees
-	//this doesn't really work in 3D but this function is here anyways
-	static float AngBetweenVectors(vec3 v1, vec3 v2){
-		return Degrees(DESHI_ACOSF(v1.dot(v2) / (v1.mag() * v2.mag())));
-	}
-	
-	//returns in degrees
-	static float AngBetweenVectors(vec2 v1, vec2 v2){
-		return Degrees(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
-	}
-	
-	//returns in degrees between 0 and 360
-	static float AngBetweenVectors360(vec2 v1, vec2 v2){
-		float ang = Degrees(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
-		return (ang < 0) ? 360 + ang : ang;
-	}
-	
-	//NOTE 0-1 depth range
-	static mat4 PerspectiveProjectionMatrix(f32 width, f32 height, f32 hFOV, f32 nearZ, f32 farZ){
-		float renderDistance = farZ - nearZ;
-		float aspectRatio = (f32)height / (f32)width;
-		float fovRad = 1.0f / DESHI_TANF(Radians(hFOV / 2.0f));
-		return mat4(aspectRatio * fovRad, 0,	   0,							  0,
-					0,					fovRad,  0,							  0,
-					0,					0,	   farZ / renderDistance,		  1,
-					0,					0,	   -(farZ*nearZ) / renderDistance, 0);
-	}
-	
-	//this function returns a matrix that tells a vector how to look at a specific point in space.
-	static mat4 LookAtMatrix(const vec3& pos, const vec3& target, vec3* out_up = 0){
-		if(pos == target){ return LookAtMatrix(pos, target + Vec3(.01f, 0, 0)); }
-		
-		//get new forward direction
-		vec3 newFor = (target - pos).normalized();
-		
-		//get right direction
-		vec3 newRight;
-		if(newFor == vec3::UP || newFor == vec3::DOWN){
-			newRight = vec3::RIGHT;
-		}else{
-			newRight = (vec3::UP.cross(newFor)).normalized();
-		}
-		
-		//get up direction
-		vec3 newUp = newFor.cross(newRight);
-		if(out_up) *out_up = newUp;
-		
-		//make look-at matrix
-		return mat4(newRight.x, newRight.y, newRight.z, 0,
-					newUp.x,    newUp.y,    newUp.z,    0,
-					newFor.x,   newFor.y,   newFor.z,   0,
-					pos.x,      pos.y,      pos.z,      1);
-	}
-	
-	//this assumes its in degrees
-	static vec3 SphericalToRectangularCoords(vec3 v){
-		float y = Radians(v.y);
-		float z = Radians(v.z);
-		return Vec3(v.x * DESHI_SINF(z) * DESHI_COSF(y), v.x * DESHI_COSF(z), v.x * DESHI_SINF(z) * DESHI_SINF(y));
-	}
-	
-	static vec3 RectangularToSphericalCoords(vec3 v){
-		float rho = Radians(DESHI_SQRTF(v.mag()));
-		float theta = Radians(atan(v.y / v.z));
-		float phi = acos(v.z / v.mag()); //maybe use v.y instead of v.z because y is our vertical axis
-		return Vec3(rho, theta, phi);
-		
-	}
-	
-	static float DistTwoPoints(vec3 a, vec3 b){
-		return DESHI_SQRTF((a.x - b.x) * (a.x - b.x) +
-						   (a.y - b.y) * (a.y - b.y) +
-						   (a.z - b.z) * (a.z - b.z));
-	}
-	
-	static inline float DistPointToPlane(vec3 point, vec3 plane_n, vec3 plane_p){
-		return (point - plane_p).dot(plane_n);
-	}
-	
-	//where a line intersects with a plane, 'returns' how far along line you were as t value
-	static vec3 VectorPlaneIntersect(vec3 plane_p, vec3 plane_n, vec3 line_start, vec3 line_end, float* out_t = 0){
-		vec3 lstole = (line_end - line_start).normalized();
-		vec3 lptopp = plane_p - line_start;
-		f32 t = lptopp.dot(plane_n) / lstole.dot(plane_n);
-		if(out_t) *out_t = t;
-		return line_start + t * lstole;
-	}
-	
-	//TODO(sushi) figure out how this worked
-	//returns where two lines intersect on the x axis with slope and the y-intercept
-	//static vec2 LineIntersect2(float slope1, float ycross1, float slope2, float ycross2){
-	//	matN lhs(2,2,{ slope1, ycross1, slope2, ycross2 });
-	//	matN rhs(2,1,{ 1, 1 });
-	//	matN det = lhs.Inverse() * rhs;
-	//	float x = 1 / det(1,0) * det(0,0);
-	//	float y = slope1 * x + ycross1;
-	//
-	//	f32 x = (ycross1 - ycross2 + slope)
-	//	return vec2(x, y);
-	//}
-	
-	static vec2 LineIntersect2(vec2 p1, vec2 p2, vec2 p3, vec2 p4) {
-		f32 m1 = (p2.y - p1.y) / (p2.x - p1.x);
-		f32 m2 = (p4.y - p3.y) / (p4.x - p3.x);
-		f32 b1 = p2.y - m1 * p2.x;
-		f32 b2 = p4.y - m2 * p4.x;
-		f32 x = (b2 - b1) / (m1 - m2);
-		f32 y = m1 * x + b1;
-		return{ x,y };
-		
-		
-	}
-	
-	static vec3 LineMidpoint(vec3 start, vec3 end){
-		return (start+end)/2.0f;
-	}
-	
-	//the input vectors should be in viewMat/camera space
-	//returns true if the line can be rendered after clipping, false otherwise
-	static bool ClipLineToZPlanes(vec3& start, vec3& end, f32 nearZ, f32 farZ){
-		//clip to the near plane
-		vec3 planePoint = Vec3(0, 0, nearZ);
-		vec3 planeNormal = vec3::FORWARD;
-		float d = planeNormal.dot(planePoint);
-		bool startBeyondPlane = planeNormal.dot(start) - d < 0;
-		bool endBeyondPlane = planeNormal.dot(end) - d < 0;
-		float t;
-		if(startBeyondPlane && !endBeyondPlane){
-			start = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, &t);
-		}else if(!startBeyondPlane && endBeyondPlane){
-			end = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, &t);
-		}else if(startBeyondPlane && endBeyondPlane){
-			return false;
-		}
-		
-		//clip to the far plane
-		planePoint = Vec3(0, 0, farZ);
-		planeNormal = vec3::BACK;
-		d = planeNormal.dot(planePoint);
-		startBeyondPlane = planeNormal.dot(start) - d < 0;
-		endBeyondPlane = planeNormal.dot(end) - d < 0;
-		if(startBeyondPlane && !endBeyondPlane){
-			start = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, &t);
-		}else if(!startBeyondPlane && endBeyondPlane){
-			end = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, &t);
-		}else if(startBeyondPlane && endBeyondPlane){
-			return false;
-		}
-		return true;
-	} //ClipLineToZPlanes
-	
-	//cohen-sutherland algorithm https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
-	//the input vectors should be in screen space
-	//returns true if the line can be rendered after clipping, false otherwise
-	static bool ClipLineToBorderPlanes(vec2& start, vec2& end, vec2 dimensions){
-		//clip to the vertical and horizontal planes
-		const int CLIP_INSIDE = 0;
-		const int CLIP_LEFT = 1;
-		const int CLIP_RIGHT = 2;
-		const int CLIP_BOTTOM = 4;
-		const int CLIP_TOP = 8;
-		auto ComputeOutCode = [&](vec2& vertex){
-			int code = CLIP_INSIDE;
-			if(vertex.x < 0){
-				code |= CLIP_LEFT;
-			}else if(vertex.x > dimensions.x){
-				code |= CLIP_RIGHT;
+		return order;
+	}else{
+		for(;;){
+			f32 temp = a * 10.0f;
+			if(DESHI_FLOORF(temp) != 1.0f){
+				break;
 			}
-			if(vertex.y < 0){ //these are inverted because we are in screen space
-				code |= CLIP_TOP;
-			}else if(vertex.y > dimensions.y){
-				code |= CLIP_BOTTOM;
-			}
-			return code;
-		};
-		
-		int lineStartCode = ComputeOutCode(start);
-		int lineEndCode = ComputeOutCode(end);
-		
-		//loop until all points are within or outside the screen zone
-		while (true){
-			if(!(lineStartCode | lineEndCode)){
-				//both points are inside the screen zone
-				return true;
-			}else if(lineStartCode & lineEndCode){
-				//both points are in the same outside zone
-				return false;
-			}else{
-				float x = 0, y = 0;
-				//select one of the points outside
-				int code = lineEndCode > lineStartCode ? lineEndCode : lineStartCode;
-				
-				//clip the points the the screen bounds by finding the intersection point
-				if      (code & CLIP_TOP){    //point is above screen
-					x = start.x + (end.x - start.x) * (-start.y) / (end.y - start.y);
-					y = 0;
-				}else if(code & CLIP_BOTTOM){ //point is below screen
-					x = start.x + (end.x - start.x) * (dimensions.y - start.y) / (end.y - start.y);
-					y = dimensions.y;
-				}else if(code & CLIP_RIGHT){  //point is right of screen
-					y = start.y + (end.y - start.y) * (dimensions.x - start.x) / (end.x - start.x);
-					x = dimensions.x;
-				}else if(code & CLIP_LEFT){   //point is left of screen
-					y = start.y + (end.y - start.y) * (-start.x) / (end.x - start.x);
-					x = 0;
-				}
-				
-				//update the vector's points and restart loop
-				if(code == lineStartCode){
-					start.x = x;
-					start.y = y;
-					lineStartCode = ComputeOutCode(start);
-				}else{
-					end.x = x;
-					end.y = y;
-					lineEndCode = ComputeOutCode(end);
-				}
-			}
+			a = temp;
+			order -= 1;
 		}
-	} //ClipLineToBorderPlanes
-	
-	//returns area of a triangle of sides a and b
-	static float TriangleArea(vec3 a, vec3 b){
-		return a.cross(b).mag() / 2.0f;
+		return order - 1;
 	}
-	
-	//The normal this returns heavily depends on how you give it the points
-	static vec3 TriangleNormal(vec3 p1, vec3 p2, vec3 p3){
-		return (p3 - p1).cross(p2 - p1).normalized();
-	}
-	
-	static vec3 TriangleMidpoint(vec3 p1, vec3 p2, vec3 p3){
-		return (p1 + p2 + p3) / 3.0f;
-	}
-	
-	inline static vec4 ProjMult(vec4 v, const mat4& m){
-		vec4 nv = v * m;
-		Assert(nv.w != 0);
-		nv.x /= nv.w;
-		nv.y /= nv.w;
-		nv.z /= nv.w;
-		return nv;
-	}
-	
-	static vec3 WorldToCamera3(vec3 vertex, const mat4& viewMat){
-		return Math::ProjMult(vertex.toVec4(), viewMat).toVec3();
-	}
-	
-	static vec4 WorldToCamera4(vec3 vertex, const mat4& viewMat){
-		return Math::ProjMult(vertex.toVec4(), viewMat);
-	}
-	
-	static vec3 CameraToWorld3(vec3 vertex, const mat4& viewMat){
-		return Math::ProjMult(vertex.toVec4(), viewMat.Inverse()).toVec3();
-	}
-	
-	static vec4 CameraToWorld4(vec3 vertex, const mat4& viewMat){
-		return Math::ProjMult(vertex.toVec4(), viewMat.Inverse());
-	}
-	
-	static vec2 CameraToScreen2(vec3 csVertex, const mat4& projMat, vec2 screenDimensions){
-		vec3 vm = Math::ProjMult(csVertex.toVec4(), projMat).toVec3();
-		vm.x += 1.0f; vm.y += 1.0f;
-		vm.x *= 0.5f * screenDimensions.x;
-		vm.y *= 0.5f * screenDimensions.y;
-		return vm.toVec2();
-	}
-	
-	static vec3 CameraToScreen3(vec3 csVertex, const mat4& projMat, vec2 screenDimensions){
-		vec3 vm = Math::ProjMult(csVertex.toVec4(), projMat).toVec3();
-		vm.x += 1.0f; vm.y += 1.0f;
-		vm.x *= 0.5f * screenDimensions.x;
-		vm.y *= 0.5f * screenDimensions.y;
-		return vm;
-	}
-	
-	static vec3 CameraToScreen3(vec3 csVertex, const mat4& projMat, vec2 screenDimensions, float& w){
-		vec4 bleh = csVertex.toVec4() * projMat;
-		w = bleh.w;
-		vec3 vm = bleh.wnormalized().toVec3();
-		vm.x += 1.0f; vm.y += 1.0f;
-		vm.x *= 0.5f * screenDimensions.x;
-		vm.y *= 0.5f * screenDimensions.y;
-		return vm;
-	}
-	
-	static vec3 CameraToScreen3(vec4 csVertex, const mat4& projMat, vec2 screenDimensions){
-		vec3 vm = Math::ProjMult(csVertex, projMat).toVec3();
-		vm.x += 1.0f; vm.y += 1.0f;
-		vm.x *= 0.5f * screenDimensions.x;
-		vm.y *= 0.5f * screenDimensions.y;
-		return vm;
-	}
-	
-	static vec4 CameraToScreen4(vec4 csVertex, const mat4& projMat, vec2 screenDimensions){
-		vec4 vm = (csVertex * projMat).wnormalized();
-		vm.x += 1.0f; vm.y += 1.0f;
-		vm.x *= 0.5f * screenDimensions.x;
-		vm.y *= 0.5f * screenDimensions.y;
-		return vm;
-	}
-	
-	static vec3 WorldToScreen(vec3 point, const mat4& ProjMat, const mat4& ViewMat, vec2 screenDimensions){
-		return CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
-	}
-	
-	static vec2 WorldToScreen2(vec3 point, const mat4& ProjMat, const mat4& ViewMat, vec2 screenDimensions){
-		vec3 v = CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
-		return Vec2(v.x, v.y);
-	}
-	
-	static vec3 ScreenToWorld(vec2 pos, const mat4& ProjMat, const mat4& view, vec2 screenDimensions){
-		vec4 out{
-			2.0f*(pos.x / screenDimensions.x) - 1.0f,
-			2.0f*(pos.y / screenDimensions.y) - 1.0f,
-			-1.0f,
-			1.0f
-		};
-		out = Math::ProjMult(out, ProjMat.Inverse());
-		out = Math::ProjMult(out, view.Inverse());
-		return out.toVec3();
-	}
-};
+}
+
+//oscillates between a given `upper` and `lower` value based on a given `t` value
+DESHI_MATH_FUNC f32
+bounded_oscillation(f32 lower, f32 upper, float t){DPZoneScoped;
+	Assert(upper > lower);
+	return (((upper - lower) * DESHI_COSF(t)) + (upper + lower)) / 2.0f;
+}
+
 
 #ifdef __cplusplus
 }
