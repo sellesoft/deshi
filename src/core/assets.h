@@ -387,12 +387,12 @@ typedef struct UniformBufferObject {
 	RenderBuffer* buffer;
 } UBO;
 
-UBO* assets_uniform_buffer_object_create(u32 size);
+UBO* assets_ubo_create(u32 size);
 
 // TODO(sushi) offset and size
-void assets_uniform_buffer_object_update(UBO* ubo, void* data);
+void assets_ubo_update(UBO* ubo, void* data);
 
-void assets_uniform_buffer_object_delete(UBO* ubo);
+void assets_ubo_delete(UBO* ubo);
 
 
 enum ShaderResourceType {

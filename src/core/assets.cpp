@@ -1148,7 +1148,7 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 #undef TextureError
 
 UBO* 
-assets_uniform_buffer_object_create(u32 size) {
+assets_ubo_create(u32 size) {
 	UBO* ubo = memory_pool_push(g_assets->ubo_pool);
 	ubo->size = size;
 	ubo->buffer = render_buffer_create(
@@ -1160,7 +1160,7 @@ assets_uniform_buffer_object_create(u32 size) {
 }
 
 void 
-assets_uniform_buffer_object_update(UBO* ubo, void* data) {
+assets_ubo_update(UBO* ubo, void* data) {
 	render_buffer_map(ubo->buffer, 0, ubo->buffer->size);
 
 	CopyMemory(ubo->buffer->mapped_data, data, ubo->size);
@@ -1169,7 +1169,7 @@ assets_uniform_buffer_object_update(UBO* ubo, void* data) {
 }
 
 void 
-assets_uniform_buffer_object_delete(UBO* ubo) {
+assets_ubo_delete(UBO* ubo) {
 	render_buffer_delete(ubo->buffer);
 	memory_pool_delete(g_assets->ubo_pool, ubo);
 }

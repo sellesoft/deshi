@@ -220,16 +220,26 @@ void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 	if(v_place_next == -1){
 		//we couldnt find a drawcmd with space for our new verts so we must allocate at the end 
 		g_ui->stats.vertices_reserved += counts.x;
+#ifdef RENDER_REWRITE
+		drawcmd->vertex_offset = g_ui->vertex_buffer.cursor;
+		g_ui->vertex_buffer.cursor += counts.x;
+#else
 		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(Vertex2);
 		g_ui->vertex_arena->cursor += counts.x * sizeof(Vertex2);
 		g_ui->vertex_arena->used += counts.x * sizeof(Vertex2);
+#endif
 	} else drawcmd->vertex_offset = v_place_next;
 	if(i_place_next == -1){
 		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
 		g_ui->stats.indices_reserved += counts.y;
+#ifdef RENDER_REWRITE
+		drawcmd->vertex_offset = g_ui->index_buffer.cursor;
+		g_ui->index_buffer.cursor += counts.y;
+#else
 		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
 		g_ui->index_arena->cursor += counts.y * sizeof(u32);
 		g_ui->index_arena->used += counts.y * sizeof(u32);
+#endif
 	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts_reserved = counts;
 }
@@ -259,7 +269,7 @@ ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
 uiDrawCmdPtrs 
 ui_drawcmd_get_ptrs(uiDrawCmd* dc) {
 #ifdef RENDER_REWRITE
-	return {(Vertex2*)g_ui->vertex_buffer->mapped_data + dc->vertex_offset, (u32*)g_ui->index_buffer->mapped_data + dc->index_offset};
+	return {(Vertex2*)g_ui->vertex_buffer.handle->mapped_data + dc->vertex_offset, (u32*)g_ui->index_buffer.handle->mapped_data + dc->index_offset};
 #else
 	return {(Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset, (u32*)g_ui->index_arena->start + dc->index_offset};
 #endif
@@ -285,7 +295,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 //		Assert(0);
 //	}
 	
-	uiItem* parent = *(g_ui->item_stack.last);
+	uiItem* parent = *g_ui->item_stack.last;
 	
 	//initialize the item in memory or retrieve it from cache if it already exists
 	uiItem* item;
@@ -535,12 +545,24 @@ ui_copy_item(uiItem* item) { DPZoneScoped;
 void 
 ui_gen_item(uiItem* item){DPZoneScoped;
 	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	auto [vp, ip] = ui_drawcmd_get_ptrs(dc);
 	vec2i counts = {0};
 	counts += ui_gen_background(item, vp, ip, counts);
 	counts += ui_gen_border(item, vp, ip, counts);
 	dc->texture = item->style.background_image;
+	if(dc->texture && !dc->descriptor_set) {
+		dc->descriptor_set = render_descriptor_set_create();
+		dc->descriptor_set->layouts = g_ui->blank_descriptor_set->layouts;
+		render_descriptor_set_update(dc->descriptor_set);
+		RenderDescriptor* descriptors;
+		array_init(descriptors, 1, deshi_temp_allocator);
+		array_count(descriptors) = 1;
+		descriptors[0].kind = RenderDescriptorType_Combined_Image_Sampler;
+		descriptors[0].image.view = dc->texture->image_view;
+		descriptors[0].image.sampler = dc->texture->sampler;
+		descriptors[0].image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+		render_descriptor_set_write(dc->descriptor_set, descriptors);
+	}
 	dc->counts_used = counts;
 }
 
@@ -738,12 +760,12 @@ deshi__ui_init_x(Window* window) {
 	*array_push(g_ui->pipeline->shader_stages) = {
 		RenderShaderStage_Vertex, 
 		str8l("twod.vert"),
-		file_read_simple(str8l("twod.vert"), deshi_temp_allocator)
+		baked_shader_twod_vert
 	};
 	*array_push(g_ui->pipeline->shader_stages) = {
 		RenderShaderStage_Fragment,
 		str8l("twod.frag"),
-		file_read_simple(str8l("twod.frag"), deshi_temp_allocator)
+		baked_shader_twod_frag
 	};
 
 	g_ui->pipeline->            front_face = RenderPipelineFrontFace_CCW;
@@ -793,14 +815,14 @@ deshi__ui_init_x(Window* window) {
 	g_ui->pipeline->layout = pipeline_layout;
 	render_pipeline_update(g_ui->pipeline);
 
-	g_ui->vertex_buffer = render_buffer_create(
+	g_ui->vertex_buffer.handle = render_buffer_create(
 			0, 
 			g_memory->arena_heap.size / 16,
 			RenderBufferUsage_VertexBuffer,
 			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
 			RenderMemoryMapping_Persistent);
 
-	g_ui->index_buffer = render_buffer_create(
+	g_ui->index_buffer.handle = render_buffer_create(
 			0, 
 			g_memory->arena_heap.size / 16,
 			RenderBufferUsage_IndexBuffer,
@@ -1450,10 +1472,10 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 #ifdef RENDER_REWRITE
 			// TODO(sushi) remove the usage of global window here
 			RenderFrame* frame = render_current_present_frame_of_window(g_ui->updating_window);
-			auto c = array_push(frame->commands);
-			c->type = RenderCommandType_Bind_Descriptor_Set;
-
-			
+			if(item->drawcmds[i].texture) {
+				render_cmd_bind_descriptor_set(frame, 0, item->drawcmds[i].descriptor_set);
+			}
+			render_cmd_draw_indexed(frame, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
 #else
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
@@ -1547,25 +1569,17 @@ void
 deshi__ui_update_x(Window* window) {
 	g_ui->updating_window = window;
 
-	pc = {0};
+	pc = {
+		{2.f/window->width, 2.f/window->height},
+		{-1.f, -1.f}
+	};
 
 	auto frame = render_current_present_frame_of_window(g_ui->updating_window);
-	auto c = array_push(frame->commands);
-	c->type = RenderCommandType_Bind_Pipeline;
-	c->bind_pipeline.handle = g_ui->pipeline;
-	c = array_push(frame->commands);
-	c->type = RenderCommandType_Push_Constant;
-	c->push_constant.data = &pc;
-	c->push_constant.info.size = sizeof(pc);
-	c->push_constant.info.offset = 0;
-	c->push_constant.info.shader_stage_flags = RenderShaderStage_Vertex;
-	c = array_push(frame->commands);
-	c->type = RenderCommandType_Bind_Vertex_Buffer;
-	c->bind_vertex_buffer.handle = g_ui->vertex_buffer;
-	c = array_push(frame->commands);
-	c->type = RenderCommandType_Bind_Index_Buffer;
-	c->bind_index_buffer.handle = g_ui->index_buffer;
-
+	render_cmd_bind_pipeline(frame, g_ui->pipeline);
+	render_cmd_push_constant(frame, &pc, {RenderShaderStage_Vertex, sizeof(pc), 0});
+	render_cmd_bind_vertex_buffer(frame, g_ui->vertex_buffer.handle);
+	render_cmd_bind_index_buffer(frame, g_ui->index_buffer.handle);
+	render_cmd_bind_descriptor_set(frame, 0, g_ui->blank_descriptor_set);
 	deshi__ui_update();
 	g_ui->updating_window = 0;
 }

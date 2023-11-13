@@ -507,11 +507,24 @@ void
 ui_gen_text(uiItem* item){DPZoneScoped;
 	vec2i counts = {0};
 	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	auto [vp, ip] = ui_drawcmd_get_ptrs(dc);
 	uiText* data = (uiText*)item;
 	
 	dc->texture = item->style.font->tex;
+	if(!dc->descriptor_set) {
+		dc->descriptor_set = render_descriptor_set_create();
+		dc->descriptor_set->layouts = g_ui->blank_descriptor_set->layouts;
+		render_descriptor_set_update(dc->descriptor_set);
+
+		RenderDescriptor* descriptors;
+		array_init(descriptors, 1, deshi_temp_allocator);
+		auto d = array_push(descriptors);
+		d->kind = RenderDescriptorType_Combined_Image_Sampler;
+		d->image.view = dc->texture->image_view;
+		d->image.sampler = dc->texture->sampler;
+		d->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+		render_descriptor_set_write(dc->descriptor_set, descriptors);
+	}
 	
 	//if there is an active selection we need to figure out how to render the selection boxes
 	//TODO(sushi) this kind of sucks because it means we do this pass twice when a selection is active

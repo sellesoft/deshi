@@ -461,6 +461,8 @@ struct uiKeybinds{
 struct uiDrawCmd{
 	Node node;
 	Texture* texture;
+	// descriptor set created for the texture
+	RenderDescriptorSet* descriptor_set;
 	u32 vertex_offset; 
 	u32 index_offset;
 	vec2i counts_reserved; //x: vertex, y: index
@@ -1010,6 +1012,9 @@ void deshi__ui_init_x(Window* window);
 void deshi__ui_update();
 #define ui_update() deshi__ui_update();
 
+void deshi__ui_update_x(Window* window);
+#define ui_update_x(window) deshi__ui_update_x(window)
+
 typedef u32 uiInputState; enum{
 	uiISNone,
 	uiISScrolling,
@@ -1055,8 +1060,12 @@ struct uiContext{
 	//             so that we can report it where things go wrong
 	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 	
-	RenderBuffer* vertex_buffer;
-	RenderBuffer* index_buffer;
+	struct {
+		RenderBuffer* handle;
+		// offset to the end of the total amount of space we have allocated so far
+		// not accounting for freed vertices
+		u64 cursor;
+	} vertex_buffer, index_buffer;
 
 	RenderPipeline* pipeline;
 
