@@ -38,6 +38,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,*  ,22/04/18,Tweak]   draw \t correctly
 [!!!,** ,22/05/02,Feature] clipping so we only consider chunks that would be on screen
 [!! ,** ,22/05/02,Bug]     fix scrolling to bottom on new log
+[!!!,*  ,23/11/08,Feature] ctrl+f search
 
 `File`
 ------
