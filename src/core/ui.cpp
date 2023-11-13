@@ -791,7 +791,7 @@ deshi__ui_init_x(Window* window) {
 	render_pipeline_layout_update(pipeline_layout);
 
 	g_ui->pipeline->layout = pipeline_layout;
-	render_update_pipeline(g_ui->pipeline);
+	render_pipeline_update(g_ui->pipeline);
 
 	g_ui->vertex_buffer = render_buffer_create(
 			0, 
@@ -816,8 +816,8 @@ deshi__ui_init_x(Window* window) {
 	array_init(descriptors, 1, deshi_temp_allocator);
 	auto descriptor = array_push(descriptors);
 	descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptor->image.view = g_assets->font_array[0]->tex->image_view;
-	descriptor->image.sampler = g_assets->font_array[0]->tex->sampler;
+	descriptor->image.view = assets_font_null()->tex->image_view;
+	descriptor->image.sampler = assets_font_null()->tex->sampler;
 	descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
 	render_descriptor_set_write(g_ui->blank_descriptor_set, descriptors);
 

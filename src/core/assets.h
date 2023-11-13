@@ -1,4 +1,9 @@
-/* deshi Assets Module
+/* deshi assets module
+ 
+	The primary purpose of assets is the loading and management of typical resources you would use in a game
+	such as meshes, models, materials, textures, etc. Assets acts as a wrapper over the render api and the goal
+	is to provide an api one can use instead of render when advanced features are not needed.
+
 Notes:
 Image pixel data is loaded using stb_image.h
 
@@ -21,6 +26,7 @@ typedef u32 MeshIndex;
 struct MeshVertex;
 struct Texture;
 struct Material;
+struct MaterialInstance;
 struct Model;
 struct Font;
 struct RenderBuffer;
@@ -31,6 +37,8 @@ struct RenderDescriptor;
 struct RenderDescriptorSet;
 struct RenderDescriptorLayout;
 struct RenderPipeline;
+struct RenderPass;
+struct UniformBufferObject;
 struct Window;
 StartLinkageC();
 
@@ -45,27 +53,32 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	Model**    model_array;
 	Font**     font_array;
 
-	Mesh*     mesh_pool;
-	Texture*  texture_pool;
-	Material* material_pool;
-	Model*    model_pool;
-	Font*     font_pool;
+	Mesh*             mesh_pool;
+	Texture*          texture_pool;
+	Material*         material_pool;
+	MaterialInstance* material_instance_pool;
+	Model*            model_pool;
+	Font*             font_pool;
+	UniformBufferObject* ubo_pool;
 
 	Texture* null_texture;
 	Font* null_font;
+	Material* null_material;
 
 	RenderPipeline* null_pipeline;
 	
 	// standard layout for ubos used with asset models
 	// this is always bound to set 0 binding 0
 	RenderDescriptorLayout* ubo_layout;
-	RenderDescriptor*   ubo_descriptor;
+	// NOTE(sushi) array containing 1 descriptor so that we can access info about it later on (dunno if this would be useful or not so if not just remove it)
+	RenderDescriptor*  ubo_descriptors;
 	RenderDescriptorSet* view_proj_ubo;
 
 	struct {
 		mat4 view;
 		mat4 proj;
 	} base_ubo;
+	UniformBufferObject* base_ubo_handle;
 	
 	// currently this is taken as the render pass that is 
 	// set for the presentation frame of the window 
@@ -93,6 +106,8 @@ extern Assets* g_assets; //global assets pointer
 //  requires the `Memory` and `Render` modules to be init
 void assets_init();
 
+void assets_init_x(Window* window);
+
 //Deletes all of the the loaded assets
 void assets_reset();
 
@@ -106,13 +121,12 @@ void assets_update_camera_view(mat4* view_matrix);
 
 void assets_update_camera_projection(mat4* projection);
 
-
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
 
 // Sets up the given pipeline for rendering assets related things.
 // This does not add any shader stages.
-void assets_setup_pipeline(Window* window, RenderPipeline* pipeline);
+void assets_setup_pipeline(RenderPipeline* pipeline);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @mesh  //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
@@ -263,6 +277,7 @@ typedef Type TextureType; enum{
 
 
 typedef struct Texture{
+	str8 name_x;
 	char name[64]; //NOTE(delle) includes the extension
 	s32 width;
 	s32 height;
@@ -335,7 +350,13 @@ FORCE_INLINE Texture* assets_texture_create_from_memory_simple(void* data, str8 
 void assets_texture_delete(Texture* texture);
 
 //Returns a pointer to the default `Texture` object which is created when `assets_init()` is called
-FORCE_INLINE Texture*  assets_texture_null(){ return DeshAssets->texture_array[0]; };
+FORCE_INLINE Texture*  assets_texture_null(){ 
+#ifdef RENDER_REWRITE
+	return g_assets->null_texture;
+#else
+	return DeshAssets->texture_array[0]; 
+#endif
+};
 
 //Returns the texture array in `Assets`
 FORCE_INLINE Texture** assets_texture_array(){ return DeshAssets->texture_array; };
@@ -363,31 +384,45 @@ typedef Type ShaderType; enum {
 //             that information in editors and such
 typedef struct UniformBufferObject {
 	u32 size;
-} UniformBufferObject;
+	RenderBuffer* buffer;
+} UBO;
+
+UBO* assets_uniform_buffer_object_create(u32 size);
+
+// TODO(sushi) offset and size
+void assets_uniform_buffer_object_update(UBO* ubo, void* data);
+
+void assets_uniform_buffer_object_delete(UBO* ubo);
+
 
 enum ShaderResourceType {
  	ShaderResourceType_UBO,
 	ShaderResourceType_Texture,
 };
 
+const str8 ShaderResourceTypeStrings[] = {
+	str8l("UBO"),
+	str8l("Texture"),
+};
+
+// a realization of a shader resource, eg. the memory for it has been allocated
 typedef struct ShaderResource {
 	ShaderResourceType type;
-
 	union {
+		UBO* ubo;
 		Texture* texture;
-		UniformBufferObject ubo;
 	};
 } ShaderResource;
 
 typedef struct ShaderX {
 	str8 filename;
-	ShaderType type;
-	ShaderResource* resources;
+	ShaderResourceType* resources;
 } ShaderX;
 
+// used for describing to Materials what shader stages are to be used
+// and the resources used within them
 typedef struct ShaderStages {
 	ShaderX vertex;
-	b32 use_geometry_shader;
 	ShaderX geometry;
 	ShaderX fragment;
 } ShaderStages;
@@ -396,55 +431,67 @@ typedef struct ShaderStages {
 //// @material
 
 typedef struct Material{
+	str8 name_x;
 	char name[64];
 	u32 render_idx; //filled when render_load_material() is called
 	Shader shader;
 	Texture** texture_array;
 	
+	// description of the stages this material goes through
+	// as well as the resources needed for each stage
+	ShaderStages stages;
+
+	ShaderResource* resources;
+
+	// possibly shared by materials
 	RenderPipeline* pipeline;
+	// unique to each instance of a material
 	RenderDescriptorSet* descriptor_set;
 }Material;
 
-//Returns a pointer to the allocated `Material` object (with texture array reserved)
+// Returns a pointer to the allocated `Material` object (with texture array reserved)
 Material* assets_material_allocate(u32 textureCount);
 
-//Returns a pointer to the created `Material` object with `shader`, `flags`, and `textures`; where `textures` are indexes in `Assets`
+// Returns a pointer to the created `Material` object with `shader`, `flags`, and `textures`; where `textures` are indexes in `Assets`
 //  calls `render_load_material()` after creation
 Material* assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture_count);
 
 // NOTE(sushi) currently window is required due to pipeline needing to know what RenderPass they are going to be
 //             used in (which is )
-Material* assets_material_create_x(Window* window, str8 name, ShaderStages shader_stages, Texture** textures);
+Material* assets_material_create_x(str8 name, ShaderStages shader_stages, ShaderResource* resources);
 
-//Returns a pointer to the created `Material` object from a `MAT` file named `name` from the `data/models` folder
+// Returns a pointer to the created `Material` object from a `MAT` file named `name` from the `data/models` folder
 //  calls `render_load_material()` after creation
 Material* assets_material_create_from_file(str8 name);
 
-//Returns a pointer to the created `Material` object from a `MAT` file at `path`
+// Returns a pointer to the created `Material` object from a `MAT` file at `path`
 //  calls `render_load_material()` after creation
 Material* assets_material_create_from_path(str8 path);
 
-//Saves the `Material` object at `material` to the `data/models` folder as a `MAT` file
+// Saves the `Material` object at `material` to the `data/models` folder as a `MAT` file
 void      assets_material_save(Material* material);
 
-//Saves the `Material` object at `material` to `path` as a `MAT` file
+// Saves the `Material` object at `material` to `path` as a `MAT` file
 void      assets_material_save_to_path(Material* material, str8 path);
 
-//Deletes the `Material` object at `material` after calling `render_unload_material()`
+// Deletes the `Material` object at `material` after calling `render_unload_material()`
 void      assets_material_delete(Material* material);
 
+// Duplicates the given material but with a newly allocated set of resources and a new name.
+Material* assets_material_duplicate(str8 name, Material* material, ShaderResource* new_resources);
+
+
 //Returns a pointer to the default `Material` object which is created when `assets_init()` is called
-FORCE_INLINE Material*  assets_material_null(){ return DeshAssets->material_array[0]; };
+FORCE_INLINE Material*  assets_material_null(){ 
+#ifdef RENDER_REWRITE
+	return g_assets->null_material;
+#else
+	return DeshAssets->material_array[0]; 
+#endif
+};
 
 //Returns the material array in `Assets`
 FORCE_INLINE Material** assets_material_array(){ return DeshAssets->material_array; };
-
-// a material with an allocation of its data on the gpu
-// used by models 
-typedef struct MaterialInstance {
-	Material* material;
-	RenderDescriptorSet* descriptor_set;
-} MaterialInstance;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @armature
@@ -506,6 +553,14 @@ FORCE_INLINE Model*  assets_model_null(){ return DeshAssets->model_array[0]; };
 
 //Returns the model array in `Assets`
 FORCE_INLINE Model** assets_model_array(){ return DeshAssets->model_array; };
+
+// Renders a model to the given window
+// NOTE(sushi) currently assets only supports one window, the one that was passed to assets_init,
+//             however we must take in the window here so we can get the frame to render to,
+//             even though we could store this on g_assets, I'm not going to do that so that later
+//             on when multi window support is implemented for assets, we can minimize how much 
+//             we need to fix usage of it 
+void assets_model_render(Window* window, Model* model, mat4* transformation);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @font
@@ -592,7 +647,13 @@ Font* assets_font_create_from_path_ttf(str8 path, u32 height);
 void  assets_font_delete(Font* font);
 
 //Returns a pointer to the default `Font` object which is created when `assets_init()` is called
-FORCE_INLINE Font*  assets_font_null(){ return DeshAssets->font_array[0]; };
+FORCE_INLINE Font*  assets_font_null(){ 
+#ifdef RENDER_REWRITE
+	return g_assets->null_font;
+#else
+	return DeshAssets->font_array[0]; 
+#endif
+};
 
 //Returns the font array in `Assets`
 FORCE_INLINE Font** assets_font_array(){ return DeshAssets->font_array; };

@@ -46,7 +46,7 @@ assets_init(){DPZoneScoped;
 	unsigned char* null_data = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &null_x, &null_y, &null_channels, STBI_rgb_alpha);
 	assets_texture_create_from_memory(null_data, STR8("null"), 128, 128, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest, TextureAddressMode_Repeat, false);
 	stbi_image_free(null_data);
-	assets_material_create(STR8("null"), Shader_NULL, MaterialFlags_NONE, DeshAssets->texture_array, 1);
+	assets_material_create(STR8("null"), Shader_NULL, DeshAssets->texture_array, 1);
 	assets_model_create_from_mesh(assets_mesh_null(), ModelFlags_NONE); cpystr(assets_model_null()->name, "null", 64);
 	
 	//create null font (white square)
@@ -73,12 +73,15 @@ assets_init_x(Window* window) {
 	file_create(STR8("data/models/"));
 	file_create(STR8("data/textures/"));
 	
-	//setup arrays
-	arrsetcap(DeshAssets->mesh_array,256);
-	arrsetcap(DeshAssets->texture_array,256);
-	arrsetcap(DeshAssets->material_array,256);
-	arrsetcap(DeshAssets->model_array,256);
-	arrsetcap(DeshAssets->font_array,8);
+	// setup pools
+	memory_pool_init(g_assets->mesh_pool, 8);
+	memory_pool_init(g_assets->texture_pool, 8);
+	memory_pool_init(g_assets->material_pool, 8);
+	memory_pool_init(g_assets->model_pool, 8);
+	memory_pool_init(g_assets->font_pool, 8);
+	memory_pool_init(g_assets->ubo_pool, 8);
+
+	g_assets->render_pass = render_pass_of_window_presentation_frame(window);
 	
 	//setup stb_image.h
 	stbi_set_flip_vertically_on_load(true);
@@ -90,7 +93,7 @@ assets_init_x(Window* window) {
 
 	int width, height, channels;
 	u8* pixels = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &width, &height, &channels, STBI_rgb_alpha);
-	assets_texture_create_from_memory(
+	g_assets->null_texture = assets_texture_create_from_memory(
 			pixels, str8l("null"), 128, 128,
 			ImageFormat_RGBA,
 			TextureType_TwoDimensional,
@@ -111,7 +114,7 @@ assets_init_x(Window* window) {
 		str8l("null.frag"), 
 		baked_shader_null_frag
 	};
-	assets_setup_pipeline(window, g_assets->null_pipeline);
+	assets_setup_pipeline(g_assets->null_pipeline);
 
 	// create a descriptor layout for a single uniform buffer
 	// (always set 0 in asset compatible pipelines)
@@ -123,28 +126,57 @@ assets_init_x(Window* window) {
 	binding->shader_stages = RenderShaderStage_Vertex;
 	binding->binding = 0;
 
+	render_descriptor_layout_update(g_assets->ubo_layout);
+
 	g_assets->view_proj_ubo = render_descriptor_set_create();
 	*array_push(g_assets->view_proj_ubo->layouts) = g_assets->ubo_layout;
 	render_descriptor_set_update(g_assets->view_proj_ubo);
 
-	g_assets->ubo_descriptor->kind = RenderDescriptorType_Uniform_Buffer;
-	g_assets->ubo_descriptor->buffer.handle = render_buffer_create(
+	array_init(g_assets->ubo_descriptors, 1, deshi_temp_allocator);
+	auto d = array_push(g_assets->ubo_descriptors);
+	d->kind = RenderDescriptorType_Uniform_Buffer;
+	d->buffer.handle = render_buffer_create(
 			0, 
 			sizeof(__assets_model_ubo), 
 			RenderBufferUsage_UniformBuffer,
 			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
 			RenderMemoryMapping_MapWriteUnmap);
-	g_assets->ubo_descriptor->buffer.offset = 0;
-	g_assets->ubo_descriptor->buffer.range = sizeof(g_assets->base_ubo);
+	d->buffer.offset = 0;
+	d->buffer.range = sizeof(g_assets->base_ubo);
+	render_descriptor_set_write(g_assets->view_proj_ubo, g_assets->ubo_descriptors);
 
 	auto t = assets_texture_null();
 	
-	ShaderX null_shaders[2];
-	array_init(null_shaders[0].resources, 1, deshi_temp_allocator);
-	null_shaders[0].resources[0].type = ShaderResourceType_UBO;
-	null_shaders[0].resources[0].ubo.size = sizeof(g_assets->base_ubo);
+	ShaderStages stages = {0};
+	stages.vertex.filename = str8l("null.vert");
+	stages.fragment.filename = str8l("null.frag");
+	array_init(stages.fragment.resources, 1, deshi_temp_allocator);
+	*array_push(stages.fragment.resources) = ShaderResourceType_Texture;
 
-	assets_material_create_x(str8l("null"), g_assets->null_pipeline, 0, &t);
+	ShaderResource* resources;
+	array_init(resources, 1, deshi_allocator);
+	auto r = array_push(resources);
+	r->type = ShaderResourceType_Texture;
+	r->texture = assets_texture_null();
+
+	g_assets->null_material = assets_material_create_x(str8l("null"), stages, resources);
+
+	g_assets->null_font = memory_pool_push(g_assets->font_pool);
+	g_assets->null_font->type = FontType_NONE;
+	g_assets->null_font->max_width = 6;
+	g_assets->null_font->max_height = 12;
+	g_assets->null_font->count = 1;
+	g_assets->null_font->name = str8l("null");
+	u8 white_pixels[4] = {255,255,255,255};
+	auto tex = assets_texture_create_from_memory(
+			white_pixels, 
+			str8l("null font"),
+			2, 2, ImageFormat_BW, 
+			TextureType_TwoDimensional,
+			TextureFilter_Nearest,
+			TextureAddressMode_ClampToWhite,
+			false);
+	g_assets->null_font->tex = tex;
 
 	DeshiStageInitEnd(DS_ASSETS);
 }
@@ -385,7 +417,29 @@ assets_browser(){DPZoneScoped;
 }
 
 void 
-assets_setup_pipeline(Window* window, RenderPipeline* pipeline) {
+assets_update_camera_view(mat4* view_matrix) {
+	auto buffer = g_assets->ubo_descriptors[0].buffer.handle;
+	render_buffer_map(buffer, 0, buffer->size);
+	
+	g_assets->base_ubo.view = *view_matrix;
+	CopyMemory(buffer->mapped_data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+
+	render_buffer_unmap(buffer, true);
+}
+
+void 
+assets_update_camera_projection(mat4* projection) {
+	auto buffer = g_assets->ubo_descriptors[0].buffer.handle;
+	render_buffer_map(buffer, 0, buffer->size);
+	
+	g_assets->base_ubo.proj = *projection;
+	CopyMemory(buffer->mapped_data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+
+	render_buffer_unmap(buffer, true);
+}
+
+void 
+assets_setup_pipeline(RenderPipeline* pipeline) {
 	// a pipeline shouldn't have anything in its vertex input arrays when this is called 
 	Assert(!(array_count(pipeline->vertex_input_bindings) || array_count(pipeline->vertex_input_attributes)));
 
@@ -412,7 +466,10 @@ assets_setup_pipeline(Window* window, RenderPipeline* pipeline) {
 	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
 	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
 	pipeline->        blend_constant = color(10,10,10,255);
-	pipeline->           render_pass = render_pass_of_window_presentation_frame(window);
+	pipeline->           render_pass = g_assets->render_pass;
+
+	*array_push(pipeline->dynamic_states) = RenderDynamicState_Viewport;
+	*array_push(pipeline->dynamic_states) = RenderDynamicState_Scissor;
 }
 
 
@@ -430,15 +487,15 @@ assets_mesh_allocate(u32 index_count,
 	Assert(index_count && vertex_count && face_count);
 	
 	u32 triangle_count = index_count/3;
-	u32 bytes =                    1*sizeof(Mesh)
-		+                vertex_count*sizeof(MeshVertex)
-		+                 index_count*sizeof(MeshIndex)
-		+              triangle_count*sizeof(MeshTriangle)
-		+                  face_count*sizeof(MeshFace)
-		+     triangles_neighbor_count*sizeof(u32) //triangle neighbors
-		+     triangles_neighbor_count*sizeof(u8)  //triangle edges
-		+              triangle_count*sizeof(u32) //face triangles
-		+           faces_vertex_count*sizeof(u32)
+	u32 bytes =                       1*sizeof(Mesh)
+		+                  vertex_count*sizeof(MeshVertex)
+		+                   index_count*sizeof(MeshIndex)
+		+                triangle_count*sizeof(MeshTriangle)
+		+                    face_count*sizeof(MeshFace)
+		+      triangles_neighbor_count*sizeof(u32) //triangle neighbors
+		+      triangles_neighbor_count*sizeof(u8)  //triangle edges
+		+                triangle_count*sizeof(u32) //face triangles
+		+            faces_vertex_count*sizeof(u32)
 		+      faces_outer_vertex_count*sizeof(u32)
 		+ faces_neighbor_triangle_count*sizeof(u32)
 		+     faces_neighbor_face_count*sizeof(u32);
@@ -766,8 +823,8 @@ assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_texture
 
-#define TextureError(name, ...) LogE("assets", "In ", __FUNCTION__, " working with texture '", name, "': ")
-#define TextureWarning(name, ...) LogW("assets", "In ", __FUNCTION__, " working with texture '", name, "': ")
+#define TextureError(name, ...) LogE("assets", "In ", __FUNCTION__, " working with texture '", name, "': ", __VA_ARGS__)
+#define TextureWarning(name, ...) LogW("assets", "In ", __FUNCTION__, " working with texture '", name, "': ", __VA_ARGS__)
 
 RenderFilter
 texture_filter_to_render(TextureFilter x) {
@@ -782,6 +839,7 @@ texture_filter_to_render(TextureFilter x) {
 void 
 upload_texture(Texture* texture) {
 	texture->image = render_image_create();
+	texture->image->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name_x, "' image").fin;
 	texture->image->format = RenderFormat_R8G8B8A8_StandardRGB;
 	texture->image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
 	texture->image->samples = RenderSampleCount_1;
@@ -790,12 +848,14 @@ upload_texture(Texture* texture) {
 	render_image_upload(texture->image, texture->pixels);
 
 	texture->image_view = render_image_view_create();
+	texture->image_view->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' image view").fin;
 	texture->image_view->image = texture->image;
 	texture->image_view->format = texture->image->format;
 	texture->image_view->aspect_flags = RenderImageViewAspectFlags_Color;
 	render_image_view_update(texture->image_view);
 
 	texture->sampler = render_sampler_create();
+	texture->sampler->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' sampler").fin;
 	texture->sampler->mipmaps = 1;
 	texture->sampler->mag_filter = 
 	texture->sampler->min_filter = texture_filter_to_render(texture->filter);
@@ -994,10 +1054,11 @@ assets_texture_create_from_memory(
 	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
 #endif
 	CopyMemory(texture->name, name.str, ClampMax(name.count,63));
+	texture->name_x  = name;
 	texture->format  = format;
 	texture->type    = type;
 	texture->filter  = filter;
-	texture->uv_mode  = uvMode;
+	texture->uv_mode = uvMode;
 	texture->width   = width;
 	texture->height  = height;
 	texture->depth   = 4;
@@ -1086,6 +1147,33 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 #undef TextureWarning
 #undef TextureError
 
+UBO* 
+assets_uniform_buffer_object_create(u32 size) {
+	UBO* ubo = memory_pool_push(g_assets->ubo_pool);
+	ubo->size = size;
+	ubo->buffer = render_buffer_create(
+			0, size,
+			RenderBufferUsage_UniformBuffer,
+			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_MapWriteUnmap);
+	return ubo;
+}
+
+void 
+assets_uniform_buffer_object_update(UBO* ubo, void* data) {
+	render_buffer_map(ubo->buffer, 0, ubo->buffer->size);
+
+	CopyMemory(ubo->buffer->mapped_data, data, ubo->size);
+
+	render_buffer_unmap(ubo->buffer, true);
+}
+
+void 
+assets_uniform_buffer_object_delete(UBO* ubo) {
+	render_buffer_delete(ubo->buffer);
+	memory_pool_delete(g_assets->ubo_pool, ubo);
+}
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_material
 
@@ -1097,6 +1185,12 @@ assets_material_allocate(u32 textureCount){DPZoneScoped;
 	Material* material = (Material*)memory_alloc(sizeof(Material));
 	arrsetlen(material->texture_array, textureCount);
 	return material;
+}
+
+Material*
+assets_material_allocate_x() {
+	auto out = memory_pool_push(g_assets->material_pool);
+	return out;
 }
 
 
@@ -1119,7 +1213,12 @@ assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture
 }
 
 Material*
-assets_material_create_x(str8 name, ShaderStages shaders, Texture** textures) {	
+assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resources) {	
+	if(!name) {
+		MaterialError("error", "name has length zero or is null");
+		return assets_material_null();
+	}
+
 	//check if material is already loaded
 	for_stb_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
@@ -1130,65 +1229,243 @@ assets_material_create_x(str8 name, ShaderStages shaders, Texture** textures) {
 		}
 	}
 
-	u32 n_textures = (textures? array_count(textures) : 0);
-	
-	b32 got_vertex_shader = false;
-	b32 got_fragment_shader = false;
-
 	auto pipeline = render_pipeline_create();
+	pipeline->name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline").fin;
 	assets_setup_pipeline(pipeline);
 
-	RenderShader* render_shaders;
+	// load each shader stage's source for the renderer to compile 
+	if(!shaders.vertex.filename) {
+		MaterialError(name, "filename of vertex shader has length zero or is null. A vertex shader is required to make a material");
+		return assets_material_null();
+	}
+
+	str8 vertex_path = str8_concat(str8l("data/shaders/"), shaders.vertex.filename);
+
+	if(!file_exists(vertex_path)) {
+		MaterialError(name, "the given filename for the vertex shader (", shaders.vertex.filename, ") couldn't be found in data/shaders");
+		return assets_material_null();
+	}
+
+	auto shader = array_push(pipeline->shader_stages);
+	shader->kind = RenderShaderStage_Vertex;
+	shader->name = shaders.vertex.filename;
+	shader->source = file_read_simple(vertex_path, deshi_temp_allocator);
+	if(!shader->source) {
+		MaterialError(name, "an error occurred when opening the vertex shader's source file or it is empty");
+		return assets_material_null();
+	}
+
+	if(shaders.geometry.filename) {
+		str8 geo_path = str8_concat(str8l("data/shaders/"), shaders.geometry.filename);
+		if(!file_exists(geo_path)) {
+			MaterialError(name, "the given filename for the geometry shader (", shaders.geometry.filename, ") couldn't be found in data/shaders");
+			return assets_material_null();
+		}
+
+		shader = array_push(pipeline->shader_stages);
+		shader->kind = RenderShaderStage_Geometry;
+		shader->name = shaders.geometry.filename;
+		shader->source = file_read_simple(geo_path, deshi_temp_allocator);
+		if(!shader->source) {
+			MaterialError(name, "an error occurred when opening the geometry shader's source file or it is empty");
+			return assets_material_null();
+		}
+	}
+
+	if(!shaders.fragment.filename) {
+		MaterialError(name, "filename of fragment shader has length zero or is null. A fragment shader is required to make a material");
+		return assets_material_null();
+	}
+
+	str8 fragment_path = str8_concat(str8l("data/shaders/"), shaders.fragment.filename);
+
+	if(!file_exists(fragment_path)) {
+		MaterialError(name, "the given filename for the fragment shader (", shaders.fragment.filename, ") couldn't be found in data/shaders");
+		return assets_material_null();
+	}
+
+	shader = array_push(pipeline->shader_stages);
+	shader->name = shaders.fragment.filename;
+	shader->kind = RenderShaderStage_Fragment;
+	shader->source = file_read_simple(fragment_path, deshi_temp_allocator);
 	
+	if(!shader->source) {
+		MaterialError(name, "an error occurred when opening the fragment shader's source file or it is empty");
+		return assets_material_null();
+	}
 
-	forI(n_shaders) {
-		auto s = shaders[i];
-		switch(s.type) {
-			case ShaderType_Fragment: {
-				if(got_fragment_shader) {
-					MaterialError(name, "a material may only have one fragment shader");
-					return assets_material_null();
-				}
-				got_fragment_shader = true;
+	// setup the descriptor layout
+	auto descriptor_layout = render_descriptor_layout_create();
+	descriptor_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " descriptor layout").fin;
+	
+	u32 n_vertex_resources   = (shaders.vertex.resources?   array_count(shaders.vertex.resources)   : 0);
+	u32 n_geometry_resources = (shaders.geometry.resources? array_count(shaders.geometry.resources) : 0);
+	u32 n_fragment_resources = (shaders.fragment.resources? array_count(shaders.fragment.resources) : 0);
+	u32 sum = n_vertex_resources + n_geometry_resources + n_fragment_resources;
 
+	if(sum && !resources) {
+		MaterialError(name, "material has resoures specified in some shader, but the given resources array is null");
+		return assets_material_null();
+	}
+
+	u32 n_resources_given = array_count(resources);
+
+	if(n_resources_given != sum) {
+		MaterialError(name, "the number of given resources (", n_resources_given, ") is not equal to the number of expected resources for this material (", sum, ")");
+		return 0;
+	}
+
+	RenderDescriptor* descriptors;
+	array_init(descriptors, sum, deshi_temp_allocator);
+
+	forI(n_vertex_resources) {
+		auto resource = shaders.vertex.resources[i];
+		auto resource_given = resources[array_count(descriptors)];
+		auto descriptor = array_push(descriptors);
+		if(resource != resource_given.type) {
+			MaterialError(name, "resource type mismatch between vertex resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", array_count(descriptors) - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			return 0;
+		}	
+
+		switch(resource) {
+			case ShaderResourceType_UBO: {
+				descriptor->kind = RenderDescriptorType_Uniform_Buffer;
+				descriptor->buffer.handle = resource_given.ubo->buffer;
+				descriptor->buffer.range = resource_given.ubo->size;
+				descriptor->buffer.offset = 0;
+			} break;
+			case ShaderResourceType_Texture: {
+				descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+				descriptor->image.view = resource_given.texture->image_view;
+				descriptor->image.sampler = resource_given.texture->sampler;
+				descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+			} break;
+		}
+
+		auto binding = array_push(descriptor_layout->bindings);
+		binding->binding = array_count(descriptor_layout->bindings) - 1;
+		binding->shader_stages = RenderShaderStage_Vertex;
+		switch(resource) {
+			case ShaderResourceType_UBO: binding->kind = RenderDescriptorType_Uniform_Buffer; break;
+			case ShaderResourceType_Texture: binding->kind = RenderDescriptorType_Combined_Image_Sampler; break;
+			default: {
+				MaterialError(name, "resource ", i, " given for vertex shader has an unknown type (", (u32)resource, ")");
+				render_descriptor_layout_destroy(descriptor_layout);
+				render_pipeline_destroy(pipeline);
+				return assets_material_null();
 			} break;
 		}
 	}
 
-
-	Material* material = assets_material_allocate(n_textures);
-	CopyMemory(material->name, name.str, ClampMax(name.count,63));
-	material->flags = flags;
-	forI(n_textures) material->texture_array[i] = textures[i];
-
-	material->descriptor_set = render_descriptor_set_create();
-	*array_push(material->descriptor_set->layouts) = pipeline->layout->descriptor_layouts[2];
-	render_descriptor_set_update(material->descriptor_set);
-
-	RenderDescriptor* descriptors;
-	array_init(descriptors, n_textures, deshi_allocator);
-	array_count(descriptors) = n_textures;
-
-	forI(n_textures) {
-		if(!textures[i]) {
-			MaterialError(name, "null texture pointer encountered in given texture array (index ", i, ")");
-			Assert(0); // TODO(sushi) free the resources we've aquired so far once that logic has been rewritten
+	forI(n_geometry_resources) {
+		auto resource = shaders.geometry.resources[i];
+		auto resource_given = resources[array_count(descriptors)];
+		auto descriptor = array_push(descriptors);
+		if(resource != resource_given.type) {
+			MaterialError(name, "resource type mismatch between geometry resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", array_count(descriptors) - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return 0;
-		}
-		if(!(textures[i]->image && textures[i]->image_view && textures[i]->sampler)) {
-			MaterialError(name, "texture at index ", i, " is missing one of (image, image_view, sampler), did you create the texture through assets?");
-			Assert(0); // TODO(sushi) free the resources 
-			return 0;
+		}	
+
+		switch(resource) {
+			case ShaderResourceType_UBO: {
+				descriptor->kind = RenderDescriptorType_Uniform_Buffer;
+				descriptor->buffer.handle = resource_given.ubo->buffer;
+				descriptor->buffer.range = resource_given.ubo->size;
+				descriptor->buffer.offset = 0;
+			} break;
+			case ShaderResourceType_Texture: {
+				descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+				descriptor->image.view = resource_given.texture->image_view;
+				descriptor->image.sampler = resource_given.texture->sampler;
+				descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+			} break;
 		}
 
-		descriptors[i].         kind = RenderDescriptorType_Combined_Image_Sampler;
-		descriptors[i].shader_stages = RenderShaderStage_Fragment;
-		descriptors[i].   image.view = textures[i]->image_view;
-		descriptors[i].image.sampler = textures[i]->sampler;
-		descriptors[i]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+		auto binding = array_push(descriptor_layout->bindings);
+		binding->binding = array_count(descriptor_layout->bindings) - 1;
+		binding->shader_stages = RenderShaderStage_Geometry;
+		switch(resource) {
+			case ShaderResourceType_UBO: binding->kind = RenderDescriptorType_Uniform_Buffer; break;
+			case ShaderResourceType_Texture: binding->kind = RenderDescriptorType_Combined_Image_Sampler; break;
+			default: {
+				MaterialError(name, "resource ", i, " given for geometry shader has an unknown type (", (u32)resource, ")");
+				render_descriptor_layout_destroy(descriptor_layout);
+				render_pipeline_destroy(pipeline);
+				return assets_material_null();
+			} break;
+		}
 	}
 
-	arrput(DeshAssets->material_array, material);
+	forI(n_fragment_resources) {
+		auto resource = shaders.fragment.resources[i];
+		auto resource_given = resources[array_count(descriptors)];
+		auto descriptor = array_push(descriptors);
+		if(resource != resource_given.type) {
+			MaterialError(name, "resource type mismatch between fragment resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", array_count(descriptors) - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			return 0;
+		}	
+
+		switch(resource) {
+			case ShaderResourceType_UBO: {
+				descriptor->kind = RenderDescriptorType_Uniform_Buffer;
+				descriptor->buffer.handle = resource_given.ubo->buffer;
+				descriptor->buffer.range = resource_given.ubo->size;
+				descriptor->buffer.offset = 0;
+			} break;
+			case ShaderResourceType_Texture: {
+				descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+				descriptor->image.view = resource_given.texture->image_view;
+				descriptor->image.sampler = resource_given.texture->sampler;
+				descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+			} break;
+		}
+
+		auto binding = array_push(descriptor_layout->bindings);
+		binding->binding = array_count(descriptor_layout->bindings) - 1;
+		binding->shader_stages = RenderShaderStage_Fragment;
+		switch(resource) {
+			case ShaderResourceType_UBO: binding->kind = RenderDescriptorType_Uniform_Buffer; break;
+			case ShaderResourceType_Texture: binding->kind = RenderDescriptorType_Combined_Image_Sampler; break;
+			default: {
+				MaterialError(name, "resource ", i, " given for fragment shader has an unknown type (", (u32)resource, ")");
+				render_descriptor_layout_destroy(descriptor_layout);
+				render_pipeline_destroy(pipeline);
+				return assets_material_null();
+			} break;
+		}
+	}
+
+	render_descriptor_layout_update(descriptor_layout);
+
+	RenderPushConstant transformation;
+	transformation.shader_stage_flags = RenderShaderStage_Vertex;
+	transformation.size = sizeof(mat4);
+	transformation.offset = 0;
+
+	auto pipeline_layout = render_pipeline_layout_create();
+	pipeline_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline layout").fin;
+	*array_push(pipeline_layout->descriptor_layouts) = g_assets->ubo_layout;
+	*array_push(pipeline_layout->descriptor_layouts) = descriptor_layout;
+	*array_push(pipeline_layout->push_constants) = transformation;
+	render_pipeline_layout_update(pipeline_layout);
+
+	pipeline->layout = pipeline_layout;
+	render_pipeline_update(pipeline);
+
+	auto descriptor_set = render_descriptor_set_create();
+	*array_push(descriptor_set->layouts) = descriptor_layout;
+	render_descriptor_set_update(descriptor_set);
+	render_descriptor_set_write(descriptor_set, descriptors);
+
+	Material* material = assets_material_allocate_x();
+	material->name_x = name;
+	material->pipeline = pipeline;
+	material->descriptor_set = descriptor_set;
+	material->stages = shaders;
+	array_init(material->resources, array_count(resources), deshi_allocator);
+	array_count(material->resources) = array_count(resources);
+	CopyMemory(material->resources, resources, sizeof(ShaderResource) * array_count(resources));
+
 	return material;
 }
 
@@ -1229,7 +1506,6 @@ assets_material_create_from_path(str8 path){DPZoneScoped;
 	//parse .mat file
 	str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
 	Shader mat_shader = 0;
-	MaterialFlags mat_flags = 0;
 	arrayT<str8> mat_textures(deshi_temp_allocator);
 	enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
 	
@@ -1288,8 +1564,6 @@ assets_material_create_from_path(str8 path){DPZoneScoped;
 					continue;
 				}
 				mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-			}else if(str8_equal_lazy(key, STR8("flags"))){
-				mat_flags = (ModelFlags)atoi((char*)line.str);
 			}else if(str8_equal_lazy(key, STR8("shader"))){
 				forI(Shader_COUNT){
 					if(str8_equal_lazy(line, ShaderStrings[i])){
@@ -1314,7 +1588,6 @@ assets_material_create_from_path(str8 path){DPZoneScoped;
 	Material* material = assets_material_allocate(mat_textures.count);
 	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
 	material->shader = mat_shader;
-	material->flags  = mat_flags;
 	forI(mat_textures.count) material->texture_array[i] = assets_texture_create_from_file_simple(mat_textures[i]);
 	
 	render_load_material(material);
@@ -1337,7 +1610,6 @@ assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 						 ">material"
 						 "\nname   \"",material->name,"\""
 						 "\nshader ",ShaderStrings[material->shader],
-						 "\nflags  ",material->flags,
 						 "\n"
 						 "\n>textures").fin,
 			   deshi_temp_allocator);
@@ -1367,14 +1639,78 @@ assets_material_delete(Material* material){DPZoneScoped;
 	memory_zfree(material);
 }
 
+Material* 
+assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
+	if(!name) {
+		MaterialError("N/A", "name has length zero or is null");
+		return assets_material_null();
+	}
+	if(!old) {
+		MaterialError(name, "material pointer is null");
+		return assets_material_null();
+	}
+	if(str8_equal(name, old->name_x)) {
+		MaterialError(name, "the name of a duplicated material must be different than the name it is duplicated from");
+		return assets_material_null();
+	}
+	if(array_count(resources) != array_count(old->resources)) {
+		MaterialError(name, "amount of given resources (", array_count(resources), ") is different from the amount of resources on the given material (", array_count(old->resources), ")");
+		return assets_material_null();
+	}
+
+	Material* nu = memory_pool_push(g_assets->material_pool);
+	nu->name_x = name;
+	nu->pipeline = old->pipeline;
+	nu->stages = old->stages;
+
+	RenderDescriptor* descriptors;
+	array_init(descriptors, array_count(resources), deshi_temp_allocator);
+
+	forI(array_count(resources)) {
+		auto given_resource = resources[i];
+		auto old_resource = old->resources[i];
+		if(given_resource.type != old_resource.type) {
+			MaterialError(name, "resource ", i, " has a different type (", ShaderResourceTypeStrings[given_resource.type], ") than the old material's resource at the same index (", ShaderResourceTypeStrings[old_resource.type], ")");
+			return assets_material_null();
+		}
+		auto d = array_push(descriptors);
+		switch(given_resource.type) {
+			case ShaderResourceType_UBO: {
+				d->kind = RenderDescriptorType_Uniform_Buffer;
+				d->buffer.handle = given_resource.ubo->buffer;
+				d->buffer.range = given_resource.ubo->size;
+				d->buffer.offset = 0;
+			} break;
+			case ShaderResourceType_Texture: {
+				d->kind = RenderDescriptorType_Combined_Image_Sampler;
+				d->image.view = given_resource.texture->image_view;
+				d->image.sampler = given_resource.texture->sampler;
+				d->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+			} break;
+		}
+	}
+
+	nu->descriptor_set = render_descriptor_set_create();
+	nu->descriptor_set->layouts = old->descriptor_set->layouts;
+	render_descriptor_set_update(nu->descriptor_set);
+	render_descriptor_set_write(nu->descriptor_set, descriptors);
+	return nu;
+}
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_model
-#define ParseError(path,...) LogE("assets","Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
+
+#define ModelError(name, ...) LogE("assets", "In ", __FUNCTION__, " while working with model '", name, "': ", __VA_ARGS__)
+#define ModelWarning(name, ...) LogW("assets", "In ", __FUNCTION__, " while working with model '", name, "': ", __VA_ARGS__)
+#define ModelInfo(name, ...) Log("assets", "In ", __FUNCTION__, " while working with model '", name, "': ", __VA_ARGS__)
 
 Model*
 assets_model_allocate(u32 batchCount){DPZoneScoped;
+#ifdef RENDER_REWRITE
+	Model* model = memory_pool_push(g_assets->model_pool);
+#else
 	Model* model = (Model*)memory_alloc(sizeof(Model));
+#endif
 	arrsetlen(model->batch_array, (batchCount) ? batchCount : 1);
 	return model;
 }
@@ -1544,6 +1880,7 @@ Model* assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceL
 
 Model*
 assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
+#define ParseError(path,...) ModelError(obj_path, "Failed parsing '",path,"' on line '",line_number,"'! ",__VA_ARGS__)
 	Stopwatch load_stopwatch = start_stopwatch();
 	map<vec3,MeshVertex> vUnique(deshi_temp_allocator);
 	set<vec3> vnUnique(deshi_temp_allocator);
@@ -1920,13 +2257,13 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 	}
 	
 	//// parsing warnings/errors ////
-	if(non_tri_warning)   LogW("assets","The mesh was not triangulated before parsing; Expect missing triangles!");
-	if(s_warning)         LogW("assets","There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
-	if(!vtArray.count){   LogW("assets","No vertex UVs 'vt' were parsed in ",obj_path); }
-	if(!vnArray.count){   LogW("assets","No vertex normals 'vn' were parsed in ",obj_path); }
-	if(fatal_error){      LogE("assets","OBJ parsing encountered a fatal error in ",obj_path); return assets_model_null(); }
-	if(!vArray.count){    LogE("assets","No vertex positions 'v' were parsed in ",obj_path); return assets_model_null(); }
-	if(!triangles.count){ LogE("assets","No faces 'f' were parsed in ",obj_path); return assets_model_null(); }
+	if(non_tri_warning)   ModelWarning(obj_path, "The mesh was not triangulated before parsing; Expect missing triangles!");
+	if(s_warning)         ModelWarning(obj_path, "There were 's' specifiers when parsing ",obj_path,", but those are not evaluated currently");
+	if(!vtArray.count){   ModelWarning(obj_path, "No vertex UVs 'vt' were parsed in ",obj_path); }
+	if(!vnArray.count){   ModelWarning(obj_path, "No vertex normals 'vn' were parsed in ",obj_path); }
+	if(fatal_error){      ModelError(obj_path, "OBJ parsing encountered a fatal error in ",obj_path); return assets_model_null(); }
+	if(!vArray.count){    ModelError(obj_path, "No vertex positions 'v' were parsed in ",obj_path); return assets_model_null(); }
+	if(!triangles.count){ ModelError(obj_path, "No faces 'f' were parsed in ",obj_path); return assets_model_null(); }
 	
 	//// check if mesh is already loaded ////
 	Mesh* mesh = 0;
@@ -2007,11 +2344,12 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 #ifdef RENDER_REWRITE
 		map_mesh(mesh);
 #else
-		render_load_mesh(mesh);
+	render_load_mesh(mesh);
+	arrput(DeshAssets->model_array, model);
 #endif
 		arrput(DeshAssets->mesh_array, mesh);
 	}
-	Log("assets","Parsing and loading OBJ '",obj_path,"' took ",peek_stopwatch(load_stopwatch),"ms");
+	ModelInfo(obj_path, "Parsing and loading OBJ took ",peek_stopwatch(load_stopwatch),"ms");
 	
 	//parse MTL files
 	if(mtllib_found){
@@ -2044,11 +2382,39 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		model->batch_array[0].material    = assets_material_null();
 	}
 	
-	arrput(DeshAssets->model_array, model);
 	Log("assets","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
 
+Model*
+assets_model_create_from_obj_x(str8 obj_path) {
+#define array_def(type, name)                 \
+	type* name;                               \
+	array_init(name, 1, deshi_temp_allocator);
+
+	ModelInfo("N/A", "creating a new model from obj file at path ", obj_path, "'");
+
+	Stopwatch watch = start_stopwatch();
+	
+	// NOTE(sushi) we cannot use commas to declare template parameters in macros because C is dumb!
+	using IndexNamePair = pair<u32, str8>;
+
+	array_def(MeshVertex,    vertex_set); // sorted by the hash of the vertex's position
+	array_def(vec3,          vertex_normal_set);
+	array_def(IndexNamePair, object_set);
+	array_def(IndexNamePair, group_set);
+	array_def(IndexNamePair, usemtl_set);
+	array_def(IndexNamePair, mtllib_set);
+	array_def(vec2,          uv_array);
+	array_def(u32,           vertex_refs);
+	array_def(u32,           vertex_normal_refs);
+	array_def(u32,           object_refs);
+	array_def(u32,           group_refs);
+	array_def(u32,           usemtl_refs);
+	// TODO(sushi) rewrite this eventually 
+	return 0;
+#undef array_def
+}
 
 Model*
 assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
@@ -2306,6 +2672,34 @@ assets_model_delete(Model* model){
 	}
 	arrfree(model->batch_array);
 	memory_zfree(model);
+}
+
+void
+assets_model_render(Window* window, Model* model, mat4* transformation) {
+	if(!model) {
+		ModelError("N/A", "null model pointer");
+		return;
+	}
+	if(!window) {
+		ModelError(model->name, "null window pointer");
+		return;
+	}
+	if(!transformation) {
+		ModelError(model->name, "null transformation pointer");
+		return;
+	}
+	auto f = render_current_present_frame_of_window(window);
+	forI(arrlenu(model->batch_array)) {
+		auto b = model->batch_array[i];
+		if(!b.index_count) continue;
+		render_cmd_bind_pipeline(f, b.material->pipeline);
+		render_cmd_bind_descriptor_set(f, 0, g_assets->view_proj_ubo);
+		render_cmd_push_constant(f, transformation, {RenderShaderStage_Vertex, sizeof(mat4), 0});
+		render_cmd_bind_vertex_buffer(f, model->mesh->vertex_buffer);
+		render_cmd_bind_index_buffer(f, model->mesh->index_buffer);
+		render_cmd_bind_descriptor_set(f, 1, b.material->descriptor_set);
+		render_cmd_draw_indexed(f, b.index_count, b.index_offset, 0);
+	}
 }
 
 
