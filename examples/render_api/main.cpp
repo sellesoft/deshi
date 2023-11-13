@@ -49,8 +49,6 @@ int main() {
 	Window* win = window_create(str8l("render_api"));
 	window_show(win);
 	render_init_x(win);
-	assets_init();
-	ui_init_x(win);
 
 	// we need to create a pipeline which describes the path we take
 	// to render the scene
@@ -181,7 +179,7 @@ int main() {
 	// Now we tell the pipeline what layout to use and update it in the backend.
 	
 	pipeline->layout = pipeline_layout;
-	render_update_pipeline(pipeline);
+	render_pipeline_update(pipeline);
 
 	// At this point we have described to the backend the sequence of operations we want 
 	// to perform on our vertices and textures and the data the stages (shaders) use 
