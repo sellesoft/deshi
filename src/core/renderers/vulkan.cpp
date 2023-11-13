@@ -4564,7 +4564,14 @@ render_descriptor_layout_update(RenderDescriptorLayout* x) {
 	resultVk = vkCreateDescriptorSetLayout(device, &info, allocator, (VkDescriptorSetLayout*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)x->handle,
-			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name, " descriptor set layout").str);
+			(char*)x->debug_name.str);
+}
+
+void
+render_descriptor_layout_destroy(RenderDescriptorLayout* x) {
+	if(x->bindings)	array_deinit(x->bindings);
+	vkDestroyDescriptorSetLayout(device, (VkDescriptorSetLayout)x->handle, allocator);
+	ZeroMemory(x, sizeof(RenderDescriptorLayout));
 }
 
 VkCompareOp
@@ -4638,7 +4645,7 @@ render_descriptor_set_update(RenderDescriptorSet* x) {
 	resultVk = vkAllocateDescriptorSets(device, &alloc_info, (VkDescriptorSet*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)x->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, "Descriptor set ", x->debug_name).str);
+			(char*)x->debug_name.str);
 }
 
 void
@@ -4688,6 +4695,13 @@ render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptor
 	array_deinit(writes);
 	array_deinit(buffer_infos);
 	array_deinit(image_infos);
+}
+
+void
+render_descriptor_set_destroy(RenderDescriptorSet* x) {
+	array_deinit(x->layouts);
+	ZeroMemory(x, sizeof(RenderDescriptorSet));
+	vkFreeDescriptorSets(device, descriptorPool, 1, (VkDescriptorSet*)&x->handle);
 }
 
 RenderPipelineLayout*
@@ -4761,7 +4775,7 @@ render_pipeline_layout_update(RenderPipelineLayout* x) {
 	resultVk = vkCreatePipelineLayout(device, &info, allocator, (VkPipelineLayout*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)x->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name, " pipeline layout").str);
+			(char*)x->debug_name.str);
 
 	PrintVk(2, "Finished updating ", x->debug_name, " layout in ", peek_stopwatch(watch), "ms");
 }
@@ -4811,7 +4825,7 @@ render_create_default_pipeline() {
 
 	p->layout = render_pipeline_layout_create_default();
 
-	render_update_pipeline(p);
+	render_pipeline_update(p);
 
 	return p;
 }
@@ -4874,7 +4888,7 @@ vulkan_format_to_render(VkFormat x) {
 }
 
 void
-render_update_pipeline(RenderPipeline* pipeline) {
+render_pipeline_update(RenderPipeline* pipeline) {
 	PrintVk(2, "Updating ", pipeline->name, " pipeline");
 
 	Stopwatch watch = start_stopwatch();
@@ -5003,9 +5017,19 @@ render_update_pipeline(RenderPipeline* pipeline) {
 	resultVk = vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, allocator, (VkPipeline*)&pipeline->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipeline->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, pipeline->name, " pipeline").str);
+			(char*)pipeline->name.str);
 
 	PrintVk(2, "Finished creating ", pipeline->name, " pipeline in ", peek_stopwatch(watch), "ms");
+}
+
+void
+render_pipeline_destroy(RenderPipeline* x) {
+	array_deinit(x->shader_stages);
+	array_deinit(x->vertex_input_bindings);
+	array_deinit(x->vertex_input_attributes);
+	array_deinit(x->dynamic_states);
+	vkDestroyPipeline(device, (VkPipeline)x->handle, allocator);
+	ZeroMemory(x, sizeof(RenderPipeline));
 }
 
 RenderImage*
@@ -5087,6 +5111,8 @@ render_image_update(RenderImage* x) {
 		(VkImage*)&x->handle,
 		(VkDeviceMemory*)&x->memory_handle
 	);
+
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)x->handle, (char*)x->debug_name.str);
 }
 
 void
@@ -5169,6 +5195,13 @@ render_image_upload(RenderImage* image, u8* pixels) {
 	// TODO(sushi) generate_mipmaps
 }
 
+void
+render_image_destroy(RenderImage* x) {
+	vkFreeMemory(device, (VkDeviceMemory)x->memory_handle, allocator);
+	vkDestroyImage(device, (VkImage)x->handle, allocator);
+	ZeroMemory(x, sizeof(RenderImage));
+}
+
 RenderImageView*
 render_image_view_create() {
 	return memory_pool_push(__render_pool_image_views);
@@ -5196,6 +5229,13 @@ render_image_view_update(RenderImageView* x) {
 		1
 	);
 
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)x->handle, (char*)x->debug_name.str);
+}
+
+void
+render_image_view_destroy(RenderImageView* x) {
+	vkDestroyImageView(device, (VkImageView)x->handle, allocator);
+	ZeroMemory(x, sizeof(RenderImageView));
 }
 
 RenderSampler*
@@ -5246,8 +5286,13 @@ render_sampler_update(RenderSampler* x) {
 	resultVk = vkCreateSampler(device, &info, allocator, (VkSampler*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)x->handle,
-			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name).str);
+			(char*)x->debug_name.str);
+}
 
+void
+render_sampler_destroy(RenderSampler* x) {
+	vkDestroySampler(device, (VkSampler)x->handle, allocator);
+	ZeroMemory(x, sizeof(RenderSampler));
 }
 
 RenderPass*
@@ -5357,93 +5402,8 @@ render_update_render_pass(RenderPass* x) {
 	resultVk = vkCreateRenderPass(device, &info, allocator, (VkRenderPass*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)x->handle, 
-			(char*)to_dstr8v(deshi_temp_allocator, x->debug_name, " render pass").str);
+			(char*)x->debug_name.str);
 }
-
-void 
-render_execute_render_pass(RenderPass* x, Window* win) {
-	auto wininf = (VkWindowInfo*)win->render_info;
-
-	VkClearValue clear_values[2];
-	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-	VkRenderPassBeginInfo render_pass_info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-	VkViewport viewport{};
-	VkRect2D scissor{};
-
-	forX(frameidx, wininf->image_count) {
-		VkCommandBuffer cmdbuf = wininf->frames[frameidx].command_buffer;
-
-		clear_values[0].color = {0,0,0,0};
-		clear_values[1].color = {0,0,0,0};
-		render_pass_info.renderPass = (VkRenderPass)x->handle;
-		render_pass_info.framebuffer = wininf->frames[frameidx].framebuffer;
-		render_pass_info.clearValueCount = 2;
-		render_pass_info.pClearValues = clear_values;
-		render_pass_info.renderArea.offset = {0,0};
-		render_pass_info.renderArea.extent = wininf->extent;
-
-		viewport.x = 0;
-		viewport.y = 0;
-		viewport.width = wininf->extent.width;
-		viewport.height = wininf->extent.height;
-		viewport.minDepth = 0.f;
-		viewport.maxDepth = 1.f;
-		scissor.offset.x = 0;
-		scissor.offset.y = 0;
-		scissor.extent.width = wininf->width;
-		scissor.extent.height = wininf->height;
-
-		DebugBeginLabelVk(cmdbuf, (char*)x->debug_name.str, {x->debug_color.r/255.f, x->debug_color.g/255.f, x->debug_color.b/255.f, x->debug_color.a/255.f});
-		vkCmdBeginRenderPass(cmdbuf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdSetScissor(cmdbuf, 0, 1, &scissor);
-		vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
-
-		RenderPipeline* currently_bound_pipeline;
-
-		forX(cmdidx, array_count(x->commands)) {
-			RenderCommand cmd = x->commands[cmdidx];
-			switch(cmd.type) {
-				case RenderCommandType_Bind_Pipeline: {
-					currently_bound_pipeline = cmd.bind_pipeline.handle;
-					vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)cmd.bind_pipeline.handle->handle);
-				} break;
-				case RenderCommandType_Bind_Vertex_Buffer: {
-					VkDeviceSize offsets[1] = {0};
-					vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&cmd.bind_vertex_buffer.handle->buffer_handle, offsets);
-				} break;
-				case RenderCommandType_Bind_Index_Buffer: {
-					vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)cmd.bind_index_buffer.handle->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
-				} break;
-				case RenderCommandType_Bind_Descriptor_Set: {
-					vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)currently_bound_pipeline->layout->handle, 0, 1, (VkDescriptorSet*)&cmd.bind_descriptor_set.handle->handle, 0, 0);
-				} break;
-				case RenderCommandType_Push_Constant: {
-					vkCmdPushConstants(cmdbuf, 
-							(VkPipelineLayout)currently_bound_pipeline->layout->handle, 
-							render_shader_kind_to_vulkan(cmd.push_constant.info.shader_stage_flags),
-							cmd.push_constant.info.offset, cmd.push_constant.info.size, cmd.push_constant.data);
-				} break;
-				case RenderCommandType_Draw_Indexed: {
-					vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
-				} break;
-				case RenderCommandType_Draw_Model: {
-					auto model = cmd.draw_model.model;
-					auto mesh = model->mesh;
-					VkDeviceSize offsets[1] = {0};
-					vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&mesh->vertex_buffer->buffer_handle, offsets);
-					vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)mesh->index_buffer->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
-					
-
-				} break;
-			}
-		}
-
-		vkCmdEndRenderPass(cmdbuf);
-		DebugEndLabelVk(cmdbuf);
-	}
-
-}
-
 RenderPass*
 render_pass_of_window_presentation_frame(Window* window) {
 	return ((VkWindowInfo*)window->render_info)->frames_x[0]->render_pass;
@@ -5482,7 +5442,7 @@ render_frame_update(RenderFrame* x) {
 	resultVk = vkCreateFramebuffer(device, &info, allocator, (VkFramebuffer*)&x->handle);
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)x->handle,
-			(char*)to_dstr8v(deshi_temp_allocator, "Framebuffer").str);
+			(char*)x->debug_name.str);
 }
 
 RenderImageView*
@@ -5911,7 +5871,7 @@ create_render_pass_and_frame(Window* window) {
 		resultVk = vkAllocateCommandBuffers(device, &cmdbuf_info, (VkCommandBuffer*)&frame->command_buffer_handle);
 		AssertVk(resultVk);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)frame->command_buffer_handle,
-				(char*)to_dstr8v(deshi_temp_allocator, "Default command buffer").str);
+				"Default command buffer");
 	}
 
 	PrintVk(2, "Finished creating frames in ", peek_stopwatch(watch), "ms");
@@ -6046,7 +6006,7 @@ render_init_x(Window* window) {
 		renderSettings.loggingLevel = 4;
 	}
 
-	renderSettings.loggingLevel = -1;
+	// renderSettings.loggingLevel = -1;
 
 	memory_pool_init(__render_pool_images, 8);
 	memory_pool_init(__render_pool_image_views, 8);
@@ -6329,7 +6289,7 @@ render_update_x(Window* window) {
 			case RenderCommandType_Bind_Descriptor_Set: {
 				vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 						(VkPipelineLayout)currently_bound_pipeline->layout->handle, 
-						0, 1, 
+						cmd.bind_descriptor_set.set_index, 1, 
 						(VkDescriptorSet*)&cmd.bind_descriptor_set.handle->handle, 
 						0, 0);
 			} break;
@@ -6555,7 +6515,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	allocInfo.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	resultVk = vkAllocateMemory(device, &allocInfo, allocator, &tvk.memory); AssertVk(resultVk, "failed to allocate image memory");
 	vkBindImageMemory(device, tvk.image, tvk.memory, 0);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, (const char*)to_dstr8v(deshi_temp_allocator, "Texture image ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, (const char*)to_dstr8v(deshi_temp_allocator, "Texture ", texture->name, " image").str);
 	
 	VkCommandBuffer commandBuffer = begin_single_time_commands();{
 		//transition image layout to accept memory transfers
@@ -6607,7 +6567,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	viewInfo.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 	viewInfo.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
 	resultVk = vkCreateImageView(device, &viewInfo, allocator, &tvk.view); AssertVk(resultVk, "failed to create texture image view");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tvk.view, (const char*)to_dstr8v(deshi_temp_allocator, "Image View ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tvk.view, (const char*)to_dstr8v(deshi_temp_allocator, "Texture ", texture->name, " image view").str);
 	
 	//create texture sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -6674,7 +6634,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	samplerInfo.minLod           = 0.0f;
 	samplerInfo.maxLod           = (f32)texture->mipmaps;
 	resultVk = vkCreateSampler(device, &samplerInfo, 0, &tvk.sampler); AssertVk(resultVk, "failed to create texture sampler");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tvk.sampler, (const char*)to_dstr8v(deshi_temp_allocator, "Sampler ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tvk.sampler, (const char*)to_dstr8v(deshi_temp_allocator, "Texture ", texture->name, " sampler").str);
 	
 	//fill texture descriptor image info
 	tvk.descriptor.imageView   = tvk.view;
@@ -6687,7 +6647,7 @@ render_load_texture(Texture* texture){DPZoneScoped;
 	setAllocInfo.pSetLayouts = &descriptorSetLayouts.twod;
 	setAllocInfo.descriptorSetCount = 1;
 	resultVk = vkAllocateDescriptorSets(device, &setAllocInfo, &tvk.descriptorSet); AssertVk(resultVk);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet, (const char*)to_dstr8v(deshi_temp_allocator, "Texture descriptor set ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet, (const char*)to_dstr8v(deshi_temp_allocator, "Texture ", texture->name, " descriptor set").str);
 	
 	VkWriteDescriptorSet set{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 	set.dstSet = tvk.descriptorSet;
@@ -6829,39 +6789,6 @@ render_model(Model* model, mat4* matrix){DPZoneScoped;
 		renderModelCmdCount += 1;
 	}
 }
-
-void
-render_model_x(RenderFrame* frame, Model* model, mat4* matrix) {
-	RenderCommand c0{RenderCommandType_Bind_Pipeline};
-	forI(arrlenu(model->batch_array)) {
-		auto ba = model->batch_array[i];
-		if(!ba.index_count) continue;
-		auto c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Pipeline;
-		c->bind_pipeline.handle = ba.material->pipeline;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Push_Constant;
-		c->push_constant.data = matrix;
-		c->push_constant.info.size = sizeof(mat4);
-		c->push_constant.info.offset = 0;
-		c->push_constant.info.shader_stage_flags = RenderShaderStage_Vertex;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Vertex_Buffer;
-		c->bind_vertex_buffer.handle = model->mesh->vertex_buffer;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Index_Buffer;
-		c->bind_index_buffer.handle = model->mesh->index_buffer;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Descriptor_Set;
-		c->bind_descriptor_set.handle = ba.material->descriptor_set;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Draw_Indexed;
-		c->draw_indexed.index_offset = ba.index_offset;
-		c->draw_indexed.index_count = ba.index_count;
-		c->draw_indexed.vertex_offset = 0;
-	}
-}
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d

@@ -45,6 +45,7 @@ struct Material;
 struct Model;
 struct Font;
 struct Window;
+struct RenderFrame;
 StartLinkageC();
 
 
@@ -264,6 +265,8 @@ typedef struct RenderDescriptorLayout {
 RenderDescriptorLayout* render_descriptor_layout_create();
 void render_descriptor_layout_update(RenderDescriptorLayout* x);
 
+void render_descriptor_layout_destroy(RenderDescriptorLayout* x);
+
 global RenderDescriptorLayout* __render_pool_descriptor_layouts;
 
 typedef struct RenderDescriptorSet {
@@ -278,6 +281,8 @@ RenderDescriptorSet* render_descriptor_set_create();
 void render_descriptor_set_update(RenderDescriptorSet* x);
 // TODO(sushi) writing to a specific binding
 void render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptors);
+
+void render_descriptor_set_destroy(RenderDescriptorSet* x);
 
 global RenderDescriptorSet* __render_pool_descriptor_sets;
 
@@ -493,10 +498,10 @@ typedef struct RenderPipeline {
 local RenderPipeline* __render_pipeline_pool;
 
 RenderPipeline* render_pipeline_create();
-RenderPipeline* render_create_default_pipeline();
-void render_update_pipeline(RenderPipeline* pipeline);
+RenderPipeline* render_pipeline_create_default();
+void render_pipeline_update(RenderPipeline* x);
 
-
+void render_pipeline_destroy(RenderPipeline* x);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_buffer
@@ -630,7 +635,6 @@ enum RenderCommandType {
 	RenderCommandType_Push_Constant,
 	// draws a set of indexes from the currently bound index buffer
 	RenderCommandType_Draw_Indexed,
-	RenderCommandType_Draw_Model,
 };
 
 typedef struct RenderCommand {
@@ -646,6 +650,7 @@ typedef struct RenderCommand {
 	} bind_vertex_buffer, bind_index_buffer;
 
 	struct { // bind_descriptor_set
+		u32 set_index;
 		RenderDescriptorSet* handle;
 	} bind_descriptor_set;
 
@@ -660,12 +665,15 @@ typedef struct RenderCommand {
 		u64 vertex_offset;
 	} draw_indexed;
 
-	struct {
-		Model* model;
-	} draw_model;
-
 	}; // union
 } RenderCommand;
+
+void render_cmd_bind_pipeline(RenderFrame* frame, RenderPipeline* pipeline);
+void render_cmd_bind_vertex_buffer(RenderFrame* frame, RenderBuffer* buffer);
+void render_cmd_bind_index_buffer(RenderFrame* frame, RenderBuffer* buffer);
+void render_cmd_bind_descriptor_set(RenderFrame* frame, u32 set_index, RenderDescriptorSet* descriptor_set);
+void render_cmd_push_constant(RenderFrame* frame, void* data, RenderPushConstant info);
+void render_cmd_draw_indexed(RenderFrame* frame, u32 index_count, u32 index_offset, u32 vertex_offset);
 
 enum RenderImageType {
 	RenderImageType_OneD,
@@ -688,6 +696,7 @@ enum RenderImageUsage {
 // GPU which can be used for things like offscreen rendering
 // this is very similar to RenderBuffer, but multidimensional
 typedef struct RenderImage {
+	str8 debug_name;
 	// TODO(sushi) support other image types
 	// RenderImageType   type;
 	RenderFormat      format;
@@ -735,6 +744,7 @@ enum RenderImageViewAspectFlags {
 };
 
 typedef struct RenderImageView {
+	str8 debug_name;
 	// TODO(sushi) support other image types
 	// RenderImageViewType type;
 	RenderFormat format;
@@ -867,6 +877,8 @@ RenderPass* render_pass_of_window_presentation_frame(Window* window);
 
 // representation of a framebuffer
 typedef struct RenderFrame {
+	str8 debug_name;
+
 	// render pass describing how this frame behaves
 	RenderPass* render_pass;
 
@@ -1385,6 +1397,52 @@ render_get_stage(){
 	return &renderStage;
 }
 
+
+void 
+render_cmd_bind_pipeline(RenderFrame* frame, RenderPipeline* pipeline) {
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Pipeline;
+	c->bind_pipeline.handle = pipeline;
+}
+
+void 
+render_cmd_bind_vertex_buffer(RenderFrame* frame, RenderBuffer* buffer) {
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Vertex_Buffer;
+	c->bind_vertex_buffer.handle = buffer;
+}
+
+void 
+render_cmd_bind_index_buffer(RenderFrame* frame, RenderBuffer* buffer) {
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Index_Buffer;
+	c->bind_index_buffer.handle = buffer;
+}
+
+void 
+render_cmd_bind_descriptor_set(RenderFrame* frame, u32 set_index, RenderDescriptorSet* descriptor_set) {
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Bind_Descriptor_Set;
+	c->bind_descriptor_set.set_index = set_index;
+	c->bind_descriptor_set.handle = descriptor_set;
+}
+
+void 
+render_cmd_push_constant(RenderFrame* frame, void* data, RenderPushConstant info) {
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Push_Constant;
+	c->push_constant.data = data;
+	c->push_constant.info = info;
+}
+
+void 
+render_cmd_draw_indexed(RenderFrame* frame, u32 index_count, u32 index_offset, u32 vertex_offset) {
+	auto c = array_push(frame->commands);
+	c->type = RenderCommandType_Draw_Indexed;
+	c->draw_indexed.index_count = index_count;
+	c->draw_indexed.index_offset = index_offset;
+	c->draw_indexed.vertex_offset = vertex_offset;
+}
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_buffer
