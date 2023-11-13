@@ -409,55 +409,30 @@ int main() {
 		RenderCommand* c;
 
 		// We have to bind the pipeline first.
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Pipeline;
-		c->bind_pipeline.handle = pipeline;
+		render_cmd_bind_pipeline(frame, pipeline);
 
 		// Then we push the transformation push constant for our first plane.
 		// Note that this doesn't copy the memory, so it must
 		// still be around by the time we update the renderer.
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Push_Constant;
-		c->push_constant.data = &plane_transform0;
-		c->push_constant.info = model_push_constant;
+		render_cmd_push_constant(frame, &plane_transform0, model_push_constant);
 
 		// We must bind the vertex and index buffers our model
 		// is using. These were generated when we asked assets to
 		// make our box mesh, so we can get them from it directly.
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Vertex_Buffer;
-		c->bind_vertex_buffer.handle = vertex_buffer;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Index_Buffer;
-		c->bind_index_buffer.handle = index_buffer;
+		render_cmd_bind_vertex_buffer(frame, vertex_buffer);
+		render_cmd_bind_index_buffer(frame, index_buffer);
 
 		// We need the descriptor set so we know what data we're actually
 		// going to be using in the shader.
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Descriptor_Set;
-		c->bind_descriptor_set.handle = descriptor_set0;
+		render_cmd_bind_descriptor_set(frame, 0, descriptor_set0);
 
 		// Finally we tell the backend that we want to draw the first plane.
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Draw_Indexed;
-		c->draw_indexed.index_count = 6;
-		c->draw_indexed.index_offset = 0;
-		c->draw_indexed.vertex_offset = 0;
+		render_cmd_draw_indexed(frame, 6, 0, 0);
 
 		// Now we change the push constant and descriptor set and draw again
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Push_Constant;
-		c->push_constant.info = model_push_constant;
-		c->push_constant.data = &plane_transform1;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Bind_Descriptor_Set;
-		c->bind_descriptor_set.handle = descriptor_set1;
-		c = array_push(frame->commands);
-		c->type = RenderCommandType_Draw_Indexed;
-		c->draw_indexed.index_count = 6;
-		c->draw_indexed.index_offset = 0;
-		c->draw_indexed.vertex_offset = 0;
-
+		render_cmd_push_constant(frame, &plane_transform1, model_push_constant);
+		render_cmd_bind_descriptor_set(frame, 0, descriptor_set1);
+		render_cmd_draw_indexed(frame, 6, 0, 0);
 
 		render_update_x(win);
 
