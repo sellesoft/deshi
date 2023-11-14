@@ -197,7 +197,11 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 #define UNICODE
 #define _UNICODE
 
-
+#ifdef BUILD_SLOW
+#define DEBUG(code) code
+#else
+#define DEBUG(code)
+#endif
 
 #include <ctime>
 #include "kigu/common.h"
