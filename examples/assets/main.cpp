@@ -53,8 +53,8 @@ int main() {
 	stages.fragment.resources[0] = ShaderResourceType_Texture;
 	stages.fragment.resources[1] = ShaderResourceType_UBO;
 
-	UBO* ubo_resource0 = assets_uniform_buffer_object_create(sizeof(ubo));
-	UBO* ubo_resource1 = assets_uniform_buffer_object_create(sizeof(ubo));
+	UBO* ubo_resource0 = assets_ubo_create(sizeof(ubo));
+	UBO* ubo_resource1 = assets_ubo_create(sizeof(ubo));
 
 	Texture* alex = assets_texture_create_from_file_simple(str8l("alex.png"));
 
@@ -69,7 +69,7 @@ int main() {
 	Material* fancy_null0 = assets_material_create_x(str8l("fancy null"), stages, resources);
 
 	resources[1].ubo = ubo_resource1;
-	Material* fancy_null1 = assets_material_duplicate(str8l("fancy null"), fancy_null0, resources);
+	Material* fancy_null1 = assets_material_duplicate(str8l("fancy null 2"), fancy_null0, resources);
 
 	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
 
@@ -91,15 +91,15 @@ int main() {
 
 		ubo.time = g_time->totalTime;
 		ubo.mix = Vec4(1, 0, 0, 1);
-		assets_uniform_buffer_object_update(ubo_resource0, &ubo);
+		assets_ubo_update(ubo_resource0, &ubo);
 		ubo.mix = Vec4(0, 1, 0, 1);
-		assets_uniform_buffer_object_update(ubo_resource1, &ubo);
+		assets_ubo_update(ubo_resource1, &ubo);
 
 		box->batch_array[0].material = fancy_null0;
 		assets_model_render(win, box, &transform0);
 		box->batch_array[0].material = fancy_null1;
 		assets_model_render(win, box, &transform1);
-
+		
 		render_update_x(win);
 	}
 }
