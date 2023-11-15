@@ -406,33 +406,38 @@ int main() {
 		// We need to give commands to the frame that we're currently working with
 		// which the api provides a function for retrieving 
 		RenderFrame* frame = render_current_present_frame_of_window(win);
-		RenderCommand* c;
+			
+		// We need to tell the renderer what render pass we're working with
+		// and what frame we want the information to actually draw to
+		render_cmd_begin_render_pass(win, frame->render_pass, frame);
 
-		// We have to bind the pipeline first.
-		render_cmd_bind_pipeline(frame, pipeline);
+		// Next we bind the pipeline.
+		render_cmd_bind_pipeline(win, pipeline);
 
 		// Then we push the transformation push constant for our first plane.
 		// Note that this doesn't copy the memory, so it must
 		// still be around by the time we update the renderer.
-		render_cmd_push_constant(frame, &plane_transform0, model_push_constant);
+		render_cmd_push_constant(win, &plane_transform0, model_push_constant);
 
 		// We must bind the vertex and index buffers our model
 		// is using. These were generated when we asked assets to
 		// make our box mesh, so we can get them from it directly.
-		render_cmd_bind_vertex_buffer(frame, vertex_buffer);
-		render_cmd_bind_index_buffer(frame, index_buffer);
+		render_cmd_bind_vertex_buffer(win, vertex_buffer);
+		render_cmd_bind_index_buffer(win, index_buffer);
 
 		// We need the descriptor set so we know what data we're actually
 		// going to be using in the shader.
-		render_cmd_bind_descriptor_set(frame, 0, descriptor_set0);
+		render_cmd_bind_descriptor_set(win, 0, descriptor_set0);
 
 		// Finally we tell the backend that we want to draw the first plane.
-		render_cmd_draw_indexed(frame, 6, 0, 0);
+		render_cmd_draw_indexed(win, 6, 0, 0);
 
 		// Now we change the push constant and descriptor set and draw again
-		render_cmd_push_constant(frame, &plane_transform1, model_push_constant);
-		render_cmd_bind_descriptor_set(frame, 0, descriptor_set1);
-		render_cmd_draw_indexed(frame, 6, 0, 0);
+		render_cmd_push_constant(win, &plane_transform1, model_push_constant);
+		render_cmd_bind_descriptor_set(win, 0, descriptor_set1);
+		render_cmd_draw_indexed(win, 6, 0, 0);
+
+		render_cmd_end_render_pass(win);
 
 		render_update_x(win);
 
