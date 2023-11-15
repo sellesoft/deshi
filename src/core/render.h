@@ -717,11 +717,15 @@ void render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slop
 //             like build commands in parallel or have command buffers
 //             that aren't meant to be cleared every frame.
 typedef struct RenderCommandBuffer {
+	str8 debug_name;
 	RenderCommand* commands;
 	void* handle;
 } RenderCommandBuffer;
 
 RenderCommandBuffer* render_command_buffer_create();
+
+// maybe this could actually queue commands?
+// currently it just creates the backend's command buffer object
 void render_command_buffer_update(RenderCommandBuffer* x);
 
 RenderCommandBuffer* render_command_buffer_of_window(Window* window);
@@ -897,8 +901,6 @@ typedef struct RenderPassAttachment {
 typedef struct RenderPass {
 	str8  debug_name;
 	color debug_color;
-
-	color clear_color;
 	
 	// NOTE(sushi) in Vulkan, viewport and scissor are only considered if they are 
 	//             set in the dynamic states array of the pipeline associated with
@@ -917,6 +919,12 @@ typedef struct RenderPass {
 	RenderPassAttachment* color_attachment;
 	RenderPassAttachment* depth_attachment;
 
+	color color_clear_values;
+	struct {
+		f32 depth;
+		u32 stencil;
+	} depth_clear_values;
+
 	void* handle;
 } RenderPass;
 
@@ -926,8 +934,8 @@ RenderPass* render_pass_create();
 void render_pass_update(RenderPass* x);
 
 // Start recording commands into a render pass with the given frame.
-RenderCommandBuffer* render_pass_begin(RenderPass* pass, RenderFrame* frame);
-void render_pass_end();
+RenderCommandBuffer* render_pass_begin(Window* window, RenderPass* pass, RenderFrame* frame);
+void render_pass_end(Window* window);
 
 RenderPass* render_pass_of_window_presentation_frame(Window* window);
 
@@ -1468,90 +1476,7 @@ render_get_stage(){
 }
 
 
-void 
-render_cmd_bind_pipeline(Window* window, RenderPipeline* pipeline) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Bind_Pipeline;
-	c->bind_pipeline.handle = pipeline;
-}
 
-void 
-render_cmd_bind_vertex_buffer(Window* window, RenderBuffer* buffer) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Bind_Vertex_Buffer;
-	c->bind_vertex_buffer.handle = buffer;
-}
-
-void 
-render_cmd_bind_index_buffer(Window* window, RenderBuffer* buffer) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Bind_Index_Buffer;
-	c->bind_index_buffer.handle = buffer;
-}
-
-void 
-render_cmd_bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Bind_Descriptor_Set;
-	c->bind_descriptor_set.set_index = set_index;
-	c->bind_descriptor_set.handle = descriptor_set;
-}
-
-void 
-render_cmd_push_constant(Window* window, void* data, RenderPushConstant info) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Push_Constant;
-	c->push_constant.data = data;
-	c->push_constant.info = info;
-}
-
-void 
-render_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Draw_Indexed;
-	c->draw_indexed.index_count = index_count;
-	c->draw_indexed.index_offset = index_offset;
-	c->draw_indexed.vertex_offset = vertex_offset;
-}
-
-void
-render_cmd_begin_render_pass(Window* window, RenderPass* pass, RenderFrame* frame) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Begin_Render_Pass;
-	c->begin_render_pass.pass = pass;
-	c->begin_render_pass.frame = frame;
-}
-
-void
-render_cmd_end_render_pass(Window* window) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_End_Render_Pass;
-}
-
-void 
-render_cmd_set_viewport(Window* window, vec2 offset, vec2 extent) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Set_Viewport;
-	c->set_viewport.offset = offset;
-	c->set_viewport.extent = extent;
-}
-
-void 
-render_cmd_set_scissor(Window* window, vec2 offset, vec2 extent) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Set_Scissor;
-	c->set_scissor.offset = offset;
-	c->set_scissor.extent = extent;
-}
-
-void 
-render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) {
-	auto c = array_push(render_command_buffer_of_window(window)->commands);
-	c->type = RenderCommandType_Set_Depth_Bias;
-	c->set_depth_bias.constant = constant;
-	c->set_depth_bias.clamp = clamp;
-	c->set_depth_bias.slope = slope;
-}
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_buffer

@@ -226,9 +226,6 @@ struct VkWindowInfo {
 	FramebufferAttachmentsVk attachments;
 	
 	RenderFrame** presentation_frames;
-	// frames processed before the presentation frame
-	RenderFrame** extra_frames;
-
 	RenderCommandBuffer* command_buffer;
 
 	// a list of render passes we are going to process in a frame
@@ -5349,9 +5346,6 @@ render_store_op_to_vulkan(RenderAttachmentStoreOp x) {
 	Assert(0);
 }
 
-
-
-
 void 
 render_pass_update(RenderPass* x) {
 	PrintVk(4, "Updating renderpass ", x->debug_name);
@@ -5433,6 +5427,7 @@ render_pass_update(RenderPass* x) {
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)x->handle, 
 			(char*)x->debug_name.str);
 }
+
 RenderPass*
 render_pass_of_window_presentation_frame(Window* window) {
 	return ((VkWindowInfo*)window->render_info)->presentation_frames[0]->render_pass;
@@ -5441,11 +5436,6 @@ render_pass_of_window_presentation_frame(Window* window) {
 RenderFrame*
 render_frame_create(Window* window) {
 	auto out = memory_pool_push(__render_pool_frames);
-	out->window = window;
-	auto wininf = (VkWindowInfo*)window->render_info;
-	array_push_value(wininf->extra_frames, out);
-	out->index = array_count(wininf->extra_frames);
-	array_init(out->commands, 1, deshi_allocator);
 	return out;
 }
 
@@ -5475,21 +5465,6 @@ render_frame_update(RenderFrame* x) {
 	AssertVk(resultVk);
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)x->handle,
 			(char*)x->debug_name.str);
-}
-
-RenderFrame*
-render_frame_from_window(Window* window, u32 n) {
-	auto wininf = (VkWindowInfo*)window->render_info;
-	if(!n) {
-		return wininf->presentation_frames[wininf->frame_index];
-	}
-
-	if(n > array_count(wininf->extra_frames)) {
-		LogE("render", "render_frame_from_window was given an n (", n, ") that is greater than the amount of extra frames (", array_count(wininf->extra_frames), ") on the given window (", window->title, ")");
-		return 0;
-	}
-
-	return wininf->extra_frames[n-1];
 }
 
 RenderImageView*
@@ -5844,12 +5819,13 @@ create_render_pass_and_frames(Window* window) {
 	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
 
 	RenderPass* render_pass = render_pass_create();
-	render_pass->color_attachment = &color_attachment;
-	render_pass->depth_attachment = &depth_attachment;
-	render_pass_update(render_pass);
-
 	render_pass->debug_name = str8l("Default render pass");
 	render_pass->debug_color = Color_DarkCyan;
+	render_pass->color_attachment = &color_attachment;
+	render_pass->depth_attachment = &depth_attachment;
+	render_pass->color_clear_values = Color_Black;
+	render_pass->depth_clear_values = {1.f, 0};
+	render_pass_update(render_pass);
 
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
 	VkImage* images;
@@ -5861,9 +5837,7 @@ create_render_pass_and_frames(Window* window) {
 	array_count(wininf->presentation_frames) = wininf->image_count;
 
 	forI(wininf->image_count) {
-		// NOTE(sushi) don't use render_frame_create here as that's meant for external use
-		RenderFrame* frame = wininf->presentation_frames[i] = memory_pool_push(__render_pool_frames);
-		array_init(frame->commands, 1, deshi_allocator);
+		RenderFrame* frame = wininf->presentation_frames[i] = render_frame_create(window);
 		frame->width = wininf->width;
 		frame->height = wininf->height;
 		frame->render_pass = render_pass;
@@ -5913,6 +5887,87 @@ create_render_pass_and_frames(Window* window) {
 	}
 
 	PrintVk(2, "Finished creating frames in ", peek_stopwatch(watch), "ms");
+}
+
+void
+recreate_frames(Window* window) {
+	// NOTE(sushi) we need to re-create these things because the window will already have 
+	//             active render-api handles which we can just reuse. This also avoids an 
+	//             issue with render commands that take RenderFrames, as if we don't do this
+	//             any command that references a previous handle would still be pointing 
+	//             at a destroyed swapchain's image
+	// the goal of this function is to recreate all of this information w/o disturbing any 
+	// possible references to any handle encountered in the process. This includes:
+	// The RenderFrame handles
+	// The RenderImageView handles contained by those frames
+	// The RenderImage handles that those views point to
+	PrintVk(2, "Recreating frames for window ", window->title);
+
+	auto wininf = (VkWindowInfo*)window->render_info;
+
+	RenderPass* render_pass = wininf->presentation_frames[0]->render_pass;
+	
+	u32 old_image_count = wininf->image_count;
+
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
+	VkImage* images;
+	array_init(images, wininf->image_count, deshi_temp_allocator);
+	array_count(images) = wininf->image_count;
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images);
+
+	array_grow(wininf->presentation_frames, wininf->image_count);
+	array_count(wininf->presentation_frames) = wininf->image_count;
+
+	// TODO(sushi) I'm not sure if this should ever happen, but if it does and we have less frames
+	//             than before, we run the risk of external handles to those frames needing to be 
+	//             invalidated (possibly). Handle this if it ever becomes a problem.
+	if(old_image_count != wininf->image_count) {
+		LogE("vulkan", "FATAL INTERNAL ERROR: while recreating frames, the amount of swapchain images differed from its original value. This situation is not yet handled and should be reported immediately.");
+		Assert(0);
+	}
+
+	forI(wininf->image_count) {
+		RenderFrame* frame = wininf->presentation_frames[i];
+		frame->width = wininf->width;
+		frame->height = wininf->height;
+		frame->render_pass = render_pass;
+			
+		auto color_image_view = frame->color_image_view; 
+		auto depth_image_view = frame->depth_image_view; 
+		auto color_image      = color_image_view->image; 
+		auto depth_image      = depth_image_view->image; 
+
+		color_image->extent = {wininf->width, wininf->height};
+		color_image->handle = (void*)images[i];
+
+		depth_image->extent = {wininf->width, wininf->height};
+		render_image_update(depth_image);
+
+		color_image_view->format = color_image->format;
+		color_image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+		render_image_view_update(color_image_view);
+
+		depth_image_view->format = depth_image->format;
+		depth_image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
+		render_image_view_update(depth_image_view);
+
+		VkImageView attachments[2] = {
+			(VkImageView)color_image_view->handle,
+			(VkImageView)depth_image_view->handle,
+		};
+
+		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+		info.renderPass = (VkRenderPass)frame->render_pass->handle;
+		info.width = wininf->width;
+		info.height = wininf->height;
+		info.layers = 1;
+		info.pAttachments = attachments;
+		info.attachmentCount = 2;
+		resultVk = vkCreateFramebuffer(device, &info, allocator, (VkFramebuffer*)&frame->handle);
+		AssertVk(resultVk);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)frame->handle, 
+				(char*)to_dstr8v(deshi_temp_allocator, "Default framebuffer").str);
+	}
 }
 
 void
@@ -6046,6 +6101,7 @@ render_init_x(Window* window) {
 
 	renderSettings.loggingLevel = -1;
 
+	// TODO(sushi) this should be moved to an implementation shared between backends
 	memory_pool_init(__render_pool_images, 8);
 	memory_pool_init(__render_pool_image_views, 8);
 	memory_pool_init(__render_pool_samplers, 8);
@@ -6055,6 +6111,7 @@ render_init_x(Window* window) {
 	memory_pool_init(__render_pool_descriptor_layouts, 8);
 	memory_pool_init(__render_pool_pipeline_layouts, 8);
 	memory_pool_init(__render_pipeline_pool, 8);
+	memory_pool_init(__render_pool_command_buffers, 8);
 
 	// create the window info that this window will point to
 	auto wi = (VkWindowInfo*)(window->render_info = memory_pool_push(window_infos));
@@ -6064,10 +6121,6 @@ render_init_x(Window* window) {
 	array_init(wi->support_details.formats, 1, deshi_allocator);
 	array_init(wi->support_details.present_modes, 1, deshi_allocator);
 	array_init(wi->presentation_frames, 1, deshi_allocator);
-	array_init(wi->extra_frames, 1, deshi_allocator);
-
-	wi->command_buffer = render_command_buffer_create();
-	render_command_buffer_update(wi->command_buffer);
 
 	// mostly vulkan-os interaction setup
 	setup_allocator();
@@ -6089,6 +6142,11 @@ render_init_x(Window* window) {
 
 	// setup static vulkan objects
 	create_command_pool();
+	
+	// create the command buffer associated with the given window
+	wi->command_buffer = render_command_buffer_create();
+	render_command_buffer_update(wi->command_buffer);
+
 	// create_uniform_buffers();
 	setup_shader_compiler();
 	create_layouts();
@@ -6258,7 +6316,7 @@ render_update_x(Window* window) {
 		if(wininf->width <= 0 || wininf->height <= 0) return;
 		vkDeviceWaitIdle(device);
 		create_swapchain(window);
-		create_render_pass_and_frames(window);
+		recreate_frames(window);
 		wininf->frame_index = 0;
 		remakeWindow = false;
 	}
@@ -6267,6 +6325,7 @@ render_update_x(Window* window) {
 
 	VkResult result = vkAcquireNextImageKHR(device, wininf->swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &wininf->frame_index);
 	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+		PrintVk(2, "Window ", window->title, "'s surface has changed.");
 		// the surface has changed in some way that makes it no longer compatible with its swapchain
 		// so we need to recreate the swapchain
 		remakeWindow = true;
@@ -6280,46 +6339,17 @@ render_update_x(Window* window) {
 	
 	VkClearValue clear_values[2];
 	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-	VkRenderPassBeginInfo render_pass_info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 	VkViewport viewport{};
 	VkRect2D scissor{};
 
-	auto cmdbuf = (VkCommandBuffer)render_command_buffer_of_window(window)->handle;
+	auto cmdbuf = (VkCommandBuffer)wininf->command_buffer->handle;
 	resultVk = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
 	AssertVk(resultVk);
 
-	clear_values[0].color = {0, 0, 0, 0};
-	clear_values[1].depthStencil = {1.f, 0};
-
-	render_pass_info.renderPass = (VkRenderPass)frame->render_pass->handle;
-	render_pass_info.framebuffer = (VkFramebuffer)frame->handle;
-	render_pass_info.clearValueCount = 2;
-	render_pass_info.pClearValues = clear_values;
-	render_pass_info.renderArea.offset = {0,0};
-	render_pass_info.renderArea.extent = {frame->width, frame->height};
-
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = frame->width;
-	viewport.height = frame->height;
-	viewport.minDepth = 0.f;
-	viewport.maxDepth = 1.f;
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent.width = frame->width;
-	scissor.extent.height = frame->height;
-	
-	RenderPass* render_pass = frame->render_pass;
-
-	DebugBeginLabelVk(cmdbuf, (char*)render_pass->debug_name.str, {render_pass->debug_color.r/255.f, render_pass->debug_color.g/255.f, render_pass->debug_color.b/255.f, render_pass->debug_color.a/255.f});
-	vkCmdBeginRenderPass(cmdbuf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdSetScissor(cmdbuf, 0, 1, &scissor);
-	vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
-
 	RenderPipeline* currently_bound_pipeline = 0;
 
-	forI(array_count(frame->commands)) {
-		auto cmd = frame->commands[i];
+	forI(array_count(wininf->command_buffer->commands)) {
+		auto cmd = wininf->command_buffer->commands[i];
 		switch(cmd.type) {
 			case RenderCommandType_Bind_Pipeline: {
 				currently_bound_pipeline = cmd.bind_pipeline.handle;
@@ -6348,19 +6378,66 @@ render_update_x(Window* window) {
 			case RenderCommandType_Draw_Indexed: {
 				vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
 			} break;
+			case RenderCommandType_Begin_Render_Pass: {
+				auto pass = cmd.begin_render_pass.pass;
+				auto frame = cmd.begin_render_pass.frame;
+
+				VkRenderPassBeginInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+				info.renderPass = (VkRenderPass)pass->handle;
+				info.framebuffer = (VkFramebuffer)frame->handle;
+				info.renderArea.offset = {0,0};
+				info.renderArea.extent = {frame->width, frame->height};
+				info.pClearValues = clear_values;
+
+				if(pass->color_attachment) {
+					clear_values[0].color = {
+						pass->color_clear_values.r / 255.f,
+						pass->color_clear_values.g / 255.f,
+						pass->color_clear_values.b / 255.f,
+						pass->color_clear_values.a / 255.f
+					};
+					if(pass->depth_attachment) {
+						clear_values[1].depthStencil = {
+							pass->depth_clear_values.depth,
+							pass->depth_clear_values.stencil,
+						};
+						info.clearValueCount = 2;
+					} else info.clearValueCount = 1;
+				} else if(pass->depth_attachment) {
+					clear_values[0].depthStencil = {
+						pass->depth_clear_values.depth,
+						pass->depth_clear_values.stencil,
+					};
+					info.clearValueCount = 1;
+				}
+				VkViewport viewport{};
+				VkRect2D scissor{};
+				viewport.x = 0;
+				viewport.y = 0;
+				viewport.width = frame->width;
+				viewport.height = frame->height;
+				viewport.minDepth = 0.f;
+				viewport.maxDepth = 1.f;
+				scissor.offset.x = 0;
+				scissor.offset.y = 0;
+				scissor.extent.width = frame->width;
+				scissor.extent.height = frame->height;
+
+				vkCmdSetScissor(cmdbuf, 0, 1, &scissor);
+				vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
+
+				DebugBeginLabelVk(cmdbuf, (char*)cmd.begin_render_pass.pass->debug_name.str, {
+						cmd.begin_render_pass.pass->debug_color.r/255.f, 
+						cmd.begin_render_pass.pass->debug_color.g/255.f, 
+						cmd.begin_render_pass.pass->debug_color.b/255.f, 
+						cmd.begin_render_pass.pass->debug_color.a/255.f});
+				vkCmdBeginRenderPass(cmdbuf, &info, VK_SUBPASS_CONTENTS_INLINE);
+			} break;
+			case RenderCommandType_End_Render_Pass: {
+				vkCmdEndRenderPass(cmdbuf);
+				DebugEndLabelVk(cmdbuf);
+			} break;
 			case RenderCommandType_Set_Scissor: {
-				DEBUG(
-					b32 found = 0;
-					forI(array_count(currently_bound_pipeline->dynamic_states)) {
-						if(currently_bound_pipeline->dynamic_states[i] == RenderDynamicState_Scissor) {
-							found = true;
-							break;
-						}
-					}
-					if(!found) {
-						LogE("render", "RenderCommand SetScissor used but the currently bound pipeline (", currently_bound_pipeline->name, ") did not specify the scissor dynamic state.");
-					}
-				);
 				VkRect2D s = {0};
 				s.offset.x = cmd.set_scissor.offset.x;
 				s.offset.y = cmd.set_scissor.offset.y;
@@ -6369,18 +6446,6 @@ render_update_x(Window* window) {
 				vkCmdSetScissor(cmdbuf, 0, 1, &s);
 			} break;
 			case RenderCommandType_Set_Viewport: {
-				DEBUG(
-					b32 found = 0;
-					forI(array_count(currently_bound_pipeline->dynamic_states)) {
-						if(currently_bound_pipeline->dynamic_states[i] == RenderDynamicState_Viewport) {
-							found = true;
-							break;
-						}
-					}
-					if(!found) {
-						LogE("render", "RenderCommand SetViewport used but the currently bound pipeline (", currently_bound_pipeline->name, ") did not specify the viewport dynamic state.");
-					}
-				);
 				VkViewport v = {0};
 				v.x = cmd.set_viewport.offset.x;
 				v.y = cmd.set_viewport.offset.y;
@@ -6396,8 +6461,6 @@ render_update_x(Window* window) {
 		}
 	}
 	
-	vkCmdEndRenderPass(cmdbuf);
-	DebugEndLabelVk(cmdbuf);
 	resultVk = vkEndCommandBuffer(cmdbuf);
 	AssertVk(resultVk);
 
@@ -6407,19 +6470,7 @@ render_update_x(Window* window) {
 	submit_info.pWaitSemaphores = &imageAcquiredSemaphore;
 	submit_info.pWaitDstStageMask = &wait_stage;
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = (VkCommandBuffer*)&frame->command_buffer_handle;
-	submit_info.signalSemaphoreCount = 1;
-	submit_info.pSignalSemaphores = &renderCompleteSemaphore;
-	resultVk = vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
-	AssertVk(resultVk);
-
-	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-	submit_info.waitSemaphoreCount = 1;
-	submit_info.pWaitSemaphores = &imageAcquiredSemaphore;
-	submit_info.pWaitDstStageMask = &wait_stage;
-	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = (VkCommandBuffer*)&wininf->presentation_frames[wininf->frame_index]->command_buffer_handle;
+	submit_info.pCommandBuffers = (VkCommandBuffer*)&wininf->command_buffer->handle;
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = &renderCompleteSemaphore;
 	resultVk = vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
@@ -6439,13 +6490,13 @@ render_update_x(Window* window) {
 	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {
 		vkDeviceWaitIdle(device);
 		create_swapchain(window);
-		create_render_pass_and_frames(window);
+		recreate_frames(window);
 		remakeWindow = false;
 	} else if(result != VK_SUCCESS) {
 		Assert(0);
 	}
 	
-	array_clear(wininf->presentation_frames[wininf->frame_index]->commands);
+	array_clear(wininf->command_buffer->commands);
 
 	wininf->frame_index = (wininf->frame_index + 1) % wininf->min_image_count;
 
@@ -7194,6 +7245,118 @@ render_buffer_flush(RenderBuffer* buffer){DPZoneScoped;
 	resultVk = vkFlushMappedMemoryRanges(device, 1, &range); AssertVk(resultVk);
 }
 
+void 
+render_cmd_bind_pipeline(Window* window, RenderPipeline* pipeline) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Bind_Pipeline;
+	c->bind_pipeline.handle = pipeline;
+}
+
+void 
+render_cmd_bind_vertex_buffer(Window* window, RenderBuffer* buffer) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Bind_Vertex_Buffer;
+	c->bind_vertex_buffer.handle = buffer;
+}
+
+void 
+render_cmd_bind_index_buffer(Window* window, RenderBuffer* buffer) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Bind_Index_Buffer;
+	c->bind_index_buffer.handle = buffer;
+}
+
+void 
+render_cmd_bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Bind_Descriptor_Set;
+	c->bind_descriptor_set.set_index = set_index;
+	c->bind_descriptor_set.handle = descriptor_set;
+}
+
+void 
+render_cmd_push_constant(Window* window, void* data, RenderPushConstant info) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Push_Constant;
+	c->push_constant.data = data;
+	c->push_constant.info = info;
+}
+
+void 
+render_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Draw_Indexed;
+	c->draw_indexed.index_count = index_count;
+	c->draw_indexed.index_offset = index_offset;
+	c->draw_indexed.vertex_offset = vertex_offset;
+}
+
+void
+render_cmd_begin_render_pass(Window* window, RenderPass* pass, RenderFrame* frame) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Begin_Render_Pass;
+	c->begin_render_pass.pass = pass;
+	c->begin_render_pass.frame = frame;
+}
+
+void
+render_cmd_end_render_pass(Window* window) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_End_Render_Pass;
+}
+
+void 
+render_cmd_set_viewport(Window* window, vec2 offset, vec2 extent) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Set_Viewport;
+	c->set_viewport.offset = offset;
+	c->set_viewport.extent = extent;
+}
+
+void 
+render_cmd_set_scissor(Window* window, vec2 offset, vec2 extent) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Set_Scissor;
+	c->set_scissor.offset = offset;
+	c->set_scissor.extent = extent;
+}
+
+void 
+render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) {
+	auto c = array_push(render_command_buffer_of_window(window)->commands);
+	c->type = RenderCommandType_Set_Depth_Bias;
+	c->set_depth_bias.constant = constant;
+	c->set_depth_bias.clamp = clamp;
+	c->set_depth_bias.slope = slope;
+}
+
+
+RenderCommandBuffer* 
+render_command_buffer_create() {
+	auto out = memory_pool_push(__render_pool_command_buffers);
+	array_init(out->commands, 1, deshi_allocator);
+	return out;
+}
+
+void 
+render_command_buffer_update(RenderCommandBuffer* x) {
+	if(x->handle) {
+		vkFreeCommandBuffers(device, commandPool, 1, (VkCommandBuffer*)&x->handle);
+	}
+
+	VkCommandBufferAllocateInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+	info.commandPool = commandPool;
+	info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	info.commandBufferCount = 1;
+	resultVk = vkAllocateCommandBuffers(device, &info, (VkCommandBuffer*)&x->handle);
+	AssertVk(resultVk);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)x->handle, (char*)x->debug_name.str);
+}
+
+RenderCommandBuffer* 
+render_command_buffer_of_window(Window* window) {
+	return ((VkWindowInfo*)window->render_info)->command_buffer;
+}
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_surface

@@ -1471,11 +1471,10 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.y;
 #ifdef RENDER_REWRITE
 			// TODO(sushi) remove the usage of global window here
-			RenderFrame* frame = render_current_present_frame_of_window(g_ui->updating_window);
 			if(item->drawcmds[i].texture) {
-				render_cmd_bind_descriptor_set(frame, 0, item->drawcmds[i].descriptor_set);
+				render_cmd_bind_descriptor_set(g_ui->updating_window, 0, item->drawcmds[i].descriptor_set);
 			}
-			render_cmd_draw_indexed(frame, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
+			render_cmd_draw_indexed(g_ui->updating_window, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
 #else
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
@@ -1575,11 +1574,11 @@ deshi__ui_update_x(Window* window) {
 	};
 
 	auto frame = render_current_present_frame_of_window(g_ui->updating_window);
-	render_cmd_bind_pipeline(frame, g_ui->pipeline);
-	render_cmd_push_constant(frame, &pc, {RenderShaderStage_Vertex, sizeof(pc), 0});
-	render_cmd_bind_vertex_buffer(frame, g_ui->vertex_buffer.handle);
-	render_cmd_bind_index_buffer(frame, g_ui->index_buffer.handle);
-	render_cmd_bind_descriptor_set(frame, 0, g_ui->blank_descriptor_set);
+	render_cmd_bind_pipeline(window, g_ui->pipeline);
+	render_cmd_push_constant(window, &pc, {RenderShaderStage_Vertex, sizeof(pc), 0});
+	render_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
+	render_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
+	render_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);
 	deshi__ui_update();
 	g_ui->updating_window = 0;
 }

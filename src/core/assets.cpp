@@ -2692,13 +2692,13 @@ assets_model_render(Window* window, Model* model, mat4* transformation) {
 	forI(arrlenu(model->batch_array)) {
 		auto b = model->batch_array[i];
 		if(!b.index_count) continue;
-		render_cmd_bind_pipeline(f, b.material->pipeline);
-		render_cmd_bind_descriptor_set(f, 0, g_assets->view_proj_ubo);
-		render_cmd_push_constant(f, transformation, {RenderShaderStage_Vertex, sizeof(mat4), 0});
-		render_cmd_bind_vertex_buffer(f, model->mesh->vertex_buffer);
-		render_cmd_bind_index_buffer(f, model->mesh->index_buffer);
-		render_cmd_bind_descriptor_set(f, 1, b.material->descriptor_set);
-		render_cmd_draw_indexed(f, b.index_count, b.index_offset, 0);
+		render_cmd_bind_pipeline(window, b.material->pipeline);
+		render_cmd_bind_descriptor_set(window, 0, g_assets->view_proj_ubo);
+		render_cmd_push_constant(window, transformation, {RenderShaderStage_Vertex, sizeof(mat4), 0});
+		render_cmd_bind_vertex_buffer(window, model->mesh->vertex_buffer);
+		render_cmd_bind_index_buffer(window, model->mesh->index_buffer);
+		render_cmd_bind_descriptor_set(window, 1, b.material->descriptor_set);
+		render_cmd_draw_indexed(window, b.index_count, b.index_offset, 0);
 	}
 }
 
