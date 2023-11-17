@@ -106,22 +106,8 @@ for (( i=1; i<=$#; i++)); do
 
   #### parse <example>
   if [ $i == 1 ]; then
-    if [ "${!i}" == "voxels" ]; then
-      build_example="voxels"
-      continue
-    elif [ "${!i}" == "ui" ]; then
-      build_example="ui"
-      continue
-    elif [ "${!i}" == "dining_philosophers" ]; then
-      build_example="dining_philosophers"
-      continue
-    elif [ "${!i}" == "ant_sim" ]; then
-      build_example="ant_sim"
-      continue
-    else
-      echo "Unknown example: ${!i}"
-      exit 1
-    fi
+    build_example="${!i}"
+    continue
   fi
 
   #### parse <command>

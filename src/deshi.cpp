@@ -88,6 +88,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,***,23/06/17,Bug]     memory_pool seems to be broken. memory_pool_init was pointing to its header incorrectly and would overwrite previous data
                            so I fixed this, but then later usage of memory_pool_push caused something to break in the generic heap, so i am going to leave
                            it for later as I don't feel like diving into fixing it.
+[!!!,*  ,22/09/08,Feature] add memory poisoning
 
 `Render`
 --------
