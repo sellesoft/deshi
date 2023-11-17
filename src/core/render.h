@@ -231,34 +231,34 @@ enum RenderImageLayout {
 };
 
 typedef struct RenderGlobal {
-
+	
 	struct {
 		RenderBuffer* vertex_buffer;
 		u32 vertex_count;
 		RenderBuffer* index_buffer;
 		u32 index_count;
-
+		
 		RenderPipeline* pipeline;
 	} temp_filled;
-
+	
 	struct {
 		RenderBuffer* vertex_buffer;
 		u32 vertex_count;
 		RenderBuffer* index_buffer;
 		u32 index_count;
-
+		
 		RenderPipeline* pipeline;
 	} temp_wireframe;
-
+	
 	RenderPass* temp_render_pass;
-
+	
 	struct {
 		mat4 proj;
 		mat4 view;
 	} temp_camera_ubo;
 	RenderBuffer* temp_camera_buffer;
 	RenderDescriptorSet* temp_descriptor_set;
-
+	
 	struct {
 		RenderDescriptorSetLayout* descriptor_set_layouts;
 		RenderDescriptorSet*       descriptor_sets;
@@ -272,7 +272,7 @@ typedef struct RenderGlobal {
 		RenderPass*                passes;
 		RenderFramebuffer*         framebuffers;
 	} pools;
-
+	
 } RenderGlobal;
 
 global RenderGlobal g_render;
@@ -294,9 +294,9 @@ typedef struct RenderDescriptorLayoutBinding {
 // a descriptor set will point to. 
 typedef struct RenderDescriptorSetLayout {
 	str8 debug_name;
-
+	
 	RenderDescriptorLayoutBinding* bindings;
-
+	
 	void* handle;
 } RenderDescriptorSetLayout;
 
@@ -314,14 +314,14 @@ void render_descriptor_layout_destroy(RenderDescriptorSetLayout* x);
 typedef struct RenderDescriptor {
 	RenderDescriptorType kind;
 	RenderShaderStage shader_stages;
-
+	
 	union {
 		struct {
 			RenderImageView* view;
 			RenderSampler* sampler;
 			RenderImageLayout layout;
 		} image;
-
+		
 		struct {
 			RenderBuffer* handle;
 			u64 offset;
@@ -342,9 +342,9 @@ typedef struct RenderDescriptor {
 // binding the one that points to the other. 
 typedef struct RenderDescriptorSet {
 	str8 debug_name;
-
+	
 	RenderDescriptorSetLayout** layouts;
-
+	
 	void* handle;
 } RenderDescriptorSet;
 
@@ -383,7 +383,7 @@ typedef struct RenderPushConstant {
 // more information.
 typedef struct RenderPipelineLayout {
 	str8 debug_name;
-
+	
 	RenderDescriptorSetLayout** descriptor_layouts;
 	RenderPushConstant* push_constants;
 	
@@ -523,9 +523,9 @@ typedef struct RenderPipeline {
 	str8 name;
 	// kigu array of shaders 
 	RenderShader* shader_stages;
-
+	
 	//// rasterization settings ////
-
+	
 	// How the front facing direction of a triangle is determined
 	RenderPipelineFrontFace front_face;
 	// How faces should be culled before fragments are produced
@@ -550,14 +550,14 @@ typedef struct RenderPipeline {
 	f32 depth_bias_slope;
 	// the width of lines drawn when using line polygon mode (maybe)
 	f32 line_width;
-
+	
 	//// MSAA ////
 	RenderSampleCount msaa_samples;
 	b32 sample_shading;
 	// TODO(sushi) more settings if seems useful
-
+	
 	//// color blending ////
-
+	
 	// perform color blending?
 	b32 color_blend;
 	// how colors are blended
@@ -573,12 +573,12 @@ typedef struct RenderPipeline {
 	
 	RenderVertexInputBindingDescription* vertex_input_bindings;
 	RenderVertexInputAttributeDescription* vertex_input_attributes;
-
+	
 	// TODO(sushi) this doesn't need to be a dynamic array
 	RenderDynamicState* dynamic_states;
 	// pointer to a RenderPipelineLayout object retrieved from render
 	RenderPipelineLayout* layout;
-
+	
 	RenderPass* render_pass;
 	
 	// handle the to backend's representation of a pipeline
@@ -749,47 +749,47 @@ enum RenderCommandType {
 typedef struct RenderCommand {
 	RenderCommandType type;
 	union {
-
-	struct { // bind_pipeline
-		RenderPipeline* handle;
-	} bind_pipeline;
-
-	struct { // bind_vertex_buffer, bind_index_buffer
-		RenderBuffer* handle;
-	} bind_vertex_buffer, bind_index_buffer;
-
-	struct { // bind_descriptor_set
-		u32 set_index;
-		RenderDescriptorSet* handle;
-	} bind_descriptor_set;
-
-	struct { // push_constant
-		void* data;
-		RenderPushConstant info;
-	} push_constant;
-
-	struct { // draw_indexed
-		u64 index_count;
-		u64 index_offset;
-		u64 vertex_offset;
-	} draw_indexed;
-
-	struct {
-		RenderPass* pass;
-		RenderFramebuffer* frame; 
-	} begin_render_pass;
-
-	struct { // set_viewport
-		vec2 offset;
-		vec2 extent;
-	} set_viewport, set_scissor;
-
-	struct {
-		f32 constant;
-		f32 clamp;
-		f32 slope;
-	} set_depth_bias;
-
+		
+		struct { // bind_pipeline
+			RenderPipeline* handle;
+		} bind_pipeline;
+		
+		struct { // bind_vertex_buffer, bind_index_buffer
+			RenderBuffer* handle;
+		} bind_vertex_buffer, bind_index_buffer;
+		
+		struct { // bind_descriptor_set
+			u32 set_index;
+			RenderDescriptorSet* handle;
+		} bind_descriptor_set;
+		
+		struct { // push_constant
+			void* data;
+			RenderPushConstant info;
+		} push_constant;
+		
+		struct { // draw_indexed
+			u64 index_count;
+			u64 index_offset;
+			u64 vertex_offset;
+		} draw_indexed;
+		
+		struct {
+			RenderPass* pass;
+			RenderFramebuffer* frame; 
+		} begin_render_pass;
+		
+		struct { // set_viewport
+			vec2 offset;
+			vec2 extent;
+		} set_viewport, set_scissor;
+		
+		struct {
+			f32 constant;
+			f32 clamp;
+			f32 slope;
+		} set_depth_bias;
+		
 	}; // union
 } RenderCommand;
 
@@ -825,17 +825,17 @@ void render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slop
 
 #if COMPILER_FEATURE_CPP
 namespace render::cmd {
-FORCE_INLINE void begin_render_pass(Window* window, RenderPass* render_pass, RenderFramebuffer* frame) { render_cmd_begin_render_pass(window, render_pass, frame); }
-FORCE_INLINE void end_render_pass(Window* window) { render_cmd_end_render_pass(window); }
-FORCE_INLINE void bind_pipeline(Window* window, RenderPipeline* pipeline) { render_cmd_bind_pipeline(window, pipeline); }
-FORCE_INLINE void bind_vertex_buffer(Window* window, RenderBuffer* buffer) { render_cmd_bind_vertex_buffer(window, buffer); }
-FORCE_INLINE void bind_index_buffer(Window* window, RenderBuffer* buffer) { render_cmd_bind_index_buffer(window, buffer); }
-FORCE_INLINE void bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set) { render_cmd_bind_descriptor_set(window, set_index, descriptor_set); }
-FORCE_INLINE void push_constant(Window* window, void* data, RenderPushConstant info) { render_cmd_push_constant(window, data, info); }
-FORCE_INLINE void draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset) { render_cmd_draw_indexed(window, index_count, index_offset, vertex_offset); }
-FORCE_INLINE void set_viewport(Window* window, vec2 offset, vec2 extent) { render_cmd_set_viewport(window, offset, extent); } 
-FORCE_INLINE void set_scissor(Window* window, vec2 offset, vec2 extent) { render_cmd_set_scissor(window, offset, extent); }
-FORCE_INLINE void set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) { render_cmd_set_depth_bias(window, constant, clamp, slope); }
+	FORCE_INLINE void begin_render_pass(Window* window, RenderPass* render_pass, RenderFramebuffer* frame){ render_cmd_begin_render_pass(window, render_pass, frame); }
+	FORCE_INLINE void end_render_pass(Window* window){ render_cmd_end_render_pass(window); }
+	FORCE_INLINE void bind_pipeline(Window* window, RenderPipeline* pipeline){ render_cmd_bind_pipeline(window, pipeline); }
+	FORCE_INLINE void bind_vertex_buffer(Window* window, RenderBuffer* buffer){ render_cmd_bind_vertex_buffer(window, buffer); }
+	FORCE_INLINE void bind_index_buffer(Window* window, RenderBuffer* buffer){ render_cmd_bind_index_buffer(window, buffer); }
+	FORCE_INLINE void bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set){ render_cmd_bind_descriptor_set(window, set_index, descriptor_set); }
+	FORCE_INLINE void push_constant(Window* window, void* data, RenderPushConstant info){ render_cmd_push_constant(window, data, info); }
+	FORCE_INLINE void draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset){ render_cmd_draw_indexed(window, index_count, index_offset, vertex_offset); }
+	FORCE_INLINE void set_viewport(Window* window, vec2 offset, vec2 extent){ render_cmd_set_viewport(window, offset, extent); } 
+	FORCE_INLINE void set_scissor(Window* window, vec2 offset, vec2 extent){ render_cmd_set_scissor(window, offset, extent); }
+	FORCE_INLINE void set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope){ render_cmd_set_depth_bias(window, constant, clamp, slope); }
 } // namespace render::cmd
 #endif
 
@@ -898,10 +898,10 @@ typedef struct RenderImage {
 	RenderSampleCount samples;
 	vec3i             extent;
 	b32               linear_tiling;
-
+	
 	// how the memory of the image is intended to be used 
 	RenderMemoryPropertyFlags memory_properties;
-
+	
 	// TODO(sushi)
 	//u64 mip_levels;
 	//u64 array_layers;
@@ -909,7 +909,7 @@ typedef struct RenderImage {
 	void* handle;
 	void* memory_handle;
 } RenderImage;
- 
+
 // Allocates a render image and returns a handle for it.
 RenderImage* render_image_create();
 
@@ -950,9 +950,9 @@ typedef struct RenderImageView {
 	// RenderImageViewType type;
 	RenderFormat format;
 	RenderImageViewAspectFlags aspect_flags;
-
+	
 	RenderImage* image;
-
+	
 	void* handle;
 } RenderImageView;
 
@@ -986,19 +986,19 @@ typedef struct RenderSampler {
 	// Behavoir when the image is magnified or minified.
 	RenderFilter mag_filter;
 	RenderFilter min_filter;
-
+	
 	// Behavoir when sampling an image outside 
 	// of the range [0, 1)
 	RenderSamplerAddressMode address_mode_u;
 	RenderSamplerAddressMode address_mode_v;
 	RenderSamplerAddressMode address_mode_w;
 	color border_color;
-
+	
 	// TODO(sushi)
 	u64 mipmaps;
-
+	
 	void* handle;
-
+	
 	str8 debug_name;
 } RenderSampler;
 
@@ -1058,13 +1058,13 @@ typedef struct RenderPass {
 	// to render_pass_update and is not copied internally
 	RenderPassAttachment* color_attachment;
 	RenderPassAttachment* depth_attachment;
-
+	
 	color color_clear_values;
 	struct {
 		f32 depth;
 		u32 stencil;
 	} depth_clear_values;
-
+	
 	void* handle;
 } RenderPass;
 
@@ -1089,13 +1089,13 @@ RenderPass* render_pass_of_window_presentation_frame(Window* window);
 // those attachments.
 typedef struct RenderFramebuffer {
 	str8 debug_name;
-
+	
 	// render pass describing how this frame behaves
 	RenderPass* render_pass;
 	
 	u32 width;
 	u32 height;
-
+	
 	// views over the actual memory the framebuffer works with
 	// TODO(sushi) I don't think these need to be render representations anymore
 	RenderImageView* color_image_view;
@@ -1309,40 +1309,40 @@ void render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov,
 
 #if COMPILER_FEATURE_CPP
 namespace render::temp {
-
-FORCE_INLINE void init(Window* window, u32 max_vertexes) { render_temp_init(window, max_vertexes); }
-FORCE_INLINE void clear() { render_temp_clear(); }
-FORCE_INLINE void update_camera(vec3 position, vec3 target) { render_temp_update_camera(position, target); }
-FORCE_INLINE void set_camera_projection(mat4 proj) { render_temp_set_camera_projection(proj); }
-FORCE_INLINE void line(vec3 start, vec3 end, color c = Color_White) { render_temp_line(start, end, c); };
-FORCE_INLINE void triangle(vec3 p0, vec3 p1, vec3 p2, color c = Color_White, b32 filled = false) { 
-	if(filled) render_temp_triangle_filled(p0,p1,p2,c);
-	else render_temp_triangle(p0,p1,p2,c);
-};
-FORCE_INLINE void quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c = Color_White, b32 filled = false) {
-	if(filled) render_temp_quad_filled(p0,p1,p2,p3,c);
-	else render_temp_quad(p0,p1,p2,p3,c);
-}
-FORCE_INLINE void poly(vec3* points, color c = Color_White, b32 filled = false) {
-	if(filled) render_temp_poly_filled(points, c);
-	else render_temp_poly(points, c);
-}
-FORCE_INLINE void circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c = Color_White, b32 filled = false) {
-	if(filled) render_temp_circle_filled(pos, rot, radius, subdivisions, c);
-	else render_temp_circle(pos, rot, radius, subdivisions, c);
-}
-FORCE_INLINE void box(mat4 transform, color c = Color_White, b32 filled = false) {
-	if(filled) render_temp_box_filled(transform, c);
-	else render_temp_box(transform, c);
-}
-FORCE_INLINE void sphere(vec3 pos, f32 radius, u32 segments = 3, u32 rings = 3, color c = Color_White, b32 filled = false) {
-	if(filled) render_temp_sphere_filled(pos, radius, segments, rings, c);
-	else render_temp_sphere(pos, radius, segments, rings, c);
-}
-FORCE_INLINE void frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c = Color_White) {
-	render_temp_frustrum(position, target, aspect_ratio, fov, near_z, far_z, c);
-}
-
+	
+	FORCE_INLINE void init(Window* window, u32 max_vertexes){ render_temp_init(window, max_vertexes); }
+	FORCE_INLINE void clear(){ render_temp_clear(); }
+	FORCE_INLINE void update_camera(vec3 position, vec3 target){ render_temp_update_camera(position, target); }
+	FORCE_INLINE void set_camera_projection(mat4 proj){ render_temp_set_camera_projection(proj); }
+	FORCE_INLINE void line(vec3 start, vec3 end, color c = Color_White){ render_temp_line(start, end, c); };
+	FORCE_INLINE void triangle(vec3 p0, vec3 p1, vec3 p2, color c = Color_White, b32 filled = false){ 
+		if(filled) render_temp_triangle_filled(p0,p1,p2,c);
+		else render_temp_triangle(p0,p1,p2,c);
+	};
+	FORCE_INLINE void quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c = Color_White, b32 filled = false){
+		if(filled) render_temp_quad_filled(p0,p1,p2,p3,c);
+		else render_temp_quad(p0,p1,p2,p3,c);
+	}
+	FORCE_INLINE void poly(vec3* points, color c = Color_White, b32 filled = false){
+		if(filled) render_temp_poly_filled(points, c);
+		else render_temp_poly(points, c);
+	}
+	FORCE_INLINE void circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c = Color_White, b32 filled = false){
+		if(filled) render_temp_circle_filled(pos, rot, radius, subdivisions, c);
+		else render_temp_circle(pos, rot, radius, subdivisions, c);
+	}
+	FORCE_INLINE void box(mat4 transform, color c = Color_White, b32 filled = false){
+		if(filled) render_temp_box_filled(transform, c);
+		else render_temp_box(transform, c);
+	}
+	FORCE_INLINE void sphere(vec3 pos, f32 radius, u32 segments = 3, u32 rings = 3, color c = Color_White, b32 filled = false){
+		if(filled) render_temp_sphere_filled(pos, radius, segments, rings, c);
+		else render_temp_sphere(pos, radius, segments, rings, c);
+	}
+	FORCE_INLINE void frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c = Color_White){
+		render_temp_frustrum(position, target, aspect_ratio, fov, near_z, far_z, c);
+	}
+	
 } // namespace render::temp
 #endif
 
@@ -1665,80 +1665,80 @@ render_max_surface_count(){
 // @render_shared_temp
 
 void 
-render_temp_clear() {
+render_temp_clear(){
 	g_render.temp_wireframe.vertex_count =
-	g_render.temp_wireframe.index_count =
-	g_render.temp_filled.vertex_count =
-	g_render.temp_filled.index_count = 0;
+		g_render.temp_wireframe.index_count =
+		g_render.temp_filled.vertex_count =
+		g_render.temp_filled.index_count = 0;
 }
 
 void 
-render_temp_update_camera(vec3 position, vec3 target) {
+render_temp_update_camera(vec3 position, vec3 target){
 	g_render.temp_camera_ubo.view = Math::LookAtMatrix(position, target).Inverse();
 	CopyMemory(g_render.temp_camera_buffer->mapped_data, &g_render.temp_camera_ubo.view, sizeof(mat4));
 }
 
 void
-render_temp_set_camera_projection(mat4 proj) {
+render_temp_set_camera_projection(mat4 proj){
 	g_render.temp_camera_ubo.proj = proj;
 	CopyMemory((u8*)g_render.temp_camera_buffer->mapped_data + sizeof(mat4), &g_render.temp_camera_ubo.proj, sizeof(mat4));
 }
 
 void 
-render_temp_line(vec3 start, vec3 end, color c) {
+render_temp_line(vec3 start, vec3 end, color c){
 	auto vp = (RenderTempVertex*)g_render.temp_wireframe.vertex_buffer->mapped_data + g_render.temp_wireframe.vertex_count;
 	auto ip = (RenderTempIndex*)g_render.temp_wireframe.index_buffer->mapped_data + g_render.temp_wireframe.index_count;
-		
+	
 	u32 first = g_render.temp_wireframe.vertex_count;
-
+	
 	ip[0] = first;
 	ip[1] = first+1;
 	ip[2] = first;
 	vp[0] = {start, c.rgba};
 	vp[1] = {end,   c.rgba};
-
+	
 	g_render.temp_wireframe.index_count  += 3;
 	g_render.temp_wireframe.vertex_count += 2;
 }
 
 void 
-render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c) {
+render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c){
 	auto vp = (RenderTempVertex*)g_render.temp_wireframe.vertex_buffer->mapped_data + g_render.temp_wireframe.vertex_count;
 	auto ip = (RenderTempIndex*)g_render.temp_wireframe.index_buffer->mapped_data + g_render.temp_wireframe.index_count;
-
+	
 	u32 first = g_render.temp_wireframe.vertex_count;
-
+	
 	ip[0] = first;
 	ip[1] = first+1;
 	ip[2] = first+2;
 	vp[0] = {p0, c.rgba};
 	vp[1] = {p1, c.rgba};
 	vp[2] = {p2, c.rgba};
-
+	
 	g_render.temp_wireframe.vertex_count += 3;
 	g_render.temp_wireframe.index_count += 3;
 }
 
 void 
-render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c) {
+render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c){
 	auto vp = (RenderTempVertex*)g_render.temp_filled.vertex_buffer->mapped_data + g_render.temp_filled.vertex_count;
 	auto ip = (RenderTempIndex*)g_render.temp_filled.index_buffer->mapped_data + g_render.temp_filled.index_count;
-
+	
 	u32 first = g_render.temp_filled.vertex_count;
-
+	
 	ip[0] = first;
 	ip[1] = first+1;
 	ip[2] = first+2;
 	vp[0] = {p0, c.rgba};
 	vp[1] = {p1, c.rgba};
 	vp[2] = {p2, c.rgba};
-
+	
 	g_render.temp_filled.vertex_count += 3;
 	g_render.temp_filled.index_count += 3;
 }
 
 void 
-render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) {
+render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){
 	render_temp_line(p0, p1, c);
 	render_temp_line(p1, p2, c);
 	render_temp_line(p2, p3, c);
@@ -1746,32 +1746,32 @@ render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) {
 }
 
 void 
-render_temp_quad_filled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) {
+render_temp_quad_filled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){
 	render_temp_triangle_filled(p0, p1, p2, c);
 	render_temp_triangle_filled(p0, p2, p3, c);
 }
 
 void 
-render_temp_poly(vec3* points, color c) {
+render_temp_poly(vec3* points, color c){
 	auto p = array_from(points);
-	if(p.count() < 3) {
+	if(p.count() < 3){
 		LogE("render", "render_temp_poly(): points array only contains ", p.count(), " points, but 3 are required for this function.");
 		return;
 	}
-
+	
 	forI(p.count()-1) 
 		render_temp_line(p[i], p[i+1], c);
 	render_temp_line(p[p.count()-1], p[0], c);
 }
 
 void 
-render_temp_poly_filled(vec3* points, color c) {
+render_temp_poly_filled(vec3* points, color c){
 	auto p = array_from(points);
-	if(p.count() < 3) {
+	if(p.count() < 3){
 		LogE("render", "render_temp_poly_filled(): points array only contains ", p.count(), " points, but 3 are required for this function.");
 		return;
 	}
-
+	
 	for(s32 i = 2; i < p.count() - 1; i++)  {
 		render_temp_triangle_filled(p[i-2], p[i-1], p[i], c);
 	}
@@ -1779,38 +1779,38 @@ render_temp_poly_filled(vec3* points, color c) {
 }
 
 void 
-render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c) {
+render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c){
 	mat4 transform = mat4::TransformationMatrix(pos, rot, vec3::ONE);
 	f32 subdivisions = f32(subdivisions_int);
-	forI(subdivisions_int) {
+	forI(subdivisions_int){
 		f32 a0 = (f32(i+1)*M_2PI) / subdivisions;
 		f32 a1 = (f32(i  )*M_2PI) / subdivisions;
 		f32 x0 = radius * cosf(a0),
-			x1 = radius * cosf(a1),
-			y0 = radius * sinf(a0),
-			y1 = radius * sinf(a1);
+		x1 = radius * cosf(a1),
+		y0 = radius * sinf(a0),
+		y1 = radius * sinf(a1);
 		vec3 xaxis0 = (Vec4(x0, y0, 0, 1) * transform).toVec3(),
-			 xaxis1 = (Vec4(x1, y1, 0, 1) * transform).toVec3();
+		xaxis1 = (Vec4(x1, y1, 0, 1) * transform).toVec3();
 		render_temp_line(xaxis0, xaxis1, c);
 	}
 }
 
 void 
-render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c) {
+render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c){
 	mat4 transform = mat4::TransformationMatrix(pos, rot, vec3::ONE);
 	f32 subdivisions = f32(subdivisions_int);
 	auto vp = (RenderTempVertex*)g_render.temp_filled.vertex_buffer->mapped_data + g_render.temp_filled.vertex_count;
 	auto ip = (RenderTempIndex*)g_render.temp_filled.index_buffer->mapped_data + g_render.temp_filled.index_count;
-
+	
 	u32 start = g_render.temp_filled.vertex_count;
-
+	
 	vp[0] = {pos, c.rgba};
 	f32 multiple = M_2PI/subdivisions;
-
-	for(u32 i = 0; i < subdivisions_int; i += 1) {
+	
+	for(u32 i = 0; i < subdivisions_int; i += 1){
 		f32 a = i * multiple;
 		f32 x = radius * cosf(a),
-			y = radius * sinf(a);
+		y = radius * sinf(a);
 		vec3 p = (Vec4(x, y, 0, 1) * transform).toVec3();
 		vp[i+1] = {p, c.rgba};
 		ip[i*3 + 0] = start+0;
@@ -1823,7 +1823,7 @@ render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, 
 }
 
 void 
-render_temp_box(mat4 transform, color c) {
+render_temp_box(mat4 transform, color c){
 	// really awful idk
 	vec3 v[8] = {
 		(Vec4( 0.5,  0.5,  0.5, 1)*transform).toVec3(),
@@ -1835,7 +1835,7 @@ render_temp_box(mat4 transform, color c) {
 		(Vec4(-0.5, -0.5, -0.5, 1)*transform).toVec3(),
 		(Vec4( 0.5, -0.5, -0.5, 1)*transform).toVec3(),
 	};
-
+	
 	render_temp_line(v[0], v[1], c);
 	render_temp_line(v[1], v[2], c);
 	render_temp_line(v[2], v[3], c);
@@ -1852,9 +1852,9 @@ render_temp_box(mat4 transform, color c) {
 void render_temp_box_filled(mat4 transform, color c){
 	auto vp = (RenderTempVertex*)g_render.temp_filled.vertex_buffer->mapped_data + g_render.temp_filled.vertex_count;
 	auto ip = (RenderTempIndex*)g_render.temp_filled.index_buffer->mapped_data + g_render.temp_filled.index_count;
-
+	
 	u32 start = g_render.temp_filled.vertex_count;
-
+	
 	vp[0] = {(Vec4( 0.5,  0.5,  0.5, 1)*transform).toVec3(),c.rgba};
 	vp[1] = {(Vec4(-0.5,  0.5,  0.5, 1)*transform).toVec3(),c.rgba};
 	vp[2] = {(Vec4(-0.5,  0.5, -0.5, 1)*transform).toVec3(),c.rgba};
@@ -1863,7 +1863,7 @@ void render_temp_box_filled(mat4 transform, color c){
 	vp[5] = {(Vec4(-0.5, -0.5,  0.5, 1)*transform).toVec3(),c.rgba};
 	vp[6] = {(Vec4(-0.5, -0.5, -0.5, 1)*transform).toVec3(),c.rgba};
 	vp[7] = {(Vec4( 0.5, -0.5, -0.5, 1)*transform).toVec3(),c.rgba};
-
+	
 	ip[ 0] = start+0; ip[ 1] = start+5; ip[ 2] = start+1;
 	ip[ 3] = start+0; ip[ 4] = start+4; ip[ 5] = start+5;
 	ip[ 6] = start+1; ip[ 7] = start+6; ip[ 8] = start+2;
@@ -1876,75 +1876,75 @@ void render_temp_box_filled(mat4 transform, color c){
 	ip[27] = start+1; ip[28] = start+2; ip[29] = start+3;
 	ip[30] = start+4; ip[31] = start+7; ip[32] = start+5;
 	ip[33] = start+5; ip[34] = start+7; ip[35] = start+6;
-
+	
 	g_render.temp_filled.vertex_count += 8;
 	g_render.temp_filled.index_count += 36;
 }
 void 
-render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c) {
+render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
 	NotImplemented;
 	// bleh. do later
 	
-//	f32 dtheta = M_2PI / rings;
-//	f32 dphi = M_2PI / segments;
-//
-//	forX(r_, rings) {
-//		auto r = r_ + 1; 
-//		f32 theta0 = r * dtheta,
-//			theta1 = (r + 1) * dtheta;
-//		f32 y0 = radius * cosf(theta0),
-//			y1 = radius * cosf(theta1);
-//		f32 pre0 = radius * sinf(theta0),
-//			pre1 = radius * sinf(theta1);
-//		forX(s_, segments) {
-//			auto s = s_ + 1;
-//			f32 phi0 = (  s  ) * dphi,
-//				phi1 = (s + 1) * dphi;
-//			f32 x0 = pre0 * cosf(phi0),
-//				x1 = pre1 * cosf(phi1),
-//				z0 = pre0 * sinf(phi0),
-//				z1 = pre1 * sinf(phi1);
-//			Log("", Vec3(x0, y0, z0), " ", Vec3(x1, y1, z1));
-//			render_temp_line(Vec3(x0, y0, z0), Vec3(x1, y0, z1), c);
-//		}
-//	}
+	//	f32 dtheta = M_2PI / rings;
+	//	f32 dphi = M_2PI / segments;
+	//
+	//	forX(r_, rings){
+	//		auto r = r_ + 1; 
+	//		f32 theta0 = r * dtheta,
+	//			theta1 = (r + 1) * dtheta;
+	//		f32 y0 = radius * cosf(theta0),
+	//			y1 = radius * cosf(theta1);
+	//		f32 pre0 = radius * sinf(theta0),
+	//			pre1 = radius * sinf(theta1);
+	//		forX(s_, segments){
+	//			auto s = s_ + 1;
+	//			f32 phi0 = (  s  ) * dphi,
+	//				phi1 = (s + 1) * dphi;
+	//			f32 x0 = pre0 * cosf(phi0),
+	//				x1 = pre1 * cosf(phi1),
+	//				z0 = pre0 * sinf(phi0),
+	//				z1 = pre1 * sinf(phi1);
+	//			Log("", Vec3(x0, y0, z0), " ", Vec3(x1, y1, z1));
+	//			render_temp_line(Vec3(x0, y0, z0), Vec3(x1, y0, z1), c);
+	//		}
+	//	}
 }
 
 void 
-render_temp_sphere_filled(vec3 pos, f32 radius, u32 segments, u32 rings, color c) {
+render_temp_sphere_filled(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
 	NotImplemented;
 }
 
 void 
-render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c) {
+render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c){
 	f32 y = tanf(Radians(fov) / 2.f);
 	f32 x = y * aspect_ratio;
 	f32 near_x = x * near_z;
 	f32 far_x  = x * far_z;
 	f32 near_y = y * near_z;
 	f32 far_y  = y * far_z;
-
+	
 	vec4 faces[8] = {
 		{ near_x,  near_y, near_z, 1},
 		{-near_x,  near_y, near_z, 1},
 		{ near_x, -near_y, near_z, 1},
 		{-near_x, -near_y, near_z, 1},
-
+		
 		{ far_x,  far_y, far_z, 1},
 		{-far_x,  far_y, far_z, 1},
 		{ far_x, -far_y, far_z, 1},
 		{-far_x, -far_y, far_z, 1},
 	};
-
+	
 	mat4 mat = Math::LookAtMatrix(position, target);
 	vec3 v[8] = {};
-	forI(8) {
+	forI(8){
 		vec4 temp = faces[i] * mat;
 		v[i].x = temp.x / temp.w;
 		v[i].y = temp.y / temp.w;
 		v[i].z = temp.z / temp.w;
 	}
-
+	
 	render_temp_line(v[0], v[1], c);
 	render_temp_line(v[0], v[2], c);
 	render_temp_line(v[3], v[1], c);
@@ -2243,7 +2243,7 @@ local RenderTwodIndex renderExternalCmdCounts[MAX_EXTERNAL_BUFFERS];
 local RenderTwodCmd   renderExternalCmdArrays[MAX_EXTERNAL_BUFFERS][MAX_TWOD_CMDS]; 
 
 void
-deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount) {DPZoneScoped;
+deshi__render_add_vertices2(str8 file, u32 line, u32 layer, Vertex2* vertices, u32 vCount, u32* indices, u32 iCount){DPZoneScoped;
 	Assert(vCount + renderTwodVertexCount < MAX_TWOD_VERTICES);
 	Assert(iCount + renderTwodIndexCount  < MAX_TWOD_INDICES);
 	
@@ -2894,7 +2894,7 @@ vec2i
 render_make_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
-
+	
 	vec2i sum={0};
 	switch (font->type){
 		//// BDF (and NULL) font rendering ////
