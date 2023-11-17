@@ -35,7 +35,7 @@ struct RenderImageView;
 struct RenderSampler;
 struct RenderDescriptor;
 struct RenderDescriptorSet;
-struct RenderDescriptorLayout;
+struct RenderDescriptorSetLayout;
 struct RenderPipeline;
 struct RenderPass;
 struct UniformBufferObject;
@@ -69,7 +69,7 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	
 	// standard layout for ubos used with asset models
 	// this is always bound to set 0 binding 0
-	RenderDescriptorLayout* ubo_layout;
+	RenderDescriptorSetLayout* ubo_layout;
 	// NOTE(sushi) array containing 1 descriptor so that we can access info about it later on (dunno if this would be useful or not so if not just remove it)
 	RenderDescriptor*  ubo_descriptors;
 	RenderDescriptorSet* view_proj_ubo;

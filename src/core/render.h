@@ -45,7 +45,17 @@ struct Material;
 struct Model;
 struct Font;
 struct Window;
-struct RenderFrame;
+struct RenderDescriptorSetLayout;
+struct RenderDescriptorSet;
+struct RenderPipelineLayout;
+struct RenderPipeline;
+struct RenderBuffer;
+struct RenderCommandBuffer;
+struct RenderImage;
+struct RenderImageView;
+struct RenderSampler;
+struct RenderPass;
+struct RenderFramebuffer;
 StartLinkageC();
 
 
@@ -151,7 +161,12 @@ typedef struct Vertex2{
 	u32  color;
 }Vertex2;
 
-typedef u32 RenderTempIndex;  //NOTE(delle) changing this also requires changing defines in the backend
+typedef u32 RenderTempIndex;  
+typedef struct RenderTempVertex {
+	vec3 pos;
+	u32  color;
+} RenderTempVertex;
+
 typedef u32 RenderModelIndex; //NOTE(delle) changing this also requires changing defines in the backend
 typedef struct RenderModelCmd{
 	u32   vertex_offset;
@@ -215,6 +230,53 @@ enum RenderImageLayout {
 	RenderImageLayout_Shader_Read_Only_Optimal,
 };
 
+typedef struct RenderGlobal {
+
+	struct {
+		RenderBuffer* vertex_buffer;
+		u32 vertex_count;
+		RenderBuffer* index_buffer;
+		u32 index_count;
+
+		RenderPipeline* pipeline;
+	} temp_filled;
+
+	struct {
+		RenderBuffer* vertex_buffer;
+		u32 vertex_count;
+		RenderBuffer* index_buffer;
+		u32 index_count;
+
+		RenderPipeline* pipeline;
+	} temp_wireframe;
+
+	RenderPass* temp_render_pass;
+
+	struct {
+		mat4 proj;
+		mat4 view;
+	} temp_camera_ubo;
+	RenderBuffer* temp_camera_buffer;
+	RenderDescriptorSet* temp_descriptor_set;
+
+	struct {
+		RenderDescriptorSetLayout* descriptor_set_layouts;
+		RenderDescriptorSet*       descriptor_sets;
+		RenderPipelineLayout*      pipeline_layouts;
+		RenderPipeline*            pipelines;
+		RenderBuffer*              buffers;
+		RenderCommandBuffer*       command_buffers;
+		RenderImage*               images;
+		RenderImageView*           image_views;
+		RenderSampler*             samplers;
+		RenderPass*                passes;
+		RenderFramebuffer*         framebuffers;
+	} pools;
+
+} RenderGlobal;
+
+global RenderGlobal g_render;
+
 enum RenderDescriptorType {
 	RenderDescriptorType_Combined_Image_Sampler,
 	RenderDescriptorType_Uniform_Buffer,
@@ -222,20 +284,33 @@ enum RenderDescriptorType {
 	// add more as they seem useful later
 };
 
-struct RenderImageView;
-struct RenderSampler;
-struct RenderBuffer;
-struct RenderPass;
-
-// describes a binding in a descriptor
-// does not represent actual memory that is allocated
 typedef struct RenderDescriptorLayoutBinding {
 	RenderDescriptorType kind;
 	RenderShaderStage shader_stages;
 	u32 binding;
 } RenderDescriptorLayoutBinding;
 
-// represents allocated data used in a descriptor set
+// A descriptor set layout determines the resources that a part of
+// a descriptor set will point to. 
+typedef struct RenderDescriptorSetLayout {
+	str8 debug_name;
+
+	RenderDescriptorLayoutBinding* bindings;
+
+	void* handle;
+} RenderDescriptorSetLayout;
+
+// Allocates and returns a handle to a descriptor layout.
+RenderDescriptorSetLayout* render_descriptor_layout_create();
+
+// Updates the given descriptor layout with the current backend.
+void render_descriptor_layout_update(RenderDescriptorSetLayout* x);
+
+// Deallocates the given descriptor layout and frees any resources 
+// created for it in the backend.
+void render_descriptor_layout_destroy(RenderDescriptorSetLayout* x);
+
+// Represents the memory pointed to by a descriptor set.
 typedef struct RenderDescriptor {
 	RenderDescriptorType kind;
 	RenderShaderStage shader_stages;
@@ -255,38 +330,47 @@ typedef struct RenderDescriptor {
 	};
 } RenderDescriptor;
 
-typedef struct RenderDescriptorLayout {
-	str8 debug_name;
-
-	RenderDescriptorLayoutBinding* bindings;
-
-	void* handle;
-} RenderDescriptorLayout;
-
-RenderDescriptorLayout* render_descriptor_layout_create();
-void render_descriptor_layout_update(RenderDescriptorLayout* x);
-
-void render_descriptor_layout_destroy(RenderDescriptorLayout* x);
-
-global RenderDescriptorLayout* __render_pool_descriptor_layouts;
-
+// A descriptor set is a collection of pointers to resources
+// used in shaders. For example, if we have a UBO in the first
+// layout and a collection of four textures in the second, then 
+// the descriptor set will be a pointer pointing at that UBO
+// then four pointers pointing at the image memory on the GPU.
+// These are useful for quickly swapping resources. For example,
+// if you have two collection of objects that use the same textures
+// but different UBOs, you can quickly swap the data used by the shader
+// by first binding a descriptor set pointing to the first ubo, then
+// binding the one that points to the other. 
 typedef struct RenderDescriptorSet {
 	str8 debug_name;
 
-	RenderDescriptorLayout** layouts;
+	RenderDescriptorSetLayout** layouts;
 
 	void* handle;
 } RenderDescriptorSet;
 
+// Allocates a descriptor set and returns a handle for it.
 RenderDescriptorSet* render_descriptor_set_create();
+
+// Updates a descriptor set with the backend.
 void render_descriptor_set_update(RenderDescriptorSet* x);
+
+// Setup the given descriptor set to point to the resources specified
+// in the given descriptors. The descriptors must be given in the correct 
+// order relative to the layout specified on the given descriptor set.
 // TODO(sushi) writing to a specific binding
 void render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptors);
 
+// Deallocates the given descriptor set and frees anything allocated 
+// on the backend. Note that this doesn't affect the resources pointed
+// to by the descriptor set.
 void render_descriptor_set_destroy(RenderDescriptorSet* x);
 
-global RenderDescriptorSet* __render_pool_descriptor_sets;
-
+// A push constant is a somewhat small amount of data that may
+// be uploaded efficiently to a shader. Push constants upload 
+// their data via a RenderCommand rather than the 'normal' way 
+// of using UBOs. The data does not need to be mapped and, since 
+// it is uploaded using a command, can be used efficiently
+// for data that changes per model.
 typedef struct RenderPushConstant {
 	// what sort of shader this constant will be pushed to
 	RenderShaderStage shader_stage_flags;
@@ -294,18 +378,18 @@ typedef struct RenderPushConstant {
 	u64 offset; // offset of the constant in bytes
 } RenderPushConstant;
 
-// it is useful to reuse this information in several pipelines
+// Describes the data that a pipeline will use. See 
+// RenderDescriptorLayout and RenderPushConstant for 
+// more information.
 typedef struct RenderPipelineLayout {
-	str8 debug_name; // name used for debugging
+	str8 debug_name;
 
-	RenderDescriptorLayout** descriptor_layouts;
+	RenderDescriptorSetLayout** descriptor_layouts;
 	RenderPushConstant* push_constants;
 	
 	// handle to backend's represenatation of descriptor set layouts
 	void* handle;
 } RenderPipelineLayout;
-
-global RenderPipelineLayout* __render_pool_pipeline_layouts;
 
 RenderPipelineLayout* render_pipeline_layout_create();
 RenderPipelineLayout* render_pipeline_layout_create_default();
@@ -395,6 +479,8 @@ enum RenderBlendFactor {
 	// if they seem useful
 };
 
+// NOTE(sushi) at this time the only supported sample count is 1
+//             as we do not yet support msaa or multisampled images
 enum RenderSampleCount {
 	RenderSampleCount_1  = 1 << 0,
 	RenderSampleCount_2  = 1 << 1,
@@ -499,14 +585,21 @@ typedef struct RenderPipeline {
 	void* handle;
 } RenderPipeline;
 
-local RenderPipeline* __render_pipeline_pool;
-
+// Allocates and returns a new RenderPipeline.
+// Properties on the given handle may then be set followed by a call
+// to render_pipeline_update().
 RenderPipeline* render_pipeline_create();
+
+// Allocates and returns a new RenderPipeline with 'default' properties set.
 RenderPipeline* render_pipeline_create_default();
-// Creates a new pipeline with the same settings as the one given
+
+// Creates a new pipeline with the same settings as the one given.
 RenderPipeline* render_pipeline_duplicate(RenderPipeline* x);
+
+// Updates the given pipeline with the current backend.
 void render_pipeline_update(RenderPipeline* x);
 
+// Deallocates the given pipeline handle.
 void render_pipeline_destroy(RenderPipeline* x);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -650,6 +743,9 @@ enum RenderCommandType {
 	RenderCommandType_Set_Depth_Bias,
 };
 
+// A command used to instruct the backend in rendering
+// things. Actual use of these is achieved via the 
+// render_cmd_* functions below.
 typedef struct RenderCommand {
 	RenderCommandType type;
 	union {
@@ -680,7 +776,7 @@ typedef struct RenderCommand {
 
 	struct {
 		RenderPass* pass;
-		RenderFrame* frame; 
+		RenderFramebuffer* frame; 
 	} begin_render_pass;
 
 	struct { // set_viewport
@@ -697,17 +793,51 @@ typedef struct RenderCommand {
 	}; // union
 } RenderCommand;
 
-void render_cmd_bind_pipeline(Window* window, RenderPipeline* pipeline);
-void render_cmd_bind_vertex_buffer(Window* window, RenderBuffer* buffer);
-void render_cmd_bind_index_buffer(Window* window, RenderBuffer* buffer);
-void render_cmd_bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set);
-void render_cmd_push_constant(Window* window, void* data, RenderPushConstant info);
-void render_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset);
-void render_cmd_begin_render_pass(Window* window, RenderPass* render_pass, RenderFrame* frame);
+// Begins the given render pass for the given frame. 
+// A render pass MUST be active to record commands.
+// Render passes may not be nested.
+void render_cmd_begin_render_pass(Window* window, RenderPass* render_pass, RenderFramebuffer* frame);
+// Ends the currently active render pass.
 void render_cmd_end_render_pass(Window* window);
+// Binds the given pipeline. The pipeline must be compatible with the currently active render pass.
+void render_cmd_bind_pipeline(Window* window, RenderPipeline* pipeline);
+// Binds the given vertex buffer. 
+void render_cmd_bind_vertex_buffer(Window* window, RenderBuffer* buffer);
+// Binds the given index buffer.
+void render_cmd_bind_index_buffer(Window* window, RenderBuffer* buffer);
+// Binds the given descriptor set to 'set_index'. The descriptor set must be compatible with the 
+// relevant descriptor layout of the currently bound pipeline.
+void render_cmd_bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set);
+// Register the memory at 'data' to be pushed according to 'info'. The data provided must be kept valid
+// until the end of the following render_update call.
+void render_cmd_push_constant(Window* window, void* data, RenderPushConstant info);
+// Draw vertexes based on the indexes in the currenly bound vertex and index buffers.
+void render_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset);
+// Set the viewport of the current render pass. The currently bound pipeline must have been created 
+// with RenderDynamicStates_Viewport in its dynamic states array.
 void render_cmd_set_viewport(Window* window, vec2 offset, vec2 extent);
+// Set the scissor of the current render pass. The currently bound pipeline must have been created 
+// with RenderDynamicStates_Scissor in its dynamic states array.
 void render_cmd_set_scissor(Window* window, vec2 offset, vec2 extent);
+// Set the depth bias of the current render pass. The currently bound pipeline must have been created
+// with RenderDynamicStates_Depth_Bias in its dynamic states array.
 void render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope);
+
+#if COMPILER_FEATURE_CPP
+namespace render::cmd {
+FORCE_INLINE void begin_render_pass(Window* window, RenderPass* render_pass, RenderFramebuffer* frame) { render_cmd_begin_render_pass(window, render_pass, frame); }
+FORCE_INLINE void end_render_pass(Window* window) { render_cmd_end_render_pass(window); }
+FORCE_INLINE void bind_pipeline(Window* window, RenderPipeline* pipeline) { render_cmd_bind_pipeline(window, pipeline); }
+FORCE_INLINE void bind_vertex_buffer(Window* window, RenderBuffer* buffer) { render_cmd_bind_vertex_buffer(window, buffer); }
+FORCE_INLINE void bind_index_buffer(Window* window, RenderBuffer* buffer) { render_cmd_bind_index_buffer(window, buffer); }
+FORCE_INLINE void bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set) { render_cmd_bind_descriptor_set(window, set_index, descriptor_set); }
+FORCE_INLINE void push_constant(Window* window, void* data, RenderPushConstant info) { render_cmd_push_constant(window, data, info); }
+FORCE_INLINE void draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset) { render_cmd_draw_indexed(window, index_count, index_offset, vertex_offset); }
+FORCE_INLINE void set_viewport(Window* window, vec2 offset, vec2 extent) { render_cmd_set_viewport(window, offset, extent); } 
+FORCE_INLINE void set_scissor(Window* window, vec2 offset, vec2 extent) { render_cmd_set_scissor(window, offset, extent); }
+FORCE_INLINE void set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) { render_cmd_set_depth_bias(window, constant, clamp, slope); }
+} // namespace render::cmd
+#endif
 
 // NOTE(sushi) this is currently only used internally
 //             We store one on each window and commands are added 
@@ -722,15 +852,24 @@ typedef struct RenderCommandBuffer {
 	void* handle;
 } RenderCommandBuffer;
 
+// Creates a command buffer. 
+// NOTE(sushi) see RenderCommandBuffer definition 
+//             for notes on why not to use this yet
 RenderCommandBuffer* render_command_buffer_create();
 
 // maybe this could actually queue commands?
 // currently it just creates the backend's command buffer object
+// NOTE(sushi) see RenderCommandBuffer definition 
+//             for notes on why not to use this yet
 void render_command_buffer_update(RenderCommandBuffer* x);
 
+// NOTE(sushi) see RenderCommandBuffer definition 
+//             for notes on why not to use this yet
 RenderCommandBuffer* render_command_buffer_of_window(Window* window);
 
-global RenderCommandBuffer* __render_pool_command_buffers;
+// NOTE(sushi) see RenderCommandBuffer definition 
+//             for notes on why not to use this yet
+void render_command_buffer_destroy(RenderCommandBuffer* x);
 
 enum RenderImageType {
 	RenderImageType_OneD,
@@ -749,9 +888,7 @@ enum RenderImageUsage {
 	RenderImageUsage_Depth_Stencil_Attachment = 1 << 5,
 };
 
-// unlike a texture from assets, this represents an arbitrary image on the 
-// GPU which can be used for things like offscreen rendering
-// this is very similar to RenderBuffer, but multidimensional
+// Represents an image allocated on the GPU.
 typedef struct RenderImage {
 	str8 debug_name;
 	// TODO(sushi) support other image types
@@ -773,16 +910,23 @@ typedef struct RenderImage {
 	void* memory_handle;
 } RenderImage;
  
+// Allocates a render image and returns a handle for it.
 RenderImage* render_image_create();
+
+// Updates the given render image on the backend and allocates 
+// backend resources for it.
 void render_image_update(RenderImage* x);
+
+// Uploads the given pixels to the given render image
 // TODO(sushi) make the api for this closer to that of RenderBuffer
 //             so the user has more flexibility in modifying 
 //             render images
+//             or just make it so that this takes ranges
 void render_image_upload(RenderImage* x, u8* pixels);
 
+// Deallocates the given render image and frees any resources
+// allocated for it in the backend.
 void render_image_destroy(RenderImage* image);
-
-global RenderImage* __render_pool_images;
 
 enum RenderImageViewType {
 	RenderImageViewType_OneD,
@@ -812,12 +956,17 @@ typedef struct RenderImageView {
 	void* handle;
 } RenderImageView;
 
+// Allocates a render image view and returns a handle to it.
 RenderImageView* render_image_view_create();
+
+// Updates the given image view on the backend.
+// If information already exists on the backend it will be destroyed
+// and recreated.
 void render_image_view_update(RenderImageView* x);
 
+// Deallocates the given image view and frees any information
+// allocated for it on the backend.
 void render_image_view_destroy(RenderImageView* x);
-
-global RenderImageView* __render_pool_image_views;
 
 enum RenderFilter {
 	RenderFilter_Nearest,
@@ -831,15 +980,21 @@ enum RenderSamplerAddressMode {
 	RenderSamplerAddressMode_Clamp_To_Border,
 };
 
+// A sampler, which is typically used in a shader to 
+// read an image.
 typedef struct RenderSampler {
+	// Behavoir when the image is magnified or minified.
 	RenderFilter mag_filter;
 	RenderFilter min_filter;
 
+	// Behavoir when sampling an image outside 
+	// of the range [0, 1)
 	RenderSamplerAddressMode address_mode_u;
 	RenderSamplerAddressMode address_mode_v;
 	RenderSamplerAddressMode address_mode_w;
 	color border_color;
 
+	// TODO(sushi)
 	u64 mipmaps;
 
 	void* handle;
@@ -847,12 +1002,17 @@ typedef struct RenderSampler {
 	str8 debug_name;
 } RenderSampler;
 
+// Allocates a render sampler and returns a handle for it.
 RenderSampler* render_sampler_create();
+
+// Updates the given sampler with the current backend. If 
+// information has already been allocated for the given object
+// it will be destroyed and recreated.
 void render_sampler_update(RenderSampler* x);
 
+// Deallocates the given render sampler and frees any 
+// memory created for it in the backend.
 void render_sampler_destroy(RenderSampler* x);
-
-global RenderSampler* __render_pool_samplers;
 
 enum RenderAttachmentStoreOp {
 	RenderAttachmentStoreOp_Store,
@@ -865,19 +1025,12 @@ enum RenderAttachmentLoadOp {
 	RenderAttachmentLoadOp_Dont_Care,
 };
 
-enum RenderPassAttachmentType {
-	RenderPassAttachmentType_
-};
-
-// TODO(sushi) for now I am calling this an attachment as that's how it is in Vulkan
-//             but eventually it should be renamed to something that clearly indicates what this 
-//             is actually used for
-//             It's also possible this should not be presented in this way at all
-//             We may want to simplify it to make it more obvious what it's doing
-//             and this may not be able to be translated to opengl
-//             I think the basic functionality should be setting up subpasses so that
-//             post processing may be achieved
 // An attachement represents an image used in a framebuffer
+// and describes four things:
+// 	1. What format the image is in
+// 	2. How many times to sample the image (TODO)
+// 	3. Behavoir regarding the loading and storing of the attachment's color and stencils.
+// 	4. The layout the image starts in and the layout it should be in when it has finished processing.
 typedef struct RenderPassAttachment {
 	RenderFormat            format;
 	RenderSampleCount       samples;
@@ -888,30 +1041,17 @@ typedef struct RenderPassAttachment {
 	// the image layout we expect the attachment to be in before we 
 	// start processing it
 	RenderImageLayout       initial_layout;
-	// the image layout we expect the image to be in while 
-	// we are processing it
-	RenderImageLayout       processed_layout;
 	// the image layout we expect the image to be in
 	// once it is done being processed
 	RenderImageLayout       final_layout;
 	
 } RenderPassAttachment;
 
-// a collection of buffers and commands using those buffers
+// A render pass represents two attachments and describes
+// how the attachments are used over the course of a render pass.
 typedef struct RenderPass {
 	str8  debug_name;
 	color debug_color;
-	
-	// NOTE(sushi) in Vulkan, viewport and scissor are only considered if they are 
-	//             set in the dynamic states array of the pipeline associated with
-	//             this renderpass
-	struct { // viewport
-		vec2 offset, dimensions;
-	} viewport;
-
-	struct { // scissor
-		vec2 offset, dimensions;
-	} scissor;
 	
 	// optional pointers to a color/depth attachment
 	// this data must exist during the duration of a call
@@ -928,85 +1068,54 @@ typedef struct RenderPass {
 	void* handle;
 } RenderPass;
 
-global RenderPass* __render_pool_render_passes;
-
+// Allocates a render pass and returns a handle for it.
 RenderPass* render_pass_create();
+
+// Creates or recreates information for the given render pass
+// in the current backend.
 void render_pass_update(RenderPass* x);
 
-// Start recording commands into a render pass with the given frame.
-RenderCommandBuffer* render_pass_begin(Window* window, RenderPass* pass, RenderFrame* frame);
-void render_pass_end(Window* window);
+// Deallocates the given render pass and frees any information 
+// allocated for it in the current backend.
+void render_pass_destroy(RenderPass* x);
 
+// Returns the render pass used by the presentation frames of the 
+// given window.
 RenderPass* render_pass_of_window_presentation_frame(Window* window);
 
-// representation of a framebuffer
-typedef struct RenderFrame {
+// A framebuffer is a collection of views on images that a 
+// render pass uses. While a render pass describes the way 
+// attachments are used, a framebuffer actually represents 
+// those attachments.
+typedef struct RenderFramebuffer {
 	str8 debug_name;
 
 	// render pass describing how this frame behaves
 	RenderPass* render_pass;
 	
-	// the index of this frame in the frame list of the Window it belongs to
-	// The order in which frames are processed is reverse, eg. frame index 0 (which, depending on the swapchain
-	// may belong to multiple frames) is the last frame to have its commands processed and is preceeded
-	// by frame 1, then frame 2, and so on.
-	u32 index;
-
 	u32 width;
 	u32 height;
 
-	RenderCommand* commands;
-
-	Window* window;
-
 	// views over the actual memory the framebuffer works with
-	// NOTE(sushi) these are filled out by the renderer
-	//             they should not be setup by the user
-	//             but are here so that if a later
-	//             renderpass needs to refernece an image
-	//             from a previous renderpass, they can just 
-	//             grab these pointers
-	//             Vulkan has no way of querying an object for
-	//             the properties it was created with
-	//             so we can't replace these with something
-	//             that generates the information from opaque pointers
+	// TODO(sushi) I don't think these need to be render representations anymore
 	RenderImageView* color_image_view;
 	RenderImageView* depth_image_view;
 	void* handle;
-} RenderFrame;
+} RenderFramebuffer;
 
-// Creates a new frame at the start of the given window's frame list. 
-RenderFrame* render_frame_create(Window* window);
+// Allocates a render framebuffer and returns a handle to it.
+RenderFramebuffer* render_frame_create();
 
-// Updates the given frame's information in the backend.
-void render_frame_update(RenderFrame* x);
+// Creates or recreates backend information for the given
+// framebuffer.
+void render_frame_update(RenderFramebuffer* x);
 
-void render_destroy_frame(RenderFrame* x);
+// Deallocates the given framebuffer and frees any backend information
+// that was created for it.
+void render_destroy_frame(RenderFramebuffer* x);
 
-// Retrieves the 'n'th RenderFrame from the given Window. If 0 is passed, then the
-// current presentation frame will be returned.
-RenderFrame* render_frame_from_window(Window* window, u32 n);
-
-global RenderFrame* __render_pool_frames;
-
-RenderImageView* render_get_window_color_image_view(Window* window);
-void render_update_window_frame(Window* window, RenderFrame* frame);
-
-RenderFrame* render_current_present_frame_of_window(Window* window);
-
-// interface for swapchains, which to us will likely just be a collection of framebuffers 
-// there's no such thing as a swapchain in opengl, but you can define multiple 
-// framebuffers, so in that backend this will just serve as a collection of those
-// buffers
-typedef struct RenderSwapchain {
-	// dimensions of this swapchain (which may not match the window)
-	s32 width;
-	s32 height;
-	// the window this swapchain belongs to
-	Window* window;
-} RenderSwapchain;
-
-void render_register_window(Window* window);
+// Retrieve the frame that will be presented on the next call to render_update(window)
+RenderFramebuffer* render_current_present_frame_of_window(Window* window);
 
 enum{
 	RenderBookKeeper_Vertex,
@@ -1119,7 +1228,7 @@ void render_update_material(Material* material);
 //Renders the `model` with the transform `matrix`
 void render_model(Model* model, mat4* matrix);
 
-void render_model_x(RenderFrame* frame, Model* model, mat4* matrix);
+void render_model_x(RenderFramebuffer* frame, Model* model, mat4* matrix);
 
 //Renders the a wireframe of `model` with the transform `matrix`
 void render_model_wireframe(Model* model, mat4* matrix, color c);
@@ -1177,6 +1286,65 @@ void render_clear_debug();
 //Creates a debug line (non-immediate drawing) from `p0` to `p1`
 void render_debug_line3(vec3 p0, vec3 p1,  color c);
 
+// Initializes the filled temp and wireframe temp buffers with the given amount of max vertexes.
+// The max amount of indexes will be 3 * max_vertexes.
+void render_temp_init(Window* window, u32 max_vertexes);
+void render_temp_clear();
+void render_temp_update_camera(vec3 position, vec3 target);
+void render_temp_set_camera_projection(mat4 proj);
+void render_temp_line(vec3 start, vec3 end, color c);
+void render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c);
+void render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c);
+void render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c);
+void render_temp_quad_filled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c);
+void render_temp_poly(vec3* points, color c);
+void render_temp_poly_filled(vec3* points, color c);
+void render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c);
+void render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c);
+void render_temp_box(mat4 transform, color c);
+void render_temp_box_filled(mat4 transform, color c);
+void render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c);
+void render_temp_sphere_filled(vec3 pos, f32 radius, u32 segments, u32 rings, color c);
+void render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c);
+
+#if COMPILER_FEATURE_CPP
+namespace render::temp {
+
+FORCE_INLINE void init(Window* window, u32 max_vertexes) { render_temp_init(window, max_vertexes); }
+FORCE_INLINE void clear() { render_temp_clear(); }
+FORCE_INLINE void update_camera(vec3 position, vec3 target) { render_temp_update_camera(position, target); }
+FORCE_INLINE void set_camera_projection(mat4 proj) { render_temp_set_camera_projection(proj); }
+FORCE_INLINE void line(vec3 start, vec3 end, color c = Color_White) { render_temp_line(start, end, c); };
+FORCE_INLINE void triangle(vec3 p0, vec3 p1, vec3 p2, color c = Color_White, b32 filled = false) { 
+	if(filled) render_temp_triangle_filled(p0,p1,p2,c);
+	else render_temp_triangle(p0,p1,p2,c);
+};
+FORCE_INLINE void quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c = Color_White, b32 filled = false) {
+	if(filled) render_temp_quad_filled(p0,p1,p2,p3,c);
+	else render_temp_quad(p0,p1,p2,p3,c);
+}
+FORCE_INLINE void poly(vec3* points, color c = Color_White, b32 filled = false) {
+	if(filled) render_temp_poly_filled(points, c);
+	else render_temp_poly(points, c);
+}
+FORCE_INLINE void circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c = Color_White, b32 filled = false) {
+	if(filled) render_temp_circle_filled(pos, rot, radius, subdivisions, c);
+	else render_temp_circle(pos, rot, radius, subdivisions, c);
+}
+FORCE_INLINE void box(mat4 transform, color c = Color_White, b32 filled = false) {
+	if(filled) render_temp_box_filled(transform, c);
+	else render_temp_box(transform, c);
+}
+FORCE_INLINE void sphere(vec3 pos, f32 radius, u32 segments = 3, u32 rings = 3, color c = Color_White, b32 filled = false) {
+	if(filled) render_temp_sphere_filled(pos, radius, segments, rings, c);
+	else render_temp_sphere(pos, radius, segments, rings, c);
+}
+FORCE_INLINE void frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c = Color_White) {
+	render_temp_frustrum(position, target, aspect_ratio, fov, near_z, far_z, c);
+}
+
+} // namespace render::temp
+#endif
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_draw_2d
@@ -1493,6 +1661,303 @@ render_max_surface_count(){
 	return MAX_SURFACES;
 }
 
+//-///////////////////////////////////////////////////////////////////////////////////////////////
+// @render_shared_temp
+
+void 
+render_temp_clear() {
+	g_render.temp_wireframe.vertex_count =
+	g_render.temp_wireframe.index_count =
+	g_render.temp_filled.vertex_count =
+	g_render.temp_filled.index_count = 0;
+}
+
+void 
+render_temp_update_camera(vec3 position, vec3 target) {
+	g_render.temp_camera_ubo.view = Math::LookAtMatrix(position, target).Inverse();
+	CopyMemory(g_render.temp_camera_buffer->mapped_data, &g_render.temp_camera_ubo.view, sizeof(mat4));
+}
+
+void
+render_temp_set_camera_projection(mat4 proj) {
+	g_render.temp_camera_ubo.proj = proj;
+	CopyMemory((u8*)g_render.temp_camera_buffer->mapped_data + sizeof(mat4), &g_render.temp_camera_ubo.proj, sizeof(mat4));
+}
+
+void 
+render_temp_line(vec3 start, vec3 end, color c) {
+	auto vp = (RenderTempVertex*)g_render.temp_wireframe.vertex_buffer->mapped_data + g_render.temp_wireframe.vertex_count;
+	auto ip = (RenderTempIndex*)g_render.temp_wireframe.index_buffer->mapped_data + g_render.temp_wireframe.index_count;
+		
+	u32 first = g_render.temp_wireframe.vertex_count;
+
+	ip[0] = first;
+	ip[1] = first+1;
+	ip[2] = first;
+	vp[0] = {start, c.rgba};
+	vp[1] = {end,   c.rgba};
+
+	g_render.temp_wireframe.index_count  += 3;
+	g_render.temp_wireframe.vertex_count += 2;
+}
+
+void 
+render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c) {
+	auto vp = (RenderTempVertex*)g_render.temp_wireframe.vertex_buffer->mapped_data + g_render.temp_wireframe.vertex_count;
+	auto ip = (RenderTempIndex*)g_render.temp_wireframe.index_buffer->mapped_data + g_render.temp_wireframe.index_count;
+
+	u32 first = g_render.temp_wireframe.vertex_count;
+
+	ip[0] = first;
+	ip[1] = first+1;
+	ip[2] = first+2;
+	vp[0] = {p0, c.rgba};
+	vp[1] = {p1, c.rgba};
+	vp[2] = {p2, c.rgba};
+
+	g_render.temp_wireframe.vertex_count += 3;
+	g_render.temp_wireframe.index_count += 3;
+}
+
+void 
+render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c) {
+	auto vp = (RenderTempVertex*)g_render.temp_filled.vertex_buffer->mapped_data + g_render.temp_filled.vertex_count;
+	auto ip = (RenderTempIndex*)g_render.temp_filled.index_buffer->mapped_data + g_render.temp_filled.index_count;
+
+	u32 first = g_render.temp_filled.vertex_count;
+
+	ip[0] = first;
+	ip[1] = first+1;
+	ip[2] = first+2;
+	vp[0] = {p0, c.rgba};
+	vp[1] = {p1, c.rgba};
+	vp[2] = {p2, c.rgba};
+
+	g_render.temp_filled.vertex_count += 3;
+	g_render.temp_filled.index_count += 3;
+}
+
+void 
+render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) {
+	render_temp_line(p0, p1, c);
+	render_temp_line(p1, p2, c);
+	render_temp_line(p2, p3, c);
+	render_temp_line(p3, p0, c);
+}
+
+void 
+render_temp_quad_filled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c) {
+	render_temp_triangle_filled(p0, p1, p2, c);
+	render_temp_triangle_filled(p0, p2, p3, c);
+}
+
+void 
+render_temp_poly(vec3* points, color c) {
+	auto p = array_from(points);
+	if(p.count() < 3) {
+		LogE("render", "render_temp_poly(): points array only contains ", p.count(), " points, but 3 are required for this function.");
+		return;
+	}
+
+	forI(p.count()-1) 
+		render_temp_line(p[i], p[i+1], c);
+	render_temp_line(p[p.count()-1], p[0], c);
+}
+
+void 
+render_temp_poly_filled(vec3* points, color c) {
+	auto p = array_from(points);
+	if(p.count() < 3) {
+		LogE("render", "render_temp_poly_filled(): points array only contains ", p.count(), " points, but 3 are required for this function.");
+		return;
+	}
+
+	for(s32 i = 2; i < p.count() - 1; i++)  {
+		render_temp_triangle_filled(p[i-2], p[i-1], p[i], c);
+	}
+	render_temp_triangle_filled(p[p.count()-3], p[p.count()-2], p[p.count()-1], c);
+}
+
+void 
+render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c) {
+	mat4 transform = mat4::TransformationMatrix(pos, rot, vec3::ONE);
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int) {
+		f32 a0 = (f32(i+1)*M_2PI) / subdivisions;
+		f32 a1 = (f32(i  )*M_2PI) / subdivisions;
+		f32 x0 = radius * cosf(a0),
+			x1 = radius * cosf(a1),
+			y0 = radius * sinf(a0),
+			y1 = radius * sinf(a1);
+		vec3 xaxis0 = (Vec4(x0, y0, 0, 1) * transform).toVec3(),
+			 xaxis1 = (Vec4(x1, y1, 0, 1) * transform).toVec3();
+		render_temp_line(xaxis0, xaxis1, c);
+	}
+}
+
+void 
+render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c) {
+	mat4 transform = mat4::TransformationMatrix(pos, rot, vec3::ONE);
+	f32 subdivisions = f32(subdivisions_int);
+	auto vp = (RenderTempVertex*)g_render.temp_filled.vertex_buffer->mapped_data + g_render.temp_filled.vertex_count;
+	auto ip = (RenderTempIndex*)g_render.temp_filled.index_buffer->mapped_data + g_render.temp_filled.index_count;
+
+	u32 start = g_render.temp_filled.vertex_count;
+
+	vp[0] = {pos, c.rgba};
+	f32 multiple = M_2PI/subdivisions;
+
+	for(u32 i = 0; i < subdivisions_int; i += 1) {
+		f32 a = i * multiple;
+		f32 x = radius * cosf(a),
+			y = radius * sinf(a);
+		vec3 p = (Vec4(x, y, 0, 1) * transform).toVec3();
+		vp[i+1] = {p, c.rgba};
+		ip[i*3 + 0] = start+0;
+		ip[i*3 + 1] = start+i+1;
+		ip[i*3 + 2] = start+i+2;
+	}
+	ip[3*subdivisions_int-1] = start+1;
+	g_render.temp_filled.vertex_count += subdivisions_int + 1;
+	g_render.temp_filled.index_count += 3*subdivisions_int;
+}
+
+void 
+render_temp_box(mat4 transform, color c) {
+	// really awful idk
+	vec3 v[8] = {
+		(Vec4( 0.5,  0.5,  0.5, 1)*transform).toVec3(),
+		(Vec4(-0.5,  0.5,  0.5, 1)*transform).toVec3(),
+		(Vec4(-0.5,  0.5, -0.5, 1)*transform).toVec3(),
+		(Vec4( 0.5,  0.5, -0.5, 1)*transform).toVec3(),
+		(Vec4( 0.5, -0.5,  0.5, 1)*transform).toVec3(),
+		(Vec4(-0.5, -0.5,  0.5, 1)*transform).toVec3(),
+		(Vec4(-0.5, -0.5, -0.5, 1)*transform).toVec3(),
+		(Vec4( 0.5, -0.5, -0.5, 1)*transform).toVec3(),
+	};
+
+	render_temp_line(v[0], v[1], c);
+	render_temp_line(v[1], v[2], c);
+	render_temp_line(v[2], v[3], c);
+	render_temp_line(v[3], v[0], c);
+	render_temp_line(v[4], v[5], c);
+	render_temp_line(v[5], v[6], c);
+	render_temp_line(v[6], v[7], c);
+	render_temp_line(v[7], v[4], c);
+	render_temp_line(v[0], v[4], c);
+	render_temp_line(v[1], v[5], c);
+	render_temp_line(v[2], v[6], c);
+	render_temp_line(v[3], v[7], c);
+}
+void render_temp_box_filled(mat4 transform, color c){
+	auto vp = (RenderTempVertex*)g_render.temp_filled.vertex_buffer->mapped_data + g_render.temp_filled.vertex_count;
+	auto ip = (RenderTempIndex*)g_render.temp_filled.index_buffer->mapped_data + g_render.temp_filled.index_count;
+
+	u32 start = g_render.temp_filled.vertex_count;
+
+	vp[0] = {(Vec4( 0.5,  0.5,  0.5, 1)*transform).toVec3(),c.rgba};
+	vp[1] = {(Vec4(-0.5,  0.5,  0.5, 1)*transform).toVec3(),c.rgba};
+	vp[2] = {(Vec4(-0.5,  0.5, -0.5, 1)*transform).toVec3(),c.rgba};
+	vp[3] = {(Vec4( 0.5,  0.5, -0.5, 1)*transform).toVec3(),c.rgba};
+	vp[4] = {(Vec4( 0.5, -0.5,  0.5, 1)*transform).toVec3(),c.rgba};
+	vp[5] = {(Vec4(-0.5, -0.5,  0.5, 1)*transform).toVec3(),c.rgba};
+	vp[6] = {(Vec4(-0.5, -0.5, -0.5, 1)*transform).toVec3(),c.rgba};
+	vp[7] = {(Vec4( 0.5, -0.5, -0.5, 1)*transform).toVec3(),c.rgba};
+
+	ip[ 0] = start+0; ip[ 1] = start+5; ip[ 2] = start+1;
+	ip[ 3] = start+0; ip[ 4] = start+4; ip[ 5] = start+5;
+	ip[ 6] = start+1; ip[ 7] = start+6; ip[ 8] = start+2;
+	ip[ 9] = start+1; ip[10] = start+5; ip[11] = start+6;
+	ip[12] = start+2; ip[13] = start+6; ip[14] = start+7;
+	ip[15] = start+2; ip[16] = start+7; ip[17] = start+3;
+	ip[18] = start+3; ip[19] = start+7; ip[20] = start+4;
+	ip[21] = start+3; ip[22] = start+4; ip[23] = start+0;
+	ip[24] = start+0; ip[25] = start+1; ip[26] = start+3;
+	ip[27] = start+1; ip[28] = start+2; ip[29] = start+3;
+	ip[30] = start+4; ip[31] = start+7; ip[32] = start+5;
+	ip[33] = start+5; ip[34] = start+7; ip[35] = start+6;
+
+	g_render.temp_filled.vertex_count += 8;
+	g_render.temp_filled.index_count += 36;
+}
+void 
+render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c) {
+	NotImplemented;
+	// bleh. do later
+	
+//	f32 dtheta = M_2PI / rings;
+//	f32 dphi = M_2PI / segments;
+//
+//	forX(r_, rings) {
+//		auto r = r_ + 1; 
+//		f32 theta0 = r * dtheta,
+//			theta1 = (r + 1) * dtheta;
+//		f32 y0 = radius * cosf(theta0),
+//			y1 = radius * cosf(theta1);
+//		f32 pre0 = radius * sinf(theta0),
+//			pre1 = radius * sinf(theta1);
+//		forX(s_, segments) {
+//			auto s = s_ + 1;
+//			f32 phi0 = (  s  ) * dphi,
+//				phi1 = (s + 1) * dphi;
+//			f32 x0 = pre0 * cosf(phi0),
+//				x1 = pre1 * cosf(phi1),
+//				z0 = pre0 * sinf(phi0),
+//				z1 = pre1 * sinf(phi1);
+//			Log("", Vec3(x0, y0, z0), " ", Vec3(x1, y1, z1));
+//			render_temp_line(Vec3(x0, y0, z0), Vec3(x1, y0, z1), c);
+//		}
+//	}
+}
+
+void 
+render_temp_sphere_filled(vec3 pos, f32 radius, u32 segments, u32 rings, color c) {
+	NotImplemented;
+}
+
+void 
+render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c) {
+	f32 y = tanf(Radians(fov) / 2.f);
+	f32 x = y * aspect_ratio;
+	f32 near_x = x * near_z;
+	f32 far_x  = x * far_z;
+	f32 near_y = y * near_z;
+	f32 far_y  = y * far_z;
+
+	vec4 faces[8] = {
+		{ near_x,  near_y, near_z, 1},
+		{-near_x,  near_y, near_z, 1},
+		{ near_x, -near_y, near_z, 1},
+		{-near_x, -near_y, near_z, 1},
+
+		{ far_x,  far_y, far_z, 1},
+		{-far_x,  far_y, far_z, 1},
+		{ far_x, -far_y, far_z, 1},
+		{-far_x, -far_y, far_z, 1},
+	};
+
+	mat4 mat = Math::LookAtMatrix(position, target);
+	vec3 v[8] = {};
+	forI(8) {
+		vec4 temp = faces[i] * mat;
+		v[i].x = temp.x / temp.w;
+		v[i].y = temp.y / temp.w;
+		v[i].z = temp.z / temp.w;
+	}
+
+	render_temp_line(v[0], v[1], c);
+	render_temp_line(v[0], v[2], c);
+	render_temp_line(v[3], v[1], c);
+	render_temp_line(v[3], v[2], c);
+	render_temp_line(v[4], v[5], c);
+	render_temp_line(v[4], v[6], c);
+	render_temp_line(v[7], v[5], c);
+	render_temp_line(v[7], v[6], c);
+	render_temp_line(v[0], v[4], c);
+	render_temp_line(v[1], v[5], c);
+	render_temp_line(v[2], v[6], c);
+	render_temp_line(v[3], v[7], c);
+}
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render_shared_draw_3d

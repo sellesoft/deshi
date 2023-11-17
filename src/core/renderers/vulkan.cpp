@@ -79,9 +79,9 @@ struct SwapChainSupportDetails{
 };
 
 struct SwapchainSupportDetailsX {
-	VkSurfaceCapabilitiesKHR capabilities;
-	VkSurfaceFormatKHR*      formats;
-	VkPresentModeKHR*        present_modes;
+	VkSurfaceCapabilitiesKHR  capabilities;
+	array<VkSurfaceFormatKHR> formats;
+	array<VkPresentModeKHR>   present_modes;
 };
 
 struct FrameVk{
@@ -203,13 +203,6 @@ struct VkSwapchain{
 	FramebufferAttachmentsVk attachments{};
 };
 
-// idk find a better name later
-struct VkRenderPassInstance {
-	RenderPass* pass;
-	RenderFrame* frame;
-	RenderCommandBuffer* command_buffer;
-};
-
 struct VkWindowInfo {
 	s32 width;
 	s32 height;
@@ -222,14 +215,11 @@ struct VkWindowInfo {
 	s32                      min_image_count;
 	u32                      image_count;
 	u32                      frame_index;
-	FrameVk*                 frames;
+	array<FrameVk>           frames;
 	FramebufferAttachmentsVk attachments;
 	
-	RenderFrame** presentation_frames;
+	array<RenderFramebuffer*> presentation_frames;
 	RenderCommandBuffer* command_buffer;
-
-	// a list of render passes we are going to process in a frame
-	VkRenderPassInstance* render_passes;
 };
 
 local VkSwapchain swapchains[MAX_SURFACES];
@@ -3586,15 +3576,13 @@ create_instance(Window* window) {
 		
 		u32 layer_count = 0;
 		vkEnumerateInstanceLayerProperties(&layer_count, 0);
-		VkLayerProperties* available_layers;
-		array_init(available_layers, layer_count, deshi_temp_allocator);
-		array_count(available_layers) = layer_count; // NOTE(sushi) no idea if this will work properly
-		vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
+		auto available_layers = array<VkLayerProperties>::create_with_count(layer_count, deshi_temp_allocator);
+		vkEnumerateInstanceLayerProperties(&layer_count, available_layers.ptr);
 		
 		forI(ArrayCount(validation_layers)){
 			bool layer_found = false;
-			for_array(available_layers){
-				if(strcmp(validation_layers[i], it->layerName) == 0){
+			forX(j, available_layers.count()){
+				if(strcmp(validation_layers[i], available_layers[j].layerName) == 0){
 					layer_found = true;
 					break;
 				}
@@ -3722,13 +3710,11 @@ pick_physical_device(Window* window) {
 	
 	u32 device_count = 0;
 	vkEnumeratePhysicalDevices(instance, &device_count, 0);
-	VkPhysicalDevice* devices;
-	array_init(devices, device_count, deshi_temp_allocator);
-	array_count(devices) = device_count;
-	vkEnumeratePhysicalDevices(instance, &device_count, devices);
+	auto devices = array<VkPhysicalDevice>::create_with_count(device_count, deshi_temp_allocator);
+	vkEnumeratePhysicalDevices(instance, &device_count, devices.ptr);
 
-	for_array(devices) {
-		auto device = *it;
+	forI(devices.count()) {
+		auto device = devices[i];
 		
 		// find a device which supports graphics operations
 		// TODO(sushi) when somehow specified by the user, also check for compute graphics support
@@ -3737,10 +3723,8 @@ pick_physical_device(Window* window) {
 
 		u32 queue_family_count = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, 0);
-		VkQueueFamilyProperties* queue_families;
-		array_init(queue_families, queue_family_count, deshi_temp_allocator);
-		array_count(queue_families) = queue_family_count;
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
+		auto queue_families = array<VkQueueFamilyProperties>::create_with_count(queue_family_count, deshi_temp_allocator);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.ptr);
 
 		forI(queue_family_count) {
 			auto family = queue_families[i];
@@ -3765,10 +3749,8 @@ pick_physical_device(Window* window) {
 		
 		u32 extension_count;
 		vkEnumerateDeviceExtensionProperties(device, 0, &extension_count, 0);
-		VkExtensionProperties* available_extensions;
-		array_init(available_extensions, extension_count, deshi_temp_allocator);
-		array_count(available_extensions) = extension_count;
-		vkEnumerateDeviceExtensionProperties(device, 0, &extension_count, available_extensions);
+		auto available_extensions = array<VkExtensionProperties>::create_with_count(extension_count, deshi_temp_allocator);
+		vkEnumerateDeviceExtensionProperties(device, 0, &extension_count, available_extensions.ptr);
 
 		u32 count = 0;
 		forI(extension_count) {
@@ -3814,17 +3796,16 @@ create_logical_device(Window* window) {
 	Stopwatch watch = start_stopwatch();
 	
 	f32 queue_priority = 1.f;
-	VkDeviceQueueCreateInfo* queue_create_infos;
-	array_init(queue_create_infos, 1, deshi_temp_allocator);
+	auto queue_create_infos = array<VkDeviceQueueCreateInfo>::create(deshi_temp_allocator);
 	VkDeviceQueueCreateInfo queue_create_info{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
 	queue_create_info.queueFamilyIndex = physical_queue_families.graphics_family;
 	queue_create_info.queueCount       = 1;
 	queue_create_info.pQueuePriorities = &queue_priority;
-	array_push_value(queue_create_infos, queue_create_info);
+	queue_create_infos.push(queue_create_info);
 
 	if(physical_queue_families.present_family != physical_queue_families.graphics_family) {
 		queue_create_info.queueFamilyIndex = physical_queue_families.present_family;
-		array_push_value(queue_create_infos, queue_create_info);
+		queue_create_infos.push(queue_create_info);
 	}
 
 	if(deviceFeatures.samplerAnisotropy) {
@@ -3846,8 +3827,8 @@ create_logical_device(Window* window) {
 	}
 
 	VkDeviceCreateInfo create_info{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
-	create_info.pQueueCreateInfos       = queue_create_infos;
-	create_info.queueCreateInfoCount    = array_count(queue_create_infos);
+	create_info.pQueueCreateInfos       = queue_create_infos.ptr;
+	create_info.queueCreateInfoCount    = queue_create_infos.count();
 	create_info.pEnabledFeatures        = &enabledFeatures;
 	create_info.enabledExtensionCount   = (u32)ArrayCount(deviceExtensions);
 	create_info.ppEnabledExtensionNames = deviceExtensions;
@@ -4534,15 +4515,15 @@ render_shader_kind_to_vulkan(RenderShaderStage x) {
 	return (VkShaderStageFlagBits)out;
 }
 
-RenderDescriptorLayout*
+RenderDescriptorSetLayout*
 render_descriptor_layout_create() {
-	auto out = memory_pool_push(__render_pool_descriptor_layouts);
+	auto out = memory_pool_push(g_render.pools.descriptor_set_layouts);
 	array_init(out->bindings, 1, deshi_allocator);
 	return out;
 }
 
 void
-render_descriptor_layout_update(RenderDescriptorLayout* x) {
+render_descriptor_layout_update(RenderDescriptorSetLayout* x) {
 	PrintVk(4, "Updating descriptor set layout");
 
 	u64 n_bindings = array_count(x->bindings);
@@ -4577,10 +4558,10 @@ render_descriptor_layout_update(RenderDescriptorLayout* x) {
 }
 
 void
-render_descriptor_layout_destroy(RenderDescriptorLayout* x) {
+render_descriptor_layout_destroy(RenderDescriptorSetLayout* x) {
 	if(x->bindings)	array_deinit(x->bindings);
 	vkDestroyDescriptorSetLayout(device, (VkDescriptorSetLayout)x->handle, allocator);
-	ZeroMemory(x, sizeof(RenderDescriptorLayout));
+	ZeroMemory(x, sizeof(RenderDescriptorSetLayout));
 }
 
 VkCompareOp
@@ -4609,7 +4590,7 @@ render_descriptor_type_to_vulkan(RenderDescriptorType x) {
 
 RenderDescriptorSet* 
 render_descriptor_set_create() {
-	auto out = memory_pool_push(__render_pool_descriptor_sets);
+	auto out = memory_pool_push(g_render.pools.descriptor_sets);
 	array_init(out->layouts, 1, deshi_allocator);
 	return out;
 }
@@ -4716,7 +4697,7 @@ render_descriptor_set_destroy(RenderDescriptorSet* x) {
 
 RenderPipelineLayout*
 render_pipeline_layout_create() {
-	auto out = memory_pool_push(__render_pool_pipeline_layouts);
+	auto out = memory_pool_push(g_render.pools.pipeline_layouts);
 	array_init(out->descriptor_layouts, 1, deshi_allocator);
 	array_init(out->push_constants, 1, deshi_allocator);
 	return out;
@@ -4795,7 +4776,7 @@ render_pipeline_layout_update(RenderPipelineLayout* x) {
 // later
 RenderPipeline*
 render_pipeline_create() {
-	auto rp = memory_pool_push(__render_pipeline_pool);
+	auto rp = memory_pool_push(g_render.pools.pipelines);
 	array_init(rp->shader_stages, 1, deshi_allocator);
 	array_init(rp->dynamic_states, 1, deshi_allocator);
 	array_init(rp->vertex_input_attributes, 1, deshi_allocator);
@@ -5060,7 +5041,7 @@ render_pipeline_destroy(RenderPipeline* x) {
 
 RenderImage*
 render_image_create() {
-	auto out = memory_pool_push(__render_pool_images);
+	auto out = memory_pool_push(g_render.pools.images);
 	return out;
 }
 
@@ -5098,11 +5079,6 @@ render_sample_count_to_vulkan(RenderSampleCount x) {
 	if(HasFlag(x, RenderSampleCount_64)) AddFlag(out, VK_SAMPLE_COUNT_64_BIT);
 	return (VkSampleCountFlagBits)out;
 }
-
-
-
-
-
 
 VkMemoryPropertyFlags
 render_memory_properties_to_vulkan(RenderMemoryPropertyFlags x) {
@@ -5230,7 +5206,7 @@ render_image_destroy(RenderImage* x) {
 
 RenderImageView*
 render_image_view_create() {
-	return memory_pool_push(__render_pool_image_views);
+	return memory_pool_push(g_render.pools.image_views);
 }
 
 VkImageAspectFlags
@@ -5266,7 +5242,7 @@ render_image_view_destroy(RenderImageView* x) {
 
 RenderSampler*
 render_sampler_create() {
-	auto out = memory_pool_push(__render_pool_samplers);
+	auto out = memory_pool_push(g_render.pools.samplers);
 	return out;
 }
 
@@ -5323,7 +5299,7 @@ render_sampler_destroy(RenderSampler* x) {
 
 RenderPass*
 render_pass_create() {
-	auto out = memory_pool_push(__render_pool_render_passes);
+	auto out = memory_pool_push(g_render.pools.passes);
 	return out;
 }
 
@@ -5370,8 +5346,8 @@ render_pass_update(RenderPass* x) {
 		attachments[index].       storeOp = render_store_op_to_vulkan(x->color_attachment->store_op);
 		attachments[index]. stencilLoadOp = render_load_op_to_vulkan(x->color_attachment->stencil_load_op);
 		attachments[index].stencilStoreOp = render_store_op_to_vulkan(x->color_attachment->stencil_store_op);
-		attachments[index]. initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[index].   finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[index]. initialLayout = render_image_layout_to_vulkan(x->color_attachment->initial_layout);
+		attachments[index].   finalLayout = render_image_layout_to_vulkan(x->color_attachment->final_layout);
 
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_attachment_reference;
@@ -5387,8 +5363,8 @@ render_pass_update(RenderPass* x) {
 		attachments[index].       storeOp = render_store_op_to_vulkan(x->depth_attachment->store_op);
 		attachments[index]. stencilLoadOp = render_load_op_to_vulkan(x->depth_attachment->stencil_load_op);
 		attachments[index].stencilStoreOp = render_store_op_to_vulkan(x->depth_attachment->stencil_store_op);
-		attachments[index]. initialLayout =	VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[index].   finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[index]. initialLayout =	render_image_layout_to_vulkan(x->depth_attachment->initial_layout);
+		attachments[index].   finalLayout = render_image_layout_to_vulkan(x->depth_attachment->final_layout);
 
 		subpass.pDepthStencilAttachment = &depth_attachment_reference;
 		depth_attachment_reference.attachment = index;
@@ -5433,14 +5409,14 @@ render_pass_of_window_presentation_frame(Window* window) {
 	return ((VkWindowInfo*)window->render_info)->presentation_frames[0]->render_pass;
 }
 
-RenderFrame*
-render_frame_create(Window* window) {
-	auto out = memory_pool_push(__render_pool_frames);
+RenderFramebuffer*
+render_frame_create() {
+	auto out = memory_pool_push(g_render.pools.framebuffers);
 	return out;
 }
 
 void
-render_frame_update(RenderFrame* x) {
+render_frame_update(RenderFramebuffer* x) {
 	Assert(x->render_pass, "A framebuffer needs a renderpass");
 	
 	PrintVk(4, "Updating frame");
@@ -5488,7 +5464,7 @@ render_get_window_color_image_view(Window* window) {
 }
 
 void
-render_update_window_frame(Window* window, RenderFrame* frame) {
+render_update_window_frame(Window* window, RenderFramebuffer* frame) {
 	auto wininf = (VkWindowInfo*)window->render_info;
 
 	// NOTE(sushi) for now we just assume that we only have one image
@@ -5509,7 +5485,7 @@ render_update_window_frame(Window* window, RenderFrame* frame) {
 }
 
 
-RenderFrame* 
+RenderFramebuffer* 
 render_current_present_frame_of_window(Window* window) {
 	auto wininf =  (VkWindowInfo*)window->render_info;
 	return wininf->presentation_frames[wininf->frame_index];
@@ -5537,23 +5513,21 @@ create_swapchain(Window* window) {
 	u32 format_count = 0;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, wininf->surface, &format_count, 0);
 	if(format_count) {
-		array_grow(wininf->support_details.formats, format_count);
-		array_count(wininf->support_details.formats) = format_count;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, wininf->surface, &format_count, wininf->support_details.formats);
+		wininf->support_details.formats.recount(format_count);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, wininf->surface, &format_count, wininf->support_details.formats.ptr);
 	}
 
 	u32 present_mode_count = 0;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, wininf->surface, &present_mode_count, 0);
 	if(present_mode_count) {
-		array_grow(wininf->support_details.present_modes, present_mode_count);
-		array_count(wininf->support_details.present_modes) = present_mode_count;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, wininf->surface, &present_mode_count, wininf->support_details.present_modes);
+		wininf->support_details.present_modes.recount(present_mode_count);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, wininf->surface, &present_mode_count, wininf->support_details.present_modes.ptr);
 	}
 	
 	// choose swapchain's surface format 
 	wininf->surface_format = wininf->support_details.formats[0];
-	for_array(wininf->support_details.formats) {
-		auto format = *it;
+	forI(wininf->support_details.formats.count()) {
+		auto format = wininf->support_details.formats[i];
 		if( format.format == VK_FORMAT_B8G8R8A8_SRGB &&
 			format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) {
 			wininf->surface_format = format;
@@ -5566,8 +5540,8 @@ create_swapchain(Window* window) {
 	b32 fifo_relaxed = false;
 	b32 mailbox = false;
 
-	for_array(wininf->support_details.present_modes) {
-		auto pm = *it;
+	forI(wininf->support_details.present_modes.count()) {
+		auto pm = wininf->support_details.present_modes[i];
 		if(pm == VK_PRESENT_MODE_IMMEDIATE_KHR)    immediate = true;
 		if(pm == VK_PRESENT_MODE_MAILBOX_KHR)      mailbox = true;
 		if(pm == VK_PRESENT_MODE_FIFO_RELAXED_KHR) fifo_relaxed = true;
@@ -5810,6 +5784,8 @@ create_render_pass_and_frames(Window* window) {
 	color_attachment.        store_op = RenderAttachmentStoreOp_Store;
 	color_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
 	color_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
+	color_attachment.  initial_layout = RenderImageLayout_Undefined;
+	color_attachment.    final_layout = RenderImageLayout_Present;
 
 	RenderPassAttachment depth_attachment;
 	depth_attachment.          format = vulkan_format_to_render(find_depth_format());
@@ -5817,6 +5793,8 @@ create_render_pass_and_frames(Window* window) {
 	depth_attachment.        store_op = RenderAttachmentStoreOp_Store;
 	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Clear;
 	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
+	depth_attachment.  initial_layout = RenderImageLayout_Undefined;
+	depth_attachment.    final_layout = RenderImageLayout_Depth_Stencil_Attachment_Optimal;
 
 	RenderPass* render_pass = render_pass_create();
 	render_pass->debug_name = str8l("Default render pass");
@@ -5828,16 +5806,13 @@ create_render_pass_and_frames(Window* window) {
 	render_pass_update(render_pass);
 
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	VkImage* images;
-	array_init(images, wininf->image_count, deshi_temp_allocator);
-	array_count(images) = wininf->image_count;
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images);
+	auto images = array<VkImage>::create_with_count(wininf->image_count);
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images.ptr);
 
-	array_grow(wininf->presentation_frames, wininf->image_count);
-	array_count(wininf->presentation_frames) = wininf->image_count;
+	wininf->presentation_frames.recount(wininf->image_count);
 
 	forI(wininf->image_count) {
-		RenderFrame* frame = wininf->presentation_frames[i] = render_frame_create(window);
+		RenderFramebuffer* frame = wininf->presentation_frames[i] = render_frame_create();
 		frame->width = wininf->width;
 		frame->height = wininf->height;
 		frame->render_pass = render_pass;
@@ -5910,13 +5885,8 @@ recreate_frames(Window* window) {
 	u32 old_image_count = wininf->image_count;
 
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	VkImage* images;
-	array_init(images, wininf->image_count, deshi_temp_allocator);
-	array_count(images) = wininf->image_count;
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images);
-
-	array_grow(wininf->presentation_frames, wininf->image_count);
-	array_count(wininf->presentation_frames) = wininf->image_count;
+	auto images = array<VkImage>::create_with_count(wininf->image_count);
+	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images.ptr);
 
 	// TODO(sushi) I'm not sure if this should ever happen, but if it does and we have less frames
 	//             than before, we run the risk of external handles to those frames needing to be 
@@ -5927,7 +5897,7 @@ recreate_frames(Window* window) {
 	}
 
 	forI(wininf->image_count) {
-		RenderFrame* frame = wininf->presentation_frames[i];
+		RenderFramebuffer* frame = wininf->presentation_frames[i];
 		frame->width = wininf->width;
 		frame->height = wininf->height;
 		frame->render_pass = render_pass;
@@ -6085,6 +6055,8 @@ render_init_x(Window* window) {
 	Log("vulkan","Initializing");
 	
 	Stopwatch watch = start_stopwatch();
+
+	g_render = {};
 	
 	array_init(validation_features_enabled_x, 1, deshi_allocator);
 	memory_pool_init(window_infos, 4);
@@ -6102,25 +6074,26 @@ render_init_x(Window* window) {
 	renderSettings.loggingLevel = -1;
 
 	// TODO(sushi) this should be moved to an implementation shared between backends
-	memory_pool_init(__render_pool_images, 8);
-	memory_pool_init(__render_pool_image_views, 8);
-	memory_pool_init(__render_pool_samplers, 8);
-	memory_pool_init(__render_pool_frames, 8);
-	memory_pool_init(__render_pool_render_passes, 8);
-	memory_pool_init(__render_pool_descriptor_sets, 8);
-	memory_pool_init(__render_pool_descriptor_layouts, 8);
-	memory_pool_init(__render_pool_pipeline_layouts, 8);
-	memory_pool_init(__render_pipeline_pool, 8);
-	memory_pool_init(__render_pool_command_buffers, 8);
+	memory_pool_init(g_render.pools.descriptor_set_layouts, 8);
+	memory_pool_init(g_render.pools.descriptor_sets, 8);
+	memory_pool_init(g_render.pools.pipeline_layouts, 8);
+	memory_pool_init(g_render.pools.pipelines, 8);
+	memory_pool_init(g_render.pools.buffers, 8);
+	memory_pool_init(g_render.pools.command_buffers, 8);
+	memory_pool_init(g_render.pools.images, 8);
+	memory_pool_init(g_render.pools.image_views, 8);
+	memory_pool_init(g_render.pools.samplers, 8);
+	memory_pool_init(g_render.pools.passes, 8);
+	memory_pool_init(g_render.pools.framebuffers, 8);
 
 	// create the window info that this window will point to
 	auto wi = (VkWindowInfo*)(window->render_info = memory_pool_push(window_infos));
 	wi->width = window->width;
 	wi->height = window->height;
-	array_init(wi->frames, 1, deshi_allocator);
-	array_init(wi->support_details.formats, 1, deshi_allocator);
-	array_init(wi->support_details.present_modes, 1, deshi_allocator);
-	array_init(wi->presentation_frames, 1, deshi_allocator);
+	wi->frames = array<FrameVk>::create(deshi_allocator);
+	wi->support_details.formats = array<VkSurfaceFormatKHR>::create(deshi_allocator);
+	wi->support_details.present_modes = array<VkPresentModeKHR>::create(deshi_allocator);
+	wi->presentation_frames = array<RenderFramebuffer*>::create(deshi_allocator);
 
 	// mostly vulkan-os interaction setup
 	setup_allocator();
@@ -6165,19 +6138,164 @@ render_init_x(Window* window) {
 	memory_pool_init(deshi__render_buffer_pool, 16);
 	externalVertexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
 	externalIndexBuffers = memory_create_arena(sizeof(BufferVk)*MAX_EXTERNAL_BUFFERS);
-
+	
 	initialized = true;
 
 	Log("vulkan", "Finished initialization in ",peek_stopwatch(watch), "ms");
 	deshiStage |= DS_RENDER;
 }
 
+void 
+render_temp_init(Window* window, u32 v) {
+	if(v > MAX_U32/3) {
+		LogE("render", "render_temp_init(", v, "): the given vertex count is too large to allow 3*vertex_count indexes. The max amount of supported vertexes is ", MAX_U32 / 3);
+		return;
+	}
+	g_render.temp_filled = {0};
+	g_render.temp_filled.vertex_buffer = render_buffer_create(
+			0, v*sizeof(RenderTempVertex), 
+			RenderBufferUsage_VertexBuffer,
+			RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_Persistent);
+	g_render.temp_filled.index_buffer = render_buffer_create(
+			0, v*sizeof(RenderTempIndex), 
+			RenderBufferUsage_IndexBuffer,
+			RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_Persistent);
+	g_render.temp_wireframe.vertex_buffer = render_buffer_create(
+			0, v*sizeof(RenderTempVertex), 
+			RenderBufferUsage_VertexBuffer,
+			RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_Persistent);
+	g_render.temp_wireframe.index_buffer = render_buffer_create(
+			0, v*sizeof(RenderTempIndex), 
+			RenderBufferUsage_IndexBuffer,
+			RenderMemoryPropertyFlag_HostCoherent,
+			RenderMemoryMapping_Persistent);
+
+	auto wininf = (VkWindowInfo*)window->render_info;
+
+	RenderPassAttachment color_attachment = {};
+	color_attachment.          format = vulkan_format_to_render(wininf->surface_format.format);
+	color_attachment.         load_op = RenderAttachmentLoadOp_Load;
+	color_attachment.        store_op = RenderAttachmentStoreOp_Store;
+	color_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
+	color_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
+	color_attachment.  initial_layout = RenderImageLayout_Present;
+	color_attachment.    final_layout = RenderImageLayout_Present;
+
+	RenderPassAttachment depth_attachment;
+	depth_attachment.          format = vulkan_format_to_render(find_depth_format());
+	depth_attachment.         load_op = RenderAttachmentLoadOp_Clear;
+	depth_attachment.        store_op = RenderAttachmentStoreOp_Store;
+	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Clear;
+	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
+	depth_attachment.  initial_layout = RenderImageLayout_Undefined;
+	depth_attachment.    final_layout = RenderImageLayout_Depth_Stencil_Attachment_Optimal;
+
+
+	auto render_pass = g_render.temp_render_pass = render_pass_create();
+	render_pass->debug_name = str8l("temp render pass");
+	render_pass->debug_color = Color_DarkGreen;
+	render_pass->color_clear_values = Color_Black;
+	render_pass->depth_clear_values = {1.f, 0};
+	render_pass->color_attachment = &color_attachment;
+	render_pass->depth_attachment = &depth_attachment;
+	render_pass_update(render_pass);
+
+	auto pipeline = g_render.temp_filled.pipeline = render_pipeline_create();
+	pipeline->                  name = str8l("<render> temp pipeline");
+	pipeline->            front_face = RenderPipelineFrontFace_CCW;
+	pipeline->               culling = RenderPipelineCulling_Back;
+	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	pipeline->            depth_test = true;
+	pipeline->      depth_compare_op = RenderCompareOp_Less;
+	pipeline->            depth_bias = false;
+	pipeline->            line_width = 1.f;
+	pipeline->           color_blend = true;
+	pipeline->        color_blend_op = RenderBlendOp_Add;
+	pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
+	pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	pipeline->        alpha_blend_op = RenderBlendOp_Add;
+	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
+	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	pipeline->        blend_constant = color(10,10,10,255);
+	pipeline->           render_pass = render_pass;
+
+	array_wrap_and_push(pipeline->shader_stages, {
+		{
+			RenderShaderStage_Vertex,
+			str8l("temp.vert"),
+			// TODO(sushi) bake these shaders
+			file_read_simple(str8l("data/shaders/temp.vert"), deshi_temp_allocator)
+		}, {
+			RenderShaderStage_Fragment,
+			str8l("temp.frag"),
+			file_read_simple(str8l("data/shaders/temp.frag"), deshi_temp_allocator)
+		}});
+
+	array_wrap_and_push(pipeline->dynamic_states, {
+		RenderDynamicState_Viewport,
+		RenderDynamicState_Scissor});
+
+	array_wrap_and_push(pipeline->vertex_input_bindings,
+		{0, sizeof(RenderTempVertex)});
+
+	array_wrap_and_push(pipeline->vertex_input_attributes, {
+		{0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(RenderTempVertex, pos)},
+		{1, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(RenderTempVertex, color)}});
+
+	g_render.temp_camera_buffer = render_buffer_create(
+		&g_render.temp_camera_ubo,
+		sizeof(g_render.temp_camera_ubo),
+		RenderBufferUsage_UniformBuffer,
+		RenderMemoryPropertyFlag_HostCoherent,
+		RenderMemoryMapping_Persistent);
+
+	auto temp_layout = render_pipeline_layout_create();
+	temp_layout->debug_name = str8l("<render> temp pipeline layout");
+	
+	auto descriptor_layout = render_descriptor_layout_create();
+	array_wrap_and_push(descriptor_layout->bindings, {
+		RenderDescriptorType_Uniform_Buffer,
+		RenderShaderStage_Vertex,
+		0});
+	render_descriptor_layout_update(descriptor_layout);
+
+	array_push_value(temp_layout->descriptor_layouts, descriptor_layout);
+	render_pipeline_layout_update(temp_layout);
+
+	pipeline->layout = temp_layout;
+	render_pipeline_update(pipeline);
+
+	auto wireframe_pipeline = g_render.temp_wireframe.pipeline = render_pipeline_duplicate(pipeline);
+	wireframe_pipeline->name = str8l("<render> temp wireframe pipeline");
+	wireframe_pipeline->polygon_mode = RenderPipelinePolygonMode_Line;
+	wireframe_pipeline->culling = RenderPipelineCulling_None;
+	wireframe_pipeline->depth_test = false;
+	wireframe_pipeline->color_blend = false;
+	render_pipeline_update(wireframe_pipeline);
+	
+
+	auto descriptor_set = g_render.temp_descriptor_set = render_descriptor_set_create();
+	descriptor_set->debug_name = str8l("<render> temp descriptor set");
+	descriptor_set->layouts = array_copy(pipeline->layout->descriptor_layouts).ptr;
+	render_descriptor_set_update(descriptor_set);
+
+	auto descriptors = array<RenderDescriptor>::create_with_count(1, deshi_temp_allocator);
+	descriptors[0].kind = RenderDescriptorType_Uniform_Buffer;
+	descriptors[0].buffer = {
+		g_render.temp_camera_buffer,
+		0,
+		sizeof(g_render.temp_camera_ubo)
+	};
+	render_descriptor_set_write(descriptor_set, descriptors.ptr);
+}
+
 void
 setup_commands() {
 
 }
-
-
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6302,7 +6420,7 @@ render_update(){DPZoneScoped;
 }
 
 void
-process_frame(RenderFrame* frame) {
+process_frame(RenderFramebuffer* frame) {
 }
 
 void 
@@ -6461,6 +6579,66 @@ render_update_x(Window* window) {
 		}
 	}
 	
+	// render temp stuff
+	if(g_render.temp_render_pass && (
+	   g_render.temp_filled.index_count    && g_render.temp_filled.vertex_count ||
+	   g_render.temp_wireframe.index_count && g_render.temp_wireframe.vertex_count)) {
+		VkRenderPassBeginInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+		info.renderPass = (VkRenderPass)g_render.temp_render_pass->handle;
+		info.framebuffer = (VkFramebuffer)render_current_present_frame_of_window(window)->handle;
+		info.renderArea.offset = {0,0};
+		info.renderArea.extent = {(u32)window->width, (u32)window->height};
+		info.pClearValues = clear_values;
+		info.clearValueCount = 2;
+	
+		clear_values[0].color = {0,0,0,0};
+		clear_values[1].depthStencil = {1.f, 0};
+
+		VkViewport viewport{};
+		VkRect2D scissor{};
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = window->width;
+		viewport.height = window->height;
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		scissor.extent.width = window->width;
+		scissor.extent.height = window->height;
+
+		vkCmdSetScissor(cmdbuf, 0, 1, &scissor);
+		vkCmdSetViewport(cmdbuf, 0, 1, &viewport);
+
+		DebugBeginLabelVk(cmdbuf, "temp render pass", Vec4(0.2, 0.4, 0.8, 1));
+		vkCmdBeginRenderPass(cmdbuf, &info, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkDeviceSize offsets[1] = {0};
+
+		vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)g_render.temp_filled.pipeline->layout->handle, 0, 1, (VkDescriptorSet*)&g_render.temp_descriptor_set->handle, 0, 0);
+
+		// wireframe
+		if(g_render.temp_wireframe.vertex_count && g_render.temp_wireframe.index_count) {	
+			vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&g_render.temp_wireframe.vertex_buffer->buffer_handle, offsets);
+			vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)g_render.temp_wireframe.index_buffer->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)g_render.temp_wireframe.pipeline->handle);
+			vkCmdDrawIndexed(cmdbuf, g_render.temp_wireframe.index_count, 1, 0, 0, 0);
+			renderStats.drawnIndices += g_render.temp_wireframe.index_count;
+		}
+
+		// filled
+		if(g_render.temp_filled.vertex_count && g_render.temp_filled.index_count) {	
+			vkCmdBindVertexBuffers(cmdbuf, 0, 1, (VkBuffer*)&g_render.temp_filled.vertex_buffer->buffer_handle, offsets);
+			vkCmdBindIndexBuffer(cmdbuf, (VkBuffer)g_render.temp_filled.index_buffer->buffer_handle, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)g_render.temp_filled.pipeline->handle);
+			vkCmdDrawIndexed(cmdbuf, g_render.temp_filled.index_count, 1, 0, 0, 0);
+			renderStats.drawnIndices += g_render.temp_filled.index_count;
+		}
+
+		vkCmdEndRenderPass(cmdbuf);
+		DebugEndLabelVk(cmdbuf);
+	}
+
 	resultVk = vkEndCommandBuffer(cmdbuf);
 	AssertVk(resultVk);
 
@@ -7292,7 +7470,7 @@ render_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 v
 }
 
 void
-render_cmd_begin_render_pass(Window* window, RenderPass* pass, RenderFrame* frame) {
+render_cmd_begin_render_pass(Window* window, RenderPass* pass, RenderFramebuffer* frame) {
 	auto c = array_push(render_command_buffer_of_window(window)->commands);
 	c->type = RenderCommandType_Begin_Render_Pass;
 	c->begin_render_pass.pass = pass;
@@ -7333,7 +7511,7 @@ render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) {
 
 RenderCommandBuffer* 
 render_command_buffer_create() {
-	auto out = memory_pool_push(__render_pool_command_buffers);
+	auto out = memory_pool_push(g_render.pools.command_buffers);
 	array_init(out->commands, 1, deshi_allocator);
 	return out;
 }
@@ -7425,7 +7603,7 @@ render_update_camera_projection(mat4* projection_matrix){DPZoneScoped;
 void
 render_use_default_camera(){DPZoneScoped;
 	uboVS.values.view = Math::LookAtMatrix(vec3::ZERO, (vec3::FORWARD * mat4::RotationMatrix(vec3::ZERO)).normalized()).Inverse();
-	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix((f32)DeshWindow->width, (f32)DeshWindow->height, 90.f, 1000.f, 0.1f);
+	uboVS.values.proj = Math::PerspectiveProjectionMatrix((f32)DeshWindow->width, (f32)DeshWindow->height, 90.f, 0.1f, 1000.f);
 	uboVS.values.proj.arr[5] *= -1;
 }
 
