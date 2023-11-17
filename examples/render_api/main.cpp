@@ -24,7 +24,6 @@
 #include "core/render.h"
 #include "core/assets.h"
 #include "core/threading.h"
-#include "core/camera.h"
 #include "core/time.h"
 #include "core/ui.h"
 #include "core/ui_widgets.h"
@@ -49,6 +48,7 @@ int main() {
 	Window* win = window_create(str8l("render_api"));
 	window_show(win);
 	render_init_x(win);
+	render::temp::init(win, 0xffff);
 
 	// we need to create a pipeline which describes the path we take
 	// to render the scene
@@ -57,18 +57,19 @@ int main() {
 	
 	// We'll need a vertex and a fragment shader which we acquire by pushing
 	// them onto the pipeline's shader stages. The backend will handle compilation.
-	*array_push(pipeline->shader_stages) = {
-		RenderShaderStage_Vertex, 
-		str8l("test"), 
-		file_read_simple(str8l("test.vert"), deshi_temp_allocator)
-	};
-
-	*array_push(pipeline->shader_stages) = {
-		RenderShaderStage_Fragment,
-		str8l("test"),
-		file_read_simple(str8l("test.frag"), deshi_temp_allocator)
-	};
 	
+	array_wrap_and_push(pipeline->shader_stages, {
+		{
+			RenderShaderStage_Vertex,
+			str8l("test.vert"),
+			file_read_simple(str8l("test.vert"), deshi_temp_allocator)
+		},
+		{
+			RenderShaderStage_Fragment,
+			str8l("test.frag"),
+			file_read_simple(str8l("test.frag"), deshi_temp_allocator)
+		}});
+
 	// We need to set all of the properties of the pipeline so that it can correctly
 	// render our scenes.
 	pipeline->            front_face = RenderPipelineFrontFace_CCW;
@@ -88,21 +89,22 @@ int main() {
 	pipeline->        blend_constant = color(10,10,10,255);
 	pipeline->           render_pass = render_pass_of_window_presentation_frame(win);
 
-	*array_push(pipeline->dynamic_states) = RenderDynamicState_Viewport;
-	*array_push(pipeline->dynamic_states) = RenderDynamicState_Scissor;
+	array_wrap_and_push(pipeline->dynamic_states, {
+			RenderDynamicState_Viewport,
+			RenderDynamicState_Scissor});
 
 	// We need to give the renderer information about the data we are going to be 
 	// giving to the vertex shader stage through buffers. We define the binding our 
 	// data will be delivered on (0) and then the size of each element of the data. 
 	// Finally, we describe how that data is laid out.
+	array_wrap_and_push(pipeline->vertex_input_bindings, 
+		{0, sizeof(MeshVertex)});
 
-	*array_push(pipeline->vertex_input_bindings) = {0, sizeof(MeshVertex)};
-	array_grow(pipeline->vertex_input_attributes, 4);
-	array_count(pipeline->vertex_input_attributes) = 4;
-	pipeline->vertex_input_attributes[0] = {0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, pos)};
-	pipeline->vertex_input_attributes[1] = {1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(MeshVertex, uv)};
-	pipeline->vertex_input_attributes[2] = {2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(MeshVertex, color)};
-	pipeline->vertex_input_attributes[3] = {3, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, normal)};
+	array_wrap_and_push(pipeline->vertex_input_attributes, {
+		{0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, pos)},
+		{1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(MeshVertex, uv)},
+		{2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(MeshVertex, color)},
+		{3, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, normal)}});
 
 	// We need to describe to the renderer how our shader is going to use 
 	// the data that we want to give to it.
@@ -134,21 +136,23 @@ int main() {
 	// that we want to give to the shaders. We're going to need a descriptor for
 	// our UBO and another one for a texture.
 	
-	RenderDescriptorLayout* descriptor_layout = render_descriptor_layout_create();
-	descriptor_layout->debug_name = str8l("test");
+	RenderDescriptorSetLayout* descriptor_layout = render_descriptor_layout_create();
+	descriptor_layout->debug_name = str8l("test descriptor layout");
 	
-	// First is the UBO. It is bound to slot 0 and used in the vertex shader.
-	RenderDescriptorLayoutBinding* binding = array_push(descriptor_layout->bindings);
-	binding->kind = RenderDescriptorType_Uniform_Buffer;
-	binding->shader_stages = RenderShaderStage_Vertex;
-	binding->binding = 0;
-
-	// Then the texture, which we bind to slot 1 and use in the fragment shader.
-	binding = array_push(descriptor_layout->bindings);
-	binding->kind = RenderDescriptorType_Combined_Image_Sampler;
-	binding->shader_stages = RenderShaderStage_Fragment;
-	binding->binding = 1;
-
+	array_wrap_and_push(descriptor_layout->bindings, {
+		// First is the UBO. It is bound to slot 0 and used in the vertex shader.
+			{
+				RenderDescriptorType_Uniform_Buffer,
+				RenderShaderStage_Vertex,
+				0
+			},
+		// Then the texture, which we bind to slot 1 and use in the fragment shader.
+			{
+				RenderDescriptorType_Combined_Image_Sampler,
+				RenderShaderStage_Fragment,
+				1
+			}});
+	
 	// update the descriptor layout in the backend
 	render_descriptor_layout_update(descriptor_layout);
 
@@ -172,8 +176,8 @@ int main() {
 	
 	RenderPipelineLayout* pipeline_layout = render_pipeline_layout_create();
 	pipeline_layout->debug_name = str8l("test");
-	*array_push(pipeline_layout->descriptor_layouts)  = descriptor_layout;
-	*array_push(pipeline_layout->push_constants) = model_push_constant;
+	array_push_value(pipeline_layout->descriptor_layouts, descriptor_layout);
+	array_push_value(pipeline_layout->push_constants, model_push_constant);
 	render_pipeline_layout_update(pipeline_layout);
 
 	// Now we tell the pipeline what layout to use and update it in the backend.
@@ -246,10 +250,7 @@ int main() {
 	// Now we have all the information we need to finally setup the descriptor set.
 	// We need to give it an array of RenderDescriptors to write to the set.
 	
-	RenderDescriptor* descriptors;
-	array_init(descriptors, 2, deshi_allocator);
-	array_count(descriptors) = 2;
-
+	auto descriptors = array<RenderDescriptor>::create_with_count(2, deshi_allocator);
 	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
 	descriptors[0].shader_stages = RenderShaderStage_Vertex;
 	descriptors[0].buffer.offset = 0;
@@ -261,8 +262,7 @@ int main() {
 	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
 	descriptors[1].image.sampler = sampler;
 	descriptors[1].   image.view = image_view;
-
-	render_descriptor_set_write(descriptor_set0, descriptors);
+	render_descriptor_set_write(descriptor_set0, descriptors.ptr);
 
 	// We're actually going to use two textures, to show descriptor set switching.
 	// So we'll do pretty much everything we just did again but with a different texture.
@@ -297,9 +297,8 @@ int main() {
 	sampler->border_color = Color_Black;
 	render_sampler_update(sampler);
 
-	array_clear(descriptors);
-	array_grow(descriptors, 2);
-	array_count(descriptors) = 2;
+	descriptors.clear();
+	descriptors.recount(2);
 
 	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
 	descriptors[0].shader_stages = RenderShaderStage_Vertex;
@@ -312,8 +311,7 @@ int main() {
 	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
 	descriptors[1].image.sampler = sampler;
 	descriptors[1].   image.view = image_view;
-
-	render_descriptor_set_write(descriptor_set1, descriptors);
+	render_descriptor_set_write(descriptor_set1, descriptors.ptr);
 
 	// Now we need a model to render. Assets has a full api for generating 
 	// a model without ever needing to touch the render api, but we're going to
@@ -326,14 +324,14 @@ int main() {
 	// The order of initialization is:
 	// 		pos (vec3), uv (vec2), color (u32), normal (vec3)
 	MeshVertex vertices[4] = {
-		{{ 0.5f,  0.5f, 0.f}, {1.f, 0.f}, 0, {0.f, 1.f, 0.f}},
-		{{-0.5f,  0.5f, 0.f}, {0.f, 0.f}, 0, {0.f, 1.f, 0.f}},
-		{{-0.5f, -0.5f, 0.f}, {0.f, 1.f}, 0, {0.f, 1.f, 0.f}},
-		{{ 0.5f, -0.5f, 0.f}, {1.f, 1.f}, 0, {0.f, 1.f, 0.f}},
+		{{ 0.5f,  0.5f, 0.f}, {1.f, 0.f}, 0, {0.f, 0.f, 1.f}},
+		{{-0.5f,  0.5f, 0.f}, {0.f, 0.f}, 0, {0.f, 0.f, 1.f}},
+		{{-0.5f, -0.5f, 0.f}, {0.f, 1.f}, 0, {0.f, 0.f, 1.f}},
+		{{ 0.5f, -0.5f, 0.f}, {1.f, 1.f}, 0, {0.f, 0.f, 1.f}},
 	};
 
 	// Then we need to define the two triangles of the plane with indicies
-	MeshIndex indexes[6] = {0, 2, 1, 0, 3, 2};
+	MeshIndex indexes[6] = {1, 2, 0, 2, 3, 0};
 
 	// Next we'll need RenderBuffers so that we can get this 
 	// data onto the gpu. For both buffers, the memory is going 
@@ -361,7 +359,8 @@ int main() {
 	// First we'll map our ubo buffer and write some initial information to it.
 	render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
 
-	ubo.proj = Camera::MakePerspectiveProjectionMatrix(win->width, win->height, 50, 1000, 0.1);
+	ubo.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
+	ubo.proj.arr[5] *= -1;
 	ubo.view = Math::LookAtMatrix(vec3{0,0,0}, vec3{0,0,1}).Inverse();
 	ubo.camera_pos = {0,0,0,0};
 	ubo.screen_dim = Vec2(win->width, win->height);
@@ -396,6 +395,9 @@ int main() {
 			{0, 0, 0},
 			{1, 1, 1});
 
+	render::temp::update_camera(Vec3(0,0,0), Vec3(0,0,1));
+	render::temp::set_camera_projection(ubo.proj);
+	
 	while(platform_update()) {
 		
 		// In order for the backend to know what to draw we need to issue it 
@@ -405,45 +407,75 @@ int main() {
 		
 		// We need to give commands to the frame that we're currently working with
 		// which the api provides a function for retrieving 
-		RenderFrame* frame = render_current_present_frame_of_window(win);
-			
-		// We need to tell the renderer what render pass we're working with
-		// and what frame we want the information to actually draw to
-		render_cmd_begin_render_pass(win, frame->render_pass, frame);
+		RenderFramebuffer* frame = render_current_present_frame_of_window(win);
+		
+		{ using namespace render::cmd;
+			// We need to tell the renderer what render pass we're working with
+			// and what frame we want the information to actually draw to
+			begin_render_pass(win, frame->render_pass, frame);
 
-		// Next we bind the pipeline.
-		render_cmd_bind_pipeline(win, pipeline);
+			// Next we bind the pipeline.
+			bind_pipeline(win, pipeline);
 
-		// Then we push the transformation push constant for our first plane.
-		// Note that this doesn't copy the memory, so it must
-		// still be around by the time we update the renderer.
-		render_cmd_push_constant(win, &plane_transform0, model_push_constant);
+			// Then we push the transformation push constant for our first plane.
+			// Note that this doesn't copy the memory, so it must
+			// still be around by the time we update the renderer.
+			push_constant(win, &plane_transform0, model_push_constant);
 
-		// We must bind the vertex and index buffers our model
-		// is using. These were generated when we asked assets to
-		// make our box mesh, so we can get them from it directly.
-		render_cmd_bind_vertex_buffer(win, vertex_buffer);
-		render_cmd_bind_index_buffer(win, index_buffer);
+			// We must bind the vertex and index buffers our model
+			// is using. These were generated when we asked assets to
+			// make our box mesh, so we can get them from it directly.
+			bind_vertex_buffer(win, vertex_buffer);
+			bind_index_buffer(win, index_buffer);
 
-		// We need the descriptor set so we know what data we're actually
-		// going to be using in the shader.
-		render_cmd_bind_descriptor_set(win, 0, descriptor_set0);
+			// We need the descriptor set so we know what data we're actually
+			// going to be using in the shader.
+			bind_descriptor_set(win, 0, descriptor_set0);
 
-		// Finally we tell the backend that we want to draw the first plane.
-		render_cmd_draw_indexed(win, 6, 0, 0);
+			// Finally we tell the backend that we want to draw the first plane.
+			draw_indexed(win, 6, 0, 0);
 
-		// Now we change the push constant and descriptor set and draw again
-		render_cmd_push_constant(win, &plane_transform1, model_push_constant);
-		render_cmd_bind_descriptor_set(win, 0, descriptor_set1);
-		render_cmd_draw_indexed(win, 6, 0, 0);
+			// Now we change the push constant and descriptor set and draw again
+			push_constant(win, &plane_transform1, model_push_constant);
+			bind_descriptor_set(win, 0, descriptor_set1);
+			draw_indexed(win, 6, 0, 0);
 
-		render_cmd_end_render_pass(win);
+			end_render_pass(win);
+		}
+		
+		{ using namespace render::temp;
+			line(Vec3(-1, 0, 1), Vec3(1, 0, 1));
+			triangle(Vec3(-1, 0.5, 1), Vec3(0, 1, 1), Vec3(1, 0.5, 1));
+			triangle(Vec3(-1, 1.5, 1), Vec3(0, 1, 1), Vec3(1, 1.5, 1), Color_Blue, true);
+			poly(array<vec3>::create({
+				{-1, 0.5, 1},
+				{-2,   1, 1},
+				{-3, 0.5, 1},
+				{-2,   0, 1}
+			}).scoped().ptr);
+			poly(array<vec3>::create({
+				{1, 0.5, 1},
+				{3, 0.5, 1},
+				{2,   1, 1},
+				{1, 0.5, 1},
+				{2,   0, 1},
+				{3, 0.5, 1}
+			}).scoped().ptr, Color_Blue, true);
+			circle(Vec3(0, 2.5, 1), Vec3(0, 0, 0), 1, 20);
+			circle(Vec3(0, -1.5, 1), Vec3(0,0,0), 1, 20, Color_Blue, true);
+			box(mat4::TransformationMatrix(Vec3(0, -4, 1), Vec3(45,45*g_time->totalTime/3000.f,45), vec3::ONE));
+			box(mat4::TransformationMatrix(Vec3(0, 5, 1), Vec3(45,-45*g_time->totalTime/3000.f,45), vec3::ONE), Color_Blue, true);
+			frustrum(Vec3(0,0,0), Vec3(0,0,1), f32(win->width)/win->height, 90, 0.1, 1000);
+		}
 
+		// We tell the renderer we're render to update the window with the commands 
+		// we've executed. The commands will be cleared at the end of the update.
 		render_update_x(win);
 
-		if(key_pressed(Key_ESCAPE)) {
-			break;
-		}
+		render::temp::clear();
+
+		// The rest of the code is stuff for making the camera move.
+		if(key_pressed(Key_ESCAPE)) break;
 
 		if(fps) {
 			vec3 inputs = {0};
@@ -459,7 +491,7 @@ int main() {
 
 			if(rotdiffx || rotdiffy || inputs.x || inputs.y || inputs.z) {
 				rotation.y += rotdiffy;
-				rotation.x -= rotdiffx;
+				rotation.x += rotdiffx;
 
 				f32 multiplier = 8.f;
 				if(input_lshift_down()) multiplier = 32.f;
@@ -477,12 +509,16 @@ int main() {
 				ubo.camera_pos = Vec4(position.x, position.y, position.z, 0);
 				ubo.view = Math::LookAtMatrix(position, position + forward).Inverse();
 				
-				Log("", inputs, ubo.view.arr[0], rotation);
-
 				render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
 				CopyMemory(ubo_buffer->mapped_data, &ubo, sizeof(ubo));
 				render_buffer_unmap(ubo_buffer, true);
+
+				render::temp::update_camera(position, position + forward);
 			}
+		}
+
+		if(key_pressed(Key_F)) {
+			ubo.proj.arr[5] *= -1;
 		}
 
 		if(key_pressed(Key_C)) {
@@ -493,5 +529,6 @@ int main() {
 			fps = !fps;
 		}
 
+		memory_clear_temp();
 	}
 }
