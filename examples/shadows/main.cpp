@@ -39,31 +39,6 @@
 
 
 
-
-
-struct {
-	RenderPass* render_pass;
-	// the image we will be rendering to
-	RenderImage* image;
-	RenderImageView* image_view;
-	RenderSampler* sampler;
-	
-	RenderFrame* frame;
-
-	u32 width, height;
-
-	f32 light_fov;
-
-	f32 z_near, z_far;
-} offscreen;
-
-struct Vertex {
-	vec3 pos;
-	vec2 uv;
-	vec3 color;
-	vec3 normal;
-};
-
 int main() {
 	memory_init(Gigabytes(1), Gigabytes(1));
 	platform_init();
@@ -71,9 +46,30 @@ int main() {
 	Window* win = window_create(str8l("render_api"));
 	window_show(win);
 	render_init_x(win);
+	assets_init_x(win);
+	ui_init_x(win);
 		
+	struct {
+		RenderPass* render_pass;
+		// the image we will be rendering to
+		RenderImage* image;
+		RenderImageView* image_view;
+		RenderSampler* sampler;
+
+		RenderFramebuffer* frame;
+
+		u32 width, height;
+
+		f32 light_fov;
+
+		f32 z_near, z_far;
+	} offscreen;
+
 	offscreen.width  = 1028;
 	offscreen.height = 1028;
+	offscreen.light_fov = 120.f;
+	offscreen.z_far = 100;
+	offscreen.z_near = 1;
 
 	struct {
 		vec3 pos;
@@ -97,15 +93,19 @@ int main() {
 	struct {
 		mat4 proj;
 		mat4 view;
-		mat4 model;
-		mat4 depth_bias_mvp;
+		mat4 light_proj;
+		mat4 light_view;
 		vec4 light_pos;
 		f32 z_near;
 		f32 z_far;
+		f32 time;
 	} ubo_scene;
+
+	scene.light_pos = Vec3(0, -10, 0);
 	
 	struct {
-		mat4 depth_mvp;
+		mat4 proj;
+		mat4 view;
 	} ubo_offscreen;
 
 	RenderBuffer* scene_ubo_buffer = render_buffer_create(
@@ -118,11 +118,12 @@ int main() {
 	auto update_scene_ubo = [&]() {
 		ubo_scene.          proj = camera.proj;
 		ubo_scene.          view = camera.view;
-		ubo_scene.         model = mat4::IDENTITY;
 		ubo_scene.     light_pos = scene.light_pos.toVec4();
-		ubo_scene.depth_bias_mvp = ubo_offscreen.depth_mvp;
+		ubo_scene.    light_view = ubo_offscreen.view;
+		ubo_scene.    light_proj = ubo_offscreen.proj;
 		ubo_scene.        z_near = camera.near_z;
 		ubo_scene.         z_far = camera.far_z;
+		ubo_scene.time = g_time->totalTime/1000.f;
 		CopyMemory(scene_ubo_buffer->mapped_data, &ubo_scene, sizeof(ubo_scene));
 	};
 	
@@ -134,28 +135,23 @@ int main() {
 			RenderMemoryMapping_Persistent);
 
 	auto update_offscreen_ubo = [&]() {
-		mat4 depth_proj_mat = Camera::MakePerspectiveProjectionMatrix(
+		ubo_offscreen.proj = Math::PerspectiveProjectionMatrix(
 				offscreen.width, offscreen.height,
 				offscreen.light_fov,
-				offscreen.z_far, offscreen.z_near);
-		mat4 depth_view_mat = Math::LookAtMatrix(ubo_scene.light_pos.toVec3(), vec3::ZERO);
-		mat4 depth_model_mat = mat4::IDENTITY;
-
-		ubo_offscreen.depth_mvp = depth_proj_mat * depth_view_mat * depth_model_mat;
-
+				offscreen.z_near, offscreen.z_far);
+		ubo_offscreen.view = Math::LookAtMatrix(ubo_scene.light_pos.toVec3(), Vec3(0,0,0)).Inverse();
 		CopyMemory(offscreen_ubo_buffer->mapped_data, &ubo_offscreen, sizeof(ubo_offscreen));
 	};
 
 	auto update_light = [&]() {
 		auto time = g_time->totalTime/1000.f;
 		ubo_scene.light_pos = Vec4(
-			cos(Radians(time*360.f)) * 40.f,
-			-50.f + sin(Radians(time*360.f)) * 20.f,
-			25.f + sin(Radians(time*360.f)) * 5.f,
+			0,
+			-10,
+			0,
 			1
 		);
 	};
-
 
 	// We only need a depth attachment as we just want
 	// the distance of pixels from the light
@@ -166,11 +162,14 @@ int main() {
 	depth_attachment.store_op = RenderAttachmentStoreOp_Store;
 	depth_attachment.stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
 	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
+	depth_attachment.initial_layout = RenderImageLayout_Undefined;
+	depth_attachment.final_layout = RenderImageLayout_Depth_Stencil_Read_Only_Optimal;
 
 	offscreen.render_pass = render_pass_create();
 	offscreen.render_pass->debug_name = str8l("offscreen render pass");
 	offscreen.render_pass->debug_color = Color_Red;
 	offscreen.render_pass->depth_attachment = &depth_attachment;
+	offscreen.render_pass->depth_clear_values = {1.f, 0};
 	render_pass_update(offscreen.render_pass);
 
 	offscreen.image = render_image_create();
@@ -196,11 +195,11 @@ int main() {
 	offscreen.sampler->min_filter = RenderFilter_Nearest;
 	offscreen.sampler->address_mode_u = 
 	offscreen.sampler->address_mode_v = 
-	offscreen.sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Edge;
-	offscreen.sampler->border_color = Color_White;
+	offscreen.sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	offscreen.sampler->border_color = Color_Red;
 	render_sampler_update(offscreen.sampler);
 
-	offscreen.frame = render_frame_create(win);
+	offscreen.frame = render_frame_create();
 	offscreen.frame->debug_name = str8l("offscreen frame");
 	offscreen.frame->render_pass = offscreen.render_pass;
 	offscreen.frame->width = offscreen.width;
@@ -208,7 +207,7 @@ int main() {
 	offscreen.frame->depth_image_view = offscreen.image_view;
 	render_frame_update(offscreen.frame);
 
-	RenderDescriptorLayout* descriptor_layout = render_descriptor_layout_create();
+	RenderDescriptorSetLayout* descriptor_layout = render_descriptor_layout_create();
 	array_grow(descriptor_layout->bindings, 2);
 	array_count(descriptor_layout->bindings) = 2;
 	descriptor_layout->bindings[0].binding = 0;
@@ -221,7 +220,7 @@ int main() {
 	
 	RenderPushConstant model_push_constant = {};
 	model_push_constant.shader_stage_flags = RenderShaderStage_Vertex;
-	model_push_constant.size = sizeof(mat4);
+	model_push_constant.size = sizeof(mat4) + sizeof(vec3);
 	model_push_constant.offset = 0;
 
 	RenderPipelineLayout* pipeline_layout = render_pipeline_layout_create();
@@ -243,7 +242,7 @@ int main() {
 	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
 	pipeline->            depth_test = true;
 	pipeline->      depth_compare_op = RenderCompareOp_Less_Or_Equal;
-	pipeline->            depth_bias = false;
+	pipeline->            depth_bias = true;
 	pipeline->            line_width = 1.f;
 	pipeline->           color_blend = true;
 	pipeline->        color_blend_op = RenderBlendOp_Add;
@@ -287,6 +286,7 @@ int main() {
 
 	offscreen_pipeline = render_pipeline_duplicate(scene_pipeline);
 	offscreen_pipeline->render_pass = offscreen.render_pass;
+	offscreen_pipeline->culling = RenderPipelineCulling_Back;
 
 	*array_push(scene_pipeline->shader_stages) = {
 		RenderShaderStage_Vertex,
@@ -388,14 +388,59 @@ int main() {
 			RenderMemoryPropertyFlag_DeviceLocal,
 			RenderMemoryMapping_None);
 
-	mat4 plane_transform;
-	auto draw_plane = [&](vec3 pos, vec3 rot, vec3 scale) {
-		plane_transform = mat4::TransformationMatrix(pos, rot, scale);
-		render_cmd_push_constant(win, &plane_transform, model_push_constant);
+	struct {
+		mat4 transform;
+		vec3 color;
+	} planes[2];
+
+	planes[0].color = Vec3(1, 0, 0);
+	planes[1].color = Vec3(0, 1, 0);
+
+	auto draw_plane = [&](u32 idx, vec3 pos, vec3 rot, vec3 scale) {
+		planes[idx].transform = mat4::TransformationMatrix(pos, rot, scale);
+		render_cmd_push_constant(win, &planes[idx], model_push_constant);
 		render_cmd_bind_vertex_buffer(win, plane_vertex_buffer);
 		render_cmd_bind_index_buffer(win, plane_index_buffer);
 		render_cmd_draw_indexed(win, 6, 0, 0);
 	};
+
+	camera.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
+	camera.view = Math::LookAtMatrix(Vec3(0,0,0), Vec3(0,0,1));
+
+	update_light();
+	update_scene_ubo();
+	update_offscreen_ubo();
+
+	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
+	
+	struct Box {
+		mat4 transform;
+		vec3 color;
+	} boxes[3];
+
+	boxes[0].color = Vec3(0,1,0);
+	boxes[1].color = Vec3(0,0,1);
+	boxes[2].color = Vec3(1,0,0);
+
+	auto draw_box = [&](u32 idx, vec3 pos, vec3 rot, vec3 scale) {
+		boxes[idx].transform = mat4::TransformationMatrix(pos, rot, scale);
+		render_cmd_push_constant(win, &boxes[idx], model_push_constant);
+		render_cmd_bind_vertex_buffer(win, box->mesh->vertex_buffer);
+		render_cmd_bind_index_buffer(win, box->mesh->index_buffer);
+		render_cmd_draw_indexed(win, box->mesh->index_count, 0, 0);
+	};
+
+	auto item = ui_begin_item(0);
+	item->style.sizing = size_auto;
+	item->style.background_color = Color_DarkGrey;
+	item->style.padding = {10,10,10,10};
+	item->style.font = assets_font_create_from_file_bdf(str8l("gohufont-11.bdf"));
+	item->style.font_height = 11;
+	item->style.text_color = Color_White;
+
+	auto text = ui_get_text(ui_make_text(str8l("hi"), 0));
+
+	ui_end_item();
 
 	b32 fps = false;
 	while(platform_update()) {
@@ -433,14 +478,19 @@ int main() {
 				camera.up      = vec3_normalized(vec3_cross(camera.forward, camera.right));
 				
 				camera.view = Math::LookAtMatrix(camera.pos, camera.pos + camera.forward).Inverse();
-				camera.proj = Camera::MakePerspectiveProjectionMatrix(win->width, win->height, 90, 1000, 0.1);
-
-				update_scene_ubo();
-				update_offscreen_ubo();
+				camera.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
 			}
 		}
 
-		update_light();
+		if(key_pressed(Key_RIGHT)) scene.light_pos.x += 0.1;
+		if(key_pressed(Key_LEFT)) scene.light_pos.x -= 0.1;
+		if(key_pressed(Key_UP)) scene.light_pos.z += 0.1;
+		if(key_pressed(Key_DOWN)) scene.light_pos.z -= 0.1;
+		if(any_key_pressed()) {
+			Log("", scene.light_pos);
+		}
+
+		update_scene_ubo();
 		update_offscreen_ubo();
 
 		if(key_pressed(Key_C)) {
@@ -451,10 +501,26 @@ int main() {
 			fps = !fps;
 		}
 
+		render_cmd_begin_render_pass(win, offscreen.render_pass, offscreen.frame);
+
+		// render_cmd_set_depth_bias(win, 0, 0, 0);
 		render_cmd_set_depth_bias(win, 1.25f, 0.f, 1.75f);
 		render_cmd_bind_pipeline(win, offscreen_pipeline);
 		render_cmd_bind_descriptor_set(win, 0, offscreen_descriptor_set);
-		draw_plane(Vec3(0,0,2), Vec3(0,0,0), vec3::ONE);
+		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
+		draw_box(1, Vec3(0, 10, 0), Vec3(0,0,0), Vec3(100, 1, 100));
+
+		render_cmd_end_render_pass(win);
+
+		render_cmd_begin_render_pass(win, render_pass_of_window_presentation_frame(win), render_current_present_frame_of_window(win));
+
+		render_cmd_bind_pipeline(win, scene_pipeline);
+		render_cmd_bind_descriptor_set(win, 0, scene_descriptor_set);
+		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
+		draw_box(1, Vec3(0, 10, 0), Vec3(0,0,0), Vec3(100, 1, 100));
+		draw_box(2, scene.light_pos, vec3::ZERO, vec3::ONE*0.2);
+
+		render_cmd_end_render_pass(win);
 
 		render_update_x(win);
 	}
