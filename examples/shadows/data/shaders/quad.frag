@@ -9,12 +9,17 @@ layout(location = 0) out vec4 out_color;
 layout(binding = 0) uniform UBO {
 	mat4 proj;
 	mat4 view;
-	mat4 model;
-	mat4 light_space;
+	mat4 light_proj;
+	mat4 light_view;
 	mat4 light_pos;
 	float z_near;
 	float z_far;
 } ubo;
+
+layout(push_constant) uniform PC {
+	mat4 transformation;
+	vec3 color;
+} pc;
 
 float linearize_depth(float depth) {
 	float n = ubo.z_near;
