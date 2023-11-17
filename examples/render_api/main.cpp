@@ -48,8 +48,7 @@ int main() {
 	Window* win = window_create(str8l("render_api"));
 	window_show(win);
 	render_init_x(win);
-	render::temp::init(win, 0xffff);
-
+	
 	// we need to create a pipeline which describes the path we take
 	// to render the scene
 	RenderPipeline* pipeline = render_pipeline_create();
@@ -443,36 +442,9 @@ int main() {
 			end_render_pass(win);
 		}
 		
-		{ using namespace render::temp;
-			line(Vec3(-1, 0, 1), Vec3(1, 0, 1));
-			triangle(Vec3(-1, 0.5, 1), Vec3(0, 1, 1), Vec3(1, 0.5, 1));
-			triangle(Vec3(-1, 1.5, 1), Vec3(0, 1, 1), Vec3(1, 1.5, 1), Color_Blue, true);
-			poly(array<vec3>::create({
-				{-1, 0.5, 1},
-				{-2,   1, 1},
-				{-3, 0.5, 1},
-				{-2,   0, 1}
-			}).scoped().ptr);
-			poly(array<vec3>::create({
-				{1, 0.5, 1},
-				{3, 0.5, 1},
-				{2,   1, 1},
-				{1, 0.5, 1},
-				{2,   0, 1},
-				{3, 0.5, 1}
-			}).scoped().ptr, Color_Blue, true);
-			circle(Vec3(0, 2.5, 1), Vec3(0, 0, 0), 1, 20);
-			circle(Vec3(0, -1.5, 1), Vec3(0,0,0), 1, 20, Color_Blue, true);
-			box(mat4::TransformationMatrix(Vec3(0, -4, 1), Vec3(45,45*g_time->totalTime/3000.f,45), vec3::ONE));
-			box(mat4::TransformationMatrix(Vec3(0, 5, 1), Vec3(45,-45*g_time->totalTime/3000.f,45), vec3::ONE), Color_Blue, true);
-			frustrum(Vec3(0,0,0), Vec3(0,0,1), f32(win->width)/win->height, 90, 0.1, 1000);
-		}
-
 		// We tell the renderer we're render to update the window with the commands 
 		// we've executed. The commands will be cleared at the end of the update.
 		render_update_x(win);
-
-		render::temp::clear();
 
 		// The rest of the code is stuff for making the camera move.
 		if(key_pressed(Key_ESCAPE)) break;
