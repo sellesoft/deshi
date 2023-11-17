@@ -4576,6 +4576,8 @@ render_compare_op_to_vulkan(RenderCompareOp x) {
 		case RenderCompareOp_Greater_Or_Equal: return VK_COMPARE_OP_GREATER_OR_EQUAL;
 		case RenderCompareOp_Always: return VK_COMPARE_OP_ALWAYS;
 	}
+	Assert(0);
+	return {};
 }
 
 
@@ -4586,6 +4588,8 @@ render_descriptor_type_to_vulkan(RenderDescriptorType x) {
 		case RenderDescriptorType_Uniform_Buffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case RenderDescriptorType_Combined_Image_Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	}
+	Assert(0);
+	return {};
 }
 
 RenderDescriptorSet* 
@@ -4856,6 +4860,7 @@ render_blend_factor_to_vulkan(RenderBlendFactor x) {
 		case RenderBlendFactor_One_Minus_Constant_Alpha: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 	}
 	Assert(0);
+	return {};
 }
 
 VkFormat
@@ -4874,7 +4879,7 @@ render_format_to_vulkan(RenderFormat x) {
 		case RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt: return VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 	Assert(0);
-	return (VkFormat)0;
+	return {};
 }
 
 RenderFormat
@@ -4891,7 +4896,7 @@ vulkan_format_to_render(VkFormat x) {
 		case VK_FORMAT_D24_UNORM_S8_UINT:  return RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt;
 	}
 	Assert(0);
-	return (RenderFormat)0;
+	return {};
 }
 
 void
@@ -5053,6 +5058,7 @@ render_image_type_to_vulkan(RenderImageType x) {
 		case RenderImageType_ThreeD: return VK_IMAGE_TYPE_3D;
 	}
 	Assert(0);
+	return {};
 }
 
 VkImageUsageFlags
@@ -5311,6 +5317,7 @@ render_load_op_to_vulkan(RenderAttachmentLoadOp x) {
 		case RenderAttachmentLoadOp_Dont_Care: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	}
 	Assert(0);
+	return {};
 }
 
 VkAttachmentStoreOp
@@ -5320,6 +5327,7 @@ render_store_op_to_vulkan(RenderAttachmentStoreOp x) {
 		case RenderAttachmentStoreOp_Dont_Care: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	}
 	Assert(0);
+	return {};
 }
 
 void 

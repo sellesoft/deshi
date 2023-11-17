@@ -1281,13 +1281,6 @@ deshi__ui_make_tree(uiStyle* style, str8 file, upt line) {
 	return item;
 }
 
-uiItem* 
-deshi__ui_begin_tree(uiStyle* style, str8 file, upt line) {
-	auto i = deshi__ui_begin_tree(style, file, line);
-	ui_push_item(i);
-	return i;
-}
-
 void 
 deshi__ui_end_tree(str8 file, upt line) {
 	deshi__ui_end_item(file, line);
