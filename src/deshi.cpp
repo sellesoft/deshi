@@ -299,7 +299,6 @@ local DeshiStage deshiStage = DS_NONE;
 //// core implementations ////
 #define DESHI_IMPLEMENTATION
 #include "core/assets.h"
-#include "core/camera.h"
 #include "core/commands.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
