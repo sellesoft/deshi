@@ -197,6 +197,7 @@ struct mat4;
 
 
 #define m128_set_4f32(a,b,c,d) _mm_set_ps((a), (b), (c), (d))
+#define m128_setr_4f32(a,b,c,d) _mm_setr_ps((a), (b), (c), (d))
 #define m128_fill_4f32(lhs) _mm_set1_ps(lhs)
 #define m128_add_4f32(lhs,rhs) _mm_add_ps((lhs), (rhs))
 #define m128_sub_4f32(lhs,rhs) _mm_sub_ps((lhs), (rhs))
@@ -212,6 +213,7 @@ struct mat4;
 #define m128_equal_4f32(lhs,rhs) (!(_mm_movemask_ps(_mm_cmpgt_ps(_mm_andnot_ps(_mm_set1_ps(-0.0f), _mm_sub_ps((lhs), (rhs))), _mm_set1_ps(M_EPSILON)))))
 
 #define m128_set_2f64(a,b) _mm_set_pd((a), (b))
+#define m128_setr_2f64(a,b) _mm_setr_pd((a), (b))
 #define m128_fill_2f64(lhs) _mm_set1_pd(lhs)
 #define m128_add_2f64(lhs,rhs) _mm_add_pd((lhs), (rhs))
 #define m128_sub_2f64(lhs,rhs) _mm_sub_pd((lhs), (rhs))
@@ -227,6 +229,7 @@ struct mat4;
 #define m128_equal_2f64(lhs,rhs) (!(_mm_movemask_pd(_mm_cmpgt_pd(_mm_andnot_pd(_mm_set1_pd(-0.0f), _mm_sub_pd((lhs), (rhs))), _mm_set1_pd(M_EPSILON)))))
 
 #define m128_set_4s32(a,b,c,d) _mm_set_epi32((a), (b), (c), (d))
+#define m128_setr_4s32(a,b,c,d) _mm_setr_epi32((a), (b), (c), (d))
 #define m128_fill_4s32(lhs) _mm_set1_epi32(lhs)
 #define m128_add_4s32(lhs,rhs) _mm_add_epi32((lhs), (rhs))
 #define m128_sub_4s32(lhs,rhs) _mm_sub_epi32((lhs), (rhs))
@@ -244,15 +247,6 @@ struct mat4;
 #define m128_swizzle(a, x,y,z,w) _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), m128_shuffle_mask((x),(y),(z),(w))))
 #define m128_swizzle_0022(a) _mm_moveldup_ps(a)
 #define m128_swizzle_1133(a) _mm_movehdup_ps(a)
-
-DESHI_MATH_FUNC inline __m128
-m128_linear_combine(__m128 vec, __m128 mat_row0, __m128 mat_row1, __m128 mat_row2, __m128 mat_row3){DPZoneScoped;
-	__m128 result =                m128_mul_4f32(m128_swizzle(vec, 0,0,0,0), mat_row0);
-	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 1,1,1,1), mat_row1));
-	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 2,2,2,2), mat_row2));
-	result = m128_add_4f32(result, m128_mul_4f32(m128_swizzle(vec, 3,3,3,3), mat_row3));
-	return result;
-}
 
 
 #endif //#if DESHI_MATH_USE_SSE
@@ -9715,10 +9709,22 @@ DESHI_MATH_FUNC inline mat4
 mat4_mul_mat4(mat4 lhs, mat4 rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
-	result.sse_row0 = m128_linear_combine(lhs.sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row1 = m128_linear_combine(lhs.sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row2 = m128_linear_combine(lhs.sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row3 = m128_linear_combine(lhs.sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row0 =                                m128_mul_4f32(m128_swizzle(lhs.sse_row0, 0,0,0,0), rhs.sse_row0);
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(lhs.sse_row0, 1,1,1,1), rhs.sse_row1));
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(lhs.sse_row0, 2,2,2,2), rhs.sse_row2));
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(lhs.sse_row0, 3,3,3,3), rhs.sse_row3));
+	result.sse_row1 =                                m128_mul_4f32(m128_swizzle(lhs.sse_row1, 0,0,0,0), rhs.sse_row0);
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(lhs.sse_row1, 1,1,1,1), rhs.sse_row1));
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(lhs.sse_row1, 2,2,2,2), rhs.sse_row2));
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(lhs.sse_row1, 3,3,3,3), rhs.sse_row3));
+	result.sse_row2 =                                m128_mul_4f32(m128_swizzle(lhs.sse_row2, 0,0,0,0), rhs.sse_row0);
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(lhs.sse_row2, 1,1,1,1), rhs.sse_row1));
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(lhs.sse_row2, 2,2,2,2), rhs.sse_row2));
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(lhs.sse_row2, 3,3,3,3), rhs.sse_row3));
+	result.sse_row3 =                                m128_mul_4f32(m128_swizzle(lhs.sse_row3, 0,0,0,0), rhs.sse_row0);
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(lhs.sse_row3, 1,1,1,1), rhs.sse_row1));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(lhs.sse_row3, 2,2,2,2), rhs.sse_row2));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(lhs.sse_row3, 3,3,3,3), rhs.sse_row3));
 #else //#if DESHI_MATH_USE_SSE
 	result.arr[ 0] = lhs.arr[ 0]*rhs.arr[ 0] + lhs.arr[ 1]*rhs.arr[ 4] + lhs.arr[ 2]*rhs.arr[ 8] + lhs.arr[ 3]*rhs.arr[12];
 	result.arr[ 1] = lhs.arr[ 0]*rhs.arr[ 1] + lhs.arr[ 1]*rhs.arr[ 5] + lhs.arr[ 2]*rhs.arr[ 9] + lhs.arr[ 3]*rhs.arr[13];
@@ -9745,10 +9751,22 @@ inline mat4 mat4::
 operator* (const mat4& rhs)const{DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
-	result.sse_row0 = m128_linear_combine(this->sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row1 = m128_linear_combine(this->sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row2 = m128_linear_combine(this->sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row3 = m128_linear_combine(this->sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row0 =                                m128_mul_4f32(m128_swizzle(this->sse_row0, 0,0,0,0), rhs.sse_row0);
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(this->sse_row0, 1,1,1,1), rhs.sse_row1));
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(this->sse_row0, 2,2,2,2), rhs.sse_row2));
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(this->sse_row0, 3,3,3,3), rhs.sse_row3));
+	result.sse_row1 =                                m128_mul_4f32(m128_swizzle(this->sse_row1, 0,0,0,0), rhs.sse_row0);
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(this->sse_row1, 1,1,1,1), rhs.sse_row1));
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(this->sse_row1, 2,2,2,2), rhs.sse_row2));
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(this->sse_row1, 3,3,3,3), rhs.sse_row3));
+	result.sse_row2 =                                m128_mul_4f32(m128_swizzle(this->sse_row2, 0,0,0,0), rhs.sse_row0);
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(this->sse_row2, 1,1,1,1), rhs.sse_row1));
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(this->sse_row2, 2,2,2,2), rhs.sse_row2));
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(this->sse_row2, 3,3,3,3), rhs.sse_row3));
+	result.sse_row3 =                                m128_mul_4f32(m128_swizzle(this->sse_row3, 0,0,0,0), rhs.sse_row0);
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(this->sse_row3, 1,1,1,1), rhs.sse_row1));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(this->sse_row3, 2,2,2,2), rhs.sse_row2));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(this->sse_row3, 3,3,3,3), rhs.sse_row3));
 #else //#if DESHI_MATH_USE_SSE
 	result.arr[ 0] = this->arr[ 0]*rhs.arr[ 0] + this->arr[ 1]*rhs.arr[ 4] + this->arr[ 2]*rhs.arr[ 8] + this->arr[ 3]*rhs.arr[12];
 	result.arr[ 1] = this->arr[ 0]*rhs.arr[ 1] + this->arr[ 1]*rhs.arr[ 5] + this->arr[ 2]*rhs.arr[ 9] + this->arr[ 3]*rhs.arr[13];
@@ -9776,10 +9794,22 @@ inline void mat4::
 operator*=(const mat4& rhs){DPZoneScoped;
 	mat4 result;
 #if DESHI_MATH_USE_SSE
-	result.sse_row0 = m128_linear_combine(this->sse_row0, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row1 = m128_linear_combine(this->sse_row1, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row2 = m128_linear_combine(this->sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-	result.sse_row3 = m128_linear_combine(this->sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse_row0 =                                m128_mul_4f32(m128_swizzle(this->sse_row0, 0,0,0,0), rhs.sse_row0);
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(this->sse_row0, 1,1,1,1), rhs.sse_row1));
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(this->sse_row0, 2,2,2,2), rhs.sse_row2));
+	result.sse_row0 = m128_add_4f32(result.sse_row0, m128_mul_4f32(m128_swizzle(this->sse_row0, 3,3,3,3), rhs.sse_row3));
+	result.sse_row1 =                                m128_mul_4f32(m128_swizzle(this->sse_row1, 0,0,0,0), rhs.sse_row0);
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(this->sse_row1, 1,1,1,1), rhs.sse_row1));
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(this->sse_row1, 2,2,2,2), rhs.sse_row2));
+	result.sse_row1 = m128_add_4f32(result.sse_row1, m128_mul_4f32(m128_swizzle(this->sse_row1, 3,3,3,3), rhs.sse_row3));
+	result.sse_row2 =                                m128_mul_4f32(m128_swizzle(this->sse_row2, 0,0,0,0), rhs.sse_row0);
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(this->sse_row2, 1,1,1,1), rhs.sse_row1));
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(this->sse_row2, 2,2,2,2), rhs.sse_row2));
+	result.sse_row2 = m128_add_4f32(result.sse_row2, m128_mul_4f32(m128_swizzle(this->sse_row2, 3,3,3,3), rhs.sse_row3));
+	result.sse_row3 =                                m128_mul_4f32(m128_swizzle(this->sse_row3, 0,0,0,0), rhs.sse_row0);
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(this->sse_row3, 1,1,1,1), rhs.sse_row1));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(this->sse_row3, 2,2,2,2), rhs.sse_row2));
+	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(m128_swizzle(this->sse_row3, 3,3,3,3), rhs.sse_row3));
 #else //#if DESHI_MATH_USE_SSE
 	result.arr[ 0] = this->arr[ 0]*rhs.arr[ 0] + this->arr[ 1]*rhs.arr[ 4] + this->arr[ 2]*rhs.arr[ 8] + this->arr[ 3]*rhs.arr[12];
 	result.arr[ 1] = this->arr[ 0]*rhs.arr[ 1] + this->arr[ 1]*rhs.arr[ 5] + this->arr[ 2]*rhs.arr[ 9] + this->arr[ 3]*rhs.arr[13];
@@ -11113,7 +11143,7 @@ mat4_inverse_transformation_matrix(mat4 lhs){DPZoneScoped;
 	result.sse_row3 =                                m128_mul_4f32(result.sse_row0, m128_swizzle(lhs.sse_row3, 0,0,0,0));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row1, m128_swizzle(lhs.sse_row3, 1,1,1,1)));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
-	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
+	result.sse_row3 = m128_sub_4f32(m128_setr_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
 #else //#if DESHI_MATH_USE_SSE
 	//transpose rotation matrix
 	f32 temp;
@@ -11161,7 +11191,7 @@ mat4_inverse_transformation_matrix_no_scale(mat4 lhs){DPZoneScoped;
 	result.sse_row3 =                                m128_mul_4f32(result.sse_row0, m128_swizzle(lhs.sse_row3, 0,0,0,0));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row1, m128_swizzle(lhs.sse_row3, 1,1,1,1)));
 	result.sse_row3 = m128_add_4f32(result.sse_row3, m128_mul_4f32(result.sse_row2, m128_swizzle(lhs.sse_row3, 2,2,2,2)));
-	result.sse_row3 = m128_sub_4f32(m128_set_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
+	result.sse_row3 = m128_sub_4f32(m128_setr_4f32(0.0f, 0.0f, 0.0f, 1.0f), result.sse_row3);
 	
 	return result;
 #else //#if DESHI_MATH_USE_SSE
@@ -11639,7 +11669,10 @@ DESHI_MATH_FUNC inline vec4
 vec4_mul_mat4(vec4 lhs, mat4 rhs){DPZoneScoped;
 	vec4 result;
 #if DESHI_MATH_USE_SSE
-	result.sse = m128_linear_combine(lhs.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse =                           m128_mul_4f32(m128_swizzle(lhs.sse, 0,0,0,0), rhs.sse_row0);
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(lhs.sse, 1,1,1,1), rhs.sse_row1));
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(lhs.sse, 2,2,2,2), rhs.sse_row2));
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(lhs.sse, 3,3,3,3), rhs.sse_row3));
 #else //#if DESHI_MATH_USE_SSE
 	result.x = (lhs.x * rhs.arr[0]) + (lhs.y * rhs.arr[4]) + (lhs.z * rhs.arr[ 8]) + (lhs.w * rhs.arr[12]);
 	result.y = (lhs.x * rhs.arr[1]) + (lhs.y * rhs.arr[5]) + (lhs.z * rhs.arr[ 9]) + (lhs.w * rhs.arr[13]);
@@ -11654,7 +11687,10 @@ inline vec4 vec4::
 operator* (const mat4& rhs)const{DPZoneScoped;
 	vec4 result;
 #if DESHI_MATH_USE_SSE
-	result.sse = m128_linear_combine(this->sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result.sse =                           m128_mul_4f32(m128_swizzle(this->sse, 0,0,0,0), rhs.sse_row0);
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(this->sse, 1,1,1,1), rhs.sse_row1));
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(this->sse, 2,2,2,2), rhs.sse_row2));
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(this->sse, 3,3,3,3), rhs.sse_row3));
 #else //#if DESHI_MATH_USE_SSE
 	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (this->w * rhs.arr[12]);
 	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (this->w * rhs.arr[13]);
@@ -11668,16 +11704,19 @@ operator* (const mat4& rhs)const{DPZoneScoped;
 #ifdef __cplusplus
 inline void vec4::
 operator*=(const mat4& rhs){DPZoneScoped;
-#if DESHI_MATH_USE_SSE
-	this->sse = m128_linear_combine(this->sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
-#else //#if DESHI_MATH_USE_SSE
 	vec4 result;
+#if DESHI_MATH_USE_SSE
+	result.sse =                           m128_mul_4f32(m128_swizzle(this->sse, 0,0,0,0), rhs.sse_row0);
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(this->sse, 1,1,1,1), rhs.sse_row1));
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(this->sse, 2,2,2,2), rhs.sse_row2));
+	result.sse = m128_add_4f32(result.sse, m128_mul_4f32(m128_swizzle(this->sse, 3,3,3,3), rhs.sse_row3));
+#else //#if DESHI_MATH_USE_SSE
 	result.x = (this->x * rhs.arr[0]) + (this->y * rhs.arr[4]) + (this->z * rhs.arr[ 8]) + (this->w * rhs.arr[12]);
 	result.y = (this->x * rhs.arr[1]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[ 9]) + (this->w * rhs.arr[13]);
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[6]) + (this->z * rhs.arr[10]) + (this->w * rhs.arr[14]);
 	result.w = (this->x * rhs.arr[3]) + (this->y * rhs.arr[7]) + (this->z * rhs.arr[11]) + (this->w * rhs.arr[15]);
-	*this = result;
 #endif //#else //#if DESHI_MATH_USE_SSE
+	*this = result;
 }
 #endif //#ifdef __cplusplus
 
@@ -12484,6 +12523,15 @@ void TEST_deshi_math(){
 		ASSERT_M128_4F32_VALUES(m128_set_4f32(1.1f, 1.2f, 1.3f, 1.4f),  1.4f, 1.3f, 1.2f,1.1f);
 		ASSERT_M128_4F32_VALUES(m128_set_4f32(8.0f,16.0f,32.0f,64.0f), 64.0f,32.0f,16.0f,8.0f);
 		
+		ASSERT_M128_4F32_EQUAL(m128_setr_4f32(0.0f, 0.0f, 0.0f, 0.0f), _mm_setr_ps(0.0f, 0.0f, 0.0f, 0.0f));
+		ASSERT_M128_4F32_EQUAL(m128_setr_4f32(1.0f, 1.0f, 1.0f, 1.0f), _mm_setr_ps(1.0f, 1.0f, 1.0f, 1.0f));
+		ASSERT_M128_4F32_EQUAL(m128_setr_4f32(8.0f,16.0f,32.0f,64.0f), _mm_setr_ps(8.0f,16.0f,32.0f,64.0f));
+		ASSERT_M128_4F32_VALUES(m128_setr_4f32(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_M128_4F32_VALUES(m128_setr_4f32(1.0f, 1.0f, 1.0f, 1.0f), 1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_M128_4F32_VALUES(m128_setr_4f32(1.0f, 2.0f, 3.0f, 4.0f), 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_M128_4F32_VALUES(m128_setr_4f32(1.1f, 1.2f, 1.3f, 1.4f), 1.1f, 1.2f, 1.3f, 1.4f);
+		ASSERT_M128_4F32_VALUES(m128_setr_4f32(8.0f,16.0f,32.0f,64.0f), 8.0f,16.0f,32.0f,64.0f);
+		
 		ASSERT_M128_4F32_VALUES(m128_fill_4f32(-1.4f), -1.4f,-1.4f,-1.4f,-1.4f);
 		ASSERT_M128_4F32_VALUES(m128_fill_4f32(-1.0f), -1.0f,-1.0f,-1.0f,-1.0f);
 		ASSERT_M128_4F32_VALUES(m128_fill_4f32(-0.0f), -0.0f,-0.0f,-0.0f,-0.0f);
@@ -12495,52 +12543,52 @@ void TEST_deshi_math(){
 		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(0.0f), m128_fill_4f32(0.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(0.0f), m128_fill_4f32(1.0f)), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(1.0f), m128_fill_4f32(1.0f)), 2.0f,2.0f,2.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(0.0f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 4.0f,3.0f,2.0f,1.0f);
-		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(0.0f), m128_set_4f32(1.5f,2.5f,3.5f,4.5f)), 4.5f,3.5f,2.5f,1.5f);
-		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 8.0f,6.0f,4.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_set_4f32(1.5f,2.5f,3.5f,4.5f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 8.5f,6.5f,4.5f,2.5f);
-		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_set_4f32(3.0f,5.0f,7.0f,9.0f), m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), 5.0f,4.0f,3.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_set_4f32(3.0f,5.0f,7.0f,9.0f), m128_set_4f32(-1.5f,-2.5f,-3.5f,-4.5f)), 4.5f,3.5f,2.5f,1.5f);
+		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(0.0f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 1.0f,2.0f,3.0f,4.0f);
+		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_fill_4f32(0.0f), m128_setr_4f32(1.5f,2.5f,3.5f,4.5f)), 1.5f,2.5f,3.5f,4.5f);
+		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 2.0f,4.0f,6.0f,8.0f);
+		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_setr_4f32(1.5f,2.5f,3.5f,4.5f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 2.5f,4.5f,6.5f,8.5f);
+		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_setr_4f32(3.0f,5.0f,7.0f,9.0f), m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), 2.0f,3.0f,4.0f,5.0f);
+		ASSERT_M128_4F32_VALUES(m128_add_4f32(m128_setr_4f32(3.0f,5.0f,7.0f,9.0f), m128_setr_4f32(-1.5f,-2.5f,-3.5f,-4.5f)), 1.5f,2.5f,3.5f,4.5f);
 		
 		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_fill_4f32(0.0f), m128_fill_4f32(0.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_fill_4f32(0.0f), m128_fill_4f32(1.0f)), -1.0f,-1.0f,-1.0f,-1.0f);
 		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_fill_4f32(1.0f), m128_fill_4f32(1.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_fill_4f32(1.5f), m128_fill_4f32(1.0f)), 0.5f,0.5f,0.5f,0.5f);
-		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_fill_4f32(0.0f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), -4.0f,-3.0f,-2.0f,-1.0f);
-		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 0.0f,0.0f,0.0f,0.0f);
-		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_set_4f32(1.5f,2.5f,3.5f,4.5f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 0.5f,0.5f,0.5f,0.5f);
-		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_set_4f32(3.0f,5.0f,7.0f,9.0f), m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), 13.0f,10.0f,7.0f,4.0f);
-		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_set_4f32(3.3f,5.3f,7.3f,9.3f), m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), 13.3f,10.3f,7.3f,4.3f);
+		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_fill_4f32(0.0f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 0.0f,0.0f,0.0f,0.0f);
+		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_setr_4f32(1.5f,2.5f,3.5f,4.5f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 0.5f,0.5f,0.5f,0.5f);
+		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_setr_4f32(3.0f,5.0f,7.0f,9.0f), m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), 4.0f,7.0f,10.0f,13.0f);
+		ASSERT_M128_4F32_VALUES(m128_sub_4f32(m128_setr_4f32(3.3f,5.3f,7.3f,9.3f), m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), 4.3f,7.3f,10.3f,13.3f);
 		
 		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(0.0f), m128_fill_4f32(0.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(0.0f), m128_fill_4f32(1.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(1.0f), m128_fill_4f32(1.0f)), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(1.5f), m128_fill_4f32(1.0f)), 1.5f,1.5f,1.5f,1.5f);
-		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(0.0f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 0.0f,0.0f,0.0f,0.0f);
-		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(0.5f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 2.0f,1.5f,1.0f,0.5f);
-		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 16.0f,9.0f,4.0f,1.0f);
-		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_set_4f32(1.5f,2.5f,3.5f,4.5f), m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 18.0f,10.5f,5.0f,1.5f);
-		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_set_4f32(3.0f,5.0f,7.0f,9.0f), m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), -36.0f,-21.0f,-10.0f,-3.0f);
+		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(0.0f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 0.0f,0.0f,0.0f,0.0f);
+		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_fill_4f32(0.5f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 0.5f,1.0f,1.5f,2.0f);
+		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 1.0f,4.0f,9.0f,16.0f);
+		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_setr_4f32(1.5f,2.5f,3.5f,4.5f), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 1.5f,5.0f,10.5f,18.0f);
+		ASSERT_M128_4F32_VALUES(m128_mul_4f32(m128_setr_4f32(3.0f,5.0f,7.0f,9.0f), m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), -3.0f,-10.0f,-21.0f,-36.0f);
 		
 		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_fill_4f32(0.0f)), m128_fill_4f32(0.0f));
 		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_fill_4f32(0.5f)), m128_fill_4f32(0.5f));
 		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_fill_4f32(1.0f)), m128_fill_4f32(1.0f));
 		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_fill_4f32(-1.0f)), m128_fill_4f32(1.0f));
 		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_fill_4f32(-1.5f)), m128_fill_4f32(1.5f));
-		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_set_4f32(1.0f,-2.0f,3.0f,-4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_set_4f32(1.5f,-2.4f,3.3f,-4.2f)), m128_set_4f32(1.5f,2.4f,3.3f,4.2f));
-		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_set_4f32(-1.0f,2.0f,-3.0f,4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_setr_4f32(1.0f,-2.0f,3.0f,-4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_setr_4f32(1.5f,-2.4f,3.3f,-4.2f)), m128_setr_4f32(1.5f,2.4f,3.3f,4.2f));
+		ASSERT_M128_4F32_EQUAL(m128_abs_4f32(m128_setr_4f32(-1.0f,2.0f,-3.0f,4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
 		
 		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_fill_4f32(0.0f)), m128_fill_4f32(0.0f));
 		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_fill_4f32(1.0f)), m128_fill_4f32(-1.0f));
 		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_fill_4f32(1.7f)), m128_fill_4f32(-1.7f));
 		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_fill_4f32(-1.0f)), m128_fill_4f32(1.0f));
 		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_fill_4f32(-1.6f)), m128_fill_4f32(1.6f));
-		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_set_4f32(1.0f,-2.0f,3.0f,-4.0f)), m128_set_4f32(-1.0f,2.0f,-3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_set_4f32(1.3f,-2.4f,3.5f,-4.6f)), m128_set_4f32(-1.3f,2.4f,-3.5f,4.6f));
-		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_set_4f32(-1.0f,2.0f,-3.0f,4.0f)), m128_set_4f32(1.0f,-2.0f,3.0f,-4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_setr_4f32(1.0f,-2.0f,3.0f,-4.0f)), m128_setr_4f32(-1.0f,2.0f,-3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_setr_4f32(1.3f,-2.4f,3.5f,-4.6f)), m128_setr_4f32(-1.3f,2.4f,-3.5f,4.6f));
+		ASSERT_M128_4F32_EQUAL(m128_negate_4f32(m128_setr_4f32(-1.0f,2.0f,-3.0f,4.0f)), m128_setr_4f32(1.0f,-2.0f,3.0f,-4.0f));
 		
 		ASSERT_M128_4F32_EQUAL(m128_floor_4f32(m128_fill_4f32(-2.00f)), m128_fill_4f32(-2.00f));
 		ASSERT_M128_4F32_EQUAL(m128_floor_4f32(m128_fill_4f32(-1.90f)), m128_fill_4f32(-2.00f));
@@ -12620,23 +12668,23 @@ void TEST_deshi_math(){
 		ASSERT_M128_4F32_EQUAL(m128_round_4f32(m128_fill_4f32( 1.90f)), m128_fill_4f32( 2.00f));
 		ASSERT_M128_4F32_EQUAL(m128_round_4f32(m128_fill_4f32( 2.00f)), m128_fill_4f32( 2.00f));
 		
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32( 0.0f, 0.0f, 0.0f, 0.0f), m128_set_4f32( 0.0f,0.0f, 0.0f,0.0f)), m128_set_4f32(0.0f,0.0f,0.0f,0.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 1.2f,2.3f, 3.4f,4.5f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_set_4f32(1.0f,1.0f,3.0f,3.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f), m128_set_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32( 1.0f,-2.0f, 3.0f,-4.0f), m128_set_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_set_4f32(1.0f,-2.0f,3.0f,-4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_set_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_set_4f32(-1.0f,1.0f,-3.0f,3.0f));
-		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_set_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_set_4f32(-1.5f,1.0f,-2.5f,3.0f)), m128_set_4f32(-1.5f,1.0f,-3.0f,3.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32( 0.0f, 0.0f, 0.0f, 0.0f), m128_setr_4f32( 0.0f,0.0f, 0.0f,0.0f)), m128_setr_4f32(0.0f,0.0f,0.0f,0.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 1.2f,2.3f, 3.4f,4.5f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_setr_4f32(1.0f,1.0f,3.0f,3.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f), m128_setr_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32( 1.0f,-2.0f, 3.0f,-4.0f), m128_setr_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_setr_4f32(1.0f,-2.0f,3.0f,-4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_setr_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_setr_4f32(-1.0f,1.0f,-3.0f,3.0f));
+		ASSERT_M128_4F32_EQUAL(m128_min_4f32(m128_setr_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_setr_4f32(-1.5f,1.0f,-2.5f,3.0f)), m128_setr_4f32(-1.5f,1.0f,-3.0f,3.0f));
 		
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32( 0.0f, 0.0f, 0.0f, 0.0f), m128_set_4f32( 0.0f,0.0f, 0.0f,0.0f)), m128_set_4f32(0.0f,0.0f,0.0f,0.0f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 1.2f,2.3f, 3.4f,4.5f)), m128_set_4f32(1.2f,2.3f,3.4f,4.5f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_set_4f32(2.0f,2.0f,4.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f), m128_set_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32( 1.0f,-2.0f, 3.0f,-4.0f), m128_set_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_set_4f32(1.0f,2.0f,3.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_set_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_set_4f32(2.0f,2.0f,4.0f,4.0f));
-		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_set_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_set_4f32(-1.5f,1.0f,-2.5f,3.0f)), m128_set_4f32(-1.0f,2.0f,-2.5f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32( 0.0f, 0.0f, 0.0f, 0.0f), m128_setr_4f32( 0.0f,0.0f, 0.0f,0.0f)), m128_setr_4f32(0.0f,0.0f,0.0f,0.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 1.2f,2.3f, 3.4f,4.5f)), m128_setr_4f32(1.2f,2.3f,3.4f,4.5f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_setr_4f32(2.0f,2.0f,4.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f), m128_setr_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32( 1.0f,-2.0f, 3.0f,-4.0f), m128_setr_4f32( 1.0f,2.0f, 3.0f,4.0f)), m128_setr_4f32(1.0f,2.0f,3.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_setr_4f32( 2.0f,1.0f, 4.0f,3.0f)), m128_setr_4f32(2.0f,2.0f,4.0f,4.0f));
+		ASSERT_M128_4F32_EQUAL(m128_max_4f32(m128_setr_4f32(-1.0f, 2.0f,-3.0f, 4.0f), m128_setr_4f32(-1.5f,1.0f,-2.5f,3.0f)), m128_setr_4f32(-1.0f,2.0f,-2.5f,4.0f));
 		
 		Assert(m128_equal_4f32(m128_fill_4f32(-1.0f), m128_fill_4f32(-1.0f)));
 		Assert(m128_equal_4f32(m128_fill_4f32(-0.1f), m128_fill_4f32(-0.1f)));
@@ -12644,18 +12692,18 @@ void TEST_deshi_math(){
 		Assert(m128_equal_4f32(m128_fill_4f32( 0.0f), m128_fill_4f32( 0.0f)));
 		Assert(m128_equal_4f32(m128_fill_4f32( 0.1f), m128_fill_4f32( 0.1f)));
 		Assert(m128_equal_4f32(m128_fill_4f32( 1.0f), m128_fill_4f32( 1.0f)));
-		Assert(m128_equal_4f32(m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f), m128_set_4f32(-1.0f,-2.0f,-3.0f,-4.0f)));
-		Assert(m128_equal_4f32(m128_set_4f32(-0.1f,-0.2f,-0.3f,-0.4f), m128_set_4f32(-0.1f,-0.2f,-0.3f,-0.4f)));
-		Assert(m128_equal_4f32(m128_set_4f32(-0.0f,-0.0f,-0.0f,-0.0f), m128_set_4f32(-0.0f,-0.0f,-0.0f,-0.0f)));
-		Assert(m128_equal_4f32(m128_set_4f32( 0.0f, 0.0f, 0.0f, 0.0f), m128_set_4f32( 0.0f, 0.0f, 0.0f, 0.0f)));
-		Assert(m128_equal_4f32(m128_set_4f32( 0.1f, 0.2f, 0.3f, 0.4f), m128_set_4f32( 0.1f, 0.2f, 0.3f, 0.4f)));
-		Assert(m128_equal_4f32(m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_set_4f32( 1.0f, 2.0f, 3.0f, 4.0f)));
-		Assert(m128_equal_4f32(m128_fill_4f32(-1.0f), m128_set_4f32(-1.0f,-1.0f,-1.0f,-1.0f)));
-		Assert(m128_equal_4f32(m128_fill_4f32(-0.1f), m128_set_4f32(-0.1f,-0.1f,-0.1f,-0.1f)));
-		Assert(m128_equal_4f32(m128_fill_4f32(-0.0f), m128_set_4f32(-0.0f,-0.0f,-0.0f,-0.0f)));
-		Assert(m128_equal_4f32(m128_fill_4f32( 0.0f), m128_set_4f32( 0.0f, 0.0f, 0.0f, 0.0f)));
-		Assert(m128_equal_4f32(m128_fill_4f32( 0.1f), m128_set_4f32( 0.1f, 0.1f, 0.1f, 0.1f)));
-		Assert(m128_equal_4f32(m128_fill_4f32( 1.0f), m128_set_4f32( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(m128_equal_4f32(m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f), m128_setr_4f32(-1.0f,-2.0f,-3.0f,-4.0f)));
+		Assert(m128_equal_4f32(m128_setr_4f32(-0.1f,-0.2f,-0.3f,-0.4f), m128_setr_4f32(-0.1f,-0.2f,-0.3f,-0.4f)));
+		Assert(m128_equal_4f32(m128_setr_4f32(-0.0f,-0.0f,-0.0f,-0.0f), m128_setr_4f32(-0.0f,-0.0f,-0.0f,-0.0f)));
+		Assert(m128_equal_4f32(m128_setr_4f32( 0.0f, 0.0f, 0.0f, 0.0f), m128_setr_4f32( 0.0f, 0.0f, 0.0f, 0.0f)));
+		Assert(m128_equal_4f32(m128_setr_4f32( 0.1f, 0.2f, 0.3f, 0.4f), m128_setr_4f32( 0.1f, 0.2f, 0.3f, 0.4f)));
+		Assert(m128_equal_4f32(m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f), m128_setr_4f32( 1.0f, 2.0f, 3.0f, 4.0f)));
+		Assert(m128_equal_4f32(m128_fill_4f32(-1.0f), m128_setr_4f32(-1.0f,-1.0f,-1.0f,-1.0f)));
+		Assert(m128_equal_4f32(m128_fill_4f32(-0.1f), m128_setr_4f32(-0.1f,-0.1f,-0.1f,-0.1f)));
+		Assert(m128_equal_4f32(m128_fill_4f32(-0.0f), m128_setr_4f32(-0.0f,-0.0f,-0.0f,-0.0f)));
+		Assert(m128_equal_4f32(m128_fill_4f32( 0.0f), m128_setr_4f32( 0.0f, 0.0f, 0.0f, 0.0f)));
+		Assert(m128_equal_4f32(m128_fill_4f32( 0.1f), m128_setr_4f32( 0.1f, 0.1f, 0.1f, 0.1f)));
+		Assert(m128_equal_4f32(m128_fill_4f32( 1.0f), m128_setr_4f32( 1.0f, 1.0f, 1.0f, 1.0f)));
 		
 		union{
 			struct{ f64 x, y; };
@@ -12673,6 +12721,15 @@ void TEST_deshi_math(){
 		ASSERT_M128_2F64_VALUES(m128_set_2f64(1.1, 1.2),  1.2,1.1);
 		ASSERT_M128_2F64_VALUES(m128_set_2f64(8.0,16.0), 16.0,8.0);
 		
+		ASSERT_M128_2F64_EQUAL(m128_setr_2f64(0.0, 0.0), _mm_setr_pd(0.0, 0.0));
+		ASSERT_M128_2F64_EQUAL(m128_setr_2f64(1.0, 1.0), _mm_setr_pd(1.0, 1.0));
+		ASSERT_M128_2F64_EQUAL(m128_setr_2f64(8.0,16.0), _mm_setr_pd(8.0,16.0));
+		ASSERT_M128_2F64_VALUES(m128_setr_2f64(0.0, 0.0), 0.0, 0.0);
+		ASSERT_M128_2F64_VALUES(m128_setr_2f64(1.0, 1.0), 1.0, 1.0);
+		ASSERT_M128_2F64_VALUES(m128_setr_2f64(1.0, 2.0), 1.0, 2.0);
+		ASSERT_M128_2F64_VALUES(m128_setr_2f64(1.1, 1.2), 1.1, 1.2);
+		ASSERT_M128_2F64_VALUES(m128_setr_2f64(8.0,16.0), 8.0,16.0);
+		
 		ASSERT_M128_2F64_VALUES(m128_fill_2f64(-1.4), -1.4,-1.4);
 		ASSERT_M128_2F64_VALUES(m128_fill_2f64(-1.0), -1.0,-1.0);
 		ASSERT_M128_2F64_VALUES(m128_fill_2f64(-0.0), -0.0,-0.0);
@@ -12684,52 +12741,52 @@ void TEST_deshi_math(){
 		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(0.0), m128_fill_2f64(0.0)), 0.0,0.0);
 		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(0.0), m128_fill_2f64(1.0)), 1.0,1.0);
 		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(1.0), m128_fill_2f64(1.0)), 2.0,2.0);
-		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(0.0), m128_set_2f64(1.0,2.0)), 2.0,1.0);
-		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(0.0), m128_set_2f64(1.5,2.5)), 2.5,1.5);
-		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_set_2f64(1.0,2.0), m128_set_2f64(1.0,2.0)), 4.0,2.0);
-		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_set_2f64(1.5,2.5), m128_set_2f64(1.0,2.0)), 4.5,2.5);
-		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_set_2f64(3.0,5.0), m128_set_2f64(-1.0,-2.0)), 3.0,2.0);
-		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_set_2f64(3.0,5.0), m128_set_2f64(-1.5,-2.5)), 2.5,1.5);
+		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(0.0), m128_setr_2f64(1.0,2.0)), 1.0,2.0);
+		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_fill_2f64(0.0), m128_setr_2f64(1.5,2.5)), 1.5,2.5);
+		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_setr_2f64(1.0,2.0), m128_setr_2f64(1.0,2.0)), 2.0,4.0);
+		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_setr_2f64(1.5,2.5), m128_setr_2f64(1.0,2.0)), 2.5,4.5);
+		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_setr_2f64(3.0,5.0), m128_setr_2f64(-1.0,-2.0)), 2.0,3.0);
+		ASSERT_M128_2F64_VALUES(m128_add_2f64(m128_setr_2f64(3.0,5.0), m128_setr_2f64(-1.5,-2.5)), 1.5,2.5);
 		
 		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_fill_2f64(0.0), m128_fill_2f64(0.0)), 0.0,0.0);
 		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_fill_2f64(0.0), m128_fill_2f64(1.0)), -1.0,-1.0);
 		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_fill_2f64(1.0), m128_fill_2f64(1.0)), 0.0,0.0);
 		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_fill_2f64(1.5), m128_fill_2f64(1.0)), 0.5,0.5);
-		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_fill_2f64(0.0), m128_set_2f64(1.0,2.0)), -2.0,-1.0);
-		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_set_2f64(1.0,2.0), m128_set_2f64(1.0,2.0)), 0.0,0.0);
-		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_set_2f64(1.5,2.5), m128_set_2f64(1.0,2.0)), 0.5,0.5);
-		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_set_2f64(3.0,5.0), m128_set_2f64(-1.0,-2.0)), 7.0,4.0);
-		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_set_2f64(3.3,5.3), m128_set_2f64(-1.0,-2.0)), 7.3,4.3);
+		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_fill_2f64(0.0), m128_setr_2f64(1.0,2.0)), -1.0,-2.0);
+		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_setr_2f64(1.0,2.0), m128_setr_2f64(1.0,2.0)), 0.0,0.0);
+		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_setr_2f64(1.5,2.5), m128_setr_2f64(1.0,2.0)), 0.5,0.5);
+		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_setr_2f64(3.0,5.0), m128_setr_2f64(-1.0,-2.0)), 4.0,7.0);
+		ASSERT_M128_2F64_VALUES(m128_sub_2f64(m128_setr_2f64(3.3,5.3), m128_setr_2f64(-1.0,-2.0)), 4.3,7.3);
 		
 		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(0.0), m128_fill_2f64(0.0)), 0.0,0.0);
 		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(0.0), m128_fill_2f64(1.0)), 0.0,0.0);
 		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(1.0), m128_fill_2f64(1.0)), 1.0,1.0);
 		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(1.5), m128_fill_2f64(1.0)), 1.5,1.5);
-		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(0.0), m128_set_2f64(1.0,2.0)), 0.0,0.0);
-		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(0.5), m128_set_2f64(1.0,2.0)), 1.0,0.5);
-		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_set_2f64(1.0,2.0), m128_set_2f64(1.0,2.0)), 4.0,1.0);
-		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_set_2f64(1.5,2.5), m128_set_2f64(1.0,2.0)), 5.0,1.5);
-		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_set_2f64(3.0,5.0), m128_set_2f64(-1.0,-2.0)), -10.0,-3.0);
+		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(0.0), m128_setr_2f64(1.0,2.0)), 0.0,0.0);
+		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_fill_2f64(0.5), m128_setr_2f64(1.0,2.0)), 0.5,1.0);
+		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_setr_2f64(1.0,2.0), m128_setr_2f64(1.0,2.0)), 1.0,4.0);
+		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_setr_2f64(1.5,2.5), m128_setr_2f64(1.0,2.0)), 1.5,5.0);
+		ASSERT_M128_2F64_VALUES(m128_mul_2f64(m128_setr_2f64(3.0,5.0), m128_setr_2f64(-1.0,-2.0)), -3.0,-10.0);
 		
 		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_fill_2f64(0.0)), m128_fill_2f64(0.0));
 		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_fill_2f64(0.5)), m128_fill_2f64(0.5));
 		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_fill_2f64(1.0)), m128_fill_2f64(1.0));
 		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_fill_2f64(-1.0)), m128_fill_2f64(1.0));
 		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_fill_2f64(-1.5)), m128_fill_2f64(1.5));
-		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_set_2f64(-1.0,-2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_set_2f64(1.0,-2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_set_2f64(1.5,-2.4)), m128_set_2f64(1.5,2.4));
-		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_set_2f64(-1.0,2.0)), m128_set_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_setr_2f64(-1.0,-2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_setr_2f64(1.0,-2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_setr_2f64(1.5,-2.4)), m128_setr_2f64(1.5,2.4));
+		ASSERT_M128_2F64_EQUAL(m128_abs_2f64(m128_setr_2f64(-1.0,2.0)), m128_setr_2f64(1.0,2.0));
 		
 		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_fill_2f64(0.0)), m128_fill_2f64(0.0));
 		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_fill_2f64(1.0)), m128_fill_2f64(-1.0));
 		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_fill_2f64(1.7)), m128_fill_2f64(-1.7));
 		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_fill_2f64(-1.0)), m128_fill_2f64(1.0));
 		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_fill_2f64(-1.6)), m128_fill_2f64(1.6));
-		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_set_2f64(-1.0,-2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_set_2f64(1.0,-2.0)), m128_set_2f64(-1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_set_2f64(1.3,-2.4)), m128_set_2f64(-1.3,2.4));
-		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_set_2f64(-1.0,2.0)), m128_set_2f64(1.0,-2.0));
+		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_setr_2f64(-1.0,-2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_setr_2f64(1.0,-2.0)), m128_setr_2f64(-1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_setr_2f64(1.3,-2.4)), m128_setr_2f64(-1.3,2.4));
+		ASSERT_M128_2F64_EQUAL(m128_negate_2f64(m128_setr_2f64(-1.0,2.0)), m128_setr_2f64(1.0,-2.0));
 		
 		ASSERT_M128_2F64_EQUAL(m128_floor_2f64(m128_fill_2f64(-2.00)), m128_fill_2f64(-2.00));
 		ASSERT_M128_2F64_EQUAL(m128_floor_2f64(m128_fill_2f64(-1.90)), m128_fill_2f64(-2.00));
@@ -12809,23 +12866,23 @@ void TEST_deshi_math(){
 		ASSERT_M128_2F64_EQUAL(m128_round_2f64(m128_fill_2f64( 1.90)), m128_fill_2f64( 2.00));
 		ASSERT_M128_2F64_EQUAL(m128_round_2f64(m128_fill_2f64( 2.00)), m128_fill_2f64( 2.00));
 		
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64( 0.0, 0.0), m128_set_2f64( 0.0,0.0)), m128_set_2f64(0.0,0.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 1.2,2.3)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 1.0,2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 2.0,1.0)), m128_set_2f64(1.0,1.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64(-1.0,-2.0), m128_set_2f64( 1.0,2.0)), m128_set_2f64(-1.0,-2.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64( 1.0,-2.0), m128_set_2f64( 1.0,2.0)), m128_set_2f64(1.0,-2.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64(-1.0, 2.0), m128_set_2f64( 2.0,1.0)), m128_set_2f64(-1.0,1.0));
-		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_set_2f64(-1.0, 2.0), m128_set_2f64(-1.5,1.0)), m128_set_2f64(-1.5,1.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64( 0.0, 0.0), m128_setr_2f64( 0.0,0.0)), m128_setr_2f64(0.0,0.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 1.2,2.3)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 1.0,2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 2.0,1.0)), m128_setr_2f64(1.0,1.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64(-1.0,-2.0), m128_setr_2f64( 1.0,2.0)), m128_setr_2f64(-1.0,-2.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64( 1.0,-2.0), m128_setr_2f64( 1.0,2.0)), m128_setr_2f64(1.0,-2.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64(-1.0, 2.0), m128_setr_2f64( 2.0,1.0)), m128_setr_2f64(-1.0,1.0));
+		ASSERT_M128_2F64_EQUAL(m128_min_2f64(m128_setr_2f64(-1.0, 2.0), m128_setr_2f64(-1.5,1.0)), m128_setr_2f64(-1.5,1.0));
 		
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64( 0.0, 0.0), m128_set_2f64( 0.0,0.0)), m128_set_2f64(0.0,0.0));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 1.2,2.3)), m128_set_2f64(1.2,2.3));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 1.0,2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 2.0,1.0)), m128_set_2f64(2.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64(-1.0,-2.0), m128_set_2f64( 1.0,2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64( 1.0,-2.0), m128_set_2f64( 1.0,2.0)), m128_set_2f64(1.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64(-1.0, 2.0), m128_set_2f64( 2.0,1.0)), m128_set_2f64(2.0,2.0));
-		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_set_2f64(-1.0, 2.0), m128_set_2f64(-1.5,1.0)), m128_set_2f64(-1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64( 0.0, 0.0), m128_setr_2f64( 0.0,0.0)), m128_setr_2f64(0.0,0.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 1.2,2.3)), m128_setr_2f64(1.2,2.3));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 1.0,2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 2.0,1.0)), m128_setr_2f64(2.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64(-1.0,-2.0), m128_setr_2f64( 1.0,2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64( 1.0,-2.0), m128_setr_2f64( 1.0,2.0)), m128_setr_2f64(1.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64(-1.0, 2.0), m128_setr_2f64( 2.0,1.0)), m128_setr_2f64(2.0,2.0));
+		ASSERT_M128_2F64_EQUAL(m128_max_2f64(m128_setr_2f64(-1.0, 2.0), m128_setr_2f64(-1.5,1.0)), m128_setr_2f64(-1.0,2.0));
 		
 		Assert(m128_equal_2f64(m128_fill_2f64(-1.0), m128_fill_2f64(-1.0)));
 		Assert(m128_equal_2f64(m128_fill_2f64(-0.1), m128_fill_2f64(-0.1)));
@@ -12833,18 +12890,18 @@ void TEST_deshi_math(){
 		Assert(m128_equal_2f64(m128_fill_2f64( 0.0), m128_fill_2f64( 0.0)));
 		Assert(m128_equal_2f64(m128_fill_2f64( 0.1), m128_fill_2f64( 0.1)));
 		Assert(m128_equal_2f64(m128_fill_2f64( 1.0), m128_fill_2f64( 1.0)));
-		Assert(m128_equal_2f64(m128_set_2f64(-1.0,-2.0), m128_set_2f64(-1.0,-2.0)));
-		Assert(m128_equal_2f64(m128_set_2f64(-0.1,-0.2), m128_set_2f64(-0.1,-0.2)));
-		Assert(m128_equal_2f64(m128_set_2f64(-0.0,-0.0), m128_set_2f64(-0.0,-0.0)));
-		Assert(m128_equal_2f64(m128_set_2f64( 0.0, 0.0), m128_set_2f64( 0.0, 0.0)));
-		Assert(m128_equal_2f64(m128_set_2f64( 0.1, 0.2), m128_set_2f64( 0.1, 0.2)));
-		Assert(m128_equal_2f64(m128_set_2f64( 1.0, 2.0), m128_set_2f64( 1.0, 2.0)));
-		Assert(m128_equal_2f64(m128_fill_2f64(-1.0), m128_set_2f64(-1.0,-1.0)));
-		Assert(m128_equal_2f64(m128_fill_2f64(-0.1), m128_set_2f64(-0.1,-0.1)));
-		Assert(m128_equal_2f64(m128_fill_2f64(-0.0), m128_set_2f64(-0.0,-0.0)));
-		Assert(m128_equal_2f64(m128_fill_2f64( 0.0), m128_set_2f64( 0.0, 0.0)));
-		Assert(m128_equal_2f64(m128_fill_2f64( 0.1), m128_set_2f64( 0.1, 0.1)));
-		Assert(m128_equal_2f64(m128_fill_2f64( 1.0), m128_set_2f64( 1.0, 1.0)));
+		Assert(m128_equal_2f64(m128_setr_2f64(-1.0,-2.0), m128_setr_2f64(-1.0,-2.0)));
+		Assert(m128_equal_2f64(m128_setr_2f64(-0.1,-0.2), m128_setr_2f64(-0.1,-0.2)));
+		Assert(m128_equal_2f64(m128_setr_2f64(-0.0,-0.0), m128_setr_2f64(-0.0,-0.0)));
+		Assert(m128_equal_2f64(m128_setr_2f64( 0.0, 0.0), m128_setr_2f64( 0.0, 0.0)));
+		Assert(m128_equal_2f64(m128_setr_2f64( 0.1, 0.2), m128_setr_2f64( 0.1, 0.2)));
+		Assert(m128_equal_2f64(m128_setr_2f64( 1.0, 2.0), m128_setr_2f64( 1.0, 2.0)));
+		Assert(m128_equal_2f64(m128_fill_2f64(-1.0), m128_setr_2f64(-1.0,-1.0)));
+		Assert(m128_equal_2f64(m128_fill_2f64(-0.1), m128_setr_2f64(-0.1,-0.1)));
+		Assert(m128_equal_2f64(m128_fill_2f64(-0.0), m128_setr_2f64(-0.0,-0.0)));
+		Assert(m128_equal_2f64(m128_fill_2f64( 0.0), m128_setr_2f64( 0.0, 0.0)));
+		Assert(m128_equal_2f64(m128_fill_2f64( 0.1), m128_setr_2f64( 0.1, 0.1)));
+		Assert(m128_equal_2f64(m128_fill_2f64( 1.0), m128_setr_2f64( 1.0, 1.0)));
 		
 		union{
 			struct{ s32 x, y, z, w; };
@@ -12861,6 +12918,14 @@ void TEST_deshi_math(){
 		ASSERT_M128_4S32_VALUES(m128_set_4s32(1, 2, 3, 4),  4, 3, 2,1);
 		ASSERT_M128_4S32_VALUES(m128_set_4s32(8,16,32,64), 64,32,16,8);
 		
+		ASSERT_M128_4S32_EQUAL(m128_setr_4s32(0, 0, 0, 0), _mm_setr_epi32(0, 0, 0, 0));
+		ASSERT_M128_4S32_EQUAL(m128_setr_4s32(1, 1, 1, 1), _mm_setr_epi32(1, 1, 1, 1));
+		ASSERT_M128_4S32_EQUAL(m128_setr_4s32(8,16,32,64), _mm_setr_epi32(8,16,32,64));
+		ASSERT_M128_4S32_VALUES(m128_setr_4s32(0, 0, 0, 0), 0, 0, 0, 0);
+		ASSERT_M128_4S32_VALUES(m128_setr_4s32(1, 1, 1, 1), 1, 1, 1, 1);
+		ASSERT_M128_4S32_VALUES(m128_setr_4s32(1, 2, 3, 4), 1, 2, 3, 4);
+		ASSERT_M128_4S32_VALUES(m128_setr_4s32(8,16,32,64), 8,16,32,64);
+		
 		ASSERT_M128_4S32_VALUES(m128_fill_4s32(-1), -1,-1,-1,-1);
 		ASSERT_M128_4S32_VALUES(m128_fill_4s32(-0), -0,-0,-0,-0);
 		ASSERT_M128_4S32_VALUES(m128_fill_4s32( 0),  0, 0, 0, 0);
@@ -12869,66 +12934,66 @@ void TEST_deshi_math(){
 		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_fill_4s32(0), m128_fill_4s32(0)), 0,0,0,0);
 		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_fill_4s32(0), m128_fill_4s32(1)), 1,1,1,1);
 		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_fill_4s32(1), m128_fill_4s32(1)), 2,2,2,2);
-		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_fill_4s32(0), m128_set_4s32(1,2,3,4)), 4,3,2,1);
-		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_set_4s32(1,2,3,4), m128_set_4s32(1,2,3,4)), 8,6,4,2);
-		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_set_4s32(3,5,7,9), m128_set_4s32(-1,-2,-3,-4)), 5,4,3,2);
+		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_fill_4s32(0), m128_setr_4s32(1,2,3,4)), 1,2,3,4);
+		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_setr_4s32(1,2,3,4), m128_setr_4s32(1,2,3,4)), 2,4,6,8);
+		ASSERT_M128_4S32_VALUES(m128_add_4s32(m128_setr_4s32(3,5,7,9), m128_setr_4s32(-1,-2,-3,-4)), 2,3,4,5);
 		
 		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_fill_4s32(0), m128_fill_4s32(0)), 0,0,0,0);
 		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_fill_4s32(0), m128_fill_4s32(1)), -1,-1,-1,-1);
 		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_fill_4s32(1), m128_fill_4s32(1)), 0,0,0,0);
-		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_fill_4s32(0), m128_set_4s32(1,2,3,4)), -4,-3,-2,-1);
-		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_set_4s32(1,2,3,4), m128_set_4s32(1,2,3,4)), 0,0,0,0);
-		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_set_4s32(3,5,7,9), m128_set_4s32(-1,-2,-3,-4)), 13,10,7,4);
+		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_fill_4s32(0), m128_setr_4s32(1,2,3,4)), -1,-2,-3,-4);
+		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_setr_4s32(1,2,3,4), m128_setr_4s32(1,2,3,4)), 0,0,0,0);
+		ASSERT_M128_4S32_VALUES(m128_sub_4s32(m128_setr_4s32(3,5,7,9), m128_setr_4s32(-1,-2,-3,-4)), 4,7,10,13);
 		
 		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_fill_4s32(0), m128_fill_4s32(0)), 0,0,0,0);
 		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_fill_4s32(0), m128_fill_4s32(1)), 0,0,0,0);
 		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_fill_4s32(1), m128_fill_4s32(1)), 1,1,1,1);
-		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_fill_4s32(0), m128_set_4s32(1,2,3,4)), 0,0,0,0);
-		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_set_4s32(1,2,3,4), m128_set_4s32(1,2,3,4)), 16,9,4,1);
-		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_set_4s32(3,5,7,9), m128_set_4s32(-1,-2,-3,-4)), -36,-21,-10,-3);
+		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_fill_4s32(0), m128_setr_4s32(1,2,3,4)), 0,0,0,0);
+		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_setr_4s32(1,2,3,4), m128_setr_4s32(1,2,3,4)), 1,4,9,16);
+		ASSERT_M128_4S32_VALUES(m128_mul_4s32(m128_setr_4s32(3,5,7,9), m128_setr_4s32(-1,-2,-3,-4)), -3,-10,-21,-36);
 		
 		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_fill_4s32(0)), m128_fill_4s32(0));
 		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_fill_4s32(1)), m128_fill_4s32(1));
 		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_fill_4s32(-1)), m128_fill_4s32(1));
-		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_set_4s32(-1,-2,-3,-4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_set_4s32(1,-2,3,-4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_set_4s32(-1,2,-3,4)), m128_set_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_setr_4s32(-1,-2,-3,-4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_setr_4s32(1,-2,3,-4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_abs_4s32(m128_setr_4s32(-1,2,-3,4)), m128_setr_4s32(1,2,3,4));
 		
 		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_fill_4s32(0)), m128_fill_4s32(0));
 		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_fill_4s32(1)), m128_fill_4s32(-1));
 		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_fill_4s32(-1)), m128_fill_4s32(1));
-		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_set_4s32(-1,-2,-3,-4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_set_4s32(1,-2,3,-4)), m128_set_4s32(-1,2,-3,4));
-		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_set_4s32(-1,2,-3,4)), m128_set_4s32(1,-2,3,-4));
+		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_setr_4s32(-1,-2,-3,-4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_setr_4s32(1,-2,3,-4)), m128_setr_4s32(-1,2,-3,4));
+		ASSERT_M128_4S32_EQUAL(m128_negate_4s32(m128_setr_4s32(-1,2,-3,4)), m128_setr_4s32(1,-2,3,-4));
 		
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32( 0, 0, 0, 0), m128_set_4s32( 0,0, 0,0)), m128_set_4s32(0,0,0,0));
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32( 1, 2, 3, 4), m128_set_4s32( 1,2, 3,4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32( 1, 2, 3, 4), m128_set_4s32( 2,1, 4,3)), m128_set_4s32(1,1,3,3));
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32(-1,-2,-3,-4), m128_set_4s32( 1,2, 3,4)), m128_set_4s32(-1,-2,-3,-4));
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32( 1,-2, 3,-4), m128_set_4s32( 1,2, 3,4)), m128_set_4s32(1,-2,3,-4));
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32(-1, 2,-3, 4), m128_set_4s32( 2,1, 4,3)), m128_set_4s32(-1,1,-3,3));
-		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_set_4s32(-1, 2,-3, 4), m128_set_4s32(-1,1,-2,3)), m128_set_4s32(-1,1,-3,3));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32( 0, 0, 0, 0), m128_setr_4s32( 0,0, 0,0)), m128_setr_4s32(0,0,0,0));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32( 1, 2, 3, 4), m128_setr_4s32( 1,2, 3,4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32( 1, 2, 3, 4), m128_setr_4s32( 2,1, 4,3)), m128_setr_4s32(1,1,3,3));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32(-1,-2,-3,-4), m128_setr_4s32( 1,2, 3,4)), m128_setr_4s32(-1,-2,-3,-4));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32( 1,-2, 3,-4), m128_setr_4s32( 1,2, 3,4)), m128_setr_4s32(1,-2,3,-4));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32(-1, 2,-3, 4), m128_setr_4s32( 2,1, 4,3)), m128_setr_4s32(-1,1,-3,3));
+		ASSERT_M128_4S32_EQUAL(m128_min_4s32(m128_setr_4s32(-1, 2,-3, 4), m128_setr_4s32(-1,1,-2,3)), m128_setr_4s32(-1,1,-3,3));
 		
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32( 0, 0, 0, 0), m128_set_4s32( 0,0, 0,0)), m128_set_4s32(0,0,0,0));
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32( 1, 2, 3, 4), m128_set_4s32( 1,2, 3,4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32( 1, 2, 3, 4), m128_set_4s32( 2,1, 4,3)), m128_set_4s32(2,2,4,4));
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32(-1,-2,-3,-4), m128_set_4s32( 1,2, 3,4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32( 1,-2, 3,-4), m128_set_4s32( 1,2, 3,4)), m128_set_4s32(1,2,3,4));
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32(-1, 2,-3, 4), m128_set_4s32( 2,1, 4,3)), m128_set_4s32(2,2,4,4));
-		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_set_4s32(-1, 2,-3, 4), m128_set_4s32(-1,1,-2,3)), m128_set_4s32(-1,2,-2,4));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32( 0, 0, 0, 0), m128_setr_4s32( 0,0, 0,0)), m128_setr_4s32(0,0,0,0));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32( 1, 2, 3, 4), m128_setr_4s32( 1,2, 3,4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32( 1, 2, 3, 4), m128_setr_4s32( 2,1, 4,3)), m128_setr_4s32(2,2,4,4));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32(-1,-2,-3,-4), m128_setr_4s32( 1,2, 3,4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32( 1,-2, 3,-4), m128_setr_4s32( 1,2, 3,4)), m128_setr_4s32(1,2,3,4));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32(-1, 2,-3, 4), m128_setr_4s32( 2,1, 4,3)), m128_setr_4s32(2,2,4,4));
+		ASSERT_M128_4S32_EQUAL(m128_max_4s32(m128_setr_4s32(-1, 2,-3, 4), m128_setr_4s32(-1,1,-2,3)), m128_setr_4s32(-1,2,-2,4));
 		
 		Assert(m128_equal_4f32(m128_fill_4f32(-1), m128_fill_4f32(-1)));
 		Assert(m128_equal_4f32(m128_fill_4f32(-0), m128_fill_4f32(-0)));
 		Assert(m128_equal_4f32(m128_fill_4f32( 0), m128_fill_4f32( 0)));
 		Assert(m128_equal_4f32(m128_fill_4f32( 1), m128_fill_4f32( 1)));
-		Assert(m128_equal_4f32(m128_set_4f32(-1,-2,-3,-4), m128_set_4f32(-1,-2,-3,-4)));
-		Assert(m128_equal_4f32(m128_set_4f32(-0,-0,-0,-0), m128_set_4f32(-0,-0,-0,-0)));
-		Assert(m128_equal_4f32(m128_set_4f32( 0, 0, 0, 0), m128_set_4f32( 0, 0, 0, 0)));
-		Assert(m128_equal_4f32(m128_set_4f32( 1, 2, 3, 4), m128_set_4f32( 1, 2, 3, 4)));
-		Assert(m128_equal_4f32(m128_fill_4f32(-1), m128_set_4f32(-1,-1,-1,-1)));
-		Assert(m128_equal_4f32(m128_fill_4f32(-0), m128_set_4f32(-0,-0,-0,-0)));
-		Assert(m128_equal_4f32(m128_fill_4f32( 0), m128_set_4f32( 0, 0, 0, 0)));
-		Assert(m128_equal_4f32(m128_fill_4f32( 1), m128_set_4f32( 1, 1, 1, 1)));
+		Assert(m128_equal_4f32(m128_setr_4f32(-1,-2,-3,-4), m128_setr_4f32(-1,-2,-3,-4)));
+		Assert(m128_equal_4f32(m128_setr_4f32(-0,-0,-0,-0), m128_setr_4f32(-0,-0,-0,-0)));
+		Assert(m128_equal_4f32(m128_setr_4f32( 0, 0, 0, 0), m128_setr_4f32( 0, 0, 0, 0)));
+		Assert(m128_equal_4f32(m128_setr_4f32( 1, 2, 3, 4), m128_setr_4f32( 1, 2, 3, 4)));
+		Assert(m128_equal_4f32(m128_fill_4f32(-1), m128_setr_4f32(-1,-1,-1,-1)));
+		Assert(m128_equal_4f32(m128_fill_4f32(-0), m128_setr_4f32(-0,-0,-0,-0)));
+		Assert(m128_equal_4f32(m128_fill_4f32( 0), m128_setr_4f32( 0, 0, 0, 0)));
+		Assert(m128_equal_4f32(m128_fill_4f32( 1), m128_setr_4f32( 1, 1, 1, 1)));
 		
 		Assert(m128_shuffle_mask(0,0,0,0) == 0x00);
 		Assert(m128_shuffle_mask(0,1,0,1) == 0x44);
@@ -12945,18 +13010,18 @@ void TEST_deshi_math(){
 		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_fill_4f32(1.0f), m128_fill_4f32(2.0f), 2,2,2,2), 1.0f,1.0f,2.0f,2.0f);
 		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_fill_4f32(1.0f), m128_fill_4f32(2.0f), 2,3,2,3), 1.0f,1.0f,2.0f,2.0f);
 		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_fill_4f32(1.0f), m128_fill_4f32(2.0f), 3,3,3,3), 1.0f,1.0f,2.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f), 0,0,0,0), 4.0f,4.0f,8.0f,8.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f), 0,1,0,1), 4.0f,3.0f,8.0f,7.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f), 1,1,1,1), 3.0f,3.0f,7.0f,7.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f), 2,2,2,2), 2.0f,2.0f,6.0f,6.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f), 2,3,2,3), 2.0f,1.0f,6.0f,5.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f), 3,3,3,3), 1.0f,1.0f,5.0f,5.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f), 0,0,0,0), 1.0f,1.0f,5.0f,5.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f), 0,1,0,1), 1.0f,2.0f,5.0f,6.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f), 1,1,1,1), 2.0f,2.0f,6.0f,6.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f), 2,2,2,2), 3.0f,3.0f,7.0f,7.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f), 2,3,2,3), 3.0f,4.0f,7.0f,8.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f), 3,3,3,3), 4.0f,4.0f,8.0f,8.0f);
 		
 		ASSERT_M128_4F32_VALUES(m128_shuffle_0101(m128_fill_4f32(1.0f), m128_fill_4f32(2.0f)), 1.0f,1.0f,2.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle_0101(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f)), 4.0f,3.0f,8.0f,7.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle_0101(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f)), 1.0f,2.0f,5.0f,6.0f);
 		
 		ASSERT_M128_4F32_VALUES(m128_shuffle_2323(m128_fill_4f32(1.0f), m128_fill_4f32(2.0f)), 1.0f,1.0f,2.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_shuffle_2323(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), m128_set_4f32(5.0f,6.0f,7.0f,8.0f)), 2.0f,1.0f,6.0f,5.0f);
+		ASSERT_M128_4F32_VALUES(m128_shuffle_2323(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), m128_setr_4f32(5.0f,6.0f,7.0f,8.0f)), 3.0f,4.0f,7.0f,8.0f);
 		
 		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_fill_4f32(1.0f), 0,0,0,0), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_fill_4f32(1.0f), 0,1,0,1), 1.0f,1.0f,1.0f,1.0f);
@@ -12964,18 +13029,18 @@ void TEST_deshi_math(){
 		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_fill_4f32(1.0f), 2,2,2,2), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_fill_4f32(1.0f), 2,3,2,3), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_fill_4f32(1.0f), 3,3,3,3), 1.0f,1.0f,1.0f,1.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), 0,0,0,0), 4.0f,4.0f,4.0f,4.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), 0,1,0,1), 4.0f,3.0f,4.0f,3.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), 1,1,1,1), 3.0f,3.0f,3.0f,3.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), 2,2,2,2), 2.0f,2.0f,2.0f,2.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), 2,3,2,3), 2.0f,1.0f,2.0f,1.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_set_4f32(1.0f,2.0f,3.0f,4.0f), 3,3,3,3), 1.0f,1.0f,1.0f,1.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), 0,0,0,0), 1.0f,1.0f,1.0f,1.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), 0,1,0,1), 1.0f,2.0f,1.0f,2.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), 1,1,1,1), 2.0f,2.0f,2.0f,2.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), 2,2,2,2), 3.0f,3.0f,3.0f,3.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), 2,3,2,3), 3.0f,4.0f,3.0f,4.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f), 3,3,3,3), 4.0f,4.0f,4.0f,4.0f);
 		
 		ASSERT_M128_4F32_VALUES(m128_swizzle_0022(m128_fill_4f32(1.0f)), 1.0f,1.0f,1.0f,1.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle_0022(m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 4.0f,4.0f,2.0f,2.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle_0022(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 1.0f,1.0f,3.0f,3.0f);
 		
 		ASSERT_M128_4F32_VALUES(m128_swizzle_1133(m128_fill_4f32(1.0f)), 1.0f,1.0f,1.0f,1.0f);
-		ASSERT_M128_4F32_VALUES(m128_swizzle_1133(m128_set_4f32(1.0f,2.0f,3.0f,4.0f)), 3.0f,3.0f,1.0f,1.0f);
+		ASSERT_M128_4F32_VALUES(m128_swizzle_1133(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 2.0f,2.0f,4.0f,4.0f);
 		
 #undef ASSERT_M128_4S32_VALUES
 #undef ASSERT_M128_4S32_EQUAL
