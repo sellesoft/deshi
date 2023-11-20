@@ -219,7 +219,7 @@ int main() {
 	// This call will create the necessary backend information for the information
 	render_image_update(image);
 	// but to actually upload it we call this function
-	render_image_upload(image, pixels);
+	render_image_upload(image, pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
 
 	// Great, now we just need to create an image view of our image and a sampler
 	// for the shader to use.
@@ -278,7 +278,7 @@ int main() {
 	image->samples = RenderSampleCount_1;
 	image->extent = {width, height, channels};
 	render_image_update(image);
-	render_image_upload(image, pixels);
+	render_image_upload(image, pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
 
 	image_view = render_image_view_create();
 	image_view->image = image;
@@ -394,9 +394,6 @@ int main() {
 			{0, 0, 0},
 			{1, 1, 1});
 
-	render::temp::update_camera(Vec3(0,0,0), Vec3(0,0,1));
-	render::temp::set_camera_projection(ubo.proj);
-	
 	while(platform_update()) {
 		
 		// In order for the backend to know what to draw we need to issue it 
@@ -484,13 +481,7 @@ int main() {
 				render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
 				CopyMemory(ubo_buffer->mapped_data, &ubo, sizeof(ubo));
 				render_buffer_unmap(ubo_buffer, true);
-
-				render::temp::update_camera(position, position + forward);
 			}
-		}
-
-		if(key_pressed(Key_F)) {
-			ubo.proj.arr[5] *= -1;
 		}
 
 		if(key_pressed(Key_C)) {
@@ -500,7 +491,6 @@ int main() {
 				window_set_cursor_mode(win, CursorMode_FirstPerson);
 			fps = !fps;
 		}
-
 		memory_clear_temp();
 	}
 }
