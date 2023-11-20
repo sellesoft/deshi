@@ -126,7 +126,7 @@ enum{
 	Need_Water,
 	Need_COUNT
 };
-str8 NeedStrings[] = {
+const str8 NeedStrings[] = {
 	STR8("Bladder"),
 	STR8("Food"),
 	STR8("Health"),
@@ -134,6 +134,8 @@ str8 NeedStrings[] = {
 	STR8("Sleep"),
 	STR8("Water"),
 };StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
+
+const u32 NeedStringsMaxWidth = 7;
 
 typedef struct Need{
 	Type type;
@@ -144,16 +146,6 @@ typedef struct Need{
 void delta_need(Need* need, f32 delta){
 	need->value += delta;
 	need->value  = Clamp(need->value, MIN_NEED_VALUE, MAX_NEED_VALUE);
-}
-
-constexpr u32 NeedStringsMaxWidth(){
-	u32 max_width = 0;
-	forI(Need_COUNT){
-		if(NeedStrings[i].count > max_width){
-			max_width = NeedStrings[i].count;
-		}
-	}
-	return max_width;
 }
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1638,8 +1630,8 @@ void update_ui(){
 		}ui_end_item();
 	}ui_end_immediate_branch();
 	
-	render_update_texture(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
-	render_update_texture(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
+	assets_texture_update(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
+	assets_texture_update(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 	
 	//zooming (even though ui handles moving the world for us, we still need to handle zooming)
 	vec2 cursize = ui.background->style.size;
@@ -1798,17 +1790,40 @@ void update_input(){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @main
 int main(int args_count, char** args){
-	deshi_init_specify("ant_sim",Megabytes(256),Megabytes(512));
-	
+	//deshi_init_specify("ant_sim",Megabytes(256),Megabytes(512));
+	profiler_init();                                   
+    memory_init(Megabytes(256),Megabytes(512));                  
+    platform_init();                                   
+    logger_init();                                     
+    Window* win = window_create(str8l("ant_sim"));                        
+    render_init_x(win);                                     
+    assets_init_x(win);                                   
+    ui_init_x(win);                                         
+    // console_init();                                    
+    // cmd_init();                                        
+    window_show(win);                           
+
 	setup_rendering();
 	setup_simulation();
 	setup_ui();
 	
-	deshi_loop_start();{
+	while(platform_update()) {
 		update_input();
 		update_simulation();
 		update_ui();
-	}deshi_loop_end();
+
+		ui_update_x(win);
+		render_update_x(win);
+		logger_update();
+
+		memory_clear_temp();
+	}
+
+	//deshi_loop_start();{
+	//	update_input();
+	//	update_simulation();
+	//	update_ui();
+	//}deshi_loop_end();
 	
 	deshi_cleanup();
 }
