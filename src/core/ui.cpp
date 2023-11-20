@@ -30,6 +30,7 @@ Index:
   ui_demo() -> void 
 */
 
+#define UI_PRINT_DRAWCMD_ALLOCS false
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_helpers
@@ -235,7 +236,7 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
 		g_ui->stats.indices_reserved += counts.y;
 #ifdef RENDER_REWRITE
-		drawcmd->vertex_offset = g_ui->index_buffer.cursor;
+		drawcmd->index_offset = g_ui->index_buffer.cursor;
 		g_ui->index_buffer.cursor += counts.y;
 #else
 		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
@@ -244,6 +245,10 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 #endif
 	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts_reserved = counts;
+
+#if UI_PRINT_DRAWCMD_ALLOCS
+	Log("ui", "allocated drawcmd: vo(", drawcmd->vertex_offset, ") vc(", drawcmd->counts_reserved.x, ") io(", drawcmd->index_offset, ") ic(", drawcmd->counts_reserved.y, ")");
+#endif
 }
 
 
