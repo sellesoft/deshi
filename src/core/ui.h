@@ -461,8 +461,6 @@ struct uiKeybinds{
 struct uiDrawCmd{
 	Node node;
 	Texture* texture;
-	// descriptor set created for the texture
-	RenderDescriptorSet* descriptor_set;
 	u32 vertex_offset; 
 	u32 index_offset;
 	vec2i counts_reserved; //x: vertex, y: index
@@ -972,7 +970,6 @@ void deshi__ui_push_item(uiItem* item, str8 file, upt line);
 uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line);
 #define ui_pop_item(count) deshi__ui_pop_item((count), str8l(__FILE__), __LINE__)
 
-
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_generate
 
@@ -1074,6 +1071,8 @@ struct uiContext{
 	RenderDescriptorSet* blank_descriptor_set;
 
 	Window* updating_window;
+
+	Texture* last_texture;
 
 	struct{
 		//visible on screen

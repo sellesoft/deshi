@@ -21,6 +21,7 @@ Index:
 #ifndef DESHI_ASSETS_H
 #define DESHI_ASSETS_H
 #include "math/vector.h"
+#include "math/matrix.h"
 struct Mesh;
 typedef u32 MeshIndex;
 struct MeshVertex;
@@ -293,6 +294,8 @@ typedef struct Texture{
 	RenderImage* image;
 	RenderImageView* image_view;
 	RenderSampler* sampler;
+
+	RenderDescriptorSet* ui_descriptor_set;
 }Texture;
 
 //Returns a pointer to the created `Texture` object from an image file named `name` in the `data/textures` folder
@@ -348,6 +351,9 @@ FORCE_INLINE Texture* assets_texture_create_from_memory_simple(void* data, str8 
 
 //Deletes the `Texture` object at `texture` after calling `render_unload_texture()`
 void assets_texture_delete(Texture* texture);
+
+// Updates the region at 'offset' of size 'extent' in 'texture' using its internal pixels array
+void assets_texture_update(Texture* texture, vec2i offset, vec2i extent);
 
 //Returns a pointer to the default `Texture` object which is created when `assets_init()` is called
 FORCE_INLINE Texture*  assets_texture_null(){ 

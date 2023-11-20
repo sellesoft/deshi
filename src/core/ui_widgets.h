@@ -362,7 +362,7 @@ void deshi__ui_end_tree_node(str8 file, upt line);
 
 #endif //DESHI_UI2_WIDGETS_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#if defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)
+#if defined(DESHI_IMPLEMENTATION)
 #define DESHI_UI2_WIDGETS_IMPL
 #include "render.h"
 
@@ -511,21 +511,21 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	uiText* data = (uiText*)item;
 	
 	dc->texture = item->style.font->tex;
-	if(!dc->descriptor_set) {
-		dc->descriptor_set = render_descriptor_set_create();
-		dc->descriptor_set->layouts = g_ui->blank_descriptor_set->layouts;
-		render_descriptor_set_update(dc->descriptor_set);
+	//if(!dc->descriptor_set) {
+	//	dc->descriptor_set = render_descriptor_set_create();
+	//	dc->descriptor_set->layouts = g_ui->blank_descriptor_set->layouts;
+	//	render_descriptor_set_update(dc->descriptor_set);
 
-		RenderDescriptor* descriptors;
-		array_init(descriptors, 1, deshi_temp_allocator);
-		auto d = array_push(descriptors);
-		d->kind = RenderDescriptorType_Combined_Image_Sampler;
-		d->image.view = dc->texture->image_view;
-		d->image.sampler = dc->texture->sampler;
-		d->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
-		render_descriptor_set_write(dc->descriptor_set, descriptors);
-	}
-	
+	//	RenderDescriptor* descriptors;
+	//	array_init(descriptors, 1, deshi_temp_allocator);
+	//	auto d = array_push(descriptors);
+	//	d->kind = RenderDescriptorType_Combined_Image_Sampler;
+	//	d->image.view = dc->texture->image_view;
+	//	d->image.sampler = dc->texture->sampler;
+	//	d->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+	//	render_descriptor_set_write(dc->descriptor_set, descriptors);
+	//}
+
 	//if there is an active selection we need to figure out how to render the selection boxes
 	//TODO(sushi) this kind of sucks because it means we do this pass twice when a selection is active
 	//            try and find a way to do this by gathering information as update happens 
@@ -546,7 +546,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	auto p = ui_drawcmd_realloc(dc, nucounts);
 	vp = p.vertexes;
 	ip = p.indexes;
-	
+
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
 	vec2 cursor = item->pos_screen;
 	forI(data->breaks.count-1){

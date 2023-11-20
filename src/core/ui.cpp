@@ -69,7 +69,8 @@ ui_drawcmd_delete(uiDrawCmd* dc){
 }
 
 
-void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
+void 
+ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	/*
 		Because we store our vertexes and indexes (here on as drawinfo) in manually managed Arenas,
 		we need to keep track of the drawinfo that a drawcmd releases when it is not needed anymore
@@ -175,7 +176,8 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	}
 }
 
-void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
+void 
+ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 	u32 v_place_next = -1;
 	u32 i_place_next = -1;	
 	
@@ -259,7 +261,7 @@ ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
 	*dummy = *dc;
 	ui_drawcmd_remove(dummy);
 	
-	*dc = {0};
+	*dc = {};
 	dc->texture = restore_texture;
 	
 	ui_drawcmd_alloc(dc, counts);
@@ -282,19 +284,6 @@ ui_drawcmd_get_ptrs(uiDrawCmd* dc) {
 
 //optionally takes a pointer to a boolean to indicate if the item was retrieved from the cache
 uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
-	// NOTE(sushi) disabling this for now, because I've found a situation in which it is useful to create
-	//             subitems in an item's evaluation callback 
-	//             I also don't remember exactly why I disallowed this, so it may come to needing to 
-	//             reenable this at some point 
-//	if(g_ui->updating){
-//		LogE("ui", 
-//			 "In file, ", setup.file, " on line ", setup.line, ": ui_setup_item() was called during ui_update().\n",
-//			 "\tui_update() requires that all items are made outside of it.\n",
-//			 "\tA possible cause of this is trying to make an item in another item's action, update, generate, or evaluate function."
-//			 );
-//		Assert(0);
-//	}
-	
 	uiItem* parent = *g_ui->item_stack.last;
 	
 	//initialize the item in memory or retrieve it from cache if it already exists
@@ -364,21 +353,22 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 	item->__hash         = setup.hash;
 	item->__copy         = setup.copy;
 	
-	//for now, a cached items drawcmds are always regenerated
-	//TODO(sushi) eventually we should only do this if we need to, that or we can put a rule on items that their drawcmd count should never
-	//            after initial creation, though this is limiting
-	//TODO(sushi) this wastes a lot of time for items whose drawcmds have not changed
-	if(retrieved_){
-		forI(item->drawcmd_count){
-			ui_drawcmd_remove(item->drawcmds + i);
-		}
-	}
-	
-	item->drawcmd_count = setup.drawcmd_count;
-	item->drawcmds = ui_make_drawcmd(setup.drawcmd_count);
-	if(setup.drawinfo_reserve){
-		forI(setup.drawcmd_count){
-			ui_drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
+	// if an item was retrieved we leave its drawcmds alone and it's expected
+	// to manage those itself
+	// It used to be that we would clear an immediate item's drawcmds every frame, but
+	// with the render rewrite we no longer associate descriptor sets with textures 
+	// in the render backend, we have to create them manually here. The only place 
+	// it makes sense to me (atm) to put descriptor sets is on the drawcmds when they
+	// have textures. This needs to be changed eventually, especially because someone
+	// wanting to make a ui widget should not be required to mess with the render 
+	// api at all.
+	if(!retrieved_) {
+		item->drawcmd_count = setup.drawcmd_count;
+		item->drawcmds = ui_make_drawcmd(setup.drawcmd_count);
+		if(setup.drawinfo_reserve){
+			forI(setup.drawcmd_count){
+				ui_drawcmd_alloc(item->drawcmds+i, setup.drawinfo_reserve[i]);
+			}
 		}
 	}
 
@@ -550,19 +540,6 @@ ui_gen_item(uiItem* item){DPZoneScoped;
 	counts += ui_gen_background(item, vp, ip, counts);
 	counts += ui_gen_border(item, vp, ip, counts);
 	dc->texture = item->style.background_image;
-	if(dc->texture && !dc->descriptor_set) {
-		dc->descriptor_set = render_descriptor_set_create();
-		dc->descriptor_set->layouts = g_ui->blank_descriptor_set->layouts;
-		render_descriptor_set_update(dc->descriptor_set);
-		RenderDescriptor* descriptors;
-		array_init(descriptors, 1, deshi_temp_allocator);
-		array_count(descriptors) = 1;
-		descriptors[0].kind = RenderDescriptorType_Combined_Image_Sampler;
-		descriptors[0].image.view = dc->texture->image_view;
-		descriptors[0].image.sampler = dc->texture->sampler;
-		descriptors[0].image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
-		render_descriptor_set_write(dc->descriptor_set, descriptors);
-	}
 	dc->counts_used = counts;
 }
 
@@ -1470,9 +1447,28 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.x;
 			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.y;
 #ifdef RENDER_REWRITE
-			// TODO(sushi) remove the usage of global window here
-			if(item->drawcmds[i].texture) {
-				render_cmd_bind_descriptor_set(g_ui->updating_window, 0, item->drawcmds[i].descriptor_set);
+			auto texture = item->drawcmds[i].texture;
+
+			if(texture && texture != g_ui->last_texture) {
+				if(!texture->ui_descriptor_set) {
+					texture->ui_descriptor_set = render_descriptor_set_create();
+					texture->ui_descriptor_set->layouts = array_copy(g_ui->blank_descriptor_set->layouts).ptr;
+					texture->ui_descriptor_set->debug_name = to_dstr8v(deshi_temp_allocator, "<ui> texture descriptor set").fin;
+					render_descriptor_set_update(texture->ui_descriptor_set);
+
+					auto descriptors = array<RenderDescriptor>::create_with_count(1, deshi_temp_allocator);
+					descriptors[0].kind = RenderDescriptorType_Combined_Image_Sampler;
+					descriptors[0].image = {
+						texture->image_view,
+						texture->sampler,
+						RenderImageLayout_Shader_Read_Only_Optimal,
+					};
+
+					render_descriptor_set_write(texture->ui_descriptor_set, descriptors.ptr);
+				}	
+				render_cmd_bind_descriptor_set(g_ui->updating_window, 0, texture->ui_descriptor_set);
+			} else if(!texture) {
+				render_cmd_bind_descriptor_set(g_ui->updating_window, 0, g_ui->blank_descriptor_set);
 			}
 			render_cmd_draw_indexed(g_ui->updating_window, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
 #else
@@ -1574,12 +1570,14 @@ deshi__ui_update_x(Window* window) {
 	};
 
 	auto frame = render_current_present_frame_of_window(g_ui->updating_window);
+	render_cmd_begin_render_pass(window, frame->render_pass, frame);
 	render_cmd_bind_pipeline(window, g_ui->pipeline);
 	render_cmd_push_constant(window, &pc, {RenderShaderStage_Vertex, sizeof(pc), 0});
 	render_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
 	render_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
 	render_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);
 	deshi__ui_update();
+	render_cmd_end_render_pass(window);
 	g_ui->updating_window = 0;
 }
 
