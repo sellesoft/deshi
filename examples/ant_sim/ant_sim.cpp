@@ -614,6 +614,15 @@ b32 move_entity(Entity* e, vec2i pos){
 }
 FORCE_INLINE b32 move_entity(Entity* e, u32 x, u32 y){ return move_entity(e,Vec2i(x,y)); }
 
+void swap_entities(Entity* e0, Entity* e1) {
+	auto pos0 = e0->pos,
+		 pos1 = e1->pos;
+	set_entity(pos0, e1);
+	set_entity(pos1, e0);
+	e1->pos = pos0;
+	e0->pos = pos1;
+}
+
 //walks the path between two positions to see if there are any entities inbetween
 b32 line_of_sight(vec2i start, vec2i end){
 	vec2i between;
@@ -1019,7 +1028,7 @@ void eval_water(Entity* e){
 		nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
 		move_entity(e, nupos);
 	}
-	
+
 	// TODO(sushi) better water sim so that water equilizes
 	// if(e->water.evaluated == sim.ticks % 2) return;
 	// e->water.evaluated = sim.ticks % 2;

@@ -6055,7 +6055,7 @@ render_init_x(Window* window) {
 		renderSettings.loggingLevel = 4;
 	}
 	
-	renderSettings.loggingLevel = 4;
+	// renderSettings.loggingLevel = 4;
 	
 	// TODO(sushi) this should be moved to an implementation shared between backends
 	memory_pool_init(g_render.pools.descriptor_set_layouts, 8);
