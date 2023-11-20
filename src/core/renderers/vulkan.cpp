@@ -4644,29 +4644,31 @@ render_descriptor_set_update(RenderDescriptorSet* x) {
 }
 
 void
-render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptors) {
+render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptors_) {
 	if(!x->handle) {
 		LogEVk("attempt to write to a descriptor set that has a null handle (did you call render_descriptor_set_update()?)");
 		return;
 	}
 	
-	VkWriteDescriptorSet* writes;
-	array_init(writes, array_count(descriptors), deshi_temp_allocator);
-	VkDescriptorBufferInfo* buffer_infos;
-	array_init(buffer_infos, 1, deshi_temp_allocator);
-	VkDescriptorImageInfo* image_infos;
-	array_init(image_infos, 1, deshi_temp_allocator);
+	auto descriptors = array_from(descriptors_);
+
+	auto writes = array<VkWriteDescriptorSet>::create_with_count(descriptors.count(), deshi_temp_allocator);
+	// NOTE(sushi) these things can't move cause the writes have to point to them so we just allocate them
+	//             with enough space to hold all the descriptors
+	auto buffer_infos = array<VkDescriptorBufferInfo>::create(descriptors.count(), deshi_temp_allocator);
+	auto image_infos = array<VkDescriptorImageInfo>::create(descriptors.count(), deshi_temp_allocator);
 	
-	forI(array_count(descriptors)) {
+	forI(descriptors.count()) {
 		auto d = descriptors[i];
-		auto w = array_push(writes);
+		auto w = writes.ptr + i;
+		*w = {};
 		w->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		w->dstSet = (VkDescriptorSet)x->handle;
 		w->dstBinding = i;
 		w->descriptorCount = 1;
 		switch(d.kind) {
 			case RenderDescriptorType_Uniform_Buffer: {
-				auto b = array_push(buffer_infos);
+				auto b = buffer_infos.push();
 				b->buffer = (VkBuffer)d.buffer.handle->buffer_handle;
 				b-> range = d.buffer.range;
 				b->offset = d.buffer.offset;
@@ -4674,7 +4676,7 @@ render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptor
 				w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
 			case RenderDescriptorType_Combined_Image_Sampler: {
-				auto b = array_push(image_infos);
+				auto b = image_infos.push();
 				b->imageView = (VkImageView)d.image.view->handle;
 				b->sampler = (VkSampler)d.image.sampler->handle;
 				b->imageLayout = render_image_layout_to_vulkan(d.image.layout);
@@ -4684,12 +4686,7 @@ render_descriptor_set_write(RenderDescriptorSet* x, RenderDescriptor* descriptor
 		}
 	}
 	
-	vkUpdateDescriptorSets(device, array_count(writes), writes, 0, 0);
-	
-	// TODO(sushi) no longer necessary when we have module specific temp allocators
-	array_deinit(writes);
-	array_deinit(buffer_infos);
-	array_deinit(image_infos);
+	vkUpdateDescriptorSets(device, writes.count(), writes.ptr, 0, 0);
 }
 
 void
@@ -5124,25 +5121,28 @@ render_image_update(RenderImage* x) {
 }
 
 void
-render_image_upload(RenderImage* image, u8* pixels) {
+render_image_upload(RenderImage* image, u8* pixels, vec2i offset, vec2i extent) {
 	if(!image->handle) {
 		LogE("render", "render_image_upload() called on a RenderImage that has a null handle (did you forget to call render_image_update()?)");
 		return;
 	}
+
+	// NOTE(sushi) vulkan requires the extent being non-zero
+	if(!extent.x || !extent.y) return;
 	
-	VkDeviceSize image_memsize = image->extent.x * image->extent.y * image->extent.z;
+	VkDeviceSize image_memsize = extent.x * extent.y * 4;
 	
 	// create a staging buffer so we can map the pixel data from the CPU
 	BufferVk stage{};
 	create_and_map_buffer(
-						  &stage.buffer, 
-						  &stage.memory, 
-						  &image_memsize, 
-						  (size_t)image_memsize, 
-						  pixels,
-						  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-						  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
-						  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		  &stage.buffer, 
+		  &stage.memory, 
+		  &image_memsize, 
+		  (size_t)image_memsize, 
+		  pixels,
+		  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+		  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	VkCommandBuffer cmdbuf = begin_single_time_commands();
 	
@@ -5167,8 +5167,8 @@ render_image_upload(RenderImage* image, u8* pixels) {
 	region.bufferOffset      = 0;
 	region.bufferRowLength   = 0;
 	region.bufferImageHeight = 0;
-	region.imageOffset       = {0, 0, 0};
-	region.imageExtent       = {(u32)image->extent.x, (u32)image->extent.y, 1};
+	region.imageOffset       = {offset.x, offset.y, 0};
+	region.imageExtent       = {(u32)extent.x, (u32)extent.y, 1};
 	region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel       = 0;
 	region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
@@ -5193,7 +5193,6 @@ render_image_upload(RenderImage* image, u8* pixels) {
 	vkCmdPipelineBarrier(cmdbuf, 
 						 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 						 0,0,0,0,0,1, &barrier);
-	
 	
 	end_single_time_commands(cmdbuf);
 	
@@ -5231,11 +5230,10 @@ render_image_view_update(RenderImageView* x) {
 	vkDestroyImageView(device, (VkImageView)x->handle, allocator);
 	
 	x->handle = (void*)create_image_view(
-										 (VkImage)x->image->handle,
-										 render_format_to_vulkan(x->format),
-										 render_image_view_aspect_to_vulkan(x->aspect_flags),
-										 1
-										 );
+			(VkImage)x->image->handle,
+			render_format_to_vulkan(x->format),
+			render_image_view_aspect_to_vulkan(x->aspect_flags),
+			1);
 	
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)x->handle, (char*)x->debug_name.str);
 }
@@ -5312,8 +5310,8 @@ render_pass_create() {
 VkAttachmentLoadOp
 render_load_op_to_vulkan(RenderAttachmentLoadOp x) {
 	switch(x) {
-		case RenderAttachmentLoadOp_Load: return VK_ATTACHMENT_LOAD_OP_LOAD;
-		case RenderAttachmentLoadOp_Clear: return VK_ATTACHMENT_LOAD_OP_CLEAR;
+		case RenderAttachmentLoadOp_Load:      return VK_ATTACHMENT_LOAD_OP_LOAD;
+		case RenderAttachmentLoadOp_Clear:     return VK_ATTACHMENT_LOAD_OP_CLEAR;
 		case RenderAttachmentLoadOp_Dont_Care: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	}
 	Assert(0);
@@ -5323,7 +5321,7 @@ render_load_op_to_vulkan(RenderAttachmentLoadOp x) {
 VkAttachmentStoreOp
 render_store_op_to_vulkan(RenderAttachmentStoreOp x) {
 	switch(x) {
-		case RenderAttachmentStoreOp_Store: return VK_ATTACHMENT_STORE_OP_STORE;
+		case RenderAttachmentStoreOp_Store:     return VK_ATTACHMENT_STORE_OP_STORE;
 		case RenderAttachmentStoreOp_Dont_Care: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	}
 	Assert(0);
@@ -5470,28 +5468,6 @@ render_get_window_color_image_view(Window* window) {
 	
 	return out;
 }
-
-void
-render_update_window_frame(Window* window, RenderFramebuffer* frame) {
-	auto wininf = (VkWindowInfo*)window->render_info;
-	
-	// NOTE(sushi) for now we just assume that we only have one image
-	//             because that's all we support, but later on this 
-	//             will need to be setup to handle multiple.
-	//             reference the old CreateFrames func to see how we should go about it 
-	
-	Assert(wininf->min_image_count == 1);	
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	Assert(wininf->image_count == 1);
-	VkImage image;
-	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, &image);
-	
-	// The window frame requires a color image for presenting
-	Assert(frame->color_image_view);
-	
-	
-}
-
 
 RenderFramebuffer* 
 render_current_present_frame_of_window(Window* window) {
@@ -5814,7 +5790,7 @@ create_render_pass_and_frames(Window* window) {
 	render_pass_update(render_pass);
 	
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	auto images = array<VkImage>::create_with_count(wininf->image_count);
+	auto images = array<VkImage>::create_with_count(wininf->image_count, deshi_temp_allocator);
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images.ptr);
 	
 	wininf->presentation_frames.recount(wininf->image_count);
@@ -5893,7 +5869,7 @@ recreate_frames(Window* window) {
 	u32 old_image_count = wininf->image_count;
 	
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, 0);
-	auto images = array<VkImage>::create_with_count(wininf->image_count);
+	auto images = array<VkImage>::create_with_count(wininf->image_count, deshi_temp_allocator);
 	vkGetSwapchainImagesKHR(device, wininf->swapchain, &wininf->image_count, images.ptr);
 	
 	// TODO(sushi) I'm not sure if this should ever happen, but if it does and we have less frames
@@ -6079,7 +6055,7 @@ render_init_x(Window* window) {
 		renderSettings.loggingLevel = 4;
 	}
 	
-	renderSettings.loggingLevel = -1;
+	renderSettings.loggingLevel = 4;
 	
 	// TODO(sushi) this should be moved to an implementation shared between backends
 	memory_pool_init(g_render.pools.descriptor_set_layouts, 8);
@@ -6137,10 +6113,8 @@ render_init_x(Window* window) {
 	create_render_pass_and_frames(window);
 	
 	create_sync_objects();
-	// create_descriptor_sets();
 	create_pipeline_cache();
 	setup_pipeline_creation();
-	// create_pipelines();
 	
 	// init shared render
 	memory_pool_init(deshi__render_buffer_pool, 16);

@@ -845,17 +845,17 @@ upload_texture(Texture* texture) {
 	texture->image->samples = RenderSampleCount_1;
 	texture->image->extent = {texture->width, texture->height, 4};
 	render_image_update(texture->image);
-	render_image_upload(texture->image, texture->pixels);
+	render_image_upload(texture->image, texture->pixels, vec2i::ZERO, {texture->width, texture->height});
 
 	texture->image_view = render_image_view_create();
-	texture->image_view->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' image view").fin;
+	texture->image_view->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name_x, "' image view").fin;
 	texture->image_view->image = texture->image;
 	texture->image_view->format = texture->image->format;
 	texture->image_view->aspect_flags = RenderImageViewAspectFlags_Color;
 	render_image_view_update(texture->image_view);
 
 	texture->sampler = render_sampler_create();
-	texture->sampler->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' sampler").fin;
+	texture->sampler->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name_x, "' sampler").fin;
 	texture->sampler->mipmaps = 1;
 	texture->sampler->mag_filter = 
 	texture->sampler->min_filter = texture_filter_to_render(texture->filter);
@@ -895,7 +895,6 @@ upload_texture(Texture* texture) {
 		} break;
 	}
 	render_sampler_update(texture->sampler);
-
 }
 
 Texture*
@@ -1142,6 +1141,29 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 #else
 	memzfree(texture);
 #endif
+}
+
+void 
+assets_texture_update(Texture* texture, vec2i offset, vec2i extent) {	
+	if(!texture) {
+		TextureError("null", "passed a null texture");
+		Assert(0);
+	}
+
+	if(offset.x > texture->width || offset.y > texture->height) {
+		TextureError(texture->name_x, "the given offset ", offset, " is outside the bounds of the given texture.");
+		return;
+	}
+	
+	if(offset.x + extent.x > texture->width || offset.y + extent.y > texture->height) {
+		TextureWarning(texture->name_x, "the given offset ", offset, " plus the given extent ", extent, " go beyond the region of the given texture (size is ", Vec2i(texture->width, texture->height), "). The extent will be clipped to be within the image.");
+		extent.x = Min(texture->width - offset.x, extent.x);
+		extent.y = Min(texture->height - offset.y, extent.y);
+	}
+
+	if(!(extent.x && extent.y)) return;
+
+	render_image_upload(texture->image, texture->pixels + offset.x*offset.y*texture->format*texture->format, offset, extent);
 }
 
 #undef TextureWarning

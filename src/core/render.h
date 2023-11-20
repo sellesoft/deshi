@@ -767,6 +767,10 @@ typedef struct RenderCommand {
 			void* data;
 			RenderPushConstant info;
 		} push_constant;
+
+		struct { // push_descriptor_set
+			RenderDescriptor* descriptors;
+		} push_descriptor_set;
 		
 		struct { // draw_indexed
 			u64 index_count;
@@ -825,17 +829,17 @@ void render_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slop
 
 #if COMPILER_FEATURE_CPP
 namespace render::cmd {
-	FORCE_INLINE void begin_render_pass(Window* window, RenderPass* render_pass, RenderFramebuffer* frame){ render_cmd_begin_render_pass(window, render_pass, frame); }
-	FORCE_INLINE void end_render_pass(Window* window){ render_cmd_end_render_pass(window); }
-	FORCE_INLINE void bind_pipeline(Window* window, RenderPipeline* pipeline){ render_cmd_bind_pipeline(window, pipeline); }
-	FORCE_INLINE void bind_vertex_buffer(Window* window, RenderBuffer* buffer){ render_cmd_bind_vertex_buffer(window, buffer); }
-	FORCE_INLINE void bind_index_buffer(Window* window, RenderBuffer* buffer){ render_cmd_bind_index_buffer(window, buffer); }
-	FORCE_INLINE void bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set){ render_cmd_bind_descriptor_set(window, set_index, descriptor_set); }
-	FORCE_INLINE void push_constant(Window* window, void* data, RenderPushConstant info){ render_cmd_push_constant(window, data, info); }
-	FORCE_INLINE void draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset){ render_cmd_draw_indexed(window, index_count, index_offset, vertex_offset); }
-	FORCE_INLINE void set_viewport(Window* window, vec2 offset, vec2 extent){ render_cmd_set_viewport(window, offset, extent); } 
-	FORCE_INLINE void set_scissor(Window* window, vec2 offset, vec2 extent){ render_cmd_set_scissor(window, offset, extent); }
-	FORCE_INLINE void set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope){ render_cmd_set_depth_bias(window, constant, clamp, slope); }
+FORCE_INLINE void begin_render_pass(Window* window, RenderPass* render_pass, RenderFramebuffer* frame){ render_cmd_begin_render_pass(window, render_pass, frame); }
+FORCE_INLINE void end_render_pass(Window* window){ render_cmd_end_render_pass(window); }
+FORCE_INLINE void bind_pipeline(Window* window, RenderPipeline* pipeline){ render_cmd_bind_pipeline(window, pipeline); }
+FORCE_INLINE void bind_vertex_buffer(Window* window, RenderBuffer* buffer){ render_cmd_bind_vertex_buffer(window, buffer); }
+FORCE_INLINE void bind_index_buffer(Window* window, RenderBuffer* buffer){ render_cmd_bind_index_buffer(window, buffer); }
+FORCE_INLINE void bind_descriptor_set(Window* window, u32 set_index, RenderDescriptorSet* descriptor_set){ render_cmd_bind_descriptor_set(window, set_index, descriptor_set); }
+FORCE_INLINE void push_constant(Window* window, void* data, RenderPushConstant info){ render_cmd_push_constant(window, data, info); }
+FORCE_INLINE void draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset){ render_cmd_draw_indexed(window, index_count, index_offset, vertex_offset); }
+FORCE_INLINE void set_viewport(Window* window, vec2 offset, vec2 extent){ render_cmd_set_viewport(window, offset, extent); } 
+FORCE_INLINE void set_scissor(Window* window, vec2 offset, vec2 extent){ render_cmd_set_scissor(window, offset, extent); }
+FORCE_INLINE void set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope){ render_cmd_set_depth_bias(window, constant, clamp, slope); }
 } // namespace render::cmd
 #endif
 
@@ -922,7 +926,7 @@ void render_image_update(RenderImage* x);
 //             so the user has more flexibility in modifying 
 //             render images
 //             or just make it so that this takes ranges
-void render_image_upload(RenderImage* x, u8* pixels);
+void render_image_upload(RenderImage* x, u8* pixels, vec2i offset, vec2i extent);
 
 // Deallocates the given render image and frees any resources
 // allocated for it in the backend.
