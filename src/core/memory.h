@@ -36,7 +36,7 @@ References:
 #include "kigu/node.h"
 StartLinkageC();
 
-#define MEMORY_CHECK_HEAPS BUILD_INTERNAL
+#define MEMORY_CHECK_HEAPS false // BUILD_INTERNAL
 #define MEMORY_TRACK_ALLOCS false
 
 #define MEMORY_PRINT_ARENA_CHUNKS false

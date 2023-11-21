@@ -155,6 +155,7 @@ typedef struct RenderSettings{
 	bool tempMeshOnTop  = false;
 }RenderSettings;
 
+// NOTE(sushi) remove and replace with a ui vertex type
 typedef struct Vertex2{
 	vec2 pos;
 	vec2 uv;
@@ -1313,39 +1314,39 @@ void render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov,
 
 #if COMPILER_FEATURE_CPP
 namespace render::temp {
-	
-	FORCE_INLINE void init(Window* window, u32 max_vertexes){ render_temp_init(window, max_vertexes); }
-	FORCE_INLINE void clear(){ render_temp_clear(); }
-	FORCE_INLINE void update_camera(vec3 position, vec3 target){ render_temp_update_camera(position, target); }
-	FORCE_INLINE void set_camera_projection(mat4 proj){ render_temp_set_camera_projection(proj); }
-	FORCE_INLINE void line(vec3 start, vec3 end, color c = Color_White){ render_temp_line(start, end, c); };
-	FORCE_INLINE void triangle(vec3 p0, vec3 p1, vec3 p2, color c = Color_White, b32 filled = false){ 
-		if(filled) render_temp_triangle_filled(p0,p1,p2,c);
-		else render_temp_triangle(p0,p1,p2,c);
-	};
-	FORCE_INLINE void quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c = Color_White, b32 filled = false){
-		if(filled) render_temp_quad_filled(p0,p1,p2,p3,c);
-		else render_temp_quad(p0,p1,p2,p3,c);
-	}
-	FORCE_INLINE void poly(vec3* points, color c = Color_White, b32 filled = false){
-		if(filled) render_temp_poly_filled(points, c);
-		else render_temp_poly(points, c);
-	}
-	FORCE_INLINE void circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c = Color_White, b32 filled = false){
-		if(filled) render_temp_circle_filled(pos, rot, radius, subdivisions, c);
-		else render_temp_circle(pos, rot, radius, subdivisions, c);
-	}
-	FORCE_INLINE void box(mat4 transform, color c = Color_White, b32 filled = false){
-		if(filled) render_temp_box_filled(transform, c);
-		else render_temp_box(transform, c);
-	}
-	FORCE_INLINE void sphere(vec3 pos, f32 radius, u32 segments = 3, u32 rings = 3, color c = Color_White, b32 filled = false){
-		if(filled) render_temp_sphere_filled(pos, radius, segments, rings, c);
-		else render_temp_sphere(pos, radius, segments, rings, c);
-	}
-	FORCE_INLINE void frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c = Color_White){
-		render_temp_frustrum(position, target, aspect_ratio, fov, near_z, far_z, c);
-	}
+
+FORCE_INLINE void init(Window* window, u32 max_vertexes){ render_temp_init(window, max_vertexes); }
+FORCE_INLINE void clear(){ render_temp_clear(); }
+FORCE_INLINE void update_camera(vec3 position, vec3 target){ render_temp_update_camera(position, target); }
+FORCE_INLINE void set_camera_projection(mat4 proj){ render_temp_set_camera_projection(proj); }
+FORCE_INLINE void line(vec3 start, vec3 end, color c = Color_White){ render_temp_line(start, end, c); };
+FORCE_INLINE void triangle(vec3 p0, vec3 p1, vec3 p2, color c = Color_White, b32 filled = false){ 
+	if(filled) render_temp_triangle_filled(p0,p1,p2,c);
+	else render_temp_triangle(p0,p1,p2,c);
+};
+FORCE_INLINE void quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c = Color_White, b32 filled = false){
+	if(filled) render_temp_quad_filled(p0,p1,p2,p3,c);
+	else render_temp_quad(p0,p1,p2,p3,c);
+}
+FORCE_INLINE void poly(vec3* points, color c = Color_White, b32 filled = false){
+	if(filled) render_temp_poly_filled(points, c);
+	else render_temp_poly(points, c);
+}
+FORCE_INLINE void circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions, color c = Color_White, b32 filled = false){
+	if(filled) render_temp_circle_filled(pos, rot, radius, subdivisions, c);
+	else render_temp_circle(pos, rot, radius, subdivisions, c);
+}
+FORCE_INLINE void box(mat4 transform, color c = Color_White, b32 filled = false){
+	if(filled) render_temp_box_filled(transform, c);
+	else render_temp_box(transform, c);
+}
+FORCE_INLINE void sphere(vec3 pos, f32 radius, u32 segments = 3, u32 rings = 3, color c = Color_White, b32 filled = false){
+	if(filled) render_temp_sphere_filled(pos, radius, segments, rings, c);
+	else render_temp_sphere(pos, radius, segments, rings, c);
+}
+FORCE_INLINE void frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c = Color_White){
+	render_temp_frustrum(position, target, aspect_ratio, fov, near_z, far_z, c);
+}
 	
 } // namespace render::temp
 #endif

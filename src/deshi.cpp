@@ -199,7 +199,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 #define _UNICODE
 
 #ifdef BUILD_SLOW
-#define DEBUG(code) code
+#define DEBUG(code) do { code } while(0);
 #else
 #define DEBUG(code)
 #endif
@@ -312,6 +312,8 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/networking.h"
 #include "core/platform.h"
 #include "core/render.h"
+#include "core/graphics.h"
+#include "core/scene.h"
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
@@ -430,8 +432,10 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/memory.cpp"
 #include "core/console.cpp"
 #include "core/assets.cpp"
+#include "core/scene.cpp"
 #include "core/ui.cpp"
 #include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
+
 
 //// global definitions ////
 local Time deshi_time;
@@ -450,6 +454,9 @@ local uiContext deshi_ui{};
 uiContext *g_ui = &deshi_ui;
 local uiStyle deshi_ui_initial_style{};
 uiStyle *ui_initial_style = &deshi_ui_initial_style;
+
+local GraphicsGlobal deshi_graphics;
+GraphicsGlobal* g_graphics = &deshi_graphics;
 
 Window *g_window = 0;
 
