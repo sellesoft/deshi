@@ -1803,28 +1803,14 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	u32 retries = 0;
 	u32 max_retries = 1000;
 	while(allocation == 0 && retries < max_retries){
-#if   DESHI_WINDOWS
-		allocation = (u8*)VirtualAlloc((LPVOID)base_address, (SIZE_T)total_size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-#elif DESHI_LINUX //DESHI_WINDOWS
-		// TODO(sushi) confirm that MAP_PRIVATE is the behavoir we want
-		allocation = (u8*)mmap(base_address, total_size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
-		if((s64)allocation == -1) {
-			dstr8 o = get_errno_print(errno, "memory", __func__, {0});
-			printf("%s", (char*)o.str);
-			dstr8_deinit(&o);
-			allocation = 0;
-		}
-#elif DESHI_MAC   //DESHI_LINUX
-#  error not implemented
-		allocation = (u8*)calloc(1, total_size);
-#endif            //DESHI_MAC
+		allocation = (u8*)platform_allocate_memory(base_address, total_size);
 		retries++;
 		if(!allocation){
 			base_address = 0; //give up on specifying the address if we failed since it's a likely cause
 			printf("[\x1b[31mMEMORY-ERROR\x1b[0m] Failed to allocate memory from OS. Retrying (%u)\n", retries);
 		}
 	}
-	Assert(allocation, "Failed to allocate memory from the OS");
+	AssertAlways(allocation, "Failed to allocate memory from the OS");
 	
 	g_memory = (MemoryContext*)allocation;
 	

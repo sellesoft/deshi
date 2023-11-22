@@ -649,7 +649,7 @@ platform_cursor_position(s32 x, s32 y){DPZoneScoped;
 }
 
 Process
-platform_get_process_by_name(str8 name){
+platform_get_process_by_name(str8 name){DPZoneScoped;
 	Process p{0};
 	
 	PROCESSENTRY32 entry;
@@ -668,17 +668,35 @@ platform_get_process_by_name(str8 name){
 }
 
 u64 
-platform_process_read(Process p, upt address, void* out, upt size){
+platform_process_read(Process p, upt address, void* out, upt size){DPZoneScoped;
 	if(ReadProcessMemory(p.handle, (LPCVOID)address, out, size, 0)) return 1;
 	win32_log_last_error("ReadProcessMemory");
 	return 0;
 }
 
 u64 
-platform_process_write(Process p, upt address, void* data, upt size){
+platform_process_write(Process p, upt address, void* data, upt size){DPZoneScoped;
 	if(WriteProcessMemory(p.handle, (LPVOID)address, data, size, 0)) return 1;
 	win32_log_last_error("WriteProcessMemory");
 	return 0;
+}
+
+void*
+platform_allocate_memory(void* address, upt size){DPZoneScoped;
+	void* result = (void*)::VirtualAlloc((LPVOID)address, (SIZE_T)size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+	if(result == 0){
+		win32_log_last_error("VirtualAlloc");
+	}
+	return result;
+}
+
+b32
+platform_deallocate_memory(void* address, upt size){DPZoneScoped;
+	BOOL result = ::VirtualFree(address, 0, MEM_RELEASE);
+	if(result == 0){
+		win32_log_last_error("VirtualFree");
+	}
+	return (b32)result;
 }
 
 
