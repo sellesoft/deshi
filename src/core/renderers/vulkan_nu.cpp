@@ -67,6 +67,13 @@ struct QueueFamilyIndexesX {
 	u32 present_family;
 };
 
+struct BufferVk{
+	VkBuffer               buffer;
+	VkDeviceMemory         memory;
+	VkDeviceSize           size; //size of data, not allocation
+	VkDescriptorBufferInfo descriptor;
+};
+
 local QueueFamilyIndexesX physical_queue_families = {};
 
 local VkSemaphore   vk_semaphore_image_acquired = VK_NULL_HANDLE;
@@ -323,6 +330,19 @@ graphics_blend_factor_to_vulkan(GraphicsBlendFactor x) {
 	return {};
 }
 
+VkBlendOp
+graphics_blend_op_to_vulkan(GraphicsBlendOp x) {
+	switch(x) {
+		case GraphicsBlendOp_Add:         return VK_BLEND_OP_ADD;
+		case GraphicsBlendOp_Max:         return VK_BLEND_OP_MAX;
+		case GraphicsBlendOp_Min:         return VK_BLEND_OP_MIN;
+		case GraphicsBlendOp_Sub:         return VK_BLEND_OP_SUBTRACT;
+		case GraphicsBlendOp_Reverse_Sub: return VK_BLEND_OP_REVERSE_SUBTRACT;
+	}
+	VulkanFatal("invalid GraphicsBlendOp: ", (u32)x);
+	return {};
+}
+
 VkFormat
 graphics_format_to_vulkan(GraphicsFormat x) {
 	switch(x) {
@@ -430,6 +450,7 @@ VkPipelineLayout&      get_handle(GraphicsPipelineLayout* x)      { return (VkPi
 VkPipeline&            get_handle(GraphicsPipeline* x)            { return (VkPipeline&)GRAPHICS_INTERNAL(x).handle; }
 VkRenderPass&          get_handle(GraphicsRenderPass* x)          { return (VkRenderPass&)GRAPHICS_INTERNAL(x).handle; }
 VkFramebuffer&         get_handle(GraphicsFramebuffer* x)         { return (VkFramebuffer&)GRAPHICS_INTERNAL(x).handle; }
+VkCommandBuffer&       get_handle(GraphicsCommandBuffer* x)       { return (VkCommandBuffer&)GRAPHICS_INTERNAL(x).handle; }
 
 // helpers for various things done several times
 
@@ -507,6 +528,122 @@ create_or_resize_buffer(VkBuffer* buffer,
 	*buffer_size = aligned_buffer_size;
 }
 
+local void
+create_and_map_buffer(VkBuffer* buffer,
+				      VkDeviceMemory* buffer_memory,
+					  VkDeviceSize* buffer_size,
+					  size_t new_size,
+					  void* data,
+					  VkBufferUsageFlags usage,
+					  VkMemoryPropertyFlags properties) {
+	vkDestroyBuffer(vk_device, *buffer, vk_allocator);
+	vkFreeMemory(vk_device, *buffer_memory, vk_allocator);
+	
+	// create buffer
+	VkBufferCreateInfo buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	buffer_info.       size = new_size;
+	buffer_info.      usage = usage;
+	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	auto result = vkCreateBuffer(vk_device, &buffer_info, vk_allocator, buffer);
+	VulkanAssertVk(result, "failed to create buffer.");
+	
+	VkMemoryRequirements req;
+	vkGetBufferMemoryRequirements(vk_device, *buffer, &req);
+	
+	// allocate buffer
+	VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	alloc_info. allocationSize = req.size;
+	alloc_info.memoryTypeIndex = find_memory_type(req.memoryTypeBits, properties);
+	result = vkAllocateMemory(vk_device, &alloc_info, vk_allocator, buffer_memory);
+	VulkanAssertVk(result, "failed to allocate memory.");
+	
+	if(data != 0) {
+		void* mapped = 0;
+		result = vkMapMemory(vk_device, *buffer_memory, 0, new_size, 0, &mapped);
+		VulkanAssertVk(result, "failed to map memory.");
+
+		CopyMemory(mapped, data, new_size);
+		
+		if(!HasFlag(properties, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+			VkMappedMemoryRange mapped_range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+			mapped_range.memory = *buffer_memory;
+			mapped_range.offset = 0;
+			mapped_range.  size = new_size;
+			vkFlushMappedMemoryRanges(vk_device, 1, &mapped_range);
+			
+		}
+		vkUnmapMemory(vk_device, *buffer_memory);
+	}
+	
+	vkBindBufferMemory(vk_device, *buffer, *buffer_memory, 0);
+	*buffer_size = new_size;
+}
+
+
+void
+create_image(u32 width, u32 height,
+		     u32 mip_levels,
+			 VkSampleCountFlagBits num_samples,
+			 VkFormat format,
+			 VkImageTiling tiling, 
+			 VkImageUsageFlags usage,
+			 VkMemoryPropertyFlags properties,
+			 VkImage* image,
+			 VkDeviceMemory* image_memory) {
+	VulkanInfo("creating image.");
+	
+	VkImageCreateInfo image_info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+	image_info.imageType     = VK_IMAGE_TYPE_2D;
+	image_info.extent.width  = width;
+	image_info.extent.height = height;
+	image_info.extent.depth  = 1;
+	image_info.mipLevels     = mip_levels;
+	image_info.arrayLayers   = 1;
+	image_info.format        = format;
+	image_info.tiling        = tiling;
+	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image_info.usage         = usage;
+	image_info.samples       = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) more samples
+	image_info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+	auto result = vkCreateImage(vk_device, &image_info, vk_allocator, image); 
+	VulkanAssertVk(result, "failed to create image");
+	
+	VkMemoryRequirements mem_reqs;
+	vkGetImageMemoryRequirements(vk_device, *image, &mem_reqs);
+	
+	VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	alloc_info.allocationSize = mem_reqs.size;
+	alloc_info.memoryTypeIndex = find_memory_type(mem_reqs.memoryTypeBits, properties);
+	result = vkAllocateMemory(vk_device, &alloc_info, vk_allocator, image_memory); 
+	VulkanAssertVk(result, "failed to allocate image memory");
+	
+	vkBindImageMemory(vk_device, *image, *image_memory, 0);
+}
+
+VkImageView
+create_image_view(VkImage image, 
+		          VkFormat format, 
+				  VkImageAspectFlags aspect_flags, 
+				  u32 mip_levels) {
+	VulkanInfo("creating image view.");
+	
+	VkImageViewCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+	info.image    = image;
+	info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	info.format   = format;
+	info.subresourceRange.aspectMask     = aspect_flags;
+	info.subresourceRange.baseMipLevel   = 0;
+	info.subresourceRange.levelCount     = mip_levels;
+	info.subresourceRange.baseArrayLayer = 0;
+	info.subresourceRange.layerCount     = 1;
+	
+	VkImageView view{};
+	auto result = vkCreateImageView(vk_device, &info, vk_allocator, &view);
+	VulkanAssertVk(result, "failed to create image view.");
+
+	return view;
+}
+
 local VkCommandBuffer
 begin_single_time_commands() {
 	VkCommandBuffer cmdbuf;
@@ -535,6 +672,62 @@ end_single_time_commands(VkCommandBuffer cmdbuf) {
 	
 	vkQueueWaitIdle(vk_graphics_queue);
 	vkFreeCommandBuffers(vk_device, vk_command_pool, 1, &cmdbuf);
+}
+
+local VkPipelineShaderStageCreateInfo
+load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
+	if(!source) return VkPipelineShaderStageCreateInfo{};
+	VulkanInfo("compiling shader: ", name);
+
+	Stopwatch watch = start_stopwatch();
+	
+	//try to compile from GLSL to SPIR-V binary
+	shaderc_compilation_result_t compiled;
+	if      (stage == VK_SHADER_STAGE_VERTEX_BIT){
+		compiled = shaderc_compile_into_spv(vk_shader_compiler, (const char*)source.str, source.count, shaderc_glsl_vertex_shader,
+											(const char*)name.str, "main", vk_shader_compiler_options);
+	}else if(stage == VK_SHADER_STAGE_FRAGMENT_BIT){
+		compiled = shaderc_compile_into_spv(vk_shader_compiler, (const char*)source.str, source.count, shaderc_glsl_fragment_shader,
+											(const char*)name.str, "main", vk_shader_compiler_options);
+	}else if(stage == VK_SHADER_STAGE_GEOMETRY_BIT){
+		compiled = shaderc_compile_into_spv(vk_shader_compiler, (const char*)source.str, source.count, shaderc_glsl_geometry_shader,
+											(const char*)name.str, "main", vk_shader_compiler_options);
+	}else{
+		Assert(!"unhandled shader stage");
+		return VkPipelineShaderStageCreateInfo{};
+	}
+	
+	//check for compile errors
+	if(!compiled){
+		LogE("vulkan",name,": Shader compiler returned a null result");
+		return VkPipelineShaderStageCreateInfo{};
+	}
+	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success){
+		LogE("vulkan",shaderc_result_get_error_message(compiled));
+		return VkPipelineShaderStageCreateInfo{};
+	}
+	defer{ shaderc_result_release(compiled); };
+	
+	//create or overwrite .spv files
+	file_write_simple(str8_concat3(STR8("data/shaders/"),name,str8_lit(".spv"), deshi_temp_allocator), (void*)shaderc_result_get_bytes(compiled), shaderc_result_get_length(compiled));
+	
+	//create shader module
+	VkShaderModule shaderModule{};
+	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+	moduleInfo.codeSize = shaderc_result_get_length(compiled);
+	moduleInfo.pCode    = (u32*)shaderc_result_get_bytes(compiled);
+	auto result = vkCreateShaderModule(vk_device, &moduleInfo, vk_allocator, &shaderModule); 
+	VulkanAssertVk(result, "failed to create shader module.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, (const char*)to_dstr8v(deshi_temp_allocator, "Shader Module ",name).str);
+	
+	//setup shader stage create info
+	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+	shaderStage.stage  = stage;
+	shaderStage.pName  = "main";
+	shaderStage.module = shaderModule;
+	
+	VulkanInfo("finished compiling shader in ", peek_stopwatch(watch), "ms.");
+	return shaderStage;
 }
 
 
@@ -884,7 +1077,7 @@ create_logical_device(Window* window) {
 	create_info.enabledExtensionCount   = (u32)ArrayCount(device_extensions);
 	create_info.ppEnabledExtensionNames = device_extensions;
 	
-	if(renderSettings.debugging) {
+	if(is_debugging) {
 		create_info.enabledLayerCount   = (u32)ArrayCount(validation_layers);
 		create_info.ppEnabledLayerNames = validation_layers;
 	} else {
@@ -1037,16 +1230,12 @@ create_swapchain(Window* window) {
 	}
 	
 	if(immediate) {
-		renderSettings.vsync = VSyncType_Immediate;
 		wininf->present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 	} else if(mailbox) {
-		renderSettings.vsync = VSyncType_Mailbox;
 		wininf->present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
 	} else if(fifo_relaxed) {
-		renderSettings.vsync = VSyncType_FifoRelaxed;
 		wininf->present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 	} else {
-		renderSettings.vsync = VSyncType_Fifo;
 		wininf->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	}
 	
@@ -1614,6 +1803,808 @@ graphics_buffer_flush(GraphicsBuffer* x_) {
 	auto result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 	VulkanAssertVk(result, "failed to flush memory of buffer '", x->debug_name, "' (", (void*)x, ").");
 }
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @image
+
+GraphicsImage*
+graphics_image_allocate() {
+	return memory_pool_push(g_graphics->pools.images);
+}
+
+void
+graphics_image_update(GraphicsImage* x) {
+	VulkanAssert(x, "passed null GraphicsImage pointer.");
+
+	VulkanInfo("updating a GraphicsImage (name: ", x->debug_name, "; addr: ", (void*)x, ").");
+
+	vkDestroyImage(vk_device, get_handle(x), vk_allocator);
+	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
+
+	create_image(
+		 x->extent.x, x->extent.y, 
+		 1, 
+		 graphics_sample_count_to_vulkan(x->samples),
+		 graphics_format_to_vulkan(x->format),
+		 (x->linear_tiling? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
+		 graphics_image_usage_to_vulkan(x->usage),
+		 graphics_memory_properties_to_vulkan(x->memory_properties),
+		 &get_handle(x),
+		 &get_memory_handle(x));
+
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_IMAGE, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void
+graphics_image_destroy(GraphicsImage* x) {
+	VulkanAssert(x, "passed null GraphicsImage pointer.");
+	VulkanInfo("destroying image '", x->debug_name, "'");
+	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
+	vkDestroyImage(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsImage));
+}
+
+void
+graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
+	VulkanAssert(x, "passed null GraphicsImage pointer.");
+
+	if(!(get_handle(x) && get_memory_handle(x))) {
+		VulkanError("one of the backend handles is null indicating the object has been deleted, is corrupt, or has not been updated (graphics_image_update()) yet.");
+		return;
+	}
+
+	if(!extent.y || !extent.x) {
+#if BUILD_SLOW
+		VulkanWarning("called with an extent ", extent, " with 0 in some axis.");
+#endif
+		return;
+	}
+
+	VkDeviceSize image_memsize = extent.x * extent.y * 4;
+	
+	// create a staging buffer so we can map the pixel data from the CPU
+	BufferVk stage{};
+	create_and_map_buffer(
+		  &stage.buffer, 
+		  &stage.memory, 
+		  &image_memsize, 
+		  (size_t)image_memsize, 
+		  pixels,
+		  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+		  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	VkCommandBuffer cmdbuf = begin_single_time_commands();
+	
+	VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+	barrier.srcAccessMask       = 0;
+	barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image               = get_handle(x);
+	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel   = 0;
+	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
+	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	vkCmdPipelineBarrier(cmdbuf, 
+						 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						 0,0,0,0,0,1, &barrier);
+	
+	VkBufferImageCopy region{};
+	region.bufferOffset      = 0;
+	region.bufferRowLength   = 0;
+	region.bufferImageHeight = 0;
+	region.imageOffset       = {offset.x, offset.y, 0};
+	region.imageExtent       = {(u32)extent.x, (u32)extent.y, 1};
+	region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel       = 0;
+	region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	region.imageSubresource.layerCount     = 1; //NOTE(delle) use image flags here?
+	vkCmdCopyBufferToImage(cmdbuf, 
+						   stage.buffer, get_handle(x),
+						   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+						   1, &region);
+	
+	barrier.srcAccessMask       = 0;
+	barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image               = get_handle(x);
+	barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel   = 0;
+	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
+	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	vkCmdPipelineBarrier(cmdbuf, 
+						 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						 0,0,0,0,0,1, &barrier);
+	
+	end_single_time_commands(cmdbuf);
+	
+	vkDestroyBuffer(vk_device, stage.buffer, vk_allocator);
+	vkFreeMemory(vk_device, stage.memory, vk_allocator);
+}
+
+GraphicsImageView* 
+graphics_image_view_allocate() {
+	return memory_pool_push(g_graphics->pools.image_views);
+}
+
+void 
+graphics_image_view_update(GraphicsImageView* x) {
+	VulkanAssert(x, "passed null GraphicsImageView pointer.");
+	VulkanInfo("updating image view '", x->debug_name, "'.");
+	
+	vkDestroyImageView(vk_device, get_handle(x), vk_allocator);
+	
+	get_handle(x) = create_image_view(get_handle(x->image), graphics_format_to_vulkan(x->format), graphics_image_view_aspect_to_vulkan(x->aspect_flags), 1);
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_image_view_destroy(GraphicsImageView* x) {
+	VulkanAssert(x, "passed null GraphicsImageView pointer.");
+	VulkanInfo("destroying image view '", x->debug_name, "'.");
+	vkDestroyImageView(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsImageView));
+	memory_pool_delete(g_graphics->pools.image_views, x);
+}
+
+GraphicsSampler* 
+graphics_sampler_allocate() {
+	return memory_pool_push(g_graphics->pools.samplers);
+}
+
+void 
+graphics_sampler_update(GraphicsSampler* x) {
+	VulkanAssert(x, "passed null GraphicsSampler pointer");
+	VulkanInfo("updating sampler '", x->debug_name, "'.");
+
+	VkSamplerCreateInfo info{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+	
+	info.magFilter = graphics_filter_to_vulkan(x->mag_filter);
+	info.minFilter = graphics_filter_to_vulkan(x->min_filter);
+	info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; // TODO)(sushi) add this to the api
+	info.addressModeU = graphics_sampler_address_mode_to_vulkan(x->address_mode_u);
+	info.addressModeV = graphics_sampler_address_mode_to_vulkan(x->address_mode_v);
+	info.addressModeW = graphics_sampler_address_mode_to_vulkan(x->address_mode_w);
+	info.mipLodBias = 0.f;
+	info.anisotropyEnable = VK_FALSE; // TODO(sushi) add to api
+	info.unnormalizedCoordinates = VK_FALSE;
+	info.compareEnable = VK_FALSE; // TODO(sushi) possibly add to api
+	info.minLod = 0.f; // TODO(sushi) add to api
+	info.maxLod = 0.f;
+	
+	auto result = vkCreateSampler(vk_device, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create sampler.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_SAMPLER, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_sampler_destroy(GraphicsSampler* x) {
+	VulkanAssert(x, "passed null GraphicsSampler pointer.");
+	VulkanInfo("destroying sampler '", x->debug_name, "'.");
+	vkDestroySampler(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsSampler));
+	memory_pool_delete(g_graphics->pools.samplers, x);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @descriptor
+
+
+GraphicsDescriptorSetLayout* 
+graphics_descriptor_set_layout_allocate() {
+	return memory_pool_push(g_graphics->pools.descriptor_set_layouts);
+}
+
+void 
+graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x) {
+	VulkanAssert(x, "passed a null GraphicsDescriptorSetLayout pointer.");
+	VulkanInfo("updating descriptor set layout '", x->debug_name, "'.");
+
+	auto bindings = array_from(x->bindings);
+
+	VkDescriptorSetLayoutCreateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+	if(!bindings.ptr) {
+		info.pBindings = 0;
+		info.bindingCount = 0;
+		auto result = vkCreateDescriptorSetLayout(vk_device, &info, vk_allocator, &get_handle(x));
+		VulkanAssertVk(result, "failed to create descriptor set layout (also, the provided GraphicsDescriptorSetLayout has a null binding array, so that may be a cause!).");
+	}
+
+	auto bindings_out = array<VkDescriptorSetLayoutBinding>::create_with_count(bindings.count(), temp_allocator);
+	info.pBindings = bindings_out.ptr;
+	info.bindingCount = bindings.count();
+
+	forI(bindings.count()) {
+		auto b = bindings[i];
+		switch(b.type) {
+			case RenderDescriptorType_Combined_Image_Sampler: {
+				bindings_out[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			} break;
+			case RenderDescriptorType_Uniform_Buffer: {
+				bindings_out[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			} break;
+		}
+		bindings_out[i].stageFlags = graphics_shader_stage_to_vulkan(b.shader_stages);
+		bindings_out[i].binding = b.n;
+		bindings_out[i].descriptorCount = 1;
+	}
+
+	auto result = vkCreateDescriptorSetLayout(vk_device, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create descriptor set layout.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x) {
+	vkDestroyDescriptorSetLayout(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsDescriptorSetLayout));
+}
+
+GraphicsDescriptorSet* 
+graphics_descriptor_set_create() {
+	return memory_pool_push(g_graphics->pools.descriptor_sets);
+}
+
+void 
+graphics_descriptor_set_update(GraphicsDescriptorSet* x) {
+	VulkanAssert(x, "passed a null GraphicsDescriptorSet pointer.");
+	VulkanInfo("updating descriptor set '", x->debug_name, "'.");
+
+	if(!x->layouts) {
+		VulkanError("given descriptor set has a null layouts array. At least a single layout is required.");
+		return;
+	}
+
+	auto layouts = array_from(x->layouts);
+	auto layouts_out = array<VkDescriptorSetLayout>::create_with_count(layouts.count(), temp_allocator);
+	
+	forI(layouts.count()) {
+		layouts_out[i] = get_handle(layouts[i]);
+	}
+
+	VkDescriptorSetAllocateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	info.descriptorPool = vk_descriptor_pool;
+	info.pSetLayouts = layouts_out.ptr;
+	info.descriptorSetCount = 1;
+
+	auto result = vkAllocateDescriptorSets(vk_device, &info, &get_handle(x));
+	VulkanAssertVk(result, "failed to allocate descriptor set.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_descriptor_set_destroy(GraphicsDescriptorSet* x) {
+	VulkanAssert(x, "passed a null GraphicsDescriptorSet pointer.");
+	VulkanInfo("destroying descriptor set '", x->debug_name, "'.");
+	vkFreeDescriptorSets(vk_device, vk_descriptor_pool, 1, &get_handle(x));
+	ZeroMemory(x, sizeof(GraphicsDescriptorSet));
+}
+
+void 
+graphics_descriptor_set_write(GraphicsDescriptorSet* x, u32 binding, GraphicsDescriptor descriptor) {
+	VulkanAssert(x, "passed a null GraphicsDescriptorSet pointer.");
+	VulkanInfo("writing a descriptor to descriptor set '", x->debug_name, "'. Binding: ", binding);
+	
+	if(!get_handle(x)) {
+		VulkanError("given descriptor set has a null backend pointer, indicating deletion, corruption, or the descriptor set has not been updated yet (graphics_descriptor_set_update()).");
+		return;
+	}
+
+	VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+	write.dstSet = get_handle(x);
+	write.dstBinding = binding;
+	write.descriptorCount = 1;
+
+	union {
+		VkDescriptorBufferInfo buffer_info;
+		VkDescriptorImageInfo image_info;
+	};
+
+	switch(descriptor.type) {
+		case GraphicsDescriptorType_Uniform_Buffer: {
+			buffer_info.buffer = get_handle(descriptor.ubo.buffer);
+			buffer_info.range = descriptor.ubo.range;
+			buffer_info.offset = descriptor.ubo.offset;
+			write.pBufferInfo = &buffer_info;
+			write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		} break;
+		case GraphicsDescriptorType_Combined_Image_Sampler: {
+			image_info.imageView = get_handle(descriptor.image.view);
+			image_info.sampler = get_handle(descriptor.image.sampler);
+			image_info.imageLayout = graphics_image_layout_to_vulkan(descriptor.image.layout);
+			write.pImageInfo = &image_info;
+			write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		} break;
+	}
+
+	vkUpdateDescriptorSets(vk_device, 1, &write, 0, 0);
+}
+
+void 
+graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor* descriptors_) {
+	VulkanAssert(x, "passed null GraphicsDescriptorSet pointer.");
+	VulkanAssert(descriptors_, "passed null descriptors array.");
+	VulkanInfo("writing descriptor array to descriptor set '", x->debug_name, "'.");
+
+	if(!get_handle(x)) {
+		VulkanError("given descriptor set has a null backend pointer, indicating deletion, corruption, or the descriptor set has not been updated yet (graphics_descriptor_set_update()).");
+		return;
+	}
+
+	auto descriptors = array_from(descriptors_);
+
+	auto writes = array<VkWriteDescriptorSet>::create_with_count(descriptors.count(), deshi_temp_allocator);
+	// NOTE(sushi) these things can't move cause the writes have to point to them so we just allocate them
+	//             with enough space to hold all the descriptors
+	auto buffer_infos = array<VkDescriptorBufferInfo>::create(descriptors.count(), deshi_temp_allocator);
+	auto image_infos = array<VkDescriptorImageInfo>::create(descriptors.count(), deshi_temp_allocator);
+	
+	forI(descriptors.count()) {
+		auto d = descriptors[i];
+		auto w = writes.ptr + i;
+		*w = {};
+		w->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		w->dstSet = get_handle(x);
+		w->dstBinding = i;
+		w->descriptorCount = 1;
+		switch(d.type) {
+			case GraphicsDescriptorType_Uniform_Buffer: {
+				auto b = buffer_infos.push();
+				b->buffer = get_handle(d.ubo.buffer);
+				b-> range = d.ubo.range;
+				b->offset = d.ubo.offset;
+				w->pBufferInfo = b;
+				w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			} break;
+			case GraphicsDescriptorType_Combined_Image_Sampler: {
+				auto b = image_infos.push();
+				b->imageView = get_handle(d.image.view);
+				b->sampler = get_handle(d.image.sampler);
+				b->imageLayout = graphics_image_layout_to_vulkan(d.image.layout);
+				w->pImageInfo = b;
+				w->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			} break;
+		}
+	}
+	
+	vkUpdateDescriptorSets(vk_device, writes.count(), writes.ptr, 0, 0);	
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @pipeline
+
+
+GraphicsPipelineLayout* 
+graphics_pipeline_layout_allocate() {
+	return memory_pool_push(g_graphics->pools.pipeline_layouts);
+}
+
+void 
+graphics_pipeline_layout_update(GraphicsPipelineLayout* x) {
+	VulkanAssert(x, "passed a null GraphicsPipelineLayout pointer.");
+	VulkanInfo("updating pipeline layout '", x->debug_name, "'.");
+
+	vkDestroyPipelineLayout(vk_device, get_handle(x), vk_allocator);
+	
+	auto layouts = array_from(x->descriptor_layouts);
+	auto constants = array_from(x->push_constants);
+	
+	auto layouts_out = array<VkDescriptorSetLayout>::create_with_count(layouts.count(), temp_allocator);
+	forI(layouts.count()) {
+		layouts_out[i] = get_handle(layouts[i]);
+	}
+
+	auto ranges = array<VkPushConstantRange>::create_with_count(constants.count(), temp_allocator);
+	forI(constants.count()) {
+		ranges[i].size = x->push_constants[i].size;
+		ranges[i].offset = x->push_constants[i].offset;
+		ranges[i].stageFlags = graphics_shader_stage_to_vulkan(x->push_constants[i].shader_stages);
+	}
+
+	VkPipelineLayoutCreateInfo info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	info.        setLayoutCount = layouts_out.count();
+	info.           pSetLayouts = layouts_out.ptr;
+	info.pushConstantRangeCount = ranges.count();
+	info.   pPushConstantRanges = ranges.ptr;
+	auto result = vkCreatePipelineLayout(vk_device, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create pipeline layout.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_pipeline_layout_destroy(GraphicsPipelineLayout* x) {
+	VulkanAssert(x, "passed a null GraphicsPipelineLayout pointer.");
+	VulkanInfo("destroying pipeline layout '", x->debug_name, "'.");
+	vkDestroyPipelineLayout(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsPipelineLayout));
+}
+
+GraphicsPipeline* 
+graphics_pipeline_allocate() {
+	return memory_pool_push(g_graphics->pools.pipelines);
+}
+
+void 
+graphics_pipeline_update(GraphicsPipeline* x) {
+	VulkanAssert(x, "passed null GraphicsPipeline pointer");
+	VulkanInfo("updating pipeline '", x->debug_name, "'.");
+
+	if(!x->shader_stages) {
+		VulkanError("null shader stages array. A pipeline is required to at least define a vertex shader.");
+		return;
+	}
+
+	auto shader_stages = array<VkPipelineShaderStageCreateInfo>::create_with_count(array_count(x->shader_stages), temp_allocator);
+	forI(array_count(x->shader_stages)) {
+		shader_stages[i] = load_shader(x->shader_stages[i].name, x->shader_stages[i].source, graphics_shader_stage_to_vulkan(x->shader_stages[i].shader_stage));
+	}
+
+   	VkPipelineInputAssemblyStateCreateInfo ias{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+	ias.              topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	ias.primitiveRestartEnable = VK_FALSE;
+	
+    VkPipelineViewportStateCreateInfo vs{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+	vs.viewportCount = 1;
+	vs.   pViewports = 0;
+	vs. scissorCount = 1;
+	vs.    pScissors = 0;
+
+	VkPipelineInputAssemblyStateCreateInfo input_assembly_state{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+	input_assembly_state.              topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	input_assembly_state.primitiveRestartEnable = VK_FALSE;
+
+	VkPipelineViewportStateCreateInfo viewport_state{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+	viewport_state.viewportCount = 1;
+	viewport_state.   pViewports = 0;
+	viewport_state. scissorCount = 1;
+	viewport_state.    pScissors = 0;
+
+	VkPipelineRasterizationStateCreateInfo rasterization_state{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+	rasterization_state.       depthClampEnable = VK_FALSE;
+	rasterization_state.rasterizerDiscardEnable = VK_FALSE;
+	rasterization_state.        depthBiasEnable = (x->depth_bias? VK_TRUE : VK_FALSE);
+	rasterization_state.         depthBiasClamp = x->depth_bias_clamp;
+	rasterization_state.   depthBiasSlopeFactor = x->depth_bias_slope;
+	rasterization_state.depthBiasConstantFactor = x->depth_bias_constant;
+	rasterization_state.              lineWidth = 1.f;
+	switch(x->polygon_mode) {
+		case RenderPipelinePolygonMode_Point: rasterization_state.polygonMode = VK_POLYGON_MODE_POINT; break;
+		case RenderPipelinePolygonMode_Fill:  rasterization_state.polygonMode = VK_POLYGON_MODE_FILL; break;
+		case RenderPipelinePolygonMode_Line:  rasterization_state.polygonMode = VK_POLYGON_MODE_LINE; break;
+	}
+	switch(x->culling) {
+		case RenderPipelineCulling_None:       rasterization_state.cullMode = VK_CULL_MODE_NONE; break;
+		case RenderPipelineCulling_Back:       rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT; break;
+		case RenderPipelineCulling_Front:      rasterization_state.cullMode = VK_CULL_MODE_FRONT_BIT; break;
+		case RenderPipelineCulling_Front_Back: rasterization_state.cullMode = VK_CULL_MODE_FRONT_AND_BACK; break;
+	}
+	switch(x->front_face) {
+		case RenderPipelineFrontFace_CW:  rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
+		case RenderPipelineFrontFace_CCW: rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; break;
+	}
+
+	VkPipelineColorBlendAttachmentState    color_blend_attachment_state{};
+	color_blend_attachment_state.        blendEnable = (x->color_blend? VK_TRUE : VK_FALSE);
+	color_blend_attachment_state.srcColorBlendFactor = graphics_blend_factor_to_vulkan(x->color_src_blend_factor);
+	color_blend_attachment_state.srcAlphaBlendFactor = graphics_blend_factor_to_vulkan(x->alpha_src_blend_factor);
+	color_blend_attachment_state.       colorBlendOp = graphics_blend_op_to_vulkan(x->color_blend_op);
+	color_blend_attachment_state.dstColorBlendFactor = graphics_blend_factor_to_vulkan(x->color_dst_blend_factor);
+	color_blend_attachment_state.dstAlphaBlendFactor = graphics_blend_factor_to_vulkan(x->alpha_dst_blend_factor);	
+	color_blend_attachment_state.       alphaBlendOp = graphics_blend_op_to_vulkan(x->alpha_blend_op);
+	color_blend_attachment_state.     colorWriteMask = 0xf;
+
+	VkPipelineColorBlendStateCreateInfo    color_blend_state{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+	color_blend_state.    logicOpEnable = VK_FALSE;
+	color_blend_state.          logicOp = VK_LOGIC_OP_COPY;
+	color_blend_state.  attachmentCount = 1;
+	color_blend_state.     pAttachments = &color_blend_attachment_state;
+	color_blend_state.blendConstants[0] = x->blend_constant.r/255.f;
+	color_blend_state.blendConstants[1] = x->blend_constant.g/255.f;
+	color_blend_state.blendConstants[2] = x->blend_constant.b/255.f;
+	color_blend_state.blendConstants[3] = x->blend_constant.a/255.f;
+
+	VkPipelineDepthStencilStateCreateInfo  depth_stencil_state{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+	depth_stencil_state.      depthTestEnable = (x->depth_test? VK_TRUE : VK_FALSE);
+	depth_stencil_state.     depthWriteEnable = (x->depth_writes? VK_TRUE : VK_FALSE);
+	depth_stencil_state.       depthCompareOp = graphics_compare_op_to_vulkan(x->depth_compare_op);
+	depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
+	depth_stencil_state.    stencilTestEnable = VK_FALSE;
+	depth_stencil_state.       minDepthBounds = 0.f;
+	depth_stencil_state.       maxDepthBounds = 1.f;
+	depth_stencil_state.    stencilTestEnable = VK_FALSE;
+	depth_stencil_state.                front = {};
+	depth_stencil_state.       back.compareOp = VK_COMPARE_OP_ALWAYS;
+
+	VkPipelineMultisampleStateCreateInfo   multisample_state{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+	multisample_state.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+	multisample_state. sampleShadingEnable  = VK_FALSE;
+	multisample_state.    minSampleShading  = .2f;
+	multisample_state.         pSampleMask  = 0;
+	multisample_state.alphaToCoverageEnable = VK_FALSE;
+	multisample_state.     alphaToOneEnable = VK_FALSE;
+
+	VkPipelineVertexInputStateCreateInfo   vertex_input_state{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+	if(!x->vertex_input_bindings) {
+		VulkanError("null vertex input bindings array. A pipeline is required to specify the vertex bindings used by the vertex shader.");
+		return;
+	}
+	if(!x->vertex_input_attributes) {
+		VulkanError("null vertex input attributes array. A pipeline is required to specify the attributes of the vertexes used in the vertex shader.");
+		return;
+	}
+	auto vertex_input_bindings = array_from(x->vertex_input_bindings);
+	auto vertex_input_attributes = array_from(x->vertex_input_attributes);
+	auto vertex_input_bindings_out = array<VkVertexInputBindingDescription>::create_with_count(vertex_input_bindings.count(), temp_allocator);
+	auto vertex_input_attributes_out = array<VkVertexInputAttributeDescription>::create_with_count(vertex_input_attributes.count(), temp_allocator);
+	forI(vertex_input_bindings.count()) {
+		vertex_input_bindings_out[i].binding = vertex_input_bindings[i].binding;
+		vertex_input_bindings_out[i].stride = vertex_input_bindings[i].stride;
+		vertex_input_bindings_out[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	}
+	forI(vertex_input_attributes.count()) {
+		vertex_input_attributes_out[i].binding = vertex_input_attributes[i].binding;
+		vertex_input_attributes_out[i].location = vertex_input_attributes[i].location;
+		vertex_input_attributes_out[i].offset = vertex_input_attributes[i].offset;
+		vertex_input_attributes_out[i].format = graphics_format_to_vulkan(vertex_input_attributes[i].format);
+	}
+	vertex_input_state.pVertexBindingDescriptions = vertex_input_bindings_out.ptr;
+	vertex_input_state.vertexBindingDescriptionCount = vertex_input_bindings_out.count();
+	vertex_input_state.pVertexAttributeDescriptions = vertex_input_attributes_out.ptr;
+	vertex_input_state.vertexAttributeDescriptionCount = vertex_input_attributes_out.count();
+
+	VkPipelineDynamicStateCreateInfo       dynamic_state{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+	auto dynamic_states = array<VkDynamicState>::create(5, temp_allocator);
+	if(x->dynamic_scissor)        dynamic_states.push(VK_DYNAMIC_STATE_SCISSOR);
+	if(x->dynamic_viewport)       dynamic_states.push(VK_DYNAMIC_STATE_VIEWPORT);
+	if(x->dynamic_depth_bias)     dynamic_states.push(VK_DYNAMIC_STATE_DEPTH_BIAS);
+	if(x->dynamic_line_width)     dynamic_states.push(VK_DYNAMIC_STATE_LINE_WIDTH);
+	if(x->dynamic_blend_constant) dynamic_states.push(VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+	dynamic_state.pDynamicStates = dynamic_states.ptr;
+	dynamic_state.dynamicStateCount = dynamic_states.count();
+	
+	VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+	info.stageCount          = shader_stages.count();
+	info.pStages             = shader_stages.ptr;
+	info.pVertexInputState   = &vertex_input_state;
+	info.pInputAssemblyState = &input_assembly_state;
+	info.pTessellationState  = 0;
+	info.pViewportState      = &viewport_state;
+	info.pRasterizationState = &rasterization_state;
+	info.pMultisampleState   = &multisample_state;
+	info.pDepthStencilState  = &depth_stencil_state;
+	info.pColorBlendState    = &color_blend_state;
+	info.pDynamicState       = &dynamic_state;
+	info.layout              = get_handle(x->layout);
+	info.renderPass          = get_handle(x->render_pass);
+	
+	auto result = vkCreateGraphicsPipelines(vk_device, vk_pipeline_cache, 1, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create graphics pipeline.");
+
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_PIPELINE, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_pipeline_destroy(GraphicsPipeline* x) {
+	VulkanAssert(x, "passed a null GraphicsPipeline pointer.");
+	VulkanInfo("destroying pipeline '", x->debug_name, "'.");
+	vkDestroyPipeline(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsPipeline));
+	memory_pool_delete(g_graphics->pools.pipelines, x);
+}
+
+// Creates a new pipeline with the same settings as the one given.
+GraphicsPipeline* 
+graphics_pipeline_duplicate(GraphicsPipeline* x) {
+	auto out = graphics_pipeline_allocate();
+	CopyMemory(out, x, sizeof(GraphicsPipeline));
+	if(out->shader_stages) {
+		out->shader_stages = array_copy(out->shader_stages).ptr;
+	}
+	if(out->vertex_input_bindings) {
+		out->vertex_input_bindings = array_copy(out->vertex_input_bindings).ptr;
+	}
+	if(out->vertex_input_attributes) {
+		out->vertex_input_attributes = array_copy(out->vertex_input_attributes).ptr;
+	}
+	get_handle(out) = 0;
+	return out;
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @render_pass
+
+
+GraphicsRenderPass* 
+graphics_render_pass_allocate() {
+	return memory_pool_push(g_graphics->pools.render_passes);
+}
+
+void 
+graphics_render_pass_update(GraphicsRenderPass* x) {
+	VulkanAssert(x, "passed null GraphicsRenderPass pointer.");
+	VulkanInfo("updating render pass '", x->debug_name, "'.");
+
+	vkDestroyRenderPass(vk_device, get_handle(x), vk_allocator);
+	
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	
+	VkAttachmentDescription attachments[2] = {};
+	
+	VkAttachmentReference color_attachment_reference{};
+	VkAttachmentReference depth_attachment_reference{};
+	VkAttachmentReference stencil_attachment_reference{};
+	
+	u32 index = 0;
+	
+	if(x->use_color_attachment) {
+		attachments[index].        format =	graphics_format_to_vulkan(x->color_attachment.format);
+		attachments[index].       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
+		attachments[index].        loadOp = graphics_load_op_to_vulkan(x->color_attachment.load_op);
+		attachments[index].       storeOp = graphics_store_op_to_vulkan(x->color_attachment.store_op);
+		attachments[index]. stencilLoadOp = graphics_load_op_to_vulkan(x->color_attachment.stencil_load_op);
+		attachments[index].stencilStoreOp = graphics_store_op_to_vulkan(x->color_attachment.stencil_store_op);
+		attachments[index]. initialLayout = graphics_image_layout_to_vulkan(x->color_attachment.initial_layout);
+		attachments[index].   finalLayout = graphics_image_layout_to_vulkan(x->color_attachment.final_layout);
+		
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment_reference;
+		color_attachment_reference.attachment = index;
+		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		index++;
+	}
+	
+	if(x->use_depth_attachment) {
+		attachments[index].        format = graphics_format_to_vulkan(x->depth_attachment.format);
+		attachments[index].       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
+		attachments[index].        loadOp = graphics_load_op_to_vulkan(x->depth_attachment.load_op);
+		attachments[index].       storeOp = graphics_store_op_to_vulkan(x->depth_attachment.store_op);
+		attachments[index]. stencilLoadOp = graphics_load_op_to_vulkan(x->depth_attachment.stencil_load_op);
+		attachments[index].stencilStoreOp = graphics_store_op_to_vulkan(x->depth_attachment.stencil_store_op);
+		attachments[index]. initialLayout =	graphics_image_layout_to_vulkan(x->depth_attachment.initial_layout);
+		attachments[index].   finalLayout = graphics_image_layout_to_vulkan(x->depth_attachment.final_layout);
+		
+		subpass.pDepthStencilAttachment = &depth_attachment_reference;
+		depth_attachment_reference.attachment = index;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		index++;
+	}
+	
+	// always define a dependency between render passes
+	// for now.
+	VkSubpassDependency dependencies[2]{};
+	dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass      = 0;
+	dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	dependencies[1].srcSubpass      = 0;
+	dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	
+	VkRenderPassCreateInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+	info.attachmentCount = index;
+	info.pAttachments = attachments;
+	info.subpassCount = 1;
+	info.pSubpasses = &subpass;
+	info.dependencyCount = 1;
+	info.pDependencies = dependencies;
+	
+	auto result = vkCreateRenderPass(vk_device, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create render pass.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_RENDER_PASS, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_render_pass_destroy(GraphicsRenderPass* x) {
+	VulkanAssert(x, "passed null GraphicsRenderPass pointer");
+	VulkanInfo("destroying render pass '", x->debug_name, "'.");
+	vkDestroyRenderPass(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsRenderPass));
+	memory_pool_delete(g_graphics->pools.render_passes, x);
+}
+
+GraphicsRenderPass* 
+graphics_render_pass_of_window_presentation_frames(Window* window) {
+	return ((WindowInfo*)window->render_info)->presentation_frames[0]->render_pass;
+}
+
+GraphicsFramebuffer* 
+graphics_framebuffer_allocate() {
+	return memory_pool_push(g_graphics->pools.framebuffers);
+}
+
+void 
+graphics_framebuffer_update(GraphicsFramebuffer* x) {
+	VulkanAssert(x, "passed null GraphicsFramebuffer pointer.");
+	VulkanAssert(x->render_pass, "null render pass pointer on framebuffer. All framebuffers require a render pass.");
+	VulkanInfo("updating framebuffer '", x->debug_name, "'.");
+
+	auto attachments = array<VkImageView>::create(temp_allocator);
+	
+	if(x->render_pass->use_color_attachment)
+		attachments.push(get_handle(x->color_image_view));
+	
+	if(x->render_pass->use_depth_attachment) 
+		attachments.push(get_handle(x->depth_image_view));
+	
+	VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+	info.     renderPass = get_handle(x->render_pass);
+	info.attachmentCount = attachments.count();
+	info.   pAttachments = attachments.ptr;
+	info.          width = x->width;
+	info.         height = x->height;
+	info.         layers = 1;
+	auto result = vkCreateFramebuffer(vk_device, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create framebuffer.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_framebuffer_destroy(GraphicsFramebuffer* x) {
+	VulkanAssert(x, "passed null GraphicsFramebuffer pointer");
+	VulkanInfo("destroying framebuffer '", x->debug_name, "'");
+	vkDestroyFramebuffer(vk_device, get_handle(x), vk_allocator);
+	ZeroMemory(x, sizeof(GraphicsFramebuffer));
+	memory_pool_delete(g_graphics->pools.framebuffers, x);
+}
+
+GraphicsFramebuffer* 
+graphics_current_present_frame_of_window(Window* window) {
+	auto w = (WindowInfo*)window->render_info;
+	return w->presentation_frames[w->frame_index];
+}
+
+GraphicsCommandBuffer* 
+graphics_command_buffer_allocate() {
+	return memory_pool_push(g_graphics->pools.command_buffers);
+}
+
+void 
+graphics_command_buffer_update(GraphicsCommandBuffer* x) {
+	VulkanAssert(x, "passed null GraphicsCommandBuffer pointer.");
+	VulkanInfo("updating command buffer '", x->debug_name, "'.");
+
+	vkFreeCommandBuffers(vk_device, vk_command_pool, 1, &get_handle(x));
+
+	VkCommandBufferAllocateInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+	info.       commandPool = vk_command_pool;
+	info.             level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	info.commandBufferCount = 1;
+	auto result = vkAllocateCommandBuffers(vk_device, &info, &get_handle(x));
+	VulkanAssertVk(result, "failed to allocate command buffer.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_command_buffer_destroy(GraphicsCommandBuffer* x) {
+	VulkanAssert(x, "passed null GraphicsCommandBuffer pointer.");
+	VulkanInfo("destroying command buffer '", x->debug_name, "'.");
+	vkFreeCommandBuffers(vk_device, vk_command_pool, 1, &get_handle(x));
+	ZeroMemory(x, sizeof(GraphicsCommandBuffer));
+	memory_pool_delete(g_graphics->pools.command_buffers, x);
+}
+
+// Retrieve the command buffer belonging to the given window.
+GraphicsCommandBuffer* graphics_command_buffer_of_window(Window* window);
 
 #undef primary_allocator
 #undef temp_allocator
