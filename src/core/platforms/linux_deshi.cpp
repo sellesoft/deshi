@@ -1296,6 +1296,30 @@ platform_set_clipboard(str8 text) {
 	NotImplemented;
 }
 
+void*
+platform_allocate_memory(void* address, upt size){DPZoneScoped;
+	void* result = mmap(address, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	if((s64)result == -1){
+		dstr8 o = get_errno_print(errno, "platform", __func__, {0});
+		printf("%s", (char*)o.str);
+		dstr8_deinit(&o);
+		result = 0;
+	}
+	return result;
+}
+
+b32
+platform_deallocate_memory(void* address, upt size){DPZoneScoped;
+	int result = munmap(address, size);
+	if(result == -1){
+		dstr8 o = get_errno_print(errno, "platform", __func__, {0});
+		printf("%s", (char*)o.str);
+		dstr8_deinit(&o);
+		result = 0;
+	}
+	return (b32)result;
+}
+
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @threading
 
