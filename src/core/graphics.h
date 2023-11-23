@@ -593,6 +593,8 @@ void graphics_image_view_destroy(GraphicsImageView* x);
 
 
 typedef struct GraphicsSampler {
+	str8 debug_name;
+
 	// Behavoir when the image s magnified or minified.
 	GraphicsFilter mag_filter;
 	GraphicsFilter min_filter;
@@ -795,7 +797,7 @@ typedef struct GraphicsPipeline {
 
 	// An arrays of shaders that the data will pass through.
 	// We require at least specifying a vertex shader.
-	RenderShader* shader_stages;
+	GraphicsShader* shader_stages;
 
 
     // Whether or not the viewport is expected to be set dynamically. If this is true
@@ -896,6 +898,7 @@ void graphics_pipeline_update(GraphicsPipeline* x);
 void graphics_pipeline_destroy(GraphicsPipeline* x);
 
 // Creates a new pipeline with the same settings as the one given.
+// This will automatically copy any non-null array on the given pipeline.
 GraphicsPipeline* graphics_pipeline_duplicate(GraphicsPipeline* x);
 
 #if COMPILER_FEATURE_CPP
@@ -1135,7 +1138,7 @@ FORCE_INLINE void set_depth_bias(Window* window, f32 constant, f32 clamp, f32 sl
 //             that aren't meant to be cleared every frame.
 typedef struct GraphicsCommandBuffer {
 	str8 debug_name;
-	RenderCommand* commands;
+	GraphicsCommand* commands;
 
 	GRAPHICS_INTERNAL_BEGIN
 		void* handle;
@@ -1154,7 +1157,7 @@ GraphicsCommandBuffer* graphics_command_buffer_of_window(Window* window);
 namespace graphics {
 
 struct CommandBuffer : public GraphicsCommandBuffer {
-	static CommandBuffer* allocate() { (CommandBuffer*)graphics_command_buffer_allocate(); }
+	static CommandBuffer* allocate() { return (CommandBuffer*)graphics_command_buffer_allocate(); }
 
 	void update() { graphics_command_buffer_update(this); }
 	void destroy() { graphics_command_buffer_destroy(this); }
