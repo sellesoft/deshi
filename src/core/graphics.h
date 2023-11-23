@@ -38,7 +38,12 @@ struct GraphicsImageView;
 struct GraphicsSampler;
 struct GraphicsBuffer;
 struct GraphicsPipeline;
+struct GraphicsPipelineLayout;
 struct GraphicsRenderPass;
+struct GraphicsDescriptorSetLayout;
+struct GraphicsDescriptorSet;
+struct GraphicsCommandBuffer;
+struct GraphicsFramebuffer;
 
 #define GRAPHICS_INTERNAL_BEGIN struct {
 #define GRAPHICS_INTERNAL_END   } __internal;
@@ -60,17 +65,17 @@ typedef struct GraphicsStats {
 
 typedef struct GraphicsGlobal {
 	struct { // pools
-		RenderDescriptorSetLayout* descriptor_set_layouts;
-		RenderDescriptorSet*       descriptor_sets;
-		RenderPipelineLayout*      pipeline_layouts;
-		RenderPipeline*            pipelines;
-		RenderBuffer*              buffers;
-		RenderCommandBuffer*       command_buffers;
-		RenderImage*               images;
-		RenderImageView*           image_views;
-		RenderSampler*             samplers;
-		RenderPass*                passes;
-		RenderFramebuffer*         framebuffers;
+		GraphicsDescriptorSetLayout* descriptor_set_layouts;
+		GraphicsDescriptorSet*       descriptor_sets;
+		GraphicsPipelineLayout*      pipeline_layouts;
+		GraphicsPipeline*            pipelines;
+		GraphicsBuffer*              buffers;
+		GraphicsCommandBuffer*       command_buffers;
+		GraphicsImage*               images;
+		GraphicsImageView*           image_views;
+		GraphicsSampler*             samplers;
+		GraphicsRenderPass*          render_passes;
+		GraphicsFramebuffer*         framebuffers;
 	} pools;
 	
 	struct { // allocators
@@ -430,68 +435,52 @@ typedef Type GraphicsCommandType; enum {
 // @buffer
 // Represents memory allocated on the device.
 //
-// The api for working with buffers is different than the api for 
-// working with most other objects. This is due to various requirements 
-// involving buffers that we do not want to include in the api, primarily 
-// alignment concerns.
-//
-// A GraphicsBuffer thus consists of only internal information and information
-// about the buffer is retrieved via getters. Information regarding how to create
-// a buffer is provided to the api via `GraphicsBufferCreateInfo`, much like in
-// the Vulkan API.
-//
-// The backend information regarding a buffer is created as soon as the buffer
-// is created. 
-
-typedef struct GraphicsBufferCreateInfo {
-	// The desired size of the buffer. Note that it is 
-	// likely the buffer will have a larger size than
-	// what is requested.
-	u64 size; 
-
-	// How the buffer is intended to be used.
-	GraphicsBufferUsage usage;
-	// Various properties determining how memory in this buffer
-	// is situated on the host and device and how that memory
-	// is communicated between them.
-	GraphicsMemoryPropertyFlags memory_properties;
-	// The mapping behavoir of the buffer, eg. how often it will be mapped.
-	GraphicsMemoryMappingBehavoir mapping_behavoir;
-} GraphicsBufferCreateInfo;
+// The api of GraphisBuffer is different than the rest of graphics due to its unique use cases 
+// we support. 
 
 typedef struct GraphicsBuffer {
+	str8 debug_name;
 	GRAPHICS_INTERNAL_BEGIN
 		u64 size;
-		
+		GraphicsBufferUsage usage;
+		GraphicsMemoryPropertyFlags memory_properties;
+		GraphicsMemoryMappingBehavoir mapping_behavoir;
+
 		struct {
 			void* data;
 			u64 offset;
 			u64 size;
 		} mapped;
 
-		GraphicsBufferCreateInfo create_info;
-
 		void* buffer_handle;
 		void* memory_handle;
 	GRAPHICS_INTERNAL_END
 } GraphicsBuffer;
 
-// Allocates a GraphicsBuffer and returns a handle to it using the information
-// provided in 'info'. 
-// If 'data' is not null, then the buffer is mapped and the data is copied 
-// (according to 'size' in 'info') immediately. If the mapping behavoir is not
-// set to persistent, then the buffer will be unmapped.
-GraphicsBuffer* graphics_buffer_create(void* data, GraphicsBufferCreateInfo info);
+// Creates a GraphicsBuffer *and* actually creates the buffer on the device. 
+//   'requested_size' is the minimum size the user needs the buffer to be, but the actual size of the buffer
+//   on the device may be different due to alignment requirements. To retrieve the actual size of the buffer
+//   use graphics_buffer_device_size()
+//
+//   'data' is an optional pointer to data to be immediately coppied to the created buffer.
+GraphicsBuffer* graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavoir);
 
-// Deallocates the given GraphicsBuffer from the device and makes the handle invalid.
+// Destroys the given GraphicsBuffer, deallocating its memory on the device and invaliding the given handle.
 void graphics_buffer_destroy(GraphicsBuffer* x);
+
+// Reallocates the memory on the device to a buffer with the given size.
+// Note that much like the create function, 'new_size' is the minimum size the user needs the buffer to be
+// but due to alignment requirements the actual device size of the buffer may be larger. 
+void graphics_buffer_reallocate(GraphicsBuffer* x, u64 new_size);
 
 // Maps 'size' bytes at 'offset' from an unmapped buffer.
 // The buffer must have been created with these properties:
 // 		memory_properties = DeviceLocal | HostVisible
 // 		mapping_behavoir  = Occasionally
 // If the given buffer is set to persistent mapping a warning is given
-// and the function returns the mapped data pointer.
+// and the function returns the mapped data pointer. If the buffer was already
+// mapped then a warning is given and the function returns the mapped data
+// pointer.
 // If the mapping is successful then a pointer to the mapped data is returned.
 // Otherwise 0 is returned.
 void* graphics_buffer_map(GraphicsBuffer* x, u64 size, u64 offset);
@@ -506,7 +495,7 @@ void graphics_buffer_unmap(GraphicsBuffer* x, b32 flush);
 void graphics_buffer_flush(GraphicsBuffer* x);
 
 // Retrieve the size of the buffer as it is on the device.
-u64 graphics_buffer_size(GraphicsBuffer* x);
+u64 graphics_buffer_device_size(GraphicsBuffer* x);
 
 // Retrieves a pointer to the mapped data of the given buffer.
 // The buffer must be mapped, otherwise 0 is returned.
@@ -526,13 +515,16 @@ namespace graphics {
 
 struct Buffer : public GraphicsBuffer {
 	static GraphicsBuffer* 
-	create(void* data, GraphicsBufferCreateInfo info) { return (Buffer*)graphics_buffer_create(data, info); }
-	
+	create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavoir) {
+		return (Buffer*)graphics_buffer_create(data, requested_size, usage, properties, mapping_behavoir);
+	}
+
+	void  reallocate(u64 new_size) { graphics_buffer_reallocate(this, new_size); }
 	void  destroy() { graphics_buffer_destroy(this); }
 	void* map(u64 size, u64 offset) { return graphics_buffer_map(this, size, offset); }
 	void  unmap(b32 flush = false) { graphics_buffer_unmap(this, flush); }
 	void  flush() { graphics_buffer_flush(this); }
-	u64   size() { return graphics_buffer_size(this); }
+	u64   device_size() { return graphics_buffer_device_size(this); }
 	void* mapped_data() { return graphics_buffer_mapped_data(this); }
 	u64   mapped_size() { return graphics_buffer_mapped_size(this); }
 	u64   mapped_offset() { return graphics_buffer_mapped_offset(this); }

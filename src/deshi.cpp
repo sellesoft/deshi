@@ -391,7 +391,11 @@ local DeshiStage deshiStage = DS_NONE;
 #  else
 #    error "unhandled platform/vulkan interaction"
 #  endif
+#if RENDER_REWRITE
+#  include "core/renderers/vulkan_nu.cpp"
+#else
 #  include "core/renderers/vulkan.cpp"
+#endif
 #elif DESHI_OPENGL //#if DESHI_VULKAN
 #  if DESHI_WINDOWS
 #    define GLAD_WGL_IMPLEMENTATION
