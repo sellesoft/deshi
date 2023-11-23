@@ -136,6 +136,9 @@ scene_voxel_chunk_create(vec3 pos, vec3 rot, u32 dimensions, SceneVoxel* voxels)
 	chunk->dimensions = dimensions;
 	chunk->modified = false;
 	chunk->hidden = false;
+
+	NotImplemented;
+	return 0;
 }
 
 
