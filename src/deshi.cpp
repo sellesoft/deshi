@@ -322,6 +322,16 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/window.h"
 
 
+//// core cpp ////
+#include "core/memory.cpp"
+#include "core/console.cpp"
+#include "core/assets.cpp"
+#include "core/scene.cpp"
+#include "core/ui.cpp"
+#include "core/render.cpp"
+#include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
+
+
 //// platform ////
 #if DESHI_WINDOWS
 #  define WIN32_LEAN_AND_MEAN
@@ -431,15 +441,6 @@ local DeshiStage deshiStage = DS_NONE;
 #else //#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "no renderer selected"
 #endif //#else //#elif DESHI_DIRECTX12 //#elif DESHI_OPENGL //#if DESHI_VULKAN
-
-//// core cpp ////
-#include "core/memory.cpp"
-#include "core/console.cpp"
-#include "core/assets.cpp"
-#include "core/scene.cpp"
-#include "core/ui.cpp"
-#include "core/render.cpp"
-#include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
 
 
 //// global definitions ////
