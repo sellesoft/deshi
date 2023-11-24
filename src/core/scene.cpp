@@ -1,12 +1,13 @@
-#define SceneAssert(cond, ...) LogE("scene", __FUNCTION__, ": assertion failed `", STRINGIZE(cond), "`: ", __VA_ARGS__)
+#define SceneAssert(cond, ...) do { if(!cond) { LogE("scene", __FUNCTION__, ": assertion failed `", STRINGIZE(cond), "`: ", __VA_ARGS__); Assert(0); } } while(0); 
 
-SceneGlobal deshi__g_scene;
-SceneGlobal* g_scene;
+SceneGlobal __deshi__g_scene;
+SceneGlobal* g_scene = &__deshi__g_scene;
 
 void 
 scene_init() {
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
+	array_init(g_scene->model_draw_commands, 4, deshi_allocator);
 }
 
 void
@@ -30,7 +31,7 @@ scene_render() {
 
 	{ using namespace graphics::cmd;
 		begin_render_pass(win, pass, frame);
-		bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
+	
 		forI(array_count(g_scene->model_draw_commands)) {
 			auto cmd = g_scene->model_draw_commands[i];
 			bind_vertex_buffer(win, cmd.model->mesh->vertex_buffer);
@@ -41,15 +42,30 @@ scene_render() {
 				if(b.material->pipeline != last_pipeline) {
 					last_pipeline = b.material->pipeline;
 					bind_pipeline(win, last_pipeline);
+					set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
+					set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
+					bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
 				}
 				push_constant(win, cmd.transform, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
 				bind_descriptor_set(win, 1, b.material->descriptor_set);
 				draw_indexed(win, b.index_count, b.index_offset, 0);
 			}
 		}	
+
+		end_render_pass(win);
 	}
 
 	array_clear(g_scene->model_draw_commands);
+}
+
+void
+scene_set_active_window(Window* window) {
+	g_scene->active.window = window;
+}
+
+void
+scene_set_active_camera(Camera* camera) {
+	g_scene->active.camera = camera;
 }
 
 
