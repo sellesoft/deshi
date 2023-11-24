@@ -2979,6 +2979,17 @@ graphics_command_buffer_of_window(Window* window) {
 	return ((WindowInfo*)window->render_info)->command_buffer;
 }
 
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @misc
+
+
+GraphicsFormat 
+graphics_format_of_presentation_frames(Window* window) {
+	return vulkan_format_to_graphics(((WindowInfo*)window->render_info)->surface_format.format);
+}
+
 #undef primary_allocator
 #undef temp_allocator
 #undef VulkanFatal

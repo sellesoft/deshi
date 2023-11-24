@@ -1221,6 +1221,13 @@ struct CommandBuffer : public GraphicsCommandBuffer {
 
 } // namespace graphics
 
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @misc
+
+
+GraphicsFormat graphics_format_of_presentation_frames(Window* window);
+
 #endif
 
 #endif // DESHI_GRAPHICS_H
