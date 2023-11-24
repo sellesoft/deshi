@@ -33,6 +33,7 @@
 #ifndef DESHI_GRAPHICS_H
 #define DESHI_GRAPHICS_H
 
+struct Window;
 struct GraphicsImage;
 struct GraphicsImageView;
 struct GraphicsSampler;
@@ -514,7 +515,7 @@ u64 graphics_buffer_mapped_offset(GraphicsBuffer* x);
 namespace graphics {
 
 struct Buffer : public GraphicsBuffer {
-	static GraphicsBuffer* 
+	static Buffer* 
 	create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavoir) {
 		return (Buffer*)graphics_buffer_create(data, requested_size, usage, properties, mapping_behavoir);
 	}
@@ -715,7 +716,7 @@ typedef struct GraphicsDescriptorSet {
 	GRAPHICS_INTERNAL_END
 } GraphicsDescriptorSet;
 
-GraphicsDescriptorSet* graphics_descriptor_set_create();
+GraphicsDescriptorSet* graphics_descriptor_set_allocate();
 void graphics_descriptor_set_update(GraphicsDescriptorSet* x);
 void graphics_descriptor_set_destroy(GraphicsDescriptorSet* x);
 
@@ -725,6 +726,37 @@ void graphics_descriptor_set_write(GraphicsDescriptorSet* x, u32 binding, Graphi
 // Write an array of descriptors to the given descriptor set. It is assumed that they can be written
 // in the order that is specified in the descriptor set's array of layouts.
 void graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor* descriptors);
+
+#if COMPILER_FEATURE_CPP 
+
+namespace graphics {
+
+struct Descriptor : public GraphicsDescriptor {};
+
+struct DescriptorSetLayoutBinding : public GraphicsDescriptorSetLayoutBinding {};
+
+struct DescriptorSetLayout : public GraphicsDescriptorSetLayout {
+	static DescriptorSetLayout*
+	allocate() { return (DescriptorSetLayout*)graphics_descriptor_set_layout_allocate(); }
+
+	void update() { return graphics_descriptor_set_layout_update(this); }
+	void destroy() { return graphics_descriptor_set_layout_destroy(this); }
+};
+
+struct DescriptorSet : public GraphicsDescriptorSet {
+	static DescriptorSet*
+	allocate() { return (DescriptorSet*)graphics_descriptor_set_allocate(); }
+
+	void update() { graphics_descriptor_set_update(this); }
+	void destroy() { graphics_descriptor_set_destroy(this); }
+
+	void write(u32 binding, Descriptor descriptor) { graphics_descriptor_set_write(this, binding, descriptor); }
+	void write(u32 binding, array<Descriptor> descriptors) { graphics_descriptor_set_write_array(this, descriptors.ptr); }
+};
+
+} // namespace graphics
+
+#endif
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -738,16 +770,34 @@ typedef struct GraphicsPushConstant {
 } GraphicsPushConstant;
 
 
+#if COMPILER_FEATURE_CPP
+namespace graphics {
+
+struct PushConstant : public GraphicsPushConstant {};
+
+} // namespace graphics
+#endif
+
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @shader
 
 
 // A shader with a name and source code to be compiled by the backend.
 typedef struct GraphicsShader {
-	RenderShaderStage shader_stage;
+	GraphicsShaderStage shader_stage;
 	str8 name;
 	str8 source;
 } GraphicsShader;
+
+
+#if COMPILER_FEATURE_CPP
+namespace graphics {
+
+struct Shader : public GraphicsShader {};
+
+} // namespace graphics
+#endif
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -903,6 +953,14 @@ GraphicsPipeline* graphics_pipeline_duplicate(GraphicsPipeline* x);
 
 #if COMPILER_FEATURE_CPP
 namespace graphics {
+struct PipelineLayout : public GraphicsPipelineLayout {
+	static PipelineLayout*
+	allocate() { return (PipelineLayout*)graphics_pipeline_layout_allocate(); }
+
+	void update() { return graphics_pipeline_layout_update(this); }
+	void destroy() { return graphics_pipeline_layout_destroy(this); }
+};
+
 struct Pipeline : public GraphicsPipeline {
 	static Pipeline*
 	allocate() { return (Pipeline*)graphics_pipeline_allocate(); }
@@ -971,7 +1029,6 @@ GraphicsRenderPass* graphics_render_pass_of_window_presentation_frames(Window* w
 
 #if COMPILER_FEATURE_CPP
 namespace graphics {
-
 struct RenderPass : public GraphicsRenderPass {
 	static RenderPass* allocate() { return (RenderPass*)graphics_render_pass_allocate(); }
 
@@ -981,7 +1038,6 @@ struct RenderPass : public GraphicsRenderPass {
 	static RenderPass*
 	of_window_presentation_frames(Window* window) { return (RenderPass*)graphics_render_pass_of_window_presentation_frames(window); }
 };
-
 } // namespace graphics
 #endif
 

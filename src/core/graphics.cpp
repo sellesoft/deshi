@@ -1,5 +1,5 @@
 GraphicsGlobal  __deshi_graphics;
-GraphicsGlobal* g_graphics;
+GraphicsGlobal* g_graphics = &__deshi_graphics;
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,7 +29,7 @@ graphics_buffer_mapped_offset(GraphicsBuffer* x) {
 void 
 graphics_cmd_begin_render_pass(Window* window, GraphicsRenderPass* render_pass, GraphicsFramebuffer* frame) {
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
-	c->type = GraphicsCommandType_Push_Constant;
+	c->type = GraphicsCommandType_Begin_Render_Pass;
 	c->begin_render_pass.pass = render_pass;
 	c->begin_render_pass.frame = frame;
 }
@@ -110,3 +110,4 @@ graphics_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) 
 	c->set_depth_bias.clamp = clamp;
 	c->set_depth_bias.slope = slope;
 }
+
