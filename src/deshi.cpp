@@ -439,6 +439,7 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/scene.cpp"
 #include "core/ui.cpp"
 #include "core/render.cpp"
+#include "core/graphics.cpp"
 #include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars
 
 
@@ -459,9 +460,6 @@ local uiContext deshi_ui{};
 uiContext *g_ui = &deshi_ui;
 local uiStyle deshi_ui_initial_style{};
 uiStyle *ui_initial_style = &deshi_ui_initial_style;
-
-local GraphicsGlobal deshi_graphics;
-GraphicsGlobal* g_graphics = &deshi_graphics;
 
 Window *g_window = 0;
 
