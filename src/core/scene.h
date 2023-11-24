@@ -104,11 +104,11 @@ void scene_camera_draw_frustrum(Camera* camera);
 // @model
 typedef struct SceneDrawModel {
 	Model*  model;
-	mat4    transform;
+	mat4*   transform;
 } SceneDrawModel;
 
 // Draws 'model' with 'transform' the next time scene_render() is called.
-void scene_draw_model(Model* model, mat4 transform);
+void scene_draw_model(Model* model, mat4* transform);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @voxel

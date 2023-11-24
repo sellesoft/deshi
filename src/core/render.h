@@ -39,6 +39,7 @@ Index:
 #include "kigu/color.h"
 #include "kigu/common.h"
 #include "math/math.h"
+
 struct Mesh;
 struct Texture;
 struct Material;
@@ -56,6 +57,7 @@ struct RenderImageView;
 struct RenderSampler;
 struct RenderPass;
 struct RenderFramebuffer;
+struct MeshVertex;
 StartLinkageC();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

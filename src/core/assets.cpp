@@ -111,7 +111,8 @@ assets_init_x(Window* window) {
 	
 	// create null pipeline 
 	g_assets->null_pipeline = graphics_pipeline_allocate();
-	array_wrap_and_push(g_assets->null_pipeline->shader_stages, {
+
+	array_init_with_elements(g_assets->null_pipeline->shader_stages, {
 				{
 					GraphicsShaderStage_Vertex,
 					str8l("null.vert"), 
@@ -129,15 +130,17 @@ assets_init_x(Window* window) {
 	// (always set 0 in asset compatible pipelines)
 	g_assets->ubo_layout = graphics_descriptor_set_layout_allocate();
 	g_assets->ubo_layout->debug_name = str8l("ubo descriptor layout");
-	
-	auto binding = array_push(g_assets->ubo_layout->bindings);
-	binding->type = GraphicsDescriptorType_Uniform_Buffer;
-	binding->shader_stages = GraphicsShaderStage_Vertex;
-	binding->n = 0;
+	array_init_with_elements(g_assets->ubo_layout->bindings, {
+				{
+					GraphicsDescriptorType_Uniform_Buffer,
+					GraphicsShaderStage_Vertex,
+					0
+				}
+			});
 	graphics_descriptor_set_layout_update(g_assets->ubo_layout);
 	
 	g_assets->view_proj_ubo = graphics_descriptor_set_allocate();
-	*array_push(g_assets->view_proj_ubo->layouts) = g_assets->ubo_layout;
+	array_init_with_elements(g_assets->view_proj_ubo->layouts, {g_assets->ubo_layout});
 	graphics_descriptor_set_update(g_assets->view_proj_ubo);
 	
 	array_init(g_assets->ubo_descriptors, 1, deshi_temp_allocator);
@@ -161,13 +164,12 @@ assets_init_x(Window* window) {
 	array_init(stages.fragment.resources, 1, deshi_temp_allocator);
 	*array_push(stages.fragment.resources) = ShaderResourceType_Texture;
 	
-	ShaderResource* resources;
-	array_init(resources, 1, deshi_allocator);
-	auto r = array_push(resources);
+	auto resources = array<ShaderResource>::create(deshi_allocator);
+	auto r = resources.push();
 	r->type = ShaderResourceType_Texture;
 	r->texture = assets_texture_null();
 	
-	g_assets->null_material = assets_material_create_x(str8l("null"), stages, resources);
+	g_assets->null_material = assets_material_create_x(str8l("null"), stages, resources.ptr);
 	
 	g_assets->null_font = memory_pool_push(g_assets->font_pool);
 	g_assets->null_font->type = FontType_NONE;
@@ -449,22 +451,15 @@ assets_update_camera_projection(mat4* projection) {
 void 
 assets_setup_pipeline(GraphicsPipeline* pipeline) {
 	// a pipeline shouldn't have anything in its vertex input arrays when this is called 
-	Assert(!(array_count(pipeline->vertex_input_bindings) || array_count(pipeline->vertex_input_attributes)));
+	Assert(!(pipeline->vertex_input_bindings || pipeline->vertex_input_attributes));
 
 	pipeline->vertex_input_bindings = array<GraphicsVertexInputBindingDescription>::create({{0, sizeof(MeshVertex)}}, deshi_allocator).ptr;
 	pipeline->vertex_input_attributes = array<GraphicsVertexInputAttributeDescription>::create({
 			{0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)},
 			{1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)},
-			{2, 0, GraphicsFormat_R8G8B8A8_SRGB,   offsetof(MeshVertex, color)},
+			{2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)},
 			{3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)}}, deshi_allocator).ptr;
 
-	array_grow(pipeline->vertex_input_attributes, 4);
-	array_count(pipeline->vertex_input_attributes) = 4;
-	pipeline->vertex_input_attributes[0] = {0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)};
-	pipeline->vertex_input_attributes[1] = {1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)};
-	pipeline->vertex_input_attributes[2] = {2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)};
-	pipeline->vertex_input_attributes[3] = {3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)};
-	
 	pipeline->            front_face = GraphicsFrontFace_CCW;
 	pipeline->               culling = GraphicsPipelineCulling_Back;
 	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
@@ -1206,7 +1201,7 @@ assets_ubo_create(u32 size) {
 
 void 
 assets_ubo_update(UBO* ubo, void* data) {
-	void* mapped_data = graphics_buffer_map(ubo->buffer, 0, graphics_buffer_device_size(ubo->buffer));
+	void* mapped_data = graphics_buffer_map(ubo->buffer, graphics_buffer_device_size(ubo->buffer), 0);
 	
 	CopyMemory(mapped_data, data, ubo->size);
 	
@@ -1281,6 +1276,8 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	auto pipeline = graphics_pipeline_allocate();
 	pipeline->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline").fin;
 	assets_setup_pipeline(pipeline);
+
+	auto shader_stages = array<GraphicsShader>::create(deshi_allocator);
 	
 	// load each shader stage's source for the renderer to compile 
 	if(!shaders.vertex.filename) {
@@ -1294,8 +1291,8 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 		MaterialError(name, "the given filename for the vertex shader (", shaders.vertex.filename, ") couldn't be found in data/shaders");
 		return assets_material_null();
 	}
-	
-	auto shader = array_push(pipeline->shader_stages);
+
+	auto shader = shader_stages.push();
 	shader->shader_stage = GraphicsShaderStage_Vertex;
 	shader->name = shaders.vertex.filename;
 	shader->source = file_read_simple(vertex_path, deshi_temp_allocator);
@@ -1333,7 +1330,7 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 		return assets_material_null();
 	}
 	
-	shader = array_push(pipeline->shader_stages);
+	shader = shader_stages.push();
 	shader->name = shaders.fragment.filename;
 	shader->shader_stage = GraphicsShaderStage_Fragment;
 	shader->source = file_read_simple(fragment_path, deshi_temp_allocator);
@@ -1343,6 +1340,8 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 		return assets_material_null();
 	}
 	
+	pipeline->shader_stages = shader_stages.ptr;
+
 	// setup the descriptor layout
 	auto descriptor_layout = graphics_descriptor_set_layout_allocate();
 	descriptor_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " descriptor layout").fin;
@@ -1483,7 +1482,7 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 			} break;
 		}
 	}
-	
+	descriptor_layout->bindings = bindings.ptr;
 	graphics_descriptor_set_layout_update(descriptor_layout);
 	
 	GraphicsPushConstant transformation;
@@ -1493,12 +1492,13 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	
 	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline layout").fin;
-	pipeline_layout->descriptor_layouts = array<GraphicsDescriptorSetLayout*>::create({
+	array_init_with_elements(pipeline_layout->descriptor_layouts, {
 				g_assets->ubo_layout,
 				descriptor_layout
-			}, deshi_temp_allocator).ptr;
-
-	pipeline_layout->push_constants = array<GraphicsPushConstant>::create({transformation}, deshi_temp_allocator).ptr;
+			}, deshi_allocator);
+	array_init_with_elements(pipeline_layout->push_constants, {
+				transformation,
+			}, deshi_allocator);
 	graphics_pipeline_layout_update(pipeline_layout);
 	
 	pipeline->layout = pipeline_layout;
