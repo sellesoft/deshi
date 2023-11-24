@@ -65,6 +65,7 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	Texture* null_texture;
 	Font* null_font;
 	Material* null_material;
+	Mesh* null_mesh;
 
 	GraphicsPipeline* null_pipeline;
 	
@@ -233,7 +234,7 @@ void  assets_mesh_save_to_path(Mesh* mesh, str8 path);
 void  assets_mesh_delete(Mesh* mesh);
 
 //Returns a pointer to the default `Mesh` object which is created when `assets_init()` is called
-FORCE_INLINE Mesh*  assets_mesh_null(){ return DeshAssets->mesh_array[0]; };
+FORCE_INLINE Mesh*  assets_mesh_null(){ return g_assets->null_mesh; };
 
 //Returns the mesh array in `Assets`
 FORCE_INLINE Mesh** assets_mesh_array(){ return DeshAssets->mesh_array; };
