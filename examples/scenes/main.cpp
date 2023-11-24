@@ -37,30 +37,58 @@ int main() {
 	logger_init();
 	Window* win = window_create(str8l("scenes example"));
 	window_show(win);
-	render_init_x(win);
-	assets_init();
+	graphics_init(win);
+	assets_init_x(win);
 	scene_init();
 
+	scene_set_active_window(win);
+
+	Texture* alex = assets_texture_create_from_file_simple(str8l("alex.png"));
+	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
 	
-	// Our scene needs a camera, so we'll create
-	// one, set some settings, then ask the scene 
-	// module to update it.
+	ShaderStages stages = {0};
+	stages.vertex.filename = str8l("dither.vert");
+	stages.fragment.filename = str8l("dither.frag");
+	array_init_with_elements(stages.fragment.resources, {
+				ShaderResourceType_Texture,
+				ShaderResourceType_UBO,
+			});
+
+	struct {
+		f32 time;
+	} ubo;
+
+	UBO* ubo_resource = assets_ubo_create(sizeof(ubo));
+
+	auto resources = array<ShaderResource>::create_with_count(2, deshi_temp_allocator);
+	resources[0].type = ShaderResourceType_Texture;
+	resources[0].texture = alex;
+	resources[1].type = ShaderResourceType_UBO;
+	resources[1].ubo = ubo_resource;
+
+	Material* dithermat = assets_material_create_x(str8l("dither"), stages, resources.ptr);
+	
+	box->batch_array[0].material = dithermat;
+
 	Camera* camera = scene_camera_create();
 	camera->position = Vec3(0,0,0);
 	camera->rotation = Vec3(0,0,0);
-	camera->near_z = 0.1;
-	camera->far_z = 1000;
-	camera->fov = 90;
-	scene_camera_update(camera);
+	camera->forward = Vec3(0,0,1);
+	scene_camera_update_perspective_projection(camera, win->width, win->height, 90, 0.1, 1000);
+	scene_camera_update_view(camera);
+	scene_set_active_camera(camera);
 
-	{ using namespace render::temp;
-
-		line(Vec3(-1, 0, 2), Vec3(1, 0, 2));
-
-	}
+	mat4 transform = mat4::TransformationMatrix(
+			Vec3(0, 0, 2),
+			Vec3(0, 0, 0),
+			Vec3(1, 1, 1));
 
 	while(platform_update()) {
-		render_update_x(win);
+		transform = mat4::TransformationMatrix(Vec3(0, 0, 3), Vec3(0, g_time->totalTime/3000.f*45, 0), vec3::ONE);
+		ubo.time = g_time->totalTime;
+		assets_ubo_update(ubo_resource, &ubo);
+		scene_draw_model(box, &transform);
+		scene_render();
+		graphics_update(win);
 	}
-
 }
