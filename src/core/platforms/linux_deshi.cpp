@@ -1883,6 +1883,7 @@ window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode displ
 	linux.x11.root = XRootWindow(linux.x11.display, linux.x11.screen);
 
 	Window* window = (Window*)memalloc(sizeof(Window));
+	window->title = title;
 	X11Window handle = XCreateSimpleWindow(linux.x11.display, linux.x11.root, x, y, width, height, 0, white, black);
 	window->handle = (void*)handle;
 	if(!DeshWindow) DeshWindow = window;
