@@ -42,6 +42,8 @@ struct WindowInfo {
 
 	array<graphics::Framebuffer*> presentation_frames;
 	graphics::CommandBuffer* command_buffer;
+
+	b32 remake_window; 
 };
 
 WindowInfo* window_infos;
@@ -362,18 +364,18 @@ graphics_format_to_vulkan(GraphicsFormat x) {
 	return {};
 }
 
-RenderFormat
+GraphicsFormat
 vulkan_format_to_graphics(VkFormat x) {
 	switch(x) {
-		case VK_FORMAT_R32G32_SFLOAT:      return RenderFormat_R32G32_Signed_Float;
-		case VK_FORMAT_R32G32B32_SFLOAT:   return RenderFormat_R32G32B32_Signed_Float;
-		case VK_FORMAT_R8G8B8A8_SRGB:      return RenderFormat_R8G8B8A8_StandardRGB;
-		case VK_FORMAT_R8G8B8A8_UNORM:     return RenderFormat_R8G8B8A8_UnsignedNormalized;
-		case VK_FORMAT_B8G8R8A8_UNORM:     return RenderFormat_B8G8R8A8_UnsignedNormalized;
-		case VK_FORMAT_D16_UNORM:          return RenderFormat_Depth16_UnsignedNormalized;
-		case VK_FORMAT_D32_SFLOAT:         return RenderFormat_Depth32_SignedFloat;
-		case VK_FORMAT_D32_SFLOAT_S8_UINT: return RenderFormat_Depth32_SignedFloat_Stencil8_UnsignedInt;
-		case VK_FORMAT_D24_UNORM_S8_UINT:  return RenderFormat_Depth24_UnsignedNormalized_Stencil8_UnsignedInt;
+		case VK_FORMAT_R32G32_SFLOAT:      return GraphicsFormat_R32G32_Float;
+		case VK_FORMAT_R32G32B32_SFLOAT:   return GraphicsFormat_R32G32B32_Float;
+		case VK_FORMAT_R8G8B8A8_SRGB:      return GraphicsFormat_R8G8B8A8_SRGB;
+		case VK_FORMAT_R8G8B8A8_UNORM:     return GraphicsFormat_R8G8B8A8_UNorm;
+		case VK_FORMAT_B8G8R8A8_UNORM:     return GraphicsFormat_B8G8R8A8_UNorm;
+		case VK_FORMAT_D16_UNORM:          return GraphicsFormat_Depth16_UNorm;
+		case VK_FORMAT_D32_SFLOAT:         return GraphicsFormat_Depth32_Float;
+		case VK_FORMAT_D32_SFLOAT_S8_UINT: return GraphicsFormat_Depth32_Float_Stencil8_UInt;
+		case VK_FORMAT_D24_UNORM_S8_UINT:  return GraphicsFormat_Depth24_UNorm_Stencil8_UInt;
 	}
 	VulkanFatal("unhandled VkFormat: ", (u32)x);
 	return {};
@@ -730,6 +732,16 @@ load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
 	return shaderStage;
 }
 
+local void
+copy_buffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) {
+	VkCommandBuffer cb = begin_single_time_commands();
+	
+	VkBufferCopy copy_region{};
+	copy_region.size = size;
+	vkCmdCopyBuffer(cb, src, dst, 1, &copy_region);
+	
+	end_single_time_commands(cb);
+}
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1329,25 +1341,27 @@ create_render_pass_and_frames(Window* window) {
 	
 	GraphicsRenderPassAttachment color_attachment;
 	color_attachment.          format = vulkan_format_to_graphics(wininf->surface_format.format);
-	color_attachment.         load_op = RenderAttachmentLoadOp_Clear;
-	color_attachment.        store_op = RenderAttachmentStoreOp_Store;
-	color_attachment. stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
-	color_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
-	color_attachment.  initial_layout = RenderImageLayout_Undefined;
-	color_attachment.    final_layout = RenderImageLayout_Present;
+	color_attachment.         load_op = GraphicsLoadOp_Clear;
+	color_attachment.        store_op = GraphicsStoreOp_Store;
+	color_attachment. stencil_load_op = GraphicsLoadOp_Dont_Care;
+	color_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	color_attachment.  initial_layout = GraphicsImageLayout_Undefined;
+	color_attachment.    final_layout = GraphicsImageLayout_Present;
 	
 	GraphicsRenderPassAttachment depth_attachment;
 	depth_attachment.          format = vulkan_format_to_graphics(find_depth_format());
-	depth_attachment.         load_op = RenderAttachmentLoadOp_Clear;
-	depth_attachment.        store_op = RenderAttachmentStoreOp_Store;
-	depth_attachment. stencil_load_op = RenderAttachmentLoadOp_Clear;
-	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
-	depth_attachment.  initial_layout = RenderImageLayout_Undefined;
-	depth_attachment.    final_layout = RenderImageLayout_Depth_Stencil_Attachment_Optimal;
+	depth_attachment.         load_op = GraphicsLoadOp_Clear;
+	depth_attachment.        store_op = GraphicsStoreOp_Store;
+	depth_attachment. stencil_load_op = GraphicsLoadOp_Clear;
+	depth_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	depth_attachment.  initial_layout = GraphicsImageLayout_Undefined;
+	depth_attachment.    final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
 	
 	auto render_pass = graphics::RenderPass::allocate();
-	render_pass->debug_name = str8l("Default render pass");
+	render_pass->debug_name = str8l("<graphics> default render pass");
+	render_pass->use_color_attachment = true;
 	render_pass->color_attachment = color_attachment;
+	render_pass->use_depth_attachment = true;
 	render_pass->depth_attachment = depth_attachment;
 	render_pass->color_clear_values = vec4::ZERO;
 	render_pass->depth_clear_values = {1.f, 0};
@@ -1369,32 +1383,33 @@ create_render_pass_and_frames(Window* window) {
 		auto depth_image_view = graphics::ImageView::allocate();
 		auto color_image      = graphics::Image::allocate();
 		auto depth_image      = graphics::Image::allocate();
-		
+		color_image_view->image = color_image;
+		depth_image_view->image = depth_image;
+
 		color_image->           format = vulkan_format_to_graphics(wininf->surface_format.format);
 		color_image->           extent = {window->width, window->height};
-		color_image->            usage = RenderImageUsage_Color_Attachment;
-		color_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+		color_image->            usage = GraphicsImageUsage_Color_Attachment;
+		color_image->memory_properties = GraphicsMemoryPropertyFlag_DeviceLocal;
 		color_image->__internal.handle = (void*)images[i];
 		// NOTE(sushi) no reason to call render_image_update() here because we get the handle to the image from the swapchain (which is kinda stupid but whatever)
 		
 		depth_image->           format = vulkan_format_to_graphics(find_depth_format());
 		depth_image->           extent = {window->width, window->height};
-		depth_image->            usage = RenderImageUsage_Depth_Stencil_Attachment;
-		depth_image->memory_properties = RenderMemoryPropertyFlag_DeviceLocal;
+		depth_image->            usage = GraphicsImageUsage_Depth_Stencil_Attachment;
+		depth_image->memory_properties = GraphicsMemoryPropertyFlag_DeviceLocal;
 		depth_image->update();
 		
 		color_image_view->format = color_image->format;
-		color_image_view->aspect_flags = RenderImageViewAspectFlags_Color;
+		color_image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
 		color_image_view->update();
 
 		depth_image_view->format = depth_image->format;
-		depth_image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
+		depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
 		depth_image_view->update();
 
 		frame->color_image_view = color_image_view;
 		frame->depth_image_view = depth_image_view;
-		color_image_view->image = color_image;
-		depth_image_view->image = depth_image;
+
 
 		VkImageView attachments[2] = {
 			get_handle(color_image_view),
@@ -1416,6 +1431,80 @@ create_render_pass_and_frames(Window* window) {
 	}
 	
 	VulkanInfo("finished creating default render pass and frames in ", peek_stopwatch(watch), "ms.");
+}
+
+void
+recreate_frames(Window* window) {
+	// NOTE(sushi) we need to re-create these things because the window will already have 
+	//             active render-api handles which we can just reuse. This also avoids an 
+	//             issue with render commands that take RenderFrames, as if we don't do this
+	//             any command that references a previous handle would still be pointing 
+	//             at a destroyed swapchain's image
+	// the goal of this function is to recreate all of this information w/o disturbing any 
+	// possible references to any handle encountered in the process. This includes:
+	// The GraphicsFramebuffer handles
+	// The GraphicsImageView handles contained by those frames
+	// The GraphicsImage handles that those views point to
+	VulkanInfo("recreating frames for window ", window->title);
+	
+	auto wininf = (WindowInfo*)window->render_info;
+	
+	GraphicsRenderPass* render_pass = wininf->presentation_frames[0]->render_pass;
+	
+	u32 old_image_count = wininf->image_count;
+	
+	vkGetSwapchainImagesKHR(vk_device, wininf->swapchain, &wininf->image_count, 0);
+	auto images = array<VkImage>::create_with_count(wininf->image_count, deshi_temp_allocator);
+	vkGetSwapchainImagesKHR(vk_device, wininf->swapchain, &wininf->image_count, images.ptr);
+	
+	// TODO(sushi) I'm not sure if this should ever happen, but if it does and we have less frames
+	//             than before, we run the risk of external handles to those frames needing to be 
+	//             invalidated (possibly). Handle this if it ever becomes a problem.
+	if(old_image_count != wininf->image_count) {
+		VulkanFatal("FATAL INTERNAL ERROR: while recreating frames, the amount of swapchain images differed from its original value. This situation is not handled yet and should be reported immediately.");
+	}
+	
+	forI(wininf->image_count) {
+		GraphicsFramebuffer* frame = wininf->presentation_frames[i];
+		frame->width = window->width;
+		frame->height = window->height;
+		frame->render_pass = render_pass;
+		
+		auto color_image_view = frame->color_image_view; 
+		auto depth_image_view = frame->depth_image_view; 
+		auto color_image      = color_image_view->image; 
+		auto depth_image      = depth_image_view->image; 
+		
+		color_image->extent = {window->width, window->height};
+		get_handle(color_image) = images[i];
+		
+		depth_image->extent = {window->width, window->height};
+		graphics_image_update(depth_image);
+		
+		color_image_view->format = color_image->format;
+		color_image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
+		graphics_image_view_update(color_image_view);
+		
+		depth_image_view->format = depth_image->format;
+		depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
+		graphics_image_view_update(depth_image_view);
+		
+		VkImageView attachments[2] = {
+			get_handle(color_image_view),
+			get_handle(depth_image_view),
+		};
+		
+		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+		info.renderPass = get_handle(frame->render_pass);
+		info.width = window->width;
+		info.height = window->height;
+		info.layers = 1;
+		info.pAttachments = attachments;
+		info.attachmentCount = 2;
+		auto result = vkCreateFramebuffer(vk_device, &info, vk_allocator, &get_handle(frame));
+		VulkanAssertVk(result, "failed to recreate framebuffer for window.");
+		vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)get_handle(frame), "<graphics> default framebuffer");
+	}
 }
 
 void
@@ -1455,10 +1544,18 @@ graphics_init(Window* window) {
 		return;
 	}
 
+	g_graphics->debugging = true;
+	g_graphics->logging_level = -1;
+	g_graphics->break_on_error = true;
+
 	VulkanNotice("initializing graphics module for window '", window->title, "'.");
 	
 	Stopwatch watch = start_stopwatch();
 	
+	// TODO(sushi) setup allocators specifically for graphics
+	primary_allocator = deshi_allocator;
+	temp_allocator = deshi_temp_allocator;
+
 	memory_pool_init(window_infos, 4);
 
 	if(!file_exists(str8l("data/shaders/"))) {
@@ -1467,17 +1564,17 @@ graphics_init(Window* window) {
 	}
 
 	// TODO(sushi) this should be moved to an implementation shared between backends
-	memory_pool_init(g_render.pools.descriptor_set_layouts, 8);
-	memory_pool_init(g_render.pools.descriptor_sets, 8);
-	memory_pool_init(g_render.pools.pipeline_layouts, 8);
-	memory_pool_init(g_render.pools.pipelines, 8);
-	memory_pool_init(g_render.pools.buffers, 8);
-	memory_pool_init(g_render.pools.command_buffers, 8);
-	memory_pool_init(g_render.pools.images, 8);
-	memory_pool_init(g_render.pools.image_views, 8);
-	memory_pool_init(g_render.pools.samplers, 8);
-	memory_pool_init(g_render.pools.passes, 8);
-	memory_pool_init(g_render.pools.framebuffers, 8);
+	memory_pool_init(g_graphics->pools.descriptor_set_layouts, 8);
+	memory_pool_init(g_graphics->pools.descriptor_sets, 8);
+	memory_pool_init(g_graphics->pools.pipeline_layouts, 8);
+	memory_pool_init(g_graphics->pools.pipelines, 8);
+	memory_pool_init(g_graphics->pools.buffers, 8);
+	memory_pool_init(g_graphics->pools.command_buffers, 8);
+	memory_pool_init(g_graphics->pools.images, 8);
+	memory_pool_init(g_graphics->pools.image_views, 8);
+	memory_pool_init(g_graphics->pools.samplers, 8);
+	memory_pool_init(g_graphics->pools.render_passes, 8);
+	memory_pool_init(g_graphics->pools.framebuffers, 8);
 
 	// create the window info that this window will point to 
 	auto wi = (WindowInfo*)(window->render_info = memory_pool_push(window_infos));
@@ -1502,6 +1599,7 @@ graphics_init(Window* window) {
 	create_command_pool();
 
 	wi->command_buffer = graphics::CommandBuffer::allocate();
+	wi->command_buffer->commands = array<GraphicsCommand>::create(primary_allocator).ptr;
 	wi->command_buffer->update();
 
 	setup_shader_compiler();
@@ -1519,6 +1617,257 @@ graphics_init(Window* window) {
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @init
+
+
+void
+graphics_update(Window* window) {
+	Stopwatch watch = start_stopwatch();
+	auto wininf = (WindowInfo*)window->render_info;
+
+	if(window->resized || wininf->remake_window) {
+		if(window->width <= 0 || window->height <= 0) return;
+		vkDeviceWaitIdle(vk_device);
+		create_swapchain(window);
+		recreate_frames(window);
+		wininf->frame_index = 0;
+		wininf->remake_window = false;
+	}
+	
+	renderStats = {};
+	
+	VkResult result = vkAcquireNextImageKHR(vk_device, wininf->swapchain, UINT64_MAX, vk_semaphore_image_acquired, VK_NULL_HANDLE, &wininf->frame_index);
+	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+		VulkanNotice("Window ", window->title, "'s surface has changed.");
+		// the surface has changed in some way that makes it no longer compatible with its swapchain
+		// so we need to recreate the swapchain
+		wininf->remake_window = true;
+		return;
+	} else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		Assert(!"failed to acquire swapchain image");
+	}
+	
+
+	//// build commands ////
+	
+
+	VkClearValue clear_values[2];
+
+	GraphicsPipeline* currently_bound_pipeline = 0;
+	GraphicsRenderPass* current_render_pass = 0;
+
+	// for keeping track of what dynamic states 
+	// are required and what have been fulfilled
+	enum {
+		Static,
+		DynamicPending,
+		DynamicFulfilled,
+	};
+
+	struct {
+		u32 viewport       : 2;
+		u32 scissor        : 2;
+		u32 depth_bias     : 2;
+		u32 line_width     : 2;
+		u32 blend_constant : 2;
+	} dynamic_state;
+
+	
+	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+	auto cmdbuf = get_handle(wininf->command_buffer);
+	result = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
+	VulkanAssertVk(result, "failed to begin command buffer for window '", window->title, "'.");
+	
+	forI(array_count(wininf->command_buffer->commands)) {
+		auto cmd = wininf->command_buffer->commands[i];
+		switch(cmd.type) {
+			case GraphicsCommandType_Begin_Render_Pass: {
+				if(current_render_pass) {
+					VulkanError("attempted to begin a render pass (", cmd.begin_render_pass.pass->debug_name, ") while one is already in progress (", current_render_pass->debug_name, ")");
+					return;
+				}
+				auto pass = cmd.begin_render_pass.pass;
+				auto frame = cmd.begin_render_pass.frame;
+				VulkanAssert(pass, "encountered begin render pass command with a null render pass handle.");
+				VulkanAssert(frame, "encountered begin render pass command with a null framebuffer handle.");
+
+				VkRenderPassBeginInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+				info.renderPass = get_handle(pass);
+				info.framebuffer = get_handle(frame);
+				info.renderArea.offset = {0,0};
+				info.renderArea.extent = {frame->width, frame->height};
+				info.pClearValues = clear_values;
+
+				if(pass->use_color_attachment) {
+					clear_values[0].color = {
+						pass->color_clear_values.r,
+						pass->color_clear_values.g,
+						pass->color_clear_values.b,
+						pass->color_clear_values.a
+					};
+					if(pass->use_depth_attachment) {
+						clear_values[1].depthStencil = {
+							pass->depth_clear_values.depth,
+							pass->depth_clear_values.stencil,
+						};
+						info.clearValueCount = 2;
+					} else info.clearValueCount = 1;
+				} else if(pass->use_depth_attachment) {
+					clear_values[0].depthStencil = {
+						pass->depth_clear_values.depth,
+						pass->depth_clear_values.stencil,
+					};
+					info.clearValueCount = 1;
+				}
+
+				vk_debug_begin_label(cmdbuf, (char*)pass->debug_name.str, {0.2, 0.4, 0.8, 1.f});
+				vkCmdBeginRenderPass(cmdbuf, &info, VK_SUBPASS_CONTENTS_INLINE);
+				current_render_pass = pass;
+			} break;
+			case GraphicsCommandType_End_Render_Pass: {
+				VulkanAssert(current_render_pass, "encountered end render pass command but no render pass has been started yet.");
+				vkCmdEndRenderPass(cmdbuf);
+				vk_debug_end_label(cmdbuf);
+				current_render_pass = 0;
+			} break;
+			case GraphicsCommandType_Bind_Pipeline: {
+				auto pipeline = cmd.bind_pipeline.handle;
+				VulkanAssert(pipeline, "encountered bind pipeline command, but the given pipeline handle is null.");
+				currently_bound_pipeline = pipeline;
+				dynamic_state.viewport       = (pipeline->dynamic_viewport?       DynamicPending : Static);
+				dynamic_state.scissor        = (pipeline->dynamic_scissor?        DynamicPending : Static);
+				dynamic_state.depth_bias     = (pipeline->dynamic_depth_bias?     DynamicPending : Static);
+				dynamic_state.line_width     = (pipeline->dynamic_line_width?     DynamicPending : Static);
+				dynamic_state.blend_constant = (pipeline->dynamic_blend_constant? DynamicPending : Static);
+				vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, get_handle(pipeline));
+			} break;
+			case GraphicsCommandType_Set_Viewport: {
+				if(dynamic_state.viewport == Static) {
+					VulkanError("encountered set viewport command, but the currently bound pipeline (", currently_bound_pipeline->debug_name, ") does not have viewport set as dynamic.");
+					continue;
+				}
+				VkViewport v = {0};
+				v.x = cmd.set_viewport.offset.x;
+				v.y = cmd.set_viewport.offset.y;
+				v.width = cmd.set_viewport.extent.x;
+				v.height = cmd.set_viewport.extent.y;
+				v.minDepth = 0.f;
+				v.maxDepth = 1.f;
+				vkCmdSetViewport(cmdbuf, 0, 1, &v);
+				dynamic_state.viewport = DynamicFulfilled;
+			} break;
+			case GraphicsCommandType_Set_Scissor: {
+				if(dynamic_state.scissor == Static) {
+					VulkanError("encountered set scissor command, but the currently bound pipeline (", currently_bound_pipeline->debug_name, ") does not have scissors set to dynamic.");
+					continue;
+				}
+				VkRect2D s = {0};
+				s.offset.x = cmd.set_scissor.offset.x;
+				s.offset.y = cmd.set_scissor.offset.y;
+				s.extent.width = cmd.set_scissor.extent.x;
+				s.extent.height = cmd.set_scissor.extent.y;
+				vkCmdSetScissor(cmdbuf, 0, 1, &s);
+				dynamic_state.scissor = DynamicFulfilled;
+			} break;
+			case GraphicsCommandType_Set_Depth_Bias: {
+				if(dynamic_state.depth_bias == Static) {
+					VulkanError("encountered set depth bias command, but the currently bound pipeline (", currently_bound_pipeline->debug_name, ") does not have depth bias set as dynamic.");
+					continue;
+				}
+				vkCmdSetDepthBias(cmdbuf, cmd.set_depth_bias.constant, cmd.set_depth_bias.clamp, cmd.set_depth_bias.slope);
+				dynamic_state.depth_bias = DynamicFulfilled;
+			} break;
+			case GraphicsCommandType_Bind_Vertex_Buffer: {
+				VulkanAssert(cmd.bind_vertex_buffer.handle, "encountered bind vertex buffer command, but the buffer handle is null.");
+				VkDeviceSize offsets[1] = {0};
+				vkCmdBindVertexBuffers(cmdbuf, 0, 1, &get_handle(cmd.bind_vertex_buffer.handle), offsets);
+			} break;
+			case GraphicsCommandType_Bind_Index_Buffer: {
+				VulkanAssert(cmd.bind_index_buffer.handle, "encountered bind index buffer command, but the buffer handle is null.");
+				vkCmdBindIndexBuffer(cmdbuf, get_handle(cmd.bind_index_buffer.handle), 0, VK_INDEX_TYPE_UINT32);
+			} break;
+			case GraphicsCommandType_Bind_Descriptor_Set: {
+				vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+										get_handle(currently_bound_pipeline->layout),
+										cmd.bind_descriptor_set.set_index, 1, 
+										&get_handle(cmd.bind_descriptor_set.handle),
+										0, 0);
+			} break;
+			case GraphicsCommandType_Push_Constant: {
+				VulkanAssert(currently_bound_pipeline, "encountered push constant command, but no pipeline has been bound yet.");
+				vkCmdPushConstants(cmdbuf, 
+								   get_handle(currently_bound_pipeline->layout),
+								   graphics_shader_stage_to_vulkan(cmd.push_constant.info.shader_stages),
+								   cmd.push_constant.info.offset, cmd.push_constant.info.size, cmd.push_constant.data);
+			} break;
+			case GraphicsCommandType_Draw_Indexed: {
+				// TODO(sushi) checks for dynamic state stuff having been set before this occurs
+				vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
+			} break;
+		}
+	}
+
+	result = vkEndCommandBuffer(cmdbuf);
+	VulkanAssertVk(result, "failed to end command buffer.");
+
+	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+	submit_info.waitSemaphoreCount = 1;
+	submit_info.pWaitSemaphores = &vk_semaphore_image_acquired;
+	submit_info.pWaitDstStageMask = &wait_stage;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &get_handle(wininf->command_buffer);
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = &vk_semaphore_render_complete;
+	result = vkQueueSubmit(vk_graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+	VulkanAssertVk(result, "failed to submit commands to queue.");
+
+	if(wininf->remake_window) return;
+
+	VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores = &vk_semaphore_render_complete;
+	present_info.swapchainCount = 1;
+	present_info.pSwapchains = (VkSwapchainKHR*)&wininf->swapchain;
+	present_info.pImageIndices = &wininf->frame_index;
+	present_info.pResults = 0;
+	result = vkQueuePresentKHR(vk_present_queue, &present_info);
+	
+	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wininf->remake_window) {
+		VulkanNotice("remaking swapchain and frames for window '", window->title, "'.");
+		vkDeviceWaitIdle(vk_device);
+		create_swapchain(window);
+		recreate_frames(window);
+		wininf->remake_window = false;
+	} else if(result != VK_SUCCESS) {
+		VulkanFatal("failed to queue present.");
+	}
+	
+	array_clear(wininf->command_buffer->commands);
+	
+	wininf->frame_index = (wininf->frame_index + 1) % wininf->min_image_count;
+	
+	result = vkQueueWaitIdle(vk_graphics_queue);
+	switch (result){
+		case VK_ERROR_OUT_OF_HOST_MEMORY:   VulkanFatal("Host is out of memory!"); break;
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY: VulkanFatal("Device is out of memory!"); break;
+		case VK_ERROR_DEVICE_LOST:          VulkanFatal("Device lost!"); break;
+		case VK_SUCCESS:default: break;
+	}
+	
+	//update renderStats
+	renderStats.drawnTriangles += renderStats.drawnIndices / 3;
+	//renderStats.totalVertices  += (u32)vertexBuffer.size() + renderTwodVertexCount + renderTempWireframeVertexCount;
+	//renderStats.totalIndices   += (u32)indexBuffer.size()  + renderTwodIndexCount  + renderTempWireframeIndexCount; //!Incomplete
+	renderStats.totalTriangles += renderStats.totalIndices / 3;
+	renderStats.renderTimeMS = peek_stopwatch(watch);
+	
+	
+	g_time->renderTime = peek_stopwatch(watch);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @buffer
 
 
@@ -1529,72 +1878,81 @@ graphics_buffer_create(
 		GraphicsBufferUsage usage, 
 		GraphicsMemoryPropertyFlags properties, 
 		GraphicsMemoryMappingBehavoir mapping_behavoir) {
-	GraphicsBuffer* out = memory_pool_push(g_graphics->pools.buffers);
-	if(!requested_size) {
-		VulkanError("the requested size of a GraphicsBuffer must be non-zero.");
-		return 0;
-	}
+	VulkanInfo("creating a buffer.");
 
+	VulkanAssert(requested_size, "cannot create a buffer with size 0.");
 	if(HasFlag(properties, GraphicsMemoryProperty_HostStreamed) && 
 	   HasFlag(properties, GraphicsMemoryPropertyFlag_LazilyAllocated)) {
 		VulkanError("the memory property flags 'HostStreamed' and 'LazilyAllocated' are incompatible.");
 		return 0;
 	}
 
-	VkDeviceSize size = requested_size;
+	GraphicsBuffer* out = memory_pool_push(g_graphics->pools.buffers);
 
-	// TODO(sushi) decide if we should be using this here. Before we did not, but I feel like doing this keeps the api and internal
-	//             stuff consistent. Eg. if we add the ability to do something with buffers in either the api or backend, this requires
-	//             us to update both to handle it rather than, for example, only updating the api's implementation to handle it.
-	//             Though this may introduce extra work that is not needed for buffers we hand out to the user.
-	create_or_resize_buffer(
-			&get_handle(out), 
-			&get_memory_handle(out),
-			&size,
-			size,
-			graphics_buffer_usage_to_vulkan(usage),
-			graphics_memory_properties_to_vulkan(properties));
+	VkBufferCreateInfo create_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	create_info.size = requested_size;
+	create_info.usage = graphics_buffer_usage_to_vulkan(usage);
+	if(mapping_behavoir == GraphicsMemoryMapping_Never) {
+		create_info.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	}
+	create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	auto result = vkCreateBuffer(vk_device, &create_info, vk_allocator, &get_handle(out));
+	VulkanAssertVk(result, "failed to create buffer.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_BUFFER, (u64)get_handle(out), "<graphics> buffer");
 
-	GRAPHICS_INTERNAL(out).size = size;
+	VkMemoryRequirements req;
+	vkGetBufferMemoryRequirements(vk_device, get_handle(out), &req);
+	GRAPHICS_INTERNAL(out).size = req.size;
+
+	VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	alloc_info.allocationSize = req.size;
+	alloc_info.memoryTypeIndex = find_memory_type(req.memoryTypeBits, graphics_memory_properties_to_vulkan(properties));
+	result = vkAllocateMemory(vk_device, &alloc_info, vk_allocator, &get_memory_handle(out));
+	VulkanAssertVk(result, "failed to allocate memory for buffer.");
+	result = vkBindBufferMemory(vk_device, get_handle(out), get_memory_handle(out), 0);
+	VulkanAssertVk(result, "failed to bind buffer to memory.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)get_memory_handle(out), "<graphics> memory");
 
 	if(mapping_behavoir == GraphicsMemoryMapping_Never) {
 		if(!data) {
 			VulkanWarning("the mapping behavoir of the buffer we are creating is set to 'Never', but the given data pointer is null. I'm not sure yet if there is a legitamate usecase for this, so remove this warning if we ever come across one.");
 		} else {
-			VulkanAssertVk(!HasFlag(properties,GraphicsMemoryPropertyFlag_HostCoherent|GraphicsMemoryPropertyFlag_HostVisible|GraphicsMemoryPropertyFlag_HostCached), 
+			VulkanAssert(!HasFlag(properties,GraphicsMemoryPropertyFlag_HostCoherent|GraphicsMemoryPropertyFlag_HostVisible|GraphicsMemoryPropertyFlag_HostCached), 
 					"incompatible mapping behavoir and memory flags. Mapping behavoir is set to 'Never', which is incompatible with the memory properties 'HostVisible', 'HostCoherent', or 'HostCached'.");
 			// create a staging buffer
-			VkBuffer stage = VK_NULL_HANDLE;
-			VkDeviceMemory stage_memory = VK_NULL_HANDLE;
+			VkBuffer stage;
+			VkBufferCreateInfo staging_buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+			staging_buffer_info.size        = requested_size;
+			staging_buffer_info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			staging_buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			result = vkCreateBuffer(vk_device, &staging_buffer_info, vk_allocator, &stage); 
+			VulkanAssertVk(result, "failed to create staging buffer for GraphicsBuffer whose mapping behavoir is 'Never'");
 
-			create_or_resize_buffer(
-					&stage,
-					&stage_memory,
-					&size,
-					size,
-					graphics_buffer_usage_to_vulkan(usage),
-					graphics_memory_properties_to_vulkan(properties));
-			
-			void* mapped = 0;
-			auto result = vkMapMemory(vk_device, stage_memory, 0, size, 0, &mapped);
-			VulkanAssertVk(result, "failed to map memory for initial data copy to GraphicsBuffer. (Mapping behavoir is 'Never')");
+			VkDeviceMemory stage_memory;
+			VkMemoryRequirements stage_req;
+			vkGetBufferMemoryRequirements(vk_device, stage, &stage_req);
+			VkMemoryAllocateInfo stage_alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+			stage_alloc_info.allocationSize = stage_req.size;
+			stage_alloc_info.memoryTypeIndex = find_memory_type(stage_req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			result = vkAllocateMemory(vk_device, &stage_alloc_info, vk_allocator, &stage_memory);
+			VulkanAssertVk(result, "failed to allocate memory for staging buffer.");
+			result = vkBindBufferMemory(vk_device, stage, stage_memory, 0);
+			VulkanAssertVk(result, "failed to bind staging buffer to memory.");
 
-			CopyMemory(mapped, data, requested_size);
+			void* stage_data;
+			result = vkMapMemory(vk_device, stage_memory, 0, req.size, 0, &stage_data);
+			VulkanAssertVk(result, "failed to map staging buffer's memory.");
+			CopyMemory(stage_data, data, requested_size);
+			vkUnmapMemory(vk_device, stage_memory);
+				
+			copy_buffer(stage, get_handle(out), requested_size);
 
-			if(!HasFlag(properties, GraphicsMemoryPropertyFlag_HostCoherent)) {
-				VkMappedMemoryRange mapped_range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-				mapped_range.memory = stage_memory;
-				mapped_range.offset = 0;
-				mapped_range.  size = size;
-				result = vkFlushMappedMemoryRanges(vk_device, 1, &mapped_range);
-				VulkanAssertVk(result, "failed to flush memory range while performing initial copy to GraphicsBuffer. (Mapping behavoir is 'Never')");
-			}
-
-			vkUnmapMemory(vk_device, get_memory_handle(out));
+			vkDestroyBuffer(vk_device, stage, vk_allocator);
+			vkFreeMemory(vk_device, stage_memory, vk_allocator);
 		} 
 	} else if(mapping_behavoir == GraphicsMemoryMapping_Occasional) {
 		if(data) {
-			auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
+			auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 			VulkanAssertVk(result, "failed to map memory for initial data copy to GraphicsBuffer. (Mapping behavoir is 'Occasional')");
 
 			CopyMemory(GRAPHICS_INTERNAL(out).mapped.data, data, requested_size);
@@ -1602,7 +1960,7 @@ graphics_buffer_create(
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 			range.memory = get_memory_handle(out);
 			range.offset = 0;
-			range.  size = size;
+			range.  size = req.size;
 			result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 			VulkanAssertVk(result, "failed to flush memory range while performing initial copy to GraphicsBuffer. (Mapping behavoir is set to 'Occasional')");
 
@@ -1610,7 +1968,7 @@ graphics_buffer_create(
 		}
 		GRAPHICS_INTERNAL(out).mapped = {};
 	} else if(mapping_behavoir == GraphicsMemoryMapping_Persistent) {
-		auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
+		auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 		VulkanAssertVk(result, "failed to perform initial mapping for GraphicsBuffer with 'Persistent' mapping behavoir.");
 
 		if(data) {
@@ -1619,7 +1977,7 @@ graphics_buffer_create(
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 			range.memory = get_memory_handle(out);
 			range.offset = 0;
-			range.  size = size;
+			range.  size = req.size;
 			result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 			VulkanAssertVk(result, "failed to flush memory range while performing initial copy to GraphicsBuffer. (MappingBehavoir is set to 'Persistent').");
 		}
@@ -1772,7 +2130,7 @@ graphics_buffer_unmap(GraphicsBuffer* x_, b32 flush) {
 		range.offset = x->mapped_offset();
 		range.size   = x->mapped_size();
 		auto result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
-		VulkanAssert(result, "failed to flush memory to device.");
+		VulkanAssertVk(result, "failed to flush memory to device.");
 	}
 
 	vkUnmapMemory(vk_device, get_memory_handle(x));
@@ -1807,6 +2165,7 @@ graphics_buffer_flush(GraphicsBuffer* x_) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @image
+
 
 GraphicsImage*
 graphics_image_allocate() {
@@ -2027,10 +2386,10 @@ graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x) {
 	forI(bindings.count()) {
 		auto b = bindings[i];
 		switch(b.type) {
-			case RenderDescriptorType_Combined_Image_Sampler: {
+			case GraphicsDescriptorType_Combined_Image_Sampler: {
 				bindings_out[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			} break;
-			case RenderDescriptorType_Uniform_Buffer: {
+			case GraphicsDescriptorType_Uniform_Buffer: {
 				bindings_out[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
 		}
@@ -2051,7 +2410,7 @@ graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x) {
 }
 
 GraphicsDescriptorSet* 
-graphics_descriptor_set_create() {
+graphics_descriptor_set_allocate() {
 	return memory_pool_push(g_graphics->pools.descriptor_sets);
 }
 
@@ -2159,6 +2518,8 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor
 		w->descriptorCount = 1;
 		switch(d.type) {
 			case GraphicsDescriptorType_Uniform_Buffer: {
+				VulkanAssert(d.ubo.buffer, "descriptor ", i, " has a null buffer pointer.");
+				VulkanAssert(get_handle(d.ubo.buffer) && get_memory_handle(d.ubo.buffer), "one of the backend handles of descriptor ", i, " is null, indicating deletion, corruption, or the object was never updated.");
 				auto b = buffer_infos.push();
 				b->buffer = get_handle(d.ubo.buffer);
 				b-> range = d.ubo.range;
@@ -2167,6 +2528,10 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor
 				w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
 			case GraphicsDescriptorType_Combined_Image_Sampler: {
+				VulkanAssert(d.image.view, "descriptor ", i, " has a null image view pointer.");
+				VulkanAssert(d.image.sampler, "descriptor ", i, " has a null sampler pointer.");
+				VulkanAssert(get_handle(d.image.sampler), "the given sampler for descriptor ", i, " has a null backend handle.");
+				VulkanAssert(get_handle(d.image.view), "the given image view for descriptor ", i, " has a null backend handle.");
 				auto b = image_infos.push();
 				b->imageView = get_handle(d.image.view);
 				b->sampler = get_handle(d.image.sampler);
@@ -2238,6 +2603,8 @@ graphics_pipeline_allocate() {
 void 
 graphics_pipeline_update(GraphicsPipeline* x) {
 	VulkanAssert(x, "passed null GraphicsPipeline pointer");
+	VulkanAssert(x->layout, "the given pipeline has a null layout pointer. All pipelines must specify a GraphicsPipelineLayout.");
+	VulkanAssert(get_handle(x->layout), "the given pipeline has a layout but its backend handle is null. Did you call graphics_pipeline_layout_update() on it?");
 	VulkanInfo("updating pipeline '", x->debug_name, "'.");
 
 	if(!x->shader_stages) {
@@ -2279,19 +2646,19 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	rasterization_state.depthBiasConstantFactor = x->depth_bias_constant;
 	rasterization_state.              lineWidth = 1.f;
 	switch(x->polygon_mode) {
-		case RenderPipelinePolygonMode_Point: rasterization_state.polygonMode = VK_POLYGON_MODE_POINT; break;
-		case RenderPipelinePolygonMode_Fill:  rasterization_state.polygonMode = VK_POLYGON_MODE_FILL; break;
-		case RenderPipelinePolygonMode_Line:  rasterization_state.polygonMode = VK_POLYGON_MODE_LINE; break;
+		case GraphicsPolygonMode_Point: rasterization_state.polygonMode = VK_POLYGON_MODE_POINT; break;
+		case GraphicsPolygonMode_Fill:  rasterization_state.polygonMode = VK_POLYGON_MODE_FILL; break;
+		case GraphicsPolygonMode_Line:  rasterization_state.polygonMode = VK_POLYGON_MODE_LINE; break;
 	}
 	switch(x->culling) {
-		case RenderPipelineCulling_None:       rasterization_state.cullMode = VK_CULL_MODE_NONE; break;
-		case RenderPipelineCulling_Back:       rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT; break;
-		case RenderPipelineCulling_Front:      rasterization_state.cullMode = VK_CULL_MODE_FRONT_BIT; break;
-		case RenderPipelineCulling_Front_Back: rasterization_state.cullMode = VK_CULL_MODE_FRONT_AND_BACK; break;
+		case GraphicsPipelineCulling_None:       rasterization_state.cullMode = VK_CULL_MODE_NONE; break;
+		case GraphicsPipelineCulling_Back:       rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT; break;
+		case GraphicsPipelineCulling_Front:      rasterization_state.cullMode = VK_CULL_MODE_FRONT_BIT; break;
+		case GraphicsPipelineCulling_Front_Back: rasterization_state.cullMode = VK_CULL_MODE_FRONT_AND_BACK; break;
 	}
 	switch(x->front_face) {
-		case RenderPipelineFrontFace_CW:  rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
-		case RenderPipelineFrontFace_CCW: rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; break;
+		case GraphicsFrontFace_CW:  rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
+		case GraphicsFrontFace_CCW: rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; break;
 	}
 
 	VkPipelineColorBlendAttachmentState    color_blend_attachment_state{};
@@ -2603,8 +2970,10 @@ graphics_command_buffer_destroy(GraphicsCommandBuffer* x) {
 	memory_pool_delete(g_graphics->pools.command_buffers, x);
 }
 
-// Retrieve the command buffer belonging to the given window.
-GraphicsCommandBuffer* graphics_command_buffer_of_window(Window* window);
+GraphicsCommandBuffer* 
+graphics_command_buffer_of_window(Window* window) {
+	return ((WindowInfo*)window->render_info)->command_buffer;
+}
 
 #undef primary_allocator
 #undef temp_allocator
