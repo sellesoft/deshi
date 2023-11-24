@@ -1575,11 +1575,14 @@ render_voxel_create_chunk(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	memory_arena_fit(chunk->arena);
 	
 	//create the vertex/index GPU buffers and upload the vertex/index data to them
+#ifndef RENDER_REWRITE
 	chunk->vertex_buffer = render_buffer_create(vertex_array, actual_vertices_size, RenderBufferUsage_VertexBuffer,
 												RenderMemoryProperty_DeviceMappable, RenderMemoryMapping_MapWriteUnmap);
 	chunk->index_buffer  = render_buffer_create(index_array,  actual_indices_size,  RenderBufferUsage_IndexBuffer,
 												RenderMemoryProperty_DeviceMappable, RenderMemoryMapping_MapWriteUnmap);
-	
+#else
+	FixMe;
+#endif
 	renderStats.totalVoxels += voxels_count;
 	renderStats.totalVoxelChunks += 1;
 	return chunk;
@@ -1591,9 +1594,12 @@ render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 	Assert(renderStats.totalVoxelChunks > 0);
 	
 	//dealloc GPU buffers
+#ifndef RENDER_REWRITE
 	render_buffer_delete(chunk->vertex_buffer);
 	render_buffer_delete(chunk->index_buffer);
-	
+#else
+	FixMe;
+#endif
 	//dealloc chunk arena
 	memory_delete_arena(chunk->arena);
 	

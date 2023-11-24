@@ -442,12 +442,16 @@ void cmd_init(){
 		
 		Texture* tex = 0;
 		const char* tex_name = temp_str8_cstr(args[2]);
+#ifndef RENDER_REWRITE
 		for_stb_array(assets_texture_array()){
 			if(strcmp((*it)->name, tex_name) == 0){
 				tex = *it;
 				break;
 			}
 		}
+#else
+		FixMe;
+#endif
 		if(tex == 0){
 			LogE("cmd","Failed to update material texture. There is no texture named '",args[2],"'.");
 			return;
@@ -484,10 +488,18 @@ void cmd_init(){
 	DESHI_CMD_START(shader_reload, "Reloads specified shader"){
 		s32 id = atoi(temp_str8_cstr(args[0]));
 		if(id == -1){
+#ifndef RENDER_REWRITE
 			render_reload_all_shaders();
+#else
+			FixMe;
+#endif
 			console_log("{{t=CMD,c=magen}Reloaded all shaders");
 		}else if(id < Shader_COUNT){
+#ifndef RENDER_REWRITE
 			render_reload_shader(id);
+#else
+			FixMe;
+#endif
 			console_log("{{t=CMD,c=magen}Reloaded '",ShaderStrings[id]);
 		}else{
 			LogE("cmd", "There is no shader with id: ",id);
