@@ -542,7 +542,7 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	}
 	
 	// check how much draw data we need for the text and reallocate the drawcmd if needed
-	vec2i nucounts = render_make_text_counts(str8_length(data->text.buffer.fin));
+	vec2i nucounts = ui_put_text_counts(str8_length(data->text.buffer.fin));
 	auto p = ui_drawcmd_realloc(dc, nucounts);
 	vp = p.vertexes;
 	ip = p.indexes;
@@ -556,10 +556,10 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
 			if(   (idx + j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)) // make selected text red 
 			   && (idx + j < Max(data->text.cursor.pos, data->text.cursor.pos + data->text.cursor.count))){
-				counts += render_make_text(vp,ip,counts, {data->text.buffer.str + idx + j, 1}, item->style.font, cursor, Color_Red,
+				counts += ui_put_text(vp,ip,counts, {data->text.buffer.str + idx + j, 1}, item->style.font, cursor, Color_Red,
 										   vec2::ONE * item->style.font_height / item->style.font->max_height);
 			}else{
-				counts += render_make_text(vp,ip,counts, {data->text.buffer.str + idx + j, 1}, item->style.font, cursor, item->style.text_color,  
+				counts += ui_put_text(vp,ip,counts, {data->text.buffer.str + idx + j, 1}, item->style.font, cursor, item->style.text_color,  
 										   vec2::ONE * item->style.font_height / item->style.font->max_height);
 			}
 			cursor.x += csize.x;
@@ -626,7 +626,7 @@ deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped
 	setup.generate = ui_gen_text;
 	setup.evaluate = ui_eval_text;
 	setup.copy = ui_copy_text;
-	vec2i counts[1] = {render_make_text_counts(str8_length(text))};
+	vec2i counts[1] = {ui_put_text_counts(str8_length(text))};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 	
@@ -660,8 +660,8 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 	dc->texture = item->style.font->tex;
 	
 	vec2i nucounts = 
-		render_make_text_counts(str8_length(data->text.buffer.fin)) +
-		render_make_filledrect_counts(); //cursor
+		ui_put_text_counts(str8_length(data->text.buffer.fin)) +
+		ui_put_filledrect_counts(); //cursor
 	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
 	    item->drawcmds = ui_make_drawcmd(1);
 		ui_drawcmd_remove(dc);
@@ -680,14 +680,14 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 		forX(j,data->breaks[i+1].first-idx){
 			vec2 csize = font_visual_size(item->style.font, {data->text.buffer.str+idx+j,1}) * item->style.font_height / item->style.font->max_height;
 			if(idx+j > Min(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count) && idx+j < Max(data->text.cursor.pos, data->text.cursor.pos+data->text.cursor.count)){
-				//render_make_rect()
-				counts+=render_make_text(vp,ip,counts,
+				//ui_put_rect()
+				counts+=ui_put_text(vp,ip,counts,
 										 {data->text.buffer.str+idx+j,1}, item->style.font,
 										 cursor, Color_Red,
 										 vec2::ONE * item->style.font_height / item->style.font->max_height
 										 );
 			}else{
-				counts+=render_make_text(vp, ip, counts,
+				counts+=ui_put_text(vp, ip, counts,
 										 {data->text.buffer.str+idx+j,1}, 
 										 item->style.font,
 										 cursor, item->style.text_color,  
@@ -697,7 +697,7 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 			//draw cursor
 			//TODO(sushi) implement different styles of cursors
 			if(idx+j == data->text.cursor.pos){
-				counts+=render_make_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
+				counts+=ui_put_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
 			}	
 			cursor.x += csize.x;
 		}
@@ -706,7 +706,7 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 		//HACK(sushi) to fix the cursor drawing at the end
 		//NOTE(sushi) this happens because of how the very last break represents the last position, but its not iterated above since
 		//            it is used as a boundry instead
-		counts+=render_make_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
+		counts+=ui_put_line(vp,ip,counts,cursor,Vec2(cursor.x,cursor.y+item->style.font_height),1,data->style.colors.cursor);
 	}
 	
 	dc->counts_used = counts;
@@ -813,7 +813,7 @@ deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZ
 	setup.generate = ui_gen_input_text;
 	setup.evaluate = ui_eval_input_text;
 	setup.copy = ui_copy_input_text;
-	vec2i counts[1] = {render_make_text_counts(str8_length(preview))+render_make_rect_counts()};
+	vec2i counts[1] = {ui_put_text_counts(str8_length(preview))+ui_put_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 	
@@ -851,13 +851,13 @@ ui_gen_slider(uiItem* item){DPZoneScoped;
 	counts += ui_gen_background(item, vp, ip, counts);
 	counts += ui_gen_border(item, vp, ip, counts);
 
-	counts += render_make_filledrect(vp, ip, counts, 
+	counts += ui_put_filledrect(vp, ip, counts, 
 			  Vec2(pos.x, pos.y + size.y * (1 - s->style.rail_thickness)/2),
 			  Vec2(size.x, size.y * s->style.rail_thickness),
 			  s->style.colors.rail);
 	
 	if(s->style.dragger_shape == slider_dragger_rect) {
-		counts += render_make_filledrect(vp, ip, counts,
+		counts += ui_put_filledrect(vp, ip, counts,
 				Vec2(pos.x + s->pos, pos.y),
 				Vec2(s->width, size.y),
 				s->style.colors.dragger);
@@ -931,7 +931,7 @@ ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	setup.copy = ui_copy_slider;
 	setup.update = ui_slider_callback;
 	setup.update_trigger = action_act_mouse_hover | action_act_hash_change;
-	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
+	vec2i counts[1] = {2*ui_put_filledrect_counts()+ui_put_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 
@@ -1004,7 +1004,7 @@ ui_gen_checkbox(uiItem* item){DPZoneScoped;
 
 	Assert(cb->var, "Null data pointer for checkbox"); 
 	if(*cb->var) {
-		counts += render_make_filledrect(vp, ip, counts, fillpos, fillsiz, cb->style.colors.filling);
+		counts += ui_put_filledrect(vp, ip, counts, fillpos, fillsiz, cb->style.colors.filling);
 	}
 
 	dc->counts_used = counts;
@@ -1039,7 +1039,7 @@ deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	setup.generate = ui_gen_checkbox;
 	setup.hash = checkbox_style_hash;
 	setup.copy = ui_copy_checkbox;
-	vec2i counts[1] = {2*render_make_filledrect_counts()+render_make_rect_counts()};
+	vec2i counts[1] = {2*ui_put_filledrect_counts()+ui_put_rect_counts()};
 	setup.drawinfo_reserve = counts;
 	setup.drawcmd_count = 1;
 
@@ -1118,14 +1118,14 @@ ui_gen_tabbed(uiItem* item) {
 	uiTab* start = 0;
 	vec2i text_counts_needed = {0};
 	forI(ti.n_tabs) { 
-		text_counts_needed += render_make_text_counts(Min(max_chars, str8_length(scan->name)));
+		text_counts_needed += ui_put_text_counts(Min(max_chars, str8_length(scan->name)));
 		if(i == ti.start) start = scan;
 		scan = (uiTab*)scan->item.node.next;
 	}
 	text_ptrs = ui_drawcmd_realloc(text_dc, text_counts_needed);
 	text_dc->texture = item->style.font->tex;
 
-	vec2i tab_counts_needed = ti.n_can_fit * render_make_filledrect_counts();
+	vec2i tab_counts_needed = ti.n_can_fit * ui_put_filledrect_counts();
 	tabs_ptrs = ui_drawcmd_realloc(tabs_dc, tab_counts_needed);
 	tabs_dc->texture = 0;
 
@@ -1142,12 +1142,12 @@ ui_gen_tabbed(uiItem* item) {
 		vec2 pos = item->pos_screen;
 		pos.x += i * ti.tab_width + ti.loffset;
 		vec2 size = {ti.tab_width, ti.tab_height};
-		tabs_counts += render_make_filledrect(tabs_ptrs.vertexes, tabs_ptrs.indexes, tabs_counts, pos, size, bg);
+		tabs_counts += ui_put_filledrect(tabs_ptrs.vertexes, tabs_ptrs.indexes, tabs_counts, pos, size, bg);
 		str8 displayed_text = str8{iter->name.str, Min(max_chars, iter->name.count)};
 		vec2 text_size = font_visual_size(item->style.font, displayed_text) * item->style.font_height / item->style.font->max_height;
 		vec2 diff = size - text_size;
 		vec2 text_pos = ceil(t->style.tab_text_alignment * diff + pos);
-		text_counts += render_make_text(text_ptrs.vertexes, text_ptrs.indexes, text_counts, str8{iter->name.str, Min(max_chars, iter->name.count)}, item->style.font, text_pos, Color_White, vec2_ONE());
+		text_counts += ui_put_text(text_ptrs.vertexes, text_ptrs.indexes, text_counts, str8{iter->name.str, Min(max_chars, iter->name.count)}, item->style.font, text_pos, Color_White, vec2_ONE());
 		iter = (uiTab*)iter->item.node.next;
 		if(!iter) break;
 	}
@@ -1194,7 +1194,7 @@ deshi__ui_make_tabbed(uiStyle* style, str8 file, upt line) {
 	setup.update = ui_update_tabbed;
 	setup.update_trigger = action_act_mouse_hover;
 	setup.drawcmd_count = 2;
-	vec2i counts[2] = {render_make_filledrect_counts(), render_make_filledrect_counts()};
+	vec2i counts[2] = {ui_put_filledrect_counts(), ui_put_filledrect_counts()};
 	setup.drawinfo_reserve = counts;
 	
 	uiItem* item = ui_setup_item(setup);
@@ -1230,7 +1230,7 @@ deshi__ui_make_tab(str8 title, uiStyle* style, str8 file, upt line) {
 	setup.line = line;
 	setup.generate = ui_gen_tab;
 	setup.drawcmd_count = 1;
-	vec2i counts[1] = {render_make_filledrect_counts() + render_make_rect_counts()};
+	vec2i counts[1] = {ui_put_filledrect_counts() + ui_put_rect_counts()};
 	setup.drawinfo_reserve = counts;
 
 	uiItem* item = ui_setup_item(setup);
@@ -1274,7 +1274,7 @@ deshi__ui_make_tree(uiStyle* style, str8 file, upt line) {
 	setup.line = line;
 	setup.generate = ui_gen_tree;
 	setup.drawcmd_count = 1;
-	vec2i counts[1] = {render_make_filledrect_counts()};
+	vec2i counts[1] = {ui_put_filledrect_counts()};
 	setup.drawinfo_reserve = counts;
 
 	uiItem* item = ui_setup_item(setup);

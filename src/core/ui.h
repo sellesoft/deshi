@@ -1157,4 +1157,32 @@ void ui_demo();
 void ui_print_tree(void (*info)(dstr8*,uiItem*));
 
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @make
+// TODO(sushi) I feel like these are more appropriate somewhere else, but I think it's only used by ui atm anyways
+//             so it will just be here for now since I need to get things out of the old render module.
+
+
+FORCE_INLINE vec2i ui_put_line_counts()                  {return { 4, 6};};
+FORCE_INLINE vec2i ui_put_filledtriangle_counts()        {return { 3, 3};};
+FORCE_INLINE vec2i ui_put_triangle_counts()              {return {12,18};};
+FORCE_INLINE vec2i ui_put_filledrect_counts()            {return { 4, 6};};
+FORCE_INLINE vec2i ui_put_rect_counts()                  {return {16,24};};
+FORCE_INLINE vec2i ui_put_circle_counts(u32 subdiv)      {return {2*(s32)subdiv,6*(s32)subdiv};};
+FORCE_INLINE vec2i ui_put_filledcircle_counts(u32 subdiv){return {1+(s32)subdiv,3*(s32)subdiv};};
+FORCE_INLINE vec2i ui_put_text_counts(u32 charcount)     {return {4*(s32)charcount,6*(s32)charcount};};
+FORCE_INLINE vec2i ui_put_texture_counts()               {return { 8,24};};
+
+vec2i ui_put_line(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color);
+vec2i ui_put_filledtriangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color);
+vec2i ui_put_triangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color);
+vec2i ui_put_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, color color);
+vec2i ui_put_rect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color);
+vec2i ui_put_circle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color);
+vec2i ui_put_filledcircle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
+vec2i ui_put_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
+vec2i ui_put_texture(Vertex2* putverts, u32* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
+
+
+
 #endif //DESHI_UI2_H

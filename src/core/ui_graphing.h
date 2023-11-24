@@ -272,7 +272,7 @@ ui_graph_gen_cartesian(uiItem* item){
 				scalar_t offset = round((cursor - top_left.x) * graph->unit_length.x);
 				vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
 				vec2 size = Vec2(1, dims.y);
-				counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_minor_gridline_color);
+				counts += ui_put_filledrect(vp, ip, counts, pos, size, graph->x_minor_gridline_color);
 				cursor += x_minor_increment_scaled;
 			}
 		}
@@ -282,7 +282,7 @@ ui_graph_gen_cartesian(uiItem* item){
 				scalar_t offset = round((cursor - top_left.y) * graph->unit_length.y);
 				vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
 				vec2 size = Vec2(dims.x, 1);
-				counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_minor_gridline_color);
+				counts += ui_put_filledrect(vp, ip, counts, pos, size, graph->y_minor_gridline_color);
 				cursor += y_minor_increment_scaled;
 			}
 		}
@@ -295,7 +295,7 @@ ui_graph_gen_cartesian(uiItem* item){
 				scalar_t offset = round((cursor - item_content_top_left.x) * graph->unit_length.x);
 				vec2 pos  = Vec2(item_content_top_left.x + offset, item_content_top_left.y);
 				vec2 size = Vec2(1, dims.y);
-				counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_major_gridline_color);
+				counts += ui_put_filledrect(vp, ip, counts, pos, size, graph->x_major_gridline_color);
 				cursor += x_major_increment_scaled;
 			}
 		}
@@ -305,7 +305,7 @@ ui_graph_gen_cartesian(uiItem* item){
 				scalar_t offset = round((cursor - item_content_top_left.y) * graph->unit_length.y);
 				vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + offset);
 				vec2 size = Vec2(dims.x, 1);
-				counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_major_gridline_color);
+				counts += ui_put_filledrect(vp, ip, counts, pos, size, graph->y_major_gridline_color);
 				cursor += y_major_increment_scaled;
 			}
 		}
@@ -320,7 +320,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		if(graph->x_axis_shown){
 			vec2 pos  = Vec2(item_content_top_left.x, item_content_top_left.y + y_origin_item_space);
 			vec2 size = Vec2(dims.x, 1);
-			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->x_axis_color);
+			counts += ui_put_filledrect(vp, ip, counts, pos, size, graph->x_axis_color);
 			// Log("graph","x axis: ",pos);
 		}
 		if(graph->x_axis_coords_shown){
@@ -331,7 +331,7 @@ ui_graph_gen_cartesian(uiItem* item){
 		if(graph->y_axis_shown){
 			vec2 pos  = Vec2(item_content_top_left.x + x_origin_item_space, item_content_top_left.y);
 			vec2 size = Vec2(1, dims.y);
-			counts += render_make_filledrect(vp, ip, counts, pos, size, graph->y_axis_color);
+			counts += ui_put_filledrect(vp, ip, counts, pos, size, graph->y_axis_color);
 			// Log("graph","y axis: ",pos);
 		}
 		if(graph->y_axis_coords_shown){
