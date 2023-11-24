@@ -95,7 +95,7 @@ assets_init_x(Window* window) {
 	
 	// setup null assets
 	
-	assets_mesh_create_box(1.f, 1.f, 1.f, Color_White.rgba);
+	g_assets->null_mesh = assets_mesh_create_box(1.f, 1.f, 1.f, Color_White.rgba);
 	cpystr(assets_mesh_null()->name, "null", 64);
 	
 	int width, height, channels;
