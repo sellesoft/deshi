@@ -19,11 +19,18 @@ struct ModelUniformBufferObject {
 	mat4 proj;
 } __assets_model_ubo;
 
+struct __Deshi_Assets_Internal {
+	array<GraphicsVertexInputBindingDescription> vertex_input_bindings;
+	array<GraphicsVertexInputAttributeDescription> vertex_input_attributes;
+} __deshi_assets_internal;
+
+#define internal __deshi_assets_internal
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets_system
 void
 assets_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Render module");
+	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Graphics module");
 	
 	//create the assets directories if they don't exist already
 	file_create(STR8("data/fonts/"));
@@ -66,7 +73,7 @@ assets_init(){DPZoneScoped;
 
 void
 assets_init_x(Window* window) {
-	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Render module");
+	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Graphics module");
 	
 	//create the assets directories if they don't exist already
 	file_create(STR8("data/fonts/"));
@@ -81,7 +88,7 @@ assets_init_x(Window* window) {
 	memory_pool_init(g_assets->font_pool, 8);
 	memory_pool_init(g_assets->ubo_pool, 8);
 	
-	g_assets->render_pass = render_pass_of_window_presentation_frame(window);
+	g_assets->render_pass = graphics_render_pass_of_window_presentation_frames(window);
 	
 	//setup stb_image.h
 	stbi_set_flip_vertically_on_load(true);
@@ -103,47 +110,48 @@ assets_init_x(Window* window) {
 	stbi_image_free(pixels);
 	
 	// create null pipeline 
-	g_assets->null_pipeline = render_pipeline_create();
-	*array_push(g_assets->null_pipeline->shader_stages) = {
-		RenderShaderStage_Vertex,
-		str8l("null.vert"), 
-		baked_shader_null_vert
-	};
-	*array_push(g_assets->null_pipeline->shader_stages) = {
-		RenderShaderStage_Fragment,
-		str8l("null.frag"), 
-		baked_shader_null_frag
-	};
+	g_assets->null_pipeline = graphics_pipeline_allocate();
+	array_wrap_and_push(g_assets->null_pipeline->shader_stages, {
+				{
+					GraphicsShaderStage_Vertex,
+					str8l("null.vert"), 
+					baked_shader_null_vert
+				},
+				{
+					GraphicsShaderStage_Fragment,
+					str8l("null.frag"), 
+					baked_shader_null_frag
+				}
+			});
 	assets_setup_pipeline(g_assets->null_pipeline);
 	
 	// create a descriptor layout for a single uniform buffer
 	// (always set 0 in asset compatible pipelines)
-	g_assets->ubo_layout = render_descriptor_layout_create();
+	g_assets->ubo_layout = graphics_descriptor_set_layout_allocate();
 	g_assets->ubo_layout->debug_name = str8l("ubo descriptor layout");
 	
 	auto binding = array_push(g_assets->ubo_layout->bindings);
-	binding->kind = RenderDescriptorType_Uniform_Buffer;
-	binding->shader_stages = RenderShaderStage_Vertex;
-	binding->binding = 0;
+	binding->type = GraphicsDescriptorType_Uniform_Buffer;
+	binding->shader_stages = GraphicsShaderStage_Vertex;
+	binding->n = 0;
+	graphics_descriptor_set_layout_update(g_assets->ubo_layout);
 	
-	render_descriptor_layout_update(g_assets->ubo_layout);
-	
-	g_assets->view_proj_ubo = render_descriptor_set_create();
+	g_assets->view_proj_ubo = graphics_descriptor_set_allocate();
 	*array_push(g_assets->view_proj_ubo->layouts) = g_assets->ubo_layout;
-	render_descriptor_set_update(g_assets->view_proj_ubo);
+	graphics_descriptor_set_update(g_assets->view_proj_ubo);
 	
 	array_init(g_assets->ubo_descriptors, 1, deshi_temp_allocator);
 	auto d = array_push(g_assets->ubo_descriptors);
-	d->kind = RenderDescriptorType_Uniform_Buffer;
-	d->buffer.handle = render_buffer_create(
+	d->type = GraphicsDescriptorType_Uniform_Buffer;
+	d->ubo.buffer = graphics_buffer_create(
 											0, 
 											sizeof(__assets_model_ubo), 
-											RenderBufferUsage_UniformBuffer,
-											RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
-											RenderMemoryMapping_MapWriteUnmap);
-	d->buffer.offset = 0;
-	d->buffer.range = sizeof(g_assets->base_ubo);
-	render_descriptor_set_write(g_assets->view_proj_ubo, g_assets->ubo_descriptors);
+											GraphicsBufferUsage_UniformBuffer,
+											GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+											GraphicsMemoryMapping_Occasional);
+	d->ubo.offset = 0;
+	d->ubo.range = sizeof(g_assets->base_ubo);
+	graphics_descriptor_set_write_array(g_assets->view_proj_ubo, g_assets->ubo_descriptors);
 	
 	auto t = assets_texture_null();
 	
@@ -169,13 +177,13 @@ assets_init_x(Window* window) {
 	g_assets->null_font->name = str8l("null");
 	u8 white_pixels[4] = {255,255,255,255};
 	auto tex = assets_texture_create_from_memory(
-												 white_pixels, 
-												 str8l("null font"),
-												 2, 2, ImageFormat_BW, 
-												 TextureType_TwoDimensional,
-												 TextureFilter_Nearest,
-												 TextureAddressMode_ClampToWhite,
-												 false);
+					 white_pixels, 
+					 str8l("null font"),
+					 2, 2, ImageFormat_BW, 
+					 TextureType_TwoDimensional,
+					 TextureFilter_Nearest,
+					 TextureAddressMode_ClampToWhite,
+					 false);
 	g_assets->null_font->tex = tex;
 	
 	DeshiStageInitEnd(DS_ASSETS);
@@ -418,58 +426,64 @@ assets_browser(){DPZoneScoped;
 
 void 
 assets_update_camera_view(mat4* view_matrix) {
-	auto buffer = g_assets->ubo_descriptors[0].buffer.handle;
-	render_buffer_map(buffer, 0, buffer->size);
+	auto buffer = (graphics::Buffer*)g_assets->ubo_descriptors[0].ubo.buffer;
+	buffer->map(buffer->device_size(), 0);
 	
 	g_assets->base_ubo.view = *view_matrix;
-	CopyMemory(buffer->mapped_data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+	CopyMemory(buffer->mapped_data(), &g_assets->base_ubo, sizeof(g_assets->base_ubo));
 	
-	render_buffer_unmap(buffer, true);
+	buffer->unmap(true);
 }
 
 void 
 assets_update_camera_projection(mat4* projection) {
-	auto buffer = g_assets->ubo_descriptors[0].buffer.handle;
-	render_buffer_map(buffer, 0, buffer->size);
-	
+	auto buffer = (graphics::Buffer*)g_assets->ubo_descriptors[0].ubo.buffer;
+	buffer->map(buffer->device_size(), 0);
+
 	g_assets->base_ubo.proj = *projection;
-	CopyMemory(buffer->mapped_data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+	CopyMemory(buffer->mapped_data(), &g_assets->base_ubo, sizeof(g_assets->base_ubo));
 	
-	render_buffer_unmap(buffer, true);
+	buffer->unmap(true);
 }
 
 void 
-assets_setup_pipeline(RenderPipeline* pipeline) {
+assets_setup_pipeline(GraphicsPipeline* pipeline) {
 	// a pipeline shouldn't have anything in its vertex input arrays when this is called 
 	Assert(!(array_count(pipeline->vertex_input_bindings) || array_count(pipeline->vertex_input_attributes)));
-	
-	*array_push(pipeline->vertex_input_bindings) = {0, sizeof(MeshVertex)};
+
+	pipeline->vertex_input_bindings = array<GraphicsVertexInputBindingDescription>::create({{0, sizeof(MeshVertex)}}, deshi_allocator).ptr;
+	pipeline->vertex_input_attributes = array<GraphicsVertexInputAttributeDescription>::create({
+			{0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)},
+			{1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)},
+			{2, 0, GraphicsFormat_R8G8B8A8_SRGB,   offsetof(MeshVertex, color)},
+			{3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)}}, deshi_allocator).ptr;
+
 	array_grow(pipeline->vertex_input_attributes, 4);
 	array_count(pipeline->vertex_input_attributes) = 4;
-	pipeline->vertex_input_attributes[0] = {0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, pos)};
-	pipeline->vertex_input_attributes[1] = {1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(MeshVertex, uv)};
-	pipeline->vertex_input_attributes[2] = {2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(MeshVertex, color)};
-	pipeline->vertex_input_attributes[3] = {3, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, normal)};
+	pipeline->vertex_input_attributes[0] = {0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)};
+	pipeline->vertex_input_attributes[1] = {1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)};
+	pipeline->vertex_input_attributes[2] = {2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)};
+	pipeline->vertex_input_attributes[3] = {3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)};
 	
-	pipeline->            front_face = RenderPipelineFrontFace_CCW;
-	pipeline->               culling = RenderPipelineCulling_Back;
-	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	pipeline->            front_face = GraphicsFrontFace_CCW;
+	pipeline->               culling = GraphicsPipelineCulling_Back;
+	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
 	pipeline->            depth_test = true;
-	pipeline->      depth_compare_op = RenderCompareOp_Less;
+	pipeline->      depth_compare_op = GraphicsCompareOp_Less;
 	pipeline->            depth_bias = false;
 	pipeline->            line_width = 1.f;
 	pipeline->           color_blend = true;
-	pipeline->        color_blend_op = RenderBlendOp_Add;
-	pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
-	pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->        alpha_blend_op = RenderBlendOp_Add;
-	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	pipeline->        color_blend_op = GraphicsBlendOp_Add;
+	pipeline->color_src_blend_factor = GraphicsBlendFactor_Source_Alpha;
+	pipeline->color_dst_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->        alpha_blend_op = GraphicsBlendOp_Add;
+	pipeline->alpha_src_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	pipeline->        blend_constant = color(10,10,10,255);
 	pipeline->           render_pass = g_assets->render_pass;
 	
-	*array_push(pipeline->dynamic_states) = RenderDynamicState_Viewport;
-	*array_push(pipeline->dynamic_states) = RenderDynamicState_Scissor;
+	pipeline->dynamic_viewport = true;
+	pipeline->dynamic_scissor = true;
 }
 
 
@@ -501,13 +515,13 @@ assets_mesh_allocate(u32 index_count,
 		+     faces_neighbor_face_count*sizeof(u32);
 	
 	Mesh* mesh = (Mesh*)memory_alloc(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
-	mesh->bytes         = bytes;
+	mesh->bytes          = bytes;
 	mesh->index_count    = index_count;
 	mesh->vertex_count   = vertex_count;
 	mesh->triangle_count = triangle_count;
 	mesh->face_count     = face_count;
-	mesh->total_tri_neighbor_count      = triangles_neighbor_count;
-	mesh->total_face_vertex_count       = faces_vertex_count;
+	mesh->total_tri_neighbor_count       = triangles_neighbor_count;
+	mesh->total_face_vertex_count        = faces_vertex_count;
 	mesh->total_face_outer_vertex_count  = faces_outer_vertex_count;
 	mesh->total_face_tri_neighbor_count  = faces_neighbor_triangle_count;
 	mesh->total_face_face_neighbor_count = faces_neighbor_face_count;
@@ -520,22 +534,22 @@ assets_mesh_allocate(u32 index_count,
 	return mesh;
 }
 
-// Create RenderBuffers for the mesh and then writes
+// Create GraphicsBuffers for the mesh and then writes
 // their vertex/index data to them.
 void
 map_mesh(Mesh* m) {
-	m->vertex_buffer = render_buffer_create(
+	m->vertex_buffer = graphics_buffer_create(
 											m->vertex_array, 
 											sizeof(MeshVertex) * m->vertex_count,
-											RenderBufferUsage_VertexBuffer,
-											RenderMemoryPropertyFlag_DeviceLocal,
-											RenderMemoryMapping_None);
-	m->index_buffer = render_buffer_create(
+											GraphicsBufferUsage_VertexBuffer,
+											GraphicsMemoryPropertyFlag_DeviceLocal,
+											GraphicsMemoryMapping_Never);
+	m->index_buffer = graphics_buffer_create(
 										   m->index_array,
 										   sizeof(MeshIndex) * m->index_count,
-										   RenderBufferUsage_IndexBuffer,
-										   RenderMemoryPropertyFlag_DeviceLocal,
-										   RenderMemoryMapping_None);
+										   GraphicsBufferUsage_IndexBuffer,
+										   GraphicsMemoryPropertyFlag_DeviceLocal,
+										   GraphicsMemoryMapping_Never);
 }
 
 Mesh*
@@ -791,7 +805,11 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 		mesh->face_array[fi].neighbor_face_array     = (u32*)(mesh->face_array[fi-1].neighbor_face_array     + mesh->face_array[fi-1].neighbor_face_count);
 	}
 	
+#if RENDER_REWRITE
+	map_mesh(mesh);
+#else
 	render_load_mesh(mesh);
+#endif
 	arrput(DeshAssets->mesh_array, mesh);
 	return mesh;
 }
@@ -815,7 +833,12 @@ assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 	if(mesh == assets_mesh_null()) return;
 	
 	for_stb_array(DeshAssets->mesh_array) if(*it == mesh) arrdelswap(DeshAssets->mesh_array, it - DeshAssets->mesh_array);
+#if RENDER_REWRITE
+	graphics_buffer_destroy(mesh->vertex_buffer);
+	graphics_buffer_destroy(mesh->index_buffer);
+#else
 	render_unload_mesh(mesh);
+#endif
 	memory_zfree(mesh);
 }
 
@@ -826,11 +849,11 @@ assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 #define TextureError(name, ...) LogE("assets", "In ", __FUNCTION__, " working with texture '", name, "': ", __VA_ARGS__)
 #define TextureWarning(name, ...) LogW("assets", "In ", __FUNCTION__, " working with texture '", name, "': ", __VA_ARGS__)
 
-RenderFilter
+GraphicsFilter
 texture_filter_to_render(TextureFilter x) {
 	switch(x) {
-		case TextureFilter_Nearest: return RenderFilter_Nearest;
-		case TextureFilter_Cubic:   return RenderFilter_Linear;
+		case TextureFilter_Nearest: return GraphicsFilter_Nearest;
+		case TextureFilter_Cubic:   return GraphicsFilter_Linear;
 	}
 	Assert(0);
 	return {};
@@ -838,63 +861,63 @@ texture_filter_to_render(TextureFilter x) {
 
 void 
 upload_texture(Texture* texture) {
-	texture->image = render_image_create();
+	texture->image = graphics_image_allocate();
 	texture->image->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name_x, "' image").fin;
-	texture->image->format = RenderFormat_R8G8B8A8_StandardRGB;
-	texture->image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
-	texture->image->samples = RenderSampleCount_1;
+	texture->image->format = GraphicsFormat_R8G8B8A8_SRGB;
+	texture->image->usage = GraphicsImageUsage_Sampled | GraphicsImageUsage_Transfer_Destination;
+	texture->image->samples = GraphicsSampleCount_1;
 	texture->image->extent = {texture->width, texture->height, 4};
-	render_image_update(texture->image);
-	render_image_upload(texture->image, texture->pixels, vec2i::ZERO, {texture->width, texture->height});
+	graphics_image_update(texture->image);
+	graphics_image_write(texture->image, texture->pixels, vec2i::ZERO, {texture->width, texture->height});
 
-	texture->image_view = render_image_view_create();
+	texture->image_view = graphics_image_view_allocate();
 	texture->image_view->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name_x, "' image view").fin;
 	texture->image_view->image = texture->image;
 	texture->image_view->format = texture->image->format;
-	texture->image_view->aspect_flags = RenderImageViewAspectFlags_Color;
-	render_image_view_update(texture->image_view);
+	texture->image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
+	graphics_image_view_update(texture->image_view);
 	
-	texture->sampler = render_sampler_create();
+	texture->sampler = graphics_sampler_allocate();
 	texture->sampler->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name_x, "' sampler").fin;
-	texture->sampler->mipmaps = 1;
+	texture->sampler->mipmap_mode = GraphicsFilter_Nearest;
 	texture->sampler->mag_filter = 
 		texture->sampler->min_filter = texture_filter_to_render(texture->filter);
 	switch(texture->uv_mode) {
 		case TextureAddressMode_Repeat: {
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
-				texture->sampler->address_mode_w = RenderSamplerAddressMode_Repeat;
+				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Repeat;
 		} break;
 		case TextureAddressMode_MirroredRepeat: {
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
-				texture->sampler->address_mode_w = RenderSamplerAddressMode_Mirrored_Repeat;
+				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Mirrored_Repeat;
 		} break;
 		case TextureAddressMode_ClampToEdge: {
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
-				texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Edge;
+				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Edge;
 		} break;
 		case TextureAddressMode_ClampToWhite: {
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
-				texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 			texture->sampler->border_color = Color_White;
 		} break;
 		case TextureAddressMode_ClampToBlack: {
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
-				texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 			texture->sampler->border_color = Color_Black;
 		} break;
 		case TextureAddressMode_ClampToTransparent: {
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
-				texture->sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 			texture->sampler->border_color = Color_NONE;
 		} break;
 	}
-	render_sampler_update(texture->sampler);
+	graphics_sampler_update(texture->sampler);
 }
 
 Texture*
@@ -1129,9 +1152,9 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 		}
 	}
 #ifdef RENDER_REWRITE
-	render_sampler_destroy(texture->sampler);
-	render_image_view_destroy(texture->image_view);
-	render_image_destroy(texture->image);
+	graphics_sampler_destroy(texture->sampler);
+	graphics_image_view_destroy(texture->image_view);
+	graphics_image_destroy(texture->image);
 #else
 	render_unload_texture(texture);
 #endif
@@ -1163,7 +1186,7 @@ assets_texture_update(Texture* texture, vec2i offset, vec2i extent) {
 
 	if(!(extent.x && extent.y)) return;
 
-	render_image_upload(texture->image, texture->pixels + offset.x*offset.y*texture->format*texture->format, offset, extent);
+	graphics_image_write(texture->image, texture->pixels + offset.x*offset.y*texture->format*texture->format, offset, extent);
 }
 
 #undef TextureWarning
@@ -1173,26 +1196,26 @@ UBO*
 assets_ubo_create(u32 size) {
 	UBO* ubo = memory_pool_push(g_assets->ubo_pool);
 	ubo->size = size;
-	ubo->buffer = render_buffer_create(
+	ubo->buffer = graphics_buffer_create(
 									   0, size,
-									   RenderBufferUsage_UniformBuffer,
-									   RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
-									   RenderMemoryMapping_MapWriteUnmap);
+									   GraphicsBufferUsage_UniformBuffer,
+									   GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+									   GraphicsMemoryMapping_Occasional);
 	return ubo;
 }
 
 void 
 assets_ubo_update(UBO* ubo, void* data) {
-	render_buffer_map(ubo->buffer, 0, ubo->buffer->size);
+	void* mapped_data = graphics_buffer_map(ubo->buffer, 0, graphics_buffer_device_size(ubo->buffer));
 	
-	CopyMemory(ubo->buffer->mapped_data, data, ubo->size);
+	CopyMemory(mapped_data, data, ubo->size);
 	
-	render_buffer_unmap(ubo->buffer, true);
+	graphics_buffer_unmap(ubo->buffer, true);
 }
 
 void 
 assets_ubo_delete(UBO* ubo) {
-	render_buffer_delete(ubo->buffer);
+	graphics_buffer_destroy(ubo->buffer);
 	memory_pool_delete(g_assets->ubo_pool, ubo);
 }
 
@@ -1218,6 +1241,7 @@ assets_material_allocate_x() {
 
 Material*
 assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture_count){DPZoneScoped;
+#ifndef RENDER_REWRITE
 	//check if material is already loaded
 	for_stb_array(DeshAssets->material_array){
 		if(strncmp((*it)->name, (char*)name.str, 64) == 0){
@@ -1232,6 +1256,9 @@ assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture
 	render_load_material(material);
 	arrput(DeshAssets->material_array, material);
 	return material;
+#else
+	return 0;
+#endif
 }
 
 Material*
@@ -1251,8 +1278,8 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 		}
 	}
 	
-	auto pipeline = render_pipeline_create();
-	pipeline->name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline").fin;
+	auto pipeline = graphics_pipeline_allocate();
+	pipeline->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline").fin;
 	assets_setup_pipeline(pipeline);
 	
 	// load each shader stage's source for the renderer to compile 
@@ -1269,7 +1296,7 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	}
 	
 	auto shader = array_push(pipeline->shader_stages);
-	shader->kind = RenderShaderStage_Vertex;
+	shader->shader_stage = GraphicsShaderStage_Vertex;
 	shader->name = shaders.vertex.filename;
 	shader->source = file_read_simple(vertex_path, deshi_temp_allocator);
 	if(!shader->source) {
@@ -1285,7 +1312,7 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 		}
 		
 		shader = array_push(pipeline->shader_stages);
-		shader->kind = RenderShaderStage_Geometry;
+		shader->shader_stage = GraphicsShaderStage_Geometry;
 		shader->name = shaders.geometry.filename;
 		shader->source = file_read_simple(geo_path, deshi_temp_allocator);
 		if(!shader->source) {
@@ -1308,7 +1335,7 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	
 	shader = array_push(pipeline->shader_stages);
 	shader->name = shaders.fragment.filename;
-	shader->kind = RenderShaderStage_Fragment;
+	shader->shader_stage = GraphicsShaderStage_Fragment;
 	shader->source = file_read_simple(fragment_path, deshi_temp_allocator);
 	
 	if(!shader->source) {
@@ -1317,7 +1344,7 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	}
 	
 	// setup the descriptor layout
-	auto descriptor_layout = render_descriptor_layout_create();
+	auto descriptor_layout = graphics_descriptor_set_layout_allocate();
 	descriptor_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " descriptor layout").fin;
 	
 	u32 n_vertex_resources   = (shaders.vertex.resources?   array_count(shaders.vertex.resources)   : 0);
@@ -1336,44 +1363,44 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 		MaterialError(name, "the number of given resources (", n_resources_given, ") is not equal to the number of expected resources for this material (", sum, ")");
 		return 0;
 	}
-	
-	RenderDescriptor* descriptors;
-	array_init(descriptors, sum, deshi_temp_allocator);
-	
+		
+	auto descriptors = array<GraphicsDescriptor>::create(sum, deshi_temp_allocator);
+	auto bindings = array<GraphicsDescriptorSetLayoutBinding>::create(sum, deshi_allocator);
+
 	forI(n_vertex_resources) {
 		auto resource = shaders.vertex.resources[i];
-		auto resource_given = resources[array_count(descriptors)];
-		auto descriptor = array_push(descriptors);
+		auto resource_given = resources[descriptors.count()];
+		auto descriptor = descriptors.push();
 		if(resource != resource_given.type) {
-			MaterialError(name, "resource type mismatch between vertex resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", array_count(descriptors) - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			MaterialError(name, "resource type mismatch between vertex resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", descriptors.count() - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return 0;
 		}	
 		
 		switch(resource) {
 			case ShaderResourceType_UBO: {
-				descriptor->kind = RenderDescriptorType_Uniform_Buffer;
-				descriptor->buffer.handle = resource_given.ubo->buffer;
-				descriptor->buffer.range = resource_given.ubo->size;
-				descriptor->buffer.offset = 0;
+				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+				descriptor->ubo.buffer = resource_given.ubo->buffer;
+				descriptor->ubo.range = resource_given.ubo->size;
+				descriptor->ubo.offset = 0;
 			} break;
 			case ShaderResourceType_Texture: {
-				descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				descriptor->image.view = resource_given.texture->image_view;
 				descriptor->image.sampler = resource_given.texture->sampler;
-				descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+				descriptor->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 			} break;
 		}
 		
-		auto binding = array_push(descriptor_layout->bindings);
-		binding->binding = array_count(descriptor_layout->bindings) - 1;
-		binding->shader_stages = RenderShaderStage_Vertex;
+		auto binding = bindings.push();
+		binding->n = bindings.count() - 1;
+		binding->shader_stages = GraphicsShaderStage_Vertex;
 		switch(resource) {
-			case ShaderResourceType_UBO: binding->kind = RenderDescriptorType_Uniform_Buffer; break;
-			case ShaderResourceType_Texture: binding->kind = RenderDescriptorType_Combined_Image_Sampler; break;
+			case ShaderResourceType_UBO:     binding->type = GraphicsDescriptorType_Uniform_Buffer; break;
+			case ShaderResourceType_Texture: binding->type = GraphicsDescriptorType_Combined_Image_Sampler; break;
 			default: {
 				MaterialError(name, "resource ", i, " given for vertex shader has an unknown type (", (u32)resource, ")");
-				render_descriptor_layout_destroy(descriptor_layout);
-				render_pipeline_destroy(pipeline);
+				graphics_descriptor_set_layout_destroy(descriptor_layout);
+				graphics_pipeline_destroy(pipeline);
 				return assets_material_null();
 			} break;
 		}
@@ -1381,38 +1408,38 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	
 	forI(n_geometry_resources) {
 		auto resource = shaders.geometry.resources[i];
-		auto resource_given = resources[array_count(descriptors)];
-		auto descriptor = array_push(descriptors);
+		auto resource_given = resources[descriptors.count()];
+		auto descriptor = descriptors.push();
 		if(resource != resource_given.type) {
-			MaterialError(name, "resource type mismatch between geometry resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", array_count(descriptors) - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			MaterialError(name, "resource type mismatch between geometry resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", descriptors.count() - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return 0;
 		}	
 		
 		switch(resource) {
 			case ShaderResourceType_UBO: {
-				descriptor->kind = RenderDescriptorType_Uniform_Buffer;
-				descriptor->buffer.handle = resource_given.ubo->buffer;
-				descriptor->buffer.range = resource_given.ubo->size;
-				descriptor->buffer.offset = 0;
+				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+				descriptor->ubo.buffer = resource_given.ubo->buffer;
+				descriptor->ubo.range = resource_given.ubo->size;
+				descriptor->ubo.offset = 0;
 			} break;
 			case ShaderResourceType_Texture: {
-				descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				descriptor->image.view = resource_given.texture->image_view;
 				descriptor->image.sampler = resource_given.texture->sampler;
-				descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+				descriptor->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 			} break;
 		}
 		
-		auto binding = array_push(descriptor_layout->bindings);
-		binding->binding = array_count(descriptor_layout->bindings) - 1;
-		binding->shader_stages = RenderShaderStage_Geometry;
+		auto binding = bindings.push();
+		binding->n = bindings.count() - 1;
+		binding->shader_stages = GraphicsShaderStage_Geometry;
 		switch(resource) {
-			case ShaderResourceType_UBO: binding->kind = RenderDescriptorType_Uniform_Buffer; break;
-			case ShaderResourceType_Texture: binding->kind = RenderDescriptorType_Combined_Image_Sampler; break;
+			case ShaderResourceType_UBO:     binding->type = GraphicsDescriptorType_Uniform_Buffer; break;
+			case ShaderResourceType_Texture: binding->type = GraphicsDescriptorType_Combined_Image_Sampler; break;
 			default: {
 				MaterialError(name, "resource ", i, " given for geometry shader has an unknown type (", (u32)resource, ")");
-				render_descriptor_layout_destroy(descriptor_layout);
-				render_pipeline_destroy(pipeline);
+				graphics_descriptor_set_layout_destroy(descriptor_layout);
+				graphics_pipeline_destroy(pipeline);
 				return assets_material_null();
 			} break;
 		}
@@ -1420,64 +1447,67 @@ assets_material_create_x(str8 name, ShaderStages shaders, ShaderResource* resour
 	
 	forI(n_fragment_resources) {
 		auto resource = shaders.fragment.resources[i];
-		auto resource_given = resources[array_count(descriptors)];
-		auto descriptor = array_push(descriptors);
+		auto resource_given = resources[descriptors.count()];
+		auto descriptor = descriptors.push();
 		if(resource != resource_given.type) {
-			MaterialError(name, "resource type mismatch between fragment resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", array_count(descriptors) - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			MaterialError(name, "resource type mismatch between fragment resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", descriptors.count() - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return 0;
 		}	
 		
 		switch(resource) {
 			case ShaderResourceType_UBO: {
-				descriptor->kind = RenderDescriptorType_Uniform_Buffer;
-				descriptor->buffer.handle = resource_given.ubo->buffer;
-				descriptor->buffer.range = resource_given.ubo->size;
-				descriptor->buffer.offset = 0;
+				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+				descriptor->ubo.buffer = resource_given.ubo->buffer;
+				descriptor->ubo.range = resource_given.ubo->size;
+				descriptor->ubo.offset = 0;
 			} break;
 			case ShaderResourceType_Texture: {
-				descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
+				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				descriptor->image.view = resource_given.texture->image_view;
 				descriptor->image.sampler = resource_given.texture->sampler;
-				descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+				descriptor->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 			} break;
 		}
 		
-		auto binding = array_push(descriptor_layout->bindings);
-		binding->binding = array_count(descriptor_layout->bindings) - 1;
-		binding->shader_stages = RenderShaderStage_Fragment;
+		auto binding = bindings.push();
+		binding->n = bindings.count() - 1;
+		binding->shader_stages = GraphicsShaderStage_Fragment;
 		switch(resource) {
-			case ShaderResourceType_UBO: binding->kind = RenderDescriptorType_Uniform_Buffer; break;
-			case ShaderResourceType_Texture: binding->kind = RenderDescriptorType_Combined_Image_Sampler; break;
+			case ShaderResourceType_UBO:     binding->type = GraphicsDescriptorType_Uniform_Buffer; break;
+			case ShaderResourceType_Texture: binding->type = GraphicsDescriptorType_Combined_Image_Sampler; break;
 			default: {
 				MaterialError(name, "resource ", i, " given for fragment shader has an unknown type (", (u32)resource, ")");
-				render_descriptor_layout_destroy(descriptor_layout);
-				render_pipeline_destroy(pipeline);
+				graphics_descriptor_set_layout_destroy(descriptor_layout);
+				graphics_pipeline_destroy(pipeline);
 				return assets_material_null();
 			} break;
 		}
 	}
 	
-	render_descriptor_layout_update(descriptor_layout);
+	graphics_descriptor_set_layout_update(descriptor_layout);
 	
-	RenderPushConstant transformation;
-	transformation.shader_stage_flags = RenderShaderStage_Vertex;
+	GraphicsPushConstant transformation;
+	transformation.shader_stages = GraphicsShaderStage_Vertex;
 	transformation.size = sizeof(mat4);
 	transformation.offset = 0;
 	
-	auto pipeline_layout = render_pipeline_layout_create();
+	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline layout").fin;
-	*array_push(pipeline_layout->descriptor_layouts) = g_assets->ubo_layout;
-	*array_push(pipeline_layout->descriptor_layouts) = descriptor_layout;
-	*array_push(pipeline_layout->push_constants) = transformation;
-	render_pipeline_layout_update(pipeline_layout);
+	pipeline_layout->descriptor_layouts = array<GraphicsDescriptorSetLayout*>::create({
+				g_assets->ubo_layout,
+				descriptor_layout
+			}, deshi_temp_allocator).ptr;
+
+	pipeline_layout->push_constants = array<GraphicsPushConstant>::create({transformation}, deshi_temp_allocator).ptr;
+	graphics_pipeline_layout_update(pipeline_layout);
 	
 	pipeline->layout = pipeline_layout;
-	render_pipeline_update(pipeline);
+	graphics_pipeline_update(pipeline);
 	
-	auto descriptor_set = render_descriptor_set_create();
-	*array_push(descriptor_set->layouts) = descriptor_layout;
-	render_descriptor_set_update(descriptor_set);
-	render_descriptor_set_write(descriptor_set, descriptors);
+	auto descriptor_set = graphics_descriptor_set_allocate();
+	descriptor_set->layouts = array<GraphicsDescriptorSetLayout*>::create({descriptor_layout}, deshi_temp_allocator).ptr;
+	graphics_descriptor_set_update(descriptor_set);
+	graphics_descriptor_set_write_array(descriptor_set, descriptors.ptr);
 	
 	Material* material = assets_material_allocate_x();
 	material->name_x = name;
@@ -1511,6 +1541,8 @@ assets_material_create_from_file(str8 name){DPZoneScoped;
 
 Material*
 assets_material_create_from_path(str8 path){DPZoneScoped;
+	// TODO(sushi) update to use new graphics api once one of us actually uses material stuff from disk
+#ifndef RENDER_REWRITE
 	//check if material is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	for_stb_array(DeshAssets->material_array){
@@ -1611,10 +1643,13 @@ assets_material_create_from_path(str8 path){DPZoneScoped;
 	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
 	material->shader = mat_shader;
 	forI(mat_textures.count) material->texture_array[i] = assets_texture_create_from_file_simple(mat_textures[i]);
-	
 	render_load_material(material);
 	arrput(DeshAssets->material_array, material);
 	return material;
+#else
+	NotImplemented;
+#endif
+	return 0;
 }
 
 
@@ -1656,7 +1691,12 @@ assets_material_delete(Material* material){DPZoneScoped;
 			arrdelswap(DeshAssets->material_array, it - DeshAssets->material_array);
 		}
 	}
+#if RENDER_REWRITE
+	graphics_pipeline_destroy(material->pipeline);
+	graphics_descriptor_set_destroy(material->descriptor_set);
+#else
 	render_unload_material(material);
+#endif
 	arrfree(material->texture_array);
 	memory_zfree(material);
 }
@@ -1664,19 +1704,19 @@ assets_material_delete(Material* material){DPZoneScoped;
 Material* 
 assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 	if(!name) {
-		MaterialError("N/A", "name has length zero or is null");
+		MaterialError("N/A", "name has length zero or is null.");
 		return assets_material_null();
 	}
 	if(!old) {
-		MaterialError(name, "material pointer is null");
+		MaterialError(name, "material pointer is null.");
 		return assets_material_null();
 	}
 	if(str8_equal(name, old->name_x)) {
-		MaterialError(name, "the name of a duplicated material must be different than the name it is duplicated from");
+		MaterialError(name, "the name of a duplicated material must be different than the name it is duplicated from.");
 		return assets_material_null();
 	}
 	if(array_count(resources) != array_count(old->resources)) {
-		MaterialError(name, "amount of given resources (", array_count(resources), ") is different from the amount of resources on the given material (", array_count(old->resources), ")");
+		MaterialError(name, "amount of given resources (", array_count(resources), ") is different from the amount of resources on the given material (", array_count(old->resources), ").");
 		return assets_material_null();
 	}
 	
@@ -1685,8 +1725,7 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 	nu->pipeline = old->pipeline;
 	nu->stages = old->stages;
 	
-	RenderDescriptor* descriptors;
-	array_init(descriptors, array_count(resources), deshi_temp_allocator);
+	auto descriptors = array<GraphicsDescriptor>::create(array_count(resources), deshi_temp_allocator);
 	
 	forI(array_count(resources)) {
 		auto given_resource = resources[i];
@@ -1695,27 +1734,27 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 			MaterialError(name, "resource ", i, " has a different type (", ShaderResourceTypeStrings[given_resource.type], ") than the old material's resource at the same index (", ShaderResourceTypeStrings[old_resource.type], ")");
 			return assets_material_null();
 		}
-		auto d = array_push(descriptors);
+		auto d = descriptors.push();
 		switch(given_resource.type) {
 			case ShaderResourceType_UBO: {
-				d->kind = RenderDescriptorType_Uniform_Buffer;
-				d->buffer.handle = given_resource.ubo->buffer;
-				d->buffer.range = given_resource.ubo->size;
-				d->buffer.offset = 0;
+				d->type = GraphicsDescriptorType_Uniform_Buffer;
+				d->ubo.buffer = given_resource.ubo->buffer;
+				d->ubo.range = given_resource.ubo->size;
+				d->ubo.offset = 0;
 			} break;
 			case ShaderResourceType_Texture: {
-				d->kind = RenderDescriptorType_Combined_Image_Sampler;
+				d->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				d->image.view = given_resource.texture->image_view;
 				d->image.sampler = given_resource.texture->sampler;
-				d->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+				d->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 			} break;
 		}
 	}
 	
-	nu->descriptor_set = render_descriptor_set_create();
+	nu->descriptor_set = graphics_descriptor_set_allocate();
 	nu->descriptor_set->layouts = old->descriptor_set->layouts;
-	render_descriptor_set_update(nu->descriptor_set);
-	render_descriptor_set_write(nu->descriptor_set, descriptors);
+	graphics_descriptor_set_update(nu->descriptor_set);
+	graphics_descriptor_set_write_array(nu->descriptor_set, descriptors.ptr);
 	return nu;
 }
 
@@ -2709,17 +2748,17 @@ assets_model_render(Window* window, Model* model, mat4* transformation) {
 		ModelError(model->name, "null transformation pointer");
 		return;
 	}
-	auto f = render_current_present_frame_of_window(window);
+	auto f = graphics_current_present_frame_of_window(window);
 	forI(arrlenu(model->batch_array)) {
 		auto b = model->batch_array[i];
 		if(!b.index_count) continue;
-		render_cmd_bind_pipeline(window, b.material->pipeline);
-		render_cmd_bind_descriptor_set(window, 0, g_assets->view_proj_ubo);
-		render_cmd_push_constant(window, transformation, {RenderShaderStage_Vertex, sizeof(mat4), 0});
-		render_cmd_bind_vertex_buffer(window, model->mesh->vertex_buffer);
-		render_cmd_bind_index_buffer(window, model->mesh->index_buffer);
-		render_cmd_bind_descriptor_set(window, 1, b.material->descriptor_set);
-		render_cmd_draw_indexed(window, b.index_count, b.index_offset, 0);
+		graphics_cmd_bind_pipeline(window, b.material->pipeline);
+		graphics_cmd_bind_descriptor_set(window, 0, g_assets->view_proj_ubo);
+		graphics_cmd_push_constant(window, transformation, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
+		graphics_cmd_bind_vertex_buffer(window, model->mesh->vertex_buffer);
+		graphics_cmd_bind_index_buffer(window, model->mesh->index_buffer);
+		graphics_cmd_bind_descriptor_set(window, 1, b.material->descriptor_set);
+		graphics_cmd_draw_indexed(window, b.index_count, b.index_offset, 0);
 	}
 }
 

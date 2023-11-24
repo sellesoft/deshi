@@ -689,7 +689,7 @@ struct uiItem{
 	
 	Type update_trigger;
 
-	RenderDescriptorSet* descriptor_set;
+	GraphicsDescriptorSet* descriptor_set;
 	
 	// TODO(sushi) we may want to pull the following functions out into a 
 	//             table stored else where, like vtables. Performance 
@@ -1058,17 +1058,17 @@ struct uiContext{
 	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
 	
 	struct {
-		RenderBuffer* handle;
+		GraphicsBuffer* handle;
 		// offset to the end of the total amount of space we have allocated so far
 		// not accounting for freed vertices
 		u64 cursor;
 	} vertex_buffer, index_buffer;
 
-	RenderPipeline* pipeline;
+	GraphicsPipeline* pipeline;
 
-	RenderPushConstant push_constant;
+	GraphicsPushConstant push_constant;
 
-	RenderDescriptorSet* blank_descriptor_set;
+	GraphicsDescriptorSet* blank_descriptor_set;
 
 	Window* updating_window;
 

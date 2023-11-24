@@ -30,15 +30,15 @@ struct Material;
 struct MaterialInstance;
 struct Model;
 struct Font;
-struct RenderBuffer;
-struct RenderImage;
-struct RenderImageView;
-struct RenderSampler;
-struct RenderDescriptor;
-struct RenderDescriptorSet;
-struct RenderDescriptorSetLayout;
-struct RenderPipeline;
-struct RenderPass;
+struct GraphicsBuffer;
+struct GraphicsImage;
+struct GraphicsImageView;
+struct GraphicsSampler;
+struct GraphicsDescriptor;
+struct GraphicsDescriptorSet;
+struct GraphicsDescriptorSetLayout;
+struct GraphicsPipeline;
+struct GraphicsRenderPass;
 struct UniformBufferObject;
 struct Window;
 StartLinkageC();
@@ -54,26 +54,26 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	Model**    model_array;
 	Font**     font_array;
 
-	Mesh*             mesh_pool;
-	Texture*          texture_pool;
-	Material*         material_pool;
-	MaterialInstance* material_instance_pool;
-	Model*            model_pool;
-	Font*             font_pool;
+	Mesh*                mesh_pool;
+	Texture*             texture_pool;
+	Material*            material_pool;
+	MaterialInstance*    material_instance_pool;
+	Model*               model_pool;
+	Font*                font_pool;
 	UniformBufferObject* ubo_pool;
 
 	Texture* null_texture;
 	Font* null_font;
 	Material* null_material;
 
-	RenderPipeline* null_pipeline;
+	GraphicsPipeline* null_pipeline;
 	
 	// standard layout for ubos used with asset models
 	// this is always bound to set 0 binding 0
-	RenderDescriptorSetLayout* ubo_layout;
+	GraphicsDescriptorSetLayout* ubo_layout;
 	// NOTE(sushi) array containing 1 descriptor so that we can access info about it later on (dunno if this would be useful or not so if not just remove it)
-	RenderDescriptor*  ubo_descriptors;
-	RenderDescriptorSet* view_proj_ubo;
+	GraphicsDescriptor*  ubo_descriptors;
+	GraphicsDescriptorSet* view_proj_ubo;
 
 	struct {
 		mat4 view;
@@ -86,7 +86,7 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	// passed to assets_init
 	// eventually we will want to support drawing to 
 	// multiple windows and so this will need to be changed
-	RenderPass* render_pass;
+	GraphicsRenderPass* render_pass;
 
 // TODO(sushi) try using manually managed global buffers 
 //             to see if they are more performant
@@ -127,7 +127,7 @@ void assets_update_camera_projection(mat4* projection);
 
 // Sets up the given pipeline for rendering assets related things.
 // This does not add any shader stages.
-void assets_setup_pipeline(RenderPipeline* pipeline);
+void assets_setup_pipeline(GraphicsPipeline* pipeline);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @mesh  //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
@@ -179,8 +179,8 @@ typedef struct Mesh{
 	u32 bytes;
 	char name[64];
 	u64 render_idx;
-	RenderBuffer* vertex_buffer;
-	RenderBuffer* index_buffer;
+	GraphicsBuffer* vertex_buffer;
+	GraphicsBuffer* index_buffer;
 	vec3 aabb_min;
 	vec3 aabb_max;
 	vec3 center;
@@ -291,11 +291,11 @@ typedef struct Texture{
 	TextureFilter filter;
 	TextureAddressMode uv_mode;
 
-	RenderImage* image;
-	RenderImageView* image_view;
-	RenderSampler* sampler;
+	GraphicsImage* image;
+	GraphicsImageView* image_view;
+	GraphicsSampler* sampler;
 
-	RenderDescriptorSet* ui_descriptor_set;
+	GraphicsDescriptorSet* ui_descriptor_set;
 }Texture;
 
 //Returns a pointer to the created `Texture` object from an image file named `name` in the `data/textures` folder
@@ -390,7 +390,7 @@ typedef Type ShaderType; enum {
 //             that information in editors and such
 typedef struct UniformBufferObject {
 	u32 size;
-	RenderBuffer* buffer;
+	GraphicsBuffer* buffer;
 } UBO;
 
 UBO* assets_ubo_create(u32 size);
@@ -450,9 +450,9 @@ typedef struct Material{
 	ShaderResource* resources;
 
 	// possibly shared by materials
-	RenderPipeline* pipeline;
+	GraphicsPipeline* pipeline;
 	// unique to each instance of a material
-	RenderDescriptorSet* descriptor_set;
+	GraphicsDescriptorSet* descriptor_set;
 }Material;
 
 // Returns a pointer to the allocated `Material` object (with texture array reserved)

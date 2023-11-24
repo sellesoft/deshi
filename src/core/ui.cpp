@@ -276,7 +276,7 @@ ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
 uiDrawCmdPtrs 
 ui_drawcmd_get_ptrs(uiDrawCmd* dc) {
 #ifdef RENDER_REWRITE
-	return {(Vertex2*)g_ui->vertex_buffer.handle->mapped_data + dc->vertex_offset, (u32*)g_ui->index_buffer.handle->mapped_data + dc->index_offset};
+	return {(Vertex2*)graphics_buffer_mapped_data(g_ui->vertex_buffer.handle) + dc->vertex_offset, (u32*)graphics_buffer_mapped_data(g_ui->index_buffer.handle) + dc->index_offset};
 #else
 	return {(Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset, (u32*)g_ui->index_arena->start + dc->index_offset};
 #endif
@@ -736,94 +736,97 @@ deshi__ui_init_x(Window* window) {
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
 
-	g_ui->pipeline = render_pipeline_create();
-	g_ui->pipeline->name = str8l("ui");
+	g_ui->pipeline = graphics_pipeline_allocate();
+	g_ui->pipeline->debug_name = str8l("ui");
 
-	*array_push(g_ui->pipeline->shader_stages) = {
-		RenderShaderStage_Vertex, 
-		str8l("twod.vert"),
-		baked_shader_twod_vert
-	};
-	*array_push(g_ui->pipeline->shader_stages) = {
-		RenderShaderStage_Fragment,
-		str8l("twod.frag"),
-		baked_shader_twod_frag
-	};
+	array_wrap_and_push(g_ui->pipeline->shader_stages, {
+			{
+				GraphicsShaderStage_Vertex, 
+				str8l("twod.vert"),
+				baked_shader_twod_vert,
+			},
+			{
+				GraphicsShaderStage_Fragment,
+				str8l("twod.frag"),
+				baked_shader_twod_frag,
+			},
+		});
 
-	g_ui->pipeline->            front_face = RenderPipelineFrontFace_CCW;
-	g_ui->pipeline->               culling = RenderPipelineCulling_None;
-	g_ui->pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	g_ui->pipeline->            front_face = GraphicsFrontFace_CCW;
+	g_ui->pipeline->               culling = GraphicsPipelineCulling_None;
+	g_ui->pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
 	g_ui->pipeline->            depth_test = false;
 	g_ui->pipeline->            line_width = 1.f;
 	g_ui->pipeline->           color_blend = true;
-	g_ui->pipeline->        color_blend_op = RenderBlendOp_Add;
-	g_ui->pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
-	g_ui->pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	g_ui->pipeline->        alpha_blend_op = RenderBlendOp_Add;
-	g_ui->pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	g_ui->pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	g_ui->pipeline->        color_blend_op = GraphicsBlendOp_Add;
+	g_ui->pipeline->color_src_blend_factor = GraphicsBlendFactor_Source_Alpha;
+	g_ui->pipeline->color_dst_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	g_ui->pipeline->        alpha_blend_op = GraphicsBlendOp_Add;
+	g_ui->pipeline->alpha_src_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	g_ui->pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	g_ui->pipeline->        blend_constant = color(10,10,10,255);
-	g_ui->pipeline->           render_pass = render_pass_of_window_presentation_frame(window);
+	g_ui->pipeline->           render_pass = graphics_render_pass_of_window_presentation_frames(window);
 	
-	*array_push(g_ui->pipeline->dynamic_states) = RenderDynamicState_Viewport;
-	*array_push(g_ui->pipeline->dynamic_states) = RenderDynamicState_Scissor;
 
-	*array_push(g_ui->pipeline->vertex_input_bindings) = {0, sizeof(Vertex2)};
-	array_grow(g_ui->pipeline->vertex_input_attributes, 3);
-	array_count(g_ui->pipeline->vertex_input_attributes) = 3;
-	g_ui->pipeline->vertex_input_attributes[0] = {0, 0, RenderFormat_R32G32_Signed_Float,         offsetof(Vertex2, pos)};
-	g_ui->pipeline->vertex_input_attributes[1] = {1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(Vertex2, uv)};
-	g_ui->pipeline->vertex_input_attributes[2] = {2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(Vertex2, color)};
+	g_ui->pipeline->dynamic_viewport = 
+	g_ui->pipeline->dynamic_scissor  = true;
 
-	auto layout = render_descriptor_layout_create();
+	g_ui->pipeline->vertex_input_bindings = array<GraphicsVertexInputBindingDescription>::create({{0, sizeof(Vertex2)}}, deshi_temp_allocator).ptr;
+	g_ui->pipeline->vertex_input_attributes = array<GraphicsVertexInputAttributeDescription>::create({
+				{0, 0, GraphicsFormat_R32G32_Float,   offsetof(Vertex2, pos)},
+				{1, 0, GraphicsFormat_R32G32_Float,   offsetof(Vertex2, uv)},
+				{2, 0, GraphicsFormat_R8G8B8A8_UNorm, offsetof(Vertex2, color)},
+			}, deshi_temp_allocator).ptr;
+
+	auto layout = graphics_descriptor_set_layout_allocate();
 	layout->debug_name = str8l("ui descriptor layout");
-
-	auto binding = array_push(layout->bindings);
-	binding->         kind = RenderDescriptorType_Combined_Image_Sampler;
-	binding->shader_stages = RenderShaderStage_Fragment;
-	binding->      binding = 0;
-	render_descriptor_layout_update(layout);
+	layout->bindings = array<GraphicsDescriptorSetLayoutBinding>::create({
+			{
+				GraphicsDescriptorType_Combined_Image_Sampler,
+				GraphicsShaderStage_Fragment,
+				0
+			}}).ptr;
+	graphics_descriptor_set_layout_update(layout);
 
 	g_ui->push_constant.size = 2 * sizeof(vec2);
 	g_ui->push_constant.offset = 0;
-	g_ui->push_constant.shader_stage_flags = RenderShaderStage_Vertex;
+	g_ui->push_constant.shader_stages = GraphicsShaderStage_Vertex;
 
-	auto pipeline_layout = render_pipeline_layout_create();
+	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = str8l("ui pipeline layout");
-	*array_push(pipeline_layout->descriptor_layouts) = layout;
-	*array_push(pipeline_layout->push_constants) = g_ui->push_constant;
-	render_pipeline_layout_update(pipeline_layout);
+	pipeline_layout->descriptor_layouts = array<GraphicsDescriptorSetLayout*>::create({layout}, deshi_temp_allocator).ptr;
+	pipeline_layout->push_constants = array<GraphicsPushConstant>::create({g_ui->push_constant}, deshi_temp_allocator).ptr;
+	graphics_pipeline_layout_update(pipeline_layout);
 
 	g_ui->pipeline->layout = pipeline_layout;
-	render_pipeline_update(g_ui->pipeline);
+	graphics_pipeline_update(g_ui->pipeline);
 
-	g_ui->vertex_buffer.handle = render_buffer_create(
+	g_ui->vertex_buffer.handle = graphics_buffer_create(
 			0, 
 			g_memory->arena_heap.size / 16,
-			RenderBufferUsage_VertexBuffer,
-			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
-			RenderMemoryMapping_Persistent);
+			GraphicsBufferUsage_VertexBuffer,
+			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+			GraphicsMemoryMapping_Persistent);
 
-	g_ui->index_buffer.handle = render_buffer_create(
+	g_ui->index_buffer.handle = graphics_buffer_create(
 			0, 
 			g_memory->arena_heap.size / 16,
-			RenderBufferUsage_IndexBuffer,
-			RenderMemoryPropertyFlag_HostVisible | RenderMemoryPropertyFlag_HostCoherent,
-			RenderMemoryMapping_Persistent);
+			GraphicsBufferUsage_IndexBuffer,
+			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+			GraphicsMemoryMapping_Persistent);
 
-	g_ui->blank_descriptor_set = render_descriptor_set_create();
+	g_ui->blank_descriptor_set = graphics_descriptor_set_allocate();
 	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
-	*array_push(g_ui->blank_descriptor_set->layouts) = g_ui->pipeline->layout->descriptor_layouts[0];
-	render_descriptor_set_update(g_ui->blank_descriptor_set);
+	g_ui->blank_descriptor_set->layouts = array<GraphicsDescriptorSetLayout*>::create({g_ui->pipeline->layout->descriptor_layouts[0]}, deshi_temp_allocator).ptr;
+	graphics_descriptor_set_update(g_ui->blank_descriptor_set);
 
-	RenderDescriptor* descriptors;
-	array_init(descriptors, 1, deshi_temp_allocator);
-	auto descriptor = array_push(descriptors);
-	descriptor->kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptor->image.view = assets_font_null()->tex->image_view;
-	descriptor->image.sampler = assets_font_null()->tex->sampler;
-	descriptor->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
-	render_descriptor_set_write(g_ui->blank_descriptor_set, descriptors);
+	auto descriptors = array<GraphicsDescriptor>::create(deshi_temp_allocator);
+	GraphicsDescriptor descriptor;
+	descriptor.         type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor.   image.view = assets_font_null()->tex->image_view;
+	descriptor.image.sampler = assets_font_null()->tex->sampler;
+	descriptor. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+	graphics_descriptor_set_write(g_ui->blank_descriptor_set, 0, descriptor);
 
 	g_ui->base = uiItem{0};
 	g_ui->base.id = STR8("base");
@@ -1456,26 +1459,26 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 
 			if(texture && texture != g_ui->last_texture) {
 				if(!texture->ui_descriptor_set) {
-					texture->ui_descriptor_set = render_descriptor_set_create();
+					texture->ui_descriptor_set = graphics_descriptor_set_allocate();
 					texture->ui_descriptor_set->layouts = array_copy(g_ui->blank_descriptor_set->layouts).ptr;
 					texture->ui_descriptor_set->debug_name = to_dstr8v(deshi_temp_allocator, "<ui> texture descriptor set").fin;
-					render_descriptor_set_update(texture->ui_descriptor_set);
+					graphics_descriptor_set_update(texture->ui_descriptor_set);
 
-					auto descriptors = array<RenderDescriptor>::create_with_count(1, deshi_temp_allocator);
-					descriptors[0].kind = RenderDescriptorType_Combined_Image_Sampler;
+					auto descriptors = array<GraphicsDescriptor>::create_with_count(1, deshi_temp_allocator);
+					descriptors[0].type = GraphicsDescriptorType_Combined_Image_Sampler;
 					descriptors[0].image = {
 						texture->image_view,
 						texture->sampler,
-						RenderImageLayout_Shader_Read_Only_Optimal,
+						GraphicsImageLayout_Shader_Read_Only_Optimal,
 					};
 
-					render_descriptor_set_write(texture->ui_descriptor_set, descriptors.ptr);
+					graphics_descriptor_set_write_array(texture->ui_descriptor_set, descriptors.ptr);
 				}	
-				render_cmd_bind_descriptor_set(g_ui->updating_window, 0, texture->ui_descriptor_set);
+				graphics_cmd_bind_descriptor_set(g_ui->updating_window, 0, texture->ui_descriptor_set);
 			} else if(!texture) {
-				render_cmd_bind_descriptor_set(g_ui->updating_window, 0, g_ui->blank_descriptor_set);
+				graphics_cmd_bind_descriptor_set(g_ui->updating_window, 0, g_ui->blank_descriptor_set);
 			}
-			render_cmd_draw_indexed(g_ui->updating_window, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
+			graphics_cmd_draw_indexed(g_ui->updating_window, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
 #else
 			render_set_active_surface_idx(0);
 			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
@@ -1574,15 +1577,15 @@ deshi__ui_update_x(Window* window) {
 		{-1.f, -1.f}
 	};
 
-	auto frame = render_current_present_frame_of_window(g_ui->updating_window);
-	render_cmd_begin_render_pass(window, frame->render_pass, frame);
-	render_cmd_bind_pipeline(window, g_ui->pipeline);
-	render_cmd_push_constant(window, &pc, {RenderShaderStage_Vertex, sizeof(pc), 0});
-	render_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
-	render_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
-	render_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);
+	auto frame = graphics_current_present_frame_of_window(g_ui->updating_window);
+	graphics_cmd_begin_render_pass(window, frame->render_pass, frame);
+	graphics_cmd_bind_pipeline(window, g_ui->pipeline);
+	graphics_cmd_push_constant(window, &pc, {GraphicsShaderStage_Vertex, sizeof(pc), 0});
+	graphics_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
+	graphics_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
+	graphics_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);
 	deshi__ui_update();
-	render_cmd_end_render_pass(window);
+	graphics_cmd_end_render_pass(window);
 	g_ui->updating_window = 0;
 }
 
@@ -1805,16 +1808,16 @@ void ui_debug(){
 	ui_dwi.panel1text->dirty = 1;
 	
 	if(g_ui->hovered){
-		render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
-		vec2 ipos = g_ui->hovered->pos_screen;
-		vec2 mpos = ipos + g_ui->hovered->style.margintl;
-		vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
-		vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
-		
-		render_quad2(ipos, g_ui->hovered->size, Color_Red);
-		render_quad2(mpos, ui_margined_area(g_ui->hovered), Color_Magenta);
-		render_quad2(bpos, ui_bordered_area(g_ui->hovered), Color_Blue);
-		render_quad2(ppos, ui_padded_area(g_ui->hovered), Color_Green);
+	//	render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
+	//	vec2 ipos = g_ui->hovered->pos_screen;
+	//	vec2 mpos = ipos + g_ui->hovered->style.margintl;
+	//	vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
+	//	vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
+	//	
+	//	render_quad2(ipos, g_ui->hovered->size, Color_Red);
+	//	render_quad2(mpos, ui_margined_area(g_ui->hovered), Color_Magenta);
+	//	render_quad2(bpos, ui_bordered_area(g_ui->hovered), Color_Blue);
+	//	render_quad2(ppos, ui_padded_area(g_ui->hovered), Color_Green);
 	}
 }
 
