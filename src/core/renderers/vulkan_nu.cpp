@@ -1788,6 +1788,9 @@ graphics_update(Window* window) {
 				vkCmdBindIndexBuffer(cmdbuf, get_handle(cmd.bind_index_buffer.handle), 0, VK_INDEX_TYPE_UINT32);
 			} break;
 			case GraphicsCommandType_Bind_Descriptor_Set: {
+				VulkanAssert(currently_bound_pipeline, "encountered bind descriptor set command, but no pipeline has been bound yet.");
+				VulkanAssert(cmd.bind_descriptor_set.handle, "encountered bind descriptor set command, but a null handle was passed.");
+				VulkanAssert(get_handle(cmd.bind_descriptor_set.handle), "encountered bind descriptor set command, but the provided descriptor set has a null backend handle.");
 				vkCmdBindDescriptorSets(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 										get_handle(currently_bound_pipeline->layout),
 										cmd.bind_descriptor_set.set_index, 1, 
