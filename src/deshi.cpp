@@ -197,6 +197,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 #define __DESHI__ // for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
 #define UNICODE
 #define _UNICODE
+#define RENDER_REWRITE 1
 
 #ifdef BUILD_SLOW
 #define DEBUG(code) do { code } while(0);
