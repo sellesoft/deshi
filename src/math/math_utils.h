@@ -14,7 +14,7 @@
 /* MSVC supports SSE in amd64 mode or _M_IX86_FP >= 1 (2 means SSE2) */
 #    if defined(_M_AMD64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 1)
 //#pragma message("_MSC_VER && (defined(_M_AMD64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 1))")
-#      define DESHI_USE_SSE 0 //NOTE(sushi) temp disable because its not working properly
+#      define DESHI_USE_SSE 1 
 #      include <xmmintrin.h>
 #      include <pmmintrin.h>
 #      include <smmintrin.h>
