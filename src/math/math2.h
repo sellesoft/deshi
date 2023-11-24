@@ -272,8 +272,8 @@ vec2{
 	static const vec2 UP;
 	static const vec2 UNITX;
 	static const vec2 UNITY;
-	f32   operator[](u32 axis)const;
-	f32&  operator[](u32 axis);
+	f32   operator[](u32 index)const;
+	f32&  operator[](u32 index);
 	vec2  operator+ (const vec2& rhs)const;
 	void  operator+=(const vec2& rhs);
 	vec2  operator- (const vec2& rhs)const;
@@ -297,15 +297,13 @@ vec2{
 	vec2  normalize()const;
 	f32   distance(const vec2& rhs)const;
 	f32   distance_sq(const vec2& rhs)const;
-	f32   projection(const vec2& rhs)const;
-	vec2  component(const vec2& rhs)const;
+	vec2  projection(const vec2& rhs)const;
 	vec2  midpoint(const vec2& rhs)const;
 	f32   slope(const vec2& rhs)const;
 	f32   radians_between(const vec2& rhs)const;
 	vec2  floor()const;
 	vec2  ceil()const;
 	vec2  round()const;
-	vec2  round_to(u32 place)const;
 	vec2  min(const vec2& rhs)const;
 	vec2  max(const vec2& rhs)const;
 	vec2  clamp(const vec2& min, const vec2& max)const;
@@ -702,37 +700,27 @@ distance_sq(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-DESHI_MATH_FUNC inline f32
-vec2_projection(vec2 lhs, vec2 rhs){DPZoneScoped;
-	f32 m = vec2_mag(lhs);
-	if(m > M_EPSILON){
-		return vec2_dot(lhs,rhs) / m;
-	}else{
-		return 0;
-	}
-}
-
-#ifdef __cplusplus
-inline f32 vec2::
-projection(const vec2& rhs)const{DPZoneScoped;
-	f32 m = this->mag();
-	if(m > M_EPSILON){
-		return this->dot(rhs) / m;
-	}else{
-		return 0;
-	}
-}
-#endif //#ifdef __cplusplus
-
+//Returns the projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec2
-vec2_component(vec2 lhs, vec2 rhs){DPZoneScoped;
-	return vec2_mul_f32(vec2_normalize(rhs), vec2_projection(lhs,rhs));
+vec2_projection(vec2 lhs, vec2 rhs){DPZoneScoped;
+	f32 m = vec2_mag(rhs);
+	if(m > M_EPSILON){
+		return vec2_mul_f32(vec2_div_f32(rhs, m), (vec2_dot(lhs,rhs) / m));
+	}else{
+		return vec2_ZERO();
+	}
 }
 
 #ifdef __cplusplus
+//Returns the projection of `lhs` on `rhs`
 inline vec2 vec2::
-component(const vec2& rhs)const{DPZoneScoped;
-	return rhs.normalize() * this->projection(rhs);
+projection(const vec2& rhs)const{DPZoneScoped;
+	f32 m = rhs.mag();
+	if(m > M_EPSILON){
+		return (rhs / m) * (this->dot(rhs) / m);
+	}else{
+		return vec2_ZERO();
+	}
 }
 #endif //#ifdef __cplusplus
 
@@ -768,7 +756,7 @@ slope(const vec2& rhs)const{DPZoneScoped;
 
 DESHI_MATH_FUNC inline f32
 vec2_radians_between(vec2 lhs, vec2 rhs){DPZoneScoped;
-	f32 m = vec2_mag(lhs) * vec2_mag(rhs);
+	f32 m = DESHI_SQRTF(vec2_mag_sq(lhs) * vec2_mag_sq(rhs));
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(vec2_dot(lhs, rhs) / m);
 	}else{
@@ -779,7 +767,7 @@ vec2_radians_between(vec2 lhs, vec2 rhs){DPZoneScoped;
 #ifdef __cplusplus
 inline f32 vec2::
 radians_between(const vec2& rhs)const{DPZoneScoped;
-	f32 m = this->mag() * rhs.mag();
+	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
@@ -868,24 +856,6 @@ round(vec2 lhs){DPZoneScoped;
 	vec2 v;
 	v.x = DESHI_ROUNDF(lhs.x);
 	v.y = DESHI_ROUNDF(lhs.y);
-	return v;
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec2
-vec2_round_to(vec2 lhs, u32 place){DPZoneScoped;
-	vec2 v;
-	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	return v;
-}
-
-#ifdef __cplusplus
-inline vec2 vec2::
-round_to(u32 place)const{DPZoneScoped;
-	vec2 v;
-	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -1113,7 +1083,7 @@ lerp(vec2 lhs, vec2 rhs, f32 t){DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 DESHI_MATH_FUNC inline vec2
-vec2_rotate_radians(vec2 lhs, f32 angle){
+vec2_rotate_radians(vec2 lhs, f32 angle){DPZoneScoped;
 	vec2 v;
 	v.x = (lhs.x * DESHI_COSF(angle)) - (lhs.y * DESHI_SINF(angle));
 	v.y = (lhs.x * DESHI_SINF(angle)) - (lhs.y * DESHI_COSF(angle));
@@ -1122,7 +1092,7 @@ vec2_rotate_radians(vec2 lhs, f32 angle){
 
 #ifdef __cplusplus
 inline vec2 vec2::
-rotate_radians(f32 angle){
+rotate_radians(f32 angle){DPZoneScoped;
 	vec2 v;
 	v.x = (this->x * DESHI_COSF(angle)) - (this->y * DESHI_SINF(angle));
 	v.y = (this->x * DESHI_SINF(angle)) - (this->y * DESHI_COSF(angle));
@@ -1361,8 +1331,7 @@ vec2i{
 	vec2i normalize()const;
 	f32   distance(const vec2i& rhs)const;
 	f32   distance_sq(const vec2i& rhs)const;
-	f32   projection(const vec2i& rhs)const;
-	vec2i component(const vec2i& rhs)const;
+	vec2i projection(const vec2i& rhs)const;
 	vec2i midpoint(const vec2i& rhs)const;
 	f32   slope(const vec2i& rhs)const;
 	f32   radians_between(const vec2i& rhs)const;
@@ -1762,37 +1731,29 @@ distance_sq(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-DESHI_MATH_FUNC inline f32
+//Returns the projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline vec2i
 vec2i_projection(vec2i lhs, vec2i rhs){DPZoneScoped;
-	f32 m = vec2i_mag(lhs);
+	f32 m = vec2i_mag(rhs);
 	if(m > M_EPSILON){
-		return vec2i_dot(lhs,rhs) / m;
+		f32 d = vec2i_dot(lhs,rhs);
+		return Vec2i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m));
 	}else{
-		return 0;
+		return vec2i_ZERO();
 	}
 }
 
 #ifdef __cplusplus
-inline f32 vec2i::
+//Returns the projection of `lhs` on `rhs`
+inline vec2i vec2i:: 
 projection(const vec2i& rhs)const{DPZoneScoped;
 	f32 m = this->mag();
 	if(m > M_EPSILON){
-		return this->dot(rhs) / m;
+		f32 d = this->dot(rhs);
+		return Vec2i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m));
 	}else{
-		return 0;
+		return vec2i_ZERO();
 	}
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec2i
-vec2i_component(vec2i lhs, vec2i rhs){DPZoneScoped;
-	return vec2i_mul_f32(vec2i_normalize(rhs), vec2i_projection(lhs,rhs));
-}
-
-#ifdef __cplusplus
-inline vec2i vec2i::
-component(const vec2i& rhs)const{DPZoneScoped;
-	return rhs.normalize() * this->projection(rhs);
 }
 #endif //#ifdef __cplusplus
 
@@ -2071,7 +2032,7 @@ lerp(vec2i lhs, vec2i rhs, f32 t){DPZoneScoped;
 #endif //#ifdef __cplusplus
 
 DESHI_MATH_FUNC inline vec2i
-vec2i_rotate_radians(vec2i lhs, f32 angle){
+vec2i_rotate_radians(vec2i lhs, f32 angle){DPZoneScoped;
 	vec2i v;
 	v.x = (s32)(((f32)lhs.x * DESHI_COSF(angle)) - ((f32)lhs.y * DESHI_SINF(angle)));
 	v.y = (s32)(((f32)lhs.x * DESHI_SINF(angle)) - ((f32)lhs.y * DESHI_COSF(angle)));
@@ -2080,7 +2041,7 @@ vec2i_rotate_radians(vec2i lhs, f32 angle){
 
 #ifdef __cplusplus
 inline vec2i vec2i::
-rotate_radians(f32 angle){
+rotate_radians(f32 angle){DPZoneScoped;
 	vec2i v;
 	v.x = (s32)(((f32)this->x * DESHI_COSF(angle)) - ((f32)this->y * DESHI_SINF(angle)));
 	v.y = (s32)(((f32)this->x * DESHI_SINF(angle)) - ((f32)this->y * DESHI_COSF(angle)));
@@ -2327,14 +2288,12 @@ vec3{
 	vec3  normalize()const;
 	f32   distance(const vec3& rhs)const;
 	f32   distance_sq(const vec3& rhs)const;
-	f32   projection(const vec3& rhs)const;
-	vec3  component(const vec3& rhs)const;
+	vec3  projection(const vec3& rhs)const;
 	vec3  midpoint(const vec3& rhs)const;
 	f32   radians_between(const vec3& rhs)const;
 	vec3  floor()const;
 	vec3  ceil()const;
 	vec3  round()const;
-	vec3  round_to(u32 place)const;
 	vec3  min(const vec3& rhs)const;
 	vec3  max(const vec3& rhs)const;
 	vec3  clamp(const vec3& min, const vec3& max)const;
@@ -2769,37 +2728,27 @@ distance_sq(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-DESHI_MATH_FUNC inline f32
+//Returns the projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline vec3
 vec3_projection(vec3 lhs, vec3 rhs){DPZoneScoped;
-	f32 m = vec3_mag(lhs);
+	f32 m = vec3_mag(rhs);
 	if(m > M_EPSILON){
-		return vec3_dot(lhs,rhs) / m;
+		return vec3_div_f32(vec3_mul_f32(rhs, vec3_dot(lhs,rhs)), m);
 	}else{
-		return 0;
+		return vec3_ZERO();
 	}
 }
 
 #ifdef __cplusplus
-inline f32 vec3::
+//Returns the projection of `lhs` on `rhs`
+inline vec3 vec3::
 projection(const vec3& rhs)const{DPZoneScoped;
 	f32 m = this->mag();
 	if(m > M_EPSILON){
-		return this->dot(rhs) / m;
+		return (rhs * this->dot(rhs)) / m;
 	}else{
-		return 0;
+		return vec3_ZERO();
 	}
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec3
-vec3_component(vec3 lhs, vec3 rhs){DPZoneScoped;
-	return vec3_mul_f32(vec3_normalize(rhs), vec3_projection(lhs,rhs));
-}
-
-#ifdef __cplusplus
-inline vec3 vec3::
-component(const vec3& rhs)const{DPZoneScoped;
-	return rhs.normalize() * this->projection(rhs);
 }
 #endif //#ifdef __cplusplus
 
@@ -2934,26 +2883,6 @@ round(vec3 lhs){DPZoneScoped;
 	v.x = DESHI_ROUNDF(lhs.x);
 	v.y = DESHI_ROUNDF(lhs.y);
 	v.z = DESHI_ROUNDF(lhs.z);
-	return v;
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec3
-vec3_round_to(vec3 lhs, u32 place){DPZoneScoped;
-	vec3 v;
-	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = DESHI_FLOORF(lhs.z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	return v;
-}
-
-#ifdef __cplusplus
-inline vec3 vec3::
-round_to(u32 place)const{DPZoneScoped;
-	vec3 v;
-	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = DESHI_FLOORF(this->z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -3553,8 +3482,7 @@ vec3i{
 	vec3i normalize()const;
 	f32   distance(const vec3i& rhs)const;
 	f32   distance_sq(const vec3i& rhs)const;
-	f32   projection(const vec3i& rhs)const;
-	vec3i component(const vec3i& rhs)const;
+	vec3i projection(const vec3i& rhs)const;
 	vec3i midpoint(const vec3i& rhs)const;
 	f32   radians_between(const vec3i& rhs)const;
 	vec3i min(const vec3i& rhs)const;
@@ -3991,37 +3919,29 @@ distance_sq(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-DESHI_MATH_FUNC inline f32
+//Returns the projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline vec3i
 vec3i_projection(vec3i lhs, vec3i rhs){DPZoneScoped;
-	f32 m = vec3i_mag(lhs);
+	f32 m = vec3i_mag(rhs);
 	if(m > M_EPSILON){
-		return vec3i_dot(lhs,rhs) / m;
+		f32 d = vec3i_dot(lhs,rhs);
+		return Vec3i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m));
 	}else{
-		return 0;
+		return vec3i_ZERO();
 	}
 }
 
 #ifdef __cplusplus
-inline f32 vec3i::
+//Returns the projection of `lhs` on `rhs`
+inline vec3i vec3i:: 
 projection(const vec3i& rhs)const{DPZoneScoped;
 	f32 m = this->mag();
 	if(m > M_EPSILON){
-		return this->dot(rhs) / m;
+		f32 d = this->dot(rhs);
+		return Vec3i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m));
 	}else{
-		return 0;
+		return vec3i_ZERO();
 	}
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec3i
-vec3i_component(vec3i lhs, vec3i rhs){DPZoneScoped;
-	return vec3i_mul_f32(vec3i_normalize(rhs), vec3i_projection(lhs,rhs));
-}
-
-#ifdef __cplusplus
-inline vec3i vec3i::
-component(const vec3i& rhs)const{DPZoneScoped;
-	return rhs.normalize() * this->projection(rhs);
 }
 #endif //#ifdef __cplusplus
 
@@ -4687,14 +4607,12 @@ vec4{
 	vec4  wnormalize()const;
 	f32   distance(const vec4& rhs)const;
 	f32   distance_sq(const vec4& rhs)const;
-	f32   projection(const vec4& rhs)const;
-	vec4  component(const vec4& rhs)const;
+	vec4  projection(const vec4& rhs)const;
 	vec4  midpoint(const vec4& rhs)const;
 	f32   radians_between(const vec4& rhs)const;
 	vec4  floor()const;
 	vec4  ceil()const;
 	vec4  round()const;
-	vec4  round_to(u32 place)const;
 	vec4  min(const vec4& rhs)const;
 	vec4  max(const vec4& rhs)const;
 	vec4  clamp(const vec4& min, const vec4& max)const;
@@ -4949,7 +4867,7 @@ operator*=(f32 rhs){DPZoneScoped;
 
 #ifdef __cplusplus
 inline vec4
-operator* (s32 lhs, vec4 rhs){
+operator* (s32 lhs, vec4 rhs){DPZoneScoped;
 	return rhs * lhs;
 }
 #endif //#ifdef __cplusplus
@@ -5323,37 +5241,27 @@ distance_sq(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-DESHI_MATH_FUNC inline f32
+//Returns the projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline vec4
 vec4_projection(vec4 lhs, vec4 rhs){DPZoneScoped;
-	f32 m = vec4_mag(lhs);
+	f32 m = vec4_mag(rhs);
 	if(m > M_EPSILON){
-		return vec4_dot(lhs,rhs) / m;
+		return vec4_div_f32(vec4_mul_f32(rhs, vec4_dot(lhs,rhs)), m);
 	}else{
-		return 0;
+		return vec4_ZERO();
 	}
 }
 
 #ifdef __cplusplus
-inline f32 vec4::
+//Returns the projection of `lhs` on `rhs`
+inline vec4 vec4::
 projection(const vec4& rhs)const{DPZoneScoped;
 	f32 m = this->mag();
 	if(m > M_EPSILON){
-		return this->dot(rhs) / m;
+		return (rhs * this->dot(rhs)) / m;
 	}else{
-		return 0;
+		return vec4_ZERO();
 	}
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec4
-vec4_component(vec4 lhs, vec4 rhs){DPZoneScoped;
-	return vec4_mul_f32(vec4_normalize(rhs), vec4_projection(lhs,rhs));
-}
-
-#ifdef __cplusplus
-inline vec4 vec4::
-component(const vec4& rhs)const{DPZoneScoped;
-	return rhs.normalize() * this->projection(rhs);
 }
 #endif //#ifdef __cplusplus
 
@@ -5543,28 +5451,6 @@ round(vec4 lhs){DPZoneScoped;
 	v.z = DESHI_ROUNDF(lhs.z);
 	v.w = DESHI_ROUNDF(lhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
-	return v;
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec4
-vec4_round_to(vec4 lhs, u32 place){DPZoneScoped;
-	vec4 v;
-	v.x = DESHI_FLOORF(lhs.x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = DESHI_FLOORF(lhs.y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = DESHI_FLOORF(lhs.z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.w = DESHI_FLOORF(lhs.w * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	return v;
-}
-
-#ifdef __cplusplus
-inline vec4 vec4::
-round_to(u32 place)const{DPZoneScoped;
-	vec4 v;
-	v.x = DESHI_FLOORF(this->x * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.y = DESHI_FLOORF(this->y * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.z = DESHI_FLOORF(this->z * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
-	v.w = DESHI_FLOORF(this->w * (f32)place * 10.0f + 0.5f) / ((f32)place * 10.0f);
 	return v;
 }
 #endif //#ifdef __cplusplus
@@ -6409,8 +6295,7 @@ vec4i{
 	vec4i wnormalize()const;
 	f32   distance(const vec4i& rhs)const;
 	f32   distance_sq(const vec4i& rhs)const;
-	f32   projection(const vec4i& rhs)const;
-	vec4i component(const vec4i& rhs)const;
+	vec4i projection(const vec4i& rhs)const;
 	vec4i midpoint(const vec4i& rhs)const;
 	f32   radians_between(const vec4i& rhs)const;
 	vec4i min(const vec4i& rhs)const;
@@ -6667,7 +6552,7 @@ operator*=(f32 rhs){DPZoneScoped;
 
 #ifdef __cplusplus
 inline vec4i
-operator* (s32 lhs, vec4i rhs){
+operator* (s32 lhs, vec4i rhs){DPZoneScoped;
 	return rhs * lhs;
 }
 #endif //#ifdef __cplusplus
@@ -7014,37 +6899,29 @@ distance_sq(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-DESHI_MATH_FUNC inline f32
+//Returns the projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline vec4i
 vec4i_projection(vec4i lhs, vec4i rhs){DPZoneScoped;
-	f32 m = vec4i_mag(lhs);
+	f32 m = vec4i_mag(rhs);
 	if(m > M_EPSILON){
-		return vec4i_dot(lhs,rhs) / m;
+		f32 d = vec4i_dot(lhs,rhs);
+		return Vec4i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m), (s32)(rhs.w * d / m));
 	}else{
-		return 0;
+		return vec4i_ZERO();
 	}
 }
 
 #ifdef __cplusplus
-inline f32 vec4i::
+//Returns the projection of `lhs` on `rhs`
+inline vec4i vec4i:: 
 projection(const vec4i& rhs)const{DPZoneScoped;
 	f32 m = this->mag();
 	if(m > M_EPSILON){
-		return this->dot(rhs) / m;
+		f32 d = this->dot(rhs);
+		return Vec4i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m), (s32)(rhs.w * d / m));
 	}else{
-		return 0;
+		return vec4i_ZERO();
 	}
-}
-#endif //#ifdef __cplusplus
-
-DESHI_MATH_FUNC inline vec4i
-vec4i_component(vec4i lhs, vec4i rhs){DPZoneScoped;
-	return vec4i_mul_f32(vec4i_normalize(rhs), vec4i_projection(lhs,rhs));
-}
-
-#ifdef __cplusplus
-inline vec4i vec4i::
-component(const vec4i& rhs)const{DPZoneScoped;
-	return rhs.normalize() * this->projection(rhs);
 }
 #endif //#ifdef __cplusplus
 
@@ -8754,7 +8631,7 @@ operator*=(const f32& rhs){DPZoneScoped;
 
 #ifdef __cplusplus
 inline mat3
-operator* (const f32& lhs, const mat3& rhs){
+operator* (const f32& lhs, const mat3& rhs){DPZoneScoped;
 	return rhs * lhs;
 }
 #endif //#ifdef __cplusplus
@@ -9700,7 +9577,7 @@ operator*=(const f32& rhs){DPZoneScoped;
 
 #ifdef __cplusplus
 inline mat4
-operator* (const f32& lhs, const mat4& rhs){
+operator* (const f32& lhs, const mat4& rhs){DPZoneScoped;
 	return rhs * lhs;
 }
 #endif //#ifdef __cplusplus
@@ -11912,7 +11789,7 @@ point_is_in_triangle(vec2 point, vec2 p0, vec2 p1, vec2 p2){DPZoneScoped;
 }
 
 DESHI_MATH_FUNC inline vec2
-vec2_line_line_intersect(vec2 line0_start, vec2 line0_end, vec2 line1_start, vec2 line1_end){
+vec2_line_line_intersect(vec2 line0_start, vec2 line0_end, vec2 line1_start, vec2 line1_end){DPZoneScoped;
 	f32 m0 = vec2_slope(line0_start, line0_end);
 	f32 m1 = vec2_slope(line1_start, line1_end);
 	f32 b0 = line0_end.y - (m0 * line0_end.x);
@@ -11923,13 +11800,13 @@ vec2_line_line_intersect(vec2 line0_start, vec2 line0_end, vec2 line1_start, vec
 }
 
 DESHI_MATH_FUNC inline f32
-vec3_distance_between_point_and_plane(vec3 point, vec3 plane_point, vec3 plane_normal){
+vec3_distance_between_point_and_plane(vec3 point, vec3 plane_point, vec3 plane_normal){DPZoneScoped;
 	return vec3_dot(vec3_sub(point, plane_point), plane_normal);
 }
 
 //Returns where a line's vector intersects with a plane
 DESHI_MATH_FUNC inline vec3
-line_plane_intersect(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plane_normal){
+line_plane_intersect(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plane_normal){DPZoneScoped;
 	vec3 line_direction = vec3_normalize(vec3_sub(line_end, line_start));
 	vec3 line_start_to_plane_point = vec3_sub(plane_point, line_start);
 	f32 distance_along_line = vec3_dot(line_start_to_plane_point, plane_normal) / vec3_dot(line_direction, plane_normal);
@@ -11938,7 +11815,7 @@ line_plane_intersect(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plan
 
 //Returns where a line's vector intersects with a plane and outputs the distance along (or beyond) that line the intersection occurred
 DESHI_MATH_FUNC inline vec3
-line_plane_intersect_output_distance(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plane_normal, f32* out_distance){
+line_plane_intersect_output_distance(vec3 line_start, vec3 line_end, vec3 plane_point, vec3 plane_normal, f32* out_distance){DPZoneScoped;
 	vec3 line_direction = vec3_normalize(vec3_sub(line_end, line_start));
 	vec3 line_start_to_plane_point = vec3_sub(plane_point, line_start);
 	f32 distance_along_line = vec3_dot(line_start_to_plane_point, plane_normal) / vec3_dot(line_direction, plane_normal);
@@ -11947,18 +11824,18 @@ line_plane_intersect_output_distance(vec3 line_start, vec3 line_end, vec3 plane_
 }
 
 DESHI_MATH_FUNC inline f32
-vec3_triangle_area(vec3 p0, vec3 p1, vec3 p2){
+vec3_triangle_area(vec3 p0, vec3 p1, vec3 p2){DPZoneScoped;
 	return vec3_mag(vec3_cross(vec3_sub(p1, p0), vec3_sub(p2, p0))) / 2.0f;
 }
 
 //Returns a triangle's normal based on the order the points are provided
 DESHI_MATH_FUNC inline vec3
-vec3_triangle_normal(vec3 p0, vec3 p1, vec3 p2){
+vec3_triangle_normal(vec3 p0, vec3 p1, vec3 p2){DPZoneScoped;
 	return vec3_normalize(vec3_cross(vec3_sub(p2, p0), vec3_sub(p1, p0)));
 }
 
 DESHI_MATH_FUNC inline vec3
-vec3_triangle_midpoint(vec3 p0, vec3 p1, vec3 p2){
+vec3_triangle_midpoint(vec3 p0, vec3 p1, vec3 p2){DPZoneScoped;
 	vec3 result;
 	result.x = (p0.x + p1.x + p2.x) / 3.0f;
 	result.x = (p0.y + p1.y + p2.y) / 3.0f;
@@ -11967,7 +11844,7 @@ vec3_triangle_midpoint(vec3 p0, vec3 p1, vec3 p2){
 }
 
 DESHI_MATH_FUNC inline vec3
-map_spherical_to_rectangular_radians(vec3 point){
+map_spherical_to_rectangular_radians(vec3 point){DPZoneScoped;
 	vec3 result;
 	f32 cY = DESHI_COSF(point.y); f32 sY = DESHI_SINF(point.y);
 	f32 cZ = DESHI_COSF(point.z); f32 sZ = DESHI_SINF(point.z);
@@ -11978,7 +11855,7 @@ map_spherical_to_rectangular_radians(vec3 point){
 }
 
 DESHI_MATH_FUNC inline vec3
-map_spherical_to_rectangular_degrees(vec3 point){
+map_spherical_to_rectangular_degrees(vec3 point){DPZoneScoped;
 	vec3 result;
 	f32 rY = DESHI_DEGREES_TO_RADIANS_F32(point.y);
 	f32 rZ = DESHI_DEGREES_TO_RADIANS_F32(point.z);
@@ -11991,7 +11868,7 @@ map_spherical_to_rectangular_degrees(vec3 point){
 }
 
 DESHI_MATH_FUNC inline vec3
-map_rectangular_to_spherical_radians(vec3 point){
+map_rectangular_to_spherical_radians(vec3 point){DPZoneScoped;
 	f32 m = vec3_mag(point);
 	f32 rho = DESHI_SQRTF(m);
 	f32 theta = DESHI_ATANF(point.y / point.z);
@@ -12000,7 +11877,7 @@ map_rectangular_to_spherical_radians(vec3 point){
 }
 
 DESHI_MATH_FUNC inline vec3
-map_rectangular_to_spherical_degrees(vec3 point){
+map_rectangular_to_spherical_degrees(vec3 point){DPZoneScoped;
 	f32 m = vec3_mag(point);
 	f32 rho = DESHI_DEGREES_TO_RADIANS_F32(DESHI_SQRTF(m));
 	f32 theta = DESHI_DEGREES_TO_RADIANS_F32(DESHI_ATANF(point.y / point.z));
@@ -12017,7 +11894,7 @@ map_rectangular_to_spherical_degrees(vec3 point){
 //  the clipping planes `near_clip` and `far_clip` are used to determine the overall render distance
 //  the depth range is from 0.0 to 1.0
 DESHI_MATH_FUNC inline mat4
-mat4_perspective_projection_matrix(f32 width, f32 height, f32 horizontal_fov, f32 near_clip, f32 far_clip){
+mat4_perspective_projection_matrix(f32 width, f32 height, f32 horizontal_fov, f32 near_clip, f32 far_clip){DPZoneScoped;
 	float render_distance = far_clip - near_clip;
 	float fov = 1.0f / DESHI_TANF(DESHI_DEGREES_TO_RADIANS_F32(horizontal_fov / 2.0f));
 	mat4 result;
@@ -12049,7 +11926,7 @@ mat4_perspective_projection_matrix(f32 width, f32 height, f32 horizontal_fov, f3
 //  `top`, `bottom`, `left`, and `right` are the scene bounds in screen space with the 2D origin assumed to be the top-left
 //  `near` and `far` are the clipping planes used to determine the overall render distance
 DESHI_MATH_FUNC inline mat4
-mat4_orthographic_projection_matrix(f32 top, f32 bottom, f32 left, f32 right, f32 near, f32 far){
+mat4_orthographic_projection_matrix(f32 top, f32 bottom, f32 left, f32 right, f32 near, f32 far){DPZoneScoped;
 	mat4 result;
 	
 	result.arr[ 0] = 2.0f / (right - left);
@@ -12077,7 +11954,7 @@ mat4_orthographic_projection_matrix(f32 top, f32 bottom, f32 left, f32 right, f3
 
 //Returns a look-at matrix which tells a vector how to look at a specific point
 DESHI_MATH_FUNC inline mat4
-mat4_lookat_matrix(vec3 position, vec3 target){
+mat4_lookat_matrix(vec3 position, vec3 target){DPZoneScoped;
 	Assert(position != target);
 	vec3 forward = vec3_normalize(vec3_sub(target, position));
 	vec3 right = (vec3_nequal(forward, vec3_UP()) && vec3_nequal(forward, vec3_DOWN())) ? vec3_normalize(vec3_cross(vec3_UP(), forward)) : vec3_RIGHT();
@@ -12091,7 +11968,7 @@ mat4_lookat_matrix(vec3 position, vec3 target){
 //Returns a look-at matrix which tells a vector how to look at a specific point
 //  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
 DESHI_MATH_FUNC inline mat4
-mat4_lookat_matrix_unsafe(vec3 position, vec3 target){
+mat4_lookat_matrix_unsafe(vec3 position, vec3 target){DPZoneScoped;
 	Assert(position != target);
 	vec3 forward = vec3_normalize(vec3_sub(target, position));
 	vec3 right = vec3_normalize(vec3_cross(vec3_UP(), forward));
@@ -12104,7 +11981,7 @@ mat4_lookat_matrix_unsafe(vec3 position, vec3 target){
 
 //Returns a look-at matrix based on the `position` and `rotation`
 DESHI_MATH_FUNC inline mat4
-mat4_lookat_matrix_from_rotation_radians(vec3 position, vec3 rotation){
+mat4_lookat_matrix_from_rotation_radians(vec3 position, vec3 rotation){DPZoneScoped;
 	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -12123,7 +12000,7 @@ mat4_lookat_matrix_from_rotation_radians(vec3 position, vec3 rotation){
 //Returns a look-at matrix based on the `position` and `rotation`
 //  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
 DESHI_MATH_FUNC inline mat4
-mat4_lookat_matrix_unsafe_from_rotation_radians(vec3 position, vec3 rotation){
+mat4_lookat_matrix_unsafe_from_rotation_radians(vec3 position, vec3 rotation){DPZoneScoped;
 	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -12141,7 +12018,7 @@ mat4_lookat_matrix_unsafe_from_rotation_radians(vec3 position, vec3 rotation){
 
 //Returns a look-at matrix based on the `position` and `rotation` and outputs the `out_forward`, `out_right`, and `out_up` vectors
 DESHI_MATH_FUNC inline mat4
-mat4_lookat_matrix_from_rotation_radians_output_directions(vec3 position, vec3 rotation, vec3* out_forward, vec3* out_right, vec3* out_up){
+mat4_lookat_matrix_from_rotation_radians_output_directions(vec3 position, vec3 rotation, vec3* out_forward, vec3* out_right, vec3* out_up){DPZoneScoped;
 	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -12163,7 +12040,7 @@ mat4_lookat_matrix_from_rotation_radians_output_directions(vec3 position, vec3 r
 //Returns a look-at matrix based on the `position` and `rotation` and outputs the `out_forward`, `out_right`, and `out_up` vectors
 //  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
 DESHI_MATH_FUNC inline mat4
-mat4_lookat_matrix_unsafe_from_rotation_radians_output_directions(vec3 position, vec3 rotation, vec3* out_forward, vec3* out_right, vec3* out_up){
+mat4_lookat_matrix_unsafe_from_rotation_radians_output_directions(vec3 position, vec3 rotation, vec3* out_forward, vec3* out_right, vec3* out_up){DPZoneScoped;
 	//NOTE forward vector is calculated via a simplification of (vec3_FORWARD() * mat3_rotation_matrix(rotation))
 	f32 cX = DESHI_COSF(rotation.x); f32 sX = DESHI_SINF(rotation.x);
 	f32 cY = DESHI_COSF(rotation.y); f32 sY = DESHI_SINF(rotation.y);
@@ -12183,7 +12060,7 @@ mat4_lookat_matrix_unsafe_from_rotation_radians_output_directions(vec3 position,
 #define mat4_lookat_matrix_unsafe_from_rotation_degrees_output_directions(translation,rotation) mat4_lookat_matrix_unsafe_from_rotation_radians_output_directions((translation), Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
 
 DESHI_MATH_FUNC inline vec3
-vec3_projection_multiply(vec3 lhs, mat4 rhs){
+vec3_projection_multiply(vec3 lhs, mat4 rhs){DPZoneScoped;
 	vec4 result = vec4_mul_mat4(Vec4(lhs.x, lhs.y, lhs.z, 1.0f), rhs); Assert(result.w != 0.0f);
 	result.x /= result.w;
 	result.y /= result.w;
@@ -12192,7 +12069,7 @@ vec3_projection_multiply(vec3 lhs, mat4 rhs){
 }
 
 DESHI_MATH_FUNC inline vec4
-vec4_projection_multiply(vec4 lhs, mat4 rhs){
+vec4_projection_multiply(vec4 lhs, mat4 rhs){DPZoneScoped;
 	vec4 result = vec4_mul_mat4(lhs, rhs); Assert(result.w != 0.0f);
 	result.x /= result.w;
 	result.y /= result.w;
@@ -12201,18 +12078,18 @@ vec4_projection_multiply(vec4 lhs, mat4 rhs){
 }
 
 DESHI_MATH_FUNC inline vec3
-map_world_to_camera(vec3 point, mat4 view_matrix){
+map_world_to_camera(vec3 point, mat4 view_matrix){DPZoneScoped;
 	return vec3_projection_multiply(point, view_matrix);
 }
 
 DESHI_MATH_FUNC inline vec3
-map_camera_to_world(vec3 point, mat4 view_matrix){
+map_camera_to_world(vec3 point, mat4 view_matrix){DPZoneScoped;
 	//TODO(delle) can we use the fast matrix inverse functions here?
 	return vec3_projection_multiply(point, mat4_inverse(view_matrix));
 }
 
 DESHI_MATH_FUNC inline vec2
-map_camera_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix){
+map_camera_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix){DPZoneScoped;
 	vec3 result = vec3_projection_multiply(point, projection_matrix);
 	result.x = (result.x + 1.0f) * (0.5f * screen_dimensions.x);
 	result.y = (result.y + 1.0f) * (0.5f * screen_dimensions.y);
@@ -12220,12 +12097,12 @@ map_camera_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix)
 }
 
 DESHI_MATH_FUNC inline vec2
-map_world_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix, mat4 view_matrix){
+map_world_to_screen(vec3 point, vec2 screen_dimensions, mat4 projection_matrix, mat4 view_matrix){DPZoneScoped;
 	return map_camera_to_screen(map_world_to_camera(point, view_matrix), screen_dimensions, projection_matrix);
 }
 
 DESHI_MATH_FUNC inline vec3
-map_screen_to_world(vec2 point, vec2 screen_dimensions, mat4 projection_matrix, mat4 view_matrix){
+map_screen_to_world(vec2 point, vec2 screen_dimensions, mat4 projection_matrix, mat4 view_matrix){DPZoneScoped;
 	//TODO(delle) can we use the fast matrix inverse functions here?
 	vec4 result;
 	result.x = (2.0f * (point.x / screen_dimensions.x)) - 1.0f;
@@ -12259,7 +12136,7 @@ map_screen_to_world(vec2 point, vec2 screen_dimensions, mat4 projection_matrix, 
 }())
 
 template<typename T> global inline T
-lerp(T lhs, T rhs, f32 t){
+lerp(T lhs, T rhs, f32 t){DPZoneScoped;
 	return (lhs * (1.0f - t)) + (rhs * t);
 }
 
@@ -12511,8 +12388,9 @@ void TEST_deshi_math(){
 			struct{ f32 x, y, z, w; };
 			__m128 sse;
 		}a,b;
-#define ASSERT_M128_4F32_EQUAL(lhs,rhs) a.sse = lhs;b.sse = rhs;Assert(memcmp(&a,&b,sizeof(__m128)) == 0)
-#define ASSERT_M128_4F32_VALUES(lhs,x_,y_,z_,w_) a.sse = lhs;ASSERT_F32_EQUAL(a.x,(x_));ASSERT_F32_EQUAL(a.y,(y_));ASSERT_F32_EQUAL(a.z,(z_));ASSERT_F32_EQUAL(a.w,(w_))
+#define ASSERT_M128_4F32_EQUAL(lhs,rhs) a.sse = (lhs);b.sse = (rhs);Assert(memcmp(&a,&b,sizeof(__m128)) == 0)
+#define ASSERT_M128_4F32_VALUES(lhs,x_,y_,z_,w_) a.sse = (lhs);ASSERT_F32_EQUAL(a.x,(x_));ASSERT_F32_EQUAL(a.y,(y_));ASSERT_F32_EQUAL(a.z,(z_));ASSERT_F32_EQUAL(a.w,(w_))
+		
 		
 		ASSERT_M128_4F32_EQUAL(m128_set_4f32(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f));
 		ASSERT_M128_4F32_EQUAL(m128_set_4f32(1.0f, 1.0f, 1.0f, 1.0f), _mm_set_ps(1.0f, 1.0f, 1.0f, 1.0f));
@@ -12705,12 +12583,14 @@ void TEST_deshi_math(){
 		Assert(m128_equal_4f32(m128_fill_4f32( 0.1f), m128_setr_4f32( 0.1f, 0.1f, 0.1f, 0.1f)));
 		Assert(m128_equal_4f32(m128_fill_4f32( 1.0f), m128_setr_4f32( 1.0f, 1.0f, 1.0f, 1.0f)));
 		
+		
 		union{
 			struct{ f64 x, y; };
 			__m128d sse;
 		}c,d;
-#define ASSERT_M128_2F64_EQUAL(lhs,rhs) c.sse = lhs;d.sse = rhs;Assert(memcmp(&c,&d,sizeof(__m128)) == 0)
-#define ASSERT_M128_2F64_VALUES(lhs,x_,y_) c.sse = lhs;ASSERT_F64_EQUAL(c.x,(x_));ASSERT_F64_EQUAL(c.y,(y_))
+#define ASSERT_M128_2F64_EQUAL(lhs,rhs) c.sse = (lhs);d.sse = (rhs);Assert(memcmp(&c,&d,sizeof(__m128)) == 0)
+#define ASSERT_M128_2F64_VALUES(lhs,x_,y_) c.sse = (lhs);ASSERT_F64_EQUAL(c.x,(x_));ASSERT_F64_EQUAL(c.y,(y_))
+		
 		
 		ASSERT_M128_2F64_EQUAL(m128_set_2f64(0.0, 0.0), _mm_set_pd(0.0, 0.0));
 		ASSERT_M128_2F64_EQUAL(m128_set_2f64(1.0, 1.0), _mm_set_pd(1.0, 1.0));
@@ -12903,12 +12783,14 @@ void TEST_deshi_math(){
 		Assert(m128_equal_2f64(m128_fill_2f64( 0.1), m128_setr_2f64( 0.1, 0.1)));
 		Assert(m128_equal_2f64(m128_fill_2f64( 1.0), m128_setr_2f64( 1.0, 1.0)));
 		
+		
 		union{
 			struct{ s32 x, y, z, w; };
 			__m128i sse;
 		}e,f;
-#define ASSERT_M128_4S32_EQUAL(lhs,rhs) e.sse = lhs;f.sse = rhs;Assert(memcmp(&e,&f,sizeof(__m128)) == 0)
-#define ASSERT_M128_4S32_VALUES(lhs,x_,y_,z_,w_) e.sse = lhs;Assert(e.x==(x_));Assert(e.y==(y_));Assert(e.z==(z_));Assert(e.w==(w_))
+#define ASSERT_M128_4S32_EQUAL(lhs,rhs) e.sse = (lhs);f.sse = (rhs);Assert(memcmp(&e,&f,sizeof(__m128)) == 0)
+#define ASSERT_M128_4S32_VALUES(lhs,x_,y_,z_,w_) e.sse = (lhs);Assert(e.x==(x_));Assert(e.y==(y_));Assert(e.z==(z_));Assert(e.w==(w_))
+		
 		
 		ASSERT_M128_4S32_EQUAL(m128_set_4s32(0, 0, 0, 0), _mm_set_epi32(0, 0, 0, 0));
 		ASSERT_M128_4S32_EQUAL(m128_set_4s32(1, 1, 1, 1), _mm_set_epi32(1, 1, 1, 1));
@@ -13042,6 +12924,7 @@ void TEST_deshi_math(){
 		ASSERT_M128_4F32_VALUES(m128_swizzle_1133(m128_fill_4f32(1.0f)), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_M128_4F32_VALUES(m128_swizzle_1133(m128_setr_4f32(1.0f,2.0f,3.0f,4.0f)), 2.0f,2.0f,4.0f,4.0f);
 		
+		
 #undef ASSERT_M128_4S32_VALUES
 #undef ASSERT_M128_4S32_EQUAL
 #undef ASSERT_M128_2F64_VALUES
@@ -13054,7 +12937,638 @@ void TEST_deshi_math(){
 	
 	//// vec2 ////
 	{
+		vec2 a;
+		vec2 b;
+#define ASSERT_VEC2_EQUAL(lhs,rhs) a = (lhs);b = (rhs);ASSERT_F32_EQUAL(a.x,b.x);ASSERT_F32_EQUAL(a.y,b.y)
+#define ASSERT_VEC2_VALUES(lhs,x_,y_) a = (lhs);ASSERT_F32_EQUAL(a.x,(x_));ASSERT_F32_EQUAL(a.y,(y_))
 		
+		
+		a = vec2{0.0f,0.0f};
+		b = vec2{0.0f,0.0f};
+		ASSERT_F32_EQUAL(a.arr[0], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[0], a.x);
+		ASSERT_F32_EQUAL(a.arr[0], a.r);
+		ASSERT_F32_EQUAL(a.arr[0], a.w);
+		ASSERT_F32_EQUAL(a.arr[0], a.u);
+		ASSERT_F32_EQUAL(a.arr[1], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[1], a.y);
+		ASSERT_F32_EQUAL(a.arr[1], a.g);
+		ASSERT_F32_EQUAL(a.arr[1], a.h);
+		ASSERT_F32_EQUAL(a.arr[1], a.v);
+		ASSERT_F32_EQUAL(b.arr[0], 0.0f);
+		ASSERT_F32_EQUAL(b.arr[0], b.x);
+		ASSERT_F32_EQUAL(b.arr[0], b.r);
+		ASSERT_F32_EQUAL(b.arr[0], b.w);
+		ASSERT_F32_EQUAL(b.arr[0], b.u);
+		ASSERT_F32_EQUAL(b.arr[1], 0.0f);
+		ASSERT_F32_EQUAL(b.arr[1], b.y);
+		ASSERT_F32_EQUAL(b.arr[1], b.g);
+		ASSERT_F32_EQUAL(b.arr[1], b.h);
+		ASSERT_F32_EQUAL(b.arr[1], b.v);
+		
+		ASSERT_VEC2_VALUES(Vec2(-1.0f,-2.0f), -1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-0.1f,-0.2f), -0.1f,-0.2f);
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 0.1f, 0.2f),  0.1f, 0.2f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f),  1.0f, 2.0f);
+		
+		ASSERT_VEC2_VALUES(vec2_ZERO(),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_ONE(),   1.0f, 1.0f);
+		ASSERT_VEC2_VALUES(vec2_UP(),    0.0f, 1.0f);
+		ASSERT_VEC2_VALUES(vec2_DOWN(),  0.0f,-1.0f);
+		ASSERT_VEC2_VALUES(vec2_LEFT(), -1.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_RIGHT(), 1.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_UNITX(), 1.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_UNITY(), 0.0f, 1.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(vec2::ZERO,  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2::ONE,   1.0f, 1.0f);
+		ASSERT_VEC2_VALUES(vec2::UP,    0.0f, 1.0f);
+		ASSERT_VEC2_VALUES(vec2::DOWN,  0.0f,-1.0f);
+		ASSERT_VEC2_VALUES(vec2::LEFT, -1.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2::RIGHT, 1.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2::UNITX, 1.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2::UNITY, 0.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+		a = Vec2(1.0f,-2.3f);
+		ASSERT_F32_EQUAL(vec2_index(a, 0),  1.0f);
+		ASSERT_F32_EQUAL(vec2_index(a, 1), -2.3f);
+		
+#ifdef __cplusplus
+		a = Vec2(1.0f,-2.3f);
+		ASSERT_F32_EQUAL(a[0],  1.0f);
+		ASSERT_F32_EQUAL(a[1], -2.3f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a[0] =  2.0f;
+		a[1] = -4.6f;
+		ASSERT_F32_EQUAL(a.arr[0],  2.0f);
+		ASSERT_F32_EQUAL(a.arr[1], -4.6f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_add(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_add(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  1.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_add(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  2.0f,3.0f);
+		ASSERT_VEC2_VALUES(vec2_add(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -0.9f,1.8f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) + Vec2( 0.0f,0.0f),  0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) + Vec2( 1.0f,2.0f),  1.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) + Vec2( 1.0f,2.0f),  2.0f,3.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) + Vec2(-2.0f,4.0f), -0.9f,1.8f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2( 0.0f, 0.0f);
+		a += Vec2( 0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(a,  0.0f,0.0f);
+		a  = Vec2( 0.0f, 0.0f);
+		a += Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  1.0f,2.0f);
+		a  = Vec2( 1.0f, 1.0f);
+		a += Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  2.0f,3.0f);
+		a  = Vec2( 1.1f,-2.2f);
+		a += Vec2(-2.0f, 4.0f);
+		ASSERT_VEC2_VALUES(a, -0.9f,1.8f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_sub(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_sub(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)), -1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(vec2_sub(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  0.0f,-1.0f);
+		ASSERT_VEC2_VALUES(vec2_sub(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)),  3.1f,-6.2f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) - Vec2( 0.0f,0.0f),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) - Vec2( 1.0f,2.0f), -1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) - Vec2( 1.0f,2.0f),  0.0f,-1.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) - Vec2(-2.0f,4.0f),  3.1f,-6.2f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2( 0.0f, 0.0f);
+		a -= Vec2( 0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
+		a  = Vec2( 0.0f, 0.0f);
+		a -= Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a, -1.0f,-2.0f);
+		a  = Vec2( 1.0f, 1.0f);
+		a -= Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  0.0f,-1.0f);
+		a  = Vec2( 1.1f,-2.2f);
+		a -= Vec2(-2.0f, 4.0f);
+		ASSERT_VEC2_VALUES(a,  3.1f,-6.2f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_mul(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_mul(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_mul(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(vec2_mul(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -2.2f,-8.8f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) * Vec2( 0.0f,0.0f),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) * Vec2( 1.0f,2.0f),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) * Vec2( 1.0f,2.0f),  1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) * Vec2(-2.0f,4.0f), -2.2f,-8.8f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2( 0.0f, 0.0f);
+		a *= Vec2( 0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
+		a  = Vec2( 0.0f, 0.0f);
+		a *= Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
+		a  = Vec2( 1.0f, 1.0f);
+		a *= Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  1.0f, 2.0f);
+		a  = Vec2( 1.1f,-2.2f);
+		a *= Vec2(-2.0f, 4.0f);
+		ASSERT_VEC2_VALUES(a, -2.2f,-8.8f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(0.0f, 0.0f),  0.0f),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(0.0f, 0.0f),  1.0f),  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(1.0f, 1.0f),  2.0f),  2.0f, 2.0f);
+		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(1.1f,-2.2f), -2.0f), -2.2f, 4.4f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) *  0.0f,  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) *  1.0f,  0.0f, 0.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) *  2.0f,  2.0f, 2.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) * -2.0f, -2.2f, 4.4f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2( 0.0f, 0.0f);
+		a *= 0.0f;
+		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
+		a  = Vec2( 0.0f, 0.0f);
+		a *= 1.0f;
+		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
+		a  = Vec2( 1.0f, 1.0f);
+		a *= 2.0f;
+		ASSERT_VEC2_VALUES(a,  2.0f, 2.0f);
+		a  = Vec2( 1.1f,-2.2f);
+		a *= -2.0f;
+		ASSERT_VEC2_VALUES(a, -2.2f, 4.4f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_div(Vec2(1.0f, 1.0f), Vec2( 1.0f,1.0f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_div(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_div(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.00f, 0.50f);
+		ASSERT_VEC2_VALUES(vec2_div(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -0.55f,-0.55f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) / Vec2( 1.0f,1.0f),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) / Vec2( 1.0f,2.0f),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) / Vec2( 1.0f,2.0f),  1.00f, 0.50f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) / Vec2(-2.0f,4.0f), -0.55f,-0.55f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2( 1.0f, 1.00f);
+		a /= Vec2( 1.0f, 1.0f);
+		ASSERT_VEC2_VALUES(a,  1.00f, 1.00f);
+		a  = Vec2( 0.0f, 0.0f);
+		a /= Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  0.00f, 0.00f);
+		a  = Vec2( 1.0f, 1.0f);
+		a /= Vec2( 1.0f, 2.0f);
+		ASSERT_VEC2_VALUES(a,  1.00f, 0.50f);
+		a  = Vec2( 1.1f,-2.2f);
+		a /= Vec2(-2.0f, 4.0f);
+		ASSERT_VEC2_VALUES(a, -0.55f,-0.55f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(1.0f, 1.0f),  1.0f),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(0.0f, 0.0f),  1.0f),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(1.0f, 1.0f),  2.0f),  0.50f, 0.50f);
+		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(1.1f,-2.2f), -2.0f), -0.55f, 1.10f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) /  1.0f,  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) /  1.0f,  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) /  2.0f,  0.50f, 0.50f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) / -2.0f, -0.55f, 1.10f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2( 1.0f, 1.00f);
+		a /= 1.0f;
+		ASSERT_VEC2_VALUES(a,  1.00f, 1.00f);
+		a  = Vec2( 0.0f, 0.0f);
+		a /= 1.0f;
+		ASSERT_VEC2_VALUES(a,  0.00f, 0.00f);
+		a  = Vec2( 1.0f, 1.0f);
+		a /= 2.0f;
+		ASSERT_VEC2_VALUES(a,  0.50f, 0.50f);
+		a  = Vec2( 1.1f,-2.2f);
+		a /= -2.0f;
+		ASSERT_VEC2_VALUES(a, -0.55f, 1.10f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_negate(Vec2(0.0f, 0.0f)), -0.0f,-0.0f);
+		ASSERT_VEC2_VALUES(vec2_negate(Vec2(1.0f, 1.0f)), -1.0f,-1.0f);
+		ASSERT_VEC2_VALUES(vec2_negate(Vec2(1.1f,-2.2f)), -1.1f, 2.2f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(-Vec2(0.0f, 0.0f), -0.0f,-0.0f);
+		ASSERT_VEC2_VALUES(-Vec2(1.0f, 1.0f), -1.0f,-1.0f);
+		ASSERT_VEC2_VALUES(-Vec2(1.1f,-2.2f), -1.1f, 2.2f);
+#endif //#ifdef __cplusplus
+		
+		Assert(vec2_equal(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)));
+		Assert(vec2_equal(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 1.0f)));
+		Assert(vec2_equal(Vec2(-1.1f, 2.2f), Vec2(-1.1f, 2.2f)));
+		Assert(!vec2_equal(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)));
+		Assert(!vec2_equal(Vec2( 1.0f, 1.0f), Vec2( 2.0f, 2.0f)));
+		Assert(!vec2_equal(Vec2(-1.1f, 2.2f), Vec2( 1.1f,-2.2f)));
+		Assert(vec2_equal(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)), Vec2( 1.0f, 1.0f)));
+		Assert(vec2_equal(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)), Vec2( 0.0f, 0.0f)));
+		
+#ifdef __cplusplus
+		Assert(Vec2( 0.0f, 0.0f) == Vec2( 0.0f, 0.0f));
+		Assert(Vec2( 1.0f, 1.0f) == Vec2( 1.0f, 1.0f));
+		Assert(Vec2(-1.1f, 2.2f) == Vec2(-1.1f, 2.2f));
+		Assert(!(Vec2( 0.0f, 0.0f) == Vec2( 1.0f, 1.0f)));
+		Assert(!(Vec2( 1.0f, 1.0f) == Vec2( 2.0f, 2.0f)));
+		Assert(!(Vec2(-1.1f, 2.2f) == Vec2( 1.1f,-2.2f)));
+		Assert(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)) == Vec2( 1.0f, 1.0f));
+		Assert(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)) == Vec2( 0.0f, 0.0f));
+#endif //#ifdef __cplusplus
+		
+		Assert(vec2_nequal(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)));
+		Assert(vec2_nequal(Vec2( 1.0f, 1.0f), Vec2( 2.0f, 2.0f)));
+		Assert(vec2_nequal(Vec2(-1.1f, 2.2f), Vec2( 1.1f,-2.2f)));
+		Assert(!vec2_nequal(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)));
+		Assert(!vec2_nequal(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 1.0f)));
+		Assert(!vec2_nequal(Vec2(-1.1f, 2.2f), Vec2(-1.1f, 2.2f)));
+		Assert(vec2_nequal(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)), Vec2( 2.0f, 2.0f)));
+		Assert(vec2_nequal(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)), Vec2( 1.0f, 1.0f)));
+		
+#ifdef __cplusplus
+		Assert(Vec2( 0.0f, 0.0f) != Vec2( 1.0f, 1.0f));
+		Assert(Vec2( 1.0f, 1.0f) != Vec2( 2.0f, 2.0f));
+		Assert(Vec2(-1.1f, 2.2f) != Vec2( 1.1f,-2.2f));
+		Assert(!(Vec2( 0.0f, 0.0f) != Vec2( 0.0f, 0.0f)));
+		Assert(!(Vec2( 1.0f, 1.0f) != Vec2( 1.0f, 1.0f)));
+		Assert(!(Vec2(-1.1f, 2.2f) != Vec2(-1.1f, 2.2f)));
+		Assert(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)) != Vec2( 2.0f, 2.0f));
+		Assert(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)) != Vec2( 1.0f, 1.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_abs(Vec2(-1.0f,-1.0f)), 1.0f,1.0f);
+		ASSERT_VEC2_VALUES(vec2_abs(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_abs(Vec2( 1.0f, 1.0f)), 1.0f,1.0f);
+		ASSERT_VEC2_VALUES(vec2_abs(Vec2( 1.1f,-2.2f)), 1.1f,2.2f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(-1.0f,-1.0f).abs(), 1.0f,1.0f);
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).abs(), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).abs(), 1.0f,1.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.1f,-2.2f).abs(), 1.1f,2.2f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_dot(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),   0.0f);
+		ASSERT_F32_EQUAL(vec2_dot(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),   0.0f);
+		ASSERT_F32_EQUAL(vec2_dot(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),   3.0f);
+		ASSERT_F32_EQUAL(vec2_dot(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -11.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).dot(Vec2( 0.0f,0.0f)),   0.0f);
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).dot(Vec2( 1.0f,2.0f)),   0.0f);
+		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).dot(Vec2( 1.0f,2.0f)),   3.0f);
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).dot(Vec2(-2.0f,4.0f)), -11.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_cross(Vec2(0.0f, 0.0f)),  0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_cross(Vec2(1.0f, 1.0f)), -1.0f,1.0f);
+		ASSERT_VEC2_VALUES(vec2_cross(Vec2(1.0f, 2.0f)), -2.0f,1.0f);
+		ASSERT_VEC2_VALUES(vec2_cross(Vec2(1.1f,-2.2f)),  2.2f,1.1f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).cross(),  0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f).cross(), -1.0f,1.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 2.0f).cross(), -2.0f,1.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f).cross(),  2.2f,1.1f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_mag(Vec2(0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_mag(Vec2(1.0f, 1.0f)), DESHI_SQRTF(2.00f));
+		ASSERT_F32_EQUAL(vec2_mag(Vec2(1.0f, 2.0f)), DESHI_SQRTF(5.00f));
+		ASSERT_F32_EQUAL(vec2_mag(Vec2(1.1f,-2.2f)), DESHI_SQRTF(6.05f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).mag(), 0.0f);
+		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).mag(), DESHI_SQRTF(2.00f));
+		ASSERT_F32_EQUAL(Vec2(1.0f, 2.0f).mag(), DESHI_SQRTF(5.00f));
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).mag(), DESHI_SQRTF(6.05f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(1.0f, 1.0f)), 2.00f);
+		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(1.0f, 2.0f)), 5.00f);
+		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(1.1f,-2.2f)), 6.05f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).mag_sq(), 0.0f);
+		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).mag_sq(), 2.00f);
+		ASSERT_F32_EQUAL(Vec2(1.0f, 2.0f).mag_sq(), 5.00f);
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).mag_sq(), 6.05f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(1.0f, 1.0f)), 1.0f/DESHI_SQRTF(2.00f), 1.0f/DESHI_SQRTF(2.00f));
+		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(1.0f, 2.0f)), 1.0f/DESHI_SQRTF(5.00f), 2.0f/DESHI_SQRTF(5.00f));
+		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(1.1f,-2.2f)), 1.1f/DESHI_SQRTF(6.05f),-2.2f/DESHI_SQRTF(6.05f));
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).normalize(), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f).normalize(), 1.0f/DESHI_SQRTF(2.00f), 1.0f/DESHI_SQRTF(2.00f));
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 2.0f).normalize(), 1.0f/DESHI_SQRTF(5.00f), 2.0f/DESHI_SQRTF(5.00f));
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f).normalize(), 1.1f/DESHI_SQRTF(6.05f),-2.2f/DESHI_SQRTF(6.05f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_distance(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.00f);
+		ASSERT_F32_EQUAL(vec2_distance(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)), DESHI_SQRTF(5.00f));
+		ASSERT_F32_EQUAL(vec2_distance(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)), 1.00f);
+		ASSERT_F32_EQUAL(vec2_distance(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), DESHI_SQRTF(48.05f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance(Vec2( 0.0f,0.0f)), 0.00f);
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance(Vec2( 1.0f,2.0f)), DESHI_SQRTF(5.00f));
+		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).distance(Vec2( 1.0f,2.0f)), 1.00f);
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).distance(Vec2(-2.0f,4.0f)), DESHI_SQRTF(48.05f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.00f);
+		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  5.00f);
+		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.00f);
+		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), 48.05f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance_sq(Vec2( 0.0f,0.0f)),  0.00f);
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance_sq(Vec2( 1.0f,2.0f)),  5.00f);
+		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).distance_sq(Vec2( 1.0f,2.0f)),  1.00f);
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).distance_sq(Vec2(-2.0f,4.0f)), 48.05f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 2.0f, 2.0f), Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 2.0f, 2.0f), Vec2( 0.0f, 5.0f)), 0.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 2.0f)), 3.0f/5.0f,6.0f/5.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.1f,-2.2f), Vec2(-2.0f, 4.0f)), 11.0f/10.0f,-11.0f/5.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.0f, 2.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.0f, 2.0f), Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
+		ASSERT_VEC2_VALUES(vec2_projection(Vec2(-2.0f, 4.0f), Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection(Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection(Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection(Vec2( 0.0f, 5.0f)), 0.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).projection(Vec2( 1.0f, 2.0f)), 3.0f/5.0f,6.0f/5.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.1f,-2.2f).projection(Vec2(-2.0f, 4.0f)), 11.0f/10.0f,-11.0f/5.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection(Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-2.0f, 4.0f).projection(Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.00f,0.00f);
+		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  0.50f,1.00f);
+		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.00f,1.50f);
+		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -0.45f,0.90f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).midpoint(Vec2( 0.0f,0.0f)),  0.00f,0.00f);
+		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).midpoint(Vec2( 1.0f,2.0f)),  0.50f,1.00f);
+		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f).midpoint(Vec2( 1.0f,2.0f)),  1.00f,1.50f);
+		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f).midpoint(Vec2(-2.0f,4.0f)), -0.45f,0.90f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_slope(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  2.0f);
+		ASSERT_F32_EQUAL(vec2_slope(Vec2(1.0f, 1.0f), Vec2( 2.0f,2.0f)),  1.0f);
+		ASSERT_F32_EQUAL(vec2_slope(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -2.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).slope(Vec2( 1.0f,2.0f)),  2.0f);
+		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).slope(Vec2( 2.0f,2.0f)),  1.0f);
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).slope(Vec2(-2.0f,4.0f)), -2.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(5.0f, 5.0f), Vec2( 3.0f,3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(0.0f, 1.0f), Vec2( 1.0f,0.0f)), DESHI_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), DESHI_PI_F32);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).radians_between(Vec2( 0.0f,0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).radians_between(Vec2( 1.0f,2.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2(5.0f, 5.0f).radians_between(Vec2( 3.0f,3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2(0.0f, 1.0f).radians_between(Vec2( 1.0f,0.0f)), DESHI_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).radians_between(Vec2(-2.0f,4.0f)), DESHI_PI_F32);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.90f,-1.90f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.55f,-1.55f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.50f,-1.50f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.45f,-1.45f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.10f,-1.10f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.00f,-1.00f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-0.90f,-0.90f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-0.55f,-0.55f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-0.50f,-0.50f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-0.45f,-0.45f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-0.10f,-0.10f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 0.00f, 0.00f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 0.10f, 0.10f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 0.45f, 0.45f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 0.50f, 0.50f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 0.55f, 0.55f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 0.90f, 0.90f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.00f, 1.00f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.10f, 1.10f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.45f, 1.45f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.50f, 1.50f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.55f, 1.55f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.90f, 1.90f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
+		
+		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).floor(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).floor(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).floor(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.50f,-1.50f).floor(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.45f,-1.45f).floor(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.10f,-1.10f).floor(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.00f,-1.00f).floor(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.90f,-0.90f).floor(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.55f,-0.55f).floor(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.50f,-0.50f).floor(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.45f,-0.45f).floor(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.10f,-0.10f).floor(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.00f, 0.00f).floor(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.10f, 0.10f).floor(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.45f, 0.45f).floor(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.50f, 0.50f).floor(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.55f, 0.55f).floor(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.90f, 0.90f).floor(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.00f, 1.00f).floor(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.10f, 1.10f).floor(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.45f, 1.45f).floor(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.50f, 1.50f).floor(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).floor(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).floor(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).floor(),  2.00f, 2.00f);
+		
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.90f,-1.90f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.55f,-1.55f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.50f,-1.50f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.45f,-1.45f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.10f,-1.10f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.00f,-1.00f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-0.90f,-0.90f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-0.55f,-0.55f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-0.50f,-0.50f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-0.45f,-0.45f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-0.10f,-0.10f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 0.00f, 0.00f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 0.10f, 0.10f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 0.45f, 0.45f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 0.50f, 0.50f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 0.55f, 0.55f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 0.90f, 0.90f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.00f, 1.00f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.10f, 1.10f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.45f, 1.45f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.50f, 1.50f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.55f, 1.55f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.90f, 1.90f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
+		
+		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).ceil(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).ceil(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).ceil(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.50f,-1.50f).ceil(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.45f,-1.45f).ceil(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.10f,-1.10f).ceil(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.00f,-1.00f).ceil(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.90f,-0.90f).ceil(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.55f,-0.55f).ceil(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.50f,-0.50f).ceil(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.45f,-0.45f).ceil(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.10f,-0.10f).ceil(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.00f, 0.00f).ceil(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.10f, 0.10f).ceil(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.45f, 0.45f).ceil(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.50f, 0.50f).ceil(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.55f, 0.55f).ceil(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.90f, 0.90f).ceil(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.00f, 1.00f).ceil(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.10f, 1.10f).ceil(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.45f, 1.45f).ceil(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.50f, 1.50f).ceil(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).ceil(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).ceil(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).ceil(),  2.00f, 2.00f);
+		
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.90f,-1.90f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.55f,-1.55f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.50f,-1.50f)), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.45f,-1.45f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.10f,-1.10f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.00f,-1.00f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-0.90f,-0.90f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-0.55f,-0.55f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-0.50f,-0.50f)), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-0.45f,-0.45f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2(-0.10f,-0.10f)), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 0.00f, 0.00f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 0.10f, 0.10f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 0.45f, 0.45f)),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 0.50f, 0.50f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 0.55f, 0.55f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 0.90f, 0.90f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.00f, 1.00f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.10f, 1.10f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.45f, 1.45f)),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.50f, 1.50f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.55f, 1.55f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.90f, 1.90f)),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(vec2_round(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
+		
+		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).round(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).round(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).round(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.50f,-1.50f).round(), -2.00f,-2.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.45f,-1.45f).round(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.10f,-1.10f).round(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-1.00f,-1.00f).round(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.90f,-0.90f).round(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.55f,-0.55f).round(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.50f,-0.50f).round(), -1.00f,-1.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.45f,-0.45f).round(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2(-0.10f,-0.10f).round(), -0.00f,-0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.00f, 0.00f).round(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.10f, 0.10f).round(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.45f, 0.45f).round(),  0.00f, 0.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.50f, 0.50f).round(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.55f, 0.55f).round(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 0.90f, 0.90f).round(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.00f, 1.00f).round(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.10f, 1.10f).round(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.45f, 1.45f).round(),  1.00f, 1.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.50f, 1.50f).round(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).round(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).round(),  2.00f, 2.00f);
+		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).round(),  2.00f, 2.00f);
+		
+		ASSERT_VEC2_VALUES(vec2_min(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2( 1.0f, 2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2( 1.0f, 2.0f), Vec2( 2.0f,1.0f)), 1.0f,1.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f,-2.0f), Vec2( 1.0f,2.0f)), -1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2( 1.0f,-2.0f), Vec2( 1.0f,2.0f)), 1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), -1.0f,1.0f);
+		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.5f,1.0f);
+		
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).min(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 1.2f,2.3f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 2.0f,1.0f)), 1.0f,1.0f);
+		ASSERT_VEC2_VALUES(Vec2(-1.0f,-2.0f).min(Vec2( 1.0f,2.0f)), -1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).min(Vec2( 1.0f,2.0f)), 1.0f,-2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).min(Vec2( 2.0f,1.0f)), -1.0f,1.0f);
+		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).min(Vec2(-1.5f,1.0f)), -1.5f,1.0f);
+		
+		ASSERT_VEC2_VALUES(vec2_max(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.2f,2.3f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2( 1.0f, 2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2( 1.0f, 2.0f), Vec2( 2.0f,1.0f)), 2.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f,-2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2( 1.0f,-2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), 2.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.0f,2.0f);
+		
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).max(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 1.2f,2.3f)), 1.2f,2.3f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 2.0f,1.0f)), 2.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-1.0f,-2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).max(Vec2( 2.0f,1.0f)), 2.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).max(Vec2(-1.5f,1.0f)), -1.0f,2.0f);
+		
+#undef ASSERT_VEC2_VALUES
+#undef ASSERT_VEC2_EQUAL
 	}
 	
 	//// vec2i ////
