@@ -21,7 +21,7 @@
 #include "core/input.h"
 #include "core/logger.h"
 #include "core/platform.h"
-#include "core/render.h"
+#include "core/graphics.h"
 #include "core/assets.h"
 #include "core/threading.h"
 #include "core/time.h"
@@ -31,7 +31,7 @@
 #include "math/math.h"
 
 // We're gonna use stb directly so we can show examples of 
-// RenderImage w/o having to go through assets
+// GraphicsImage w/o having to go through assets
 #include "stb/stb_image.h"
 
 struct {
@@ -45,65 +45,67 @@ int main() {
 	memory_init(Gigabytes(1), Gigabytes(1));
 	platform_init();
 	logger_init();
-	Window* win = window_create(str8l("render_api"));
+	Window* win = window_create(str8l("graphics api example"));
 	window_show(win);
-	render_init_x(win);
+	graphics_init(win);
 	
+	using namespace graphics;
+
 	// we need to create a pipeline which describes the path we take
 	// to render the scene
-	RenderPipeline* pipeline = render_pipeline_create();
-	pipeline->name = str8l("flat");
+	Pipeline* pipeline = graphics::Pipeline::allocate();
+	pipeline->debug_name = str8l("flat pipeline");
 	
 	// We'll need a vertex and a fragment shader which we acquire by pushing
 	// them onto the pipeline's shader stages. The backend will handle compilation.
 	
-	array_wrap_and_push(pipeline->shader_stages, {
+	pipeline->shader_stages = array<GraphicsShader>::create({
 		{
-			RenderShaderStage_Vertex,
+			GraphicsShaderStage_Vertex,
 			str8l("test.vert"),
 			file_read_simple(str8l("test.vert"), deshi_temp_allocator)
 		},
 		{
-			RenderShaderStage_Fragment,
+			GraphicsShaderStage_Fragment,
 			str8l("test.frag"),
 			file_read_simple(str8l("test.frag"), deshi_temp_allocator)
-		}});
+		}}, deshi_allocator).ptr;
 
 	// We need to set all of the properties of the pipeline so that it can correctly
 	// render our scenes.
-	pipeline->            front_face = RenderPipelineFrontFace_CCW;
-	pipeline->               culling = RenderPipelineCulling_Back;
-	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	pipeline->            front_face = GraphicsFrontFace_CCW;
+	pipeline->               culling = GraphicsPipelineCulling_Back;
+	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
 	pipeline->            depth_test = true;
-	pipeline->      depth_compare_op = RenderCompareOp_Less;
+	pipeline->          depth_writes = true;
+	pipeline->      depth_compare_op = GraphicsCompareOp_Less;
 	pipeline->            depth_bias = false;
 	pipeline->            line_width = 1.f;
 	pipeline->           color_blend = true;
-	pipeline->        color_blend_op = RenderBlendOp_Add;
-	pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
-	pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->        alpha_blend_op = RenderBlendOp_Add;
-	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	pipeline->        color_blend_op = GraphicsBlendOp_Add;
+	pipeline->color_src_blend_factor = GraphicsBlendFactor_Source_Alpha;
+	pipeline->color_dst_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->        alpha_blend_op = GraphicsBlendOp_Add;
+	pipeline->alpha_src_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	pipeline->        blend_constant = color(10,10,10,255);
-	pipeline->           render_pass = render_pass_of_window_presentation_frame(win);
+	pipeline->           render_pass = graphics::RenderPass::of_window_presentation_frames(win);
 
-	array_wrap_and_push(pipeline->dynamic_states, {
-			RenderDynamicState_Viewport,
-			RenderDynamicState_Scissor});
+	pipeline->dynamic_viewport = true;
+	pipeline->dynamic_scissor = true;
 
 	// We need to give the renderer information about the data we are going to be 
 	// giving to the vertex shader stage through buffers. We define the binding our 
 	// data will be delivered on (0) and then the size of each element of the data. 
 	// Finally, we describe how that data is laid out.
-	array_wrap_and_push(pipeline->vertex_input_bindings, 
-		{0, sizeof(MeshVertex)});
+	array_init_with_elements(pipeline->vertex_input_bindings, 
+			{{0, sizeof(MeshVertex)}});
 
-	array_wrap_and_push(pipeline->vertex_input_attributes, {
-		{0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, pos)},
-		{1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(MeshVertex, uv)},
-		{2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(MeshVertex, color)},
-		{3, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, normal)}});
+	array_init_with_elements(pipeline->vertex_input_attributes, {
+		{0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)},
+		{1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)},
+		{2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)},
+		{3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)}});
 
 	// We need to describe to the renderer how our shader is going to use 
 	// the data that we want to give to it.
@@ -116,44 +118,44 @@ int main() {
 	
 	// The first thing we need to do is create a buffer on the GPU for our ubo data. 
 	
-	RenderBuffer* ubo_buffer = render_buffer_create(
+	Buffer* ubo_buffer = Buffer::create(
 		&ubo, 
 		sizeof(ubo), 
-		RenderBufferUsage_UniformBuffer,
+		GraphicsBufferUsage_UniformBuffer,
 		// we need to be able to map this memory so that we may 
 		// update it, so it needs to be visible to the host
-		RenderMemoryPropertyFlag_HostVisible | 
+		GraphicsMemoryPropertyFlag_HostVisible | 
 		// this flag indicates that the memory does not need to be flushed manually
 		// the CPU/GPU will keep things in sync for us
-		RenderMemoryPropertyFlag_HostCoherent,
+		GraphicsMemoryPropertyFlag_HostCoherent,
 		// indicates that we don't want to keep this memory mapped
 		// but would like to map and unmap it later
-		RenderMemoryMapping_MapWriteUnmap
+		GraphicsMemoryMapping_Occasional
 	);
 
 	// Now we can create the descriptor layout. This describes the layout of data
 	// that we want to give to the shaders. We're going to need a descriptor for
 	// our UBO and another one for a texture.
 	
-	RenderDescriptorSetLayout* descriptor_layout = render_descriptor_layout_create();
+	DescriptorSetLayout* descriptor_layout = DescriptorSetLayout::allocate(); 
 	descriptor_layout->debug_name = str8l("test descriptor layout");
 	
-	array_wrap_and_push(descriptor_layout->bindings, {
+	array_init_with_elements(descriptor_layout->bindings, {
 		// First is the UBO. It is bound to slot 0 and used in the vertex shader.
 			{
-				RenderDescriptorType_Uniform_Buffer,
-				RenderShaderStage_Vertex,
+				GraphicsDescriptorType_Uniform_Buffer,
+				GraphicsShaderStage_Vertex,
 				0
 			},
 		// Then the texture, which we bind to slot 1 and use in the fragment shader.
 			{
-				RenderDescriptorType_Combined_Image_Sampler,
-				RenderShaderStage_Fragment,
+				GraphicsDescriptorType_Combined_Image_Sampler,
+				GraphicsShaderStage_Fragment,
 				1
 			}});
 	
 	// update the descriptor layout in the backend
-	render_descriptor_layout_update(descriptor_layout);
+	descriptor_layout->update();
 
 	// We'll also be using a push constant, which is a single value that 
 	// we can efficiently upload to the GPU. We will use a push constant 
@@ -163,9 +165,9 @@ int main() {
 	// several times per frame, as many times as we have models and as many 
 	// render passes we have passing over those models. 
 	
-	RenderPushConstant model_push_constant;
+	PushConstant model_push_constant;
 	// we only need the model matrix in the vertex shader
-	model_push_constant.shader_stage_flags = RenderShaderStage_Vertex;
+	model_push_constant.shader_stages = GraphicsShaderStage_Vertex;
 	model_push_constant.size = sizeof(mat4);
 	model_push_constant.offset = 0;
 	
@@ -173,16 +175,16 @@ int main() {
 	// This is just a pair of a collection descriptor layouts 
 	// and a collection of push constants.
 	
-	RenderPipelineLayout* pipeline_layout = render_pipeline_layout_create();
+	PipelineLayout* pipeline_layout = PipelineLayout::allocate();
 	pipeline_layout->debug_name = str8l("test");
-	array_push_value(pipeline_layout->descriptor_layouts, descriptor_layout);
-	array_push_value(pipeline_layout->push_constants, model_push_constant);
-	render_pipeline_layout_update(pipeline_layout);
+	array_init_with_elements(pipeline_layout->descriptor_layouts, {(GraphicsDescriptorSetLayout*)descriptor_layout});
+	array_init_with_elements(pipeline_layout->push_constants, {(GraphicsPushConstant)model_push_constant});
+	pipeline_layout->update();
 
 	// Now we tell the pipeline what layout to use and update it in the backend.
 	
 	pipeline->layout = pipeline_layout;
-	render_pipeline_update(pipeline);
+	pipeline->update();
 
 	// At this point we have described to the backend the sequence of operations we want 
 	// to perform on our vertices and textures and the data the stages (shaders) use 
@@ -190,11 +192,11 @@ int main() {
 	// to tell the backend to allocate this information we need to create a descriptor set. 
 	// A descriptor set is just an array of descriptor layouts.
 	
-	RenderDescriptorSet* descriptor_set0 = render_descriptor_set_create();
+	DescriptorSet* descriptor_set0 = DescriptorSet::allocate();
 	// It's important that we use the same layouts that we gave to the pipeline.
 	// If we don't, we'll run into problems when we want to bind this set.
 	descriptor_set0->layouts = pipeline->layout->descriptor_layouts;
-	render_descriptor_set_update(descriptor_set0);
+	descriptor_set0->update();
 
 	// The descriptor set isn't fully setup yet. We still need to give it the uniform buffer
 	// and the texture we wish to use. We already have the UBO, so now we just need the texture.
@@ -203,114 +205,114 @@ int main() {
 	s32 width, height, channels;
 	u8* pixels = stbi_load("data/textures/null128.png", &width, &height, &channels, STBI_rgb_alpha);
 
-	// Next, we'll create a RenderImage, which is similar to a RenderBuffer except 
+	// Next, we'll create a GraphicsImage, which is similar to a GraphicsBuffer except 
 	// multidimentional.
-	RenderImage* image = render_image_create();
-	image->format = RenderFormat_R8G8B8A8_StandardRGB;
+	Image* image = Image::allocate();
+	image->format = GraphicsFormat_R8G8B8A8_SRGB;
 	// We're going to be sampling this image in our shader and the
 	// image is going to be the destination of a transfer when we upload
 	// our texture pixels to it.
-	image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
+	image->usage = GraphicsImageUsage_Sampled | GraphicsImageUsage_Transfer_Destination;
 	// We only care for sampling the image once (and atm we only support 1 sample!)
-	image->samples = RenderSampleCount_1;
+	image->samples = GraphicsSampleCount_1;
 	// The size of our image as well as how many channels we have
 	image->extent = {width, height, channels};
 
 	// This call will create the necessary backend information for the information
-	render_image_update(image);
+	image->update();
 	// but to actually upload it we call this function
-	render_image_upload(image, pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
+	image->write(pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
 
 	// Great, now we just need to create an image view of our image and a sampler
 	// for the shader to use.
 	
-	RenderImageView* image_view = render_image_view_create();
+	ImageView* image_view = ImageView::allocate();
 	image_view->image = image;
 	image_view->format = image->format;
-	image_view->aspect_flags = RenderImageViewAspectFlags_Color;
-	render_image_view_update(image_view);
+	image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
+	image_view->update();
 
-	RenderSampler* sampler = render_sampler_create();
-	sampler->mipmaps = 1;
+	Sampler* sampler = Sampler::allocate();
+	sampler->mipmap_mode = GraphicsFilter_Nearest;
 	// This determines how the image is filtered when we get close to it.
-	sampler->mag_filter = RenderFilter_Nearest;
+	sampler->mag_filter = GraphicsFilter_Nearest;
 	// And this when we get far from it.
-	sampler->min_filter = RenderFilter_Nearest;
+	sampler->min_filter = GraphicsFilter_Nearest;
 	// Here we decide how the sampler behaves when we try to read
 	// beyond [0,1) over each axis. We will just clamp to border
 	// which will just give black outside the bounds of the image.
 	sampler->address_mode_u = 
 	sampler->address_mode_v = 
-	sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 	// The color used when we are in clamp to border mode
 	sampler->border_color = Color_Black;
-	render_sampler_update(sampler);
+	sampler->update();
 
 	// Now we have all the information we need to finally setup the descriptor set.
-	// We need to give it an array of RenderDescriptors to write to the set.
+	// We need to give it an array of GraphicsDescriptors to write to the set.
 	
-	auto descriptors = array<RenderDescriptor>::create_with_count(2, deshi_allocator);
-	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = RenderShaderStage_Vertex;
-	descriptors[0].buffer.offset = 0;
-	descriptors[0]. buffer.range = sizeof(ubo);
-	descriptors[0].buffer.handle = ubo_buffer;
+	auto descriptors = array<Descriptor>::create_with_count(2, deshi_allocator);
+	descriptors[0].         type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
+	descriptors[0].   ubo.offset = 0;
+	descriptors[0].    ubo.range = sizeof(ubo);
+	descriptors[0].   ubo.buffer = ubo_buffer;
 
-	descriptors[1].         kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = RenderShaderStage_Fragment;
-	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+	descriptors[1].         type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
+	descriptors[1]. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 	descriptors[1].image.sampler = sampler;
 	descriptors[1].   image.view = image_view;
-	render_descriptor_set_write(descriptor_set0, descriptors.ptr);
+	descriptor_set0->write(0, descriptors);
 
 	// We're actually going to use two textures, to show descriptor set switching.
 	// So we'll do pretty much everything we just did again but with a different texture.
 	
-	RenderDescriptorSet* descriptor_set1 = render_descriptor_set_create();
+	DescriptorSet* descriptor_set1 = DescriptorSet::allocate();
 	descriptor_set1->layouts = pipeline->layout->descriptor_layouts;
-	render_descriptor_set_update(descriptor_set1);
+	descriptor_set1->update();
 
 	pixels = stbi_load("data/textures/alex.png", &width, &height, &channels, STBI_rgb_alpha);
 
-	image = render_image_create();
-	image->format = RenderFormat_R8G8B8A8_StandardRGB;
-	image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
-	image->samples = RenderSampleCount_1;
+	image = Image::allocate();
+	image->format = GraphicsFormat_R8G8B8A8_SRGB;
+	image->usage = GraphicsImageUsage_Sampled | GraphicsImageUsage_Transfer_Destination;
+	image->samples = GraphicsSampleCount_1;
 	image->extent = {width, height, channels};
-	render_image_update(image);
-	render_image_upload(image, pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
+	image->update();
+	image->write(pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
 
-	image_view = render_image_view_create();
+	image_view = ImageView::allocate();
 	image_view->image = image;
 	image_view->format = image->format;
-	image_view->aspect_flags = RenderImageViewAspectFlags_Color;
-	render_image_view_update(image_view);
+	image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
+	image_view->update();
 
-	sampler = render_sampler_create();
-	sampler->mipmaps = 1;
-	sampler->mag_filter = RenderFilter_Nearest;
-	sampler->min_filter = RenderFilter_Nearest;
+	sampler = Sampler::allocate();
+	sampler->mipmap_mode = GraphicsFilter_Nearest;
+	sampler->mag_filter = GraphicsFilter_Nearest;
+	sampler->min_filter = GraphicsFilter_Nearest;
 	sampler->address_mode_u = 
 	sampler->address_mode_v = 
-	sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 	sampler->border_color = Color_Black;
-	render_sampler_update(sampler);
+	sampler->update();
 
 	descriptors.clear();
 	descriptors.recount(2);
 
-	descriptors[0].         kind = RenderDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = RenderShaderStage_Vertex;
-	descriptors[0].buffer.offset = 0;
-	descriptors[0]. buffer.range = sizeof(ubo);
-	descriptors[0].buffer.handle = ubo_buffer;
+	descriptors[0].         type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
+	descriptors[0].   ubo.offset = 0;
+	descriptors[0].    ubo.range = sizeof(ubo);
+	descriptors[0].   ubo.buffer = ubo_buffer;
 
-	descriptors[1].         kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = RenderShaderStage_Fragment;
-	descriptors[1]. image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
+	descriptors[1].         type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
+	descriptors[1]. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 	descriptors[1].image.sampler = sampler;
 	descriptors[1].   image.view = image_view;
-	render_descriptor_set_write(descriptor_set1, descriptors.ptr);
+	descriptor_set1->write(0, descriptors);
 
 	// Now we need a model to render. Assets has a full api for generating 
 	// a model without ever needing to touch the render api, but we're going to
@@ -332,31 +334,31 @@ int main() {
 	// Then we need to define the two triangles of the plane with indicies
 	MeshIndex indexes[6] = {1, 2, 0, 2, 3, 0};
 
-	// Next we'll need RenderBuffers so that we can get this 
+	// Next we'll need GraphicsBuffers so that we can get this 
 	// data onto the gpu. For both buffers, the memory is going 
 	// to be local to the GPU and we don't plan to remap
 	// the memory in this program either. The calls to these functions
 	// map, write, and unmap the buffers automatically, so there's no need
 	// for us to do it manually like we will with our UBOs in a moment.
 	
-	RenderBuffer* vertex_buffer = render_buffer_create(
+	Buffer* vertex_buffer = Buffer::create(
 			vertices,
 			sizeof(MeshVertex) * 4,
-			RenderBufferUsage_VertexBuffer,
-			RenderMemoryPropertyFlag_DeviceLocal,
-			RenderMemoryMapping_None);
+			GraphicsBufferUsage_VertexBuffer,
+			GraphicsMemoryPropertyFlag_DeviceLocal,
+			GraphicsMemoryMapping_Never);
 
-	RenderBuffer* index_buffer = render_buffer_create(
+	Buffer* index_buffer = Buffer::create(
 			indexes,
 			sizeof(MeshIndex) * 6,
-			RenderBufferUsage_IndexBuffer,
-			RenderMemoryPropertyFlag_DeviceLocal,
-			RenderMemoryMapping_None);
+			GraphicsBufferUsage_IndexBuffer,
+			GraphicsMemoryPropertyFlag_DeviceLocal,
+			GraphicsMemoryMapping_Never);
 
 	// Now we can start initializing the scene.
 	 
 	// First we'll map our ubo buffer and write some initial information to it.
-	render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
+	ubo_buffer->map(ubo_buffer->device_size(), 0);
 
 	ubo.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
 	ubo.proj.arr[5] *= -1;
@@ -364,9 +366,9 @@ int main() {
 	ubo.camera_pos = {0,0,0,0};
 	ubo.screen_dim = Vec2(win->width, win->height);
 
-	CopyMemory(ubo_buffer->mapped_data, &ubo, sizeof(ubo));
+	CopyMemory(ubo_buffer->mapped_data(), &ubo, sizeof(ubo));
 
-	render_buffer_unmap(ubo_buffer, true);
+	ubo_buffer->unmap(true);
 
 	// Next we'll setup some information needed to have a controllable camera.
 	vec3 up       = {0}, 
@@ -403,15 +405,20 @@ int main() {
 		
 		// We need to give commands to the frame that we're currently working with
 		// which the api provides a function for retrieving 
-		RenderFramebuffer* frame = render_current_present_frame_of_window(win);
+		Framebuffer* frame = (Framebuffer*)graphics_current_present_frame_of_window(win);
 		
-		{ using namespace render::cmd;
+		{ using namespace graphics::cmd;
 			// We need to tell the renderer what render pass we're working with
 			// and what frame we want the information to actually draw to
 			begin_render_pass(win, frame->render_pass, frame);
 
 			// Next we bind the pipeline.
 			bind_pipeline(win, pipeline);
+
+			// Now we setup the viewport and scissors we want to use
+			// which will just cover the entire screen.
+			set_viewport(win, {0,0}, Vec2(win->width, win->height));
+			set_scissor(win, {0,0}, Vec2(win->width, win->height));
 
 			// Then we push the transformation push constant for our first plane.
 			// Note that this doesn't copy the memory, so it must
@@ -441,7 +448,7 @@ int main() {
 		
 		// We tell the renderer we're render to update the window with the commands 
 		// we've executed. The commands will be cleared at the end of the update.
-		render_update_x(win);
+		graphics_update(win);
 
 		// The rest of the code is stuff for making the camera move.
 		if(key_pressed(Key_ESCAPE)) break;
@@ -478,9 +485,9 @@ int main() {
 				ubo.camera_pos = Vec4(position.x, position.y, position.z, 0);
 				ubo.view = Math::LookAtMatrix(position, position + forward).Inverse();
 				
-				render_buffer_map(ubo_buffer, 0, ubo_buffer->size);
-				CopyMemory(ubo_buffer->mapped_data, &ubo, sizeof(ubo));
-				render_buffer_unmap(ubo_buffer, true);
+				ubo_buffer->map(ubo_buffer->device_size(), 0);
+				CopyMemory(ubo_buffer->mapped_data(), &ubo, sizeof(ubo));
+				ubo_buffer->unmap(true);
 			}
 		}
 
