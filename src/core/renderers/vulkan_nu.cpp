@@ -942,11 +942,12 @@ create_surface(Window* window) {
 	auto wininf = (WindowInfo*)window->render_info;
 
 #if DESHI_WINDOWS
-	PrintVk(2, "Creating win32-vulkan surface");
+	VulkanInfo("Creating win32-vulkan surface");
 	VkWin32SurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
 	info.hwnd = (HWND)window->handle;
 	info.hinstance = (HINSTANCE)win32_console_instance;
-	resultVk = vkCreateWin32SurfaceKHR(instance, &info, 0, &wi->surface); AssertVk(resultVk, "failed to create win32 surface");
+	auto result = vkCreateWin32SurfaceKHR(vk_instance, &info, 0, &wininf->surface);
+	VulkanAssertVk(result, "failed to create win32 surface");
 #elif DESHI_LINUX
 	VkXlibSurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
 	info.window = (X11Window)window->handle;

@@ -13,8 +13,8 @@ void
 scene_render() {
 	auto win   = g_scene->active.window;
 	auto cam   = g_scene->active.camera;
-	auto frame = render_current_present_frame_of_window(win);
-	auto pass  = frame->render_pass;
+	//auto frame = render_current_present_frame_of_window(win);
+	//auto pass  = frame->render_pass;
 
 
 }
