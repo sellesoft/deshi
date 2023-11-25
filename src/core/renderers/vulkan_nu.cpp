@@ -816,7 +816,7 @@ vk_debug_callback(
 			VulkanWarning(pCallbackData->pMessage);
 		} break;
 		default: {
-			VulkanNotice(pCallbackData->pMessage);
+			VulkanInfo(pCallbackData->pMessage);
 		} break;
 	}
 	return VK_FALSE;
@@ -921,6 +921,7 @@ create_instance(Window* window) {
 		
 		watch = start_stopwatch();
 
+		debug_create_info.pNext = 0;
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vk_instance, "vkCreateDebugUtilsMessengerEXT");
 		if(!func) {
 			VulkanError("unable to retrieve vkCreateDebugUtilsMessengerEXT");
