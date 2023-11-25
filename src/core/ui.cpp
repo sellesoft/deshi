@@ -227,9 +227,9 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 		drawcmd->vertex_offset = g_ui->vertex_buffer.cursor;
 		g_ui->vertex_buffer.cursor += counts.x;
 #else
-		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(Vertex2);
-		g_ui->vertex_arena->cursor += counts.x * sizeof(Vertex2);
-		g_ui->vertex_arena->used += counts.x * sizeof(Vertex2);
+		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(uiVertex);
+		g_ui->vertex_arena->cursor += counts.x * sizeof(uiVertex);
+		g_ui->vertex_arena->used += counts.x * sizeof(uiVertex);
 #endif
 	} else drawcmd->vertex_offset = v_place_next;
 	if(i_place_next == -1){
@@ -275,11 +275,7 @@ ui_drawcmd_realloc(uiDrawCmd* dc, vec2i counts) {
 
 uiDrawCmdPtrs 
 ui_drawcmd_get_ptrs(uiDrawCmd* dc) {
-#ifdef RENDER_REWRITE
-	return {(Vertex2*)graphics_buffer_mapped_data(g_ui->vertex_buffer.handle) + dc->vertex_offset, (u32*)graphics_buffer_mapped_data(g_ui->index_buffer.handle) + dc->index_offset};
-#else
-	return {(Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset, (u32*)g_ui->index_arena->start + dc->index_offset};
-#endif
+	return {(uiVertex*)graphics_buffer_mapped_data(g_ui->vertex_buffer.handle) + dc->vertex_offset, (u32*)graphics_buffer_mapped_data(g_ui->index_buffer.handle) + dc->index_offset};
 }
 
 
@@ -396,7 +392,7 @@ deshi__ui_pop_item(u32 count, str8 file, upt line) {
 }
 
 vec2i 
-ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
+ui_gen_background(uiItem* item, uiVertex* vp, u32* ip, vec2i counts){
 	vec2 mtl = floor(item->style.margintl * item->scale);
 	vec2 mbr = floor(item->style.marginbr * item->scale);
 	vec2 bor = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
@@ -406,7 +402,7 @@ ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
 }
 
 vec2i 
-ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts){
+ui_gen_border(uiItem* item, uiVertex* vp, u32* ip, vec2i counts){
 	switch(item->style.border_style){
 		case border_none:{}break;
 		case border_solid:{
@@ -667,65 +663,8 @@ deshi__ui_pop_id(str8 file, upt line){
 // @ui_context
 
 
-void 
-deshi__ui_init(){DPZoneScoped;
-	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
-	
-	g_ui->allocator_root.next = g_ui->allocator_root.prev = &g_ui->allocator_root;
-	
-	g_ui->immediate.active = 0;
-	g_ui->immediate.pushed = 0;
-	
-	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
-	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
-
-	g_ui->vertex_arena = memory_create_arena(g_memory->arena_heap.size / 16);
-	g_ui->index_arena  = memory_create_arena(g_memory->arena_heap.size / 16);
-	
-	g_ui->base = uiItem{0};
-	g_ui->base.id = STR8("base");
-	g_ui->base.file_created = STR8(__FILE__);
-	g_ui->base.line_created = __LINE__;
-	g_ui->base.style.width = DeshWindow->width;
-	g_ui->base.style.height = DeshWindow->height;
-	g_ui->base.style_hash = ui_hash_style(&g_ui->base);
-	g_ui->base.link.prev = g_ui->base.link.next = &g_ui->base.link;
-	push_item(&g_ui->base);
-	
-	//setup default keybinds
-	//TODO(sushi) export these to a config file and load them instead
-	g_ui->keys.inputtext.cursor.          left = Key_LEFT  | InputMod_None;
-	g_ui->keys.inputtext.cursor.     left_word = Key_LEFT  | InputMod_AnyCtrl;
-	g_ui->keys.inputtext.cursor. left_wordpart = Key_LEFT  | InputMod_AnyAlt;
-	g_ui->keys.inputtext.cursor.         right = Key_RIGHT | InputMod_None;
-	g_ui->keys.inputtext.cursor.    right_word = Key_RIGHT | InputMod_AnyCtrl;
-	g_ui->keys.inputtext.cursor.right_wordpart = Key_RIGHT | InputMod_AnyAlt;
-	g_ui->keys.inputtext.cursor.            up = Key_UP    | InputMod_None;
-	g_ui->keys.inputtext.cursor.          down = Key_DOWN  | InputMod_None;
-	
-	g_ui->keys.inputtext.select.          left = Key_LEFT  | InputMod_AnyShift;
-	g_ui->keys.inputtext.select.     left_word = Key_LEFT  | InputMod_AnyShift | InputMod_AnyCtrl;
-	g_ui->keys.inputtext.select. left_wordpart = Key_LEFT  | InputMod_AnyShift | InputMod_AnyAlt;
-	g_ui->keys.inputtext.select.         right = Key_RIGHT | InputMod_AnyShift;
-	g_ui->keys.inputtext.select.    right_word = Key_RIGHT | InputMod_AnyShift | InputMod_AnyCtrl;
-	g_ui->keys.inputtext.select.right_wordpart = Key_RIGHT | InputMod_AnyShift | InputMod_AnyAlt;
-	g_ui->keys.inputtext.select.            up = Key_UP    | InputMod_AnyShift;
-	g_ui->keys.inputtext.select.          down = Key_DOWN  | InputMod_AnyShift;
-	
-	g_ui->keys.inputtext.del.             left = Key_BACKSPACE | InputMod_None;
-	g_ui->keys.inputtext.del.        left_word = Key_BACKSPACE | InputMod_AnyCtrl;
-	g_ui->keys.inputtext.del.    left_wordpart = Key_BACKSPACE | InputMod_AnyAlt;
-	g_ui->keys.inputtext.del.            right = Key_DELETE    | InputMod_None;
-	g_ui->keys.inputtext.del.       right_word = Key_DELETE    | InputMod_AnyCtrl;
-	g_ui->keys.inputtext.del.   right_wordpart = Key_DELETE    | InputMod_AnyAlt;
-	
-	g_ui->keys.drag_item = Mouse_LEFT;
-	
-	DeshiStageInitEnd(DS_UI);
-}
-
 void
-deshi__ui_init_x(Window* window) {
+deshi__ui_init(Window* window) {
 	DeshiStageInitStart(DS_UI, DS_MEMORY, "Attempted to initialize UI2 module before initializing the Memory module");
 	
 	g_ui->allocator_root.next = g_ui->allocator_root.prev = &g_ui->allocator_root;
@@ -735,11 +674,31 @@ deshi__ui_init_x(Window* window) {
 	
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
+
+	g_ui->render_pass = graphics_render_pass_allocate();
+	g_ui->render_pass->debug_name = str8l("<ui> render pass");
+	g_ui->render_pass->use_color_attachment = true;
+	g_ui->render_pass->color_attachment.          format = graphics_format_of_presentation_frames(window);
+	g_ui->render_pass->color_attachment.         load_op = GraphicsLoadOp_Load;
+	g_ui->render_pass->color_attachment.        store_op = GraphicsStoreOp_Store;
+	g_ui->render_pass->color_attachment. stencil_load_op = GraphicsLoadOp_Dont_Care;
+	g_ui->render_pass->color_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	g_ui->render_pass->color_attachment.  initial_layout = GraphicsImageLayout_Present;
+	g_ui->render_pass->color_attachment.    final_layout = GraphicsImageLayout_Present;
+	g_ui->render_pass->use_depth_attachment = true;
+	g_ui->render_pass->depth_attachment.          format = graphics_current_present_frame_of_window(window)->render_pass->depth_attachment.format;
+	g_ui->render_pass->depth_attachment.         load_op = GraphicsLoadOp_Clear;
+	g_ui->render_pass->depth_attachment.        store_op = GraphicsStoreOp_Store;
+	g_ui->render_pass->depth_attachment. stencil_load_op = GraphicsLoadOp_Clear;
+	g_ui->render_pass->depth_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	g_ui->render_pass->depth_attachment.  initial_layout = GraphicsImageLayout_Undefined;
+	g_ui->render_pass->depth_attachment.    final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
+	graphics_render_pass_update(g_ui->render_pass);
 
 	g_ui->pipeline = graphics_pipeline_allocate();
-	g_ui->pipeline->debug_name = str8l("ui");
+	g_ui->pipeline->debug_name = str8l("<ui> pipeline");
 
-	array_wrap_and_push(g_ui->pipeline->shader_stages, {
+	array_init_with_elements(g_ui->pipeline->shader_stages, {
 			{
 				GraphicsShaderStage_Vertex, 
 				str8l("twod.vert"),
@@ -755,7 +714,8 @@ deshi__ui_init_x(Window* window) {
 	g_ui->pipeline->            front_face = GraphicsFrontFace_CCW;
 	g_ui->pipeline->               culling = GraphicsPipelineCulling_None;
 	g_ui->pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
-	g_ui->pipeline->            depth_test = false;
+	g_ui->pipeline->            depth_test = true;
+	g_ui->pipeline->      depth_compare_op = GraphicsCompareOp_Always;
 	g_ui->pipeline->            line_width = 1.f;
 	g_ui->pipeline->           color_blend = true;
 	g_ui->pipeline->        color_blend_op = GraphicsBlendOp_Add;
@@ -766,26 +726,25 @@ deshi__ui_init_x(Window* window) {
 	g_ui->pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	g_ui->pipeline->        blend_constant = color(10,10,10,255);
 	g_ui->pipeline->           render_pass = graphics_render_pass_of_window_presentation_frames(window);
-	
 
 	g_ui->pipeline->dynamic_viewport = 
 	g_ui->pipeline->dynamic_scissor  = true;
 
-	g_ui->pipeline->vertex_input_bindings = array<GraphicsVertexInputBindingDescription>::create({{0, sizeof(Vertex2)}}, deshi_temp_allocator).ptr;
-	g_ui->pipeline->vertex_input_attributes = array<GraphicsVertexInputAttributeDescription>::create({
-				{0, 0, GraphicsFormat_R32G32_Float,   offsetof(Vertex2, pos)},
-				{1, 0, GraphicsFormat_R32G32_Float,   offsetof(Vertex2, uv)},
-				{2, 0, GraphicsFormat_R8G8B8A8_UNorm, offsetof(Vertex2, color)},
-			}, deshi_temp_allocator).ptr;
-
+	array_init_with_elements(g_ui->pipeline->vertex_input_bindings, 
+			{{0, sizeof(uiVertex)}}, deshi_allocator);
+	array_init_with_elements(g_ui->pipeline->vertex_input_attributes, {
+				{0, 0, GraphicsFormat_R32G32_Float,   offsetof(uiVertex, pos)},
+				{1, 0, GraphicsFormat_R32G32_Float,   offsetof(uiVertex, uv)},
+				{2, 0, GraphicsFormat_R8G8B8A8_UNorm, offsetof(uiVertex, color)},
+			}, deshi_allocator);
 	auto layout = graphics_descriptor_set_layout_allocate();
 	layout->debug_name = str8l("ui descriptor layout");
-	layout->bindings = array<GraphicsDescriptorSetLayoutBinding>::create({
+	array_init_with_elements(layout->bindings,{
 			{
 				GraphicsDescriptorType_Combined_Image_Sampler,
 				GraphicsShaderStage_Fragment,
 				0
-			}}).ptr;
+			}}, deshi_allocator);
 	graphics_descriptor_set_layout_update(layout);
 
 	g_ui->push_constant.size = 2 * sizeof(vec2);
@@ -794,8 +753,8 @@ deshi__ui_init_x(Window* window) {
 
 	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = str8l("ui pipeline layout");
-	pipeline_layout->descriptor_layouts = array<GraphicsDescriptorSetLayout*>::create({layout}, deshi_temp_allocator).ptr;
-	pipeline_layout->push_constants = array<GraphicsPushConstant>::create({g_ui->push_constant}, deshi_temp_allocator).ptr;
+	array_init_with_elements(pipeline_layout->descriptor_layouts, {layout});
+	array_init_with_elements(pipeline_layout->push_constants, {g_ui->push_constant});
 	graphics_pipeline_layout_update(pipeline_layout);
 
 	g_ui->pipeline->layout = pipeline_layout;
@@ -817,11 +776,11 @@ deshi__ui_init_x(Window* window) {
 
 	g_ui->blank_descriptor_set = graphics_descriptor_set_allocate();
 	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
-	g_ui->blank_descriptor_set->layouts = array<GraphicsDescriptorSetLayout*>::create({g_ui->pipeline->layout->descriptor_layouts[0]}, deshi_temp_allocator).ptr;
+	array_init_with_elements(g_ui->blank_descriptor_set->layouts, 
+			{g_ui->pipeline->layout->descriptor_layouts[0]});
 	graphics_descriptor_set_update(g_ui->blank_descriptor_set);
 
-	auto descriptors = array<GraphicsDescriptor>::create(deshi_temp_allocator);
-	GraphicsDescriptor descriptor;
+	GraphicsDescriptor descriptor = {};
 	descriptor.         type = GraphicsDescriptorType_Combined_Image_Sampler;
 	descriptor.   image.view = assets_font_null()->tex->image_view;
 	descriptor.image.sampler = assets_font_null()->tex->sampler;
@@ -868,8 +827,6 @@ deshi__ui_init_x(Window* window) {
 	g_ui->keys.drag_item = Mouse_LEFT;
 	
 	DeshiStageInitEnd(DS_UI);
-
-
 }
  
 //pass 0 for child on first call
@@ -1454,11 +1411,17 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			g_ui->stats.drawcmds_visible++;
 			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.x;
 			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.y;
-#ifdef RENDER_REWRITE
+
 			auto texture = item->drawcmds[i].texture;
 
 			if(texture && texture != g_ui->last_texture) {
 				if(!texture->ui_descriptor_set) {
+					// NOTE(sushi) atm we store a pointer to a descriptor set on asset textures so that ui can make
+					//             one per texture used within it. The reason we do this is because otherwise we would
+					//             need a way to match textures to descriptor sets internally in ui, which would probably
+					//             have to be some kind of map which I really don't want to have to deal with every single
+					//             time we draw something in ui. This needs to be fixed later on though because it's weird
+					//             to me that assets stores a pointer on Textures specifically for ui.
 					texture->ui_descriptor_set = graphics_descriptor_set_allocate();
 					texture->ui_descriptor_set->layouts = array_copy(g_ui->blank_descriptor_set->layouts).ptr;
 					texture->ui_descriptor_set->debug_name = to_dstr8v(deshi_temp_allocator, "<ui> texture descriptor set").fin;
@@ -1479,16 +1442,6 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 				graphics_cmd_bind_descriptor_set(g_ui->updating_window, 0, g_ui->blank_descriptor_set);
 			}
 			graphics_cmd_draw_indexed(g_ui->updating_window, item->drawcmds[i].counts_used.y, item->drawcmds[i].index_offset, item->drawcmds[i].vertex_offset);
-#else
-			render_set_active_surface_idx(0);
-			render_start_cmd2(5, item->drawcmds[i].texture, scoff, scext);
-			render_add_vertices2(5, 		
-				(Vertex2*)g_ui->vertex_arena->start + item->drawcmds[i].vertex_offset, 
-				item->drawcmds[i].counts_used.x, 
-				(u32*)g_ui->index_arena->start + item->drawcmds[i].index_offset,
-				item->drawcmds[i].counts_used.y
-			);
-#endif
 		}
 	}
 	
@@ -1507,8 +1460,27 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	return {pos,siz};
 }
 
+struct {
+	vec2 scale;
+	vec2 translation;
+} pc;
+
 void 
-deshi__ui_update(){DPZoneScoped;
+deshi__ui_update(Window* window) {
+	g_ui->updating_window = window;
+
+	pc = {
+		{2.f/window->width, 2.f/window->height},
+		{-1.f, -1.f}
+	};
+
+	graphics_cmd_begin_render_pass(window, g_ui->render_pass, graphics_current_present_frame_of_window(window));
+	graphics_cmd_bind_pipeline(window, g_ui->pipeline);
+	graphics_cmd_push_constant(window, &pc, {GraphicsShaderStage_Vertex, sizeof(pc), 0});
+	graphics_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
+	graphics_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
+	graphics_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);
+	
 	g_ui->updating = 1;
 	
 	g_ui->stats.drawcmds_visible = 0;
@@ -1561,30 +1533,7 @@ deshi__ui_update(){DPZoneScoped;
 	g_ui->immediate_items.clear();
 	
 	g_ui->updating = 0;
-}
 
-struct {
-	vec2 scale;
-	vec2 translation;
-} pc;
-
-void 
-deshi__ui_update_x(Window* window) {
-	g_ui->updating_window = window;
-
-	pc = {
-		{2.f/window->width, 2.f/window->height},
-		{-1.f, -1.f}
-	};
-
-	auto frame = graphics_current_present_frame_of_window(g_ui->updating_window);
-	graphics_cmd_begin_render_pass(window, frame->render_pass, frame);
-	graphics_cmd_bind_pipeline(window, g_ui->pipeline);
-	graphics_cmd_push_constant(window, &pc, {GraphicsShaderStage_Vertex, sizeof(pc), 0});
-	graphics_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
-	graphics_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
-	graphics_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);
-	deshi__ui_update();
 	graphics_cmd_end_render_pass(window);
 	g_ui->updating_window = 0;
 }
@@ -1785,7 +1734,7 @@ void ui_debug(){
 	forI(g_ui->immediate_items.count){
 		memsum += g_ui->immediate_items[i]->memsize;
 	}
-	memsum += g_ui->stats.vertices_reserved * sizeof(Vertex2);
+	memsum += g_ui->stats.vertices_reserved * sizeof(uiVertex);
 	memsum += g_ui->stats.indices_reserved * sizeof(u32);
 	memsum += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
 	
@@ -2084,12 +2033,12 @@ ui_print_tree(void (*info)(dstr8*, uiItem*)) {
 
 
 vec2i
-ui_put_line(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
+ui_put_line(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	vec2 ott = end - start;
@@ -2112,12 +2061,12 @@ ui_put_line(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 
 
 //3 verts, 3 indices
 vec2i 
-ui_put_filledtriangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
+ui_put_filledtriangle(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;
@@ -2129,12 +2078,12 @@ ui_put_filledtriangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p1
 }
 
 vec2i
-ui_put_triangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color){DPZoneScoped;
+ui_put_triangle(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	vec2i sum;
@@ -2171,12 +2120,12 @@ ui_put_triangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2
 }
 
 vec2i
-ui_put_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, color color){DPZoneScoped;
+ui_put_filledrect(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	vec2 tl = pos;
@@ -2195,12 +2144,12 @@ ui_put_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, v
 }
 
 vec2i
-ui_put_rect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
+ui_put_rect(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	// vec2 tl = pos;
@@ -2241,12 +2190,12 @@ ui_put_rect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 si
 }
 
 vec2i
-ui_put_circle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color){DPZoneScoped;
+ui_put_circle(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	f32 subdivisions = f32(subdivisions_int);
@@ -2278,12 +2227,12 @@ ui_put_circle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 r
 }
 
 vec2i 
-ui_put_filledcircle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
+ui_put_filledcircle(uiVertex* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
 	u32     col = color.rgba;
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	vp[0].pos = pos; vp[0].uv = { 0,0 }; vp[0].color = col;
@@ -2312,7 +2261,7 @@ ui_put_filledcircle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos,
 }
 
 vec2i
-ui_put_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
+ui_put_text(uiVertex* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(color.a == 0) return{0,0};
 	
@@ -2324,9 +2273,9 @@ ui_put_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* 
 			str8 remaining = text;
 			u32 i = 0;
 			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
-				u32     col = color.rgba;
-				Vertex2* vp = putverts + offsets.x + 4 * i;
-				u32*     ip = putindices + offsets.y + 6 * i;
+				u32      col = color.rgba;
+				uiVertex* vp = putverts + offsets.x + 4 * i;
+				u32*      ip = putindices + offsets.y + 6 * i;
 				
 				f32 w = font->max_width * scale.x;
 				f32 h = font->max_height * scale.y;
@@ -2353,9 +2302,9 @@ ui_put_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* 
 			str8 remaining = text;
 			u32 i = 0;
 			while(remaining && (codepoint = str8_advance(&remaining).codepoint)){
-				u32     col = color.rgba;
-				Vertex2* vp = putverts + offsets.x + 4 * i;
-				u32*     ip = putindices + offsets.y + 6 * i;
+				u32      col = color.rgba;
+				uiVertex* vp = putverts + offsets.x + 4 * i;
+				u32*      ip = putindices + offsets.y + 6 * i;
 				FontAlignedQuad q = font_aligned_quad(font, codepoint, &pos, scale);
 				
 				ip[0] = offsets.x+4*i; ip[1] = offsets.x+4*i + 1; ip[2] = offsets.x+4*i + 2;
@@ -2374,12 +2323,12 @@ ui_put_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* 
 }
 
 vec2i 
-ui_put_texture(Vertex2* putverts, u32* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
+ui_put_texture(uiVertex* putverts, u32* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx = 0, b32 flipy = 0){DPZoneScoped;
 	Assert(putverts && putindices);
 	if(!alpha) return{0,0};
 	
 	u32     col = PackColorU32(255,255,255,255.f * alpha);
-	Vertex2* vp = putverts + offsets.x;
+	uiVertex* vp = putverts + offsets.x;
 	u32*     ip = putindices + offsets.y;
 	
 	ip[0] = offsets.x; ip[1] = offsets.x + 1; ip[2] = offsets.x + 2;

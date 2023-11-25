@@ -249,8 +249,7 @@ ui_graph_gen_cartesian(uiItem* item){
 	
 	{
 		uiDrawCmd* dc = item->drawcmds;
-		Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+		auto [vp, ip] = ui_drawcmd_get_ptrs(dc);
 		vec2i  counts = vec2i{0,0};
 		
 		vec2 item_margin_top_left   = floor(item->style.margintl * item->scale);

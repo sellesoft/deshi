@@ -86,8 +86,6 @@ scene_render() {
 
 	}
 
-
-
 	array_clear(g_scene->model_draw_commands);
 }
 
@@ -251,8 +249,8 @@ render_temp_init(Window* window, u32 v) {
 	tl->debug_name = str8l("<render> temp pipeline layout");
 	auto dl = graphics_descriptor_set_layout_allocate();
 	array_init_with_elements(dl->bindings, {{
-				RenderDescriptorType_Uniform_Buffer,
-				RenderShaderStage_Vertex,
+				GraphicsDescriptorType_Uniform_Buffer,
+				GraphicsShaderStage_Vertex,
 				0
 			}});
 	graphics_descriptor_set_layout_update(dl);

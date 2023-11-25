@@ -30,6 +30,7 @@ struct Material;
 struct MaterialInstance;
 struct Model;
 struct Font;
+struct Shader;
 struct GraphicsBuffer;
 struct GraphicsImage;
 struct GraphicsImageView;
@@ -38,6 +39,7 @@ struct GraphicsDescriptor;
 struct GraphicsDescriptorSet;
 struct GraphicsDescriptorSetLayout;
 struct GraphicsPipeline;
+struct GraphicsShader;
 struct GraphicsRenderPass;
 struct UniformBufferObject;
 struct Window;
@@ -46,13 +48,13 @@ StartLinkageC();
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets
 
-typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is no real need to iterate thru them
-	// TODO(sushi) convert to pools
-	Mesh**     mesh_array;
-	Texture**  texture_array;
-	Material** material_array;
-	Model**    model_array;
-	Font**     font_array;
+typedef struct Assets { 
+	Mesh**     mesh_map;
+	Texture**  texture_map;
+	Material** material_map;
+	Model**    model_map;
+	Font**     font_map;
+	Shader**   shader_map;
 
 	Mesh*                mesh_pool;
 	Texture*             texture_pool;
@@ -61,11 +63,14 @@ typedef struct Assets{ //NOTE(delle) these arrays are non-owning since there is 
 	Model*               model_pool;
 	Font*                font_pool;
 	UniformBufferObject* ubo_pool;
+	Shader*              shader_pool;
 
-	Texture* null_texture;
-	Font* null_font;
+	Texture*  null_texture;
+	Font*     null_font;
 	Material* null_material;
-	Mesh* null_mesh;
+	Mesh*     null_mesh;
+	Model*    null_model;
+	Shader*   null_shader;
 
 	GraphicsPipeline* null_pipeline;
 	
@@ -106,22 +111,19 @@ extern Assets* g_assets; //global assets pointer
 
 //Inits `Assets` memory and creates the null/default objects of each asset
 //  requires the `Memory` and `Render` modules to be init
-void assets_init();
-
-void assets_init_x(Window* window);
+void assets_init(Window* window);
 
 //Deletes all of the the loaded assets
 void assets_reset();
-
-//Draws a window for inspection of `Assets` assets
-//  requires the `UI` module to be init
-void assets_browser();
 
 // TODO(sushi) put these somewhere better later
 
 void assets_update_camera_view(mat4* view_matrix);
 
 void assets_update_camera_projection(mat4* projection);
+
+// Generates a unique id from the given name.
+u64 assets_make_unique_id(str8 name);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
@@ -177,8 +179,9 @@ typedef struct MeshFace{
 }MeshFace;
 
 typedef struct Mesh{
+	str8 name;
+	u64 uid; // unique id used in the maps, just a hash of the given name for now
 	u32 bytes;
-	char name[64];
 	u64 render_idx;
 	GraphicsBuffer* vertex_buffer;
 	GraphicsBuffer* index_buffer;
@@ -210,7 +213,7 @@ Mesh* assets_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 t
 
 //Returns a pointer to the created `Mesh` object of a 3D rectangular cuboid with dimensions `width`/`height`/`depth` along the `XYZ` axis and vertex colors as `color`
 //  calls `render_load_mesh()` after creation
-Mesh* assets_mesh_create_box(f32 width, f32 height, f32 depth, u32 color);
+Mesh* assets_mesh_create_box(str8 name, f32 width, f32 height, f32 depth, u32 color);
 
 //Returns a pointer to the `Mesh` object created from a `MESH` file named `name` in the `data/models` folder
 //  calls `render_load_mesh()` after creation
@@ -237,8 +240,15 @@ void  assets_mesh_delete(Mesh* mesh);
 FORCE_INLINE Mesh*  assets_mesh_null(){ return g_assets->null_mesh; };
 
 //Returns the mesh array in `Assets`
-FORCE_INLINE Mesh** assets_mesh_array(){ return DeshAssets->mesh_array; };
+FORCE_INLINE Mesh** assets_mesh_array(){ return g_assets->mesh_map; };
 
+// Attempts to retrieve a mesh by the name it would have been created with.
+// Returns 0 if no mesh could be found.
+Mesh* assets_mesh_get_by_name(str8 name);
+
+// Attempts to retrieve a mesh by the unique id it would have been assigned at creation.
+// Returns 0 if no mesh could be found.
+Mesh* assets_mesh_get_by_uid(u64 uid);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @texture
@@ -279,8 +289,8 @@ typedef Type TextureType; enum{
 
 
 typedef struct Texture{
-	str8 name_x;
-	char name[64]; //NOTE(delle) includes the extension
+	str8 name;
+	u64 uid; // unique id used in the maps, just a hash of the given name for now
 	s32 width;
 	s32 height;
 	s32 depth;
@@ -357,34 +367,23 @@ void assets_texture_delete(Texture* texture);
 void assets_texture_update(Texture* texture, vec2i offset, vec2i extent);
 
 //Returns a pointer to the default `Texture` object which is created when `assets_init()` is called
-FORCE_INLINE Texture*  assets_texture_null(){ 
-#ifdef RENDER_REWRITE
-	return g_assets->null_texture;
-#else
-	return DeshAssets->texture_array[0]; 
-#endif
-};
+FORCE_INLINE Texture* assets_texture_null(){ return g_assets->null_texture; };
 
 //Returns the texture array in `Assets`
-FORCE_INLINE Texture** assets_texture_array(){ return DeshAssets->texture_array; };
+FORCE_INLINE Texture** assets_texture_array(){ return DeshAssets->texture_map; };
+
+// Attempts to retrieve a texture by the name it would have been created with.
+// Returns 0 if no texture could be found.
+Texture* assets_texture_get_by_name(str8 name);
+
+// Attempts to retrieve a texture by the unique id it would have been assigned at creation.
+// Returns 0 if no texture could be found.
+Texture* assets_texture_get_by_uid(u64 uid);
 
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @shader
-typedef Type Shader; enum{ 
-	Shader_NULL,
-	Shader_Flat,
-	Shader_Phong,
-	Shader_PBR,
-	Shader_Wireframe,
-	Shader_COUNT,
-}; global str8 ShaderStrings[] = { str8_lit("NULL"), str8_lit("Flat"), str8_lit("Phong"), str8_lit("PBR"), str8_lit("Wireframe") };
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @shader
 
-typedef Type ShaderType; enum {
-	ShaderType_Vertex,
-	ShaderType_Geometry,
-	ShaderType_Fragment,
-};
 
 // TODO(sushi) if this is kept around, it may be worth making it specify 
 //             the actual variables used in the ubo so that we can use 
@@ -401,8 +400,13 @@ void assets_ubo_update(UBO* ubo, void* data);
 
 void assets_ubo_delete(UBO* ubo);
 
+typedef Type ShaderType; enum {
+	ShaderType_Vertex,
+	ShaderType_Geometry,
+	ShaderType_Fragment,
+};
 
-enum ShaderResourceType {
+typedef Type ShaderResourceType; enum {
  	ShaderResourceType_UBO,
 	ShaderResourceType_Texture,
 };
@@ -412,7 +416,7 @@ const str8 ShaderResourceTypeStrings[] = {
 	str8l("Texture"),
 };
 
-// a realization of a shader resource, eg. the memory for it has been allocated
+// Sum type for specifying resources used by a shader.
 typedef struct ShaderResource {
 	ShaderResourceType type;
 	union {
@@ -421,33 +425,57 @@ typedef struct ShaderResource {
 	};
 } ShaderResource;
 
-typedef struct ShaderX {
-	str8 filename;
+typedef struct Shader {
+	str8 name;
+	u64  uid;
+	ShaderType type;
 	ShaderResourceType* resources;
-} ShaderX;
 
-// used for describing to Materials what shader stages are to be used
-// and the resources used within them
-typedef struct ShaderStages {
-	ShaderX vertex;
-	ShaderX geometry;
-	ShaderX fragment;
-} ShaderStages;
+	GraphicsShader* handle;
+} Shader;
+
+
+// Load a shader using 'source' as its source code.
+Shader* assets_shader_load_from_source(str8 name, str8 source, ShaderType type);
+
+// Load a shader source file from the given path.
+Shader* assets_shader_load_from_path(str8 name, str8 path, ShaderType type);
+
+// Load a compiled shader from the given path.
+Shader* assets_shader_load_from_file(str8 filename, ShaderType type);
+
+// Reloads the given shader.
+// Note that this will remake the backend graphics information for all materials
+// that use the given shader.
+void assets_reload_shader(Shader* shader);
+
+// Attempt to retrieve a shader by the name it would have been created with.
+// Returns 0 if no shader could be found.
+Shader* assets_shader_get_by_name(str8 name);
+
+// Attempt to retrieve a shader by the unique id it would have been assigned when it was created.
+// Returns 0 if no shader could be found.
+Shader* assets_shader_get_by_uid(u64 uid);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @material
 
+typedef struct ShaderStages {
+	Shader* vertex;
+	Shader* geometry;
+	Shader* fragment;
+} ShaderStages;
+
 typedef struct Material{
-	str8 name_x;
-	char name[64];
-	u32 render_idx; //filled when render_load_material() is called
-	Shader shader;
+	str8 name;
+	u64 uid; // unique id used in the maps, just a hash of the given name for now
 	Texture** texture_array;
 	
 	// description of the stages this material goes through
 	// as well as the resources needed for each stage
 	ShaderStages stages;
 
+	// The allocated resources this material will use.
 	ShaderResource* resources;
 
 	// possibly shared by materials
@@ -459,13 +487,7 @@ typedef struct Material{
 // Returns a pointer to the allocated `Material` object (with texture array reserved)
 Material* assets_material_allocate(u32 textureCount);
 
-// Returns a pointer to the created `Material` object with `shader`, `flags`, and `textures`; where `textures` are indexes in `Assets`
-//  calls `render_load_material()` after creation
-Material* assets_material_create(str8 name, Shader shader, Texture** textures, u32 texture_count);
-
-// NOTE(sushi) currently window is required due to pipeline needing to know what RenderPass they are going to be
-//             used in (which is )
-Material* assets_material_create_x(str8 name, ShaderStages shader_stages, ShaderResource* resources);
+Material* assets_material_create(str8 name, ShaderStages shader_stages, ShaderResource* resources);
 
 // Returns a pointer to the created `Material` object from a `MAT` file named `name` from the `data/models` folder
 //  calls `render_load_material()` after creation
@@ -487,18 +509,18 @@ void      assets_material_delete(Material* material);
 // Duplicates the given material but with a newly allocated set of resources and a new name.
 Material* assets_material_duplicate(str8 name, Material* material, ShaderResource* new_resources);
 
-
 //Returns a pointer to the default `Material` object which is created when `assets_init()` is called
-FORCE_INLINE Material*  assets_material_null(){ 
-#ifdef RENDER_REWRITE
-	return g_assets->null_material;
-#else
-	return DeshAssets->material_array[0]; 
-#endif
-};
+FORCE_INLINE Material* assets_material_null(){ return g_assets->null_material; };
 
 //Returns the material array in `Assets`
-FORCE_INLINE Material** assets_material_array(){ return DeshAssets->material_array; };
+FORCE_INLINE Material** assets_material_array(){ return g_assets->material_map; };
+
+// Attempt to retrieve a material by the name it would have been created with.
+Material* assets_material_get_by_name(str8 name);
+
+// Attempt to retrieve a material by the uid it would have been assigned at creation,
+// which is the str8_hash64 of the name it was given at creation.
+Material* assets_material_get_by_uid(u64 uid);
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @armature
@@ -518,7 +540,8 @@ typedef struct ModelBatch{
 }ModelBatch;
 
 typedef struct Model{
-	char name[64];
+	str8 name;
+	u64 uid;
 	ModelFlags flags;
 	Mesh* mesh;
 	Armature* armature;
@@ -544,7 +567,7 @@ Model* assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags);
 Model* assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags);
 
 //Returns a pointer to a new copy in `Assets` of the `Model` object at `base`
-Model* assets_model_copy(Model* base);
+Model* assets_model_duplicate(Model* base);
 
 //Saves the `Model` object at `model` to the `data/models` folder as a `MODEL` file
 void   assets_model_save(Model* model);
@@ -556,18 +579,19 @@ void   assets_model_save_to_path(Model* model, str8 path);
 void   assets_model_delete(Model* model);
 
 //Returns a pointer to the default `Model` object which is created when `assets_init()` is called
-FORCE_INLINE Model*  assets_model_null(){ return DeshAssets->model_array[0]; };
+FORCE_INLINE Model*  assets_model_null(){ return g_assets->null_model; };
 
 //Returns the model array in `Assets`
-FORCE_INLINE Model** assets_model_array(){ return DeshAssets->model_array; };
+FORCE_INLINE Model** assets_model_array(){ return g_assets->model_map; };
 
-// Renders a model to the given window
-// NOTE(sushi) currently assets only supports one window, the one that was passed to assets_init,
-//             however we must take in the window here so we can get the frame to render to,
-//             even though we could store this on g_assets, I'm not going to do that so that later
-//             on when multi window support is implemented for assets, we can minimize how much 
-//             we need to fix usage of it 
-void assets_model_render(Window* window, Model* model, mat4* transformation);
+// Attempts to retrieve a model by the name it would have been given when it was created.
+// Returns 0 if no model could be found.
+Model* assets_model_get_by_name(str8 name);
+
+// Attempts to retrieve a model by the uid it would have been assigned at creation.
+// returns 0 if no model could be found.
+Model* assets_model_get_by_uid(u64 uid);
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @font
@@ -604,6 +628,7 @@ typedef struct FontPackRange{ //mirror to stbtt_pack_range
 typedef struct Font{
 	FontType type;
 	str8 name;
+	u64 uid; // unique id used in the maps, just a hash of the given name for now
 	char weight[64];
 	u32 max_width;
 	u32 max_height;
@@ -654,16 +679,18 @@ Font* assets_font_create_from_path_ttf(str8 path, u32 height);
 void  assets_font_delete(Font* font);
 
 //Returns a pointer to the default `Font` object which is created when `assets_init()` is called
-FORCE_INLINE Font*  assets_font_null(){ 
-#ifdef RENDER_REWRITE
-	return g_assets->null_font;
-#else
-	return DeshAssets->font_array[0]; 
-#endif
-};
+FORCE_INLINE Font* assets_font_null(){ return g_assets->null_font; };
 
 //Returns the font array in `Assets`
-FORCE_INLINE Font** assets_font_array(){ return DeshAssets->font_array; };
+FORCE_INLINE Font** assets_font_map(){ return DeshAssets->font_map; };
+
+// Attempts to retrieve a font by the name it was given when it was created. 
+// Returns 0 if no font could be found.
+Font* assets_font_get_by_name(str8 name);
+
+// Attempts to retrieve a font by a unique id it would have been given when it was created. 
+// Returns 0 if no font could be found.
+Font* assets_font_get_by_uid(u64 uid);
 
 
 EndLinkageC();

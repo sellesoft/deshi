@@ -419,6 +419,12 @@ struct Texture;
 #define UI_HASH_PRIME 16777619 // 32bit FNV_prime (FNV-1a)
 #define UI_HASH_VAR(x) seed ^= (u64)(x); seed *= UI_HASH_PRIME
 
+struct uiVertex {
+	vec2 pos;
+	vec2 uv;
+	u32  color;
+};
+typedef u32 uiIndex;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_keybinds
@@ -486,8 +492,8 @@ void ui_drawcmd_remove(uiDrawCmd* drawcmd);
 void ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts);
 
 struct uiDrawCmdPtrs {
-	Vertex2* vertexes;
-	u32* indexes;
+	uiVertex* vertexes;
+	uiIndex* indexes;
 };
 
 // retrieves the start of the given drawcmds drawinfo in 
@@ -975,9 +981,9 @@ uiItem* deshi__ui_pop_item(u32 count, str8 file, upt line);
 // @ui_generate
 
 
-vec2i ui_gen_background(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
+vec2i ui_gen_background(uiItem* item, uiVertex* vp, u32* ip, vec2i counts);
 
-vec2i ui_gen_border(uiItem* item, Vertex2* vp, u32* ip, vec2i counts);
+vec2i ui_gen_border(uiItem* item, uiVertex* vp, u32* ip, vec2i counts);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1001,17 +1007,11 @@ void deshi__ui_pop_id(str8 file, upt line);
 // @ui_context
 
 
-void deshi__ui_init();
-#define ui_init() deshi__ui_init()
+void deshi__ui_init(Window* window);
+#define ui_init(window) deshi__ui_init(window)
 
-void deshi__ui_init_x(Window* window);
-#define ui_init_x(window) deshi__ui_init_x(window)
-
-void deshi__ui_update();
-#define ui_update() deshi__ui_update();
-
-void deshi__ui_update_x(Window* window);
-#define ui_update_x(window) deshi__ui_update_x(window)
+void deshi__ui_update(Window* window);
+#define ui_update(window) deshi__ui_update(window)
 
 typedef u32 uiInputState; enum{
 	uiISNone,
@@ -1051,9 +1051,6 @@ struct uiContext{
 	arrayT<uiDrawCmd*> inactive_drawcmds_vertex_sorted;
 	arrayT<uiDrawCmd*> inactive_drawcmds_index_sorted;
 	
-	Arena* vertex_arena; // arena of Vertex2
-	Arena* index_arena; // arena of u32
-	RenderTwodBuffer render_buffer;
 	// TODO(sushi) because we have item_push/pop now, we should store file/line that pushed the item
 	//             so that we can report it where things go wrong
 	arrayT<uiItem*> item_stack; //TODO(sushi) eventually put this in it's own arena since we can do a stack more efficiently in it
@@ -1065,10 +1062,10 @@ struct uiContext{
 		u64 cursor;
 	} vertex_buffer, index_buffer;
 
+	GraphicsRenderPass* render_pass;
+	GraphicsFramebuffer* framebuffer;
 	GraphicsPipeline* pipeline;
-
 	GraphicsPushConstant push_constant;
-
 	GraphicsDescriptorSet* blank_descriptor_set;
 
 	Window* updating_window;
@@ -1173,15 +1170,15 @@ FORCE_INLINE vec2i ui_put_filledcircle_counts(u32 subdiv){return {1+(s32)subdiv,
 FORCE_INLINE vec2i ui_put_text_counts(u32 charcount)     {return {4*(s32)charcount,6*(s32)charcount};};
 FORCE_INLINE vec2i ui_put_texture_counts()               {return { 8,24};};
 
-vec2i ui_put_line(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color);
-vec2i ui_put_filledtriangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color);
-vec2i ui_put_triangle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color);
-vec2i ui_put_filledrect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, color color);
-vec2i ui_put_rect(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color);
-vec2i ui_put_circle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color);
-vec2i ui_put_filledcircle(Vertex2* putverts, u32* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
-vec2i ui_put_text(Vertex2* putverts, u32* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
-vec2i ui_put_texture(Vertex2* putverts, u32* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
+vec2i ui_put_line(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 start, vec2 end, f32 thickness, color color);
+vec2i ui_put_filledtriangle(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 p1, vec2 p2, vec2 p3, color color);
+vec2i ui_put_triangle(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 p0, vec2 p1, vec2 p2, f32 thickness, color color);
+vec2i ui_put_filledrect(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 pos, vec2 size, color color);
+vec2i ui_put_rect(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 pos, vec2 size, f32 thickness, color color);
+vec2i ui_put_circle(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, f32 thickness, color color);
+vec2i ui_put_filledcircle(uiVertex* putverts, uiIndex* putindices, vec2i offsets, vec2 pos, f32 radius, u32 subdivisions_int, color color);
+vec2i ui_put_text(uiVertex* putverts, uiIndex* putindices, vec2i offsets, str8 text, Font* font, vec2 pos, color color, vec2 scale);
+vec2i ui_put_texture(uiVertex* putverts, uiIndex* putindices, vec2i offsets, Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, b32 flipx, b32 flipy);
 
 
 

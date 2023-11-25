@@ -29,7 +29,7 @@ Index:
   gen_error(str8 file, upt line, ...) -> void
   find_text_breaks(arrayT<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size) -> void
   find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text) -> s64
-  render_ui_text(vec2i counts, uiDrawCmd* dc, Vertex2* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks) -> vec2i
+  render_ui_text(vec2i counts, uiDrawCmd* dc, uiVertex* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks) -> vec2i
 @ui2_widgets_text_impl
   ui_gen_text(uiItem* item) -> void
   ui_eval_text(uiItem* item) -> void
@@ -653,8 +653,7 @@ void
 ui_gen_input_text(uiItem* item){DPZoneScoped;
 	vec2i counts = {0};
 	uiDrawCmd* dc = item->drawcmds;
-	Vertex2*   vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	u32*       ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	auto [vp, ip] = ui_drawcmd_get_ptrs(dc);
 	uiInputText* data = (uiInputText*)item;
 	
 	dc->texture = item->style.font->tex;
@@ -668,8 +667,9 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 		dc = item->drawcmds;
 		ui_drawcmd_alloc(dc, nucounts);
 		dc->texture = item->style.font->tex;
-	    vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-		ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+		auto x = ui_drawcmd_get_ptrs(dc);
+		vp = x.vertexes;
+		ip = x.indexes;
 	}
 	
 	f32 space_width = font_visual_size(item->style.font, STR8(" ")).x * item->style.font_height / item->style.font->max_height;
@@ -840,8 +840,7 @@ deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZ
 void
 ui_gen_slider(uiItem* item){DPZoneScoped;
 	auto dc = item->drawcmds;
-	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	auto [vp, ip] = ui_drawcmd_get_ptrs(dc);
 	vec2i counts = {0};
 	auto s = ui_get_slider(item);
 
@@ -992,8 +991,7 @@ void
 ui_gen_checkbox(uiItem* item){DPZoneScoped;
 	auto cb = ui_get_checkbox(item);
 	auto dc = item->drawcmds;
-	auto vp = (Vertex2*)g_ui->vertex_arena->start + dc->vertex_offset;
-	auto ip = (u32*)g_ui->index_arena->start + dc->index_offset;
+	auto [vp, ip] = ui_drawcmd_get_ptrs(dc);
 	vec2i counts = {0};
 
 	vec2 fillpos = item->pos_screen + cb->style.fill_padding;

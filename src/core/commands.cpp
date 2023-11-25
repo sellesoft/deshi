@@ -495,11 +495,7 @@ void cmd_init(){
 #endif
 			console_log("{{t=CMD,c=magen}Reloaded all shaders");
 		}else if(id < Shader_COUNT){
-#ifndef RENDER_REWRITE
-			render_reload_shader(id);
-#else
-			FixMe;
-#endif
+			assets_reload_shader();
 			console_log("{{t=CMD,c=magen}Reloaded '",ShaderStrings[id]);
 		}else{
 			LogE("cmd", "There is no shader with id: ",id);

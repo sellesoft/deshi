@@ -238,9 +238,9 @@ typedef struct SceneVoxelChunk {
 	SceneVoxel** voxels;
 	u64 voxel_count;
 
-	RenderBuffer* vertex_buffer;
+	GraphicsBuffer* vertex_buffer;
 	u64 vertex_count;
-	RenderBuffer* index_buffer;
+	GraphicsBuffer* index_buffer;
 	u64 index_count;
 } SceneVoxelChunk;
 
@@ -251,7 +251,7 @@ void scene_voxel_init(SceneVoxelType* types, u32 voxel_size);
 // Creates a new voxel chunk for voxels.
 // All voxels are transformed into global space by 'pos' and 'rot'.
 // 'chunk_size' determines the number of voxels there may be along each dimension.
-SceneVoxelChunk* scene_voxel_chunk_create(vec3 pos, vec3 rot, u32 chunk_size, RenderVoxel* voxels);
+SceneVoxelChunk* scene_voxel_chunk_create(vec3 pos, vec3 rot, u32 chunk_size, SceneVoxel* voxels);
 
 // Destroys the given chunk freeing all data it owns.
 void scene_voxel_chunk_destroy(SceneVoxelChunk* chunk);

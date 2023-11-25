@@ -38,6 +38,7 @@ struct GraphicsImage;
 struct GraphicsImageView;
 struct GraphicsSampler;
 struct GraphicsBuffer;
+struct GraphicsShader;
 struct GraphicsPipeline;
 struct GraphicsPipelineLayout;
 struct GraphicsRenderPass;
@@ -53,7 +54,7 @@ struct GraphicsFramebuffer;
 // Stored as a singleton within GraphicsGlobal
 // and keeps track of various statistics.
 typedef struct GraphicsStats {
-	f64 graphics_update_time;
+	f64 update_time;
 
 	u64 total_vertexes;
 	u64 total_indexes;
@@ -68,6 +69,7 @@ typedef struct GraphicsGlobal {
 	struct { // pools
 		GraphicsDescriptorSetLayout* descriptor_set_layouts;
 		GraphicsDescriptorSet*       descriptor_sets;
+		GraphicsShader*              shaders;
 		GraphicsPipelineLayout*      pipeline_layouts;
 		GraphicsPipeline*            pipelines;
 		GraphicsBuffer*              buffers;
@@ -783,21 +785,22 @@ struct PushConstant : public GraphicsPushConstant {};
 // @shader
 
 
-// A shader with a name and source code to be compiled by the backend.
+// A compiled shader provided by the user. If you don't already have spv you 
+// may use `graphics_shader_compile_to_spv()` to perform compilation.
 typedef struct GraphicsShader {
+	str8 debug_name;
+
 	GraphicsShaderStage shader_stage;
-	str8 name;
 	str8 source;
+
+	GRAPHICS_INTERNAL_BEGIN
+		void* handle;
+	GRAPHICS_INTERNAL_END
 } GraphicsShader;
 
-
-#if COMPILER_FEATURE_CPP
-namespace graphics {
-
-struct Shader : public GraphicsShader {};
-
-} // namespace graphics
-#endif
+GraphicsShader* graphics_shader_allocate();
+void graphics_shader_update(GraphicsShader* x);
+void graphics_shader_destroy(GraphicsShader* x);
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -845,9 +848,9 @@ typedef struct GraphicsPipeline {
 	str8 debug_name;
 	
 
-	// An arrays of shaders that the data will pass through.
-	// We require at least specifying a vertex shader.
-	GraphicsShader* shader_stages;
+	GraphicsShader* vertex_shader;
+	GraphicsShader* geometry_shader;
+	GraphicsShader* fragment_shader;
 
 
     // Whether or not the viewport is expected to be set dynamically. If this is true

@@ -453,6 +453,7 @@ VkPipeline&            get_handle(GraphicsPipeline* x)            { return (VkPi
 VkRenderPass&          get_handle(GraphicsRenderPass* x)          { return (VkRenderPass&)GRAPHICS_INTERNAL(x).handle; }
 VkFramebuffer&         get_handle(GraphicsFramebuffer* x)         { return (VkFramebuffer&)GRAPHICS_INTERNAL(x).handle; }
 VkCommandBuffer&       get_handle(GraphicsCommandBuffer* x)       { return (VkCommandBuffer&)GRAPHICS_INTERNAL(x).handle; }
+VkShaderModule&        get_handle(GraphicsShader* x)              { return (VkShaderModule&)GRAPHICS_INTERNAL(x).handle; }
 
 // helpers for various things done several times
 
@@ -1381,9 +1382,13 @@ create_render_pass_and_frames(Window* window) {
 		frame->render_pass = render_pass;
 		
 		auto color_image_view = graphics::ImageView::allocate();
+		color_image_view->debug_name = str8l("<graphics> default framebuffer color image view");
 		auto depth_image_view = graphics::ImageView::allocate();
+		color_image_view->debug_name = str8l("<graphics> default framebuffer depth image view");
 		auto color_image      = graphics::Image::allocate();
+		color_image->debug_name = str8l("<graphics> default framebuffer color image");
 		auto depth_image      = graphics::Image::allocate();
+		depth_image->debug_name = str8l("<graphics> default framebuffer depth image");
 		color_image_view->image = color_image;
 		depth_image_view->image = depth_image;
 
@@ -1411,7 +1416,6 @@ create_render_pass_and_frames(Window* window) {
 		frame->color_image_view = color_image_view;
 		frame->depth_image_view = depth_image_view;
 
-
 		VkImageView attachments[2] = {
 			get_handle(color_image_view),
 			get_handle(depth_image_view),
@@ -1428,7 +1432,7 @@ create_render_pass_and_frames(Window* window) {
 		VulkanAssertVk(result, "failed to create framebuffer.");
 
 		vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)get_handle(frame), 
-				 "Default framebuffer");
+				 "<graphics> default framebuffer");
 	}
 	
 	VulkanInfo("finished creating default render pass and frames in ", peek_stopwatch(watch), "ms.");
@@ -1635,7 +1639,7 @@ graphics_update(Window* window) {
 		wininf->remake_window = false;
 	}
 	
-	renderStats = {};
+	g_graphics->stats = {};
 	
 	VkResult result = vkAcquireNextImageKHR(vk_device, wininf->swapchain, UINT64_MAX, vk_semaphore_image_acquired, VK_NULL_HANDLE, &wininf->frame_index);
 	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1673,7 +1677,6 @@ graphics_update(Window* window) {
 		u32 blend_constant : 2;
 	} dynamic_state;
 
-	
 	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	auto cmdbuf = get_handle(wininf->command_buffer);
 	result = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
@@ -1860,12 +1863,11 @@ graphics_update(Window* window) {
 	}
 	
 	//update renderStats
-	renderStats.drawnTriangles += renderStats.drawnIndices / 3;
+	g_graphics->stats.drawn_triangles += g_graphics->stats.drawn_indexes / 3;
 	//renderStats.totalVertices  += (u32)vertexBuffer.size() + renderTwodVertexCount + renderTempWireframeVertexCount;
 	//renderStats.totalIndices   += (u32)indexBuffer.size()  + renderTwodIndexCount  + renderTempWireframeIndexCount; //!Incomplete
-	renderStats.totalTriangles += renderStats.totalIndices / 3;
-	renderStats.renderTimeMS = peek_stopwatch(watch);
-	
+	g_graphics->stats.total_triangles += g_graphics->stats.total_indexes / 3;
+	g_graphics->stats.update_time = peek_stopwatch(watch);
 	
 	g_time->renderTime = peek_stopwatch(watch);
 }
@@ -2551,6 +2553,68 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @shader
+
+
+GraphicsShader* 
+graphics_shader_allocate() {
+	return memory_pool_push(g_graphics->pools.shaders);
+}
+
+void 
+graphics_shader_update(GraphicsShader* x) {
+	VulkanAssert(x, "passed null GraphicsShader pointer.");
+	VulkanAssert(x->source, "need some source code to compile.");
+	VulkanInfo("updating shader '", x->debug_name, "'.");
+
+	vkDestroyShaderModule(vk_device, get_handle(x), vk_allocator);
+
+	VulkanNotice("compiling shader '", x->debug_name, "'.");
+
+	Stopwatch watch = start_stopwatch();
+
+	shaderc_shader_kind sk = {};
+	switch(x->shader_stage) {
+		case GraphicsShaderStage_Vertex:   sk = shaderc_vertex_shader; break;
+		case GraphicsShaderStage_Geometry: sk = shaderc_geometry_shader; break;
+		case GraphicsShaderStage_Fragment: sk = shaderc_fragment_shader; break;
+		case GraphicsShaderStage_Compute:  sk = shaderc_compute_shader; break;
+		default: {
+			VulkanError("unrecognized GraphicsShaderStage assigned to shader '", x->debug_name, "': ", (u32)x->shader_stage);
+			return;
+		} break;
+	}
+
+	shaderc_compilation_result_t compiled = shaderc_compile_into_spv(vk_shader_compiler, (char*)x->source.str, x->source.count, sk, (char*)x->debug_name.str, "main", vk_shader_compiler_options);
+	VulkanAssert(compiled, "shaderc returned a null result.");
+	
+	VulkanNotice("finished compiling '", x->debug_name, "' in ", peek_stopwatch(watch), "ms.");
+
+	defer { shaderc_result_release(compiled); };
+
+	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success) {
+		VulkanError(shaderc_result_get_error_message(compiled));
+		return;
+	}
+
+	VkShaderModuleCreateInfo info{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+	info.codeSize = shaderc_result_get_length(compiled);
+	info.pCode = (u32*)shaderc_result_get_bytes(compiled);
+	auto result = vkCreateShaderModule(vk_device, &info, vk_allocator, &get_handle(x));
+	VulkanAssertVk(result, "failed to create shader module.");
+	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)get_handle(x), (char*)x->debug_name.str);
+}
+
+void 
+graphics_shader_destroy(GraphicsShader* x) {
+	VulkanAssert(x, "passed null GraphicsShader pointer.");
+	
+	vkDestroyShaderModule(vk_device, get_handle(x), vk_allocator);
+	memory_pool_delete(g_graphics->pools.shaders, x);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @pipeline
 
 
@@ -2612,7 +2676,7 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	VulkanInfo("updating pipeline '", x->debug_name, "'.");
 
 	if(!x->shader_stages) {
-		VulkanError("null shader stages array. A pipeline is required to at least define a vertex shader.");
+		VulkanError("null shader stages array. A pipeline is required to at least specify a vertex shader.");
 		return;
 	}
 
