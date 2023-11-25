@@ -185,7 +185,7 @@ includes = (
 
 sources = {
     "deshi": "../../src/deshi.cpp",
-    "app": "main.cpp"
+    "app": "multiview.cpp"
 }
 
 parts = {
