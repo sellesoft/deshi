@@ -232,41 +232,68 @@ void console_update(){DPZoneScoped;
 		text_delete_left(text);
 	}
 	
-	//ensure that the console is the topmost UI item
-	if(console_is_open() && (&console.ui.main->node != g_ui->base.node.last_child)){
-		move_to_parent_last(&console.ui.main->node);
-	}
-	
-	//check for history inputs
-	b32 change_input = false;
-	if(g_ui->active == console.ui.inputtext && key_pressed(Key_UP)){
-		LogE("console","input history isnt implemented yet!");
-		change_input = true;
-		console.input_history_index--;
-		if(console.input_history_index == -2) console.input_history_index = console.input_history.count-1;
-	}
-	if(g_ui->active == console.ui.inputtext && key_pressed(Key_DOWN)){
-		LogE("console","input history isnt implemented yet!");
-		change_input = true;
-		console.input_history_index++;
-		if(console.input_history_index >= console.input_history.count) console.input_history_index = -1;
-	}
-	if(change_input){
-		simulate_key_press(Key_END); //TODO(delle) remove this, it shouldn't be necessary
-		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
-	}
-	
-	if(ui_item_hovered(console.ui.buffer, 0)){
-		if(g_input->scrollY < 0 && console.scroll < console.dictionary.count){
-			forI(-g_input->scrollY){console.scroll++;
-				while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline) console.scroll++;
-			}
-		}else if(g_input->scrollY > 0 && console.scroll){
-			forI(g_input->scrollY){console.scroll--;
-				while(console.scroll > 0 && !console.dictionary[console.scroll].newline) console.scroll--;
+	if(console_is_open()){
+		//ensure that the console is the topmost UI item
+		if((&console.ui.main->node != g_ui->base.node.last_child)){
+			move_to_parent_last(&console.ui.main->node);
+		}
+		
+		//next/previous input box history
+		if(g_ui->active == console.ui.inputtext){
+			if(key_pressed(Key_UP)){
+				LogW("console","input history isnt implemented yet!");
+				console.input_history_index--;
+				if(console.input_history_index == -2){
+					console.input_history_index = console.input_history.count-1;
+				}
+				text_clear(&ui_get_input_text(console.ui.inputtext)->text);
+			}else if(key_pressed(Key_DOWN)){
+				LogW("console","input history isnt implemented yet!");
+				console.input_history_index++;
+				if(console.input_history_index >= console.input_history.count){
+					console.input_history_index = -1;
+				}
+				text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 			}
 		}
-		console.scroll = Max(0,console.scroll);
+		
+		//scroll the buffer
+		if(key_pressed(Key_PAGEDOWN) && (console.scroll < console.dictionary.count)){
+			if(input_ctrl_down()){
+				console.scroll = console.dictionary.count;
+			}else{
+				console.scroll++;
+				while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline){
+					console.scroll++;
+				}
+			}
+		}else if(key_pressed(Key_PAGEUP) && (console.scroll > 0)){
+			if(input_ctrl_down()){
+				console.scroll = 0;
+			}else{
+				console.scroll--;
+				while(console.scroll > 0 && !console.dictionary[console.scroll].newline){
+					console.scroll--;
+				}
+			}
+		}else if(ui_item_hovered(console.ui.buffer, hovered_area)){
+			if(g_input->scrollY < 0 && console.scroll < console.dictionary.count){
+				forI(-g_input->scrollY){
+					console.scroll++;
+					while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline){
+						console.scroll++;
+					}
+				}
+			}else if(g_input->scrollY > 0 && console.scroll){
+				forI(g_input->scrollY){
+					console.scroll--;
+					while(console.scroll > 0 && !console.dictionary[console.scroll].newline){
+						console.scroll--;
+					}
+				}
+			}
+			console.scroll = ClampMin(console.scroll, 0);
+		}
 	}
 	
 	u32 linestofit = console.ui.buffer->height / console.ui.buffer->style.font_height;
