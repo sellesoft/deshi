@@ -48,7 +48,7 @@ int main() {
 	assets_init(win);
 	cmd_init();
 
-	Shader* fancy_null_fragment = assets_shader_load_from_file(str8l("null_fancy.frag"), ShaderType_Fragment);
+	Shader* fancy_null_fragment = assets_shader_load_from_path(str8l("null_fancy.frag"), str8l("null_fancy.frag"), ShaderType_Fragment);
 
 	ShaderStages stages = {0};
 	stages.vertex =	assets_shader_null_vertex();
@@ -60,7 +60,7 @@ int main() {
 	UBO* ubo_resource0 = assets_ubo_create(sizeof(ubo));
 	UBO* ubo_resource1 = assets_ubo_create(sizeof(ubo));
 
-	Texture* alex = assets_texture_create_from_file_simple(str8l("alex.png"));
+	Texture* alex = assets_texture_create_from_path_simple(str8l("alex"), str8l("alex.png"));
 
 	auto resources = array<ShaderResource>::create_with_count(2, deshi_temp_allocator);
 	resources[0].type = ShaderResourceType_Texture;
@@ -73,7 +73,7 @@ int main() {
 	resources[1].ubo = ubo_resource1;
 	Material* fancy_null1 = assets_material_duplicate(str8l("fancy null 2"), fancy_null0, resources.ptr);
 
-	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
+	Model* box = assets_model_create_from_obj(str8l("box.obj"), 0);
 
 	auto view = Math::LookAtMatrix({0,0,0}, {0,0,1}).Inverse();
 	assets_update_camera_view(&view);
