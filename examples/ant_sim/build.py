@@ -229,7 +229,7 @@ parts = {
     "defines":{ 
         "buildmode": {
             "release": "-DBUILD_INTERNAL=0 -DBUILD_SLOW=0 -DBUILD_RELEASE=1 ",
-            "debug": "-DBUILD_INTERNAL=1 -DBUILD_SLOW=1 -DBUILD_RELEASE=0 -DDESHI_DISABLE_ASSERT_ON_ERROR=1 -DRENDER_REWRITE ",
+            "debug": "-DBUILD_INTERNAL=1 -DBUILD_SLOW=1 -DBUILD_RELEASE=0 -DDESHI_DISABLE_ASSERT_ON_ERROR=1 -DDESHI_DISABLE_SSE ",
         },
         "platform":{
             "win32": "-DDESHI_WINDOWS=1 -DDESHI_MAC=0 -DDESHI_LINUX=0 ",
