@@ -41,6 +41,8 @@ int main() {
 	assets_init_x(win);
 	scene_init();
 
+	render_temp_init(win, 0xfff);
+
 	scene_set_active_window(win);
 
 	Texture* alex = assets_texture_create_from_file_simple(str8l("alex.png"));
@@ -82,6 +84,8 @@ int main() {
 			Vec3(0, 0, 2),
 			Vec3(0, 0, 0),
 			Vec3(1, 1, 1));
+
+	render_temp_line(Vec3(-1, 0, 1), Vec3(1, 0, 1), Color_Blue);
 
 	while(platform_update()) {
 		transform = mat4::TransformationMatrix(Vec3(0, 0, 3), Vec3(0, g_time->totalTime/3000.f*45, 0), vec3::ONE);
