@@ -155,60 +155,62 @@ void console_init(){DPZoneScoped;
 	base.sizing = size_normal;
 	
 	//initialize ui elements
-	console.ui.main = ui_begin_item(&base);
-	uiItem*  main  = console.ui.main;
-	uiStyle* mains = &main->style;
-	main->id = STR8("console.main");
-	mains-> background_color = color(14,14,14);
-	mains->     border_style = border_solid;
-	mains->     border_width = 1;
-	mains->          display = display_flex;
-	mains->           sizing = size_percent;
-	mains->            width = 100;
-	mains->           height = 0;
-	mains->        paddingtl = {2,2};
-	mains->        paddingbr = {2,2};
-	mains->      positioning = pos_fixed;
-	
-	console.ui.buffer = ui_begin_item(&base);
-	uiItem*  buffer  = console.ui.buffer;
-	uiStyle* buffers = &buffer->style;
-	buffer->id = STR8("console.buffer");
-	buffers->           sizing = size_flex | size_percent_x; //fills the space not occupied by input box
-	buffers->           height = 1; //occupy as much vertical space as it can in the container
-	buffers->            width = 100; //100% the width of the container
-	buffers-> background_color = Color_Black;
-	buffers->        paddingtl = {2,2};
-	buffers->        paddingbr = {2,2};
-	ui_end_item();
-	
-	console.ui.inputbox = ui_begin_item(&base);
-	uiItem*  inputb  = console.ui.inputbox;
-	uiStyle* inputbs = &inputb->style;
-	inputb->id = STR8("console.inputbox");
-	inputbs->background_color = Color_DarkGray;
-	inputbs->sizing = size_percent_x; //this element's size is static so it doesnt flex
-	inputbs->width = 100;
-	inputbs->height = inputbs->font->max_height + 2;
-	inputbs->content_align = {0.5,0.5};
-	inputbs->tab_spaces = 2;
-	inputbs->paddingtl = {2,2};
-	inputbs->paddingbr = {2,2};
-	console.ui.inputtext = ui_make_input_text(str8null, 0);
-	uiItem* inputt = console.ui.inputtext;
-	uiStyle* inputts = &inputt->style;
-	inputt->id = STR8("console.inputtext");
-	inputts->sizing = size_percent;
-	inputts->size = {100,100};
-	uiInputText* it = (uiInputText*)inputt;	
-	ui_end_item();
-	ui_end_item();
+	console.ui.main = ui_begin_item(&base);{
+		uiItem*  main  = console.ui.main;
+		uiStyle* mains = &main->style;
+		main->id = STR8("console.main");
+		mains-> background_color = color(14,14,14);
+		mains->     border_style = border_solid;
+		mains->     border_width = 1;
+		mains->          display = display_flex;
+		mains->           sizing = size_percent;
+		mains->            width = 100;
+		mains->           height = 0;
+		mains->        paddingtl = {2,2};
+		mains->        paddingbr = {2,2};
+		mains->      positioning = pos_fixed;
+		
+		console.ui.buffer = ui_begin_item(&base);{
+			uiItem*  buffer  = console.ui.buffer;
+			uiStyle* buffers = &buffer->style;
+			buffer->id = STR8("console.buffer");
+			buffers->           sizing = size_flex | size_percent_x; //fills the space not occupied by input box
+			buffers->           height = 1; //occupy as much vertical space as it can in the container
+			buffers->            width = 100; //100% the width of the container
+			buffers-> background_color = Color_Black;
+			buffers->        paddingtl = {2,2};
+			buffers->        paddingbr = {2,2};
+		}ui_end_item();
+		
+		console.ui.inputbox = ui_begin_item(&base);{
+			uiItem*  inputb  = console.ui.inputbox;
+			uiStyle* inputbs = &inputb->style;
+			inputb->id = STR8("console.inputbox");
+			inputbs->background_color = Color_DarkGray;
+			inputbs->sizing = size_percent_x; //this element's size is static so it doesnt flex
+			inputbs->width = 100;
+			inputbs->height = inputbs->font->max_height + 2;
+			inputbs->content_align = {0.5,0.5};
+			inputbs->tab_spaces = 2;
+			inputbs->paddingtl = {2,2};
+			inputbs->paddingbr = {2,2};
+			console.ui.inputtext = ui_make_input_text(str8null, 0);
+			uiItem* inputt = console.ui.inputtext;
+			uiStyle* inputts = &inputt->style;
+			inputt->id = STR8("console.inputtext");
+			inputts->sizing = size_percent;
+			inputts->size = {100,100};
+			uiInputText* it = (uiInputText*)inputt;	
+		}ui_end_item();
+	}ui_end_item();
 	
 	console.initialized = true;
 	DeshiStageInitEnd(DS_CONSOLE);
 }
 
 void console_update(){DPZoneScoped;
+	Assert(DeshiModuleLoaded(DS_CONSOLE), "console_init() must be called before console_update().");
+	
 	//check for console state changing inputs
 	if(key_pressed(Key_BACKQUOTE)){
 		if      (input_shift_down()){
@@ -218,6 +220,10 @@ void console_update(){DPZoneScoped;
 		}else{
 			console_change_state(ConsoleState_OpenSmall);
 		}
+	}
+	
+	if(console_is_open() && (&console.ui.main->node != g_ui->base.node.last_child)){
+		move_to_parent_last(&console.ui.main->node);
 	}
 	
 	//check for history inputs
@@ -237,29 +243,6 @@ void console_update(){DPZoneScoped;
 	if(change_input){
 		simulate_key_press(Key_END);
 		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
-		
-		// if(console.input_history_index != -1){
-		// 	u32 cursor = 0;
-		// 	u32 chunk_idx = console.input_history[console.input_history_index].first;
-		// 	ConsoleChunk& chunk = console.dictionary[chunk_idx];
-		
-		// 	u64 restore = console.logger->file->cursor;
-		// 	for(;;){
-		// 		u32 characters = (cursor + chunk.size > CONSOLE_INPUT_BUFFER_SIZE)
-		// 			? CONSOLE_INPUT_BUFFER_SIZE - (cursor + chunk.size) : chunk.size;
-		// 		file_set_cursor(console.logger->file, chunk.start);
-		// 		file_read(console.logger->file, console.input_buffer, characters);
-		// 		console.input_length += characters;
-		// 		cursor += characters;
-		
-		// 		if(chunk_idx >= console.input_history[console.input_history_index].second || cursor >= CONSOLE_INPUT_BUFFER_SIZE){
-		// 			break;
-		// 		}else{
-		// 			chunk = console.dictionary[++chunk_idx];
-		// 		}
-		// 	}
-		// 	file_set_cursor(console.logger->file, restore);
-		// }
 	}
 	
 	if(ui_item_hovered(console.ui.buffer, 0)){
@@ -298,65 +281,63 @@ void console_update(){DPZoneScoped;
 		}
 	}
 	
-	
-	// uiImmediateBP(console.ui.buffer);{
-	// 	vec2 cursor = vec2::ZERO;
-	// 	uiItem* line = uiItemB();
-	// 	line->style.display = display_horizontal;
-	// 	line->style.sizing = size_percent_x;
-	// 	line->style.size = {100, f32(console.ui.buffer->style.font_height)};
-	// 	line->id = STR8("console.line0");
-	// 	u64 nlines = 0;
-	// 	u64 i = console.scroll;
-	// 	while(nlines < linestofit){
-	// 		if(i>=console.dictionary.count) break;
-	// 		//if console_chunk_render_arena isn't large enough, double the space for it
-	// 		if(console.dictionary[i].size >= console.chunk_render_arena->size){
-	// 			console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
-	// 		}
-	
-	// 		if(console.dictionary[i].newline == 1 && nlines++){
-	// 			uiItemE(); 
-	// 			line = uiItemBS(&line->style);
-	// 			line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines);
-	// 		}
-	
-	// 		//get chunk text from the log file
-	// 		file_set_cursor(console.logger->file, console.dictionary[i].start);
-	// 		file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
-	// 		console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
-	
-	// 		str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
-	// 		uiItem* text = uiTextMS(&line->style, out);
-	// 		text->id = to_dstr8v(deshi_temp_allocator, "console.text",i);
-	// 		text->style.text_color = console.dictionary[i].fg;
-	
-	
-	// 		i++;
-	// 	}
-	// 	uiItemE();
-	
-	// 	uiItem* debug = uiItemB();
-	// 	debug->style.positioning = pos_absolute;
-	// 	debug->style.anchor = anchor_bottom_right;
-	// 	debug->style.sizing = size_auto;
-	// 	debug->id = STR8("console.debug");
-	// 	uiTextM(to_dstr8v(deshi_temp_allocator,
-	// 					  "      show tags: ", console.tag_show, "\n",
-	// 					  " highlight tags: ", console.tag_highlighting, "\n",
-	// 					  "   outline tags: ", console.tag_outlines, "\n",
-	// 					  "highlight lines: ", console.line_highlighing, "\n",
-	// 					  "    auto scroll: ", console.automatic_scroll, "\n",
-	// 					  "          state: ", console.state, "\n",
-	// 					  "   small open %: ", console.open_small_percent, "\n",
-	// 					  "     max open %: ", console.open_max_percent, "\n",
-	// 					  "    open amount: ", console.open_amount, "\n",
-	// 					  "    open target: ", console.open_target, "\n",
-	// 					  "open delta time: ", console.open_dt, "\n",
-	// 					  "         scroll: ", console.scroll
-	// 					  ));
-	// 	uiItemE();
-	// }uiImmediateE();
+	ui_begin_immediate_branch(console.ui.buffer);{
+		vec2 cursor = vec2::ZERO;
+		uiItem* line = ui_begin_item(0);
+		line->style.display = display_horizontal;
+		line->style.sizing = size_percent_x;
+		line->style.size = {100, f32(console.ui.buffer->style.font_height)};
+		line->id = STR8("console.line0");
+		u64 nlines = 0;
+		u64 i = console.scroll;
+		while(nlines < linestofit){
+			if(i>=console.dictionary.count) break;
+			//if console_chunk_render_arena isn't large enough, double the space for it
+			if(console.dictionary[i].size >= console.chunk_render_arena->size){
+				console.chunk_render_arena = memory_grow_arena(console.chunk_render_arena, console.chunk_render_arena->size);
+			}
+			
+			if(console.dictionary[i].newline == 1 && nlines++){
+				ui_end_item(); 
+				line = ui_begin_item(&line->style);
+				line->id = to_dstr8v(deshi_temp_allocator, "console.line",nlines).fin;
+			}
+			
+			//get chunk text from the log file
+			file_set_cursor(console.logger->file, console.dictionary[i].start);
+			file_read(console.logger->file, console.chunk_render_arena->start, console.dictionary[i].size);
+			console.chunk_render_arena->start[console.dictionary[i].size] = '\0';
+			
+			str8 out = {(u8*)console.chunk_render_arena->start, (s64)console.dictionary[i].size};
+			uiItem* text = ui_make_text(out, &line->style);
+			text->id = to_dstr8v(deshi_temp_allocator, "console.text",i).fin;
+			text->style.text_color = console.dictionary[i].fg;
+			
+			i++;
+		}
+		ui_end_item();
+		
+		uiItem* debug = ui_begin_item(0);
+		debug->style.positioning = pos_absolute;
+		debug->style.anchor = anchor_bottom_right;
+		debug->style.sizing = size_auto;
+		debug->id = STR8("console.debug");
+		ui_make_text(to_dstr8v(deshi_temp_allocator,
+							   "      show tags: ", console.tag_show, "\n",
+							   " highlight tags: ", console.tag_highlighting, "\n",
+							   "   outline tags: ", console.tag_outlines, "\n",
+							   "highlight lines: ", console.line_highlighing, "\n",
+							   "    auto scroll: ", console.automatic_scroll, "\n",
+							   "          state: ", console.state, "\n",
+							   "   small open %: ", console.open_small_percent, "\n",
+							   "     max open %: ", console.open_max_percent, "\n",
+							   "    open amount: ", console.open_amount, "\n",
+							   "    open target: ", console.open_target, "\n",
+							   "open delta time: ", console.open_dt, "\n",
+							   "         scroll: ", console.scroll).fin,
+					 0);
+		ui_end_item();
+	}ui_end_immediate_branch();
 	
 	if(g_ui->active == console.ui.inputtext && key_pressed(Key_ENTER)){
 		str8 command = ui_get_input_text(console.ui.inputtext)->text.buffer.fin;
