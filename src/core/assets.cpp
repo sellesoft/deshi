@@ -233,10 +233,11 @@ assets_setup_pipeline(GraphicsPipeline* pipeline) {
 			{2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)},
 			{3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)}}, deshi_allocator).ptr;
 
-	pipeline->            front_face = GraphicsFrontFace_CCW;
+	pipeline->            front_face = GraphicsFrontFace_CW;
 	pipeline->               culling = GraphicsPipelineCulling_Back;
 	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
 	pipeline->            depth_test = true;
+	pipeline->          depth_writes = true;
 	pipeline->      depth_compare_op = GraphicsCompareOp_Less;
 	pipeline->            depth_bias = false;
 	pipeline->            line_width = 1.f;
@@ -1145,7 +1146,7 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 		return g_assets->null_material;
 	}
 	
-	u32 n_resources_given = array_count(resources);
+	u32 n_resources_given = (resources? array_count(resources) : 0);
 	
 	if(n_resources_given != sum) {
 		AssetsError("the number of given resources (", n_resources_given, ") is not equal to the number of expected resources for this material (", sum, ")");
@@ -1300,9 +1301,9 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	material->pipeline = pipeline;
 	material->descriptor_set = descriptor_set;
 	material->stages = shaders;
-	array_init(material->resources, array_count(resources), deshi_allocator);
-	array_count(material->resources) = array_count(resources);
-	CopyMemory(material->resources, resources, sizeof(ShaderResource) * array_count(resources));
+	array_init(material->resources, n_resources_given, deshi_allocator);
+	array_count(material->resources) = n_resources_given;
+	CopyMemory(material->resources, resources, sizeof(ShaderResource) * n_resources_given);
 	array_insert_value(g_assets->material_map, index, material);
 
 	AssetsNotice("created material ", AssetsResourceBasicInfo(material));
