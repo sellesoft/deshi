@@ -70,7 +70,8 @@ typedef struct Assets {
 	Material* null_material;
 	Mesh*     null_mesh;
 	Model*    null_model;
-	Shader*   null_shader;
+	Shader*   null_vertex_shader;
+	Shader*   null_fragment_shader;
 
 	GraphicsPipeline* null_pipeline;
 	
@@ -240,7 +241,7 @@ void  assets_mesh_delete(Mesh* mesh);
 FORCE_INLINE Mesh*  assets_mesh_null(){ return g_assets->null_mesh; };
 
 //Returns the mesh array in `Assets`
-FORCE_INLINE Mesh** assets_mesh_array(){ return g_assets->mesh_map; };
+FORCE_INLINE Mesh** assets_mesh_map(){ return g_assets->mesh_map; };
 
 // Attempts to retrieve a mesh by the name it would have been created with.
 // Returns 0 if no mesh could be found.
@@ -296,7 +297,6 @@ typedef struct Texture{
 	s32 depth;
 	s32 mipmaps;
 	u8* pixels; //pixel data allocated during creation
-	u32 render_idx; //filled when render_load_texture() is called
 	ImageFormat format;
 	TextureType type;
 	TextureFilter filter;
@@ -370,7 +370,7 @@ void assets_texture_update(Texture* texture, vec2i offset, vec2i extent);
 FORCE_INLINE Texture* assets_texture_null(){ return g_assets->null_texture; };
 
 //Returns the texture array in `Assets`
-FORCE_INLINE Texture** assets_texture_array(){ return DeshAssets->texture_map; };
+FORCE_INLINE Texture** assets_texture_map(){ return DeshAssets->texture_map; };
 
 // Attempts to retrieve a texture by the name it would have been created with.
 // Returns 0 if no texture could be found.
@@ -404,6 +404,12 @@ typedef Type ShaderType; enum {
 	ShaderType_Vertex,
 	ShaderType_Geometry,
 	ShaderType_Fragment,
+};
+
+const str8 ShaderTypeStrings[] = {
+	str8l("Vertex"),
+	str8l("Geometry"),
+	str8l("Fragment"),
 };
 
 typedef Type ShaderResourceType; enum {
@@ -447,7 +453,7 @@ Shader* assets_shader_load_from_file(str8 filename, ShaderType type);
 // Reloads the given shader.
 // Note that this will remake the backend graphics information for all materials
 // that use the given shader.
-void assets_reload_shader(Shader* shader);
+void assets_shader_reload(Shader* shader);
 
 // Attempt to retrieve a shader by the name it would have been created with.
 // Returns 0 if no shader could be found.
@@ -456,6 +462,10 @@ Shader* assets_shader_get_by_name(str8 name);
 // Attempt to retrieve a shader by the unique id it would have been assigned when it was created.
 // Returns 0 if no shader could be found.
 Shader* assets_shader_get_by_uid(u64 uid);
+
+FORCE_INLINE Shader* assets_shader_null_vertex() { return g_assets->null_vertex_shader; }
+FORCE_INLINE Shader* assets_shader_null_fragment() { return g_assets->null_fragment_shader; }
+FORCE_INLINE Shader** assets_shader_map() { return g_assets->shader_map; }
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @material
@@ -513,7 +523,7 @@ Material* assets_material_duplicate(str8 name, Material* material, ShaderResourc
 FORCE_INLINE Material* assets_material_null(){ return g_assets->null_material; };
 
 //Returns the material array in `Assets`
-FORCE_INLINE Material** assets_material_array(){ return g_assets->material_map; };
+FORCE_INLINE Material** assets_material_map(){ return g_assets->material_map; };
 
 // Attempt to retrieve a material by the name it would have been created with.
 Material* assets_material_get_by_name(str8 name);
@@ -582,7 +592,7 @@ void   assets_model_delete(Model* model);
 FORCE_INLINE Model*  assets_model_null(){ return g_assets->null_model; };
 
 //Returns the model array in `Assets`
-FORCE_INLINE Model** assets_model_array(){ return g_assets->model_map; };
+FORCE_INLINE Model** assets_model_map(){ return g_assets->model_map; };
 
 // Attempts to retrieve a model by the name it would have been given when it was created.
 // Returns 0 if no model could be found.

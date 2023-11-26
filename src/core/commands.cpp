@@ -398,62 +398,46 @@ void cmd_init(){
 	}DESHI_CMD_END_NO_ARGS(window_info);
 	
 	DESHI_CMD_START(mat_list, "Lists the materials and their info"){
-		Log("cmd", "Material List:\nName\tShader\tTextures");
-		forI(arrlenu(assets_material_array())){
-			Material* mat = assets_material_array()[i];
-			dstr8 builder;
-			dstr8_init(&builder, str8{(u8*)mat->name, (s64)strlen(mat->name)}, deshi_temp_allocator);
-			dstr8_append(&builder, str8_lit("\t"));
-			dstr8_append(&builder, ShaderStrings[mat->shader]);
-			dstr8_append(&builder, str8_lit("\t"));
-			if(mat->texture_array){
-				for_stb_array(mat->texture_array){
-					dstr8_append(&builder, str8_lit(" "));
-					dstr8_append(&builder, str8_from_cstr((*it)->name));
+		Log("", "Material List:");
+		forI(array_count(assets_material_map())){
+			Material* mat = assets_material_map()[i];
+			Log("", " --- ", mat->name, " --- "
+					   "\n  Shaders:");
+			Log("", "   Vertex: ", mat->stages.vertex->name);
+			if(mat->stages.geometry)
+				Log("", "   Geometry: ", mat->stages.geometry->name);
+			if(mat->stages.fragment)
+				Log("", "   Fragment: ", mat->stages.fragment->name);
+			if(mat->texture_array) {
+				Log("", "  Textures: ");
+				forI(array_count(mat->texture_array)) {
+					Log("", "   ", mat->texture_array[i]->name);
 				}
 			}
-			Log("cmd", (const char*)builder.str);
 		}
 	}DESHI_CMD_END_NO_ARGS(mat_list);
 	
 	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
-		Material* mat = 0;
-		const char* mat_name = temp_str8_cstr(args[0]);
-		for_stb_array(assets_material_array()){
-			if(strcmp((*it)->name, mat_name) == 0){
-				mat = *it;
-				break;
-			}
-		}
-		if(mat == 0){
-			LogE("cmd","Failed to update material texture. There is no material named '",args[0],"'.");
+		Material* mat = assets_material_get_by_name(args[0]);
+		if(!mat){
+			LogE("cmd","Could not find a material named '", args[0], "'.");
 			return;
 		}
-		
+
+		if(!mat->texture_array){
+			LogE("cmd","The material '",args[0],"' has no texture slots.");
+			return;
+		}
+
 		s32 texSlot = atoi(temp_str8_cstr(args[1]));
-		if(mat->texture_array == 0){
-			LogE("cmd","Failed to update material texture. The material '",args[0],"' has no textures.");
-			return;
-		}
-		if(texSlot < 0 || texSlot >= arrlen(mat->texture_array)){
-			LogE("cmd","Failed to update material texture. The supplied texture index '",texSlot,"' is outside of bounds '0..",arrlen(mat->texture_array),"'.");
+		if(texSlot < 0 || texSlot >= array_count(mat->texture_array)){
+			LogE("cmd", "Given texture index '",texSlot,"' is outside of bounds '0..",array_count(mat->texture_array),"'.");
 			return;
 		}
 		
-		Texture* tex = 0;
-		const char* tex_name = temp_str8_cstr(args[2]);
-#ifndef RENDER_REWRITE
-		for_stb_array(assets_texture_array()){
-			if(strcmp((*it)->name, tex_name) == 0){
-				tex = *it;
-				break;
-			}
-		}
-#else
-		FixMe;
-#endif
-		if(tex == 0){
-			LogE("cmd","Failed to update material texture. There is no texture named '",args[2],"'.");
+		Texture* tex = assets_texture_get_by_name(args[2]);
+		if(!tex){
+			LogE("cmd", "Could not find a texture named '", args[2], "'.");
 			return;
 		}
 		
@@ -462,50 +446,64 @@ void cmd_init(){
 	}DESHI_CMD_END(mat_texture, CmdArgument_String, CmdArgument_S32, CmdArgument_String);
 	
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
-		Material* mat = 0;
-		const char* mat_name = temp_str8_cstr(args[0]);
-		for_stb_array(assets_material_array()){
-			if(strcmp((*it)->name, mat_name) == 0){
-				mat = *it;
-				break;
-			}
-		}
-		if(mat == 0){
-			LogE("cmd","Failed to update material shader. There is no material named '",args[0],"'.");
+		Material* mat = assets_material_get_by_name(args[0]);
+		if(!mat){
+			LogE("cmd","Could not find a material named '",args[0],"'.");
 			return;
 		}
-		
-		s32 shader = atoi(temp_str8_cstr(args[1]));
-		if(shader < 0 || shader >= Shader_COUNT){
-			LogE("cmd","Failed to update material shader. There is no shader with value '",shader,"'.");
+	
+		Shader* shader = assets_shader_get_by_name(args[1]);
+		if(!shader) {
+			LogE("cmd", "Could not find a shader named '", args[1], "'.");
 			return;
 		}
-		
-		mat->shader = (Shader)shader;
-		Log("cmd", "Updated material ",mat->name,"'s shader to ",ShaderStrings[shader]);
-	}DESHI_CMD_END(mat_shader, CmdArgument_S32, CmdArgument_S32);
+
+		str8 shader_type;
+
+		switch(shader->type) {
+			case ShaderType_Vertex: {
+				shader_type = str8l("vertex");
+				mat->stages.vertex = shader;
+				mat->pipeline->vertex_shader = shader->handle;
+			} break;
+			case ShaderType_Geometry: {
+				shader_type = str8l("geometry");
+				mat->stages.geometry = shader;
+				mat->pipeline->geometry_shader = shader->handle;
+			} break;
+			case ShaderType_Fragment: {
+				shader_type = str8l("fragment");
+				mat->stages.fragment = shader;
+				mat->pipeline->fragment_shader = shader->handle;
+			} break;
+		}
+
+		Log("cmd", "Updated material ", mat->name, "'s ", shader_type, " shader to ", shader->name, ".");
+		graphics_pipeline_update(mat->pipeline);
+	}DESHI_CMD_END(mat_shader, CmdArgument_String, CmdArgument_String);
 	
 	DESHI_CMD_START(shader_reload, "Reloads specified shader"){
-		s32 id = atoi(temp_str8_cstr(args[0]));
-		if(id == -1){
-#ifndef RENDER_REWRITE
-			render_reload_all_shaders();
-#else
-			FixMe;
-#endif
-			console_log("{{t=CMD,c=magen}Reloaded all shaders");
-		}else if(id < Shader_COUNT){
-			assets_reload_shader();
-			console_log("{{t=CMD,c=magen}Reloaded '",ShaderStrings[id]);
-		}else{
-			LogE("cmd", "There is no shader with id: ",id);
+		Shader* shader = assets_shader_get_by_name(args[0]);
+		if(!shader) {
+			LogE("cmd", "Could not find shader with the name '", args[0], "'.");
+			return;
 		}
-	}DESHI_CMD_END(shader_reload, CmdArgument_S32);
+
+		assets_shader_reload(shader);
+	}DESHI_CMD_END(shader_reload, CmdArgument_String);
 	
 	DESHI_CMD_START(shader_list, "Lists the shaders and their info"){
-		Log("cmd", "Shader List:\nID\tName");
-		forI(ArrayCount(ShaderStrings)){
-			Log("cmd", i,'\t',ShaderStrings[i]);
+		Log("", "Shaders:");
+		forI(array_count(assets_shader_map())) {
+			Shader* s = assets_shader_map()[i];
+			Log("", " --- ", s->name, " --- ",
+					"\n  Type: ", ShaderTypeStrings[s->type]);
+			if(s->resources && array_count(s->resources)) {
+				Log("", "  Resources:");
+				forI(array_count(s->resources)) {
+					Log("", "   ", ShaderResourceTypeStrings[s->resources[i]]);
+				}
+			}
 		}
 	}DESHI_CMD_END_NO_ARGS(shader_list);
 	
@@ -516,10 +514,17 @@ void cmd_init(){
 	}DESHI_CMD_END(texture_load, CmdArgument_String);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
-		Log("cmd", "Texture List:\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
-		for_stb_array(assets_texture_array()){
-			Texture* tex = *it;
-			Log("cmd", '\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth, '\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
+		Log("", "Textures: ");
+		forI(array_count(assets_texture_map())) {
+			Texture* t = assets_texture_map()[i];
+			Log("", " --- ", t->name, " --- "
+					"\n  Dimensions: (", t->width, ", ", t->height, ")",
+					"\n  Channels: ", t->depth, 
+					"\n  Mipmaps: ", t->mipmaps, 
+					"\n  Format: ", ImageFormatStrings[t->format],
+					"\n  Type: ", TextureTypeStrings[t->type],
+					"\n  Filter: ", TextureFilterStrings[t->filter],
+					"\n  AddressMode: ", TextureAddressModeStrings[t->uv_mode]);
 		}
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
