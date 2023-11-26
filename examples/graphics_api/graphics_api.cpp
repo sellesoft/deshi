@@ -201,7 +201,7 @@ int main() {
 	
 	// First, we'll load the texture into memory using stb.	
 	s32 width, height, channels;
-	u8* pixels = stbi_load("data/textures/null128.png", &width, &height, &channels, STBI_rgb_alpha);
+	u8* pixels = stbi_load("null128.png", &width, &height, &channels, STBI_rgb_alpha);
 
 	// Next, we'll create a GraphicsImage, which is similar to a GraphicsBuffer except 
 	// multidimentional.
@@ -270,7 +270,7 @@ int main() {
 	descriptor_set1->layouts = pipeline->layout->descriptor_layouts;
 	graphics_descriptor_set_update(descriptor_set1);
 
-	pixels = stbi_load("data/textures/alex.png", &width, &height, &channels, STBI_rgb_alpha);
+	pixels = stbi_load("alex.png", &width, &height, &channels, STBI_rgb_alpha);
 
 	image = graphics_image_allocate();
 	image->format = GraphicsFormat_R8G8B8A8_SRGB;
