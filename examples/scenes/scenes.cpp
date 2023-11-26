@@ -21,14 +21,13 @@
 #include "core/input.h"
 #include "core/logger.h"
 #include "core/platform.h"
-#include "core/render.h"
 #include "core/assets.h"
-#include "core/scene.h"
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
 #include "core/ui_widgets.h"
 #include "core/window.h"
+#include "core/render.h"
 #include "math/math.h"
 
 int main() {
@@ -38,20 +37,18 @@ int main() {
 	Window* win = window_create(str8l("scenes example"));
 	window_show(win);
 	graphics_init(win);
-	assets_init_x(win);
-	scene_init();
+	assets_init(win);
+	render_init();
 
-	render_temp_init(win, 0xfff);
-
-	scene_set_active_window(win);
+	render_set_active_window(win);
 
 	Texture* alex = assets_texture_create_from_file_simple(str8l("alex.png"));
 	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
-	
+
 	ShaderStages stages = {0};
-	stages.vertex.filename = str8l("dither.vert");
-	stages.fragment.filename = str8l("dither.frag");
-	array_init_with_elements(stages.fragment.resources, {
+	stages.vertex = assets_shader_load_from_file(str8l("dither.vert"), ShaderType_Vertex);
+	stages.fragment = assets_shader_load_from_file(str8l("dither.frag"), ShaderType_Fragment);
+	array_init_with_elements<ShaderResourceType>(stages.fragment->resources, {
 				ShaderResourceType_Texture,
 				ShaderResourceType_UBO,
 			});
@@ -68,31 +65,29 @@ int main() {
 	resources[1].type = ShaderResourceType_UBO;
 	resources[1].ubo = ubo_resource;
 
-	Material* dithermat = assets_material_create_x(str8l("dither"), stages, resources.ptr);
+	Material* dithermat = assets_material_create(str8l("dither"), stages, resources.ptr);
 	
 	box->batch_array[0].material = dithermat;
 
-	Camera* camera = scene_camera_create();
+	Camera* camera = render_camera_create();
 	camera->position = Vec3(0,0,0);
 	camera->rotation = Vec3(0,0,0);
 	camera->forward = Vec3(0,0,1);
-	scene_camera_update_perspective_projection(camera, win->width, win->height, 90, 0.1, 1000);
-	scene_camera_update_view(camera);
-	scene_set_active_camera(camera);
+	render_camera_update_perspective_projection(camera, win->width, win->height, 90, 0.1, 1000);
+	render_camera_update_view(camera);
+	render_set_active_camera(camera);
 
 	mat4 transform = mat4::TransformationMatrix(
 			Vec3(0, 0, 2),
 			Vec3(0, 0, 0),
 			Vec3(1, 1, 1));
 
-	render_temp_line(Vec3(-1, 0, 1), Vec3(1, 0, 1), Color_Blue);
-
 	while(platform_update()) {
 		transform = mat4::TransformationMatrix(Vec3(0, 0, 3), Vec3(0, g_time->totalTime/3000.f*45, 0), vec3::ONE);
 		ubo.time = g_time->totalTime;
 		assets_ubo_update(ubo_resource, &ubo);
-		scene_draw_model(box, &transform);
-		scene_render();
+		render_draw_model(box, &transform);
+		render_update();
 		graphics_update(win);
 	}
 }
