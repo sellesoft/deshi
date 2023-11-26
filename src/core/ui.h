@@ -1131,6 +1131,11 @@ deshi__ui_memory_resize(void* ptr, upt size) {
 	return (void*)(header+1);
 }
 
+global void
+ui_set_active_item(uiItem* item){
+	g_ui->active = item;
+}
+
 // A generic allocator for memory that should be considered owned and managed by
 // the ui system. Currently the main use of this is for dynamically allocated uiItem ids. 
 // This prefixes the memory with a header used to identify memory belonging to ui. If a uiItem's

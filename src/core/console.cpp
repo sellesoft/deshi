@@ -140,7 +140,7 @@ void console_init(){DPZoneScoped;
 	console.dictionary.init(512, deshi_allocator);
 	console.input_history.init(256, deshi_allocator);
 	console.console_pos = vec2::ZERO;
-	console.console_dim = Vec2(f32(DeshWindow->width), 0);
+	console.console_dim = Vec2((f32)g_window->width, 0);
 	console.scroll_to_bottom = true;
 	console.chunk_render_arena = memory_create_arena(512);
 	console.state = ConsoleState_Closed;
@@ -169,6 +169,7 @@ void console_init(){DPZoneScoped;
 		mains->        paddingtl = {2,2};
 		mains->        paddingbr = {2,2};
 		mains->      positioning = pos_fixed;
+		mains->              pos = Vec2(-1,-1); //HACK(delle) for some reason, this item at 0,0 has a 1 pixel gap at the top and left
 		
 		console.ui.buffer = ui_begin_item(&base);{
 			uiItem*  buffer  = console.ui.buffer;
@@ -222,6 +223,16 @@ void console_update(){DPZoneScoped;
 		}
 	}
 	
+	//HACK(delle) hacky way of preventing tilde inputs when opening/closing the console
+	//  banned inputs should maybe be a feature of the widget
+	Text* text = &ui_get_input_text(console.ui.inputtext)->text;
+	if(text->buffer.count > 0 && (   text->buffer.str[text->buffer.count-1] == '`'
+								  || text->buffer.str[text->buffer.count-1] == '~')){
+		text_move_cursor_to_end(text, false);
+		text_delete_left(text);
+	}
+	
+	//ensure that the console is the topmost UI item
 	if(console_is_open() && (&console.ui.main->node != g_ui->base.node.last_child)){
 		move_to_parent_last(&console.ui.main->node);
 	}
@@ -241,17 +252,17 @@ void console_update(){DPZoneScoped;
 		if(console.input_history_index >= console.input_history.count) console.input_history_index = -1;
 	}
 	if(change_input){
-		simulate_key_press(Key_END);
+		simulate_key_press(Key_END); //TODO(delle) remove this, it shouldn't be necessary
 		text_clear(&ui_get_input_text(console.ui.inputtext)->text);
 	}
 	
 	if(ui_item_hovered(console.ui.buffer, 0)){
-		if(DeshInput->scrollY < 0 && console.scroll < console.dictionary.count){
-			forI(-DeshInput->scrollY){console.scroll++;
+		if(g_input->scrollY < 0 && console.scroll < console.dictionary.count){
+			forI(-g_input->scrollY){console.scroll++;
 				while(console.scroll < console.dictionary.count && !console.dictionary[console.scroll].newline) console.scroll++;
 			}
-		}else if(DeshInput->scrollY > 0 && console.scroll){
-			forI(DeshInput->scrollY){console.scroll--;
+		}else if(g_input->scrollY > 0 && console.scroll){
+			forI(g_input->scrollY){console.scroll--;
 				while(console.scroll > 0 && !console.dictionary[console.scroll].newline) console.scroll--;
 			}
 		}
@@ -368,17 +379,17 @@ void console_change_state(ConsoleState new_state){DPZoneScoped;
 		case ConsoleState_OpenSmall:{
 			console.open_target = 100 * console.open_small_percent;
 			console.open_amount = console.ui.main->style.height;
-			console.console_pos = Vec2(0, -1);
-			console.console_dim.x = (f32)DeshWindow->width;
-			g_ui->active = console.ui.inputtext;
+			console.console_pos = vec2::ZERO;
+			console.console_dim.x = (f32)g_window->width;
+			ui_set_active_item(console.ui.inputtext);
 			window_set_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		case ConsoleState_OpenBig:{
 			console.open_target = 100 * console.open_max_percent;
 			console.open_amount = console.ui.main->style.height;
-			console.console_pos = Vec2(0, -1);
-			console.console_dim.x = (f32)DeshWindow->width;
-			g_ui->active = console.ui.inputtext;
+			console.console_pos = vec2::ZERO;
+			console.console_dim.x = (f32)g_window->width;
+			ui_set_active_item(console.ui.inputtext);
 			window_set_cursor_mode(g_window, CursorMode_Default);
 		}break;
 		// case ConsoleState_Popout:{
