@@ -79,7 +79,21 @@ win32_error_to_temp_str8(DWORD error){DPZoneScoped;
 local void
 win32_log_last_error(const char* func_name, b32 crash_on_error = false, str8 custom = str8{}){DPZoneScoped;
 	DWORD error = ::GetLastError();
-	LogE("win32",func_name," failed with error ",(u32)error,": ",win32_error_to_temp_str8(error)," ",custom);
+	Logger* logger = logger_expose();
+	if(logger->file){
+		LogE("win32",func_name," failed with error ",(u32)error,": ",win32_error_to_temp_str8(error)," ",custom);
+	}else{
+		LPVOID msg_buffer;
+		DWORD msg_size = ::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+										  0, error, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), (LPSTR)&msg_buffer, 0, 0);
+		if(custom.count){
+			printf("[\x1b[31mWIN32-ERROR\x1b[0m] %s failed with error %d: %.*s %.*s", func_name, (int)error, (int)msg_size, (const char*)msg_buffer, (int)custom.count, custom.str);
+		}else{
+			printf("[\x1b[31mWIN32-ERROR\x1b[0m] %s failed with error %d: %.*s", func_name, (int)error, (int)msg_size, (const char*)msg_buffer);
+		}
+		fflush(stdout);
+		::LocalFree(msg_buffer);
+	}
 	if(crash_on_error){
 		Assert(!"assert before exit so we can stack trace in debug mode");
 		::ExitProcess(error);
