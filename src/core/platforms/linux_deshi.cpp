@@ -1019,10 +1019,6 @@ platform_init() {
 
 	// !Issue(Pool) memory_pool_init(file_shared.files, 16);
 
-	file_create(STR8("data/"));
-	file_create(STR8("data/cfg/"));
-	file_create(STR8("data/temp/"));
-
 	// initialize display and screen
 	Display* display = linux.x11.display = XOpenDisplay(0);
 	if(!display) {

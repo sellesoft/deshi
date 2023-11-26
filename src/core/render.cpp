@@ -14,8 +14,13 @@ render_init() {
 	ShaderStages stages = {};
 	stages.vertex = assets_shader_load_from_source(str8l("flat.vert"), baked_shader_flat_vert_2, ShaderType_Vertex);
 	stages.fragment = assets_shader_load_from_source(str8l("flat.frag"), baked_shader_flat_frag_2, ShaderType_Fragment);
-	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels flat"), stages, 0);
-
+	array_init_with_elements<ShaderResourceType>(stages.fragment->resources, {
+				ShaderResourceType_Texture});
+	auto resources = array<ShaderResource>::create(deshi_temp_allocator);
+	auto resource = resources.push();
+	resource->type = ShaderResourceType_Texture;
+	resource->texture = assets_texture_null();
+	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels flat"), stages, resources.ptr);
 }
 
 void
@@ -252,13 +257,13 @@ render_temp_init(Window* window, u32 v) {
 	auto temp_vertex_shader = graphics_shader_allocate();
 	temp_vertex_shader->debug_name = str8l("<scene> temp vertex shader");
 	temp_vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
-	temp_vertex_shader->source = file_read_simple(str8l("data/shaders/temp.vert"), deshi_temp_allocator);
+	temp_vertex_shader->source = baked_shader_temp_vert;
 	graphics_shader_update(temp_vertex_shader);	
 
 	auto temp_fragment_shader = graphics_shader_allocate();
 	temp_fragment_shader->debug_name = str8l("<scene> temp fragment shader");
 	temp_fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
-	temp_fragment_shader->source = file_read_simple(str8l("data/shaders/temp.frag"), deshi_temp_allocator);
+	temp_fragment_shader->source = baked_shader_temp_frag;
 	graphics_shader_update(temp_fragment_shader);
 
 	pl->vertex_shader = temp_vertex_shader;

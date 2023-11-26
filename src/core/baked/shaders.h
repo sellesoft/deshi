@@ -741,10 +741,12 @@ L(layout(location = 2) in vec4 in_color;)
 L(layout(location = 3) in vec3 in_normal;)
 L()
 L(layout(location = 0) out vec4 out_color;)
+L(layout(location = 1) out vec2 out_uv;)
 L()
 L(void main() {)
 L(	gl_Position = ubo.proj * ubo.view * primitive.transformation * vec4(in_pos.xyz, 1.0);)
 L(	out_color = in_color;)
+L(	out_uv = in_uv;)
 L(})
 );
 
@@ -752,11 +754,14 @@ local str8 baked_shader_flat_frag_2 = str8l (
 L(#version 450)
 L(#extension GL_ARB_separate_shader_objects : enable)
 L()
+L(layout(set = 1, binding = 0) uniform sampler2D tex;)
+L()
 L(layout(location = 0) in vec4 in_color;)
+L(layout(location = 1) in vec2 in_uv;)
 L(layout(location = 0) out vec4 out_color;)
 L()
 L(void main() {)
-L(	out_color = in_color;)
+L(	out_color = texture(tex, in_uv) * in_color;)
 L(})
 );
 
