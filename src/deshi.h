@@ -62,8 +62,8 @@
 
 #define deshi_loop_end()     \
     console_update();        \
-    ui_update(window);       \
     scene_render();          \
+    ui_update(window);       \
     graphics_update(window); \
     logger_update();         \
     memory_clear_temp();     \
