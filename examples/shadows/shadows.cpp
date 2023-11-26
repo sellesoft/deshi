@@ -27,14 +27,13 @@
 #include "core/input.h"
 #include "core/logger.h"
 #include "core/platform.h"
-#include "core/render.h"
 #include "core/assets.h"
 #include "core/threading.h"
-#include "core/camera.h"
 #include "core/time.h"
 #include "core/ui.h"
 #include "core/ui_widgets.h"
 #include "core/window.h"
+#include "core/render.h"
 #include "math/math.h"
 
 
@@ -43,20 +42,19 @@ int main() {
 	memory_init(Gigabytes(1), Gigabytes(1));
 	platform_init();
 	logger_init();
-	Window* win = window_create(str8l("render_api"));
+	Window* win = window_create(str8l("graphics_api"));
 	window_show(win);
-	render_init_x(win);
-	assets_init_x(win);
-	ui_init_x(win);
+	graphics_init(win);
+	assets_init(win);
 		
 	struct {
-		RenderPass* render_pass;
+		GraphicsRenderPass* render_pass;
 		// the image we will be rendering to
-		RenderImage* image;
-		RenderImageView* image_view;
-		RenderSampler* sampler;
+		GraphicsImage* image;
+		GraphicsImageView* image_view;
+		GraphicsSampler* sampler;
 
-		RenderFramebuffer* frame;
+		GraphicsFramebuffer* frame;
 
 		u32 width, height;
 
@@ -67,9 +65,9 @@ int main() {
 
 	offscreen.width  = 1028;
 	offscreen.height = 1028;
-	offscreen.light_fov = 120.f;
-	offscreen.z_far = 100;
-	offscreen.z_near = 1;
+	offscreen.light_fov = 160.f;
+	offscreen.z_far = 1000;
+	offscreen.z_near = 0.1;
 
 	struct {
 		vec3 pos;
@@ -108,12 +106,12 @@ int main() {
 		mat4 view;
 	} ubo_offscreen;
 
-	RenderBuffer* scene_ubo_buffer = render_buffer_create(
+	GraphicsBuffer* scene_ubo_buffer = graphics_buffer_create(
 			0, sizeof(ubo_scene),
-			RenderBufferUsage_UniformBuffer,
-			RenderMemoryPropertyFlag_HostVisible | 
-			RenderMemoryPropertyFlag_HostCoherent,
-			RenderMemoryMapping_Persistent);
+			GraphicsBufferUsage_UniformBuffer,
+			GraphicsMemoryPropertyFlag_HostVisible | 
+			GraphicsMemoryPropertyFlag_HostCoherent,
+			GraphicsMemoryMapping_Persistent);
 
 	auto update_scene_ubo = [&]() {
 		ubo_scene.          proj = camera.proj;
@@ -124,15 +122,15 @@ int main() {
 		ubo_scene.        z_near = camera.near_z;
 		ubo_scene.         z_far = camera.far_z;
 		ubo_scene.time = g_time->totalTime/1000.f;
-		CopyMemory(scene_ubo_buffer->mapped_data, &ubo_scene, sizeof(ubo_scene));
+		CopyMemory(graphics_buffer_mapped_data(scene_ubo_buffer), &ubo_scene, sizeof(ubo_scene));
 	};
 	
-	RenderBuffer* offscreen_ubo_buffer = render_buffer_create(
+	GraphicsBuffer* offscreen_ubo_buffer = graphics_buffer_create(
 			0, sizeof(ubo_offscreen),
-			RenderBufferUsage_UniformBuffer,
-			RenderMemoryPropertyFlag_HostVisible | 
-			RenderMemoryPropertyFlag_HostCoherent,
-			RenderMemoryMapping_Persistent);
+			GraphicsBufferUsage_UniformBuffer,
+			GraphicsMemoryPropertyFlag_HostVisible | 
+			GraphicsMemoryPropertyFlag_HostCoherent,
+			GraphicsMemoryMapping_Persistent);
 
 	auto update_offscreen_ubo = [&]() {
 		ubo_offscreen.proj = Math::PerspectiveProjectionMatrix(
@@ -140,7 +138,7 @@ int main() {
 				offscreen.light_fov,
 				offscreen.z_near, offscreen.z_far);
 		ubo_offscreen.view = Math::LookAtMatrix(ubo_scene.light_pos.toVec3(), Vec3(0,0,0)).Inverse();
-		CopyMemory(offscreen_ubo_buffer->mapped_data, &ubo_offscreen, sizeof(ubo_offscreen));
+		CopyMemory(graphics_buffer_mapped_data(offscreen_ubo_buffer), &ubo_offscreen, sizeof(ubo_offscreen));
 	};
 
 	auto update_light = [&]() {
@@ -155,216 +153,216 @@ int main() {
 
 	// We only need a depth attachment as we just want
 	// the distance of pixels from the light
-	RenderPassAttachment depth_attachment = {};
-	depth_attachment.format = RenderFormat_Depth16_UnsignedNormalized;
-	depth_attachment.load_op = RenderAttachmentLoadOp_Clear;
+	GraphicsRenderPassAttachment depth_attachment = {};
+	depth_attachment.format = GraphicsFormat_Depth16_UNorm;
+	depth_attachment.load_op = GraphicsLoadOp_Clear;
 	// We want to store the result of this render pass so we may use it for the final frame
-	depth_attachment.store_op = RenderAttachmentStoreOp_Store;
-	depth_attachment.stencil_load_op = RenderAttachmentLoadOp_Dont_Care;
-	depth_attachment.stencil_store_op = RenderAttachmentStoreOp_Dont_Care;
-	depth_attachment.initial_layout = RenderImageLayout_Undefined;
-	depth_attachment.final_layout = RenderImageLayout_Depth_Stencil_Read_Only_Optimal;
+	depth_attachment.store_op = GraphicsStoreOp_Store;
+	depth_attachment.stencil_load_op = GraphicsLoadOp_Dont_Care;
+	depth_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	depth_attachment.initial_layout = GraphicsImageLayout_Undefined;
+	depth_attachment.final_layout = GraphicsImageLayout_Depth_Stencil_Read_Only_Optimal;
 
-	offscreen.render_pass = render_pass_create();
+	offscreen.render_pass = graphics_render_pass_allocate();
 	offscreen.render_pass->debug_name = str8l("offscreen render pass");
-	offscreen.render_pass->debug_color = Color_Red;
-	offscreen.render_pass->depth_attachment = &depth_attachment;
+	offscreen.render_pass->use_depth_attachment = true;
+	offscreen.render_pass->depth_attachment = depth_attachment;
 	offscreen.render_pass->depth_clear_values = {1.f, 0};
-	render_pass_update(offscreen.render_pass);
+	graphics_render_pass_update(offscreen.render_pass);
 
-	offscreen.image = render_image_create();
+	offscreen.image = graphics_image_allocate();
 	offscreen.image->debug_name = str8l("offscreen image");
-	offscreen.image->format = RenderFormat_Depth16_UnsignedNormalized;
+	offscreen.image->format = GraphicsFormat_Depth16_UNorm;
 	offscreen.image->extent.x = offscreen.width;
 	offscreen.image->extent.y = offscreen.height;
 	offscreen.image->extent.z = 1;
-	offscreen.image->samples = RenderSampleCount_1;
+	offscreen.image->samples = GraphicsSampleCount_1;
 	offscreen.image->linear_tiling = false;
-	offscreen.image->usage = (RenderImageUsage)(RenderImageUsage_Depth_Stencil_Attachment | RenderImageUsage_Sampled);
-	render_image_update(offscreen.image);
+	offscreen.image->usage = GraphicsImageUsage_Depth_Stencil_Attachment | GraphicsImageUsage_Sampled;
+	graphics_image_update(offscreen.image);
 
-	offscreen.image_view = render_image_view_create();
+	offscreen.image_view = graphics_image_view_allocate();
 	offscreen.image_view->debug_name = str8l("offscreen image view");
 	offscreen.image_view->image = offscreen.image;
 	offscreen.image_view->format = offscreen.image->format;
-	offscreen.image_view->aspect_flags = RenderImageViewAspectFlags_Depth;
-	render_image_view_update(offscreen.image_view);
+	offscreen.image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
+	graphics_image_view_update(offscreen.image_view);
 
-	offscreen.sampler = render_sampler_create();
+	offscreen.sampler = graphics_sampler_allocate();
 	offscreen.sampler->mag_filter =
-	offscreen.sampler->min_filter = RenderFilter_Nearest;
+	offscreen.sampler->min_filter = GraphicsFilter_Nearest;
 	offscreen.sampler->address_mode_u = 
 	offscreen.sampler->address_mode_v = 
-	offscreen.sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	offscreen.sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 	offscreen.sampler->border_color = Color_Red;
-	render_sampler_update(offscreen.sampler);
+	graphics_sampler_update(offscreen.sampler);
 
-	offscreen.frame = render_frame_create();
+	offscreen.frame = graphics_framebuffer_allocate();
 	offscreen.frame->debug_name = str8l("offscreen frame");
 	offscreen.frame->render_pass = offscreen.render_pass;
 	offscreen.frame->width = offscreen.width;
 	offscreen.frame->height = offscreen.height;
 	offscreen.frame->depth_image_view = offscreen.image_view;
-	render_frame_update(offscreen.frame);
+	graphics_framebuffer_update(offscreen.frame);
 
-	RenderDescriptorSetLayout* descriptor_layout = render_descriptor_layout_create();
-	array_grow(descriptor_layout->bindings, 2);
-	array_count(descriptor_layout->bindings) = 2;
-	descriptor_layout->bindings[0].binding = 0;
-	descriptor_layout->bindings[0].kind = RenderDescriptorType_Uniform_Buffer;
-	descriptor_layout->bindings[0].shader_stages = (RenderShaderStage)(RenderShaderStage_Vertex | RenderShaderStage_Fragment);
-	descriptor_layout->bindings[1].binding = 1;
-	descriptor_layout->bindings[1].kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptor_layout->bindings[1].shader_stages = RenderShaderStage_Fragment;
-	render_descriptor_layout_update(descriptor_layout);
+	GraphicsDescriptorSetLayout* descriptor_layout = graphics_descriptor_set_layout_allocate();
+	descriptor_layout->bindings = array<GraphicsDescriptorSetLayoutBinding>::create_with_count(2, deshi_temp_allocator).ptr;
+	descriptor_layout->bindings[0].n = 0;
+	descriptor_layout->bindings[0].type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptor_layout->bindings[0].shader_stages = GraphicsShaderStage_Vertex | GraphicsShaderStage_Fragment;
+	descriptor_layout->bindings[1].n = 1;
+	descriptor_layout->bindings[1].type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor_layout->bindings[1].shader_stages = GraphicsShaderStage_Fragment;
+	graphics_descriptor_set_layout_update(descriptor_layout);
 	
-	RenderPushConstant model_push_constant = {};
-	model_push_constant.shader_stage_flags = RenderShaderStage_Vertex;
+	GraphicsPushConstant model_push_constant = {};
+	model_push_constant.shader_stages = GraphicsShaderStage_Vertex;
 	model_push_constant.size = sizeof(mat4) + sizeof(vec3);
 	model_push_constant.offset = 0;
 
-	RenderPipelineLayout* pipeline_layout = render_pipeline_layout_create();
+	GraphicsPipelineLayout* pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = str8l("shadows shared pipeline layout");
-	*array_push(pipeline_layout->descriptor_layouts) = descriptor_layout;
-	*array_push(pipeline_layout->push_constants) = model_push_constant;
-	render_pipeline_layout_update(pipeline_layout);
+	array_init_with_elements(pipeline_layout->descriptor_layouts, {descriptor_layout}, deshi_allocator);
+	array_init_with_elements(pipeline_layout->push_constants, {model_push_constant}, deshi_allocator);
+	graphics_pipeline_layout_update(pipeline_layout);
 
-	RenderPipeline* shadow_debug_quad_pipeline = render_pipeline_create();
-	RenderPipeline* scene_pipeline = 0;
-	RenderPipeline* offscreen_pipeline = 0;
+	GraphicsPipeline* shadow_debug_quad_pipeline = graphics_pipeline_allocate();
+	GraphicsPipeline* scene_pipeline = 0;
+	GraphicsPipeline* offscreen_pipeline = 0;
 
 	auto pipeline = shadow_debug_quad_pipeline;
 	pipeline->layout = pipeline_layout;
 
 	// setup settings shared by all three pipelines
-	pipeline->            front_face = RenderPipelineFrontFace_CCW;
-	pipeline->               culling = RenderPipelineCulling_Back;
-	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	pipeline->            front_face = GraphicsFrontFace_CCW;
+	pipeline->               culling = GraphicsPipelineCulling_Back;
+	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
 	pipeline->            depth_test = true;
-	pipeline->      depth_compare_op = RenderCompareOp_Less_Or_Equal;
+	pipeline->          depth_writes = true;
+	pipeline->      depth_compare_op = GraphicsCompareOp_Less_Or_Equal;
 	pipeline->            depth_bias = true;
 	pipeline->            line_width = 1.f;
 	pipeline->           color_blend = true;
-	pipeline->        color_blend_op = RenderBlendOp_Add;
-	pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
-	pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->        alpha_blend_op = RenderBlendOp_Add;
-	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	pipeline->        color_blend_op = GraphicsBlendOp_Add;
+	pipeline->color_src_blend_factor = GraphicsBlendFactor_Source_Alpha;
+	pipeline->color_dst_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->        alpha_blend_op = GraphicsBlendOp_Add;
+	pipeline->alpha_src_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	pipeline->        blend_constant = color(10,10,10,255);
-	pipeline->           render_pass = render_pass_of_window_presentation_frame(win);
+	pipeline->           render_pass = graphics_render_pass_of_window_presentation_frames(win);
 
-	*array_push(pipeline->dynamic_states) = RenderDynamicState_Viewport;
-	*array_push(pipeline->dynamic_states) = RenderDynamicState_Scissor;
+	pipeline->dynamic_depth_bias =
+	pipeline->dynamic_viewport   = 
+	pipeline->dynamic_scissor    = true;
 
-	scene_pipeline = render_pipeline_duplicate(shadow_debug_quad_pipeline);
+	scene_pipeline = graphics_pipeline_duplicate(shadow_debug_quad_pipeline);
 
 	// shadow map debug quad display
-	shadow_debug_quad_pipeline->culling = RenderPipelineCulling_None;
-	*array_push(shadow_debug_quad_pipeline->shader_stages) = {
-		RenderShaderStage_Vertex,
-		str8l("quad.vert"),
-		file_read_simple(str8l("data/shaders/quad.vert"), deshi_temp_allocator),
-	};
-	*array_push(shadow_debug_quad_pipeline->shader_stages) = {
-		RenderShaderStage_Fragment,
-		str8l("quad.frag"),
-		file_read_simple(str8l("data/shaders/quad.frag"), deshi_temp_allocator),
-	};
-
+	shadow_debug_quad_pipeline->culling = GraphicsPipelineCulling_None;
+	shadow_debug_quad_pipeline->vertex_shader = graphics_shader_allocate();
+	shadow_debug_quad_pipeline->vertex_shader->debug_name = str8l("quad.vert");
+	shadow_debug_quad_pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
+	shadow_debug_quad_pipeline->vertex_shader->source = file_read_simple(str8l("quad.vert"), deshi_temp_allocator);
+	graphics_shader_update(shadow_debug_quad_pipeline->vertex_shader);
+	shadow_debug_quad_pipeline->fragment_shader = graphics_shader_allocate();
+	shadow_debug_quad_pipeline->fragment_shader->debug_name = str8l("quad.frag"); 
+	shadow_debug_quad_pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
+	shadow_debug_quad_pipeline->fragment_shader->source = file_read_simple(str8l("quad.frag"), deshi_temp_allocator);
+	graphics_shader_update(shadow_debug_quad_pipeline->fragment_shader);
+	
 	// the vertex state has nothing 
-	render_pipeline_update(shadow_debug_quad_pipeline);
+	graphics_pipeline_update(shadow_debug_quad_pipeline);
 
 	// scene with shadows
-	*array_push(scene_pipeline->vertex_input_bindings) = {0, sizeof(MeshVertex)};
-	array_grow(scene_pipeline->vertex_input_attributes, 4);
-	array_count(scene_pipeline->vertex_input_attributes) = 4;
-	scene_pipeline->vertex_input_attributes[0] = {0, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, pos)};
-	scene_pipeline->vertex_input_attributes[1] = {1, 0, RenderFormat_R32G32_Signed_Float,         offsetof(MeshVertex, uv)};
-	scene_pipeline->vertex_input_attributes[2] = {2, 0, RenderFormat_R8G8B8A8_UnsignedNormalized, offsetof(MeshVertex, color)};
-	scene_pipeline->vertex_input_attributes[3] = {3, 0, RenderFormat_R32G32B32_Signed_Float,      offsetof(MeshVertex, normal)};
+	array_init_with_elements(scene_pipeline->vertex_input_bindings, 
+			{{0, sizeof(MeshVertex)}}, deshi_allocator);
 
-	offscreen_pipeline = render_pipeline_duplicate(scene_pipeline);
+	array_init_with_elements(scene_pipeline->vertex_input_attributes, {
+			{0, 0, GraphicsFormat_R32G32B32_Float,      offsetof(MeshVertex, pos)},
+			{1, 0, GraphicsFormat_R32G32_Float,         offsetof(MeshVertex, uv)},
+			{2, 0, GraphicsFormat_R8G8B8A8_UNorm,       offsetof(MeshVertex, color)},
+			{3, 0, GraphicsFormat_R32G32B32_Float,      offsetof(MeshVertex, normal)},
+			}, deshi_allocator);
+
+	offscreen_pipeline = graphics_pipeline_duplicate(scene_pipeline);
 	offscreen_pipeline->render_pass = offscreen.render_pass;
-	offscreen_pipeline->culling = RenderPipelineCulling_Back;
+	offscreen_pipeline->culling = GraphicsPipelineCulling_Back;
 
-	*array_push(scene_pipeline->shader_stages) = {
-		RenderShaderStage_Vertex,
-		str8l("scene.vert"),
-		file_read_simple(str8l("data/shaders/scene.vert"), deshi_temp_allocator),
-	};
-	*array_push(scene_pipeline->shader_stages) = {
-		RenderShaderStage_Fragment,
-		str8l("scene.frag"),
-		file_read_simple(str8l("data/shaders/scene.frag"), deshi_temp_allocator),
-	};
-	render_pipeline_update(scene_pipeline);
-
-	// offscreen vertex (vertex shader only)
-	*array_push(offscreen_pipeline->shader_stages) = {
-		RenderShaderStage_Vertex,
-		str8l("offscreen.vert"),
-		file_read_simple(str8l("data/shaders/offscreen.vert"), deshi_temp_allocator),
-	};
-	*array_push(offscreen_pipeline->dynamic_states) = RenderDynamicState_Depth_Bias;
-	render_pipeline_update(offscreen_pipeline);
+	scene_pipeline->vertex_shader = graphics_shader_allocate();
+	scene_pipeline->vertex_shader->debug_name = str8l("scene.vert");
+	scene_pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
+	scene_pipeline->vertex_shader->source = file_read_simple(str8l("scene.vert"), deshi_temp_allocator);
+	graphics_shader_update(scene_pipeline->vertex_shader);
+	scene_pipeline->fragment_shader = graphics_shader_allocate();
+	scene_pipeline->fragment_shader->debug_name = str8l("scene.frag");
+	scene_pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
+	scene_pipeline->fragment_shader->source = file_read_simple(str8l("scene.frag"), deshi_temp_allocator);
+	graphics_shader_update(scene_pipeline->fragment_shader);
 	
+	graphics_pipeline_update(scene_pipeline);
 
-	RenderDescriptor* descriptors;
-	array_init(descriptors, 2, deshi_temp_allocator);
-	
+	offscreen_pipeline->vertex_shader = graphics_shader_allocate();
+	offscreen_pipeline->vertex_shader->debug_name = str8l("offscreen.vert");
+	offscreen_pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
+	offscreen_pipeline->vertex_shader->source = file_read_simple(str8l("offscreen.vert"), deshi_temp_allocator);
+	graphics_shader_update(offscreen_pipeline->vertex_shader);
 
-	RenderDescriptorSet* debug_descriptor_set = render_descriptor_set_create();
-	*array_push(debug_descriptor_set->layouts) = descriptor_layout;
-	render_descriptor_set_update(debug_descriptor_set);
+	graphics_pipeline_update(offscreen_pipeline);
+
+	auto descriptors = array<GraphicsDescriptor>::create(2, deshi_temp_allocator);
+
+	GraphicsDescriptorSet* debug_descriptor_set = graphics_descriptor_set_allocate();
+	array_init_with_elements(debug_descriptor_set->layouts, {descriptor_layout});
+	graphics_descriptor_set_update(debug_descriptor_set);
 	
-	array_count(descriptors) = 2;
-	descriptors[0].kind = RenderDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = RenderShaderStage_Fragment;
-	descriptors[0].buffer = {
+	descriptors[0].type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptors[0].shader_stages = GraphicsShaderStage_Fragment;
+	descriptors[0].ubo = {
 		scene_ubo_buffer,
 		0,
-		scene_ubo_buffer->size,
+		sizeof(ubo_scene),
 	};
 
-	descriptors[1].kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = RenderShaderStage_Fragment;
+	descriptors[1].type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
 	descriptors[1].image = {
 		offscreen.image_view,
 		offscreen.sampler,
-		RenderImageLayout_Depth_Stencil_Read_Only_Optimal,
+		GraphicsImageLayout_Depth_Stencil_Read_Only_Optimal,
 	};
-	render_descriptor_set_write(debug_descriptor_set, descriptors);
+	graphics_descriptor_set_write_array(debug_descriptor_set, descriptors.ptr);
 
-	RenderDescriptorSet* offscreen_descriptor_set = render_descriptor_set_create();
-	*array_push(offscreen_descriptor_set->layouts) = descriptor_layout;
-	render_descriptor_set_update(offscreen_descriptor_set);
+	GraphicsDescriptorSet* offscreen_descriptor_set = graphics_descriptor_set_allocate();
+	array_init_with_elements(offscreen_descriptor_set->layouts, {descriptor_layout});
+	graphics_descriptor_set_update(offscreen_descriptor_set);
 
-	array_count(descriptors) = 1;
-	descriptors[0].shader_stages = RenderShaderStage_Vertex;
-	descriptors[0].buffer = {
+	descriptors.recount(1);
+	descriptors[0].type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
+	descriptors[0].ubo = {
 		offscreen_ubo_buffer,
 		0,
-		offscreen_ubo_buffer->size,
+		sizeof(ubo_offscreen),
 	};
-	render_descriptor_set_write(offscreen_descriptor_set, descriptors);
+	graphics_descriptor_set_write_array(offscreen_descriptor_set, descriptors.ptr);
 	
-	RenderDescriptorSet* scene_descriptor_set = render_descriptor_set_create();
-	*array_push(scene_descriptor_set->layouts) = descriptor_layout;
-	render_descriptor_set_update(scene_descriptor_set);
+	GraphicsDescriptorSet* scene_descriptor_set = graphics_descriptor_set_allocate(); 
+	array_init_with_elements(scene_descriptor_set->layouts, {descriptor_layout});
+	graphics_descriptor_set_update(scene_descriptor_set);
 
-	array_count(descriptors) = 2;
-	descriptors[0].buffer = {
+	descriptors.recount(2);
+	descriptors[0].ubo = {
 		scene_ubo_buffer,
 		0,
-		scene_ubo_buffer->size,
+		sizeof(ubo_scene),
 	};
 	descriptors[1].image = {
 		offscreen.image_view,
 		offscreen.sampler,
-		RenderImageLayout_Depth_Stencil_Read_Only_Optimal,
+		GraphicsImageLayout_Depth_Stencil_Read_Only_Optimal,
 	};
-	render_descriptor_set_write(scene_descriptor_set, descriptors);
+	graphics_descriptor_set_write_array(scene_descriptor_set, descriptors.ptr);
 
 	MeshVertex vertices[4] = {
 		{{ 0.5f,  0.5f, 0.f}, {1.f, 0.f}, 0, {0.f, 1.f, 0.f}},
@@ -374,19 +372,19 @@ int main() {
 	};
 	MeshIndex indexes[6] = {0, 2, 1, 0, 3, 2};
 
-	RenderBuffer* plane_vertex_buffer = render_buffer_create(
+	GraphicsBuffer* plane_vertex_buffer = graphics_buffer_create(
 			vertices,
 			sizeof(MeshVertex) * 4,
-			RenderBufferUsage_VertexBuffer,
-			RenderMemoryPropertyFlag_DeviceLocal,
-			RenderMemoryMapping_None);
+			GraphicsBufferUsage_VertexBuffer,
+			GraphicsMemoryPropertyFlag_DeviceLocal,
+			GraphicsMemoryMapping_Never);
 
-	RenderBuffer* plane_index_buffer = render_buffer_create(
+	GraphicsBuffer* plane_index_buffer = graphics_buffer_create(
 			indexes,
 			sizeof(MeshIndex) * 6,
-			RenderBufferUsage_IndexBuffer,
-			RenderMemoryPropertyFlag_DeviceLocal,
-			RenderMemoryMapping_None);
+			GraphicsBufferUsage_IndexBuffer,
+			GraphicsMemoryPropertyFlag_DeviceLocal,
+			GraphicsMemoryMapping_Never);
 
 	struct {
 		mat4 transform;
@@ -398,10 +396,10 @@ int main() {
 
 	auto draw_plane = [&](u32 idx, vec3 pos, vec3 rot, vec3 scale) {
 		planes[idx].transform = mat4::TransformationMatrix(pos, rot, scale);
-		render_cmd_push_constant(win, &planes[idx], model_push_constant);
-		render_cmd_bind_vertex_buffer(win, plane_vertex_buffer);
-		render_cmd_bind_index_buffer(win, plane_index_buffer);
-		render_cmd_draw_indexed(win, 6, 0, 0);
+		graphics_cmd_push_constant(win, &planes[idx], model_push_constant);
+		graphics_cmd_bind_vertex_buffer(win, plane_vertex_buffer);
+		graphics_cmd_bind_index_buffer(win, plane_index_buffer);
+		graphics_cmd_draw_indexed(win, 6, 0, 0);
 	};
 
 	camera.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
@@ -411,7 +409,7 @@ int main() {
 	update_scene_ubo();
 	update_offscreen_ubo();
 
-	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
+	Model* box = assets_model_create_from_obj(str8l("box.obj"), 0);
 	
 	struct Box {
 		mat4 transform;
@@ -424,23 +422,11 @@ int main() {
 
 	auto draw_box = [&](u32 idx, vec3 pos, vec3 rot, vec3 scale) {
 		boxes[idx].transform = mat4::TransformationMatrix(pos, rot, scale);
-		render_cmd_push_constant(win, &boxes[idx], model_push_constant);
-		render_cmd_bind_vertex_buffer(win, box->mesh->vertex_buffer);
-		render_cmd_bind_index_buffer(win, box->mesh->index_buffer);
-		render_cmd_draw_indexed(win, box->mesh->index_count, 0, 0);
+		graphics_cmd_push_constant(win, &boxes[idx], model_push_constant);
+		graphics_cmd_bind_vertex_buffer(win, box->mesh->vertex_buffer);
+		graphics_cmd_bind_index_buffer(win, box->mesh->index_buffer);
+		graphics_cmd_draw_indexed(win, box->mesh->index_count, 0, 0);
 	};
-
-	auto item = ui_begin_item(0);
-	item->style.sizing = size_auto;
-	item->style.background_color = Color_DarkGrey;
-	item->style.padding = {10,10,10,10};
-	item->style.font = assets_font_create_from_file_bdf(str8l("gohufont-11.bdf"));
-	item->style.font_height = 11;
-	item->style.text_color = Color_White;
-
-	auto text = ui_get_text(ui_make_text(str8l("hi"), 0));
-
-	ui_end_item();
 
 	b32 fps = false;
 	while(platform_update()) {
@@ -501,27 +487,33 @@ int main() {
 			fps = !fps;
 		}
 
-		render_cmd_begin_render_pass(win, offscreen.render_pass, offscreen.frame);
+		graphics_cmd_begin_render_pass(win, offscreen.render_pass, offscreen.frame);
 
-		// render_cmd_set_depth_bias(win, 0, 0, 0);
-		render_cmd_set_depth_bias(win, 1.25f, 0.f, 1.75f);
-		render_cmd_bind_pipeline(win, offscreen_pipeline);
-		render_cmd_bind_descriptor_set(win, 0, offscreen_descriptor_set);
-		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
+		graphics_cmd_set_viewport(win, vec2::ZERO, Vec2(offscreen.width, offscreen.height));
+		graphics_cmd_set_scissor(win, vec2::ZERO, Vec2(offscreen.width, offscreen.height));
+
+		// graphics_cmd_set_depth_bias(win, 0, 0, 0);
+		graphics_cmd_set_depth_bias(win, 1.25f, 0.f, 1.75f);
+		graphics_cmd_bind_pipeline(win, offscreen_pipeline);
+		graphics_cmd_bind_descriptor_set(win, 0, offscreen_descriptor_set);
 		draw_box(1, Vec3(0, 10, 0), Vec3(0,0,0), Vec3(100, 1, 100));
-
-		render_cmd_end_render_pass(win);
-
-		render_cmd_begin_render_pass(win, render_pass_of_window_presentation_frame(win), render_current_present_frame_of_window(win));
-
-		render_cmd_bind_pipeline(win, scene_pipeline);
-		render_cmd_bind_descriptor_set(win, 0, scene_descriptor_set);
 		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
+
+		graphics_cmd_end_render_pass(win);
+
+		graphics_cmd_begin_render_pass(win, graphics_render_pass_of_window_presentation_frames(win), graphics_current_present_frame_of_window(win));
+
+		graphics_cmd_set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
+		graphics_cmd_set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
+
+		graphics_cmd_bind_pipeline(win, scene_pipeline);
+		graphics_cmd_bind_descriptor_set(win, 0, scene_descriptor_set);
 		draw_box(1, Vec3(0, 10, 0), Vec3(0,0,0), Vec3(100, 1, 100));
+		draw_box(0, Vec3(0, 3, 5), Vec3(0,0,0), vec3::ONE);
 		draw_box(2, scene.light_pos, vec3::ZERO, vec3::ONE*0.2);
 
-		render_cmd_end_render_pass(win);
+		graphics_cmd_end_render_pass(win);
 
-		render_update_x(win);
+		graphics_update(win);
 	}
 }
