@@ -35,7 +35,7 @@ import os,sys,subprocess,platform,time
 from datetime import datetime
 from threading import Thread
 
-app_name = "render_api"
+app_name = "graphics_api_example"
 
 config = {
     "verbose": False, 
