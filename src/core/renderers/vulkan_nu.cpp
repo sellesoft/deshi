@@ -1574,7 +1574,7 @@ graphics_init(Window* window) {
 	memory_pool_init(g_graphics->pools.descriptor_sets, 8);
 	memory_pool_init(g_graphics->pools.pipeline_layouts, 8);
 	memory_pool_init(g_graphics->pools.pipelines, 8);
-	memory_pool_init(g_graphics->pools.buffers, 8);
+	memory_pool_init(g_graphics->pools.buffers, 80);
 	memory_pool_init(g_graphics->pools.command_buffers, 8);
 	memory_pool_init(g_graphics->pools.images, 8);
 	memory_pool_init(g_graphics->pools.image_views, 8);
@@ -1748,10 +1748,6 @@ graphics_update(Window* window) {
 				vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, get_handle(pipeline));
 			} break;
 			case GraphicsCommandType_Set_Viewport: {
-				if(dynamic_state.viewport == Static) {
-					VulkanError("encountered set viewport command, but the currently bound pipeline (", currently_bound_pipeline->debug_name, ") does not have viewport set as dynamic.");
-					continue;
-				}
 				VkViewport v = {0};
 				v.x = cmd.set_viewport.offset.x;
 				v.y = cmd.set_viewport.offset.y;
@@ -1760,28 +1756,17 @@ graphics_update(Window* window) {
 				v.minDepth = 0.f;
 				v.maxDepth = 1.f;
 				vkCmdSetViewport(cmdbuf, 0, 1, &v);
-				dynamic_state.viewport = DynamicFulfilled;
 			} break;
 			case GraphicsCommandType_Set_Scissor: {
-				if(dynamic_state.scissor == Static) {
-					VulkanError("encountered set scissor command, but the currently bound pipeline (", currently_bound_pipeline->debug_name, ") does not have scissors set to dynamic.");
-					continue;
-				}
 				VkRect2D s = {0};
 				s.offset.x = cmd.set_scissor.offset.x;
 				s.offset.y = cmd.set_scissor.offset.y;
 				s.extent.width = cmd.set_scissor.extent.x;
 				s.extent.height = cmd.set_scissor.extent.y;
 				vkCmdSetScissor(cmdbuf, 0, 1, &s);
-				dynamic_state.scissor = DynamicFulfilled;
 			} break;
 			case GraphicsCommandType_Set_Depth_Bias: {
-				if(dynamic_state.depth_bias == Static) {
-					VulkanError("encountered set depth bias command, but the currently bound pipeline (", currently_bound_pipeline->debug_name, ") does not have depth bias set as dynamic.");
-					continue;
-				}
 				vkCmdSetDepthBias(cmdbuf, cmd.set_depth_bias.constant, cmd.set_depth_bias.clamp, cmd.set_depth_bias.slope);
-				dynamic_state.depth_bias = DynamicFulfilled;
 			} break;
 			case GraphicsCommandType_Bind_Vertex_Buffer: {
 				VulkanAssert(cmd.bind_vertex_buffer.handle, "encountered bind vertex buffer command, but the buffer handle is null.");
