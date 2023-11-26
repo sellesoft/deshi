@@ -42,12 +42,12 @@ int main() {
 
 	render_set_active_window(win);
 
-	Texture* alex = assets_texture_create_from_file_simple(str8l("alex.png"));
-	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
+	Texture* alex = assets_texture_create_from_path_simple(str8l("alex"), str8l("alex.png"));
+	Model* box = assets_model_create_from_obj(str8l("box.obj"), 0);
 
 	ShaderStages stages = {0};
-	stages.vertex = assets_shader_load_from_file(str8l("dither.vert"), ShaderType_Vertex);
-	stages.fragment = assets_shader_load_from_file(str8l("dither.frag"), ShaderType_Fragment);
+	stages.vertex = assets_shader_load_from_path(str8l("dither.vert"), str8l("dither.vert"), ShaderType_Vertex);
+	stages.fragment = assets_shader_load_from_path(str8l("dither.frag"), str8l("dither.frag"), ShaderType_Fragment);
 	array_init_with_elements<ShaderResourceType>(stages.fragment->resources, {
 				ShaderResourceType_Texture,
 				ShaderResourceType_UBO,

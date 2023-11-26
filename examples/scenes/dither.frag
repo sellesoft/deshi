@@ -30,7 +30,7 @@ vec4 dither() {
 	}
 
 	float seed_float = rand(vec2(s, s/2.f));
-	tc = vec2(quant(tc.x, tex_size.x), quant(tc.y, tex_size.y));
+	tc = vec2(quant(tc.x, tex_size.x / 10), quant(tc.y, tex_size.y / 10));
 	tc.y *= -1;
 	vec2 rand_control = vec2(tc.x + quant(s, 5), tc.y + quant(s, 5));
 	float random = rand(rand_control);
