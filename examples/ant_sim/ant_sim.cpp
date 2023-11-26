@@ -1809,10 +1809,6 @@ int main(int args_count, char** args){
 		update_input();
 		update_simulation();
 		update_ui();
-		
-		if(key_down(Key_L)){
-			ui_print_tree([](dstr8* in, uiItem* item){});
-		}
 	}deshi_loop_end();
 	
 	deshi_cleanup();

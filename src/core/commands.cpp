@@ -151,21 +151,21 @@ void cmd_run(str8 input){
 			if(str8_equal(args[0], it->name)){
 				if(it->func){
 					if(args_count < it->min_args){
-						LogE("cmd", "Command '",args[0],"' requires at least ",it->min_args," arguments");
+						LogW("cmd", "Command '",args[0],"' requires at least ",it->min_args," arguments");
 					}else if(args_count > it->max_args){
-						LogE("cmd", "Command '",args[0],"' requires at most  ",it->max_args," arguments");
+						LogW("cmd", "Command '",args[0],"' requires at most  ",it->max_args," arguments");
 					}else{
 						it->func(args.data+1, args_count);
 					}
 				}else{
-					LogE("cmd", "Command '",args[0],"' has no registered function");
+					LogW("cmd", "Command '",args[0],"' has no registered function");
 				}
 				found = true;
 				break;
 			}
 		}
 		if(!found){
-			LogE("cmd", "Unknown command '",args[0],"'");
+			LogW("cmd", "Unknown command '",args[0],"'");
 		}
 	}
 }
@@ -402,7 +402,7 @@ void cmd_init(){
 		forI(array_count(assets_material_map())){
 			Material* mat = assets_material_map()[i];
 			Log("", " --- ", mat->name, " --- "
-					   "\n  Shaders:");
+				"\n  Shaders:");
 			Log("", "   Vertex: ", mat->stages.vertex->name);
 			if(mat->stages.geometry)
 				Log("", "   Geometry: ", mat->stages.geometry->name);
@@ -423,12 +423,12 @@ void cmd_init(){
 			LogE("cmd","Could not find a material named '", args[0], "'.");
 			return;
 		}
-
+		
 		if(!mat->texture_array){
 			LogE("cmd","The material '",args[0],"' has no texture slots.");
 			return;
 		}
-
+		
 		s32 texSlot = atoi(temp_str8_cstr(args[1]));
 		if(texSlot < 0 || texSlot >= array_count(mat->texture_array)){
 			LogE("cmd", "Given texture index '",texSlot,"' is outside of bounds '0..",array_count(mat->texture_array),"'.");
@@ -451,15 +451,15 @@ void cmd_init(){
 			LogE("cmd","Could not find a material named '",args[0],"'.");
 			return;
 		}
-	
+		
 		Shader* shader = assets_shader_get_by_name(args[1]);
 		if(!shader) {
 			LogE("cmd", "Could not find a shader named '", args[1], "'.");
 			return;
 		}
-
+		
 		str8 shader_type;
-
+		
 		switch(shader->type) {
 			case ShaderType_Vertex: {
 				shader_type = str8l("vertex");
@@ -477,7 +477,7 @@ void cmd_init(){
 				mat->pipeline->fragment_shader = shader->handle;
 			} break;
 		}
-
+		
 		Log("cmd", "Updated material ", mat->name, "'s ", shader_type, " shader to ", shader->name, ".");
 		graphics_pipeline_update(mat->pipeline);
 	}DESHI_CMD_END(mat_shader, CmdArgument_String, CmdArgument_String);
@@ -488,7 +488,7 @@ void cmd_init(){
 			LogE("cmd", "Could not find shader with the name '", args[0], "'.");
 			return;
 		}
-
+		
 		assets_shader_reload(shader);
 	}DESHI_CMD_END(shader_reload, CmdArgument_String);
 	
@@ -497,7 +497,7 @@ void cmd_init(){
 		forI(array_count(assets_shader_map())) {
 			Shader* s = assets_shader_map()[i];
 			Log("", " --- ", s->name, " --- ",
-					"\n  Type: ", ShaderTypeStrings[s->type]);
+				"\n  Type: ", ShaderTypeStrings[s->type]);
 			if(s->resources && array_count(s->resources)) {
 				Log("", "  Resources:");
 				forI(array_count(s->resources)) {
@@ -518,13 +518,13 @@ void cmd_init(){
 		forI(array_count(assets_texture_map())) {
 			Texture* t = assets_texture_map()[i];
 			Log("", " --- ", t->name, " --- "
-					"\n  Dimensions: (", t->width, ", ", t->height, ")",
-					"\n  Channels: ", t->depth, 
-					"\n  Mipmaps: ", t->mipmaps, 
-					"\n  Format: ", ImageFormatStrings[t->format],
-					"\n  Type: ", TextureTypeStrings[t->type],
-					"\n  Filter: ", TextureFilterStrings[t->filter],
-					"\n  AddressMode: ", TextureAddressModeStrings[t->uv_mode]);
+				"\n  Dimensions: (", t->width, ", ", t->height, ")",
+				"\n  Channels: ", t->depth, 
+				"\n  Mipmaps: ", t->mipmaps, 
+				"\n  Format: ", ImageFormatStrings[t->format],
+				"\n  Type: ", TextureTypeStrings[t->type],
+				"\n  Filter: ", TextureFilterStrings[t->filter],
+				"\n  AddressMode: ", TextureAddressModeStrings[t->uv_mode]);
 		}
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
