@@ -188,7 +188,7 @@ if config["graphics"] == "vulkan":
 
 sources = {
     "deshi": "../../src/deshi.cpp",
-    "app": "render_api.cpp"
+    "app": "graphics_api.cpp"
 }
 
 parts = {
