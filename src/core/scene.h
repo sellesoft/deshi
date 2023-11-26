@@ -16,7 +16,10 @@
 
 struct Camera;
 struct SceneDrawModel;
+struct SceneDrawVoxelChunk;
 struct SceneVoxelType;
+struct RenderVoxelChunk;
+
 StartLinkageC();
 
 
@@ -31,6 +34,7 @@ typedef struct SceneGlobal {
 	// by the scene.
 	struct {
 		Camera* camera;
+		RenderVoxelChunk* voxel_chunks;
 	} pools;
 
 	// Collection of active elements of the scene 
@@ -45,6 +49,9 @@ typedef struct SceneGlobal {
 	// that will be executed and then cleared next time scene_render
 	// is called
 	SceneDrawModel* model_draw_commands;	
+	SceneDrawVoxelChunk* voxel_chunk_draw_commands;
+
+	Material* voxel_material;
 
 	struct {
 		GraphicsRenderPass* render_pass;
@@ -212,49 +219,54 @@ FORCE_INLINE void frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov
 // @voxel
 
 
-typedef struct SceneVoxelType {
-	color col;
+typedef u16 RenderVoxelIndex;
+
+typedef struct RenderVoxelType {
+	color color;
 	
 	// TODO(delle) shape
-} SceneVoxelType;
+} RenderVoxelType;
 
-typedef struct SceneVoxel {
+typedef struct RenderVoxel {
 	// index into 
 	u16 type;
 	// offset into chunk local space
 	u16 x, y, z;
-} SceneVoxel;
+} RenderVoxel;
 
 // A collection of voxels that get turned into a mesh
 // for rendering.
-typedef struct SceneVoxelChunk {
+typedef struct RenderVoxelChunk {
 	vec3 position;
 	vec3 rotation;
 	u32  dimensions;
 
+	mat4 transform;
+
 	b32 modified;
 	b32 hidden;
 
-	SceneVoxel** voxels;
+	Arena* arena;
+	RenderVoxel** voxels;
 	u64 voxel_count;
 
 	GraphicsBuffer* vertex_buffer;
 	u64 vertex_count;
 	GraphicsBuffer* index_buffer;
 	u64 index_count;
-} SceneVoxelChunk;
+} RenderVoxelChunk;
 
 // Initializes the voxel renderer using an array of voxel types.
 // 'voxel_size' determines the size of a voxel in the world.
-void scene_voxel_init(SceneVoxelType* types, u32 voxel_size);
+void render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size);
 
 // Creates a new voxel chunk for voxels.
 // All voxels are transformed into global space by 'pos' and 'rot'.
 // 'chunk_size' determines the number of voxels there may be along each dimension.
-SceneVoxelChunk* scene_voxel_chunk_create(vec3 pos, vec3 rot, u32 chunk_size, SceneVoxel* voxels);
+RenderVoxelChunk* render_voxel_chunk_create(vec3 pos, vec3 rot, u32 chunk_size, RenderVoxel* voxels, u64 voxels_count);
 
 // Destroys the given chunk freeing all data it owns.
-void scene_voxel_chunk_destroy(SceneVoxelChunk* chunk);
+void render_voxel_chunk_destroy(RenderVoxelChunk* chunk);
 
 EndLinkageC();
 #endif // DESHI_SCENE_H
