@@ -404,7 +404,6 @@ TODO(sushi) example
 #include "kigu/node.h"
 #include "kigu/unicode.h"
 #include "math/vector.h"
-#include "core/render.h"
 #include "core/graphics.h"
 #include "core/text.h"
 #include "core/input.h"
