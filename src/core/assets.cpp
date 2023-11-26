@@ -2346,6 +2346,7 @@ Font*
 assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	//check if font was loaded already
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
+	if(!filename) filename = path;
 	u64 uid = __uid_of_name(filename);
 	auto [index, found] = __find_resource(uid, g_assets->font_map);
 	if(found){
@@ -2376,7 +2377,6 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 		LogE("assets","Error parsing BDF '",path,"' on line 1. The file did not begin with 'STARTFONT'.");
 		return assets_font_null();
 	}
-	
 	
 	Font* font = memory_pool_push(g_assets->font_pool);
 	font->type = FontType_BDF;

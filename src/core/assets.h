@@ -228,9 +228,6 @@ Mesh* assets_mesh_create_from_path(str8 path);
 //  calls `render_load_mesh()` after creation
 Mesh* assets_mesh_create_from_memory(void* data);
 
-// Saves mesh to the given path
-void  assets_mesh_save(str8 path, Mesh* mesh);
-
 //Saves the `Mesh` object at `mesh` to `path` as a `MESH` file
 void  assets_mesh_save_to_path(Mesh* mesh, str8 path);
 
