@@ -27,8 +27,8 @@ struct Advert;
 #define TICKS_PER_WORLD_MONTH  2629740
 #define TICKS_PER_WORLD_YEAR   31536000
 
-#define WORLD_WIDTH 512
-#define WORLD_HEIGHT 512
+#define WORLD_WIDTH 32
+#define WORLD_HEIGHT 32
 
 enum{
 	north,
@@ -1351,7 +1351,7 @@ str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
 }
 
 void setup_ui(){
-	g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+	g_ui->base.style.font        = assets_font_create_from_path_bdf(STR8("gohufont-11.bdf"));
 	g_ui->base.style.font_height = 11;
 	g_ui->base.style.text_color  = Color_White;
 	
@@ -1811,7 +1811,7 @@ int main(int args_count, char** args){
 		update_ui();
 		
 		if(key_down(Key_L)){
-			ui_print_tree([](dstr8* in, uiItem* item){ dstr8_append(in, item->id); });
+			ui_print_tree([](dstr8* in, uiItem* item){});
 		}
 	}deshi_loop_end();
 	
