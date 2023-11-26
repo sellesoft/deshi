@@ -615,8 +615,8 @@ b32 move_entity(Entity* e, vec2i pos){
 FORCE_INLINE b32 move_entity(Entity* e, u32 x, u32 y){ return move_entity(e,Vec2i(x,y)); }
 
 void swap_entities(Entity* e0, Entity* e1) {
-	auto pos0 = e0->pos,
-		 pos1 = e1->pos;
+	auto pos0 = e0->pos;
+	auto pos1 = e1->pos;
 	set_entity(pos0, e1);
 	set_entity(pos1, e0);
 	e1->pos = pos0;
@@ -1028,7 +1028,7 @@ void eval_water(Entity* e){
 		nupos.y = Clamp(nupos.y, 0, WORLD_HEIGHT-1);
 		move_entity(e, nupos);
 	}
-
+	
 	// TODO(sushi) better water sim so that water equilizes
 	// if(e->water.evaluated == sim.ticks % 2) return;
 	// e->water.evaluated = sim.ticks % 2;
@@ -1799,40 +1799,17 @@ void update_input(){
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @main
 int main(int args_count, char** args){
-	//deshi_init_specify("ant_sim",Megabytes(256),Megabytes(512));
-	profiler_init();                                   
-    memory_init(Megabytes(256),Megabytes(512));                  
-    platform_init();                                   
-    logger_init();                                     
-    Window* win = window_create(str8l("ant_sim"));                        
-    render_init_x(win);                                     
-    assets_init_x(win);                                   
-    ui_init_x(win);                                         
-    // console_init();                                    
-    // cmd_init();                                        
-    window_show(win);                           
-
+	deshi_init_specify("ant_sim",Megabytes(256),Megabytes(512));
+	
 	setup_rendering();
 	setup_simulation();
 	setup_ui();
 	
-	while(platform_update()) {
+	deshi_loop_start();{
 		update_input();
 		update_simulation();
 		update_ui();
-
-		ui_update_x(win);
-		render_update_x(win);
-		logger_update();
-
-		memory_clear_temp();
-	}
-
-	//deshi_loop_start();{
-	//	update_input();
-	//	update_simulation();
-	//	update_ui();
-	//}deshi_loop_end();
+	}deshi_loop_end();
 	
 	deshi_cleanup();
 }

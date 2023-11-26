@@ -33,6 +33,8 @@
 #ifndef DESHI_GRAPHICS_H
 #define DESHI_GRAPHICS_H
 
+#include "kigu/array.h"
+
 struct Window;
 struct GraphicsImage;
 struct GraphicsImageView;
