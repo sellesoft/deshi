@@ -28,6 +28,7 @@
   assets_init(window);                            \
   scene_init();                                   \
   scene_set_active_window(window);                \
+  render_temp_init(window, 0xfffff);              \
   ui_init(window);                                \
   console_init();                                 \
   cmd_init();                                     \
@@ -48,6 +49,7 @@
   assets_init(window);                               \
   scene_init();                                      \
   scene_set_active_window(window);                   \
+  render_temp_init(window, 0xfff);                   \
   ui_init(window);                                   \
   console_init();                                    \
   cmd_init();                                        \

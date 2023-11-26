@@ -8,7 +8,14 @@ void
 scene_init() {
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
+	memory_pool_init(g_scene->pools.voxel_chunks, 8);
 	array_init(g_scene->model_draw_commands, 4, deshi_allocator);
+
+	ShaderStages stages = {};
+	stages.vertex = assets_shader_load_from_file(str8l("flat.vert"), ShaderType_Vertex);
+	stages.fragment = assets_shader_load_from_file(str8l("flat.frag"), ShaderType_Fragment);
+	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels flat"), stages, 0);
+
 }
 
 void
@@ -33,18 +40,19 @@ scene_render() {
 	{ using namespace graphics::cmd;
 		begin_render_pass(win, pass, frame);
 	
+		set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
+		set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
+
 		forI(array_count(g_scene->model_draw_commands)) {
 			auto cmd = g_scene->model_draw_commands[i];
 			bind_vertex_buffer(win, cmd.model->mesh->vertex_buffer);
 			bind_index_buffer(win, cmd.model->mesh->index_buffer);
-			forI(arrlenu(cmd.model->batch_array)) {
+			forI(array_count(cmd.model->batch_array)) {
 				auto b = cmd.model->batch_array[i];
 				if(!b.index_count) continue;
 				if(b.material->pipeline != last_pipeline) {
 					last_pipeline = b.material->pipeline;
 					bind_pipeline(win, last_pipeline);
-					set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
-					set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
 					bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
 				}
 				push_constant(win, cmd.transform, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
@@ -52,6 +60,22 @@ scene_render() {
 				draw_indexed(win, b.index_count, b.index_offset, 0);
 			}
 		}	
+
+		bind_pipeline(win, g_scene->voxel_material->pipeline);
+		bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
+		for_pool(g_scene->pools.voxel_chunks) {
+			if(!it->vertex_buffer || !it->index_buffer) {
+				break;
+			}
+
+			if(!it->hidden) {
+				it->transform = mat4::TransformationMatrix(it->position, it->rotation, vec3::ONE);
+				bind_vertex_buffer(win, it->vertex_buffer);
+				bind_index_buffer(win, it->index_buffer);
+				push_constant(win, &it->transform, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
+				draw_indexed(win, it->index_count, 0, 0);
+			}
+		}
 
 		end_render_pass(win);
 	
@@ -67,8 +91,6 @@ scene_render() {
 				bind_index_buffer(win, g_scene->temp.wireframe.index_buffer);
 				bind_pipeline(win, g_scene->temp.wireframe.pipeline);
 				bind_descriptor_set(win, 0, g_scene->temp.descriptor_set);
-				set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
-				set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
 				draw_indexed(win, g_scene->temp.wireframe.index_count, 0, 0);
 			}		
 
@@ -77,8 +99,6 @@ scene_render() {
 				bind_index_buffer(win, g_scene->temp.wireframe.index_buffer);
 				bind_pipeline(win, g_scene->temp.wireframe.pipeline);
 				bind_descriptor_set(win, 0, g_scene->temp.descriptor_set);
-				set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
-				set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
 				draw_indexed(win, g_scene->temp.wireframe.index_count, 0, 0);
 			}
 			end_render_pass(win);
@@ -113,15 +133,16 @@ scene_camera_create() {
 void
 scene_camera_update_view(Camera* camera) {
 	SceneAssert(camera, "passed null Camera pointer.");
-	camera->right = camera->forward.cross(vec3::UP).normalized();
+	camera->right = vec3::UP.cross(camera->forward).normalized();
 	camera->up = camera->forward.cross(camera->right).normalized();
-	camera->view = Math::LookAtMatrix(camera->position, camera->position + camera->forward);
+	camera->view = Math::LookAtMatrix(camera->position, camera->position + camera->forward).Inverse();
 }
 
 void
 scene_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z) {
 	SceneAssert(camera, "passed null Camera pointer.");
 	camera->proj = Math::PerspectiveProjectionMatrix(width, height, fov, near_z, far_z);
+	camera->proj.arr[5] *= -1;
 }
 
 void
@@ -198,11 +219,11 @@ render_temp_init(Window* window, u32 v) {
 	rp->color_attachment.    final_layout = GraphicsImageLayout_Present;
 	rp->use_depth_attachment = true;
 	rp->depth_attachment.          format = GraphicsFormat_Depth32_Float;
-	rp->depth_attachment.         load_op = GraphicsLoadOp_Clear;
+	rp->depth_attachment.         load_op = GraphicsLoadOp_Load;
 	rp->depth_attachment.        store_op = GraphicsStoreOp_Store;
 	rp->depth_attachment. stencil_load_op = GraphicsLoadOp_Clear;
 	rp->depth_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
-	rp->depth_attachment.  initial_layout = GraphicsImageLayout_Undefined;
+	rp->depth_attachment.  initial_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
 	rp->depth_attachment.    final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
 	graphics_render_pass_update(rp);
 
@@ -212,6 +233,7 @@ render_temp_init(Window* window, u32 v) {
 	pl->               culling = GraphicsPipelineCulling_Back;
 	pl->          polygon_mode = GraphicsPolygonMode_Fill;
 	pl->            depth_test = true;
+	pl->          depth_writes = true;
 	pl->      depth_compare_op = GraphicsCompareOp_Less;
 	pl->            depth_bias = false;
 	pl->            line_width = 1.f;
@@ -269,8 +291,6 @@ render_temp_init(Window* window, u32 v) {
 	wpl->debug_name = str8l("<render> temp wireframe pipeline");
 	wpl->polygon_mode = GraphicsPolygonMode_Line;
 	wpl->culling = GraphicsPipelineCulling_None;
-	wpl->depth_test = false;
-	wpl->color_blend = false;
 	graphics_pipeline_update(wpl);
 
 	auto ds = g_scene->temp.descriptor_set = graphics_descriptor_set_allocate();
@@ -587,70 +607,196 @@ render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @voxel
 
+enum{ //voxel face order
+	render_voxel_face_posx = 0,
+	render_voxel_face_posy = 1,
+	render_voxel_face_posz = 2,
+	render_voxel_face_negx = 3,
+	render_voxel_face_negy = 4,
+	render_voxel_face_negz = 5,
+};
 
-#define VoxelError(...) LogE("scene.voxels", __FUNCTION__, "(): ", __VA_ARGS__)
-#define VoxelWarning(...) LogW("scene.voxels", __FUNCTION__, "(): ", __VA_ARGS__)
+enum{ //voxel face vertex order (when looking at the front of the face)
+	render_voxel_face_vertex_bl = 0,
+	render_voxel_face_vertex_tl = 1,
+	render_voxel_face_vertex_tr = 2,
+	render_voxel_face_vertex_br = 3,
+};
 
-namespace __deshi_voxels {
+local RenderVoxelType* render_voxel_types;
+local u64 render_voxel_types_count;
+local RenderVoxelChunk* render_voxel_chunk_pool;
+local u32 render_voxel_voxel_size; //width, height, and depth of a voxel in the world
 
-SceneVoxelChunk* chunk_pool;
-array<SceneVoxelType> types;
-u32 size;
+local vec3 render_voxel_unit_vertex_offsets[6][4] = { //unit vertex offsets by face
+	{ { 1,0,0 }, { 1,1,0 }, { 1,1,1 }, { 1,0,1 } }, //render_voxel_face_posx
+	{ { 0,1,0 }, { 0,1,1 }, { 1,1,1 }, { 1,1,0 } }, //render_voxel_face_posy
+	{ { 1,0,1 }, { 1,1,1 }, { 0,1,1 }, { 0,0,1 } }, //render_voxel_face_posz
+	{ { 0,0,1 }, { 0,1,1 }, { 0,1,0 }, { 0,0,0 } }, //render_voxel_face_negx
+	{ { 0,0,1 }, { 0,0,0 }, { 1,0,0 }, { 1,0,1 } }, //render_voxel_face_negy
+	{ { 0,0,0 }, { 0,1,0 }, { 1,1,0 }, { 1,0,0 } }, //render_voxel_face_negz
+};
 
-// stupid people polluting my damn namespace
-#undef index
-FORCE_INLINE SceneVoxel* 
-index(SceneVoxelChunk* chunk, vec3i pos) { 
-	if(pos.x > chunk->dimensions || pos.y > chunk->dimensions || pos.z > chunk->dimensions) return 0;
-	return chunk->voxels[pos.z * chunk->dimensions * chunk->dimensions + pos.y * chunk->dimensions + pos.x]; 
-}
+local vec3 render_voxel_face_normals[6] = {
+	vec3_RIGHT(),
+	vec3_LEFT(),
+	vec3_UP(),
+	vec3_DOWN(),
+	vec3_FORWARD(),
+	vec3_BACK(),
+};
 
-FORCE_INLINE SceneVoxel* right(SceneVoxelChunk* chunk, vec3i pos)   { return index(chunk, vec3i{pos.x + 1, pos.y, pos.z}); }
-FORCE_INLINE SceneVoxel* left(SceneVoxelChunk* chunk, vec3i pos)    { return index(chunk, vec3i{pos.x - 1, pos.y, pos.z}); }
-FORCE_INLINE SceneVoxel* above(SceneVoxelChunk* chunk, vec3i pos)   { return index(chunk, vec3i{pos.x, pos.y + 1, pos.z}); }
-FORCE_INLINE SceneVoxel* below(SceneVoxelChunk* chunk, vec3i pos)   { return index(chunk, vec3i{pos.x, pos.y - 1, pos.z}); }
-FORCE_INLINE SceneVoxel* forward(SceneVoxelChunk* chunk, vec3i pos) { return index(chunk, vec3i{pos.x, pos.y, pos.z + 1}); }
-FORCE_INLINE SceneVoxel* behind(SceneVoxelChunk* chunk, vec3i pos)  { return index(chunk, vec3i{pos.x, pos.y, pos.z - 1}); }
-
-} // namespace __deshi_voxels
-#define voxel __deshi_voxels
+//NOTE(delle) voxels are linearly laid out like x-y plane at z0, x-y plane at z1, ... with x being the major axis in the x-y plane
+#define render_voxel_linear(dims,x,y,z)  (((z) * (dims) * (dims)) + ((y) * (dims)) + (x))
+#define render_voxel_right(dims,linear)  ((linear) + 1)
+#define render_voxel_left(dims,linear)   ((linear) - 1)
+#define render_voxel_above(dims,linear)  ((linear) + (dims))
+#define render_voxel_below(dims,linear)  ((linear) - (dims))
+#define render_voxel_front(dims,linear)  ((linear) + ((dims)*(dims)))
+#define render_voxel_behind(dims,linear) ((linear) - ((dims)*(dims)))
 
 void
-scene_voxel_init(SceneVoxelType* types, u32 voxel_size) {
-	voxel::types = array_from(types);
-	if(!voxel::types.count()) {
-		LogE("scene.voxels", "given types array is empty");
-		return;
-	}
-
-	memory_pool_init(voxel::chunk_pool, 128);
-	for_pool(voxel::chunk_pool) it->hidden = true;
-	
-	voxel::size = voxel_size;
-}
-
-SceneVoxelChunk*
-scene_voxel_chunk_create(vec3 pos, vec3 rot, u32 dimensions, SceneVoxel* voxels) {
-	if(!dimensions) {
-		VoxelError("given dimensions is zero. Chunks are statically sized, so this does not make sense.");
-		return 0;
-	}
-
-	const u64 dimensions_cubed = dimensions * dimensions * dimensions;
-	
-	auto chunk = memory_pool_push(voxel::chunk_pool);
-	chunk->position = pos;
-	chunk->rotation = rot;
-	chunk->dimensions = dimensions;
-	chunk->modified = false;
-	chunk->hidden = false;
-
-	NotImplemented;
-	return 0;
+render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
+	render_voxel_types = types;
+	render_voxel_types_count = count;
+	memory_pool_init(render_voxel_chunk_pool, 128);
+	for_pool(render_voxel_chunk_pool) it->hidden = true;
+	render_voxel_voxel_size = voxel_size;
 }
 
 
+void
+render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){
+	vec3 voxel_position = chunk->position + Vec3(voxel->x, voxel->y, voxel->z);
+	mat4 transform = mat4::TransformationMatrix(voxel_position, chunk->rotation, vec3_ONE());
 
+	vertex_array[*vertex_count+0] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_bl] * transform,
+		Vec2(0,0),
+		ByteSwap32(render_voxel_types[voxel->type].color.rgba),
+		render_voxel_face_normals[direction] * transform
+	};
+	vertex_array[*vertex_count+1] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tl] * transform,
+		Vec2(0,1),
+		ByteSwap32(render_voxel_types[voxel->type].color.rgba),
+		render_voxel_face_normals[direction] * transform
+	};
+	vertex_array[*vertex_count+2] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_tr] * transform,
+		Vec2(1,1),
+		ByteSwap32(render_voxel_types[voxel->type].color.rgba),
+		render_voxel_face_normals[direction] * transform
+	};
+	vertex_array[*vertex_count+3] = {
+		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_br] * transform,
+		Vec2(1,0),
+		ByteSwap32(render_voxel_types[voxel->type].color.rgba),
+		render_voxel_face_normals[direction] * transform
+	};
+	
+	index_array[*index_count+0] = *vertex_count+0;
+	index_array[*index_count+1] = *vertex_count+1;
+	index_array[*index_count+2] = *vertex_count+2;
+	index_array[*index_count+3] = *vertex_count+0;
+	index_array[*index_count+4] = *vertex_count+2;
+	index_array[*index_count+5] = *vertex_count+3;
+	
+	*vertex_count += 4;
+	*index_count  += 6;
+}
+
+
+RenderVoxelChunk*
+render_voxel_chunk_create(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
+	Assert(dimensions != 0, "Dimensions can not be zero!");
+	Assert(voxels != 0 && voxels_count != 0, "Don't call this with an invalid voxels array!");
+	
+	//alloc and init chunk
+	RenderVoxelChunk* chunk = memory_pool_push(g_scene->pools.voxel_chunks);
+	chunk->position    = position;
+	chunk->rotation    = rotation;
+	chunk->dimensions  = dimensions;
+	chunk->modified    = false;
+	chunk->hidden      = false;
+	chunk->voxel_count = voxels_count;
+	
+	//calculate some chunk creation info
+	upt dimensions_cubed    = dimensions * dimensions * dimensions;
+	upt dimensions_stride_x = 1;
+	upt dimensions_stride_y = dimensions;
+	upt dimensions_stride_z = dimensions * dimensions;
+	
+	//alloc an arena for chunk creation
+	upt array_header_size = sizeof(stbds_array_header);
+	upt voxels_array_size = dimensions_cubed * sizeof(RenderVoxel*);
+	upt max_vertices_size = dimensions_cubed * 24 * sizeof(MeshVertex);
+	upt max_indices_size  = dimensions_cubed * 36 * sizeof(MeshIndex);
+	chunk->arena = memory_create_arena(voxels_array_size + max_vertices_size + max_indices_size);
+	
+	//init voxels array
+	chunk->voxels = (RenderVoxel**)memory_arena_push(chunk->arena,voxels_array_size);
+	ZeroMemory(chunk->voxels, dimensions_cubed * sizeof(RenderVoxel*));
+	for(RenderVoxel* it = voxels; it < voxels+voxels_count; ++it){
+		chunk->voxels[render_voxel_linear(dimensions, it->x, it->y, it->z)] = it;
+	}
+	
+	//generate chunk's mesh
+	//TODO(delle) combine faces across the chunk where possible
+	MeshVertex* vertex_array = (MeshVertex*)memory_arena_push(chunk->arena,max_vertices_size);
+	MeshIndex*  index_array  =  (MeshIndex*)memory_arena_push(chunk->arena,max_indices_size);
+	u32 dimensions_minus_one = dimensions-1;
+	forI(dimensions_cubed){
+		if(chunk->voxels[i] == 0) continue; //skip empty voxels
+		
+		if((chunk->voxels[i]->x == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_x] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->x == 0)                    || (chunk->voxels[i - dimensions_stride_x] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->y == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_y] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->y == 0)                    || (chunk->voxels[i - dimensions_stride_y] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->z == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_z] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		if((chunk->voxels[i]->z == 0)                    || (chunk->voxels[i - dimensions_stride_z] == 0))
+			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+	}
+	
+	//shift the index_array to the end of the vertex_array
+	upt actual_vertices_size = chunk->vertex_count*sizeof(MeshVertex);
+	upt actual_indices_size  =  chunk->index_count*sizeof(MeshIndex);
+	MeshIndex* new_index_array = (MeshIndex*)((u8*)vertex_array + actual_vertices_size);
+	CopyMemory(new_index_array, index_array, actual_indices_size);
+	index_array = new_index_array;
+	
+	//fit the arena to its actually used size
+	chunk->arena->used = voxels_array_size + actual_vertices_size + actual_indices_size;
+	memory_arena_fit(chunk->arena);
+	
+	//create the vertex/index GPU buffers and upload the vertex/index data to them
+	chunk->vertex_buffer = graphics_buffer_create(vertex_array, actual_vertices_size, GraphicsBufferUsage_VertexBuffer,
+												GraphicsMemoryProperty_DeviceMappable, GraphicsMemoryMapping_Occasional);
+	chunk->index_buffer  = graphics_buffer_create(index_array,  actual_indices_size,  GraphicsBufferUsage_IndexBuffer,
+												GraphicsMemoryProperty_DeviceMappable, GraphicsMemoryMapping_Occasional);
+	
+	return chunk;
+}
+
+
+void
+render_voxel_delete_chunk(RenderVoxelChunk* chunk){
+	//dealloc GPU buffers
+	graphics_buffer_destroy(chunk->vertex_buffer);
+	graphics_buffer_destroy(chunk->index_buffer);
+	
+	//dealloc chunk arena
+	memory_delete_arena(chunk->arena);
+	
+	//delete the chunk (and set it to hidden since for_pool() doesn't skip deleted chunks)
+	memory_pool_delete(render_voxel_chunk_pool, chunk);
+	chunk->hidden = true;
+}
 
 
 

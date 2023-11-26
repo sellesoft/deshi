@@ -1,0 +1,275 @@
+Thu Nov 23 23:48:28 2023
+
+[GRAPHICS.VULKAN] graphics_init(): initializing graphics module for window 'scenes example'.
+[GRAPHICS.VULKAN] setup_allocator(): setting up allocators.
+[GRAPHICS.VULKAN] setup_allocator(): finished setting up allocators in 0.0168457ms
+[GRAPHICS.VULKAN] create_instance(): creating vulkan instance.
+[GRAPHICS.VULKAN] create_instance(): checking validation layer support.
+[GRAPHICS.VULKAN] create_instance(): getting required extensions.
+[GRAPHICS.VULKAN] vk_debug_callback(): Searching for layer manifest files
+[GRAPHICS.VULKAN] vk_debug_callback():    In following locations:
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.config/vulkan/implicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/xdg/vulkan/implicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/implicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/implicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/local/share/vulkan/implicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/implicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():    Found the following files:
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/implicit_layer.d/renderdoc_capture.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/implicit_layer.d/steamfossilize_i386.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/implicit_layer.d/steamoverlay_x86_64.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/implicit_layer.d/steamoverlay_i386.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/implicit_layer.d/steamfossilize_x86_64.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/implicit_layer.d/nvidia_layers.json
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /etc/vulkan/implicit_layer.d/renderdoc_capture.json (file version 1.1.2)
+[GRAPHICS.VULKAN] vk_debug_callback(): Layer "VK_LAYER_RENDERDOC_Capture" using deprecated 'vkGetInstanceProcAddr' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag.
+[GRAPHICS.VULKAN] vk_debug_callback(): Layer "VK_LAYER_RENDERDOC_Capture" using deprecated 'vkGetDeviceProcAddr' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag.
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /home/sushi/.local/share/vulkan/implicit_layer.d/steamfossilize_i386.json (file version 1.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /home/sushi/.local/share/vulkan/implicit_layer.d/steamoverlay_x86_64.json (file version 1.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /home/sushi/.local/share/vulkan/implicit_layer.d/steamoverlay_i386.json (file version 1.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /home/sushi/.local/share/vulkan/implicit_layer.d/steamfossilize_x86_64.json (file version 1.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /usr/share/vulkan/implicit_layer.d/nvidia_layers.json (file version 1.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Searching for layer manifest files
+[GRAPHICS.VULKAN] vk_debug_callback():    In following locations:
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.config/vulkan/explicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/xdg/vulkan/explicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/explicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/explicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/local/share/vulkan/explicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/explicit_layer.d
+[GRAPHICS.VULKAN] vk_debug_callback():    Found the following files:
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/explicit_layer.d/VkLayer_api_dump.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/explicit_layer.d/VkLayer_monitor.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/explicit_layer.d/VkLayer_screenshot.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /etc/vulkan/explicit_layer.d/VkLayer_api_dump.json (file version 1.2.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /etc/vulkan/explicit_layer.d/VkLayer_monitor.json (file version 1.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /etc/vulkan/explicit_layer.d/VkLayer_screenshot.json (file version 1.2.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Found manifest file /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json (file version 1.2.0)
+[GRAPHICS.VULKAN] vk_debug_callback(): Searching for driver manifest files
+[GRAPHICS.VULKAN] vk_debug_callback():    In following locations:
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.config/vulkan/icd.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/xdg/vulkan/icd.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /etc/vulkan/icd.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /home/sushi/.local/share/vulkan/icd.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/local/share/vulkan/icd.d
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/icd.d
+[GRAPHICS.VULKAN] vk_debug_callback():    Found the following files:
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/icd.d/vk_swiftshader_icd.json
+[GRAPHICS.VULKAN] vk_debug_callback():       /usr/share/vulkan/icd.d/nvidia_icd.json
+[GRAPHICS.VULKAN] vk_debug_callback(): Found ICD manifest file /usr/share/vulkan/icd.d/vk_swiftshader_icd.json, version 1.0.0
+[GRAPHICS.VULKAN] vk_debug_callback(): Searching for ICD drivers named /usr/lib/libvk_swiftshader.so
+[GRAPHICS.VULKAN] vk_debug_callback(): Found ICD manifest file /usr/share/vulkan/icd.d/nvidia_icd.json, version 1.0.0
+[GRAPHICS.VULKAN] vk_debug_callback(): Searching for ICD drivers named libGLX_nvidia.so.0
+[GRAPHICS.VULKAN] vk_debug_callback(): Loading layer library libVkLayer_khronos_validation.so
+[GRAPHICS.VULKAN] vk_debug_callback(): Insert instance layer "VK_LAYER_KHRONOS_validation" (libVkLayer_khronos_validation.so)
+[GRAPHICS.VULKAN] vk_debug_callback(): Validation Information: [ UNASSIGNED-CreateInstance-status-message ] Object 0: handle = 0x20006118, type = VK_OBJECT_TYPE_INSTANCE; | MessageID = 0x87d47f57 | vkCreateInstance():  Khronos Validation Layer Active:
+    Settings File: None. Default location is /home/sushi/src/frog/deshi/examples/scenes\vk_layer_settings.txt.
+    Current Enables: VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT.
+    Current Disables: None.
+
+[GRAPHICS.VULKAN] vk_debug_callback(): linux_read_sorted_physical_devices:
+[GRAPHICS.VULKAN] vk_debug_callback():      Original order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback():      Sorted order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti  
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)  
+[GRAPHICS.VULKAN] vk_debug_callback(): linux_read_sorted_physical_devices:
+[GRAPHICS.VULKAN] vk_debug_callback():      Original order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback():      Sorted order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti  
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)  
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 0 into new device 0
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 1 into new device 1
+[GRAPHICS.VULKAN] vk_debug_callback(): linux_read_sorted_physical_devices:
+[GRAPHICS.VULKAN] vk_debug_callback():      Original order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback():      Sorted order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti  
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)  
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 0 into new device 0
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 1 into new device 1
+[GRAPHICS.VULKAN] vk_debug_callback(): linux_read_sorted_physical_devices:
+[GRAPHICS.VULKAN] vk_debug_callback():      Original order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback():      Sorted order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti  
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)  
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 0 into new device 0
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 1 into new device 1
+[GRAPHICS.VULKAN] create_instance(): finished creating instance in 1467.9ms
+[GRAPHICS.VULKAN] create_instance(): setting up debug messenger.
+[GRAPHICS.VULKAN] create_instance(): finished setting up debug messenger in 0.955811ms
+[GRAPHICS.VULKAN] create_surface(): creating surface.
+[GRAPHICS.VULKAN] create_surface(): finished creating surface in 0.996338ms.
+[GRAPHICS.VULKAN] pick_physical_device(): picking physical device.
+[GRAPHICS.VULKAN] vk_debug_callback(): linux_read_sorted_physical_devices:
+[GRAPHICS.VULKAN] vk_debug_callback():      Original order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback():      Sorted order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti  
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)  
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 0 into new device 0
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 1 into new device 1
+[GRAPHICS.VULKAN] vk_debug_callback(): linux_read_sorted_physical_devices:
+[GRAPHICS.VULKAN] vk_debug_callback():      Original order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)
+[GRAPHICS.VULKAN] vk_debug_callback():      Sorted order:
+[GRAPHICS.VULKAN] vk_debug_callback():            [0] NVIDIA GeForce GTX 1070 Ti  
+[GRAPHICS.VULKAN] vk_debug_callback():            [1] SwiftShader Device (LLVM 10.0.0)  
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 0 into new device 0
+[GRAPHICS.VULKAN] vk_debug_callback(): Copying old device 1 into new device 1
+[GRAPHICS.VULKAN] pick_physical_device(): finished picking physical device in 6.97192ms.
+[GRAPHICS.VULKAN] pick_physical_device(): chose device 'NVIDIA GeForce GTX 1070 Ti'.
+[GRAPHICS.VULKAN] create_logical_device(): creating logical device.
+[GRAPHICS.VULKAN] vk_debug_callback(): Inserted device layer "VK_LAYER_KHRONOS_validation" (libVkLayer_khronos_validation.so)
+[GRAPHICS.VULKAN] vk_debug_callback():        Using "NVIDIA GeForce GTX 1070 Ti" with driver: "libGLX_nvidia.so.0"
+[GRAPHICS.VULKAN] vk_debug_callback(): Validation Information: [ UNASSIGNED-cache-file-error ] | MessageID = 0xf0bb3995 | vkCreateDevice():  Cannot open shader validation cache at /home/sushi/.cache/shader_validation_cache-1000.bin for reading (it may not exist yet)
+[GRAPHICS.VULKAN] create_logical_device(): finished creating logical device in 24.3594ms.
+[GRAPHICS.VULKAN] create_command_pool(): creating command pool.
+[GRAPHICS.VULKAN] create_command_pool(): finished creating command pool in 0.391357ms.
+[GRAPHICS.VULKAN] graphics_command_buffer_update(): updating command buffer ''.
+[GRAPHICS.VULKAN] setup_shader_compiler(): setting up shader compiler.
+[GRAPHICS.VULKAN] setup_shader_compiler(): finished setting up shader compiler in 0.553955ms.
+[GRAPHICS.VULKAN] create_descriptor_pool(): creating descriptor pool.
+[GRAPHICS.VULKAN] create_descriptor_pool(): finished creating descriptor pool in 2.0498ms.
+[GRAPHICS.VULKAN] create_swapchain(): creating swapchain.
+[GRAPHICS.VULKAN] create_swapchain(): finished creating swapchain in 8.35352ms.
+[GRAPHICS.VULKAN] create_render_pass_and_frames(): creating frames for scenes example
+[GRAPHICS.VULKAN] find_supported_format(): finding supported image formats.
+[GRAPHICS.VULKAN] graphics_render_pass_update(): updating render pass '<graphics> default render pass'.
+[GRAPHICS.VULKAN] find_supported_format(): finding supported image formats.
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: ; addr: 0x20005530).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] find_supported_format(): finding supported image formats.
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: ; addr: 0x200055c0).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] create_render_pass_and_frames(): finished creating default render pass and frames in 1.13013ms.
+[GRAPHICS.VULKAN] create_sync_objects(): creating sync objects
+[GRAPHICS.VULKAN] create_sync_objects(): finished creating sync objects in 0.153564ms.
+[GRAPHICS.VULKAN] create_pipeline_cache(): creating pipeline cache.
+[GRAPHICS.VULKAN] create_pipeline_cache(): finished creating pipeline cache in 0.177734ms.
+[GRAPHICS.VULKAN] graphics_init(): finished initialization in 1510.18ms.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: <assets> texture 'null' image; addr: 0x20005608).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view '<assets> texture 'null' image view'.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_sampler_update(): updating sampler '<assets> texture 'null' sampler'.
+[GRAPHICS.VULKAN] graphics_descriptor_set_layout_update(): updating descriptor set layout 'ubo descriptor layout'.
+[GRAPHICS.VULKAN] graphics_descriptor_set_update(): updating descriptor set ''.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_descriptor_set_write_array(): writing descriptor array to descriptor set ''.
+[GRAPHICS.VULKAN] graphics_descriptor_set_layout_update(): updating descriptor set layout 'Material null descriptor layout'.
+[GRAPHICS.VULKAN] graphics_pipeline_layout_update(): updating pipeline layout 'Material null pipeline layout'.
+[GRAPHICS.VULKAN] graphics_pipeline_update(): updating pipeline 'Material null pipeline'.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: null.vert
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 104.342ms.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: null.frag
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 1.28833ms.
+[GRAPHICS.VULKAN] graphics_descriptor_set_update(): updating descriptor set ''.
+[GRAPHICS.VULKAN] graphics_descriptor_set_write_array(): writing descriptor array to descriptor set ''.
+[[33mASSETS-WARNING[0m] In assets_texture_create_from_memory working with texture 'null font': non-rgba textures are currently reinterpreted as rgba (TODO(sushi) properly handle non-rgba formats)
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: <assets> texture 'null font' image; addr: 0x20005650).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view '<assets> texture 'null font' image view'.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_sampler_update(): updating sampler '<assets> texture 'null font' sampler'.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_render_pass_update(): updating render pass '<render> temp render pass'.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_descriptor_set_layout_update(): updating descriptor set layout ''.
+[GRAPHICS.VULKAN] graphics_pipeline_layout_update(): updating pipeline layout '<render> temp pipeline layout'.
+[GRAPHICS.VULKAN] graphics_pipeline_update(): updating pipeline '<render> temp pipeline'.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: temp.vert
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 1.69385ms.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: temp.frag
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 1.52319ms.
+[GRAPHICS.VULKAN] graphics_pipeline_update(): updating pipeline '<render> temp wireframe pipeline'.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: temp.vert
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 1.60718ms.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: temp.frag
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 1.30957ms.
+[GRAPHICS.VULKAN] graphics_descriptor_set_update(): updating descriptor set '<render> temp descriptor set'.
+[GRAPHICS.VULKAN] graphics_descriptor_set_write(): writing a descriptor to descriptor set '<render> temp descriptor set'. Binding: 0
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: <assets> texture '' image; addr: 0x20005698).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view '<assets> texture '' image view'.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_sampler_update(): updating sampler '<assets> texture '' sampler'.
+[[33mASSETS-WARNING[0m] In assets_model_create_from_obj while working with model 'data/models/box.obj': There were 's' specifiers when parsing data/models/box.obj, but those are not evaluated currently
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[ASSETS] In assets_model_create_from_obj while working with model 'data/models/box.obj': Parsing and loading OBJ took 1.99512ms
+[ASSETS] Parsing and loading MTLs for OBJ 'data/models/box.obj' took 0.00683594ms
+[ASSETS] Finished loading model 'data/models/box.obj' in 0.0136719ms
+[GRAPHICS.VULKAN] graphics_buffer_create(): creating a buffer.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_descriptor_set_layout_update(): updating descriptor set layout 'Material dither descriptor layout'.
+[GRAPHICS.VULKAN] graphics_pipeline_layout_update(): updating pipeline layout 'Material dither pipeline layout'.
+[GRAPHICS.VULKAN] graphics_pipeline_update(): updating pipeline 'Material dither pipeline'.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: dither.vert
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 2.15576ms.
+[GRAPHICS.VULKAN] load_shader(): compiling shader: dither.frag
+[GRAPHICS.VULKAN] load_shader(): finished compiling shader in 2.7334ms.
+[GRAPHICS.VULKAN] graphics_descriptor_set_update(): updating descriptor set ''.
+[GRAPHICS.VULKAN] graphics_descriptor_set_write_array(): writing descriptor array to descriptor set ''.
+[GRAPHICS.VULKAN] create_swapchain(): creating swapchain.
+[GRAPHICS.VULKAN] create_swapchain(): finished creating swapchain in 1.90234ms.
+[GRAPHICS.VULKAN] recreate_frames(): recreating frames for window scenes example
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: ; addr: 0x20005530).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_image_update(): updating a GraphicsImage (name: ; addr: 0x200055c0).
+[GRAPHICS.VULKAN] create_image(): creating image.
+[GRAPHICS.VULKAN] find_memory_type(): finding memory types.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[GRAPHICS.VULKAN] graphics_image_view_update(): updating image view ''.
+[GRAPHICS.VULKAN] create_image_view(): creating image view.
+[[31mLINUX-ERROR[0m] XFindContext failed

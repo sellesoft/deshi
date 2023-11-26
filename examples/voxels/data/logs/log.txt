@@ -1,0 +1,65 @@
+Sun Nov 26 06:38:16 2023
+
+[GRAPHICS.VULKAN] graphics_init(): initializing graphics module for window 'deshi'.
+[GRAPHICS.VULKAN] graphics_init(): finished initialization in 1449.76ms.
+[ASSETS] assets_shader_load_from_source(): loading shader 'null.vert'.
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<assets-shader> null.vert'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<assets-shader> null.vert' in 84.0923ms.
+[ASSETS] assets_shader_load_from_source(): loading shader 'null.frag'.
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<assets-shader> null.frag'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<assets-shader> null.frag' in 0.769287ms.
+[ASSETS] assets_mesh_create_box(): creating box mesh 'null'
+created buffer 0x20005128
+created buffer 0x20005178
+created buffer 0x200051c8
+[ASSETS] assets_texture_create_from_memory(): creating texture 'null'.
+[ASSETS] assets_material_create(): loading material 'null'.
+[ASSETS] assets_material_create(): created material {'null', 6601085983368743140}@0x200407b8
+[ASSETS] assets_texture_create_from_memory(): creating texture 'null font'.
+[[33mASSETS-WARNING[0m] assets_texture_create_from_memory(): non-rgba textures are currently reinterpreted as rgba (TODO(sushi) properly handle non-rgba formats)
+[ASSETS] assets_shader_load_from_source(): loading shader 'flat.vert'.
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<assets-shader> flat.vert'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<assets-shader> flat.vert' in 1.35303ms.
+[ASSETS] assets_shader_load_from_source(): loading shader 'flat.frag'.
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<assets-shader> flat.frag'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<assets-shader> flat.frag' in 0.507568ms.
+[ASSETS] assets_material_create(): loading material '<scene> voxels flat'.
+[ASSETS] assets_material_create(): created material {'<scene> voxels flat', 15098971820371573921}@0x20040808
+created buffer 0x20005218
+created buffer 0x20005268
+created buffer 0x200052b8
+created buffer 0x20005308
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<scene> temp vertex shader'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<scene> temp vertex shader' in 1.15112ms.
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<scene> temp fragment shader'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<scene> temp fragment shader' in 1.17822ms.
+created buffer 0x20005358
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<ui> vertex shader'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<ui> vertex shader' in 0.744873ms.
+[GRAPHICS.VULKAN] graphics_shader_update(): compiling shader '<ui> fragment shader'.
+[GRAPHICS.VULKAN] graphics_shader_update(): finished compiling '<ui> fragment shader' in 0.790039ms.
+created buffer 0x200053a8
+created buffer 0x200053f8
+[ASSETS] assets_texture_create_from_memory(): creating texture 'gohufont-11.bdf'.
+[[33mASSETS-WARNING[0m] assets_texture_create_from_memory(): non-rgba textures are currently reinterpreted as rgba (TODO(sushi) properly handle non-rgba formats)
+[[33mASSETS-WARNING[0m] assets_font_create_from_path_bdf(): a Font resource with the name 'gohufont-11.bdf' already exists. All resources must be given a name unique among all other resources of the same type. The handle to the original resource will be returned.
+created buffer 0x20005448
+created buffer 0x20005498
+created buffer 0x200054e8
+created buffer 0x20005538
+created buffer 0x20005588
+created buffer 0x200055d8
+created buffer 0x20005628
+created buffer 0x20005678
+created buffer 0x200056c8
+created buffer 0x20005718
+created buffer 0x20005768
+created buffer 0x200057b8
+created buffer 0x20005808
+created buffer 0x20005858
+created buffer 0x200058a8
+created buffer 0x200058f8
+created buffer 0x20005948
+created buffer 0x20005998
+created buffer 0x200059e8
+created buffer 0x20005a38
