@@ -817,7 +817,7 @@ vk_debug_callback(
 			VulkanWarning(pCallbackData->pMessage);
 		} break;
 		default: {
-			VulkanNotice(pCallbackData->pMessage);
+			VulkanInfo(pCallbackData->pMessage);
 		} break;
 	}
 	return VK_FALSE;
@@ -1550,7 +1550,7 @@ graphics_init(Window* window) {
 	}
 
 	g_graphics->debugging = true;
-	g_graphics->logging_level = -1;
+	g_graphics->logging_level = 0;
 	g_graphics->break_on_error = true;
 
 	VulkanNotice("initializing graphics module for window '", window->title, "'.");
@@ -1580,6 +1580,7 @@ graphics_init(Window* window) {
 	memory_pool_init(g_graphics->pools.samplers, 8);
 	memory_pool_init(g_graphics->pools.render_passes, 8);
 	memory_pool_init(g_graphics->pools.framebuffers, 8);
+	memory_pool_init(g_graphics->pools.shaders, 8);
 
 	// create the window info that this window will point to 
 	auto wi = (WindowInfo*)(window->render_info = memory_pool_push(window_infos));
@@ -2593,7 +2594,7 @@ graphics_shader_update(GraphicsShader* x) {
 	defer { shaderc_result_release(compiled); };
 
 	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success) {
-		VulkanError(shaderc_result_get_error_message(compiled));
+		VulkanError("encountered compilation errors: \n", shaderc_result_get_error_message(compiled));
 		return;
 	}
 
@@ -2675,14 +2676,48 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	VulkanAssert(get_handle(x->layout), "the given pipeline has a layout but its backend handle is null. Did you call graphics_pipeline_layout_update() on it?");
 	VulkanInfo("updating pipeline '", x->debug_name, "'.");
 
-	if(!x->shader_stages) {
-		VulkanError("null shader stages array. A pipeline is required to at least specify a vertex shader.");
+	if(!x->vertex_shader) {
+		VulkanError("vertex shader pointer is null. A pipeline is required to at least specify a vertex shader.");
 		return;
 	}
 
-	auto shader_stages = array<VkPipelineShaderStageCreateInfo>::create_with_count(array_count(x->shader_stages), temp_allocator);
-	forI(array_count(x->shader_stages)) {
-		shader_stages[i] = load_shader(x->shader_stages[i].name, x->shader_stages[i].source, graphics_shader_stage_to_vulkan(x->shader_stages[i].shader_stage));
+	auto shader_stages = array<VkPipelineShaderStageCreateInfo>::create(deshi_temp_allocator);
+
+	if(!get_handle(x->vertex_shader)) {
+		VulkanError("backend handle of vertex shader '", x->vertex_shader->debug_name, "' is null, which indicates deletion, corruption, or the shader has not been updated yet.");
+		return;
+	}
+
+	auto stage = shader_stages.push();
+	stage->sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO; 
+	stage->stage  = VK_SHADER_STAGE_VERTEX_BIT;
+	stage->pName  = "main";
+	stage->module = get_handle(x->vertex_shader);
+
+	if(x->geometry_shader) {
+		if(!get_handle(x->geometry_shader)) {
+			VulkanError("backend handle of geometry shader '", x->geometry_shader->debug_name, "' is null, which indicates deletion, corruption, or the shader has not been updated yet.");
+			return;
+		}
+
+		stage = shader_stages.push();
+		stage->sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO; 
+		stage->stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
+		stage->pName  = "main";
+		stage->module = get_handle(x->geometry_shader);
+	}
+
+	if(x->fragment_shader) {
+		if(!get_handle(x->fragment_shader)) {
+			VulkanError("backend handle of fragment shader '", x->fragment_shader->debug_name, "' is null, which indicates deletion, corruption, or the shader has not been updated yet.");
+			return;
+		}
+
+		stage = shader_stages.push();
+		stage->sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO; 
+		stage->stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+		stage->pName  = "main";
+		stage->module = get_handle(x->fragment_shader);
 	}
 
    	VkPipelineInputAssemblyStateCreateInfo ias{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
@@ -2843,9 +2878,6 @@ GraphicsPipeline*
 graphics_pipeline_duplicate(GraphicsPipeline* x) {
 	auto out = graphics_pipeline_allocate();
 	CopyMemory(out, x, sizeof(GraphicsPipeline));
-	if(out->shader_stages) {
-		out->shader_stages = array_copy(out->shader_stages).ptr;
-	}
 	if(out->vertex_input_bindings) {
 		out->vertex_input_bindings = array_copy(out->vertex_input_bindings).ptr;
 	}

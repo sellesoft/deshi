@@ -226,17 +226,22 @@ render_temp_init(Window* window, u32 v) {
 	pl->           render_pass = rp;
 	pl->      dynamic_viewport = true;
 	pl->       dynamic_scissor = true;
-	array_init_with_elements(pl->shader_stages, {
-			{
-				GraphicsShaderStage_Vertex,
-				str8l("temp.vert"),
-				file_read_simple(str8l("data/shaders/temp.vert"), deshi_temp_allocator)
-			},
-			{
-				GraphicsShaderStage_Fragment,
-				str8l("temp.frag"),
-				file_read_simple(str8l("data/shaders/temp.frag"), deshi_temp_allocator)
-			}});
+	
+	auto temp_vertex_shader = graphics_shader_allocate();
+	temp_vertex_shader->debug_name = str8l("<scene> temp vertex shader");
+	temp_vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
+	temp_vertex_shader->source = file_read_simple(str8l("data/shaders/temp.vert"), deshi_temp_allocator);
+	graphics_shader_update(temp_vertex_shader);	
+
+	auto temp_fragment_shader = graphics_shader_allocate();
+	temp_fragment_shader->debug_name = str8l("<scene> temp fragment shader");
+	temp_fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
+	temp_fragment_shader->source = file_read_simple(str8l("data/shaders/temp.frag"), deshi_temp_allocator);
+	graphics_shader_update(temp_fragment_shader);
+
+	pl->vertex_shader = temp_vertex_shader;
+	pl->fragment_shader = temp_fragment_shader;
+
 	array_init_with_elements(pl->vertex_input_bindings, {
 			{0, sizeof(RenderTempVertex)}});
 	array_init_with_elements(pl->vertex_input_attributes, {

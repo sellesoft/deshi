@@ -698,18 +698,17 @@ deshi__ui_init(Window* window) {
 	g_ui->pipeline = graphics_pipeline_allocate();
 	g_ui->pipeline->debug_name = str8l("<ui> pipeline");
 
-	array_init_with_elements(g_ui->pipeline->shader_stages, {
-			{
-				GraphicsShaderStage_Vertex, 
-				str8l("twod.vert"),
-				baked_shader_twod_vert,
-			},
-			{
-				GraphicsShaderStage_Fragment,
-				str8l("twod.frag"),
-				baked_shader_twod_frag,
-			},
-		});
+	g_ui->pipeline->vertex_shader = graphics_shader_allocate();
+	g_ui->pipeline->vertex_shader->debug_name = str8l("<ui> vertex shader");
+	g_ui->pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
+	g_ui->pipeline->vertex_shader->source = baked_shader_twod_vert;
+	graphics_shader_update(g_ui->pipeline->vertex_shader);
+
+	g_ui->pipeline->fragment_shader = graphics_shader_allocate();
+	g_ui->pipeline->fragment_shader->debug_name = str8l("<ui> fragment shader");
+	g_ui->pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
+	g_ui->pipeline->fragment_shader->source = baked_shader_twod_frag;
+	graphics_shader_update(g_ui->pipeline->fragment_shader);
 
 	g_ui->pipeline->            front_face = GraphicsFrontFace_CCW;
 	g_ui->pipeline->               culling = GraphicsPipelineCulling_None;
