@@ -107,6 +107,8 @@ assets_init(Window* window) {
 	g_assets->null_mesh = assets_mesh_create_box(str8l("null"), 1.f, 1.f, 1.f, Color_White.rgba);
 	g_assets->null_mesh->name = str8l("null");
 	
+	g_assets->base_ubo_handle = assets_ubo_create(sizeof(g_assets->base_ubo));
+
 	int width, height, channels;
 	u8* pixels = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &width, &height, &channels, STBI_rgb_alpha);
 	g_assets->null_texture = assets_texture_create_from_memory(
@@ -144,12 +146,7 @@ assets_init(Window* window) {
 	array_init(g_assets->ubo_descriptors, 1, deshi_temp_allocator);
 	auto d = array_push(g_assets->ubo_descriptors);
 	d->type = GraphicsDescriptorType_Uniform_Buffer;
-	d->ubo.buffer = graphics_buffer_create(
-											0, 
-											sizeof(__assets_model_ubo), 
-											GraphicsBufferUsage_UniformBuffer,
-											GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
-											GraphicsMemoryMapping_Occasional);
+	d->ubo.buffer = g_assets->base_ubo_handle->buffer;
 	d->ubo.offset = 0;
 	d->ubo.range = sizeof(g_assets->base_ubo);
 	graphics_descriptor_set_write_array(g_assets->view_proj_ubo, g_assets->ubo_descriptors);
@@ -204,24 +201,24 @@ assets_reset(){DPZoneScoped;
 
 void 
 assets_update_camera_view(mat4* view_matrix) {
-	auto buffer = (graphics::Buffer*)g_assets->ubo_descriptors[0].ubo.buffer;
-	buffer->map(buffer->device_size(), 0);
+	auto buffer = g_assets->base_ubo_handle->buffer;
+	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
 	
 	g_assets->base_ubo.view = *view_matrix;
-	CopyMemory(buffer->mapped_data(), &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+	CopyMemory(data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
 	
-	buffer->unmap(true);
+	graphics_buffer_unmap(buffer, true);
 }
 
 void 
 assets_update_camera_projection(mat4* projection) {
-	auto buffer = (graphics::Buffer*)g_assets->ubo_descriptors[0].ubo.buffer;
-	buffer->map(buffer->device_size(), 0);
-
-	g_assets->base_ubo.proj = *projection;
-	CopyMemory(buffer->mapped_data(), &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+	auto buffer = g_assets->base_ubo_handle->buffer;
+	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
 	
-	buffer->unmap(true);
+	g_assets->base_ubo.proj = *projection;
+	CopyMemory(data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+	
+	graphics_buffer_unmap(buffer, true);
 }
 
 void 
