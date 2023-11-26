@@ -329,51 +329,14 @@ void
 logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	DeshiStageInitStart(DS_LOGGER, DS_PLATFORM, "Attempted to initialize Logger module before initializing the Platform module");
 	
-	//create the logs directory if it doesn't exist already
-	file_create(str8_lit("data/logs/"));
-	
 	logger.mirror_to_file    = true;
 	logger.mirror_to_stdout  = mirror;
 	logger.mirror_to_console = false; //NOTE(delle) this gets set to true when Console is init
 	
 	u8 path_buffer[256];
-	log_count = ClampMin(log_count, 1);
-	FileArray log_files = file_search_directory(str8_lit("data/logs/"));
-	if(!log_files) return;
-	
-	//rename previous log.txt
-	forX_array(file, log_files){
-		if(str8_equal(file->name, str8_lit("log.txt"))){
-			int len = stbsp_snprintf((char*)path_buffer, ArrayCount(path_buffer), "data/logs/log_%lld.txt", file->last_write_time);
-			file_rename(file->path, (str8{path_buffer, (s64)len}));
-			file->path = str8{path_buffer, (s64)len}; //NOTE(delle) correcting path on temp memory so it's valid for deletion
-			break;
-		}
-	}
-	
-	//delete all but last 'log_count' files in logs directory
-	if(array_count(log_files) > log_count){
-		//sort logs ascending based on last write time
-		b32 swapped = false;
-		forX(i,log_count){
-			swapped = false;
-			forX(j,array_count(log_files)-1-i){
-				if(log_files[j].last_write_time > log_files[j+1].last_write_time){
-					Swap(log_files[j], log_files[j+1]);
-					swapped = true;
-				}
-			}
-			if(!swapped) break;
-		}
-		
-		//delete logs
-		forI((array_count(log_files)-log_count)+1) file_delete(log_files[i].path, FileDeleteFlags_File);
-	}
-	
-	array_deinit(log_files);
 	
 	//create log file named as current time
-	logger.file = file_init(str8_lit("data/logs/log.txt"), FileAccess_ReadWriteAppendCreate);
+	logger.file = file_init(str8_lit("log.txt"), FileAccess_ReadWriteAppendCreate);
 	Assert(logger.file, "logger failed to open file");
 	
 	//write date at top of file

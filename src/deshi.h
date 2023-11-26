@@ -8,7 +8,7 @@
 #include "core/logger.h"
 #include "core/memory.h"
 #include "core/platform.h"
-#include "core/scene.h"
+#include "core/render.h"
 #include "core/threading.h"
 #include "core/ui.h"
 #include "core/ui_widgets.h"
@@ -26,17 +26,17 @@
   window_show(window);                            \
   graphics_init(window);                          \
   assets_init(window);                            \
-  scene_init();                                   \
-  scene_set_active_window(window);                \
-  render_temp_init(window, 0xfffff);              \
+  render_init();                                  \
+  render_set_active_window(window);               \
+  render_temp_init(window, 0xffff);               \
   ui_init(window);                                \
   console_init();                                 \
   cmd_init();                                     \
-  Camera* camera = scene_camera_create();         \
+  Camera* camera = render_camera_create();        \
   camera->forward = vec3{0,0,1};                  \
-  scene_camera_update_perspective_projection(camera, window->width, window->height, 90.0f, 0.1f, 1000.0f); \
-  scene_camera_update_view(camera);               \
-  scene_set_active_camera(camera);
+  render_camera_update_perspective_projection(camera, window->width, window->height, 90.0f, 0.1f, 1000.0f); \
+  render_camera_update_view(camera);              \
+  render_set_active_camera(camera);
 
 #define deshi_init_specify(name,main_size,temp_size) \
   profiler_init();                                   \
@@ -47,24 +47,24 @@
   window_show(window);                               \
   graphics_init(window);                             \
   assets_init(window);                               \
-  scene_init();                                      \
-  scene_set_active_window(window);                   \
-  render_temp_init(window, 0xfff);                   \
+  render_init();                                     \
+  render_set_active_window(window);                  \
+  render_temp_init(window, 0xffff);                  \
   ui_init(window);                                   \
   console_init();                                    \
   cmd_init();                                        \
   Camera* camera = scene_camera_create();            \
   camera->forward = vec3{0,0,1};                     \
-  scene_camera_update_perspective_projection(camera, window->width, window->height, 90.0f, 0.1f, 1000.0f); \
-  scene_camera_update_view(camera);                  \
-  scene_set_active_camera(camera);
+  render_camera_update_perspective_projection(camera, window->width, window->height, 90.0f, 0.1f, 1000.0f); \
+  render_camera_update_view(camera);                 \
+  render_set_active_camera(camera);
 
 #define deshi_loop_start()   \
   while(platform_update()){
 
 #define deshi_loop_end()     \
     console_update();        \
-    scene_render();          \
+    render_update();         \
     ui_update(window);       \
     graphics_update(window); \
     logger_update();         \

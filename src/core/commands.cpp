@@ -509,9 +509,9 @@ void cmd_init(){
 	
 	DESHI_CMD_START(texture_load, "Loads a specific texture"){
 		Stopwatch load_stopwatch = start_stopwatch();
-		assets_texture_create_from_file_simple(args[0]);
+		assets_texture_create_from_path_simple(args[0], args[1]);
 		Log("cmd", "Loaded texture '",args[0],"' in ",peek_stopwatch(load_stopwatch),"ms");
-	}DESHI_CMD_END(texture_load, CmdArgument_String);
+	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_String);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("", "Textures: ");

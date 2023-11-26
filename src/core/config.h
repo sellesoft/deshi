@@ -332,10 +332,10 @@ config_load(str8 path, ConfigMapItem* config_map, u64 config_count){
 				case ConfigValueType_Font:{
 					str8 name = str8_eat_until(line, ',');
 					if(name.count == line.count) //no height was given
-						*(Font**)configs[i].var = assets_font_create_from_file(name, 0);
+						*(Font**)configs[i].var = assets_font_create_from_path(name, 0);
 					else{
 						str8_increment(&line, name.count+1);
-						*(Font**)configs[i].var = assets_font_create_from_file(name, strtol((char*)line.str, 0, 0));
+						*(Font**)configs[i].var = assets_font_create_from_path(name, strtol((char*)line.str, 0, 0));
 					}
 				}break;
 				case ConfigValueType_KeyMod:{

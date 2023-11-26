@@ -1578,7 +1578,7 @@ void ui_debug(){
 		def_style.sizing = size_auto;
 		def_style.text_color = Color_White;
 		def_style.text_wrap = text_wrap_none;
-		def_style.font = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+		def_style.font = assets_font_create_from_path_bdf(STR8("gohufont-11.bdf"));
 		def_style.font_height = 11;
 		def_style.background_color = color(14,14,14);
 		def_style.tab_spaces = 4;

@@ -313,7 +313,7 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/networking.h"
 #include "core/platform.h"
 #include "core/graphics.h"
-#include "core/scene.h"
+#include "core/render.h"
 #include "core/threading.h"
 #include "core/time.h"
 #include "core/ui.h"
@@ -326,7 +326,7 @@ local DeshiStage deshiStage = DS_NONE;
 #include "core/memory.cpp"
 #include "core/console.cpp"
 #include "core/assets.cpp"
-#include "core/scene.cpp"
+#include "core/render.cpp"
 #include "core/ui.cpp"
 #include "core/graphics.cpp"
 #include "core/commands.cpp" //NOTE(delle) this should be the last include so it can reference .cpp vars

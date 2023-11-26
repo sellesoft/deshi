@@ -228,8 +228,8 @@ Mesh* assets_mesh_create_from_path(str8 path);
 //  calls `render_load_mesh()` after creation
 Mesh* assets_mesh_create_from_memory(void* data);
 
-//Saves the `Mesh` object at `mesh` to the `data/models` folder as a `MESH` file
-void  assets_mesh_save(Mesh* mesh);
+// Saves mesh to the given path
+void  assets_mesh_save(str8 path, Mesh* mesh);
 
 //Saves the `Mesh` object at `mesh` to `path` as a `MESH` file
 void  assets_mesh_save_to_path(Mesh* mesh, str8 path);
@@ -309,37 +309,19 @@ typedef struct Texture{
 	GraphicsDescriptorSet* ui_descriptor_set;
 }Texture;
 
-//Returns a pointer to the created `Texture` object from an image file named `name` in the `data/textures` folder
-//  `name` should include the extension
-//  `format` determines the image format after loading it (does not have to be the same as the format on disk)
-//  `type`, `filter`, and `uvMode` arguments determine usage in `Render`
-//  `generateMipmaps` determines whether `Render` should generate and use mipmaps for rendering this texture
-//  the `pixels` var of the created `Texture` object is freed from memory unless `keepLoaded` is true
-//  calls `render_load_texture()` after creation
-Texture* assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type, TextureFilter filter,
-										 TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps);
-
-//Returns a pointer to the created `Texture` object from an image file named `name` in the `data/textures` folder
-//  `name` should include the extension
-//  calls `render_load_texture()` after creation
-FORCE_INLINE Texture* assets_texture_create_from_file_simple(str8 name){
-	return assets_texture_create_from_file(name, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest,
-										   TextureAddressMode_Repeat, false, true);
-}
-
 //Returns a pointer to the created `Texture` object from an image file at `path`
 //  `format` determines the image format after loading it (does not have to be the same as the format on disk)
 //  `type`, `filter`, and `uvMode` arguments determine usage in `Render`
 //  `generateMipmaps` determines whether `Render` should generate and use mipmaps for rendering this texture
 //  the `pixels` var of the created `Texture` object is freed from memory unless `keepLoaded` is true
 //  calls `render_load_texture()` after creation
-Texture* assets_texture_create_from_path(str8 path, ImageFormat format, TextureType type, TextureFilter filter,
+Texture* assets_texture_create_from_path(str8 name, str8 path, ImageFormat format, TextureType type, TextureFilter filter,
 										 TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps);
 
 //Returns a pointer to the created `Texture` object from an image file at `path`
 //  calls `render_load_texture()` after creation
-FORCE_INLINE Texture* assets_texture_create_from_path_simple(str8 path){
-	return assets_texture_create_from_path(path, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest,
+FORCE_INLINE Texture* assets_texture_create_from_path_simple(str8 name, str8 path){
+	return assets_texture_create_from_path(name, path, ImageFormat_RGBA, TextureType_TwoDimensional, TextureFilter_Nearest,
 										   TextureAddressMode_Repeat, false, true);
 }
 
@@ -447,9 +429,6 @@ Shader* assets_shader_load_from_source(str8 name, str8 source, ShaderType type);
 // Load a shader source file from the given path.
 Shader* assets_shader_load_from_path(str8 name, str8 path, ShaderType type);
 
-// Load a compiled shader from the given path.
-Shader* assets_shader_load_from_file(str8 filename, ShaderType type);
-
 // Reloads the given shader.
 // Note that this will remake the backend graphics information for all materials
 // that use the given shader.
@@ -499,13 +478,9 @@ Material* assets_material_allocate(u32 textureCount);
 
 Material* assets_material_create(str8 name, ShaderStages shader_stages, ShaderResource* resources);
 
-// Returns a pointer to the created `Material` object from a `MAT` file named `name` from the `data/models` folder
-//  calls `render_load_material()` after creation
-Material* assets_material_create_from_file(str8 name);
-
 // Returns a pointer to the created `Material` object from a `MAT` file at `path`
 //  calls `render_load_material()` after creation
-Material* assets_material_create_from_path(str8 path);
+Material* assets_material_create_from_path(str8 name, str8 path);
 
 // Saves the `Material` object at `material` to the `data/models` folder as a `MAT` file
 void      assets_material_save(Material* material);
@@ -560,10 +535,6 @@ typedef struct Model{
 
 //Returns a pointer to the allocated `Model` object (with batch array reserved)
 Model* assets_model_allocate(u32 batchCount);
-
-//Returns a pointer to the created `Model` object from either `OBJ`, `MODEL`/`MESH`, `MESH`/`OBJ`/`MAT`, or `OBJ`/`MAT` file pairs named `name` with `flags` from the `data/models` folder
-//  creates a new `Mesh` object in `Assets` from an `OBJ` file if no `MESH` file is found or `forceLoadOBJ` is true and then calls `render_load_mesh()`
-Model* assets_model_create_from_file(str8 name, ModelFlags flags, b32 forceLoadOBJ);
 
 //Returns a pointer to the created `Model` object from the `OBJ` file at `obj_path` with `flags`
 //  creates a new mesh if the `OBJ` hasn't been loaded already and then calls `render_load_mesh()`
@@ -665,22 +636,12 @@ FontAlignedQuad font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 sca
 //Returns the pixel-size bounding box of the `text` when using `font`
 vec2 font_visual_size(Font* font, str8 text);
 
-//Returns a pointer to the created `Font` object from a `TTF` or `BDF` file named `name` with `height` in pixels from the `data/fonts` folder
-//  loading a `BDF` font ignores the `height` argument since the font height is baked into the file
-Font* assets_font_create_from_file(str8 name, u32 height);
-
 //Returns a pointer to the created `Font` object from a `TTF` or `BDF` file at `path` with `height` in pixels
 //  loading a `BDF` font ignores the `height` argument since the font height is baked into the file
 Font* assets_font_create_from_path(str8 path, u32 height);
 
-//Returns a pointer to the created `Font` object from a `BDF` file named `name` from the `data/fonts` folder
-Font* assets_font_create_from_file_bdf(str8 name);
-
 //Returns a pointer to the created `Font` object from a `BDF` file at `path`
 Font* assets_font_create_from_path_bdf(str8 path);
-
-//Returns a pointer to the created `Font` object from a `TTF` file named `name` with `height` in pixels from the `data/fonts` folder
-Font* assets_font_create_from_file_ttf(str8 name, u32 height);
 
 //Returns a pointer to the created `Font` object from a `TTF` file at `path` with `height` in pixels
 Font* assets_font_create_from_path_ttf(str8 path, u32 height);

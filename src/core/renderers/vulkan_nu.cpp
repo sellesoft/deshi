@@ -711,9 +711,6 @@ load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
 	}
 	defer{ shaderc_result_release(compiled); };
 	
-	//create or overwrite .spv files
-	file_write_simple(str8_concat3(STR8("data/shaders/"),name,str8_lit(".spv"), deshi_temp_allocator), (void*)shaderc_result_get_bytes(compiled), shaderc_result_get_length(compiled));
-	
 	//create shader module
 	VkShaderModule shaderModule{};
 	VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
@@ -1563,11 +1560,6 @@ graphics_init(Window* window) {
 	temp_allocator = deshi_temp_allocator;
 
 	memory_pool_init(window_infos, 4);
-
-	if(!file_exists(str8l("data/shaders/"))) {
-		VulkanNotice("data/shaders/ is missing, creating it now.");
-		file_create(str8l("data/shaders/"));
-	}
 
 	// TODO(sushi) this should be moved to an implementation shared between backends
 	memory_pool_init(g_graphics->pools.descriptor_set_layouts, 8);

@@ -29,13 +29,6 @@ struct ModelUniformBufferObject {
 	mat4 proj;
 } __assets_model_ubo;
 
-struct __Deshi_Assets_Internal {
-	array<GraphicsVertexInputBindingDescription> vertex_input_bindings;
-	array<GraphicsVertexInputAttributeDescription> vertex_input_attributes;
-} __deshi_assets_internal;
-
-#define internal __deshi_assets_internal
-
 template<typename T> FORCE_INLINE pair<spt, b32>
 __find_resource(u64 uid, T** map) {
 	if(!array_count(map)) return {0, 0};
@@ -72,11 +65,6 @@ void
 assets_init(Window* window) {
 	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Graphics module");
 	
-	//create the assets directories if they don't exist already
-	file_create(STR8("data/fonts/"));
-	file_create(STR8("data/models/"));
-	file_create(STR8("data/textures/"));
-
 	// setup pools
 	memory_pool_init(g_assets->mesh_pool, 8);
 	memory_pool_init(g_assets->texture_pool, 8);
@@ -100,9 +88,8 @@ assets_init(Window* window) {
 	
 	// setup null assets
 	
-	g_assets->null_vertex_shader = assets_shader_load_from_file(str8l("null.vert"), ShaderType_Vertex);
-	g_assets->null_fragment_shader = assets_shader_load_from_file(str8l("null.frag"), ShaderType_Fragment);
-	array_init_with_elements(g_assets->null_fragment_shader->resources, {(ShaderResourceType)ShaderResourceType_Texture});
+	g_assets->null_vertex_shader = assets_shader_load_from_source(str8l("null.vert"), baked_shader_null_vert_2, ShaderType_Vertex);
+	g_assets->null_fragment_shader = assets_shader_load_from_source(str8l("null.frag"), baked_shader_null_frag_2, ShaderType_Fragment);
 
 	g_assets->null_mesh = assets_mesh_create_box(str8l("null"), 1.f, 1.f, 1.f, Color_White.rgba);
 	g_assets->null_mesh->name = str8l("null");
@@ -507,25 +494,7 @@ assets_mesh_create_box(str8 name, f32 width, f32 height, f32 depth, u32 color){D
 }
 
 Mesh*
-assets_mesh_create_from_file(str8 name){DPZoneScoped;
-	AssetsAssertName(name);
-	if(str8_equal_lazy(name, STR8("null"))) return assets_mesh_null();
-
-	//prepend the meshes (models) folder
-	dstr8 builder;
-	dstr8_init(&builder, STR8("data/models/"), deshi_temp_allocator);
-	dstr8_append(&builder, name);
-	
-	//append extension if not provided
-	str8 front = str8_eat_until_last(name, '.');
-	if(front.count == name.count) dstr8_append(&builder, STR8(".mesh"));
-	
-	return assets_mesh_create_from_path(dstr8_peek(&builder));
-}
-
-
-Mesh*
-assets_mesh_create_from_path(str8 path){DPZoneScoped;
+assets_mesh_create_from_path(str8 name, str8 path){DPZoneScoped;
 	AssetsAssertName(path);
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
 	if(!contents) {
@@ -711,53 +680,7 @@ upload_texture(Texture* texture) {
 }
 
 Texture*
-assets_texture_create_from_file(str8 name, ImageFormat format, TextureType type, TextureFilter filter, TextureAddressMode uvMode, b32 keepLoaded, b32 generateMipmaps){DPZoneScoped;
-	AssetsAssertName(name);
-	if(str8_equal_lazy(name, STR8("null"))) return assets_texture_null();
-	
-	AssetsNotice("creating texture '", name, "'.");
-
-	u64 uid = __uid_of_name(name);
-	auto [index, found] = __find_resource(uid, g_assets->texture_map);
-	if(found) {
-		AssetsExistanceWarning(name, Texture);
-		return g_assets->texture_map[index];
-	}
-
-	str8 path = str8_concat(STR8("data/textures/"),name, deshi_temp_allocator);
-	Texture* texture = memory_pool_push(g_assets->texture_pool);
-	texture->name    = name;
-	texture->uid     = uid;
-	texture->format  = format;
-	texture->type    = type;
-	texture->filter  = filter;
-	texture->uv_mode = uvMode;
-	texture->pixels  = stbi_load((char*)path.str, &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
-	if(texture->pixels == 0){
-		AssetsError("failed to load texture from path '", path, "' file due to stbi error: ", stbi_failure_reason());
-		memory_pool_delete(g_assets->texture_pool, texture);
-		return assets_texture_null();
-	}
-	
-	if(generateMipmaps){
-		texture->mipmaps = (s32)log2(Max(texture->width, texture->height)) + 1;
-	}else{
-		texture->mipmaps = 1;
-	}
-	
-	upload_texture(texture);
-	if(!keepLoaded){
-		stbi_image_free(texture->pixels); 
-		texture->pixels = 0;
-	}
-
-	array_insert_value(g_assets->texture_map, index, texture);
-	return texture;
-}
-
-
-Texture*
-assets_texture_create_from_path(
+assets_texture_create_from_path(str8 name,
 								str8 path, 
 								ImageFormat format, 
 								TextureType type, 
@@ -769,17 +692,17 @@ assets_texture_create_from_path(
 	//check if texture is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 
-	u64 uid = __uid_of_name(filename);
+	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->texture_map);
 	if(found) {
-		AssetsExistanceWarning(filename, Texture);
+		AssetsExistanceWarning(name, Texture);
 		return g_assets->texture_map[index];
 	}
 
 	AssetsNotice("creating texture from path '", path, "'.");
 
 	Texture* texture = memory_pool_push(g_assets->texture_pool);
-	texture->name    = filename;
+	texture->name    = name;
 	texture->uid     = uid;
 	texture->format  = format; //TODO(delle) handle non RGBA formats properly
 	texture->type    = type;
@@ -1010,27 +933,6 @@ assets_shader_load_from_source(str8 name, str8 source, ShaderType type) {
 	graphics_shader_update(out->handle);
 	array_insert_value(g_assets->shader_map, index, out);
 	return out;
-}
-
-Shader*
-assets_shader_load_from_file(str8 filename, ShaderType type) {
-	AssetsAssert(filename, "empty filename.");
-	
-	str8 path = str8_concat(str8l("data/shaders/"), filename);
-	if(!file_exists(path)) {
-		AssetsError("the file '", filename, "' does not exist in 'deshi/shaders'");
-		switch(type) {
-			case ShaderType_Vertex: return g_assets->null_vertex_shader;
-			case ShaderType_Fragment: return g_assets->null_fragment_shader;
-			default: {
-				AssetsFatal("unhandled or invalid ShaderType: ", (u32)type);
-			} break;
-		}
-	}
-
-	str8 source = file_read_simple(path, deshi_temp_allocator);
-	
-	return assets_shader_load_from_source(filename, source, type);
 }
 
 Shader*
@@ -1311,24 +1213,6 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	return material;
 }
 
-
-Material*
-assets_material_create_from_file(str8 name){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return assets_material_null();
-	
-	//prepend the materials (models) folder
-	dstr8 builder;
-	dstr8_init(&builder, STR8("data/models/"), deshi_temp_allocator);
-	dstr8_append(&builder, name);
-	
-	//append extension if not provided
-	str8 front = str8_eat_until_last(name, '.');
-	if(front.count == name.count) dstr8_append(&builder, STR8(".mat"));
-	
-	return assets_material_create_from_path(dstr8_peek(&builder));
-}
-
-
 Material*
 assets_material_create_from_path(str8 path){DPZoneScoped;
 	// TODO(sushi) update to use new graphics api once one of us actually uses material stuff from disk
@@ -1584,171 +1468,6 @@ assets_model_allocate(u32 batchCount){DPZoneScoped;
 	model->batch_array = array<ModelBatch>::create_with_count(batchCount ? batchCount : 1, deshi_allocator).ptr;
 	return model;
 }
-
-
-Model* 
-assets_model_create_from_file(str8 filename, ModelFlags flags, b32 forceLoadOBJ){DPZoneScoped;
-	if(str8_equal_lazy(filename, STR8("null"))) return assets_model_null();
-		
-	//prepend the models folder
-	str8 directory = STR8("data/models/");
-	dstr8 builder;
-	dstr8_init(&builder, directory, deshi_temp_allocator);
-	dstr8_append(&builder, filename);
-	
-	//append extension if not provided
-	str8 front = str8_eat_until_last(filename, '.');
-	if(front.count == filename.count) dstr8_append(&builder, STR8(".model"));
-	
-	u64 uid = __uid_of_name(filename);
-	auto [index, found] = __find_resource(uid, g_assets->model_map);
-	if(found) {
-		AssetsExistanceWarning(filename, Model);
-		return g_assets->null_model;
-	}
-
-	//check which files need to be parsed
-	str8 model_path = dstr8_peek(&builder);
-	str8 obj_path  = str8_concat3(directory, front, STR8(".obj"),  deshi_temp_allocator);
-	str8 mesh_path = str8_concat3(directory, front, STR8(".mesh"), deshi_temp_allocator);
-	b32 parse_obj_mesh  = true;
-	b32 parse_obj_model = true;
-	if(!forceLoadOBJ){
-		if(file_exists(mesh_path))  parse_obj_mesh  = false;
-		if(file_exists(model_path)) parse_obj_model = false;
-	}
-	
-	//// load .obj and .mtl ////
-	if(parse_obj_model && parse_obj_mesh){
-		return assets_model_create_from_obj(obj_path, flags);
-	}
-	//// load .obj (batch info only), .mtl, and .mesh ////
-	else if(parse_obj_model){
-		return assets_model_create_from_mesh_obj(assets_mesh_create_from_path(mesh_path), obj_path, flags);
-	}
-	
-	//// load .model and .mesh ////
-	Stopwatch load_stopwatch = start_stopwatch();
-	str8 model_name;
-	str8 model_mesh;
-	ModelFlags model_flags;
-	arrayT<pair<str8,u32,u32>> model_batches(deshi_temp_allocator);
-	enum{ HEADER_MODEL, HEADER_BATCHES, HEADER_INVALID } header;
-	
-	File* file = file_init(model_path, FileAccess_Read);
-	if(!file) return assets_model_null();
-	defer{ file_deinit(file); };
-	
-	u32 line_number = 0;
-	while(file->cursor < file->bytes){
-		line_number += 1;
-		
-		//next line
-		str8 line = file_read_line_alloc(file, &assets_load_allocator);
-		if(!line) continue;
-		
-		//skip leading whitespace
-		str8_advance_while(&line, ' ');
-		if(!line) continue;
-		
-		//early out if comment is first character
-		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-		if(decoded.codepoint == '#') continue;
-		
-		//check for headers
-		if(decoded.codepoint == '>'){
-			if     (str8_begins_with(line, STR8(">model"))) header = HEADER_MODEL;
-			else if(str8_begins_with(line, STR8(">batches"))) header = HEADER_BATCHES;
-			else{ header = HEADER_INVALID; LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header: ",line); };
-			continue;
-		}
-		
-		//early out invalid header
-		if(header == HEADER_INVALID){
-			LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid Header; skipping line");
-			continue;
-		}
-		
-		if(header == HEADER_MODEL){
-			//parse key
-			str8 key = str8_eat_until(line, ' ');
-			str8_increment(&line, key.count);
-			
-			//skip separating whitespace
-			str8_advance_while(&line, ' ');
-			if(!line){
-				LogE("config","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
-				continue;
-			}
-			
-			//early out if comment is first value character
-			decoded = decoded_codepoint_from_utf8(line.str, 4);
-			if(decoded.codepoint == '#'){
-				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No value passed to key: ",key);
-				continue;
-			}
-			
-			if      (str8_equal_lazy(key, STR8("name"))){
-				if(decoded.codepoint != '\"'){
-					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes.");
-					continue;
-				}
-				model_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-			}else if(str8_equal_lazy(key, STR8("flags"))){
-				model_flags = (ModelFlags)atoi((char*)line.str);
-			}else if(str8_equal_lazy(key, STR8("mesh"))){
-				if(decoded.codepoint != '\"'){
-					LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Filenames must be wrapped in double quotes.");
-					continue;
-				}
-				model_mesh = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-			}else if(str8_equal_lazy(key, STR8("armature"))){
-				//NOTE currently nothing
-			}else{
-				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Invalid key '",key,"' for >model header.");
-				continue;
-			}
-		}else{
-			if(decoded.codepoint != '\"'){
-				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". Names must be wrapped in double quotes. Batch format: '\"material_name\" index_offset index_count'");
-				continue;
-			}
-			
-			str8 batch_mat = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-			str8_increment(&line, batch_mat.count+2);
-			if(!line){
-				LogE("assets","Error parsing model '",model_path,"' on line ",line_number,". No indexes passed. Batch format: '\"material_name\" index_offset index_count'");
-				continue;
-			}
-			
-			char* next = (char*)line.str;
-			u32 ioffset = strtol(next,&next,10);
-			u32 icount  = strtol(next,&next,10);
-			
-			model_batches.add({batch_mat, ioffset, icount});
-		}
-	}
-	Log("assets","Successfully loaded model ",model_path);
-	
-	Model* model = assets_model_allocate(model_batches.count);
-	model->name     = model_name;
-	model->uid      = uid;
-	model->flags    = model_flags;
-	model->mesh     = assets_mesh_create_from_file(model_mesh);
-	model->armature = 0;
-	forI(model_batches.count){
-		model->batch_array[i] = ModelBatch{
-			model_batches[i].second,
-			model_batches[i].third,
-			assets_material_create_from_file(model_batches[i].first)
-		};
-	}
-	
-	array_insert_value(g_assets->model_map, index, model);
-	AssetsNotice("finished loading model ", AssetsResourceBasicInfo(model), " in ", peek_stopwatch(load_stopwatch), "ms");
-	return model;
-}
-
 
 Model*
 assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
@@ -2479,42 +2198,8 @@ assets_model_duplicate(str8 name, Model* base){DPZoneScoped;
 	return model;
 }
 
-
 void
-assets_model_save(Model* model){
-	str8 directory = STR8("data/models/");
-	
-	if(model->mesh){
-		assets_mesh_save(model->mesh);
-	}
-	
-	str8 path = str8_concat3(directory,model->name,STR8(".model"), deshi_temp_allocator);
-	dstr8 builder;
-	dstr8_init(&builder,
-			   to_dstr8v(deshi_temp_allocator,
-						 ">model"
-						 "\nname     \"",model->name,"\""
-						 "\nflags    ", model->flags,
-						 "\nmesh     \"", model->mesh->name,"\""
-						 "\narmature ", 0,
-						 "\n"
-						 "\n>batches").fin,
-			   deshi_temp_allocator);
-	if(model->batch_array){
-		for_array(model->batch_array){
-			assets_material_save(it->material);
-			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",it->material->name,"\" ",it->index_offset," ",it->index_count));
-		}
-	}
-	dstr8_append(&builder, STR8("\n"));
-	str8 model_text = dstr8_peek(&builder);
-	file_write_simple(path, model_text.str, model_text.count*sizeof(u8));
-	Log("assets","Successfully saved model: ",path);
-}
-
-
-void
-assets_model_save_at_path(Model* model, str8 path){DPZoneScoped;
+assets_model_save_to_path(Model* model, str8 path){DPZoneScoped;
 	str8 directory = str8_eat_until_last(path, '/');
 	if(directory.str[directory.count] == '/') directory.count += 1;
 	
@@ -2656,14 +2341,6 @@ assets_font_create_from_path(str8 path, u32 height){DPZoneScoped;
 	LogE("assets","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
 	return assets_font_null();
 }
-
-
-Font*
-assets_font_create_from_file_bdf(str8 name){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return assets_font_null();
-	return assets_font_create_from_path_bdf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator));
-}
-
 
 Font*
 assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
@@ -2853,14 +2530,6 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 	array_insert_value(g_assets->font_map, index, font);
 	return font;
 }
-
-
-Font*
-assets_font_create_from_file_ttf(str8 name, u32 height){DPZoneScoped;
-	if(str8_equal_lazy(name, STR8("null"))) return assets_font_null();
-	return assets_font_create_from_path_ttf(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
-}
-
 
 Font*
 assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
