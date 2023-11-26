@@ -765,13 +765,14 @@ deshi__ui_init(Window* window) {
 			GraphicsBufferUsage_VertexBuffer,
 			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
 			GraphicsMemoryMapping_Persistent);
-
+	g_ui->vertex_buffer.handle->debug_name = str8l("<ui> vertex buffer");
 	g_ui->index_buffer.handle = graphics_buffer_create(
 			0, 
 			g_memory->arena_heap.size / 16,
 			GraphicsBufferUsage_IndexBuffer,
 			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
 			GraphicsMemoryMapping_Persistent);
+	g_ui->index_buffer.handle->debug_name = str8l("<ui> index buffer");
 
 	g_ui->blank_descriptor_set = graphics_descriptor_set_allocate();
 	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
