@@ -1,5 +1,5 @@
 /*
-	deshi scene module
+	deshi render module
 
 	An api for typical operations used to interact with a 3D scene.
 	While asset's purpose is to provide an api for un/loading and storing 
@@ -7,17 +7,17 @@
 	is to provide an api for actually rendering those things w/o having to 
 	interact with the render api directly.
 
-	scene_draw_* functions record a thing to draw, but nothing is actually rendered
-	until scene_render() is called.
+	render_draw_* functions record a thing to draw, but nothing is actually rendered
+	until render_render() is called.
 */
 
-#ifndef DESHI_SCENE_H
-#define DESHI_SCENE_H
+#ifndef DESHI_RENDER_H
+#define DESHI_RENDER_H
 
 struct Camera;
-struct SceneDrawModel;
-struct SceneDrawVoxelChunk;
-struct SceneVoxelType;
+struct RenderDrawModel;
+struct RenderDrawVoxelChunk;
+struct RenderVoxelType;
 struct RenderVoxelChunk;
 
 StartLinkageC();
@@ -28,7 +28,7 @@ StartLinkageC();
 
 
 // Global scene object used for keep track of various things.
-typedef struct SceneGlobal {
+typedef struct RenderGlobal {
 
 	// Collection of things allocated and managed
 	// by the scene.
@@ -45,11 +45,11 @@ typedef struct SceneGlobal {
 		Camera* camera;
 	} active;
 
-	// Array of draw commands created from scene_draw_model
-	// that will be executed and then cleared next time scene_render
+	// Array of draw commands created from render_draw_model
+	// that will be executed and then cleared next time render_render
 	// is called
-	SceneDrawModel* model_draw_commands;	
-	SceneDrawVoxelChunk* voxel_chunk_draw_commands;
+	RenderDrawModel* model_draw_commands;	
+	RenderDrawVoxelChunk* voxel_chunk_draw_commands;
 
 	Material* voxel_material;
 
@@ -73,21 +73,21 @@ typedef struct SceneGlobal {
 		GraphicsBuffer* camera_buffer;
 		GraphicsDescriptorSet* descriptor_set;
 	} temp;
-} SceneGlobal;
+} RenderGlobal;
 
-extern SceneGlobal* g_scene;
+extern RenderGlobal* g_scene;
 
 // Initialize the scene module. 
-void scene_init();
+void render_init();
 
 // Renders the scene to the active window using the active camera
-void scene_render();
+void render_update();
 
-// Sets the window scene will draw to in the next call to scene_render
-void scene_set_active_window(Window* window);
+// Sets the window scene will draw to in the next call to render_render
+void render_set_active_window(Window* window);
 
-// Sets the camera to render the scene from next time scene_render is called
-void scene_set_active_camera(Camera* camera);
+// Sets the camera to render the scene from next time render_render is called
+void render_set_active_camera(Camera* camera);
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +95,7 @@ void scene_set_active_camera(Camera* camera);
 
 
 // A view into a scene.
-// Cameras are only updated through the scene_camera_update
+// Cameras are only updated through the render_camera_update
 // function, rather than automatically being updated when it is used
 // so that we may minimize the amount of work we do with the camera.
 // proj and view are not meant to be modified by the user but it is 
@@ -107,7 +107,7 @@ struct Camera {
 	// determines the direction in which the camera is facing,
 	// set by user 
 	vec3 forward;
-	// these are calculated internally by scene_camera_update_view
+	// these are calculated internally by render_camera_update_view
 	vec3 right;
 	vec3 up;
 
@@ -116,36 +116,36 @@ struct Camera {
 };
 
 // Allocates and returns a pointer to a camera
-Camera* scene_camera_create();
+Camera* render_camera_create();
 
 // Updates a camera's projection and view matrices based on its
 // internal properties
-void scene_camera_update_view(Camera* camera);
+void render_camera_update_view(Camera* camera);
 
 // Updates the camera to use perspective projection
-void scene_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z);
+void render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z);
 
 // Updates the camera to use orthographic projection
-void scene_camera_update_orthographic_projection(Camera* camera, vec2 x_bounds, vec2 y_bounds, f32 z_bounds);
+void render_camera_update_orthographic_projection(Camera* camera, vec2 x_bounds, vec2 y_bounds, f32 z_bounds);
 
 // Deallocates the given camera
-void scene_camera_destroy(Camera* camera);
+void render_camera_destroy(Camera* camera);
 
 // Draws the given camera's frustrum using graphics temp drawing
-void scene_camera_draw_frustrum(Camera* camera);
+void render_camera_draw_frustrum(Camera* camera);
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @model
 
 
-typedef struct SceneDrawModel {
+typedef struct RenderDrawModel {
 	Model*  model;
 	mat4*   transform;
-} SceneDrawModel;
+} RenderDrawModel;
 
-// Draws 'model' with 'transform' the next time scene_render() is called.
-void scene_draw_model(Model* model, mat4* transform);
+// Draws 'model' with 'transform' the next time render_render() is called.
+void render_draw_model(Model* model, mat4* transform);
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

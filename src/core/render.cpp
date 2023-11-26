@@ -1,27 +1,27 @@
-#define SceneAssert(cond, ...) do { if(!cond) { LogE("scene", __FUNCTION__, ": assertion failed `", STRINGIZE(cond), "`: ", __VA_ARGS__); Assert(0); } } while(0); 
-#define SceneError(...) LogE("scene", __VA_ARGS__)
+#define RenderAssert(cond, ...) do { if(!cond) { LogE("scene", __FUNCTION__, ": assertion failed `", STRINGIZE(cond), "`: ", __VA_ARGS__); Assert(0); } } while(0); 
+#define RenderError(...) LogE("scene", __VA_ARGS__)
 
-SceneGlobal __deshi__g_scene;
-SceneGlobal* g_scene = &__deshi__g_scene;
+RenderGlobal __deshi__g_scene;
+RenderGlobal* g_scene = &__deshi__g_scene;
 
 void 
-scene_init() {
+render_init() {
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
 	memory_pool_init(g_scene->pools.voxel_chunks, 8);
 	array_init(g_scene->model_draw_commands, 4, deshi_allocator);
 
 	ShaderStages stages = {};
-	stages.vertex = assets_shader_load_from_file(str8l("flat.vert"), ShaderType_Vertex);
-	stages.fragment = assets_shader_load_from_file(str8l("flat.frag"), ShaderType_Fragment);
+	stages.vertex = assets_shader_load_from_source(str8l("flat.vert"), baked_shader_flat_vert_2, ShaderType_Vertex);
+	stages.fragment = assets_shader_load_from_source(str8l("flat.frag"), baked_shader_flat_frag_2, ShaderType_Fragment);
 	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels flat"), stages, 0);
 
 }
 
 void
-scene_render() {
-	SceneAssert(g_scene->active.window, "need a window to render to.");
-	SceneAssert(g_scene->active.camera, "need a camera to render from.");
+render_update() {
+	RenderAssert(g_scene->active.window, "need a window to render to.");
+	RenderAssert(g_scene->active.camera, "need a camera to render from.");
 	
 	auto win   = g_scene->active.window;
 	auto cam   = g_scene->active.camera;
@@ -110,12 +110,12 @@ scene_render() {
 }
 
 void
-scene_set_active_window(Window* window) {
+render_set_active_window(Window* window) {
 	g_scene->active.window = window;
 }
 
 void
-scene_set_active_camera(Camera* camera) {
+render_set_active_camera(Camera* camera) {
 	g_scene->active.camera = camera;
 }
 
@@ -125,29 +125,29 @@ scene_set_active_camera(Camera* camera) {
 
 
 Camera*
-scene_camera_create() {
+render_camera_create() {
 	auto out = memory_pool_push(g_scene->pools.camera);
 	return out;
 }
 
 void
-scene_camera_update_view(Camera* camera) {
-	SceneAssert(camera, "passed null Camera pointer.");
+render_camera_update_view(Camera* camera) {
+	RenderAssert(camera, "passed null Camera pointer.");
 	camera->right = vec3::UP.cross(camera->forward).normalized();
 	camera->up = camera->forward.cross(camera->right).normalized();
 	camera->view = Math::LookAtMatrix(camera->position, camera->position + camera->forward).Inverse();
 }
 
 void
-scene_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z) {
-	SceneAssert(camera, "passed null Camera pointer.");
+render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z) {
+	RenderAssert(camera, "passed null Camera pointer.");
 	camera->proj = Math::PerspectiveProjectionMatrix(width, height, fov, near_z, far_z);
 	camera->proj.arr[5] *= -1;
 }
 
 void
-scene_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left, f32 top, f32 bottom, f32 far, f32 near_) {
-	SceneAssert(camera, "passed null Camera pointer.");
+render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left, f32 top, f32 bottom, f32 far, f32 near_) {
+	RenderAssert(camera, "passed null Camera pointer.");
 	f32 A =  2 / (right - left),
 		B =  2 / (top - bottom),
 		C = -2 / (far - near_),
@@ -163,12 +163,12 @@ scene_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left,
 }
 
 void
-scene_camera_destroy(Camera* camera) {
+render_camera_destroy(Camera* camera) {
 	memory_pool_delete(g_scene->pools.camera, camera);
 }
 
 void
-scene_camera_draw_frustrum(Camera* camera) {
+render_camera_draw_frustrum(Camera* camera) {
 	// TODO(sushi) implement by transforming 4 points out based on the proj and view matrices
 	NotImplemented;
 }
@@ -179,8 +179,8 @@ scene_camera_draw_frustrum(Camera* camera) {
 
 
 void 
-scene_draw_model(Model* model, mat4* transform) {
-	SceneAssert(model, "passed null Model pointer.");
+render_draw_model(Model* model, mat4* transform) {
+	RenderAssert(model, "passed null Model pointer.");
 	auto cmd = array_push(g_scene->model_draw_commands);
 	cmd->model = model;
 	cmd->transform = transform;
@@ -195,7 +195,7 @@ scene_draw_model(Model* model, mat4* transform) {
 void
 render_temp_init(Window* window, u32 v) {
 	if(v > MAX_U32/3) {
-		SceneError("the given vertex count (", v, ") is too large to allow 3*vertex_count indexes. The max amount of supported vertexes is ", MAX_U32 / 3);
+		RenderError("the given vertex count (", v, ") is too large to allow 3*vertex_count indexes. The max amount of supported vertexes is ", MAX_U32 / 3);
 		return;
 	}
 
