@@ -53,7 +53,7 @@
   ui_init(window);                                   \
   console_init();                                    \
   cmd_init();                                        \
-  Camera* camera = scene_camera_create();            \
+  Camera* camera = render_camera_create();           \
   camera->forward = vec3{0,0,1};                     \
   render_camera_update_perspective_projection(camera, window->width, window->height, 90.0f, 0.1f, 1000.0f); \
   render_camera_update_view(camera);                 \
