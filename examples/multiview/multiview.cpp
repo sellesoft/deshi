@@ -25,6 +25,8 @@
 #include "core/window.h"
 #include "math/math.h"
 
+#include "core/baked/shaders.h"
+
 struct {
 	mat4 view;
 	mat4 proj;
@@ -39,7 +41,7 @@ int main() {
 	graphics_init(win);
 	assets_init(win);
 
-	Model* box = assets_model_create_from_obj(str8l("data/models/box.obj"), 0);
+	Model* box = assets_model_create_from_obj(str8l("box.obj"), 0);
 	
 	auto pipeline = graphics_pipeline_allocate();
 	pipeline->debug_name = str8l("multiview pipeline");
@@ -47,13 +49,13 @@ int main() {
 	pipeline->vertex_shader = graphics_shader_allocate();
 	pipeline->vertex_shader->debug_name = str8l("flat.vert");
 	pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
-	pipeline->vertex_shader->source = file_read_simple(str8l("flat.vert"), deshi_temp_allocator);
+	pipeline->vertex_shader->source = baked_shader_flat_vert_2;
 	graphics_shader_update(pipeline->vertex_shader);
 
 	pipeline->fragment_shader = graphics_shader_allocate();
 	pipeline->fragment_shader->debug_name = str8l("flat.frag");
 	pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
-	pipeline->fragment_shader->source = file_read_simple(str8l("flat.frag"), deshi_temp_allocator);
+	pipeline->fragment_shader->source =	baked_shader_flat_frag_2;
 	graphics_shader_update(pipeline->fragment_shader);
 	
 	pipeline->            front_face = GraphicsFrontFace_CCW;
@@ -171,7 +173,7 @@ int main() {
 			}, deshi_temp_allocator);
 	graphics_descriptor_set_update(texture_descriptor_set);
 	
-	Texture* texture = assets_texture_create_from_file_simple(str8l("alex.png"));
+	Texture* texture = assets_texture_create_from_path_simple(str8l("alex"), str8l("alex.png"));
 
 	descriptor.type = GraphicsDescriptorType_Combined_Image_Sampler;
 	descriptor.shader_stages = GraphicsShaderStage_Fragment;

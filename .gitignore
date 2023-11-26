@@ -12,3 +12,5 @@ examples/*/build
 #delle specific
 examples/shell.bat
 examples/ctime.exe
+examples/scenes/log.txt
+examples/ant_sim/log.txt
