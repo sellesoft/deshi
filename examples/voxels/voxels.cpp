@@ -166,38 +166,8 @@ int main(int args_count, char** args){
 				
 				camera->forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera->rotation));
 				render_camera_update_view(camera);
-			}	
-			if(g_window->resized){
-				render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 			}
-			
-			vec3 inputs = vec3_ZERO();
-			if(key_down(Key_W))     inputs += camera->forward;
-			if(key_down(Key_S))     inputs -= camera->forward;
-			if(key_down(Key_D))     inputs += camera->right;
-			if(key_down(Key_A))     inputs -= camera->right;
-			if(key_down(Key_SPACE)) inputs += camera->up;
-			if(key_down(Key_LCTRL)) inputs -= camera->up;
-			
-			f32 multiplier = 8.f;
-			if(input_lshift_down()) multiplier = 32.f;
-			else if(input_lalt_down()) multiplier = 4.f;
-
-			camera->position += inputs * multiplier * (g_time->deltaTime / 1000);
-			
-			camera->rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
-			camera->rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
-			camera->rotation.x = Clamp(camera->rotation.x, -89.0f, 89.0f);
-			if(camera->rotation.y >  1440.f) camera->rotation.y -= 1440.f;
-			if(camera->rotation.y < -1440.f) camera->rotation.y += 1440.f;
-			
-			camera->forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera->rotation));
-			// camera->right   = vec3_normalized(vec3_cross(vec3_UP(), camera->forward));
-			// camera->up      = vec3_normalized(vec3_cross(camera->forward, camera->right));
-
-			render_camera_update_view(camera);
-		}	
-
+		}
 		if(g_window->resized){
 			render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 		}

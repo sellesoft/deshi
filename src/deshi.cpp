@@ -197,7 +197,6 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 #define __DESHI__ // for various things to detect if deshi is active (eg. utils stuff that can make use of temp alloc)
 #define UNICODE
 #define _UNICODE
-#define RENDER_REWRITE 1
 
 #ifdef BUILD_SLOW
 #define DEBUG(code) do { code } while(0);
@@ -401,11 +400,7 @@ local DeshiStage deshiStage = DS_NONE;
 #  else
 #    error "unhandled platform/vulkan interaction"
 #  endif
-#if RENDER_REWRITE
-#  include "core/renderers/vulkan_nu.cpp"
-#else
 #  include "core/renderers/vulkan.cpp"
-#endif
 #elif DESHI_OPENGL //#if DESHI_VULKAN
 #  if DESHI_WINDOWS
 #    define GLAD_WGL_IMPLEMENTATION

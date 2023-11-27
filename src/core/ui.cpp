@@ -223,26 +223,14 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 	if(v_place_next == -1){
 		//we couldnt find a drawcmd with space for our new verts so we must allocate at the end 
 		g_ui->stats.vertices_reserved += counts.x;
-#ifdef RENDER_REWRITE
 		drawcmd->vertex_offset = g_ui->vertex_buffer.cursor;
 		g_ui->vertex_buffer.cursor += counts.x;
-#else
-		drawcmd->vertex_offset = (g_ui->vertex_arena->cursor - g_ui->vertex_arena->start) / sizeof(uiVertex);
-		g_ui->vertex_arena->cursor += counts.x * sizeof(uiVertex);
-		g_ui->vertex_arena->used += counts.x * sizeof(uiVertex);
-#endif
 	} else drawcmd->vertex_offset = v_place_next;
 	if(i_place_next == -1){
 		//we couldnt find a drawcmd with space for our new indices so we must allocate at the end
 		g_ui->stats.indices_reserved += counts.y;
-#ifdef RENDER_REWRITE
 		drawcmd->index_offset = g_ui->index_buffer.cursor;
 		g_ui->index_buffer.cursor += counts.y;
-#else
-		drawcmd->index_offset = (g_ui->index_arena->cursor - g_ui->index_arena->start) / sizeof(u32);
-		g_ui->index_arena->cursor += counts.y * sizeof(u32);
-		g_ui->index_arena->used += counts.y * sizeof(u32);
-#endif
 	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts_reserved = counts;
 
