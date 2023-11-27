@@ -196,13 +196,6 @@ int main(int args_count, char** args){
 			// camera->up      = vec3_normalized(vec3_cross(camera->forward, camera->right));
 
 			render_camera_update_view(camera);
-
-			text_clear_and_replace(&text->text, to_dstr8v(deshi_temp_allocator, 
-						"forward: ", camera->forward,
-						"\nright: ", camera->right,
-						"\nup: ", camera->up,
-						"\npos: ", camera->position).fin);
-			text->item.dirty = true;
 		}	
 
 		if(g_window->resized){
