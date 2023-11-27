@@ -112,6 +112,7 @@ typedef struct GraphicsGlobal {
 
 	GraphicsStats stats;
 
+	b32 initialized;
 	u32 logging_level;
 	b32 debugging;
 	b32 break_on_error;
