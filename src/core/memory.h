@@ -347,7 +347,6 @@ void deshi__memory_bytes_draw();
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @memory_state
 typedef struct MemoryContext{
-	b32    cleanup_happened; //NOTE(delle) this exists to handle C++ destructors trying to free on program close
 	Heap   arena_heap;
 	Arena* generic_arena; //generic_heap is stored here; not used otherwise
 	Heap*  generic_heap;

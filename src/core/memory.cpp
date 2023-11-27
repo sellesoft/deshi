@@ -187,7 +187,7 @@ void*
 deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(heap);
 	
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(bytes == 0) return 0;
 	Assert(heap && heap->initialized, "Attempted to allocate before heap_init() has been called");
 	
@@ -253,7 +253,7 @@ deshi__memory_heap_add_bytes(Heap* heap, upt bytes, str8 file, upt line){DPZoneS
 
 void
 deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	if(ptr == 0 || heap == 0) return;
 	
 	DEBUG_CheckHeap(heap);
@@ -323,7 +323,7 @@ deshi__memory_heap_remove(Heap* heap, void* ptr, str8 file, upt line){DPZoneScop
 
 void
 deshi__memory_heap_clear(Heap* heap, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	if(heap == 0) return;
 	
 	DEBUG_PrintHeapAction("Cleared a heap[0x%p]%s with %zu bytes", heap, deshi__memory_allocinfo_get(heap).name.str, heap->size);
@@ -373,7 +373,7 @@ Arena*
 deshi__memory_arena_create(upt requested_size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(requested_size == 0) return 0;
 	Assert(g_memory->arena_heap.initialized, "Attempted to create an arena before memory_init() has been called");
 	
@@ -476,7 +476,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 	DEBUG_CheckHeap(&g_memory->arena_heap);
 	DEBUG_CheckArenaHeapArenas();
 	
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(size == 0) return arena;
 	if(arena == 0) return 0;
 	Assert(g_memory->arena_heap.initialized, "Attempted to grow an arena before memory_init() has been called");
@@ -615,7 +615,7 @@ deshi__memory_arena_grow(Arena* arena, upt size, str8 file, upt line){DPZoneScop
 
 void
 deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	
 	DEBUG_PrintArenaAction("Cleared an arena[0x%p]%s with %zu bytes", arena, deshi__memory_allocinfo_get(arena).name.str, arena->size);
 	
@@ -627,7 +627,7 @@ deshi__memory_arena_clear(Arena* arena, str8 file, upt line){DPZoneScoped;
 
 void
 deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	if(arena->used >= arena->size) return;
 	
 	DEBUG_CheckHeap(&g_memory->arena_heap);
@@ -725,7 +725,7 @@ deshi__memory_arena_fit(Arena* arena, str8 file, upt line){DPZoneScoped;
 
 void
 deshi__memory_arena_delete(Arena* arena, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	if(arena == 0) return;
 	
 	DEBUG_CheckHeap(&g_memory->arena_heap);
@@ -1044,7 +1044,7 @@ void*
 deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneScoped;
 	DEBUG_CheckHeap(g_memory->generic_heap);
 	
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(requested_size == 0) return 0;
 	Assert(g_memory->generic_heap && g_memory->generic_heap->initialized, "Attempted to allocate before memory_init() has been called");
 	
@@ -1144,7 +1144,7 @@ deshi__memory_generic_allocate(upt requested_size, str8 file, upt line){DPZoneSc
 //// @memory_generic_realloc
 void*
 deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
 	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
 	
@@ -1357,7 +1357,7 @@ deshi__memory_generic_reallocate(void* ptr, upt requested_size, str8 file, upt l
 //// @memory_generic_zfree
 void
 deshi__memory_generic_zero_free(void* ptr, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	if(ptr == 0) return;
 	
 	DEBUG_CheckHeap(g_memory->generic_heap);
@@ -1468,7 +1468,7 @@ deshi__memory_generic_expose(){DPZoneScoped;
 
 void*
 deshi__memory_temp_allocate(upt size, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(size == 0) return 0;
 	Assert(g_memory->temp_arena.start, "Attempted to temp allocate before memory_init() has been called");
 	
@@ -1494,7 +1494,7 @@ deshi__memory_temp_allocate(upt size, str8 file, upt line){DPZoneScoped;
 
 void*
 deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneScoped;
-	if(g_memory->cleanup_happened) return 0;
+	if(g_memory == 0) return 0;
 	if(size == 0) return 0;
 	if(ptr == 0) return 0;
 	
@@ -1527,7 +1527,7 @@ deshi__memory_temp_reallocate(void* ptr, upt size, str8 file, upt line){DPZoneSc
 
 void
 deshi__memory_temp_clear(){DPZoneScoped;
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	
 	DEBUG_PrintTempAction("Clearing temporary memory which used %zu bytes", g_memory->temp_arena.used);
 	
@@ -1548,7 +1548,7 @@ deshi__memory_temp_expose(){DPZoneScoped;
 void
 deshi__memory_allocinfo_set(void* address, str8 name, Type type){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
-	if(g_memory->cleanup_happened) return;
+	if(g_memory == 0) return;
 	if(address == 0) return;
 	
 	//binary search for address index (or index to insert at)
@@ -1588,7 +1588,7 @@ deshi__memory_allocinfo_get(void* address){DPZoneScoped;
 #if MEMORY_TRACK_ALLOCS
 	local AllocInfo test_alloc_info{0, str8_lit(""), 0, 0, upt(-1), str8_lit(""), 0};
 	
-	if(g_memory->cleanup_happened) return null_alloc_info;
+	if(g_memory == 0) return null_alloc_info;
 	if(address == 0) return null_alloc_info;
 	
 	test_alloc_info.address = address;
@@ -1848,5 +1848,5 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 
 void
 memory_cleanup(){DPZoneScoped;
-	g_memory->cleanup_happened = true;
+	g_memory = 0;
 }
