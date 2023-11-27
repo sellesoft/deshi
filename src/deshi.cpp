@@ -228,8 +228,8 @@ enum
 };
 local DeshiStage deshiStage = DS_NONE;
 
-#define DeshiStageInitStart(stage, dependencies, ...)      \
-  Assert((deshiStage & (dependencies)) == (dependencies)); \
+#define DeshiStageInitStart(stage, dependencies, ...) \
+  Assert(((deshiStage & (dependencies)) == (dependencies)) && (deshiStage & (stage)) != (stage)); \
   Stopwatch stopwatch##stage = start_stopwatch()
 
 #if DESHI_LOG_MODULE_INIT

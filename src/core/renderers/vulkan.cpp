@@ -1537,45 +1537,23 @@ create_sync_objects() {
 
 void
 graphics_init(Window* window) {
+	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to reinitialize the Graphics module or initialzie it before initializing the Platform module");
 	if(!window) {
 		VulkanFatal("passed a null window pointer.");
 		return;
 	}
-
 	if(window->render_info) {
 		VulkanError("the given window has a non-zero render_info. This likely means that the graphics module has already been initialized with the window or the window was not initialized properly (eg. garbage data from a stack allocated window).");
 		return;
 	}
 
-	g_graphics->debugging = true;
-	g_graphics->logging_level = 0;
-	g_graphics->break_on_error = true;
-
 	VulkanNotice("initializing graphics module for window '", window->title, "'.");
-	
 	Stopwatch watch = start_stopwatch();
 	
-	// TODO(sushi) setup allocators specifically for graphics
-	primary_allocator = deshi_allocator;
-	temp_allocator = deshi_temp_allocator;
-
+	graphics_init_shared(window);
+	
+	// create the window info that this window will point to
 	memory_pool_init(window_infos, 4);
-
-	// TODO(sushi) this should be moved to an implementation shared between backends
-	memory_pool_init(g_graphics->pools.descriptor_set_layouts, 8);
-	memory_pool_init(g_graphics->pools.descriptor_sets, 8);
-	memory_pool_init(g_graphics->pools.pipeline_layouts, 8);
-	memory_pool_init(g_graphics->pools.pipelines, 8);
-	memory_pool_init(g_graphics->pools.buffers, 80);
-	memory_pool_init(g_graphics->pools.command_buffers, 8);
-	memory_pool_init(g_graphics->pools.images, 8);
-	memory_pool_init(g_graphics->pools.image_views, 8);
-	memory_pool_init(g_graphics->pools.samplers, 8);
-	memory_pool_init(g_graphics->pools.render_passes, 8);
-	memory_pool_init(g_graphics->pools.framebuffers, 8);
-	memory_pool_init(g_graphics->pools.shaders, 8);
-
-	// create the window info that this window will point to 
 	auto wi = (WindowInfo*)(window->render_info = memory_pool_push(window_infos));
 	wi->support_details.formats = array<VkSurfaceFormatKHR>::create(primary_allocator);
 	wi->support_details.present_modes = array<VkPresentModeKHR>::create(primary_allocator);
@@ -1611,7 +1589,7 @@ graphics_init(Window* window) {
 	create_pipeline_cache();
 
 	VulkanNotice("finished initialization in ", peek_stopwatch(watch), "ms.");
-	deshiStage |= DS_RENDER;
+	DeshiStageInitEnd(DS_RENDER);
 }
 
 
