@@ -12,15 +12,9 @@ render_init() {
 	array_init(g_scene->model_draw_commands, 4, deshi_allocator);
 
 	ShaderStages stages = {};
-	stages.vertex = assets_shader_load_from_source(str8l("flat.vert"), baked_shader_flat_vert_2, ShaderType_Vertex);
-	stages.fragment = assets_shader_load_from_source(str8l("flat.frag"), baked_shader_flat_frag_2, ShaderType_Fragment);
-	array_init_with_elements<ShaderResourceType>(stages.fragment->resources, {
-				ShaderResourceType_Texture});
-	auto resources = array<ShaderResource>::create(deshi_temp_allocator);
-	auto resource = resources.push();
-	resource->type = ShaderResourceType_Texture;
-	resource->texture = assets_texture_null();
-	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels flat"), stages, resources.ptr);
+	stages.vertex = assets_shader_load_from_source(str8l("voxel.vert"), baked_shader_voxel_vert, ShaderType_Vertex);
+	stages.fragment = assets_shader_load_from_source(str8l("voxel.frag"), baked_shader_voxel_frag, ShaderType_Fragment);
+	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels"), stages, 0);
 }
 
 void

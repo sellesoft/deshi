@@ -7,24 +7,16 @@ int main(int args_count, char** args){
 	
 	//init ui
 	{
-		g_ui->base.style.font        = assets_font_create_from_file_bdf(STR8("gohufont-11.bdf"));
+		g_ui->base.style.font        = assets_font_create_from_path_bdf(STR8("gohufont-11.bdf"));
 		g_ui->base.style.font_height = 11;
 		g_ui->base.style.text_color  = Color_White;
 	}
-
-	auto debug = ui_begin_item(0);
-	debug->style.sizing = size_auto;
-	debug->style.background_color = Color_Black;
-	auto text = ui_get_text(ui_make_text(str8l(""), 0));
-	ui_end_item();
 	
 	//init camera
 	{
-		camera->position = Vec3(0, 0, -3);
-		camera->rotation = Vec3(0, 0, 0);
-		//camera->position = Vec3(4,    3, -4);
-		//camera->rotation = Vec3(28, -45,  0);
-		camera->forward  = vec3_FORWARD();
+		camera->position = Vec3(4,    3, -4);
+		camera->rotation = Vec3(28, -45,  0);
+		camera->forward  = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera->rotation));
 		camera->right    = vec3_RIGHT();
 		camera->up       = vec3_UP();
 		render_camera_update_view(camera);
@@ -48,7 +40,7 @@ int main(int args_count, char** args){
 		VoxelType_COUNT
 	};
 	RenderVoxelType voxel_types[VoxelType_COUNT] = {
-		{ PackColorU32(  0,  0,  0,255) },
+		{ PackColorU32(  0,  0,  0,  0) },
 		{ PackColorU32(200,  0,  0,255) },
 		{ PackColorU32(  0,200,  0,255) },
 		{ PackColorU32(  0,  0,200,255) },
@@ -129,19 +121,54 @@ int main(int args_count, char** args){
 	}
 	
 	f32 move_speed = 8.0f;
-	b32 fps = false;
+	b32 draw_grid = true;
 	deshi_loop_start();{
-		render_temp_clear();
-
-		render_temp_box(mat4::TransformationMatrix(Vec3(0, 5, 0), Vec3(0,0,0), vec3::ONE), Color_White);
-		//update camera
-		if(fps){
-			if(g_input->scrollY != 0){
-				if(g_input->scrollY > 0){
-					move_speed *= 2;
-				}else{
-					move_speed /= 2;
+		//// update camera ////
+		if(g_window->focused && !console_is_open()){
+			if(key_pressed(Key_C)){
+				window_set_cursor_mode(window, (window->cursor_mode == CursorMode_FirstPerson) ? CursorMode_Default : CursorMode_FirstPerson);
+			}
+			if(key_down(Mouse_RIGHT)){
+				window_set_cursor_mode(window, CursorMode_FirstPerson);
+			}
+			if(window->cursor_mode == CursorMode_FirstPerson){
+				if(key_released(Mouse_RIGHT)){
+					window_set_cursor_mode(window, CursorMode_Default);
 				}
+				
+				if(g_input->scrollY != 0){
+					if(g_input->scrollY > 0){
+						move_speed *= 2;
+					}else{
+						move_speed /= 2;
+					}
+				}
+				
+				vec3 inputs = vec3_ZERO();
+				if(key_down(Key_W))     inputs += camera->forward;
+				if(key_down(Key_S))     inputs -= camera->forward;
+				if(key_down(Key_D))     inputs += camera->right;
+				if(key_down(Key_A))     inputs -= camera->right;
+				if(key_down(Key_SPACE)) inputs += camera->up;
+				if(key_down(Key_LCTRL)) inputs -= camera->up;
+				
+				f32 multiplier = 8.f;
+				if(input_lshift_down()) multiplier = 32.f;
+				else if(input_lalt_down()) multiplier = 4.f;
+				
+				camera->position += inputs * multiplier * (g_time->deltaTime / 1000);
+				
+				camera->rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
+				camera->rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
+				camera->rotation.x = Clamp(camera->rotation.x, -89.0f, 89.0f);
+				if(camera->rotation.y >  1440.f) camera->rotation.y -= 1440.f;
+				if(camera->rotation.y < -1440.f) camera->rotation.y += 1440.f;
+				
+				camera->forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera->rotation));
+				render_camera_update_view(camera);
+			}	
+			if(g_window->resized){
+				render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 			}
 			
 			vec3 inputs = vec3_ZERO();
@@ -182,17 +209,11 @@ int main(int args_count, char** args){
 			render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 		}
 		
-		if(key_pressed(Key_C)) {
-			if(fps)
-				window_set_cursor_mode(window, CursorMode_Default);
-			else
-				window_set_cursor_mode(window, CursorMode_FirstPerson);
-			fps = !fps;
+		//// update grid ////
+		if(key_pressed(Key_G)){
+			draw_grid = !draw_grid;
 		}
-
-
-		//draw grid
-		{
+		if(draw_grid){
 			int lines = 100;
 			f32 xp = floor(camera->position.x) + lines;
 			f32 xn = floor(camera->position.x) - lines;
@@ -213,27 +234,22 @@ int main(int args_count, char** args){
 			render_temp_line(Vec3(0,0,-1000), Vec3(0,0,1000), Color_Blue);
 		}
 		
-		//update ui
-	//	ui_begin_immediate_branch(&g_ui->base);{
-	//		persist Type anchor = anchor_top_left;
-	//		uiItem* window = ui_begin_item(0);
-	//		if(Math::PointInRectangle(input_mouse_position(),window->pos_screen,window->size)) anchor = (anchor+1) % (anchor_bottom_left+1);
-	//		window->style.sizing           = size_auto;
-	//		window->style.background_color = Color_Black;
-	//		window->style.positioning      = pos_absolute;
-	//		window->style.anchor           = anchor;
-	//		window->id                     = STR8("voxels.info_window");
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime),        " fps").fin, 0);
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, (int)move_speed,                                 " move speed").fin, 0);
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,render_get_stats()->renderTimeMS)," ms render").fin, 0);
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalVoxels,                 " voxels").fin, 0);
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalTriangles,              " triangles").fin, 0);
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalVertices,               " vertices").fin, 0);
-	//		ui_make_text(to_dstr8v(deshi_temp_allocator, render_get_stats()->totalIndices,                " indices").fin, 0);
-	//		ui_make_text(to_dstr8p(camera.position, 2, deshi_temp_allocator).fin, 0);
-	//		ui_make_text(to_dstr8p(camera.rotation, 2, deshi_temp_allocator).fin, 0);
-	//		ui_end_item();
-	//	}ui_end_immediate_branch();
+		//// update ui ////
+		ui_begin_immediate_branch(&g_ui->base);{
+			persist Type anchor = anchor_top_left;
+			uiItem* window = ui_begin_item(0);
+			if(Math::PointInRectangle(input_mouse_position(),window->pos_screen,window->size)) anchor = (anchor+1) % (anchor_bottom_left+1);
+			window->style.sizing           = size_auto;
+			window->style.background_color = Color_Black;
+			window->style.positioning      = pos_absolute;
+			window->style.anchor           = anchor;
+			window->id                     = STR8("voxels.info_window");
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime),        " fps").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)move_speed,                                 " move speed").fin, 0);
+			ui_make_text(to_dstr8p(camera->position, 2, deshi_temp_allocator).fin, 0);
+			ui_make_text(to_dstr8p(camera->rotation, 2, deshi_temp_allocator).fin, 0);
+			ui_end_item();
+		}ui_end_immediate_branch();
 	}deshi_loop_end();
 	deshi_cleanup();
 }

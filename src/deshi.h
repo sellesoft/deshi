@@ -60,7 +60,8 @@
   render_set_active_camera(camera);
 
 #define deshi_loop_start()   \
-  while(platform_update()){
+  while(platform_update()){  \
+    render_temp_clear();
 
 #define deshi_loop_end()     \
     console_update();        \
