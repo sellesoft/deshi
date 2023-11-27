@@ -719,7 +719,7 @@ projection(const vec2& rhs)const{DPZoneScoped;
 	if(m > M_EPSILON){
 		return (rhs / m) * (this->dot(rhs) / m);
 	}else{
-		return vec2_ZERO();
+		return vec2::ZERO;
 	}
 }
 #endif //#ifdef __cplusplus
@@ -1734,10 +1734,11 @@ distance_sq(const vec2i& rhs)const{DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec2i
 vec2i_projection(vec2i lhs, vec2i rhs){DPZoneScoped;
-	f32 m = vec2i_mag(rhs);
+	vec2 rhs_f32 = rhs.to_vec2();
+	f32 m = vec2_mag(rhs_f32);
 	if(m > M_EPSILON){
-		f32 d = vec2i_dot(lhs,rhs);
-		return Vec2i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m));
+		vec2 lhs_f32 = lhs.to_vec2();
+		return vec2_mul_f32(vec2_div_f32(rhs_f32, m), (vec2_dot(lhs_f32,rhs_f32) / m)).to_vec2i();
 	}else{
 		return vec2i_ZERO();
 	}
@@ -1747,12 +1748,13 @@ vec2i_projection(vec2i lhs, vec2i rhs){DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 inline vec2i vec2i:: 
 projection(const vec2i& rhs)const{DPZoneScoped;
-	f32 m = this->mag();
+	vec2 rhs_f32 = rhs.to_vec2();
+	f32 m = vec2_mag(rhs_f32);
 	if(m > M_EPSILON){
-		f32 d = this->dot(rhs);
-		return Vec2i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m));
+		f32 d = vec2_dot(this->to_vec2(),rhs_f32);
+		return Vec2i((s32)((rhs_f32.x  * (d / m)) / m), (s32)((rhs_f32.y * (d / m)) / m));
 	}else{
-		return vec2i_ZERO();
+		return vec2i::ZERO;
 	}
 }
 #endif //#ifdef __cplusplus
@@ -1789,7 +1791,7 @@ slope(const vec2i& rhs)const{DPZoneScoped;
 
 DESHI_MATH_FUNC inline f32
 vec2i_radians_between(vec2i lhs, vec2i rhs){DPZoneScoped;
-	f32 m = vec2i_mag(lhs) * vec2i_mag(rhs);
+	f32 m = DESHI_SQRTF(vec2i_mag_sq(lhs) * vec2i_mag_sq(rhs));
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(vec2i_dot(lhs,rhs) / m);
 	}else{
@@ -1800,7 +1802,7 @@ vec2i_radians_between(vec2i lhs, vec2i rhs){DPZoneScoped;
 #ifdef __cplusplus
 inline f32 vec2i::
 radians_between(const vec2i& rhs)const{DPZoneScoped;
-	f32 m = this->mag() * rhs.mag();
+	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
@@ -2733,7 +2735,7 @@ DESHI_MATH_FUNC inline vec3
 vec3_projection(vec3 lhs, vec3 rhs){DPZoneScoped;
 	f32 m = vec3_mag(rhs);
 	if(m > M_EPSILON){
-		return vec3_div_f32(vec3_mul_f32(rhs, vec3_dot(lhs,rhs)), m);
+		return vec3_mul_f32(vec3_div_f32(rhs, m), (vec3_dot(lhs,rhs) / m));
 	}else{
 		return vec3_ZERO();
 	}
@@ -2743,11 +2745,11 @@ vec3_projection(vec3 lhs, vec3 rhs){DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 inline vec3 vec3::
 projection(const vec3& rhs)const{DPZoneScoped;
-	f32 m = this->mag();
+	f32 m = rhs.mag();
 	if(m > M_EPSILON){
-		return (rhs * this->dot(rhs)) / m;
+		return (rhs / m) * (this->dot(rhs) / m);
 	}else{
-		return vec3_ZERO();
+		return vec3::ZERO;
 	}
 }
 #endif //#ifdef __cplusplus
@@ -2774,7 +2776,7 @@ midpoint(const vec3& rhs)const{DPZoneScoped;
 
 DESHI_MATH_FUNC inline f32
 vec3_radians_between(vec3 lhs, vec3 rhs){DPZoneScoped;
-	f32 m = vec3_mag(lhs) * vec3_mag(rhs);
+	f32 m = DESHI_SQRTF(vec3_mag_sq(lhs) * vec3_mag_sq(rhs));
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(vec3_dot(lhs, rhs) / m);
 	}else{
@@ -2785,7 +2787,7 @@ vec3_radians_between(vec3 lhs, vec3 rhs){DPZoneScoped;
 #ifdef __cplusplus
 inline f32 vec3::
 radians_between(const vec3& rhs)const{DPZoneScoped;
-	f32 m = this->mag() * rhs.mag();
+	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
@@ -3922,10 +3924,11 @@ distance_sq(const vec3i& rhs)const{DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec3i
 vec3i_projection(vec3i lhs, vec3i rhs){DPZoneScoped;
-	f32 m = vec3i_mag(rhs);
+	vec3 rhs_f32 = rhs.to_vec3();
+	f32 m = vec3_mag(rhs_f32);
 	if(m > M_EPSILON){
-		f32 d = vec3i_dot(lhs,rhs);
-		return Vec3i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m));
+		vec3 lhs_f32 = lhs.to_vec3();
+		return vec3_mul_f32(vec3_div_f32(rhs_f32, m), (vec3_dot(lhs_f32,rhs_f32) / m)).to_vec3i();
 	}else{
 		return vec3i_ZERO();
 	}
@@ -3935,12 +3938,13 @@ vec3i_projection(vec3i lhs, vec3i rhs){DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 inline vec3i vec3i:: 
 projection(const vec3i& rhs)const{DPZoneScoped;
-	f32 m = this->mag();
+	vec3 rhs_f32 = rhs.to_vec3();
+	f32 m = vec3_mag(rhs_f32);
 	if(m > M_EPSILON){
-		f32 d = this->dot(rhs);
-		return Vec3i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m));
+		f32 d = vec3_dot(this->to_vec3(),rhs_f32);
+		return Vec3i((s32)((rhs_f32.x * (d / m)) / m), (s32)((rhs_f32.y * (d / m)) / m), (s32)((rhs_f32.z * (d / m)) / m));
 	}else{
-		return vec3i_ZERO();
+		return vec3i::ZERO;
 	}
 }
 #endif //#ifdef __cplusplus
@@ -3967,7 +3971,7 @@ midpoint(const vec3i& rhs)const{DPZoneScoped;
 
 DESHI_MATH_FUNC inline f32
 vec3i_radians_between(vec3i lhs, vec3i rhs){DPZoneScoped;
-	f32 m = vec3i_mag(lhs) * vec3i_mag(rhs);
+	f32 m = DESHI_SQRTF(vec3i_mag_sq(lhs) * vec3i_mag_sq(rhs));
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(vec3i_dot(lhs, rhs) / m);
 	}else{
@@ -3978,7 +3982,7 @@ vec3i_radians_between(vec3i lhs, vec3i rhs){DPZoneScoped;
 #ifdef __cplusplus
 inline f32 vec3i::
 radians_between(const vec3i& rhs)const{DPZoneScoped;
-	f32 m = this->mag() * rhs.mag();
+	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
@@ -5246,7 +5250,7 @@ DESHI_MATH_FUNC inline vec4
 vec4_projection(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 m = vec4_mag(rhs);
 	if(m > M_EPSILON){
-		return vec4_div_f32(vec4_mul_f32(rhs, vec4_dot(lhs,rhs)), m);
+		return vec4_mul_f32(vec4_div_f32(rhs, m), (vec4_dot(lhs,rhs) / m));
 	}else{
 		return vec4_ZERO();
 	}
@@ -5256,11 +5260,11 @@ vec4_projection(vec4 lhs, vec4 rhs){DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 inline vec4 vec4::
 projection(const vec4& rhs)const{DPZoneScoped;
-	f32 m = this->mag();
+	f32 m = rhs.mag();
 	if(m > M_EPSILON){
-		return (rhs * this->dot(rhs)) / m;
+		return (rhs / m) * (this->dot(rhs) / m);
 	}else{
-		return vec4_ZERO();
+		return vec4::ZERO;
 	}
 }
 #endif //#ifdef __cplusplus
@@ -5297,7 +5301,7 @@ midpoint(const vec4& rhs)const{DPZoneScoped;
 
 DESHI_MATH_FUNC inline f32
 vec4_radians_between(vec4 lhs, vec4 rhs){DPZoneScoped;
-	f32 m = vec4_mag(lhs) * vec4_mag(rhs);
+	f32 m = DESHI_SQRTF(vec4_mag_sq(lhs) * vec4_mag_sq(rhs));
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(vec4_dot(lhs, rhs) / m);
 	}else{
@@ -5308,7 +5312,7 @@ vec4_radians_between(vec4 lhs, vec4 rhs){DPZoneScoped;
 #ifdef __cplusplus
 inline f32 vec4::
 radians_between(const vec4& rhs)const{DPZoneScoped;
-	f32 m = this->mag() * rhs.mag();
+	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
@@ -6902,10 +6906,11 @@ distance_sq(const vec4i& rhs)const{DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec4i
 vec4i_projection(vec4i lhs, vec4i rhs){DPZoneScoped;
-	f32 m = vec4i_mag(rhs);
+	vec4 rhs_f32 = rhs.to_vec4();
+	f32 m = vec4_mag(rhs_f32);
 	if(m > M_EPSILON){
-		f32 d = vec4i_dot(lhs,rhs);
-		return Vec4i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m), (s32)(rhs.w * d / m));
+		vec4 lhs_f32 = lhs.to_vec4();
+		return vec4_mul_f32(vec4_div_f32(rhs_f32, m), (vec4_dot(lhs_f32,rhs_f32) / m)).to_vec4i();
 	}else{
 		return vec4i_ZERO();
 	}
@@ -6915,12 +6920,13 @@ vec4i_projection(vec4i lhs, vec4i rhs){DPZoneScoped;
 //Returns the projection of `lhs` on `rhs`
 inline vec4i vec4i:: 
 projection(const vec4i& rhs)const{DPZoneScoped;
-	f32 m = this->mag();
+	vec4 rhs_f32 = rhs.to_vec4();
+	f32 m = vec4_mag(rhs_f32);
 	if(m > M_EPSILON){
-		f32 d = this->dot(rhs);
-		return Vec4i((s32)(rhs.x * d / m), (s32)(rhs.y * d / m), (s32)(rhs.z * d / m), (s32)(rhs.w * d / m));
+		f32 d = vec4_dot(this->to_vec4(),rhs_f32);
+		return Vec4i((s32)((rhs_f32.x * (d / m)) / m), (s32)((rhs_f32.y * (d / m)) / m), (s32)((rhs_f32.z * (d / m)) / m), (s32)((rhs_f32.w * (d / m)) / m));
 	}else{
-		return vec4i_ZERO();
+		return vec4i::ZERO;
 	}
 }
 #endif //#ifdef __cplusplus
@@ -6949,7 +6955,7 @@ midpoint(const vec4i& rhs)const{DPZoneScoped;
 
 DESHI_MATH_FUNC inline f32
 vec4i_radians_between(vec4i lhs, vec4i rhs){DPZoneScoped;
-	f32 m = vec4i_mag(lhs) * vec4i_mag(rhs);
+	f32 m = DESHI_SQRTF(vec4i_mag_sq(lhs) * vec4i_mag_sq(rhs));
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(vec4i_dot(lhs, rhs) / m);
 	}else{
@@ -6960,7 +6966,7 @@ vec4i_radians_between(vec4i lhs, vec4i rhs){DPZoneScoped;
 #ifdef __cplusplus
 inline f32 vec4i::
 radians_between(const vec4i& rhs)const{DPZoneScoped;
-	f32 m = this->mag() * rhs.mag();
+	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
 	if(m > M_EPSILON){
 		return DESHI_ACOSF(this->dot(rhs) / m);
 	}else{
@@ -12195,6 +12201,7 @@ bounded_oscillation(f32 lower, f32 upper, float t){DPZoneScoped;
 #define DESHI_TESTS_MATH
 
 
+#define ASSERT_S32_EQUAL(a,b) Assert((a)==(b))
 #define ASSERT_F32_EQUAL(a,b) Assert(((a)-(b) < 0 ? -((a)-(b)) : (a)-(b)) < 0.00001f)
 #define ASSERT_F64_EQUAL(a,b) Assert(((a)-(b) < 0 ? -((a)-(b)) : (a)-(b)) < 0.000000001)
 
@@ -12224,6 +12231,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(DESHI_RADIANS_TO_DEGREES_F32(0.25f*DESHI_PI_F32),  45.0f);
 		ASSERT_F32_EQUAL(DESHI_RADIANS_TO_DEGREES_F32(0.00f*DESHI_PI_F32),   0.0f);
 	}
+	
 	
 	//// libc ////
 	{
@@ -12380,6 +12388,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(DESHI_ROUNDF( 1.90f),  2.0f);
 		ASSERT_F32_EQUAL(DESHI_ROUNDF( 2.00f),  2.0f);
 	}
+	
 	
 	//// simd ////
 #if DESHI_MATH_USE_SSE
@@ -12935,11 +12944,11 @@ void TEST_deshi_math(){
 	}
 #endif //#if DESHI_MATH_USE_SSE
 	
+	
 	//// vec2 ////
 	{
 		vec2 a;
 		vec2 b;
-#define ASSERT_VEC2_EQUAL(lhs,rhs) a = (lhs);b = (rhs);ASSERT_F32_EQUAL(a.x,b.x);ASSERT_F32_EQUAL(a.y,b.y)
 #define ASSERT_VEC2_VALUES(lhs,x_,y_) a = (lhs);ASSERT_F32_EQUAL(a.x,(x_));ASSERT_F32_EQUAL(a.y,(y_))
 		
 		
@@ -13401,6 +13410,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.90f, 1.90f)),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
 		
+#ifdef __cplusplus
 		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).floor(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).floor(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).floor(), -2.00f,-2.00f);
@@ -13426,6 +13436,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).floor(),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).floor(),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).floor(),  2.00f, 2.00f);
+#endif //#ifdef __cplusplus
 		
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.90f,-1.90f)), -1.00f,-1.00f);
@@ -13453,6 +13464,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.90f, 1.90f)),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
 		
+#ifdef __cplusplus
 		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).ceil(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).ceil(), -1.00f,-1.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).ceil(), -1.00f,-1.00f);
@@ -13478,6 +13490,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).ceil(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).ceil(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).ceil(),  2.00f, 2.00f);
+#endif //#ifdef __cplusplus
 		
 		ASSERT_VEC2_VALUES(vec2_round(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.90f,-1.90f)), -2.00f,-2.00f);
@@ -13505,6 +13518,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.90f, 1.90f)),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(vec2_round(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
 		
+#ifdef __cplusplus
 		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).round(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).round(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).round(), -2.00f,-2.00f);
@@ -13530,6 +13544,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).round(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).round(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).round(),  2.00f, 2.00f);
+#endif //#ifdef __cplusplus
 		
 		ASSERT_VEC2_VALUES(vec2_min(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_min(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.0f,2.0f);
@@ -13540,6 +13555,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.5f,1.0f);
 		
+#ifdef __cplusplus
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).min(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 1.2f,2.3f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13548,6 +13564,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).min(Vec2( 1.0f,2.0f)), 1.0f,-2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).min(Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).min(Vec2(-1.5f,1.0f)), -1.5f,1.0f);
+#endif //#ifdef __cplusplus
 		
 		ASSERT_VEC2_VALUES(vec2_max(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_max(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.2f,2.3f);
@@ -13558,6 +13575,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.0f,2.0f);
 		
+#ifdef __cplusplus
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).max(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 1.2f,2.3f)), 1.2f,2.3f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13566,65 +13584,554 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).max(Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).max(Vec2(-1.5f,1.0f)), -1.0f,2.0f);
+#endif //#ifdef __cplusplus
+		
 		
 #undef ASSERT_VEC2_VALUES
-#undef ASSERT_VEC2_EQUAL
 	}
+	
 	
 	//// vec2i ////
 	{
+		vec2i a;
+		vec2i b;
+#define ASSERT_VEC2I_VALUES(lhs,x_,y_) a = (lhs);ASSERT_S32_EQUAL(a.x,(x_));ASSERT_S32_EQUAL(a.y,(y_))
 		
+		
+		a = vec2i{0,0};
+		b = vec2i{0,0};
+		ASSERT_S32_EQUAL(a.arr[0], 0);
+		ASSERT_S32_EQUAL(a.arr[0], a.x);
+		ASSERT_S32_EQUAL(a.arr[0], a.r);
+		ASSERT_S32_EQUAL(a.arr[0], a.w);
+		ASSERT_S32_EQUAL(a.arr[0], a.u);
+		ASSERT_S32_EQUAL(a.arr[1], 0);
+		ASSERT_S32_EQUAL(a.arr[1], a.y);
+		ASSERT_S32_EQUAL(a.arr[1], a.g);
+		ASSERT_S32_EQUAL(a.arr[1], a.h);
+		ASSERT_S32_EQUAL(a.arr[1], a.v);
+		ASSERT_S32_EQUAL(b.arr[0], 0);
+		ASSERT_S32_EQUAL(b.arr[0], b.x);
+		ASSERT_S32_EQUAL(b.arr[0], b.r);
+		ASSERT_S32_EQUAL(b.arr[0], b.w);
+		ASSERT_S32_EQUAL(b.arr[0], b.u);
+		ASSERT_S32_EQUAL(b.arr[1], 0);
+		ASSERT_S32_EQUAL(b.arr[1], b.y);
+		ASSERT_S32_EQUAL(b.arr[1], b.g);
+		ASSERT_S32_EQUAL(b.arr[1], b.h);
+		ASSERT_S32_EQUAL(b.arr[1], b.v);
+		
+		ASSERT_VEC2I_VALUES(Vec2i(-1,-2), -1,-2);
+		ASSERT_VEC2I_VALUES(Vec2i(-0,-0), -0,-0);
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0),  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2),  1, 2);
+		
+		ASSERT_VEC2I_VALUES(vec2i_ZERO(),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_ONE(),   1, 1);
+		ASSERT_VEC2I_VALUES(vec2i_UP(),    0, 1);
+		ASSERT_VEC2I_VALUES(vec2i_DOWN(),  0,-1);
+		ASSERT_VEC2I_VALUES(vec2i_LEFT(), -1, 0);
+		ASSERT_VEC2I_VALUES(vec2i_RIGHT(), 1, 0);
+		ASSERT_VEC2I_VALUES(vec2i_UNITX(), 1, 0);
+		ASSERT_VEC2I_VALUES(vec2i_UNITY(), 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(vec2i::ZERO,  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i::ONE,   1, 1);
+		ASSERT_VEC2I_VALUES(vec2i::UP,    0, 1);
+		ASSERT_VEC2I_VALUES(vec2i::DOWN,  0,-1);
+		ASSERT_VEC2I_VALUES(vec2i::LEFT, -1, 0);
+		ASSERT_VEC2I_VALUES(vec2i::RIGHT, 1, 0);
+		ASSERT_VEC2I_VALUES(vec2i::UNITX, 1, 0);
+		ASSERT_VEC2I_VALUES(vec2i::UNITY, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		a = Vec2i(1,-2);
+		ASSERT_S32_EQUAL(vec2i_index(a, 0),  1);
+		ASSERT_S32_EQUAL(vec2i_index(a, 1), -2);
+		
+#ifdef __cplusplus
+		a = Vec2i(1,-2);
+		ASSERT_S32_EQUAL(a[0],  1);
+		ASSERT_S32_EQUAL(a[1], -2);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a[0] =  2;
+		a[1] = -4;
+		ASSERT_S32_EQUAL(a.arr[0],  2);
+		ASSERT_S32_EQUAL(a.arr[1], -4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(0, 0), Vec2i( 0,0)),  0,0);
+		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(0, 0), Vec2i( 1,2)),  1,2);
+		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(1, 1), Vec2i( 1,2)),  2,3);
+		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(1,-2), Vec2i(-2,4)), -1,2);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) + Vec2i( 0,0),  0,0);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) + Vec2i( 1,2),  1,2);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) + Vec2i( 1,2),  2,3);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2) + Vec2i(-2,4), -1,2);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2i( 0, 0);
+		a += Vec2i( 0, 0);
+		ASSERT_VEC2I_VALUES(a,  0,0);
+		a  = Vec2i( 0, 0);
+		a += Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  1,2);
+		a  = Vec2i( 1, 1);
+		a += Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  2,3);
+		a  = Vec2i( 1,-2);
+		a += Vec2i(-2, 4);
+		ASSERT_VEC2I_VALUES(a, -1,2);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(0, 0), Vec2i( 0,0)),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(0, 0), Vec2i( 1,2)), -1,-2);
+		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(1, 1), Vec2i( 1,2)),  0,-1);
+		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(1,-2), Vec2i(-2,4)),  3,-6);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) - Vec2i( 0,0),  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) - Vec2i( 1,2), -1,-2);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) - Vec2i( 1,2),  0,-1);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2) - Vec2i(-2,4),  3,-6);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2i( 0, 0);
+		a -= Vec2i( 0, 0);
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 0, 0);
+		a -= Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a, -1,-2);
+		a  = Vec2i( 1, 1);
+		a -= Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  0,-1);
+		a  = Vec2i( 1,-2);
+		a -= Vec2i(-2, 4);
+		ASSERT_VEC2I_VALUES(a,  3,-6);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(0, 0), Vec2i( 0,0)),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(0, 0), Vec2i( 1,2)),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(1, 1), Vec2i( 1,2)),  1, 2);
+		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(1,-2), Vec2i(-2,4)), -2,-8);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) * Vec2i( 0,0),  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) * Vec2i( 1,2),  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) * Vec2i( 1,2),  1, 2);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2) * Vec2i(-2,4), -2,-8);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2i( 0, 0);
+		a *= Vec2i( 0, 0);
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 0, 0);
+		a *= Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 1, 1);
+		a *= Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  1, 2);
+		a  = Vec2i( 1,-2);
+		a *= Vec2i(-2, 4);
+		ASSERT_VEC2I_VALUES(a, -2,-8);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(0, 0),  0),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(0, 0),  1),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(1, 1),  2),  2, 2);
+		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(1,-2), -2), -2, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) *  0,  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) *  1,  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) *  2,  2, 2);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2) * -2, -2, 4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2i( 0, 0);
+		a *= 0;
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 0, 0);
+		a *= 1;
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 1, 1);
+		a *= 2;
+		ASSERT_VEC2I_VALUES(a,  2, 2);
+		a  = Vec2i( 1,-2);
+		a *= -2;
+		ASSERT_VEC2I_VALUES(a, -2, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(1, 1), Vec2i( 1,1)),  1, 1);
+		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(0, 0), Vec2i( 1,2)),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(1, 1), Vec2i( 1,2)),  1, 0);
+		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(1,-2), Vec2i(-2,4)), -0,-0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) / Vec2i( 1,1),  1, 1);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) / Vec2i( 1,2),  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) / Vec2i( 1,2),  1, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2) / Vec2i(-2,4), -0,-0);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2i( 1, 1);
+		a /= Vec2i( 1, 1);
+		ASSERT_VEC2I_VALUES(a,  1, 1);
+		a  = Vec2i( 0, 0);
+		a /= Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 1, 1);
+		a /= Vec2i( 1, 2);
+		ASSERT_VEC2I_VALUES(a,  1, 0);
+		a  = Vec2i( 1,-2);
+		a /= Vec2i(-2, 4);
+		ASSERT_VEC2I_VALUES(a, -0,-0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(1, 1),  1),  1, 1);
+		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(0, 0),  1),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(1, 1),  2),  0, 0);
+		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(1,-2), -2), -0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) /  1,  1, 1);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0) /  1,  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1) /  2,  0, 0);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2) / -2, -0, 1);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec2i( 1, 1.00f);
+		a /= 1;
+		ASSERT_VEC2I_VALUES(a,  1, 1);
+		a  = Vec2i( 0, 0);
+		a /= 1;
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 1, 1);
+		a /= 2;
+		ASSERT_VEC2I_VALUES(a,  0, 0);
+		a  = Vec2i( 1,-2);
+		a /= -2;
+		ASSERT_VEC2I_VALUES(a, -0, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_negate(Vec2i(0, 0)), -0,-0);
+		ASSERT_VEC2I_VALUES(vec2i_negate(Vec2i(1, 1)), -1,-1);
+		ASSERT_VEC2I_VALUES(vec2i_negate(Vec2i(1,-2)), -1, 2);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(-Vec2i(0, 0), -0,-0);
+		ASSERT_VEC2I_VALUES(-Vec2i(1, 1), -1,-1);
+		ASSERT_VEC2I_VALUES(-Vec2i(1,-2), -1, 2);
+#endif //#ifdef __cplusplus
+		
+		Assert(vec2i_equal(Vec2i( 0, 0), Vec2i( 0, 0)));
+		Assert(vec2i_equal(Vec2i( 1, 1), Vec2i( 1, 1)));
+		Assert(vec2i_equal(Vec2i(-1, 2), Vec2i(-1, 2)));
+		Assert(!vec2i_equal(Vec2i( 0, 0), Vec2i( 1, 1)));
+		Assert(!vec2i_equal(Vec2i( 1, 1), Vec2i( 2, 2)));
+		Assert(!vec2i_equal(Vec2i(-1, 2), Vec2i( 1,-2)));
+		Assert(vec2i_equal(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)), Vec2i( 1, 1)));
+		Assert(vec2i_equal(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)), Vec2i( 0, 0)));
+		
+#ifdef __cplusplus
+		Assert(Vec2i( 0, 0) == Vec2i( 0, 0));
+		Assert(Vec2i( 1, 1) == Vec2i( 1, 1));
+		Assert(Vec2i(-1, 2) == Vec2i(-1, 2));
+		Assert(!(Vec2i( 0, 0) == Vec2i( 1, 1)));
+		Assert(!(Vec2i( 1, 1) == Vec2i( 2, 2)));
+		Assert(!(Vec2i(-1, 2) == Vec2i( 1,-2)));
+		Assert(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)) == Vec2i( 1, 1));
+		Assert(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)) == Vec2i( 0, 0));
+#endif //#ifdef __cplusplus
+		
+		Assert(vec2i_nequal(Vec2i( 0, 0), Vec2i( 1, 1)));
+		Assert(vec2i_nequal(Vec2i( 1, 1), Vec2i( 2, 2)));
+		Assert(vec2i_nequal(Vec2i(-1, 2), Vec2i( 1,-2)));
+		Assert(!vec2i_nequal(Vec2i( 0, 0), Vec2i( 0, 0)));
+		Assert(!vec2i_nequal(Vec2i( 1, 1), Vec2i( 1, 1)));
+		Assert(!vec2i_nequal(Vec2i(-1, 2), Vec2i(-1, 2)));
+		Assert(vec2i_nequal(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)), Vec2i( 2, 2)));
+		Assert(vec2i_nequal(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)), Vec2i( 1, 1)));
+		
+#ifdef __cplusplus
+		Assert(Vec2i( 0, 0) != Vec2i( 1, 1));
+		Assert(Vec2i( 1, 1) != Vec2i( 2, 2));
+		Assert(Vec2i(-1, 2) != Vec2i( 1,-2));
+		Assert(!(Vec2i( 0, 0) != Vec2i( 0, 0)));
+		Assert(!(Vec2i( 1, 1) != Vec2i( 1, 1)));
+		Assert(!(Vec2i(-1, 2) != Vec2i(-1, 2)));
+		Assert(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)) != Vec2i( 2, 2));
+		Assert(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)) != Vec2i( 1, 1));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i(-1,-1)), 1,1);
+		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i( 1, 1)), 1,1);
+		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i( 1,-2)), 1,2);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(-1,-1).abs(), 1,1);
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).abs(), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).abs(), 1,1);
+		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).abs(), 1,2);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(0, 0), Vec2i( 0,0)),   0.0f);
+		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(0, 0), Vec2i( 1,2)),   0.0f);
+		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(1, 1), Vec2i( 1,2)),   3.0f);
+		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(1,-2), Vec2i(-2,4)), -10.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).dot(Vec2i( 0,0)),   0.0f);
+		ASSERT_F32_EQUAL(Vec2i(0, 0).dot(Vec2i( 1,2)),   0.0f);
+		ASSERT_F32_EQUAL(Vec2i(1, 1).dot(Vec2i( 1,2)),   3.0f);
+		ASSERT_F32_EQUAL(Vec2i(1,-2).dot(Vec2i(-2,4)), -10.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(0, 0)),  0,0);
+		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(1, 1)), -1,1);
+		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(1, 2)), -2,1);
+		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(1,-2)),  2,1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0).cross(),  0,0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1).cross(), -1,1);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 2).cross(), -2,1);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2).cross(),  2,1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(1, 1)), DESHI_SQRTF(2.0f));
+		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(1, 2)), DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(1,-2)), DESHI_SQRTF(5.0f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).mag(), 0.00f);
+		ASSERT_F32_EQUAL(Vec2i(1, 1).mag(), DESHI_SQRTF(2.0f));
+		ASSERT_F32_EQUAL(Vec2i(1, 2).mag(), DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(Vec2i(1,-2).mag(), DESHI_SQRTF(5.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(1, 1)), 2.0f);
+		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(1, 2)), 5.0f);
+		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(1,-2)), 5.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).mag_sq(), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i(1, 1).mag_sq(), 2.0f);
+		ASSERT_F32_EQUAL(Vec2i(1, 2).mag_sq(), 5.0f);
+		ASSERT_F32_EQUAL(Vec2i(1,-2).mag_sq(), 5.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(1, 1)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(1, 2)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(1,-2)), 0,0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0).normalize(), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1).normalize(), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 2).normalize(), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2).normalize(), 0,0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(0, 0), Vec2i( 0,0)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(0, 0), Vec2i( 1,2)), DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(1, 1), Vec2i( 1,2)), 1.0f);
+		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(1,-2), Vec2i(-2,4)), DESHI_SQRTF(45.0f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).distance(Vec2i( 0,0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i(0, 0).distance(Vec2i( 1,2)), DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(Vec2i(1, 1).distance(Vec2i( 1,2)), 1.0f);
+		ASSERT_F32_EQUAL(Vec2i(1,-2).distance(Vec2i(-2,4)), DESHI_SQRTF(45.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(0, 0), Vec2i( 0,0)),  0.0f);
+		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(0, 0), Vec2i( 1,2)),  5.0f);
+		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(1, 1), Vec2i( 1,2)),  1.0f);
+		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(1,-2), Vec2i(-2,4)), 45.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).distance_sq(Vec2i( 0,0)),  0.0f);
+		ASSERT_F32_EQUAL(Vec2i(0, 0).distance_sq(Vec2i( 1,2)),  5.0f);
+		ASSERT_F32_EQUAL(Vec2i(1, 1).distance_sq(Vec2i( 1,2)),  1.0f);
+		ASSERT_F32_EQUAL(Vec2i(1,-2).distance_sq(Vec2i(-2,4)), 45.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 0, 0), Vec2i( 1, 2)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 2, 2), Vec2i( 5, 0)), 2,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 2, 2), Vec2i( 0, 5)), 0,2);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1, 1), Vec2i( 1, 2)), 0,1);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1,-2), Vec2i(-2, 4)), 1,-2);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1, 2), Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1, 2), Vec2i( 1, 1)), 1,1);
+		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i(-2, 4), Vec2i( 1,-2)), -2,4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection(Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection(Vec2i( 1, 2)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection(Vec2i( 5, 0)), 2,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection(Vec2i( 0, 5)), 0,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).projection(Vec2i( 1, 2)), 0,1);
+		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).projection(Vec2i(-2, 4)), 1,-2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection(Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection(Vec2i( 1, 1)), 1,1);
+		ASSERT_VEC2I_VALUES(Vec2i(-2, 4).projection(Vec2i( 1,-2)), -2,4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(0, 0), Vec2i( 0,0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(0, 0), Vec2i( 1,2)), 0,1);
+		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(1, 1), Vec2i( 1,2)), 1,1);
+		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(1,-2), Vec2i(-2,4)), 0,1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0).midpoint(Vec2i( 0,0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i(0, 0).midpoint(Vec2i( 1,2)), 0,1);
+		ASSERT_VEC2I_VALUES(Vec2i(1, 1).midpoint(Vec2i( 1,2)), 1,1);
+		ASSERT_VEC2I_VALUES(Vec2i(1,-2).midpoint(Vec2i(-2,4)), 0,1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_slope(Vec2i(0, 0), Vec2i( 1,2)),  2.0f);
+		ASSERT_F32_EQUAL(vec2i_slope(Vec2i(1, 1), Vec2i( 2,2)),  1.0f);
+		ASSERT_F32_EQUAL(vec2i_slope(Vec2i(1,-2), Vec2i(-2,4)), -2.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).slope(Vec2i( 1,2)),  2.0f);
+		ASSERT_F32_EQUAL(Vec2i(1, 1).slope(Vec2i( 2,2)),  1.0f);
+		ASSERT_F32_EQUAL(Vec2i(1,-2).slope(Vec2i(-2,4)), -2.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(0, 0), Vec2i( 0,0)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(0, 0), Vec2i( 1,2)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(5, 5), Vec2i( 3,3)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(0, 1), Vec2i( 1,0)), DESHI_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(1,-2), Vec2i(-2,4)), DESHI_PI_F32);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec2i(0, 0).radians_between(Vec2i( 0,0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i(0, 0).radians_between(Vec2i( 1,2)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i(5, 5).radians_between(Vec2i( 3,3)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i(0, 1).radians_between(Vec2i( 1,0)), DESHI_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(Vec2i(1,-2).radians_between(Vec2i(-2,4)), DESHI_PI_F32);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 1, 2), Vec2i( 2,1)), 1,1);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i(-1,-2), Vec2i( 1,2)), -1,-2);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 1,-2), Vec2i( 1,2)), 1,-2);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i(-1, 2), Vec2i( 2,1)), -1,1);
+		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i(-1, 2), Vec2i(-1,1)), -1,1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).min(Vec2i( 0,0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).min(Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).min(Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).min(Vec2i( 2,1)), 1,1);
+		ASSERT_VEC2I_VALUES(Vec2i(-1,-2).min(Vec2i( 1,2)), -1,-2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).min(Vec2i( 1,2)), 1,-2);
+		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).min(Vec2i( 2,1)), -1,1);
+		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).min(Vec2i(-1,1)), -1,1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 1, 2), Vec2i( 2,1)), 2,2);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i(-1,-2), Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 1,-2), Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i(-1, 2), Vec2i( 2,1)), 2,2);
+		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i(-1, 2), Vec2i(-1,1)), -1,2);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).max(Vec2i( 0,0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).max(Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).max(Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).max(Vec2i( 2,1)), 2,2);
+		ASSERT_VEC2I_VALUES(Vec2i(-1,-2).max(Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).max(Vec2i( 1,2)), 1,2);
+		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).max(Vec2i( 2,1)), 2,2);
+		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).max(Vec2i(-1,1)), -1,2);
+#endif //#ifdef __cplusplus
+		
+#undef ASSERT_VEC2I_VALUES
 	}
+	
 	
 	//// vec3 ////
 	{
 		
 	}
 	
+	
 	//// vec3i ////
 	{
 		
 	}
+	
 	
 	//// vec4 ////
 	{
 		
 	}
 	
+	
 	//// vec4i ////
 	{
 		
 	}
+	
 	
 	//// vec_conversions ////
 	{
 		
 	}
 	
+	
 	//// vec_hashing ////
 	{
 		
 	}
+	
 	
 	//// vec_tostring ////
 	{
 		
 	}
 	
+	
 	//// mat3 ////
 	{
 		
 	}
+	
 	
 	//// mat4 ////
 	{
 		
 	}
 	
+	
 	//// mat_conversions ////
 	{
 		
 	}
+	
 	
 	//// mat_hashing ////
 #ifndef DESHI_MATH_DISABLE_HASHING
@@ -13635,6 +14142,7 @@ void TEST_deshi_math(){
 #endif //#ifdef __cplusplus
 #endif //#ifndef DESHI_MATH_DISABLE_HASHING
 	
+	
 	//// mat_tostring ////
 #ifndef DESHI_MATH_DISABLE_TOSTRING
 	{
@@ -13642,25 +14150,30 @@ void TEST_deshi_math(){
 	}
 #endif //#ifndef DESHI_MATH_DISABLE_TOSTRING
 	
+	
 	//// mat_vec_interactions ////
 	{
 		
 	}
+	
 	
 	//// geometry ////
 	{
 		
 	}
 	
+	
 	//// camera ////
 	{
 		
 	}
 	
+	
 	//// cpp_only ////
 	{
 		
 	}
+	
 	
 	//// other ////
 	{
@@ -13669,6 +14182,7 @@ void TEST_deshi_math(){
 }
 
 
+#undef ASSERT_S32_EQUAL
 #undef ASSERT_F32_EQUAL
 #undef ASSERT_F64_EQUAL
 
