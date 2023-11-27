@@ -21,7 +21,6 @@
 #include "core/input.h"
 #include "core/logger.h"
 #include "core/platform.h"
-#include "core/render.h"
 #include "core/assets.h"
 #include "core/threading.h"
 #include "core/time.h"
@@ -29,6 +28,7 @@
 #include "core/ui_widgets.h"
 #include "core/window.h"
 #include "math/math.h"
+#include "core/render.h"
 
 int main() {
 	memory_init(Gigabytes(1), Gigabytes(1));
@@ -36,7 +36,7 @@ int main() {
 	logger_init();
 	Window* win = window_create(str8l("render_api"));
 	window_show(win);
-	render_init_x(win);
+	graphics_init(win);
 
 	struct TwodVertex {
 		vec2 pos;
@@ -49,80 +49,77 @@ int main() {
 		vec2 translation;
 	};
 
-	RenderPipeline* pipeline = render_pipeline_create();
-	pipeline->name = str8l("twod pipeline");
-	
-	array_wrap_and_push(pipeline->shader_stages, {
-		{
-			RenderShaderStage_Vertex,
-			str8l("twod.vert"),
-			file_read_simple(str8l("data/shaders/twod.vert"), deshi_temp_allocator)
-		},
-		{
-			RenderShaderStage_Fragment,
-			str8l("twod.frag"),
-			file_read_simple(str8l("data/shaders/twod.frag"), deshi_temp_allocator)
-		}});
+	GraphicsPipeline* pipeline = graphics_pipeline_allocate();
+	pipeline->debug_name = str8l("twod pipeline");
+	pipeline->vertex_shader = graphics_shader_allocate();
+	pipeline->vertex_shader->debug_name = str8l("twod.vert");
+	pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
+	pipeline->vertex_shader->source = file_read_simple(str8l("twod.vert"), deshi_temp_allocator);
+	graphics_shader_update(pipeline->vertex_shader);
+	pipeline->fragment_shader = graphics_shader_allocate();
+	pipeline->fragment_shader->debug_name = str8l("twod.frag");
+	pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
+	pipeline->fragment_shader->source = file_read_simple(str8l("twod.frag"), deshi_temp_allocator);
+	graphics_shader_update(pipeline->fragment_shader);
 
-	pipeline->            front_face = RenderPipelineFrontFace_CCW;
-	pipeline->               culling = RenderPipelineCulling_None;
-	pipeline->          polygon_mode = RenderPipelinePolygonMode_Fill;
+	pipeline->            front_face = GraphicsFrontFace_CCW;
+	pipeline->               culling = GraphicsPipelineCulling_None;
+	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
 	pipeline->            depth_test = false;
 	pipeline->           color_blend = true;
-	pipeline->        color_blend_op = RenderBlendOp_Add;
-	pipeline->color_src_blend_factor = RenderBlendFactor_Source_Alpha;
-	pipeline->color_dst_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->        alpha_blend_op = RenderBlendOp_Add;
-	pipeline->alpha_src_blend_factor = RenderBlendFactor_One_Minus_Source_Alpha;
-	pipeline->alpha_dst_blend_factor = RenderBlendFactor_Zero;
+	pipeline->        color_blend_op = GraphicsBlendOp_Add;
+	pipeline->color_src_blend_factor = GraphicsBlendFactor_Source_Alpha;
+	pipeline->color_dst_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->        alpha_blend_op = GraphicsBlendOp_Add;
+	pipeline->alpha_src_blend_factor = GraphicsBlendFactor_One_Minus_Source_Alpha;
+	pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	pipeline->        blend_constant = color(10,10,10,255);
-	pipeline->           render_pass = render_pass_of_window_presentation_frame(win);
+	pipeline->           render_pass = graphics_render_pass_of_window_presentation_frames(win);
 
-	array_wrap_and_push(pipeline->dynamic_states, {
-			RenderDynamicState_Viewport,
-			RenderDynamicState_Scissor});
+	pipeline->dynamic_viewport =
+	pipeline->dynamic_scissor  = true;
 
-	array_wrap_and_push(pipeline->vertex_input_bindings,
-			{0, sizeof(TwodVertex)});
+	array_init_with_elements(pipeline->vertex_input_bindings,
+			{{0, sizeof(TwodVertex)}}, deshi_temp_allocator);
 
-	array_wrap_and_push(pipeline->vertex_input_attributes,{
-			{0, 0, RenderFormat_R32G32_Signed_Float, offsetof(TwodVertex, pos)},
-			{1, 0, RenderFormat_R32G32_Signed_Float, offsetof(TwodVertex, uv)}});
+	array_init_with_elements(pipeline->vertex_input_attributes,{
+			{0, 0, GraphicsFormat_R32G32_Float, offsetof(TwodVertex, pos)},
+			{1, 0, GraphicsFormat_R32G32_Float, offsetof(TwodVertex, uv)}});
 
-	RenderDescriptorSetLayout* descriptor_layout = render_descriptor_layout_create();
+	GraphicsDescriptorSetLayout* descriptor_layout = graphics_descriptor_set_layout_allocate();
 	descriptor_layout->debug_name = str8l("twod descriptor layout");
-	array_wrap_and_push(descriptor_layout->bindings, {
+	array_init_with_elements(descriptor_layout->bindings, {
 			{
-				RenderDescriptorType_Combined_Image_Sampler,
-				RenderShaderStage_Fragment,
+				GraphicsDescriptorType_Combined_Image_Sampler,
+				GraphicsShaderStage_Fragment,
 				0
 			}});
-	render_descriptor_layout_update(descriptor_layout);
+	graphics_descriptor_set_layout_update(descriptor_layout);
 
-	RenderPushConstant twod_push_constant;
+	GraphicsPushConstant twod_push_constant;
 	twod_push_constant.size = sizeof(PushConstant);
 	twod_push_constant.offset = 0;
-	twod_push_constant.shader_stage_flags = RenderShaderStage_Vertex;
+	twod_push_constant.shader_stages = GraphicsShaderStage_Vertex;
 
-	RenderPipelineLayout* pipeline_layout = render_pipeline_layout_create();
-	array_wrap_and_push(pipeline_layout->descriptor_layouts, descriptor_layout);
-	array_wrap_and_push(pipeline_layout->push_constants, twod_push_constant);
-	render_pipeline_layout_update(pipeline_layout);
+	GraphicsPipelineLayout* pipeline_layout = graphics_pipeline_layout_allocate();
+	array_init_with_elements(pipeline_layout->descriptor_layouts, {descriptor_layout}, deshi_temp_allocator);
+	array_init_with_elements(pipeline_layout->push_constants, {twod_push_constant}, deshi_temp_allocator);
+	graphics_pipeline_layout_update(pipeline_layout);
 
 	pipeline->layout = pipeline_layout;
-	render_pipeline_update(pipeline);
+	graphics_pipeline_update(pipeline);
 
-	RenderBuffer* vertex_buffer = render_buffer_create(
+	GraphicsBuffer* vertex_buffer = graphics_buffer_create(
 			0, sizeof(TwodVertex) * 16, 
-			RenderBufferUsage_VertexBuffer,
-			RenderMemoryPropertyFlag_HostCoherent,
-			RenderMemoryMapping_Persistent);
+			GraphicsBufferUsage_VertexBuffer,
+			GraphicsMemoryPropertyFlag_HostCoherent,
+			GraphicsMemoryMapping_Persistent);
 
-	RenderBuffer* index_buffer = render_buffer_create(
+	GraphicsBuffer* index_buffer = graphics_buffer_create(
 			0, sizeof(TwodIndex) * 64, 
-			RenderBufferUsage_IndexBuffer,
-			RenderMemoryPropertyFlag_HostCoherent,
-			RenderMemoryMapping_Persistent);
+			GraphicsBufferUsage_IndexBuffer,
+			GraphicsMemoryPropertyFlag_HostCoherent,
+			GraphicsMemoryMapping_Persistent);
 
 	// Create the image that we'll be modifying 
 	s32 width = 256,
@@ -134,42 +131,41 @@ int main() {
 		pixels[i] = randcolor.rgba;
 	}
 
-	RenderImage* image = render_image_create();
-	image->format = RenderFormat_R8G8B8A8_StandardRGB;
-	image->usage = (RenderImageUsage)(RenderImageUsage_Sampled | RenderImageUsage_Transfer_Destination);
-	image->samples = RenderSampleCount_1;
+	GraphicsImage* image = graphics_image_allocate();
+	image->format = GraphicsFormat_R8G8B8A8_SRGB;
+	image->usage = GraphicsImageUsage_Sampled | GraphicsImageUsage_Transfer_Destination;
+	image->samples = GraphicsSampleCount_1;
 	image->extent = {width, height, 4};
-	render_image_update(image);
-	render_image_upload(image, (u8*)pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
+	graphics_image_update(image);
+	graphics_image_write(image, (u8*)pixels, vec2i::ZERO, {image->extent.x, image->extent.y});
 
-	RenderImageView* image_view = render_image_view_create();
+	GraphicsImageView* image_view = graphics_image_view_allocate();
 	image_view->image = image;
 	image_view->format = image->format;
-	image_view->aspect_flags = RenderImageViewAspectFlags_Color;
-	render_image_view_update(image_view);
+	image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
+	graphics_image_view_update(image_view);
 
-	RenderSampler* sampler = render_sampler_create();
-	sampler->mipmaps = 1;
-	sampler->mag_filter = RenderFilter_Nearest;
-	sampler->min_filter = RenderFilter_Nearest;
+	GraphicsSampler* sampler = graphics_sampler_allocate();
+	sampler->mag_filter = GraphicsFilter_Nearest;
+	sampler->min_filter = GraphicsFilter_Nearest;
 	sampler->address_mode_u = 
 	sampler->address_mode_v = 
-	sampler->address_mode_w = RenderSamplerAddressMode_Clamp_To_Border;
+	sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 	sampler->border_color = Color_Black;
-	render_sampler_update(sampler);
+	graphics_sampler_update(sampler);
 
-	RenderDescriptorSet* descriptor_set = render_descriptor_set_create();
-	descriptor_set->layouts = pipeline->layout->descriptor_layouts;
-	render_descriptor_set_update(descriptor_set);
+	GraphicsDescriptorSet* descriptor_set = graphics_descriptor_set_allocate();
+	descriptor_set->layouts = array_copy(pipeline->layout->descriptor_layouts).ptr;
+	graphics_descriptor_set_update(descriptor_set);
 
-	auto descriptors = array<RenderDescriptor>::create_with_count(1, deshi_temp_allocator);
-	descriptors[0].kind = RenderDescriptorType_Combined_Image_Sampler;
-	descriptors[0].image = {
+	GraphicsDescriptor descriptor = {};
+	descriptor.type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor.image = {
 		image_view,
 		sampler,
-		RenderImageLayout_Shader_Read_Only_Optimal
+		GraphicsImageLayout_Shader_Read_Only_Optimal
 	};
-	render_descriptor_set_write(descriptor_set, descriptors.ptr);
+	graphics_descriptor_set_write(descriptor_set, 0, descriptor);
 	
 	f32 w = win->width / 2.f;
 	f32 h = w;
@@ -183,8 +179,8 @@ int main() {
 
 	TwodIndex indexes[6] = {0, 3, 1, 3, 2, 1};
 
-	CopyMemory(vertex_buffer->mapped_data, vertexes, sizeof(TwodVertex)*4);
-	CopyMemory(index_buffer->mapped_data, indexes, sizeof(TwodIndex)*6);
+	CopyMemory(graphics_buffer_mapped_data(vertex_buffer), vertexes, sizeof(TwodVertex)*4);
+	CopyMemory(graphics_buffer_mapped_data(index_buffer), indexes, sizeof(TwodIndex)*6);
 
 	PushConstant pc = {
 		{2.f / win->width, 2.f / win->height},
@@ -192,8 +188,10 @@ int main() {
 	};
 
 	while(platform_update()) {
-		{ using namespace render::cmd;
-			begin_render_pass(win, render_pass_of_window_presentation_frame(win), render_current_present_frame_of_window(win));
+		{ using namespace graphics::cmd;
+			begin_render_pass(win, graphics_render_pass_of_window_presentation_frames(win), graphics_current_present_frame_of_window(win));
+			set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
+			set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
 			bind_pipeline(win, pipeline);
 			push_constant(win, &pc, twod_push_constant);
 			bind_vertex_buffer(win, vertex_buffer);
@@ -203,9 +201,9 @@ int main() {
 			end_render_pass(win);
 		}
 
-		render_update_x(win);
+		graphics_update(win);
 
-		// no seizures here
+		// no seizures her
 		platform_sleep(100);
 
 		u32 col = color(rand()%255, rand()%255, rand()%255, 255).rgba;
@@ -219,6 +217,6 @@ int main() {
 		vec2i offset = {rand() % image->extent.x, rand() % image->extent.y};
 		vec2i extent = {rand() % (image->extent.x - offset.x), rand() % (image->extent.y - offset.y)};
 
-		render_image_upload(image, (u8*)pixels, offset, extent);
+		graphics_image_write(image, (u8*)pixels, offset, extent);
 	}
 }
