@@ -14,11 +14,20 @@
 #ifndef DESHI_RENDER_H
 #define DESHI_RENDER_H
 
+#include "math/math.h"
+
 struct Camera;
 struct RenderDrawModel;
 struct RenderDrawVoxelChunk;
 struct RenderVoxelType;
 struct RenderVoxelChunk;
+struct Window;
+struct Material;
+struct Model;
+struct GraphicsRenderPass;
+struct GraphicsBuffer;
+struct GraphicsPipeline;
+struct GraphicsDescriptorSet;
 
 StartLinkageC();
 
