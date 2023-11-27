@@ -98,8 +98,7 @@ assets_init(Window* window) {
 
 	int width, height, channels;
 	u8* pixels = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &width, &height, &channels, STBI_rgb_alpha);
-	g_assets->null_texture = assets_texture_create_from_memory(
-															   pixels, str8l("null"), 128, 128,
+	g_assets->null_texture = assets_texture_create_from_memory(pixels, str8l("null"), 128, 128,
 															   ImageFormat_RGBA,
 															   TextureType_TwoDimensional,
 															   TextureFilter_Nearest,

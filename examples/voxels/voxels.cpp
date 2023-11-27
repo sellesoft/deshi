@@ -40,7 +40,7 @@ int main(int args_count, char** args){
 		VoxelType_COUNT
 	};
 	RenderVoxelType voxel_types[VoxelType_COUNT] = {
-		{ PackColorU32(  0,  0,  0,255) },
+		{ PackColorU32(  0,  0,  0,  0) },
 		{ PackColorU32(200,  0,  0,255) },
 		{ PackColorU32(  0,200,  0,255) },
 		{ PackColorU32(  0,  0,200,255) },

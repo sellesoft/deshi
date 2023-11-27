@@ -776,5 +776,45 @@ local str8 baked_shader_flat_frag_2 = STR8(
 "}\n"
 );
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// GLSL voxel shader
+local str8 baked_shader_voxel_vert = STR8(
+"#version 450\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"\n"
+"layout(set = 0, binding = 0) uniform UBO{\n"
+"	mat4 view;\n"
+"	mat4 proj;\n"
+"} ubo;\n"
+"\n"
+"layout(push_constant) uniform PC{\n"
+"	mat4 transformation;\n"
+"} primitive;\n"
+"\n"
+"layout(location = 0) in vec3 in_pos;\n"
+"layout(location = 1) in vec2 in_uv;\n"
+"layout(location = 2) in vec4 in_color;\n"
+"layout(location = 3) in vec3 in_normal;\n"
+"\n"
+"layout(location = 0) out vec4 out_color;\n"
+"\n"
+"void main(){\n"
+"	gl_Position = ubo.proj * ubo.view * primitive.transformation * vec4(in_pos.xyz, 1.0);\n"
+"	out_color = in_color;\n"
+"}\n"
+);
+
+local str8 baked_shader_voxel_frag = STR8(
+"#version 450\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"\n"
+"layout(location = 0) in vec4 in_color;\n"
+"layout(location = 0) out vec4 out_color;\n"
+"\n"
+"void main(){\n"
+"	out_color = in_color;\n"
+"}\n"
+);
+
 
 #endif //DESHI_BAKED_SHADERS_H
