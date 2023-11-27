@@ -68,6 +68,7 @@ render_update() {
 
 		bind_pipeline(win, g_scene->voxel_material->pipeline);
 		bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
+		bind_descriptor_set(win, 1, g_scene->voxel_material->descriptor_set);
 		for_pool(g_scene->pools.voxel_chunks) {
 			if(!it->vertex_buffer || !it->index_buffer) {
 				break;
