@@ -645,126 +645,136 @@ DESHI_BAKED_SHADERS_PUSHCONST3D_STRING
 DESHI_BAKED_SHADERS_COMMON_VERTEX_INPUT_STRING
 "\n"
 "void main(){\n"
-"    gl_Position = ubo.lightVP * primitive.model * vec4(inPosition.xyz, 1.0);\n"
+"	gl_Position = ubo.lightVP * primitive.model * vec4(inPosition.xyz, 1.0);\n"
 "}\n"
 );
 
 
-#define L(x) STRINGIZE(x) "\n"
-
-local str8 baked_shader_temp_vert = str8l(
-L(#version 450)
-L(layout(location = 0) in vec3 in_pos;)
-L(layout(location = 1) in vec4 in_color;)
-L(layout(binding = 0) uniform UBO {)
-L(	mat4 view;)
-L(  mat4 proj;)
-L(} ubo;)
-L(layout(location = 0) out vec4 out_color;)
-L(void main() {)
-L(	gl_Position = ubo.proj * ubo.view * vec4(in_pos, 1.f);)
-L(	out_color = in_color;)
-L(})
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// GLSL temp shader
+local str8 baked_shader_temp_vert = STR8(
+"#version 450\n"
+"\n"
+"layout(location = 0) in vec3 in_pos;\n"
+"layout(location = 1) in vec4 in_color;\n"
+"\n"
+"layout(binding = 0) uniform UBO{\n"
+"	mat4 view;\n"
+"	mat4 proj;\n"
+"} ubo;\n"
+"\n"
+"layout(location = 0) out vec4 out_color;\n"
+"void main(){\n"
+"	gl_Position = ubo.proj * ubo.view * vec4(in_pos, 1.f);\n"
+"	out_color = in_color;\n"
+"}\n"
 );
 
-local str8 baked_shader_temp_frag = str8l(
-L(#version 450)
-L(layout(location = 0) in vec4 in_color;)
-L(layout(location = 0) out vec4 out_color;)
-L(void main() {)
-L(	out_color = in_color;)
-L(})
+local str8 baked_shader_temp_frag = STR8(
+"#version 450\n"
+"\n"
+"layout(location = 0) in vec4 in_color;\n"
+"layout(location = 0) out vec4 out_color;\n"
+"\n"
+"void main(){\n"
+"	out_color = in_color;\n"
+"}\n"
 );
 
-local str8 baked_shader_null_vert_2 = str8l(
-L(#version 450)
-L(#extension GL_ARB_separate_shader_objects : enable)
-L()
-L(layout(set = 0, binding = 0) uniform UBO {)
-L(	mat4 view;)
-L(	mat4 proj;)
-L(} ubo;)
-L()
-L(layout(push_constant) uniform PC {)
-L(	mat4 transformation;)
-L(} primitive;)
-L()
-L(layout(location = 0) in vec3 in_pos;)
-L(layout(location = 1) in vec2 in_uv;)
-L(layout(location = 2) in vec4 in_color;)
-L(layout(location = 3) in vec3 in_normal;)
-L()
-L(layout(location = 0) out vec2 out_uv;)
-L()
-L(void main() {)
-L(	gl_Position = ubo.proj * ubo.view * primitive.transformation * vec4(in_pos.xyz, 1.0);)
-L(	out_uv = in_uv;)
-L(})
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// GLSL null shader
+local str8 baked_shader_null_vert_2 = STR8(
+"#version 450\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"\n"
+"layout(set = 0, binding = 0) uniform UBO{\n"
+"	mat4 view;\n"
+"	mat4 proj;\n"
+"} ubo;\n"
+"\n"
+"layout(push_constant) uniform PC{\n"
+"	mat4 transformation;\n"
+"} primitive;\n"
+"\n"
+"layout(location = 0) in vec3 in_pos;\n"
+"layout(location = 1) in vec2 in_uv;\n"
+"layout(location = 2) in vec4 in_color;\n"
+"layout(location = 3) in vec3 in_normal;\n"
+"\n"
+"layout(location = 0) out vec2 out_uv;\n"
+"\n"
+"void main(){\n"
+"	gl_Position = ubo.proj * ubo.view * primitive.transformation * vec4(in_pos.xyz, 1.0);\n"
+"	out_uv = in_uv;\n"
+"}\n"
 );
 
-local str8 baked_shader_null_frag_2 = str8l(
-L(#version 450)
-L(#extension GL_ARB_separate_shader_objects : enable)
-L()
-L(layout(location = 0) in vec2 in_uv;)
-L()
-L(layout(location = 0) out vec4 out_color;)
-L()
-L(const float square_size = 0.1;)
-L()
-L(void main() {)
-L(	vec4 ws = gl_FragCoord;)
-L(	if(mod(ws.x, (2*square_size)) < square_size && mod(ws.y, (2*square_size)) < square_size) {)
-L(		out_color = vec4(0);)
-L(	} else {)
-L(		out_color = vec4(0.8, 0.2, 0.4, 1);)
-L(	})
-L(})
+local str8 baked_shader_null_frag_2 = STR8(
+"#version 450\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"\n"
+"layout(location = 0) in vec2 in_uv;\n"
+"\n"
+"layout(location = 0) out vec4 out_color;\n"
+"\n"
+"const float square_size = 0.1;\n"
+"\n"
+"void main(){\n"
+"	vec4 ws = gl_FragCoord;\n"
+"	if(mod(ws.x, (2*square_size)) < square_size && mod(ws.y, (2*square_size)) < square_size){\n"
+"		out_color = vec4(0);\n"
+"	}else{\n"
+"		out_color = vec4(0.8, 0.2, 0.4, 1);\n"
+"	}\n"
+"}\n"
 );
 
-local str8 baked_shader_flat_vert_2 = str8l(
-L(#version 450)
-L(#extension GL_ARB_separate_shader_objects : enable)
-L()
-L(layout(set = 0, binding = 0) uniform UBO {)
-L(	mat4 view;)
-L(	mat4 proj;)
-L(} ubo;)
-L()
-L(layout(push_constant) uniform PC {)
-L(	mat4 transformation;)
-L(} primitive;)
-L()
-L(layout(location = 0) in vec3 in_pos;)
-L(layout(location = 1) in vec2 in_uv;)
-L(layout(location = 2) in vec4 in_color;)
-L(layout(location = 3) in vec3 in_normal;)
-L()
-L(layout(location = 0) out vec4 out_color;)
-L(layout(location = 1) out vec2 out_uv;)
-L()
-L(void main() {)
-L(	gl_Position = ubo.proj * ubo.view * primitive.transformation * vec4(in_pos.xyz, 1.0);)
-L(	out_color = in_color;)
-L(	out_uv = in_uv;)
-L(})
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// GLSL flat shader
+local str8 baked_shader_flat_vert_2 = STR8(
+"#version 450\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"\n"
+"layout(set = 0, binding = 0) uniform UBO{\n"
+"	mat4 view;\n"
+"	mat4 proj;\n"
+"} ubo;\n"
+"\n"
+"layout(push_constant) uniform PC{\n"
+"	mat4 transformation;\n"
+"} primitive;\n"
+"\n"
+"layout(location = 0) in vec3 in_pos;\n"
+"layout(location = 1) in vec2 in_uv;\n"
+"layout(location = 2) in vec4 in_color;\n"
+"layout(location = 3) in vec3 in_normal;\n"
+"\n"
+"layout(location = 0) out vec4 out_color;\n"
+"layout(location = 1) out vec2 out_uv;\n"
+"\n"
+"void main(){\n"
+"	gl_Position = ubo.proj * ubo.view * primitive.transformation * vec4(in_pos.xyz, 1.0);\n"
+"	out_color = in_color;\n"
+"	out_uv = in_uv;\n"
+"}\n"
 );
 
-local str8 baked_shader_flat_frag_2 = str8l (
-L(#version 450)
-L(#extension GL_ARB_separate_shader_objects : enable)
-L()
-L(layout(set = 1, binding = 0) uniform sampler2D tex;)
-L()
-L(layout(location = 0) in vec4 in_color;)
-L(layout(location = 1) in vec2 in_uv;)
-L(layout(location = 0) out vec4 out_color;)
-L()
-L(void main() {)
-L(	out_color = texture(tex, in_uv) * in_color;)
-L(})
+local str8 baked_shader_flat_frag_2 = STR8(
+"#version 450\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"\n"
+"layout(set = 1, binding = 0) uniform sampler2D tex;\n"
+"\n"
+"layout(location = 0) in vec4 in_color;\n"
+"layout(location = 1) in vec2 in_uv;\n"
+"layout(location = 0) out vec4 out_color;\n"
+"\n"
+"void main(){\n"
+"	out_color = texture(tex, in_uv) * in_color;\n"
+"}\n"
 );
 
-#undef L
 
 #endif //DESHI_BAKED_SHADERS_H
