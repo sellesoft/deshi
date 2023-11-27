@@ -142,6 +142,7 @@ assets_init(Window* window) {
 		g_assets->null_vertex_shader, 0, g_assets->null_fragment_shader
 	};
 	
+	array_init_with_elements<ShaderResourceType>(g_assets->null_fragment_shader->resources, {ShaderResourceType_Texture});
 	auto resources = array<ShaderResource>::create(deshi_allocator);
 	auto r = resources.push();
 	r->type = ShaderResourceType_Texture;
