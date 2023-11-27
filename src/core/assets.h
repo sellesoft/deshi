@@ -216,13 +216,9 @@ Mesh* assets_mesh_allocate(u32 indexCount, u32 vertexCount, u32 faceCount, u32 t
 //  calls `render_load_mesh()` after creation
 Mesh* assets_mesh_create_box(str8 name, f32 width, f32 height, f32 depth, u32 color);
 
-//Returns a pointer to the `Mesh` object created from a `MESH` file named `name` in the `data/models` folder
-//  calls `render_load_mesh()` after creation
-Mesh* assets_mesh_create_from_file(str8 name);
-
 //Returns a pointer to the `Mesh` object created from a `MESH` file at `path`
 //  calls `render_load_mesh()` after creation
-Mesh* assets_mesh_create_from_path(str8 path);
+Mesh* assets_mesh_create_from_path(str8 name, str8 path);
 
 //Returns a pointer to the `Mesh` object created from mesh data at the `data` pointer as a memory-mapping of a `MESH` file
 //  calls `render_load_mesh()` after creation
