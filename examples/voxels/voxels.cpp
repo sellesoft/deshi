@@ -27,8 +27,8 @@ int main(int args_count, char** args){
 		camera->forward  = vec3_FORWARD();
 		camera->right    = vec3_RIGHT();
 		camera->up       = vec3_UP();
-		scene_camera_update_view(camera);
-		scene_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
+		render_camera_update_view(camera);
+		render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 	}
 	
 	//init voxels
@@ -168,7 +168,7 @@ int main(int args_count, char** args){
 			// camera->right   = vec3_normalized(vec3_cross(vec3_UP(), camera->forward));
 			// camera->up      = vec3_normalized(vec3_cross(camera->forward, camera->right));
 
-			scene_camera_update_view(camera);
+			render_camera_update_view(camera);
 
 			text_clear_and_replace(&text->text, to_dstr8v(deshi_temp_allocator, 
 						"forward: ", camera->forward,
@@ -179,7 +179,7 @@ int main(int args_count, char** args){
 		}	
 
 		if(g_window->resized){
-			scene_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
+			render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 		}
 		
 		if(key_pressed(Key_C)) {
