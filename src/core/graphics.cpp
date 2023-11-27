@@ -26,6 +26,11 @@ graphics_buffer_mapped_offset(GraphicsBuffer* x) {
 	return GRAPHICS_INTERNAL(x).mapped.offset;
 }
 
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @commands
+
+
 void 
 graphics_cmd_begin_render_pass(Window* window, GraphicsRenderPass* render_pass, GraphicsFramebuffer* frame) {
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
@@ -113,6 +118,66 @@ graphics_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) 
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @allocate
+
+
+GraphicsImage*
+graphics_image_allocate() {
+	return memory_pool_push(g_graphics->pools.images);
+}
+
+GraphicsImageView* 
+graphics_image_view_allocate() {
+	return memory_pool_push(g_graphics->pools.image_views);
+}
+
+GraphicsSampler* 
+graphics_sampler_allocate() {
+	return memory_pool_push(g_graphics->pools.samplers);
+}
+
+GraphicsDescriptorSet* 
+graphics_descriptor_set_allocate() {
+	return memory_pool_push(g_graphics->pools.descriptor_sets);
+}
+
+GraphicsDescriptorSetLayout* 
+graphics_descriptor_set_layout_allocate() {
+	return memory_pool_push(g_graphics->pools.descriptor_set_layouts);
+}
+
+GraphicsShader* 
+graphics_shader_allocate() {
+	return memory_pool_push(g_graphics->pools.shaders);
+}
+
+GraphicsPipelineLayout* 
+graphics_pipeline_layout_allocate() {
+	return memory_pool_push(g_graphics->pools.pipeline_layouts);
+}
+
+GraphicsPipeline* 
+graphics_pipeline_allocate() {
+	return memory_pool_push(g_graphics->pools.pipelines);
+}
+
+GraphicsRenderPass* 
+graphics_render_pass_allocate() {
+	return memory_pool_push(g_graphics->pools.render_passes);
+}
+
+GraphicsFramebuffer* 
+graphics_framebuffer_allocate() {
+	return memory_pool_push(g_graphics->pools.framebuffers);
+}
+
+GraphicsCommandBuffer* 
+graphics_command_buffer_allocate() {
+	return memory_pool_push(g_graphics->pools.command_buffers);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @shared_internals
 
 
@@ -143,3 +208,4 @@ graphics_init_shared(Window* window){
 	memory_pool_init(g_graphics->pools.framebuffers, 8);
 	memory_pool_init(g_graphics->pools.shaders, 8);
 }
+

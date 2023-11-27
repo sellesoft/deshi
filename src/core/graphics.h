@@ -26,6 +26,20 @@
 	Any object that allocates information in the backend will include a member named `debug_name`
 	which will be used to mark the object with a name for debugging in programs like RenderDoc.
 
+Index:
+@context
+@enums
+@buffer
+@image
+@descriptor
+@push_constant
+@shader
+@pipeline
+@render_pass
+@framebuffer
+@command
+@misc
+
 	TODO(sushi) write-up stuff about each thing in the api
 */
 
@@ -48,6 +62,11 @@ struct GraphicsDescriptorSetLayout;
 struct GraphicsDescriptorSet;
 struct GraphicsCommandBuffer;
 struct GraphicsFramebuffer;
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @context
+
 
 #define GRAPHICS_INTERNAL_BEGIN struct {
 #define GRAPHICS_INTERNAL_END   } __internal;
@@ -117,8 +136,8 @@ void graphics_cleanup();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @enums
-
 // All enums used throughout the graphics api
+
 
 // Specifies a shader stage or stages for use in 
 // various properties of graphics objects.

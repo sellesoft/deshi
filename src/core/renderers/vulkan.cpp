@@ -1588,6 +1588,7 @@ graphics_init(Window* window) {
 	create_sync_objects();
 	create_pipeline_cache();
 
+	g_graphics->initialized = true;
 	VulkanNotice("finished initialization in ", peek_stopwatch(watch), "ms.");
 	DeshiStageInitEnd(DS_RENDER);
 }
@@ -2130,11 +2131,6 @@ graphics_buffer_flush(GraphicsBuffer* x_) {
 // @image
 
 
-GraphicsImage*
-graphics_image_allocate() {
-	return memory_pool_push(g_graphics->pools.images);
-}
-
 void
 graphics_image_update(GraphicsImage* x) {
 	VulkanAssert(x, "passed null GraphicsImage pointer.");
@@ -2253,11 +2249,6 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
 	vkFreeMemory(vk_device, stage.memory, vk_allocator);
 }
 
-GraphicsImageView* 
-graphics_image_view_allocate() {
-	return memory_pool_push(g_graphics->pools.image_views);
-}
-
 void 
 graphics_image_view_update(GraphicsImageView* x) {
 	VulkanAssert(x, "passed null GraphicsImageView pointer.");
@@ -2276,11 +2267,6 @@ graphics_image_view_destroy(GraphicsImageView* x) {
 	vkDestroyImageView(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsImageView));
 	memory_pool_delete(g_graphics->pools.image_views, x);
-}
-
-GraphicsSampler* 
-graphics_sampler_allocate() {
-	return memory_pool_push(g_graphics->pools.samplers);
 }
 
 void 
@@ -2321,11 +2307,6 @@ graphics_sampler_destroy(GraphicsSampler* x) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @descriptor
 
-
-GraphicsDescriptorSetLayout* 
-graphics_descriptor_set_layout_allocate() {
-	return memory_pool_push(g_graphics->pools.descriptor_set_layouts);
-}
 
 void 
 graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x) {
@@ -2370,11 +2351,6 @@ void
 graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x) {
 	vkDestroyDescriptorSetLayout(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsDescriptorSetLayout));
-}
-
-GraphicsDescriptorSet* 
-graphics_descriptor_set_allocate() {
-	return memory_pool_push(g_graphics->pools.descriptor_sets);
 }
 
 void 
@@ -2513,11 +2489,6 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor
 // @shader
 
 
-GraphicsShader* 
-graphics_shader_allocate() {
-	return memory_pool_push(g_graphics->pools.shaders);
-}
-
 void 
 graphics_shader_update(GraphicsShader* x) {
 	VulkanAssert(x, "passed null GraphicsShader pointer.");
@@ -2575,11 +2546,6 @@ graphics_shader_destroy(GraphicsShader* x) {
 // @pipeline
 
 
-GraphicsPipelineLayout* 
-graphics_pipeline_layout_allocate() {
-	return memory_pool_push(g_graphics->pools.pipeline_layouts);
-}
-
 void 
 graphics_pipeline_layout_update(GraphicsPipelineLayout* x) {
 	VulkanAssert(x, "passed a null GraphicsPipelineLayout pointer.");
@@ -2618,11 +2584,6 @@ graphics_pipeline_layout_destroy(GraphicsPipelineLayout* x) {
 	VulkanInfo("destroying pipeline layout '", x->debug_name, "'.");
 	vkDestroyPipelineLayout(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsPipelineLayout));
-}
-
-GraphicsPipeline* 
-graphics_pipeline_allocate() {
-	return memory_pool_push(g_graphics->pools.pipelines);
 }
 
 void 
@@ -2849,11 +2810,6 @@ graphics_pipeline_duplicate(GraphicsPipeline* x) {
 // @render_pass
 
 
-GraphicsRenderPass* 
-graphics_render_pass_allocate() {
-	return memory_pool_push(g_graphics->pools.render_passes);
-}
-
 void 
 graphics_render_pass_update(GraphicsRenderPass* x) {
 	VulkanAssert(x, "passed null GraphicsRenderPass pointer.");
@@ -2950,11 +2906,6 @@ graphics_render_pass_of_window_presentation_frames(Window* window) {
 	return ((WindowInfo*)window->render_info)->presentation_frames[0]->render_pass;
 }
 
-GraphicsFramebuffer* 
-graphics_framebuffer_allocate() {
-	return memory_pool_push(g_graphics->pools.framebuffers);
-}
-
 void 
 graphics_framebuffer_update(GraphicsFramebuffer* x) {
 	VulkanAssert(x, "passed null GraphicsFramebuffer pointer.");
@@ -2994,11 +2945,6 @@ GraphicsFramebuffer*
 graphics_current_present_frame_of_window(Window* window) {
 	auto w = (WindowInfo*)window->render_info;
 	return w->presentation_frames[w->frame_index];
-}
-
-GraphicsCommandBuffer* 
-graphics_command_buffer_allocate() {
-	return memory_pool_push(g_graphics->pools.command_buffers);
 }
 
 void 
