@@ -469,7 +469,7 @@ typedef struct GraphicsBuffer {
 		u64 size;
 		GraphicsBufferUsage usage;
 		GraphicsMemoryPropertyFlags memory_properties;
-		GraphicsMemoryMappingBehavoir mapping_behavoir;
+		GraphicsMemoryMappingBehavoir mapping_behavior;
 
 		struct {
 			void* data;
@@ -488,7 +488,7 @@ typedef struct GraphicsBuffer {
 //   use graphics_buffer_device_size()
 //
 //   'data' is an optional pointer to data to be immediately coppied to the created buffer.
-GraphicsBuffer* graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavoir);
+GraphicsBuffer* graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavior);
 
 // Destroys the given GraphicsBuffer, deallocating its memory on the device and invaliding the given handle.
 void graphics_buffer_destroy(GraphicsBuffer* x);
@@ -501,7 +501,7 @@ void graphics_buffer_reallocate(GraphicsBuffer* x, u64 new_size);
 // Maps 'size' bytes at 'offset' from an unmapped buffer.
 // The buffer must have been created with these properties:
 // 		memory_properties = DeviceLocal | HostVisible
-// 		mapping_behavoir  = Occasionally
+// 		mapping_behavior  = Occasionally
 // If the given buffer is set to persistent mapping a warning is given
 // and the function returns the mapped data pointer. If the buffer was already
 // mapped then a warning is given and the function returns the mapped data
@@ -540,8 +540,8 @@ namespace graphics {
 
 struct Buffer : public GraphicsBuffer {
 	static Buffer* 
-	create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavoir) {
-		return (Buffer*)graphics_buffer_create(data, requested_size, usage, properties, mapping_behavoir);
+	create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping_behavior) {
+		return (Buffer*)graphics_buffer_create(data, requested_size, usage, properties, mapping_behavior);
 	}
 
 	void  reallocate(u64 new_size) { graphics_buffer_reallocate(this, new_size); }

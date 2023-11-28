@@ -641,7 +641,7 @@ graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage
 	result->__internal.size = requested_size;
 	result->__internal.usage = usage;
 	result->__internal.memory_properties = properties;
-	result->__internal.mapping_behavoir = mapping;
+	result->__internal.mapping_behavior = mapping;
 	result->__internal.mapped.data = mapped_data;
 	result->__internal.mapped.size = mapped_size;
 	result->__internal.buffer_handle = (void*)(u64)buffer_handle;
@@ -743,13 +743,13 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
 	u64   mapped_size = 0;
 	if(GL_VERSION_TEST(4,4, glBufferStorage)){
 		GLbitfield storage_flags = 0;
-		if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Never){
+		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Never){
 			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible|GraphicsMemoryPropertyFlag_HostCoherent|GraphicsMemoryPropertyFlag_HostCached)){
 				LogEGl("Called with incompatible mapping and memory flags, GraphicsMemoryMapping_Never and GraphicsMemoryPropertyFlag_HostVisible or GraphicsMemoryPropertyFlag_HostCoherent or GraphicsMemoryPropertyFlag_HostCached.");
 				glDeleteBuffers(1, &new_buffer_handle);
 				return;
 			}
-		}else if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Occasional){
+		}else if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Occasional){
 			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible) && !HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostCoherent)){
 				storage_flags = GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT|GL_CLIENT_STORAGE_BIT; 
 			}else{
@@ -757,7 +757,7 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
 				glDeleteBuffers(1, &new_buffer_handle);
 				return;
 			}
-		}else if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Persistent){
+		}else if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
 			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible)){
 				storage_flags = GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT;
 			}else if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostCoherent)){
@@ -776,13 +776,13 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
 		}
 	}else{
 		//TODO(delle) better buffer usage determination
-		if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Never){
+		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Never){
 			glBufferData(OPENGL_RENDER_BUFFER_TARGET, new_size, 0, GL_STATIC_DRAW);
 			if(opengl_error){
 				glDeleteBuffers(1, &new_buffer_handle);
 				return;
 			}
-		}else if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Persistent){
+		}else if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
 			glBufferData(OPENGL_RENDER_BUFFER_TARGET, new_size, 0, GL_STREAM_DRAW);
 			if(opengl_error){
 				glDeleteBuffers(1, &new_buffer_handle);
@@ -807,7 +807,7 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
 	if(GL_VERSION_TEST(3,1, glCopyBufferSubData)){
 		glCopyBufferSubData(GL_COPY_READ_BUFFER, OPENGL_RENDER_BUFFER_TARGET, 0, 0, old_buffer_size);
 		
-		if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Persistent){
+		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
 			glUnmapBuffer(GL_COPY_READ_BUFFER);
 			
 			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible)){
@@ -839,7 +839,7 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
 			return;
 		}
 		
-		if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Persistent){
+		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
 			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible)){
 				mapped_size = new_size;
 				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
@@ -901,12 +901,12 @@ graphics_buffer_map(GraphicsBuffer* buffer, u64 size, u64 offset){
 		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
 		return 0;
 	}
-	if(buffer->__internal.mapping_behavoir != GraphicsMemoryMapping_Occasional){
+	if(buffer->__internal.mapping_behavior != GraphicsMemoryMapping_Occasional){
 		LogEGl("A buffer must have the mapping GraphicsMemoryMapping_Occasional in order to be mapped in the middle of its lifetime.");
 		return 0;
 	}
 	if(buffer->__internal.mapped.data){
-		if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Persistent){
+		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
 			LogWGl("Cannot map a persistently mapped buffer since it's always actively mapped.");
 		}else{
 			LogWGl("Cannot map an actively mapped buffer.");
@@ -939,12 +939,12 @@ graphics_buffer_unmap(GraphicsBuffer* buffer, b32 flush){
 		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
 		return;
 	}
-	if(buffer->__internal.mapping_behavoir != GraphicsMemoryMapping_Occasional){
+	if(buffer->__internal.mapping_behavior != GraphicsMemoryMapping_Occasional){
 		LogEGl("A buffer must have the mapping GraphicsMemoryMapping_Occasional in order to be unmapped in the middle of its lifetime.");
 		return;
 	}
 	if(!buffer->__internal.mapped.data){
-		if(buffer->__internal.mapping_behavoir == GraphicsMemoryMapping_Persistent){
+		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
 			LogWGl("Cannot unmap a persistently mapped buffer since it's always actively mapped.");
 		}else{
 			LogWGl("The input buffer is not actively mapped.");
