@@ -1934,11 +1934,6 @@ void window_close(Window* window){
 	NotImplemented;
 }
 
-void
-window_swap_buffers(Window* window){
-	XFlush(linux.x11.display);
-}
-
 void window_display_mode(Window* window, DisplayMode displayMode){
 	NotImplemented;
 }

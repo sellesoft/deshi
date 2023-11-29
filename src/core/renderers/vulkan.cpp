@@ -1537,45 +1537,23 @@ create_sync_objects() {
 
 void
 graphics_init(Window* window) {
+	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to reinitialize the Graphics module or initialzie it before initializing the Platform module");
 	if(!window) {
 		VulkanFatal("passed a null window pointer.");
 		return;
 	}
-
 	if(window->render_info) {
 		VulkanError("the given window has a non-zero render_info. This likely means that the graphics module has already been initialized with the window or the window was not initialized properly (eg. garbage data from a stack allocated window).");
 		return;
 	}
 
-	g_graphics->debugging = true;
-	g_graphics->logging_level = 0;
-	g_graphics->break_on_error = false;
-
 	VulkanNotice("initializing graphics module for window '", window->title, "'.");
-	
 	Stopwatch watch = start_stopwatch();
 	
-	// TODO(sushi) setup allocators specifically for graphics
-	primary_allocator = deshi_allocator;
-	temp_allocator = deshi_temp_allocator;
-
+	graphics_init_shared(window);
+	
+	// create the window info that this window will point to
 	memory_pool_init(window_infos, 4);
-
-	// TODO(sushi) this should be moved to an implementation shared between backends
-	memory_pool_init(g_graphics->pools.descriptor_set_layouts, 8);
-	memory_pool_init(g_graphics->pools.descriptor_sets, 8);
-	memory_pool_init(g_graphics->pools.pipeline_layouts, 8);
-	memory_pool_init(g_graphics->pools.pipelines, 8);
-	memory_pool_init(g_graphics->pools.buffers, 80);
-	memory_pool_init(g_graphics->pools.command_buffers, 8);
-	memory_pool_init(g_graphics->pools.images, 8);
-	memory_pool_init(g_graphics->pools.image_views, 8);
-	memory_pool_init(g_graphics->pools.samplers, 8);
-	memory_pool_init(g_graphics->pools.render_passes, 8);
-	memory_pool_init(g_graphics->pools.framebuffers, 8);
-	memory_pool_init(g_graphics->pools.shaders, 8);
-
-	// create the window info that this window will point to 
 	auto wi = (WindowInfo*)(window->render_info = memory_pool_push(window_infos));
 	wi->support_details.formats = array<VkSurfaceFormatKHR>::create(primary_allocator);
 	wi->support_details.present_modes = array<VkPresentModeKHR>::create(primary_allocator);
@@ -1610,8 +1588,9 @@ graphics_init(Window* window) {
 	create_sync_objects();
 	create_pipeline_cache();
 
+	g_graphics->initialized = true;
 	VulkanNotice("finished initialization in ", peek_stopwatch(watch), "ms.");
-	deshiStage |= DS_RENDER;
+	DeshiStageInitEnd(DS_RENDER);
 }
 
 
@@ -1862,7 +1841,7 @@ graphics_buffer_create(
 		u64 requested_size, 
 		GraphicsBufferUsage usage, 
 		GraphicsMemoryPropertyFlags properties, 
-		GraphicsMemoryMappingBehavoir mapping_behavoir) {
+		GraphicsMemoryMappingBehavoir mapping_behavior) {
 	VulkanInfo("creating a buffer.");
 
 	VulkanAssert(requested_size, "cannot create a buffer with size 0.");
@@ -1877,7 +1856,7 @@ graphics_buffer_create(
 	VkBufferCreateInfo create_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
 	create_info.size = requested_size;
 	create_info.usage = graphics_buffer_usage_to_vulkan(usage);
-	if(mapping_behavoir == GraphicsMemoryMapping_Never) {
+	if(mapping_behavior == GraphicsMemoryMapping_Never) {
 		create_info.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
 	create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -1898,7 +1877,7 @@ graphics_buffer_create(
 	VulkanAssertVk(result, "failed to bind buffer to memory.");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)get_memory_handle(out), "<graphics> memory");
 
-	if(mapping_behavoir == GraphicsMemoryMapping_Never) {
+	if(mapping_behavior == GraphicsMemoryMapping_Never) {
 		if(!data) {
 			VulkanWarning("the mapping behavoir of the buffer we are creating is set to 'Never', but the given data pointer is null. I'm not sure yet if there is a legitamate usecase for this, so remove this warning if we ever come across one.");
 		} else {
@@ -1935,7 +1914,7 @@ graphics_buffer_create(
 			vkDestroyBuffer(vk_device, stage, vk_allocator);
 			vkFreeMemory(vk_device, stage_memory, vk_allocator);
 		} 
-	} else if(mapping_behavoir == GraphicsMemoryMapping_Occasional) {
+	} else if(mapping_behavior == GraphicsMemoryMapping_Occasional) {
 		if(data) {
 			auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 			VulkanAssertVk(result, "failed to map memory for initial data copy to GraphicsBuffer. (Mapping behavoir is 'Occasional')");
@@ -1952,7 +1931,7 @@ graphics_buffer_create(
 			vkUnmapMemory(vk_device, get_memory_handle(out));
 		}
 		GRAPHICS_INTERNAL(out).mapped = {};
-	} else if(mapping_behavoir == GraphicsMemoryMapping_Persistent) {
+	} else if(mapping_behavior == GraphicsMemoryMapping_Persistent) {
 		auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 		VulkanAssertVk(result, "failed to perform initial mapping for GraphicsBuffer with 'Persistent' mapping behavoir.");
 
@@ -1968,12 +1947,12 @@ graphics_buffer_create(
 			result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 			VulkanAssertVk(result, "failed to flush memory range while performing initial copy to GraphicsBuffer. (MappingBehavoir is set to 'Persistent').");
 		}
-	} else VulkanAssertVk(!VK_SUCCESS, "invalid mapping_behavoir specified: ", (u32)mapping_behavoir);
+	} else VulkanAssertVk(!VK_SUCCESS, "invalid mapping_behavior specified: ", (u32)mapping_behavior);
 	
 	StaticAssertAlways(sizeof(VkDeviceSize) == sizeof(u64));
 	GRAPHICS_INTERNAL(out).usage = usage;
 	GRAPHICS_INTERNAL(out).memory_properties = properties;
-	GRAPHICS_INTERNAL(out).mapping_behavoir = mapping_behavoir;
+	GRAPHICS_INTERNAL(out).mapping_behavior = mapping_behavior;
 
 	return out;
 }
@@ -2075,7 +2054,7 @@ graphics_buffer_map(GraphicsBuffer* x_, u64 size, u64 offset) {
 	auto x = (graphics::Buffer*)x_;
 
 	if(x->mapped_data()) {
-		if(GRAPHICS_INTERNAL(x).mapping_behavoir == GraphicsMemoryMapping_Persistent) {
+		if(GRAPHICS_INTERNAL(x).mapping_behavior == GraphicsMemoryMapping_Persistent) {
 			VulkanWarning("useless call on buffer '", x->debug_name, "' (", (void*)x, ") as its mapping behavoir is set to 'Persistent'.");
 		} else {
 			VulkanWarning("useless call on buffer '", x->debug_name, "' (", (void*)x, ") as it was already previously mapped.");
@@ -2083,7 +2062,7 @@ graphics_buffer_map(GraphicsBuffer* x_, u64 size, u64 offset) {
 		return x->mapped_data();
 	}
 
-	if(GRAPHICS_INTERNAL(x).mapping_behavoir == GraphicsMemoryMapping_Never) {
+	if(GRAPHICS_INTERNAL(x).mapping_behavior == GraphicsMemoryMapping_Never) {
 		VulkanError("the given buffer's mapping behavoir is 'Never'.");
 		return 0;
 	}
@@ -2153,11 +2132,6 @@ graphics_buffer_flush(GraphicsBuffer* x_) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @image
 
-
-GraphicsImage*
-graphics_image_allocate() {
-	return memory_pool_push(g_graphics->pools.images);
-}
 
 void
 graphics_image_update(GraphicsImage* x) {
@@ -2277,11 +2251,6 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
 	vkFreeMemory(vk_device, stage.memory, vk_allocator);
 }
 
-GraphicsImageView* 
-graphics_image_view_allocate() {
-	return memory_pool_push(g_graphics->pools.image_views);
-}
-
 void 
 graphics_image_view_update(GraphicsImageView* x) {
 	VulkanAssert(x, "passed null GraphicsImageView pointer.");
@@ -2300,11 +2269,6 @@ graphics_image_view_destroy(GraphicsImageView* x) {
 	vkDestroyImageView(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsImageView));
 	memory_pool_delete(g_graphics->pools.image_views, x);
-}
-
-GraphicsSampler* 
-graphics_sampler_allocate() {
-	return memory_pool_push(g_graphics->pools.samplers);
 }
 
 void 
@@ -2345,11 +2309,6 @@ graphics_sampler_destroy(GraphicsSampler* x) {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @descriptor
 
-
-GraphicsDescriptorSetLayout* 
-graphics_descriptor_set_layout_allocate() {
-	return memory_pool_push(g_graphics->pools.descriptor_set_layouts);
-}
 
 void 
 graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x) {
@@ -2394,11 +2353,6 @@ void
 graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x) {
 	vkDestroyDescriptorSetLayout(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsDescriptorSetLayout));
-}
-
-GraphicsDescriptorSet* 
-graphics_descriptor_set_allocate() {
-	return memory_pool_push(g_graphics->pools.descriptor_sets);
 }
 
 void 
@@ -2537,11 +2491,6 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor
 // @shader
 
 
-GraphicsShader* 
-graphics_shader_allocate() {
-	return memory_pool_push(g_graphics->pools.shaders);
-}
-
 void 
 graphics_shader_update(GraphicsShader* x) {
 	VulkanAssert(x, "passed null GraphicsShader pointer.");
@@ -2599,11 +2548,6 @@ graphics_shader_destroy(GraphicsShader* x) {
 // @pipeline
 
 
-GraphicsPipelineLayout* 
-graphics_pipeline_layout_allocate() {
-	return memory_pool_push(g_graphics->pools.pipeline_layouts);
-}
-
 void 
 graphics_pipeline_layout_update(GraphicsPipelineLayout* x) {
 	VulkanAssert(x, "passed a null GraphicsPipelineLayout pointer.");
@@ -2642,11 +2586,6 @@ graphics_pipeline_layout_destroy(GraphicsPipelineLayout* x) {
 	VulkanInfo("destroying pipeline layout '", x->debug_name, "'.");
 	vkDestroyPipelineLayout(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsPipelineLayout));
-}
-
-GraphicsPipeline* 
-graphics_pipeline_allocate() {
-	return memory_pool_push(g_graphics->pools.pipelines);
 }
 
 void 
@@ -2873,11 +2812,6 @@ graphics_pipeline_duplicate(GraphicsPipeline* x) {
 // @render_pass
 
 
-GraphicsRenderPass* 
-graphics_render_pass_allocate() {
-	return memory_pool_push(g_graphics->pools.render_passes);
-}
-
 void 
 graphics_render_pass_update(GraphicsRenderPass* x) {
 	VulkanAssert(x, "passed null GraphicsRenderPass pointer.");
@@ -2974,11 +2908,6 @@ graphics_render_pass_of_window_presentation_frames(Window* window) {
 	return ((WindowInfo*)window->render_info)->presentation_frames[0]->render_pass;
 }
 
-GraphicsFramebuffer* 
-graphics_framebuffer_allocate() {
-	return memory_pool_push(g_graphics->pools.framebuffers);
-}
-
 void 
 graphics_framebuffer_update(GraphicsFramebuffer* x) {
 	VulkanAssert(x, "passed null GraphicsFramebuffer pointer.");
@@ -3018,11 +2947,6 @@ GraphicsFramebuffer*
 graphics_current_present_frame_of_window(Window* window) {
 	auto w = (WindowInfo*)window->render_info;
 	return w->presentation_frames[w->frame_index];
-}
-
-GraphicsCommandBuffer* 
-graphics_command_buffer_allocate() {
-	return memory_pool_push(g_graphics->pools.command_buffers);
 }
 
 void 

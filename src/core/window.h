@@ -112,7 +112,7 @@ struct Window{
 	// opaque handle to the info needed by the current render backend 
 	// to properly draw things to this window
 	void* render_info;
-
+	
 	union{
 		vec2i position;
 		struct{ s32 x, y; };
@@ -144,7 +144,7 @@ struct Window{
 	b32 resized;
 	b32 minimized;
 	b32 close_window;
-
+	
 	Decoration decorations;
 	//HitTest hit_test;
 	//s32 titlebar_height;
@@ -165,9 +165,6 @@ FORCE_INLINE Window* window_create(const char* title, s32 width = 0xFFFFFFFF, s3
 
 //Closes and deletes the `window` (exits the application if this this is the last open window)
 external void window_close(Window* window);
-
-//Swap the display buffer of `window` (used only in OpenGL)
-external void window_swap_buffers(Window* window);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////

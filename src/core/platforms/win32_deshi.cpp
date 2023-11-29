@@ -2204,11 +2204,6 @@ window_close(Window* window){DPZoneScoped;
 }
 
 void
-window_swap_buffers(Window* window){DPZoneScoped;
-	::SwapBuffers((HDC)window->context);
-}
-
-void
 window_display_mode(Window* window, DisplayMode mode){DPZoneScoped;
 	if(window->display_mode == mode) return;
 	

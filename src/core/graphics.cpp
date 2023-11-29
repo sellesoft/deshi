@@ -26,6 +26,11 @@ graphics_buffer_mapped_offset(GraphicsBuffer* x) {
 	return GRAPHICS_INTERNAL(x).mapped.offset;
 }
 
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @commands
+
+
 void 
 graphics_cmd_begin_render_pass(Window* window, GraphicsRenderPass* render_pass, GraphicsFramebuffer* frame) {
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
@@ -109,5 +114,98 @@ graphics_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) 
 	c->set_depth_bias.constant = constant;
 	c->set_depth_bias.clamp = clamp;
 	c->set_depth_bias.slope = slope;
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @allocate
+
+
+GraphicsImage*
+graphics_image_allocate() {
+	return memory_pool_push(g_graphics->pools.images);
+}
+
+GraphicsImageView* 
+graphics_image_view_allocate() {
+	return memory_pool_push(g_graphics->pools.image_views);
+}
+
+GraphicsSampler* 
+graphics_sampler_allocate() {
+	return memory_pool_push(g_graphics->pools.samplers);
+}
+
+GraphicsDescriptorSet* 
+graphics_descriptor_set_allocate() {
+	return memory_pool_push(g_graphics->pools.descriptor_sets);
+}
+
+GraphicsDescriptorSetLayout* 
+graphics_descriptor_set_layout_allocate() {
+	return memory_pool_push(g_graphics->pools.descriptor_set_layouts);
+}
+
+GraphicsShader* 
+graphics_shader_allocate() {
+	return memory_pool_push(g_graphics->pools.shaders);
+}
+
+GraphicsPipelineLayout* 
+graphics_pipeline_layout_allocate() {
+	return memory_pool_push(g_graphics->pools.pipeline_layouts);
+}
+
+GraphicsPipeline* 
+graphics_pipeline_allocate() {
+	return memory_pool_push(g_graphics->pools.pipelines);
+}
+
+GraphicsRenderPass* 
+graphics_render_pass_allocate() {
+	return memory_pool_push(g_graphics->pools.render_passes);
+}
+
+GraphicsFramebuffer* 
+graphics_framebuffer_allocate() {
+	return memory_pool_push(g_graphics->pools.framebuffers);
+}
+
+GraphicsCommandBuffer* 
+graphics_command_buffer_allocate() {
+	return memory_pool_push(g_graphics->pools.command_buffers);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// @shared_internals
+
+
+void
+graphics_init_shared(Window* window){
+	//// init settings ////
+	
+	g_graphics->debugging = true;
+	g_graphics->logging_level = 0;
+	g_graphics->break_on_error = true;
+	
+	//// init memory ////
+	
+	// TODO(sushi) setup allocators specifically for graphics
+	g_graphics->allocators.primary = deshi_allocator;
+	g_graphics->allocators.temp = deshi_temp_allocator;
+	
+	memory_pool_init(g_graphics->pools.descriptor_set_layouts, 8);
+	memory_pool_init(g_graphics->pools.descriptor_sets, 8);
+	memory_pool_init(g_graphics->pools.pipeline_layouts, 8);
+	memory_pool_init(g_graphics->pools.pipelines, 8);
+	memory_pool_init(g_graphics->pools.buffers, 80);
+	memory_pool_init(g_graphics->pools.command_buffers, 8);
+	memory_pool_init(g_graphics->pools.images, 8);
+	memory_pool_init(g_graphics->pools.image_views, 8);
+	memory_pool_init(g_graphics->pools.samplers, 8);
+	memory_pool_init(g_graphics->pools.render_passes, 8);
+	memory_pool_init(g_graphics->pools.framebuffers, 8);
+	memory_pool_init(g_graphics->pools.shaders, 8);
 }
 
