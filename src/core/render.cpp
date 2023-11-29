@@ -94,11 +94,10 @@ render_update() {
 			}		
 
 			if(g_scene->temp.filled.vertex_count) {
-				bind_vertex_buffer(win, g_scene->temp.wireframe.vertex_buffer);
-				bind_index_buffer(win, g_scene->temp.wireframe.index_buffer);
-				bind_pipeline(win, g_scene->temp.wireframe.pipeline);
-				bind_descriptor_set(win, 0, g_scene->temp.descriptor_set);
-				draw_indexed(win, g_scene->temp.wireframe.index_count, 0, 0);
+				bind_vertex_buffer(win, g_scene->temp.filled.vertex_buffer);
+				bind_index_buffer(win, g_scene->temp.filled.index_buffer);
+				bind_pipeline(win, g_scene->temp.filled.pipeline);
+				draw_indexed(win, g_scene->temp.filled.index_count, 0, 0);
 			}
 			end_render_pass(win);
 		}
@@ -201,6 +200,7 @@ render_temp_init(Window* window, u32 v) {
 	g_scene->temp.filled = {};
 	g_scene->temp.filled.vertex_buffer = graphics_buffer_create(0, v * sizeof(RenderTempVertex), GraphicsBufferUsage_VertexBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
 	g_scene->temp.filled.index_buffer  = graphics_buffer_create(0, v * sizeof(RenderTempIndex), GraphicsBufferUsage_IndexBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
+	g_scene->temp.wireframe = {};
 	g_scene->temp.wireframe.vertex_buffer = graphics_buffer_create(0, v * sizeof(RenderTempVertex), GraphicsBufferUsage_VertexBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
 	g_scene->temp.wireframe.index_buffer = graphics_buffer_create(0, v * sizeof(RenderTempIndex), GraphicsBufferUsage_IndexBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
 	
@@ -229,7 +229,7 @@ render_temp_init(Window* window, u32 v) {
 	auto pl = g_scene->temp.filled.pipeline = graphics_pipeline_allocate();
 	pl->            debug_name = str8l("<render> temp pipeline");
 	pl->            front_face = GraphicsFrontFace_CCW;
-	pl->               culling = GraphicsPipelineCulling_Back;
+	pl->               culling = GraphicsPipelineCulling_None;
 	pl->          polygon_mode = GraphicsPolygonMode_Fill;
 	pl->            depth_test = true;
 	pl->          depth_writes = true;
@@ -289,7 +289,8 @@ render_temp_init(Window* window, u32 v) {
 	auto wpl = g_scene->temp.wireframe.pipeline = graphics_pipeline_duplicate(pl);
 	wpl->debug_name = str8l("<render> temp wireframe pipeline");
 	wpl->polygon_mode = GraphicsPolygonMode_Line;
-	wpl->culling = GraphicsPipelineCulling_None;
+	wpl->depth_compare_op = GraphicsCompareOp_Less_Or_Equal;
+	wpl->color_blend_op = GraphicsBlendOp_Max;
 	graphics_pipeline_update(wpl);
 
 	auto ds = g_scene->temp.descriptor_set = graphics_descriptor_set_allocate();
@@ -525,7 +526,10 @@ void render_temp_box_filled(mat4 transform, color c){
 }
 void 
 render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
-	NotImplemented;
+	render_temp_circle(pos, Vec3( 0, 0, 0), radius, segments, c);
+	render_temp_circle(pos, Vec3( 0,90, 0), radius, segments, c);
+	render_temp_circle(pos, Vec3(90, 0, 0), radius, segments, c);
+		
 	// bleh. do later
 	
 	//	f32 dtheta = M_2PI / rings;
