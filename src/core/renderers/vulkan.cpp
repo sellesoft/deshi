@@ -1549,7 +1549,7 @@ graphics_init(Window* window) {
 
 	g_graphics->debugging = true;
 	g_graphics->logging_level = 0;
-	g_graphics->break_on_error = true;
+	g_graphics->break_on_error = false;
 
 	VulkanNotice("initializing graphics module for window '", window->title, "'.");
 	
@@ -1956,6 +1956,8 @@ graphics_buffer_create(
 		auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 		VulkanAssertVk(result, "failed to perform initial mapping for GraphicsBuffer with 'Persistent' mapping behavoir.");
 
+		GRAPHICS_INTERNAL(out).mapped.size = req.size;
+		GRAPHICS_INTERNAL(out).mapped.offset = 0;
 		if(data) {
 			CopyMemory(GRAPHICS_INTERNAL(out).mapped.data, data, requested_size);
 
