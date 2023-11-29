@@ -2,6 +2,7 @@
 # gdb extension for providing debugging functionality for deshi things  
 #
 
+import numpy
 import gdb
 pp = gdb.printing.RegexpCollectionPrettyPrinter("deshi")
 
@@ -13,6 +14,12 @@ class vec2printer:
         return f"({self.val['x']}, {self.val['y']})"
 pp.add_printer("vec2", "^vec2$", vec2printer)
 
+class vec3printer:
+    def __init__(self, val): self.val = val
+    def to_string(self):
+        return f"({self.val['x']}, {self.val['y']}, {self.val['z']})"
+pp.add_printer("vec3", "^vec3$", vec3printer)
+
 class vec2iprinter:
     def __init__(self, val):
         self.val = val
@@ -20,6 +27,18 @@ class vec2iprinter:
     def to_string(self):
         return f"({self.val['x']}, {self.val['y']})"
 pp.add_printer("vec2i", "^vec2i$", vec2iprinter)
+
+class mat4printer:
+    def __init__(self, val): self.val = val
+    def to_string(self):
+        def e(x):
+            return self.val["arr"][x]
+        return str(numpy.matrix(
+            [[e[ 0],e[ 1],e[ 2],e[ 3]],
+             [e[ 4],e[ 5],e[ 6],e[ 7]],
+             [e[ 8],e[ 9],e[10],e[11]],
+             [e[12],e[13],e[14],e[15]]]))
+pp.add_printer("mat4", "^mat4$", mat4printer)
 
 class textprinter:
     def __init__(self, val):
