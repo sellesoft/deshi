@@ -330,6 +330,11 @@ render_temp_set_camera_projection(mat4 proj){
 
 void 
 render_temp_line(vec3 start, vec3 end, color c){
+	render_temp_line_gradient(start, end, c, c);
+}
+
+void
+render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_color) {
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.vertex_buffer) + g_scene->temp.wireframe.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.index_buffer) + g_scene->temp.wireframe.index_count;
 	
@@ -338,8 +343,8 @@ render_temp_line(vec3 start, vec3 end, color c){
 	ip[0] = first;
 	ip[1] = first+1;
 	ip[2] = first;
-	vp[0] = {start, c.rgba};
-	vp[1] = {end,   c.rgba};
+	vp[0] = {start, start_color.rgba};
+	vp[1] = {end,   end_color.rgba};
 	
 	g_scene->temp.wireframe.index_count  += 3;
 	g_scene->temp.wireframe.vertex_count += 2;
