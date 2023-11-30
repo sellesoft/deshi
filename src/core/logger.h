@@ -336,7 +336,7 @@ logger_init(u32 log_count, b32 mirror){DPZoneScoped;
 	u8 path_buffer[256];
 	
 	//create log file named as current time
-	logger.file = file_init(str8_lit("log.txt"), FileAccess_ReadWriteAppendCreate);
+	logger.file = file_init(str8_lit("log.txt"), FileAccess_WriteTruncateCreate);
 	Assert(logger.file, "logger failed to open file");
 	
 	//write date at top of file
