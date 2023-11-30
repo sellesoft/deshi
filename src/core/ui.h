@@ -471,6 +471,9 @@ struct uiDrawCmd{
 	u32 index_offset;
 	vec2i counts_reserved; //x: vertex, y: index
 	vec2i counts_used; //x: vertex, y: index
+	b32 freed;
+	str8 removed_by;
+	str8 alloced_by;
 };
 
 // allocates `count amount of uiDrawCmds generically 

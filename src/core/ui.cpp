@@ -42,6 +42,7 @@ Index:
 #define gen_error(file,line,...)\
   LogE("ui",CyanFormatComma(file),":",line,":",RedFormatComma("error"),":",__VA_ARGS__)
 
+
 void push_item(uiItem* item){DPZoneScoped;
 	g_ui->item_stack.add(item);
 }
@@ -64,63 +65,82 @@ ui_make_drawcmd(upt count){
 }
 
 void 
-ui_drawcmd_delete(uiDrawCmd* dc){
+ui_drawcmd_delete(uiDrawCmd* dc) {
 	memzfree(dc);
 	g_ui->stats.drawcmds_reserved--;
 }
 
 
+pair<s32, b32>
+find_drawcmd_vertex(uiDrawCmd* dc) {
+	if(!g_ui->inactive_drawcmds_vertex_sorted.count) return {0, false};
+	s32 l = 0, m = 0, r = g_ui->inactive_drawcmds_vertex_sorted.count - 1;
+	while(l <= r) {
+		m = l+(r-l)/2;
+		if(g_ui->inactive_drawcmds_vertex_sorted[m]->vertex_offset == dc->vertex_offset) {
+			return {m,true};
+		} else if(g_ui->inactive_drawcmds_vertex_sorted[m]->vertex_offset < dc->vertex_offset) {
+			l = m+1;
+		} else {
+			r = m-1;
+		}
+	}
+	return {m, false};
+}
+
+pair<s32, b32>
+find_drawcmd_index(uiDrawCmd* dc) {
+	if(!g_ui->inactive_drawcmds_index_sorted.count) return {0, false};
+	s32 l = 0, m = 0, r = g_ui->inactive_drawcmds_index_sorted.count - 1;
+	while(l <= r) {
+		m = l+(r-l)/2;
+		if(g_ui->inactive_drawcmds_index_sorted[m]->index_offset == dc->index_offset) {
+			return {m,true};
+		} else if(g_ui->inactive_drawcmds_index_sorted[m]->index_offset < dc->index_offset) {
+			l = m+1;
+		} else {
+			r = m-1;
+		}
+	}
+	return {m, false};
+}
+
+
 void 
 ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
-	/*
-		Because we store our vertexes and indexes (here on as drawinfo) in manually managed Arenas,
-		we need to keep track of the drawinfo that a drawcmd releases when it is not needed anymore
-		so that later drawcmds may come and use it. We do this by storing a linked list of inactive
-		drawcmds, which we organize in arrays sorted by their *memory address*. This allows us to
-		merge bordering drawcmds.
-	*/
-	
+	if(!(drawcmd->counts_reserved.x || drawcmd->counts_reserved.y)) {
+		ui_drawcmd_delete(drawcmd);
+		return;
+	}
+
 	carray<uiDrawCmd*> varr = {g_ui->inactive_drawcmds_vertex_sorted.data, g_ui->inactive_drawcmds_vertex_sorted.count};
 	carray<uiDrawCmd*> iarr = {g_ui->inactive_drawcmds_index_sorted.data, g_ui->inactive_drawcmds_index_sorted.count};
 	
 	if(g_ui->inactive_drawcmds_vertex_sorted.count){
-		s32 idx = -1;
-		s32 mid =  0;
-		s32 left = 0;
-		s32 right = varr.count-1;
-		while(left <= right){
-			mid = left + (right-left)/2;
-			if(varr[mid]->vertex_offset < drawcmd->vertex_offset){
-				left = mid + 1;
-				mid = left+((right-left)/2);
-			}else{
-				right = mid - 1;
-			}
-		}
-		
-		g_ui->inactive_drawcmds_vertex_sorted.insert(drawcmd, mid);
-		
-		if(mid != g_ui->inactive_drawcmds_vertex_sorted.count-1){
-			uiDrawCmd* right = g_ui->inactive_drawcmds_vertex_sorted[mid+1];
+		auto [index, found] = find_drawcmd_vertex(drawcmd);
+		Assert(!found, "we shouldn't come across a drawcmd that's already in this list.");
+		g_ui->inactive_drawcmds_vertex_sorted.insert(drawcmd, index);
+		if(index != g_ui->inactive_drawcmds_vertex_sorted.count-1){
+			uiDrawCmd* right = g_ui->inactive_drawcmds_vertex_sorted[index+1];
 			if(right->vertex_offset - drawcmd->counts_reserved.x == drawcmd->vertex_offset){
 				// in this case we have found a drawcmd on the right side that is aligned with the one we are currently 
 				// deleting, so we can take its vertices and set its count to 0
 				drawcmd->counts_reserved.x += right->counts_reserved.x;
 				right->counts_reserved.x = 0;
-				g_ui->inactive_drawcmds_vertex_sorted.remove(mid+1);
+				g_ui->inactive_drawcmds_vertex_sorted.remove(index+1);
 				if(!right->counts_reserved.y){
 					ui_drawcmd_delete(right);
 				}
 			}
 		}
-		if(mid){
-			uiDrawCmd* left = g_ui->inactive_drawcmds_vertex_sorted[mid-1];
+		if(index){
+			uiDrawCmd* left = g_ui->inactive_drawcmds_vertex_sorted[index-1];
 			if(left->vertex_offset + left->counts_reserved.x == drawcmd->vertex_offset){
 				// in this case we have found a drawcmd on the left side that is aligned with the one we are currently 
 				// deleting, so we can give it it's vertices and set them to 0
 				left->counts_reserved.x += drawcmd->counts_reserved.x;
 				drawcmd->counts_reserved.x = 0; 
-				g_ui->inactive_drawcmds_vertex_sorted.remove(mid);
+				g_ui->inactive_drawcmds_vertex_sorted.remove(index);
 				//since this is the drawcmd we are currently working with, its index count shouldn't be zero so we dont check that
 			}
 		}
@@ -129,43 +149,30 @@ ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 	}
 	
 	if(g_ui->inactive_drawcmds_index_sorted.count){
-		s32 idx = -1;
-		s32 mid =  0;
-		s32 left = 0;
-		s32 right = iarr.count-1;
-		while(left <= right){
-			mid = left + (right-left)/2;
-			if(iarr[mid]->index_offset < drawcmd->index_offset){
-				left = mid + 1;
-				mid = left+((right-left)/2);
-			}else{
-				right = mid - 1;
-			}
-		}
-		
-		g_ui->inactive_drawcmds_index_sorted.insert(drawcmd, mid);
-		
-		if(mid != g_ui->inactive_drawcmds_index_sorted.count-1){
-			uiDrawCmd* right = g_ui->inactive_drawcmds_index_sorted[mid+1];
+		auto [index, found] = find_drawcmd_index(drawcmd);
+		Assert(!found, "we shouldn't come across a drawcmd that's already in this list.");
+		g_ui->inactive_drawcmds_index_sorted.insert(drawcmd, index);
+		if(index != g_ui->inactive_drawcmds_index_sorted.count-1){
+			uiDrawCmd* right = g_ui->inactive_drawcmds_index_sorted[index+1];
 			if(right->index_offset - drawcmd->counts_reserved.y == drawcmd->index_offset){
 				// in this case we have found a drawcmd on the right side that is aligned with the one we are currently 
 				// deleting, so we can take its vertices and set its count to 0
 				drawcmd->counts_reserved.y += right->counts_reserved.y;
 				right->counts_reserved.y = 0;
-				g_ui->inactive_drawcmds_index_sorted.remove(mid+1);
+				g_ui->inactive_drawcmds_index_sorted.remove(index+1);
 				if(!right->counts_reserved.x){
 					ui_drawcmd_delete(right);
 				}
 			}
 		}
-		if(mid){
-			uiDrawCmd* left = g_ui->inactive_drawcmds_index_sorted[mid-1];
+		if(index){
+			uiDrawCmd* left = g_ui->inactive_drawcmds_index_sorted[index-1];
 			if(left->index_offset + left->counts_reserved.y == drawcmd->index_offset){
 				// in this case we have found a drawcmd on the left side that is aligned with the one we are currently 
 				// deleting, so we can give it it's vertices and set them to 0
 				left->counts_reserved.y += drawcmd->counts_reserved.y;
 				drawcmd->counts_reserved.y = 0; 
-				g_ui->inactive_drawcmds_index_sorted.remove(mid);
+				g_ui->inactive_drawcmds_index_sorted.remove(index);
 				if(!drawcmd->counts_reserved.x){
 					//this drawcmd has been absorbed by others, so its safe to delete it
 					ui_drawcmd_delete(drawcmd);
@@ -191,6 +198,8 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 				g_ui->inactive_drawcmds_vertex_sorted.remove(i);
 				dc->counts_reserved.x = 0;
 				if(!dc->counts_reserved.y){
+					auto [index, found] = find_drawcmd_index(dc);
+					if(found) g_ui->inactive_drawcmds_index_sorted.remove(index);
 					ui_drawcmd_delete(dc);
 				}
 			}else{
@@ -203,6 +212,11 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 	
 	forI(g_ui->inactive_drawcmds_index_sorted.count){
 		uiDrawCmd* dc = g_ui->inactive_drawcmds_index_sorted[i];
+		if(dc->freed) { // it's possible this dc was already deleted above, so we have to remove it from the list here
+			g_ui->inactive_drawcmds_index_sorted.remove(i);
+			i--;
+		} 
+
 		s64 iremain = dc->counts_reserved.y - counts.y;
 		if(iremain >= 0){
 			i_place_next = dc->index_offset;
