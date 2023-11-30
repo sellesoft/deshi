@@ -55,9 +55,10 @@ local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 #define LogEGl(...) LogE("opengl", __func__, "(): ", __VA_ARGS__); Assert(!g_graphics->break_on_error)
 #define GL_VERSION_TEST(major,minor,...) (opengl_version >= GLAD_MAKE_VERSION(major,minor))
 
+
 #if DESHI_WINDOWS
 local void
-WGLDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){
+WGLDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){DPZoneScoped;
 	DWORD error_code = ::GetLastError();
 	const char* error_flag = 0;
 	const char* error_msg  = 0;
@@ -75,10 +76,10 @@ WGLDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_a
 			error_msg  = "?";
 		}break;
 	}
-	LogE("render-wgl","ERROR_",(u32)error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
-	if(g_graphics->break_on_error) Assert(!"crashing because of error in opengl"); //TODO(delle) remove this in favor of logger assert on error
+	LogEGl("WGL ERROR_",(u32)error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
 }
 #endif //#if DESHI_WINDOWS
+
 
 local void
 GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){DPZoneScoped;
@@ -116,8 +117,7 @@ GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_
 				error_msg = "Set when reading or writing to a framebuffer that is not complete.";
 			}break;
 		}
-		LogEGl("ERROR_",opengl_error," '",error_flag,"' on ",name,"(); Reason: ",error_msg,"; Info: http://docs.gl/gl3/",name);
-		if(g_graphics->break_on_error) Assert(!"crashing because of error in opengl"); //TODO(delle) remove this in favor of logger assert on error
+		LogEGl("ERROR_",opengl_error," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
 	}
 }
 
@@ -498,6 +498,7 @@ graphics_update(Window* window){DPZoneScoped;
 	g_time->renderTime = peek_stopwatch(update_stopwatch);
 }
 
+
 void
 graphics_cleanup(){
 	LogGl(1,"Cleaning up the OpenGL graphics backend.");
@@ -515,8 +516,9 @@ graphics_cleanup(){
 
 #define OPENGL_RENDER_BUFFER_TARGET GL_ARRAY_BUFFER
 
+
 GraphicsBuffer*
-graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping){
+graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage, GraphicsMemoryPropertyFlags properties, GraphicsMemoryMappingBehavoir mapping){DPZoneScoped;
 	if(!g_graphics->pools.buffers){
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return 0;
@@ -650,7 +652,7 @@ graphics_buffer_create(void* data, u64 requested_size, GraphicsBufferUsage usage
 }
 
 void
-graphics_buffer_destroy(GraphicsBuffer* buffer){
+graphics_buffer_destroy(GraphicsBuffer* buffer){DPZoneScoped;
 	if(!g_graphics->pools.buffers){
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
@@ -678,8 +680,9 @@ graphics_buffer_destroy(GraphicsBuffer* buffer){
 	memory_pool_delete(g_graphics->pools.buffers, buffer);
 }
 
+
 void
-graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
+graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){DPZoneScoped;
 	if(!g_graphics->pools.buffers){
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
@@ -891,8 +894,9 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){
 	buffer->__internal.buffer_handle = (void*)(u64)new_buffer_handle;
 }
 
+
 void*
-graphics_buffer_map(GraphicsBuffer* buffer, u64 size, u64 offset){
+graphics_buffer_map(GraphicsBuffer* buffer, u64 size, u64 offset){DPZoneScoped;
 	if(!g_graphics->pools.buffers){
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return 0;
@@ -929,8 +933,9 @@ graphics_buffer_map(GraphicsBuffer* buffer, u64 size, u64 offset){
 	buffer->__internal.mapped.size = size;
 }
 
+
 void
-graphics_buffer_unmap(GraphicsBuffer* buffer, b32 flush){
+graphics_buffer_unmap(GraphicsBuffer* buffer, b32 flush){DPZoneScoped;
 	if(!g_graphics->pools.buffers){
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
@@ -975,8 +980,9 @@ graphics_buffer_unmap(GraphicsBuffer* buffer, b32 flush){
 	buffer->__internal.mapped.size = 0;
 }
 
+
 void
-graphics_buffer_flush(GraphicsBuffer* buffer){
+graphics_buffer_flush(GraphicsBuffer* buffer){DPZoneScoped;
 	if(!g_graphics->pools.buffers){
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
@@ -991,6 +997,11 @@ graphics_buffer_flush(GraphicsBuffer* buffer){
 	}
 	LogGl(1,"Flushing the buffer [",buffer->debug_name,"].");
 	
+	glBindBuffer(OPENGL_RENDER_BUFFER_TARGET, (GLuint)(u64)buffer->__internal.buffer_handle);
+	if(opengl_error){
+		return;
+	}
+	
 	glFlushMappedBufferRange(OPENGL_RENDER_BUFFER_TARGET, (GLintptr)buffer->__internal.mapped.offset, (GLsizeiptr)buffer->__internal.mapped.size);
 }
 
@@ -1000,42 +1011,49 @@ graphics_buffer_flush(GraphicsBuffer* buffer){
 
 
 void
-graphics_image_update(GraphicsImage* image){
+graphics_image_update(GraphicsImage* image){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_image_destroy(GraphicsImage* image){
+graphics_image_destroy(GraphicsImage* image){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_image_write(GraphicsImage* image, u8* pixels, vec2i offset, vec2i extent){
+graphics_image_write(GraphicsImage* image, u8* pixels, vec2i offset, vec2i extent){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_image_view_update(GraphicsImageView* image_view){
+graphics_image_view_update(GraphicsImageView* image_view){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_image_view_destroy(GraphicsImageView* image_view){
+graphics_image_view_destroy(GraphicsImageView* image_view){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_sampler_update(GraphicsSampler* sampler){
+graphics_sampler_update(GraphicsSampler* sampler){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_sampler_destroy(GraphicsSampler* sampler){
+graphics_sampler_destroy(GraphicsSampler* sampler){DPZoneScoped;
 	DontCompile;
 }
+
 
 GraphicsFormat
-graphics_format_of_presentation_frames(Window* window){
+graphics_format_of_presentation_frames(Window* window){DPZoneScoped;
 	DontCompile;
 }
 
@@ -1045,32 +1063,37 @@ graphics_format_of_presentation_frames(Window* window){
 
 
 void
-graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* descriptor_set_layout){
+graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* descriptor_set_layout){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* descriptor_set_layout){
+graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* descriptor_set_layout){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_descriptor_set_update(GraphicsDescriptorSet* descriptor_set){
+graphics_descriptor_set_update(GraphicsDescriptorSet* descriptor_set){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_descriptor_set_destroy(GraphicsDescriptorSet* descriptor_set){
+graphics_descriptor_set_destroy(GraphicsDescriptorSet* descriptor_set){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_descriptor_set_write(GraphicsDescriptorSet* descriptor_set, u32 binding, GraphicsDescriptor descriptor){
+graphics_descriptor_set_write(GraphicsDescriptorSet* descriptor_set, u32 binding, GraphicsDescriptor descriptor){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_descriptor_set_write_array(GraphicsDescriptorSet* descriptor_set, GraphicsDescriptor* descriptors){
+graphics_descriptor_set_write_array(GraphicsDescriptorSet* descriptor_set, GraphicsDescriptor* descriptors){DPZoneScoped;
 	DontCompile;
 }
 
@@ -1080,12 +1103,13 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* descriptor_set, Graph
 
 
 void
-graphics_shader_update(GraphicsShader* shader){
+graphics_shader_update(GraphicsShader* shader){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_shader_destroy(GraphicsShader* shader){
+graphics_shader_destroy(GraphicsShader* shader){DPZoneScoped;
 	DontCompile;
 }
 
@@ -1095,27 +1119,31 @@ graphics_shader_destroy(GraphicsShader* shader){
 
 
 void
-graphics_pipeline_layout_update(GraphicsPipelineLayout* pipeline_layout){
+graphics_pipeline_layout_update(GraphicsPipelineLayout* pipeline_layout){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_pipeline_layout_destroy(GraphicsPipelineLayout* pipeline_layout){
+graphics_pipeline_layout_destroy(GraphicsPipelineLayout* pipeline_layout){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_pipeline_update(GraphicsPipeline* pipeline){
+graphics_pipeline_update(GraphicsPipeline* pipeline){DPZoneScoped;
 	DontCompile;
 }
 
+
 void
-graphics_pipeline_destroy(GraphicsPipeline* pipeline){
+graphics_pipeline_destroy(GraphicsPipeline* pipeline){DPZoneScoped;
 	DontCompile;
 }
+
 
 GraphicsPipeline*
-graphics_pipeline_duplicate(GraphicsPipeline* pipeline){
+graphics_pipeline_duplicate(GraphicsPipeline* pipeline){DPZoneScoped;
 	DontCompile;
 }
 
@@ -1125,17 +1153,19 @@ graphics_pipeline_duplicate(GraphicsPipeline* pipeline){
 
 
 void
-graphics_render_pass_update(GraphicsRenderPass* renderpass){
+graphics_render_pass_update(GraphicsRenderPass* renderpass){DPZoneScoped;
 	DontCompile;
 }
+
 
 void
-graphics_render_pass_destroy(GraphicsRenderPass* renderpass){
+graphics_render_pass_destroy(GraphicsRenderPass* renderpass){DPZoneScoped;
 	DontCompile;
 }
 
+
 GraphicsRenderPass*
-graphics_render_pass_of_window_presentation_frames(Window* window){
+graphics_render_pass_of_window_presentation_frames(Window* window){DPZoneScoped;
 	DontCompile;
 }
 
@@ -1145,17 +1175,19 @@ graphics_render_pass_of_window_presentation_frames(Window* window){
 
 
 void
-graphics_framebuffer_update(GraphicsFramebuffer* framebuffer){
+graphics_framebuffer_update(GraphicsFramebuffer* framebuffer){DPZoneScoped;
 	DontCompile;
 }
+
 
 void
-graphics_framebuffer_destroy(GraphicsFramebuffer* framebuffer){
+graphics_framebuffer_destroy(GraphicsFramebuffer* framebuffer){DPZoneScoped;
 	DontCompile;
 }
 
+
 GraphicsFramebuffer*
-graphics_current_present_frame_of_window(Window* window){
+graphics_current_present_frame_of_window(Window* window){DPZoneScoped;
 	DontCompile;
 }
 
@@ -1165,17 +1197,19 @@ graphics_current_present_frame_of_window(Window* window){
 
 
 void
-graphics_command_buffer_update(GraphicsCommandBuffer* command_buffer){
+graphics_command_buffer_update(GraphicsCommandBuffer* command_buffer){DPZoneScoped;
 	DontCompile;
 }
+
 
 void
-graphics_command_buffer_destroy(GraphicsCommandBuffer* command_buffer){
+graphics_command_buffer_destroy(GraphicsCommandBuffer* command_buffer){DPZoneScoped;
 	DontCompile;
 }
 
+
 GraphicsCommandBuffer*
-graphics_command_buffer_of_window(Window* window){
+graphics_command_buffer_of_window(Window* window){DPZoneScoped;
 	DontCompile;
 }
 
