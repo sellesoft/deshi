@@ -2792,21 +2792,6 @@ graphics_pipeline_destroy(GraphicsPipeline* x) {
 	memory_pool_delete(g_graphics->pools.pipelines, x);
 }
 
-// Creates a new pipeline with the same settings as the one given.
-GraphicsPipeline* 
-graphics_pipeline_duplicate(GraphicsPipeline* x) {
-	auto out = graphics_pipeline_allocate();
-	CopyMemory(out, x, sizeof(GraphicsPipeline));
-	if(out->vertex_input_bindings) {
-		out->vertex_input_bindings = array_copy(out->vertex_input_bindings).ptr;
-	}
-	if(out->vertex_input_attributes) {
-		out->vertex_input_attributes = array_copy(out->vertex_input_attributes).ptr;
-	}
-	get_handle(out) = 0;
-	return out;
-}
-
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @render_pass
