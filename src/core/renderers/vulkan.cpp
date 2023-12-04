@@ -2067,9 +2067,12 @@ graphics_buffer_map(GraphicsBuffer* x_, u64 size, u64 offset) {
 		return 0;
 	}
 
-	auto result = vkMapMemory(vk_device, get_memory_handle(x), offset, size, 0, &GRAPHICS_INTERNAL(x).mapped.data);
-	GRAPHICS_INTERNAL(x).mapped.offset = offset;
-	GRAPHICS_INTERNAL(x).mapped.size   = size;
+	VkDeviceSize range_start = RoundDownTo(offset, vk_physical_device_properties.limits.nonCoherentAtomSize);
+	VkDeviceSize range_end = RoundDownTo(range_start+size, vk_physical_device_properties.limits.nonCoherentAtomSize);
+	VkDeviceSize range_size = range_end - range_start;
+	auto result = vkMapMemory(vk_device, get_memory_handle(x), range_start, range_size, 0, &GRAPHICS_INTERNAL(x).mapped.data);
+	GRAPHICS_INTERNAL(x).mapped.offset = (u64)range_start;
+	GRAPHICS_INTERNAL(x).mapped.size   = (u64)range_size;
 
 	return x->mapped_data();
 } 
