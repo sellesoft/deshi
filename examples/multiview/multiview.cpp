@@ -30,6 +30,7 @@
 struct {
 	mat4 view;
 	mat4 proj;
+	vec4 position;
 } ubo;
 
 int main() {
@@ -49,13 +50,13 @@ int main() {
 	pipeline->vertex_shader = graphics_shader_allocate();
 	pipeline->vertex_shader->debug_name = str8l("flat.vert");
 	pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
-	pipeline->vertex_shader->source = baked_shader_flat_vert_2;
+	pipeline->vertex_shader->source = baked_shader_flat_vert;
 	graphics_shader_update(pipeline->vertex_shader);
 
 	pipeline->fragment_shader = graphics_shader_allocate();
-	pipeline->fragment_shader->debug_name = str8l("flat.frag");
+	pipeline->fragment_shader->debug_name = str8l("flat_textured.frag");
 	pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
-	pipeline->fragment_shader->source =	baked_shader_flat_frag_2;
+	pipeline->fragment_shader->source =	baked_shader_flat_textured_frag;
 	graphics_shader_update(pipeline->fragment_shader);
 	
 	pipeline->            front_face = GraphicsFrontFace_CCW;
@@ -187,14 +188,16 @@ int main() {
 	
 	ubo.view = Math::LookAtMatrix(Vec3(0,0,0), Vec3(0,0,1));
 	ubo.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
+	ubo.position = Vec4(0,0,0,1);
 	CopyMemory(mapped_data, &ubo, sizeof(ubo));
 
 	graphics_buffer_unmap(view0_buffer, true);
 
 	mapped_data = graphics_buffer_map(view1_buffer, graphics_buffer_device_size(view1_buffer), 0);
 	
-	ubo.view = Math::LookAtMatrix(Vec3(0, 0, 8), Vec3(0,0,4));
+	ubo.view = Math::LookAtMatrix(Vec3(0,0,8), Vec3(0,0,4));
 	ubo.proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
+	ubo.position = Vec4(0,0,8,1);
 	CopyMemory(mapped_data, &ubo, sizeof(ubo));
 
 	graphics_buffer_unmap(view1_buffer, true);

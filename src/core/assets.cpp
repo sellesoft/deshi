@@ -88,8 +88,8 @@ assets_init(Window* window) {
 	
 	// setup null assets
 	
-	g_assets->null_vertex_shader = assets_shader_load_from_source(str8l("null.vert"), baked_shader_null_vert_2, ShaderType_Vertex);
-	g_assets->null_fragment_shader = assets_shader_load_from_source(str8l("null.frag"), baked_shader_null_frag_2, ShaderType_Fragment);
+	g_assets->null_vertex_shader = assets_shader_load_from_source(str8l("null.vert"), baked_shader_null_vert, ShaderType_Vertex);
+	g_assets->null_fragment_shader = assets_shader_load_from_source(str8l("null.frag"), baked_shader_null_frag, ShaderType_Fragment);
 
 	g_assets->null_mesh = assets_mesh_create_box(str8l("null"), 1.f, 1.f, 1.f, Color_White.rgba);
 	g_assets->null_mesh->name = str8l("null");
@@ -186,7 +186,18 @@ assets_reset(){DPZoneScoped;
 	array_clear(g_assets->font_map);
 }
 
-void 
+void
+assets_update_camera_position(vec4* position) {
+	auto buffer = g_assets->base_ubo_handle->buffer;
+	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
+	
+	g_assets->base_ubo.position = *position;
+	CopyMemory(data, &g_assets->base_ubo, sizeof(g_assets->base_ubo));
+	
+	graphics_buffer_unmap(buffer, true);
+}
+
+void
 assets_update_camera_view(mat4* view_matrix) {
 	auto buffer = g_assets->base_ubo_handle->buffer;
 	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
@@ -197,7 +208,7 @@ assets_update_camera_view(mat4* view_matrix) {
 	graphics_buffer_unmap(buffer, true);
 }
 
-void 
+void
 assets_update_camera_projection(mat4* projection) {
 	auto buffer = g_assets->base_ubo_handle->buffer;
 	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);

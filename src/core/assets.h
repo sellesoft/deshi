@@ -85,6 +85,7 @@ typedef struct Assets {
 	struct {
 		mat4 view;
 		mat4 proj;
+		vec4 position;
 	} base_ubo;
 	UniformBufferObject* base_ubo_handle;
 	
@@ -118,6 +119,8 @@ void assets_init(Window* window);
 void assets_reset();
 
 // TODO(sushi) put these somewhere better later
+
+void assets_update_camera_position(vec4* position);
 
 void assets_update_camera_view(mat4* view_matrix);
 

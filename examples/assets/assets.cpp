@@ -79,6 +79,8 @@ int main() {
 	assets_update_camera_view(&view);
 	auto proj = Math::PerspectiveProjectionMatrix(win->width, win->height, 90, 0.1, 1000);
 	assets_update_camera_projection(&proj);
+	auto position = Vec4(0,0,0,1);
+	assets_update_camera_position(&position);
 
 	cmd_run(str8l("mat_list"));
 	cmd_run(str8l("shader_list"));
