@@ -297,7 +297,8 @@ vec2{
 	vec2  normalize()const;
 	f32   distance(const vec2& rhs)const;
 	f32   distance_sq(const vec2& rhs)const;
-	vec2  projection(const vec2& rhs)const;
+	f32   projection_scalar(const vec2& rhs)const;
+	vec2  projection_vector(const vec2& rhs)const;
 	vec2  midpoint(const vec2& rhs)const;
 	f32   slope(const vec2& rhs)const;
 	f32   radians_between(const vec2& rhs)const;
@@ -700,9 +701,33 @@ distance_sq(const vec2& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//Returns the projection of `lhs` on `rhs`
+//Returns the scalar projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline f32
+vec2_projection_scalar(vec2 lhs, vec2 rhs){DPZoneScoped;
+	f32 m = vec2_mag(rhs);
+	if(m > M_EPSILON){
+		return vec2_dot(lhs,rhs) / m;
+	}else{
+		return 0.0f;
+	}
+}
+
+#ifdef __cplusplus
+//Returns the scalar projection of `lhs` on `rhs`
+inline f32 vec2::
+projection_scalar(const vec2& rhs)const{DPZoneScoped;
+	f32 m = rhs.mag();
+	if(m > M_EPSILON){
+		return this->dot(rhs) / m;
+	}else{
+		return 0.0f;
+	}
+}
+#endif //#ifdef __cplusplus
+
+//Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec2
-vec2_projection(vec2 lhs, vec2 rhs){DPZoneScoped;
+vec2_projection_vector(vec2 lhs, vec2 rhs){DPZoneScoped;
 	f32 m = vec2_mag(rhs);
 	if(m > M_EPSILON){
 		return vec2_mul_f32(vec2_div_f32(rhs, m), (vec2_dot(lhs,rhs) / m));
@@ -712,9 +737,9 @@ vec2_projection(vec2 lhs, vec2 rhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-//Returns the projection of `lhs` on `rhs`
+//Returns the vector projection of `lhs` on `rhs`
 inline vec2 vec2::
-projection(const vec2& rhs)const{DPZoneScoped;
+projection_vector(const vec2& rhs)const{DPZoneScoped;
 	f32 m = rhs.mag();
 	if(m > M_EPSILON){
 		return (rhs / m) * (this->dot(rhs) / m);
@@ -1331,7 +1356,8 @@ vec2i{
 	vec2i normalize()const;
 	f32   distance(const vec2i& rhs)const;
 	f32   distance_sq(const vec2i& rhs)const;
-	vec2i projection(const vec2i& rhs)const;
+	f32   projection_scalar(const vec2i& rhs)const;
+	vec2i projection_vector(const vec2i& rhs)const;
 	vec2i midpoint(const vec2i& rhs)const;
 	f32   slope(const vec2i& rhs)const;
 	f32   radians_between(const vec2i& rhs)const;
@@ -1731,9 +1757,37 @@ distance_sq(const vec2i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//Returns the projection of `lhs` on `rhs`
+//Returns the scalar projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline f32
+vec2i_projection_scalar(vec2i lhs, vec2i rhs){DPZoneScoped;
+	vec2 rhs_f32 = rhs.to_vec2();
+	f32 m = vec2_mag(rhs_f32);
+	if(m > M_EPSILON){
+		vec2 lhs_f32 = lhs.to_vec2();
+		return vec2_dot(lhs_f32,rhs_f32) / m;
+	}else{
+		return 0.0f;
+	}
+}
+
+#ifdef __cplusplus
+//Returns the scalar projection of `lhs` on `rhs`
+inline f32 vec2i::
+projection_scalar(const vec2i& rhs)const{DPZoneScoped;
+	vec2 rhs_f32 = rhs.to_vec2();
+	f32 m = vec2_mag(rhs_f32);
+	if(m > M_EPSILON){
+		vec2 lhs_f32 = this->to_vec2();
+		return vec2_dot(lhs_f32,rhs_f32) / m;
+	}else{
+		return 0.0f;
+	}
+}
+#endif //#ifdef __cplusplus
+
+//Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec2i
-vec2i_projection(vec2i lhs, vec2i rhs){DPZoneScoped;
+vec2i_projection_vector(vec2i lhs, vec2i rhs){DPZoneScoped;
 	vec2 rhs_f32 = rhs.to_vec2();
 	f32 m = vec2_mag(rhs_f32);
 	if(m > M_EPSILON){
@@ -1745,9 +1799,9 @@ vec2i_projection(vec2i lhs, vec2i rhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-//Returns the projection of `lhs` on `rhs`
-inline vec2i vec2i:: 
-projection(const vec2i& rhs)const{DPZoneScoped;
+//Returns the vector projection of `lhs` on `rhs`
+inline vec2i vec2i::
+projection_vector(const vec2i& rhs)const{DPZoneScoped;
 	vec2 rhs_f32 = rhs.to_vec2();
 	f32 m = vec2_mag(rhs_f32);
 	if(m > M_EPSILON){
@@ -2290,7 +2344,8 @@ vec3{
 	vec3  normalize()const;
 	f32   distance(const vec3& rhs)const;
 	f32   distance_sq(const vec3& rhs)const;
-	vec3  projection(const vec3& rhs)const;
+	f32   projection_scalar(const vec3& rhs)const;
+	vec3  projection_vector(const vec3& rhs)const;
 	vec3  midpoint(const vec3& rhs)const;
 	f32   radians_between(const vec3& rhs)const;
 	vec3  floor()const;
@@ -2730,9 +2785,33 @@ distance_sq(const vec3& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//Returns the projection of `lhs` on `rhs`
+//Returns the scalar projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline f32
+vec3_projection_scalar(vec3 lhs, vec3 rhs){DPZoneScoped;
+	f32 m = vec3_mag(rhs);
+	if(m > M_EPSILON){
+		return vec3_dot(lhs,rhs) / m;
+	}else{
+		return 0.0f;
+	}
+}
+
+#ifdef __cplusplus
+//Returns the scalar projection of `lhs` on `rhs`
+inline f32 vec3::
+projection_scalar(const vec3& rhs)const{DPZoneScoped;
+	f32 m = rhs.mag();
+	if(m > M_EPSILON){
+		return this->dot(rhs) / m;
+	}else{
+		return 0.0f;
+	}
+}
+#endif //#ifdef __cplusplus
+
+//Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec3
-vec3_projection(vec3 lhs, vec3 rhs){DPZoneScoped;
+vec3_projection_vector(vec3 lhs, vec3 rhs){DPZoneScoped;
 	f32 m = vec3_mag(rhs);
 	if(m > M_EPSILON){
 		return vec3_mul_f32(vec3_div_f32(rhs, m), (vec3_dot(lhs,rhs) / m));
@@ -2742,9 +2821,9 @@ vec3_projection(vec3 lhs, vec3 rhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-//Returns the projection of `lhs` on `rhs`
+//Returns the vector projection of `lhs` on `rhs`
 inline vec3 vec3::
-projection(const vec3& rhs)const{DPZoneScoped;
+projection_vector(const vec3& rhs)const{DPZoneScoped;
 	f32 m = rhs.mag();
 	if(m > M_EPSILON){
 		return (rhs / m) * (this->dot(rhs) / m);
@@ -3484,7 +3563,8 @@ vec3i{
 	vec3i normalize()const;
 	f32   distance(const vec3i& rhs)const;
 	f32   distance_sq(const vec3i& rhs)const;
-	vec3i projection(const vec3i& rhs)const;
+	f32   projection_scalar(const vec3i& rhs)const;
+	vec3i projection_vector(const vec3i& rhs)const;
 	vec3i midpoint(const vec3i& rhs)const;
 	f32   radians_between(const vec3i& rhs)const;
 	vec3i min(const vec3i& rhs)const;
@@ -3921,9 +4001,37 @@ distance_sq(const vec3i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//Returns the projection of `lhs` on `rhs`
+//Returns the scalar projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline f32
+vec3i_projection_scalar(vec3i lhs, vec3i rhs){DPZoneScoped;
+	vec3 rhs_f32 = rhs.to_vec3();
+	f32 m = vec3_mag(rhs_f32);
+	if(m > M_EPSILON){
+		vec3 lhs_f32 = lhs.to_vec3();
+		return vec3_dot(lhs_f32,rhs_f32) / m;
+	}else{
+		return 0.0f;
+	}
+}
+
+#ifdef __cplusplus
+//Returns the scalar projection of `lhs` on `rhs`
+inline f32 vec3i:: 
+projection_scalar(const vec3i& rhs)const{DPZoneScoped;
+	vec3 rhs_f32 = rhs.to_vec3();
+	f32 m = vec3_mag(rhs_f32);
+	if(m > M_EPSILON){
+		vec3 lhs_f32 = this->to_vec3();
+		return vec3_dot(lhs_f32,rhs_f32) / m;
+	}else{
+		return 0.0f;
+	}
+}
+#endif //#ifdef __cplusplus
+
+//Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec3i
-vec3i_projection(vec3i lhs, vec3i rhs){DPZoneScoped;
+vec3i_projection_vector(vec3i lhs, vec3i rhs){DPZoneScoped;
 	vec3 rhs_f32 = rhs.to_vec3();
 	f32 m = vec3_mag(rhs_f32);
 	if(m > M_EPSILON){
@@ -3935,9 +4043,9 @@ vec3i_projection(vec3i lhs, vec3i rhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-//Returns the projection of `lhs` on `rhs`
+//Returns the vector projection of `lhs` on `rhs`
 inline vec3i vec3i:: 
-projection(const vec3i& rhs)const{DPZoneScoped;
+projection_vector(const vec3i& rhs)const{DPZoneScoped;
 	vec3 rhs_f32 = rhs.to_vec3();
 	f32 m = vec3_mag(rhs_f32);
 	if(m > M_EPSILON){
@@ -4611,7 +4719,8 @@ vec4{
 	vec4  wnormalize()const;
 	f32   distance(const vec4& rhs)const;
 	f32   distance_sq(const vec4& rhs)const;
-	vec4  projection(const vec4& rhs)const;
+	f32   projection_scalar(const vec4& rhs)const;
+	vec4  projection_vector(const vec4& rhs)const;
 	vec4  midpoint(const vec4& rhs)const;
 	f32   radians_between(const vec4& rhs)const;
 	vec4  floor()const;
@@ -5245,9 +5354,33 @@ distance_sq(const vec4& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//Returns the projection of `lhs` on `rhs`
+//Returns the scalar projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline f32
+vec4_projection_scalar(vec4 lhs, vec4 rhs){DPZoneScoped;
+	f32 m = vec4_mag(rhs);
+	if(m > M_EPSILON){
+		return vec4_dot(lhs,rhs) / m;
+	}else{
+		return 0.0f;
+	}
+}
+
+#ifdef __cplusplus
+//Returns the scalar projection of `lhs` on `rhs`
+inline f32 vec4::
+projection_scalar(const vec4& rhs)const{DPZoneScoped;
+	f32 m = rhs.mag();
+	if(m > M_EPSILON){
+		return this->dot(rhs) / m;
+	}else{
+		return 0.0f;
+	}
+}
+#endif //#ifdef __cplusplus
+
+//Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec4
-vec4_projection(vec4 lhs, vec4 rhs){DPZoneScoped;
+vec4_projection_vector(vec4 lhs, vec4 rhs){DPZoneScoped;
 	f32 m = vec4_mag(rhs);
 	if(m > M_EPSILON){
 		return vec4_mul_f32(vec4_div_f32(rhs, m), (vec4_dot(lhs,rhs) / m));
@@ -5257,9 +5390,9 @@ vec4_projection(vec4 lhs, vec4 rhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-//Returns the projection of `lhs` on `rhs`
+//Returns the vector projection of `lhs` on `rhs`
 inline vec4 vec4::
-projection(const vec4& rhs)const{DPZoneScoped;
+projection_vector(const vec4& rhs)const{DPZoneScoped;
 	f32 m = rhs.mag();
 	if(m > M_EPSILON){
 		return (rhs / m) * (this->dot(rhs) / m);
@@ -6299,7 +6432,8 @@ vec4i{
 	vec4i wnormalize()const;
 	f32   distance(const vec4i& rhs)const;
 	f32   distance_sq(const vec4i& rhs)const;
-	vec4i projection(const vec4i& rhs)const;
+	f32   projection_scalar(const vec4i& rhs)const;
+	vec4i projection_vector(const vec4i& rhs)const;
 	vec4i midpoint(const vec4i& rhs)const;
 	f32   radians_between(const vec4i& rhs)const;
 	vec4i min(const vec4i& rhs)const;
@@ -6903,9 +7037,37 @@ distance_sq(const vec4i& rhs)const{DPZoneScoped;
 }
 #endif //#ifdef __cplusplus
 
-//Returns the projection of `lhs` on `rhs`
+//Returns the scalar projection of `lhs` on `rhs`
+DESHI_MATH_FUNC inline f32
+vec4i_projection_scalar(vec4i lhs, vec4i rhs){DPZoneScoped;
+	vec4 rhs_f32 = rhs.to_vec4();
+	f32 m = vec4_mag(rhs_f32);
+	if(m > M_EPSILON){
+		vec4 lhs_f32 = lhs.to_vec4();
+		return vec4_dot(lhs_f32,rhs_f32) / m;
+	}else{
+		return 0.0f;
+	}
+}
+
+#ifdef __cplusplus
+//Returns the scalar projection of `lhs` on `rhs`
+inline f32 vec4i::
+projection_scalar(const vec4i& rhs)const{DPZoneScoped;
+	vec4 rhs_f32 = rhs.to_vec4();
+	f32 m = vec4_mag(rhs_f32);
+	if(m > M_EPSILON){
+		vec4 lhs_f32 = this->to_vec4();
+		return vec4_dot(lhs_f32,rhs_f32) / m;
+	}else{
+		return 0.0f;
+	}
+}
+#endif //#ifdef __cplusplus
+
+//Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec4i
-vec4i_projection(vec4i lhs, vec4i rhs){DPZoneScoped;
+vec4i_projection_vector(vec4i lhs, vec4i rhs){DPZoneScoped;
 	vec4 rhs_f32 = rhs.to_vec4();
 	f32 m = vec4_mag(rhs_f32);
 	if(m > M_EPSILON){
@@ -6917,9 +7079,9 @@ vec4i_projection(vec4i lhs, vec4i rhs){DPZoneScoped;
 }
 
 #ifdef __cplusplus
-//Returns the projection of `lhs` on `rhs`
+//Returns the vector projection of `lhs` on `rhs`
 inline vec4i vec4i:: 
-projection(const vec4i& rhs)const{DPZoneScoped;
+projection_vector(const vec4i& rhs)const{DPZoneScoped;
 	vec4 rhs_f32 = rhs.to_vec4();
 	f32 m = vec4_mag(rhs_f32);
 	if(m > M_EPSILON){
@@ -13326,26 +13488,48 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).distance_sq(Vec2(-2.0f,4.0f)), 48.05f);
 #endif //#ifdef __cplusplus
 		
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 2.0f, 2.0f), Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 2.0f, 2.0f), Vec2( 0.0f, 5.0f)), 0.0f,2.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 2.0f)), 3.0f/5.0f,6.0f/5.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.1f,-2.2f), Vec2(-2.0f, 4.0f)), 11.0f/10.0f,-11.0f/5.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.0f, 2.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2( 1.0f, 2.0f), Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
-		ASSERT_VEC2_VALUES(vec2_projection(Vec2(-2.0f, 4.0f), Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 2.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 2.0f, 2.0f), Vec2( 5.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 2.0f, 2.0f), Vec2( 0.0f, 5.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 2.0f)), 3.0f/DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 1.1f,-2.2f), Vec2(-2.0f, 4.0f)), -11.0f/DESHI_SQRTF(20.0f));
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 1.0f, 2.0f), Vec2( 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 1.0f, 2.0f), Vec2( 1.0f, 1.0f)), 3.0f/DESHI_SQRTF(2.0f));
+		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2(-2.0f, 4.0f), Vec2( 1.1f,-2.2f)), -11.0f/DESHI_SQRTF(6.05f));
 		
 #ifdef __cplusplus
-		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
-		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection(Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
-		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection(Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
-		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection(Vec2( 0.0f, 5.0f)), 0.0f,2.0f);
-		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).projection(Vec2( 1.0f, 2.0f)), 3.0f/5.0f,6.0f/5.0f);
-		ASSERT_VEC2_VALUES(Vec2( 1.1f,-2.2f).projection(Vec2(-2.0f, 4.0f)), 11.0f/10.0f,-11.0f/5.0f);
-		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
-		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection(Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
-		ASSERT_VEC2_VALUES(Vec2(-2.0f, 4.0f).projection(Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
+		ASSERT_F32_EQUAL(Vec2( 0.0f, 0.0f).projection_scalar(Vec2( 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2( 0.0f, 0.0f).projection_scalar(Vec2( 1.0f, 2.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2( 2.0f, 2.0f).projection_scalar(Vec2( 5.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec2( 2.0f, 2.0f).projection_scalar(Vec2( 0.0f, 5.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec2( 1.0f, 1.0f).projection_scalar(Vec2( 1.0f, 2.0f)), 3.0f/DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(Vec2( 1.1f,-2.2f).projection_scalar(Vec2(-2.0f, 4.0f)), -11.0f/DESHI_SQRTF(20.0f));
+		ASSERT_F32_EQUAL(Vec2( 1.0f, 2.0f).projection_scalar(Vec2( 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2( 1.0f, 2.0f).projection_scalar(Vec2( 1.0f, 1.0f)), 3.0f/DESHI_SQRTF(2.0f));
+		ASSERT_F32_EQUAL(Vec2(-2.0f, 4.0f).projection_scalar(Vec2( 1.1f,-2.2f)), -11.0f/DESHI_SQRTF(6.05f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 2.0f, 2.0f), Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 2.0f, 2.0f), Vec2( 0.0f, 5.0f)), 0.0f,2.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 2.0f)), 3.0f/5.0f,6.0f/5.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 1.1f,-2.2f), Vec2(-2.0f, 4.0f)), 11.0f/10.0f,-11.0f/5.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 1.0f, 2.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 1.0f, 2.0f), Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
+		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2(-2.0f, 4.0f), Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection_vector(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection_vector(Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection_vector(Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection_vector(Vec2( 0.0f, 5.0f)), 0.0f,2.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).projection_vector(Vec2( 1.0f, 2.0f)), 3.0f/5.0f,6.0f/5.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.1f,-2.2f).projection_vector(Vec2(-2.0f, 4.0f)), 11.0f/10.0f,-11.0f/5.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection_vector(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
+		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection_vector(Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
+		ASSERT_VEC2_VALUES(Vec2(-2.0f, 4.0f).projection_vector(Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
 #endif //#ifdef __cplusplus
 		
 		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.00f,0.00f);
@@ -13971,26 +14155,48 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec2i(1,-2).distance_sq(Vec2i(-2,4)), 45.0f);
 #endif //#ifdef __cplusplus
 		
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 0, 0), Vec2i( 1, 2)), 0,0);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 2, 2), Vec2i( 5, 0)), 2,0);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 2, 2), Vec2i( 0, 5)), 0,2);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1, 1), Vec2i( 1, 2)), 0,1);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1,-2), Vec2i(-2, 4)), 1,-2);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1, 2), Vec2i( 0, 0)), 0,0);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i( 1, 2), Vec2i( 1, 1)), 1,1);
-		ASSERT_VEC2I_VALUES(vec2i_projection(Vec2i(-2, 4), Vec2i( 1,-2)), -2,4);
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 0, 0), Vec2i( 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 0, 0), Vec2i( 1, 2)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 2, 2), Vec2i( 5, 0)), 2.0f);
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 2, 2), Vec2i( 0, 5)), 2.0f);
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 1, 1), Vec2i( 1, 2)), 3.0f/DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 1,-2), Vec2i(-2, 4)), -10.0f/DESHI_SQRTF(20.0f));
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 1, 2), Vec2i( 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 1, 2), Vec2i( 1, 1)), 3.0f/DESHI_SQRTF(2.0f));
+		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i(-2, 4), Vec2i( 1,-2)), -10.0f/DESHI_SQRTF(5.0f));
 		
 #ifdef __cplusplus
-		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection(Vec2i( 0, 0)), 0,0);
-		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection(Vec2i( 1, 2)), 0,0);
-		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection(Vec2i( 5, 0)), 2,0);
-		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection(Vec2i( 0, 5)), 0,2);
-		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).projection(Vec2i( 1, 2)), 0,1);
-		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).projection(Vec2i(-2, 4)), 1,-2);
-		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection(Vec2i( 0, 0)), 0,0);
-		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection(Vec2i( 1, 1)), 1,1);
-		ASSERT_VEC2I_VALUES(Vec2i(-2, 4).projection(Vec2i( 1,-2)), -2,4);
+		ASSERT_F32_EQUAL(Vec2i( 0, 0).projection_scalar(Vec2i( 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i( 0, 0).projection_scalar(Vec2i( 1, 2)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i( 2, 2).projection_scalar(Vec2i( 5, 0)), 2.0f);
+		ASSERT_F32_EQUAL(Vec2i( 2, 2).projection_scalar(Vec2i( 0, 5)), 2.0f);
+		ASSERT_F32_EQUAL(Vec2i( 1, 1).projection_scalar(Vec2i( 1, 2)), 3.0f/DESHI_SQRTF(5.0f));
+		ASSERT_F32_EQUAL(Vec2i( 1,-2).projection_scalar(Vec2i(-2, 4)), -10.0f/DESHI_SQRTF(20.0f));
+		ASSERT_F32_EQUAL(Vec2i( 1, 2).projection_scalar(Vec2i( 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec2i( 1, 2).projection_scalar(Vec2i( 1, 1)), 3.0f/DESHI_SQRTF(2.0f));
+		ASSERT_F32_EQUAL(Vec2i(-2, 4).projection_scalar(Vec2i( 1,-2)), -10.0f/DESHI_SQRTF(5.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 0, 0), Vec2i( 1, 2)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 2, 2), Vec2i( 5, 0)), 2,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 2, 2), Vec2i( 0, 5)), 0,2);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 1, 1), Vec2i( 1, 2)), 0,1);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 1,-2), Vec2i(-2, 4)), 1,-2);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 1, 2), Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 1, 2), Vec2i( 1, 1)), 1,1);
+		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i(-2, 4), Vec2i( 1,-2)), -2,4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection_vector(Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection_vector(Vec2i( 1, 2)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection_vector(Vec2i( 5, 0)), 2,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection_vector(Vec2i( 0, 5)), 0,2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).projection_vector(Vec2i( 1, 2)), 0,1);
+		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).projection_vector(Vec2i(-2, 4)), 1,-2);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection_vector(Vec2i( 0, 0)), 0,0);
+		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection_vector(Vec2i( 1, 1)), 1,1);
+		ASSERT_VEC2I_VALUES(Vec2i(-2, 4).projection_vector(Vec2i( 1,-2)), -2,4);
 #endif //#ifdef __cplusplus
 		
 		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(0, 0), Vec2i( 0,0)), 0,0);
