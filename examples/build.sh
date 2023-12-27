@@ -40,6 +40,8 @@
 #   > eventually support gcc in the code base when someone really wants it
 #       but push for them to use clang instead :)
 #   > make this script easy to use without deshi
+
+
 #_____________________________________________________________________________________________________
 #                                           Builder Vars
 #_____________________________________________________________________________________________________
@@ -75,6 +77,8 @@ else
   echo "Unhandled development platform: $OSTYPE"
   exit 1
 fi
+
+
 #_____________________________________________________________________________________________________
 #                                       Command Line Args
 #_____________________________________________________________________________________________________
@@ -94,7 +98,6 @@ build_compiler="$builder_compiler"
 build_linker="$builder_linker"
 build_object=""
 vulkan_override=0
-
 
 skip_arg=0
 for (( i=1; i<=$#; i++)); do
@@ -187,12 +190,13 @@ for (( i=1; i<=$#; i++)); do
   fi
 done
 
-
 if [ "$build_compiler" == "cl" ]; then
   build_object="obj"
 else
   build_object="o"
 fi
+
+
 #_____________________________________________________________________________________________________
 #                                           Build Vars
 #_____________________________________________________________________________________________________
@@ -206,11 +210,9 @@ if [ $vulkan_override != 0 ]; then
   vulkan_folder=$vulkan_override
 fi
 
-
 #### Specify outputs ####
 app_name="$build_example"
 build_folder="$examples_folder/$app_name/build"
-
 
 #### Specify sources ####
 includes="
@@ -268,6 +270,8 @@ else
   echo "Libs not setup for platform: $build_platform"
   exit 1
 fi
+
+
 #_____________________________________________________________________________________________________
 #                                         Global Defines
 #_____________________________________________________________________________________________________
@@ -277,7 +281,6 @@ if [ $build_release == 0 ]; then
 else
   defines_build="-DBUILD_INTERNAL=0 -DBUILD_SLOW=0 -DBUILD_RELEASE=1"
 fi
-
 
 defines_platform=""
 if [ $build_platform == "win32" ]; then
@@ -290,7 +293,6 @@ else
   echo "Platform defines not setup for platform: $build_platform"
   exit 1
 fi
-
 
 defines_graphics=""
 if [ $build_graphics == "vulkan" ]; then
@@ -318,8 +320,9 @@ else
   defines_shared="-DDESHI_RELOADABLE_UI=0"
 fi
 
-
 defines="$defines_build $defines_platform $defines_graphics $defines_shared $defines_misc"
+
+
 #_____________________________________________________________________________________________________
 #                                           Build Flags
 #_____________________________________________________________________________________________________
@@ -402,6 +405,7 @@ elif [ $build_compiler == "clang++" ]; then #___________________________________
   #### -fexceptions ()
   #### -fcxx-exceptions ()
   #### -finline-functions ()
+  #### -fno-caret-diagnostics ()
   #### -pipe ()
   #### -msse3 ()
   compile_flags="$compile_flags 
@@ -409,8 +413,9 @@ elif [ $build_compiler == "clang++" ]; then #___________________________________
     -fexceptions 
     -fcxx-exceptions 
     -finline-functions 
+    -fno-caret-diagnostics 
     -pipe 
-    -msse3"
+    -msse4.2"
 
   #### -Wno-unused-value ()
   #### -Wno-implicitly-unsigned-literal ()
@@ -419,6 +424,7 @@ elif [ $build_compiler == "clang++" ]; then #___________________________________
   #### -Wno-unused-function ()
   #### -Wno-unused-variable ()
   #### -Wno-undefined-inline ()
+  #### -Wno-return-type-c-linkage ()
   compile_flags="$compile_flags
     -Wno-unused-value 
     -Wno-implicitly-unsigned-literal 
@@ -426,7 +432,8 @@ elif [ $build_compiler == "clang++" ]; then #___________________________________
     -Wno-writable-strings 
     -Wno-unused-function 
     -Wno-unused-variable 
-    -Wno-undefined-inline"
+    -Wno-undefined-inline 
+    -Wno-return-type-c-linkage"
 
   if [ $build_release == 0 ]; then
     #### -ggdb3 (produces max debug info with extra stuff for gdb)

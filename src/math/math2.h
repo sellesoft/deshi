@@ -3523,7 +3523,7 @@ z_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 DESHI_MATH_TYPE typedef struct
 vec3i{
 	union{
-		s32 arr[3] = {};
+		s32 arr[3];
 		struct{ s32 x, y, z; };
 		struct{ s32 r, g, b; };
 		struct{ vec2i xy; s32 _z0; };
@@ -6362,7 +6362,7 @@ w_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 DESHI_MATH_TYPE typedef struct
 vec4i{
 	union{
-		s32 arr[4] = {};
+		s32 arr[4];
 		struct{ 
 			union{
 				vec3i xyz;
@@ -9124,6 +9124,7 @@ mat3_minor(mat3 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 
 #ifdef __cplusplus
@@ -9153,6 +9154,7 @@ minor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 #endif //#ifdef __cplusplus
 
@@ -9182,6 +9184,7 @@ mat3_cofactor(mat3 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 
 #ifdef __cplusplus
@@ -9211,6 +9214,7 @@ cofactor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 #endif //#ifdef __cplusplus
 
@@ -10458,6 +10462,7 @@ mat4_minor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 
 #ifdef __cplusplus
@@ -10578,6 +10583,7 @@ minor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 #endif //#ifdef __cplusplus
 
@@ -10699,6 +10705,7 @@ mat4_cofactor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 
 #ifdef __cplusplus
@@ -10819,6 +10826,7 @@ cofactor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 			}
 		}break;
 	}
+	return 0;
 }
 #endif //#ifdef __cplusplus
 
@@ -12189,10 +12197,10 @@ mat4_lookat_matrix_from_rotation_radians_output_directions(vec3 position, vec3 r
 	*out_forward = forward;
 	*out_right = right;
 	*out_up = up;
-	mat4 result = Mat4(right.x,    right.y,    right.z,    0,
-					   up.x,       up.y,       up.z,       0,
-					   forward.x,  forward.y,  forward.z,  0,
-					   position.x, position.y, position.z, 1);
+	return Mat4(right.x,    right.y,    right.z,    0,
+				up.x,       up.y,       up.z,       0,
+				forward.x,  forward.y,  forward.z,  0,
+				position.x, position.y, position.z, 1);
 }
 
 #define mat4_lookat_matrix_from_rotation_degrees_output_directions(translation,rotation) mat4_lookat_matrix_from_rotation_radians_output_directions((translation), Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)))
