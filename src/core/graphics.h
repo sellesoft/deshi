@@ -178,6 +178,12 @@ typedef Type GraphicsFormat; enum {
 	GraphicsFormat_Depth32_Float,
 	GraphicsFormat_Depth32_Float_Stencil8_UInt,
 	GraphicsFormat_Depth24_UNorm_Stencil8_UInt,
+	
+	GraphicsFormat_COUNT,
+	GraphicsFormat_COLOR_FIRST = GraphicsFormat_R32G32_Float,
+	GraphicsFormat_COLOR_LAST = GraphicsFormat_B8G8R8A8_UNorm,
+	GraphicsFormat_DEPTH_FIRST = GraphicsFormat_Depth16_UNorm,
+	GraphicsFormat_DEPTH_LAST = GraphicsFormat_Depth24_UNorm_Stencil8_UInt,
 };
 
 // Determines which side of faces are culled.
@@ -791,6 +797,11 @@ typedef struct GraphicsPushConstant {
 	GraphicsShaderStage shader_stages;
 	u32 size;
 	u32 offset;
+	str8 shader_block_name;
+	
+	GRAPHICS_INTERNAL_BEGIN
+		u32 shader_block_binding;
+	GRAPHICS_INTERNAL_END
 } GraphicsPushConstant;
 
 

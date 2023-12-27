@@ -1,6 +1,8 @@
 GraphicsGlobal  __deshi_graphics;
 GraphicsGlobal* g_graphics = &__deshi_graphics;
 
+#define GRAPHICS_INITIAL_COMMAND_BUFFER_SIZE 32
+
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // @buffer

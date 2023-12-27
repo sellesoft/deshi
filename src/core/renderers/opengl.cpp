@@ -1,4 +1,7 @@
 /* deshi OpenGL Render Submodule
+Notes:
+- The minimum supported OpenGL version is 3.3 (most graphics cards after 2007 and laptops after 2012 should support this)
+
 Logging Levels:
 0: warnings and errors
 1: happens on demand
@@ -18,6 +21,20 @@ Index:
 @graphics_renderpass
 @graphics_framebuffer
 @graphics_commands
+
+TODOs:
+mipmaps
+- https://www.khronos.org/opengl/wiki/Texture#Mip_maps
+- https://learnopengl.com/Getting-started/Textures
+multisampling
+- https://www.khronos.org/opengl/wiki/Multisampling
+- https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing
+anistropic filtering
+- https://www.khronos.org/opengl/wiki/Sampler_Object#Anisotropic_filtering
+pipeline binarys (pipeline caching)
+- https://registry.khronos.org/OpenGL/extensions/ARB/ARB_get_program_binary.txt
+specialization constants (spir-v)
+- https://www.khronos.org/opengl/wiki/SPIR-V/Compilation
 */
 
 
@@ -27,6 +44,7 @@ Index:
 
 typedef struct WindowRenderInfoGl{
 	GraphicsCommandBuffer* command_buffer;
+	GraphicsFramebuffer* framebuffer;
 }WindowRenderInfoGl;
 
 
@@ -36,14 +54,14 @@ typedef struct WindowRenderInfoGl{
 
 local void* opengl_context = 0;
 
-local s32 opengl_success = 0;
+local GLint opengl_success = 0;
 local GLenum opengl_error = 0;
 
 local int opengl_version = 0;
 local int backend_version = 0;
 
 #define OPENGL_INFOLOG_SIZE 512
-local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
+local char opengl_infolog[OPENGL_INFOLOG_SIZE];
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +97,23 @@ WGLDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_a
 	LogEGl("WGL ERROR_",(u32)error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
 }
 #endif //#if DESHI_WINDOWS
+
+
+#if DESHI_LINUX
+local void
+GLXDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){DPZoneScoped;
+	u32 error_code = 0; //glx error code?
+	const char* error_flag = 0;
+	const char* error_msg  = 0;
+	switch(error_code){
+		default:{
+			error_flag = "?";
+			error_msg  = "?";
+		}break;
+	}
+	LogEGl("GLX ERROR_",(u32)error_code," '",error_flag,"' on ",name,"(); Reason: ",error_msg);
+}
+#endif //#if DESHI_LINUX
 
 
 local void
@@ -137,14 +172,18 @@ graphics_init(Window* window){DPZoneScoped;
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup WGL and glad
 #if DESHI_WINDOWS
+	//!ref: https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)
+	
 	//restore point for contexts
 	HDC   prev_dc = wglGetCurrentDC();
 	HGLRC prev_rc = wglGetCurrentContext();
 	
 	//setup pixel format for dummy device context
 	PIXELFORMATDESCRIPTOR temp_pfd{sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_DOUBLEBUFFER};
-	temp_pfd.cColorBits = 32; temp_pfd.cDepthBits = 24; temp_pfd.cStencilBits = 8;
-	int temp_format = ChoosePixelFormat((HDC)window_helper.context, &temp_pfd);
+	temp_pfd.cColorBits = 32;
+	temp_pfd.cDepthBits = 24;
+	temp_pfd.cStencilBits = 8;
+	int temp_format = ::ChoosePixelFormat((HDC)window_helper.context, &temp_pfd);
 	if(!::SetPixelFormat((HDC)window_helper.context, temp_format, &temp_pfd)){
 		win32_log_last_error("SetPixelFormat", g_graphics->break_on_error);
 		return;
@@ -158,18 +197,17 @@ graphics_init(Window* window){DPZoneScoped;
 	}
 	wglMakeCurrent((HDC)window_helper.context, temp_context);
 	
-	//load wgl extensions
+	//load wgl
 	backend_version = gladLoaderLoadWGL((HDC)window_helper.context);
 	if(backend_version == 0){
-		LogEGl("Failed to load OpenGL");
+		LogEGl("Failed to load WGL.");
 		return;
 	}
-	Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
-	
 #if BUILD_INTERNAL
 	gladInstallWGLDebug();
 	gladSetWGLPostCallback(WGLDebugPostCallback);
 #endif //#if BUILD_INTERNAL
+	Logf("opengl","Loaded WGL %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 	
 	//delete dummy context
 	wglMakeCurrent(prev_dc, prev_rc);
@@ -182,21 +220,25 @@ graphics_init(Window* window){DPZoneScoped;
 	const int format_attributes[] = {
 		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
 		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-		WGL_DOUBLE_BUFFER_ARB,	GL_TRUE,
-		WGL_PIXEL_TYPE_ARB,		WGL_TYPE_RGBA_ARB,
-		WGL_COLOR_BITS_ARB,		32,
-		WGL_DEPTH_BITS_ARB,		24,
-		WGL_STENCIL_BITS_ARB,	8,
+		WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+		//WGL_TRANSPARENT_ARB, GL_TRUE,
+		WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+		WGL_COLOR_BITS_ARB, 32,
+		WGL_DEPTH_BITS_ARB, 24,
+		WGL_STENCIL_BITS_ARB, 8,
 		WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
-		0
+		0 //terminate
 	};
-	wglChoosePixelFormatARB((HDC)window->context, format_attributes, 0, 1, &format, &format_count); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
-	if(!::DescribePixelFormat((HDC)window->context, format, sizeof(pfd), &pfd)){
-		win32_log_last_error("DescribePixelFormat", g_graphics->break_on_error);
+	if(wglChoosePixelFormatARB((HDC)window->context, format_attributes, 0, 1, &format, &format_count) == FALSE){
+		win32_log_last_error("wglChoosePixelFormatARB", g_graphics->break_on_error);
 		return;
 	}
 	if(format == 0){
 		win32_log_last_error("ChoosePixelFormatARB", g_graphics->break_on_error);
+		return;
+	}
+	if(!::DescribePixelFormat((HDC)window->context, format, sizeof(pfd), &pfd)){
+		win32_log_last_error("DescribePixelFormat", g_graphics->break_on_error);
 		return;
 	}
 	if(!::SetPixelFormat((HDC)window->context, format, &pfd)){
@@ -204,132 +246,207 @@ graphics_init(Window* window){DPZoneScoped;
 		return;
 	}
 	
-	//set the desired OpenGL version and render context settings
+	//create and enable the actual render context
 	int context_attributes[] = {
 		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-		WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-#  if BUILD_INTERNAL
+		WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+#if BUILD_INTERNAL
 		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
-#  else
+#else //#if BUILD_INTERNAL
 		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-#  endif
+#endif //#else //#if BUILD_INTERNAL
 		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-		0
+		0 //terminate
 	};
-	
-	//create actual render context and delete temporary one
-	opengl_context = wglCreateContextAttribsARB((HDC)window->context, 0, context_attributes); //https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt
+	opengl_context = wglCreateContextAttribsARB((HDC)window->context, 0, context_attributes);
 	if(!opengl_context){
 		win32_log_last_error("wglCreateContextAttribsARB", g_graphics->break_on_error);
 		return;
 	}
 	wglMakeCurrent((HDC)window->context, (HGLRC)opengl_context);
-#elif DESHI_LINUX //#if DESHI_WINDOWS
-	// following this tutorial: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
 	
+#elif DESHI_LINUX //#if DESHI_WINDOWS
+	//!ref: https://www.khronos.org/opengl/wiki/Programming_OpenGL_in_Linux:_GLX_and_Xlib
+	
+	//print a nice message since loading opengl currently takes long enough for us to be able to see it :D
 	XFlush(linux.x11.display);
-	// print a nice message since loading opengl currently takes long enough for us to be able to see it :D
 	XDrawString(linux.x11.display, (X11Window)window->handle, (GC)window->context, 50, 50, "Loading OpenGL...", 17);
 	
+	//load glx
 	backend_version = gladLoaderLoadGLX(linux.x11.display, linux.x11.screen);
+	if(backend_version == 0){
+		LogEGl("Failed to load GLX.");
+		return;
+	}
+#if BUILD_INTERNAL
+	gladInstallGLXDebug();
+	gladSetGLXPostCallback(GLXDebugPostCallback);
+#endif //#if BUILD_INTERNAL
 	Logf("opengl","Loaded GLX %d.%d", GLAD_VERSION_MAJOR(backend_version), GLAD_VERSION_MINOR(backend_version));
 	
-	gladInstallGLXDebug();
-	
-	// get restore points 
-	Display* prev_display = glXGetCurrentDisplay();
-	GLXContext prev_context = glXGetCurrentContext();
-	
-	// list of attributes to ask of GLX
+	//get all framebuffer configs that support these attributes
 	int attributes_config[] = {
-		GLX_DEPTH_SIZE, 24,  // 24 bit depth
-		GLX_STENCIL_SIZE, 8, // 8 bit stencil size
-		GLX_DOUBLEBUFFER,	 // use a double buffer
-		0,
+		GLX_X_RENDERABLE, GL_TRUE,
+		GLX_DOUBLEBUFFER, GL_TRUE,
+		//GLX_TRANSPARENT_TYPE, GLX_TRANSPARENT_RGB,
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
+		GLX_RED_SIZE, 8,
+		GLX_GREEN_SIZE, 8,
+		GLX_BLUE_SIZE, 8,
+		GLX_ALPHA_SIZE, 8,
+		GLX_DEPTH_SIZE, 24,
+		GLX_STENCIL_SIZE, 8,
+		GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
+		0, //terminate
 	};
-	
-	int n_elem;
-	GLXFBConfig* config = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes_config, &n_elem);
-	if(!config || !n_elem) {
+	int framebuffer_configs_count;
+	GLXFBConfig* framebuffer_configs = glXChooseFBConfig(linux.x11.display, linux.x11.screen, attributes_config, &framebuffer_configs_count);
+	if(!framebuffer_configs || framebuffer_configs_count <= 0){
 		LogEGl("Cannot find an appropriate framebuffer configuration with glXChooseFBConfig.");
 		return;
 	}
 	
-	GLXFBConfig fbconfig = config[0];
-	XFree(config);
-	
-	int attributes_visual[] = {
-		GLX_RGBA,
-		GLX_DOUBLEBUFFER,
-		GLX_DEPTH_SIZE, 24,  // 24 bit depth
-		GLX_STENCIL_SIZE, 8, // 8 bit stencil size
-		GLX_DOUBLEBUFFER,	 // use a double buffer
-		0,
-	};
-	
-	// get the best visual for our chosen attributes
-	XVisualInfo* vi = glXChooseVisual(linux.x11.display, linux.x11.screen, attributes_visual);
-	if(!vi) {
+	//choose the best framebuffer config and visual info for the above attributes
+	//NOTE "best" config meaning the with the most samples
+	int best_framebuffer_config_index = 0;
+	int best_framebuffer_config_samples = -1;
+	XVisualInfo* best_visual_info = 0;
+	for(int samples, sample_buffers, i = 1; i < framebuffer_configs_count; i += 1){
+		XVisualInfo* visual_info = glXGetVisualFromFBConfig(display, framebuffer_configs[i]);
+		if(visual_info){
+			glXGetFBConfigAttrib(linux.x11.display, framebuffer_configs[i], GLX_SAMPLES, &samples);
+			glXGetFBConfigAttrib(linux.x11.display, framebuffer_configs[i], GLX_SAMPLE_BUFFERS, &sample_buffers);
+			if(sample_buffers > 0 && samples > best_framebuffer_config_samples){
+				best_framebuffer_config_index = i;
+				best_framebuffer_config_samples = samples;
+				if(best_visual_info){
+					XFree(best_visual_info);
+				}
+				best_visual_info = visual_info;
+			}else{
+				XFree(visual_info);
+			}
+		}
+	}
+	GLXFBConfig best_framebuffer_config = framebuffer_configs[best_config_index];
+	XFree(framebuffer_configs);
+	if(!best_visual_info){
 		LogEGl("Cannot find an appropriate visual for the given attributes.");
 		return;
 	}
 	
-	Colormap cm = XCreateColormap(linux.x11.display, (X11Window)window->handle, vi->visual, AllocNone);
+	//create the colormap
+	Colormap cm = XCreateColormap(linux.x11.display, (X11Window)window->handle, best_visual_info->visual, AllocNone);
+	XFree(best_visual_info);
 	
-	int contextAttribs[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 3, 
-		GLX_CONTEXT_MINOR_VERSION_ARB, 2, 
+	//create the context
+	int attributes_context[] = {
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
 #if BUILD_INTERNAL
 		GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | GLX_CONTEXT_DEBUG_BIT_ARB,
 #else //#if BUILD_INTERNAL
-		GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB, 
+		GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 #endif //#else //#if BUILD_INTERNAL
-		0 // Terminate the attribute list
+		0 //terminate
 	};
-	
-	GLXContext context = glXCreateContextAttribsARB(linux.x11.display, fbconfig, 0, True, contextAttribs);
-	if(!glXMakeCurrent(linux.x11.display, (X11Window)window->handle, context)) {
-		LogEGl("Failed to set the glx context.");
+	GLXContext context = glXCreateContextAttribsARB(linux.x11.display, framebuffer_best_config, 0, True, attributes_context);
+	if(!glXMakeCurrent(linux.x11.display, (X11Window)window->handle, context)){
+		LogEGl("Failed to create the GLX context.");
 		return;
 	}
+	
 #else //#elif DESHI_LINUX //#if DESHI_WINDOWS
-#  error "unhandled platform"
+#   error "unhandled platform"
 #endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
 	
-	//load glad extensions
+	//load opengl
 	opengl_version = gladLoaderLoadGL();
 	if(opengl_version == 0){
 		LogEGl("Failed to load OpenGL.");
 		return;
 	}
-	Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
-	
+	if(!GL_VERSION_TEST(3,3)){
+		LogEGl("The OpenGL graphics backend of deshi requires at least version 3.3 which is not supported on this device.");
+		return;
+	}
 #if BUILD_INTERNAL
 	gladInstallGLDebug();
 	gladSetGLPostCallback(GladDebugPostCallback);
 #endif //#if BUILD_INTERNAL
+	Logf("opengl","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 	
 #if DESHI_WINDOWS
 	UpdateWindow((HWND)window->handle);
 #elif DESHI_LINUX //#if DESHI_WINDOWS
 	XFlush(linux.x11.display);
 #else //#elif DESHI_LINUX //#if DESHI_WINDOWS
-#  error "unhandled platform"
+#   error "unhandled platform"
 #endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
-	
-	//-///////////////////////////////////////////////////////////////////////////////////////////////
-	//// require OpenGL3.0 minimum
-	if(!GL_VERSION_TEST(3,0)){
-		LogEGl("The OpenGL graphics backend of deshi requires at least version 3.0 which is not supported on this device.");
-		return;
-	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// setup per-window info
 	WindowRenderInfoGl* window_info = (WindowRenderInfoGl*)g_graphics->allocators.primary->reserve(sizeof(WindowRenderInfoGl));
 	window->render_info = window_info;
+	
+	//setup the window's default command buffer
 	window_info->command_buffer = graphics_command_buffer_allocate();
-	array_init(window_info->command_buffer->commands, 1, g_graphics->allocators.primary);
+	window_info->command_buffer->debug_name = str8_lit("<graphics> default command buffer");
+	array_init(window_info->command_buffer->commands, GRAPHICS_INITIAL_COMMAND_BUFFER_SIZE, g_graphics->allocators.primary);
+	
+	//setup the window's default framebuffer
+	//NOTE OpenGL creation of this framebuffer occurred above during context creation
+	window_info->framebuffer = graphics_framebuffer_allocate();
+	window_info->framebuffer->debug_name = str8_lit("<graphics> default framebuffer");
+	window_info->framebuffer->render_pass = graphics_render_pass_allocate();
+	window_info->framebuffer->render_pass->debug_name = str8_lit("<graphics> default framebuffer's render pass");
+	window_info->framebuffer->render_pass->use_color_attachment = true;
+	window_info->framebuffer->render_pass->color_attachment.format = GraphicsFormat_R8G8B8A8_SRGB;
+	window_info->framebuffer->render_pass->color_attachment.load_op = GraphicsLoadOp_Clear;
+	window_info->framebuffer->render_pass->color_attachment.store_op = GraphicsStoreOp_Store;
+	window_info->framebuffer->render_pass->color_attachment.stencil_load_op = GraphicsLoadOp_Dont_Care;
+	window_info->framebuffer->render_pass->color_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	window_info->framebuffer->render_pass->color_attachment.initial_layout = GraphicsImageLayout_Undefined;
+	window_info->framebuffer->render_pass->color_attachment.final_layout = GraphicsImageLayout_Present;
+	window_info->framebuffer->render_pass->depth_attachment.format = GraphicsFormat_Depth24_UNorm_Stencil8_UInt;
+	window_info->framebuffer->render_pass->depth_attachment.load_op = GraphicsLoadOp_Clear;
+	window_info->framebuffer->render_pass->depth_attachment.store_op = GraphicsStoreOp_Store;
+	window_info->framebuffer->render_pass->depth_attachment.stencil_load_op = GraphicsLoadOp_Clear;
+	window_info->framebuffer->render_pass->depth_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
+	window_info->framebuffer->render_pass->depth_attachment.initial_layout = GraphicsImageLayout_Undefined;
+	window_info->framebuffer->render_pass->depth_attachment.final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
+	window_info->framebuffer->render_pass->color_clear_values = vec4{0.0f,0.0f,0.0f,0.0f};
+	window_info->framebuffer->render_pass->depth_clear_values.depth = 1.0f;
+	window_info->framebuffer->render_pass->depth_clear_values.stencil = 0;
+	window_info->framebuffer->width = window->width;
+	window_info->framebuffer->height = window->height;
+	window_info->framebuffer->color_image_view = graphics_image_view_allocate();
+	window_info->framebuffer->color_image_view->debug_name = str8_lit("<graphics> default framebuffer's color image view");
+	window_info->framebuffer->color_image_view->format = GraphicsFormat_R8G8B8A8_SRGB;
+	window_info->framebuffer->color_image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
+	window_info->framebuffer->color_image_view->image = graphics_image_allocate();
+	window_info->framebuffer->color_image_view->image->debug_name = str8_lit("<graphics> default framebuffer's color image");
+	window_info->framebuffer->color_image_view->image->format = GraphicsFormat_R8G8B8A8_SRGB;
+	window_info->framebuffer->color_image_view->image->usage = GraphicsImageUsage_Color_Attachment;
+	window_info->framebuffer->color_image_view->image->samples = GraphicsSampleCount_1;
+	window_info->framebuffer->color_image_view->image->linear_tiling = false;
+	window_info->framebuffer->color_image_view->image->extent = vec3i{(s32)window->width, (s32)window->height, 0};
+	window_info->framebuffer->color_image_view->image->memory_properties = GraphicsMemoryPropertyFlag_DeviceLocal;
+	window_info->framebuffer->color_image_view->image->mip_levels = 0;
+	window_info->framebuffer->depth_image_view = graphics_image_view_allocate();
+	window_info->framebuffer->depth_image_view->debug_name = str8_lit("<graphics> default framebuffer's depth image view");
+	window_info->framebuffer->depth_image_view->format = GraphicsFormat_Depth24_UNorm_Stencil8_UInt;
+	window_info->framebuffer->depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
+	window_info->framebuffer->depth_image_view->image = graphics_image_allocate();
+	window_info->framebuffer->depth_image_view->image->debug_name = str8_lit("<graphics> default framebuffer's depth image");
+	window_info->framebuffer->depth_image_view->image->format = GraphicsFormat_Depth24_UNorm_Stencil8_UInt;
+	window_info->framebuffer->depth_image_view->image->usage = GraphicsImageUsage_Depth_Stencil_Attachment;
+	window_info->framebuffer->depth_image_view->image->samples = GraphicsSampleCount_1;
+	window_info->framebuffer->depth_image_view->image->linear_tiling = false;
+	window_info->framebuffer->depth_image_view->image->extent = vec3i{(s32)window->width, (s32)window->height, 0};
+	window_info->framebuffer->depth_image_view->image->memory_properties = GraphicsMemoryPropertyFlag_DeviceLocal;
+	window_info->framebuffer->depth_image_view->image->mip_levels = 0;
+	window_info->framebuffer->__internal.handle = 0; //NOTE OpenGL default framebuffer handle is zero
 	
 	g_graphics->initialized = true;
 	DeshiStageInitEnd(DS_RENDER);
@@ -344,21 +461,22 @@ graphics_update(Window* window){DPZoneScoped;
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// handle if the window resized
-	
-	if(g_window->resized){
+	if(window->resized){
 		LogGl(2,"Window resized; Updating the viewport.");
-		if(g_window->width <= 0 || g_window->height <= 0){
+		window_info->framebuffer->color_image_view->image->extent = vec3i{(s32)window->width, (s32)window->height, 0};
+		window_info->framebuffer->depth_image_view->image->extent = vec3i{(s32)window->width, (s32)window->height, 0};
+		if(window->width <= 0 || window->height <= 0){
 			return;
 		}
-		glViewport(0,0, g_window->width,g_window->height);
+		glViewport(0, 0, (GLsizei)window->width, (GLsizei)window->height);
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// execute commands
+	LogGl(3,"Starting a command buffer[",window_info->command_buffer->debug_name,"].");
 	
-	LogGl(3,"Starting the command buffer [",window_info->command_buffer->debug_name,"].");
-	
-	GraphicsRenderPass* current_render_pass = false;
+	GraphicsRenderPass* active_render_pass = 0;
+	GraphicsPipeline* active_pipeline = 0;
 	forX_array(cmd, window_info->command_buffer->commands){
 		switch(cmd->type){
 			case GraphicsCommandType_Begin_Render_Pass:{
@@ -366,13 +484,13 @@ graphics_update(Window* window){DPZoneScoped;
 					LogEGl("Null renderpass specified in a GraphicsCommandType_Begin_Render_Pass.");
 					continue;
 				}
-				if(current_render_pass){
-					LogEGl("Attempted to begin the renderpass [",cmd->begin_render_pass.pass->debug_name,"] while the renderpass [",current_render_pass->debug_name,"] is already in progress.");
+				if(active_render_pass){
+					LogEGl("Attempted to begin a renderpass[",cmd->begin_render_pass.pass->debug_name,"] while another renderpass[",active_render_pass->debug_name,"] is already in progress.");
 					continue;
 				}
-				LogGl(3,"Beginning the renderpass [",cmd->begin_render_pass.pass->debug_name,"].");
+				LogGl(3,"Beginning a renderpass[",cmd->begin_render_pass.pass->debug_name,"].");
 				
-				current_render_pass = cmd->begin_render_pass.pass;
+				glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)(u64)cmd->begin_render_pass.frame->__internal.handle);
 				
 				if(cmd->begin_render_pass.pass->use_color_attachment){
 					glClearColor(cmd->begin_render_pass.pass->color_clear_values.r,
@@ -382,22 +500,24 @@ graphics_update(Window* window){DPZoneScoped;
 				}
 				
 				if(cmd->begin_render_pass.pass->use_depth_attachment){
-					//NOTE(delle) (1 - depth) because openGL Z direction is opposite ours
+					//NOTE(delle) (1 - depth) because openGL Z direction is opposite deshi's
 					glClearDepth(1.0 - (f64)cmd->begin_render_pass.pass->depth_clear_values.depth);
 					glClearStencil(cmd->begin_render_pass.pass->depth_clear_values.stencil);
 				}
 				
 				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+				
+				active_render_pass = cmd->begin_render_pass.pass;
 			}break;
 			
 			case GraphicsCommandType_End_Render_Pass:{
-				if(!current_render_pass){
-					LogEGl("Attempted to end renderpass when one is not in progress.");
+				if(!active_render_pass){
+					LogEGl("Attempted to end a renderpass when one is not in progress.");
 					continue;
 				}
-				LogGl(3,"Ending the renderpass [",current_render_pass->debug_name,"].");
+				LogGl(3,"Ending a renderpass[",active_render_pass->debug_name,"].");
 				
-				current_render_pass = 0;
+				active_render_pass = 0;
 			}break;
 			
 			case GraphicsCommandType_Bind_Pipeline:{
@@ -405,30 +525,349 @@ graphics_update(Window* window){DPZoneScoped;
 					LogEGl("Null pipeline specified in a GraphicsCommandType_Bind_Pipeline.");
 					continue;
 				}
-				LogGl(3,"Binding the index buffer [",cmd->bind_pipeline.handle->debug_name,"].");
+				if(!cmd->bind_pipeline.handle->layout){
+					LogEGl("Pipeline[",cmd->bind_pipeline.handle->debug_name,"] specified in a GraphicsCommandType_Bind_Pipeline has a null layout.");
+					continue;
+				}
+				LogGl(3,"Binding a pipeline[",cmd->bind_pipeline.handle->debug_name,"].");
 				
-				//TODO pipelines
-				//glUseProgram(programs.flat.handle);
+				glUseProgram((GLuint)(u64)cmd->bind_pipeline.handle->__internal.handle);
+				
+				if(!cmd->bind_pipeline.handle->dynamic_viewport){
+					//!TestMe that the offset.y doesn't need to be inverted
+					glViewport((GLint)cmd->bind_pipeline.handle->viewport_offset.x, (GLint)cmd->bind_pipeline.handle->viewport_offset.y,
+							   (GLsizei)cmd->bind_pipeline.handle->viewport_extent.x, (GLsizei)cmd->bind_pipeline.handle->viewport_extent.y);
+				}
+				
+				if(!cmd->bind_pipeline.handle->dynamic_scissor){
+					//!TestMe that the offset.y doesn't need to be inverted
+					glEnable(GL_SCISSOR_TEST);
+					glScissor((GLint)cmd->bind_pipeline.handle->scissor_offset.x, (GLint)cmd->bind_pipeline.handle->scissor_offset.y,
+							  (GLsizei)cmd->bind_pipeline.handle->scissor_extent.x, (GLsizei)cmd->bind_pipeline.handle->scissor_extent.y);
+				}else{
+					glDisable(GL_SCISSOR_TEST);
+				}
+				
+				switch(cmd->bind_pipeline.handle->front_face){
+					case GraphicsFrontFace_CW:{
+						glFrontFace(GL_CW);
+					}break;
+					case GraphicsFrontFace_CCW:{
+						glFrontFace(GL_CCW);
+					}break;
+					default:{
+						LogEGl("Unhandled GraphicsFrontFace when setting the front face for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->front_face,".");
+					}break;
+				}
+				
+				switch(cmd->bind_pipeline.handle->culling){
+					case GraphicsPipelineCulling_None:{
+						glDisable(GL_CULL_FACE);
+					}break;
+					case GraphicsPipelineCulling_Front:{
+						glEnable(GL_CULL_FACE);
+						glCullFace(GL_FRONT);
+					}break;
+					case GraphicsPipelineCulling_Back:{
+						glEnable(GL_CULL_FACE);
+						glCullFace(GL_BACK);
+					}break;
+					case GraphicsPipelineCulling_Front_Back:{
+						glEnable(GL_CULL_FACE);
+						glCullFace(GL_FRONT_AND_BACK);
+					}break;
+					default:{
+						LogEGl("Unhandled GraphicsPipelineCulling when setting the cull face for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->culling,".");
+					}break;
+				}
+				
+				if(!cmd->bind_pipeline.handle->dynamic_line_width){
+					glLineWidth((GLfloat)cmd->bind_pipeline.handle->line_width);
+				}
+				
+				if(cmd->bind_pipeline.handle->depth_test){
+					glEnable(GL_DEPTH_TEST);
+					glDepthMask((cmd->bind_pipeline.handle->depth_writes) ? GL_TRUE : GL_FALSE);
+					switch(cmd->bind_pipeline.handle->depth_compare_op){
+						case GraphicsCompareOp_Never:{
+							glDepthFunc(GL_NEVER);
+						}break;
+						case GraphicsCompareOp_Less:{
+							glDepthFunc(GL_LESS);
+						}break;
+						case GraphicsCompareOp_Equal:{
+							glDepthFunc(GL_EQUAL);
+						}break;
+						case GraphicsCompareOp_Less_Or_Equal:{
+							glDepthFunc(GL_LEQUAL);
+						}break;
+						case GraphicsCompareOp_Greater:{
+							glDepthFunc(GL_GREATER);
+						}break;
+						case GraphicsCompareOp_Not_Equal:{
+							glDepthFunc(GL_NOTEQUAL);
+						}break;
+						case GraphicsCompareOp_Greater_Or_Equal:{
+							glDepthFunc(GL_GEQUAL);
+						}break;
+						case GraphicsCompareOp_Always:{
+							glDepthFunc(GL_ALWAYS);
+						}break;
+						default:{
+							LogEGl("Unhandled GraphicsCompareOp when setting the depth test function for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->depth_compare_op,".");
+						}break;
+					}
+				}else{
+					glDisable(GL_DEPTH_TEST);
+				}
+				
+				if(cmd->bind_pipeline.handle->depth_bias){
+					switch(cmd->bind_pipeline.handle->polygon_mode){
+						case GraphicsPolygonMode_Point:{
+							glEnable(GL_POLYGON_OFFSET_POINT);
+							glDisable(GL_POLYGON_OFFSET_LINE);
+							glDisable(GL_POLYGON_OFFSET_FILL);
+						}break;
+						case GraphicsPolygonMode_Line:{
+							glDisable(GL_POLYGON_OFFSET_POINT);
+							glEnable(GL_POLYGON_OFFSET_LINE);
+							glDisable(GL_POLYGON_OFFSET_FILL);
+						}break;
+						case GraphicsPolygonMode_Fill:{
+							glDisable(GL_POLYGON_OFFSET_POINT);
+							glDisable(GL_POLYGON_OFFSET_LINE);
+							glEnable(GL_POLYGON_OFFSET_FILL);
+						}break;
+						default:{
+							LogEGl("Unhandled GraphicsPolygonMode when setting the depth bias for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,".");
+						}break;
+					}
+					
+					glPolygonOffset(cmd->bind_pipeline.handle->depth_bias_slope, cmd->bind_pipeline.handle->depth_bias_constant);
+				}
+				
+				if(cmd->bind_pipeline.handle->color_blend){
+					glEnable(GL_BLEND);
+					
+					GLenum color_blend_equation = GL_FUNC_ADD;
+					GLenum alpha_blend_equation = GL_FUNC_ADD;
+					switch(cmd->bind_pipeline.handle->color_blend_op){
+						case GraphicsBlendOp_Add: color_blend_equation = GL_FUNC_ADD; break;
+						case GraphicsBlendOp_Sub: color_blend_equation = GL_FUNC_SUBTRACT; break;
+						case GraphicsBlendOp_Reverse_Sub: color_blend_equation = GL_FUNC_REVERSE_SUBTRACT; break;
+						case GraphicsBlendOp_Min: color_blend_equation = GL_MIN; break;
+						case GraphicsBlendOp_Max: color_blend_equation = GL_MAX; break;
+						default: LogEGl("Unhandled GraphicsBlendOp when setting the color blend equation for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,"."); break;
+					}
+					switch(cmd->bind_pipeline.handle->alpha_blend_op){
+						case GraphicsBlendOp_Add: alpha_blend_equation = GL_FUNC_ADD; break;
+						case GraphicsBlendOp_Sub: alpha_blend_equation = GL_FUNC_SUBTRACT; break;
+						case GraphicsBlendOp_Reverse_Sub: alpha_blend_equation = GL_FUNC_REVERSE_SUBTRACT; break;
+						case GraphicsBlendOp_Min: alpha_blend_equation = GL_MIN; break;
+						case GraphicsBlendOp_Max: alpha_blend_equation = GL_MAX; break;
+						default: LogEGl("Unhandled GraphicsBlendOp when setting the alpha blend equation for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,"."); break;
+					}
+					glBlendEquationSeparate(color_blend_equation, alpha_blend_equation);
+					
+					GLenum color_src_blend_func = GL_ONE;
+					GLenum color_dst_blend_func = GL_ONE;
+					GLenum alpha_src_blend_func = GL_ZERO;
+					GLenum alpha_dst_blend_func = GL_ZERO;
+					switch(cmd->bind_pipeline.handle->color_src_blend_factor){
+						case GraphicsBlendFactor_Zero: color_src_blend_func = GL_ZERO; break;
+						case GraphicsBlendFactor_One: color_src_blend_func = GL_ONE; break;
+						case GraphicsBlendFactor_Source_Color: color_src_blend_func = GL_SRC_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Source_Color: color_src_blend_func = GL_ONE_MINUS_SRC_COLOR; break;
+						case GraphicsBlendFactor_Destination_Color: color_src_blend_func = GL_DST_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Color: color_src_blend_func = GL_ONE_MINUS_DST_COLOR; break;
+						case GraphicsBlendFactor_Source_Alpha: color_src_blend_func = GL_SRC_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Source_Alpha: color_src_blend_func = GL_ONE_MINUS_SRC_ALPHA; break;
+						case GraphicsBlendFactor_Destination_Alpha: color_src_blend_func = GL_DST_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Alpha: color_src_blend_func = GL_ONE_MINUS_DST_ALPHA; break;
+						case GraphicsBlendFactor_Constant_Color: color_src_blend_func = GL_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Color: color_src_blend_func = GL_ONE_MINUS_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_Constant_Alpha: color_src_blend_func = GL_CONSTANT_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Alpha: color_src_blend_func = GL_ONE_MINUS_CONSTANT_ALPHA; break;
+						default: LogEGl("Unhandled GraphicsBlendFactor when setting the color source blend function for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,"."); break;
+					}
+					switch(cmd->bind_pipeline.handle->color_dst_blend_factor){
+						case GraphicsBlendFactor_Zero: color_dst_blend_func = GL_ZERO; break;
+						case GraphicsBlendFactor_One: color_dst_blend_func = GL_ONE; break;
+						case GraphicsBlendFactor_Source_Color: color_dst_blend_func = GL_SRC_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Source_Color: color_dst_blend_func = GL_ONE_MINUS_SRC_COLOR; break;
+						case GraphicsBlendFactor_Destination_Color: color_dst_blend_func = GL_DST_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Color: color_dst_blend_func = GL_ONE_MINUS_DST_COLOR; break;
+						case GraphicsBlendFactor_Source_Alpha: color_dst_blend_func = GL_SRC_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Source_Alpha: color_dst_blend_func = GL_ONE_MINUS_SRC_ALPHA; break;
+						case GraphicsBlendFactor_Destination_Alpha: color_dst_blend_func = GL_DST_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Alpha: color_dst_blend_func = GL_ONE_MINUS_DST_ALPHA; break;
+						case GraphicsBlendFactor_Constant_Color: color_dst_blend_func = GL_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Color: color_dst_blend_func = GL_ONE_MINUS_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_Constant_Alpha: color_dst_blend_func = GL_CONSTANT_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Alpha: color_dst_blend_func = GL_ONE_MINUS_CONSTANT_ALPHA; break;
+						default: LogEGl("Unhandled GraphicsBlendFactor when setting the color destination blend function for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,"."); break;
+					}
+					switch(cmd->bind_pipeline.handle->alpha_src_blend_factor){
+						case GraphicsBlendFactor_Zero: alpha_src_blend_func = GL_ZERO; break;
+						case GraphicsBlendFactor_One: alpha_src_blend_func = GL_ONE; break;
+						case GraphicsBlendFactor_Source_Color: alpha_src_blend_func = GL_SRC_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Source_Color: alpha_src_blend_func = GL_ONE_MINUS_SRC_COLOR; break;
+						case GraphicsBlendFactor_Destination_Color: alpha_src_blend_func = GL_DST_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Color: alpha_src_blend_func = GL_ONE_MINUS_DST_COLOR; break;
+						case GraphicsBlendFactor_Source_Alpha: alpha_src_blend_func = GL_SRC_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Source_Alpha: alpha_src_blend_func = GL_ONE_MINUS_SRC_ALPHA; break;
+						case GraphicsBlendFactor_Destination_Alpha: alpha_src_blend_func = GL_DST_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Alpha: alpha_src_blend_func = GL_ONE_MINUS_DST_ALPHA; break;
+						case GraphicsBlendFactor_Constant_Color: alpha_src_blend_func = GL_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Color: alpha_src_blend_func = GL_ONE_MINUS_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_Constant_Alpha: alpha_src_blend_func = GL_CONSTANT_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Alpha: alpha_src_blend_func = GL_ONE_MINUS_CONSTANT_ALPHA; break;
+						default: LogEGl("Unhandled GraphicsBlendFactor when setting the alpha source blend function for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,"."); break;
+					}
+					switch(cmd->bind_pipeline.handle->alpha_dst_blend_factor){
+						case GraphicsBlendFactor_Zero: alpha_dst_blend_func = GL_ZERO; break;
+						case GraphicsBlendFactor_One: alpha_dst_blend_func = GL_ONE; break;
+						case GraphicsBlendFactor_Source_Color: alpha_dst_blend_func = GL_SRC_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Source_Color: alpha_dst_blend_func = GL_ONE_MINUS_SRC_COLOR; break;
+						case GraphicsBlendFactor_Destination_Color: alpha_dst_blend_func = GL_DST_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Color: alpha_dst_blend_func = GL_ONE_MINUS_DST_COLOR; break;
+						case GraphicsBlendFactor_Source_Alpha: alpha_dst_blend_func = GL_SRC_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Source_Alpha: alpha_dst_blend_func = GL_ONE_MINUS_SRC_ALPHA; break;
+						case GraphicsBlendFactor_Destination_Alpha: alpha_dst_blend_func = GL_DST_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Destination_Alpha: alpha_dst_blend_func = GL_ONE_MINUS_DST_ALPHA; break;
+						case GraphicsBlendFactor_Constant_Color: alpha_dst_blend_func = GL_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Color: alpha_dst_blend_func = GL_ONE_MINUS_CONSTANT_COLOR; break;
+						case GraphicsBlendFactor_Constant_Alpha: alpha_dst_blend_func = GL_CONSTANT_ALPHA; break;
+						case GraphicsBlendFactor_One_Minus_Constant_Alpha: alpha_dst_blend_func = GL_ONE_MINUS_CONSTANT_ALPHA; break;
+						default: LogEGl("Unhandled GraphicsBlendFactor when setting the alpha destination blend function for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->polygon_mode,"."); break;
+					}
+					glBlendFuncSeparate(color_src_blend_func, color_dst_blend_func,
+										alpha_src_blend_func, alpha_dst_blend_func);
+					
+					if(!cmd->bind_pipeline.handle->dynamic_blend_constant){
+						glBlendColor((GLfloat)cmd->bind_pipeline.handle->blend_constant.r / 255.0f,
+									 (GLfloat)cmd->bind_pipeline.handle->blend_constant.g / 255.0f,
+									 (GLfloat)cmd->bind_pipeline.handle->blend_constant.b / 255.0f,
+									 (GLfloat)cmd->bind_pipeline.handle->blend_constant.a / 255.0f);
+					}
+				}else{
+					glDisable(GL_BLEND);
+				}
+				
+				forI(array_count(cmd->bind_pipeline.handle->vertex_input_attributes)){
+					GLint index = (GLuint)cmd->bind_pipeline.handle->vertex_input_attributes[i].offset;
+					GLint size = 4;
+					GLenum type = GL_FLOAT;
+					GLboolean normalized = GL_FALSE;
+					switch(cmd->bind_pipeline.handle->vertex_input_attributes[i].format){
+						case GraphicsFormat_R32G32_Float:{
+							size = 2;
+							type = GL_FLOAT;
+							normalized = GL_FALSE;
+						}break;
+						case GraphicsFormat_R32G32B32_Float:{
+							size = 3;
+							type = GL_FLOAT;
+							normalized = GL_FALSE;
+						}break;
+						case GraphicsFormat_R8G8B8_SRGB:{
+							size = 3;
+							type = GL_UNSIGNED_BYTE;
+							normalized = GL_FALSE;
+						}break;
+						case GraphicsFormat_R8G8B8_UNorm:{
+							size = 3;
+							type = GL_UNSIGNED_BYTE;
+							normalized = GL_TRUE;
+						}break;
+						case GraphicsFormat_R8G8B8A8_SRGB:{
+							size = 4;
+							type = GL_UNSIGNED_BYTE;
+							normalized = GL_FALSE;
+						}break;
+						case GraphicsFormat_R8G8B8A8_UNorm:{
+							size = 4;
+							type = GL_UNSIGNED_BYTE;
+							normalized = GL_TRUE;
+						}break;
+						case GraphicsFormat_B8G8R8A8_UNorm:{
+							size = GL_BGRA;
+							type = GL_UNSIGNED_BYTE;
+							normalized = GL_TRUE;
+						}break;
+						case GraphicsFormat_Depth16_UNorm:{
+							size = 1;
+							type = GL_UNSIGNED_SHORT;
+							normalized = GL_TRUE;
+						}break;
+						case GraphicsFormat_Depth32_Float:{
+							size = 1;
+							type = GL_FLOAT;
+							normalized = GL_FALSE;
+						}break;
+						case GraphicsFormat_Depth32_Float_Stencil8_UInt:{
+							size = 1;
+							type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+							normalized = GL_FALSE;
+						}break;
+						case GraphicsFormat_Depth24_UNorm_Stencil8_UInt:{
+							size = 1;
+							type = GL_UNSIGNED_INT_24_8_EXT;
+							normalized = GL_TRUE;
+						}break;
+						default:{
+							LogEGl("Unhandled GraphicsFormat when setting the vertex input attributes for a pipeline[",cmd->bind_pipeline.handle->debug_name,"]: ",cmd->bind_pipeline.handle->vertex_input_attributes[i].format,".");
+						}break;
+					}
+					GLsizei stride = cmd->bind_pipeline.handle->vertex_input_bindings[i].stride;
+					const void* offset = (void*)(u64)cmd->bind_pipeline.handle->vertex_input_attributes[i].offset;
+					glVertexAttribPointer(index, size, type, normalized, stride, offset);
+					glEnableVertexAttribArray(index);
+				}
+				
+				active_pipeline = cmd->bind_pipeline.handle;
 			}break;
 			
 			case GraphicsCommandType_Set_Viewport:{
 				LogGl(3,"Setting the viewport offset to ",cmd->set_viewport.offset," and extent to ",cmd->set_viewport.extent,".");
 				
 				//!TestMe that the offset.y doesn't need to be inverted
-				glViewport(cmd->set_viewport.offset.x, cmd->set_viewport.offset.y,
-						   cmd->set_viewport.extent.x, cmd->set_viewport.extent.y);
+				glViewport((GLint)cmd->set_viewport.offset.x, (GLint)cmd->set_viewport.offset.y,
+						   (GLsizei)cmd->set_viewport.extent.x, (GLsizei)cmd->set_viewport.extent.y);
 			}break;
 			
 			case GraphicsCommandType_Set_Scissor:{
 				LogGl(3,"Setting the scissor offset to ",cmd->set_viewport.offset," and extent to ",cmd->set_viewport.extent,".");
 				
 				//!TestMe that the offset.y doesn't need to be inverted
-				glScissor(cmd->set_scissor.offset.x, cmd->set_scissor.offset.y,
-						  cmd->set_scissor.extent.x, cmd->set_scissor.extent.y);
+				glEnable(GL_SCISSOR_TEST);
+				glScissor((GLint)cmd->set_scissor.offset.x, (GLint)cmd->set_scissor.offset.y,
+						  (GLsizei)cmd->set_scissor.extent.x, (GLsizei)cmd->set_scissor.extent.y);
 			}break;
 			
 			case GraphicsCommandType_Set_Depth_Bias:{
 				LogGl(3,"Setting the depth bias slope to ",cmd->set_depth_bias.slope, " and constant to ",cmd->set_depth_bias.constant);
+				
+				switch(active_pipeline->polygon_mode){
+					case GraphicsPolygonMode_Point:{
+						glEnable(GL_POLYGON_OFFSET_POINT);
+						glDisable(GL_POLYGON_OFFSET_LINE);
+						glDisable(GL_POLYGON_OFFSET_FILL);
+					}break;
+					case GraphicsPolygonMode_Line:{
+						glDisable(GL_POLYGON_OFFSET_POINT);
+						glEnable(GL_POLYGON_OFFSET_LINE);
+						glDisable(GL_POLYGON_OFFSET_FILL);
+					}break;
+					case GraphicsPolygonMode_Fill:{
+						glDisable(GL_POLYGON_OFFSET_POINT);
+						glDisable(GL_POLYGON_OFFSET_LINE);
+						glEnable(GL_POLYGON_OFFSET_FILL);
+					}break;
+					default:{
+						LogEGl("Unhandled polygon mode when dynamically setting the depth bias for a pipeline[",active_pipeline->debug_name,"]: ",active_pipeline->polygon_mode,".");
+					}break;
+				}
 				
 				glPolygonOffset(cmd->set_depth_bias.slope, cmd->set_depth_bias.constant);
 			}break;
@@ -438,7 +877,11 @@ graphics_update(Window* window){DPZoneScoped;
 					LogEGl("Null buffer specified in a GraphicsCommandType_Bind_Vertex_Buffer.");
 					continue;
 				}
-				LogGl(3,"Binding the vertex buffer [",cmd->bind_vertex_buffer.handle->debug_name,"].");
+				if(!active_pipeline){
+					LogEGl("Attempted to bind a vertex buffer[",cmd->bind_vertex_buffer.handle->debug_name,"] before a pipeline has been bound this frame.");
+					continue;
+				}
+				LogGl(3,"Binding a vertex buffer[",cmd->bind_vertex_buffer.handle->debug_name,"].");
 				
 				glBindBuffer(GL_ARRAY_BUFFER, (GLuint)(u64)cmd->bind_vertex_buffer.handle->__internal.buffer_handle);
 			}break;
@@ -448,7 +891,11 @@ graphics_update(Window* window){DPZoneScoped;
 					LogEGl("Null buffer specified in a GraphicsCommandType_Bind_Index_Buffer.");
 					continue;
 				}
-				LogGl(3,"Binding the index buffer [",cmd->bind_index_buffer.handle->debug_name,"].");
+				if(!active_pipeline){
+					LogEGl("Attempted to bind an index buffer[",cmd->bind_index_buffer.handle->debug_name,"] before a pipeline has been bound this frame.");
+					continue;
+				}
+				LogGl(3,"Binding an index buffer[",cmd->bind_index_buffer.handle->debug_name,"].");
 				
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)(u64)cmd->bind_index_buffer.handle->__internal.buffer_handle);
 			}break;
@@ -458,33 +905,63 @@ graphics_update(Window* window){DPZoneScoped;
 					LogEGl("Null descriptor set specified in a GraphicsCommandType_Bind_Descriptor_Set.");
 					continue;
 				}
-				LogGl(3,"Binding the descriptor set [",cmd->bind_descriptor_set.handle->debug_name,"].");
+				if(!active_pipeline){
+					LogEGl("Attempted to bind a descriptor set[",cmd->bind_descriptor_set.handle->debug_name,"] before a pipeline has been bound this frame.");
+					continue;
+				}
+				LogGl(3,"Binding a descriptor set[",cmd->bind_descriptor_set.handle->debug_name,"].");
 				
 				//TODO textures
 				//glActiveTexture(GL_TEXTURE0 + descriptor_index);
 				//glBindTexture(glTextures[0].type, glTextures[0].handle);
+				
+				DontCompile;
 			}break;
 			
 			case GraphicsCommandType_Push_Constant:{
+				if(!active_pipeline){
+					LogEGl("Attempted to push constants before a pipeline has been bound this frame.");
+					continue;
+				}
+				LogGl(3,"Pushing constants of [",cmd->push_constant.info.size,"] bytes at [",cmd->push_constant.data,"].");
 				
-				
-				//TODO push constant UBO
-				//glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
-				//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &matrix);
+				for_array(active_pipeline->layout->push_constants){
+					glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)it->__internal.shader_block_binding);
+					glBufferSubData(GL_UNIFORM_BUFFER, (GLintptr)cmd->push_constant.info.offset, (GLsizeiptr)cmd->push_constant.info.size, cmd->push_constant.data);
+				}
 			}break;
 			
 			case GraphicsCommandType_Draw_Indexed:{
+				if(!active_pipeline){
+					LogEGl("Attempted to push constants before a pipeline has been bound this frame.");
+					continue;
+				}
+				LogGl(3,"Drawing vertices using [",cmd->draw_indexed.index_count,"] indices.");
 				
-				
-				//TODO draw
-				//glDrawElements(GL_TRIANGLES, it->index_count, INDEX_TYPE_GL_MESH, 0);
+				GLsizei index_count = (GLsizei)cmd->draw_indexed.index_count;
+				GLenum index_type = GL_UNSIGNED_INT;
+				const void* index_offset = (void*)(u64)(cmd->draw_indexed.index_offset * sizeof(u32));
+				GLint vertex_offset = (GLint)cmd->draw_indexed.vertex_offset;
+				switch(active_pipeline->polygon_mode){
+					case GraphicsPolygonMode_Point:{
+						glDrawElementsBaseVertex(GL_POINTS, index_count, index_type, index_offset, vertex_offset);
+					}break;
+					case GraphicsPolygonMode_Line:{
+						glDrawElementsBaseVertex(GL_LINES, index_count, index_type, index_offset, vertex_offset);
+					}break;
+					case GraphicsPolygonMode_Fill:{
+						glDrawElementsBaseVertex(GL_TRIANGLES, index_count, index_type, index_offset, vertex_offset);
+					}break;
+					default:{
+						LogEGl("Unhandled pipeline polygon mode: ",active_pipeline->polygon_mode,".");
+					}break;
+				}
 			}break;
 		}
 	}
 	
 	//-///////////////////////////////////////////////////////////////////////////////////////////////
 	//// present frame
-	
 	LogGl(3,"Presenting the frame.");
 	
 #if DESHI_WINDOWS
@@ -492,7 +969,7 @@ graphics_update(Window* window){DPZoneScoped;
 #elif DESHI_LINUX //#if DESHI_WINDOWS
 	glXSwapBuffers(linux.x11.display, (X11Window)window->handle);
 #else //#elif DESHI_LINUX //#if DESHI_WINDOWS
-#  error "unhandled platform"
+#   error "unhandled platform"
 #endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
 	
 	g_time->renderTime = peek_stopwatch(update_stopwatch);
@@ -503,7 +980,7 @@ void
 graphics_cleanup(){
 	LogGl(1,"Cleaning up the OpenGL graphics backend.");
 	
-	//TODO(delle) save pipelines in GL4
+	//TODO(delle) save pipelines in GL4.1 (glGetProgramBinary)
 	//TODO(delle) save graphics settings to config
 	glFinish();
 }
@@ -657,17 +1134,22 @@ graphics_buffer_destroy(GraphicsBuffer* buffer){DPZoneScoped;
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
 	}
-	if(!buffer || !buffer->__internal.buffer_handle){
-		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
+	if(!buffer){
+		LogEGl("The input buffer was null.");
 		return;
 	}
-	LogGl(1,"Destroying the buffer [",buffer->debug_name,"] with ",buffer->__internal.size," bytes.");
+	if(!buffer->__internal.buffer_handle){
+		LogEGl("The input buffer[",buffer->debug_name,"] was not properly created with graphics_buffer_create() or was previously deleted.");
+		return;
+	}
+	LogGl(1,"Destroying a buffer[",buffer->debug_name,"] with ",buffer->__internal.size," bytes.");
 	
 	//unmap before deletion
 	if(buffer->__internal.mapped.data){
 		glUnmapBuffer(OPENGL_RENDER_BUFFER_TARGET);
 	}
 	
+	//clear the buffer
 	GLuint buffer_handle = (GLuint)(u64)buffer->__internal.buffer_handle;
 	if(GL_VERSION_TEST(4,3, glInvalidateBufferData)){
 		glInvalidateBufferData(buffer_handle);
@@ -675,7 +1157,12 @@ graphics_buffer_destroy(GraphicsBuffer* buffer){DPZoneScoped;
 		glBindBuffer(OPENGL_RENDER_BUFFER_TARGET, buffer_handle);
 		glBufferData(OPENGL_RENDER_BUFFER_TARGET, (GLsizeiptr)buffer->__internal.size, 0, (GLenum)(u64)buffer->__internal.memory_handle);
 	}
+	
+	//delete the buffer
 	glDeleteBuffers(1, &buffer_handle);
+	if(opengl_error){
+		return;
+	}
 	
 	memory_pool_delete(g_graphics->pools.buffers, buffer);
 }
@@ -687,23 +1174,22 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){DPZoneScoped;
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
 	}
+	if(!buffer){
+		LogEGl("The input buffer was null.");
+		return;
+	}
 	if(new_size == 0){
 		LogEGl("Must not be called with zero size.");
 		return;
 	}
-	if(!buffer || !buffer->__internal.buffer_handle){
-		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
-		return;
-	}
-	if(!HasFlag(buffer->__internal.usage, GraphicsBufferUsage_TransferSource|GraphicsBufferUsage_TransferDestination)){
-		//NOTE: only here for consistency as it's not a requirement in OpenGL
-		LogEGl("The input buffer does not have the usage flags GraphicsBufferUsage_TransferSource and GraphicsBufferUsage_TransferDestination, so it cannot be copied.");
+	if(!buffer->__internal.buffer_handle){
+		LogEGl("The input buffer[",buffer->debug_name,"] was not properly created with graphics_buffer_create() or was previously deleted.");
 		return;
 	}
 	if(new_size < buffer->__internal.size){
 		return;
 	}
-	LogGl(1,"Reallocating the buffer [",buffer->debug_name,"] with ",buffer->__internal.size," bytes to have ",new_size," bytes.");
+	LogGl(1,"Reallocating a buffer[",buffer->debug_name,"] with ",buffer->__internal.size," bytes to have ",new_size," bytes.");
 	
 	//unmap the old buffer before copy/deletion
 	if(buffer->__internal.mapped.data){
@@ -718,16 +1204,9 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){DPZoneScoped;
 	}
 	
 	//get the old buffer size
-	GLsizeiptr old_buffer_size = buffer->__internal.size;
-	if(GL_VERSION_TEST(3,2, glGetBufferParameteri64v)){
-		GLint64 gl_buffer_size;
-		glGetBufferParameteri64v(GL_COPY_READ_BUFFER, GL_BUFFER_SIZE, &gl_buffer_size);
-		old_buffer_size = (GLsizeiptr)gl_buffer_size;
-	}else{
-		GLint gl_buffer_size;
-		glGetBufferParameteriv(GL_COPY_READ_BUFFER, GL_BUFFER_SIZE, &gl_buffer_size);
-		old_buffer_size = (GLsizeiptr)gl_buffer_size;
-	}
+	GLint64 buffer_size_s64;
+	glGetBufferParameteri64v(GL_COPY_READ_BUFFER, GL_BUFFER_SIZE, &buffer_size_s64);
+	GLsizeiptr old_buffer_size = (GLsizeiptr)buffer_size_s64;
 	
 	//create a new buffer
 	GLuint new_buffer_handle;
@@ -742,8 +1221,8 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){DPZoneScoped;
 	}
 	
 	//allocate the new buffer's memory
+	u64 mapped_size = 0;
 	void* mapped_data = 0;
-	u64   mapped_size = 0;
 	if(GL_VERSION_TEST(4,4, glBufferStorage)){
 		GLbitfield storage_flags = 0;
 		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Never){
@@ -807,76 +1286,29 @@ graphics_buffer_reallocate(GraphicsBuffer* buffer, u64 new_size){DPZoneScoped;
 	}
 	
 	//copy the old buffer's memory to the new buffer's memory
-	if(GL_VERSION_TEST(3,1, glCopyBufferSubData)){
-		glCopyBufferSubData(GL_COPY_READ_BUFFER, OPENGL_RENDER_BUFFER_TARGET, 0, 0, old_buffer_size);
+	glCopyBufferSubData(GL_COPY_READ_BUFFER, OPENGL_RENDER_BUFFER_TARGET, 0, 0, old_buffer_size);
+	if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
+		glUnmapBuffer(GL_COPY_READ_BUFFER);
 		
-		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
-			glUnmapBuffer(GL_COPY_READ_BUFFER);
-			
-			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible)){
-				mapped_size = new_size;
-				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
-				if(opengl_error){
-					glDeleteBuffers(1, &new_buffer_handle);
-					return;
-				}
-			}else if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostCoherent)){
-				mapped_size = new_size;
-				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT);
-				if(opengl_error){
-					glDeleteBuffers(1, &new_buffer_handle);
-					return;
-				}
-			}else{
-				LogEGl("Called with incompatible mapping and memory flags, GraphicsMemoryMapping_Persistent and not GraphicsMemoryPropertyFlag_HostVisible or GraphicsMemoryPropertyFlag_HostCoherent.");
-				glDeleteBuffers(1, &new_buffer_handle);
-				return;
-			}
-		}
-	}else{
-		//NOTE: Not sure if there is a routine for copying buffer memory before OpenGL3.1 so doing a memory mapping in order to copy
-		
-		void* old_mapped_data = glMapBufferRange(GL_COPY_READ_BUFFER, 0, old_buffer_size, GL_MAP_READ_BIT);
-		if(opengl_error){
-			glDeleteBuffers(1, &new_buffer_handle);
-			return;
-		}
-		
-		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
-			if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible)){
-				mapped_size = new_size;
-				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
-				if(opengl_error){
-					glDeleteBuffers(1, &new_buffer_handle);
-					return;
-				}
-			}else if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostCoherent)){
-				mapped_size = new_size;
-				mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT);
-				if(opengl_error){
-					glDeleteBuffers(1, &new_buffer_handle);
-					return;
-				}
-			}else{
-				LogEGl("Called with incompatible mapping and memory flags, GraphicsMemoryMapping_Persistent and not GraphicsMemoryPropertyFlag_HostVisible or GraphicsMemoryPropertyFlag_HostCoherent.");
-				glDeleteBuffers(1, &new_buffer_handle);
-				return;
-			}
-			
-			CopyMemory(mapped_data, old_mapped_data, (upt)old_buffer_size);
-		}else{
-			void* new_mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, old_buffer_size, GL_MAP_WRITE_BIT);
+		if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostVisible)){
+			mapped_size = new_size;
+			mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT);
 			if(opengl_error){
 				glDeleteBuffers(1, &new_buffer_handle);
 				return;
 			}
-			
-			CopyMemory(new_mapped_data, old_mapped_data, (upt)old_buffer_size);
-			
-			glUnmapBuffer(OPENGL_RENDER_BUFFER_TARGET);
+		}else if(HasFlag(buffer->__internal.memory_properties, GraphicsMemoryPropertyFlag_HostCoherent)){
+			mapped_size = new_size;
+			mapped_data = glMapBufferRange(OPENGL_RENDER_BUFFER_TARGET, 0, new_size, GL_MAP_READ_BIT|GL_MAP_WRITE_BIT|GL_MAP_COHERENT_BIT|GL_MAP_PERSISTENT_BIT);
+			if(opengl_error){
+				glDeleteBuffers(1, &new_buffer_handle);
+				return;
+			}
+		}else{
+			LogEGl("Called with incompatible mapping and memory flags, GraphicsMemoryMapping_Persistent and not GraphicsMemoryPropertyFlag_HostVisible or GraphicsMemoryPropertyFlag_HostCoherent.");
+			glDeleteBuffers(1, &new_buffer_handle);
+			return;
 		}
-		
-		glUnmapBuffer(GL_COPY_READ_BUFFER);
 	}
 	
 	//delete the old buffer
@@ -901,23 +1333,27 @@ graphics_buffer_map(GraphicsBuffer* buffer, u64 size, u64 offset){DPZoneScoped;
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return 0;
 	}
-	if(!buffer || !buffer->__internal.buffer_handle){
-		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
+	if(!buffer){
+		LogEGl("The input buffer was null.");
+		return 0;
+	}
+	if(!buffer->__internal.buffer_handle){
+		LogEGl("The input buffer[",buffer->debug_name,"] was not properly created with graphics_buffer_create() or was previously deleted.");
 		return 0;
 	}
 	if(buffer->__internal.mapping_behavior != GraphicsMemoryMapping_Occasional){
-		LogEGl("A buffer must have the mapping GraphicsMemoryMapping_Occasional in order to be mapped in the middle of its lifetime.");
+		LogEGl("The input buffer[",buffer->debug_name,"] cannot be mapped in the middle of its lifetime since it does not have the mapping GraphicsMemoryMapping_Occasional.");
 		return 0;
 	}
 	if(buffer->__internal.mapped.data){
 		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
-			LogWGl("Cannot map a persistently mapped buffer since it's always actively mapped.");
+			LogWGl("Cannot map the persistently mapped input buffer[",buffer->debug_name,"] since it's always actively mapped.");
 		}else{
-			LogWGl("Cannot map an actively mapped buffer.");
+			LogWGl("Cannot map the input buffer[",buffer->debug_name,"] since it's already mapped.");
 		}
 		return 0;
 	}
-	LogGl(1,"Mapping ",size," bytes at the ",offset," offset into the buffer [",buffer->debug_name,"].");
+	LogGl(1,"Mapping ",size," bytes at the ",offset," offset into a buffer[",buffer->debug_name,"].");
 	
 	glBindBuffer(OPENGL_RENDER_BUFFER_TARGET, (GLuint)(u64)buffer->__internal.buffer_handle);
 	if(opengl_error){
@@ -940,23 +1376,27 @@ graphics_buffer_unmap(GraphicsBuffer* buffer, b32 flush){DPZoneScoped;
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
 	}
-	if(!buffer || !buffer->__internal.buffer_handle){
-		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
+	if(!buffer){
+		LogEGl("The input buffer was null.");
+		return;
+	}
+	if(!buffer->__internal.buffer_handle){
+		LogEGl("The input buffer[",buffer->debug_name,"] was not properly created with graphics_buffer_create() or was previously deleted.");
 		return;
 	}
 	if(buffer->__internal.mapping_behavior != GraphicsMemoryMapping_Occasional){
-		LogEGl("A buffer must have the mapping GraphicsMemoryMapping_Occasional in order to be unmapped in the middle of its lifetime.");
+		LogEGl("Cannot unmap a buffer[",buffer->debug_name,"] in the middle of its lifetime since it does not have the mapping GraphicsMemoryMapping_Occasional.");
 		return;
 	}
 	if(!buffer->__internal.mapped.data){
 		if(buffer->__internal.mapping_behavior == GraphicsMemoryMapping_Persistent){
-			LogWGl("Cannot unmap a persistently mapped buffer since it's always actively mapped.");
+			LogWGl("Cannot unmap a persistently mapped buffer[",buffer->debug_name,"] since it's always actively mapped.");
 		}else{
-			LogWGl("The input buffer is not actively mapped.");
+			LogWGl("The input buffer[",buffer->debug_name,"] is not actively mapped.");
 		}
 		return;
 	}
-	LogGl(1,"Unmapping",(flush ? " and flushing" : "")," the buffer [",buffer->debug_name,"].");
+	LogGl(1,"Unmapping",(flush ? " and flushing" : "")," a buffer[",buffer->debug_name,"].");
 	
 	glBindBuffer(OPENGL_RENDER_BUFFER_TARGET, (GLuint)(u64)buffer->__internal.buffer_handle);
 	if(opengl_error){
@@ -987,15 +1427,19 @@ graphics_buffer_flush(GraphicsBuffer* buffer){DPZoneScoped;
 		LogEGl("Must not be called before g_graphics->pools.buffers is init.");
 		return;
 	}
+	if(!buffer){
+		LogEGl("The input buffer was null.");
+		return;
+	}
 	if(!buffer || !buffer->__internal.buffer_handle){
-		LogEGl("The input buffer was not properly created with graphics_buffer_create() or was previously deleted.");
+		LogEGl("The input buffer[",buffer->debug_name,"] was not properly created with graphics_buffer_create() or was previously deleted.");
 		return;
 	}
 	if(!buffer->__internal.mapped.data){
-		LogWGl("The input buffer is not actively mapped.");
+		LogWGl("The input buffer[",buffer->debug_name,"] is not actively mapped.");
 		return;
 	}
-	LogGl(1,"Flushing the buffer [",buffer->debug_name,"].");
+	LogGl(1,"Flushing a buffer[",buffer->debug_name,"].");
 	
 	glBindBuffer(OPENGL_RENDER_BUFFER_TARGET, (GLuint)(u64)buffer->__internal.buffer_handle);
 	if(opengl_error){
@@ -1012,49 +1456,488 @@ graphics_buffer_flush(GraphicsBuffer* buffer){DPZoneScoped;
 
 void
 graphics_image_update(GraphicsImage* image){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!image){
+		LogEGl("The input image was null.");
+		return;
+	}
+	LogGl(1,"Updating an image[",image->debug_name,"].");
+	
+	//map the sample count
+	GLsizei samples = 1;
+	switch(image->samples){
+		case GraphicsSampleCount_1: samples = 1; break;
+		case GraphicsSampleCount_2: samples = 2; break;
+		case GraphicsSampleCount_4: samples = 4; break;
+		case GraphicsSampleCount_8: samples = 8; break;
+		case GraphicsSampleCount_16: samples = 16; break;
+		case GraphicsSampleCount_32: samples = 32; break;
+		case GraphicsSampleCount_64: samples = 64; break;
+	}
+	
+	//map the texture type
+	GLenum texture_target = GL_TEXTURE_2D;
+	if(samples > 1){
+		texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+		
+		/* //TODO(delle) texture types
+		if(image->type == GraphicsImageType_2D){
+			texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+		}else if(image->type == GraphicsImageType_2D_Array){
+			texture_target = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+		}else{
+			LogEGl("Invalid multisample graphics image type specified: ",image->type,".");
+			return;
+		}
+		*/
+	}else{
+		/* //TODO(delle) texture types
+		switch(image->type){
+			case GraphicsImageType_1D: texture_target = GL_TEXTURE_1D; break;
+			case GraphicsImageType_2D: texture_target = GL_TEXTURE_2D; break;
+			case GraphicsImageType_3D: texture_target = GL_TEXTURE_3D; break;
+			case GraphicsImageType_1D_Array: texture_target = GL_TEXTURE_1D_ARRAY; break;
+			case GraphicsImageType_2D_Array: texture_target = GL_TEXTURE_2D_ARRAY; break;
+			default: LogEGl("Unhandled graphics image type: ",image->type,"."); return;
+		}
+		*/
+	}
+	
+	//map the texture format
+	GLint texture_format = GL_RGBA8;
+	switch(image->format){
+		case GraphicsFormat_R32G32_Float: texture_format = GL_RG32F; break;
+		case GraphicsFormat_R32G32B32_Float: texture_format = GL_RGB32F; break;
+		case GraphicsFormat_R8G8B8_SRGB: texture_format = GL_SRGB8; break;
+		case GraphicsFormat_R8G8B8_UNorm: texture_format = GL_RGB8; break;
+		case GraphicsFormat_R8G8B8A8_SRGB: texture_format = GL_SRGB8_ALPHA8; break;
+		case GraphicsFormat_R8G8B8A8_UNorm: texture_format = GL_RGBA8; break;
+		case GraphicsFormat_B8G8R8A8_UNorm: texture_format = GL_BGRA; break;
+		case GraphicsFormat_Depth16_UNorm: texture_format = GL_DEPTH_COMPONENT16; break;
+		case GraphicsFormat_Depth32_Float: texture_format = GL_DEPTH_COMPONENT32F; break;
+		case GraphicsFormat_Depth32_Float_Stencil8_UInt: texture_format = GL_DEPTH32F_STENCIL8; break;
+		case GraphicsFormat_Depth24_UNorm_Stencil8_UInt: texture_format = GL_DEPTH24_STENCIL8; break;
+		default: LogEGl("Unhandled graphics texture format: ",image->format,"."); return;
+	}
+	
+	//delete the previous texture
+	if(image->__internal.handle){
+		GLuint previous_texture_handle = (GLuint)(u64)image->__internal.handle;
+		glDeleteTextures(1, &previous_texture_handle);
+		if(opengl_error){
+			return;
+		}
+		
+		image->__internal.handle = 0;
+		image->__internal.memory_handle = 0;
+	}
+	
+	//create a new texture
+	GLuint texture_handle;
+	glGenTextures(1, &texture_handle);
+	if(opengl_error){
+		return;
+	}
+	glBindTexture(texture_target, texture_handle);
+	if(opengl_error){
+		glDeleteTextures(1, &texture_handle);
+		return;
+	}
+	
+	//define the texture
+	switch(texture_target){
+		case GL_TEXTURE_1D:
+		case GL_PROXY_TEXTURE_1D:
+		{
+			glTexImage1D(texture_target, 0, texture_format, (GLsizei)image->extent.x, 0, GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+		}break;
+		case GL_TEXTURE_2D:
+		case GL_PROXY_TEXTURE_2D:
+		case GL_TEXTURE_1D_ARRAY:
+		case GL_PROXY_TEXTURE_1D_ARRAY:
+		case GL_TEXTURE_RECTANGLE:
+		case GL_PROXY_TEXTURE_RECTANGLE:
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+		case GL_PROXY_TEXTURE_CUBE_MAP:
+		{
+			glTexImage2D(texture_target, 0, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, 0, GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+		}break;
+		case GL_TEXTURE_2D_MULTISAMPLE:
+		case GL_PROXY_TEXTURE_2D_MULTISAMPLE:
+		{
+			glTexImage2DMultisample(texture_target, samples, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, GL_FALSE);
+		}break;
+		case GL_TEXTURE_3D:
+		case GL_PROXY_TEXTURE_3D:
+		case GL_TEXTURE_2D_ARRAY:
+		case GL_PROXY_TEXTURE_2D_ARRAY:
+		{
+			glTexImage3D(texture_target, 0, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, (GLsizei)image->extent.z, 0, GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+		}break;
+		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+		case GL_PROXY_TEXTURE_2D_MULTISAMPLE_ARRAY:
+		{
+			glTexImage3DMultisample(texture_target, samples, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, (GLsizei)image->extent.z, GL_FALSE);
+		}break;
+		default:
+		{
+			LogEGl("Unhandled texture target: ",texture_target,".");
+			glDeleteTextures(1, &texture_handle);
+		}return;
+	}
+	if(opengl_error){
+		glDeleteTextures(1, &texture_handle);
+		return;
+	}
+	
+	//update the GraphicsImage
+	image->__internal.handle = (void*)(u64)texture_handle;
+	image->__internal.memory_handle = (void*)(u64)texture_target;
 }
 
 
 void
 graphics_image_destroy(GraphicsImage* image){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.images){
+		LogEGl("Must not be called before g_graphics->pools.images is init.");
+		return;
+	}
+	if(!image){
+		LogEGl("The input image was null.");
+		return;
+	}
+	if(!image->__internal.handle){
+		LogEGl("The input image[",image->debug_name,"] was not properly initialized with graphics_image_update() or was previously deleted.");
+		return;
+	}
+	LogGl(1,"Destroying an image[",image->debug_name,"].");
+	
+	//delete the texture
+	GLuint texture_handle = (GLuint)(u64)image->__internal.handle;
+	glDeleteTextures(1, &texture_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	memory_pool_delete(g_graphics->pools.images, image);
 }
 
 
 void
 graphics_image_write(GraphicsImage* image, u8* pixels, vec2i offset, vec2i extent){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!image){
+		LogEGl("The input image was null.");
+		return;
+	}
+	if(!image->__internal.handle){
+		LogEGl("The input image[",image->debug_name,"] was not properly initialized with graphics_image_update() or was previously deleted.");
+		return;
+	}
+	LogGl(1,"Writing an image[",image->debug_name,"].");
+	
+	//bind the texture
+	GLenum texture_target = (GLenum)(u64)image->__internal.memory_handle;
+	GLuint texture_handle = (GLuint)(u64)image->__internal.handle;
+	glBindTexture(texture_target, texture_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	//map the image format
+	//TODO(delle) image formats
+	GLint image_format = GL_RGBA8;
+	
+	//upload texture data
+	switch(texture_target){
+		case GL_TEXTURE_1D:
+		{
+			glTexSubImage1D(texture_target, 0, (GLint)offset.x, (GLsizei)extent.x, image_format, GL_UNSIGNED_BYTE, pixels);
+		}break;
+		case GL_TEXTURE_2D:
+		case GL_TEXTURE_1D_ARRAY:
+		case GL_TEXTURE_RECTANGLE:
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+		{
+			glTexSubImage2D(texture_target, 0, (GLint)offset.x, (GLint)offset.y, (GLsizei)extent.x, (GLsizei)extent.y, image_format, GL_UNSIGNED_BYTE, pixels);
+		}break;
+		case GL_TEXTURE_3D:
+		case GL_TEXTURE_2D_ARRAY:
+		{
+			NotImplemented;
+			//TODO(delle) change func args to vec3i
+			//glTexSubImage3D(texture_target, 0, (GLint)offset.x, (GLint)offset.y, (GLint)offset.z, (GLsizei)extent.x, (GLsizei)extent.y, (GLsizei)extent.z, image_format, GL_UNSIGNED_BYTE, pixels);
+		}break;
+		default:
+		{
+			LogEGl("Graphics texture target can not be written to: ",texture_target,".");
+		}return;
+	}
+	if(opengl_error){
+		return;
+	}
+	
+	//TODO(delle) mipmaps
 }
 
 
 void
 graphics_image_view_update(GraphicsImageView* image_view){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!image_view){
+		LogEGl("The input image view was null.");
+		return;
+	}
+	
+	if(GL_VERSION_TEST(4,3, glTextureView)){
+		if(!image_view->image){
+			LogEGl("The input image view[",image_view->debug_name,"] has a null image.");
+			return;
+		}
+		if(!image_view->image->__internal.handle){
+			LogEGl("The input image view[",image_view->debug_name,"] has an image[",image_view->image->debug_name,"] which was not properly initialized with graphics_image_update() or was previously destroyed.");
+			return;
+		}
+		LogGl(1,"Updating an image view[",image_view->debug_name,"].");
+		
+		//TODO(delle) glTextureView
+	}
 }
 
 
 void
 graphics_image_view_destroy(GraphicsImageView* image_view){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.image_views){
+		LogEGl("Must not be called before g_graphics->pools.image_views is init.");
+		return;
+	}
+	if(!image_view){
+		LogEGl("The input image view was null.");
+		return;
+	}
+	LogGl(1,"Destroying an image view[",image_view->debug_name,"].");
+	
+	if(GL_VERSION_TEST(4,3, glTextureView)){
+		if(!image_view->__internal.handle){
+			LogEGl("The input image view was not properly initialized with graphics_image_view_update() or was previously destroyed.");
+			return;
+		}
+		
+		//TODO(delle) glTextureView
+	}
+	
+	memory_pool_delete(g_graphics->pools.image_views, image_view);
 }
 
 
 void
 graphics_sampler_update(GraphicsSampler* sampler){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!sampler){
+		LogEGl("The input sampler was null.");
+		return;
+	}
+	LogGl(1,"Updating a sampler[",sampler->debug_name,"].");
+	
+	//delete the previous sampler
+	if(sampler->__internal.handle){
+		GLuint previous_sampler_handle = (GLuint)(u64)sampler->__internal.handle;
+		glDeleteSamplers(1, &previous_sampler_handle);
+		if(opengl_error){
+			return;
+		}
+		
+		sampler->__internal.handle = 0;
+	}
+	
+	//create a new sampler
+	GLuint sampler_handle;
+	glGenSamplers(1, &sampler_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	//map the magnifying and minifying filters
+	switch(sampler->mag_filter){
+		case GraphicsFilter_Nearest:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}break;
+		case GraphicsFilter_Linear:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}break;
+		default:{
+			LogEGl("Unhandled GraphicsFilter when trying to map to a GL_TEXTURE_MAG_FILTER paramater: ",sampler->mag_filter,".");
+			glDeleteSamplers(1, &sampler_handle);
+		}return;
+	}
+	if(opengl_error){
+		glDeleteSamplers(1, &sampler_handle);
+		return;
+	}
+	
+	switch(sampler->min_filter){
+		case GraphicsFilter_Nearest:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		}break;
+		case GraphicsFilter_Linear:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}break;
+		/* //TODO(delle) mipmaps
+		case GraphicsFilter_NearestMipmapNearest:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		}break;
+		case GraphicsFilter_LinearMipmapNearest:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		}break;
+		case GraphicsFilter_NearestMipmapLinear:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+		}break;
+		case GraphicsFilter_LinearMipmapLinear:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		}break;
+*/
+		default:{
+			LogEGl("Unhandled GraphicsFilter when trying to map to a GL_TEXTURE_MIN_FILTER paramater: ",sampler->min_filter,".");
+			glDeleteSamplers(1, &sampler_handle);
+		}return;
+	}
+	if(opengl_error){
+		glDeleteSamplers(1, &sampler_handle);
+		return;
+	}
+	
+	//map the texture wrapping
+	switch(sampler->address_mode_u){
+		case GraphicsSamplerAddressMode_Repeat:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		}break;
+		case GraphicsSamplerAddressMode_Mirrored_Repeat:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		}break;
+		case GraphicsSamplerAddressMode_Clamp_To_Edge:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_TO_EDGE);
+		}break;
+		case GraphicsSamplerAddressMode_Clamp_To_Border:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		}break;
+		default:{
+			LogEGl("Unhandled GraphicsSamplerAddressMode when trying to map to a GL_TEXTURE_WRAP_S paramater: ",sampler->address_mode_u,".");
+			glDeleteSamplers(1, &sampler_handle);
+		}return;
+	}
+	if(opengl_error){
+		glDeleteSamplers(1, &sampler_handle);
+		return;
+	}
+	
+	switch(sampler->address_mode_v){
+		case GraphicsSamplerAddressMode_Repeat:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}break;
+		case GraphicsSamplerAddressMode_Mirrored_Repeat:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		}break;
+		case GraphicsSamplerAddressMode_Clamp_To_Edge:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_TO_EDGE);
+		}break;
+		case GraphicsSamplerAddressMode_Clamp_To_Border:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		}break;
+		default:{
+			LogEGl("Unhandled GraphicsSamplerAddressMode when trying to map to a GL_TEXTURE_WRAP_T paramater: ",sampler->address_mode_v,".");
+			glDeleteSamplers(1, &sampler_handle);
+		}return;
+	}
+	if(opengl_error){
+		glDeleteSamplers(1, &sampler_handle);
+		return;
+	}
+	
+	switch(sampler->address_mode_w){
+		case GraphicsSamplerAddressMode_Repeat:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_R, GL_REPEAT);
+		}break;
+		case GraphicsSamplerAddressMode_Mirrored_Repeat:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_R, GL_MIRRORED_REPEAT);
+		}break;
+		case GraphicsSamplerAddressMode_Clamp_To_Edge:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_R, GL_MIRROR_CLAMP_TO_EDGE);
+		}break;
+		case GraphicsSamplerAddressMode_Clamp_To_Border:{
+			glSamplerParameteri(sampler_handle, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+		}break;
+		default:{
+			LogEGl("Unhandled GraphicsSamplerAddressMode when trying to map to a GL_TEXTURE_WRAP_R paramater: ",sampler->address_mode_w,".");
+			glDeleteSamplers(1, &sampler_handle);
+		}return;
+	}
+	if(opengl_error){
+		glDeleteSamplers(1, &sampler_handle);
+		return;
+	}
+	
+	//set the border color when texture wrapping is set to GL_CLAMP_TO_BORDER
+	GLfloat border_color[4];
+	border_color[0] = (GLfloat)sampler->border_color.r / 255.0f;
+	border_color[1] = (GLfloat)sampler->border_color.g / 255.0f;
+	border_color[2] = (GLfloat)sampler->border_color.b / 255.0f;
+	border_color[3] = (GLfloat)sampler->border_color.a / 255.0f;
+	glSamplerParameterfv(sampler_handle, GL_TEXTURE_BORDER_COLOR, border_color);
+	if(opengl_error){
+		glDeleteSamplers(1, &sampler_handle);
+	}
+	
+	//TODO(delle) anistropic filtering
+	
+	sampler->__internal.handle = (void*)(u64)sampler_handle;
 }
 
 
 void
 graphics_sampler_destroy(GraphicsSampler* sampler){DPZoneScoped;
-	DontCompile;
-}
-
-
-GraphicsFormat
-graphics_format_of_presentation_frames(Window* window){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.samplers){
+		LogEGl("Must not be called before g_graphics->pools.samplers is init.");
+		return;
+	}
+	if(!sampler){
+		LogEGl("The input sampler was null.");
+		return;
+	}
+	if(!sampler->__internal.handle){
+		LogEGl("The input sampler[",sampler->debug_name,"] was not properly initialized with graphics_sampler_update() or was previously deleted.");
+		return;
+	}
+	LogGl(1,"Destroying a sampler[",sampler->debug_name,"].");
+	
+	GLuint sampler_handle = (GLuint)(u64)sampler->__internal.handle;
+	glDeleteSamplers(1, &sampler_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	memory_pool_delete(g_graphics->pools.samplers, sampler);
 }
 
 
@@ -1064,37 +1947,57 @@ graphics_format_of_presentation_frames(Window* window){DPZoneScoped;
 
 void
 graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* descriptor_set_layout){DPZoneScoped;
-	DontCompile;
+	//do nothing
 }
 
 
 void
 graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* descriptor_set_layout){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.descriptor_set_layouts){
+		LogEGl("Must not be called before g_graphics->pools.descriptor_set_layout is init.");
+		return;
+	}
+	if(!descriptor_set_layout){
+		LogEGl("The input descriptor set layout was null.");
+		return;
+	}
+	LogGl(1,"Destroying a descriptor set layout[",descriptor_set_layout->debug_name,"].");
+	
+	memory_pool_delete(g_graphics->pools.descriptor_set_layouts, descriptor_set_layout);
 }
 
 
 void
 graphics_descriptor_set_update(GraphicsDescriptorSet* descriptor_set){DPZoneScoped;
-	DontCompile;
+	//do nothing
 }
 
 
 void
 graphics_descriptor_set_destroy(GraphicsDescriptorSet* descriptor_set){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.descriptor_sets){
+		LogEGl("Must not be called before g_graphics->pools.descriptor_sets is init.");
+		return;
+	}
+	if(!descriptor_set){
+		LogEGl("The input descriptor set was null.");
+		return;
+	}
+	LogGl(1,"Destroying a descriptor set[",descriptor_set->debug_name,"].");
+	
+	memory_pool_delete(g_graphics->pools.descriptor_sets, descriptor_set);
 }
 
 
 void
 graphics_descriptor_set_write(GraphicsDescriptorSet* descriptor_set, u32 binding, GraphicsDescriptor descriptor){DPZoneScoped;
-	DontCompile;
+	//do nothing
 }
 
 
 void
 graphics_descriptor_set_write_array(GraphicsDescriptorSet* descriptor_set, GraphicsDescriptor* descriptors){DPZoneScoped;
-	DontCompile;
+	//do nothing
 }
 
 
@@ -1104,13 +2007,102 @@ graphics_descriptor_set_write_array(GraphicsDescriptorSet* descriptor_set, Graph
 
 void
 graphics_shader_update(GraphicsShader* shader){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!shader){
+		LogEGl("The input shader was null.");
+		return;
+	}
+	if(!shader->source.str || shader->source.count){
+		LogEGl("The input shader's source was empty.");
+		return;
+	}
+	LogGl(1,"Updating a shader[",shader->debug_name,"].");
+	
+	//delete the old shader
+	//NOTE the shader will actually be deleted once it's no longer attached to a program
+	if(shader->__internal.handle){
+		glDeleteShader((GLuint)(u64)shader->__internal.handle);
+		if(opengl_error){
+			return;
+		}
+		
+		shader->__internal.handle = 0;
+	}
+	
+	//map the shader stage
+	GLenum shader_type = 0;
+	switch(shader->shader_stage){
+		case GraphicsShaderStage_Vertex:{
+			shader_type = GL_VERTEX_SHADER;
+		}break;
+		case GraphicsShaderStage_Geometry:{
+			shader_type = GL_GEOMETRY_SHADER;
+		}break;
+		case GraphicsShaderStage_Fragment:{
+			shader_type = GL_FRAGMENT_SHADER;
+		}break;
+		case GraphicsShaderStage_Compute:{
+			if(!GL_VERSION_TEST(4,3, GL_COMPUTE_SHADER)){
+				LogEGl("Unhandled shader stage: ",shader->shader_stage,".");
+				return;
+			}
+			shader_type = GL_COMPUTE_SHADER;
+		}break;
+		default:{
+			LogEGl("Unhandled shader stage: ",shader->shader_stage,".");
+		}return;
+	}
+	
+	//create the shader
+	GLuint shader_handle = glCreateShader(shader_type);
+	if(opengl_error || shader_handle == 0){
+		return;
+	}
+	
+	//compile the shader
+	GLchar* string = (GLchar*)shader->source.str;
+	GLint length = shader->source.count;
+	glShaderSource(shader_handle, 1, &string, &length);
+	glCompileShader(shader_handle);
+	glGetShaderiv(shader_handle, GL_COMPILE_STATUS, &opengl_success);
+	if(opengl_success != GL_TRUE){
+		glGetShaderInfoLog(shader_handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
+		LogEGl("Failed to compile a shader[",shader->debug_name,"] because:\n", opengl_infolog);
+		glDeleteShader(shader_handle);
+		return;
+	}
+	
+	//update the GraphicsShader
+	shader->__internal.handle = (void*)(u64)shader_handle;
 }
 
 
 void
 graphics_shader_destroy(GraphicsShader* shader){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.shaders){
+		LogEGl("Must not be called before g_graphics->pools.shaders is init.");
+		return;
+	}
+	if(!shader){
+		LogEGl("The input shader was null.");
+		return;
+	}
+	if(!shader->__internal.handle){
+		LogEGl("The input shader was not properly initialized with graphics_shader_update() or was previously destroyed.");
+		return;
+	}
+	LogGl(1,"Destroying a shader[",shader->debug_name,"].");
+	
+	//NOTE the shader will actually be deleted once it's no longer attached to a program
+	glDeleteShader((GLuint)(u64)shader->__internal.handle);
+	if(opengl_error){
+		return;
+	}
+	
+	memory_pool_delete(g_graphics->pools.shaders, shader);
 }
 
 
@@ -1120,31 +2112,173 @@ graphics_shader_destroy(GraphicsShader* shader){DPZoneScoped;
 
 void
 graphics_pipeline_layout_update(GraphicsPipelineLayout* pipeline_layout){DPZoneScoped;
-	DontCompile;
+	//do nothing
 }
 
 
 void
 graphics_pipeline_layout_destroy(GraphicsPipelineLayout* pipeline_layout){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.pipeline_layouts){
+		LogEGl("Must not be called before g_graphics->pools.pipeline_layouts is init.");
+		return;
+	}
+	if(!pipeline_layout){
+		LogEGl("The input pipeline layout was null.");
+		return;
+	}
+	LogGl(1,"Destroying a pipeline layout[",pipeline_layout->debug_name,"].");
+	
+	memory_pool_delete(g_graphics->pools.pipeline_layouts, pipeline_layout);
 }
 
 
 void
 graphics_pipeline_update(GraphicsPipeline* pipeline){DPZoneScoped;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!pipeline){
+		LogEGl("The input pipeline was null.");
+		return;
+	}
+	if(!pipeline->layout){
+		LogEGl("The input pipeline's layout was null.");
+		return;
+	}
+	if(!pipeline->vertex_shader && !pipeline->geometry_shader && !pipeline->fragment_shader){
+		LogEGl("The input pipeline was has no shaders specified.");
+		return;
+	}
+	LogGl(1,"Updating a pipeline[",pipeline->debug_name,"].");
+	
+	//delete the old program
+	if(pipeline->__internal.handle){
+		//NOTE the program will actually be deleted once it's no longer in use
+		GLuint old_program_handle = (GLuint)(u64)(pipeline->__internal.handle);
+		glDeleteProgram(old_program_handle);
+		if(opengl_error){
+			return;
+		}
+		
+		//stop using the program if it's currently in use
+		GLint current_program = 0;
+		glGetIntegerv(GL_CURRENT_PROGRAM, &current_program);
+		if((GLuint)current_program == old_program_handle){
+			glUseProgram(0);
+		}
+		
+		pipeline->__internal.handle = 0;
+	}
+	
+	//create the program
+	GLuint program_handle = glCreateProgram();
+	if(opengl_error || program_handle == 0){
+		return;
+	}
+	
+	//attach the shaders
+	if(pipeline->vertex_shader){
+		glAttachShader(program_handle, (GLuint)(u64)pipeline->vertex_shader->__internal.handle);
+		if(opengl_error){
+			glDeleteProgram(program_handle);
+			return;
+		}
+	}
+	if(pipeline->geometry_shader){
+		glAttachShader(program_handle, (GLuint)(u64)pipeline->geometry_shader->__internal.handle);
+		if(opengl_error){
+			glDeleteProgram(program_handle);
+			return;
+		}
+	}
+	if(pipeline->fragment_shader){
+		glAttachShader(program_handle, (GLuint)(u64)pipeline->fragment_shader->__internal.handle);
+		if(opengl_error){
+			glDeleteProgram(program_handle);
+			return;
+		}
+	}
+	
+	//link the program
+	glLinkProgram(program_handle);
+	glGetProgramiv(program_handle, GL_LINK_STATUS, &opengl_success);
+	if(opengl_success != GL_TRUE){
+		glGetProgramInfoLog(program_handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
+		LogEGl("Failed to link the shaders of a pipeline[",pipeline->debug_name,"] because:\n", opengl_infolog);
+		glDeleteProgram(program_handle);
+		return;
+	}
+	
+	//specify descriptors (uniforms)
 	DontCompile;
+	
+	//specify push constants
+	for_array(pipeline->layout->push_constants){
+		if(!str8_valid(it->shader_block_name)){
+			LogEGl("Push constant #",it-pipeline->layout->push_constants," of a pipeline[",pipeline->debug_name,"] has an empty source_block_name field which is required for OpenGL.");
+			glDeleteProgram(program_handle);
+			return;
+		}
+		
+		str8 uniform_block_name = str8_copy(it->shader_block_name, g_graphics->allocators.temp); //NOTE ensure null-terminated
+		GLuint block_binding = glGetUniformBlockIndex(program_handle, (const GLchar*)uniform_block_name.str);
+		if(block_binding == GL_INVALID_INDEX){
+			glDeleteProgram(program_handle);
+			return;
+		}
+		
+		it->__internal.shader_block_binding = block_binding;
+	}
+	
+	//detach the shaders
+	if(pipeline->vertex_shader){
+		glDetachShader(program_handle, (GLuint)(u64)pipeline->vertex_shader->__internal.handle);
+	}
+	if(pipeline->geometry_shader){
+		glDetachShader(program_handle, (GLuint)(u64)pipeline->geometry_shader->__internal.handle);
+	}
+	if(pipeline->fragment_shader){
+		glDetachShader(program_handle, (GLuint)(u64)pipeline->fragment_shader->__internal.handle);
+	}
+	
+	//update the GraphicsPipeline
+	pipeline->__internal.handle = (void*)(u64)program_handle;
 }
 
 
 void
 graphics_pipeline_destroy(GraphicsPipeline* pipeline){DPZoneScoped;
-	DontCompile;
-}
-
-
-GraphicsPipeline*
-graphics_pipeline_duplicate(GraphicsPipeline* pipeline){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.pipelines){
+		LogEGl("Must not be called before g_graphics->pools.pipelines is init.");
+		return;
+	}
+	if(!pipeline){
+		LogEGl("The input pipeline was null.");
+		return;
+	}
+	if(!pipeline->__internal.handle){
+		LogEGl("The input pipeline was not properly initialized with graphics_pipeline_update() or was previously destroyed.");
+		return;
+	}
+	LogGl(1,"Destroying a pipeline[",pipeline->debug_name,"].");
+	
+	//delete the program
+	//NOTE the program will actually be deleted once it's no longer in use
+	GLuint program_handle = (GLuint)(u64)(pipeline->__internal.handle);
+	glDeleteProgram(program_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	//stop using the program if it's currently in use
+	GLint current_program = 0;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &current_program);
+	if((GLuint)current_program == program_handle){
+		glUseProgram(0);
+	}
+	
+	memory_pool_delete(g_graphics->pools.pipelines, pipeline);
 }
 
 
@@ -1153,20 +2287,30 @@ graphics_pipeline_duplicate(GraphicsPipeline* pipeline){DPZoneScoped;
 
 
 void
-graphics_render_pass_update(GraphicsRenderPass* renderpass){DPZoneScoped;
-	DontCompile;
+graphics_render_pass_update(GraphicsRenderPass* render_pass){DPZoneScoped;
+	//do nothing
 }
 
 
 void
-graphics_render_pass_destroy(GraphicsRenderPass* renderpass){DPZoneScoped;
-	DontCompile;
+graphics_render_pass_destroy(GraphicsRenderPass* render_pass){DPZoneScoped;
+	if(!g_graphics->pools.render_passes){
+		LogEGl("Must not be called before g_graphics->pools.render_passes is init.");
+		return;
+	}
+	if(!render_pass){
+		LogEGl("The input render pass was null.");
+		return;
+	}
+	LogGl(1,"Destroying a render pass[",render_pass->debug_name,"].");
+	
+	memory_pool_delete(g_graphics->pools.render_passes, render_pass);
 }
 
 
 GraphicsRenderPass*
 graphics_render_pass_of_window_presentation_frames(Window* window){DPZoneScoped;
-	DontCompile;
+	return ((WindowRenderInfoGl*)window->render_info)->framebuffer->render_pass;
 }
 
 
@@ -1176,19 +2320,188 @@ graphics_render_pass_of_window_presentation_frames(Window* window){DPZoneScoped;
 
 void
 graphics_framebuffer_update(GraphicsFramebuffer* framebuffer){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->initialized){
+		LogEGl("Must not be called before graphics is init.");
+		return;
+	}
+	if(!framebuffer){
+		LogEGl("The input framebuffer was null.");
+		return;
+	}
+	if(!framebuffer->render_pass){
+		LogEGl("The input framebuffer has no render_pass.");
+		return;
+	}
+	if(framebuffer->render_pass->use_color_attachment){
+		if(framebuffer->color_image_view->aspect_flags != GraphicsImageViewAspectFlags_Color){
+			LogEGl("A color image view[",framebuffer->color_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have the GraphicsImageViewAspectFlags_Color aspect_flags.");
+			return;
+		}
+		if(framebuffer->color_image_view->format >= GraphicsFormat_COLOR_FIRST && framebuffer->color_image_view->format <= GraphicsFormat_COLOR_LAST){
+			LogEGl("A color image view[",framebuffer->color_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have a valid color GraphicsFormat: ",framebuffer->color_image_view->format,".");
+			return;
+		}
+		if(!framebuffer->color_image_view->image){
+			LogEGl("A color image view[",framebuffer->color_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] has a null image.");
+			return;
+		}
+		if(!framebuffer->color_image_view->image->__internal.handle){
+			LogEGl("A color image view[",framebuffer->color_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] has an image[",framebuffer->color_image_view->image->debug_name,"] which was not properly initialized with graphics_image_update() or was previously destroyed.");
+			return;
+		}
+	}
+	if(framebuffer->render_pass->use_depth_attachment){
+		if(!HasFlag(framebuffer->depth_image_view->aspect_flags, GraphicsImageViewAspectFlags_Depth|GraphicsImageViewAspectFlags_Stencil)){
+			LogEGl("A depth image view[",framebuffer->depth_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have the GraphicsImageViewAspectFlags_Depth or GraphicsImageViewAspectFlags_Stencil aspect_flags.");
+			return;
+		}
+		if(framebuffer->depth_image_view->format >= GraphicsFormat_DEPTH_FIRST && framebuffer->depth_image_view->format <= GraphicsFormat_DEPTH_LAST){
+			LogEGl("A depth image view[",framebuffer->depth_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have a valid depth/stencil GraphicsFormat: ",framebuffer->depth_image_view->format,".");
+			return;
+		}
+		if(!framebuffer->depth_image_view->image){
+			LogEGl("A depth image view[",framebuffer->depth_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] has a null image.");
+			return;
+		}
+		if(!framebuffer->depth_image_view->image->__internal.handle){
+			LogEGl("A depth image view[",framebuffer->depth_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] has an image[",framebuffer->depth_image_view->image->debug_name,"] which was not properly initialized with graphics_image_update() or was previously destroyed.");
+			return;
+		}
+	}
+	LogGl(1,"Updating a framebuffer[",framebuffer->debug_name,"].");
+	
+	//delete the old framebuffer
+	if(framebuffer->__internal.handle){
+		GLuint old_framebuffer_handle = (GLuint)(u64)framebuffer->__internal.handle;
+		glDeleteFramebuffers(1, &old_framebuffer_handle);
+		if(opengl_error){
+			return;
+		}
+		
+		framebuffer->__internal.handle = 0;
+	}
+	
+	//create a new framebuffer
+	GLuint framebuffer_handle;
+	glGenFramebuffers(1, &framebuffer_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	//bind the framebuffer for read/write
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_handle);
+	if(opengl_error){
+		glDeleteFramebuffers(1, &framebuffer_handle);
+		return;
+	}
+	
+	
+	//attach the color texture
+	if(framebuffer->render_pass->use_color_attachment){
+		//TODO(delle) glFramebufferRenderbuffer if GraphicsMemoryPropertyFlag_DeviceLocal
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (GLuint)(u64)framebuffer->color_image_view->image->__internal.handle, 0);
+		if(opengl_error){
+			glDeleteFramebuffers(1, &framebuffer_handle);
+			return;
+		}
+	}
+	
+	//attach the depth/stencil texture
+	if(framebuffer->render_pass->use_color_attachment){
+		//TODO(delle) glFramebufferRenderbuffer if GraphicsMemoryPropertyFlag_DeviceLocal
+		if(HasFlag(framebuffer->depth_image_view->aspect_flags, GraphicsImageViewAspectFlags_Depth)){
+			if(HasFlag(framebuffer->depth_image_view->aspect_flags, GraphicsImageViewAspectFlags_Stencil)){
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, (GLuint)(u64)framebuffer->depth_image_view->image->__internal.handle, 0);
+			}else{
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, (GLuint)(u64)framebuffer->depth_image_view->image->__internal.handle, 0);
+			}
+		}else{
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, (GLuint)(u64)framebuffer->depth_image_view->image->__internal.handle, 0);
+		}
+		if(opengl_error){
+			glDeleteFramebuffers(1, &framebuffer_handle);
+			return;
+		}
+	}
+	
+	GLenum framebuffer_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(framebuffer_status != GL_FRAMEBUFFER_COMPLETE){
+		const char* error_flag = 0;
+		const char* error_msg  = 0;
+		switch(framebuffer_status){
+			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:{
+				error_flag = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+				error_msg  = "one of the framebuffer attachment points are framebuffer incomplete";
+			}break;
+			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:{
+				error_flag = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+				error_msg  = "the framebuffer does not have at least one image attached to it";
+			}break;
+			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:{
+				error_flag = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+				error_msg  = "the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for one of the color attachment point(s) named by GL_DRAW_BUFFERi";
+			}break;
+			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:{
+				error_flag = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
+				error_msg  = "GL_READ_BUFFER is not GL_NONE and the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for the color attachment point named by GL_READ_BUFFER";
+			}break;
+			case GL_FRAMEBUFFER_UNSUPPORTED:{
+				error_flag = "GL_FRAMEBUFFER_UNSUPPORTED";
+				error_msg  = "the combination of internal formats of the attached images violates an implementation-dependent set of restrictions";
+			}break;
+			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:{
+				error_flag = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+				error_msg  = "the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers; if the value of GL_TEXTURE_SAMPLES is the not same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES does not match the value of GL_TEXTURE_SAMPLES. Or, the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not the same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures";
+			}break;
+			case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:{
+				error_flag = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
+				error_msg  = "one of the framebuffer attachments is layered and another populated attachment is not layered, or all populated color attachments are not from textures of the same target";
+			}break;
+		}
+		LogEGl("Failed to update a framebuffer[",framebuffer->debug_name,"] because ",error_msg," (",error_flag,").");
+		glDeleteFramebuffers(1, &framebuffer_handle);
+		return;
+	}
+	
+	framebuffer->__internal.handle = (void*)(u64)framebuffer_handle;
 }
 
 
 void
 graphics_framebuffer_destroy(GraphicsFramebuffer* framebuffer){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.framebuffers){
+		LogEGl("Must not be called before g_graphics->pools.framebuffers is init.");
+		return;
+	}
+	if(!framebuffer){
+		LogEGl("The input framebuffer was null.");
+		return;
+	}
+	if(!framebuffer->__internal.handle){
+		LogEGl("The input framebuffer was not properly initialized with graphics_framebuffer_update() or was previously deleted.");
+		return;
+	}
+	LogGl(1,"Destroying a framebuffer[",framebuffer->debug_name,"].");
+	
+	GLuint framebuffer_handle = (GLuint)(u64)framebuffer->__internal.handle;
+	glDeleteFramebuffers(1, &framebuffer_handle);
+	if(opengl_error){
+		return;
+	}
+	
+	memory_pool_delete(g_graphics->pools.framebuffers, framebuffer);
 }
 
 
 GraphicsFramebuffer*
 graphics_current_present_frame_of_window(Window* window){DPZoneScoped;
-	DontCompile;
+	return ((WindowRenderInfoGl*)window->render_info)->framebuffer;
+}
+
+
+GraphicsFormat
+graphics_format_of_presentation_frames(Window* window){DPZoneScoped;
+	return ((WindowRenderInfoGl*)window->render_info)->framebuffer->color_image_view->format;
 }
 
 
@@ -1198,18 +2511,28 @@ graphics_current_present_frame_of_window(Window* window){DPZoneScoped;
 
 void
 graphics_command_buffer_update(GraphicsCommandBuffer* command_buffer){DPZoneScoped;
-	DontCompile;
+	//do nothing
 }
 
 
 void
 graphics_command_buffer_destroy(GraphicsCommandBuffer* command_buffer){DPZoneScoped;
-	DontCompile;
+	if(!g_graphics->pools.command_buffers){
+		LogEGl("Must not be called before g_graphics->pools.command_buffers is init.");
+		return;
+	}
+	if(!command_buffer){
+		LogEGl("The input command buffer was null.");
+		return;
+	}
+	LogGl(1,"Destroying a command buffer[",command_buffer->debug_name,"].");
+	
+	memory_pool_delete(g_graphics->pools.command_buffers, command_buffer);
 }
 
 
 GraphicsCommandBuffer*
 graphics_command_buffer_of_window(Window* window){DPZoneScoped;
-	DontCompile;
+	return ((WindowRenderInfoGl*)window->render_info)->command_buffer;
 }
 
