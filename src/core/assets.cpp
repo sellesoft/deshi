@@ -125,17 +125,18 @@ assets_init(Window* window) {
 				}});
 	graphics_descriptor_set_layout_update(g_assets->ubo_layout);
 	
-	g_assets->view_proj_ubo = graphics_descriptor_set_allocate();
-	array_init_with_elements(g_assets->view_proj_ubo->layouts, {g_assets->ubo_layout});
-	graphics_descriptor_set_update(g_assets->view_proj_ubo);
-	
-	array_init(g_assets->ubo_descriptors, 1, deshi_temp_allocator);
+	array_init(g_assets->ubo_descriptors, 1, deshi_allocator);
 	auto d = array_push(g_assets->ubo_descriptors);
 	d->type = GraphicsDescriptorType_Uniform_Buffer;
 	d->ubo.buffer = g_assets->base_ubo_handle->buffer;
 	d->ubo.offset = 0;
 	d->ubo.range = sizeof(g_assets->base_ubo);
-	graphics_descriptor_set_write_array(g_assets->view_proj_ubo, g_assets->ubo_descriptors);
+	
+	g_assets->view_proj_ubo = graphics_descriptor_set_allocate();
+	g_assets->view_proj_ubo->descriptors = g_assets->ubo_descriptors;
+	array_init_with_elements(g_assets->view_proj_ubo->layouts, {g_assets->ubo_layout});
+	graphics_descriptor_set_update(g_assets->view_proj_ubo);
+	graphics_descriptor_set_write(g_assets->view_proj_ubo);
 	
 	ShaderStages null_stages = {
 		g_assets->null_vertex_shader, 0, g_assets->null_fragment_shader
@@ -1066,7 +1067,7 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 		return g_assets->null_material;
 	}
 		
-	auto descriptors = array<GraphicsDescriptor>::create(sum, deshi_temp_allocator);
+	auto descriptors = array<GraphicsDescriptor>::create(sum, deshi_allocator);
 	auto bindings = array<GraphicsDescriptorSetLayoutBinding>::create(sum, deshi_allocator);
 
 	forI(n_vertex_resources) {
@@ -1204,9 +1205,10 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	graphics_pipeline_update(pipeline);
 	
 	auto descriptor_set = graphics_descriptor_set_allocate();
+	descriptor_set->descriptors = descriptors.ptr;
 	descriptor_set->layouts = array<GraphicsDescriptorSetLayout*>::create({descriptor_layout}, deshi_temp_allocator).ptr;
 	graphics_descriptor_set_update(descriptor_set);
-	graphics_descriptor_set_write_array(descriptor_set, descriptors.ptr);
+	graphics_descriptor_set_write(descriptor_set);
 	
 	Material* material = memory_pool_push(g_assets->material_pool);
 	material->name = name;
@@ -1422,7 +1424,7 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 	nu->pipeline = old->pipeline;
 	nu->stages = old->stages;
 	
-	auto descriptors = array<GraphicsDescriptor>::create(array_count(resources), deshi_temp_allocator);
+	auto descriptors = array<GraphicsDescriptor>::create(array_count(resources), deshi_allocator);
 	
 	forI(array_count(resources)) {
 		auto given_resource = resources[i];
@@ -1449,9 +1451,10 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 	}
 	
 	nu->descriptor_set = graphics_descriptor_set_allocate();
+	nu->descriptor_set->descriptors = descriptors.ptr;
 	nu->descriptor_set->layouts = old->descriptor_set->layouts;
 	graphics_descriptor_set_update(nu->descriptor_set);
-	graphics_descriptor_set_write_array(nu->descriptor_set, descriptors.ptr);
+	graphics_descriptor_set_write(nu->descriptor_set);
 	array_insert_value(g_assets->material_map, index, nu);
 	return nu;
 }

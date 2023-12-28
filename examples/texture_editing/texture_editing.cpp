@@ -153,19 +153,21 @@ int main() {
 	sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 	sampler->border_color = Color_Black;
 	graphics_sampler_update(sampler);
-
-	GraphicsDescriptorSet* descriptor_set = graphics_descriptor_set_allocate();
-	descriptor_set->layouts = array_copy(pipeline->layout->descriptor_layouts).ptr;
-	graphics_descriptor_set_update(descriptor_set);
-
-	GraphicsDescriptor descriptor = {};
-	descriptor.type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptor.image = {
+	
+	GraphicsDescriptor* descriptors = array_create(GraphicsDescriptor, 1, deshi_allocator);
+	GraphicsDescriptor* descriptor = array_push(descriptors);
+	descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor->image = {
 		image_view,
 		sampler,
 		GraphicsImageLayout_Shader_Read_Only_Optimal
 	};
-	graphics_descriptor_set_write(descriptor_set, 0, descriptor);
+
+	GraphicsDescriptorSet* descriptor_set = graphics_descriptor_set_allocate();
+	descriptor_set->descriptors = descriptors;
+	descriptor_set->layouts = array_copy(pipeline->layout->descriptor_layouts).ptr;
+	graphics_descriptor_set_update(descriptor_set);
+	graphics_descriptor_set_write(descriptor_set);
 	
 	f32 w = win->width / 2.f;
 	f32 h = w;

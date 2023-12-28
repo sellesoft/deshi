@@ -2394,58 +2394,17 @@ graphics_descriptor_set_destroy(GraphicsDescriptorSet* x) {
 }
 
 void 
-graphics_descriptor_set_write(GraphicsDescriptorSet* x, u32 binding, GraphicsDescriptor descriptor) {
-	VulkanAssert(x, "passed a null GraphicsDescriptorSet pointer.");
-	VulkanInfo("writing a descriptor to descriptor set '", x->debug_name, "'. Binding: ", binding);
+graphics_descriptor_set_write(GraphicsDescriptorSet* x) {
+	VulkanAssert(x, "passed null GraphicsDescriptorSet pointer.");
+	VulkanAssert(x->descriptors, "passed null descriptors array.");
+	VulkanInfo("writing descriptor array to descriptor set '", x->debug_name, "'.");
 	
 	if(!get_handle(x)) {
 		VulkanError("given descriptor set has a null backend pointer, indicating deletion, corruption, or the descriptor set has not been updated yet (graphics_descriptor_set_update()).");
 		return;
 	}
-
-	VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-	write.dstSet = get_handle(x);
-	write.dstBinding = binding;
-	write.descriptorCount = 1;
-
-	union {
-		VkDescriptorBufferInfo buffer_info;
-		VkDescriptorImageInfo image_info;
-	};
-
-	switch(descriptor.type) {
-		case GraphicsDescriptorType_Uniform_Buffer: {
-			buffer_info.buffer = get_handle(descriptor.ubo.buffer);
-			buffer_info.range = descriptor.ubo.range;
-			buffer_info.offset = descriptor.ubo.offset;
-			write.pBufferInfo = &buffer_info;
-			write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		} break;
-		case GraphicsDescriptorType_Combined_Image_Sampler: {
-			image_info.imageView = get_handle(descriptor.image.view);
-			image_info.sampler = get_handle(descriptor.image.sampler);
-			image_info.imageLayout = graphics_image_layout_to_vulkan(descriptor.image.layout);
-			write.pImageInfo = &image_info;
-			write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		} break;
-	}
-
-	vkUpdateDescriptorSets(vk_device, 1, &write, 0, 0);
-}
-
-void 
-graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor* descriptors_) {
-	VulkanAssert(x, "passed null GraphicsDescriptorSet pointer.");
-	VulkanAssert(descriptors_, "passed null descriptors array.");
-	VulkanInfo("writing descriptor array to descriptor set '", x->debug_name, "'.");
-
-	if(!get_handle(x)) {
-		VulkanError("given descriptor set has a null backend pointer, indicating deletion, corruption, or the descriptor set has not been updated yet (graphics_descriptor_set_update()).");
-		return;
-	}
-
-	auto descriptors = array_from(descriptors_);
-
+	
+	auto descriptors = array_from(x->descriptors);
 	auto writes = array<VkWriteDescriptorSet>::create_with_count(descriptors.count(), deshi_temp_allocator);
 	// NOTE(sushi) these things can't move cause the writes have to point to them so we just allocate them
 	//             with enough space to hold all the descriptors

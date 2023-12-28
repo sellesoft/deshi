@@ -249,19 +249,21 @@ int main() {
 	// Now we have all the information we need to finally setup the descriptor set.
 	// We need to give it an array of GraphicsDescriptors to write to the set.
 	
-	auto descriptors = array<GraphicsDescriptor>::create_with_count(2, deshi_allocator);
-	descriptors[0].         type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
-	descriptors[0].   ubo.offset = 0;
-	descriptors[0].    ubo.range = sizeof(ubo);
-	descriptors[0].   ubo.buffer = ubo_buffer;
+	auto descriptors0 = array<GraphicsDescriptor>::create_with_count(2, deshi_allocator);
+	descriptors0[0].         type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptors0[0].shader_stages = GraphicsShaderStage_Vertex;
+	descriptors0[0].   ubo.offset = 0;
+	descriptors0[0].    ubo.range = sizeof(ubo);
+	descriptors0[0].   ubo.buffer = ubo_buffer;
 
-	descriptors[1].         type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
-	descriptors[1]. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
-	descriptors[1].image.sampler = sampler;
-	descriptors[1].   image.view = image_view;
-	graphics_descriptor_set_write_array(descriptor_set0, descriptors.ptr);
+	descriptors0[1].         type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptors0[1].shader_stages = GraphicsShaderStage_Fragment;
+	descriptors0[1]. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+	descriptors0[1].image.sampler = sampler;
+	descriptors0[1].   image.view = image_view;
+
+	descriptor_set0->descriptors = descriptors0.ptr;
+	graphics_descriptor_set_write(descriptor_set0);
 
 	// We're actually going to use two textures, to show descriptor set switching.
 	// So we'll do pretty much everything we just did again but with a different texture.
@@ -295,22 +297,22 @@ int main() {
 	sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 	sampler->border_color = Color_Black;
 	graphics_sampler_update(sampler);
+	
+	auto descriptors1 = array<GraphicsDescriptor>::create_with_count(2, deshi_allocator);
+	descriptors1[0].         type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptors1[0].shader_stages = GraphicsShaderStage_Vertex;
+	descriptors1[0].   ubo.offset = 0;
+	descriptors1[0].    ubo.range = sizeof(ubo);
+	descriptors1[0].   ubo.buffer = ubo_buffer;
 
-	descriptors.clear();
-	descriptors.recount(2);
+	descriptors1[1].         type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptors1[1].shader_stages = GraphicsShaderStage_Fragment;
+	descriptors1[1]. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+	descriptors1[1].image.sampler = sampler;
+	descriptors1[1].   image.view = image_view;
 
-	descriptors[0].         type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
-	descriptors[0].   ubo.offset = 0;
-	descriptors[0].    ubo.range = sizeof(ubo);
-	descriptors[0].   ubo.buffer = ubo_buffer;
-
-	descriptors[1].         type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
-	descriptors[1]. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
-	descriptors[1].image.sampler = sampler;
-	descriptors[1].   image.view = image_view;
-	graphics_descriptor_set_write_array(descriptor_set1, descriptors.ptr);
+	descriptor_set1->descriptors = descriptors1.ptr;
+	graphics_descriptor_set_write(descriptor_set1);
 
 	// Now we need a model to render. Assets has a full api for generating 
 	// a model without ever needing to touch the render api, but we're going to

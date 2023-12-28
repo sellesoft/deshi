@@ -141,48 +141,55 @@ int main() {
 
 	pipeline->layout = pipeline_layout;
 	graphics_pipeline_update(pipeline);
+	
+	GraphicsDescriptor* descriptors0 = array_create(GraphicsDescriptor, 1, deshi_allocator);
+	GraphicsDescriptor* descriptor0 = array_push(descriptors0);
+	descriptor0->type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptor0->shader_stages = GraphicsShaderStage_Vertex;
+	descriptor0->ubo.buffer = view0_buffer;
+	descriptor0->ubo.range = sizeof(ubo);
+	descriptor0->ubo.offset = 0;
 
 	GraphicsDescriptorSet* camera_descriptor_set0 = graphics_descriptor_set_allocate();
+	camera_descriptor_set0->descriptors = descriptors0;
 	array_init_with_elements(camera_descriptor_set0->layouts, {
 				camera_descriptor_layout
 			}, deshi_temp_allocator);
 	graphics_descriptor_set_update(camera_descriptor_set0);
-
-	GraphicsDescriptor descriptor;
-	descriptor.type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptor.shader_stages = GraphicsShaderStage_Vertex;
-	descriptor.ubo.buffer = view0_buffer;
-	descriptor.ubo.range = sizeof(ubo);
-	descriptor.ubo.offset = 0;
-	graphics_descriptor_set_write(camera_descriptor_set0, 0, descriptor);
+	graphics_descriptor_set_write(camera_descriptor_set0);
+	
+	GraphicsDescriptor* descriptors1 = array_create(GraphicsDescriptor, 1, deshi_allocator);
+	GraphicsDescriptor* descriptor1 = array_push(descriptors1);
+	descriptor1->type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptor1->shader_stages = GraphicsShaderStage_Vertex;
+	descriptor1->ubo.buffer = view1_buffer;
+	descriptor1->ubo.range = sizeof(ubo);
+	descriptor1->ubo.offset = 0;
 
 	GraphicsDescriptorSet* camera_descriptor_set1 = graphics_descriptor_set_allocate();
+	camera_descriptor_set1->descriptors = descriptors1;
 	array_init_with_elements(camera_descriptor_set1->layouts, {
 				camera_descriptor_layout
 			}, deshi_temp_allocator);
 	graphics_descriptor_set_update(camera_descriptor_set1);
-
-	descriptor.ubo.buffer = view1_buffer;
-	descriptor.ubo.range = sizeof(ubo);
-	descriptor.ubo.offset = 0;
-
-	graphics_descriptor_set_write(camera_descriptor_set1, 0, descriptor);
+	graphics_descriptor_set_write(camera_descriptor_set1);
+	
+	GraphicsDescriptor* descriptors2 = array_create(GraphicsDescriptor, 1, deshi_allocator);
+	GraphicsDescriptor* descriptor2 = array_push(descriptors2);
+	Texture* texture = assets_texture_create_from_path_simple(str8l("alex"), str8l("alex.png"));
+	descriptor2->type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor2->shader_stages = GraphicsShaderStage_Fragment;
+	descriptor2->image.view = texture->image_view;
+	descriptor2->image.sampler = texture->sampler;
+	descriptor2->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 
 	GraphicsDescriptorSet* texture_descriptor_set = graphics_descriptor_set_allocate();
+	texture_descriptor_set->descriptors = descriptors2;
 	array_init_with_elements(texture_descriptor_set->layouts, {
 				texture_descriptor_layout
 			}, deshi_temp_allocator);
 	graphics_descriptor_set_update(texture_descriptor_set);
-	
-	Texture* texture = assets_texture_create_from_path_simple(str8l("alex"), str8l("alex.png"));
-
-	descriptor.type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptor.shader_stages = GraphicsShaderStage_Fragment;
-	descriptor.image.view = texture->image_view;
-	descriptor.image.sampler = texture->sampler;
-	descriptor.image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
-
-	graphics_descriptor_set_write(texture_descriptor_set, 0, descriptor);
+	graphics_descriptor_set_write(texture_descriptor_set);
 
 	void* mapped_data = graphics_buffer_map(view0_buffer, graphics_buffer_device_size(view0_buffer), 0);
 	

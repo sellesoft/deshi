@@ -739,6 +739,7 @@ typedef struct GraphicsDescriptor {
 typedef struct GraphicsDescriptorSet {
 	str8 debug_name;
 
+	GraphicsDescriptor* descriptors;
 	GraphicsDescriptorSetLayout** layouts;
 
 	GRAPHICS_INTERNAL_BEGIN
@@ -749,13 +750,7 @@ typedef struct GraphicsDescriptorSet {
 GraphicsDescriptorSet* graphics_descriptor_set_allocate();
 void graphics_descriptor_set_update(GraphicsDescriptorSet* x);
 void graphics_descriptor_set_destroy(GraphicsDescriptorSet* x);
-
-// Write a single descriptor to the specified binding of the given descriptor set.
-void graphics_descriptor_set_write(GraphicsDescriptorSet* x, u32 binding, GraphicsDescriptor descriptor);
-
-// Write an array of descriptors to the given descriptor set. It is assumed that they can be written
-// in the order that is specified in the descriptor set's array of layouts.
-void graphics_descriptor_set_write_array(GraphicsDescriptorSet* x, GraphicsDescriptor* descriptors);
+void graphics_descriptor_set_write(GraphicsDescriptorSet* x);
 
 #if COMPILER_FEATURE_CPP 
 
@@ -780,8 +775,7 @@ struct DescriptorSet : public GraphicsDescriptorSet {
 	void update() { graphics_descriptor_set_update(this); }
 	void destroy() { graphics_descriptor_set_destroy(this); }
 
-	void write(u32 binding, Descriptor descriptor) { graphics_descriptor_set_write(this, binding, descriptor); }
-	void write(u32 binding, array<Descriptor> descriptors) { graphics_descriptor_set_write_array(this, descriptors.ptr); }
+	void write() { graphics_descriptor_set_write(this); }
 };
 
 } // namespace graphics

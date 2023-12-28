@@ -292,20 +292,22 @@ render_temp_init(Window* window, u32 v) {
 	wpl->depth_compare_op = GraphicsCompareOp_Less_Or_Equal;
 	wpl->color_blend_op = GraphicsBlendOp_Max;
 	graphics_pipeline_update(wpl);
-
-	auto ds = g_scene->temp.descriptor_set = graphics_descriptor_set_allocate();
-	ds->debug_name = str8l("<render> temp descriptor set");
-	ds->layouts = array_copy(pl->layout->descriptor_layouts).ptr;
-	graphics_descriptor_set_update(ds);
-
-	GraphicsDescriptor descriptor = {};
-	descriptor.type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptor.ubo = {
+	
+	GraphicsDescriptor* descriptors = array_create(GraphicsDescriptor, 1, deshi_allocator);
+	GraphicsDescriptor* descriptor = array_push(descriptors);
+	descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+	descriptor->ubo = {
 		g_scene->temp.camera_buffer,
 		0,
 		sizeof(g_scene->temp.camera_ubo)
 	};
-	graphics_descriptor_set_write(ds, 0, descriptor);
+
+	auto ds = g_scene->temp.descriptor_set = graphics_descriptor_set_allocate();
+	ds->debug_name = str8l("<render> temp descriptor set");
+	ds->descriptors = descriptors;
+	ds->layouts = array_copy(pl->layout->descriptor_layouts).ptr;
+	graphics_descriptor_set_update(ds);
+	graphics_descriptor_set_write(ds);
 }
 
 void 

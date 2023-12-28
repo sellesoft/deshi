@@ -310,59 +310,61 @@ int main() {
 
 	graphics_pipeline_update(offscreen_pipeline);
 
-	auto descriptors = array<GraphicsDescriptor>::create(2, deshi_temp_allocator);
-
 	GraphicsDescriptorSet* debug_descriptor_set = graphics_descriptor_set_allocate();
 	array_init_with_elements(debug_descriptor_set->layouts, {descriptor_layout});
 	graphics_descriptor_set_update(debug_descriptor_set);
-	
-	descriptors[0].type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = GraphicsShaderStage_Fragment;
-	descriptors[0].ubo = {
+
+	auto debug_descriptors = array<GraphicsDescriptor>::create(2, deshi_allocator);
+	debug_descriptors[0].type = GraphicsDescriptorType_Uniform_Buffer;
+	debug_descriptors[0].shader_stages = GraphicsShaderStage_Fragment;
+	debug_descriptors[0].ubo = {
 		scene_ubo_buffer,
 		0,
 		sizeof(ubo_scene),
 	};
 
-	descriptors[1].type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
-	descriptors[1].image = {
+	debug_descriptors[1].type = GraphicsDescriptorType_Combined_Image_Sampler;
+	debug_descriptors[1].shader_stages = GraphicsShaderStage_Fragment;
+	debug_descriptors[1].image = {
 		offscreen.image_view,
 		offscreen.sampler,
 		GraphicsImageLayout_Depth_Stencil_Read_Only_Optimal,
 	};
-	graphics_descriptor_set_write_array(debug_descriptor_set, descriptors.ptr);
+	debug_descriptor_set->descriptors = debug_descriptors.ptr;
+	graphics_descriptor_set_write(debug_descriptor_set);
 
 	GraphicsDescriptorSet* offscreen_descriptor_set = graphics_descriptor_set_allocate();
 	array_init_with_elements(offscreen_descriptor_set->layouts, {descriptor_layout});
 	graphics_descriptor_set_update(offscreen_descriptor_set);
 
-	descriptors.recount(1);
-	descriptors[0].type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
-	descriptors[0].ubo = {
+	auto offscreen_descriptors = array<GraphicsDescriptor>::create(1, deshi_allocator);
+	offscreen_descriptors[0].type = GraphicsDescriptorType_Uniform_Buffer;
+	offscreen_descriptors[0].shader_stages = GraphicsShaderStage_Vertex;
+	offscreen_descriptors[0].ubo = {
 		offscreen_ubo_buffer,
 		0,
 		sizeof(ubo_offscreen),
 	};
-	graphics_descriptor_set_write_array(offscreen_descriptor_set, descriptors.ptr);
+	offscreen_descriptor_set->descriptors = offscreen_descriptors.ptr;
+	graphics_descriptor_set_write(offscreen_descriptor_set);
 	
 	GraphicsDescriptorSet* scene_descriptor_set = graphics_descriptor_set_allocate(); 
 	array_init_with_elements(scene_descriptor_set->layouts, {descriptor_layout});
 	graphics_descriptor_set_update(scene_descriptor_set);
 
-	descriptors.recount(2);
-	descriptors[0].ubo = {
+	auto scene_descriptors = array<GraphicsDescriptor>::create(2, deshi_allocator);
+	scene_descriptors[0].ubo = {
 		scene_ubo_buffer,
 		0,
 		sizeof(ubo_scene),
 	};
-	descriptors[1].image = {
+	scene_descriptors[1].image = {
 		offscreen.image_view,
 		offscreen.sampler,
 		GraphicsImageLayout_Depth_Stencil_Read_Only_Optimal,
 	};
-	graphics_descriptor_set_write_array(scene_descriptor_set, descriptors.ptr);
+	scene_descriptor_set->descriptors = scene_descriptors.ptr;
+	graphics_descriptor_set_write(scene_descriptor_set);
 
 	MeshVertex vertices[4] = {
 		{{ 0.5f,  0.5f, 0.f}, {1.f, 0.f}, 0, {0.f, 1.f, 0.f}},

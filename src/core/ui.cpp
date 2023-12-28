@@ -775,19 +775,21 @@ deshi__ui_init(Window* window) {
 			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
 			GraphicsMemoryMapping_Persistent);
 	g_ui->index_buffer.handle->debug_name = str8l("<ui> index buffer");
+	
+	GraphicsDescriptor* descriptors = array_create(GraphicsDescriptor, 1, deshi_allocator);
+	GraphicsDescriptor* descriptor = array_push(descriptors);
+	descriptor->         type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor->   image.view = assets_font_null()->tex->image_view;
+	descriptor->image.sampler = assets_font_null()->tex->sampler;
+	descriptor-> image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 
 	g_ui->blank_descriptor_set = graphics_descriptor_set_allocate();
 	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
+	g_ui->blank_descriptor_set->descriptors = descriptors;
 	array_init_with_elements(g_ui->blank_descriptor_set->layouts, 
 			{g_ui->pipeline->layout->descriptor_layouts[0]});
 	graphics_descriptor_set_update(g_ui->blank_descriptor_set);
-
-	GraphicsDescriptor descriptor = {};
-	descriptor.         type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptor.   image.view = assets_font_null()->tex->image_view;
-	descriptor.image.sampler = assets_font_null()->tex->sampler;
-	descriptor. image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
-	graphics_descriptor_set_write(g_ui->blank_descriptor_set, 0, descriptor);
+	graphics_descriptor_set_write(g_ui->blank_descriptor_set);
 
 	g_ui->base = uiItem{0};
 	g_ui->base.id = STR8("base");
@@ -1418,6 +1420,14 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 
 			if(texture && texture != g_ui->last_texture) {
 				if(!texture->ui_descriptor_set) {
+					auto descriptors = array<GraphicsDescriptor>::create_with_count(1, deshi_allocator);
+					descriptors[0].type = GraphicsDescriptorType_Combined_Image_Sampler;
+					descriptors[0].image = {
+						texture->image_view,
+						texture->sampler,
+						GraphicsImageLayout_Shader_Read_Only_Optimal,
+					};
+					
 					// NOTE(sushi) atm we store a pointer to a descriptor set on asset textures so that ui can make
 					//             one per texture used within it. The reason we do this is because otherwise we would
 					//             need a way to match textures to descriptor sets internally in ui, which would probably
@@ -1425,19 +1435,11 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 					//             time we draw something in ui. This needs to be fixed later on though because it's weird
 					//             to me that assets stores a pointer on Textures specifically for ui.
 					texture->ui_descriptor_set = graphics_descriptor_set_allocate();
+					texture->ui_descriptor_set->descriptors = descriptors.ptr;
 					texture->ui_descriptor_set->layouts = array_copy(g_ui->blank_descriptor_set->layouts).ptr;
 					texture->ui_descriptor_set->debug_name = to_dstr8v(deshi_temp_allocator, "<ui> texture descriptor set").fin;
 					graphics_descriptor_set_update(texture->ui_descriptor_set);
-
-					auto descriptors = array<GraphicsDescriptor>::create_with_count(1, deshi_temp_allocator);
-					descriptors[0].type = GraphicsDescriptorType_Combined_Image_Sampler;
-					descriptors[0].image = {
-						texture->image_view,
-						texture->sampler,
-						GraphicsImageLayout_Shader_Read_Only_Optimal,
-					};
-
-					graphics_descriptor_set_write_array(texture->ui_descriptor_set, descriptors.ptr);
+					graphics_descriptor_set_write(texture->ui_descriptor_set);
 				}	
 				graphics_cmd_bind_descriptor_set(g_ui->updating_window, 0, texture->ui_descriptor_set);
 			} else if(!texture) {
