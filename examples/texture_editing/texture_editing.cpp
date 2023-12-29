@@ -195,7 +195,7 @@ int main() {
 			set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
 			set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
 			bind_pipeline(win, pipeline);
-			push_constant(win, &pc, twod_push_constant);
+			push_constant(win, GraphicsShaderStage_Vertex, &pc, 0, sizeof(PushConstant));
 			bind_vertex_buffer(win, vertex_buffer);
 			bind_index_buffer(win, index_buffer);
 			bind_descriptor_set(win, 0, descriptor_set);

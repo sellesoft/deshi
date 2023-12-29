@@ -398,7 +398,7 @@ int main() {
 
 	auto draw_plane = [&](u32 idx, vec3 pos, vec3 rot, vec3 scale) {
 		planes[idx].transform = mat4::TransformationMatrix(pos, rot, scale);
-		graphics_cmd_push_constant(win, &planes[idx], model_push_constant);
+		graphics_cmd_push_constant(win, GraphicsShaderStage_Vertex, &planes[idx], 0, sizeof(mat4) + sizeof(vec3));
 		graphics_cmd_bind_vertex_buffer(win, plane_vertex_buffer);
 		graphics_cmd_bind_index_buffer(win, plane_index_buffer);
 		graphics_cmd_draw_indexed(win, 6, 0, 0);
@@ -424,7 +424,7 @@ int main() {
 
 	auto draw_box = [&](u32 idx, vec3 pos, vec3 rot, vec3 scale) {
 		boxes[idx].transform = mat4::TransformationMatrix(pos, rot, scale);
-		graphics_cmd_push_constant(win, &boxes[idx], model_push_constant);
+		graphics_cmd_push_constant(win, GraphicsShaderStage_Vertex, &boxes[idx], 0, sizeof(mat4) + sizeof(vec3));
 		graphics_cmd_bind_vertex_buffer(win, box->mesh->vertex_buffer);
 		graphics_cmd_bind_index_buffer(win, box->mesh->index_buffer);
 		graphics_cmd_draw_indexed(win, box->mesh->index_count, 0, 0);

@@ -222,7 +222,7 @@ int main() {
 			set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
 			bind_descriptor_set(win, 1, texture_descriptor_set);
 			set_viewport(win, vec2::ZERO, Vec2(win->width/2, win->height/2));
-			push_constant(win, &transform, model_push_constant);
+			push_constant(win, GraphicsShaderStage_Vertex, &transform, 0, sizeof(mat4));
 			bind_vertex_buffer(win, box->mesh->vertex_buffer);
 			bind_index_buffer(win, box->mesh->index_buffer);
 			bind_descriptor_set(win, 0, camera_descriptor_set0);

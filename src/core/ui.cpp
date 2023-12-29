@@ -1482,7 +1482,7 @@ deshi__ui_update(Window* window) {
 	graphics_cmd_bind_pipeline(window, g_ui->pipeline);
 	graphics_cmd_set_viewport(window, vec2_ZERO(), Vec2(window->width, window->height));
 	graphics_cmd_set_scissor(window, vec2_ZERO(), Vec2(window->width, window->height));
-	graphics_cmd_push_constant(window, &pc, {GraphicsShaderStage_Vertex, sizeof(pc), 0});
+	graphics_cmd_push_constant(window, GraphicsShaderStage_Vertex, &pc, 0, sizeof(pc));
 	graphics_cmd_bind_vertex_buffer(window, g_ui->vertex_buffer.handle);
 	graphics_cmd_bind_index_buffer(window, g_ui->index_buffer.handle);
 	graphics_cmd_bind_descriptor_set(window, 0, g_ui->blank_descriptor_set);

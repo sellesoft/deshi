@@ -419,7 +419,7 @@ int main() {
 			// Then we push the transformation push constant for our first plane.
 			// Note that this doesn't copy the memory, so it must
 			// still be around by the time we update the renderer.
-			push_constant(win, &plane_transform0, model_push_constant);
+			push_constant(win, GraphicsShaderStage_Vertex, &plane_transform0, 0, sizeof(mat4));
 
 			// We must bind the vertex and index buffers our model
 			// is using. These were generated when we asked assets to
@@ -435,7 +435,7 @@ int main() {
 			draw_indexed(win, 6, 0, 0);
 
 			// Now we change the push constant and descriptor set and draw again
-			push_constant(win, &plane_transform1, model_push_constant);
+			push_constant(win, GraphicsShaderStage_Vertex, &plane_transform1, 0, sizeof(mat4));
 			bind_descriptor_set(win, 0, descriptor_set1);
 			draw_indexed(win, 6, 0, 0);
 

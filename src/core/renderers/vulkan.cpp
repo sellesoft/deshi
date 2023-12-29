@@ -1762,8 +1762,8 @@ graphics_update(Window* window) {
 				VulkanAssert(currently_bound_pipeline, "encountered push constant command, but no pipeline has been bound yet.");
 				vkCmdPushConstants(cmdbuf, 
 								   get_handle(currently_bound_pipeline->layout),
-								   graphics_shader_stage_to_vulkan(cmd.push_constant.info.shader_stages),
-								   cmd.push_constant.info.offset, cmd.push_constant.info.size, cmd.push_constant.data);
+								   graphics_shader_stage_to_vulkan(cmd.push_constant.shader_stages),
+								   cmd.push_constant.offset, cmd.push_constant.size, cmd.push_constant.data);
 			} break;
 			case GraphicsCommandType_Draw_Indexed: {
 				// TODO(sushi) checks for dynamic state stuff having been set before this occurs

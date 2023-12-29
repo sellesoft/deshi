@@ -97,11 +97,13 @@ graphics_cmd_bind_descriptor_set(Window* window, u32 set_index, GraphicsDescript
 }
 
 void 
-graphics_cmd_push_constant(Window* window, void* data, GraphicsPushConstant info) {
+graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, void* data, u32 offset, u32 size) {
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Push_Constant;
+	c->push_constant.shader_stages = shader_stages;
 	c->push_constant.data = data;
-	c->push_constant.info = info;
+	c->push_constant.offset = offset;
+	c->push_constant.size = size;
 }
 
 void 

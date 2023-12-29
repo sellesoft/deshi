@@ -115,7 +115,7 @@ int main() {
 				set_viewport(win, vec2::ZERO, Vec2(win->width, win->height));
 				set_scissor(win, vec2::ZERO, Vec2(win->width, win->height));
 				bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
-				push_constant(win, &transform0, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
+				push_constant(win, GraphicsShaderStage_Vertex, &transform0, 0, sizeof(mat4));
 				bind_vertex_buffer(win, box->mesh->vertex_buffer);
 				bind_index_buffer(win, box->mesh->index_buffer);
 				bind_descriptor_set(win, 1, b.material->descriptor_set);
@@ -130,7 +130,7 @@ int main() {
 				set_viewport(win, vec2::ZERO, Vec2(win->width, win->height));
 				set_scissor(win, vec2::ZERO, Vec2(win->width, win->height));
 				bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
-				push_constant(win, &transform1, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
+				push_constant(win, GraphicsShaderStage_Vertex, &transform1, 0, sizeof(mat4));
 				bind_vertex_buffer(win, box->mesh->vertex_buffer);
 				bind_index_buffer(win, box->mesh->index_buffer);
 				bind_descriptor_set(win, 1, b.material->descriptor_set);

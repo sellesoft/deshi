@@ -794,7 +794,9 @@ typedef struct GraphicsPushConstant {
 	str8 shader_block_name;
 	
 	GRAPHICS_INTERNAL_BEGIN
+		u32 shader_block_index;
 		u32 shader_block_binding;
+		u32 shader_buffer_handle;
 	GRAPHICS_INTERNAL_END
 } GraphicsPushConstant;
 
@@ -1138,8 +1140,10 @@ typedef struct GraphicsCommand {
 	} bind_descriptor_set;
 	
 	struct { // push_constant
+		GraphicsShaderStage shader_stages;
 		void* data;
-		GraphicsPushConstant info;
+		u32 offset;
+		u32 size;
 	} push_constant;
 
 	struct { // draw_indexed
@@ -1184,7 +1188,7 @@ void graphics_cmd_bind_index_buffer(Window* window, GraphicsBuffer* buffer);
 void graphics_cmd_bind_descriptor_set(Window* window, u32 set_index, GraphicsDescriptorSet* descriptor_set);
 // Register the memory at 'data' to be pushed according to 'info'. The data provided must be kept valid
 // until the end of the following graphics_update call.
-void graphics_cmd_push_constant(Window* window, void* data, GraphicsPushConstant info);
+void graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, void* data, u32 offset, u32 size);
 // Draw vertexes based on the indexes in the currenly bound vertex and index buffers.
 void graphics_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset);
 // Set the viewport of the current render pass. The currently bound pipeline must have been created 
@@ -1206,7 +1210,7 @@ FORCE_INLINE void bind_pipeline(Window* window, GraphicsPipeline* pipeline){ gra
 FORCE_INLINE void bind_vertex_buffer(Window* window, GraphicsBuffer* buffer){ graphics_cmd_bind_vertex_buffer(window, buffer); }
 FORCE_INLINE void bind_index_buffer(Window* window, GraphicsBuffer* buffer){ graphics_cmd_bind_index_buffer(window, buffer); }
 FORCE_INLINE void bind_descriptor_set(Window* window, u32 set_index, GraphicsDescriptorSet* descriptor_set){ graphics_cmd_bind_descriptor_set(window, set_index, descriptor_set); }
-FORCE_INLINE void push_constant(Window* window, void* data, GraphicsPushConstant info){ graphics_cmd_push_constant(window, data, info); }
+FORCE_INLINE void push_constant(Window* window, GraphicsShaderStage shader_stages, void* data, u32 offset, u32 size){ graphics_cmd_push_constant(window, shader_stages, data, offset, size); }
 FORCE_INLINE void draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset){ graphics_cmd_draw_indexed(window, index_count, index_offset, vertex_offset); }
 FORCE_INLINE void set_viewport(Window* window, vec2 offset, vec2 extent){ graphics_cmd_set_viewport(window, offset, extent); } 
 FORCE_INLINE void set_scissor(Window* window, vec2 offset, vec2 extent){ graphics_cmd_set_scissor(window, offset, extent); }

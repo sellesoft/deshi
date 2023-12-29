@@ -54,7 +54,7 @@ render_update() {
 					bind_pipeline(win, last_pipeline);
 					bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
 				}
-				push_constant(win, cmd.transform, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
+				push_constant(win, GraphicsShaderStage_Vertex, cmd.transform, 0, sizeof(mat4));
 				bind_descriptor_set(win, 1, b.material->descriptor_set);
 				draw_indexed(win, b.index_count, b.index_offset, 0);
 			}
@@ -71,7 +71,7 @@ render_update() {
 				it->transform = mat4::TransformationMatrix(it->position, it->rotation, vec3::ONE);
 				bind_vertex_buffer(win, it->vertex_buffer);
 				bind_index_buffer(win, it->index_buffer);
-				push_constant(win, &it->transform, {GraphicsShaderStage_Vertex, sizeof(mat4), 0});
+				push_constant(win, GraphicsShaderStage_Vertex, &it->transform, 0, sizeof(mat4));
 				draw_indexed(win, it->index_count, 0, 0);
 			}
 		}
