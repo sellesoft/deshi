@@ -41,9 +41,9 @@ TODO:
 #endif //#else //#if DESHI_VULKAN || DESHI_OPENGL
 
 #if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(set = " #set ", binding = " #binding ") uniform " name "{\n"
+#  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(std140, set = " #set ", binding = " #binding ") uniform " name "{\n"
 #elif DESHI_OPENGL //#if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(binding = " #binding ") uniform " name "{\n"
+#  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(std140, binding = " #binding ") uniform " name "{\n"
 #else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "unhandled graphics backend"
 #endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
@@ -53,7 +53,7 @@ TODO:
 #if DESHI_VULKAN
 #  define DESHI_BAKED_SHADERS_PUSH_CONSTANT_HEADER(name) "layout(push_constant) uniform " name "{\n"
 #elif DESHI_OPENGL //#if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_PUSH_CONSTANT_HEADER(name) "uniform " name "{\n"
+#  define DESHI_BAKED_SHADERS_PUSH_CONSTANT_HEADER(name) "layout(std140) uniform " name "{\n"
 #else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "unhandled graphics backend"
 #endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
