@@ -2,20 +2,13 @@
 #_____________________________________________________________________________________________________
 #                                            Usage
 #_____________________________________________________________________________________________________
-# build.sh <example> <command> [arguments...]
-#
-# Commands:
-#   (empty)       Compile and link (default)
-#   compile       Compile only
-#   link          Link with previously generated .obj/.o
-#   one <file>    Compile one file and link with previously generated .obj/.o
+# build.sh <example> [arguments...]
 #
 # Arguments:
 #   --v    Echo build commands to the console
 #   --time Time the script (this relies on GNU awk)
 #   --d    Build with    debug info and without optimization (default)
 #   --r    Build without debug info and with    optimization
-#   --s    Build certain modules as shared libraries for code implementation reloading
 #   --p    Enable Tracy profiling
 #   --pw   Enable Tracy profiling and force the program to wait for a connection to start running
 #   --sa   Enable static analysis
@@ -34,12 +27,8 @@
 #   >sh.exe build.sh voxels --d --time -graphics vulkan
 #
 # TODOs:
-#   >support the non-default commands
-#   >echo out when we successfully build things
-#   >early out when we don't successfully build
-#   > eventually support gcc in the code base when someone really wants it
-#       but push for them to use clang instead :)
-#   > make this script easy to use without deshi
+#   >setup gcc
+#   >merge build_all.sh into this
 
 
 #_____________________________________________________________________________________________________
@@ -88,7 +77,6 @@ build_example=""
 build_dir="debug"
 build_verbose=0
 build_release=0
-build_shared=0
 build_time=0
 build_profiler=""
 build_static_analysis=0
@@ -113,23 +101,6 @@ for (( i=1; i<=$#; i++)); do
     continue
   fi
 
-  #### parse <command>
-  if [ $i == 2 ]; then
-    if [ "${!i}" == "compile" ]; then
-      build_cmd="compile"
-      continue
-    elif [ "${!i}" == "link" ]; then
-      build_cmd="link"
-      continue
-    elif [ "${!i}" == "one" ]; then
-      build_cmd="one"
-      skip_arg=1
-      next_arg=$((i+1))
-      build_cmd_one_file="${!next_arg}"
-      continue
-    fi
-  fi
-
   #### parse [arguments...]
   if [ "${!i}" == "--v" ]; then
     build_verbose=1
@@ -140,8 +111,6 @@ for (( i=1; i<=$#; i++)); do
   elif [ "${!i}" == "--r" ]; then
     build_dir="release"
     build_release=1
-  elif [ "${!i}" == "--s" ]; then
-    build_shared=1
   elif [ "${!i}" == "--p" ]; then
     build_profiler="profile"
   elif [ "${!i}" == "--pw" ]; then
@@ -313,14 +282,7 @@ elif [ "$build_profiler" == "wait and profile" ]; then
   defines_misc="$defines_misc -DTRACY_ENABLE -DDESHI_WAIT_FOR_TRACY_CONNECTION"
 fi
 
-defines_shared=""
-if [ $build_shared == 1 ]; then
-  defines_shared="-DDESHI_RELOADABLE_UI=1"
-else
-  defines_shared="-DDESHI_RELOADABLE_UI=0"
-fi
-
-defines="$defines_build $defines_platform $defines_graphics $defines_shared $defines_misc"
+defines="$defines_build $defines_platform $defines_graphics $defines_misc"
 
 
 #_____________________________________________________________________________________________________
@@ -509,13 +471,12 @@ exe(){
 }
 
 echo "`date +'%a, %h %d %Y, %H:%M:%S'` ($build_compiler/$build_dir/$build_graphics) [$app_name]"
+if [ $build_time == 1 ]; then start_time=$(date +%s.%3N); fi
 if [ ! -e $build_folder ]; then mkdir $build_folder; fi
 if [ ! -e $build_folder/$build_dir ]; then mkdir $build_folder/$build_dir; fi
 pushd $root_folder > /dev/null
 build_dir="examples/$app_name/build/$build_dir"
 if [ $builder_platform == "win32" ]; then #_________________________________________________________________________________win32
-  if [ -e examples/ctime.exe ]; then ctime -begin examples/$app_name/$app_name.ctm; fi
-  if [ $build_time == 1 ]; then start_time=$(date +%s.%3N); fi
   echo "---------------------------------"
   
   if [ $build_compiler == "cl" ] || [ $build_compiler == "clang-cl" ]; then #______________________________________cl
@@ -547,8 +508,6 @@ if [ $builder_platform == "win32" ]; then #_____________________________________
   fi
 
   echo "---------------------------------"
-  if [ -e examples/ctime.exe ]; then ctime -end examples/$app_name/$app_name.ctm; fi
-  if [ $build_time == 1 ]; then printf "time: %f seconds" $(awk "BEGIN {print $(date +%s.%3N) - $start_time}"); fi
 elif [ $builder_platform == "mac" ]; then #_________________________________________________________________________________mac
   echo "Execute commands not setup for platform: $builder_platform"
 elif [ $builder_platform == "linux" ]; then #_______________________________________________________________________________linux
@@ -571,4 +530,5 @@ elif [ $builder_platform == "linux" ]; then #___________________________________
 else
   echo "Execute commands not setup for platform: $builder_platform"
 fi
+if [ $build_time == 1 ]; then printf "time: %.3f seconds" $(awk "BEGIN {print $(date +%s.%3N) - $start_time}"); fi
 popd > /dev/null
