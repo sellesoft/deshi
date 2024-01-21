@@ -2391,17 +2391,17 @@ Vec3(f32 x, f32 y, f32 z){
 	return vec3{x, y, z};
 }
 
-DESHI_MATH_FUNC inline vec3 vec3_ZERO()   { return vec3{ 0, 0, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_ONE()    { return vec3{ 1, 1, 1}; }
-DESHI_MATH_FUNC inline vec3 vec3_LEFT()   { return vec3{-1, 0, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_RIGHT()  { return vec3{ 1, 0, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_DOWN()   { return vec3{ 0,-1, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_UP()     { return vec3{ 0, 1, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_BACK()   { return vec3{ 0, 0,-1}; }
-DESHI_MATH_FUNC inline vec3 vec3_FORWARD(){ return vec3{ 0, 0, 1}; }
-DESHI_MATH_FUNC inline vec3 vec3_UNITX()  { return vec3{ 1, 0, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_UNITY()  { return vec3{ 0, 1, 0}; }
-DESHI_MATH_FUNC inline vec3 vec3_UNITZ()  { return vec3{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3 vec3_ZERO()    { return vec3{ 0, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_ONE()     { return vec3{ 1, 1, 1}; }
+DESHI_MATH_FUNC inline vec3 vec3_LEFT()    { return vec3{-1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_RIGHT()   { return vec3{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_DOWN()    { return vec3{ 0,-1, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_UP()      { return vec3{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_BACKWARD(){ return vec3{ 0, 0,-1}; }
+DESHI_MATH_FUNC inline vec3 vec3_FORWARD() { return vec3{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3 vec3_UNITX()   { return vec3{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_UNITY()   { return vec3{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3 vec3_UNITZ()   { return vec3{ 0, 0, 1}; }
 
 #ifdef __cplusplus
 inline const vec3 vec3::ZERO     = vec3{ 0, 0, 0};
@@ -3607,17 +3607,17 @@ Vec3i(s32 x, s32 y, s32 z){
 	return vec3i{x, y, z};
 }
 
-DESHI_MATH_FUNC inline vec3i vec3i_ZERO()   { return vec3i{ 0, 0, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_ONE()    { return vec3i{ 1, 1, 1}; }
-DESHI_MATH_FUNC inline vec3i vec3i_LEFT()   { return vec3i{-1, 0, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_RIGHT()  { return vec3i{ 1, 0, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_DOWN()   { return vec3i{ 0,-1, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_UP()     { return vec3i{ 0, 1, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_BACK()   { return vec3i{ 0, 0,-1}; }
-DESHI_MATH_FUNC inline vec3i vec3i_FORWARD(){ return vec3i{ 0, 0, 1}; }
-DESHI_MATH_FUNC inline vec3i vec3i_UNITX()  { return vec3i{ 1, 0, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_UNITY()  { return vec3i{ 0, 1, 0}; }
-DESHI_MATH_FUNC inline vec3i vec3i_UNITZ()  { return vec3i{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_ZERO()    { return vec3i{ 0, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_ONE()     { return vec3i{ 1, 1, 1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_LEFT()    { return vec3i{-1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_RIGHT()   { return vec3i{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_DOWN()    { return vec3i{ 0,-1, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UP()      { return vec3i{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_BACKWARD(){ return vec3i{ 0, 0,-1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_FORWARD() { return vec3i{ 0, 0, 1}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UNITX()   { return vec3i{ 1, 0, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UNITY()   { return vec3i{ 0, 1, 0}; }
+DESHI_MATH_FUNC inline vec3i vec3i_UNITZ()   { return vec3i{ 0, 0, 1}; }
 
 #ifdef __cplusplus
 inline const vec3i vec3i::ZERO     = vec3i{ 0, 0, 0};
@@ -3973,7 +3973,7 @@ vec3i_normalize(vec3i lhs){DESHI_MATH_FUNCTION_START;
 #ifdef __cplusplus
 inline vec3i vec3i::
 normalize()const{DESHI_MATH_FUNCTION_START;
-	if(this->x != 0 || this->y != 0 || this->z != DESHI_MATH_EPSILON_F32){
+	if(this->x != 0 || this->y != 0 || this->z != 0){
 		return *this / this->mag();
 	}else{
 		return *this;
@@ -14443,7 +14443,7 @@ void TEST_deshi_math(){
 #endif //#ifdef __cplusplus
 		
 #ifdef __cplusplus
-		a  = Vec2i( 1, 1.00f);
+		a  = Vec2i( 1, 1);
 		a /= 1;
 		ASSERT_VEC2I_VALUES(a,  1, 1);
 		a  = Vec2i( 0, 0);
@@ -15122,13 +15122,2286 @@ void TEST_deshi_math(){
 	
 	//// vec3 ////
 	{
+		vec3 a;
+		vec3 b;
+#define ASSERT_VEC3_VALUES(lhs,x_,y_,z_) a = (lhs);ASSERT_F32_EQUAL(a.x,(x_));ASSERT_F32_EQUAL(a.y,(y_));ASSERT_F32_EQUAL(a.z,(z_))
 		
+		
+		a = vec3{0.0f,0.0f,0.0f};
+		b = vec3{0.0f,0.0f,0.0f};
+		ASSERT_F32_EQUAL(a.arr[0], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[0], a.x);
+		ASSERT_F32_EQUAL(a.arr[0], a.u);
+		ASSERT_F32_EQUAL(a.arr[0], a.r);
+		ASSERT_F32_EQUAL(a.arr[0], a.xy.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[0], a._x0);
+		ASSERT_F32_EQUAL(a.arr[1], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[1], a.y);
+		ASSERT_F32_EQUAL(a.arr[1], a.v);
+		ASSERT_F32_EQUAL(a.arr[1], a.g);
+		ASSERT_F32_EQUAL(a.arr[1], a.xy.arr[1]);
+		ASSERT_F32_EQUAL(a.arr[1], a.yz.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[2], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[2], a.z);
+		ASSERT_F32_EQUAL(a.arr[2], a.w);
+		ASSERT_F32_EQUAL(a.arr[2], a.b);
+		ASSERT_F32_EQUAL(a.arr[2], a._z0);
+		ASSERT_F32_EQUAL(a.arr[2], a.yz.arr[1]);
+		ASSERT_F32_EQUAL(b.arr[0], 0.0f);
+		ASSERT_F32_EQUAL(b.arr[0], b.x);
+		ASSERT_F32_EQUAL(b.arr[0], b.u);
+		ASSERT_F32_EQUAL(b.arr[0], b.r);
+		ASSERT_F32_EQUAL(b.arr[0], b.xy.arr[0]);
+		ASSERT_F32_EQUAL(b.arr[0], b._x0);
+		ASSERT_F32_EQUAL(b.arr[1], 0.0f);
+		ASSERT_F32_EQUAL(b.arr[1], b.y);
+		ASSERT_F32_EQUAL(b.arr[1], b.v);
+		ASSERT_F32_EQUAL(b.arr[1], b.g);
+		ASSERT_F32_EQUAL(b.arr[1], b.xy.arr[1]);
+		ASSERT_F32_EQUAL(b.arr[1], b.yz.arr[0]);
+		ASSERT_F32_EQUAL(b.arr[2], 0.0f);
+		ASSERT_F32_EQUAL(b.arr[2], b.z);
+		ASSERT_F32_EQUAL(b.arr[2], b.w);
+		ASSERT_F32_EQUAL(b.arr[2], b.b);
+		ASSERT_F32_EQUAL(b.arr[2], b._z0);
+		ASSERT_F32_EQUAL(b.arr[2], b.yz.arr[1]);
+		
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-2.0f,-3.0f), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-0.1f,-0.2f,-0.3f), -0.1f,-0.2f,-0.3f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.1f, 0.2f, 0.3f),  0.1f, 0.2f, 0.3f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f),  1.0f, 2.0f, 3.0f);
+		
+		ASSERT_VEC3_VALUES(vec3_ZERO(),    0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_ONE(),     1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_UP(),      0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_DOWN(),    0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_LEFT(),   -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_RIGHT(),   1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_FORWARD(), 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_BACKWARD(),0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_UNITX(),   1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_UNITY(),   0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_UNITZ(),   0.0f, 0.0f, 1.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(vec3::ZERO,     0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::ONE,      1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3::UP,       0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::DOWN,     0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::LEFT,    -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::RIGHT,    1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::FORWARD,  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3::BACKWARD, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3::UNITX,    1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::UNITY,    0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3::UNITZ,    0.0f, 0.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+		a = Vec3(1.0f,-2.3f,0.4f);
+		ASSERT_F32_EQUAL(vec3_index(a, 0),  1.0f);
+		ASSERT_F32_EQUAL(vec3_index(a, 1), -2.3f);
+		ASSERT_F32_EQUAL(vec3_index(a, 2),  0.4f);
+		
+#ifdef __cplusplus
+		a = Vec3(1.0f,-2.3f,0.4f);
+		ASSERT_F32_EQUAL(a[0],  1.0f);
+		ASSERT_F32_EQUAL(a[1], -2.3f);
+		ASSERT_F32_EQUAL(a[2],  0.4f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a[0] =  2.0f;
+		a[1] = -4.6f;
+		a[2] =  0.8f;
+		ASSERT_F32_EQUAL(a.arr[0],  2.0f);
+		ASSERT_F32_EQUAL(a.arr[1], -4.6f);
+		ASSERT_F32_EQUAL(a.arr[2],  0.8f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_add(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_add(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,2.0f,3.0f);
+		ASSERT_VEC3_VALUES(vec3_add(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  2.0f,3.0f,4.0f);
+		ASSERT_VEC3_VALUES(vec3_add(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.9f,1.8f,0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) + Vec3( 0.0f, 0.0f, 0.0f),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) + Vec3( 1.0f, 2.0f, 3.0f),  1.0f,2.0f,3.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) + Vec3( 1.0f, 2.0f, 3.0f),  2.0f,3.0f,4.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) + Vec3(-2.0f, 4.0f,-0.3f), -0.9f,1.8f,0.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a += Vec3( 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(a,  0.0f,0.0f,0.0f);
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a += Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  1.0f,2.0f,3.0f);
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a += Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  2.0f,3.0f,4.0f);
+		a  = Vec3( 1.1f,-2.2f, 0.3f);
+		a += Vec3(-2.0f, 4.0f,-0.3f);
+		ASSERT_VEC3_VALUES(a, -0.9f,1.8f,0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_sub(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_sub(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(vec3_sub(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.0f,-1.0f,-2.0f);
+		ASSERT_VEC3_VALUES(vec3_sub(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)),  3.1f,-6.2f, 0.6f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) - Vec3( 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) - Vec3( 1.0f, 2.0f, 3.0f), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) - Vec3( 1.0f, 2.0f, 3.0f),  0.0f,-1.0f,-2.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) - Vec3(-2.0f, 4.0f,-0.3f),  3.1f,-6.2f, 0.6f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a -= Vec3( 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a -= Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a, -1.0f,-2.0f,-3.0f);
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a -= Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  0.0f,-1.0f,-2.0f);
+		a  = Vec3( 1.1f,-2.2f, 0.3f);
+		a -= Vec3(-2.0f, 4.0f,-0.3f);
+		ASSERT_VEC3_VALUES(a,  3.1f,-6.2f, 0.6f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_mul(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_mul(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_mul(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_mul(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -2.2f,-8.8f,-0.09f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) * Vec3( 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) * Vec3( 1.0f, 2.0f, 3.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) * Vec3( 1.0f, 2.0f, 3.0f),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) * Vec3(-2.0f, 4.0f,-0.3f), -2.2f,-8.8f,-0.09f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a *= Vec3( 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a *= Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a *= Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  1.0f, 2.0f, 3.0f);
+		a  = Vec3( 1.1f,-2.2f, 0.3f);
+		a *= Vec3(-2.0f, 4.0f,-0.3f);
+		ASSERT_VEC3_VALUES(a, -2.2f,-8.8f,-0.09f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(0.0f, 0.0f, 0.0f),  0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(0.0f, 0.0f, 0.0f),  1.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(1.0f, 1.0f, 1.0f),  2.0f),  2.0f, 2.0f, 2.0f);
+		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(1.1f,-2.2f, 0.3f), -2.0f), -2.2f, 4.4f,-0.6f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) *  0.0f,  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) *  1.0f,  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) *  2.0f,  2.0f, 2.0f, 2.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) * -2.0f, -2.2f, 4.4f,-0.6f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a *= 0.0f;
+		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a *= 1.0f;
+		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a *= 2.0f;
+		ASSERT_VEC3_VALUES(a,  2.0f, 2.0f, 2.0f);
+		a  = Vec3( 1.1f,-2.2f, 0.3f);
+		a *= -2.0f;
+		ASSERT_VEC3_VALUES(a, -2.2f, 4.4f,-0.6f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_div(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_div(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_div(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.00f, 0.50f, 1.0f/3.0f);
+		ASSERT_VEC3_VALUES(vec3_div(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.55f,-0.55f,-1.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) / Vec3( 1.0f, 1.0f, 1.0f),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) / Vec3( 1.0f, 2.0f, 3.0f),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) / Vec3( 1.0f, 2.0f, 3.0f),  1.00f, 0.50f, 1.0f/3.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) / Vec3(-2.0f, 4.0f,-0.3f), -0.55f,-0.55f,-1.00f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a /= Vec3( 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(a,  1.00f, 1.00f, 1.00f);
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a /= Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  0.00f, 0.00f, 0.00f);
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a /= Vec3( 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(a,  1.00f, 0.50f, 1.0f/3.0f);
+		a  = Vec3( 1.1f,-2.2f, 0.3f);
+		a /= Vec3(-2.0f, 4.0f,-0.3f);
+		ASSERT_VEC3_VALUES(a, -0.55f,-0.55f,-1.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(1.0f, 1.0f, 1.0f),  1.0f),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(0.0f, 0.0f, 0.0f),  1.0f),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(1.0f, 1.0f, 1.0f),  2.0f),  0.50f, 0.50f, 0.50f);
+		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(1.1f,-2.2f, 0.3f), -2.0f), -0.55f, 1.10f,-0.15f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) /  1.0f,  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) /  1.0f,  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) /  2.0f,  0.50f, 0.50f, 0.50f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) / -2.0f, -0.55f, 1.10f,-0.15f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a /= 1.0f;
+		ASSERT_VEC3_VALUES(a,  1.00f, 1.00f, 1.00f);
+		a  = Vec3( 0.0f, 0.0f, 0.0f);
+		a /= 1.0f;
+		ASSERT_VEC3_VALUES(a,  0.00f, 0.00f, 0.00f);
+		a  = Vec3( 1.0f, 1.0f, 1.0f);
+		a /= 2.0f;
+		ASSERT_VEC3_VALUES(a,  0.50f, 0.50f, 0.50f);
+		a  = Vec3( 1.1f,-2.2f, 0.3f);
+		a /= -2.0f;
+		ASSERT_VEC3_VALUES(a, -0.55f, 1.10f,-0.15f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_negate(Vec3(0.0f, 0.0f, 0.0f)), -0.0f,-0.0f,-0.0f);
+		ASSERT_VEC3_VALUES(vec3_negate(Vec3(1.0f, 1.0f, 1.0f)), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_negate(Vec3(1.1f,-2.2f, 0.3f)), -1.1f, 2.2f,-0.3f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(-Vec3(0.0f, 0.0f, 0.0f), -0.0f,-0.0f,-0.0f);
+		ASSERT_VEC3_VALUES(-Vec3(1.0f, 1.0f, 1.0f), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(-Vec3(1.1f,-2.2f, 0.3f), -1.1f, 2.2f,-0.3f);
+#endif //#ifdef __cplusplus
+		
+		Assert(vec3_equal(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)));
+		Assert(vec3_equal(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(vec3_equal(Vec3(-1.1f, 2.2f, 0.3f), Vec3(-1.1f, 2.2f, 0.3f)));
+		Assert(!vec3_equal(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(!vec3_equal(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 2.0f, 2.0f, 2.0f)));
+		Assert(!vec3_equal(Vec3(-1.1f, 2.2f, 0.3f), Vec3( 1.1f,-2.2f,-0.3f)));
+		Assert(vec3_equal(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(vec3_equal(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 0.0f, 0.0f, 0.0f)));
+		
+#ifdef __cplusplus
+		Assert(Vec3( 0.0f, 0.0f, 0.0f) == Vec3( 0.0f, 0.0f, 0.0f));
+		Assert(Vec3( 1.0f, 1.0f, 1.0f) == Vec3( 1.0f, 1.0f, 1.0f));
+		Assert(Vec3(-1.1f, 2.2f, 0.3f) == Vec3(-1.1f, 2.2f, 0.3f));
+		Assert(!(Vec3( 0.0f, 0.0f, 0.0f) == Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(!(Vec3( 1.0f, 1.0f, 1.0f) == Vec3( 2.0f, 2.0f, 2.0f)));
+		Assert(!(Vec3(-1.1f, 2.2f, 0.3f) == Vec3( 1.1f,-2.2f,-0.3f)));
+		Assert(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)) == Vec3( 1.0f, 1.0f, 1.0f));
+		Assert(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)) == Vec3( 0.0f, 0.0f, 0.0f));
+#endif //#ifdef __cplusplus
+		
+		Assert(vec3_nequal(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(vec3_nequal(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 2.0f, 2.0f, 2.0f)));
+		Assert(vec3_nequal(Vec3(-1.1f, 2.2f, 0.3f), Vec3( 1.1f,-2.2f,-0.3f)));
+		Assert(!vec3_nequal(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)));
+		Assert(!vec3_nequal(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(!vec3_nequal(Vec3(-1.1f, 2.2f, 0.3f), Vec3(-1.1f, 2.2f, 0.3f)));
+		Assert(vec3_nequal(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 2.0f, 2.0f, 2.0f)));
+		Assert(vec3_nequal(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 1.0f, 1.0f, 1.0f)));
+		
+#ifdef __cplusplus
+		Assert(Vec3( 0.0f, 0.0f, 0.0f) != Vec3( 1.0f, 1.0f, 1.0f));
+		Assert(Vec3( 1.0f, 1.0f, 1.0f) != Vec3( 2.0f, 2.0f, 2.0f));
+		Assert(Vec3(-1.1f, 2.2f, 0.3f) != Vec3( 1.1f,-2.2f,-0.3f));
+		Assert(!(Vec3( 0.0f, 0.0f, 0.0f) != Vec3( 0.0f, 0.0f, 0.0f)));
+		Assert(!(Vec3( 1.0f, 1.0f, 1.0f) != Vec3( 1.0f, 1.0f, 1.0f)));
+		Assert(!(Vec3(-1.1f, 2.2f, 0.3f) != Vec3(-1.1f, 2.2f, 0.3f)));
+		Assert(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)) != Vec3( 2.0f, 2.0f, 2.0f));
+		Assert(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)) != Vec3( 1.0f, 1.0f, 1.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_abs(Vec3(-1.0f,-1.0f,-1.0f)), 1.0f,1.0f,1.0f);
+		ASSERT_VEC3_VALUES(vec3_abs(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_abs(Vec3( 1.0f, 1.0f, 1.0f)), 1.0f,1.0f,1.0f);
+		ASSERT_VEC3_VALUES(vec3_abs(Vec3( 1.1f,-2.2f,-0.3f)), 1.1f,2.2f,0.3f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).abs(), 1.0f,1.0f,1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).abs(), 0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 1.0f, 1.0f).abs(), 1.0f,1.0f,1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.1f,-2.2f,-0.3f).abs(), 1.1f,2.2f,0.3f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_dot(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),   0.0f);
+		ASSERT_F32_EQUAL(vec3_dot(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),   0.0f);
+		ASSERT_F32_EQUAL(vec3_dot(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),   6.0f);
+		ASSERT_F32_EQUAL(vec3_dot(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -11.09f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).dot(Vec3( 0.0f, 0.0f, 0.0f)),   0.0f);
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).dot(Vec3( 1.0f, 2.0f, 3.0f)),   0.0f);
+		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).dot(Vec3( 1.0f, 2.0f, 3.0f)),   6.0f);
+		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).dot(Vec3(-2.0f, 4.0f,-0.3f)), -11.09f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_cross(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_cross(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.00f, 0.00f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_cross(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.00f,-2.00f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_cross(Vec3(1.0f, 2.0f, 3.0f), Vec3( 1.0f, 1.0f, 1.0f)), -1.00f, 2.00f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_cross(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.54f,-0.27f, 0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).cross(Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).cross(Vec3( 1.0f, 2.0f, 3.0f)),  0.00f, 0.00f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f).cross(Vec3( 1.0f, 2.0f, 3.0f)),  1.00f,-2.00f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 2.0f, 3.0f).cross(Vec3( 1.0f, 1.0f, 1.0f)), -1.00f, 2.00f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f).cross(Vec3(-2.0f, 4.0f,-0.3f)), -0.54f,-0.27f, 0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_mag(Vec3(0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_mag(Vec3(1.0f, 1.0f, 1.0f)), DESHI_SQRTF( 3.00f));
+		ASSERT_F32_EQUAL(vec3_mag(Vec3(1.0f, 2.0f, 3.0f)), DESHI_SQRTF(14.00f));
+		ASSERT_F32_EQUAL(vec3_mag(Vec3(1.1f,-2.2f, 0.3f)), DESHI_SQRTF( 6.14f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).mag(), 0.0f);
+		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).mag(), DESHI_SQRTF( 3.00f));
+		ASSERT_F32_EQUAL(Vec3(1.0f, 2.0f, 3.0f).mag(), DESHI_SQRTF(14.00f));
+		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).mag(), DESHI_SQRTF( 6.14f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(1.0f, 1.0f, 1.0f)), 3.00f);
+		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(1.0f, 2.0f, 3.0f)), 14.00f);
+		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(1.1f,-2.2f, 0.3f)), 6.14f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).mag_sq(), 0.0f);
+		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).mag_sq(), 3.00f);
+		ASSERT_F32_EQUAL(Vec3(1.0f, 2.0f, 3.0f).mag_sq(), 14.00f);
+		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).mag_sq(), 6.14f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(1.0f, 1.0f, 1.0f)), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f));
+		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(1.0f, 2.0f, 3.0f)), 1.0f/DESHI_SQRTF(14.00f), 2.0f/DESHI_SQRTF(14.00f), 3.0f/DESHI_SQRTF(14.00f));
+		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(1.1f,-2.2f, 0.3f)), 1.1f/DESHI_SQRTF( 6.14f),-2.2f/DESHI_SQRTF( 6.14f), 0.3f/DESHI_SQRTF( 6.14f));
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).normalize(), 0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f).normalize(), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f));
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 2.0f, 3.0f).normalize(), 1.0f/DESHI_SQRTF(14.00f), 2.0f/DESHI_SQRTF(14.00f), 3.0f/DESHI_SQRTF(14.00f));
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f).normalize(), 1.1f/DESHI_SQRTF( 6.14f),-2.2f/DESHI_SQRTF( 6.14f), 0.3f/DESHI_SQRTF( 6.14f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_distance(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.00f);
+		ASSERT_F32_EQUAL(vec3_distance(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF(14.00f));
+		ASSERT_F32_EQUAL(vec3_distance(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF( 5.00f));
+		ASSERT_F32_EQUAL(vec3_distance(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), DESHI_SQRTF(48.41f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance(Vec3( 0.0f, 0.0f, 0.0f)), 0.00f);
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance(Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF(14.00f));
+		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).distance(Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF( 5.00f));
+		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).distance(Vec3(-2.0f, 4.0f,-0.3f)), DESHI_SQRTF(48.41f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.00f);
+		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 14.00f);
+		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  5.00f);
+		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), 48.41f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance_sq(Vec3( 0.0f, 0.0f, 0.0f)),  0.00f);
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance_sq(Vec3( 1.0f, 2.0f, 3.0f)), 14.00f);
+		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).distance_sq(Vec3( 1.0f, 2.0f, 3.0f)),  5.00f);
+		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).distance_sq(Vec3(-2.0f, 4.0f,-0.3f)), 48.41f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 0.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 0.0f, 5.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 0.0f, 0.0f, 5.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -11.09f/DESHI_SQRTF(20.09f));
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 1.0f, 1.0f)), 6.0f/DESHI_SQRTF(3.0f));
+		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3(-2.0f, 4.0f,-0.3f), Vec3( 1.1f,-2.2f, 0.3f)), -11.09f/DESHI_SQRTF(6.14f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3( 0.0f, 0.0f, 0.0f).projection_scalar(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3( 0.0f, 0.0f, 0.0f).projection_scalar(Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3( 2.0f, 2.0f, 2.0f).projection_scalar(Vec3( 5.0f, 0.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec3( 2.0f, 2.0f, 2.0f).projection_scalar(Vec3( 0.0f, 5.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec3( 2.0f, 2.0f, 2.0f).projection_scalar(Vec3( 0.0f, 0.0f, 5.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec3( 1.0f, 1.0f, 1.0f).projection_scalar(Vec3( 1.0f, 2.0f, 3.0f)), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(Vec3( 1.1f,-2.2f, 0.3f).projection_scalar(Vec3(-2.0f, 4.0f,-0.3f)), -11.09f/DESHI_SQRTF(20.09f));
+		ASSERT_F32_EQUAL(Vec3( 1.0f, 2.0f, 3.0f).projection_scalar(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3( 1.0f, 2.0f, 3.0f).projection_scalar(Vec3( 1.0f, 1.0f, 1.0f)), 6.0f/DESHI_SQRTF(3.0f));
+		ASSERT_F32_EQUAL(Vec3(-2.0f, 4.0f,-0.3f).projection_scalar(Vec3( 1.1f,-2.2f, 0.3f)), -11.09f/DESHI_SQRTF(6.14f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 0.0f, 0.0f)), 2.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 0.0f, 5.0f, 0.0f)), 0.0f, 2.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 0.0f, 0.0f, 5.0f)), 0.0f, 0.0f, 2.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)), 6.0f/14.0f, 12.0f/14.0f, 18.0f/14.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), 22.18f/20.09f, -44.36f/20.09f, 3.327f/20.09f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 1.0f, 1.0f)), 2.0f, 2.0f, 2.0f);
+		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3(-2.0f, 4.0f,-0.3f), Vec3( 1.1f,-2.2f, 0.3f)),-12.199f/6.14f, 24.398f/6.14f,-3.327f/6.14f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).projection_vector(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).projection_vector(Vec3( 1.0f, 2.0f, 3.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 2.0f, 2.0f, 2.0f).projection_vector(Vec3( 5.0f, 0.0f, 0.0f)), 2.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 2.0f, 2.0f, 2.0f).projection_vector(Vec3( 0.0f, 5.0f, 0.0f)), 0.0f, 2.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 2.0f, 2.0f, 2.0f).projection_vector(Vec3( 0.0f, 0.0f, 5.0f)), 0.0f, 0.0f, 2.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 1.0f, 1.0f).projection_vector(Vec3( 1.0f, 2.0f, 3.0f)), 6.0f/14.0f, 12.0f/14.0f, 18.0f/14.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.1f,-2.2f, 0.3f).projection_vector(Vec3(-2.0f, 4.0f,-0.3f)), 22.18f/20.09f, -44.36f/20.09f, 3.327f/20.09f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).projection_vector(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).projection_vector(Vec3( 1.0f, 1.0f, 1.0f)), 2.0f, 2.0f, 2.0f);
+		ASSERT_VEC3_VALUES(Vec3(-2.0f, 4.0f,-0.3f).projection_vector(Vec3( 1.1f,-2.2f, 0.3f)),-12.199f/6.14f, 24.398f/6.14f,-3.327f/6.14f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.50f, 1.00f, 1.50f);
+		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.00f, 1.50f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.45f, 0.90f, 0.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).midpoint(Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).midpoint(Vec3( 1.0f, 2.0f, 3.0f)),  0.50f, 1.00f, 1.50f);
+		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f).midpoint(Vec3( 1.0f, 2.0f, 3.0f)),  1.00f, 1.50f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f).midpoint(Vec3(-2.0f, 4.0f,-0.3f)), -0.45f, 0.90f, 0.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(5.0f, 5.0f, 5.0f), Vec3( 3.0f, 3.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(0.0f, 1.0f, 0.0f), Vec3( 1.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), 3.0872f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).radians_between(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).radians_between(Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3(5.0f, 5.0f, 5.0f).radians_between(Vec3( 3.0f, 3.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3(0.0f, 1.0f, 0.0f).radians_between(Vec3( 1.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).radians_between(Vec3(-2.0f, 4.0f,-0.3f)), 3.0872f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.55f,-1.55f,-1.55f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.50f,-1.50f,-1.50f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.45f,-1.45f,-1.45f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.10f,-1.10f,-1.10f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.00f,-1.00f,-1.00f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-0.90f,-0.90f,-0.90f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-0.55f,-0.55f,-0.55f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-0.50f,-0.50f,-0.50f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-0.45f,-0.45f,-0.45f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-0.10f,-0.10f,-0.10f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 0.00f, 0.00f, 0.00f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 0.10f, 0.10f, 0.10f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 0.45f, 0.45f, 0.45f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 0.50f, 0.50f, 0.50f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 0.55f, 0.55f, 0.55f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 0.90f, 0.90f, 0.90f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.00f, 1.00f, 1.00f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.10f, 1.10f, 1.10f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.45f, 1.45f, 1.45f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.50f, 1.50f, 1.50f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.55f, 1.55f, 1.55f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.90f, 1.90f, 1.90f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(-2.00f,-2.00f,-2.00f).floor(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.90f,-1.90f,-1.90f).floor(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.55f,-1.55f,-1.55f).floor(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.50f,-1.50f,-1.50f).floor(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.45f,-1.45f,-1.45f).floor(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.10f,-1.10f,-1.10f).floor(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.00f,-1.00f,-1.00f).floor(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.90f,-0.90f,-0.90f).floor(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.55f,-0.55f,-0.55f).floor(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.50f,-0.50f,-0.50f).floor(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.45f,-0.45f,-0.45f).floor(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.10f,-0.10f,-0.10f).floor(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.00f, 0.00f, 0.00f).floor(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.10f, 0.10f, 0.10f).floor(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.45f, 0.45f, 0.45f).floor(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.50f, 0.50f, 0.50f).floor(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.55f, 0.55f, 0.55f).floor(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.90f, 0.90f, 0.90f).floor(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.00f, 1.00f, 1.00f).floor(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.10f, 1.10f, 1.10f).floor(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.45f, 1.45f, 1.45f).floor(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.50f, 1.50f, 1.50f).floor(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.55f, 1.55f, 1.55f).floor(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.90f, 1.90f, 1.90f).floor(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 2.00f, 2.00f, 2.00f).floor(),  2.00f, 2.00f, 2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.90f,-1.90f,-1.90f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.55f,-1.55f,-1.55f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.50f,-1.50f,-1.50f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.45f,-1.45f,-1.45f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.10f,-1.10f,-1.10f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.00f,-1.00f,-1.00f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-0.90f,-0.90f,-0.90f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-0.55f,-0.55f,-0.55f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-0.50f,-0.50f,-0.50f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-0.45f,-0.45f,-0.45f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-0.10f,-0.10f,-0.10f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 0.00f, 0.00f, 0.00f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 0.10f, 0.10f, 0.10f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 0.45f, 0.45f, 0.45f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 0.50f, 0.50f, 0.50f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 0.55f, 0.55f, 0.55f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 0.90f, 0.90f, 0.90f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.00f, 1.00f, 1.00f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.10f, 1.10f, 1.10f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.45f, 1.45f, 1.45f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.50f, 1.50f, 1.50f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.55f, 1.55f, 1.55f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(-2.00f,-2.00f,-2.00f).ceil(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.90f,-1.90f,-1.90f).ceil(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.55f,-1.55f,-1.55f).ceil(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.50f,-1.50f,-1.50f).ceil(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.45f,-1.45f,-1.45f).ceil(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.10f,-1.10f,-1.10f).ceil(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.00f,-1.00f,-1.00f).ceil(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.90f,-0.90f,-0.90f).ceil(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.55f,-0.55f,-0.55f).ceil(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.50f,-0.50f,-0.50f).ceil(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.45f,-0.45f,-0.45f).ceil(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.10f,-0.10f,-0.10f).ceil(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.00f, 0.00f, 0.00f).ceil(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.10f, 0.10f, 0.10f).ceil(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.45f, 0.45f, 0.45f).ceil(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.50f, 0.50f, 0.50f).ceil(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.55f, 0.55f, 0.55f).ceil(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.90f, 0.90f, 0.90f).ceil(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.00f, 1.00f, 1.00f).ceil(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.10f, 1.10f, 1.10f).ceil(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.45f, 1.45f, 1.45f).ceil(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.50f, 1.50f, 1.50f).ceil(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.55f, 1.55f, 1.55f).ceil(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.90f, 1.90f, 1.90f).ceil(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 2.00f, 2.00f, 2.00f).ceil(),  2.00f, 2.00f, 2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.55f,-1.55f,-1.55f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.50f,-1.50f,-1.50f)), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.45f,-1.45f,-1.45f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.10f,-1.10f,-1.10f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.00f,-1.00f,-1.00f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-0.90f,-0.90f,-0.90f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-0.55f,-0.55f,-0.55f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-0.50f,-0.50f,-0.50f)), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-0.45f,-0.45f,-0.45f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3(-0.10f,-0.10f,-0.10f)), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 0.00f, 0.00f, 0.00f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 0.10f, 0.10f, 0.10f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 0.45f, 0.45f, 0.45f)),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 0.50f, 0.50f, 0.50f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 0.55f, 0.55f, 0.55f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 0.90f, 0.90f, 0.90f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.00f, 1.00f, 1.00f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.10f, 1.10f, 1.10f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.45f, 1.45f, 1.45f)),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.50f, 1.50f, 1.50f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.55f, 1.55f, 1.55f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(vec3_round(Vec3( 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3(-2.00f,-2.00f,-2.00f).round(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.90f,-1.90f,-1.90f).round(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.55f,-1.55f,-1.55f).round(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.50f,-1.50f,-1.50f).round(), -2.00f,-2.00f,-2.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.45f,-1.45f,-1.45f).round(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.10f,-1.10f,-1.10f).round(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-1.00f,-1.00f,-1.00f).round(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.90f,-0.90f,-0.90f).round(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.55f,-0.55f,-0.55f).round(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.50f,-0.50f,-0.50f).round(), -1.00f,-1.00f,-1.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.45f,-0.45f,-0.45f).round(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3(-0.10f,-0.10f,-0.10f).round(), -0.00f,-0.00f,-0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.00f, 0.00f, 0.00f).round(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.10f, 0.10f, 0.10f).round(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.45f, 0.45f, 0.45f).round(),  0.00f, 0.00f, 0.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.50f, 0.50f, 0.50f).round(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.55f, 0.55f, 0.55f).round(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 0.90f, 0.90f, 0.90f).round(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.00f, 1.00f, 1.00f).round(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.10f, 1.10f, 1.10f).round(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.45f, 1.45f, 1.45f).round(),  1.00f, 1.00f, 1.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.50f, 1.50f, 1.50f).round(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.55f, 1.55f, 1.55f).round(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 1.90f, 1.90f, 1.90f).round(),  2.00f, 2.00f, 2.00f);
+		ASSERT_VEC3_VALUES(Vec3( 2.00f, 2.00f, 2.00f).round(),  2.00f, 2.00f, 2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_min(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3(-1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).min(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).min(Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).min(Vec3( 2.0f, 1.0f, 0.0f)),  1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-2.0f,-3.0f).min(Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).min(Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).min(Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_max(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3(-1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).max(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).max(Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).max(Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-2.0f,-3.0f).max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).max(Vec3( 1.0f, 2.0f, 0.0f)),  1.0f, 2.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).max(Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).max(Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f, 5.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 5.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 5.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 5.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  5.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f,-5.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-5.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f,-5.0f, 0.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-5.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3(-5.0f, 0.0f, 0.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -5.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 1.2f, 2.3f, 1.2f), Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 1.2f, 2.3f, 2.3f), Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.3f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 1.2f, 2.3f, 5.3f), Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 5.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3(-1.5f, 1.0f,-0.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3(-1.5f, 1.0f,-1.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f);
+		ASSERT_VEC3_VALUES(vec3_clamp(Vec3(-1.5f, 1.0f,-6.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 5.0f).clamp(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 5.0f, 0.0f).clamp(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 5.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 5.0f, 0.0f, 0.0f).clamp(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  5.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-5.0f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-5.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-5.0f, 0.0f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-5.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-5.0f, 0.0f, 0.0f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -5.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.2f, 2.3f, 1.2f).clamp(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.2f, 2.3f, 2.3f).clamp(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.3f);
+		ASSERT_VEC3_VALUES(Vec3( 1.2f, 2.3f, 5.3f).clamp(Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 5.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.5f, 1.0f,-0.5f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.5f, 1.0f,-1.5f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f);
+		ASSERT_VEC3_VALUES(Vec3(-1.5f, 1.0f,-6.5f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 5.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 5.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 5.0f, 1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 5.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  5.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f,-5.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-5.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f,-5.0f, 0.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.0f,-5.0f,-1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3(-5.0f, 0.0f, 0.0f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -5.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 1.2f, 2.3f, 1.2f), Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 1.2f, 2.3f, 2.3f), Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.3f);
+		ASSERT_VEC3_VALUES(clamp(Vec3( 1.2f, 2.3f, 5.3f), Vec3( 2.0f, 2.0f, 2.0f), Vec3( 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 5.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3(-1.5f, 1.0f,-0.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(clamp(Vec3(-1.5f, 1.0f,-1.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f);
+		ASSERT_VEC3_VALUES(clamp(Vec3(-1.5f, 1.0f,-6.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3(-1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp_min(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_min(Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_min(Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-2.0f,-3.0f).clamp_min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).clamp_min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_min(Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_min(Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(clamp_min(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3(-1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3(-1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp_max(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_max(Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_max(Vec3( 2.0f, 1.0f, 0.0f)),  1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-2.0f,-3.0f).clamp_max(Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).clamp_max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_max(Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_max(Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(clamp_max(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3(-1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 0.0f, 0.0f, 0.0f), 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 1.0f, 2.0f, 3.0f), 1.0f,99.0f), 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 1.0f, 2.0f, 3.0f), 4.0f,99.0f), 4.0f/DESHI_SQRTF(14.0f), 8.0f/DESHI_SQRTF(14.0f), 12.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 1.0f, 2.0f, 3.0f), 0.0f, 2.0f), 2.0f/DESHI_SQRTF(14.0f), 4.0f/DESHI_SQRTF(14.0f), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 1.0f, 2.0f, 3.0f), 0.0f, 4.0f), 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3(-1.0f,-2.0f,-3.0f), 1.0f,99.0f), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 1.0f,-2.0f,-3.0f), 4.0f,99.0f), 4.0f/DESHI_SQRTF(14.0f),-8.0f/DESHI_SQRTF(14.0f),-12.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3(-1.0f, 2.0f, 3.0f), 0.0f, 2.0f), -2.0f/DESHI_SQRTF(14.0f), 4.0f/DESHI_SQRTF(14.0f), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3(-1.0f, 2.0f, 3.0f), 0.0f, 4.0f), -1.0f, 2.0f, 3.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp_mag(0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_mag(1.0f,99.0f), 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_mag(4.0f,99.0f), 4.0f/DESHI_SQRTF(14.0f), 8.0f/DESHI_SQRTF(14.0f), 12.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_mag(0.0f, 2.0f), 2.0f/DESHI_SQRTF(14.0f), 4.0f/DESHI_SQRTF(14.0f), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_mag(0.0f, 4.0f), 1.0f, 2.0f, 3.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-2.0f,-3.0f).clamp_mag(1.0f,99.0f), -1.0f,-2.0f,-3.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).clamp_mag(4.0f,99.0f), 4.0f/DESHI_SQRTF(14.0f),-8.0f/DESHI_SQRTF(14.0f),-12.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_mag(0.0f, 2.0f), -2.0f/DESHI_SQRTF(14.0f), 4.0f/DESHI_SQRTF(14.0f), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_mag(0.0f, 4.0f), -1.0f, 2.0f, 3.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.9f, 0.9f, 0.9f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)), -0.5f,-0.5f,-0.5f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.9f, 0.9f, 0.9f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 5.0f, 5.0f, 5.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(Vec3( 0.9f, 0.9f, 0.9f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 1.0f, 1.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)), -0.5f,-0.5f,-0.5f);
+		ASSERT_VEC3_VALUES(Vec3( 0.9f, 0.9f, 0.9f).nudge(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 1.0f, 1.0f).nudge(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(Vec3( 5.0f, 5.0f, 5.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 0.9f, 0.9f, 0.9f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)), -0.5f,-0.5f,-0.5f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 0.9f, 0.9f, 0.9f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(nudge(Vec3( 5.0f, 5.0f, 5.0f), Vec3( 1.0f, 1.0f, 0.0f), Vec3( 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.0f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.5f, 0.5f, 0.5f);
+		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 1.0f, 0.0f)), 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3(-1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f,-1.0f, 0.0f)), 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 1.5f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 1.5f, 0.0f)), 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_zero(), 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).x_zero(), 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).x_zero(), 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).x_zero(), 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_zero(), 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_zero(), 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_zero(), 0.0f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3(-1.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 1.5f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f, 0.0f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_zero(),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).y_zero(),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).y_zero(), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).y_zero(),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).y_zero(),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_zero(),  0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_zero(),  1.5f, 0.0f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 1.0f, 0.0f)),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3(-1.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f,-1.0f, 0.0f)),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 1.5f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 1.5f, 0.0f)),  0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_zero(),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_zero(),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).z_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).z_zero(), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).z_zero(),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).z_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).z_zero(),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_zero(),  0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_zero(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_zero(),  1.5f, 1.5f, 0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 1.0f, 0.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 0.0f, 1.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3(-1.0f, 0.0f, 0.0f)), -1.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f,-1.0f, 0.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 0.0f,-1.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 1.5f, 0.0f, 0.0f)),  1.5f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 1.5f, 0.0f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f,0.0f,0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_only(),  1.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).x_only(), -1.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).x_only(),  1.5f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_only(),  0.0f,0.0f,0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_only(),  1.5f,0.0f,0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 1.0f, 0.0f)), 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3(-1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f,-1.0f, 0.0f)), 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 1.5f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 1.5f, 0.0f)), 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_only(), 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).y_only(), 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_only(), 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_only(), 0.0f, 1.5f, 0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 1.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3(-1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f,-1.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 1.5f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 1.5f, 0.0f)), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 1.5f, 1.5f, 1.5f)), 0.0f, 0.0f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).z_only(), 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).z_only(), 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_only(), 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_only(), 0.0f, 0.0f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 1.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 1.0f, 0.0f)),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3(-1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f,-1.0f, 0.0f)),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 1.5f, 0.0f, 0.0f)), -1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 1.5f, 0.0f)),  0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 1.5f, 1.5f, 1.5f)), -1.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_negate(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_negate(), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_negate(),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).x_negate(),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).x_negate(),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).x_negate(),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).x_negate(),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).x_negate(), -1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_negate(),  0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_negate(),  0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_negate(), -1.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 1.0f, 0.0f)),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3(-1.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f,-1.0f, 0.0f)),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 1.5f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 1.5f, 0.0f)),  0.0f,-1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f,-1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_negate(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_negate(),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_negate(),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).y_negate(),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).y_negate(), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).y_negate(),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).y_negate(),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).y_negate(),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_negate(),  0.0f,-1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_negate(),  0.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_negate(),  1.5f,-1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 1.0f, 0.0f)),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3(-1.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f,-1.0f, 0.0f)),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 1.5f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 1.5f, 0.0f)),  0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f,-1.5f);
+		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f,-1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_negate(),  0.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_negate(),  1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_negate(),  0.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).z_negate(),  0.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).z_negate(), -1.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).z_negate(),  0.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).z_negate(),  0.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).z_negate(),  1.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_negate(),  0.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_negate(),  0.0f, 0.0f,-1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_negate(),  1.5f, 1.5f,-1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 1.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 1.0f, 0.0f), 10.0f), 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 0.0f, 1.0f), 10.0f), 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3(-1.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f,-1.0f, 0.0f), 10.0f), 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 0.0f,-1.0f), 10.0f), 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 1.5f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 1.5f, 0.0f), 10.0f), 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 1.5f, 1.5f, 1.5f), 10.0f), 10.0f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_set(10.0f), 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).x_set(10.0f), 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).x_set(10.0f), 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).x_set(10.0f), 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_set(10.0f), 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_set(10.0f), 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_set(10.0f), 10.0f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 10.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3(-1.0f, 0.0f, 0.0f), 10.0f), -1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 10.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 1.5f, 0.0f, 0.0f), 10.0f),  1.5f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 10.0f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_set(10.0f),  1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).y_set(10.0f),  0.0f, 10.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).y_set(10.0f), -1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).y_set(10.0f),  0.0f, 10.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).y_set(10.0f),  1.5f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_set(10.0f),  0.0f, 10.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_set(10.0f),  1.5f, 10.0f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3(-1.0f, 0.0f, 0.0f), 10.0f), -1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f,-1.0f, 0.0f), 10.0f),  0.0f,-1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 1.5f, 0.0f, 0.0f), 10.0f),  1.5f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 1.5f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 10.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_set(10.0f),  1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_set(10.0f),  0.0f, 1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).z_set(10.0f), -1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).z_set(10.0f),  0.0f,-1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).z_set(10.0f),  1.5f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_set(10.0f),  0.0f, 1.5f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_set(10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_set(10.0f),  1.5f, 1.5f, 10.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 1.0f, 0.0f, 0.0f), 10.0f), 11.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 1.0f, 0.0f), 10.0f), 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 0.0f, 1.0f), 10.0f), 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3(-1.0f, 0.0f, 0.0f), 10.0f),  9.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f,-1.0f, 0.0f), 10.0f), 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 0.0f,-1.0f), 10.0f), 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 1.5f, 0.0f, 0.0f), 10.0f), 11.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 1.5f, 0.0f), 10.0f), 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 1.5f, 1.5f, 1.5f), 10.0f), 11.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_add(10.0f), 11.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_add(10.0f), 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).x_add(10.0f), 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).x_add(10.0f),  9.0f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).x_add(10.0f), 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).x_add(10.0f), 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).x_add(10.0f), 11.5f, 0.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_add(10.0f), 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_add(10.0f), 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_add(10.0f), 11.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 11.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 10.0f, 1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3(-1.0f, 0.0f, 0.0f), 10.0f), -1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f,-1.0f, 0.0f), 10.0f),  0.0f,  9.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 10.0f,-1.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 1.5f, 0.0f, 0.0f), 10.0f),  1.5f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 11.5f, 0.0f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 1.5f);
+		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 11.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_add(10.0f),  1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_add(10.0f),  0.0f, 11.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).y_add(10.0f),  0.0f, 10.0f, 1.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).y_add(10.0f), -1.0f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).y_add(10.0f),  0.0f,  9.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).y_add(10.0f),  0.0f, 10.0f,-1.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).y_add(10.0f),  1.5f, 10.0f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_add(10.0f),  0.0f, 11.5f, 0.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_add(10.0f),  0.0f, 10.0f, 1.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_add(10.0f),  1.5f, 11.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 0.0f, 11.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3(-1.0f, 0.0f, 0.0f), 10.0f), -1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f,-1.0f, 0.0f), 10.0f),  0.0f,-1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 0.0f,  9.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 1.5f, 0.0f, 0.0f), 10.0f),  1.5f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 1.5f, 10.0f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 11.5f);
+		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 11.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_add(10.0f),  1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_add(10.0f),  0.0f, 1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.0f).z_add(10.0f),  0.0f, 0.0f, 11.0f);
+		ASSERT_VEC3_VALUES(Vec3(-1.0f, 0.0f, 0.0f).z_add(10.0f), -1.0f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f,-1.0f, 0.0f).z_add(10.0f),  0.0f,-1.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f,-1.0f).z_add(10.0f),  0.0f, 0.0f,  9.0f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 0.0f, 0.0f).z_add(10.0f),  1.5f, 0.0f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_add(10.0f),  0.0f, 1.5f, 10.0f);
+		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_add(10.0f),  0.0f, 0.0f, 11.5f);
+		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_add(10.0f),  1.5f, 1.5f, 11.5f);
+#endif //#ifdef __cplusplus
+		
+#undef ASSERT_VEC3_VALUES
 	}
 	
 	
 	//// vec3i ////
 	{
+		vec3i a;
+		vec3i b;
+#define ASSERT_VEC3I_VALUES(lhs,x_,y_,z_) a = (lhs);ASSERT_S32_EQUAL(a.x,(x_));ASSERT_S32_EQUAL(a.y,(y_));ASSERT_S32_EQUAL(a.z,(z_))
 		
+		
+		a = vec3i{0,0,0};
+		b = vec3i{0,0,0};
+		ASSERT_S32_EQUAL(a.arr[0], 0);
+		ASSERT_S32_EQUAL(a.arr[0], a.x);
+		ASSERT_S32_EQUAL(a.arr[0], a.r);
+		ASSERT_S32_EQUAL(a.arr[0], a.xy.arr[0]);
+		ASSERT_S32_EQUAL(a.arr[0], a._x0);
+		ASSERT_S32_EQUAL(a.arr[1], 0);
+		ASSERT_S32_EQUAL(a.arr[1], a.y);
+		ASSERT_S32_EQUAL(a.arr[1], a.g);
+		ASSERT_S32_EQUAL(a.arr[1], a.xy.arr[1]);
+		ASSERT_S32_EQUAL(a.arr[1], a.yz.arr[0]);
+		ASSERT_S32_EQUAL(a.arr[2], 0);
+		ASSERT_S32_EQUAL(a.arr[2], a.z);
+		ASSERT_S32_EQUAL(a.arr[2], a.b);
+		ASSERT_S32_EQUAL(a.arr[2], a._z0);
+		ASSERT_S32_EQUAL(a.arr[2], a.yz.arr[1]);
+		ASSERT_S32_EQUAL(b.arr[0], 0);
+		ASSERT_S32_EQUAL(b.arr[0], b.x);
+		ASSERT_S32_EQUAL(b.arr[0], b.r);
+		ASSERT_S32_EQUAL(b.arr[0], b.xy.arr[0]);
+		ASSERT_S32_EQUAL(b.arr[0], b._x0);
+		ASSERT_S32_EQUAL(b.arr[1], 0);
+		ASSERT_S32_EQUAL(b.arr[1], b.y);
+		ASSERT_S32_EQUAL(b.arr[1], b.g);
+		ASSERT_S32_EQUAL(b.arr[1], b.xy.arr[1]);
+		ASSERT_S32_EQUAL(b.arr[1], b.yz.arr[0]);
+		ASSERT_S32_EQUAL(b.arr[2], 0);
+		ASSERT_S32_EQUAL(b.arr[2], b.z);
+		ASSERT_S32_EQUAL(b.arr[2], b.b);
+		ASSERT_S32_EQUAL(b.arr[2], b._z0);
+		ASSERT_S32_EQUAL(b.arr[2], b.yz.arr[1]);
+		
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-2,-3), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i(-0,-0,-0), -0,-0,-0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3),  1, 2, 3);
+		
+		ASSERT_VEC3I_VALUES(vec3i_ZERO(),     0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_ONE(),      1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_LEFT(),    -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_RIGHT(),    1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_DOWN(),     0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_UP(),       0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_BACKWARD(), 0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_FORWARD(),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_UNITX(),    1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_UNITY(),    0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_UNITZ(),    0, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(vec3i::ZERO,     0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i::ONE,      1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i::LEFT,    -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i::RIGHT,    1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i::DOWN,     0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i::UP,       0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i::BACKWARD, 0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i::FORWARD,  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i::UNITX,    1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i::UNITY,    0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i::UNITZ,    0, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		a = Vec3i(1,-2,3);
+		ASSERT_S32_EQUAL(vec3i_index(a, 0),  1);
+		ASSERT_S32_EQUAL(vec3i_index(a, 1), -2);
+		ASSERT_S32_EQUAL(vec3i_index(a, 2),  3);
+		
+#ifdef __cplusplus
+		a = Vec3i(1,-2,3);
+		ASSERT_S32_EQUAL(a[0],  1);
+		ASSERT_S32_EQUAL(a[1], -2);
+		ASSERT_S32_EQUAL(a[2],  3);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a[0] =  2;
+		a[1] = -4;
+		a[2] = -3;
+		ASSERT_S32_EQUAL(a.arr[0],  2);
+		ASSERT_S32_EQUAL(a.arr[1], -4);
+		ASSERT_S32_EQUAL(a.arr[2], -3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  2, 3, 4);
+		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -1, 2, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) + Vec3i( 0, 0, 0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) + Vec3i( 1, 2, 3),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) + Vec3i( 1, 2, 3),  2, 3, 4);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) + Vec3i(-2, 4,-3), -1, 2, 0);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3i( 0, 0, 0);
+		a += Vec3i( 0, 0, 0);
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 0, 0, 0);
+		a += Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  1, 2, 3);
+		a  = Vec3i( 1, 1, 1);
+		a += Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  2, 3, 4);
+		a  = Vec3i( 1,-2, 3);
+		a += Vec3i(-2, 4,-3);
+		ASSERT_VEC3I_VALUES(a, -1, 2, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  0,-1,-2);
+		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)),  3,-6, 6);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) - Vec3i( 0, 0, 0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) - Vec3i( 1, 2, 3), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) - Vec3i( 1, 2, 3),  0,-1,-2);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) - Vec3i(-2, 4,-3),  3,-6, 6);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3i( 0, 0, 0);
+		a -= Vec3i( 0, 0, 0);
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 0, 0, 0);
+		a -= Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a, -1,-2,-3);
+		a  = Vec3i( 1, 1, 1);
+		a -= Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  0,-1,-2);
+		a  = Vec3i( 1,-2, 3);
+		a -= Vec3i(-2, 4,-3);
+		ASSERT_VEC3I_VALUES(a,  3,-6, 6);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -2,-8,-9);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) * Vec3i( 0, 0, 0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) * Vec3i( 1, 2, 3),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) * Vec3i( 1, 2, 3),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) * Vec3i(-2, 4,-3), -2,-8,-9);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3i( 0, 0, 0);
+		a *= Vec3i( 0, 0, 0);
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 0, 0, 0);
+		a *= Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 1, 1, 1);
+		a *= Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  1, 2, 3);
+		a  = Vec3i( 1,-2, 3);
+		a *= Vec3i(-2, 4,-3);
+		ASSERT_VEC3I_VALUES(a, -2,-8,-9);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(0, 0, 0),  0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(0, 0, 0),  1),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(1, 1, 1),  2),  2, 2, 2);
+		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(1,-2, 3), -2), -2, 4,-6);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) *  0,  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) *  1,  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) *  2,  2, 2, 2);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) * -2, -2, 4,-6);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3i( 0, 0, 0);
+		a *= 0;
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 0, 0, 0);
+		a *= 1;
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 1, 1, 1);
+		a *= 2;
+		ASSERT_VEC3I_VALUES(a,  2, 2, 2);
+		a  = Vec3i( 1,-2, 3);
+		a *= -2;
+		ASSERT_VEC3I_VALUES(a, -2, 4,-6);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -0,-0,-1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) / Vec3i( 1, 1, 1),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) / Vec3i( 1, 2, 3),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) / Vec3i( 1, 2, 3),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) / Vec3i(-2, 4,-3), -0,-0,-1);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3i( 1, 1, 1);
+		a /= Vec3i( 1, 1, 1);
+		ASSERT_VEC3I_VALUES(a,  1, 1, 1);
+		a  = Vec3i( 0, 0, 0);
+		a /= Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 1, 1, 1);
+		a /= Vec3i( 1, 2, 3);
+		ASSERT_VEC3I_VALUES(a,  1, 0, 0);
+		a  = Vec3i( 1,-2, 3);
+		a /= Vec3i(-2, 4,-3);
+		ASSERT_VEC3I_VALUES(a, -0,-0,-1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(1, 1, 1),  1),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(0, 0, 0),  1),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(1, 1, 1),  2),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(1,-2, 3), -2), -0, 1,-1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) /  1,  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) /  1,  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) /  2,  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) / -2, -0, 1,-1);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec3i( 1, 1, 1);
+		a /= 1;
+		ASSERT_VEC3I_VALUES(a,  1, 1, 1);
+		a  = Vec3i( 0, 0, 0);
+		a /= 1;
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 1, 1, 1);
+		a /= 2;
+		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
+		a  = Vec3i( 1,-2, 3);
+		a /= -2;
+		ASSERT_VEC3I_VALUES(a, -0, 1, -1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_negate(Vec3i(0, 0, 0)), -0,-0,-0);
+		ASSERT_VEC3I_VALUES(vec3i_negate(Vec3i(1, 1, 1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(vec3i_negate(Vec3i(1,-2, 3)), -1, 2,-3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(-Vec3i(0, 0, 0), -0,-0,-0);
+		ASSERT_VEC3I_VALUES(-Vec3i(1, 1, 1), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(-Vec3i(1,-2, 3), -1, 2,-3);
+#endif //#ifdef __cplusplus
+		
+		Assert(vec3i_equal(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)));
+		Assert(vec3i_equal(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)));
+		Assert(vec3i_equal(Vec3i(-1, 2, 3), Vec3i(-1, 2, 3)));
+		Assert(!vec3i_equal(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)));
+		Assert(!vec3i_equal(Vec3i( 1, 1, 1), Vec3i( 2, 2, 2)));
+		Assert(!vec3i_equal(Vec3i(-1, 2, 3), Vec3i( 1,-2,-3)));
+		Assert(vec3i_equal(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)), Vec3i( 1, 1, 1)));
+		Assert(vec3i_equal(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), Vec3i( 0, 0, 0)));
+		
+#ifdef __cplusplus
+		Assert(Vec3i( 0, 0, 0) == Vec3i( 0, 0, 0));
+		Assert(Vec3i( 1, 1, 1) == Vec3i( 1, 1, 1));
+		Assert(Vec3i(-1, 2, 3) == Vec3i(-1, 2, 3));
+		Assert(!(Vec3i( 0, 0, 0) == Vec3i( 1, 1, 1)));
+		Assert(!(Vec3i( 1, 1, 1) == Vec3i( 2, 2, 2)));
+		Assert(!(Vec3i(-1, 2, 3) == Vec3i( 1,-2,-3)));
+		Assert(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)) == Vec3i( 1, 1, 1));
+		Assert(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)) == Vec3i( 0, 0, 0));
+#endif //#ifdef __cplusplus
+		
+		Assert(vec3i_nequal(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)));
+		Assert(vec3i_nequal(Vec3i( 1, 1, 1), Vec3i( 2, 2, 2)));
+		Assert(vec3i_nequal(Vec3i(-1, 2, 3), Vec3i( 1,-2,-3)));
+		Assert(!vec3i_nequal(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)));
+		Assert(!vec3i_nequal(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)));
+		Assert(!vec3i_nequal(Vec3i(-1, 2, 3), Vec3i(-1, 2, 3)));
+		Assert(vec3i_nequal(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)), Vec3i( 2, 2, 2)));
+		Assert(vec3i_nequal(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), Vec3i( 1, 1, 1)));
+		
+#ifdef __cplusplus
+		Assert(Vec3i( 0, 0, 0) != Vec3i( 1, 1, 1));
+		Assert(Vec3i( 1, 1, 1) != Vec3i( 2, 2, 2));
+		Assert(Vec3i(-1, 2, 3) != Vec3i( 1,-2,-3));
+		Assert(!(Vec3i( 0, 0, 0) != Vec3i( 0, 0, 0)));
+		Assert(!(Vec3i( 1, 1, 1) != Vec3i( 1, 1, 1)));
+		Assert(!(Vec3i(-1, 2, 3) != Vec3i(-1, 2,-3)));
+		Assert(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)) != Vec3i( 2, 2, 2));
+		Assert(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)) != Vec3i( 1, 1, 1));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i(-1,-1,-1)), 1,1,1);
+		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i( 0, 0, 0)), 0,0,0);
+		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i( 1, 1, 1)), 1,1,1);
+		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i( 1,-2,-3)), 1,2,3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).abs(), 1,1,1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).abs(), 0,0,0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).abs(), 1,1,1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).abs(), 1,2,3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),   0.0f);
+		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),   0.0f);
+		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),   6.0f);
+		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -19.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).dot(Vec3i( 0, 0, 0)),   0.0f);
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).dot(Vec3i( 1, 2, 1)),   0.0f);
+		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).dot(Vec3i( 1, 2, 3)),   6.0f);
+		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).dot(Vec3i(-2, 4,-3)), -19.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(0, 0, 0), Vec3i(0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(0, 0, 0), Vec3i(1, 2, 3)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(1, 1, 1), Vec3i(1, 2, 3)),  1,-2, 1);
+		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(1, 2, 3), Vec3i(1, 1, 1)), -1, 2,-1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).cross(Vec3i(0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).cross(Vec3i(1, 2, 3)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1).cross(Vec3i(1, 2, 3)),  1,-2, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 2, 3).cross(Vec3i(1, 1, 1)), -1, 2,-1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(1, 1, 1)), DESHI_SQRTF( 3.0f));
+		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(1, 2, 3)), DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(1,-2, 3)), DESHI_SQRTF(14.0f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).mag(), 0.00f);
+		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).mag(), DESHI_SQRTF( 3.0f));
+		ASSERT_F32_EQUAL(Vec3i(1, 2, 3).mag(), DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).mag(), DESHI_SQRTF(14.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(0, 0, 0)),  0.0f);
+		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(1, 1, 1)),  3.0f);
+		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(1, 2, 3)), 14.0f);
+		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(1,-2, 3)), 14.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).mag_sq(),  0.0f);
+		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).mag_sq(),  3.0f);
+		ASSERT_F32_EQUAL(Vec3i(1, 2, 3).mag_sq(), 14.0f);
+		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).mag_sq(), 14.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(0, 0, 0)), 0,0,0);
+		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1, 0, 0)), 1,0,0);
+		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1, 1, 1)), 0,0,0);
+		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1, 2, 3)), 0,0,0);
+		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1,-2, 3)), 0,0,0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).normalize(), 0,0,0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1).normalize(), 0,0,0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 0, 0).normalize(), 1,0,0);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 2, 3).normalize(), 0,0,0);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3).normalize(), 0,0,0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)), DESHI_SQRTF( 5.0f));
+		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 9.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance(Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance(Vec3i( 1, 2, 3)), DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).distance(Vec3i( 1, 2, 3)), DESHI_SQRTF( 5.0f));
+		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).distance(Vec3i(-2, 4,-3)), 9.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0.0f);
+		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), 14.0f);
+		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  5.0f);
+		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 81.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance_sq(Vec3i( 0, 0, 0)),  0.0f);
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance_sq(Vec3i( 1, 2, 3)), 14.0f);
+		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).distance_sq(Vec3i( 1, 2, 3)),  5.0f);
+		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).distance_sq(Vec3i(-2, 4,-3)), 81.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 0, 0, 0), Vec3i( 1, 2, 3)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 2, 2, 2), Vec3i( 5, 0, 0)), 2.0f);
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 2, 2, 2), Vec3i( 0, 5, 0)), 2.0f);
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 2, 2, 2), Vec3i( 0, 0, 5)), 2.0f);
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 1, 1, 1), Vec3i( 1, 2, 3)), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 1,-2, 3), Vec3i(-2, 4,-3)), -19.0f/DESHI_SQRTF(29.0f));
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 1, 2, 3), Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 1, 2, 3), Vec3i( 1, 1, 1)), 6.0f/DESHI_SQRTF(3.0f));
+		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i(-2, 4,-3), Vec3i( 1,-2, 3)), -19.0f/DESHI_SQRTF(14.0f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i( 0, 0, 0).projection_scalar(Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i( 0, 0, 0).projection_scalar(Vec3i( 1, 2, 3)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i( 2, 2, 2).projection_scalar(Vec3i( 5, 0, 0)), 2.0f);
+		ASSERT_F32_EQUAL(Vec3i( 2, 2, 2).projection_scalar(Vec3i( 0, 5, 0)), 2.0f);
+		ASSERT_F32_EQUAL(Vec3i( 2, 2, 2).projection_scalar(Vec3i( 0, 0, 5)), 2.0f);
+		ASSERT_F32_EQUAL(Vec3i( 1, 1, 1).projection_scalar(Vec3i( 1, 2, 3)), 6.0f/DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(Vec3i( 1,-2, 3).projection_scalar(Vec3i(-2, 4,-3)), -19.0f/DESHI_SQRTF(29.0f));
+		ASSERT_F32_EQUAL(Vec3i( 1, 2, 3).projection_scalar(Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i( 1, 2, 3).projection_scalar(Vec3i( 1, 1, 1)), 6.0f/DESHI_SQRTF(3.0f));
+		ASSERT_F32_EQUAL(Vec3i(-2, 4,-3).projection_scalar(Vec3i( 1,-2, 3)), -19.0f/DESHI_SQRTF(14.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 0, 0, 0), Vec3i( 1, 2, 3)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 2, 2, 2), Vec3i( 5, 0, 0)),  2, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 2, 2, 2), Vec3i( 0, 5, 0)),  0, 2, 0);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 2, 2, 2), Vec3i( 0, 0, 5)),  0, 0, 2);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 1, 1, 1), Vec3i( 1, 2, 3)),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 1,-2, 3), Vec3i(-2, 4,-3)),  1,-2, 1);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 1, 2, 3), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 1, 2, 3), Vec3i( 1, 1, 1)),  2, 2, 2);
+		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i(-2, 4,-3), Vec3i( 1,-2, 3)), -1, 2,-4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).projection_vector(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).projection_vector(Vec3i( 1, 2, 3)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 2, 2, 2).projection_vector(Vec3i( 5, 0, 0)),  2, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 2, 2, 2).projection_vector(Vec3i( 0, 5, 0)),  0, 2, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 2, 2, 2).projection_vector(Vec3i( 0, 0, 5)),  0, 0, 2);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).projection_vector(Vec3i( 1, 2, 3)),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2, 3).projection_vector(Vec3i(-2, 4,-3)),  1,-2, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).projection_vector(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).projection_vector(Vec3i( 1, 1, 1)),  2, 2, 2);
+		ASSERT_VEC3I_VALUES(Vec3i(-2, 4,-3).projection_vector(Vec3i( 1,-2, 3)), -1, 2,-4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), 0, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)), 1, 1, 2);
+		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 0, 1, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).midpoint(Vec3i( 0, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).midpoint(Vec3i( 1, 2, 3)), 0, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1).midpoint(Vec3i( 1, 2, 3)), 1, 1, 2);
+		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3).midpoint(Vec3i(-2, 4,-3)), 0, 1, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(5, 5, 5), Vec3i( 3, 3, 3)), 0.0f);
+		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(0, 1, 0), Vec3i( 1, 0, 0)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 2.8021914f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).radians_between(Vec3i( 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).radians_between(Vec3i( 1, 2, 3)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i(5, 5, 5).radians_between(Vec3i( 3, 3, 3)), 0.0f);
+		ASSERT_F32_EQUAL(Vec3i(0, 1, 0).radians_between(Vec3i( 1, 0, 0)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).radians_between(Vec3i(-2, 4,-3)), 2.8021914f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  1, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i(-1,-2,-3), Vec3i( 1, 2, 3)), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)), -1, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 1, 3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).min(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).min(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).min(Vec3i( 2, 1, 0)),  1, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-2,-3).min(Vec3i( 1, 2, 3)), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).min(Vec3i( 1, 2, 3)),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).min(Vec3i( 2, 1, 0)), -1, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).min(Vec3i(-1, 1, 4)), -1, 1, 3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i(-1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 2, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).max(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).max(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).max(Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-2,-3).max(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).max(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).max(Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).max(Vec3i(-1, 1, 4)), -1, 2, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 5, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  5, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 5, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 5, 1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0, 5), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 5);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0, 0), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i(-5, 0, 0), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -5,-1,-1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0,-5, 0), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-5,-1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0,-5), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-5);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 1, 2, 3), Vec3i( 2, 2, 2), Vec3i( 5, 5, 5)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i(-1, 1,-3), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp(Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 5, 0, 0).clamp(Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  5, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 5, 0).clamp(Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 5, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 5).clamp(Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 5);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(Vec3i(-5, 0, 0).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -5,-1,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-5, 0).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-5,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-5).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-5);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp(Vec3i( 2, 2, 2), Vec3i( 5, 5, 5)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 1,-3).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-3);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 5, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  5, 1, 1);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 5, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 5, 1);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0, 5), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 5);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0, 0), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i(-5, 0, 0), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -5,-1,-1);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0,-5, 0), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-5,-1);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0,-5), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-5);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i( 1, 2, 3), Vec3i( 2, 2, 2), Vec3i( 5, 5, 5)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp(Vec3i(-1, 1,-3), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i(-1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 2, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp_min(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_min(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_min(Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-2,-3).clamp_min(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).clamp_min(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_min(Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_min(Vec3i(-1, 1, 4)), -1, 2, 4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i(-1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp_min(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 2, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  1, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i(-1,-2,-3), Vec3i( 1, 2, 3)), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)), -1, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 1, 3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp_max(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_max(Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_max(Vec3i( 2, 1, 0)),  1, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-2,-3).clamp_max(Vec3i( 1, 2, 3)), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).clamp_max(Vec3i( 1, 2, 3)),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_max(Vec3i( 2, 1, 0)), -1, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_max(Vec3i(-1, 1, 4)), -1, 1, 3);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  1, 1, 0);
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i(-1,-2,-3), Vec3i( 1, 2, 3)), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)), -1, 1, 0);
+		ASSERT_VEC3I_VALUES(clamp_max(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 1, 3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 0, 0, 0), 0, 0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 1, 2, 3), 1,99),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 1, 2, 3), 4,99),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 1, 2, 3), 0, 2),  0, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 1, 2, 3), 0, 4),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i(-1,-2,-3), 1,99), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 1,-2,-3), 4,99),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i(-1, 2, 3), 0, 2),  0, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i(-1, 2, 3), 0, 4), -1, 2, 3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp_mag(0, 0),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_mag(1,99),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_mag(4,99),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_mag(0, 2),  0, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_mag(0, 4),  1, 2, 3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-2,-3).clamp_mag(1,99), -1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).clamp_mag(4,99),  1,-2,-3);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_mag(0, 2),  0, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_mag(0, 4), -1, 2, 3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i( 2, 2, 2), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i( 2, 2, 2), Vec3i( 3, 3, 3)),  2, 2, 2);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1), Vec3i( 0, 0, 0)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i(-1,-1,-1), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 1, 1, 1), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 5, 5, 5), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  4, 4, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 2, 2, 2), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 2, 2, 2), Vec3i( 3, 3, 3)),  2, 2, 2);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).nudge(Vec3i( 1, 1, 1), Vec3i( 0, 0, 0)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i(-1,-1,-1), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).nudge(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 5, 5, 5).nudge(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  4, 4, 4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 2, 2, 2), Vec3i( 1, 1, 1)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 2, 2, 2), Vec3i( 3, 3, 3)),  2, 2, 2);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1), Vec3i( 0, 0, 0)),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i(-1,-1,-1), Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 1, 1, 1), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(nudge(Vec3i( 5, 5, 5), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  4, 4, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 1.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), 0.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.0f), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 0, 0, 0), 0.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 0, 0, 0), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 0, 0, 0), 1.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 1, 1, 1), 0.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).lerp(Vec3i( 1, 1, 1), 0.0f), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).lerp(Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).lerp(Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 1.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), 0.0f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.0f), -1,-1,-1);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 1, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0, 1, 0)), 0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0, 0, 1)), 0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i(-1, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0,-1, 0)), 0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0, 0,-1)), 0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 1, 1, 1)), 0, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_zero(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_zero(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_zero(), 0, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).x_zero(), 0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).x_zero(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_zero(), 0,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_zero(), 0, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_zero(), 0, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 1, 0, 0)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0, 1, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0, 0, 1)),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i(-1, 0, 0)), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0,-1, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0, 0,-1)),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 1, 1, 1)),  1, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_zero(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_zero(),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_zero(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).y_zero(),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).y_zero(), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_zero(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_zero(),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_zero(),  1, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 1, 0, 0)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0, 1, 0)),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0, 0, 1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i(-1, 0, 0)), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0,-1, 0)),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0, 0,-1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 1, 1, 1)),  1, 1, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_zero(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_zero(),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_zero(),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).z_zero(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).z_zero(), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_zero(),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_zero(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_zero(),  1, 1, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 1, 0, 0)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0, 1, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0, 0, 1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i(-1, 0, 0)), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0,-1, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0, 0,-1)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 1, 1, 1)),  1, 0, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_only(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_only(),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_only(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).x_only(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).x_only(), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_only(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_only(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_only(),  1, 0, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 1, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0, 1, 0)), 0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0, 0, 1)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i(-1, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0,-1, 0)), 0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0, 0,-1)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 1, 1, 1)), 0, 1, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_only(), 0, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).y_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).y_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_only(), 0,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_only(), 0, 1, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 1, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0, 1, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0, 0, 1)), 0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i(-1, 0, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0,-1, 0)), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0, 0,-1)), 0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 1, 1, 1)), 0, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).z_only(), 0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).z_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_only(), 0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_only(), 0, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_only(), 0, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 1, 0, 0)), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0, 1, 0)),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0, 0, 1)),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i(-1, 0, 0)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0,-1, 0)),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0, 0,-1)),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 1, 1, 1)), -1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_negate(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_negate(), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_negate(),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).x_negate(),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).x_negate(),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_negate(),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_negate(),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_negate(), -1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 1, 0, 0)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0, 1, 0)),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0, 0, 1)),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i(-1, 0, 0)), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0,-1, 0)),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0, 0,-1)),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 1, 1, 1)),  1,-1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_negate(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_negate(),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_negate(),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).y_negate(),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).y_negate(), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_negate(),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_negate(),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_negate(),  1,-1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0, 0, 0)),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 1, 0, 0)),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0, 1, 0)),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0, 0, 1)),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i(-1, 0, 0)), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0,-1, 0)),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0, 0,-1)),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 1, 1, 1)),  1, 1,-1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_negate(),  0, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_negate(),  1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_negate(),  0, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).z_negate(),  0, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).z_negate(), -1, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_negate(),  0,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_negate(),  0, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_negate(),  1, 1,-1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0, 0, 0), 10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 1, 0, 0), 10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0, 1, 0), 10), 10, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0, 0, 1), 10), 10, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i(-1, 0, 0), 10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0,-1, 0), 10), 10,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0, 0,-1), 10), 10, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 1, 1, 1), 10), 10, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_set(10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_set(10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_set(10), 10, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).x_set(10), 10, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).x_set(10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_set(10), 10,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_set(10), 10, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_set(10), 10, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0, 0, 0), 10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 1, 0, 0), 10),  1, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0, 1, 0), 10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0, 0, 1), 10),  0, 10, 1);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i(-1, 0, 0), 10), -1, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0,-1, 0), 10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0, 0,-1), 10),  0, 10,-1);
+		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 1, 1, 1), 10),  1, 10, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_set(10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_set(10),  1, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_set(10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).y_set(10),  0, 10, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).y_set(10), -1, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_set(10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_set(10),  0, 10,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_set(10),  1, 10, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0, 0, 0), 10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 1, 0, 0), 10),  1, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0, 1, 0), 10),  0, 1, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0, 0, 1), 10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i(-1, 0, 0), 10), -1, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0,-1, 0), 10),  0,-1, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0, 0,-1), 10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 1, 1, 1), 10),  1, 1, 10);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_set(10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_set(10),  1, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_set(10),  0, 1, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).z_set(10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).z_set(10), -1, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_set(10),  0,-1, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_set(10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_set(10),  1, 1, 10);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0, 0, 0), 10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 1, 0, 0), 10), 11, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0, 1, 0), 10), 10, 1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0, 0, 1), 10), 10, 0, 1);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i(-1, 0, 0), 10),  9, 0, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0,-1, 0), 10), 10,-1, 0);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0, 0,-1), 10), 10, 0,-1);
+		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 1, 1, 1), 10), 11, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_add(10), 10, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_add(10), 11, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_add(10), 10, 1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).x_add(10), 10, 0, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).x_add(10),  9, 0, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_add(10), 10,-1, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_add(10), 10, 0,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_add(10), 11, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0, 0, 0), 10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 1, 0, 0), 10),  1, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0, 1, 0), 10),  0, 11, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0, 0, 1), 10),  0, 10, 1);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i(-1, 0, 0), 10), -1, 10, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0,-1, 0), 10),  0,  9, 0);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0, 0,-1), 10),  0, 10,-1);
+		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 1, 1, 1), 10),  1, 11, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_add(10),  0, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_add(10),  1, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_add(10),  0, 11, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).y_add(10),  0, 10, 1);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).y_add(10), -1, 10, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_add(10),  0,  9, 0);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_add(10),  0, 10,-1);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_add(10),  1, 11, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0, 0, 0), 10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 1, 0, 0), 10),  1, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0, 1, 0), 10),  0, 1, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0, 0, 1), 10),  0, 0, 11);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i(-1, 0, 0), 10), -1, 0, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0,-1, 0), 10),  0,-1, 10);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0, 0,-1), 10),  0, 0,  9);
+		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 1, 1, 1), 10),  1, 1, 11);
+		
+#ifdef __cplusplus
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_add(10),  0, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_add(10),  1, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_add(10),  0, 1, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 1).z_add(10),  0, 0, 11);
+		ASSERT_VEC3I_VALUES(Vec3i(-1, 0, 0).z_add(10), -1, 0, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_add(10),  0,-1, 10);
+		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_add(10),  0, 0,  9);
+		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_add(10),  1, 1, 11);
+#endif //#ifdef __cplusplus
+		
+#undef ASSERT_VEC3I_VALUES
 	}
 	
 	
