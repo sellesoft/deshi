@@ -138,9 +138,10 @@ int main(int args_count, char** args){
 				
 				if(g_input->scrollY != 0){
 					if(g_input->scrollY > 0){
-						move_speed *= 2;
+						move_speed *= 2.0f;
 					}else{
-						move_speed /= 2;
+						move_speed *= 0.5f;
+						move_speed = ClampMin(move_speed, 1.0f);
 					}
 				}
 				
@@ -152,11 +153,14 @@ int main(int args_count, char** args){
 				if(key_down(Key_SPACE)) inputs += camera->up;
 				if(key_down(Key_LCTRL)) inputs -= camera->up;
 				
-				f32 multiplier = 8.f;
-				if(input_lshift_down()) multiplier = 32.f;
-				else if(input_lalt_down()) multiplier = 4.f;
+				f32 multiplier = 1.0f;
+				if(input_lshift_down()){
+					multiplier = 4.0f;
+				}else if(input_lalt_down()){
+					multiplier = 0.5f;
+				}
 				
-				camera->position += inputs * multiplier * (g_time->deltaTime / 1000);
+				camera->position += inputs * move_speed * multiplier * (g_time->deltaTime / 1000);
 				
 				camera->rotation.y += (g_input->mouseX - (f32)g_window->center.x) * .075f;
 				camera->rotation.x += (g_input->mouseY - (f32)g_window->center.y) * .075f;
@@ -207,8 +211,8 @@ int main(int args_count, char** args){
 			window->style.positioning      = pos_absolute;
 			window->style.anchor           = anchor;
 			window->id                     = STR8("voxels.info_window");
-			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime),        " fps").fin, 0);
-			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)move_speed,                                 " move speed").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps").fin, 0);
+			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)move_speed,                         " move speed").fin, 0);
 			ui_make_text(to_dstr8p(camera->position, 2, deshi_temp_allocator).fin, 0);
 			ui_make_text(to_dstr8p(camera->rotation, 2, deshi_temp_allocator).fin, 0);
 			ui_end_item();

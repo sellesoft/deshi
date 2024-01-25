@@ -530,5 +530,5 @@ elif [ $builder_platform == "linux" ]; then #___________________________________
 else
   echo "Execute commands not setup for platform: $builder_platform"
 fi
-if [ $build_time == 1 ]; then printf "time: %.3f seconds" $(awk "BEGIN {print $(date +%s.%3N) - $start_time}"); fi
+if [ $build_time == 1 ]; then printf "time: %.3f seconds\n" $(awk "BEGIN {print $(date +%s.%3N) - $start_time}"); fi
 popd > /dev/null
