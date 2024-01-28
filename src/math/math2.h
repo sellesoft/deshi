@@ -243,7 +243,7 @@ struct mat4;
 #define m128_negate_4s32(lhs) _mm_sub_epi32(_mm_set1_epi32(0), (lhs))
 #define m128_min_4s32(lhs,rhs) _mm_min_epi32((lhs), (rhs))
 #define m128_max_4s32(lhs,rhs) _mm_max_epi32((lhs), (rhs))
-#define m128_equal_4s32(lhs,rhs) (!(_mm_movemask_epi8(_mm_cmpeq_epi32((lhs), (rhs)))))
+#define m128_equal_4s32(lhs,rhs) (_mm_movemask_epi8(_mm_cmpeq_epi32((lhs), (rhs))))
 
 #define m128_shuffle_mask(x,y,z,w) ((x) | ((y) << 2) | ((z) << 4) | ((w) << 6))
 #define m128_shuffle(a,b, x,y,z,w) _mm_shuffle_ps((a), (b), m128_shuffle_mask((x),(y),(z),(w)))
@@ -5106,10 +5106,10 @@ vec4_equal(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(lhs.sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(lhs.x - rhs.x) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(lhs.y - rhs.y) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(lhs.z - rhs.z) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(lhs.w - rhs.w) < DESHI_MATH_EPSILON_F32;
+	return (   DESHI_ABSF(lhs.x - rhs.x) < DESHI_MATH_EPSILON_F32 
+			&& DESHI_ABSF(lhs.y - rhs.y) < DESHI_MATH_EPSILON_F32 
+			&& DESHI_ABSF(lhs.z - rhs.z) < DESHI_MATH_EPSILON_F32 
+			&& DESHI_ABSF(lhs.w - rhs.w) < DESHI_MATH_EPSILON_F32);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
@@ -5119,10 +5119,10 @@ operator==(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4f32(this->sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(this->x - rhs.x) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(this->y - rhs.y) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(this->z - rhs.z) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(this->w - rhs.w) < DESHI_MATH_EPSILON_F32;
+	return (   DESHI_ABSF(this->x - rhs.x) < DESHI_MATH_EPSILON_F32 
+			&& DESHI_ABSF(this->y - rhs.y) < DESHI_MATH_EPSILON_F32 
+			&& DESHI_ABSF(this->z - rhs.z) < DESHI_MATH_EPSILON_F32 
+			&& DESHI_ABSF(this->w - rhs.w) < DESHI_MATH_EPSILON_F32);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
@@ -5132,10 +5132,10 @@ vec4_nequal(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(lhs.sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(lhs.x - rhs.x) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(lhs.y - rhs.y) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(lhs.z - rhs.z) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(lhs.w - rhs.w) > DESHI_MATH_EPSILON_F32;
+	return (   DESHI_ABSF(lhs.x - rhs.x) > DESHI_MATH_EPSILON_F32 
+			|| DESHI_ABSF(lhs.y - rhs.y) > DESHI_MATH_EPSILON_F32 
+			|| DESHI_ABSF(lhs.z - rhs.z) > DESHI_MATH_EPSILON_F32 
+			|| DESHI_ABSF(lhs.w - rhs.w) > DESHI_MATH_EPSILON_F32);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
@@ -5145,10 +5145,10 @@ operator!=(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return !m128_equal_4f32(this->sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(this->x - rhs.x) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(this->y - rhs.y) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(this->z - rhs.z) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(this->w - rhs.w) > DESHI_MATH_EPSILON_F32;
+	return (   DESHI_ABSF(this->x - rhs.x) > DESHI_MATH_EPSILON_F32 
+			|| DESHI_ABSF(this->y - rhs.y) > DESHI_MATH_EPSILON_F32 
+			|| DESHI_ABSF(this->z - rhs.z) > DESHI_MATH_EPSILON_F32 
+			|| DESHI_ABSF(this->w - rhs.w) > DESHI_MATH_EPSILON_F32);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
@@ -5732,7 +5732,7 @@ DESHI_MATH_FUNC inline vec4
 vec4_clamp_min(vec4 value, vec4 min){DESHI_MATH_FUNCTION_START;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_min_4f32(value.sse, min.sse);
+	v.sse = m128_max_4f32(value.sse, min.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x < min.x) ? min.x : value.x;
 	v.y = (value.y < min.y) ? min.y : value.y;
@@ -5747,7 +5747,7 @@ inline vec4 vec4::
 clamp_min(const vec4& min)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_min_4f32(this->sse, min.sse);
+	v.sse = m128_max_4f32(this->sse, min.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x < min.x) ? min.x : this->x;
 	v.y = (this->y < min.y) ? min.y : this->y;
@@ -5763,7 +5763,7 @@ inline vec4
 clamp_min(vec4 value, vec4 min){DESHI_MATH_FUNCTION_START;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_min_4f32(value.sse, min.sse);
+	v.sse = m128_max_4f32(value.sse, min.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x < min.x) ? min.x : value.x;
 	v.y = (value.y < min.y) ? min.y : value.y;
@@ -5778,7 +5778,7 @@ DESHI_MATH_FUNC inline vec4
 vec4_clamp_max(vec4 value, vec4 max){DESHI_MATH_FUNCTION_START;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_max_4f32(value.sse, max.sse);
+	v.sse = m128_min_4f32(value.sse, max.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x > max.x) ? max.x : value.x;
 	v.y = (value.y > max.y) ? max.y : value.y;
@@ -5793,7 +5793,7 @@ inline vec4 vec4::
 clamp_max(const vec4& max)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_max_4f32(this->sse, max.sse);
+	v.sse = m128_min_4f32(this->sse, max.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x > max.x) ? max.x : this->x;
 	v.y = (this->y > max.y) ? max.y : this->y;
@@ -5809,7 +5809,7 @@ inline vec4
 clamp_max(vec4 value, vec4 max){DESHI_MATH_FUNCTION_START;
 	vec4 v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_max_4f32(value.sse, max.sse);
+	v.sse = m128_min_4f32(value.sse, max.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (value.x > max.x) ? max.x : value.x;
 	v.y = (value.y > max.y) ? max.y : value.y;
@@ -6792,10 +6792,10 @@ vec4i_equal(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4s32(lhs.sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(lhs.x - rhs.x) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(lhs.y - rhs.y) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(lhs.z - rhs.z) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(lhs.w - rhs.w) < DESHI_MATH_EPSILON_F32;
+	return (   lhs.x == rhs.x
+			&& lhs.y == rhs.y
+			&& lhs.z == rhs.z
+			&& lhs.w == rhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
@@ -6805,10 +6805,10 @@ operator==(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return m128_equal_4s32(this->sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(this->x - rhs.x) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(this->y - rhs.y) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(this->z - rhs.z) < DESHI_MATH_EPSILON_F32 
-		&& DESHI_ABSF(this->w - rhs.w) < DESHI_MATH_EPSILON_F32;
+	return (   this->x == rhs.x
+			&& this->y == rhs.y
+			&& this->z == rhs.z
+			&& this->w == rhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
@@ -6818,10 +6818,10 @@ vec4i_nequal(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return !m128_equal_4s32(lhs.sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(lhs.x - rhs.x) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(lhs.y - rhs.y) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(lhs.z - rhs.z) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(lhs.w - rhs.w) > DESHI_MATH_EPSILON_F32;
+	return (   lhs.x != rhs.x
+			&& lhs.y != rhs.y
+			&& lhs.z != rhs.z
+			&& lhs.w != rhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
@@ -6831,10 +6831,10 @@ operator!=(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
 	return !m128_equal_4s32(this->sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(this->x - rhs.x) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(this->y - rhs.y) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(this->z - rhs.z) > DESHI_MATH_EPSILON_F32 
-		|| DESHI_ABSF(this->w - rhs.w) > DESHI_MATH_EPSILON_F32;
+	return (   this->x != rhs.x
+			&& this->y != rhs.y
+			&& this->z != rhs.z
+			&& this->w != rhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
@@ -7194,7 +7194,7 @@ inline vec4i vec4i::
 max(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_min_4s32(this->sse, rhs.sse);
+	v.sse = m128_max_4s32(this->sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (this->x > rhs.x) ? this->x : rhs.x;
 	v.y = (this->y > rhs.y) ? this->y : rhs.y;
@@ -7210,7 +7210,7 @@ inline vec4i
 max(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	vec4i v;
 #if DESHI_MATH_USE_SSE
-	v.sse = m128_min_4s32(lhs.sse, rhs.sse);
+	v.sse = m128_max_4s32(lhs.sse, rhs.sse);
 #else //#if DESHI_MATH_USE_SSE
 	v.x = (lhs.x > rhs.x) ? lhs.x : rhs.x;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
@@ -17407,13 +17407,2692 @@ void TEST_deshi_math(){
 	
 	//// vec4 ////
 	{
+		vec4 a;
+		vec4 b;
+#define ASSERT_VEC4_VALUES(lhs,x_,y_,z_,w_) a = (lhs);ASSERT_F32_EQUAL(a.x,(x_));ASSERT_F32_EQUAL(a.y,(y_));ASSERT_F32_EQUAL(a.z,(z_));ASSERT_F32_EQUAL(a.w,(w_))
 		
+		
+		a = vec4{0.0f,0.0f,0.0f,0.0f};
+		b = vec4{0.0f,0.0f,0.0f,0.0f};
+		ASSERT_F32_EQUAL(a.arr[0], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[0], a.xyz.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[0], a.x);
+		ASSERT_F32_EQUAL(a.arr[0], a.rgb.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[0], a.r);
+		ASSERT_F32_EQUAL(a.arr[0], a.xy.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[0], a._x0);
+		ASSERT_F32_EQUAL(a.arr[0], a._x1);
+		ASSERT_F32_EQUAL(a.arr[1], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[1], a.xyz.arr[1]);
+		ASSERT_F32_EQUAL(a.arr[1], a.y);
+		ASSERT_F32_EQUAL(a.arr[1], a.rgb.arr[1]);
+		ASSERT_F32_EQUAL(a.arr[1], a.g);
+		ASSERT_F32_EQUAL(a.arr[1], a.xy.arr[1]);
+		ASSERT_F32_EQUAL(a.arr[1], a.yz.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[1], a._y0);
+		ASSERT_F32_EQUAL(a.arr[2], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[2], a.xyz.arr[2]);
+		ASSERT_F32_EQUAL(a.arr[2], a.z);
+		ASSERT_F32_EQUAL(a.arr[2], a.rgb.arr[2]);
+		ASSERT_F32_EQUAL(a.arr[2], a.b);
+		ASSERT_F32_EQUAL(a.arr[2], a._z0);
+		ASSERT_F32_EQUAL(a.arr[2], a.yz.arr[1]);
+		ASSERT_F32_EQUAL(a.arr[2], a.zw.arr[0]);
+		ASSERT_F32_EQUAL(a.arr[3], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[3], a.w);
+		ASSERT_F32_EQUAL(a.arr[3], a.a);
+		ASSERT_F32_EQUAL(a.arr[3], a._w0);
+		ASSERT_F32_EQUAL(a.arr[3], a._w1);
+		ASSERT_F32_EQUAL(a.arr[3], a.zw.arr[1]);
+		
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-0.1f,-0.2f,-0.3f,-0.4f), -0.1f,-0.2f,-0.3f,-0.4f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.1f, 0.2f, 0.3f, 0.4f),  0.1f, 0.2f, 0.3f, 0.4f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.0f, 2.0f, 3.0f, 4.0f);
+		
+		ASSERT_VEC4_VALUES(vec4_ZERO(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_ONE(),   1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_UNITX(), 1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_UNITY(), 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_UNITZ(), 0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_UNITW(), 0.0f, 0.0f, 0.0f, 1.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(vec4::ZERO,  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4::ONE,   1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4::UNITX, 1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4::UNITY, 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4::UNITZ, 0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4::UNITW, 0.0f, 0.0f, 0.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+		a = Vec4(1.0f,-2.3f,0.4f,5.0f);
+		ASSERT_F32_EQUAL(vec4_index(a, 0),  1.0f);
+		ASSERT_F32_EQUAL(vec4_index(a, 1), -2.3f);
+		ASSERT_F32_EQUAL(vec4_index(a, 2),  0.4f);
+		ASSERT_F32_EQUAL(vec4_index(a, 3),  5.0f);
+		
+#ifdef __cplusplus
+		a = Vec4(1.0f,-2.3f,0.4f,5.0f);
+		ASSERT_F32_EQUAL(a[0],  1.0f);
+		ASSERT_F32_EQUAL(a[1], -2.3f);
+		ASSERT_F32_EQUAL(a[2],  0.4f);
+		ASSERT_F32_EQUAL(a[3],  5.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a[0] =  2.0f;
+		a[1] = -4.6f;
+		a[2] =  0.8f;
+		a[3] =  6.0f;
+		ASSERT_F32_EQUAL(a.arr[0],  2.0f);
+		ASSERT_F32_EQUAL(a.arr[1], -4.6f);
+		ASSERT_F32_EQUAL(a.arr[2],  0.8f);
+		ASSERT_F32_EQUAL(a.arr[3],  6.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_add(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_add(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_add(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  2.0f, 3.0f, 4.0f, 5.0f);
+		ASSERT_VEC4_VALUES(vec4_add(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.9f, 1.8f, 0.0f, 4.4f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) + Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) + Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) + Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  2.0f, 3.0f, 4.0f, 5.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) + Vec4(-2.0f, 4.0f,-0.3f, 0.4f), -0.9f, 1.8f, 0.0f, 4.4f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a += Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a += Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  1.0f, 2.0f, 3.0f, 4.0f);
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a += Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  2.0f, 3.0f, 4.0f, 5.0f);
+		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
+		a += Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
+		ASSERT_VEC4_VALUES(a, -0.9f, 1.8f, 0.0f, 4.4f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_sub(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_sub(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(vec4_sub(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.0f,-1.0f,-2.0f,-3.0f);
+		ASSERT_VEC4_VALUES(vec4_sub(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)),  3.1f,-6.2f, 0.6f, 3.6f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) - Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) - Vec4( 1.0f, 2.0f, 3.0f, 4.0f), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) - Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  0.0f,-1.0f,-2.0f,-3.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) - Vec4(-2.0f, 4.0f,-0.3f, 0.4f),  3.1f,-6.2f, 0.6f, 3.6f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a -= Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a -= Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a, -1.0f,-2.0f,-3.0f,-4.0f);
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a -= Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  0.0f,-1.0f,-2.0f,-3.0f);
+		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
+		a -= Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
+		ASSERT_VEC4_VALUES(a,  3.1f,-6.2f, 0.6f, 3.6f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_mul(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.00f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_mul(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.0f, 0.0f, 0.00f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_mul(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.00f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_mul(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -2.2f,-8.8f,-0.09f, 1.6f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) * Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.00f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) * Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  0.0f, 0.0f, 0.00f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) * Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.0f, 2.0f, 3.00f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) * Vec4(-2.0f, 4.0f,-0.3f, 0.4f), -2.2f,-8.8f,-0.09f, 1.6f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a *= Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.00f, 0.0f);
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a *= Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.00f, 0.0f);
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a *= Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  1.0f, 2.0f, 3.00f, 4.0f);
+		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
+		a *= Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
+		ASSERT_VEC4_VALUES(a, -2.2f,-8.8f,-0.09f, 1.6f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(0.0f, 0.0f, 0.0f, 0.0f),  0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(0.0f, 0.0f, 0.0f, 0.0f),  1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(1.0f, 1.0f, 1.0f, 1.0f),  2.0f),  2.0f, 2.0f, 2.0f, 2.0f);
+		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(1.1f,-2.2f, 0.3f, 4.0f), -2.0f), -2.2f, 4.4f,-0.6f,-8.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) *  0.0f,  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) *  1.0f,  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) *  2.0f,  2.0f, 2.0f, 2.0f, 2.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) * -2.0f, -2.2f, 4.4f,-0.6f,-8.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a *= 0.0f;
+		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a *= 1.0f;
+		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a *= 2.0f;
+		ASSERT_VEC4_VALUES(a,  2.0f, 2.0f, 2.0f, 2.0f);
+		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
+		a *= -2.0f;
+		ASSERT_VEC4_VALUES(a, -2.2f, 4.4f,-0.6f,-8.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_div(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_div(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_div(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.00f, 0.50f, 1.0f/3.0f, 0.25f);
+		ASSERT_VEC4_VALUES(vec4_div(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.55f,-0.55f,-1.00f, 10.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) / Vec4( 1.0f, 1.0f, 1.0f, 1.0f),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) / Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) / Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.00f, 0.50f, 1.0f/3.0f, 0.25f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) / Vec4(-2.0f, 4.0f,-0.3f, 0.4f), -0.55f,-0.55f,-1.00f, 10.00f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a /= Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(a,  1.00f, 1.00f, 1.00f, 1.00f);
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a /= Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  0.00f, 0.00f, 0.00f, 0.00f);
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a /= Vec4( 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(a,  1.00f, 0.50f, 1.0f/3.0f, 0.25f);
+		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
+		a /= Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
+		ASSERT_VEC4_VALUES(a, -0.55f,-0.55f,-1.0f, 10.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(1.0f, 1.0f, 1.0f, 1.0f),  1.0f),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(0.0f, 0.0f, 0.0f, 0.0f),  1.0f),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(1.0f, 1.0f, 1.0f, 1.0f),  2.0f),  0.50f, 0.50f, 0.50f, 0.50f);
+		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(1.1f,-2.2f, 0.3f, 4.0f), -2.0f), -0.55f, 1.10f,-0.15f,-2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) /  1.0f,  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) /  1.0f,  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) /  2.0f,  0.50f, 0.50f, 0.50f, 0.50f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) / -2.0f, -0.55f, 1.10f,-0.15f,-2.00f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a /= 1.0f;
+		ASSERT_VEC4_VALUES(a,  1.00f, 1.00f, 1.00f, 1.00f);
+		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
+		a /= 1.0f;
+		ASSERT_VEC4_VALUES(a,  0.00f, 0.00f, 0.00f, 0.00f);
+		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
+		a /= 2.0f;
+		ASSERT_VEC4_VALUES(a,  0.50f, 0.50f, 0.50f, 0.50f);
+		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
+		a /= -2.0f;
+		ASSERT_VEC4_VALUES(a, -0.55f, 1.10f,-0.15f,-2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_negate(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), -0.0f,-0.0f,-0.0f,-0.0f);
+		ASSERT_VEC4_VALUES(vec4_negate(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_negate(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), -1.1f, 2.2f,-0.3f,-4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(-Vec4(0.0f, 0.0f, 0.0f, 0.0f), -0.0f,-0.0f,-0.0f,-0.0f);
+		ASSERT_VEC4_VALUES(-Vec4(1.0f, 1.0f, 1.0f, 1.0f), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(-Vec4(1.1f,-2.2f, 0.3f, 4.0f), -1.1f, 2.2f,-0.3f,-4.0f);
+#endif //#ifdef __cplusplus
+		
+		Assert(vec4_equal(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)));
+		Assert(vec4_equal(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(vec4_equal(Vec4(-1.1f, 2.2f, 0.3f, 4.0f), Vec4(-1.1f, 2.2f, 0.3f, 4.0f)));
+		Assert(!vec4_equal(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(!vec4_equal(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f)));
+		Assert(!vec4_equal(Vec4(-1.1f, 2.2f, 0.3f, 4.0f), Vec4( 1.1f,-2.2f,-0.3f, 0.4f)));
+		Assert(vec4_equal(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(vec4_equal(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)));
+		
+#ifdef __cplusplus
+		Assert(Vec4( 0.0f, 0.0f, 0.0f, 0.0f) == Vec4( 0.0f, 0.0f, 0.0f, 0.0f));
+		Assert(Vec4( 1.0f, 1.0f, 1.0f, 1.0f) == Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
+		Assert(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) == Vec4(-1.1f, 2.2f, 0.3f, 4.0f));
+		Assert(!(Vec4( 0.0f, 0.0f, 0.0f, 0.0f) == Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(!(Vec4( 1.0f, 1.0f, 1.0f, 1.0f) == Vec4( 2.0f, 2.0f, 2.0f, 2.0f)));
+		Assert(!(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) == Vec4( 1.1f,-2.2f,-0.3f, 0.4f)));
+		Assert(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) == Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
+		Assert(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) == Vec4( 0.0f, 0.0f, 0.0f, 0.0f));
+#endif //#ifdef __cplusplus
+		
+		Assert(vec4_nequal(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(vec4_nequal(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f)));
+		Assert(vec4_nequal(Vec4(-1.1f, 2.2f, 0.3f, 4.0f), Vec4( 1.1f,-2.2f,-0.3f, 0.4f)));
+		Assert(!vec4_nequal(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)));
+		Assert(!vec4_nequal(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(!vec4_nequal(Vec4(-1.1f, 2.2f, 0.3f, 4.0f), Vec4(-1.1f, 2.2f, 0.3f, 4.0f)));
+		Assert(vec4_nequal(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 2.0f, 2.0f, 2.0f, 2.0f)));
+		Assert(vec4_nequal(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		
+#ifdef __cplusplus
+		Assert(Vec4( 0.0f, 0.0f, 0.0f, 0.0f) != Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
+		Assert(Vec4( 1.0f, 1.0f, 1.0f, 1.0f) != Vec4( 2.0f, 2.0f, 2.0f, 2.0f));
+		Assert(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) != Vec4( 1.1f,-2.2f,-0.3f, 0.4f));
+		Assert(!(Vec4( 0.0f, 0.0f, 0.0f, 0.0f) != Vec4( 0.0f, 0.0f, 0.0f, 0.0f)));
+		Assert(!(Vec4( 1.0f, 1.0f, 1.0f, 1.0f) != Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
+		Assert(!(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) != Vec4(-1.1f, 2.2f, 0.3f, 4.0f)));
+		Assert(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) != Vec4( 2.0f, 2.0f, 2.0f, 2.0f));
+		Assert(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) != Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_abs(Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), 1.0f,1.0f,1.0f,1.0f);
+		ASSERT_VEC4_VALUES(vec4_abs(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_abs(Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 1.0f,1.0f,1.0f,1.0f);
+		ASSERT_VEC4_VALUES(vec4_abs(Vec4( 1.1f,-2.2f,-0.3f, 4.0f)), 1.1f,2.2f,0.3f,4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).abs(), 1.0f,1.0f,1.0f,1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).abs(), 0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).abs(), 1.0f,1.0f,1.0f,1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.1f,-2.2f,-0.3f, 4.0f).abs(), 1.1f,2.2f,0.3f,4.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_dot(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_dot(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_dot(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f);
+		ASSERT_F32_EQUAL(vec4_dot(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -9.49f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).dot(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).dot(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).dot(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f);
+		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).dot(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -9.49f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_mag(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_mag(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), DESHI_SQRTF( 4.00f));
+		ASSERT_F32_EQUAL(vec4_mag(Vec4(1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(vec4_mag(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), DESHI_SQRTF(22.14f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).mag(), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).mag(), DESHI_SQRTF( 4.00f));
+		ASSERT_F32_EQUAL(Vec4(1.0f, 2.0f, 3.0f, 4.0f).mag(), DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).mag(), DESHI_SQRTF(22.14f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), 4.00f);
+		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(1.0f, 2.0f, 3.0f, 4.0f)), 30.00f);
+		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), 22.14f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).mag_sq(), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).mag_sq(), 4.00f);
+		ASSERT_F32_EQUAL(Vec4(1.0f, 2.0f, 3.0f, 4.0f).mag_sq(), 30.00f);
+		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).mag_sq(), 22.14f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f));
+		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(1.0f, 2.0f, 3.0f, 4.0f)), 1.0f/DESHI_SQRTF(30.00f), 2.0f/DESHI_SQRTF(30.00f), 3.0f/DESHI_SQRTF(30.00f), 4.0f/DESHI_SQRTF(30.00f));
+		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), 1.1f/DESHI_SQRTF(22.14f),-2.2f/DESHI_SQRTF(22.14f), 0.3f/DESHI_SQRTF(22.14f), 4.0f/DESHI_SQRTF(22.14f));
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f).normalize(), 0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f).normalize(), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f));
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 2.0f, 3.0f, 4.0f).normalize(), 1.0f/DESHI_SQRTF(30.00f), 2.0f/DESHI_SQRTF(30.00f), 3.0f/DESHI_SQRTF(30.00f), 4.0f/DESHI_SQRTF(30.00f));
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f).normalize(), 1.1f/DESHI_SQRTF(22.14f),-2.2f/DESHI_SQRTF(22.14f), 0.3f/DESHI_SQRTF(22.14f), 4.0f/DESHI_SQRTF(22.14f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_distance(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.00f);
+		ASSERT_F32_EQUAL(vec4_distance(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(vec4_distance(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(14.00f));
+		ASSERT_F32_EQUAL(vec4_distance(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), DESHI_SQRTF(61.37f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.00f);
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).distance(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(14.00f));
+		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).distance(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), DESHI_SQRTF(61.37f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f);
+		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 30.00f);
+		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 14.00f);
+		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 61.37f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance_sq(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f);
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance_sq(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 30.00f);
+		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).distance_sq(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 14.00f);
+		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).distance_sq(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 61.37f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 0.0f, 0.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 0.0f, 5.0f, 0.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 0.0f, 0.0f, 5.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 0.0f, 0.0f, 0.0f, 5.0f)), 2.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f/DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -9.49f/DESHI_SQRTF(20.25f));
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 5.0f);
+		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4(-2.0f, 4.0f,-0.3f, 0.4f), Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -9.49f/DESHI_SQRTF(22.14f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_scalar(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_scalar(Vec4( 5.0f, 0.0f, 0.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_scalar(Vec4( 0.0f, 5.0f, 0.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_scalar(Vec4( 0.0f, 0.0f, 5.0f, 0.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 5.0f)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).projection_scalar(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f/DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(Vec4( 1.1f,-2.2f, 0.3f, 4.0f).projection_scalar(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -9.49f/DESHI_SQRTF(20.25f));
+		ASSERT_F32_EQUAL(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_scalar(Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 5.0f);
+		ASSERT_F32_EQUAL(Vec4(-2.0f, 4.0f,-0.3f, 0.4f).projection_scalar(Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -9.49f/DESHI_SQRTF(22.14f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 0.0f, 0.0f, 0.0f)), 2.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 0.0f, 5.0f, 0.0f, 0.0f)), 0.0f, 2.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 0.0f, 0.0f, 5.0f, 0.0f)), 0.0f, 0.0f, 2.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 0.0f, 0.0f, 0.0f, 5.0f)), 0.0f, 0.0f, 0.0f, 2.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f/30.00f, 20.0f/30.00f, 1.0f, 40.0f/30.00f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 18.98f/20.25f, -37.96f/20.25f, 2.847f/20.25f, -3.796f/20.25f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f);
+		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4(-2.0f, 4.0f,-0.3f, 0.4f), Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -10.439f/22.14f, 20.878f/22.14f, -2.847f/22.14f, -37.96f/22.14f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_vector(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_vector(Vec4( 5.0f, 0.0f, 0.0f, 0.0f)), 2.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_vector(Vec4( 0.0f, 5.0f, 0.0f, 0.0f)), 0.0f, 2.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_vector(Vec4( 0.0f, 0.0f, 5.0f, 0.0f)), 0.0f, 0.0f, 2.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 5.0f)), 0.0f, 0.0f, 0.0f, 2.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).projection_vector(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f/30.00f, 20.0f/30.00f, 1.0f, 40.0f/30.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.1f,-2.2f, 0.3f, 4.0f).projection_vector(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 18.98f/20.25f, -37.96f/20.25f, 2.847f/20.25f, -3.796f/20.25f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_vector(Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-2.0f, 4.0f,-0.3f, 0.4f).projection_vector(Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -10.439f/22.14f, 20.878f/22.14f, -2.847f/22.14f, -37.96f/22.14f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.50f, 1.00f, 1.50f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.00f, 1.50f, 2.00f, 2.50f);
+		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.45f, 0.90f, 0.00f, 2.20f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f).midpoint(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f).midpoint(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.50f, 1.00f, 1.50f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f).midpoint(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.00f, 1.50f, 2.00f, 2.50f);
+		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f).midpoint(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.45f, 0.90f, 0.00f, 2.20f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(5.0f, 5.0f, 5.0f, 5.0f), Vec4( 3.0f, 3.0f, 3.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(0.0f, 1.0f, 0.0f, 0.0f), Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 2.03553f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).radians_between(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).radians_between(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(5.0f, 5.0f, 5.0f, 5.0f).radians_between(Vec4( 3.0f, 3.0f, 3.0f, 3.0f)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4(0.0f, 1.0f, 0.0f, 0.0f).radians_between(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).radians_between(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 2.03553f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-2.00f,-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.90f,-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.55f,-1.55f,-1.55f,-1.55f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.50f,-1.50f,-1.50f,-1.50f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.45f,-1.45f,-1.45f,-1.45f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.10f,-1.10f,-1.10f,-1.10f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.00f,-1.00f,-1.00f,-1.00f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-0.90f,-0.90f,-0.90f,-0.90f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-0.55f,-0.55f,-0.55f,-0.55f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-0.50f,-0.50f,-0.50f,-0.50f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-0.45f,-0.45f,-0.45f,-0.45f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-0.10f,-0.10f,-0.10f,-0.10f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 0.00f, 0.00f, 0.00f, 0.00f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 0.10f, 0.10f, 0.10f, 0.10f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 0.45f, 0.45f, 0.45f, 0.45f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 0.50f, 0.50f, 0.50f, 0.50f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 0.55f, 0.55f, 0.55f, 0.55f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 0.90f, 0.90f, 0.90f, 0.90f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.00f, 1.00f, 1.00f, 1.00f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.10f, 1.10f, 1.10f, 1.10f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.45f, 1.45f, 1.45f, 1.45f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.50f, 1.50f, 1.50f, 1.50f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.55f, 1.55f, 1.55f, 1.55f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.90f, 1.90f, 1.90f, 1.90f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 2.00f, 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(-2.00f,-2.00f,-2.00f,-2.00f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.90f,-1.90f,-1.90f,-1.90f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.55f,-1.55f,-1.55f,-1.55f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.50f,-1.50f,-1.50f,-1.50f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.45f,-1.45f,-1.45f,-1.45f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.10f,-1.10f,-1.10f,-1.10f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.00f,-1.00f,-1.00f,-1.00f).floor(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.90f,-0.90f,-0.90f,-0.90f).floor(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.55f,-0.55f,-0.55f,-0.55f).floor(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.50f,-0.50f,-0.50f,-0.50f).floor(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.45f,-0.45f,-0.45f,-0.45f).floor(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.10f,-0.10f,-0.10f,-0.10f).floor(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.00f, 0.00f, 0.00f, 0.00f).floor(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.10f, 0.10f, 0.10f, 0.10f).floor(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.45f, 0.45f, 0.45f, 0.45f).floor(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.50f, 0.50f, 0.50f, 0.50f).floor(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.55f, 0.55f, 0.55f, 0.55f).floor(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.90f, 0.90f, 0.90f, 0.90f).floor(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.00f, 1.00f, 1.00f, 1.00f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.10f, 1.10f, 1.10f, 1.10f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.45f, 1.45f, 1.45f, 1.45f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.50f, 1.50f, 1.50f, 1.50f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.55f, 1.55f, 1.55f, 1.55f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.90f, 1.90f, 1.90f, 1.90f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 2.00f, 2.00f, 2.00f, 2.00f).floor(),  2.00f, 2.00f, 2.00f, 2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-2.00f,-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.90f,-1.90f,-1.90f,-1.90f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.55f,-1.55f,-1.55f,-1.55f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.50f,-1.50f,-1.50f,-1.50f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.45f,-1.45f,-1.45f,-1.45f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.10f,-1.10f,-1.10f,-1.10f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.00f,-1.00f,-1.00f,-1.00f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-0.90f,-0.90f,-0.90f,-0.90f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-0.55f,-0.55f,-0.55f,-0.55f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-0.50f,-0.50f,-0.50f,-0.50f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-0.45f,-0.45f,-0.45f,-0.45f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-0.10f,-0.10f,-0.10f,-0.10f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 0.00f, 0.00f, 0.00f, 0.00f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 0.10f, 0.10f, 0.10f, 0.10f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 0.45f, 0.45f, 0.45f, 0.45f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 0.50f, 0.50f, 0.50f, 0.50f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 0.55f, 0.55f, 0.55f, 0.55f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 0.90f, 0.90f, 0.90f, 0.90f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.00f, 1.00f, 1.00f, 1.00f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.10f, 1.10f, 1.10f, 1.10f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.45f, 1.45f, 1.45f, 1.45f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.50f, 1.50f, 1.50f, 1.50f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.55f, 1.55f, 1.55f, 1.55f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.90f, 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 2.00f, 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(-2.00f,-2.00f,-2.00f,-2.00f).ceil(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.90f,-1.90f,-1.90f,-1.90f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.55f,-1.55f,-1.55f,-1.55f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.50f,-1.50f,-1.50f,-1.50f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.45f,-1.45f,-1.45f,-1.45f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.10f,-1.10f,-1.10f,-1.10f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.00f,-1.00f,-1.00f,-1.00f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.90f,-0.90f,-0.90f,-0.90f).ceil(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.55f,-0.55f,-0.55f,-0.55f).ceil(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.50f,-0.50f,-0.50f,-0.50f).ceil(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.45f,-0.45f,-0.45f,-0.45f).ceil(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.10f,-0.10f,-0.10f,-0.10f).ceil(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.00f, 0.00f, 0.00f, 0.00f).ceil(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.10f, 0.10f, 0.10f, 0.10f).ceil(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.45f, 0.45f, 0.45f, 0.45f).ceil(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.50f, 0.50f, 0.50f, 0.50f).ceil(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.55f, 0.55f, 0.55f, 0.55f).ceil(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.90f, 0.90f, 0.90f, 0.90f).ceil(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.00f, 1.00f, 1.00f, 1.00f).ceil(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.10f, 1.10f, 1.10f, 1.10f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.45f, 1.45f, 1.45f, 1.45f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.50f, 1.50f, 1.50f, 1.50f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.55f, 1.55f, 1.55f, 1.55f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.90f, 1.90f, 1.90f, 1.90f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 2.00f, 2.00f, 2.00f, 2.00f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-2.00f,-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.90f,-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.55f,-1.55f,-1.55f,-1.55f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.50f,-1.50f,-1.50f,-1.50f)), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.45f,-1.45f,-1.45f,-1.45f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.10f,-1.10f,-1.10f,-1.10f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.00f,-1.00f,-1.00f,-1.00f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-0.90f,-0.90f,-0.90f,-0.90f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-0.55f,-0.55f,-0.55f,-0.55f)), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-0.50f,-0.50f,-0.50f,-0.50f)), -0.00f,-0.00f,-0.00f,-0.00f); //i guess this rounds down
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-0.45f,-0.45f,-0.45f,-0.45f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4(-0.10f,-0.10f,-0.10f,-0.10f)), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 0.00f, 0.00f, 0.00f, 0.00f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 0.10f, 0.10f, 0.10f, 0.10f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 0.45f, 0.45f, 0.45f, 0.45f)),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 0.50f, 0.50f, 0.50f, 0.50f)),  0.00f, 0.00f, 0.00f, 0.00f); //i guess this rounds down
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 0.55f, 0.55f, 0.55f, 0.55f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 0.90f, 0.90f, 0.90f, 0.90f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.00f, 1.00f, 1.00f, 1.00f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.10f, 1.10f, 1.10f, 1.10f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.45f, 1.45f, 1.45f, 1.45f)),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.50f, 1.50f, 1.50f, 1.50f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.55f, 1.55f, 1.55f, 1.55f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.90f, 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(vec4_round(Vec4( 2.00f, 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f, 2.00f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4(-2.00f,-2.00f,-2.00f,-2.00f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.90f,-1.90f,-1.90f,-1.90f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.55f,-1.55f,-1.55f,-1.55f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.50f,-1.50f,-1.50f,-1.50f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.45f,-1.45f,-1.45f,-1.45f).round(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.10f,-1.10f,-1.10f,-1.10f).round(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-1.00f,-1.00f,-1.00f,-1.00f).round(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.90f,-0.90f,-0.90f,-0.90f).round(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.55f,-0.55f,-0.55f,-0.55f).round(), -1.00f,-1.00f,-1.00f,-1.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.50f,-0.50f,-0.50f,-0.50f).round(), -0.00f,-0.00f,-0.00f,-0.00f); //i guess this rounds down
+		ASSERT_VEC4_VALUES(Vec4(-0.45f,-0.45f,-0.45f,-0.45f).round(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4(-0.10f,-0.10f,-0.10f,-0.10f).round(), -0.00f,-0.00f,-0.00f,-0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.00f, 0.00f, 0.00f, 0.00f).round(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.10f, 0.10f, 0.10f, 0.10f).round(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.45f, 0.45f, 0.45f, 0.45f).round(),  0.00f, 0.00f, 0.00f, 0.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.50f, 0.50f, 0.50f, 0.50f).round(),  0.00f, 0.00f, 0.00f, 0.00f); //i guess this rounds down
+		ASSERT_VEC4_VALUES(Vec4( 0.55f, 0.55f, 0.55f, 0.55f).round(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 0.90f, 0.90f, 0.90f, 0.90f).round(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.00f, 1.00f, 1.00f, 1.00f).round(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.10f, 1.10f, 1.10f, 1.10f).round(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.45f, 1.45f, 1.45f, 1.45f).round(),  1.00f, 1.00f, 1.00f, 1.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.50f, 1.50f, 1.50f, 1.50f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.55f, 1.55f, 1.55f, 1.55f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 1.90f, 1.90f, 1.90f, 1.90f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
+		ASSERT_VEC4_VALUES(Vec4( 2.00f, 2.00f, 2.00f, 2.00f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-2.0f,-3.0f,-4.0f).min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).min(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-2.0f,-3.0f,-4.0f).max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).max(Vec4( 1.0f, 2.0f, 0.0f, 4.0f)),  1.0f, 2.0f, 0.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).max(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 5.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 5.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 5.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 5.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 5.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  5.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f,-5.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f,-5.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f,-5.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-5.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f,-5.0f, 0.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-5.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4(-5.0f, 0.0f, 0.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -5.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 1.2f, 2.3f, 1.2f, 2.3f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.0f, 2.3f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 1.2f, 2.3f, 2.3f, 1.2f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.3f, 2.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 1.2f, 2.3f, 5.3f, 5.3f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 5.0f, 5.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4(-1.5f, 1.0f,-0.5f,-0.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4(-1.5f, 1.0f,-1.5f,-1.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f,-1.5f);
+		ASSERT_VEC4_VALUES(vec4_clamp(Vec4(-1.5f, 1.0f,-6.5f,-6.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f,-5.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 5.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 5.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 5.0f, 0.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 5.0f, 0.0f, 0.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 5.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 5.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  5.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-5.0f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f,-5.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-5.0f, 0.0f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-5.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-5.0f, 0.0f, 0.0f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-5.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-5.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -5.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.2f, 2.3f, 1.2f, 2.3f).clamp(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.0f, 2.3f);
+		ASSERT_VEC4_VALUES(Vec4( 1.2f, 2.3f, 2.3f, 1.2f).clamp(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.3f, 2.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.2f, 2.3f, 5.3f, 5.3f).clamp(Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 5.0f, 5.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.5f, 1.0f,-0.5f,-0.4f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.5f, 1.0f,-1.5f,-1.5f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f,-1.5f);
+		ASSERT_VEC4_VALUES(Vec4(-1.5f, 1.0f,-6.5f,-6.5f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f,-5.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 5.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 5.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f, 1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 5.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 5.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 5.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  5.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f,-5.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-1.0f,-5.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f,-5.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-1.0f,-5.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f,-5.0f, 0.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.0f,-5.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4(-5.0f, 0.0f, 0.0f, 0.0f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -5.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 1.2f, 2.3f, 1.2f, 2.3f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.0f, 2.3f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 1.2f, 2.3f, 2.3f, 1.2f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 2.3f, 2.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4( 1.2f, 2.3f, 5.3f, 5.3f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  2.0f, 2.3f, 5.0f, 5.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4(-1.5f, 1.0f,-0.5f,-0.4f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp(Vec4(-1.5f, 1.0f,-1.5f,-1.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f,-1.5f);
+		ASSERT_VEC4_VALUES(clamp(Vec4(-1.5f, 1.0f,-6.5f,-6.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f,-5.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-2.0f,-3.0f,-4.0f).clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(clamp_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-2.0f,-3.0f,-4.0f).clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(clamp_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), 1.0f,99.0f), 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), 6.0f,99.0f), 6.0f/DESHI_SQRTF(30.0f), 12.0f/DESHI_SQRTF(30.0f), 18.0f/DESHI_SQRTF(30.0f), 24.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), 0.0f, 2.0f), 2.0f/DESHI_SQRTF(30.0f), 4.0f/DESHI_SQRTF(30.0f), 6.0f/DESHI_SQRTF(30.0f), 8.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), 0.0f, 6.0f), 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4(-1.0f,-2.0f,-3.0f,-4.0f), 1.0f,99.0f), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 1.0f,-2.0f,-3.0f, 4.0f), 6.0f,99.0f), 6.0f/DESHI_SQRTF(30.0f),-12.0f/DESHI_SQRTF(30.0f),-18.0f/DESHI_SQRTF(30.0f), 24.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), 0.0f, 2.0f), -2.0f/DESHI_SQRTF(30.0f), 4.0f/DESHI_SQRTF(30.0f), 6.0f/DESHI_SQRTF(30.0f), 8.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), 0.0f, 6.0f), -1.0f, 2.0f, 3.0f, 4.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp_mag(0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(1.0f,99.0f), 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(6.0f,99.0f), 6.0f/DESHI_SQRTF(30.0f), 12.0f/DESHI_SQRTF(30.0f), 18.0f/DESHI_SQRTF(30.0f), 24.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(0.0f, 2.0f), 2.0f/DESHI_SQRTF(30.0f), 4.0f/DESHI_SQRTF(30.0f), 6.0f/DESHI_SQRTF(30.0f), 8.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(0.0f, 6.0f), 1.0f, 2.0f, 3.0f, 4.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-2.0f,-3.0f,-4.0f).clamp_mag(1.0f,99.0f), -1.0f,-2.0f,-3.0f,-4.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).clamp_mag(6.0f,99.0f), 6.0f/DESHI_SQRTF(30.0f),-12.0f/DESHI_SQRTF(30.0f),-18.0f/DESHI_SQRTF(30.0f),-24.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(0.0f, 2.0f), -2.0f/DESHI_SQRTF(30.0f), 4.0f/DESHI_SQRTF(30.0f), 6.0f/DESHI_SQRTF(30.0f), 8.0f/DESHI_SQRTF(30.0f));
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(0.0f, 6.0f), -1.0f, 2.0f, 3.0f, 4.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.1f, 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f, 0.1f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.9f, 0.9f, 0.9f, 0.9f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)), -0.5f,-0.5f,-0.5f,-0.5f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.9f, 0.9f, 0.9f, 0.9f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f, 0.4f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 5.0f, 5.0f, 5.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f, 4.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.1f, 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f, 0.1f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(Vec4( 0.9f, 0.9f, 0.9f, 0.9f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)), -0.5f,-0.5f,-0.5f,-0.5f);
+		ASSERT_VEC4_VALUES(Vec4( 0.9f, 0.9f, 0.9f, 0.9f).nudge(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f, 0.4f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).nudge(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(Vec4( 5.0f, 5.0f, 5.0f, 5.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.1f, 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f, 0.1f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 0.9f, 0.9f, 0.9f, 0.9f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)), -0.5f,-0.5f,-0.5f,-0.5f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 0.9f, 0.9f, 0.9f, 0.9f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f, 0.4f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(nudge(Vec4( 5.0f, 5.0f, 5.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f, 4.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.5f, 0.5f, 0.5f, 0.5f);
+		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f,-1.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)), 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)), 0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)), 0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)), 0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)), 0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)), 0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_zero(), 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).x_zero(), 0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).x_zero(), 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).x_zero(), 0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).x_zero(), 0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).x_zero(), 0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).x_zero(), 0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_zero(), 0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_zero(), 0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_zero(), 0.0f, 1.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 0.0f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_zero(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).y_zero(),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).y_zero(),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).y_zero(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).y_zero(),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).y_zero(),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).y_zero(),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_zero(),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_zero(),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_zero(),  1.5f, 0.0f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 0.0f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_zero(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_zero(),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).z_zero(),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).z_zero(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).z_zero(),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).z_zero(),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).z_zero(),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).z_zero(),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_zero(),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_zero(),  1.5f, 1.5f, 0.0f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 1.5f, 0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_zero(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_zero(),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).w_zero(),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).w_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).w_zero(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).w_zero(),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).w_zero(),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).w_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).w_zero(),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).w_zero(),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_zero(),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_zero(),  1.5f, 1.5f, 1.5f, 0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f,0.0f,0.0f,0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_only(),  1.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).x_only(), -1.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).x_only(),  1.5f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_only(),  0.0f,0.0f,0.0f,0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_only(),  1.5f,0.0f,0.0f,0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)), 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)), 0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)), 0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 0.0f, 0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_only(), 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).y_only(), 0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).y_only(), 0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_only(), 0.0f, 1.5f, 0.0f, 0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)), 0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)), 0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)), 0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 0.0f, 1.5f, 0.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).z_only(), 0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).z_only(), 0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_only(), 0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_only(), 0.0f, 0.0f, 1.5f, 0.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)), 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)), 0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 0.0f, 0.0f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).w_only(), 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).w_only(), 0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_only(), 0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_only(), 0.0f, 0.0f, 0.0f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)), -1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), -1.5f, 1.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_negate(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).x_negate(),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).x_negate(),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).x_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).x_negate(),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).x_negate(),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).x_negate(),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).x_negate(), -1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).x_negate(),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_negate(),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_negate(),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_negate(), -1.5f, 1.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f,-1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f,-1.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_negate(),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).y_negate(),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).y_negate(),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).y_negate(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).y_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).y_negate(),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).y_negate(),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).y_negate(),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).y_negate(),  0.0f,-1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_negate(),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_negate(),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_negate(),  1.5f,-1.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f,-1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f,-1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).z_negate(),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).z_negate(),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).z_negate(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).z_negate(),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).z_negate(),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).z_negate(),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).z_negate(),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).z_negate(),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_negate(),  0.0f, 0.0f,-1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_negate(),  0.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_negate(),  1.5f, 1.5f,-1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 1.0f, 0.0f, 0.0f)),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 1.0f, 0.0f)),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.0f)),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4(-1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f,-1.0f, 0.0f, 0.0f)),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f,-1.0f, 0.0f)),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 0.0f,-1.0f)),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 1.5f, 0.0f, 0.0f, 0.0f)),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 1.5f, 0.0f, 0.0f)),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 1.5f, 0.0f)),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f,-1.5f);
+		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 1.5f,-1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).w_negate(),  0.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).w_negate(),  0.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).w_negate(), -1.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).w_negate(),  0.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).w_negate(),  0.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).w_negate(),  0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).w_negate(),  1.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).w_negate(),  0.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_negate(),  0.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_negate(),  0.0f, 0.0f, 0.0f,-1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_negate(),  1.5f, 1.5f, 1.5f,-1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f), 10.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f), 10.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f), 10.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f), 10.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f), 10.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f), 10.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f), 10.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f), 10.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f), 10.0f, 1.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_set(10.0f), 10.0f, 1.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), -1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f),  1.5f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 10.0f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_set(10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).y_set(10.0f), -1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).y_set(10.0f),  1.5f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_set(10.0f),  1.5f, 10.0f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 0.0f, 10.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), -1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f),  0.0f,-1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 0.0f, 10.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f),  1.5f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f),  0.0f, 1.5f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 10.0f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_set(10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).z_set(10.0f), -1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f,-1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).z_set(10.0f),  1.5f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 1.5f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_set(10.0f),  1.5f, 1.5f, 10.0f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 0.0f, 1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), -1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f),  0.0f,-1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 0.0f,-1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f),  1.5f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f),  0.0f, 1.5f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 0.0f, 1.5f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 1.5f, 10.0f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_set(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_set(10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_set(10.0f),  0.0f, 1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).w_set(10.0f),  0.0f, 0.0f, 1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).w_set(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).w_set(10.0f), -1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).w_set(10.0f),  0.0f,-1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).w_set(10.0f),  0.0f, 0.0f,-1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).w_set(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).w_set(10.0f),  1.5f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).w_set(10.0f),  0.0f, 1.5f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_set(10.0f),  0.0f, 0.0f, 1.5f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_set(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_set(10.0f),  1.5f, 1.5f, 1.5f, 10.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f), 11.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f), 10.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f), 10.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f), 10.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  9.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f), 10.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f), 10.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f), 10.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f), 11.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f), 10.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f), 10.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f), 11.5f, 1.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_add(10.0f), 11.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).x_add(10.0f), 10.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).x_add(10.0f),  9.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f,-1.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).x_add(10.0f), 10.0f, 0.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).x_add(10.0f), 10.0f, 0.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).x_add(10.0f), 11.5f, 0.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 1.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_add(10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_add(10.0f), 11.5f, 1.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 11.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), -1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f),  0.0f,  9.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f),  1.5f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f),  0.0f, 11.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 11.5f, 1.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_add(10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 11.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).y_add(10.0f),  0.0f, 10.0f, 0.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).y_add(10.0f), -1.0f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f,  9.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).y_add(10.0f),  0.0f, 10.0f,-1.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).y_add(10.0f),  0.0f, 10.0f, 0.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).y_add(10.0f),  1.5f, 10.0f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 11.5f, 0.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 1.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_add(10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_add(10.0f),  1.5f, 11.5f, 1.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 0.0f, 11.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 0.0f, 10.0f, 1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), -1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f),  0.0f,-1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 0.0f,  9.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 0.0f, 10.0f,-1.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f),  1.5f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f),  0.0f, 1.5f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 0.0f, 11.5f, 0.0f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
+		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 11.5f, 1.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_add(10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 11.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).z_add(10.0f),  0.0f, 0.0f, 10.0f, 1.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).z_add(10.0f), -1.0f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f,-1.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).z_add(10.0f),  0.0f, 0.0f,  9.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).z_add(10.0f),  0.0f, 0.0f, 10.0f,-1.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).z_add(10.0f),  1.5f, 0.0f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 1.5f, 10.0f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 11.5f, 0.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_add(10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_add(10.0f),  1.5f, 1.5f, 11.5f, 1.5f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 1.0f, 0.0f, 0.0f), 10.0f),  0.0f, 1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 1.0f, 0.0f), 10.0f),  0.0f, 0.0f, 1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 0.0f, 1.0f), 10.0f),  0.0f, 0.0f, 0.0f, 11.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4(-1.0f, 0.0f, 0.0f, 0.0f), 10.0f), -1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f,-1.0f, 0.0f, 0.0f), 10.0f),  0.0f,-1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f,-1.0f, 0.0f), 10.0f),  0.0f, 0.0f,-1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 0.0f,-1.0f), 10.0f),  0.0f, 0.0f, 0.0f,  9.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 1.5f, 0.0f, 0.0f, 0.0f), 10.0f),  1.5f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 1.5f, 0.0f, 0.0f), 10.0f),  0.0f, 1.5f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 1.5f, 0.0f), 10.0f),  0.0f, 0.0f, 1.5f, 10.0f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 0.0f, 11.5f);
+		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 1.5f, 11.5f);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_add(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_add(10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_add(10.0f),  0.0f, 1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.0f, 0.0f).w_add(10.0f),  0.0f, 0.0f, 1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.0f).w_add(10.0f),  0.0f, 0.0f, 0.0f, 11.0f);
+		ASSERT_VEC4_VALUES(Vec4(-1.0f, 0.0f, 0.0f, 0.0f).w_add(10.0f), -1.0f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f,-1.0f, 0.0f, 0.0f).w_add(10.0f),  0.0f,-1.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f,-1.0f, 0.0f).w_add(10.0f),  0.0f, 0.0f,-1.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f,-1.0f).w_add(10.0f),  0.0f, 0.0f, 0.0f,  9.0f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 0.0f, 0.0f, 0.0f).w_add(10.0f),  1.5f, 0.0f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.5f, 0.0f, 0.0f).w_add(10.0f),  0.0f, 1.5f, 0.0f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_add(10.0f),  0.0f, 0.0f, 1.5f, 10.0f);
+		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_add(10.0f),  0.0f, 0.0f, 0.0f, 11.5f);
+		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_add(10.0f),  1.5f, 1.5f, 1.5f, 11.5f);
+#endif //#ifdef __cplusplus
+		
+#undef ASSERT_VEC4_VALUES
 	}
 	
 	
 	//// vec4i ////
 	{
+		vec4i a;
+		vec4i b;
+#define ASSERT_VEC4I_VALUES(lhs,x_,y_,z_,w_) a = (lhs);ASSERT_S32_EQUAL(a.x,(x_));ASSERT_S32_EQUAL(a.y,(y_));ASSERT_S32_EQUAL(a.z,(z_));ASSERT_S32_EQUAL(a.w,(w_))
 		
+		
+		a = vec4i{0,0,0,0};
+		b = vec4i{0,0,0,0};
+		ASSERT_S32_EQUAL(a.arr[0], 0);
+		ASSERT_S32_EQUAL(a.arr[0], a.x);
+		ASSERT_S32_EQUAL(a.arr[0], a.r);
+		ASSERT_S32_EQUAL(a.arr[0], a.xy.arr[0]);
+		ASSERT_S32_EQUAL(a.arr[0], a._unusedX0);
+		ASSERT_S32_EQUAL(a.arr[1], 0);
+		ASSERT_S32_EQUAL(a.arr[1], a.y);
+		ASSERT_S32_EQUAL(a.arr[1], a.g);
+		ASSERT_S32_EQUAL(a.arr[1], a.xy.arr[1]);
+		ASSERT_S32_EQUAL(a.arr[1], a.yz.arr[0]);
+		ASSERT_S32_EQUAL(a.arr[2], 0);
+		ASSERT_S32_EQUAL(a.arr[2], a.z);
+		ASSERT_S32_EQUAL(a.arr[2], a.b);
+		ASSERT_S32_EQUAL(a.arr[2], a._unusedZ0);
+		ASSERT_S32_EQUAL(a.arr[2], a.yz.arr[1]);
+		ASSERT_S32_EQUAL(b.arr[0], 0);
+		ASSERT_S32_EQUAL(b.arr[0], b.x);
+		ASSERT_S32_EQUAL(b.arr[0], b.r);
+		ASSERT_S32_EQUAL(b.arr[0], b.xy.arr[0]);
+		ASSERT_S32_EQUAL(b.arr[0], b._unusedX0);
+		ASSERT_S32_EQUAL(b.arr[1], 0);
+		ASSERT_S32_EQUAL(b.arr[1], b.y);
+		ASSERT_S32_EQUAL(b.arr[1], b.g);
+		ASSERT_S32_EQUAL(b.arr[1], b.xy.arr[1]);
+		ASSERT_S32_EQUAL(b.arr[1], b.yz.arr[0]);
+		ASSERT_S32_EQUAL(b.arr[2], 0);
+		ASSERT_S32_EQUAL(b.arr[2], b.z);
+		ASSERT_S32_EQUAL(b.arr[2], b.b);
+		ASSERT_S32_EQUAL(b.arr[2], b._unusedZ0);
+		ASSERT_S32_EQUAL(b.arr[2], b.yz.arr[1]);
+		
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-2,-3,-4), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i(-0,-0,-0,-0), -0,-0,-0,-0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4),  1, 2, 3, 4);
+		
+		ASSERT_VEC4I_VALUES(vec4i_ZERO(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_ONE(),   1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_UNITX(), 1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_UNITY(), 0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_UNITZ(), 0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_UNITW(), 0, 0, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(vec4i::ZERO,  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i::ONE,   1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i::UNITX, 1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i::UNITY, 0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i::UNITZ, 0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i::UNITW, 0, 0, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		a = Vec4i(1,-2,3,-4);
+		ASSERT_S32_EQUAL(vec4i_index(a, 0),  1);
+		ASSERT_S32_EQUAL(vec4i_index(a, 1), -2);
+		ASSERT_S32_EQUAL(vec4i_index(a, 2),  3);
+		ASSERT_S32_EQUAL(vec4i_index(a, 3), -4);
+		
+#ifdef __cplusplus
+		a = Vec4i(1,-2,3,-4);
+		ASSERT_S32_EQUAL(a[0],  1);
+		ASSERT_S32_EQUAL(a[1], -2);
+		ASSERT_S32_EQUAL(a[2],  3);
+		ASSERT_S32_EQUAL(a[3], -4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a[0] =  2;
+		a[1] = -4;
+		a[2] = -3;
+		a[3] =  4;
+		ASSERT_S32_EQUAL(a.arr[0],  2);
+		ASSERT_S32_EQUAL(a.arr[1], -4);
+		ASSERT_S32_EQUAL(a.arr[2], -3);
+		ASSERT_S32_EQUAL(a.arr[3],  4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  2, 3, 4, 5);
+		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -1, 2, 0, 3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) + Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) + Vec4i( 1, 2, 3, 4),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) + Vec4i( 1, 2, 3, 4),  2, 3, 4, 5);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) + Vec4i(-2, 4,-3,-1), -1, 2, 0, 3);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4i( 0, 0, 0, 0);
+		a += Vec4i( 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 0, 0, 0, 0);
+		a += Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  1, 2, 3, 4);
+		a  = Vec4i( 1, 1, 1, 1);
+		a += Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  2, 3, 4, 5);
+		a  = Vec4i( 1,-2, 3, 4);
+		a += Vec4i(-2, 4,-3,-1);
+		ASSERT_VEC4I_VALUES(a, -1, 2, 0, 3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  0,-1,-2,-3);
+		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)),  3,-6, 6, 5);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) - Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) - Vec4i( 1, 2, 3, 4), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) - Vec4i( 1, 2, 3, 4),  0,-1,-2,-3);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) - Vec4i(-2, 4,-3,-1),  3,-6, 6, 5);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4i( 0, 0, 0, 0);
+		a -= Vec4i( 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 0, 0, 0, 0);
+		a -= Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a, -1,-2,-3,-4);
+		a  = Vec4i( 1, 1, 1, 1);
+		a -= Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  0,-1,-2,-3);
+		a  = Vec4i( 1,-2, 3, 4);
+		a -= Vec4i(-2, 4,-3,-1);
+		ASSERT_VEC4I_VALUES(a,  3,-6, 6, 5);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -2,-8,-9,-4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) * Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) * Vec4i( 1, 2, 3, 4),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) * Vec4i( 1, 2, 3, 4),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) * Vec4i(-2, 4,-3,-1), -2,-8,-9,-4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4i( 0, 0, 0, 0);
+		a *= Vec4i( 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 0, 0, 0, 0);
+		a *= Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 1, 1, 1, 1);
+		a *= Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  1, 2, 3, 4);
+		a  = Vec4i( 1,-2, 3, 4);
+		a *= Vec4i(-2, 4,-3,-1);
+		ASSERT_VEC4I_VALUES(a, -2,-8,-9,-4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(0, 0, 0, 0),  0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(0, 0, 0, 0),  1),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(1, 1, 1, 1),  2),  2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(1,-2, 3, 4), -2), -2, 4,-6,-8);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) *  0,  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) *  1,  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) *  2,  2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) * -2, -2, 4,-6,-8);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4i( 0, 0, 0, 0);
+		a *= 0;
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 0, 0, 0, 0);
+		a *= 1;
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 1, 1, 1, 1);
+		a *= 2;
+		ASSERT_VEC4I_VALUES(a,  2, 2, 2, 2);
+		a  = Vec4i( 1,-2, 3, 4);
+		a *= -2;
+		ASSERT_VEC4I_VALUES(a, -2, 4,-6,-8);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -0,-0,-1,-4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) / Vec4i( 1, 1, 1, 1),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) / Vec4i( 1, 2, 3, 4),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) / Vec4i( 1, 2, 3, 4),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) / Vec4i(-2, 4,-3,-1), -0,-0,-1,-4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4i( 1, 1, 1, 1);
+		a /= Vec4i( 1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(a,  1, 1, 1, 1);
+		a  = Vec4i( 0, 0, 0, 0);
+		a /= Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 1, 1, 1, 1);
+		a /= Vec4i( 1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(a,  1, 0, 0, 0);
+		a  = Vec4i( 1,-2, 3, 4);
+		a /= Vec4i(-2, 4,-3,-1);
+		ASSERT_VEC4I_VALUES(a, -0,-0,-1,-4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(1, 1, 1, 1),  1),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(0, 0, 0, 0),  1),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(1, 1, 1, 1),  2),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(1,-2, 3, 4), -2), -0, 1,-1,-2);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) /  1,  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) /  1,  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) /  2,  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) / -2, -0, 1,-1,-2);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		a  = Vec4i( 1, 1, 1, 1);
+		a /= 1;
+		ASSERT_VEC4I_VALUES(a,  1, 1, 1, 1);
+		a  = Vec4i( 0, 0, 0, 0);
+		a /= 1;
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 1, 1, 1, 1);
+		a /= 2;
+		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
+		a  = Vec4i( 1,-2, 3, 4);
+		a /= -2;
+		ASSERT_VEC4I_VALUES(a, -0, 1, -1,-2);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_negate(Vec4i(0, 0, 0, 0)), -0,-0,-0,-0);
+		ASSERT_VEC4I_VALUES(vec4i_negate(Vec4i(1, 1, 1, 1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(vec4i_negate(Vec4i(1,-2, 3, 4)), -1, 2,-3,-4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(-Vec4i(0, 0, 0, 0), -0,-0,-0,-0);
+		ASSERT_VEC4I_VALUES(-Vec4i(1, 1, 1, 1), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(-Vec4i(1,-2, 3, 4), -1, 2,-3,-4);
+#endif //#ifdef __cplusplus
+		
+		Assert(vec4i_equal(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)));
+		Assert(vec4i_equal(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)));
+		Assert(vec4i_equal(Vec4i(-1, 2, 3,-4), Vec4i(-1, 2, 3,-4)));
+		Assert(!vec4i_equal(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)));
+		Assert(!vec4i_equal(Vec4i( 1, 1, 1, 1), Vec4i( 2, 2, 2, 2)));
+		Assert(!vec4i_equal(Vec4i(-1, 2, 3,-4), Vec4i( 1,-2,-3, 4)));
+		Assert(vec4i_equal(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)), Vec4i( 1, 1, 1, 1)));
+		Assert(vec4i_equal(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), Vec4i( 0, 0, 0, 0)));
+		
+#ifdef __cplusplus
+		Assert(Vec4i( 0, 0, 0, 0) == Vec4i( 0, 0, 0, 0));
+		Assert(Vec4i( 1, 1, 1, 1) == Vec4i( 1, 1, 1, 1));
+		Assert(Vec4i(-1, 2, 3,-4) == Vec4i(-1, 2, 3,-4));
+		Assert(!(Vec4i( 0, 0, 0, 0) == Vec4i( 1, 1, 1, 1)));
+		Assert(!(Vec4i( 1, 1, 1, 1) == Vec4i( 2, 2, 2, 2)));
+		Assert(!(Vec4i(-1, 2, 3,-4) == Vec4i( 1,-2,-3, 4)));
+		Assert(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)) == Vec4i( 1, 1, 1, 1));
+		Assert(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)) == Vec4i( 0, 0, 0, 0));
+#endif //#ifdef __cplusplus
+		
+		Assert(vec4i_nequal(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)));
+		Assert(vec4i_nequal(Vec4i( 1, 1, 1, 1), Vec4i( 2, 2, 2, 2)));
+		Assert(vec4i_nequal(Vec4i(-1, 2, 3,-4), Vec4i( 1,-2,-3, 4)));
+		Assert(!vec4i_nequal(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)));
+		Assert(!vec4i_nequal(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)));
+		Assert(!vec4i_nequal(Vec4i(-1, 2, 3,-4), Vec4i(-1, 2, 3,-4)));
+		Assert(vec4i_nequal(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)), Vec4i( 2, 2, 2, 2)));
+		Assert(vec4i_nequal(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), Vec4i( 1, 1, 1, 1)));
+		
+#ifdef __cplusplus
+		Assert(Vec4i( 0, 0, 0, 0) != Vec4i( 1, 1, 1, 1));
+		Assert(Vec4i( 1, 1, 1, 1) != Vec4i( 2, 2, 2, 2));
+		Assert(Vec4i(-1, 2, 3,-4) != Vec4i( 1,-2,-3, 4));
+		Assert(!(Vec4i( 0, 0, 0, 0) != Vec4i( 0, 0, 0, 0)));
+		Assert(!(Vec4i( 1, 1, 1, 1) != Vec4i( 1, 1, 1, 1)));
+		Assert(!(Vec4i(-1, 2, 3,-4) != Vec4i(-1, 2,-3, 4)));
+		Assert(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)) != Vec4i( 2, 2, 2, 2));
+		Assert(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)) != Vec4i( 1, 1, 1, 1));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i(-1,-1,-1,-1)), 1,1,1,1);
+		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i( 0, 0, 0, 0)), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i( 1, 1, 1, 1)), 1,1,1,1);
+		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i( 1,-2,-3, 4)), 1,2,3,4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).abs(), 1,1,1,1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).abs(), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).abs(), 1,1,1,1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3, 4).abs(), 1,2,3,4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),   0.0f);
+		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),   0.0f);
+		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  10.0f);
+		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -23.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).dot(Vec4i( 0, 0, 0, 0)),   0.0f);
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).dot(Vec4i( 1, 2, 1, 1)),   0.0f);
+		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).dot(Vec4i( 1, 2, 3, 4)),  10.0f);
+		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).dot(Vec4i(-2, 4,-3,-1)), -23.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(1, 1, 1, 1)), DESHI_SQRTF( 4.0f));
+		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(1, 2, 3, 4)), DESHI_SQRTF(30.0f));
+		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(1,-2, 3, 4)), DESHI_SQRTF(30.0f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).mag(), 0.00f);
+		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).mag(), DESHI_SQRTF( 4.0f));
+		ASSERT_F32_EQUAL(Vec4i(1, 2, 3, 4).mag(), DESHI_SQRTF(30.0f));
+		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).mag(), DESHI_SQRTF(30.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(0, 0, 0, 0)),  0.0f);
+		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(1, 1, 1, 1)),  4.0f);
+		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(1, 2, 3, 4)), 30.0f);
+		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(1,-2, 3, 4)), 30.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).mag_sq(),  0.0f);
+		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).mag_sq(),  4.0f);
+		ASSERT_F32_EQUAL(Vec4i(1, 2, 3, 4).mag_sq(), 30.0f);
+		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).mag_sq(), 30.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(0, 0, 0, 0)), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1, 0, 0, 0)), 1,0,0,0);
+		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1, 1, 1, 1)), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1, 2, 3, 4)), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1,-2, 3, 4)), 0,0,0,0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0).normalize(), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1).normalize(), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 0, 0, 0).normalize(), 1,0,0,0);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 2, 3, 4).normalize(), 0,0,0,0);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4).normalize(), 0,0,0,0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(30.0f));
+		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), DESHI_SQRTF(106.0f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance(Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance(Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(30.0f));
+		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).distance(Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(14.0f));
+		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).distance(Vec4i(-2, 4,-3,-1)), DESHI_SQRTF(106.0f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0.0f);
+		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 30.0f);
+		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), 14.0f);
+		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 106.0f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance_sq(Vec4i( 0, 0, 0, 0)),  0.0f);
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance_sq(Vec4i( 1, 2, 3, 4)), 30.0f);
+		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).distance_sq(Vec4i( 1, 2, 3, 4)), 14.0f);
+		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).distance_sq(Vec4i(-2, 4,-3,-1)), 106.0f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 2, 2, 2, 2), Vec4i( 5, 0, 0, 0)), 2.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 2, 2, 2, 2), Vec4i( 0, 5, 0, 0)), 2.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 2, 2, 2, 2), Vec4i( 0, 0, 5, 0)), 2.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 2, 2, 2, 2), Vec4i( 0, 0, 0, 5)), 2.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), 10.0f/DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -23.0f/DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 1, 2, 3, 4), Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 1, 2, 3, 4), Vec4i( 1, 1, 1, 1)), 5.0f);
+		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i(-2, 4,-3,-1), Vec4i( 1,-2, 3, 4)), -23.0f/DESHI_SQRTF(30.00f));
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i( 0, 0, 0, 0).projection_scalar(Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i( 0, 0, 0, 0).projection_scalar(Vec4i( 1, 2, 3, 4)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i( 2, 2, 2, 2).projection_scalar(Vec4i( 5, 0, 0, 0)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4i( 2, 2, 2, 2).projection_scalar(Vec4i( 0, 5, 0, 0)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4i( 2, 2, 2, 2).projection_scalar(Vec4i( 0, 0, 5, 0)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4i( 2, 2, 2, 2).projection_scalar(Vec4i( 0, 0, 0, 5)), 2.0f);
+		ASSERT_F32_EQUAL(Vec4i( 1, 1, 1, 1).projection_scalar(Vec4i( 1, 2, 3, 4)), 10.0f/DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(Vec4i( 1,-2, 3, 4).projection_scalar(Vec4i(-2, 4,-3,-1)), -23.0f/DESHI_SQRTF(30.00f));
+		ASSERT_F32_EQUAL(Vec4i( 1, 2, 3, 4).projection_scalar(Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i( 1, 2, 3, 4).projection_scalar(Vec4i( 1, 1, 1, 1)), 5.0f);
+		ASSERT_F32_EQUAL(Vec4i(-2, 4,-3,-1).projection_scalar(Vec4i( 1,-2, 3, 4)), -23.0f/DESHI_SQRTF(30.00f));
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 2, 2, 2, 2), Vec4i( 5, 0, 0, 0)), 2, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 2, 2, 2, 2), Vec4i( 0, 5, 0, 0)), 0, 2, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 2, 2, 2, 2), Vec4i( 0, 0, 5, 0)), 0, 0, 2, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 2, 2, 2, 2), Vec4i( 0, 0, 0, 5)), 0, 0, 0, 2);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), 0, 0, 0, 1); //floating error causes z to become 0 when it should be 1
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 1,-3, 2, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 1, 2, 3, 4), Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 1, 2, 3, 4), Vec4i( 1, 1, 1, 1)), 2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i(-2, 4,-3,-1), Vec4i( 1,-2, 3, 4)), 0, 1,-2,-3);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).projection_vector(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).projection_vector(Vec4i( 1, 2, 3, 4)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 2, 2, 2, 2).projection_vector(Vec4i( 5, 0, 0, 0)), 2, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 2, 2, 2, 2).projection_vector(Vec4i( 0, 5, 0, 0)), 0, 2, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 2, 2, 2, 2).projection_vector(Vec4i( 0, 0, 5, 0)), 0, 0, 2, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 2, 2, 2, 2).projection_vector(Vec4i( 0, 0, 0, 5)), 0, 0, 0, 2);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).projection_vector(Vec4i( 1, 2, 3, 4)), 0, 0, 0, 1); //floating error causes z to become 0 when it should be 1
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2, 3, 4).projection_vector(Vec4i(-2, 4,-3,-1)), 1,-3, 2, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).projection_vector(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).projection_vector(Vec4i( 1, 1, 1, 1)), 2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(Vec4i(-2, 4,-3,-1).projection_vector(Vec4i( 1,-2, 3, 4)), 0, 1,-2,-3);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0, 1, 1, 2);
+		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), 1, 1, 2, 2);
+		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 0, 1, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0).midpoint(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0).midpoint(Vec4i( 1, 2, 3, 4)), 0, 1, 1, 2);
+		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1).midpoint(Vec4i( 1, 2, 3, 4)), 1, 1, 2, 2);
+		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4).midpoint(Vec4i(-2, 4,-3,-1)), 0, 1, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(5, 5, 5, 5), Vec4i( 3, 3, 3, 3)), 0.0f);
+		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(0, 1, 0, 0), Vec4i( 1, 0, 0, 0)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 2.44443f);
+		
+#ifdef __cplusplus
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).radians_between(Vec4i( 0, 0, 0, 0)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).radians_between(Vec4i( 1, 2, 3, 4)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i(5, 5, 5, 5).radians_between(Vec4i( 3, 3, 3, 3)), 0.0f);
+		ASSERT_F32_EQUAL(Vec4i(0, 1, 0, 0).radians_between(Vec4i( 1, 0, 0, 0)), DESHI_MATH_PI_F32/2.0f);
+		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).radians_between(Vec4i(-2, 4,-3,-1)), 2.44443f);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i(-1,-2,-3,-1), Vec4i( 1, 2, 3, 4)), -1,-2,-3,-1);
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).min(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).min(Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-2,-3,-4).min(Vec4i( 1, 2, 3, 4)), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).min(Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).min(Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).min(Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i(-1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).max(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).max(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-2,-3,-4).max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).max(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).max(Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 5, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  5, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 5, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 5, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 5, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 5, 1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0, 5), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 5);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i(-5, 0, 0, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -5,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0,-5, 0, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-5,-1,-1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0,-5, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-5,-1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0,-5), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-5);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 1, 2, 3, 4), Vec4i( 2, 2, 2, 2), Vec4i( 5, 5, 5, 5)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i(-1, 1,-3,-4), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-3,-4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 5, 0, 0, 0).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  5, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 5, 0, 0).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 5, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 5, 0).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 5, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 5).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 5);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-5, 0, 0, 0).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -5,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-5, 0, 0).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-5,-1,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-5, 0).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-5,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-5).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-5);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp(Vec4i( 2, 2, 2, 2), Vec4i( 5, 5, 5, 5)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 1,-3,-4).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-3,-4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 5, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  5, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 5, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 5, 1, 1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 5, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 5, 1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0, 5), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 5);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i(-5, 0, 0, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -5,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0,-5, 0, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-5,-1,-1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0,-5, 0), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-5,-1);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0,-5), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-5);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i( 1, 2, 3, 4), Vec4i( 2, 2, 2,-2), Vec4i( 5, 5, 5, 5)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp(Vec4i(-1, 1,-3,-4), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-3,-4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i(-1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp_min(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_min(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-2,-3,-4).clamp_min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).clamp_min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_min(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_min(Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i(-1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp_min(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i(-1,-2,-3,-4), Vec4i( 1, 2, 3, 4)), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp_max(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_max(Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-2,-3,-4).clamp_max(Vec4i( 1, 2, 3, 4)), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).clamp_max(Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_max(Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_max(Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i(-1,-2,-3,-4), Vec4i( 1, 2, 3, 4)), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
+		ASSERT_VEC4I_VALUES(clamp_max(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 0, 0, 0, 0), 0, 0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 1, 2, 3, 4), 1,99),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 1, 2, 3, 4), 6,99),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 1, 2, 3, 4), 0, 2),  0, 0, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 1, 2, 3, 4), 0, 6),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i(-1,-2,-3,-4), 1,99), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 1,-2,-3,-4), 6,99),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i(-1, 2, 3, 4), 0, 2),  0, 0, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i(-1, 2, 3, 4), 0, 6), -1, 2, 3, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp_mag(0, 0),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_mag(1,99),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_mag(6,99),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_mag(0, 2),  0, 0, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_mag(0, 6),  1, 2, 3, 4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-2,-3,-4).clamp_mag(1,99), -1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).clamp_mag(6,99),  1,-2,-3,-4);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_mag(0, 2),  0, 0, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_mag(0, 6), -1, 2, 3, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i( 2, 2, 2, 2), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i( 2, 2, 2, 2), Vec4i( 3, 3, 3, 3)),  2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1), Vec4i( 0, 0, 0, 0)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i(-1,-1,-1,-1), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 1, 1, 1, 1), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 5, 5, 5, 5), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  4, 4, 4, 4);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 2, 2, 2, 2), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 2, 2, 2, 2), Vec4i( 3, 3, 3, 3)),  2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).nudge(Vec4i( 1, 1, 1, 1), Vec4i( 0, 0, 0, 0)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i(-1,-1,-1,-1), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).nudge(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 5, 5, 5, 5).nudge(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  4, 4, 4, 4);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 2, 2, 2, 2), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 2, 2, 2, 2), Vec4i( 3, 3, 3, 3)),  2, 2, 2, 2);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1), Vec4i( 0, 0, 0, 0)),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i(-1,-1,-1,-1), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 1, 1, 1, 1), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(nudge(Vec4i( 5, 5, 5, 5), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  4, 4, 4, 4);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 1.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), 0.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.0f), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 0, 0, 0, 0), 0.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 0, 0, 0, 0), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 0, 0, 0, 0), 1.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 1, 1, 1, 1), 0.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).lerp(Vec4i( 1, 1, 1, 1), 0.0f), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).lerp(Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).lerp(Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 1.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), 0.0f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.0f), -1,-1,-1,-1);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 1, 0, 0)), 0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0, 1, 0)), 0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0, 0, 1)), 0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i(-1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0,-1, 0, 0)), 0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0,-1, 0)), 0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0, 0,-1)), 0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 1, 1, 1, 1)), 0, 1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_zero(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_zero(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_zero(), 0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).x_zero(), 0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).x_zero(), 0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).x_zero(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).x_zero(), 0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_zero(), 0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_zero(), 0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_zero(), 0, 1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 1, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0, 1, 0)),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0,-1, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0,-1, 0)),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 1, 1, 1, 1)),  1, 0, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_zero(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).y_zero(),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).y_zero(),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).y_zero(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).y_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_zero(),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_zero(),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_zero(),  1, 0, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 1, 0, 0)),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0, 1, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0,-1, 0, 0)),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0,-1, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 1, 1, 1, 1)),  1, 1, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_zero(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_zero(),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).z_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).z_zero(),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).z_zero(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).z_zero(),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_zero(),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_zero(),  1, 1, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 1, 0, 0)),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0, 1, 0)),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0,-1, 0, 0)),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0,-1, 0)),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0, 0,-1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 1, 1, 1, 1)),  1, 1, 1, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_zero(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_zero(),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).w_zero(),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).w_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).w_zero(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).w_zero(),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_zero(),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_zero(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_zero(),  1, 1, 1, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 1, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0, 1, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0,-1, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0,-1, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0, 0,-1)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 1, 1, 1, 1)),  1, 0, 0, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_only(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).x_only(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_only(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_only(),  1, 0, 0, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 1, 0, 0)), 0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0, 1, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0, 0, 1)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i(-1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0,-1, 0, 0)), 0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0,-1, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0, 0,-1)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 1, 1, 1, 1)), 0, 1, 0, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_only(), 0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).y_only(), 0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_only(), 0, 1, 0, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 1, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0, 1, 0)), 0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0, 0, 1)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i(-1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0,-1, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0,-1, 0)), 0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0, 0,-1)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 1, 1, 1, 1)), 0, 0, 1, 0);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).z_only(), 0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_only(), 0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_only(), 0, 0, 1, 0);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 1, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0, 1, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0, 0, 1)), 0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i(-1, 0, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0,-1, 0, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0,-1, 0)), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0, 0,-1)), 0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 1, 1, 1, 1)), 0, 0, 0, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).w_only(), 0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_only(), 0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_only(), 0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_only(), 0, 0, 0, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 1, 0, 0)),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0, 1, 0)),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i(-1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0,-1, 0, 0)),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0,-1, 0)),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 1, 1, 1, 1)), -1, 1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_negate(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_negate(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_negate(),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).x_negate(),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).x_negate(),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).x_negate(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).x_negate(),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_negate(),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_negate(),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_negate(), -1, 1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 1, 0, 0)),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0, 1, 0)),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0,-1, 0, 0)),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0,-1, 0)),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 1, 1, 1, 1)),  1,-1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_negate(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_negate(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_negate(),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).y_negate(),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).y_negate(),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).y_negate(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).y_negate(),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_negate(),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_negate(),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_negate(),  1,-1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 1, 0, 0)),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0, 1, 0)),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0, 0, 1)),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0,-1, 0, 0)),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0,-1, 0)),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 1, 1, 1, 1)),  1, 1,-1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_negate(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_negate(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_negate(),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).z_negate(),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).z_negate(),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).z_negate(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).z_negate(),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_negate(),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_negate(),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_negate(),  1, 1,-1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 1, 0, 0)),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0, 1, 0)),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0, 0, 1)),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i(-1, 0, 0, 0)), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0,-1, 0, 0)),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0,-1, 0)),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 1, 1, 1, 1)),  1, 1, 1,-1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_negate(),  0, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_negate(),  1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_negate(),  0, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).w_negate(),  0, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).w_negate(),  0, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).w_negate(), -1, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).w_negate(),  0,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_negate(),  0, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_negate(),  0, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_negate(),  1, 1, 1,-1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0, 0, 0), 10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 1, 0, 0, 0), 10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 1, 0, 0), 10), 10, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0, 1, 0), 10), 10, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0, 0, 1), 10), 10, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i(-1, 0, 0, 0), 10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0,-1, 0, 0), 10), 10,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0,-1, 0), 10), 10, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0, 0,-1), 10), 10, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 1, 1, 1, 1), 10), 10, 1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_set(10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_set(10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_set(10), 10, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).x_set(10), 10, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).x_set(10), 10, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).x_set(10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).x_set(10), 10,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_set(10), 10, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_set(10), 10, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_set(10), 10, 1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0, 0, 0), 10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 1, 0, 0, 0), 10),  1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 1, 0, 0), 10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0, 1, 0), 10),  0, 10, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0, 0, 1), 10),  0, 10, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i(-1, 0, 0, 0), 10), -1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0,-1, 0, 0), 10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0,-1, 0), 10),  0, 10,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0, 0,-1), 10),  0, 10, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 1, 1, 1, 1), 10),  1, 10, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_set(10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_set(10),  1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_set(10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).y_set(10),  0, 10, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).y_set(10),  0, 10, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).y_set(10), -1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).y_set(10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_set(10),  0, 10,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_set(10),  0, 10, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_set(10),  1, 10, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0, 0, 0), 10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 1, 0, 0, 0), 10),  1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 1, 0, 0), 10),  0, 1, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0, 1, 0), 10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0, 0, 1), 10),  0, 0, 10, 1);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i(-1, 0, 0, 0), 10), -1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0,-1, 0, 0), 10),  0,-1, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0,-1, 0), 10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0, 0,-1), 10),  0, 0, 10,-1);
+		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 1, 1, 1, 1), 10),  1, 1, 10, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_set(10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_set(10),  1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_set(10),  0, 1, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).z_set(10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).z_set(10),  0, 0, 10, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).z_set(10), -1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).z_set(10),  0,-1, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_set(10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_set(10),  0, 0, 10,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_set(10),  1, 1, 10, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0, 0, 0), 10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 1, 0, 0, 0), 10),  1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 1, 0, 0), 10),  0, 1, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0, 1, 0), 10),  0, 0, 1, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0, 0, 1), 10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i(-1, 0, 0, 0), 10), -1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0,-1, 0, 0), 10),  0,-1, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0,-1, 0), 10),  0, 0,-1, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0, 0,-1), 10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 1, 1, 1, 1), 10),  1, 1, 1, 10);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_set(10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_set(10),  1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_set(10),  0, 1, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).w_set(10),  0, 0, 1, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).w_set(10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).w_set(10), -1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).w_set(10),  0,-1, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_set(10),  0, 0,-1, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_set(10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_set(10),  1, 1, 1, 10);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0, 0, 0), 10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 1, 0, 0, 0), 10), 11, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 1, 0, 0), 10), 10, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0, 1, 0), 10), 10, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0, 0, 1), 10), 10, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i(-1, 0, 0, 0), 10),  9, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0,-1, 0, 0), 10), 10,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0,-1, 0), 10), 10, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0, 0,-1), 10), 10, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 1, 1, 1, 1), 10), 11, 1, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_add(10), 10, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_add(10), 11, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_add(10), 10, 1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).x_add(10), 10, 0, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).x_add(10), 10, 0, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).x_add(10),  9, 0, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).x_add(10), 10,-1, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_add(10), 10, 0,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_add(10), 10, 0, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_add(10), 11, 1, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0, 0, 0), 10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 1, 0, 0, 0), 10),  1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 1, 0, 0), 10),  0, 11, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0, 1, 0), 10),  0, 10, 1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0, 0, 1), 10),  0, 10, 0, 1);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i(-1, 0, 0, 0), 10), -1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0,-1, 0, 0), 10),  0,  9, 0, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0,-1, 0), 10),  0, 10,-1, 0);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0, 0,-1), 10),  0, 10, 0,-1);
+		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 1, 1, 1, 1), 10),  1, 11, 1, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_add(10),  0, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_add(10),  1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_add(10),  0, 11, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).y_add(10),  0, 10, 1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).y_add(10),  0, 10, 0, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).y_add(10), -1, 10, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).y_add(10),  0,  9, 0, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_add(10),  0, 10,-1, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_add(10),  0, 10, 0,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_add(10),  1, 11, 1, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0, 0, 0), 10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 1, 0, 0, 0), 10),  1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 1, 0, 0), 10),  0, 1, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0, 1, 0), 10),  0, 0, 11, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0, 0, 1), 10),  0, 0, 10, 1);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i(-1, 0, 0, 0), 10), -1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0,-1, 0, 0), 10),  0,-1, 10, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0,-1, 0), 10),  0, 0,  9, 0);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0, 0,-1), 10),  0, 0, 10,-1);
+		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 1, 1, 1, 1), 10),  1, 1, 11, 1);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_add(10),  0, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_add(10),  1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_add(10),  0, 1, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).z_add(10),  0, 0, 11, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).z_add(10),  0, 0, 10, 1);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).z_add(10), -1, 0, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).z_add(10),  0,-1, 10, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_add(10),  0, 0,  9, 0);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_add(10),  0, 0, 10,-1);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_add(10),  1, 1, 11, 1);
+#endif //#ifdef __cplusplus
+		
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0, 0, 0), 10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 1, 0, 0, 0), 10),  1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 1, 0, 0), 10),  0, 1, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0, 1, 0), 10),  0, 0, 1, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0, 0, 1), 10),  0, 0, 0, 11);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i(-1, 0, 0, 0), 10), -1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0,-1, 0, 0), 10),  0,-1, 0, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0,-1, 0), 10),  0, 0,-1, 10);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0, 0,-1), 10),  0, 0, 0,  9);
+		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 1, 1, 1, 1), 10),  1, 1, 1, 11);
+		
+#ifdef __cplusplus
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_add(10),  0, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_add(10),  1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_add(10),  0, 1, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 1, 0).w_add(10),  0, 0, 1, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 1).w_add(10),  0, 0, 0, 11);
+		ASSERT_VEC4I_VALUES(Vec4i(-1, 0, 0, 0).w_add(10), -1, 0, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0,-1, 0, 0).w_add(10),  0,-1, 0, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_add(10),  0, 0,-1, 10);
+		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_add(10),  0, 0, 0,  9);
+		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_add(10),  1, 1, 1, 11);
+#endif //#ifdef __cplusplus
+		
+#undef ASSERT_VEC4I_VALUES
 	}
 	
 	
