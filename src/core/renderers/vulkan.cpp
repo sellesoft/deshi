@@ -2601,19 +2601,13 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 		stage->module = get_handle(x->fragment_shader);
 	}
 
-   	VkPipelineInputAssemblyStateCreateInfo ias{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
-	ias.              topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	ias.primitiveRestartEnable = VK_FALSE;
-	
-    VkPipelineViewportStateCreateInfo vs{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
-	vs.viewportCount = 1;
-	vs.   pViewports = 0;
-	vs. scissorCount = 1;
-	vs.    pScissors = 0;
-
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
-	input_assembly_state.              topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	input_assembly_state.primitiveRestartEnable = VK_FALSE;
+	switch(x->polygon_mode) {
+		case GraphicsPolygonMode_Point: input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; break;
+		case GraphicsPolygonMode_Fill:  input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; break;
+		case GraphicsPolygonMode_Line:  input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST; break;
+	}
 
 	VkPipelineViewportStateCreateInfo viewport_state{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
 	viewport_state.viewportCount = 1;
