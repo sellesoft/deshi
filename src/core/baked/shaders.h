@@ -43,7 +43,7 @@ TODO:
 #if DESHI_VULKAN
 #  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(std140, set = " #set ", binding = " #binding ") uniform " name "{\n"
 #elif DESHI_OPENGL //#if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(std140, binding = " #binding ") uniform " name "{\n"
+#  define DESHI_BAKED_SHADERS_BUFFER_HEADER(name,set,binding) "layout(std140) uniform " name "{\n"
 #else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "unhandled graphics backend"
 #endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
@@ -63,7 +63,7 @@ TODO:
 #if DESHI_VULKAN
 #  define DESHI_BAKED_SHADERS_BINDING(type,name,set,binding) "layout(set = " #set ", binding = " #binding ") uniform " type " " name ";\n"
 #elif DESHI_OPENGL //#if DESHI_VULKAN
-#  define DESHI_BAKED_SHADERS_BINDING(type,name,set,binding) "layout(binding = " #binding ") uniform " type " " name ";\n"
+#  define DESHI_BAKED_SHADERS_BINDING(type,name,set,binding) "uniform " type " " name ";\n"
 #else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 #  error "unhandled graphics backend"
 #endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
@@ -151,7 +151,7 @@ DESHI_BAKED_SHADERS_PUSH_CONSTANT_FOOTER("push")
 "layout(location = 3) in vec3 in_normal;\n"
 "\n"
 "layout(location = 0) out vec2 out_uv;\n"
-"layout(location = 1) out flat vec3 out_normal;\n"
+"layout(location = 1) flat out vec3 out_normal;\n"
 "\n"
 "void main(){\n"
 "	gl_Position = cam.proj * cam.view * push.model * vec4(in_pos.xyz, 1.0);\n"
@@ -165,7 +165,7 @@ DESHI_BAKED_SHADERS_VERSION
 DESHI_BAKED_SHADERS_FRAGMENT_EXTENSIONS
 "\n"
 "layout(location = 0) in vec2 in_uv;\n"
-"layout(location = 1) in flat vec3 in_normal;\n"
+"layout(location = 1) flat in vec3 in_normal;\n"
 "\n"
 "layout(location = 0) out vec4 out_color;\n"
 "\n"
