@@ -89,6 +89,9 @@ assets_init(Window* window) {
 	// setup null assets
 	
 	g_assets->null_vertex_shader = assets_shader_load_from_source(str8l("null.vert"), baked_shader_null_vert, ShaderType_Vertex);
+	array_init(g_assets->null_vertex_shader->resources, 2, deshi_allocator);
+	array_push_value(g_assets->null_vertex_shader->resources, ShaderResourceType_UBO);
+	array_push_value(g_assets->null_vertex_shader->resources, ShaderResourceType_PushConstant);
 	g_assets->null_fragment_shader = assets_shader_load_from_source(str8l("null.frag"), baked_shader_null_frag, ShaderType_Fragment);
 
 	g_assets->null_mesh = assets_mesh_create_box(str8l("null"), 1.f, 1.f, 1.f, Color_White.rgba);
@@ -128,6 +131,7 @@ assets_init(Window* window) {
 	array_init(g_assets->ubo_descriptors, 1, deshi_allocator);
 	auto d = array_push(g_assets->ubo_descriptors);
 	d->type = GraphicsDescriptorType_Uniform_Buffer;
+	d->name_in_shader = "CameraInfo";
 	d->ubo.buffer = g_assets->base_ubo_handle->buffer;
 	d->ubo.offset = 0;
 	d->ubo.range = sizeof(g_assets->base_ubo);
@@ -142,13 +146,17 @@ assets_init(Window* window) {
 		g_assets->null_vertex_shader, 0, g_assets->null_fragment_shader
 	};
 	
-	array_init_with_elements<ShaderResourceType>(g_assets->null_fragment_shader->resources, {ShaderResourceType_Texture});
-	auto resources = array<ShaderResource>::create(deshi_allocator);
-	auto r = resources.push();
-	r->type = ShaderResourceType_Texture;
-	r->texture = assets_texture_null();
+	ShaderResource* null_resources = array_create(ShaderResource, 2, deshi_temp_allocator);
+	ShaderResource* null_ubo_resource = array_push(null_resources);
+	null_ubo_resource->type = ShaderResourceType_UBO;
+	null_ubo_resource->name_in_shader = "CameraInfo";
+	null_ubo_resource->ubo = g_assets->base_ubo_handle;
+	ShaderResource* null_pc_resource = array_push(null_resources);
+	null_pc_resource->type = ShaderResourceType_PushConstant;
+	null_pc_resource->name_in_shader = "PushConstant";
+	null_pc_resource->push_constant_size = sizeof(mat4);
 
-	g_assets->null_material = assets_material_create(str8l("null"), null_stages, resources.ptr);
+	g_assets->null_material = assets_material_create(str8l("null"), null_stages, null_resources);
 	
 	// TODO(sushi) setup a function for creating a font from memory if possible 
 	g_assets->null_font = memory_pool_push(g_assets->font_pool);
@@ -893,7 +901,7 @@ assets_ubo_create(u32 size) {
 	ubo->buffer = graphics_buffer_create(
 									   0, size,
 									   GraphicsBufferUsage_UniformBuffer,
-									   GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+									   GraphicsMemoryPropertyFlag_HostVisible,
 									   GraphicsMemoryMapping_Occasional);
 	return ubo;
 }
@@ -1043,16 +1051,16 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	}
 	
 	pipeline->vertex_shader = shaders.vertex->handle;
-	pipeline->geometry_shader = (shaders.geometry? shaders.geometry->handle : 0);
-	pipeline->fragment_shader = (shaders.fragment? shaders.fragment->handle : 0);
+	pipeline->geometry_shader = (shaders.geometry ? shaders.geometry->handle : 0);
+	pipeline->fragment_shader = (shaders.fragment ? shaders.fragment->handle : 0);
 
 	// setup the descriptor layout
 	auto descriptor_layout = graphics_descriptor_set_layout_allocate();
 	descriptor_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " descriptor layout").fin;
 	
-	u32 n_vertex_resources   = (shaders.vertex->resources?   array_count(shaders.vertex->resources)   : 0);
-	u32 n_geometry_resources = (shaders.geometry && shaders.geometry->resources? array_count(shaders.geometry->resources) : 0);
-	u32 n_fragment_resources = (shaders.fragment && shaders.fragment->resources? array_count(shaders.fragment->resources) : 0);
+	u32 n_vertex_resources   = (shaders.vertex->resources ? array_count(shaders.vertex->resources) : 0);
+	u32 n_geometry_resources = (shaders.geometry && shaders.geometry->resources ? array_count(shaders.geometry->resources) : 0);
+	u32 n_fragment_resources = (shaders.fragment && shaders.fragment->resources ? array_count(shaders.fragment->resources) : 0);
 	u32 sum = n_vertex_resources + n_geometry_resources + n_fragment_resources;
 	
 	if(sum && !resources) {
@@ -1060,44 +1068,64 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 		return g_assets->null_material;
 	}
 	
-	u32 n_resources_given = (resources? array_count(resources) : 0);
+	u32 n_resources_given = (resources ? array_count(resources) : 0);
 	
 	if(n_resources_given != sum) {
 		AssetsError("the number of given resources (", n_resources_given, ") is not equal to the number of expected resources for this material (", sum, ")");
 		return g_assets->null_material;
 	}
-		
+	
+	u32 resource_index = 0;
 	auto descriptors = array<GraphicsDescriptor>::create(sum, deshi_allocator);
 	auto bindings = array<GraphicsDescriptorSetLayoutBinding>::create(sum, deshi_allocator);
+	GraphicsPushConstant* push_constants = array_create(GraphicsPushConstant, 0, deshi_allocator);
 
 	forI(n_vertex_resources) {
 		auto resource = shaders.vertex->resources[i];
-		auto resource_given = resources[descriptors.count()];
-		auto descriptor = descriptors.push();
+		auto resource_given = resources[resource_index];
 		if(resource != resource_given.type) {
-			AssetsError("resource type mismatch between vertex resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", descriptors.count() - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			AssetsError("resource type mismatch between vertex resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", resource_index, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return g_assets->null_material;
-		}	
+		}
+		if(resource_given.name_in_shader == 0 || *resource_given.name_in_shader == '\0'){
+			AssetsError("resource ",i," given for vertex shader has an empty name_in_shader field");
+			return g_assets->null_material;
+		}
 		
-		auto binding = bindings.push();
-		binding->n = bindings.count() - 1;
-		binding->shader_stages = GraphicsShaderStage_Vertex;
-
 		switch(resource) {
 			case ShaderResourceType_UBO: {
+				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+				descriptor->name_in_shader = resource_given.name_in_shader;
 				descriptor->ubo.buffer = resource_given.ubo->buffer;
 				descriptor->ubo.range = resource_given.ubo->size;
 				descriptor->ubo.offset = 0;
+				
+				auto binding = bindings.push();
+				binding->n = bindings.count() - 1;
+				binding->shader_stages = GraphicsShaderStage_Vertex;
 				binding->type = GraphicsDescriptorType_Uniform_Buffer;
 			} break;
 			case ShaderResourceType_Texture: {
+				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
+				descriptor->name_in_shader = resource_given.name_in_shader;
 				descriptor->image.view = resource_given.texture->image_view;
 				descriptor->image.sampler = resource_given.texture->sampler;
 				descriptor->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+				
+				auto binding = bindings.push();
+				binding->n = bindings.count() - 1;
+				binding->shader_stages = GraphicsShaderStage_Vertex;
 				binding->type = GraphicsDescriptorType_Combined_Image_Sampler;
 			} break;
+			case ShaderResourceType_PushConstant:{
+				GraphicsPushConstant* constant = array_push(push_constants);
+				constant->shader_stages = GraphicsShaderStage_Vertex;
+				constant->size = resource_given.push_constant_size;
+				constant->offset = 0;
+				constant->name_in_shader = resource_given.name_in_shader;
+			}break;
 			default: {
 				AssetsError("resource ", i, " given for vertex shader has an unknown type (", (u32)resource, ")");
 				graphics_descriptor_set_layout_destroy(descriptor_layout);
@@ -1105,74 +1133,113 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				return g_assets->null_material;
 			} break;
 		}
+		
+		resource_index += 1;
 	}
 	
 	forI(n_geometry_resources) {
 		auto resource = shaders.geometry->resources[i];
-		auto resource_given = resources[descriptors.count()];
-		auto descriptor = descriptors.push();
+		auto resource_given = resources[resource_index];
 		if(resource != resource_given.type) {
-			AssetsError("resource type mismatch between geometry resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", descriptors.count() - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			AssetsError("resource type mismatch between geometry resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", resource_index, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return g_assets->null_material;
-		}	
+		}
+		if(resource_given.name_in_shader == 0 || *resource_given.name_in_shader == '\0'){
+			AssetsError("resource ",i," given for geometry shader has an empty name_in_shader field");
+			return g_assets->null_material;
+		}
 			
-		auto binding = bindings.push();
-		binding->n = bindings.count() - 1;
-		binding->shader_stages = GraphicsShaderStage_Geometry;
-
 		switch(resource) {
 			case ShaderResourceType_UBO: {
+				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+				descriptor->name_in_shader = resource_given.name_in_shader;
 				descriptor->ubo.buffer = resource_given.ubo->buffer;
 				descriptor->ubo.range = resource_given.ubo->size;
 				descriptor->ubo.offset = 0;
+				
+				auto binding = bindings.push();
+				binding->n = bindings.count() - 1;
+				binding->shader_stages = GraphicsShaderStage_Geometry;
 				binding->type = GraphicsDescriptorType_Uniform_Buffer;
 			} break;
 			case ShaderResourceType_Texture: {
+				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
+				descriptor->name_in_shader = resource_given.name_in_shader;
 				descriptor->image.view = resource_given.texture->image_view;
 				descriptor->image.sampler = resource_given.texture->sampler;
 				descriptor->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+				
+				auto binding = bindings.push();
+				binding->n = bindings.count() - 1;
+				binding->shader_stages = GraphicsShaderStage_Geometry;
 				binding->type = GraphicsDescriptorType_Combined_Image_Sampler;
 			} break;
+			case ShaderResourceType_PushConstant:{
+				GraphicsPushConstant* constant = array_push(push_constants);
+				constant->shader_stages = GraphicsShaderStage_Geometry;
+				constant->size = resource_given.push_constant_size;
+				constant->offset = 0;
+				constant->name_in_shader = resource_given.name_in_shader;
+			}break;
 			default: {
 				AssetsError("resource ", i, " given for geometry shader has an unknown type (", (u32)resource, ")");
 				graphics_descriptor_set_layout_destroy(descriptor_layout);
 				graphics_pipeline_destroy(pipeline);
 				return g_assets->null_material;
 			} break;
-
 		}
+		
+		resource_index += 1;
 	}
 	
 	forI(n_fragment_resources) {
 		auto resource = shaders.fragment->resources[i];
-		auto resource_given = resources[descriptors.count()];
-		auto descriptor = descriptors.push();
+		auto resource_given = resources[resource_index];
 		if(resource != resource_given.type) {
-			AssetsError("resource type mismatch between fragment resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", descriptors.count() - 1, " (", ShaderResourceTypeStrings[resource_given.type], ")");
+			AssetsError("resource type mismatch between fragment resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", resource_index, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return g_assets->null_material;
-		}	
+		}
+		if(resource_given.name_in_shader == 0 || *resource_given.name_in_shader == '\0'){
+			AssetsError("resource ",i," given for fragment shader has an empty name_in_shader field");
+			return g_assets->null_material;
+		}
 
-		auto binding = bindings.push();
-		binding->n = bindings.count() - 1;
-		binding->shader_stages = GraphicsShaderStage_Fragment;
-		
 		switch(resource) {
 			case ShaderResourceType_UBO: {
+				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
+				descriptor->name_in_shader = resource_given.name_in_shader;
 				descriptor->ubo.buffer = resource_given.ubo->buffer;
 				descriptor->ubo.range = resource_given.ubo->size;
 				descriptor->ubo.offset = 0;
+				
+				auto binding = bindings.push();
+				binding->n = bindings.count() - 1;
+				binding->shader_stages = GraphicsShaderStage_Fragment;
 				binding->type = GraphicsDescriptorType_Uniform_Buffer;
 			} break;
 			case ShaderResourceType_Texture: {
+				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
+				descriptor->name_in_shader = resource_given.name_in_shader;
 				descriptor->image.view = resource_given.texture->image_view;
 				descriptor->image.sampler = resource_given.texture->sampler;
 				descriptor->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+				
+				auto binding = bindings.push();
+				binding->n = bindings.count() - 1;
+				binding->shader_stages = GraphicsShaderStage_Fragment;
 				binding->type = GraphicsDescriptorType_Combined_Image_Sampler;
 			} break;
+			case ShaderResourceType_PushConstant:{
+				GraphicsPushConstant* constant = array_push(push_constants);
+				constant->shader_stages = GraphicsShaderStage_Fragment;
+				constant->size = resource_given.push_constant_size;
+				constant->offset = 0;
+				constant->name_in_shader = resource_given.name_in_shader;
+			}break;
 			default: {
 				AssetsError("resource ", i, " given for fragment shader has an unknown type (", (u32)resource, ")");
 				graphics_descriptor_set_layout_destroy(descriptor_layout);
@@ -1185,20 +1252,10 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	descriptor_layout->bindings = bindings.ptr;
 	graphics_descriptor_set_layout_update(descriptor_layout);
 	
-	GraphicsPushConstant transformation;
-	transformation.shader_stages = GraphicsShaderStage_Vertex;
-	transformation.size = sizeof(mat4);
-	transformation.offset = 0;
-	
 	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " pipeline layout").fin;
-	array_init_with_elements(pipeline_layout->descriptor_layouts, {
-				g_assets->ubo_layout,
-				descriptor_layout
-			}, deshi_allocator);
-	array_init_with_elements(pipeline_layout->push_constants, {
-				transformation,
-			}, deshi_allocator);
+	array_init_with_elements(pipeline_layout->descriptor_layouts, { g_assets->ubo_layout, descriptor_layout }, deshi_allocator);
+	pipeline_layout->push_constants = push_constants;
 	graphics_pipeline_layout_update(pipeline_layout);
 	
 	pipeline->layout = pipeline_layout;
@@ -1433,16 +1490,19 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 			AssetsError("resource ", i, " has a different type (", ShaderResourceTypeStrings[given_resource.type], ") than the old material's resource at the same index (", ShaderResourceTypeStrings[old_resource.type], ")");
 			return assets_material_null();
 		}
-		auto d = descriptors.push();
 		switch(given_resource.type) {
 			case ShaderResourceType_UBO: {
+				auto d = descriptors.push();
 				d->type = GraphicsDescriptorType_Uniform_Buffer;
+				d->name_in_shader = given_resource.name_in_shader;
 				d->ubo.buffer = given_resource.ubo->buffer;
 				d->ubo.range = given_resource.ubo->size;
 				d->ubo.offset = 0;
 			} break;
 			case ShaderResourceType_Texture: {
+				auto d = descriptors.push();
 				d->type = GraphicsDescriptorType_Combined_Image_Sampler;
+				d->name_in_shader = given_resource.name_in_shader;
 				d->image.view = given_resource.texture->image_view;
 				d->image.sampler = given_resource.texture->sampler;
 				d->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;

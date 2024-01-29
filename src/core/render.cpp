@@ -1,24 +1,38 @@
-#define RenderAssert(cond, ...) do { if(!cond) { LogE("scene", __FUNCTION__, ": assertion failed `", STRINGIZE(cond), "`: ", __VA_ARGS__); Assert(0); } } while(0); 
+#define RenderAssert(cond, ...) do { if(!cond){ LogE("scene", __FUNCTION__, ": assertion failed `", STRINGIZE(cond), "`: ", __VA_ARGS__); Assert(0); } } while(0); 
 #define RenderError(...) LogE("scene", __VA_ARGS__)
 
 RenderGlobal __deshi__g_scene;
 RenderGlobal* g_scene = &__deshi__g_scene;
 
 void 
-render_init() {
+render_init(){
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
 	memory_pool_init(g_scene->pools.voxel_chunks, 8);
 	array_init(g_scene->model_draw_commands, 4, deshi_allocator);
-
+	
 	ShaderStages stages = {};
 	stages.vertex = assets_shader_load_from_source(str8l("voxel.vert"), baked_shader_voxel_vert, ShaderType_Vertex);
+	array_init(stages.vertex->resources, 2, deshi_allocator);
+	array_push_value(stages.vertex->resources, ShaderResourceType_UBO);
+	array_push_value(stages.vertex->resources, ShaderResourceType_PushConstant);
 	stages.fragment = assets_shader_load_from_source(str8l("voxel.frag"), baked_shader_voxel_frag, ShaderType_Fragment);
-	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels"), stages, 0);
+	
+	ShaderResource* voxel_resources = array_create(ShaderResource, 2, deshi_temp_allocator);
+	ShaderResource* voxel_ubo_resource = array_push(voxel_resources);
+	voxel_ubo_resource->type = ShaderResourceType_UBO;
+	voxel_ubo_resource->name_in_shader = "CameraInfo";
+	voxel_ubo_resource->ubo = g_assets->base_ubo_handle;
+	ShaderResource* voxel_pc_resource = array_push(voxel_resources);
+	voxel_pc_resource->type = ShaderResourceType_PushConstant;
+	voxel_pc_resource->name_in_shader = "PushConstant";
+	voxel_pc_resource->push_constant_size = sizeof(mat4);
+	
+	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels"), stages, voxel_resources);
 }
 
 void
-render_update() {
+render_update(){
 	RenderAssert(g_scene->active.window, "need a window to render to.");
 	RenderAssert(g_scene->active.camera, "need a camera to render from.");
 	
@@ -26,30 +40,30 @@ render_update() {
 	auto cam   = g_scene->active.camera;
 	auto frame = graphics_current_present_frame_of_window(win);
 	auto pass  = frame->render_pass;
-
+	
 	GraphicsPipeline* last_pipeline = 0;
-
+	
 	// TODO(sushi) we need a way to do this only when specific things change
 	// TODO(sushi) that we do this is kinda weird, cause camera is a scene thing
 	//             but since assets controls the base ubo of shaders used with it
 	//             we have to do this like this for now.
 	assets_update_camera_view(&g_scene->active.camera->view);
 	assets_update_camera_projection(&g_scene->active.camera->proj);
-
+	
 	{ using namespace graphics::cmd;
 		begin_render_pass(win, pass, frame);
-	
+		
 		set_viewport(win, vec2::ZERO, win->dimensions.toVec2());
 		set_scissor(win, vec2::ZERO, win->dimensions.toVec2());
-
-		forI(array_count(g_scene->model_draw_commands)) {
+		
+		forI(array_count(g_scene->model_draw_commands)){
 			auto cmd = g_scene->model_draw_commands[i];
 			bind_vertex_buffer(win, cmd.model->mesh->vertex_buffer);
 			bind_index_buffer(win, cmd.model->mesh->index_buffer);
-			forI(array_count(cmd.model->batch_array)) {
+			forI(array_count(cmd.model->batch_array)){
 				auto b = cmd.model->batch_array[i];
 				if(!b.index_count) continue;
-				if(b.material->pipeline != last_pipeline) {
+				if(b.material->pipeline != last_pipeline){
 					last_pipeline = b.material->pipeline;
 					bind_pipeline(win, last_pipeline);
 					bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
@@ -59,15 +73,15 @@ render_update() {
 				draw_indexed(win, b.index_count, b.index_offset, 0);
 			}
 		}	
-
+		
 		bind_pipeline(win, g_scene->voxel_material->pipeline);
 		bind_descriptor_set(win, 0, g_assets->view_proj_ubo);
-		for_pool(g_scene->pools.voxel_chunks) {
-			if(!it->vertex_buffer || !it->index_buffer) {
+		for_pool(g_scene->pools.voxel_chunks){
+			if(!it->vertex_buffer || !it->index_buffer){
 				break;
 			}
-
-			if(!it->hidden) {
+			
+			if(!it->hidden){
 				it->transform = mat4::TransformationMatrix(it->position, it->rotation, vec3::ONE);
 				bind_vertex_buffer(win, it->vertex_buffer);
 				bind_index_buffer(win, it->index_buffer);
@@ -75,25 +89,25 @@ render_update() {
 				draw_indexed(win, it->index_count, 0, 0);
 			}
 		}
-
+		
 		end_render_pass(win);
-	
-		if(g_scene->temp.render_pass) {
+		
+		if(g_scene->temp.render_pass){
 			g_scene->temp.camera_ubo.proj = g_scene->active.camera->proj;
 			g_scene->temp.camera_ubo.view = g_scene->active.camera->view;
 			CopyMemory(graphics_buffer_mapped_data(g_scene->temp.camera_buffer), &g_scene->temp.camera_ubo, sizeof(g_scene->temp.camera_ubo));
-
+			
 			begin_render_pass(win, g_scene->temp.render_pass, frame);
-
-			if(g_scene->temp.wireframe.vertex_count) {
+			
+			if(g_scene->temp.wireframe.vertex_count){
 				bind_vertex_buffer(win, g_scene->temp.wireframe.vertex_buffer);
 				bind_index_buffer(win, g_scene->temp.wireframe.index_buffer);
 				bind_pipeline(win, g_scene->temp.wireframe.pipeline);
 				bind_descriptor_set(win, 0, g_scene->temp.descriptor_set);
 				draw_indexed(win, g_scene->temp.wireframe.index_count, 0, 0);
 			}		
-
-			if(g_scene->temp.filled.vertex_count) {
+			
+			if(g_scene->temp.filled.vertex_count){
 				bind_vertex_buffer(win, g_scene->temp.filled.vertex_buffer);
 				bind_index_buffer(win, g_scene->temp.filled.index_buffer);
 				bind_pipeline(win, g_scene->temp.filled.pipeline);
@@ -101,19 +115,18 @@ render_update() {
 			}
 			end_render_pass(win);
 		}
-
 	}
-
+	
 	array_clear(g_scene->model_draw_commands);
 }
 
 void
-render_set_active_window(Window* window) {
+render_set_active_window(Window* window){
 	g_scene->active.window = window;
 }
 
 void
-render_set_active_camera(Camera* camera) {
+render_set_active_camera(Camera* camera){
 	g_scene->active.camera = camera;
 }
 
@@ -123,13 +136,13 @@ render_set_active_camera(Camera* camera) {
 
 
 Camera*
-render_camera_create() {
+render_camera_create(){
 	auto out = memory_pool_push(g_scene->pools.camera);
 	return out;
 }
 
 void
-render_camera_update_view(Camera* camera) {
+render_camera_update_view(Camera* camera){
 	RenderAssert(camera, "passed null Camera pointer.");
 	camera->right = vec3::UP.cross(camera->forward).normalized();
 	camera->up = camera->forward.cross(camera->right).normalized();
@@ -137,36 +150,36 @@ render_camera_update_view(Camera* camera) {
 }
 
 void
-render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z) {
+render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z){
 	RenderAssert(camera, "passed null Camera pointer.");
 	camera->proj = Math::PerspectiveProjectionMatrix(width, height, fov, near_z, far_z);
+#if DESHI_VULKAN
 	camera->proj.arr[5] *= -1;
+#endif //#if DESHI_VULKAN
 }
 
 void
-render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left, f32 top, f32 bottom, f32 far, f32 near_) {
+render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left, f32 top, f32 bottom, f32 far, f32 near_){
 	RenderAssert(camera, "passed null Camera pointer.");
-	f32 A =  2 / (right - left),
-		B =  2 / (top - bottom),
-		C = -2 / (far - near_),
-		D = -(right + left) / (right - left),
-		E = -(top + bottom) / (top - bottom),
-		F = -(far + near_) / (far - near_);
-	camera->proj = mat4(
-		A, 0, 0, D,
-		0, B, 0, E,
-		0, 0, C, F,
-		0, 0, 0, 1
-	);
+	f32 A =  2 / (right - left);
+	f32 B =  2 / (top - bottom);
+	f32 C = -2 / (far - near_);
+	f32 D = -(right + left) / (right - left);
+	f32 E = -(top + bottom) / (top - bottom);
+	f32 F = -(far + near_) / (far - near_);
+	camera->proj = mat4(A, 0, 0, D,
+						0, B, 0, E,
+						0, 0, C, F,
+						0, 0, 0, 1);
 }
 
 void
-render_camera_destroy(Camera* camera) {
+render_camera_destroy(Camera* camera){
 	memory_pool_delete(g_scene->pools.camera, camera);
 }
 
 void
-render_camera_draw_frustrum(Camera* camera) {
+render_camera_draw_frustrum(Camera* camera){
 	// TODO(sushi) implement by transforming 4 points out based on the proj and view matrices
 	NotImplemented;
 }
@@ -177,7 +190,7 @@ render_camera_draw_frustrum(Camera* camera) {
 
 
 void 
-render_draw_model(Model* model, mat4* transform) {
+render_draw_model(Model* model, mat4* transform){
 	RenderAssert(model, "passed null Model pointer.");
 	auto cmd = array_push(g_scene->model_draw_commands);
 	cmd->model = model;
@@ -191,12 +204,12 @@ render_draw_model(Model* model, mat4* transform) {
 
 
 void
-render_temp_init(Window* window, u32 v) {
-	if(v > MAX_U32/3) {
+render_temp_init(Window* window, u32 v){
+	if(v > MAX_U32/3){
 		RenderError("the given vertex count (", v, ") is too large to allow 3*vertex_count indexes. The max amount of supported vertexes is ", MAX_U32 / 3);
 		return;
 	}
-
+	
 	g_scene->temp.filled = {};
 	g_scene->temp.filled.vertex_buffer = graphics_buffer_create(0, v * sizeof(RenderTempVertex), GraphicsBufferUsage_VertexBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
 	g_scene->temp.filled.index_buffer  = graphics_buffer_create(0, v * sizeof(RenderTempIndex), GraphicsBufferUsage_IndexBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
@@ -225,7 +238,7 @@ render_temp_init(Window* window, u32 v) {
 	rp->depth_attachment.  initial_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
 	rp->depth_attachment.    final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
 	graphics_render_pass_update(rp);
-
+	
 	auto pl = g_scene->temp.filled.pipeline = graphics_pipeline_allocate();
 	pl->            debug_name = str8l("<render> temp pipeline");
 	pl->            front_face = GraphicsFrontFace_CCW;
@@ -253,36 +266,36 @@ render_temp_init(Window* window, u32 v) {
 	temp_vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
 	temp_vertex_shader->source = baked_shader_temp_vert;
 	graphics_shader_update(temp_vertex_shader);	
-
+	
 	auto temp_fragment_shader = graphics_shader_allocate();
 	temp_fragment_shader->debug_name = str8l("<scene> temp fragment shader");
 	temp_fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
 	temp_fragment_shader->source = baked_shader_temp_frag;
 	graphics_shader_update(temp_fragment_shader);
-
+	
 	pl->vertex_shader = temp_vertex_shader;
 	pl->fragment_shader = temp_fragment_shader;
-
+	
 	array_init_with_elements(pl->vertex_input_bindings, {
-			{0, sizeof(RenderTempVertex)}});
+								 {0, sizeof(RenderTempVertex)}
+							 });
 	array_init_with_elements(pl->vertex_input_attributes, {
-			{0, 0, GraphicsFormat_R32G32B32_Float, offsetof(RenderTempVertex, pos)},
-			{1, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(RenderTempVertex, color)}});
+								 {0, 0, GraphicsFormat_R32G32B32_Float, offsetof(RenderTempVertex, pos)},
+								 {1, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(RenderTempVertex, color)}
+							 });
 	
 	g_scene->temp.camera_buffer = graphics_buffer_create(&g_scene->temp.camera_ubo, sizeof(g_scene->temp.camera_ubo), GraphicsBufferUsage_UniformBuffer, GraphicsMemoryPropertyFlag_HostCoherent, GraphicsMemoryMapping_Persistent);
 	
 	auto tl = graphics_pipeline_layout_allocate();
 	tl->debug_name = str8l("<render> temp pipeline layout");
 	auto dl = graphics_descriptor_set_layout_allocate();
-	array_init_with_elements(dl->bindings, {{
-				GraphicsDescriptorType_Uniform_Buffer,
-				GraphicsShaderStage_Vertex,
-				0
-			}});
+	array_init_with_elements(dl->bindings, {
+								 {GraphicsDescriptorType_Uniform_Buffer, GraphicsShaderStage_Vertex, 0}
+							 });
 	graphics_descriptor_set_layout_update(dl);
 	array_init_with_elements(tl->descriptor_layouts, {dl});
 	graphics_pipeline_layout_update(tl);
-
+	
 	pl->layout = tl;
 	graphics_pipeline_update(pl);
 	
@@ -296,12 +309,9 @@ render_temp_init(Window* window, u32 v) {
 	GraphicsDescriptor* descriptors = array_create(GraphicsDescriptor, 1, deshi_allocator);
 	GraphicsDescriptor* descriptor = array_push(descriptors);
 	descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
-	descriptor->ubo = {
-		g_scene->temp.camera_buffer,
-		0,
-		sizeof(g_scene->temp.camera_ubo)
-	};
-
+	descriptor->name_in_shader = "CameraInfo";
+	descriptor->ubo = {g_scene->temp.camera_buffer, 0, sizeof(g_scene->temp.camera_ubo)};
+	
 	auto ds = g_scene->temp.descriptor_set = graphics_descriptor_set_allocate();
 	ds->debug_name = str8l("<render> temp descriptor set");
 	ds->descriptors = descriptors;
@@ -312,10 +322,10 @@ render_temp_init(Window* window, u32 v) {
 
 void 
 render_temp_clear(){
-	g_scene->temp.wireframe.vertex_count =
-		g_scene->temp.wireframe.index_count =
-		g_scene->temp.filled.vertex_count =
-		g_scene->temp.filled.index_count = 0;
+	g_scene->temp.wireframe.vertex_count = 0;
+	g_scene->temp.wireframe.index_count = 0;
+	g_scene->temp.filled.vertex_count = 0;
+	g_scene->temp.filled.index_count = 0;
 }
 
 void 
@@ -336,7 +346,7 @@ render_temp_line(vec3 start, vec3 end, color c){
 }
 
 void
-render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_color) {
+render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_color){
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.vertex_buffer) + g_scene->temp.wireframe.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.index_buffer) + g_scene->temp.wireframe.index_count;
 	
@@ -344,11 +354,10 @@ render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_col
 	
 	ip[0] = first;
 	ip[1] = first+1;
-	ip[2] = first;
 	vp[0] = {start, start_color.rgba};
 	vp[1] = {end,   end_color.rgba};
 	
-	g_scene->temp.wireframe.index_count  += 3;
+	g_scene->temp.wireframe.index_count  += 2;
 	g_scene->temp.wireframe.vertex_count += 2;
 }
 
@@ -410,8 +419,9 @@ render_temp_poly(vec3* points, color c){
 		return;
 	}
 	
-	forI(p.count()-1) 
+	forI(p.count()-1){
 		render_temp_line(p[i], p[i+1], c);
+	}
 	render_temp_line(p[p.count()-1], p[0], c);
 }
 
@@ -423,7 +433,7 @@ render_temp_poly_filled(vec3* points, color c){
 		return;
 	}
 	
-	for(s32 i = 2; i < p.count() - 1; i++)  {
+	for(s32 i = 2; i < p.count() - 1; i++){
 		render_temp_triangle_filled(p[i-2], p[i-1], p[i], c);
 	}
 	render_temp_triangle_filled(p[p.count()-3], p[p.count()-2], p[p.count()-1], c);
@@ -500,6 +510,7 @@ render_temp_box(mat4 transform, color c){
 	render_temp_line(v[2], v[6], c);
 	render_temp_line(v[3], v[7], c);
 }
+
 void render_temp_box_filled(mat4 transform, color c){
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.filled.vertex_buffer) + g_scene->temp.filled.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.filled.index_buffer) + g_scene->temp.filled.index_count;
@@ -531,12 +542,13 @@ void render_temp_box_filled(mat4 transform, color c){
 	g_scene->temp.filled.vertex_count += 8;
 	g_scene->temp.filled.index_count += 36;
 }
+
 void 
 render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
 	render_temp_circle(pos, Vec3( 0, 0, 0), radius, segments, c);
 	render_temp_circle(pos, Vec3( 0,90, 0), radius, segments, c);
 	render_temp_circle(pos, Vec3(90, 0, 0), radius, segments, c);
-		
+	
 	// bleh. do later
 	
 	//	f32 dtheta = M_2PI / rings;
@@ -679,7 +691,7 @@ void
 render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){
 	vec3 voxel_position = chunk->position + Vec3(voxel->x, voxel->y, voxel->z);
 	mat4 transform = mat4::TransformationMatrix(voxel_position, chunk->rotation, vec3_ONE());
-
+	
 	vertex_array[*vertex_count+0] = {
 		render_voxel_unit_vertex_offsets[direction][render_voxel_face_vertex_bl] * transform,
 		Vec2(0,0),
@@ -786,9 +798,9 @@ render_voxel_chunk_create(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	
 	//create the vertex/index GPU buffers and upload the vertex/index data to them
 	chunk->vertex_buffer = graphics_buffer_create(vertex_array, actual_vertices_size, GraphicsBufferUsage_VertexBuffer,
-												GraphicsMemoryProperty_DeviceMappable, GraphicsMemoryMapping_Occasional);
+												  GraphicsMemoryProperty_DeviceMappable, GraphicsMemoryMapping_Occasional);
 	chunk->index_buffer  = graphics_buffer_create(index_array,  actual_indices_size,  GraphicsBufferUsage_IndexBuffer,
-												GraphicsMemoryProperty_DeviceMappable, GraphicsMemoryMapping_Occasional);
+												  GraphicsMemoryProperty_DeviceMappable, GraphicsMemoryMapping_Occasional);
 	
 	return chunk;
 }
@@ -807,7 +819,3 @@ render_voxel_delete_chunk(RenderVoxelChunk* chunk){
 	memory_pool_delete(render_voxel_chunk_pool, chunk);
 	chunk->hidden = true;
 }
-
-
-
-#undef voxels

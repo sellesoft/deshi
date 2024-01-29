@@ -382,7 +382,8 @@ typedef Type GraphicsMemoryMappingBehavoir; enum {
 	// Requires one of the the memory properties: HostVisible, HostCoherent, or HostCached.
 	GraphicsMemoryMapping_Occasional,
 	// The buffer is mapped right after is is allocated and isn't unmapped until it 
-	// is destroyed.
+	// is destroyed. Note, this does not mean the mapping pointer does not change (due to
+	// this not being natively supported on OpenGL3).
 	// Requires one of the memory properties: HostVisible, HostCoherent, or HostCached.
 	GraphicsMemoryMapping_Persistent,
 };
@@ -485,6 +486,7 @@ typedef struct GraphicsBuffer {
 
 		void* buffer_handle;
 		void* memory_handle;
+		u32 vao_handle;
 	GRAPHICS_INTERNAL_END
 } GraphicsBuffer;
 
@@ -718,6 +720,7 @@ void graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x);
 typedef struct GraphicsDescriptor {
 	GraphicsDescriptorType type;
 	GraphicsShaderStage shader_stages;
+	char* name_in_shader; //null-terminated string
 
 	union {
 
@@ -734,6 +737,10 @@ typedef struct GraphicsDescriptor {
 	} ubo;
 
 	};
+	
+	GRAPHICS_INTERNAL_BEGIN
+		u32 location_in_shader;
+	GRAPHICS_INTERNAL_END
 } GraphicsDescriptor;
 
 typedef struct GraphicsDescriptorSet {
@@ -791,7 +798,7 @@ typedef struct GraphicsPushConstant {
 	GraphicsShaderStage shader_stages;
 	u32 size;
 	u32 offset;
-	str8 shader_block_name;
+	char* name_in_shader; //null-terminated string
 	
 	GRAPHICS_INTERNAL_BEGIN
 		u32 shader_block_index;

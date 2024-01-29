@@ -391,21 +391,25 @@ const str8 ShaderTypeStrings[] = {
 };
 
 typedef Type ShaderResourceType; enum {
- 	ShaderResourceType_UBO,
+	ShaderResourceType_UBO,
 	ShaderResourceType_Texture,
+	ShaderResourceType_PushConstant,
 };
 
 const str8 ShaderResourceTypeStrings[] = {
 	str8l("UBO"),
 	str8l("Texture"),
+	str8l("Push Constant"),
 };
 
 // Sum type for specifying resources used by a shader.
 typedef struct ShaderResource {
 	ShaderResourceType type;
+	char* name_in_shader; //null-terminated string
 	union {
 		UBO* ubo;
 		Texture* texture;
+		u32 push_constant_size;
 	};
 } ShaderResource;
 

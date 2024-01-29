@@ -77,6 +77,7 @@ typedef struct RenderGlobal {
 		struct {
 			mat4 view;
 			mat4 proj;
+			vec4 position;
 		} camera_ubo;
 
 		GraphicsBuffer* camera_buffer;
@@ -171,6 +172,8 @@ typedef struct RenderTempVertex {
 // The max amount of indexes will be 3 * max_vertexes.
 void render_temp_init(Window* window, u32 max_vertexes);
 void render_temp_clear();
+void render_temp_update_camera(vec3 position, vec3 target);
+void render_temp_set_camera_projection(mat4 proj);
 void render_temp_line(vec3 start, vec3 end, color c);
 void render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_color);
 void render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c);

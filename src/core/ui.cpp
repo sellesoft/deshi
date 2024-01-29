@@ -751,6 +751,7 @@ deshi__ui_init(Window* window) {
 	g_ui->push_constant.size = 2 * sizeof(vec2);
 	g_ui->push_constant.offset = 0;
 	g_ui->push_constant.shader_stages = GraphicsShaderStage_Vertex;
+	g_ui->push_constant.name_in_shader = "PushConstant";
 
 	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = str8l("ui pipeline layout");
@@ -778,10 +779,11 @@ deshi__ui_init(Window* window) {
 	
 	GraphicsDescriptor* descriptors = array_create(GraphicsDescriptor, 1, deshi_allocator);
 	GraphicsDescriptor* descriptor = array_push(descriptors);
-	descriptor->         type = GraphicsDescriptorType_Combined_Image_Sampler;
-	descriptor->   image.view = assets_font_null()->tex->image_view;
-	descriptor->image.sampler = assets_font_null()->tex->sampler;
-	descriptor-> image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
+	descriptor->          type = GraphicsDescriptorType_Combined_Image_Sampler;
+	descriptor->name_in_shader = "font_texture";
+	descriptor->    image.view = assets_font_null()->tex->image_view;
+	descriptor-> image.sampler = assets_font_null()->tex->sampler;
+	descriptor->  image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
 
 	g_ui->blank_descriptor_set = graphics_descriptor_set_allocate();
 	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
@@ -1422,6 +1424,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 				if(!texture->ui_descriptor_set) {
 					auto descriptors = array<GraphicsDescriptor>::create_with_count(1, deshi_allocator);
 					descriptors[0].type = GraphicsDescriptorType_Combined_Image_Sampler;
+					descriptors[0].name_in_shader = "font_texture";
 					descriptors[0].image = {
 						texture->image_view,
 						texture->sampler,
@@ -1474,8 +1477,15 @@ deshi__ui_update(Window* window) {
 	g_ui->updating_window = window;
 
 	pc = {
-		{2.f/window->width, 2.f/window->height},
-		{-1.f, -1.f}
+#if DESHI_VULKAN
+		{2.0f/window->width, 2.0f/window->height},
+		{-1.0f, -1.0f}
+#elif DESHI_OPENGL //#if DESHI_VULKAN
+		{2.0f/window->width, -2.0f/window->height},
+		{-1.0f, 1.0f}
+#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
+#  error "unhandled graphics backend"
+#endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 	};
 
 	graphics_cmd_begin_render_pass(window, g_ui->render_pass, graphics_current_present_frame_of_window(window));

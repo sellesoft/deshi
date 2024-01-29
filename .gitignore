@@ -8,6 +8,7 @@ examples/*/build
 *.rdbg
 *.cap
 *.ctm
+*.smproj
 
 #delle specific
 examples/shell.bat
