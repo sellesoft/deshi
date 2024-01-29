@@ -20,6 +20,7 @@ int main(int args_count, char** args){
 		camera->right    = vec3_RIGHT();
 		camera->up       = vec3_UP();
 		render_camera_update_view(camera);
+		render_temp_update_camera(camera->position, camera->position + camera->forward);
 		render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
 	}
 	
@@ -170,10 +171,16 @@ int main(int args_count, char** args){
 				
 				camera->forward = vec3_normalized(vec3_FORWARD() * mat4::RotationMatrix(camera->rotation));
 				render_camera_update_view(camera);
+				render_temp_update_camera(camera->position, camera->position + camera->forward);
 			}
 		}
 		if(g_window->resized){
-			render_camera_update_perspective_projection(camera, window->width, window->height, 90.f, .01f, 10000.f);
+			render_camera_update_perspective_projection(camera, window->width, window->height, 90.0f, 0.01f, 10000.0f);
+			mat4 projection = Math::PerspectiveProjectionMatrix(window->width, window->height, 90.0f, 0.01f, 10000.0f);
+#if DESHI_VULKAN
+			camera->proj.arr[5] *= -1;
+#endif //#if DESHI_VULKAN
+			render_temp_set_camera_projection(projection);
 		}
 		
 		//// update grid ////
