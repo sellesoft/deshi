@@ -20,8 +20,12 @@ Index:
 */
 #ifndef DESHI_ASSETS_H
 #define DESHI_ASSETS_H
+
+
 #include "math/vector.h"
 #include "math/matrix.h"
+
+
 struct Mesh;
 typedef u32 MeshIndex;
 struct MeshVertex;
@@ -43,19 +47,23 @@ struct GraphicsShader;
 struct GraphicsRenderPass;
 struct UniformBufferObject;
 struct Window;
+
+
 StartLinkageC();
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @assets
 
-typedef struct Assets { 
+
+typedef struct Assets{
 	Mesh**     mesh_map;
 	Texture**  texture_map;
 	Material** material_map;
 	Model**    model_map;
 	Font**     font_map;
 	Shader**   shader_map;
-
+	
 	Mesh*                mesh_pool;
 	Texture*             texture_pool;
 	Material*            material_pool;
@@ -64,7 +72,7 @@ typedef struct Assets {
 	Font*                font_pool;
 	UniformBufferObject* ubo_pool;
 	Shader*              shader_pool;
-
+	
 	Texture*  null_texture;
 	Font*     null_font;
 	Material* null_material;
@@ -72,7 +80,7 @@ typedef struct Assets {
 	Model*    null_model;
 	Shader*   null_vertex_shader;
 	Shader*   null_fragment_shader;
-
+	
 	GraphicsPipeline* null_pipeline;
 	
 	// standard layout for ubos used with asset models
@@ -81,12 +89,12 @@ typedef struct Assets {
 	// NOTE(sushi) array containing 1 descriptor so that we can access info about it later on (dunno if this would be useful or not so if not just remove it)
 	GraphicsDescriptor*  ubo_descriptors;
 	GraphicsDescriptorSet* view_proj_ubo;
-
-	struct {
+	
+	struct{
 		mat4 view;
 		mat4 proj;
 		vec4 position;
-	} base_ubo;
+	}base_ubo;
 	UniformBufferObject* base_ubo_handle;
 	
 	// currently this is taken as the render pass that is 
@@ -95,19 +103,20 @@ typedef struct Assets {
 	// eventually we will want to support drawing to 
 	// multiple windows and so this will need to be changed
 	GraphicsRenderPass* render_pass;
-
-// TODO(sushi) try using manually managed global buffers 
-//             to see if they are more performant
-//	u64 mesh_vertexes_cursor;
-//	u64 mesh_vertexes_reserved;
-//	u64 mesh_indexes_cursor;
-//	u64 mesh_indexes_reserved;
-//	Mesh** inactive_meshes_vertex_sorted;
-//	Mesh** inactive_meshes_index_sorted;
-//	// GPU equivalents
-//	RenderBuffer* mesh_vertex_buffer;
-//	RenderBuffer* mesh_index_buffer;
+	
+	// TODO(sushi) try using manually managed global buffers 
+	//             to see if they are more performant
+	//	u64 mesh_vertexes_cursor;
+	//	u64 mesh_vertexes_reserved;
+	//	u64 mesh_indexes_cursor;
+	//	u64 mesh_indexes_reserved;
+	//	Mesh** inactive_meshes_vertex_sorted;
+	//	Mesh** inactive_meshes_index_sorted;
+	//	// GPU equivalents
+	//	RenderBuffer* mesh_vertex_buffer;
+	//	RenderBuffer* mesh_index_buffer;
 }Assets;
+
 extern Assets* g_assets; //global assets pointer
 #define DeshAssets g_assets
 
@@ -129,15 +138,19 @@ void assets_update_camera_projection(mat4* projection);
 // Generates a unique id from the given name.
 u64 assets_make_unique_id(str8 name);
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @helpers
+
 
 // Sets up the given pipeline for rendering assets related things.
 // This does not add any shader stages.
 void assets_setup_pipeline(GraphicsPipeline* pipeline);
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @mesh  //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
+
 
 typedef struct MeshVertex{ //36 bytes
 	vec3 pos;
@@ -247,8 +260,11 @@ Mesh* assets_mesh_get_by_name(str8 name);
 // Returns 0 if no mesh could be found.
 Mesh* assets_mesh_get_by_uid(u64 uid);
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @texture
+
+
 typedef Type ImageFormat; enum{ //NOTE value = bytes per pixel
 	ImageFormat_BW   = 1,
 	ImageFormat_BWA  = 2,
@@ -297,11 +313,11 @@ typedef struct Texture{
 	TextureType type;
 	TextureFilter filter;
 	TextureAddressMode uv_mode;
-
+	
 	GraphicsImage* image;
 	GraphicsImageView* image_view;
 	GraphicsSampler* sampler;
-
+	
 	GraphicsDescriptorSet* ui_descriptor_set;
 }Texture;
 
@@ -350,26 +366,26 @@ FORCE_INLINE Texture* assets_texture_null(){ return g_assets->null_texture; };
 //Returns the texture array in `Assets`
 FORCE_INLINE Texture** assets_texture_map(){ return DeshAssets->texture_map; };
 
-// Attempts to retrieve a texture by the name it would have been created with.
-// Returns 0 if no texture could be found.
+//Attempts to retrieve a texture by the name it would have been created with.
+//  Returns 0 if no texture could be found.
 Texture* assets_texture_get_by_name(str8 name);
 
-// Attempts to retrieve a texture by the unique id it would have been assigned at creation.
-// Returns 0 if no texture could be found.
+//Attempts to retrieve a texture by the unique id it would have been assigned at creation.
+//  Returns 0 if no texture could be found.
 Texture* assets_texture_get_by_uid(u64 uid);
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @shader
 
 
 // TODO(sushi) if this is kept around, it may be worth making it specify 
 //             the actual variables used in the ubo so that we can use 
 //             that information in editors and such
-typedef struct UniformBufferObject {
+typedef struct UniformBufferObject{
 	u32 size;
 	GraphicsBuffer* buffer;
-} UBO;
+}UBO;
 
 UBO* assets_ubo_create(u32 size);
 
@@ -378,50 +394,37 @@ void assets_ubo_update(UBO* ubo, void* data);
 
 void assets_ubo_delete(UBO* ubo);
 
-typedef Type ShaderType; enum {
+typedef Type ShaderType; enum{
 	ShaderType_Vertex,
 	ShaderType_Geometry,
 	ShaderType_Fragment,
-};
-
-const str8 ShaderTypeStrings[] = {
-	str8l("Vertex"),
-	str8l("Geometry"),
-	str8l("Fragment"),
-};
+}; global const str8 ShaderTypeStrings[] = { str8l("Vertex"), str8l("Geometry"), str8l("Fragment"), };
 
 typedef Type ShaderResourceType; enum {
 	ShaderResourceType_UBO,
 	ShaderResourceType_Texture,
 	ShaderResourceType_PushConstant,
-};
-
-const str8 ShaderResourceTypeStrings[] = {
-	str8l("UBO"),
-	str8l("Texture"),
-	str8l("Push Constant"),
-};
+}; global const str8 ShaderResourceTypeStrings[] = { str8l("UBO"), str8l("Texture"), str8l("Push Constant"), };
 
 // Sum type for specifying resources used by a shader.
-typedef struct ShaderResource {
+typedef struct ShaderResource{
 	ShaderResourceType type;
 	char* name_in_shader; //null-terminated string
-	union {
+	union{
 		UBO* ubo;
 		Texture* texture;
 		u32 push_constant_size;
 	};
-} ShaderResource;
+}ShaderResource;
 
-typedef struct Shader {
+typedef struct Shader{
 	str8 name;
 	u64  uid;
 	ShaderType type;
 	ShaderResourceType* resources;
-
+	
 	GraphicsShader* handle;
-} Shader;
-
+}Shader;
 
 // Load a shader using 'source' as its source code.
 Shader* assets_shader_load_from_source(str8 name, str8 source, ShaderType type);
@@ -442,18 +445,22 @@ Shader* assets_shader_get_by_name(str8 name);
 // Returns 0 if no shader could be found.
 Shader* assets_shader_get_by_uid(u64 uid);
 
-FORCE_INLINE Shader* assets_shader_null_vertex() { return g_assets->null_vertex_shader; }
-FORCE_INLINE Shader* assets_shader_null_fragment() { return g_assets->null_fragment_shader; }
-FORCE_INLINE Shader** assets_shader_map() { return g_assets->shader_map; }
+FORCE_INLINE Shader* assets_shader_null_vertex(){ return g_assets->null_vertex_shader; }
+
+FORCE_INLINE Shader* assets_shader_null_fragment(){ return g_assets->null_fragment_shader; }
+
+FORCE_INLINE Shader** assets_shader_map(){ return g_assets->shader_map; }
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @material
 
-typedef struct ShaderStages {
+
+typedef struct ShaderStages{
 	Shader* vertex;
 	Shader* geometry;
 	Shader* fragment;
-} ShaderStages;
+}ShaderStages;
 
 typedef struct Material{
 	str8 name;
@@ -463,33 +470,34 @@ typedef struct Material{
 	// description of the stages this material goes through
 	// as well as the resources needed for each stage
 	ShaderStages stages;
-
+	
 	// The allocated resources this material will use.
 	ShaderResource* resources;
-
+	
 	// possibly shared by materials
 	GraphicsPipeline* pipeline;
+	
 	// unique to each instance of a material
 	GraphicsDescriptorSet* descriptor_set;
 }Material;
 
-// Returns a pointer to the allocated `Material` object (with texture array reserved)
+//Returns a pointer to the allocated `Material` object (with texture array reserved)
 Material* assets_material_allocate(u32 textureCount);
 
 Material* assets_material_create(str8 name, ShaderStages shader_stages, ShaderResource* resources);
 
-// Returns a pointer to the created `Material` object from a `MAT` file at `path`
+//Returns a pointer to the created `Material` object from a `MAT` file at `path`
 //  calls `render_load_material()` after creation
 Material* assets_material_create_from_path(str8 name, str8 path);
 
-// Saves the `Material` object at `material` to the `data/models` folder as a `MAT` file
-void      assets_material_save(Material* material);
+//Saves the `Material` object at `material` to the `data/models` folder as a `MAT` file
+void assets_material_save(Material* material);
 
-// Saves the `Material` object at `material` to `path` as a `MAT` file
-void      assets_material_save_to_path(Material* material, str8 path);
+//Saves the `Material` object at `material` to `path` as a `MAT` file
+void assets_material_save_to_path(Material* material, str8 path);
 
-// Deletes the `Material` object at `material` after calling `render_unload_material()`
-void      assets_material_delete(Material* material);
+//Deletes the `Material` object at `material` after calling `render_unload_material()`
+void assets_material_delete(Material* material);
 
 // Duplicates the given material but with a newly allocated set of resources and a new name.
 Material* assets_material_duplicate(str8 name, Material* material, ShaderResource* new_resources);
@@ -500,20 +508,25 @@ FORCE_INLINE Material* assets_material_null(){ return g_assets->null_material; }
 //Returns the material array in `Assets`
 FORCE_INLINE Material** assets_material_map(){ return g_assets->material_map; };
 
-// Attempt to retrieve a material by the name it would have been created with.
+//Attempt to retrieve a material by the name it would have been created with.
 Material* assets_material_get_by_name(str8 name);
 
-// Attempt to retrieve a material by the uid it would have been assigned at creation,
-// which is the str8_hash64 of the name it was given at creation.
+//Attempt to retrieve a material by the uid it would have been assigned at creation,
+//  which is the str8_hash64 of the name it was given at creation.
 Material* assets_material_get_by_uid(u64 uid);
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @armature
+
+
 struct Armature;
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @model
+
+
 typedef Flags ModelFlags; enum{
 	ModelFlags_NONE = 0,
 };
@@ -551,13 +564,13 @@ Model* assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags f
 Model* assets_model_duplicate(Model* base);
 
 //Saves the `Model` object at `model` to the `data/models` folder as a `MODEL` file
-void   assets_model_save(Model* model);
+void assets_model_save(Model* model);
 
 //Saves the `Model` object at `model` to `path` as a `MODEL` file
-void   assets_model_save_to_path(Model* model, str8 path);
+void assets_model_save_to_path(Model* model, str8 path);
 
 //Deletes the `Model` object at `model`
-void   assets_model_delete(Model* model);
+void assets_model_delete(Model* model);
 
 //Returns a pointer to the default `Model` object which is created when `assets_init()` is called
 FORCE_INLINE Model*  assets_model_null(){ return g_assets->null_model; };
@@ -578,6 +591,7 @@ Model* assets_model_get_by_uid(u64 uid);
 //// @font
 //NOTE to calculate the width of a char from a specified height do: height / aspect_ratio / max_width
 //NOTE we mirror stb types so we don't have to include that header here
+
 
 typedef Type FontType; enum{
 	FontType_NONE,
@@ -665,4 +679,4 @@ Font* assets_font_get_by_uid(u64 uid);
 
 
 EndLinkageC();
-#endif //DESHI_ASSETS_H
+#endif //#ifndef DESHI_ASSETS_H

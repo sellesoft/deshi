@@ -24,29 +24,29 @@ persist Allocator assets_load_allocator{
 };
 
 // default ubo used on all materials for the basic information needed to render them
-struct ModelUniformBufferObject {
+struct ModelUniformBufferObject{
 	mat4 view;
 	mat4 proj;
-} __assets_model_ubo;
+}__assets_model_ubo;
 
 template<typename T> FORCE_INLINE pair<spt, b32>
-__find_resource(u64 uid, T** map) {
+__find_resource(u64 uid, T** map){DPZoneScoped;
 	if(!array_count(map)) return {0, 0};
 	spt index = -1;
 	spt middle = -1;
-	if(array_count(map)) {
+	if(array_count(map)){
 		spt left = 0;
 		spt right = array_count(map) - 1;
-		while(left <= right ) {
+		while(left <= right ){
 			middle = left+(right-left)/2;
-			if(map[middle]->uid == uid) {
+			if(map[middle]->uid == uid){
 				index = middle;
 				break;
 			}
-			if(map[middle]->uid < uid) {
+			if(map[middle]->uid < uid){
 				left = middle+1;
 				middle = left+(right-left)/2;
-			} else {
+			}else{
 				right = middle-1;
 			}
 		}
@@ -55,14 +55,17 @@ __find_resource(u64 uid, T** map) {
 }
 
 FORCE_INLINE u64
-__uid_of_name(str8 name) {
+__uid_of_name(str8 name){DPZoneScoped;
 	return str8_hash64(name);
 }
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @assets_system
+// @assets_system
+
+
 void
-assets_init(Window* window) {
+assets_init(Window* window){DPZoneScoped;
 	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Graphics module");
 	
 	// setup pools
@@ -73,32 +76,31 @@ assets_init(Window* window) {
 	memory_pool_init(g_assets->font_pool, 8);
 	memory_pool_init(g_assets->ubo_pool, 8);
 	memory_pool_init(g_assets->shader_pool, 8);
-
+	
 	array_init(g_assets->mesh_map, 256, deshi_allocator);
 	array_init(g_assets->texture_map, 256, deshi_allocator);
 	array_init(g_assets->material_map, 256, deshi_allocator);
 	array_init(g_assets->model_map, 256, deshi_allocator);
 	array_init(g_assets->font_map, 8, deshi_allocator);
 	array_init(g_assets->shader_map, 256, deshi_allocator);
-
+	
 	g_assets->render_pass = graphics_render_pass_of_window_presentation_frames(window);
 	
 	//setup stb_image.h
 	stbi_set_flip_vertically_on_load(true);
 	
 	// setup null assets
-	
 	g_assets->null_vertex_shader = assets_shader_load_from_source(str8l("null.vert"), baked_shader_null_vert, ShaderType_Vertex);
 	array_init(g_assets->null_vertex_shader->resources, 2, deshi_allocator);
 	array_push_value(g_assets->null_vertex_shader->resources, ShaderResourceType_UBO);
 	array_push_value(g_assets->null_vertex_shader->resources, ShaderResourceType_PushConstant);
 	g_assets->null_fragment_shader = assets_shader_load_from_source(str8l("null.frag"), baked_shader_null_frag, ShaderType_Fragment);
-
+	
 	g_assets->null_mesh = assets_mesh_create_box(str8l("null"), 1.f, 1.f, 1.f, Color_White.rgba);
 	g_assets->null_mesh->name = str8l("null");
 	
 	g_assets->base_ubo_handle = assets_ubo_create(sizeof(g_assets->base_ubo));
-
+	
 	int width, height, channels;
 	u8* pixels = stbi_load_from_memory(baked_texture_null128_png, sizeof(baked_texture_null128_png), &width, &height, &channels, STBI_rgb_alpha);
 	g_assets->null_texture = assets_texture_create_from_memory(pixels, str8l("null"), 128, 128,
@@ -113,7 +115,7 @@ assets_init(Window* window) {
 	g_assets->null_pipeline = graphics_pipeline_allocate();
 	g_assets->null_pipeline->vertex_shader = g_assets->null_vertex_shader->handle;
 	g_assets->null_pipeline->fragment_shader = g_assets->null_fragment_shader->handle;
-
+	
 	assets_setup_pipeline(g_assets->null_pipeline);
 	
 	// create a descriptor layout for a single uniform buffer
@@ -121,11 +123,8 @@ assets_init(Window* window) {
 	g_assets->ubo_layout = graphics_descriptor_set_layout_allocate();
 	g_assets->ubo_layout->debug_name = str8l("ubo descriptor layout");
 	array_init_with_elements(g_assets->ubo_layout->bindings, {
-				{
-					GraphicsDescriptorType_Uniform_Buffer,
-					GraphicsShaderStage_Vertex,
-					0
-				}});
+								 {GraphicsDescriptorType_Uniform_Buffer, GraphicsShaderStage_Vertex, 0}
+							 });
 	graphics_descriptor_set_layout_update(g_assets->ubo_layout);
 	
 	array_init(g_assets->ubo_descriptors, 1, deshi_allocator);
@@ -155,7 +154,7 @@ assets_init(Window* window) {
 	null_pc_resource->type = ShaderResourceType_PushConstant;
 	null_pc_resource->name_in_shader = "PushConstant";
 	null_pc_resource->push_constant_size = sizeof(mat4);
-
+	
 	g_assets->null_material = assets_material_create(str8l("null"), null_stages, null_resources);
 	
 	// TODO(sushi) setup a function for creating a font from memory if possible 
@@ -168,14 +167,9 @@ assets_init(Window* window) {
 	g_assets->null_font->uid = __uid_of_name(str8l("null"));
 	array_push_value(g_assets->font_map, g_assets->null_font);
 	u8 white_pixels[4] = {255,255,255,255};
-	auto tex = assets_texture_create_from_memory(
-					 white_pixels, 
-					 str8l("null font"),
-					 2, 2, ImageFormat_BW, 
-					 TextureType_TwoDimensional,
-					 TextureFilter_Nearest,
-					 TextureAddressMode_ClampToWhite,
-					 false);
+	auto tex = assets_texture_create_from_memory(white_pixels, str8l("null font"), 2, 2, ImageFormat_BW, 
+												 TextureType_TwoDimensional, TextureFilter_Nearest,
+												 TextureAddressMode_ClampToWhite, false);
 	g_assets->null_font->tex = tex;
 	
 	DeshiStageInitEnd(DS_ASSETS);
@@ -196,7 +190,7 @@ assets_reset(){DPZoneScoped;
 }
 
 void
-assets_update_camera_position(vec4* position) {
+assets_update_camera_position(vec4* position){DPZoneScoped;
 	auto buffer = g_assets->base_ubo_handle->buffer;
 	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
 	
@@ -207,7 +201,7 @@ assets_update_camera_position(vec4* position) {
 }
 
 void
-assets_update_camera_view(mat4* view_matrix) {
+assets_update_camera_view(mat4* view_matrix){DPZoneScoped;
 	auto buffer = g_assets->base_ubo_handle->buffer;
 	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
 	
@@ -218,7 +212,7 @@ assets_update_camera_view(mat4* view_matrix) {
 }
 
 void
-assets_update_camera_projection(mat4* projection) {
+assets_update_camera_projection(mat4* projection){DPZoneScoped;
 	auto buffer = g_assets->base_ubo_handle->buffer;
 	void* data = graphics_buffer_map(buffer, sizeof(g_assets->base_ubo), 0);
 	
@@ -229,17 +223,19 @@ assets_update_camera_projection(mat4* projection) {
 }
 
 void 
-assets_setup_pipeline(GraphicsPipeline* pipeline) {
+assets_setup_pipeline(GraphicsPipeline* pipeline){
 	// a pipeline shouldn't have anything in its vertex input arrays when this is called 
 	Assert(!(pipeline->vertex_input_bindings || pipeline->vertex_input_attributes));
-
-	pipeline->vertex_input_bindings = array<GraphicsVertexInputBindingDescription>::create({{0, sizeof(MeshVertex)}}, deshi_allocator).ptr;
-	pipeline->vertex_input_attributes = array<GraphicsVertexInputAttributeDescription>::create({
-			{0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)},
-			{1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)},
-			{2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)},
-			{3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)}}, deshi_allocator).ptr;
-
+	
+	pipeline->vertex_input_bindings = array_create(GraphicsVertexInputBindingDescription, 1, deshi_allocator);
+	array_push_value(pipeline->vertex_input_bindings, (GraphicsVertexInputBindingDescription{0, sizeof(MeshVertex)}));
+	
+	pipeline->vertex_input_attributes = array_create(GraphicsVertexInputAttributeDescription, 4, deshi_allocator);
+	array_push_value(pipeline->vertex_input_attributes, (GraphicsVertexInputAttributeDescription{0, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, pos)}));
+	array_push_value(pipeline->vertex_input_attributes, (GraphicsVertexInputAttributeDescription{1, 0, GraphicsFormat_R32G32_Float,    offsetof(MeshVertex, uv)}));
+	array_push_value(pipeline->vertex_input_attributes, (GraphicsVertexInputAttributeDescription{2, 0, GraphicsFormat_R8G8B8A8_UNorm,  offsetof(MeshVertex, color)}));
+	array_push_value(pipeline->vertex_input_attributes, (GraphicsVertexInputAttributeDescription{3, 0, GraphicsFormat_R32G32B32_Float, offsetof(MeshVertex, normal)}));
+	
 	pipeline->            front_face = GraphicsFrontFace_CW;
 	pipeline->               culling = GraphicsPipelineCulling_Back;
 	pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
@@ -263,7 +259,7 @@ assets_setup_pipeline(GraphicsPipeline* pipeline) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @mesh
 
 
@@ -275,7 +271,8 @@ assets_mesh_allocate(u32 index_count,
 					 u32 faces_vertex_count, 
 					 u32 faces_outer_vertex_count, 
 					 u32 faces_neighbor_triangle_count, 
-					 u32 faces_neighbor_face_count){DPZoneScoped;
+					 u32 faces_neighbor_face_count)
+{DPZoneScoped;
 	AssetsAssert(index_count && vertex_count && face_count, "");
 	
 	u32 triangle_count = index_count/3;
@@ -315,29 +312,25 @@ assets_mesh_allocate(u32 index_count,
 // Create GraphicsBuffers for the mesh and then writes
 // their vertex/index data to them.
 void
-map_mesh(Mesh* m) {
-	m->vertex_buffer = graphics_buffer_create(
-											m->vertex_array, 
-											sizeof(MeshVertex) * m->vertex_count,
-											GraphicsBufferUsage_VertexBuffer,
-											GraphicsMemoryPropertyFlag_DeviceLocal,
-											GraphicsMemoryMapping_Never);
-	m->index_buffer = graphics_buffer_create(
-										   m->index_array,
-										   sizeof(MeshIndex) * m->index_count,
-										   GraphicsBufferUsage_IndexBuffer,
-										   GraphicsMemoryPropertyFlag_DeviceLocal,
-										   GraphicsMemoryMapping_Never);
+map_mesh(Mesh* m){DPZoneScoped;
+	m->vertex_buffer = graphics_buffer_create(m->vertex_array, sizeof(MeshVertex) * m->vertex_count,
+											  GraphicsBufferUsage_VertexBuffer,
+											  GraphicsMemoryPropertyFlag_DeviceLocal,
+											  GraphicsMemoryMapping_Never);
+	m->index_buffer = graphics_buffer_create(m->index_array, sizeof(MeshIndex) * m->index_count,
+											 GraphicsBufferUsage_IndexBuffer,
+											 GraphicsMemoryPropertyFlag_DeviceLocal,
+											 GraphicsMemoryMapping_Never);
 }
 
 Mesh*
 assets_mesh_create_box(str8 name, f32 width, f32 height, f32 depth, u32 color){DPZoneScoped;
 	AssetsAssertName(name);
 	AssetsNotice("creating box mesh '", name, "'");
-
+	
 	//TODO(delle) change this to take in 8 points
 	u64 uid = __uid_of_name(name);
-
+	
 	width  /= 2.f;
 	height /= 2.f;
 	depth  /= 2.f;
@@ -345,12 +338,12 @@ assets_mesh_create_box(str8 name, f32 width, f32 height, f32 depth, u32 color){D
 	// get potential position in map and 
 	// check if already created
 	auto [index, found] = __find_resource(uid, g_assets->mesh_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(name, Mesh);
 		return g_assets->mesh_map[index];
 	}
 	
-
+	
 	Mesh* mesh = assets_mesh_allocate(36, 8, 6, 36, 24, 24, 24, 24);
 	mesh->name      = str8l("box_mesh");
 	mesh->aabb_min  = {-width,-height,-depth};
@@ -517,14 +510,13 @@ Mesh*
 assets_mesh_create_from_path(str8 name, str8 path){DPZoneScoped;
 	AssetsAssertName(path);
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) {
+	if(!contents){
 		AssetsError("failed to load mesh file.");
 		return assets_mesh_null();
 	}
 	
 	return assets_mesh_create_from_memory(contents.str);
 }
-
 
 Mesh*
 assets_mesh_create_from_memory(void* data){DPZoneScoped;
@@ -534,13 +526,13 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 		AssetsError("mesh size was too small when trying to load it from memory.");
 		return assets_mesh_null();
 	}
-
+	
 	auto [index, found] = __find_resource(((Mesh*)data)->uid, g_assets->mesh_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(((Mesh*)data)->name, Mesh);
 		return g_assets->mesh_map[index];
 	}
-
+	
 	//allocate and copy from data
 	Mesh* mesh = (Mesh*)memory_alloc(bytes);
 	CopyMemory(mesh, data, bytes);
@@ -575,36 +567,33 @@ assets_mesh_create_from_memory(void* data){DPZoneScoped;
 	return mesh;
 }
 
-
 void
 assets_mesh_save(Mesh* mesh){DPZoneScoped;
 	assets_mesh_save_to_path(mesh, str8_concat3(STR8("data/models/"),mesh->name,STR8(".mesh"), deshi_temp_allocator));
 }
 
-
 void
 assets_mesh_save_to_path(Mesh* mesh, str8 path){DPZoneScoped;
-	if(file_write_simple(path, mesh, mesh->bytes)) {
+	if(file_write_simple(path, mesh, mesh->bytes)){
 		AssetsNotice("successfully saved mesh: ", path);
 	}
 }
 
-
 void
 assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 	AssetsAssert(mesh, "passed null mesh pointer.");
-
-	if(mesh == g_assets->null_mesh) {
+	
+	if(mesh == g_assets->null_mesh){
 		AssetsWarning("attempted to delete null mesh.");
 		return;
 	}
 	
 	auto [index, found] = __find_resource(mesh->uid, g_assets->mesh_map);
-	if(!found) {
+	if(!found){
 		AssetsError("the given mesh ('", mesh->name, "'@", (void*)mesh, ") has a uid (", mesh->uid, ") that does not exist in the mesh map. The memory of the mesh will not be deleted as we cannot be sure we own it.");
 		return;
 	}
-
+	
 	array_remove_ordered(g_assets->mesh_map, index);
 	graphics_buffer_destroy(mesh->vertex_buffer);
 	graphics_buffer_destroy(mesh->index_buffer);
@@ -612,25 +601,25 @@ assets_mesh_delete(Mesh* mesh){DPZoneScoped;
 }
 
 FORCE_INLINE Mesh*
-assets_mesh_get_by_uid(u64 uid) {
+assets_mesh_get_by_uid(u64 uid){DPZoneScoped;
 	auto [index, found] = __find_resource(uid, g_assets->mesh_map);
 	if(found) return g_assets->mesh_map[index];
 	return 0;
 }
- 
+
 FORCE_INLINE Mesh*
-assets_mesh_get_by_name(str8 name) {
+assets_mesh_get_by_name(str8 name){DPZoneScoped;
 	return assets_mesh_get_by_uid(__uid_of_name(name));
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @texture
 
 
 GraphicsFilter
-texture_filter_to_render(TextureFilter x) {
-	switch(x) {
+texture_filter_to_render(TextureFilter x){DPZoneScoped;
+	switch(x){
 		case TextureFilter_Nearest: return GraphicsFilter_Nearest;
 		case TextureFilter_Cubic:   return GraphicsFilter_Linear;
 	}
@@ -639,7 +628,7 @@ texture_filter_to_render(TextureFilter x) {
 }
 
 void 
-upload_texture(Texture* texture) {
+upload_texture(Texture* texture){DPZoneScoped;
 	texture->image = graphics_image_allocate();
 	texture->image->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' image").fin;
 	texture->image->format = GraphicsFormat_R8G8B8A8_SRGB;
@@ -648,7 +637,7 @@ upload_texture(Texture* texture) {
 	texture->image->extent = {texture->width, texture->height, 4};
 	graphics_image_update(texture->image);
 	graphics_image_write(texture->image, texture->pixels, vec2i::ZERO, {texture->width, texture->height});
-
+	
 	texture->image_view = graphics_image_view_allocate();
 	texture->image_view->debug_name = to_dstr8v(deshi_temp_allocator, "<assets> texture '", texture->name, "' image view").fin;
 	texture->image_view->image = texture->image;
@@ -661,40 +650,40 @@ upload_texture(Texture* texture) {
 	texture->sampler->mipmap_mode = GraphicsFilter_Nearest;
 	texture->sampler->mag_filter = 
 		texture->sampler->min_filter = texture_filter_to_render(texture->filter);
-	switch(texture->uv_mode) {
-		case TextureAddressMode_Repeat: {
+	switch(texture->uv_mode){
+		case TextureAddressMode_Repeat:{
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
 				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Repeat;
-		} break;
-		case TextureAddressMode_MirroredRepeat: {
+		}break;
+		case TextureAddressMode_MirroredRepeat:{
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
 				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Mirrored_Repeat;
-		} break;
-		case TextureAddressMode_ClampToEdge: {
+		}break;
+		case TextureAddressMode_ClampToEdge:{
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
 				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Edge;
-		} break;
-		case TextureAddressMode_ClampToWhite: {
+		}break;
+		case TextureAddressMode_ClampToWhite:{
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
 				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 			texture->sampler->border_color = Color_White;
-		} break;
-		case TextureAddressMode_ClampToBlack: {
+		}break;
+		case TextureAddressMode_ClampToBlack:{
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
 				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 			texture->sampler->border_color = Color_Black;
-		} break;
-		case TextureAddressMode_ClampToTransparent: {
+		}break;
+		case TextureAddressMode_ClampToTransparent:{
 			texture->sampler->address_mode_u = 
 				texture->sampler->address_mode_v = 
 				texture->sampler->address_mode_w = GraphicsSamplerAddressMode_Clamp_To_Border;
 			texture->sampler->border_color = Color_NONE;
-		} break;
+		}break;
 	}
 	graphics_sampler_update(texture->sampler);
 }
@@ -707,20 +696,21 @@ assets_texture_create_from_path(str8 name,
 								TextureFilter filter, 
 								TextureAddressMode uvMode, 
 								b32 keepLoaded, 
-								b32 generateMipmaps){DPZoneScoped;
+								b32 generateMipmaps)
+{DPZoneScoped;
 	AssetsAssert(path, "given an empty path.");
 	//check if texture is already loaded
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-
+	
 	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->texture_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(name, Texture);
 		return g_assets->texture_map[index];
 	}
-
+	
 	AssetsNotice("creating texture from path '", path, "'.");
-
+	
 	Texture* texture = memory_pool_push(g_assets->texture_pool);
 	texture->name    = name;
 	texture->uid     = uid;
@@ -752,27 +742,27 @@ assets_texture_create_from_path(str8 name,
 
 
 Texture*
-assets_texture_create_from_memory(
-								  void* data, 
+assets_texture_create_from_memory(void* data, 
 								  str8 name, 
 								  u32 width, u32 height, 
 								  ImageFormat format, 
 								  TextureType type, 
 								  TextureFilter filter, 
 								  TextureAddressMode uvMode, 
-								  b32 generateMipmaps){DPZoneScoped;
+								  b32 generateMipmaps)
+{DPZoneScoped;
 	AssetsAssert(data, "passed null data pointer.");
 	AssetsAssertName(name);
 	
 	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->texture_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(name, Texture);
 		return g_assets->texture_map[index];
 	}
-
+	
 	AssetsNotice("creating texture '", name, "'.");
-
+	
 	Texture* texture = memory_pool_push(g_assets->texture_pool);
 	texture->name    = name;
 	texture->uid     = uid;
@@ -836,20 +826,20 @@ assets_texture_create_from_memory(
 void
 assets_texture_delete(Texture* texture){DPZoneScoped;
 	AssetsAssert(texture, "passed null texture pointer.");
-
-	if(texture == g_assets->null_texture) {
+	
+	if(texture == g_assets->null_texture){
 		AssetsWarning("attempted to delete null texture.");
 		return;
 	} 
 	
 	auto [index, found] = __find_resource(texture->uid, g_assets->texture_map);
-	if(!found) {
+	if(!found){
 		AssetsDeleteNotFound(texture, Texture);
 		return;
 	}
-
+	
 	AssetsNotice("deleting texture ", AssetsResourceBasicInfo(texture));
-
+	
 	graphics_sampler_destroy(texture->sampler);
 	graphics_image_view_destroy(texture->image_view);
 	graphics_image_destroy(texture->image);
@@ -858,56 +848,55 @@ assets_texture_delete(Texture* texture){DPZoneScoped;
 }
 
 void 
-assets_texture_update(Texture* texture, vec2i offset, vec2i extent) {	
+assets_texture_update(Texture* texture, vec2i offset, vec2i extent){DPZoneScoped;
 	AssetsAssert(texture, "passed a null texture pointer.");
-
-	if(offset.x > texture->width || offset.y > texture->height) {
+	
+	if(offset.x > texture->width || offset.y > texture->height){
 		AssetsError("cannot update texture '", texture->name, "': the given offset ", offset, " is outside the bounds of the given texture.");
 		return;
 	}
 	
-	if(offset.x + extent.x > texture->width || offset.y + extent.y > texture->height) {
+	if(offset.x + extent.x > texture->width || offset.y + extent.y > texture->height){
 		AssetsWarning("while updating texture '", texture->name, "': the given offset ", offset, " plus the given extent ", extent, " go beyond the region of the given texture (size is ", Vec2i(texture->width, texture->height), "). The extent will be clipped to be within the image.");
 		extent.x = Min(texture->width - offset.x, extent.x);
 		extent.y = Min(texture->height - offset.y, extent.y);
 	}
-
+	
 	if(!(extent.x && extent.y)) return;
-
+	
 	graphics_image_write(texture->image, texture->pixels + offset.x*offset.y*texture->format*texture->format, offset, extent);
 }
 
 FORCE_INLINE Texture*
-assets_texture_get_by_uid(u64 uid) {
+assets_texture_get_by_uid(u64 uid){DPZoneScoped;
 	auto [index, found] = __find_resource(uid, g_assets->texture_map);
 	if(found) return g_assets->texture_map[index];
 	return 0;
 }
 
 FORCE_INLINE Texture*
-assets_texture_get_by_name(str8 name) {
+assets_texture_get_by_name(str8 name){DPZoneScoped;
 	return assets_texture_get_by_uid(__uid_of_name(name));
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @shader
 
 
 UBO* 
-assets_ubo_create(u32 size) {
+assets_ubo_create(u32 size){DPZoneScoped;
 	UBO* ubo = memory_pool_push(g_assets->ubo_pool);
 	ubo->size = size;
-	ubo->buffer = graphics_buffer_create(
-									   0, size,
-									   GraphicsBufferUsage_UniformBuffer,
-									   GraphicsMemoryPropertyFlag_HostVisible,
-									   GraphicsMemoryMapping_Occasional);
+	ubo->buffer = graphics_buffer_create(0, size,
+										 GraphicsBufferUsage_UniformBuffer,
+										 GraphicsMemoryPropertyFlag_HostVisible,
+										 GraphicsMemoryMapping_Occasional);
 	return ubo;
 }
 
 void 
-assets_ubo_update(UBO* ubo, void* data) {
+assets_ubo_update(UBO* ubo, void* data){DPZoneScoped;
 	void* mapped_data = graphics_buffer_map(ubo->buffer, graphics_buffer_device_size(ubo->buffer), 0);
 	
 	CopyMemory(mapped_data, data, ubo->size);
@@ -916,37 +905,37 @@ assets_ubo_update(UBO* ubo, void* data) {
 }
 
 void 
-assets_ubo_delete(UBO* ubo) {
+assets_ubo_delete(UBO* ubo){DPZoneScoped;
 	graphics_buffer_destroy(ubo->buffer);
 	memory_pool_delete(g_assets->ubo_pool, ubo);
 }
 
 Shader*
-assets_shader_load_from_source(str8 name, str8 source, ShaderType type) {
+assets_shader_load_from_source(str8 name, str8 source, ShaderType type){DPZoneScoped;
 	AssetsAssertName(name);
 	AssetsAssert(source, "empty source data.");
 	
 	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->shader_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(name, Shader);
 		return g_assets->shader_map[index];
 	}
-
+	
 	AssetsNotice("loading shader '", name, "'.");
-
+	
 	Shader* out = memory_pool_push(g_assets->shader_pool);
 	out->name = name;
 	out->uid = uid;
 	out->type = type;
 	out->handle = graphics_shader_allocate();
-	switch(type) {
+	switch(type){
 		case ShaderType_Vertex:   out->handle->shader_stage = GraphicsShaderStage_Vertex; break;
 		case ShaderType_Geometry: out->handle->shader_stage = GraphicsShaderStage_Geometry; break;
 		case ShaderType_Fragment: out->handle->shader_stage = GraphicsShaderStage_Fragment; break;
-		default: {
+		default:{
 			AssetsFatal("invalid ShaderType: ", (u32)type);
-		} break;
+		}break;
 	}
 	out->handle->source = source;
 	out->handle->debug_name = to_dstr8v(deshi_allocator, "<assets-shader> ", name).fin;
@@ -956,66 +945,66 @@ assets_shader_load_from_source(str8 name, str8 source, ShaderType type) {
 }
 
 Shader*
-assets_shader_load_from_path(str8 name, str8 path, ShaderType type) {
+assets_shader_load_from_path(str8 name, str8 path, ShaderType type){DPZoneScoped;
 	AssetsAssertName(name);
 	AssetsAssert(path, "empty path.");
 	
-	if(!file_exists(path)) {
+	if(!file_exists(path)){
 		AssetsError("no file exists at path '", path, "'.");
-		switch(type) {
+		switch(type){
 			case ShaderType_Vertex: return g_assets->null_vertex_shader;
 			case ShaderType_Fragment: return g_assets->null_fragment_shader;
-			default: {
+			default:{
 				AssetsFatal("unhandled or invalid ShaderType: ", (u32)type);
-			} break;
+			}break;
 		}
 	}
-
+	
 	str8 source = file_read_simple(path, deshi_temp_allocator);
-
+	
 	return assets_shader_load_from_source(name, source, type);
 }
 
 void
-assets_shader_reload(Shader* shader) {
+assets_shader_reload(Shader* shader){DPZoneScoped;
 	AssetsAssert(shader, "passed null Shader pointer.");
 	AssetsAssert(shader->handle, "given shader has a null graphics handle.");
-
+	
 	// TODO(sushi) this implementation SUCKS! my original intension when i began this  
 	//             whole shader api was to make it so that you can get away with just 
 	//             recompiling a single shader and also associating shaders with materials
 	//             so we can find the right things to update directly. That is not happening 
 	//             here, instead it is much like it was before, but I would like it to be faster
 	//             though it does not HAVE to be since this is probably a debug thing anywyas 
-	switch(shader->type) {
-		case ShaderType_Vertex: {
-			forI(array_count(g_assets->material_map)) {
+	switch(shader->type){
+		case ShaderType_Vertex:{
+			forI(array_count(g_assets->material_map)){
 				auto m = g_assets->material_map[i];
 				if(m->stages.vertex == shader) graphics_pipeline_update(m->pipeline);
 			}
-		} break;
-		case ShaderType_Geometry: {
-			forI(array_count(g_assets->material_map)) {
+		}break;
+		case ShaderType_Geometry:{
+			forI(array_count(g_assets->material_map)){
 				auto m = g_assets->material_map[i];
 				if(m->stages.geometry == shader) graphics_pipeline_update(m->pipeline);
 			}
-		} break;
-		case ShaderType_Fragment: {
-			forI(array_count(g_assets->material_map)) {
+		}break;
+		case ShaderType_Fragment:{
+			forI(array_count(g_assets->material_map)){
 				auto m = g_assets->material_map[i];
 				if(m->stages.fragment == shader) graphics_pipeline_update(m->pipeline);
 			}
-		} break;
+		}break;
 	}
 }
 
 FORCE_INLINE Shader*
-assets_shader_get_by_name(str8 name) {
+assets_shader_get_by_name(str8 name){DPZoneScoped;
 	return assets_shader_get_by_uid(__uid_of_name(name));
 }
 
 FORCE_INLINE Shader*
-assets_shader_get_by_uid(u64 uid) {
+assets_shader_get_by_uid(u64 uid){DPZoneScoped;
 	auto [index, found] = __find_resource(uid, g_assets->shader_map);
 	if(found) return g_assets->shader_map[index];
 	return 0;
@@ -1023,29 +1012,29 @@ assets_shader_get_by_uid(u64 uid) {
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @assets_material
+// @assets_material
 
 
 Material*
-assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resources) {	
+assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resources){	DPZoneScoped;
 	AssetsAssertName(name);
 	
 	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->material_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(name, Material);
 		return g_assets->null_material;
 	}
-
+	
 	AssetsNotice("loading material '", name, "'.");
-
+	
 	auto pipeline = graphics_pipeline_allocate();
 	pipeline->debug_name = to_dstr8v(deshi_temp_allocator, "<assets-material> ", name, " pipeline").fin;
 	assets_setup_pipeline(pipeline);
-
+	
 	auto shader_stages = array<GraphicsShader>::create(deshi_allocator);
 	
-	if(!shaders.vertex) {
+	if(!shaders.vertex){
 		AssetsError("vertex shader stage pointer is null. A material is required to specify at least a vertex shader.");
 		return assets_material_null();
 	}
@@ -1053,7 +1042,7 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	pipeline->vertex_shader = shaders.vertex->handle;
 	pipeline->geometry_shader = (shaders.geometry ? shaders.geometry->handle : 0);
 	pipeline->fragment_shader = (shaders.fragment ? shaders.fragment->handle : 0);
-
+	
 	// setup the descriptor layout
 	auto descriptor_layout = graphics_descriptor_set_layout_allocate();
 	descriptor_layout->debug_name = to_dstr8v(deshi_temp_allocator, "Material ", name, " descriptor layout").fin;
@@ -1063,14 +1052,14 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	u32 n_fragment_resources = (shaders.fragment && shaders.fragment->resources ? array_count(shaders.fragment->resources) : 0);
 	u32 sum = n_vertex_resources + n_geometry_resources + n_fragment_resources;
 	
-	if(sum && !resources) {
+	if(sum && !resources){
 		AssetsError("material has resoures specified in some shader, but the given resources array is null");
 		return g_assets->null_material;
 	}
 	
 	u32 n_resources_given = (resources ? array_count(resources) : 0);
 	
-	if(n_resources_given != sum) {
+	if(n_resources_given != sum){
 		AssetsError("the number of given resources (", n_resources_given, ") is not equal to the number of expected resources for this material (", sum, ")");
 		return g_assets->null_material;
 	}
@@ -1079,11 +1068,11 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	auto descriptors = array<GraphicsDescriptor>::create(sum, deshi_allocator);
 	auto bindings = array<GraphicsDescriptorSetLayoutBinding>::create(sum, deshi_allocator);
 	GraphicsPushConstant* push_constants = array_create(GraphicsPushConstant, 0, deshi_allocator);
-
-	forI(n_vertex_resources) {
+	
+	forI(n_vertex_resources){
 		auto resource = shaders.vertex->resources[i];
 		auto resource_given = resources[resource_index];
-		if(resource != resource_given.type) {
+		if(resource != resource_given.type){
 			AssetsError("resource type mismatch between vertex resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", resource_index, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return g_assets->null_material;
 		}
@@ -1092,8 +1081,8 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 			return g_assets->null_material;
 		}
 		
-		switch(resource) {
-			case ShaderResourceType_UBO: {
+		switch(resource){
+			case ShaderResourceType_UBO:{
 				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
 				descriptor->name_in_shader = resource_given.name_in_shader;
@@ -1105,8 +1094,8 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				binding->n = bindings.count() - 1;
 				binding->shader_stages = GraphicsShaderStage_Vertex;
 				binding->type = GraphicsDescriptorType_Uniform_Buffer;
-			} break;
-			case ShaderResourceType_Texture: {
+			}break;
+			case ShaderResourceType_Texture:{
 				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				descriptor->name_in_shader = resource_given.name_in_shader;
@@ -1118,7 +1107,7 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				binding->n = bindings.count() - 1;
 				binding->shader_stages = GraphicsShaderStage_Vertex;
 				binding->type = GraphicsDescriptorType_Combined_Image_Sampler;
-			} break;
+			}break;
 			case ShaderResourceType_PushConstant:{
 				GraphicsPushConstant* constant = array_push(push_constants);
 				constant->shader_stages = GraphicsShaderStage_Vertex;
@@ -1126,21 +1115,21 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				constant->offset = 0;
 				constant->name_in_shader = resource_given.name_in_shader;
 			}break;
-			default: {
+			default:{
 				AssetsError("resource ", i, " given for vertex shader has an unknown type (", (u32)resource, ")");
 				graphics_descriptor_set_layout_destroy(descriptor_layout);
 				graphics_pipeline_destroy(pipeline);
 				return g_assets->null_material;
-			} break;
+			}break;
 		}
 		
 		resource_index += 1;
 	}
 	
-	forI(n_geometry_resources) {
+	forI(n_geometry_resources){
 		auto resource = shaders.geometry->resources[i];
 		auto resource_given = resources[resource_index];
-		if(resource != resource_given.type) {
+		if(resource != resource_given.type){
 			AssetsError("resource type mismatch between geometry resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", resource_index, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return g_assets->null_material;
 		}
@@ -1148,9 +1137,9 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 			AssetsError("resource ",i," given for geometry shader has an empty name_in_shader field");
 			return g_assets->null_material;
 		}
-			
-		switch(resource) {
-			case ShaderResourceType_UBO: {
+		
+		switch(resource){
+			case ShaderResourceType_UBO:{
 				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
 				descriptor->name_in_shader = resource_given.name_in_shader;
@@ -1162,8 +1151,8 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				binding->n = bindings.count() - 1;
 				binding->shader_stages = GraphicsShaderStage_Geometry;
 				binding->type = GraphicsDescriptorType_Uniform_Buffer;
-			} break;
-			case ShaderResourceType_Texture: {
+			}break;
+			case ShaderResourceType_Texture:{
 				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				descriptor->name_in_shader = resource_given.name_in_shader;
@@ -1175,7 +1164,7 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				binding->n = bindings.count() - 1;
 				binding->shader_stages = GraphicsShaderStage_Geometry;
 				binding->type = GraphicsDescriptorType_Combined_Image_Sampler;
-			} break;
+			}break;
 			case ShaderResourceType_PushConstant:{
 				GraphicsPushConstant* constant = array_push(push_constants);
 				constant->shader_stages = GraphicsShaderStage_Geometry;
@@ -1183,21 +1172,21 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				constant->offset = 0;
 				constant->name_in_shader = resource_given.name_in_shader;
 			}break;
-			default: {
+			default:{
 				AssetsError("resource ", i, " given for geometry shader has an unknown type (", (u32)resource, ")");
 				graphics_descriptor_set_layout_destroy(descriptor_layout);
 				graphics_pipeline_destroy(pipeline);
 				return g_assets->null_material;
-			} break;
+			}break;
 		}
 		
 		resource_index += 1;
 	}
 	
-	forI(n_fragment_resources) {
+	forI(n_fragment_resources){
 		auto resource = shaders.fragment->resources[i];
 		auto resource_given = resources[resource_index];
-		if(resource != resource_given.type) {
+		if(resource != resource_given.type){
 			AssetsError("resource type mismatch between fragment resource ", i, " (", ShaderResourceTypeStrings[resource], ") and given resource ", resource_index, " (", ShaderResourceTypeStrings[resource_given.type], ")");
 			return g_assets->null_material;
 		}
@@ -1205,9 +1194,9 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 			AssetsError("resource ",i," given for fragment shader has an empty name_in_shader field");
 			return g_assets->null_material;
 		}
-
-		switch(resource) {
-			case ShaderResourceType_UBO: {
+		
+		switch(resource){
+			case ShaderResourceType_UBO:{
 				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Uniform_Buffer;
 				descriptor->name_in_shader = resource_given.name_in_shader;
@@ -1219,8 +1208,8 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				binding->n = bindings.count() - 1;
 				binding->shader_stages = GraphicsShaderStage_Fragment;
 				binding->type = GraphicsDescriptorType_Uniform_Buffer;
-			} break;
-			case ShaderResourceType_Texture: {
+			}break;
+			case ShaderResourceType_Texture:{
 				auto descriptor = descriptors.push();
 				descriptor->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				descriptor->name_in_shader = resource_given.name_in_shader;
@@ -1232,7 +1221,7 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				binding->n = bindings.count() - 1;
 				binding->shader_stages = GraphicsShaderStage_Fragment;
 				binding->type = GraphicsDescriptorType_Combined_Image_Sampler;
-			} break;
+			}break;
 			case ShaderResourceType_PushConstant:{
 				GraphicsPushConstant* constant = array_push(push_constants);
 				constant->shader_stages = GraphicsShaderStage_Fragment;
@@ -1240,13 +1229,13 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 				constant->offset = 0;
 				constant->name_in_shader = resource_given.name_in_shader;
 			}break;
-			default: {
+			default:{
 				AssetsError("resource ", i, " given for fragment shader has an unknown type (", (u32)resource, ")");
 				graphics_descriptor_set_layout_destroy(descriptor_layout);
 				graphics_pipeline_destroy(pipeline);
 				return g_assets->null_material;
-			} break;
-
+			}break;
+			
 		}
 	}
 	descriptor_layout->bindings = bindings.ptr;
@@ -1277,9 +1266,9 @@ assets_material_create(str8 name, ShaderStages shaders, ShaderResource* resource
 	array_count(material->resources) = n_resources_given;
 	CopyMemory(material->resources, resources, sizeof(ShaderResource) * n_resources_given);
 	array_insert_value(g_assets->material_map, index, material);
-
+	
 	AssetsNotice("created material ", AssetsResourceBasicInfo(material));
-
+	
 	return material;
 }
 
@@ -1287,109 +1276,109 @@ Material*
 assets_material_create_from_path(str8 path){DPZoneScoped;
 	// TODO(sushi) update to use new graphics api once one of us actually uses material stuff from disk
 	NotImplemented;
-//	//check if material is already loaded
-//	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
-//	for_stb_array(g_assets->material_array){
-//		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
-//			return *it;
-//		}
-//	}
-//	str8 front = str8_eat_until(filename, '.');
-//	
-//	//load .mat file
-//	File* file = file_init(path, FileAccess_Read);
-//	if(!file) return assets_material_null();
-//	defer{ file_deinit(file); };
-//	
-//	//parse .mat file
-//	str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
-//	Shader mat_shader = 0;
-//	arrayT<str8> mat_textures(deshi_temp_allocator);
-//	enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
-//	
-//	u32 line_number = 0;
-//	while(file->cursor < file->bytes){
-//		line_number += 1;
-//		
-//		//next line
-//		str8 line = file_read_line_alloc(file, &assets_load_allocator);
-//		if(!line) continue;
-//		
-//		//skip leading whitespace
-//		str8_advance_while(&line, ' ');
-//		if(!line) continue;
-//		
-//		//early out if comment is first character
-//		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
-//		if(decoded.codepoint == '#') continue;
-//		
-//		//check for header
-//		if(decoded.codepoint == '>'){
-//			if     (str8_begins_with(line, STR8(">material"))) header = HEADER_MATERIAL;
-//			else if(str8_begins_with(line, STR8(">textures"))) header = HEADER_TEXTURES;
-//			else{ header = HEADER_INVALID; LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid Header: ",line); };
-//			continue;
-//		}
-//		
-//		//early out invalid header
-//		if(header == HEADER_INVALID){
-//			LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid Header; skipping line");
-//			continue;
-//		}
-//		
-//		if(header == HEADER_MATERIAL){
-//			//parse key
-//			str8 key = str8_eat_until(line, ' ');
-//			str8_increment(&line, key.count);
-//			
-//			//skip separating whitespace
-//			str8_advance_while(&line, ' ');
-//			if(!line){
-//				LogE("config","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
-//				continue;
-//			}
-//			
-//			//early out if comment is first value character
-//			decoded = decoded_codepoint_from_utf8(line.str, 4);
-//			if(decoded.codepoint == '#'){
-//				LogE("assets","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
-//				continue;
-//			}
-//			
-//			if      (str8_equal_lazy(key, STR8("name"))){
-//				if(decoded.codepoint != '\"'){
-//					LogE("assets","Error parsing material '",path,"' on line ",line_number,". Names must be wrapped in double quotes.");
-//					continue;
-//				}
-//				mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
-//			}else if(str8_equal_lazy(key, STR8("shader"))){
-//				forI(Shader_COUNT){
-//					if(str8_equal_lazy(line, ShaderStrings[i])){
-//						mat_shader = i;
-//						break;
-//					}
-//				}
-//			}else{
-//				LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
-//				continue;
-//			}
-//		}else{
-//			if(decoded.codepoint != '\"'){
-//				LogE("assets","Error parsing material '",path,"' on line ",line_number,". Textures must be wrapped in double quotes.");
-//				continue;
-//			}
-//			
-//			mat_textures.add(str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator));
-//		}
-//	}
-//	
-//	Material* material = assets_material_allocate(mat_textures.count);
-//	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
-//	material->shader = mat_shader;
-//	forI(mat_textures.count) material->texture_array[i] = assets_texture_create_from_file_simple(mat_textures[i]);
-//	render_load_material(material);
-//	arrput(g_assets->material_array, material);
-//	return material;
+	//	//check if material is already loaded
+	//	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
+	//	for_stb_array(g_assets->material_array){
+	//		if(strncmp((*it)->name, (char*)filename.str, 64) == 0){
+	//			return *it;
+	//		}
+	//	}
+	//	str8 front = str8_eat_until(filename, '.');
+	//	
+	//	//load .mat file
+	//	File* file = file_init(path, FileAccess_Read);
+	//	if(!file) return assets_material_null();
+	//	defer{ file_deinit(file); };
+	//	
+	//	//parse .mat file
+	//	str8 mat_name{}; //NOTE(delle) unused b/c we use the filename for loaded name currently
+	//	Shader mat_shader = 0;
+	//	arrayT<str8> mat_textures(deshi_temp_allocator);
+	//	enum{ HEADER_MATERIAL, HEADER_TEXTURES, HEADER_INVALID }header;
+	//	
+	//	u32 line_number = 0;
+	//	while(file->cursor < file->bytes){
+	//		line_number += 1;
+	//		
+	//		//next line
+	//		str8 line = file_read_line_alloc(file, &assets_load_allocator);
+	//		if(!line) continue;
+	//		
+	//		//skip leading whitespace
+	//		str8_advance_while(&line, ' ');
+	//		if(!line) continue;
+	//		
+	//		//early out if comment is first character
+	//		DecodedCodepoint decoded = decoded_codepoint_from_utf8(line.str, 4);
+	//		if(decoded.codepoint == '#') continue;
+	//		
+	//		//check for header
+	//		if(decoded.codepoint == '>'){
+	//			if     (str8_begins_with(line, STR8(">material"))) header = HEADER_MATERIAL;
+	//			else if(str8_begins_with(line, STR8(">textures"))) header = HEADER_TEXTURES;
+	//			else{ header = HEADER_INVALID; LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid Header: ",line); };
+	//			continue;
+	//		}
+	//		
+	//		//early out invalid header
+	//		if(header == HEADER_INVALID){
+	//			LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid Header; skipping line");
+	//			continue;
+	//		}
+	//		
+	//		if(header == HEADER_MATERIAL){
+	//			//parse key
+	//			str8 key = str8_eat_until(line, ' ');
+	//			str8_increment(&line, key.count);
+	//			
+	//			//skip separating whitespace
+	//			str8_advance_while(&line, ' ');
+	//			if(!line){
+	//				LogE("config","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
+	//				continue;
+	//			}
+	//			
+	//			//early out if comment is first value character
+	//			decoded = decoded_codepoint_from_utf8(line.str, 4);
+	//			if(decoded.codepoint == '#'){
+	//				LogE("assets","Error parsing material '",path,"' on line ",line_number,". No value passed to key: ",key);
+	//				continue;
+	//			}
+	//			
+	//			if      (str8_equal_lazy(key, STR8("name"))){
+	//				if(decoded.codepoint != '\"'){
+	//					LogE("assets","Error parsing material '",path,"' on line ",line_number,". Names must be wrapped in double quotes.");
+	//					continue;
+	//				}
+	//				mat_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+	//			}else if(str8_equal_lazy(key, STR8("shader"))){
+	//				forI(Shader_COUNT){
+	//					if(str8_equal_lazy(line, ShaderStrings[i])){
+	//						mat_shader = i;
+	//						break;
+	//					}
+	//				}
+	//			}else{
+	//				LogE("assets","Error parsing material '",path,"' on line ",line_number,". Invalid key '",key,"' for >material header.");
+	//				continue;
+	//			}
+	//		}else{
+	//			if(decoded.codepoint != '\"'){
+	//				LogE("assets","Error parsing material '",path,"' on line ",line_number,". Textures must be wrapped in double quotes.");
+	//				continue;
+	//			}
+	//			
+	//			mat_textures.add(str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator));
+	//		}
+	//	}
+	//	
+	//	Material* material = assets_material_allocate(mat_textures.count);
+	//	CopyMemory(material->name, front.str, ClampMax(front.count, 63));
+	//	material->shader = mat_shader;
+	//	forI(mat_textures.count) material->texture_array[i] = assets_texture_create_from_file_simple(mat_textures[i]);
+	//	render_load_material(material);
+	//	arrput(g_assets->material_array, material);
+	//	return material;
 	return 0;
 }
 
@@ -1404,27 +1393,27 @@ void
 assets_material_save_to_path(Material* material, str8 path){DPZoneScoped;
 	NotImplemented;
 	// TODO(sushi)
-//	dstr8 builder;
-//	dstr8_init(&builder,
-//			   to_dstr8v(deshi_temp_allocator,
-//						 ">material"
-//						 "\nname   \"",material->name,"\""
-//						 "\nshader-vertex   ", (material->stages.vertex.filename.str? material->stages.vertex.filename : str8l("NONE")),
-//						 "\nshader-geometry ", (material->stages.geometry.filename.str? material->stages.geometry.filename : str8l("NONE")),
-//						 "\nshader-fragment ", (material->stages.fragment.filename.str? material->stages.fragment.filename : str8l("NONE")),
-//						 "\nshader ",material->stages,
-//						 "\n"
-//						 "\n>textures").fin,
-//			   deshi_temp_allocator);
-//	if(material->texture_array){
-//		for_array(material->texture_array){
-//			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
-//		}
-//	}
-//	dstr8_append(&builder, STR8("\n"));
-//	str8 mat_text = dstr8_peek(&builder);
-//	file_write_simple(path, mat_text.str, mat_text.count*sizeof(u8));
-//	Log("assets","Successfully saved material: ",path);
+	//	dstr8 builder;
+	//	dstr8_init(&builder,
+	//			   to_dstr8v(deshi_temp_allocator,
+	//						 ">material"
+	//						 "\nname   \"",material->name,"\""
+	//						 "\nshader-vertex   ", (material->stages.vertex.filename.str? material->stages.vertex.filename : str8l("NONE")),
+	//						 "\nshader-geometry ", (material->stages.geometry.filename.str? material->stages.geometry.filename : str8l("NONE")),
+	//						 "\nshader-fragment ", (material->stages.fragment.filename.str? material->stages.fragment.filename : str8l("NONE")),
+	//						 "\nshader ",material->stages,
+	//						 "\n"
+	//						 "\n>textures").fin,
+	//			   deshi_temp_allocator);
+	//	if(material->texture_array){
+	//		for_array(material->texture_array){
+	//			dstr8_append(&builder, to_dstr8v(deshi_temp_allocator, "\n\"",(*it)->name,"\""));
+	//		}
+	//	}
+	//	dstr8_append(&builder, STR8("\n"));
+	//	str8 mat_text = dstr8_peek(&builder);
+	//	file_write_simple(path, mat_text.str, mat_text.count*sizeof(u8));
+	//	Log("assets","Successfully saved material: ",path);
 }
 
 
@@ -1432,17 +1421,17 @@ void
 assets_material_delete(Material* material){DPZoneScoped;
 	AssetsAssert(material, "passed null Material pointer.");
 	
-	if(material == g_assets->null_material) {
+	if(material == g_assets->null_material){
 		AssetsWarning("attempted to delete null material.");
 		return;
 	}
-
+	
 	auto [index, found] = __find_resource(material->uid, g_assets->material_map);
-	if(!found) {
+	if(!found){
 		AssetsDeleteNotFound(material, Material);
 		return;
 	}
-
+	
 	graphics_pipeline_destroy(material->pipeline);
 	graphics_descriptor_set_destroy(material->descriptor_set);
 	array_deinit(material->texture_array);
@@ -1450,27 +1439,27 @@ assets_material_delete(Material* material){DPZoneScoped;
 }
 
 Material* 
-assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
-	if(!name) {
+assets_material_duplicate(str8 name, Material* old, ShaderResource* resources){DPZoneScoped;
+	if(!name){
 		AssetsError("name has length zero or is null.");
 		return assets_material_null();
 	}
-	if(!old) {
+	if(!old){
 		AssetsError("material pointer is null.");
 		return assets_material_null();
 	}
-	if(str8_equal(name, old->name)) {
+	if(str8_equal(name, old->name)){
 		AssetsError("the name of a duplicated material must be different than the name it is duplicated from.");
 		return assets_material_null();
 	}
-	if(array_count(resources) != array_count(old->resources)) {
+	if(array_count(resources) != array_count(old->resources)){
 		AssetsError("amount of given resources (", array_count(resources), ") is different from the amount of resources on the given material (", array_count(old->resources), ").");
 		return assets_material_null();
 	}
-
+	
 	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->material_map);
-	if(found) {
+	if(found){
 		AssetsError("cannot duplicate material '", old->name, "' to new material with name '", name, "' as another material with the new name already exists.");
 		return g_assets->null_material;
 	}
@@ -1483,30 +1472,30 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 	
 	auto descriptors = array<GraphicsDescriptor>::create(array_count(resources), deshi_allocator);
 	
-	forI(array_count(resources)) {
+	forI(array_count(resources)){
 		auto given_resource = resources[i];
 		auto old_resource = old->resources[i];
-		if(given_resource.type != old_resource.type) {
+		if(given_resource.type != old_resource.type){
 			AssetsError("resource ", i, " has a different type (", ShaderResourceTypeStrings[given_resource.type], ") than the old material's resource at the same index (", ShaderResourceTypeStrings[old_resource.type], ")");
 			return assets_material_null();
 		}
-		switch(given_resource.type) {
-			case ShaderResourceType_UBO: {
+		switch(given_resource.type){
+			case ShaderResourceType_UBO:{
 				auto d = descriptors.push();
 				d->type = GraphicsDescriptorType_Uniform_Buffer;
 				d->name_in_shader = given_resource.name_in_shader;
 				d->ubo.buffer = given_resource.ubo->buffer;
 				d->ubo.range = given_resource.ubo->size;
 				d->ubo.offset = 0;
-			} break;
-			case ShaderResourceType_Texture: {
+			}break;
+			case ShaderResourceType_Texture:{
 				auto d = descriptors.push();
 				d->type = GraphicsDescriptorType_Combined_Image_Sampler;
 				d->name_in_shader = given_resource.name_in_shader;
 				d->image.view = given_resource.texture->image_view;
 				d->image.sampler = given_resource.texture->sampler;
 				d->image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
-			} break;
+			}break;
 		}
 	}
 	
@@ -1520,24 +1509,24 @@ assets_material_duplicate(str8 name, Material* old, ShaderResource* resources) {
 }
 
 FORCE_INLINE Material*
-assets_material_get_by_uid(u64 uid) {
+assets_material_get_by_uid(u64 uid){DPZoneScoped;
 	auto [index, found] = __find_resource(uid, g_assets->material_map);
 	if(found) return g_assets->material_map[index];
 	return 0;
 }
 
 FORCE_INLINE Material*
-assets_material_get_by_name(str8 name) {
+assets_material_get_by_name(str8 name){DPZoneScoped;
 	return assets_material_get_by_uid(__uid_of_name(name));
 }
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @assets_model
+// @assets_model
 
 
 Model*
-assets_model_allocate(u32 batchCount){DPZoneScoped;
+assets_model_allocate(u32 batchCount){DPZoneScoped;DPZoneScoped;
 	Model* model = memory_pool_push(g_assets->model_pool);
 	model->batch_array = array<ModelBatch>::create_with_count(batchCount ? batchCount : 1, deshi_allocator).ptr;
 	return model;
@@ -1589,11 +1578,11 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 	
 	u64 uid = __uid_of_name(file->front);
 	auto [index, found] = __find_resource(uid, g_assets->model_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(file->front, Model);
 		return g_assets->model_map[index];
 	}
-
+	
 	u32 line_number = 0;
 	while(file->cursor < file->bytes){
 		line_number += 1;
@@ -2045,14 +2034,14 @@ assets_model_create_from_obj(str8 obj_path, ModelFlags flags){DPZoneScoped;
 		model->batch_array[0].index_count  = indexes.count;
 		model->batch_array[0].material    = assets_material_null();
 	}
-
+	
 	array_insert_value(g_assets->model_map, index, model);
 	Log("assets","Finished loading model '",obj_path,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
 
 Model*
-assets_model_create_from_obj_x(str8 obj_path) {
+assets_model_create_from_obj_x(str8 obj_path){
 #define array_def(type, name)                 \
 	type* name;                               \
 	array_init(name, 1, deshi_temp_allocator);
@@ -2087,11 +2076,11 @@ assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	
 	u64 uid = mesh->uid;
 	auto [index, found] = __find_resource(uid, g_assets->model_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(mesh->name, Model);
 		return g_assets->model_map[index];
 	}
-
+	
 	Model* model = assets_model_allocate(1);
 	model->name     = mesh->name;
 	model->uid      = uid;
@@ -2103,7 +2092,6 @@ assets_model_create_from_mesh(Mesh* mesh, ModelFlags flags){DPZoneScoped;
 	AssetsNotice("finished loading model '",model->name,"' in ",peek_stopwatch(load_stopwatch),"ms");
 	return model;
 }
-
 
 Model*
 assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){DPZoneScoped;
@@ -2125,11 +2113,11 @@ assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){D
 	
 	u64 uid = __uid_of_name(file->front);
 	auto [index, found] = __find_resource(uid, g_assets->model_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(file->front, Model);
 		return g_assets->model_map[index];
 	}
-
+	
 	u32 line_number = 0;
 	while(file->cursor < file->bytes){
 		line_number += 1;
@@ -2241,21 +2229,20 @@ assets_model_create_from_mesh_obj(Mesh* mesh, str8 obj_path, ModelFlags flags){D
 	return model;
 }
 
-
 Model* 
 assets_model_duplicate(str8 name, Model* base){DPZoneScoped;
-	if(str8_equal(name, base->name)) {
+	if(str8_equal(name, base->name)){
 		AssetsError("the name of a copy of a model cannot match the original name.");
 		return 0;
 	}
-
+	
 	u64 uid = __uid_of_name(name);
 	auto [index, found] = __find_resource(uid, g_assets->model_map);
-	if(found) {
+	if(found){
 		AssetsError("cannot duplicate model '", base->name, "' with name '", name, "' because another model with that name already exists.");
 		return 0;
 	}
-
+	
 	Model* model = assets_model_allocate(arrlenu(base->batch_array));
 	model->name     = name;
 	model->uid      = uid;
@@ -2304,18 +2291,17 @@ assets_model_save_to_path(Model* model, str8 path){DPZoneScoped;
 	Log("assets","Successfully saved model: ",path);
 }
 
-
 void
-assets_model_delete(Model* model){
+assets_model_delete(Model* model){DPZoneScoped;
 	AssetsAssert(model, "passed null Model pointer.");
-
-	if(model == g_assets->null_model) {
+	
+	if(model == g_assets->null_model){
 		AssetsWarning("attempted to delete null model.");
 		return;
 	}
 	
 	auto [index, found] = __find_resource(model->uid, g_assets->model_map);
-	if(!found) {
+	if(!found){
 		AssetsDeleteNotFound(model, Model);
 		return;
 	}
@@ -2325,11 +2311,14 @@ assets_model_delete(Model* model){
 	memory_pool_delete(g_assets->model_pool, model);
 }
 
+
 #undef ParseError
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @assets_font
+// @assets_font
+
+
 FontPackedChar*
-font_packed_char(Font* font, u32 codepoint){
+font_packed_char(Font* font, u32 codepoint){DPZoneScoped;
 	//TODO(delle) an overload for specifying range if you know where you're working
 	forI(font->num_ranges){
 		if(   (codepoint >= font->ranges[i].first_codepoint)
@@ -2341,9 +2330,8 @@ font_packed_char(Font* font, u32 codepoint){
 	return 0;
 }
 
-
 FontAlignedQuad
-font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){
+font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){DPZoneScoped;
 	FontPackedChar* pc = font_packed_char(font, codepoint);
 	if(pc){
 		FontAlignedQuad q;
@@ -2362,9 +2350,8 @@ font_aligned_quad(Font* font, u32 codepoint, vec2* pos, vec2 scale){
 	return FontAlignedQuad{};
 }
 
-
 vec2
-font_visual_size(Font* font, str8 text){
+font_visual_size(Font* font, str8 text){DPZoneScoped;
 	vec2 result = vec2{0, (f32)font->max_height};
 	f32 line_width = 0;
 	switch(font->type){
@@ -2395,12 +2382,10 @@ font_visual_size(Font* font, str8 text){
 	return result;
 }
 
-
 Font*
 assets_font_create_from_file(str8 name, u32 height){DPZoneScoped;
 	return assets_font_create_from_path(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
 }
-
 
 Font*
 assets_font_create_from_path(str8 path, u32 height){DPZoneScoped;
@@ -2427,7 +2412,7 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 		AssetsExistanceWarning(filename, Font);
 		return g_assets->font_map[index];
 	}
-
+	
 	b32 in_char   = false;
 	b32 in_bitmap = false;
 	u32 char_idx = 0;
@@ -2614,7 +2599,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
 	u64 uid = __uid_of_name(filename);
 	auto [index, found] = __find_resource(uid, g_assets->font_map);
-	if(found) {
+	if(found){
 		AssetsExistanceWarning(filename, Font);
 		return g_assets->font_map[index];
 	}
@@ -2769,18 +2754,18 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 void
 assets_font_delete(Font* font){DPZoneScoped;
 	AssetsAssert(font, "passed null Font pointer.");
-
-	if(font == g_assets->null_font) {
+	
+	if(font == g_assets->null_font){
 		AssetsWarning("attempt to delete null font.");
 		return;
 	}
 	
 	auto [index, found] = __find_resource(font->uid, g_assets->font_map);
-	if(!found) {
+	if(!found){
 		AssetsDeleteNotFound(font, Font);
 		return;
 	}
-
+	
 	array_remove_ordered(g_assets->font_map, index);
 	if(font->type == FontType_TTF){
 		forI(font->num_ranges) memory_zfree(font->ranges[i].chardata_for_range);

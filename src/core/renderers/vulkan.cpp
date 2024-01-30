@@ -1,22 +1,32 @@
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @macros
+
 // When something happens that prevents the entire application from being
 // able to continue. Only used in situations in which we can reasonably assume the user
 // needs something to happen in order for the program to continue as a whole, such as 
 // the initialization function.
 #define VulkanFatal(...) do { LogE("graphics.vulkan", __FUNCTION__, "(): ", __VA_ARGS__); Assert(0); } while(0)
+
 // When something happens that is fatal to a single operation, but not to the 
 // entire application.
 #define VulkanError(...) LogE("graphics.vulkan", __FUNCTION__, "(): ", __VA_ARGS__)
+
 // When something happens that may cause odd behavoir, but we are able to continue.
 #define VulkanWarning(...) LogW("graphics.vulkan", __FUNCTION__, "(): ", __VA_ARGS__)
+
 // Normal but signifigant conditions. Things we'd probably want to know about if a user
 // sends in some kinda logs.
 #define VulkanNotice(...) Log("graphics.vulkan", __FUNCTION__, "(): ", __VA_ARGS__)
+
 // General information about the functioning of the backend.
 #define VulkanInfo(...) if(g_graphics->logging_level >= 1) Log("graphics.vulkan", __FUNCTION__, "(): ", __VA_ARGS__)
+
 // Information useful when trying to figure out what's wrong with the backend
 #define VulkanDebug(...) if(g_graphics->logging_level >= 2) Log("graphics.vulkan", __FUNCTION__, "(): ", __VA_ARGS__)
+
 // Used to assert that the result of a vulkan function call succeeded
 #define VulkanAssertVk(result, ...) if((result) != VK_SUCCESS) VulkanFatal(__VA_ARGS__)
+
 // Used to assert a condition is true
 #define VulkanAssert(result, ...) if(!result) VulkanFatal(__VA_ARGS__)
 
@@ -24,45 +34,48 @@
 #define primary_allocator g_graphics->allocators.primary
 #define temp_allocator g_graphics->allocators.temp
 
-// backend specific information stored on windows initialized with graphics
-struct WindowInfo {
-	VkSwapchainKHR swapchain;
-	struct { // support_details
-		VkSurfaceCapabilitiesKHR  capabilities;
-		array<VkSurfaceFormatKHR> formats;
-		array<VkPresentModeKHR>   present_modes;
-	} support_details;
-	VkSurfaceKHR       surface;
-	VkSurfaceFormatKHR surface_format;
-	VkPresentModeKHR   present_mode;
-	VkExtent2D         extent;
-	s32                min_image_count;
-	u32                image_count;
-	u32                frame_index;
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @types
 
+// backend specific information stored on windows initialized with graphics
+struct WindowInfo{
+	VkSwapchainKHR swapchain;
+	struct{ // support_details
+		VkSurfaceCapabilitiesKHR capabilities;
+		array<VkSurfaceFormatKHR> formats;
+		array<VkPresentModeKHR> present_modes;
+	}support_details;
+	VkSurfaceKHR surface;
+	VkSurfaceFormatKHR surface_format;
+	VkPresentModeKHR present_mode;
+	VkExtent2D extent;
+	s32 min_image_count;
+	u32 image_count;
+	u32 frame_index;
+	
 	array<graphics::Framebuffer*> presentation_frames;
 	graphics::CommandBuffer* command_buffer;
-
+	
 	b32 remake_window; 
 };
 
 WindowInfo* window_infos;
 
-local VkAllocationCallbacks      vk_allocator_ = {};
-local VkAllocationCallbacks*     vk_allocator = &vk_allocator_;
-local VkAllocationCallbacks      vk_temp_allocator_ = {};
-local VkAllocationCallbacks*     vk_temp_allocator = &vk_temp_allocator_;
-local VkInstance                 vk_instance = VK_NULL_HANDLE;
-local VkPhysicalDevice           vk_physical_device = VK_NULL_HANDLE;
+local VkAllocationCallbacks vk_allocator_ = {};
+local VkAllocationCallbacks* vk_allocator = &vk_allocator_;
+local VkAllocationCallbacks vk_temp_allocator_ = {};
+local VkAllocationCallbacks* vk_temp_allocator = &vk_temp_allocator_;
+local VkInstance vk_instance = VK_NULL_HANDLE;
+local VkPhysicalDevice vk_physical_device = VK_NULL_HANDLE;
 local VkPhysicalDeviceProperties vk_physical_device_properties = {};
-local VkPhysicalDeviceFeatures   vk_physical_device_features = {};
-local VkPhysicalDeviceFeatures   vk_physical_device_enabled_features = {};
-local VkDebugUtilsMessengerEXT   vk_debug_messenger = VK_NULL_HANDLE;
-local VkDevice                   vk_device = VK_NULL_HANDLE;
-local VkQueue                    vk_graphics_queue = VK_NULL_HANDLE;
-local VkQueue                    vk_present_queue = VK_NULL_HANDLE;
+local VkPhysicalDeviceFeatures vk_physical_device_features = {};
+local VkPhysicalDeviceFeatures vk_physical_device_enabled_features = {};
+local VkDebugUtilsMessengerEXT vk_debug_messenger = VK_NULL_HANDLE;
+local VkDevice vk_device = VK_NULL_HANDLE;
+local VkQueue vk_graphics_queue = VK_NULL_HANDLE;
+local VkQueue vk_present_queue = VK_NULL_HANDLE;
 
-struct QueueFamilyIndexesX {
+struct QueueFamilyIndexesX{
 	b32 found_graphics_family;
 	u32 graphics_family;
 	b32 found_present_family;
@@ -70,16 +83,16 @@ struct QueueFamilyIndexesX {
 };
 
 struct BufferVk{
-	VkBuffer               buffer;
-	VkDeviceMemory         memory;
-	VkDeviceSize           size; //size of data, not allocation
+	VkBuffer buffer;
+	VkDeviceMemory memory;
+	VkDeviceSize size; //size of data, not allocation
 	VkDescriptorBufferInfo descriptor;
 };
 
 local QueueFamilyIndexesX physical_queue_families = {};
 
-local VkSemaphore   vk_semaphore_image_acquired = VK_NULL_HANDLE;
-local VkSemaphore   vk_semaphore_render_complete = VK_NULL_HANDLE;
+local VkSemaphore vk_semaphore_image_acquired = VK_NULL_HANDLE;
+local VkSemaphore vk_semaphore_render_complete = VK_NULL_HANDLE;
 local VkCommandPool vk_command_pool = VK_NULL_HANDLE;
 
 local shaderc_compiler_t vk_shader_compiler;
@@ -98,19 +111,17 @@ local char* device_extensions[] = {
 	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
 };
 
-VkDebugUtilsMessageSeverityFlagsEXT vk_callback_severities = 
-VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
-VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+VkDebugUtilsMessageSeverityFlagsEXT vk_callback_severities = (VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+															  VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+															  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+															  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
 
-VkDebugUtilsMessageTypeFlagsEXT vk_callback_types = 
-VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | 
-VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+VkDebugUtilsMessageTypeFlagsEXT vk_callback_types = (VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+													 VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+													 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @extension_functions
 
 
@@ -125,7 +136,7 @@ vk_debug_begin_label(VkCommandBuffer command_buffer, const char* label_name, vec
 	label.color[2]   = color.b;
 	label.color[3]   = color.a;
 	vkfunc_vkCmdBeginDebugUtilsLabelEXT(command_buffer, &label);
-#endif //BUILD_INTERNAL
+#endif //#ifdef BUILD_INTERNAL
 }
 
 PFN_vkCmdEndDebugUtilsLabelEXT vkfunc_vkCmdEndDebugUtilsLabelEXT;
@@ -133,7 +144,7 @@ local inline void
 vk_debug_end_label(VkCommandBuffer command_buffer){DPZoneScoped;
 #ifdef BUILD_INTERNAL
 	vkfunc_vkCmdEndDebugUtilsLabelEXT(command_buffer);
-#endif //BUILD_INTERNAL
+#endif //#ifdef BUILD_INTERNAL
 }
 
 PFN_vkCmdInsertDebugUtilsLabelEXT vkfunc_vkCmdInsertDebugUtilsLabelEXT;
@@ -147,7 +158,7 @@ vk_debug_insert_label(VkCommandBuffer command_buffer, const char* label_name, ve
 	label.color[2]   = color.b;
 	label.color[3]   = color.a;
 	vkfunc_vkCmdInsertDebugUtilsLabelEXT(command_buffer, &label);
-#endif //BUILD_INTERNAL
+#endif //#ifdef BUILD_INTERNAL
 }
 
 PFN_vkSetDebugUtilsObjectNameEXT vkfunc_vkSetDebugUtilsObjectNameEXT;
@@ -160,16 +171,16 @@ vk_debug_set_object_name(VkDevice device, VkObjectType object_type, u64 object_h
 	nameInfo.objectHandle = object_handle;
 	nameInfo.pObjectName  = object_name;
 	vkfunc_vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-#endif //BUILD_INTERNAL
+#endif //#ifdef BUILD_INTERNAL
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @helpers
 
 
 VkShaderStageFlagBits
-graphics_shader_stage_to_vulkan(GraphicsShaderStage x) {
+graphics_shader_stage_to_vulkan(GraphicsShaderStage x){DPZoneScoped;
 	VkShaderStageFlags out = 0;
 	if(HasFlag(x, GraphicsShaderStage_Vertex))   AddFlag(out, VK_SHADER_STAGE_VERTEX_BIT);
 	if(HasFlag(x, GraphicsShaderStage_Fragment)) AddFlag(out, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -179,7 +190,7 @@ graphics_shader_stage_to_vulkan(GraphicsShaderStage x) {
 }
 
 VkFormat
-find_supported_format(VkFormat* formats, u64 format_count, VkImageTiling tiling, VkFormatFeatureFlags features) {
+find_supported_format(VkFormat* formats, u64 format_count, VkImageTiling tiling, VkFormatFeatureFlags features){DPZoneScoped;
 	VulkanInfo("finding supported image formats.");
 	forI(format_count){
 		VkFormatProperties props;
@@ -196,7 +207,7 @@ find_supported_format(VkFormat* formats, u64 format_count, VkImageTiling tiling,
 }
 
 VkFormat
-find_depth_format() {
+find_depth_format(){DPZoneScoped;
 	VkFormat depth_formats[] = { 
 		VK_FORMAT_D32_SFLOAT, 
 		VK_FORMAT_D32_SFLOAT_S8_UINT, 
@@ -208,8 +219,8 @@ find_depth_format() {
 }
 
 VkFilter
-graphics_filter_to_vulkan(GraphicsFilter x) {
-	switch(x) {
+graphics_filter_to_vulkan(GraphicsFilter x){DPZoneScoped;
+	switch(x){
 		case GraphicsFilter_Nearest: return VK_FILTER_NEAREST;
 		case GraphicsFilter_Linear:  return VK_FILTER_LINEAR;
 	}
@@ -218,8 +229,8 @@ graphics_filter_to_vulkan(GraphicsFilter x) {
 }
 
 VkImageType
-graphics_image_type_to_vulkan(GraphicsImageType x) {
-	switch(x) {
+graphics_image_type_to_vulkan(GraphicsImageType x){DPZoneScoped;
+	switch(x){
 		case GraphicsImageType_1D: return VK_IMAGE_TYPE_1D;
 		case GraphicsImageType_2D: return VK_IMAGE_TYPE_2D;
 		case GraphicsImageType_3D: return VK_IMAGE_TYPE_3D;
@@ -229,7 +240,7 @@ graphics_image_type_to_vulkan(GraphicsImageType x) {
 }
 
 VkImageUsageFlags
-graphics_image_usage_to_vulkan(GraphicsImageUsage x) {
+graphics_image_usage_to_vulkan(GraphicsImageUsage x){DPZoneScoped;
 	VkImageUsageFlags out = 0;
 	if(HasFlag(x, GraphicsImageUsage_Transfer_Source))          AddFlag(out, VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	if(HasFlag(x, GraphicsImageUsage_Transfer_Destination))     AddFlag(out, VK_IMAGE_USAGE_TRANSFER_DST_BIT);
@@ -241,7 +252,7 @@ graphics_image_usage_to_vulkan(GraphicsImageUsage x) {
 }
 
 VkSampleCountFlagBits
-graphics_sample_count_to_vulkan(GraphicsSampleCount x) {
+graphics_sample_count_to_vulkan(GraphicsSampleCount x){DPZoneScoped;
 	VkSampleCountFlags out = 0;
 	if(HasFlag(x, GraphicsSampleCount_1))  AddFlag(out, VK_SAMPLE_COUNT_1_BIT);
 	if(HasFlag(x, GraphicsSampleCount_2))  AddFlag(out, VK_SAMPLE_COUNT_2_BIT);
@@ -254,7 +265,7 @@ graphics_sample_count_to_vulkan(GraphicsSampleCount x) {
 }
 
 VkMemoryPropertyFlags
-graphics_memory_properties_to_vulkan(GraphicsMemoryPropertyFlags x) {
+graphics_memory_properties_to_vulkan(GraphicsMemoryPropertyFlags x){DPZoneScoped;
 	VkBufferUsageFlags usage_flags = 0;
 	if(HasFlag(x, GraphicsBufferUsage_TransferSource))      usage_flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	if(HasFlag(x, GraphicsBufferUsage_TransferDestination)) usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -269,7 +280,7 @@ graphics_memory_properties_to_vulkan(GraphicsMemoryPropertyFlags x) {
 }
 
 VkImageAspectFlags
-graphics_image_view_aspect_to_vulkan(GraphicsImageViewAspectFlags x) {
+graphics_image_view_aspect_to_vulkan(GraphicsImageViewAspectFlags x){DPZoneScoped;
 	VkImageAspectFlags out = 0;
 	if(HasFlag(x, GraphicsImageViewAspectFlags_Color))   AddFlag(out, VK_IMAGE_ASPECT_COLOR_BIT);
 	if(HasFlag(x, GraphicsImageViewAspectFlags_Depth))   AddFlag(out, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -278,8 +289,8 @@ graphics_image_view_aspect_to_vulkan(GraphicsImageViewAspectFlags x) {
 }
 
 VkSamplerAddressMode
-graphics_sampler_address_mode_to_vulkan(GraphicsSamplerAddressMode x) {
-	switch(x) {
+graphics_sampler_address_mode_to_vulkan(GraphicsSamplerAddressMode x){DPZoneScoped;
+	switch(x){
 		case GraphicsSamplerAddressMode_Repeat:          return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		case GraphicsSamplerAddressMode_Mirrored_Repeat: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
 		case GraphicsSamplerAddressMode_Clamp_To_Border: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
@@ -290,8 +301,8 @@ graphics_sampler_address_mode_to_vulkan(GraphicsSamplerAddressMode x) {
 }
 
 VkAttachmentLoadOp
-graphics_load_op_to_vulkan(GraphicsLoadOp x) {
-	switch(x) {
+graphics_load_op_to_vulkan(GraphicsLoadOp x){DPZoneScoped;
+	switch(x){
 		case GraphicsLoadOp_Load:      return VK_ATTACHMENT_LOAD_OP_LOAD;
 		case GraphicsLoadOp_Clear:     return VK_ATTACHMENT_LOAD_OP_CLEAR;
 		case GraphicsLoadOp_Dont_Care: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -301,8 +312,8 @@ graphics_load_op_to_vulkan(GraphicsLoadOp x) {
 }
 
 VkAttachmentStoreOp
-graphics_store_op_to_vulkan(GraphicsStoreOp x) {
-	switch(x) {
+graphics_store_op_to_vulkan(GraphicsStoreOp x){DPZoneScoped;
+	switch(x){
 		case GraphicsStoreOp_Store:     return VK_ATTACHMENT_STORE_OP_STORE;
 		case GraphicsStoreOp_Dont_Care: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	}
@@ -311,8 +322,8 @@ graphics_store_op_to_vulkan(GraphicsStoreOp x) {
 }
 
 VkBlendFactor
-graphics_blend_factor_to_vulkan(GraphicsBlendFactor x) {
-	switch(x) {
+graphics_blend_factor_to_vulkan(GraphicsBlendFactor x){DPZoneScoped;
+	switch(x){
 		case GraphicsBlendFactor_Zero:                        return VK_BLEND_FACTOR_ZERO;
 		case GraphicsBlendFactor_One:                         return VK_BLEND_FACTOR_ONE;
 		case GraphicsBlendFactor_Source_Color:                return VK_BLEND_FACTOR_SRC_COLOR;
@@ -333,8 +344,8 @@ graphics_blend_factor_to_vulkan(GraphicsBlendFactor x) {
 }
 
 VkBlendOp
-graphics_blend_op_to_vulkan(GraphicsBlendOp x) {
-	switch(x) {
+graphics_blend_op_to_vulkan(GraphicsBlendOp x){DPZoneScoped;
+	switch(x){
 		case GraphicsBlendOp_Add:         return VK_BLEND_OP_ADD;
 		case GraphicsBlendOp_Max:         return VK_BLEND_OP_MAX;
 		case GraphicsBlendOp_Min:         return VK_BLEND_OP_MIN;
@@ -346,8 +357,8 @@ graphics_blend_op_to_vulkan(GraphicsBlendOp x) {
 }
 
 VkFormat
-graphics_format_to_vulkan(GraphicsFormat x) {
-	switch(x) {
+graphics_format_to_vulkan(GraphicsFormat x){DPZoneScoped;
+	switch(x){
 		case GraphicsFormat_R32G32_Float:                return VK_FORMAT_R32G32_SFLOAT;
 		case GraphicsFormat_R32G32B32_Float:             return VK_FORMAT_R32G32B32_SFLOAT;
 		case GraphicsFormat_R8G8B8_UNorm:                return VK_FORMAT_R8G8B8_UNORM;
@@ -365,8 +376,8 @@ graphics_format_to_vulkan(GraphicsFormat x) {
 }
 
 GraphicsFormat
-vulkan_format_to_graphics(VkFormat x) {
-	switch(x) {
+vulkan_format_to_graphics(VkFormat x){DPZoneScoped;
+	switch(x){
 		case VK_FORMAT_R32G32_SFLOAT:      return GraphicsFormat_R32G32_Float;
 		case VK_FORMAT_R32G32B32_SFLOAT:   return GraphicsFormat_R32G32B32_Float;
 		case VK_FORMAT_R8G8B8A8_SRGB:      return GraphicsFormat_R8G8B8A8_SRGB;
@@ -382,8 +393,8 @@ vulkan_format_to_graphics(VkFormat x) {
 }
 
 VkImageLayout
-graphics_image_layout_to_vulkan(GraphicsImageLayout x) {
-	switch(x) {
+graphics_image_layout_to_vulkan(GraphicsImageLayout x){DPZoneScoped;
+	switch(x){
 		case GraphicsImageLayout_Undefined:                        return VK_IMAGE_LAYOUT_UNDEFINED;
 		case GraphicsImageLayout_General:                          return VK_IMAGE_LAYOUT_GENERAL;
 		case GraphicsImageLayout_Color_Attachment_Optimal:         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -396,10 +407,9 @@ graphics_image_layout_to_vulkan(GraphicsImageLayout x) {
 	return {};
 }
 
-
 VkCompareOp
-graphics_compare_op_to_vulkan(GraphicsCompareOp x) {
-	switch(x) {
+graphics_compare_op_to_vulkan(GraphicsCompareOp x){DPZoneScoped;
+	switch(x){
 		case GraphicsCompareOp_Never:            return VK_COMPARE_OP_NEVER;
 		case GraphicsCompareOp_Less:             return VK_COMPARE_OP_LESS;
 		case GraphicsCompareOp_Equal:            return VK_COMPARE_OP_EQUAL;
@@ -414,8 +424,8 @@ graphics_compare_op_to_vulkan(GraphicsCompareOp x) {
 }
 
 VkDescriptorType
-graphics_descriptor_type_to_vulkan(GraphicsDescriptorType x) {
-	switch(x) {
+graphics_descriptor_type_to_vulkan(GraphicsDescriptorType x){DPZoneScoped;
+	switch(x){
 		case GraphicsDescriptorType_Uniform_Buffer:         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case GraphicsDescriptorType_Combined_Image_Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	}
@@ -424,7 +434,7 @@ graphics_descriptor_type_to_vulkan(GraphicsDescriptorType x) {
 }
 
 VkBufferUsageFlags
-graphics_buffer_usage_to_vulkan(GraphicsBufferUsage x) {
+graphics_buffer_usage_to_vulkan(GraphicsBufferUsage x){DPZoneScoped;
 	VkBufferUsageFlags usage_flags = 0;
 	if(HasFlag(x,GraphicsBufferUsage_TransferSource))      usage_flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	if(HasFlag(x,GraphicsBufferUsage_TransferDestination)) usage_flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -440,32 +450,32 @@ graphics_buffer_usage_to_vulkan(GraphicsBufferUsage x) {
 
 // helpers to make retrieving handles a little nicer to look at
 
-VkBuffer&              get_handle(GraphicsBuffer* x)              { return (VkBuffer&)GRAPHICS_INTERNAL(x).buffer_handle; }
-VkDeviceMemory&        get_memory_handle(GraphicsBuffer* x)       { return (VkDeviceMemory&)GRAPHICS_INTERNAL(x).memory_handle; }
-VkImage&               get_handle(GraphicsImage* x)               { return (VkImage&)GRAPHICS_INTERNAL(x).handle; }
-VkDeviceMemory&        get_memory_handle(GraphicsImage* x)        { return (VkDeviceMemory&)GRAPHICS_INTERNAL(x).memory_handle; }
-VkImageView&           get_handle(GraphicsImageView* x)           { return (VkImageView&)GRAPHICS_INTERNAL(x).handle; }
-VkSampler&             get_handle(GraphicsSampler* x)             { return (VkSampler&)GRAPHICS_INTERNAL(x).handle; }
-VkDescriptorSetLayout& get_handle(GraphicsDescriptorSetLayout* x) { return (VkDescriptorSetLayout&)GRAPHICS_INTERNAL(x).handle; }
-VkDescriptorSet&       get_handle(GraphicsDescriptorSet* x)       { return (VkDescriptorSet&)GRAPHICS_INTERNAL(x).handle; }
-VkPipelineLayout&      get_handle(GraphicsPipelineLayout* x)      { return (VkPipelineLayout&)GRAPHICS_INTERNAL(x).handle; }
-VkPipeline&            get_handle(GraphicsPipeline* x)            { return (VkPipeline&)GRAPHICS_INTERNAL(x).handle; }
-VkRenderPass&          get_handle(GraphicsRenderPass* x)          { return (VkRenderPass&)GRAPHICS_INTERNAL(x).handle; }
-VkFramebuffer&         get_handle(GraphicsFramebuffer* x)         { return (VkFramebuffer&)GRAPHICS_INTERNAL(x).handle; }
-VkCommandBuffer&       get_handle(GraphicsCommandBuffer* x)       { return (VkCommandBuffer&)GRAPHICS_INTERNAL(x).handle; }
-VkShaderModule&        get_handle(GraphicsShader* x)              { return (VkShaderModule&)GRAPHICS_INTERNAL(x).handle; }
+VkBuffer&              get_handle(GraphicsBuffer* x)             { return (VkBuffer&)GRAPHICS_INTERNAL(x).buffer_handle; }
+VkDeviceMemory&        get_memory_handle(GraphicsBuffer* x)      { return (VkDeviceMemory&)GRAPHICS_INTERNAL(x).memory_handle; }
+VkImage&               get_handle(GraphicsImage* x)              { return (VkImage&)GRAPHICS_INTERNAL(x).handle; }
+VkDeviceMemory&        get_memory_handle(GraphicsImage* x)       { return (VkDeviceMemory&)GRAPHICS_INTERNAL(x).memory_handle; }
+VkImageView&           get_handle(GraphicsImageView* x)          { return (VkImageView&)GRAPHICS_INTERNAL(x).handle; }
+VkSampler&             get_handle(GraphicsSampler* x)            { return (VkSampler&)GRAPHICS_INTERNAL(x).handle; }
+VkDescriptorSetLayout& get_handle(GraphicsDescriptorSetLayout* x){ return (VkDescriptorSetLayout&)GRAPHICS_INTERNAL(x).handle; }
+VkDescriptorSet&       get_handle(GraphicsDescriptorSet* x)      { return (VkDescriptorSet&)GRAPHICS_INTERNAL(x).handle; }
+VkPipelineLayout&      get_handle(GraphicsPipelineLayout* x)     { return (VkPipelineLayout&)GRAPHICS_INTERNAL(x).handle; }
+VkPipeline&            get_handle(GraphicsPipeline* x)           { return (VkPipeline&)GRAPHICS_INTERNAL(x).handle; }
+VkRenderPass&          get_handle(GraphicsRenderPass* x)         { return (VkRenderPass&)GRAPHICS_INTERNAL(x).handle; }
+VkFramebuffer&         get_handle(GraphicsFramebuffer* x)        { return (VkFramebuffer&)GRAPHICS_INTERNAL(x).handle; }
+VkCommandBuffer&       get_handle(GraphicsCommandBuffer* x)      { return (VkCommandBuffer&)GRAPHICS_INTERNAL(x).handle; }
+VkShaderModule&        get_handle(GraphicsShader* x)             { return (VkShaderModule&)GRAPHICS_INTERNAL(x).handle; }
 
 // helpers for various things done several times
 
 local u32 
-find_memory_type(u32 type_filter, VkMemoryPropertyFlags properties) {
+find_memory_type(u32 type_filter, VkMemoryPropertyFlags properties){DPZoneScoped;
 	VulkanInfo("finding memory types.");
 	VkPhysicalDeviceMemoryProperties memprops;
 	vkGetPhysicalDeviceMemoryProperties(vk_physical_device, &memprops);
 	
-	for(u32 i = 0; i < memprops.memoryTypeCount; i++) {
+	for(u32 i = 0; i < memprops.memoryTypeCount; i++){
 		if(HasFlag(type_filter, (1 << i)) && 
-		   HasAllFlags(memprops.memoryTypes[i].propertyFlags, properties)) {
+		   HasAllFlags(memprops.memoryTypes[i].propertyFlags, properties)){
 			return i;
 		}
 	}
@@ -475,12 +485,13 @@ find_memory_type(u32 type_filter, VkMemoryPropertyFlags properties) {
 }
 
 local void
-create_or_resize_buffer(VkBuffer* buffer, 
-		                VkDeviceMemory* buffer_memory, 
-						VkDeviceSize* buffer_size, 
-		                u64 new_size, 
-						VkBufferUsageFlags usage, 
-						VkMemoryPropertyFlags properties) {
+create_or_resize_buffer(VkBuffer* buffer,
+						VkDeviceMemory* buffer_memory,
+						VkDeviceSize* buffer_size,
+						u64 new_size,
+						VkBufferUsageFlags usage,
+						VkMemoryPropertyFlags properties)
+{DPZoneScoped;
 	VkBuffer old_buffer = *buffer; 
 	VkDeviceMemory old_buffer_memory = *buffer_memory; 
 	*buffer = VK_NULL_HANDLE;
@@ -504,8 +515,8 @@ create_or_resize_buffer(VkBuffer* buffer,
 	VulkanAssertVk(result, "failed to bind buffer memory");
 	
 	u64 aligned_buffer_size = RoundUpTo(req.alignment, *buffer_size);
-
-	if(buffer_size) {
+	
+	if(buffer_size){
 		void* old_buffer_data,* new_buffer_data;
 		result = vkMapMemory(vk_device, old_buffer_memory, 0, *buffer_size, 0, &old_buffer_data);
 		VulkanAssertVk(result, "failed to map old buffer memory.");
@@ -533,12 +544,13 @@ create_or_resize_buffer(VkBuffer* buffer,
 
 local void
 create_and_map_buffer(VkBuffer* buffer,
-				      VkDeviceMemory* buffer_memory,
+					  VkDeviceMemory* buffer_memory,
 					  VkDeviceSize* buffer_size,
 					  size_t new_size,
 					  void* data,
 					  VkBufferUsageFlags usage,
-					  VkMemoryPropertyFlags properties) {
+					  VkMemoryPropertyFlags properties)
+{DPZoneScoped;
 	vkDestroyBuffer(vk_device, *buffer, vk_allocator);
 	vkFreeMemory(vk_device, *buffer_memory, vk_allocator);
 	
@@ -560,14 +572,14 @@ create_and_map_buffer(VkBuffer* buffer,
 	result = vkAllocateMemory(vk_device, &alloc_info, vk_allocator, buffer_memory);
 	VulkanAssertVk(result, "failed to allocate memory.");
 	
-	if(data != 0) {
+	if(data != 0){
 		void* mapped = 0;
 		result = vkMapMemory(vk_device, *buffer_memory, 0, new_size, 0, &mapped);
 		VulkanAssertVk(result, "failed to map memory.");
-
+		
 		CopyMemory(mapped, data, new_size);
 		
-		if(!HasFlag(properties, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+		if(!HasFlag(properties, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)){
 			VkMappedMemoryRange mapped_range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 			mapped_range.memory = *buffer_memory;
 			mapped_range.offset = 0;
@@ -582,17 +594,18 @@ create_and_map_buffer(VkBuffer* buffer,
 	*buffer_size = new_size;
 }
 
-
 void
-create_image(u32 width, u32 height,
-		     u32 mip_levels,
+create_image(u32 width,
+			 u32 height,
+			 u32 mip_levels,
 			 VkSampleCountFlagBits num_samples,
 			 VkFormat format,
-			 VkImageTiling tiling, 
+			 VkImageTiling tiling,
 			 VkImageUsageFlags usage,
 			 VkMemoryPropertyFlags properties,
 			 VkImage* image,
-			 VkDeviceMemory* image_memory) {
+			 VkDeviceMemory* image_memory)
+{DPZoneScoped;
 	VulkanInfo("creating image.");
 	
 	VkImageCreateInfo image_info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -624,10 +637,7 @@ create_image(u32 width, u32 height,
 }
 
 VkImageView
-create_image_view(VkImage image, 
-		          VkFormat format, 
-				  VkImageAspectFlags aspect_flags, 
-				  u32 mip_levels) {
+create_image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, u32 mip_levels){DPZoneScoped;
 	VulkanInfo("creating image view.");
 	
 	VkImageViewCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -643,12 +653,12 @@ create_image_view(VkImage image,
 	VkImageView view{};
 	auto result = vkCreateImageView(vk_device, &info, vk_allocator, &view);
 	VulkanAssertVk(result, "failed to create image view.");
-
+	
 	return view;
 }
 
 local VkCommandBuffer
-begin_single_time_commands() {
+begin_single_time_commands(){DPZoneScoped;
 	VkCommandBuffer cmdbuf;
 	
 	VkCommandBufferAllocateInfo alloc_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
@@ -665,7 +675,7 @@ begin_single_time_commands() {
 }
 
 local void
-end_single_time_commands(VkCommandBuffer cmdbuf) {
+end_single_time_commands(VkCommandBuffer cmdbuf){DPZoneScoped;
 	vkEndCommandBuffer(cmdbuf);
 	
 	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
@@ -681,7 +691,7 @@ local VkPipelineShaderStageCreateInfo
 load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
 	if(!source) return VkPipelineShaderStageCreateInfo{};
 	VulkanInfo("compiling shader: ", name);
-
+	
 	Stopwatch watch = start_stopwatch();
 	
 	//try to compile from GLSL to SPIR-V binary
@@ -731,7 +741,7 @@ load_shader(str8 name, str8 source, VkShaderStageFlagBits stage){DPZoneScoped;
 }
 
 local void
-copy_buffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) {
+copy_buffer(VkBuffer src, VkBuffer dst, VkDeviceSize size){DPZoneScoped;
 	VkCommandBuffer cb = begin_single_time_commands();
 	
 	VkBufferCopy copy_region{};
@@ -742,16 +752,16 @@ copy_buffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @init_functions
 
 
 local void
-setup_allocator() {
+setup_allocator(){DPZoneScoped;
 	VulkanInfo("setting up allocators.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	//regular allocator
 	auto deshi_vulkan_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
 		void* result = memalloc(RoundUpTo(size,alignment));
@@ -795,25 +805,25 @@ setup_allocator() {
 	vk_temp_allocator_.pfnAllocation = deshi_vulkan_temp_allocation_func;
 	vk_temp_allocator_.pfnReallocation = deshi_vulkan_temp_reallocation_func;
 	vk_temp_allocator_.pfnFree = deshi_vulkan_temp_free_func;
-
+	
 	VulkanInfo("finished setting up allocators in ", peek_stopwatch(watch), "ms");
 }
 
 local VKAPI_ATTR VkBool32 VKAPI_CALL
-vk_debug_callback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
-		void* pUserData) {
-	switch(messageSeverity) {
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
+vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
+				  VkDebugUtilsMessageTypeFlagsEXT messageType,
+				  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
+				  void* pUserData)
+{DPZoneScoped;
+	switch(messageSeverity){
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:{
 			VulkanError(pCallbackData->pMessage);
 			if(g_graphics->break_on_error) DebugBreakpoint;
 		} break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:{
 			VulkanWarning(pCallbackData->pMessage);
 		} break;
-		default: {
+		default:{
 			VulkanInfo(pCallbackData->pMessage);
 		} break;
 	}
@@ -821,25 +831,25 @@ vk_debug_callback(
 }
 
 void
-create_instance(Window* window) {
+create_instance(Window* window){DPZoneScoped;
 	VulkanInfo("creating vulkan instance.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	// check for validation layer support
-	if(is_debugging) {
+	if(is_debugging){
 		VulkanInfo("checking validation layer support.");
 		b32 has_support = true;
-
+		
 		u32 layer_count = 0;
 		vkEnumerateInstanceLayerProperties(&layer_count, 0);
 		auto available_layers = array<VkLayerProperties>::create_with_count(layer_count, temp_allocator);
 		vkEnumerateInstanceLayerProperties(&layer_count, available_layers.ptr);
-
-		forI(ArrayCount(validation_layers)) {
+		
+		forI(ArrayCount(validation_layers)){
 			b32 layer_found = false;
-			forX(j, available_layers.count()) {
-				if(!strcmp(validation_layers[i], available_layers[j].layerName)) {
+			forX(j, available_layers.count()){
+				if(!strcmp(validation_layers[i], available_layers[j].layerName)){
 					layer_found = true;
 					break;
 				}
@@ -847,7 +857,7 @@ create_instance(Window* window) {
 			if(!layer_found) VulkanFatal("a validation layer was requested but it is not available");
 		}
 	}
-
+	
 	// set application info
 	VkApplicationInfo app_info{VK_STRUCTURE_TYPE_APPLICATION_INFO};
 	app_info.pApplicationName   = (char*)window->title.str;
@@ -859,7 +869,7 @@ create_instance(Window* window) {
 	VkValidationFeatureEnableEXT validation_features_arr[] = {
 		VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
 	};
-
+	
 	VkValidationFeaturesEXT validation_features{VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
 	validation_features.disabledValidationFeatureCount = 0;
 	validation_features.pDisabledValidationFeatures    = 0;
@@ -904,42 +914,42 @@ create_instance(Window* window) {
 		create_info.ppEnabledLayerNames = validation_layers;
 		debug_create_info.pNext         = &validation_features;
 		create_info.pNext               = &debug_create_info;
-	} else {
+	}else{
 		create_info.enabledLayerCount   = 0;
 		create_info.pNext               = 0;
 	}
-
+	
 	auto result = vkCreateInstance(&create_info, vk_allocator, &vk_instance);
 	VulkanAssertVk(result, "failed to create instance.");
-
+	
 	VulkanInfo("finished creating instance in ", peek_stopwatch(watch), "ms");
-
-	if(is_debugging) {
+	
+	if(is_debugging){
 		VulkanInfo("setting up debug messenger.");
 		
 		watch = start_stopwatch();
-
+		
 		debug_create_info.pNext = 0;
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vk_instance, "vkCreateDebugUtilsMessengerEXT");
-		if(!func) {
+		if(!func){
 			VulkanError("unable to retrieve vkCreateDebugUtilsMessengerEXT");
 			return;
 		}
 		auto result = func(vk_instance, &debug_create_info, vk_allocator, &vk_debug_messenger);
 		VulkanAssertVk(result, "failed to create debug messenger.");
-
+		
 		VulkanInfo("finished setting up debug messenger in ", peek_stopwatch(watch), "ms");
 	}
 }
 
 void
-create_surface(Window* window) {
+create_surface(Window* window){DPZoneScoped;
 	VulkanInfo("creating surface.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	auto wininf = (WindowInfo*)window->render_info;
-
+	
 #if DESHI_WINDOWS
 	VulkanInfo("Creating win32-vulkan surface");
 	VkWin32SurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
@@ -947,31 +957,31 @@ create_surface(Window* window) {
 	info.hinstance = (HINSTANCE)win32_console_instance;
 	auto result = vkCreateWin32SurfaceKHR(vk_instance, &info, 0, &wininf->surface);
 	VulkanAssertVk(result, "failed to create win32 surface");
-#elif DESHI_LINUX
+#elif DESHI_LINUX //#if DESHI_WINDOWS
 	VkXlibSurfaceCreateInfoKHR info{VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
 	info.window = (X11Window)window->handle;
 	info.dpy = linux.x11.display;
 	auto result = vkCreateXlibSurfaceKHR(vk_instance, &info, 0, &wininf->surface);
 	VulkanAssertVk(result, "failed to create X11 surface.");
-#else
-#	error "unsupported platform for renderer"
-#endif
-
+#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
+#  error "unsupported platform for renderer"
+#endif //#else //#elif DESHI_LINUX //#if DESHI_WINDOWS
+	
 	VulkanInfo("finished creating surface in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-pick_physical_device(Window* window) {
+pick_physical_device(Window* window){DPZoneScoped;
 	VulkanInfo("picking physical device.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	u32 device_count = 0;
 	vkEnumeratePhysicalDevices(vk_instance, &device_count, 0);
 	auto devices = array<VkPhysicalDevice>::create_with_count(device_count, temp_allocator);
 	vkEnumeratePhysicalDevices(vk_instance, &device_count, devices.ptr);
-
-	forI(devices.count()) {
+	
+	forI(devices.count()){
 		auto device = devices[i];
 		
 		// find a device which supports graphics operations
@@ -983,17 +993,17 @@ pick_physical_device(Window* window) {
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, 0);
 		auto queue_families = array<VkQueueFamilyProperties>::create_with_count(queue_family_count, temp_allocator);
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.ptr);
-
-		forI(queue_family_count) {
+		
+		forI(queue_family_count){
 			auto family = queue_families[i];
-			if(HasFlag(family.queueFlags, VK_QUEUE_GRAPHICS_BIT)) {
+			if(HasFlag(family.queueFlags, VK_QUEUE_GRAPHICS_BIT)){
 				physical_queue_families.found_graphics_family = true;
 				physical_queue_families.graphics_family = i;
 			}
 			
 			VkBool32 present_support = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, ((WindowInfo*)window->render_info)->surface, &present_support);
-			if(present_support) {
+			if(present_support){
 				physical_queue_families.found_present_family = true;
 				physical_queue_families.present_family = i;
 			}
@@ -1011,10 +1021,10 @@ pick_physical_device(Window* window) {
 		vkEnumerateDeviceExtensionProperties(device, 0, &extension_count, available_extensions.ptr);
 		
 		u32 count = 0;
-		forI(extension_count) {
+		forI(extension_count){
 			auto extension = available_extensions[i];
-			forI(ArrayCount(device_extensions)) {
-				if(extension.extensionName == device_extensions[i]) {
+			forI(ArrayCount(device_extensions)){
+				if(extension.extensionName == device_extensions[i]){
 					count++;
 					break;
 				}
@@ -1034,23 +1044,24 @@ pick_physical_device(Window* window) {
 		vk_physical_device = device;
 		break;
 	}
-
-	if(vk_physical_device == VK_NULL_HANDLE)
+	
+	if(vk_physical_device == VK_NULL_HANDLE){
 		VulkanFatal("failed to find a suitable physical device.");
-
+	}
+	
 	vkGetPhysicalDeviceFeatures(vk_physical_device, &vk_physical_device_features);
 	vkGetPhysicalDeviceProperties(vk_physical_device, &vk_physical_device_properties);
-
+	
 	VulkanInfo("finished picking physical device in ", peek_stopwatch(watch), "ms.");
 	VulkanInfo("chose device '", vk_physical_device_properties.deviceName, "'.");
 }
 
 void
-create_logical_device(Window* window) {
+create_logical_device(Window* window){DPZoneScoped;
 	VulkanInfo("creating logical device.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	f32 queue_priority = 1.f;
 	auto queue_create_infos = array<VkDeviceQueueCreateInfo>::create(temp_allocator);
 	VkDeviceQueueCreateInfo queue_create_info{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
@@ -1059,25 +1070,25 @@ create_logical_device(Window* window) {
 	queue_create_info.pQueuePriorities = &queue_priority;
 	queue_create_infos.push(queue_create_info);
 	
-	if(physical_queue_families.present_family != physical_queue_families.graphics_family) {
+	if(physical_queue_families.present_family != physical_queue_families.graphics_family){
 		queue_create_info.queueFamilyIndex = physical_queue_families.present_family;
 		queue_create_infos.push(queue_create_info);
 	}
 	
-	if(vk_physical_device_features.samplerAnisotropy) {
+	if(vk_physical_device_features.samplerAnisotropy){
 		vk_physical_device_enabled_features.samplerAnisotropy = VK_TRUE; // anistrophic filtering
 		vk_physical_device_enabled_features.sampleRateShading = VK_TRUE; // sample shading
 	}
 	
-	if(vk_physical_device_features.fillModeNonSolid) {
+	if(vk_physical_device_features.fillModeNonSolid){
 		vk_physical_device_enabled_features.fillModeNonSolid = VK_TRUE; // wireframe
-		if(vk_physical_device_features.wideLines) {
+		if(vk_physical_device_features.wideLines){
 			vk_physical_device_enabled_features.wideLines = VK_TRUE; // wide lines
 		}
 	}
 	
-	if(is_debugging) {
-		if(vk_physical_device_features.geometryShader) {
+	if(is_debugging){
+		if(vk_physical_device_features.geometryShader){
 			vk_physical_device_enabled_features.geometryShader = VK_TRUE;
 		}
 	}
@@ -1089,10 +1100,10 @@ create_logical_device(Window* window) {
 	create_info.enabledExtensionCount   = (u32)ArrayCount(device_extensions);
 	create_info.ppEnabledExtensionNames = device_extensions;
 	
-	if(is_debugging) {
+	if(is_debugging){
 		create_info.enabledLayerCount   = (u32)ArrayCount(validation_layers);
 		create_info.ppEnabledLayerNames = validation_layers;
-	} else {
+	}else{
 		create_info.enabledLayerCount = 0;
 	}
 	
@@ -1101,14 +1112,14 @@ create_logical_device(Window* window) {
 	
 	vkGetDeviceQueue(vk_device, physical_queue_families.graphics_family, 0, &vk_graphics_queue);
 	vkGetDeviceQueue(vk_device, physical_queue_families.present_family, 0, &vk_present_queue);
-
+	
 	VulkanInfo("finished creating logical device in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-create_command_pool() {
+create_command_pool(){DPZoneScoped;
 	VulkanInfo("creating command pool.");
-
+	
 	Stopwatch watch = start_stopwatch();
 	
 	VkCommandPoolCreateInfo pool_info{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
@@ -1120,30 +1131,30 @@ create_command_pool() {
 	
 	auto result = vkCreateCommandPool(vk_device, &pool_info, vk_allocator, &vk_command_pool);
 	VulkanAssertVk(result, "failed to create command pool");
-
+	
 	VulkanInfo("finished creating command pool in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-setup_shader_compiler() {
+setup_shader_compiler(){DPZoneScoped;
 	VulkanInfo("setting up shader compiler.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	vk_shader_compiler = shaderc_compiler_initialize();
 	vk_shader_compiler_options = shaderc_compile_options_initialize();
-
+	
 	// TODO(sushi) option to optimize shaders
 	
 	VulkanInfo("finished setting up shader compiler in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-create_descriptor_pool() {
+create_descriptor_pool(){DPZoneScoped;
 	VulkanInfo("creating descriptor pool.");
 	
 	Stopwatch watch = start_stopwatch();
-
+	
 	VkDescriptorPoolSize pool_sizes[] = {
 		{ VK_DESCRIPTOR_TYPE_SAMPLER,                1000 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -1165,65 +1176,65 @@ create_descriptor_pool() {
 	pool_info.pPoolSizes    = pool_sizes;
 	auto result = vkCreateDescriptorPool(vk_device, &pool_info, vk_allocator, &vk_descriptor_pool);
 	VulkanAssertVk(result, "failed to create descriptor pool.");
-
+	
 	VulkanInfo("finished creating descriptor pool in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-create_pipeline_cache() {
+create_pipeline_cache(){DPZoneScoped;
 	VulkanInfo("creating pipeline cache.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	VkPipelineCacheCreateInfo pipeline_cache_create_info{VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
 	
-	if(file_exists(str8l("data/pipelines.cache"))) {
+	if(file_exists(str8l("data/pipelines.cache"))){
 		str8 data = file_read_simple(str8l("data/pipelines.cache"), deshi_temp_allocator);
 		pipeline_cache_create_info.initialDataSize = data.count;
 		pipeline_cache_create_info.pInitialData    = data.str;
 	}
-
+	
 	auto result = vkCreatePipelineCache(vk_device, &pipeline_cache_create_info, 0, &vk_pipeline_cache);
 	VulkanAssertVk(result, "failed to create pipeline cache.");
-
+	
 	VulkanInfo("finished creating pipeline cache in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-create_swapchain(Window* window) {
+create_swapchain(Window* window){DPZoneScoped;
 	VulkanInfo("creating swapchain.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	auto wininf = (WindowInfo*)window->render_info;
 	auto old_swapchain = wininf->swapchain;
 	wininf->swapchain = VK_NULL_HANDLE;
-
+	
 	vkDeviceWaitIdle(vk_device);
-
+	
 	// check GPU's capabilities for the new swapchain
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, wininf->surface, &wininf->support_details.capabilities);
 	
 	u32 format_count = 0;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, wininf->surface, &format_count, 0);
-	if(format_count) {
+	if(format_count){
 		wininf->support_details.formats.recount(format_count);
 		vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, wininf->surface, &format_count, wininf->support_details.formats.ptr);
 	}
 	
 	u32 present_mode_count = 0;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, wininf->surface, &present_mode_count, 0);
-	if(present_mode_count) {
+	if(present_mode_count){
 		wininf->support_details.present_modes.recount(present_mode_count);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, wininf->surface, &present_mode_count, wininf->support_details.present_modes.ptr);
 	}
 	
 	// choose swapchain's surface format 
 	wininf->surface_format = wininf->support_details.formats[0];
-	forI(wininf->support_details.formats.count()) {
+	forI(wininf->support_details.formats.count()){
 		auto format = wininf->support_details.formats[i];
 		if( format.format == VK_FORMAT_B8G8R8A8_SRGB &&
-		   format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) {
+		   format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT){
 			wininf->surface_format = format;
 			break;
 		}
@@ -1234,45 +1245,45 @@ create_swapchain(Window* window) {
 	b32 fifo_relaxed = false;
 	b32 mailbox = false;
 	
-	forI(wininf->support_details.present_modes.count()) {
+	forI(wininf->support_details.present_modes.count()){
 		auto pm = wininf->support_details.present_modes[i];
 		if(pm == VK_PRESENT_MODE_IMMEDIATE_KHR)    immediate = true;
 		if(pm == VK_PRESENT_MODE_MAILBOX_KHR)      mailbox = true;
 		if(pm == VK_PRESENT_MODE_FIFO_RELAXED_KHR) fifo_relaxed = true;
 	}
 	
-	if(immediate) {
+	if(immediate){
 		wininf->present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-	} else if(mailbox) {
+	}else if(mailbox){
 		wininf->present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-	} else if(fifo_relaxed) {
+	}else if(fifo_relaxed){
 		wininf->present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-	} else {
+	}else{
 		wininf->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	}
 	
 	// find actual extent of the swapchain
 	auto capabilities = wininf->support_details.capabilities;
-	if(capabilities.currentExtent.width != UINT32_MAX) {
+	if(capabilities.currentExtent.width != UINT32_MAX){
 		wininf->extent = capabilities.currentExtent;
-	} else {
+	}else{
 		wininf->extent = { (u32)window->width, (u32)window->height };
 		wininf->extent.width  = Max(capabilities.minImageExtent.width,  Min(capabilities.maxImageExtent.width,  wininf->extent.width));
 		wininf->extent.height = Max(capabilities.minImageExtent.height, Min(capabilities.maxImageExtent.height, wininf->extent.height));
 	}
 	
 	// get min image count if not specified
-	if(!wininf->min_image_count) {
-		switch(wininf->present_mode) {
+	if(!wininf->min_image_count){
+		switch(wininf->present_mode){
 			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
 			case VK_PRESENT_MODE_MAILBOX_KHR: 
-			case VK_PRESENT_MODE_FIFO_KHR: {
+			case VK_PRESENT_MODE_FIFO_KHR:{
 				wininf->min_image_count = 2;
 			} break;
-			case VK_PRESENT_MODE_IMMEDIATE_KHR: {
+			case VK_PRESENT_MODE_IMMEDIATE_KHR:{
 				wininf->min_image_count = 1;
 			} break;
-			default: {
+			default:{
 				wininf->min_image_count = -1;
 			} break;
 		}
@@ -1297,11 +1308,11 @@ create_swapchain(Window* window) {
 	info.imageColorSpace           = wininf->surface_format.colorSpace;
 	info.imageArrayLayers          = 1;
 	info.imageUsage                = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	if(physical_queue_families.graphics_family != physical_queue_families.present_family) {
+	if(physical_queue_families.graphics_family != physical_queue_families.present_family){
 		info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
 		info.queueFamilyIndexCount = 2;
 		info.pQueueFamilyIndices   = queue_family_indices;
-	} else {
+	}else{
 		info.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = 0;
 		info.pQueueFamilyIndices   = 0;
@@ -1312,27 +1323,27 @@ create_swapchain(Window* window) {
 	info.clipped                   = VK_TRUE;
 	info.oldSwapchain              = old_swapchain;
 	info.minImageCount             = wininf->min_image_count;
-	if(wininf->support_details.capabilities.maxImageCount && info.minImageCount > wininf->support_details.capabilities.maxImageCount) {
+	if(wininf->support_details.capabilities.maxImageCount && info.minImageCount > wininf->support_details.capabilities.maxImageCount){
 		info.minImageCount         = wininf->support_details.capabilities.maxImageCount;
 	}
-	if(wininf->extent.width == UINT32_MAX) {
+	if(wininf->extent.width == UINT32_MAX){
 		info.imageExtent.width     = window->width;
 		info.imageExtent.height    = window->height;
-	} else {
+	}else{
 		info.imageExtent.width     = window->width  = wininf->extent.width;
 		info.imageExtent.height    = window->height = wininf->extent.height;
 	}
-
+	
 	auto result = vkCreateSwapchainKHR(vk_device, &info, vk_allocator, &wininf->swapchain);
 	VulkanAssertVk(result, "failed to create swapchain.");
-
+	
 	if(old_swapchain != VK_NULL_HANDLE) vkDestroySwapchainKHR(vk_device, old_swapchain, vk_allocator);
-
+	
 	VulkanInfo("finished creating swapchain in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-create_render_pass_and_frames(Window* window) {
+create_render_pass_and_frames(Window* window){DPZoneScoped;
 	VulkanInfo("creating frames for ", window->title);
 	
 	Stopwatch watch = start_stopwatch();
@@ -1366,14 +1377,14 @@ create_render_pass_and_frames(Window* window) {
 	render_pass->color_clear_values = vec4::ZERO;
 	render_pass->depth_clear_values = {1.f, 0};
 	render_pass->update();
-
+	
 	vkGetSwapchainImagesKHR(vk_device, wininf->swapchain, &wininf->image_count, 0);
 	auto images = array<VkImage>::create_with_count(wininf->image_count, temp_allocator);
 	vkGetSwapchainImagesKHR(vk_device, wininf->swapchain, &wininf->image_count, images.ptr);
 	
 	wininf->presentation_frames.recount(wininf->image_count);
 	
-	forI(wininf->image_count) {
+	forI(wininf->image_count){
 		auto frame = wininf->presentation_frames[i] = graphics::Framebuffer::allocate();
 		frame->width = window->width;
 		frame->height = window->height;
@@ -1389,7 +1400,7 @@ create_render_pass_and_frames(Window* window) {
 		depth_image->debug_name = str8l("<graphics> default framebuffer depth image");
 		color_image_view->image = color_image;
 		depth_image_view->image = depth_image;
-
+		
 		color_image->           format = vulkan_format_to_graphics(wininf->surface_format.format);
 		color_image->           extent = {window->width, window->height};
 		color_image->            usage = GraphicsImageUsage_Color_Attachment;
@@ -1406,14 +1417,14 @@ create_render_pass_and_frames(Window* window) {
 		color_image_view->format = color_image->format;
 		color_image_view->aspect_flags = GraphicsImageViewAspectFlags_Color;
 		color_image_view->update();
-
+		
 		depth_image_view->format = depth_image->format;
 		depth_image_view->aspect_flags = GraphicsImageViewAspectFlags_Depth;
 		depth_image_view->update();
-
+		
 		frame->color_image_view = color_image_view;
 		frame->depth_image_view = depth_image_view;
-
+		
 		VkImageView attachments[2] = {
 			get_handle(color_image_view),
 			get_handle(depth_image_view),
@@ -1428,16 +1439,16 @@ create_render_pass_and_frames(Window* window) {
 		info.attachmentCount = 2;
 		auto result = vkCreateFramebuffer(vk_device, &info, vk_allocator, &get_handle(frame));
 		VulkanAssertVk(result, "failed to create framebuffer.");
-
+		
 		vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)get_handle(frame), 
-				 "<graphics> default framebuffer");
+								 "<graphics> default framebuffer");
 	}
 	
 	VulkanInfo("finished creating default render pass and frames in ", peek_stopwatch(watch), "ms.");
 }
 
 void
-recreate_frames(Window* window) {
+recreate_frames(Window* window){DPZoneScoped;
 	// NOTE(sushi) we need to re-create these things because the window will already have 
 	//             active render-api handles which we can just reuse. This also avoids an 
 	//             issue with render commands that take RenderFrames, as if we don't do this
@@ -1463,11 +1474,11 @@ recreate_frames(Window* window) {
 	// TODO(sushi) I'm not sure if this should ever happen, but if it does and we have less frames
 	//             than before, we run the risk of external handles to those frames needing to be 
 	//             invalidated (possibly). Handle this if it ever becomes a problem.
-	if(old_image_count != wininf->image_count) {
+	if(old_image_count != wininf->image_count){
 		VulkanFatal("FATAL INTERNAL ERROR: while recreating frames, the amount of swapchain images differed from its original value. This situation is not handled yet and should be reported immediately.");
 	}
 	
-	forI(wininf->image_count) {
+	forI(wininf->image_count){
 		GraphicsFramebuffer* frame = wininf->presentation_frames[i];
 		frame->width = window->width;
 		frame->height = window->height;
@@ -1511,9 +1522,9 @@ recreate_frames(Window* window) {
 }
 
 void
-create_sync_objects() {
+create_sync_objects(){DPZoneScoped;
 	VulkanInfo("creating sync objects");
-
+	
 	Stopwatch watch = start_stopwatch();
 	
 	VkSemaphoreCreateInfo semaphore_info{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
@@ -1526,27 +1537,27 @@ create_sync_objects() {
 	
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_SEMAPHORE, (u64)vk_semaphore_image_acquired, "Semaphore image acquired");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_SEMAPHORE, (u64)vk_semaphore_render_complete, "Semaphore render complete");
-
+	
 	VulkanInfo("finished creating sync objects in ", peek_stopwatch(watch), "ms.");
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @init
 
 
 void
-graphics_init(Window* window) {
+graphics_init(Window* window){DPZoneScoped;
 	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to reinitialize the Graphics module or initialzie it before initializing the Platform module");
-	if(!window) {
+	if(!window){
 		VulkanFatal("passed a null window pointer.");
 		return;
 	}
-	if(window->render_info) {
+	if(window->render_info){
 		VulkanError("the given window has a non-zero render_info. This likely means that the graphics module has already been initialized with the window or the window was not initialized properly (eg. garbage data from a stack allocated window).");
 		return;
 	}
-
+	
 	VulkanNotice("initializing graphics module for window '", window->title, "'.");
 	Stopwatch watch = start_stopwatch();
 	
@@ -1558,52 +1569,52 @@ graphics_init(Window* window) {
 	wi->support_details.formats = array<VkSurfaceFormatKHR>::create(primary_allocator);
 	wi->support_details.present_modes = array<VkPresentModeKHR>::create(primary_allocator);
 	wi->presentation_frames = array<graphics::Framebuffer*>::create(primary_allocator);
-
+	
 	setup_allocator();
 	create_instance(window);
-
+	
 	//// grab Vulkan extension functions ////
 #if BUILD_INTERNAL
 	vkfunc_vkSetDebugUtilsObjectNameEXT  = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(vk_instance, "vkSetDebugUtilsObjectNameEXT");
 	vkfunc_vkCmdBeginDebugUtilsLabelEXT  = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(vk_instance, "vkCmdBeginDebugUtilsLabelEXT");
 	vkfunc_vkCmdEndDebugUtilsLabelEXT    = (PFN_vkCmdEndDebugUtilsLabelEXT)   vkGetInstanceProcAddr(vk_instance, "vkCmdEndDebugUtilsLabelEXT");
 	vkfunc_vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(vk_instance, "vkCmdInsertDebugUtilsLabelEXT");
-#endif //BUILD_INTERNAL
+#endif //#if BUILD_INTERNAL
 	
 	create_surface(window);
 	pick_physical_device(window);
 	create_logical_device(window);
 	create_command_pool();
-
+	
 	wi->command_buffer = graphics::CommandBuffer::allocate();
 	wi->command_buffer->commands = array<GraphicsCommand>::create(primary_allocator).ptr;
 	wi->command_buffer->update();
-
+	
 	setup_shader_compiler();
 	create_descriptor_pool();
 	
 	create_swapchain(window);
 	create_render_pass_and_frames(window);
-
+	
 	create_sync_objects();
 	create_pipeline_cache();
-
+	
 	g_graphics->initialized = true;
 	VulkanNotice("finished initialization in ", peek_stopwatch(watch), "ms.");
 	DeshiStageInitEnd(DS_RENDER);
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// @init
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @update
 
 
 void
-graphics_update(Window* window) {
+graphics_update(Window* window){DPZoneScoped;
 	Stopwatch watch = start_stopwatch();
 	auto wininf = (WindowInfo*)window->render_info;
-
-	if(window->resized || wininf->remake_window) {
+	
+	if(window->resized || wininf->remake_window){
 		if(window->width <= 0 || window->height <= 0) return;
 		vkDeviceWaitIdle(vk_device);
 		create_swapchain(window);
@@ -1615,99 +1626,104 @@ graphics_update(Window* window) {
 	g_graphics->stats = {};
 	
 	VkResult result = vkAcquireNextImageKHR(vk_device, wininf->swapchain, UINT64_MAX, vk_semaphore_image_acquired, VK_NULL_HANDLE, &wininf->frame_index);
-	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+	if(result == VK_ERROR_OUT_OF_DATE_KHR){
 		VulkanNotice("Window ", window->title, "'s surface has changed.");
 		// the surface has changed in some way that makes it no longer compatible with its swapchain
 		// so we need to recreate the swapchain
 		wininf->remake_window = true;
 		return;
-	} else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+	}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
 		Assert(!"failed to acquire swapchain image");
 	}
 	
-
+	
 	//// build commands ////
 	
-
+	
 	VkClearValue clear_values[2];
-
+	
 	GraphicsPipeline* currently_bound_pipeline = 0;
 	GraphicsRenderPass* current_render_pass = 0;
-
+	
 	// for keeping track of what dynamic states 
 	// are required and what have been fulfilled
-	enum {
+	enum{
 		Static,
 		DynamicPending,
 		DynamicFulfilled,
 	};
-
-	struct {
+	
+	struct{
 		u32 viewport       : 2;
 		u32 scissor        : 2;
 		u32 depth_bias     : 2;
 		u32 line_width     : 2;
 		u32 blend_constant : 2;
 	} dynamic_state;
-
+	
 	VkCommandBufferBeginInfo cmd_buffer_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	auto cmdbuf = get_handle(wininf->command_buffer);
 	result = vkBeginCommandBuffer(cmdbuf, &cmd_buffer_info);
 	VulkanAssertVk(result, "failed to begin command buffer for window '", window->title, "'.");
 	
-	forI(array_count(wininf->command_buffer->commands)) {
+	forI(array_count(wininf->command_buffer->commands)){
 		auto cmd = wininf->command_buffer->commands[i];
-		switch(cmd.type) {
-			case GraphicsCommandType_Begin_Render_Pass: {
-				if(current_render_pass) {
+		switch(cmd.type){
+			case GraphicsCommandType_Begin_Render_Pass:{
+				if(current_render_pass){
 					VulkanError("attempted to begin a render pass (", cmd.begin_render_pass.pass->debug_name, ") while one is already in progress (", current_render_pass->debug_name, ")");
 					return;
 				}
+				
 				auto pass = cmd.begin_render_pass.pass;
 				auto frame = cmd.begin_render_pass.frame;
 				VulkanAssert(pass, "encountered begin render pass command with a null render pass handle.");
 				VulkanAssert(frame, "encountered begin render pass command with a null framebuffer handle.");
-
+				
 				VkRenderPassBeginInfo info{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 				info.renderPass = get_handle(pass);
 				info.framebuffer = get_handle(frame);
 				info.renderArea.offset = {0,0};
 				info.renderArea.extent = {frame->width, frame->height};
 				info.pClearValues = clear_values;
-
-				if(pass->use_color_attachment) {
+				
+				if(pass->use_color_attachment){
 					clear_values[0].color = {
 						pass->color_clear_values.r,
 						pass->color_clear_values.g,
 						pass->color_clear_values.b,
 						pass->color_clear_values.a
 					};
-					if(pass->use_depth_attachment) {
+					if(pass->use_depth_attachment){
 						clear_values[1].depthStencil = {
 							pass->depth_clear_values.depth,
 							pass->depth_clear_values.stencil,
 						};
 						info.clearValueCount = 2;
-					} else info.clearValueCount = 1;
-				} else if(pass->use_depth_attachment) {
+					}else{
+						info.clearValueCount = 1;
+					}
+				}else if(pass->use_depth_attachment){
 					clear_values[0].depthStencil = {
 						pass->depth_clear_values.depth,
 						pass->depth_clear_values.stencil,
 					};
 					info.clearValueCount = 1;
 				}
-
+				
 				vk_debug_begin_label(cmdbuf, (char*)pass->debug_name.str, {0.2, 0.4, 0.8, 1.f});
 				vkCmdBeginRenderPass(cmdbuf, &info, VK_SUBPASS_CONTENTS_INLINE);
 				current_render_pass = pass;
-			} break;
-			case GraphicsCommandType_End_Render_Pass: {
+			}break;
+			
+			case GraphicsCommandType_End_Render_Pass:{
 				VulkanAssert(current_render_pass, "encountered end render pass command but no render pass has been started yet.");
 				vkCmdEndRenderPass(cmdbuf);
 				vk_debug_end_label(cmdbuf);
 				current_render_pass = 0;
-			} break;
-			case GraphicsCommandType_Bind_Pipeline: {
+			}break;
+			
+			case GraphicsCommandType_Bind_Pipeline:{
 				auto pipeline = cmd.bind_pipeline.handle;
 				VulkanAssert(pipeline, "encountered bind pipeline command, but the given pipeline handle is null.");
 				currently_bound_pipeline = pipeline;
@@ -1717,8 +1733,9 @@ graphics_update(Window* window) {
 				dynamic_state.line_width     = (pipeline->dynamic_line_width?     DynamicPending : Static);
 				dynamic_state.blend_constant = (pipeline->dynamic_blend_constant? DynamicPending : Static);
 				vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, get_handle(pipeline));
-			} break;
-			case GraphicsCommandType_Set_Viewport: {
+			}break;
+			
+			case GraphicsCommandType_Set_Viewport:{
 				VkViewport v = {0};
 				v.x = cmd.set_viewport.offset.x;
 				v.y = cmd.set_viewport.offset.y;
@@ -1727,28 +1744,33 @@ graphics_update(Window* window) {
 				v.minDepth = 0.f;
 				v.maxDepth = 1.f;
 				vkCmdSetViewport(cmdbuf, 0, 1, &v);
-			} break;
-			case GraphicsCommandType_Set_Scissor: {
+			}break;
+			
+			case GraphicsCommandType_Set_Scissor:{
 				VkRect2D s = {0};
 				s.offset.x = cmd.set_scissor.offset.x;
 				s.offset.y = cmd.set_scissor.offset.y;
 				s.extent.width = cmd.set_scissor.extent.x;
 				s.extent.height = cmd.set_scissor.extent.y;
 				vkCmdSetScissor(cmdbuf, 0, 1, &s);
-			} break;
-			case GraphicsCommandType_Set_Depth_Bias: {
+			}break;
+			
+			case GraphicsCommandType_Set_Depth_Bias:{
 				vkCmdSetDepthBias(cmdbuf, cmd.set_depth_bias.constant, cmd.set_depth_bias.clamp, cmd.set_depth_bias.slope);
-			} break;
-			case GraphicsCommandType_Bind_Vertex_Buffer: {
+			}break;
+			
+			case GraphicsCommandType_Bind_Vertex_Buffer:{
 				VulkanAssert(cmd.bind_vertex_buffer.handle, "encountered bind vertex buffer command, but the buffer handle is null.");
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdbuf, 0, 1, &get_handle(cmd.bind_vertex_buffer.handle), offsets);
-			} break;
-			case GraphicsCommandType_Bind_Index_Buffer: {
+			}break;
+			
+			case GraphicsCommandType_Bind_Index_Buffer:{
 				VulkanAssert(cmd.bind_index_buffer.handle, "encountered bind index buffer command, but the buffer handle is null.");
 				vkCmdBindIndexBuffer(cmdbuf, get_handle(cmd.bind_index_buffer.handle), 0, VK_INDEX_TYPE_UINT32);
-			} break;
-			case GraphicsCommandType_Bind_Descriptor_Set: {
+			}break;
+			
+			case GraphicsCommandType_Bind_Descriptor_Set:{
 				VulkanAssert(currently_bound_pipeline, "encountered bind descriptor set command, but no pipeline has been bound yet.");
 				VulkanAssert(cmd.bind_descriptor_set.handle, "encountered bind descriptor set command, but a null handle was passed.");
 				VulkanAssert(get_handle(cmd.bind_descriptor_set.handle), "encountered bind descriptor set command, but the provided descriptor set has a null backend handle.");
@@ -1757,24 +1779,26 @@ graphics_update(Window* window) {
 										cmd.bind_descriptor_set.set_index, 1, 
 										&get_handle(cmd.bind_descriptor_set.handle),
 										0, 0);
-			} break;
-			case GraphicsCommandType_Push_Constant: {
+			}break;
+			
+			case GraphicsCommandType_Push_Constant:{
 				VulkanAssert(currently_bound_pipeline, "encountered push constant command, but no pipeline has been bound yet.");
 				vkCmdPushConstants(cmdbuf, 
 								   get_handle(currently_bound_pipeline->layout),
 								   graphics_shader_stage_to_vulkan(cmd.push_constant.shader_stages),
 								   cmd.push_constant.offset, cmd.push_constant.size, cmd.push_constant.data);
-			} break;
-			case GraphicsCommandType_Draw_Indexed: {
+			}break;
+			
+			case GraphicsCommandType_Draw_Indexed:{
 				// TODO(sushi) checks for dynamic state stuff having been set before this occurs
 				vkCmdDrawIndexed(cmdbuf, cmd.draw_indexed.index_count, 1, cmd.draw_indexed.index_offset, cmd.draw_indexed.vertex_offset, 0);
-			} break;
+			}break;
 		}
 	}
-
+	
 	result = vkEndCommandBuffer(cmdbuf);
 	VulkanAssertVk(result, "failed to end command buffer.");
-
+	
 	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submit_info{VK_STRUCTURE_TYPE_SUBMIT_INFO};
 	submit_info.waitSemaphoreCount = 1;
@@ -1786,9 +1810,9 @@ graphics_update(Window* window) {
 	submit_info.pSignalSemaphores = &vk_semaphore_render_complete;
 	result = vkQueueSubmit(vk_graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
 	VulkanAssertVk(result, "failed to submit commands to queue.");
-
+	
 	if(wininf->remake_window) return;
-
+	
 	VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 	present_info.waitSemaphoreCount = 1;
 	present_info.pWaitSemaphores = &vk_semaphore_render_complete;
@@ -1798,13 +1822,13 @@ graphics_update(Window* window) {
 	present_info.pResults = 0;
 	result = vkQueuePresentKHR(vk_present_queue, &present_info);
 	
-	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wininf->remake_window) {
+	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || wininf->remake_window){
 		VulkanNotice("remaking swapchain and frames for window '", window->title, "'.");
 		vkDeviceWaitIdle(vk_device);
 		create_swapchain(window);
 		recreate_frames(window);
 		wininf->remake_window = false;
-	} else if(result != VK_SUCCESS) {
+	}else if(result != VK_SUCCESS){
 		VulkanFatal("failed to queue present.");
 	}
 	
@@ -1813,7 +1837,7 @@ graphics_update(Window* window) {
 	wininf->frame_index = (wininf->frame_index + 1) % wininf->min_image_count;
 	
 	result = vkQueueWaitIdle(vk_graphics_queue);
-	switch (result){
+	switch(result){
 		case VK_ERROR_OUT_OF_HOST_MEMORY:   VulkanFatal("Host is out of memory!"); break;
 		case VK_ERROR_OUT_OF_DEVICE_MEMORY: VulkanFatal("Device is out of memory!"); break;
 		case VK_ERROR_DEVICE_LOST:          VulkanFatal("Device lost!"); break;
@@ -1831,43 +1855,43 @@ graphics_update(Window* window) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @buffer
 
 
 GraphicsBuffer*
-graphics_buffer_create(
-		void* data,
-		u64 requested_size, 
-		GraphicsBufferUsage usage, 
-		GraphicsMemoryPropertyFlags properties, 
-		GraphicsMemoryMappingBehavoir mapping_behavior) {
+graphics_buffer_create(void* data,
+					   u64 requested_size, 
+					   GraphicsBufferUsage usage, 
+					   GraphicsMemoryPropertyFlags properties, 
+					   GraphicsMemoryMappingBehavoir mapping_behavior)
+{DPZoneScoped;
 	VulkanInfo("creating a buffer.");
-
+	
 	VulkanAssert(requested_size, "cannot create a buffer with size 0.");
-	if(HasFlag(properties, GraphicsMemoryProperty_HostStreamed) && 
-	   HasFlag(properties, GraphicsMemoryPropertyFlag_LazilyAllocated)) {
+	if(   HasFlag(properties, GraphicsMemoryProperty_HostStreamed)
+	   && HasFlag(properties, GraphicsMemoryPropertyFlag_LazilyAllocated)){
 		VulkanError("the memory property flags 'HostStreamed' and 'LazilyAllocated' are incompatible.");
 		return 0;
 	}
-
+	
 	GraphicsBuffer* out = memory_pool_push(g_graphics->pools.buffers);
-
+	
 	VkBufferCreateInfo create_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
 	create_info.size = requested_size;
 	create_info.usage = graphics_buffer_usage_to_vulkan(usage);
-	if(mapping_behavior == GraphicsMemoryMapping_Never) {
+	if(mapping_behavior == GraphicsMemoryMapping_Never){
 		create_info.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
 	create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	auto result = vkCreateBuffer(vk_device, &create_info, vk_allocator, &get_handle(out));
 	VulkanAssertVk(result, "failed to create buffer.");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_BUFFER, (u64)get_handle(out), "<graphics> buffer");
-
+	
 	VkMemoryRequirements req;
 	vkGetBufferMemoryRequirements(vk_device, get_handle(out), &req);
 	GRAPHICS_INTERNAL(out).size = req.size;
-
+	
 	VkMemoryAllocateInfo alloc_info{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 	alloc_info.allocationSize = req.size;
 	alloc_info.memoryTypeIndex = find_memory_type(req.memoryTypeBits, graphics_memory_properties_to_vulkan(properties));
@@ -1876,13 +1900,13 @@ graphics_buffer_create(
 	result = vkBindBufferMemory(vk_device, get_handle(out), get_memory_handle(out), 0);
 	VulkanAssertVk(result, "failed to bind buffer to memory.");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DEVICE_MEMORY, (u64)get_memory_handle(out), "<graphics> memory");
-
-	if(mapping_behavior == GraphicsMemoryMapping_Never) {
-		if(!data) {
+	
+	if(mapping_behavior == GraphicsMemoryMapping_Never){
+		if(!data){
 			VulkanWarning("the mapping behavoir of the buffer we are creating is set to 'Never', but the given data pointer is null. I'm not sure yet if there is a legitamate usecase for this, so remove this warning if we ever come across one.");
-		} else {
+		}else{
 			VulkanAssert(!HasFlag(properties,GraphicsMemoryPropertyFlag_HostCoherent|GraphicsMemoryPropertyFlag_HostVisible|GraphicsMemoryPropertyFlag_HostCached), 
-					"incompatible mapping behavoir and memory flags. Mapping behavoir is set to 'Never', which is incompatible with the memory properties 'HostVisible', 'HostCoherent', or 'HostCached'.");
+						 "incompatible mapping behavoir and memory flags. Mapping behavoir is set to 'Never', which is incompatible with the memory properties 'HostVisible', 'HostCoherent', or 'HostCached'.");
 			// create a staging buffer
 			VkBuffer stage;
 			VkBufferCreateInfo staging_buffer_info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -1891,7 +1915,7 @@ graphics_buffer_create(
 			staging_buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			result = vkCreateBuffer(vk_device, &staging_buffer_info, vk_allocator, &stage); 
 			VulkanAssertVk(result, "failed to create staging buffer for GraphicsBuffer whose mapping behavoir is 'Never'");
-
+			
 			VkDeviceMemory stage_memory;
 			VkMemoryRequirements stage_req;
 			vkGetBufferMemoryRequirements(vk_device, stage, &stage_req);
@@ -1902,44 +1926,44 @@ graphics_buffer_create(
 			VulkanAssertVk(result, "failed to allocate memory for staging buffer.");
 			result = vkBindBufferMemory(vk_device, stage, stage_memory, 0);
 			VulkanAssertVk(result, "failed to bind staging buffer to memory.");
-
+			
 			void* stage_data;
 			result = vkMapMemory(vk_device, stage_memory, 0, req.size, 0, &stage_data);
 			VulkanAssertVk(result, "failed to map staging buffer's memory.");
 			CopyMemory(stage_data, data, requested_size);
 			vkUnmapMemory(vk_device, stage_memory);
-				
+			
 			copy_buffer(stage, get_handle(out), requested_size);
-
+			
 			vkDestroyBuffer(vk_device, stage, vk_allocator);
 			vkFreeMemory(vk_device, stage_memory, vk_allocator);
 		} 
-	} else if(mapping_behavior == GraphicsMemoryMapping_Occasional) {
-		if(data) {
+	}else if(mapping_behavior == GraphicsMemoryMapping_Occasional){
+		if(data){
 			auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 			VulkanAssertVk(result, "failed to map memory for initial data copy to GraphicsBuffer. (Mapping behavoir is 'Occasional')");
-
+			
 			CopyMemory(GRAPHICS_INTERNAL(out).mapped.data, data, requested_size);
-
+			
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 			range.memory = get_memory_handle(out);
 			range.offset = 0;
 			range.  size = req.size;
 			result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 			VulkanAssertVk(result, "failed to flush memory range while performing initial copy to GraphicsBuffer. (Mapping behavoir is set to 'Occasional')");
-
+			
 			vkUnmapMemory(vk_device, get_memory_handle(out));
 		}
 		GRAPHICS_INTERNAL(out).mapped = {};
-	} else if(mapping_behavior == GraphicsMemoryMapping_Persistent) {
+	}else if(mapping_behavior == GraphicsMemoryMapping_Persistent){
 		auto result = vkMapMemory(vk_device, get_memory_handle(out), 0, req.size, 0, &GRAPHICS_INTERNAL(out).mapped.data);
 		VulkanAssertVk(result, "failed to perform initial mapping for GraphicsBuffer with 'Persistent' mapping behavoir.");
-
+		
 		GRAPHICS_INTERNAL(out).mapped.size = req.size;
 		GRAPHICS_INTERNAL(out).mapped.offset = 0;
-		if(data) {
+		if(data){
 			CopyMemory(GRAPHICS_INTERNAL(out).mapped.data, data, requested_size);
-
+			
 			VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 			range.memory = get_memory_handle(out);
 			range.offset = 0;
@@ -1947,70 +1971,66 @@ graphics_buffer_create(
 			result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 			VulkanAssertVk(result, "failed to flush memory range while performing initial copy to GraphicsBuffer. (MappingBehavoir is set to 'Persistent').");
 		}
-	} else VulkanAssertVk(!VK_SUCCESS, "invalid mapping_behavior specified: ", (u32)mapping_behavior);
+	}else VulkanAssertVk(!VK_SUCCESS, "invalid mapping_behavior specified: ", (u32)mapping_behavior);
 	
 	StaticAssertAlways(sizeof(VkDeviceSize) == sizeof(u64));
 	GRAPHICS_INTERNAL(out).usage = usage;
 	GRAPHICS_INTERNAL(out).memory_properties = properties;
 	GRAPHICS_INTERNAL(out).mapping_behavior = mapping_behavior;
-
+	
 	return out;
 }
 
 void
-graphics_buffer_destroy(GraphicsBuffer* x_) {
+graphics_buffer_destroy(GraphicsBuffer* x_){DPZoneScoped;
 	VulkanAssert(x_, "passed a null GraphicsBuffer pointer.");
-
+	
 	auto x = (graphics::Buffer*)x_;
-
-	if(get_handle(x) == VK_NULL_HANDLE || get_memory_handle(x) == VK_NULL_HANDLE) {
+	
+	if(get_handle(x) == VK_NULL_HANDLE || get_memory_handle(x) == VK_NULL_HANDLE){
 		VulkanError("the given GraphicsBuffer has null backend handles which indicates deletion, corruption, or that the object was not created with graphics_buffer_create().");
 		return;
 	}
-
-	if(x->mapped_data()) {
+	
+	if(x->mapped_data()){
 		vkUnmapMemory(vk_device, get_memory_handle(x));
 	}
-
+	
 	vkDestroyBuffer(vk_device, get_handle(x), vk_allocator);
 	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
-
+	
 	memory_pool_delete(g_graphics->pools.buffers, x);
 }
 
 void
-graphics_buffer_reallocate(GraphicsBuffer* x_, u64 new_size) {
+graphics_buffer_reallocate(GraphicsBuffer* x_, u64 new_size){DPZoneScoped;
 	VulkanAssert(x_, "passed a null GraphicsBuffer pointer");
 	VulkanAssert(new_size, "new_size must be non-zero.");
-
+	
 	if(new_size < GRAPHICS_INTERNAL(x_).size) return;
-
-	if(!HasFlag(GRAPHICS_INTERNAL(x_).usage, GraphicsBufferUsage_TransferSource|GraphicsBufferUsage_TransferDestination)) {
+	
+	if(!HasFlag(GRAPHICS_INTERNAL(x_).usage, GraphicsBufferUsage_TransferSource|GraphicsBufferUsage_TransferDestination)){
 		VulkanError("the given GraphicsBuffer did not specify one of the usage flags 'TransferSource' or 'TransferDestination' when it was created. The new buffer will use the same properties as the given buffer, which requires both copying to and from.");
 		return;
 	}
-
+	
 	auto x = (graphics::Buffer*)x_;
-
-	if(x->mapped_data()) {
+	
+	if(x->mapped_data()){
 		vkUnmapMemory(vk_device, get_memory_handle(x));
 	}
-
+	
 	VkBuffer nu = VK_NULL_HANDLE;
 	VkDeviceMemory nu_memory = VK_NULL_HANDLE;
-
+	
 	VkDeviceSize device_size = new_size;
-
-	create_or_resize_buffer(
-			&nu,
-			&nu_memory,
-			&device_size,
-			device_size,
-			graphics_buffer_usage_to_vulkan(GRAPHICS_INTERNAL(x).usage),
-			graphics_memory_properties_to_vulkan(GRAPHICS_INTERNAL(x).memory_properties));
-
+	
+	create_or_resize_buffer(&nu, &nu_memory, &device_size, device_size,
+							graphics_buffer_usage_to_vulkan(GRAPHICS_INTERNAL(x).usage),
+							graphics_memory_properties_to_vulkan(GRAPHICS_INTERNAL(x).memory_properties));
+	
 	auto cmdbuf = begin_single_time_commands();
-
+	
 	// I'm not sure if this barrier is actually necessary because we create
 	// the copy command here and then execute it immediately (in end_single_time_commands())
 	// perhaps it will make more sense when the graphics api is thread safe
@@ -2018,20 +2038,17 @@ graphics_buffer_reallocate(GraphicsBuffer* x_, u64 new_size) {
 	memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 	memory_barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 	
-	vkCmdPipelineBarrier(
-			cmdbuf, 
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 
-			1, &memory_barrier, 
-			0, 0, 0, 0);
-
+	vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0,
+						 1, &memory_barrier, 0, 0, 0, 0);
+	
 	VkBufferCopy region;
 	region.size = x->device_size();
 	region.srcOffset = region.dstOffset = 0;
-
+	
 	vkCmdCopyBuffer(cmdbuf, get_handle(x), nu, 1, &region);
-
+	
 	end_single_time_commands(cmdbuf);
-
+	
 	// get rid of the old buffer
 	vkDestroyBuffer(vk_device, get_handle(x), vk_allocator);
 	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
@@ -2042,58 +2059,58 @@ graphics_buffer_reallocate(GraphicsBuffer* x_, u64 new_size) {
 }
 
 void*
-graphics_buffer_map(GraphicsBuffer* x_, u64 size, u64 offset) {
+graphics_buffer_map(GraphicsBuffer* x_, u64 size, u64 offset){DPZoneScoped;
 	VulkanAssert(x_, "passed a null GraphicsBuffer pointer.");
 	VulkanAssert(size, "size is 0");
-
-	if(get_handle(x_) == VK_NULL_HANDLE || get_memory_handle(x_) == VK_NULL_HANDLE) {
+	
+	if(get_handle(x_) == VK_NULL_HANDLE || get_memory_handle(x_) == VK_NULL_HANDLE){
 		VulkanError("the given GraphicsBuffer has null backend handles which indicates deletion, corruption, or that the object was not created with graphics_buffer_create().");
 		return 0;
 	}
-
+	
 	auto x = (graphics::Buffer*)x_;
-
-	if(x->mapped_data()) {
-		if(GRAPHICS_INTERNAL(x).mapping_behavior == GraphicsMemoryMapping_Persistent) {
+	
+	if(x->mapped_data()){
+		if(GRAPHICS_INTERNAL(x).mapping_behavior == GraphicsMemoryMapping_Persistent){
 			VulkanWarning("useless call on buffer '", x->debug_name, "' (", (void*)x, ") as its mapping behavoir is set to 'Persistent'.");
-		} else {
+		}else{
 			VulkanWarning("useless call on buffer '", x->debug_name, "' (", (void*)x, ") as it was already previously mapped.");
 		}
 		return x->mapped_data();
 	}
-
-	if(GRAPHICS_INTERNAL(x).mapping_behavior == GraphicsMemoryMapping_Never) {
+	
+	if(GRAPHICS_INTERNAL(x).mapping_behavior == GraphicsMemoryMapping_Never){
 		VulkanError("the given buffer's mapping behavoir is 'Never'.");
 		return 0;
 	}
-
+	
 	VkDeviceSize range_start = RoundDownTo(offset, vk_physical_device_properties.limits.nonCoherentAtomSize);
 	VkDeviceSize range_end = RoundDownTo(range_start+size, vk_physical_device_properties.limits.nonCoherentAtomSize);
 	VkDeviceSize range_size = range_end - range_start;
 	auto result = vkMapMemory(vk_device, get_memory_handle(x), range_start, range_size, 0, &GRAPHICS_INTERNAL(x).mapped.data);
 	GRAPHICS_INTERNAL(x).mapped.offset = (u64)range_start;
 	GRAPHICS_INTERNAL(x).mapped.size   = (u64)range_size;
-
+	
 	return x->mapped_data();
 } 
 
 void
-graphics_buffer_unmap(GraphicsBuffer* x_, b32 flush) {
+graphics_buffer_unmap(GraphicsBuffer* x_, b32 flush){DPZoneScoped;
 	VulkanAssert(x_, "passed a null GraphicsBuffer pointer.");
 	
-	if(get_handle(x_) == VK_NULL_HANDLE || get_memory_handle(x_) == VK_NULL_HANDLE) {
+	if(get_handle(x_) == VK_NULL_HANDLE || get_memory_handle(x_) == VK_NULL_HANDLE){
 		VulkanError("the given GraphicsBuffer has null backend handles which indicates deletion, corruption, or that the object was not created with graphics_buffer_create().");
 		return;
 	}
-
+	
 	auto x = (graphics::Buffer*)x_;
-
-	if(!x->mapped_data()) {
+	
+	if(!x->mapped_data()){
 		VulkanWarning("useless call on buffer '", x->debug_name, "' (", (void*)x, ") as it is not mapped.");
 		return;
 	}
-
-	if(flush) {
+	
+	if(flush){
 		VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 		range.memory = get_memory_handle(x);
 		range.offset = x->mapped_offset();
@@ -2101,28 +2118,28 @@ graphics_buffer_unmap(GraphicsBuffer* x_, b32 flush) {
 		auto result = vkFlushMappedMemoryRanges(vk_device, 1, &range);
 		VulkanAssertVk(result, "failed to flush memory to device.");
 	}
-
+	
 	vkUnmapMemory(vk_device, get_memory_handle(x));
-
+	
 	GRAPHICS_INTERNAL(x).mapped = {};
 }
 
 void
-graphics_buffer_flush(GraphicsBuffer* x_) {
+graphics_buffer_flush(GraphicsBuffer* x_){DPZoneScoped;
 	VulkanAssert(x_, "passed a null GraphicsBuffer pointer");
-
-	if(get_handle(x_) == VK_NULL_HANDLE || get_memory_handle(x_) == VK_NULL_HANDLE) {
+	
+	if(get_handle(x_) == VK_NULL_HANDLE || get_memory_handle(x_) == VK_NULL_HANDLE){
 		VulkanError("the given GraphicsBuffer has null backend handles which indicates deletion, corruption, or that the object was not created with graphics_buffer_create().");
 		return;
 	}
-
+	
 	auto x = (graphics::Buffer*)x_;
-
-	if(!x->mapped_data()) {
+	
+	if(!x->mapped_data()){
 		VulkanError("the given buffer is not mapped.");
 		return;
 	}
-
+	
 	VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
 	range.memory = get_memory_handle(x);
 	range.offset = x->mapped_offset();
@@ -2132,35 +2149,32 @@ graphics_buffer_flush(GraphicsBuffer* x_) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @image
 
 
 void
-graphics_image_update(GraphicsImage* x) {
+graphics_image_update(GraphicsImage* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsImage pointer.");
-
+	
 	VulkanInfo("updating a GraphicsImage (name: ", x->debug_name, "; addr: ", (void*)x, ").");
-
+	
 	vkDestroyImage(vk_device, get_handle(x), vk_allocator);
 	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
-
-	create_image(
-		 x->extent.x, x->extent.y, 
-		 1, 
-		 graphics_sample_count_to_vulkan(x->samples),
-		 graphics_format_to_vulkan(x->format),
-		 (x->linear_tiling? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
-		 graphics_image_usage_to_vulkan(x->usage),
-		 graphics_memory_properties_to_vulkan(x->memory_properties),
-		 &get_handle(x),
-		 &get_memory_handle(x));
-
+	
+	create_image(x->extent.x, x->extent.y, 1, 
+				 graphics_sample_count_to_vulkan(x->samples),
+				 graphics_format_to_vulkan(x->format),
+				 (x->linear_tiling ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL),
+				 graphics_image_usage_to_vulkan(x->usage),
+				 graphics_memory_properties_to_vulkan(x->memory_properties),
+				 &get_handle(x), &get_memory_handle(x));
+	
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_IMAGE, (u64)get_handle(x), (char*)x->debug_name.str);
 }
 
 void
-graphics_image_destroy(GraphicsImage* x) {
+graphics_image_destroy(GraphicsImage* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsImage pointer.");
 	VulkanInfo("destroying image '", x->debug_name, "'");
 	vkFreeMemory(vk_device, get_memory_handle(x), vk_allocator);
@@ -2169,34 +2183,28 @@ graphics_image_destroy(GraphicsImage* x) {
 }
 
 void
-graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
+graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsImage pointer.");
-
-	if(!(get_handle(x) && get_memory_handle(x))) {
+	
+	if(!(get_handle(x) && get_memory_handle(x))){
 		VulkanError("one of the backend handles is null indicating the object has been deleted, is corrupt, or has not been updated (graphics_image_update()) yet.");
 		return;
 	}
-
-	if(!extent.y || !extent.x) {
+	
+	if(!extent.y || !extent.x){
 #if BUILD_SLOW
 		VulkanWarning("called with an extent ", extent, " with 0 in some axis.");
-#endif
+#endif //#if BUILD_SLOW
 		return;
 	}
-
+	
 	VkDeviceSize image_memsize = extent.x * extent.y * 4;
 	
 	// create a staging buffer so we can map the pixel data from the CPU
 	BufferVk stage{};
-	create_and_map_buffer(
-		  &stage.buffer, 
-		  &stage.memory, 
-		  &image_memsize, 
-		  (size_t)image_memsize, 
-		  pixels,
-		  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
-		  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	create_and_map_buffer(&stage.buffer, &stage.memory, &image_memsize, (size_t)image_memsize,pixels,
+						  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+						  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	VkCommandBuffer cmdbuf = begin_single_time_commands();
 	
@@ -2213,9 +2221,7 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
 	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
 	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
-	vkCmdPipelineBarrier(cmdbuf, 
-						 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-						 0,0,0,0,0,1, &barrier);
+	vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,0,0,0,0,1, &barrier);
 	
 	VkBufferImageCopy region{};
 	region.bufferOffset      = 0;
@@ -2227,10 +2233,7 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
 	region.imageSubresource.mipLevel       = 0;
 	region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 	region.imageSubresource.layerCount     = 1; //NOTE(delle) use image flags here?
-	vkCmdCopyBufferToImage(cmdbuf, 
-						   stage.buffer, get_handle(x),
-						   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-						   1, &region);
+	vkCmdCopyBufferToImage(cmdbuf, stage.buffer, get_handle(x), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	
 	barrier.srcAccessMask       = 0;
 	barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -2244,9 +2247,7 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
 	barrier.subresourceRange.levelCount     = 1; // TODO(sushi) mipmaps
 	barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
 	barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
-	vkCmdPipelineBarrier(cmdbuf, 
-						 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-						 0,0,0,0,0,1, &barrier);
+	vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,0,0,0,0,1, &barrier);
 	
 	end_single_time_commands(cmdbuf);
 	
@@ -2255,7 +2256,7 @@ graphics_image_write(GraphicsImage* x, u8* pixels, vec2i offset, vec2i extent) {
 }
 
 void 
-graphics_image_view_update(GraphicsImageView* x) {
+graphics_image_view_update(GraphicsImageView* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsImageView pointer.");
 	VulkanInfo("updating image view '", x->debug_name, "'.");
 	
@@ -2266,7 +2267,7 @@ graphics_image_view_update(GraphicsImageView* x) {
 }
 
 void 
-graphics_image_view_destroy(GraphicsImageView* x) {
+graphics_image_view_destroy(GraphicsImageView* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsImageView pointer.");
 	VulkanInfo("destroying image view '", x->debug_name, "'.");
 	vkDestroyImageView(vk_device, get_handle(x), vk_allocator);
@@ -2275,10 +2276,10 @@ graphics_image_view_destroy(GraphicsImageView* x) {
 }
 
 void 
-graphics_sampler_update(GraphicsSampler* x) {
+graphics_sampler_update(GraphicsSampler* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsSampler pointer");
 	VulkanInfo("updating sampler '", x->debug_name, "'.");
-
+	
 	VkSamplerCreateInfo info{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 	
 	info.magFilter = graphics_filter_to_vulkan(x->mag_filter);
@@ -2300,7 +2301,7 @@ graphics_sampler_update(GraphicsSampler* x) {
 }
 
 void 
-graphics_sampler_destroy(GraphicsSampler* x) {
+graphics_sampler_destroy(GraphicsSampler* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsSampler pointer.");
 	VulkanInfo("destroying sampler '", x->debug_name, "'.");
 	vkDestroySampler(vk_device, get_handle(x), vk_allocator);
@@ -2309,36 +2310,36 @@ graphics_sampler_destroy(GraphicsSampler* x) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @descriptor
 
 
 void 
-graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x) {
+graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x){DPZoneScoped;
 	VulkanAssert(x, "passed a null GraphicsDescriptorSetLayout pointer.");
 	VulkanInfo("updating descriptor set layout '", x->debug_name, "'.");
-
+	
 	auto bindings = array_from(x->bindings);
-
+	
 	VkDescriptorSetLayoutCreateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-	if(!bindings.ptr) {
+	if(!bindings.ptr){
 		info.pBindings = 0;
 		info.bindingCount = 0;
 		auto result = vkCreateDescriptorSetLayout(vk_device, &info, vk_allocator, &get_handle(x));
 		VulkanAssertVk(result, "failed to create descriptor set layout (also, the provided GraphicsDescriptorSetLayout has a null binding array, so that may be a cause!).");
 	}
-
+	
 	auto bindings_out = array<VkDescriptorSetLayoutBinding>::create_with_count(bindings.count(), temp_allocator);
 	info.pBindings = bindings_out.ptr;
 	info.bindingCount = bindings.count();
-
-	forI(bindings.count()) {
+	
+	forI(bindings.count()){
 		auto b = bindings[i];
-		switch(b.type) {
-			case GraphicsDescriptorType_Combined_Image_Sampler: {
+		switch(b.type){
+			case GraphicsDescriptorType_Combined_Image_Sampler:{
 				bindings_out[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			} break;
-			case GraphicsDescriptorType_Uniform_Buffer: {
+			case GraphicsDescriptorType_Uniform_Buffer:{
 				bindings_out[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
 		}
@@ -2346,47 +2347,47 @@ graphics_descriptor_set_layout_update(GraphicsDescriptorSetLayout* x) {
 		bindings_out[i].binding = b.n;
 		bindings_out[i].descriptorCount = 1;
 	}
-
+	
 	auto result = vkCreateDescriptorSetLayout(vk_device, &info, vk_allocator, &get_handle(x));
 	VulkanAssertVk(result, "failed to create descriptor set layout.");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)get_handle(x), (char*)x->debug_name.str);
 }
 
 void 
-graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x) {
+graphics_descriptor_set_layout_destroy(GraphicsDescriptorSetLayout* x){DPZoneScoped;
 	vkDestroyDescriptorSetLayout(vk_device, get_handle(x), vk_allocator);
 	ZeroMemory(x, sizeof(GraphicsDescriptorSetLayout));
 }
 
 void 
-graphics_descriptor_set_update(GraphicsDescriptorSet* x) {
+graphics_descriptor_set_update(GraphicsDescriptorSet* x){DPZoneScoped;
 	VulkanAssert(x, "passed a null GraphicsDescriptorSet pointer.");
 	VulkanInfo("updating descriptor set '", x->debug_name, "'.");
-
-	if(!x->layouts) {
+	
+	if(!x->layouts){
 		VulkanError("given descriptor set has a null layouts array. At least a single layout is required.");
 		return;
 	}
-
+	
 	auto layouts = array_from(x->layouts);
 	auto layouts_out = array<VkDescriptorSetLayout>::create_with_count(layouts.count(), temp_allocator);
 	
-	forI(layouts.count()) {
+	forI(layouts.count()){
 		layouts_out[i] = get_handle(layouts[i]);
 	}
-
+	
 	VkDescriptorSetAllocateInfo info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 	info.descriptorPool = vk_descriptor_pool;
 	info.pSetLayouts = layouts_out.ptr;
 	info.descriptorSetCount = 1;
-
+	
 	auto result = vkAllocateDescriptorSets(vk_device, &info, &get_handle(x));
 	VulkanAssertVk(result, "failed to allocate descriptor set.");
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)get_handle(x), (char*)x->debug_name.str);
 }
 
 void 
-graphics_descriptor_set_destroy(GraphicsDescriptorSet* x) {
+graphics_descriptor_set_destroy(GraphicsDescriptorSet* x){DPZoneScoped;
 	VulkanAssert(x, "passed a null GraphicsDescriptorSet pointer.");
 	VulkanInfo("destroying descriptor set '", x->debug_name, "'.");
 	vkFreeDescriptorSets(vk_device, vk_descriptor_pool, 1, &get_handle(x));
@@ -2394,12 +2395,12 @@ graphics_descriptor_set_destroy(GraphicsDescriptorSet* x) {
 }
 
 void 
-graphics_descriptor_set_write(GraphicsDescriptorSet* x) {
+graphics_descriptor_set_write(GraphicsDescriptorSet* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsDescriptorSet pointer.");
 	VulkanAssert(x->descriptors, "passed null descriptors array.");
 	VulkanInfo("writing descriptor array to descriptor set '", x->debug_name, "'.");
 	
-	if(!get_handle(x)) {
+	if(!get_handle(x)){
 		VulkanError("given descriptor set has a null backend pointer, indicating deletion, corruption, or the descriptor set has not been updated yet (graphics_descriptor_set_update()).");
 		return;
 	}
@@ -2411,7 +2412,7 @@ graphics_descriptor_set_write(GraphicsDescriptorSet* x) {
 	auto buffer_infos = array<VkDescriptorBufferInfo>::create(descriptors.count(), deshi_temp_allocator);
 	auto image_infos = array<VkDescriptorImageInfo>::create(descriptors.count(), deshi_temp_allocator);
 	
-	forI(descriptors.count()) {
+	forI(descriptors.count()){
 		auto d = descriptors[i];
 		auto w = writes.ptr + i;
 		*w = {};
@@ -2419,8 +2420,8 @@ graphics_descriptor_set_write(GraphicsDescriptorSet* x) {
 		w->dstSet = get_handle(x);
 		w->dstBinding = i;
 		w->descriptorCount = 1;
-		switch(d.type) {
-			case GraphicsDescriptorType_Uniform_Buffer: {
+		switch(d.type){
+			case GraphicsDescriptorType_Uniform_Buffer:{
 				VulkanAssert(d.ubo.buffer, "descriptor ", i, " has a null buffer pointer.");
 				VulkanAssert(get_handle(d.ubo.buffer) && get_memory_handle(d.ubo.buffer), "one of the backend handles of descriptor ", i, " is null, indicating deletion, corruption, or the object was never updated.");
 				auto b = buffer_infos.push();
@@ -2430,7 +2431,7 @@ graphics_descriptor_set_write(GraphicsDescriptorSet* x) {
 				w->pBufferInfo = b;
 				w->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			} break;
-			case GraphicsDescriptorType_Combined_Image_Sampler: {
+			case GraphicsDescriptorType_Combined_Image_Sampler:{
 				VulkanAssert(d.image.view, "descriptor ", i, " has a null image view pointer.");
 				VulkanAssert(d.image.sampler, "descriptor ", i, " has a null sampler pointer.");
 				VulkanAssert(get_handle(d.image.sampler), "the given sampler for descriptor ", i, " has a null backend handle.");
@@ -2449,46 +2450,46 @@ graphics_descriptor_set_write(GraphicsDescriptorSet* x) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @shader
 
 
 void 
-graphics_shader_update(GraphicsShader* x) {
+graphics_shader_update(GraphicsShader* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsShader pointer.");
 	VulkanAssert(x->source, "need some source code to compile.");
 	VulkanInfo("updating shader '", x->debug_name, "'.");
-
+	
 	vkDestroyShaderModule(vk_device, get_handle(x), vk_allocator);
-
+	
 	VulkanNotice("compiling shader '", x->debug_name, "'.");
-
+	
 	Stopwatch watch = start_stopwatch();
-
+	
 	shaderc_shader_kind sk = {};
-	switch(x->shader_stage) {
+	switch(x->shader_stage){
 		case GraphicsShaderStage_Vertex:   sk = shaderc_vertex_shader; break;
 		case GraphicsShaderStage_Geometry: sk = shaderc_geometry_shader; break;
 		case GraphicsShaderStage_Fragment: sk = shaderc_fragment_shader; break;
 		case GraphicsShaderStage_Compute:  sk = shaderc_compute_shader; break;
-		default: {
+		default:{
 			VulkanError("unrecognized GraphicsShaderStage assigned to shader '", x->debug_name, "': ", (u32)x->shader_stage);
 			return;
-		} break;
+		}break;
 	}
-
+	
 	shaderc_compilation_result_t compiled = shaderc_compile_into_spv(vk_shader_compiler, (char*)x->source.str, x->source.count, sk, (char*)x->debug_name.str, "main", vk_shader_compiler_options);
 	VulkanAssert(compiled, "shaderc returned a null result.");
 	
 	VulkanNotice("finished compiling '", x->debug_name, "' in ", peek_stopwatch(watch), "ms.");
-
-	defer { shaderc_result_release(compiled); };
-
-	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success) {
+	
+	defer{ shaderc_result_release(compiled); };
+	
+	if(shaderc_result_get_compilation_status(compiled) != shaderc_compilation_status_success){
 		VulkanError("encountered compilation errors: \n", shaderc_result_get_error_message(compiled));
 		return;
 	}
-
+	
 	VkShaderModuleCreateInfo info{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
 	info.codeSize = shaderc_result_get_length(compiled);
 	info.pCode = (u32*)shaderc_result_get_bytes(compiled);
@@ -2498,7 +2499,7 @@ graphics_shader_update(GraphicsShader* x) {
 }
 
 void 
-graphics_shader_destroy(GraphicsShader* x) {
+graphics_shader_destroy(GraphicsShader* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsShader pointer.");
 	
 	vkDestroyShaderModule(vk_device, get_handle(x), vk_allocator);
@@ -2506,32 +2507,32 @@ graphics_shader_destroy(GraphicsShader* x) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @pipeline
 
 
 void 
-graphics_pipeline_layout_update(GraphicsPipelineLayout* x) {
+graphics_pipeline_layout_update(GraphicsPipelineLayout* x){DPZoneScoped;
 	VulkanAssert(x, "passed a null GraphicsPipelineLayout pointer.");
 	VulkanInfo("updating pipeline layout '", x->debug_name, "'.");
-
+	
 	vkDestroyPipelineLayout(vk_device, get_handle(x), vk_allocator);
 	
 	auto layouts = array_from(x->descriptor_layouts);
 	auto constants = array_from(x->push_constants);
 	
 	auto layouts_out = array<VkDescriptorSetLayout>::create_with_count(layouts.count(), temp_allocator);
-	forI(layouts.count()) {
+	forI(layouts.count()){
 		layouts_out[i] = get_handle(layouts[i]);
 	}
-
+	
 	auto ranges = array<VkPushConstantRange>::create_with_count(constants.count(), temp_allocator);
-	forI(constants.count()) {
+	forI(constants.count()){
 		ranges[i].size = x->push_constants[i].size;
 		ranges[i].offset = x->push_constants[i].offset;
 		ranges[i].stageFlags = graphics_shader_stage_to_vulkan(x->push_constants[i].shader_stages);
 	}
-
+	
 	VkPipelineLayoutCreateInfo info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 	info.        setLayoutCount = layouts_out.count();
 	info.           pSetLayouts = layouts_out.ptr;
@@ -2543,7 +2544,7 @@ graphics_pipeline_layout_update(GraphicsPipelineLayout* x) {
 }
 
 void 
-graphics_pipeline_layout_destroy(GraphicsPipelineLayout* x) {
+graphics_pipeline_layout_destroy(GraphicsPipelineLayout* x){DPZoneScoped;
 	VulkanAssert(x, "passed a null GraphicsPipelineLayout pointer.");
 	VulkanInfo("destroying pipeline layout '", x->debug_name, "'.");
 	vkDestroyPipelineLayout(vk_device, get_handle(x), vk_allocator);
@@ -2551,70 +2552,70 @@ graphics_pipeline_layout_destroy(GraphicsPipelineLayout* x) {
 }
 
 void 
-graphics_pipeline_update(GraphicsPipeline* x) {
+graphics_pipeline_update(GraphicsPipeline* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsPipeline pointer");
 	VulkanAssert(x->layout, "the given pipeline has a null layout pointer. All pipelines must specify a GraphicsPipelineLayout.");
 	VulkanAssert(get_handle(x->layout), "the given pipeline has a layout but its backend handle is null. Did you call graphics_pipeline_layout_update() on it?");
 	VulkanInfo("updating pipeline '", x->debug_name, "'.");
-
-	if(!x->vertex_shader) {
+	
+	if(!x->vertex_shader){
 		VulkanError("vertex shader pointer is null. A pipeline is required to at least specify a vertex shader.");
 		return;
 	}
-
+	
 	auto shader_stages = array<VkPipelineShaderStageCreateInfo>::create(deshi_temp_allocator);
-
-	if(!get_handle(x->vertex_shader)) {
+	
+	if(!get_handle(x->vertex_shader)){
 		VulkanError("backend handle of vertex shader '", x->vertex_shader->debug_name, "' is null, which indicates deletion, corruption, or the shader has not been updated yet.");
 		return;
 	}
-
+	
 	auto stage = shader_stages.push();
 	stage->sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO; 
 	stage->stage  = VK_SHADER_STAGE_VERTEX_BIT;
 	stage->pName  = "main";
 	stage->module = get_handle(x->vertex_shader);
-
-	if(x->geometry_shader) {
-		if(!get_handle(x->geometry_shader)) {
+	
+	if(x->geometry_shader){
+		if(!get_handle(x->geometry_shader)){
 			VulkanError("backend handle of geometry shader '", x->geometry_shader->debug_name, "' is null, which indicates deletion, corruption, or the shader has not been updated yet.");
 			return;
 		}
-
+		
 		stage = shader_stages.push();
 		stage->sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO; 
 		stage->stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
 		stage->pName  = "main";
 		stage->module = get_handle(x->geometry_shader);
 	}
-
-	if(x->fragment_shader) {
-		if(!get_handle(x->fragment_shader)) {
+	
+	if(x->fragment_shader){
+		if(!get_handle(x->fragment_shader)){
 			VulkanError("backend handle of fragment shader '", x->fragment_shader->debug_name, "' is null, which indicates deletion, corruption, or the shader has not been updated yet.");
 			return;
 		}
-
+		
 		stage = shader_stages.push();
 		stage->sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO; 
 		stage->stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
 		stage->pName  = "main";
 		stage->module = get_handle(x->fragment_shader);
 	}
-
+	
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
 	input_assembly_state.primitiveRestartEnable = VK_FALSE;
-	switch(x->polygon_mode) {
+	switch(x->polygon_mode){
 		case GraphicsPolygonMode_Point: input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; break;
 		case GraphicsPolygonMode_Fill:  input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; break;
 		case GraphicsPolygonMode_Line:  input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST; break;
 	}
-
+	
 	VkPipelineViewportStateCreateInfo viewport_state{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
 	viewport_state.viewportCount = 1;
 	viewport_state.   pViewports = 0;
 	viewport_state. scissorCount = 1;
 	viewport_state.    pScissors = 0;
-
+	
 	VkPipelineRasterizationStateCreateInfo rasterization_state{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
 	rasterization_state.       depthClampEnable = VK_FALSE;
 	rasterization_state.rasterizerDiscardEnable = VK_FALSE;
@@ -2623,22 +2624,22 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	rasterization_state.   depthBiasSlopeFactor = x->depth_bias_slope;
 	rasterization_state.depthBiasConstantFactor = x->depth_bias_constant;
 	rasterization_state.              lineWidth = 1.f;
-	switch(x->polygon_mode) {
+	switch(x->polygon_mode){
 		case GraphicsPolygonMode_Point: rasterization_state.polygonMode = VK_POLYGON_MODE_POINT; break;
 		case GraphicsPolygonMode_Fill:  rasterization_state.polygonMode = VK_POLYGON_MODE_FILL; break;
 		case GraphicsPolygonMode_Line:  rasterization_state.polygonMode = VK_POLYGON_MODE_LINE; break;
 	}
-	switch(x->culling) {
+	switch(x->culling){
 		case GraphicsPipelineCulling_None:       rasterization_state.cullMode = VK_CULL_MODE_NONE; break;
 		case GraphicsPipelineCulling_Back:       rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT; break;
 		case GraphicsPipelineCulling_Front:      rasterization_state.cullMode = VK_CULL_MODE_FRONT_BIT; break;
 		case GraphicsPipelineCulling_Front_Back: rasterization_state.cullMode = VK_CULL_MODE_FRONT_AND_BACK; break;
 	}
-	switch(x->front_face) {
+	switch(x->front_face){
 		case GraphicsFrontFace_CW:  rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE; break;
 		case GraphicsFrontFace_CCW: rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; break;
 	}
-
+	
 	VkPipelineColorBlendAttachmentState    color_blend_attachment_state{};
 	color_blend_attachment_state.        blendEnable = (x->color_blend? VK_TRUE : VK_FALSE);
 	color_blend_attachment_state.srcColorBlendFactor = graphics_blend_factor_to_vulkan(x->color_src_blend_factor);
@@ -2648,7 +2649,7 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	color_blend_attachment_state.dstAlphaBlendFactor = graphics_blend_factor_to_vulkan(x->alpha_dst_blend_factor);	
 	color_blend_attachment_state.       alphaBlendOp = graphics_blend_op_to_vulkan(x->alpha_blend_op);
 	color_blend_attachment_state.     colorWriteMask = 0xf;
-
+	
 	VkPipelineColorBlendStateCreateInfo    color_blend_state{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
 	color_blend_state.    logicOpEnable = VK_FALSE;
 	color_blend_state.          logicOp = VK_LOGIC_OP_COPY;
@@ -2658,7 +2659,7 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	color_blend_state.blendConstants[1] = x->blend_constant.g/255.f;
 	color_blend_state.blendConstants[2] = x->blend_constant.b/255.f;
 	color_blend_state.blendConstants[3] = x->blend_constant.a/255.f;
-
+	
 	VkPipelineDepthStencilStateCreateInfo  depth_stencil_state{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
 	depth_stencil_state.      depthTestEnable = (x->depth_test? VK_TRUE : VK_FALSE);
 	depth_stencil_state.     depthWriteEnable = (x->depth_writes? VK_TRUE : VK_FALSE);
@@ -2670,7 +2671,7 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	depth_stencil_state.    stencilTestEnable = VK_FALSE;
 	depth_stencil_state.                front = {};
 	depth_stencil_state.       back.compareOp = VK_COMPARE_OP_ALWAYS;
-
+	
 	VkPipelineMultisampleStateCreateInfo   multisample_state{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
 	multisample_state.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
 	multisample_state. sampleShadingEnable  = VK_FALSE;
@@ -2678,13 +2679,13 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	multisample_state.         pSampleMask  = 0;
 	multisample_state.alphaToCoverageEnable = VK_FALSE;
 	multisample_state.     alphaToOneEnable = VK_FALSE;
-
+	
 	VkPipelineVertexInputStateCreateInfo   vertex_input_state{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-	if(!x->vertex_input_bindings) {
+	if(!x->vertex_input_bindings){
 		VulkanError("null vertex input bindings array. A pipeline is required to specify the vertex bindings used by the vertex shader.");
 		return;
 	}
-	if(!x->vertex_input_attributes) {
+	if(!x->vertex_input_attributes){
 		VulkanError("null vertex input attributes array. A pipeline is required to specify the attributes of the vertexes used in the vertex shader.");
 		return;
 	}
@@ -2692,12 +2693,12 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	auto vertex_input_attributes = array_from(x->vertex_input_attributes);
 	auto vertex_input_bindings_out = array<VkVertexInputBindingDescription>::create_with_count(vertex_input_bindings.count(), temp_allocator);
 	auto vertex_input_attributes_out = array<VkVertexInputAttributeDescription>::create_with_count(vertex_input_attributes.count(), temp_allocator);
-	forI(vertex_input_bindings.count()) {
+	forI(vertex_input_bindings.count()){
 		vertex_input_bindings_out[i].binding = vertex_input_bindings[i].binding;
 		vertex_input_bindings_out[i].stride = vertex_input_bindings[i].stride;
 		vertex_input_bindings_out[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	}
-	forI(vertex_input_attributes.count()) {
+	forI(vertex_input_attributes.count()){
 		vertex_input_attributes_out[i].binding = vertex_input_attributes[i].binding;
 		vertex_input_attributes_out[i].location = vertex_input_attributes[i].location;
 		vertex_input_attributes_out[i].offset = vertex_input_attributes[i].offset;
@@ -2707,7 +2708,7 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	vertex_input_state.vertexBindingDescriptionCount = vertex_input_bindings_out.count();
 	vertex_input_state.pVertexAttributeDescriptions = vertex_input_attributes_out.ptr;
 	vertex_input_state.vertexAttributeDescriptionCount = vertex_input_attributes_out.count();
-
+	
 	VkPipelineDynamicStateCreateInfo       dynamic_state{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
 	auto dynamic_states = array<VkDynamicState>::create(5, temp_allocator);
 	if(x->dynamic_scissor)        dynamic_states.push(VK_DYNAMIC_STATE_SCISSOR);
@@ -2735,12 +2736,12 @@ graphics_pipeline_update(GraphicsPipeline* x) {
 	
 	auto result = vkCreateGraphicsPipelines(vk_device, vk_pipeline_cache, 1, &info, vk_allocator, &get_handle(x));
 	VulkanAssertVk(result, "failed to create graphics pipeline.");
-
+	
 	vk_debug_set_object_name(vk_device, VK_OBJECT_TYPE_PIPELINE, (u64)get_handle(x), (char*)x->debug_name.str);
 }
 
 void 
-graphics_pipeline_destroy(GraphicsPipeline* x) {
+graphics_pipeline_destroy(GraphicsPipeline* x){DPZoneScoped;
 	VulkanAssert(x, "passed a null GraphicsPipeline pointer.");
 	VulkanInfo("destroying pipeline '", x->debug_name, "'.");
 	vkDestroyPipeline(vk_device, get_handle(x), vk_allocator);
@@ -2749,15 +2750,15 @@ graphics_pipeline_destroy(GraphicsPipeline* x) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @render_pass
 
 
 void 
-graphics_render_pass_update(GraphicsRenderPass* x) {
+graphics_render_pass_update(GraphicsRenderPass* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsRenderPass pointer.");
 	VulkanInfo("updating render pass '", x->debug_name, "'.");
-
+	
 	vkDestroyRenderPass(vk_device, get_handle(x), vk_allocator);
 	
 	VkSubpassDescription subpass{};
@@ -2771,7 +2772,7 @@ graphics_render_pass_update(GraphicsRenderPass* x) {
 	
 	u32 index = 0;
 	
-	if(x->use_color_attachment) {
+	if(x->use_color_attachment){
 		attachments[index].        format =	graphics_format_to_vulkan(x->color_attachment.format);
 		attachments[index].       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
 		attachments[index].        loadOp = graphics_load_op_to_vulkan(x->color_attachment.load_op);
@@ -2788,7 +2789,7 @@ graphics_render_pass_update(GraphicsRenderPass* x) {
 		index++;
 	}
 	
-	if(x->use_depth_attachment) {
+	if(x->use_depth_attachment){
 		attachments[index].        format = graphics_format_to_vulkan(x->depth_attachment.format);
 		attachments[index].       samples = VK_SAMPLE_COUNT_1_BIT; // TODO(sushi) msaa
 		attachments[index].        loadOp = graphics_load_op_to_vulkan(x->depth_attachment.load_op);
@@ -2836,7 +2837,7 @@ graphics_render_pass_update(GraphicsRenderPass* x) {
 }
 
 void 
-graphics_render_pass_destroy(GraphicsRenderPass* x) {
+graphics_render_pass_destroy(GraphicsRenderPass* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsRenderPass pointer");
 	VulkanInfo("destroying render pass '", x->debug_name, "'.");
 	vkDestroyRenderPass(vk_device, get_handle(x), vk_allocator);
@@ -2845,23 +2846,25 @@ graphics_render_pass_destroy(GraphicsRenderPass* x) {
 }
 
 GraphicsRenderPass* 
-graphics_render_pass_of_window_presentation_frames(Window* window) {
+graphics_render_pass_of_window_presentation_frames(Window* window){DPZoneScoped;
 	return ((WindowInfo*)window->render_info)->presentation_frames[0]->render_pass;
 }
 
 void 
-graphics_framebuffer_update(GraphicsFramebuffer* x) {
+graphics_framebuffer_update(GraphicsFramebuffer* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsFramebuffer pointer.");
 	VulkanAssert(x->render_pass, "null render pass pointer on framebuffer. All framebuffers require a render pass.");
 	VulkanInfo("updating framebuffer '", x->debug_name, "'.");
-
+	
 	auto attachments = array<VkImageView>::create(temp_allocator);
 	
-	if(x->render_pass->use_color_attachment)
+	if(x->render_pass->use_color_attachment){
 		attachments.push(get_handle(x->color_image_view));
+	}
 	
-	if(x->render_pass->use_depth_attachment) 
+	if(x->render_pass->use_depth_attachment){
 		attachments.push(get_handle(x->depth_image_view));
+	}
 	
 	VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
 	info.     renderPass = get_handle(x->render_pass);
@@ -2876,7 +2879,7 @@ graphics_framebuffer_update(GraphicsFramebuffer* x) {
 }
 
 void 
-graphics_framebuffer_destroy(GraphicsFramebuffer* x) {
+graphics_framebuffer_destroy(GraphicsFramebuffer* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsFramebuffer pointer");
 	VulkanInfo("destroying framebuffer '", x->debug_name, "'");
 	vkDestroyFramebuffer(vk_device, get_handle(x), vk_allocator);
@@ -2885,18 +2888,18 @@ graphics_framebuffer_destroy(GraphicsFramebuffer* x) {
 }
 
 GraphicsFramebuffer* 
-graphics_current_present_frame_of_window(Window* window) {
+graphics_current_present_frame_of_window(Window* window){DPZoneScoped;
 	auto w = (WindowInfo*)window->render_info;
 	return w->presentation_frames[w->frame_index];
 }
 
 void 
-graphics_command_buffer_update(GraphicsCommandBuffer* x) {
+graphics_command_buffer_update(GraphicsCommandBuffer* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsCommandBuffer pointer.");
 	VulkanInfo("updating command buffer '", x->debug_name, "'.");
-
+	
 	vkFreeCommandBuffers(vk_device, vk_command_pool, 1, &get_handle(x));
-
+	
 	VkCommandBufferAllocateInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
 	info.       commandPool = vk_command_pool;
 	info.             level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -2907,7 +2910,7 @@ graphics_command_buffer_update(GraphicsCommandBuffer* x) {
 }
 
 void 
-graphics_command_buffer_destroy(GraphicsCommandBuffer* x) {
+graphics_command_buffer_destroy(GraphicsCommandBuffer* x){DPZoneScoped;
 	VulkanAssert(x, "passed null GraphicsCommandBuffer pointer.");
 	VulkanInfo("destroying command buffer '", x->debug_name, "'.");
 	vkFreeCommandBuffers(vk_device, vk_command_pool, 1, &get_handle(x));
@@ -2916,18 +2919,17 @@ graphics_command_buffer_destroy(GraphicsCommandBuffer* x) {
 }
 
 GraphicsCommandBuffer* 
-graphics_command_buffer_of_window(Window* window) {
+graphics_command_buffer_of_window(Window* window){DPZoneScoped;
 	return ((WindowInfo*)window->render_info)->command_buffer;
 }
 
 
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// @misc
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @misc
 
 
 GraphicsFormat 
-graphics_format_of_presentation_frames(Window* window) {
+graphics_format_of_presentation_frames(Window* window){DPZoneScoped;
 	return vulkan_format_to_graphics(((WindowInfo*)window->render_info)->surface_format.format);
 }
 

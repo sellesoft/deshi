@@ -5,7 +5,7 @@ RenderGlobal __deshi__g_scene;
 RenderGlobal* g_scene = &__deshi__g_scene;
 
 void 
-render_init(){
+render_init(){DPZoneScoped;
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
 	memory_pool_init(g_scene->pools.voxel_chunks, 8);
@@ -32,7 +32,7 @@ render_init(){
 }
 
 void
-render_update(){
+render_update(){DPZoneScoped;
 	RenderAssert(g_scene->active.window, "need a window to render to.");
 	RenderAssert(g_scene->active.camera, "need a camera to render from.");
 	
@@ -121,12 +121,12 @@ render_update(){
 }
 
 void
-render_set_active_window(Window* window){
+render_set_active_window(Window* window){DPZoneScoped;
 	g_scene->active.window = window;
 }
 
 void
-render_set_active_camera(Camera* camera){
+render_set_active_camera(Camera* camera){DPZoneScoped;
 	g_scene->active.camera = camera;
 }
 
@@ -136,13 +136,13 @@ render_set_active_camera(Camera* camera){
 
 
 Camera*
-render_camera_create(){
+render_camera_create(){DPZoneScoped;
 	auto out = memory_pool_push(g_scene->pools.camera);
 	return out;
 }
 
 void
-render_camera_update_view(Camera* camera){
+render_camera_update_view(Camera* camera){DPZoneScoped;
 	RenderAssert(camera, "passed null Camera pointer.");
 	camera->right = vec3::UP.cross(camera->forward).normalized();
 	camera->up = camera->forward.cross(camera->right).normalized();
@@ -150,7 +150,7 @@ render_camera_update_view(Camera* camera){
 }
 
 void
-render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z){
+render_camera_update_perspective_projection(Camera* camera, u32 width, u32 height, f32 fov, f32 near_z, f32 far_z){DPZoneScoped;
 	RenderAssert(camera, "passed null Camera pointer.");
 	camera->proj = Math::PerspectiveProjectionMatrix(width, height, fov, near_z, far_z);
 #if DESHI_VULKAN
@@ -159,7 +159,7 @@ render_camera_update_perspective_projection(Camera* camera, u32 width, u32 heigh
 }
 
 void
-render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left, f32 top, f32 bottom, f32 far, f32 near_){
+render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left, f32 top, f32 bottom, f32 far, f32 near_){DPZoneScoped;
 	RenderAssert(camera, "passed null Camera pointer.");
 	f32 A =  2 / (right - left);
 	f32 B =  2 / (top - bottom);
@@ -174,12 +174,12 @@ render_camera_update_orthographic_projection(Camera* camera, f32 right, f32 left
 }
 
 void
-render_camera_destroy(Camera* camera){
+render_camera_destroy(Camera* camera){DPZoneScoped;
 	memory_pool_delete(g_scene->pools.camera, camera);
 }
 
 void
-render_camera_draw_frustrum(Camera* camera){
+render_camera_draw_frustrum(Camera* camera){DPZoneScoped;
 	// TODO(sushi) implement by transforming 4 points out based on the proj and view matrices
 	NotImplemented;
 }
@@ -190,7 +190,7 @@ render_camera_draw_frustrum(Camera* camera){
 
 
 void 
-render_draw_model(Model* model, mat4* transform){
+render_draw_model(Model* model, mat4* transform){DPZoneScoped;
 	RenderAssert(model, "passed null Model pointer.");
 	auto cmd = array_push(g_scene->model_draw_commands);
 	cmd->model = model;
@@ -204,7 +204,7 @@ render_draw_model(Model* model, mat4* transform){
 
 
 void
-render_temp_init(Window* window, u32 v){
+render_temp_init(Window* window, u32 v){DPZoneScoped;
 	if(v > MAX_U32/3){
 		RenderError("the given vertex count (", v, ") is too large to allow 3*vertex_count indexes. The max amount of supported vertexes is ", MAX_U32 / 3);
 		return;
@@ -321,7 +321,7 @@ render_temp_init(Window* window, u32 v){
 }
 
 void 
-render_temp_clear(){
+render_temp_clear(){DPZoneScoped;
 	g_scene->temp.wireframe.vertex_count = 0;
 	g_scene->temp.wireframe.index_count = 0;
 	g_scene->temp.filled.vertex_count = 0;
@@ -329,24 +329,24 @@ render_temp_clear(){
 }
 
 void 
-render_temp_update_camera(vec3 position, vec3 target){
+render_temp_update_camera(vec3 position, vec3 target){DPZoneScoped;
 	g_scene->temp.camera_ubo.view = Math::LookAtMatrix(position, target).Inverse();
 	CopyMemory(graphics_buffer_mapped_data(g_scene->temp.camera_buffer), &g_scene->temp.camera_ubo.view, sizeof(mat4));
 }
 
 void
-render_temp_set_camera_projection(mat4 proj){
+render_temp_set_camera_projection(mat4 proj){DPZoneScoped;
 	g_scene->temp.camera_ubo.proj = proj;
 	CopyMemory((u8*)graphics_buffer_mapped_data(g_scene->temp.camera_buffer) + sizeof(mat4), &g_scene->temp.camera_ubo.proj, sizeof(mat4));
 }
 
 void 
-render_temp_line(vec3 start, vec3 end, color c){
+render_temp_line(vec3 start, vec3 end, color c){DPZoneScoped;
 	render_temp_line_gradient(start, end, c, c);
 }
 
 void
-render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_color){
+render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_color){DPZoneScoped;
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.vertex_buffer) + g_scene->temp.wireframe.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.index_buffer) + g_scene->temp.wireframe.index_count;
 	
@@ -362,7 +362,7 @@ render_temp_line_gradient(vec3 start, vec3 end, color start_color, color end_col
 }
 
 void 
-render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c){
+render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c){DPZoneScoped;
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.vertex_buffer) + g_scene->temp.wireframe.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.wireframe.index_buffer) + g_scene->temp.wireframe.index_count;
 	
@@ -380,7 +380,7 @@ render_temp_triangle(vec3 p0, vec3 p1, vec3 p2, color c){
 }
 
 void 
-render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c){
+render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c){DPZoneScoped;
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.filled.vertex_buffer) + g_scene->temp.filled.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.filled.index_buffer) + g_scene->temp.filled.index_count;
 	
@@ -398,7 +398,7 @@ render_temp_triangle_filled(vec3 p0, vec3 p1, vec3 p2, color c){
 }
 
 void 
-render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){
+render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){DPZoneScoped;
 	render_temp_line(p0, p1, c);
 	render_temp_line(p1, p2, c);
 	render_temp_line(p2, p3, c);
@@ -406,13 +406,13 @@ render_temp_quad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){
 }
 
 void 
-render_temp_quad_filled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){
+render_temp_quad_filled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color c){DPZoneScoped;
 	render_temp_triangle_filled(p0, p1, p2, c);
 	render_temp_triangle_filled(p0, p2, p3, c);
 }
 
 void 
-render_temp_poly(vec3* points, color c){
+render_temp_poly(vec3* points, color c){DPZoneScoped;
 	auto p = array_from(points);
 	if(p.count() < 3){
 		LogE("render", "render_temp_poly(): points array only contains ", p.count(), " points, but 3 are required for this function.");
@@ -426,7 +426,7 @@ render_temp_poly(vec3* points, color c){
 }
 
 void 
-render_temp_poly_filled(vec3* points, color c){
+render_temp_poly_filled(vec3* points, color c){DPZoneScoped;
 	auto p = array_from(points);
 	if(p.count() < 3){
 		LogE("render", "render_temp_poly_filled(): points array only contains ", p.count(), " points, but 3 are required for this function.");
@@ -440,7 +440,7 @@ render_temp_poly_filled(vec3* points, color c){
 }
 
 void 
-render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c){
+render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c){DPZoneScoped;
 	mat4 transform = mat4::TransformationMatrix(pos, rot, vec3::ONE);
 	f32 subdivisions = f32(subdivisions_int);
 	forI(subdivisions_int){
@@ -457,7 +457,7 @@ render_temp_circle(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c
 }
 
 void 
-render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c){
+render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, color c){DPZoneScoped;
 	mat4 transform = mat4::TransformationMatrix(pos, rot, vec3::ONE);
 	f32 subdivisions = f32(subdivisions_int);
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.filled.vertex_buffer) + g_scene->temp.filled.vertex_count;
@@ -484,7 +484,7 @@ render_temp_circle_filled(vec3 pos, vec3 rot, f32 radius, u32 subdivisions_int, 
 }
 
 void 
-render_temp_box(mat4 transform, color c){
+render_temp_box(mat4 transform, color c){DPZoneScoped;
 	// really awful idk
 	vec3 v[8] = {
 		(Vec4( 0.5,  0.5,  0.5, 1)*transform).toVec3(),
@@ -511,7 +511,7 @@ render_temp_box(mat4 transform, color c){
 	render_temp_line(v[3], v[7], c);
 }
 
-void render_temp_box_filled(mat4 transform, color c){
+void render_temp_box_filled(mat4 transform, color c){DPZoneScoped;
 	auto vp = (RenderTempVertex*)graphics_buffer_mapped_data(g_scene->temp.filled.vertex_buffer) + g_scene->temp.filled.vertex_count;
 	auto ip = (RenderTempIndex*)graphics_buffer_mapped_data(g_scene->temp.filled.index_buffer) + g_scene->temp.filled.index_count;
 	
@@ -544,7 +544,7 @@ void render_temp_box_filled(mat4 transform, color c){
 }
 
 void 
-render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
+render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c){DPZoneScoped;
 	render_temp_circle(pos, Vec3( 0, 0, 0), radius, segments, c);
 	render_temp_circle(pos, Vec3( 0,90, 0), radius, segments, c);
 	render_temp_circle(pos, Vec3(90, 0, 0), radius, segments, c);
@@ -577,12 +577,12 @@ render_temp_sphere(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
 }
 
 void 
-render_temp_sphere_filled(vec3 pos, f32 radius, u32 segments, u32 rings, color c){
+render_temp_sphere_filled(vec3 pos, f32 radius, u32 segments, u32 rings, color c){DPZoneScoped;
 	NotImplemented;
 }
 
 void 
-render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c){
+render_temp_frustrum(vec3 position, vec3 target, f32 aspect_ratio, f32 fov, f32 near_z, f32 far_z, color c){DPZoneScoped;
 	f32 y = tanf(Radians(fov) / 2.f);
 	f32 x = y * aspect_ratio;
 	f32 near_x = x * near_z;
@@ -678,7 +678,7 @@ local vec3 render_voxel_face_normals[6] = {
 #define render_voxel_behind(dims,linear) ((linear) - ((dims)*(dims)))
 
 void
-render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
+render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){DPZoneScoped;
 	render_voxel_types = types;
 	render_voxel_types_count = count;
 	memory_pool_init(render_voxel_chunk_pool, 128);
@@ -688,7 +688,7 @@ render_voxel_init(RenderVoxelType* types, u64 count, u32 voxel_size){
 
 
 void
-render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){
+render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel* voxel, MeshVertex* vertex_array, u64* vertex_count, MeshIndex* index_array, u64* index_count){DPZoneScoped;
 	vec3 voxel_position = chunk->position + Vec3(voxel->x, voxel->y, voxel->z);
 	mat4 transform = mat4::TransformationMatrix(voxel_position, chunk->rotation, vec3_ONE());
 	
@@ -730,7 +730,7 @@ render_voxel_make_face_mesh(int direction, RenderVoxelChunk* chunk, RenderVoxel*
 
 
 RenderVoxelChunk*
-render_voxel_chunk_create(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){
+render_voxel_chunk_create(vec3 position, vec3 rotation, u32 dimensions, RenderVoxel* voxels, u64 voxels_count){DPZoneScoped;
 	Assert(dimensions != 0, "Dimensions can not be zero!");
 	Assert(voxels != 0 && voxels_count != 0, "Don't call this with an invalid voxels array!");
 	
@@ -771,18 +771,24 @@ render_voxel_chunk_create(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 	forI(dimensions_cubed){
 		if(chunk->voxels[i] == 0) continue; //skip empty voxels
 		
-		if((chunk->voxels[i]->x == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_x] == 0))
+		if((chunk->voxels[i]->x == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_x] == 0)){
 			render_voxel_make_face_mesh(render_voxel_face_posx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->x == 0)                    || (chunk->voxels[i - dimensions_stride_x] == 0))
+		}
+		if((chunk->voxels[i]->x == 0)                    || (chunk->voxels[i - dimensions_stride_x] == 0)){
 			render_voxel_make_face_mesh(render_voxel_face_negx, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_y] == 0))
+		}
+		if((chunk->voxels[i]->y == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_y] == 0)){
 			render_voxel_make_face_mesh(render_voxel_face_posy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->y == 0)                    || (chunk->voxels[i - dimensions_stride_y] == 0))
+		}
+		if((chunk->voxels[i]->y == 0)                    || (chunk->voxels[i - dimensions_stride_y] == 0)){
 			render_voxel_make_face_mesh(render_voxel_face_negy, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_z] == 0))
+		}
+		if((chunk->voxels[i]->z == dimensions_minus_one) || (chunk->voxels[i + dimensions_stride_z] == 0)){
 			render_voxel_make_face_mesh(render_voxel_face_posz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
-		if((chunk->voxels[i]->z == 0)                    || (chunk->voxels[i - dimensions_stride_z] == 0))
+		}
+		if((chunk->voxels[i]->z == 0)                    || (chunk->voxels[i - dimensions_stride_z] == 0)){
 			render_voxel_make_face_mesh(render_voxel_face_negz, chunk, chunk->voxels[i], vertex_array, &chunk->vertex_count, index_array, &chunk->index_count);
+		}
 	}
 	
 	//shift the index_array to the end of the vertex_array
@@ -807,7 +813,7 @@ render_voxel_chunk_create(vec3 position, vec3 rotation, u32 dimensions, RenderVo
 
 
 void
-render_voxel_delete_chunk(RenderVoxelChunk* chunk){
+render_voxel_delete_chunk(RenderVoxelChunk* chunk){DPZoneScoped;
 	//dealloc GPU buffers
 	graphics_buffer_destroy(chunk->vertex_buffer);
 	graphics_buffer_destroy(chunk->index_buffer);

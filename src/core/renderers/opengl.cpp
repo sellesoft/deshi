@@ -2786,4 +2786,3 @@ GraphicsCommandBuffer*
 graphics_command_buffer_of_window(Window* window){DPZoneScoped;
 	return ((WindowRenderInfoGl*)window->render_info)->command_buffer;
 }
-

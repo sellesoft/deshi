@@ -4,44 +4,44 @@ GraphicsGlobal* g_graphics = &__deshi_graphics;
 #define GRAPHICS_INITIAL_COMMAND_BUFFER_SIZE 32
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @buffer
 
 
 u64
-graphics_buffer_device_size(GraphicsBuffer* x) {
+graphics_buffer_device_size(GraphicsBuffer* x){
 	return GRAPHICS_INTERNAL(x).size;
 }
 
 void*
-graphics_buffer_mapped_data(GraphicsBuffer* x) {
+graphics_buffer_mapped_data(GraphicsBuffer* x){
 	return GRAPHICS_INTERNAL(x).mapped.data;
 }
 
 u64
-graphics_buffer_mapped_size(GraphicsBuffer* x) {
+graphics_buffer_mapped_size(GraphicsBuffer* x){
 	return GRAPHICS_INTERNAL(x).mapped.size;
 }
 
 u64
-graphics_buffer_mapped_offset(GraphicsBuffer* x) {
+graphics_buffer_mapped_offset(GraphicsBuffer* x){
 	return GRAPHICS_INTERNAL(x).mapped.offset;
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @pipeline
 
 
 // Creates a new pipeline with the same settings as the one given.
 GraphicsPipeline* 
-graphics_pipeline_duplicate(GraphicsPipeline* x) {
+graphics_pipeline_duplicate(GraphicsPipeline* x){DPZoneScoped;
 	auto out = graphics_pipeline_allocate();
 	CopyMemory(out, x, sizeof(GraphicsPipeline));
-	if(out->vertex_input_bindings) {
+	if(out->vertex_input_bindings){
 		out->vertex_input_bindings = array_copy(out->vertex_input_bindings).ptr;
 	}
-	if(out->vertex_input_attributes) {
+	if(out->vertex_input_attributes){
 		out->vertex_input_attributes = array_copy(out->vertex_input_attributes).ptr;
 	}
 	GRAPHICS_INTERNAL(out).handle = 0;
@@ -49,12 +49,12 @@ graphics_pipeline_duplicate(GraphicsPipeline* x) {
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @commands
 
 
 void 
-graphics_cmd_begin_render_pass(Window* window, GraphicsRenderPass* render_pass, GraphicsFramebuffer* frame) {
+graphics_cmd_begin_render_pass(Window* window, GraphicsRenderPass* render_pass, GraphicsFramebuffer* frame){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Begin_Render_Pass;
 	c->begin_render_pass.pass = render_pass;
@@ -62,34 +62,34 @@ graphics_cmd_begin_render_pass(Window* window, GraphicsRenderPass* render_pass, 
 }
 
 void 
-graphics_cmd_end_render_pass(Window* window) {
+graphics_cmd_end_render_pass(Window* window){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_End_Render_Pass;
 }
 
 void 
-graphics_cmd_bind_pipeline(Window* window, GraphicsPipeline* pipeline) {
+graphics_cmd_bind_pipeline(Window* window, GraphicsPipeline* pipeline){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Bind_Pipeline;
 	c->bind_pipeline.handle = pipeline;
 }
 
 void 
-graphics_cmd_bind_vertex_buffer(Window* window, GraphicsBuffer* buffer) {
+graphics_cmd_bind_vertex_buffer(Window* window, GraphicsBuffer* buffer){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Bind_Vertex_Buffer;
 	c->bind_vertex_buffer.handle = buffer;
 }
 
 void 
-graphics_cmd_bind_index_buffer(Window* window, GraphicsBuffer* buffer) {
+graphics_cmd_bind_index_buffer(Window* window, GraphicsBuffer* buffer){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Bind_Index_Buffer;
 	c->bind_index_buffer.handle = buffer;
 }
 
 void 
-graphics_cmd_bind_descriptor_set(Window* window, u32 set_index, GraphicsDescriptorSet* descriptor_set) {
+graphics_cmd_bind_descriptor_set(Window* window, u32 set_index, GraphicsDescriptorSet* descriptor_set){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Bind_Descriptor_Set;
 	c->bind_descriptor_set.handle = descriptor_set;
@@ -97,7 +97,7 @@ graphics_cmd_bind_descriptor_set(Window* window, u32 set_index, GraphicsDescript
 }
 
 void 
-graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, void* data, u32 offset, u32 size) {
+graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, void* data, u32 offset, u32 size){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Push_Constant;
 	c->push_constant.shader_stages = shader_stages;
@@ -107,7 +107,7 @@ graphics_cmd_push_constant(Window* window, GraphicsShaderStage shader_stages, vo
 }
 
 void 
-graphics_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset) {
+graphics_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32 vertex_offset){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Draw_Indexed;
 	c->draw_indexed.index_count = index_count;
@@ -116,7 +116,7 @@ graphics_cmd_draw_indexed(Window* window, u32 index_count, u32 index_offset, u32
 }
 
 void 
-graphics_cmd_set_viewport(Window* window, vec2 offset, vec2 extent) {
+graphics_cmd_set_viewport(Window* window, vec2 offset, vec2 extent){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Set_Viewport;
 	c->set_viewport.offset = offset;
@@ -124,7 +124,7 @@ graphics_cmd_set_viewport(Window* window, vec2 offset, vec2 extent) {
 }
 
 void 
-graphics_cmd_set_scissor(Window* window, vec2 offset, vec2 extent) {
+graphics_cmd_set_scissor(Window* window, vec2 offset, vec2 extent){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Set_Scissor;
 	c->set_scissor.offset = offset;
@@ -132,7 +132,7 @@ graphics_cmd_set_scissor(Window* window, vec2 offset, vec2 extent) {
 }
 
 void
-graphics_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) {
+graphics_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope){DPZoneScoped;
 	auto c = array_push(graphics_command_buffer_of_window(window)->commands);
 	c->type = GraphicsCommandType_Set_Depth_Bias;
 	c->set_depth_bias.constant = constant;
@@ -141,72 +141,72 @@ graphics_cmd_set_depth_bias(Window* window, f32 constant, f32 clamp, f32 slope) 
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @allocate
 
 
 GraphicsImage*
-graphics_image_allocate() {
+graphics_image_allocate(){
 	return memory_pool_push(g_graphics->pools.images);
 }
 
 GraphicsImageView* 
-graphics_image_view_allocate() {
+graphics_image_view_allocate(){
 	return memory_pool_push(g_graphics->pools.image_views);
 }
 
 GraphicsSampler* 
-graphics_sampler_allocate() {
+graphics_sampler_allocate(){
 	return memory_pool_push(g_graphics->pools.samplers);
 }
 
 GraphicsDescriptorSet* 
-graphics_descriptor_set_allocate() {
+graphics_descriptor_set_allocate(){
 	return memory_pool_push(g_graphics->pools.descriptor_sets);
 }
 
 GraphicsDescriptorSetLayout* 
-graphics_descriptor_set_layout_allocate() {
+graphics_descriptor_set_layout_allocate(){
 	return memory_pool_push(g_graphics->pools.descriptor_set_layouts);
 }
 
 GraphicsShader* 
-graphics_shader_allocate() {
+graphics_shader_allocate(){
 	return memory_pool_push(g_graphics->pools.shaders);
 }
 
 GraphicsPipelineLayout* 
-graphics_pipeline_layout_allocate() {
+graphics_pipeline_layout_allocate(){
 	return memory_pool_push(g_graphics->pools.pipeline_layouts);
 }
 
 GraphicsPipeline* 
-graphics_pipeline_allocate() {
+graphics_pipeline_allocate(){
 	return memory_pool_push(g_graphics->pools.pipelines);
 }
 
 GraphicsRenderPass* 
-graphics_render_pass_allocate() {
+graphics_render_pass_allocate(){
 	return memory_pool_push(g_graphics->pools.render_passes);
 }
 
 GraphicsFramebuffer* 
-graphics_framebuffer_allocate() {
+graphics_framebuffer_allocate(){
 	return memory_pool_push(g_graphics->pools.framebuffers);
 }
 
 GraphicsCommandBuffer* 
-graphics_command_buffer_allocate() {
+graphics_command_buffer_allocate(){
 	return memory_pool_push(g_graphics->pools.command_buffers);
 }
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//-////////////////////////////////////////////////////////////////////////////////////////////////
 // @shared_internals
 
 
 void
-graphics_init_shared(Window* window){
+graphics_init_shared(Window* window){DPZoneScoped;
 	//// init settings ////
 	
 	g_graphics->debugging = true;
@@ -232,4 +232,3 @@ graphics_init_shared(Window* window){
 	memory_pool_init(g_graphics->pools.framebuffers, 8);
 	memory_pool_init(g_graphics->pools.shaders, 8);
 }
-
