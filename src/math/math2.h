@@ -7203,7 +7203,7 @@ max(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#ifdef __cplusplus 
 
 #ifdef __cplusplus
 inline vec4i
@@ -8062,7 +8062,7 @@ vec3_to_vec4i(vec3 a){DESHI_MATH_FUNCTION_START;
 #ifdef __cplusplus
 inline vec4i
 vec3::to_vec4i()const{DESHI_MATH_FUNCTION_START;
-	return Vec4i((s32)this->x, (s32)this->y, 0, 0);
+	return Vec4i((s32)this->x, (s32)this->y, (s32)this->z, 0);
 }
 #endif //#ifdef __cplusplus
 
@@ -20098,20 +20098,343 @@ void TEST_deshi_math(){
 	
 	//// vec_conversions ////
 	{
+		vec2  v2f32;
+		vec2i v2s32;
+		vec3  v3f32;
+		vec3i v3s32;
+		vec4  v4f32;
+		vec4i v4s32;
 		
+		v2f32 = Vec2(1.0f,1.0f);
+		v2s32 = vec2_to_vec2i(v2f32);
+		v3f32 = vec2_to_vec3 (v2f32);
+		v3s32 = vec2_to_vec3i(v2f32);
+		v4f32 = vec2_to_vec4 (v2f32);
+		v4s32 = vec2_to_vec4i(v2f32);
+		ASSERT_F32_EQUAL(v2f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 1.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 1);
+		ASSERT_S32_EQUAL(v2s32.y, 1);
+		ASSERT_F32_EQUAL(v3f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 0.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 1);
+		ASSERT_S32_EQUAL(v3s32.y, 1);
+		ASSERT_S32_EQUAL(v3s32.z, 0);
+		ASSERT_F32_EQUAL(v4f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 0.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 1);
+		ASSERT_S32_EQUAL(v4s32.y, 1);
+		ASSERT_S32_EQUAL(v4s32.z, 0);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+		
+#ifdef __cplusplus
+		v2f32 = Vec2(2.0f,2.0f);
+		v2s32 = v2f32.to_vec2i();
+		v3f32 = v2f32.to_vec3();
+		v3s32 = v2f32.to_vec3i();
+		v4f32 = v2f32.to_vec4();
+		v4s32 = v2f32.to_vec4i();
+		ASSERT_F32_EQUAL(v2f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 2.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 2);
+		ASSERT_S32_EQUAL(v2s32.y, 2);
+		ASSERT_F32_EQUAL(v3f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 0.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 2);
+		ASSERT_S32_EQUAL(v3s32.y, 2);
+		ASSERT_S32_EQUAL(v3s32.z, 0);
+		ASSERT_F32_EQUAL(v4f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 0.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 2);
+		ASSERT_S32_EQUAL(v4s32.y, 2);
+		ASSERT_S32_EQUAL(v4s32.z, 0);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+#endif //#ifdef __cplusplus
+		
+		v2s32 = Vec2i(1,1);
+		v2f32 = vec2i_to_vec2 (v2s32);
+		v3f32 = vec2i_to_vec3 (v2s32);
+		v3s32 = vec2i_to_vec3i(v2s32);
+		v4f32 = vec2i_to_vec4 (v2s32);
+		v4s32 = vec2i_to_vec4i(v2s32);
+		ASSERT_F32_EQUAL(v2f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 1.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 1);
+		ASSERT_S32_EQUAL(v2s32.y, 1);
+		ASSERT_F32_EQUAL(v3f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 0.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 1);
+		ASSERT_S32_EQUAL(v3s32.y, 1);
+		ASSERT_S32_EQUAL(v3s32.z, 0);
+		ASSERT_F32_EQUAL(v4f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 0.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 1);
+		ASSERT_S32_EQUAL(v4s32.y, 1);
+		ASSERT_S32_EQUAL(v4s32.z, 0);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+		
+#ifdef __cplusplus
+		v2s32 = Vec2i(2,2);
+		v2f32 = v2s32.to_vec2();
+		v3f32 = v2s32.to_vec3();
+		v3s32 = v2s32.to_vec3i();
+		v4f32 = v2s32.to_vec4();
+		v4s32 = v2s32.to_vec4i();
+		ASSERT_F32_EQUAL(v2f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 2.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 2);
+		ASSERT_S32_EQUAL(v2s32.y, 2);
+		ASSERT_F32_EQUAL(v3f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 0.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 2);
+		ASSERT_S32_EQUAL(v3s32.y, 2);
+		ASSERT_S32_EQUAL(v3s32.z, 0);
+		ASSERT_F32_EQUAL(v4f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 0.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 2);
+		ASSERT_S32_EQUAL(v4s32.y, 2);
+		ASSERT_S32_EQUAL(v4s32.z, 0);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+#endif //#ifdef __cplusplus
+		
+		v3f32 = Vec3(1.0f,1.0f,1.0f);
+		v2f32 = vec3_to_vec2 (v3f32);
+		v2s32 = vec3_to_vec2i(v3f32);
+		v3s32 = vec3_to_vec3i(v3f32);
+		v4f32 = vec3_to_vec4 (v3f32);
+		v4s32 = vec3_to_vec4i(v3f32);
+		ASSERT_F32_EQUAL(v2f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 1.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 1);
+		ASSERT_S32_EQUAL(v2s32.y, 1);
+		ASSERT_F32_EQUAL(v3f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 1.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 1);
+		ASSERT_S32_EQUAL(v3s32.y, 1);
+		ASSERT_S32_EQUAL(v3s32.z, 1);
+		ASSERT_F32_EQUAL(v4f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 1);
+		ASSERT_S32_EQUAL(v4s32.y, 1);
+		ASSERT_S32_EQUAL(v4s32.z, 1);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+		
+#ifdef __cplusplus
+		v3f32 = Vec3(2.0f,2.0f,2.0f);
+		v2f32 = v3f32.to_vec2();
+		v2s32 = v3f32.to_vec2i();
+		v3s32 = v3f32.to_vec3i();
+		v4f32 = v3f32.to_vec4();
+		v4s32 = v3f32.to_vec4i();
+		ASSERT_F32_EQUAL(v2f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 2.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 2);
+		ASSERT_S32_EQUAL(v2s32.y, 2);
+		ASSERT_F32_EQUAL(v3f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 2.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 2);
+		ASSERT_S32_EQUAL(v3s32.y, 2);
+		ASSERT_S32_EQUAL(v3s32.z, 2);
+		ASSERT_F32_EQUAL(v4f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 2);
+		ASSERT_S32_EQUAL(v4s32.y, 2);
+		ASSERT_S32_EQUAL(v4s32.z, 2);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+#endif //#ifdef __cplusplus
+		
+		v3s32 = Vec3i(1,1,1);
+		v2f32 = vec3i_to_vec2 (v3s32);
+		v2s32 = vec3i_to_vec2i(v3s32);
+		v3f32 = vec3i_to_vec3 (v3s32);
+		v4f32 = vec3i_to_vec4 (v3s32);
+		v4s32 = vec3i_to_vec4i(v3s32);
+		ASSERT_F32_EQUAL(v2f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 1.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 1);
+		ASSERT_S32_EQUAL(v2s32.y, 1);
+		ASSERT_F32_EQUAL(v3f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 1.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 1);
+		ASSERT_S32_EQUAL(v3s32.y, 1);
+		ASSERT_S32_EQUAL(v3s32.z, 1);
+		ASSERT_F32_EQUAL(v4f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 1);
+		ASSERT_S32_EQUAL(v4s32.y, 1);
+		ASSERT_S32_EQUAL(v4s32.z, 1);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+		
+#ifdef __cplusplus
+		v3s32 = Vec3i(2,2,2);
+		v2f32 = v3s32.to_vec2();
+		v2s32 = v3s32.to_vec2i();
+		v3f32 = v3s32.to_vec3();
+		v4f32 = v3s32.to_vec4();
+		v4s32 = v3s32.to_vec4i();
+		ASSERT_F32_EQUAL(v2f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 2.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 2);
+		ASSERT_S32_EQUAL(v2s32.y, 2);
+		ASSERT_F32_EQUAL(v3f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 2.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 2);
+		ASSERT_S32_EQUAL(v3s32.y, 2);
+		ASSERT_S32_EQUAL(v3s32.z, 2);
+		ASSERT_F32_EQUAL(v4f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 0.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 2);
+		ASSERT_S32_EQUAL(v4s32.y, 2);
+		ASSERT_S32_EQUAL(v4s32.z, 2);
+		ASSERT_S32_EQUAL(v4s32.w, 0);
+#endif //#ifdef __cplusplus
+		
+		v4f32 = Vec4(1.0f,1.0f,1.0f,1.0f);
+		v2f32 = vec4_to_vec2 (v4f32);
+		v2s32 = vec4_to_vec2i(v4f32);
+		v3f32 = vec4_to_vec3 (v4f32);
+		v3s32 = vec4_to_vec3i(v4f32);
+		v4s32 = vec4_to_vec4i(v4f32);
+		ASSERT_F32_EQUAL(v2f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 1.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 1);
+		ASSERT_S32_EQUAL(v2s32.y, 1);
+		ASSERT_F32_EQUAL(v3f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 1.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 1);
+		ASSERT_S32_EQUAL(v3s32.y, 1);
+		ASSERT_S32_EQUAL(v3s32.z, 1);
+		ASSERT_F32_EQUAL(v4f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 1.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 1);
+		ASSERT_S32_EQUAL(v4s32.y, 1);
+		ASSERT_S32_EQUAL(v4s32.z, 1);
+		ASSERT_S32_EQUAL(v4s32.w, 1);
+		
+#ifdef __cplusplus
+		v4f32 = Vec4(2.0f,2.0f,2.0f,2.0f);
+		v2f32 = v4f32.to_vec2();
+		v2s32 = v4f32.to_vec2i();
+		v3f32 = v4f32.to_vec3();
+		v3s32 = v4f32.to_vec3i();
+		v4s32 = v4f32.to_vec4i();
+		ASSERT_F32_EQUAL(v2f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 2.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 2);
+		ASSERT_S32_EQUAL(v2s32.y, 2);
+		ASSERT_F32_EQUAL(v3f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 2.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 2);
+		ASSERT_S32_EQUAL(v3s32.y, 2);
+		ASSERT_S32_EQUAL(v3s32.z, 2);
+		ASSERT_F32_EQUAL(v4f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 2.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 2);
+		ASSERT_S32_EQUAL(v4s32.y, 2);
+		ASSERT_S32_EQUAL(v4s32.z, 2);
+		ASSERT_S32_EQUAL(v4s32.w, 2);
+#endif //#ifdef __cplusplus
+		
+		v4s32 = Vec4i(1,1,1,1);
+		v2f32 = vec4i_to_vec2 (v4s32);
+		v2s32 = vec4i_to_vec2i(v4s32);
+		v3f32 = vec4i_to_vec3 (v4s32);
+		v3s32 = vec4i_to_vec3i(v4s32);
+		v4f32 = vec4i_to_vec4 (v4s32);
+		ASSERT_F32_EQUAL(v2f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 1.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 1);
+		ASSERT_S32_EQUAL(v2s32.y, 1);
+		ASSERT_F32_EQUAL(v3f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 1.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 1);
+		ASSERT_S32_EQUAL(v3s32.y, 1);
+		ASSERT_S32_EQUAL(v3s32.z, 1);
+		ASSERT_F32_EQUAL(v4f32.x, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 1.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 1.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 1);
+		ASSERT_S32_EQUAL(v4s32.y, 1);
+		ASSERT_S32_EQUAL(v4s32.z, 1);
+		ASSERT_S32_EQUAL(v4s32.w, 1);
+		
+#ifdef __cplusplus
+		v4s32 = Vec4i(2,2,2,2);
+		v2f32 = v4s32.to_vec2();
+		v2s32 = v4s32.to_vec2i();
+		v3f32 = v4s32.to_vec3();
+		v3s32 = v4s32.to_vec3i();
+		v4f32 = v4s32.to_vec4();
+		ASSERT_F32_EQUAL(v2f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v2f32.y, 2.0f);
+		ASSERT_S32_EQUAL(v2s32.x, 2);
+		ASSERT_S32_EQUAL(v2s32.y, 2);
+		ASSERT_F32_EQUAL(v3f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v3f32.z, 2.0f);
+		ASSERT_S32_EQUAL(v3s32.x, 2);
+		ASSERT_S32_EQUAL(v3s32.y, 2);
+		ASSERT_S32_EQUAL(v3s32.z, 2);
+		ASSERT_F32_EQUAL(v4f32.x, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.y, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.z, 2.0f);
+		ASSERT_F32_EQUAL(v4f32.w, 2.0f);
+		ASSERT_S32_EQUAL(v4s32.x, 2);
+		ASSERT_S32_EQUAL(v4s32.y, 2);
+		ASSERT_S32_EQUAL(v4s32.z, 2);
+		ASSERT_S32_EQUAL(v4s32.w, 2);
+#endif //#ifdef __cplusplus
 	}
 	
 	
 	//// vec_hashing ////
+#ifndef DESHI_MATH_DISABLE_HASHING
+#ifdef __cplusplus
 	{
-		
+		//TODO test vec_hashing
 	}
+#endif //#ifdef __cplusplus
+#endif //#ifndef DESHI_MATH_DISABLE_HASHING
 	
 	
+#ifndef DESHI_MATH_DISABLE_TOSTRING
 	//// vec_tostring ////
 	{
-		
+		//TODO test vec_tostring
 	}
+#endif //#ifndef DESHI_MATH_DISABLE_TOSTRING
 	
 	
 	//// mat3 ////
@@ -20136,7 +20459,7 @@ void TEST_deshi_math(){
 #ifndef DESHI_MATH_DISABLE_HASHING
 #ifdef __cplusplus
 	{
-		
+		//TODO test mat_hashing
 	}
 #endif //#ifdef __cplusplus
 #endif //#ifndef DESHI_MATH_DISABLE_HASHING
@@ -20145,7 +20468,7 @@ void TEST_deshi_math(){
 	//// mat_tostring ////
 #ifndef DESHI_MATH_DISABLE_TOSTRING
 	{
-		
+		//TODO test mat_tostring
 	}
 #endif //#ifndef DESHI_MATH_DISABLE_TOSTRING
 	
