@@ -68,6 +68,14 @@ TODO:
 #  error "unhandled graphics backend"
 #endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 
+#if DESHI_VULKAN
+#  define DESHI_BAKED_SHADERS_VERTEX_INDEX "gl_VertexIndex"
+#elif DESHI_OPENGL //#if DESHI_VULKAN
+#  define DESHI_BAKED_SHADERS_VERTEX_INDEX "gl_VertexID"
+#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
+#  error "unhandled graphics backend"
+#endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
+
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @functions
