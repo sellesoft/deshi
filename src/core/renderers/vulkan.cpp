@@ -2681,35 +2681,31 @@ graphics_pipeline_update(GraphicsPipeline* x){DPZoneScoped;
 	multisample_state.     alphaToOneEnable = VK_FALSE;
 	
 	VkPipelineVertexInputStateCreateInfo   vertex_input_state{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-	if(!x->vertex_input_bindings){
-		VulkanError("null vertex input bindings array. A pipeline is required to specify the vertex bindings used by the vertex shader.");
-		return;
+	if(x->vertex_input_bindings){
+		auto vertex_input_bindings = array_from(x->vertex_input_bindings);
+		auto vertex_input_bindings_out = array<VkVertexInputBindingDescription>::create_with_count(vertex_input_bindings.count(), temp_allocator);
+		forI(vertex_input_bindings.count()){
+			vertex_input_bindings_out[i].binding = vertex_input_bindings[i].binding;
+			vertex_input_bindings_out[i].stride = vertex_input_bindings[i].stride;
+			vertex_input_bindings_out[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		}
+		vertex_input_state.pVertexBindingDescriptions = vertex_input_bindings_out.ptr;
+		vertex_input_state.vertexBindingDescriptionCount = vertex_input_bindings_out.count();
 	}
-	if(!x->vertex_input_attributes){
-		VulkanError("null vertex input attributes array. A pipeline is required to specify the attributes of the vertexes used in the vertex shader.");
-		return;
+	if(x->vertex_input_attributes){
+		auto vertex_input_attributes = array_from(x->vertex_input_attributes);
+		auto vertex_input_attributes_out = array<VkVertexInputAttributeDescription>::create_with_count(vertex_input_attributes.count(), temp_allocator);
+		forI(vertex_input_attributes.count()){
+			vertex_input_attributes_out[i].binding = vertex_input_attributes[i].binding;
+			vertex_input_attributes_out[i].location = vertex_input_attributes[i].location;
+			vertex_input_attributes_out[i].offset = vertex_input_attributes[i].offset;
+			vertex_input_attributes_out[i].format = graphics_format_to_vulkan(vertex_input_attributes[i].format);
+		}
+		vertex_input_state.pVertexAttributeDescriptions = vertex_input_attributes_out.ptr;
+		vertex_input_state.vertexAttributeDescriptionCount = vertex_input_attributes_out.count();
 	}
-	auto vertex_input_bindings = array_from(x->vertex_input_bindings);
-	auto vertex_input_attributes = array_from(x->vertex_input_attributes);
-	auto vertex_input_bindings_out = array<VkVertexInputBindingDescription>::create_with_count(vertex_input_bindings.count(), temp_allocator);
-	auto vertex_input_attributes_out = array<VkVertexInputAttributeDescription>::create_with_count(vertex_input_attributes.count(), temp_allocator);
-	forI(vertex_input_bindings.count()){
-		vertex_input_bindings_out[i].binding = vertex_input_bindings[i].binding;
-		vertex_input_bindings_out[i].stride = vertex_input_bindings[i].stride;
-		vertex_input_bindings_out[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	}
-	forI(vertex_input_attributes.count()){
-		vertex_input_attributes_out[i].binding = vertex_input_attributes[i].binding;
-		vertex_input_attributes_out[i].location = vertex_input_attributes[i].location;
-		vertex_input_attributes_out[i].offset = vertex_input_attributes[i].offset;
-		vertex_input_attributes_out[i].format = graphics_format_to_vulkan(vertex_input_attributes[i].format);
-	}
-	vertex_input_state.pVertexBindingDescriptions = vertex_input_bindings_out.ptr;
-	vertex_input_state.vertexBindingDescriptionCount = vertex_input_bindings_out.count();
-	vertex_input_state.pVertexAttributeDescriptions = vertex_input_attributes_out.ptr;
-	vertex_input_state.vertexAttributeDescriptionCount = vertex_input_attributes_out.count();
 	
-	VkPipelineDynamicStateCreateInfo       dynamic_state{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+	VkPipelineDynamicStateCreateInfo dynamic_state{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
 	auto dynamic_states = array<VkDynamicState>::create(5, temp_allocator);
 	if(x->dynamic_scissor)        dynamic_states.push(VK_DYNAMIC_STATE_SCISSOR);
 	if(x->dynamic_viewport)       dynamic_states.push(VK_DYNAMIC_STATE_VIEWPORT);

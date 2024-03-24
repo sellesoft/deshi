@@ -561,7 +561,7 @@ graphics_update(Window* window){DPZoneScoped;
 				LogGl(3,"Binding a pipeline[",cmd->bind_pipeline.handle->debug_name,"].");
 				
 				//disable previous pipeline's vertex attributes array
-				if(active_pipeline){
+				if(active_pipeline && active_pipeline->vertex_input_attributes){
 					forI(array_count(active_pipeline->vertex_input_attributes)){
 						glDisableVertexAttribArray(i);
 					}
@@ -982,76 +982,78 @@ graphics_update(Window* window){DPZoneScoped;
 				//NOTE(delle) the below vertex descriptions must be set once the buffer is bound, but it uses
 				// information from the active pipeline, so we have to perform it here (which sucks) since
 				// Vulkan doesn't require the pipeline or vertex buffer to be bound in a specific order
-				forI(array_count(active_pipeline->vertex_input_attributes)){
-					GLint size = 4;
-					GLenum type = GL_FLOAT;
-					GLboolean normalized = GL_FALSE;
-					switch(active_pipeline->vertex_input_attributes[i].format){
-						case GraphicsFormat_R32G32_Float:{
-							size = 2;
-							type = GL_FLOAT;
-							normalized = GL_FALSE;
-						}break;
-						case GraphicsFormat_R32G32B32_Float:{
-							size = 3;
-							type = GL_FLOAT;
-							normalized = GL_FALSE;
-						}break;
-						case GraphicsFormat_R8G8B8_SRGB:{
-							size = 3;
-							type = GL_UNSIGNED_BYTE;
-							normalized = GL_FALSE;
-						}break;
-						case GraphicsFormat_R8G8B8_UNorm:{
-							size = 3;
-							type = GL_UNSIGNED_BYTE;
-							normalized = GL_TRUE;
-						}break;
-						case GraphicsFormat_R8G8B8A8_SRGB:{
-							size = 4;
-							type = GL_UNSIGNED_BYTE;
-							normalized = GL_FALSE;
-						}break;
-						case GraphicsFormat_R8G8B8A8_UNorm:{
-							size = 4;
-							type = GL_UNSIGNED_BYTE;
-							normalized = GL_TRUE;
-						}break;
-						case GraphicsFormat_B8G8R8A8_UNorm:{
-							size = GL_BGRA;
-							type = GL_UNSIGNED_BYTE;
-							normalized = GL_TRUE;
-						}break;
-						case GraphicsFormat_Depth16_UNorm:{
-							size = 1;
-							type = GL_UNSIGNED_SHORT;
-							normalized = GL_TRUE;
-						}break;
-						case GraphicsFormat_Depth32_Float:{
-							size = 1;
-							type = GL_FLOAT;
-							normalized = GL_FALSE;
-						}break;
-						case GraphicsFormat_Depth32_Float_Stencil8_UInt:{
-							size = 1;
-							type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
-							normalized = GL_FALSE;
-						}break;
-						case GraphicsFormat_Depth24_UNorm_Stencil8_UInt:{
-							size = 1;
-							type = GL_UNSIGNED_INT_24_8_EXT;
-							normalized = GL_TRUE;
-						}break;
-						default:{
-							LogEGl("Unhandled GraphicsFormat when setting the vertex input attributes for a pipeline[",active_pipeline->debug_name,"]: ",active_pipeline->vertex_input_attributes[i].format,".");
-						}break;
+				if(active_pipeline->vertex_input_attributes){
+					forI(array_count(active_pipeline->vertex_input_attributes)){
+						GLint size = 4;
+						GLenum type = GL_FLOAT;
+						GLboolean normalized = GL_FALSE;
+						switch(active_pipeline->vertex_input_attributes[i].format){
+							case GraphicsFormat_R32G32_Float:{
+								size = 2;
+								type = GL_FLOAT;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R32G32B32_Float:{
+								size = 3;
+								type = GL_FLOAT;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R8G8B8_SRGB:{
+								size = 3;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R8G8B8_UNorm:{
+								size = 3;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_R8G8B8A8_SRGB:{
+								size = 4;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_R8G8B8A8_UNorm:{
+								size = 4;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_B8G8R8A8_UNorm:{
+								size = GL_BGRA;
+								type = GL_UNSIGNED_BYTE;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_Depth16_UNorm:{
+								size = 1;
+								type = GL_UNSIGNED_SHORT;
+								normalized = GL_TRUE;
+							}break;
+							case GraphicsFormat_Depth32_Float:{
+								size = 1;
+								type = GL_FLOAT;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_Depth32_Float_Stencil8_UInt:{
+								size = 1;
+								type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+								normalized = GL_FALSE;
+							}break;
+							case GraphicsFormat_Depth24_UNorm_Stencil8_UInt:{
+								size = 1;
+								type = GL_UNSIGNED_INT_24_8_EXT;
+								normalized = GL_TRUE;
+							}break;
+							default:{
+								LogEGl("Unhandled GraphicsFormat when setting the vertex input attributes for a pipeline[",active_pipeline->debug_name,"]: ",active_pipeline->vertex_input_attributes[i].format,".");
+							}break;
+						}
+						u32 binding = active_pipeline->vertex_input_attributes[i].binding;
+						GLsizei stride = active_pipeline->vertex_input_bindings[binding].stride;
+						const void* offset = (void*)(u64)active_pipeline->vertex_input_attributes[i].offset;
+						
+						glVertexAttribPointer(i, size, type, normalized, stride, offset);
+						glEnableVertexAttribArray(i);
 					}
-					u32 binding = active_pipeline->vertex_input_attributes[i].binding;
-					GLsizei stride = active_pipeline->vertex_input_bindings[binding].stride;
-					const void* offset = (void*)(u64)active_pipeline->vertex_input_attributes[i].offset;
-					
-					glVertexAttribPointer(i, size, type, normalized, stride, offset);
-					glEnableVertexAttribArray(i);
 				}
 				
 				GLsizei index_count = (GLsizei)cmd->draw_indexed.index_count;
@@ -2351,14 +2353,6 @@ graphics_pipeline_update(GraphicsPipeline* pipeline){DPZoneScoped;
 	}
 	if(!pipeline->vertex_shader && !pipeline->geometry_shader && !pipeline->fragment_shader){
 		LogEGl("The input pipeline was has no shaders specified.");
-		return;
-	}
-	if(!pipeline->vertex_input_bindings || array_count(pipeline->vertex_input_bindings) == 0){
-		LogEGl("The input pipeline was has no vertex input binding descriptions specified.");
-		return;
-	}
-	if(!pipeline->vertex_input_attributes || array_count(pipeline->vertex_input_attributes) == 0){
-		LogEGl("The input pipeline was has no vertex input attribute descriptions specified.");
 		return;
 	}
 	if(!pipeline->layout){
