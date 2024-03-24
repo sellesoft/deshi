@@ -791,6 +791,8 @@ namespace graphics{
 
 
 typedef struct GraphicsPushConstant{
+	str8 debug_name;
+	
 	GraphicsShaderStage shader_stages;
 	u32 size;
 	u32 offset;
