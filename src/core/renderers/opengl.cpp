@@ -1641,15 +1641,15 @@ graphics_image_update(GraphicsImage* image){DPZoneScoped;
 	}
 	
 	//map the texture type
-	GLenum texture_target = GL_TEXTURE_2D;
+	GLenum target = GL_TEXTURE_2D;
 	if(samples > 1){
-		texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+		target = GL_TEXTURE_2D_MULTISAMPLE;
 		
 		/* //TODO(delle) texture types
 		if(image->type == GraphicsImageType_2D){
-			texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+			target = GL_TEXTURE_2D_MULTISAMPLE;
 		}else if(image->type == GraphicsImageType_2D_Array){
-			texture_target = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+			target = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
 		}else{
 			LogEGl("Invalid multisample graphics image type specified: ",image->type,".");
 			return;
@@ -1658,37 +1658,85 @@ graphics_image_update(GraphicsImage* image){DPZoneScoped;
 	}else{
 		/* //TODO(delle) texture types
 		switch(image->type){
-			case GraphicsImageType_1D: texture_target = GL_TEXTURE_1D; break;
-			case GraphicsImageType_2D: texture_target = GL_TEXTURE_2D; break;
-			case GraphicsImageType_3D: texture_target = GL_TEXTURE_3D; break;
-			case GraphicsImageType_1D_Array: texture_target = GL_TEXTURE_1D_ARRAY; break;
-			case GraphicsImageType_2D_Array: texture_target = GL_TEXTURE_2D_ARRAY; break;
+			case GraphicsImageType_1D: target = GL_TEXTURE_1D; break;
+			case GraphicsImageType_2D: target = GL_TEXTURE_2D; break;
+			case GraphicsImageType_3D: target = GL_TEXTURE_3D; break;
+			case GraphicsImageType_1D_Array: target = GL_TEXTURE_1D_ARRAY; break;
+			case GraphicsImageType_2D_Array: target = GL_TEXTURE_2D_ARRAY; break;
 			default: LogEGl("Unhandled graphics image type: ",image->type,"."); return;
 		}
 		*/
 	}
 	
 	//map the texture format
-	GLint texture_format = GL_RGBA8;
+	GLint color_format = GL_RGBA8;
+	GLenum pixel_format = GL_RGBA;
+	GLenum pixel_type = GL_UNSIGNED_BYTE;
 	switch(image->format){
-		case GraphicsFormat_R32G32_Float: texture_format = GL_RG32F; break;
-		case GraphicsFormat_R32G32B32_Float: texture_format = GL_RGB32F; break;
-		case GraphicsFormat_R8G8B8_SRGB: texture_format = GL_SRGB8; break;
-		case GraphicsFormat_R8G8B8_UNorm: texture_format = GL_RGB8; break;
-		case GraphicsFormat_R8G8B8A8_SRGB: texture_format = GL_SRGB8_ALPHA8; break;
-		case GraphicsFormat_R8G8B8A8_UNorm: texture_format = GL_RGBA8; break;
-		case GraphicsFormat_B8G8R8A8_UNorm: texture_format = GL_BGRA; break;
-		case GraphicsFormat_Depth16_UNorm: texture_format = GL_DEPTH_COMPONENT16; break;
-		case GraphicsFormat_Depth32_Float: texture_format = GL_DEPTH_COMPONENT32F; break;
-		case GraphicsFormat_Depth32_Float_Stencil8_UInt: texture_format = GL_DEPTH32F_STENCIL8; break;
-		case GraphicsFormat_Depth24_UNorm_Stencil8_UInt: texture_format = GL_DEPTH24_STENCIL8; break;
-		default: LogEGl("Unhandled graphics texture format: ",image->format,"."); return;
+		case GraphicsFormat_R32G32_Float:{
+			color_format = GL_RG32F;
+			pixel_format = GL_RG;
+			pixel_type = GL_FLOAT;
+		}break;
+		case GraphicsFormat_R32G32B32_Float:{
+			color_format = GL_RGB32F;
+			pixel_format = GL_RGB;
+			pixel_type = GL_FLOAT;
+		}break;
+		case GraphicsFormat_R8G8B8_SRGB:{
+			color_format = GL_SRGB8;
+			pixel_format = GL_RGB;
+			pixel_type = GL_UNSIGNED_BYTE;
+		}break;
+		case GraphicsFormat_R8G8B8_UNorm:{
+			color_format = GL_RGB8;
+			pixel_format = GL_RGB;
+			pixel_type = GL_UNSIGNED_BYTE;
+		}break;
+		case GraphicsFormat_R8G8B8A8_SRGB:{
+			color_format = GL_SRGB8_ALPHA8;
+			pixel_format = GL_RGBA;
+			pixel_type = GL_UNSIGNED_BYTE;
+		}break;
+		case GraphicsFormat_R8G8B8A8_UNorm:{
+			color_format = GL_RGBA8;
+			pixel_format = GL_RGBA;
+			pixel_type = GL_UNSIGNED_BYTE;
+		}break;
+		case GraphicsFormat_B8G8R8A8_UNorm:{
+			color_format = GL_BGRA;
+			pixel_format = GL_BGRA;
+			pixel_type = GL_UNSIGNED_BYTE;
+		}break;
+		case GraphicsFormat_Depth16_UNorm:{
+			color_format = GL_DEPTH_COMPONENT16;
+			pixel_format = GL_DEPTH_COMPONENT;
+			pixel_type = GL_UNSIGNED_SHORT;
+		}break;
+		case GraphicsFormat_Depth32_Float:{
+			color_format = GL_DEPTH_COMPONENT32F;
+			pixel_format = GL_DEPTH_COMPONENT;
+			pixel_type = GL_FLOAT;
+		}break;
+		case GraphicsFormat_Depth32_Float_Stencil8_UInt:{
+			color_format = GL_DEPTH32F_STENCIL8;
+			pixel_format = GL_DEPTH_STENCIL;
+			pixel_type = GL_DEPTH32F_STENCIL8;
+		}break;
+		case GraphicsFormat_Depth24_UNorm_Stencil8_UInt:{
+			color_format = GL_DEPTH24_STENCIL8;
+			pixel_format = GL_DEPTH_STENCIL;
+			pixel_type = GL_DEPTH24_STENCIL8;
+		}break;
+		default:{
+			LogEGl("Unhandled graphics texture format: ",image->format,".");
+		}return;
 	}
 	
 	//delete the previous texture
 	if(image->__internal.handle){
-		GLuint previous_texture_handle = (GLuint)(u64)image->__internal.handle;
-		glDeleteTextures(1, &previous_texture_handle);
+		GLuint previous_handle = (GLuint)(u64)image->__internal.handle;
+		glDeleteTextures(1, &previous_handle);
 		if(opengl_error){
 			return;
 		}
@@ -1698,23 +1746,26 @@ graphics_image_update(GraphicsImage* image){DPZoneScoped;
 	}
 	
 	//create a new texture
-	GLuint texture_handle;
-	glGenTextures(1, &texture_handle);
+	GLuint handle;
+	glGenTextures(1, &handle);
 	if(opengl_error){
 		return;
 	}
-	glBindTexture(texture_target, texture_handle);
+	glBindTexture(target, handle);
 	if(opengl_error){
-		glDeleteTextures(1, &texture_handle);
+		glDeleteTextures(1, &handle);
 		return;
 	}
 	
 	//define the texture
-	switch(texture_target){
+	GLsizei width = (GLsizei)image->extent.x;
+	GLsizei height = (GLsizei)image->extent.y;
+	GLsizei depth = (GLsizei)image->extent.z;
+	switch(target){
 		case GL_TEXTURE_1D:
 		case GL_PROXY_TEXTURE_1D:
 		{
-			glTexImage1D(texture_target, 0, texture_format, (GLsizei)image->extent.x, 0, GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+			glTexImage1D(target, 0, color_format, width, 0, pixel_format, pixel_type, 0);
 		}break;
 		case GL_TEXTURE_2D:
 		case GL_PROXY_TEXTURE_2D:
@@ -1730,39 +1781,39 @@ graphics_image_update(GraphicsImage* image){DPZoneScoped;
 		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
 		case GL_PROXY_TEXTURE_CUBE_MAP:
 		{
-			glTexImage2D(texture_target, 0, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D(target, 0, color_format, width, height, 0, pixel_format, pixel_type, 0);
 		}break;
 		case GL_TEXTURE_2D_MULTISAMPLE:
 		case GL_PROXY_TEXTURE_2D_MULTISAMPLE:
 		{
-			glTexImage2DMultisample(texture_target, samples, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, GL_FALSE);
+			glTexImage2DMultisample(target, samples, color_format, width, height, GL_FALSE);
 		}break;
 		case GL_TEXTURE_3D:
 		case GL_PROXY_TEXTURE_3D:
 		case GL_TEXTURE_2D_ARRAY:
 		case GL_PROXY_TEXTURE_2D_ARRAY:
 		{
-			glTexImage3D(texture_target, 0, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, (GLsizei)image->extent.z, 0, GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+			glTexImage3D(target, 0, color_format, width, height, depth, 0, pixel_format, pixel_type, 0);
 		}break;
 		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
 		case GL_PROXY_TEXTURE_2D_MULTISAMPLE_ARRAY:
 		{
-			glTexImage3DMultisample(texture_target, samples, texture_format, (GLsizei)image->extent.x, (GLsizei)image->extent.y, (GLsizei)image->extent.z, GL_FALSE);
+			glTexImage3DMultisample(target, samples, color_format, width, height, depth, GL_FALSE);
 		}break;
 		default:
 		{
-			LogEGl("Unhandled texture target: ",texture_target,".");
-			glDeleteTextures(1, &texture_handle);
+			LogEGl("Unhandled texture target: ",target,".");
+			glDeleteTextures(1, &handle);
 		}return;
 	}
 	if(opengl_error){
-		glDeleteTextures(1, &texture_handle);
+		glDeleteTextures(1, &handle);
 		return;
 	}
 	
 	//update the GraphicsImage
-	image->__internal.handle = (void*)(u64)texture_handle;
-	image->__internal.memory_handle = (void*)(u64)texture_target;
+	image->__internal.handle = (void*)(u64)handle;
+	image->__internal.memory_handle = (void*)(u64)target;
 }
 
 
@@ -2588,7 +2639,7 @@ graphics_framebuffer_update(GraphicsFramebuffer* framebuffer){DPZoneScoped;
 			LogEGl("A color image view[",framebuffer->color_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have the GraphicsImageViewAspectFlags_Color aspect_flags.");
 			return;
 		}
-		if(framebuffer->color_image_view->format >= GraphicsFormat_COLOR_FIRST && framebuffer->color_image_view->format <= GraphicsFormat_COLOR_LAST){
+		if(framebuffer->color_image_view->format < GraphicsFormat_COLOR_FIRST || framebuffer->color_image_view->format > GraphicsFormat_COLOR_LAST){
 			LogEGl("A color image view[",framebuffer->color_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have a valid color GraphicsFormat: ",framebuffer->color_image_view->format,".");
 			return;
 		}
@@ -2606,7 +2657,7 @@ graphics_framebuffer_update(GraphicsFramebuffer* framebuffer){DPZoneScoped;
 			LogEGl("A depth image view[",framebuffer->depth_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have the GraphicsImageViewAspectFlags_Depth or GraphicsImageViewAspectFlags_Stencil aspect_flags.");
 			return;
 		}
-		if(framebuffer->depth_image_view->format >= GraphicsFormat_DEPTH_FIRST && framebuffer->depth_image_view->format <= GraphicsFormat_DEPTH_LAST){
+		if(framebuffer->depth_image_view->format < GraphicsFormat_DEPTH_FIRST || framebuffer->depth_image_view->format > GraphicsFormat_DEPTH_LAST){
 			LogEGl("A depth image view[",framebuffer->depth_image_view->debug_name,"] attached to a framebuffer[",framebuffer->debug_name,"] does not have a valid depth/stencil GraphicsFormat: ",framebuffer->depth_image_view->format,".");
 			return;
 		}
@@ -2658,7 +2709,7 @@ graphics_framebuffer_update(GraphicsFramebuffer* framebuffer){DPZoneScoped;
 	}
 	
 	//attach the depth/stencil texture
-	if(framebuffer->render_pass->use_color_attachment){
+	if(framebuffer->render_pass->use_depth_attachment){
 		//TODO(delle) glFramebufferRenderbuffer if GraphicsMemoryPropertyFlag_DeviceLocal
 		if(HasFlag(framebuffer->depth_image_view->aspect_flags, GraphicsImageViewAspectFlags_Depth)){
 			if(HasFlag(framebuffer->depth_image_view->aspect_flags, GraphicsImageViewAspectFlags_Stencil)){
