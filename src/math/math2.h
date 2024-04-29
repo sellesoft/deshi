@@ -335,7 +335,7 @@ vec2{
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
 #endif //#ifdef __cplusplus
-} vec2;
+}vec2;
 
 DESHI_MATH_FUNC inline vec2
 Vec2(f32 x, f32 y){
@@ -1394,7 +1394,7 @@ vec2i{
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
 #endif //#ifdef __cplusplus
-} vec2i;
+}vec2i;
 
 DESHI_MATH_FUNC inline vec2i
 Vec2i(s32 x, s32 y){
@@ -2384,7 +2384,7 @@ vec3{
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
 #endif //#ifdef __cplusplus
-} vec3;
+}vec3;
 
 DESHI_MATH_FUNC inline vec3
 Vec3(f32 x, f32 y, f32 z){
@@ -3600,7 +3600,7 @@ vec3i{
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
 #endif //#ifdef __cplusplus
-} vec3i;
+}vec3i;
 
 DESHI_MATH_FUNC inline vec3i
 Vec3i(s32 x, s32 y, s32 z){
@@ -4758,7 +4758,7 @@ vec4{
 	vec3i to_vec3i()const;
 	vec4i to_vec4i()const;
 #endif //#ifdef __cplusplus
-} vec4;
+}vec4;
 
 DESHI_MATH_FUNC inline vec4
 Vec4(f32 x, f32 y, f32 z, f32 w){
@@ -6468,7 +6468,7 @@ vec4i{
 	vec3i to_vec3i()const;
 	vec4  to_vec4()const;
 #endif //#ifdef __cplusplus
-} vec4i;
+}vec4i;
 
 DESHI_MATH_FUNC inline vec4i
 Vec4i(s32 x, s32 y, s32 z, s32 w){
@@ -8588,7 +8588,7 @@ mat3{
 	vec3 row(u32 row)const;
 	vec3 col(u32 col)const;
 #endif //#ifdef __cplusplus
-} mat3;
+}mat3;
 
 DESHI_MATH_FUNC inline mat3
 Mat3(f32 _00, f32 _10, f32 _20,
@@ -8612,7 +8612,7 @@ inline const mat3 mat3::ONE      = mat3{1,1,1,1,1,1,1,1,1};
 inline const mat3 mat3::IDENTITY = mat3{1,0,0,0,1,0,0,0,1};
 #endif //#ifdef __cplusplus
 
-#define mat3_coord(m,row,col) m.arr[3*row + col]
+#define mat3_coord(m,row,col) (m.arr[3*(row) + (col)])
 
 #ifdef __cplusplus
 inline f32 mat3::
@@ -8630,7 +8630,7 @@ operator()(u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 }
 #endif //#ifdef __cplusplus
 
-#define mat3_index(m,index) m.arr[index]
+#define mat3_index(m,index) (m.arr[(index)])
 
 #ifdef __cplusplus
 inline f32 mat3::
@@ -9004,57 +9004,57 @@ operator%=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 
 DESHI_MATH_FUNC inline b32
 mat3_equal(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
-	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32;
 }
 
 #ifdef __cplusplus
 inline b32 mat3::
 operator==(const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
-	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[1] - rhs.arr[1]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[2] - rhs.arr[2]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[3] - rhs.arr[3]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[4] - rhs.arr[4]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[5] - rhs.arr[5]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[6] - rhs.arr[6]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[1] - rhs.arr[1]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[2] - rhs.arr[2]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[3] - rhs.arr[3]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[4] - rhs.arr[4]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[5] - rhs.arr[5]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[6] - rhs.arr[6]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32;
 }
 #endif //#ifdef __cplusplus
 
 DESHI_MATH_FUNC inline b32
 mat3_nequal(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
-	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32;
 }
 
 #ifdef __cplusplus
 inline b32 mat3::
 operator!=(const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
-	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[1] - rhs.arr[1]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[2] - rhs.arr[2]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[3] - rhs.arr[3]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[4] - rhs.arr[4]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[5] - rhs.arr[5]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[6] - rhs.arr[6]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[1] - rhs.arr[1]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[2] - rhs.arr[2]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[3] - rhs.arr[3]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[4] - rhs.arr[4]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[5] - rhs.arr[5]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[6] - rhs.arr[6]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32;
 }
 #endif //#ifdef __cplusplus
 
@@ -9408,7 +9408,7 @@ mat4{
 	vec4 row(u32 row)const;
 	vec4 col(u32 col)const;
 #endif //#ifdef __cplusplus
-} mat4;
+}mat4;
 
 DESHI_MATH_FUNC inline mat4
 Mat4(f32 _00, f32 _10, f32 _20, f32 _30,
@@ -10169,22 +10169,22 @@ mat4_equal(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 		&& m128_equal_4f32(lhs.sse_row2, rhs.sse_row2)
 		&& m128_equal_4f32(lhs.sse_row3, rhs.sse_row3);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[9] - rhs.arr[9]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[10] - rhs.arr[10]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[11] - rhs.arr[11]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[12] - rhs.arr[12]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[13] - rhs.arr[13]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[14] - rhs.arr[14]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(lhs.arr[15] - rhs.arr[15]) > DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(lhs.arr[ 0] - rhs.arr[ 0]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 1] - rhs.arr[ 1]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 2] - rhs.arr[ 2]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 3] - rhs.arr[ 3]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 4] - rhs.arr[ 4]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 5] - rhs.arr[ 5]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 6] - rhs.arr[ 6]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 7] - rhs.arr[ 7]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 8] - rhs.arr[ 8]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[ 9] - rhs.arr[ 9]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[10] - rhs.arr[10]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[11] - rhs.arr[11]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[12] - rhs.arr[12]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[13] - rhs.arr[13]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[14] - rhs.arr[14]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(lhs.arr[15] - rhs.arr[15]) < DESHI_MATH_EPSILON_F32;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
@@ -10197,22 +10197,22 @@ operator==(const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 		&& m128_equal_4f32(this->sse_row2, rhs.sse_row2)
 		&& m128_equal_4f32(this->sse_row3, rhs.sse_row3);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[1] - rhs.arr[1]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[2] - rhs.arr[2]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[3] - rhs.arr[3]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[4] - rhs.arr[4]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[5] - rhs.arr[5]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[6] - rhs.arr[6]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[9] - rhs.arr[9]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[10] - rhs.arr[10]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[11] - rhs.arr[11]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[12] - rhs.arr[12]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[13] - rhs.arr[13]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[14] - rhs.arr[14]) > DESHI_MATH_EPSILON_F32
-		&& DESHI_ABSF(this->arr[15] - rhs.arr[15]) > DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(this->arr[ 0] - rhs.arr[ 0]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 1] - rhs.arr[ 1]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 2] - rhs.arr[ 2]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 3] - rhs.arr[ 3]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 4] - rhs.arr[ 4]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 5] - rhs.arr[ 5]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 6] - rhs.arr[ 6]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 7] - rhs.arr[ 7]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 8] - rhs.arr[ 8]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[ 9] - rhs.arr[ 9]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[10] - rhs.arr[10]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[11] - rhs.arr[11]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[12] - rhs.arr[12]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[13] - rhs.arr[13]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[14] - rhs.arr[14]) < DESHI_MATH_EPSILON_F32
+		&& DESHI_ABSF(this->arr[15] - rhs.arr[15]) < DESHI_MATH_EPSILON_F32;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
@@ -10225,22 +10225,22 @@ mat4_nequal(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 		&& !m128_equal_4f32(lhs.sse_row2, rhs.sse_row2)
 		&& !m128_equal_4f32(lhs.sse_row3, rhs.sse_row3);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(lhs.arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[1] - rhs.arr[1]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[2] - rhs.arr[2]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[3] - rhs.arr[3]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[4] - rhs.arr[4]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[5] - rhs.arr[5]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[6] - rhs.arr[6]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[9] - rhs.arr[9]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[10] - rhs.arr[10]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[11] - rhs.arr[11]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[12] - rhs.arr[12]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[13] - rhs.arr[13]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[14] - rhs.arr[14]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(lhs.arr[15] - rhs.arr[15]) < DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(lhs.arr[ 0] - rhs.arr[ 0]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 1] - rhs.arr[ 1]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 2] - rhs.arr[ 2]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 3] - rhs.arr[ 3]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 4] - rhs.arr[ 4]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 5] - rhs.arr[ 5]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 6] - rhs.arr[ 6]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 7] - rhs.arr[ 7]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 8] - rhs.arr[ 8]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[ 9] - rhs.arr[ 9]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[10] - rhs.arr[10]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[11] - rhs.arr[11]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[12] - rhs.arr[12]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[13] - rhs.arr[13]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[14] - rhs.arr[14]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(lhs.arr[15] - rhs.arr[15]) > DESHI_MATH_EPSILON_F32;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
@@ -10253,22 +10253,22 @@ operator!=(const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 		&& !m128_equal_4f32(this->sse_row2, rhs.sse_row2)
 		&& !m128_equal_4f32(this->sse_row3, rhs.sse_row3);
 #else //#if DESHI_MATH_USE_SSE
-	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[1] - rhs.arr[1]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[2] - rhs.arr[2]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[3] - rhs.arr[3]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[4] - rhs.arr[4]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[5] - rhs.arr[5]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[6] - rhs.arr[6]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[9] - rhs.arr[9]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[10] - rhs.arr[10]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[11] - rhs.arr[11]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[12] - rhs.arr[12]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[13] - rhs.arr[13]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[14] - rhs.arr[14]) < DESHI_MATH_EPSILON_F32
-		|| DESHI_ABSF(this->arr[15] - rhs.arr[15]) < DESHI_MATH_EPSILON_F32;
+	return DESHI_ABSF(this->arr[ 0] - rhs.arr[ 0]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 1] - rhs.arr[ 1]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 2] - rhs.arr[ 2]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 3] - rhs.arr[ 3]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 4] - rhs.arr[ 4]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 5] - rhs.arr[ 5]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 6] - rhs.arr[ 6]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 7] - rhs.arr[ 7]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 8] - rhs.arr[ 8]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[ 9] - rhs.arr[ 9]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[10] - rhs.arr[10]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[11] - rhs.arr[11]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[12] - rhs.arr[12]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[13] - rhs.arr[13]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[14] - rhs.arr[14]) > DESHI_MATH_EPSILON_F32
+		|| DESHI_ABSF(this->arr[15] - rhs.arr[15]) > DESHI_MATH_EPSILON_F32;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 #endif //#ifdef __cplusplus
