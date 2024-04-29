@@ -126,6 +126,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!! ,** ,22/06/04,Tweak]   shrink Vertex2 footprint by using s16 for pos and f16 for uv
 [!! ,*  ,22/12/03,Feature] add VRAM tracking when creating and deleting device memory
 [!! ,***,22/12/03,Feature] memory suballocation (like memory does) since device memory allocation can be quite slow
+[!  ,*  ,24/03/23,Tweak]   validate that shaders contain the name_in_shader string specified on descriptors
 
 `Sound`
 -------

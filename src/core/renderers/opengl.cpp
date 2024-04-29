@@ -619,6 +619,7 @@ graphics_update(Window* window){DPZoneScoped;
 					glLineWidth((GLfloat)cmd->bind_pipeline.handle->line_width);
 				}
 				
+				//NOTE(delle): compare ops are inverted for depth testing because openGL Z direction is opposite deshi's
 				if(cmd->bind_pipeline.handle->depth_test){
 					glEnable(GL_DEPTH_TEST);
 					glDepthMask((cmd->bind_pipeline.handle->depth_writes) ? GL_TRUE : GL_FALSE);
@@ -627,22 +628,22 @@ graphics_update(Window* window){DPZoneScoped;
 							glDepthFunc(GL_NEVER);
 						}break;
 						case GraphicsCompareOp_Less:{
-							glDepthFunc(GL_LESS);
+							glDepthFunc(GL_GREATER);
 						}break;
 						case GraphicsCompareOp_Equal:{
 							glDepthFunc(GL_EQUAL);
 						}break;
 						case GraphicsCompareOp_Less_Or_Equal:{
-							glDepthFunc(GL_LEQUAL);
+							glDepthFunc(GL_GEQUAL);
 						}break;
 						case GraphicsCompareOp_Greater:{
-							glDepthFunc(GL_GREATER);
+							glDepthFunc(GL_LESS);
 						}break;
 						case GraphicsCompareOp_Not_Equal:{
 							glDepthFunc(GL_NOTEQUAL);
 						}break;
 						case GraphicsCompareOp_Greater_Or_Equal:{
-							glDepthFunc(GL_GEQUAL);
+							glDepthFunc(GL_LEQUAL);
 						}break;
 						case GraphicsCompareOp_Always:{
 							glDepthFunc(GL_ALWAYS);
@@ -677,7 +678,9 @@ graphics_update(Window* window){DPZoneScoped;
 						}break;
 					}
 					
-					glPolygonOffset(cmd->bind_pipeline.handle->depth_bias_slope, cmd->bind_pipeline.handle->depth_bias_constant);
+					if(!cmd->bind_pipeline.handle->dynamic_depth_bias){
+						glPolygonOffset(cmd->bind_pipeline.handle->depth_bias_slope, cmd->bind_pipeline.handle->depth_bias_constant);
+					}
 				}
 				
 				if(cmd->bind_pipeline.handle->color_blend){
@@ -808,27 +811,6 @@ graphics_update(Window* window){DPZoneScoped;
 			
 			case GraphicsCommandType_Set_Depth_Bias:{
 				LogGl(3,"Setting the depth bias slope to ",cmd->set_depth_bias.slope, " and constant to ",cmd->set_depth_bias.constant);
-				
-				switch(active_pipeline->polygon_mode){
-					case GraphicsPolygonMode_Point:{
-						glEnable(GL_POLYGON_OFFSET_POINT);
-						glDisable(GL_POLYGON_OFFSET_LINE);
-						glDisable(GL_POLYGON_OFFSET_FILL);
-					}break;
-					case GraphicsPolygonMode_Line:{
-						glDisable(GL_POLYGON_OFFSET_POINT);
-						glEnable(GL_POLYGON_OFFSET_LINE);
-						glDisable(GL_POLYGON_OFFSET_FILL);
-					}break;
-					case GraphicsPolygonMode_Fill:{
-						glDisable(GL_POLYGON_OFFSET_POINT);
-						glDisable(GL_POLYGON_OFFSET_LINE);
-						glEnable(GL_POLYGON_OFFSET_FILL);
-					}break;
-					default:{
-						LogEGl("Unhandled polygon mode when dynamically setting the depth bias for a pipeline[",active_pipeline->debug_name,"]: ",active_pipeline->polygon_mode,".");
-					}break;
-				}
 				
 				glPolygonOffset(cmd->set_depth_bias.slope, cmd->set_depth_bias.constant);
 			}break;
@@ -1082,6 +1064,7 @@ graphics_update(Window* window){DPZoneScoped;
 	//// present frame
 	LogGl(3,"Presenting the frame.");
 	
+	glFlush(); //flush all threads' commands before calling SwapBuffers (not really necessary when single-threaded)
 #if DESHI_WINDOWS
 	::SwapBuffers((HDC)window->context);
 #elif DESHI_LINUX //#if DESHI_WINDOWS
@@ -2485,6 +2468,7 @@ graphics_pipeline_update(GraphicsPipeline* pipeline){DPZoneScoped;
 			
 			GLuint block_index = glGetUniformBlockIndex(program_handle, (const GLchar*)it->name_in_shader);
 			if(block_index == GL_INVALID_INDEX){
+				LogEGl("Push constant #",it-pipeline->layout->push_constants," of a pipeline[",pipeline->debug_name,"] has the name '",it->name_in_shader,"' which was not found in any of the shaders.");
 				error_found = true;
 				continue;
 			}
@@ -2511,7 +2495,7 @@ graphics_pipeline_update(GraphicsPipeline* pipeline){DPZoneScoped;
 			//NOTE(delle) offsetting from the max buffer binding for the push constants to avoid binding collision with regular buffers
 			GLuint block_binding = (GLuint)(max_uniform_buffer_bindings - 1 - (it - pipeline->layout->push_constants));
 			if(block_binding < max_descriptor_buffer_count){
-				LogEGl("The number of descriptor buffers(",max_descriptor_buffer_count,") on the #"" descriptor set layout plus the number of push constants(",array_count(pipeline->layout->push_constants),") is greater than GL_MAX_UNIFORM_BUFFER_BINDINGS(",max_uniform_buffer_bindings,") on the current device for a pipeline[",pipeline->debug_name,"].");
+				LogEGl("The number of descriptor buffers(",max_descriptor_buffer_count,") on the #",it-pipeline->layout->push_constants," descriptor set layout plus the number of push constants(",array_count(pipeline->layout->push_constants),") is greater than GL_MAX_UNIFORM_BUFFER_BINDINGS(",max_uniform_buffer_bindings,") on the current device for a pipeline[",pipeline->debug_name,"].");
 				glDeleteBuffers(1, &buffer_handle);
 				error_found = true;
 				continue;
@@ -2522,6 +2506,12 @@ graphics_pipeline_update(GraphicsPipeline* pipeline){DPZoneScoped;
 			it->__internal.shader_buffer_handle = (u32)buffer_handle;
 		}
 		if(error_found){
+			for_array(pipeline->layout->push_constants){
+				if(it->__internal.shader_buffer_handle){
+					GLuint handle = (GLuint)(u64)it->__internal.shader_buffer_handle;
+					glDeleteBuffers(1, &handle);
+				}
+			}
 			glDeleteProgram(program_handle);
 			return;
 		}
