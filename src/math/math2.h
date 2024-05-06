@@ -73,9 +73,16 @@ TODOs:
 #endif //#else //#ifndef DESHI_MATH_DISABLE_LIBC
 
 
+#if !defined(DESHI_MATH_DISABLE_CPP) && defined(__cplusplus)
+#  define DESHI_MATH_USE_CPP 1
+#else //#if !isdefined(DESHI_MATH_DISABLE_CPP) && isdefined(__cplusplus)
+#  define DESHI_MATH_USE_CPP 0
+#endif //#else //#if !isdefined(DESHI_MATH_DISABLE_CPP) && isdefined(__cplusplus)
+
+
 #ifndef DESHI_MATH_DISABLE_SSE
 #  if defined(_MSC_VER)
-/* MSVC supports SSE in amd64 mode or _M_IX86_FP >= 1 (2 means SSE2) */
+/* MSVC supports SSE in amd64 mode or when _M_IX86_FP >= 1 (2 means SSE2) */
 #    if defined(_M_AMD64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 1)
 #      define DESHI_MATH_USE_SSE 1
 #      include <xmmintrin.h>
@@ -268,7 +275,7 @@ vec2{
 		struct{ f32 u, v; };
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const vec2 ZERO;
 	static const vec2 ONE;
 	static const vec2 LEFT;
@@ -334,7 +341,7 @@ vec2{
 	vec3i to_vec3i()const;
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }vec2;
 
 DESHI_MATH_FUNC inline vec2
@@ -351,7 +358,7 @@ DESHI_MATH_FUNC inline vec2 vec2_RIGHT(){ return vec2{ 1, 0}; }
 DESHI_MATH_FUNC inline vec2 vec2_UNITX(){ return vec2{ 1, 0}; }
 DESHI_MATH_FUNC inline vec2 vec2_UNITY(){ return vec2{ 0, 1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const vec2 vec2::ZERO  = vec2{ 0, 0};
 inline const vec2 vec2::ONE   = vec2{ 1, 1};
 inline const vec2 vec2::LEFT  = vec2{-1, 0};
@@ -360,26 +367,26 @@ inline const vec2 vec2::DOWN  = vec2{ 0,-1};
 inline const vec2 vec2::UP    = vec2{ 0, 1};
 inline const vec2 vec2::UNITX = vec2{ 1, 0};
 inline const vec2 vec2::UNITY = vec2{ 0, 1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_index(vec2 lhs, u32 index){DESHI_MATH_FUNCTION_START;
 	return lhs.arr[index];
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& vec2::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_add(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -389,7 +396,7 @@ vec2_add(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator+ (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -397,15 +404,15 @@ operator+ (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y + rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2::
 operator+=(const vec2& rhs){DESHI_MATH_FUNCTION_START;
 	this->x += rhs.x;
 	this->y += rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_sub(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -415,7 +422,7 @@ vec2_sub(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator- (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -423,15 +430,15 @@ operator- (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y - rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2::
 operator-=(const vec2& rhs){DESHI_MATH_FUNCTION_START;
 	this->x -= rhs.x;
 	this->y -= rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_mul(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -441,7 +448,7 @@ vec2_mul(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator* (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -449,15 +456,15 @@ operator* (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y * rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2::
 operator*=(const vec2& rhs){DESHI_MATH_FUNCTION_START;
 	this->x *= rhs.x;
 	this->y *= rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_mul_f32(vec2 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -467,7 +474,7 @@ vec2_mul_f32(vec2 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -475,22 +482,22 @@ operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y * rhs;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2::
 operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x *= rhs;
 	this->y *= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 operator* (f32 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_div(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -500,7 +507,7 @@ vec2_div(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator/ (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -508,15 +515,15 @@ operator/ (const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y / rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2::
 operator/=(const vec2& rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs.x;
 	this->y /= rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_div_f32(vec2 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -526,7 +533,7 @@ vec2_div_f32(vec2 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -534,15 +541,15 @@ operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y / rhs;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2::
 operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs;
 	this->y /= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_negate(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -552,7 +559,7 @@ vec2_negate(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 operator- ()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -560,7 +567,7 @@ operator- ()const{DESHI_MATH_FUNCTION_START;
 	v.y = -(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec2_equal(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -568,13 +575,13 @@ vec2_equal(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 		&& (DESHI_ABSF(lhs.y - rhs.y) < DESHI_MATH_EPSILON_F32);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec2::
 operator==(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (DESHI_ABSF(this->x - rhs.x) < DESHI_MATH_EPSILON_F32)
 		&& (DESHI_ABSF(this->y - rhs.y) < DESHI_MATH_EPSILON_F32);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec2_nequal(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -582,13 +589,13 @@ vec2_nequal(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 		|| (DESHI_ABSF(lhs.y - rhs.y) > DESHI_MATH_EPSILON_F32);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec2::
 operator!=(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (DESHI_ABSF(this->x - rhs.x) > DESHI_MATH_EPSILON_F32)
 		|| (DESHI_ABSF(this->y - rhs.y) > DESHI_MATH_EPSILON_F32);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_abs(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -598,7 +605,7 @@ vec2_abs(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 abs()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -606,19 +613,19 @@ abs()const{DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_ABSF(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_dot(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return (lhs.x * rhs.x) + (lhs.y * rhs.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 dot(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (this->x * rhs.x) + (this->y * rhs.y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_cross(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -628,7 +635,7 @@ vec2_cross(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 cross()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -636,31 +643,31 @@ cross()const{DESHI_MATH_FUNCTION_START;
 	v.y =   this->x;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_mag(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 mag()const{DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((this->x * this->x) + (this->y * this->y));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32 
 vec2_mag_sq(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return (lhs.x * lhs.x) + (lhs.y * lhs.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 mag_sq()const{DESHI_MATH_FUNCTION_START;
 	return (this->x * this->x) + (this->y * this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_normalize(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -671,7 +678,7 @@ vec2_normalize(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 normalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->x > DESHI_MATH_EPSILON_F32 || this->y > DESHI_MATH_EPSILON_F32){
@@ -680,31 +687,31 @@ normalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_distance(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return vec2_mag(vec2_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 distance(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_distance_sq(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return vec2_mag_sq(vec2_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 distance_sq(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag_sq();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the scalar projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline f32
@@ -717,7 +724,7 @@ vec2_projection_scalar(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the scalar projection of `lhs` on `rhs`
 inline f32 vec2::
 projection_scalar(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -728,7 +735,7 @@ projection_scalar(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0.0f;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec2
@@ -741,7 +748,7 @@ vec2_projection_vector(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the vector projection of `lhs` on `rhs`
 inline vec2 vec2::
 projection_vector(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -752,7 +759,7 @@ projection_vector(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 		return vec2::ZERO;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_midpoint(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -762,7 +769,7 @@ vec2_midpoint(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 midpoint(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -770,19 +777,19 @@ midpoint(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y + rhs.y) / 2.0f;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_slope(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return (rhs.y - lhs.y) / (rhs.x - lhs.x);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 slope(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (rhs.y - this->y) / (rhs.x - this->x);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2_radians_between(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -794,7 +801,7 @@ vec2_radians_between(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2::
 radians_between(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
@@ -804,7 +811,7 @@ radians_between(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_floor(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -814,7 +821,7 @@ vec2_floor(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 floor()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -822,9 +829,9 @@ floor()const{DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_FLOORF(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 floor(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -832,7 +839,7 @@ floor(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_FLOORF(lhs.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_ceil(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -842,7 +849,7 @@ vec2_ceil(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 ceil()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -850,9 +857,9 @@ ceil()const{DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_CEILF(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 ceil(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -860,7 +867,7 @@ ceil(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_CEILF(lhs.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_round(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -870,7 +877,7 @@ vec2_round(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 round()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -878,9 +885,9 @@ round()const{DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_ROUNDF(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 round(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -888,7 +895,7 @@ round(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	v.y = DESHI_ROUNDF(lhs.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_min(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -898,7 +905,7 @@ vec2_min(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 min(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -906,9 +913,9 @@ min(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < rhs.y) ? this->y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 min(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -916,7 +923,7 @@ min(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	v.y = (lhs.y < rhs.y) ? lhs.y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_max(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
@@ -926,7 +933,7 @@ vec2_max(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 max(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -934,9 +941,9 @@ max(const vec2& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y > rhs.y) ? this->y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 max(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -944,7 +951,7 @@ max(vec2 lhs, vec2 rhs){DESHI_MATH_FUNCTION_START;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_clamp(vec2 value, vec2 min, vec2 max){DESHI_MATH_FUNCTION_START;
@@ -954,7 +961,7 @@ vec2_clamp(vec2 value, vec2 min, vec2 max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 clamp(const vec2& min, const vec2& max)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -962,9 +969,9 @@ clamp(const vec2& min, const vec2& max)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < min.y) ? min.y : ((this->y > max.y) ? max.y : this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 clamp(vec2 value, vec2 min, vec2 max){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -972,7 +979,7 @@ clamp(vec2 value, vec2 min, vec2 max){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y < min.y) ? min.y : ((value.y > max.y) ? max.y : value.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_clamp_min(vec2 value, vec2 min){DESHI_MATH_FUNCTION_START;
@@ -982,7 +989,7 @@ vec2_clamp_min(vec2 value, vec2 min){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 clamp_min(const vec2& min)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -990,9 +997,9 @@ clamp_min(const vec2& min)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < min.y) ? min.y : this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 clamp_min(vec2 value, vec2 min){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1000,7 +1007,7 @@ clamp_min(vec2 value, vec2 min){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y < min.y) ? min.y : value.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_clamp_max(vec2 value, vec2 max){DESHI_MATH_FUNCTION_START;
@@ -1010,7 +1017,7 @@ vec2_clamp_max(vec2 value, vec2 max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 clamp_max(const vec2& max)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1018,9 +1025,9 @@ clamp_max(const vec2& max)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y > max.y) ? max.y : this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 clamp_max(vec2 value, vec2 max){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1028,7 +1035,7 @@ clamp_max(vec2 value, vec2 max){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y > max.y) ? max.y : value.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_clamp_mag(vec2 lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
@@ -1042,7 +1049,7 @@ vec2_clamp_mag(vec2 lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 	f32 m = this->mag();
@@ -1054,7 +1061,7 @@ clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_nudge(vec2 value, vec2 target, vec2 delta){DESHI_MATH_FUNCTION_START;
@@ -1064,7 +1071,7 @@ vec2_nudge(vec2 value, vec2 target, vec2 delta){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 nudge(vec2 target, vec2 delta){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1072,9 +1079,9 @@ nudge(vec2 target, vec2 delta){DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < target.y) ? ((this->y + delta.y < target.y) ? this->y + delta.y : target.y) : ((this->y - delta.y > target.y) ? this->y - delta.y : target.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 nudge(vec2 value, vec2 target, vec2 delta){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1082,7 +1089,7 @@ nudge(vec2 value, vec2 target, vec2 delta){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y < target.y) ? ((value.y + delta.y < target.y) ? value.y + delta.y : target.y) : ((value.y - delta.y > target.y) ? value.y - delta.y : target.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_lerp(vec2 lhs, vec2 rhs, f32 t){DESHI_MATH_FUNCTION_START;
@@ -1092,7 +1099,7 @@ vec2_lerp(vec2 lhs, vec2 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 lerp(vec2 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1100,9 +1107,9 @@ lerp(vec2 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.y = (this->y * (1.0f - t)) + (rhs.y * t);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 lerp(vec2 lhs, vec2 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1110,7 +1117,7 @@ lerp(vec2 lhs, vec2 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.y = (lhs.y * (1.0f - t)) + (rhs.y * t);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //rotates counter-clockwise
 DESHI_MATH_FUNC inline vec2
@@ -1121,7 +1128,7 @@ vec2_rotate_radians(vec2 lhs, f32 angle){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //rotates counter-clockwise
 inline vec2 vec2::
 rotate_radians(f32 angle){DESHI_MATH_FUNCTION_START;
@@ -1130,7 +1137,7 @@ rotate_radians(f32 angle){DESHI_MATH_FUNCTION_START;
 	v.y = (this->x * DESHI_SINF(angle)) + (this->y * DESHI_COSF(angle));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //rotates counter-clockwise
 #define vec2_rotate_degrees(lhs,angle) vec2_rotate_radians((lhs), DESHI_DEGREES_TO_RADIANS_F32(angle))
@@ -1143,7 +1150,7 @@ vec2_x_zero(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 x_zero()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1151,7 +1158,7 @@ x_zero()const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_y_zero(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -1161,7 +1168,7 @@ vec2_y_zero(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 y_zero()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1169,7 +1176,7 @@ y_zero()const{DESHI_MATH_FUNCTION_START;
 	v.y = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_x_only(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -1179,7 +1186,7 @@ vec2_x_only(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 x_only()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1187,7 +1194,7 @@ x_only()const{DESHI_MATH_FUNCTION_START;
 	v.y = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_y_only(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -1197,7 +1204,7 @@ vec2_y_only(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 y_only()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1205,7 +1212,7 @@ y_only()const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_x_negate(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -1215,7 +1222,7 @@ vec2_x_negate(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 x_negate()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1223,7 +1230,7 @@ x_negate()const{DESHI_MATH_FUNCTION_START;
 	v.y =   this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_y_negate(vec2 lhs){DESHI_MATH_FUNCTION_START;
@@ -1233,7 +1240,7 @@ vec2_y_negate(vec2 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 y_negate()const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1241,7 +1248,7 @@ y_negate()const{DESHI_MATH_FUNCTION_START;
 	v.y = -(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_x_set(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -1251,7 +1258,7 @@ vec2_x_set(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 x_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1259,7 +1266,7 @@ x_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_y_set(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -1269,7 +1276,7 @@ vec2_y_set(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 y_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1277,7 +1284,7 @@ y_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_x_add(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -1287,7 +1294,7 @@ vec2_x_add(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 x_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1295,7 +1302,7 @@ x_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2
 vec2_y_add(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -1305,7 +1312,7 @@ vec2_y_add(vec2 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2 vec2::
 y_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2 v;
@@ -1313,7 +1320,7 @@ y_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y + a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1330,7 +1337,7 @@ vec2i{
 		struct{ s32 u, v; };
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const vec2i ZERO;
 	static const vec2i ONE;
 	static const vec2i UP;
@@ -1393,7 +1400,7 @@ vec2i{
 	vec3i to_vec3i()const;
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }vec2i;
 
 DESHI_MATH_FUNC inline vec2i
@@ -1410,7 +1417,7 @@ DESHI_MATH_FUNC inline vec2i vec2i_RIGHT(){ return vec2i{ 1, 0}; }
 DESHI_MATH_FUNC inline vec2i vec2i_UNITX(){ return vec2i{ 1, 0}; }
 DESHI_MATH_FUNC inline vec2i vec2i_UNITY(){ return vec2i{ 0, 1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const vec2i vec2i::ZERO  = vec2i{ 0, 0};
 inline const vec2i vec2i::ONE   = vec2i{ 1, 1};
 inline const vec2i vec2i::UP    = vec2i{ 0, 1};
@@ -1419,26 +1426,26 @@ inline const vec2i vec2i::LEFT  = vec2i{-1, 0};
 inline const vec2i vec2i::RIGHT = vec2i{ 1, 0};
 inline const vec2i vec2i::UNITX = vec2i{ 1, 0};
 inline const vec2i vec2i::UNITY = vec2i{ 0, 1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline s32
 vec2i_index(vec2i lhs, u32 index){DESHI_MATH_FUNCTION_START;
 	return lhs.arr[index];
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline s32 vec2i::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline s32& vec2i::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_add(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1448,7 +1455,7 @@ vec2i_add(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator+ (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1456,15 +1463,15 @@ operator+ (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y + rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2i::
 operator+=(const vec2i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x += rhs.x;
 	this->y += rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_sub(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1474,7 +1481,7 @@ vec2i_sub(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator- (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1482,15 +1489,15 @@ operator- (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y - rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2i::
 operator-=(const vec2i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x -= rhs.x;
 	this->y -= rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_mul(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1500,7 +1507,7 @@ vec2i_mul(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator* (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1508,15 +1515,15 @@ operator* (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y * rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2i::
 operator*=(const vec2i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x *= rhs.x;
 	this->y *= rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_mul_f32(vec2i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -1526,7 +1533,7 @@ vec2i_mul_f32(vec2i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1534,22 +1541,22 @@ operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (s32)((f32)this->y * rhs);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2i::
 operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x = (s32)((f32)this->x * rhs);
 	this->y = (s32)((f32)this->y * rhs);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 operator* (f32 lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_div(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1559,7 +1566,7 @@ vec2i_div(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator/ (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1567,15 +1574,15 @@ operator/ (const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y / rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2i::
 operator/=(const vec2i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs.x;
 	this->y /= rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_div_f32(vec2i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -1585,7 +1592,7 @@ vec2i_div_f32(vec2i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1593,15 +1600,15 @@ operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (s32)((f32)this->y / rhs);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec2i::
 operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x = (s32)((f32)this->x / rhs);
 	this->y = (s32)((f32)this->y / rhs);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_negate(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -1611,7 +1618,7 @@ vec2i_negate(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 operator- ()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1619,7 +1626,7 @@ operator- ()const{DESHI_MATH_FUNCTION_START;
 	v.y = -(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec2i_equal(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1627,13 +1634,13 @@ vec2i_equal(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 		&& lhs.y == rhs.y;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec2i::
 operator==(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return this->x == rhs.x
 		&& this->y == rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec2i_nequal(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1641,13 +1648,13 @@ vec2i_nequal(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 		&& lhs.y != rhs.y;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec2i::
 operator!=(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return this->x != rhs.x
 		&& this->y != rhs.y;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_abs(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -1657,7 +1664,7 @@ vec2i_abs(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 abs()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1665,19 +1672,19 @@ abs()const{DESHI_MATH_FUNCTION_START;
 	v.y = ::DESHI_ABS(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_dot(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return (f32)((lhs.x * rhs.x) + (lhs.y * rhs.y));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 dot(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (f32)((this->x * rhs.x) + (this->y * rhs.y));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_cross(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -1687,7 +1694,7 @@ vec2i_cross(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 cross()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1695,31 +1702,31 @@ cross()const{DESHI_MATH_FUNCTION_START;
 	v.y =   this->x;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_mag(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((f32)((lhs.x * lhs.x) + (lhs.y * lhs.y)));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 mag()const{DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((f32)((this->x * this->x) + (this->y * this->y)));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_mag_sq(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return (f32)((lhs.x * lhs.x) + (lhs.y * lhs.y));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 mag_sq()const{DESHI_MATH_FUNCTION_START;
 	return (f32)((this->x * this->x) + (this->y * this->y));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_normalize(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -1730,7 +1737,7 @@ vec2i_normalize(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 normalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->x != 0 || this->y != 0){
@@ -1739,31 +1746,31 @@ normalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_distance(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return vec2i_mag(vec2i_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 distance(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_distance_sq(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return vec2i_mag_sq(vec2i_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 distance_sq(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag_sq();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the scalar projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline f32
@@ -1776,7 +1783,7 @@ vec2i_projection_scalar(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the scalar projection of `lhs` on `rhs`
 inline f32 vec2i::
 projection_scalar(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -1787,7 +1794,7 @@ projection_scalar(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0.0f;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec2i
@@ -1801,7 +1808,7 @@ vec2i_projection_vector(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the vector projection of `lhs` on `rhs`
 inline vec2i vec2i::
 projection_vector(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -1813,7 +1820,7 @@ projection_vector(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return vec2i::ZERO;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_midpoint(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1823,7 +1830,7 @@ vec2i_midpoint(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 midpoint(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1831,19 +1838,19 @@ midpoint(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (s32)((f32)(this->y + rhs.y) / 2.0f);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_slope(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return (f32)(rhs.y - lhs.y) / (f32)(rhs.x - lhs.x);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 slope(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (f32)(rhs.y - this->y) / (f32)(rhs.x - this->x);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec2i_radians_between(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1855,7 +1862,7 @@ vec2i_radians_between(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec2i::
 radians_between(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
@@ -1865,7 +1872,7 @@ radians_between(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_min(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1875,7 +1882,7 @@ vec2i_min(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 min(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1883,9 +1890,9 @@ min(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < rhs.y) ? this->y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 min(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1893,7 +1900,7 @@ min(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	v.y = (lhs.y < rhs.y) ? lhs.y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_max(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
@@ -1903,7 +1910,7 @@ vec2i_max(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 max(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1911,9 +1918,9 @@ max(const vec2i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y > rhs.y) ? this->y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 max(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1921,7 +1928,7 @@ max(vec2i lhs, vec2i rhs){DESHI_MATH_FUNCTION_START;
 	v.y = (lhs.y > rhs.y) ? lhs.y : rhs.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_clamp(vec2i value, vec2i min, vec2i max){DESHI_MATH_FUNCTION_START;
@@ -1931,7 +1938,7 @@ vec2i_clamp(vec2i value, vec2i min, vec2i max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 clamp(const vec2i& min, const vec2i& max)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1939,9 +1946,9 @@ clamp(const vec2i& min, const vec2i& max)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < min.y) ? min.y : ((this->y > max.y) ? max.y : this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 clamp(vec2i value, vec2i min, vec2i max){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1949,7 +1956,7 @@ clamp(vec2i value, vec2i min, vec2i max){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y < min.y) ? min.y : ((value.y > max.y) ? max.y : value.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_clamp_min(vec2i value, vec2i min){DESHI_MATH_FUNCTION_START;
@@ -1959,7 +1966,7 @@ vec2i_clamp_min(vec2i value, vec2i min){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 clamp_min(const vec2i& min)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1967,9 +1974,9 @@ clamp_min(const vec2i& min)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < min.y) ? min.y : this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 clamp_min(vec2i value, vec2i min){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1977,7 +1984,7 @@ clamp_min(vec2i value, vec2i min){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y < min.y) ? min.y : value.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_clamp_max(vec2i value, vec2i max){DESHI_MATH_FUNCTION_START;
@@ -1987,7 +1994,7 @@ vec2i_clamp_max(vec2i value, vec2i max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 clamp_max(const vec2i& max)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -1995,9 +2002,9 @@ clamp_max(const vec2i& max)const{DESHI_MATH_FUNCTION_START;
 	v.y = (this->y > max.y) ? max.y : this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 clamp_max(vec2i value, vec2i max){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2005,7 +2012,7 @@ clamp_max(vec2i value, vec2i max){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y > max.y) ? max.y : value.y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_clamp_mag(vec2i lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
@@ -2019,7 +2026,7 @@ vec2i_clamp_mag(vec2i lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 	f32 m = this->mag();
@@ -2031,7 +2038,7 @@ clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_nudge(vec2i value, vec2i target, vec2i delta){DESHI_MATH_FUNCTION_START;
@@ -2041,7 +2048,7 @@ vec2i_nudge(vec2i value, vec2i target, vec2i delta){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 nudge(vec2i target, vec2i delta){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2049,9 +2056,9 @@ nudge(vec2i target, vec2i delta){DESHI_MATH_FUNCTION_START;
 	v.y = (this->y < target.y) ? ((this->y + delta.y < target.y) ? this->y + delta.y : target.y) : ((this->y - delta.y > target.y) ? this->y - delta.y : target.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 nudge(vec2i value, vec2i target, vec2i delta){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2059,7 +2066,7 @@ nudge(vec2i value, vec2i target, vec2i delta){DESHI_MATH_FUNCTION_START;
 	v.y = (value.y < target.y) ? ((value.y + delta.y < target.y) ? value.y + delta.y : target.y) : ((value.y - delta.y > target.y) ? value.y - delta.y : target.y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_lerp(vec2i lhs, vec2i rhs, f32 t){DESHI_MATH_FUNCTION_START;
@@ -2069,7 +2076,7 @@ vec2i_lerp(vec2i lhs, vec2i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 lerp(vec2i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2077,9 +2084,9 @@ lerp(vec2i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.y = (s32)(((f32)this->y * (1.0f - t)) + ((f32)rhs.y * t));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 lerp(vec2i lhs, vec2i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2087,7 +2094,7 @@ lerp(vec2i lhs, vec2i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.y = (s32)(((f32)lhs.y * (1.0f - t)) + ((f32)rhs.y * t));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_rotate_radians(vec2i lhs, f32 angle){DESHI_MATH_FUNCTION_START;
@@ -2099,7 +2106,7 @@ vec2i_rotate_radians(vec2i lhs, f32 angle){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 rotate_radians(f32 angle){DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2107,7 +2114,7 @@ rotate_radians(f32 angle){DESHI_MATH_FUNCTION_START;
 	v.y = (s32)(((f32)this->x * DESHI_SINF(angle)) + ((f32)this->y * DESHI_COSF(angle)));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 #define vec2i_rotate_degrees(lhs,angle) vec2i_rotate_radians((lhs), DESHI_DEGREES_TO_RADIANS_F32(angle))
 
@@ -2119,7 +2126,7 @@ vec2i_x_zero(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 x_zero()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2127,7 +2134,7 @@ x_zero()const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_y_zero(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -2137,7 +2144,7 @@ vec2i_y_zero(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 y_zero()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2145,7 +2152,7 @@ y_zero()const{DESHI_MATH_FUNCTION_START;
 	v.y = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_x_only(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -2155,7 +2162,7 @@ vec2i_x_only(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 x_only()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2163,7 +2170,7 @@ x_only()const{DESHI_MATH_FUNCTION_START;
 	v.y = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_y_only(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -2173,7 +2180,7 @@ vec2i_y_only(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 y_only()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2181,7 +2188,7 @@ y_only()const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_x_negate(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -2191,7 +2198,7 @@ vec2i_x_negate(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 x_negate()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2199,7 +2206,7 @@ x_negate()const{DESHI_MATH_FUNCTION_START;
 	v.y =   this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_y_negate(vec2i lhs){DESHI_MATH_FUNCTION_START;
@@ -2209,7 +2216,7 @@ vec2i_y_negate(vec2i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 y_negate()const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2217,7 +2224,7 @@ y_negate()const{DESHI_MATH_FUNCTION_START;
 	v.y = -(this->y);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_x_set(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -2227,7 +2234,7 @@ vec2i_x_set(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 x_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2235,7 +2242,7 @@ x_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_y_set(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -2245,7 +2252,7 @@ vec2i_y_set(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 y_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2253,7 +2260,7 @@ y_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_x_add(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -2263,7 +2270,7 @@ vec2i_x_add(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 x_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2271,7 +2278,7 @@ x_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec2i
 vec2i_y_add(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -2281,7 +2288,7 @@ vec2i_y_add(vec2i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i vec2i::
 y_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec2i v;
@@ -2289,7 +2296,7 @@ y_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.y = this->y + a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2307,7 +2314,7 @@ vec3{
 		struct{ f32 _x0; vec2 yz; };
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const vec3 ZERO;
 	static const vec3 ONE;
 	static const vec3 LEFT;
@@ -2383,7 +2390,7 @@ vec3{
 	vec3i to_vec3i()const;
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }vec3;
 
 DESHI_MATH_FUNC inline vec3
@@ -2403,7 +2410,7 @@ DESHI_MATH_FUNC inline vec3 vec3_UNITX()   { return vec3{ 1, 0, 0}; }
 DESHI_MATH_FUNC inline vec3 vec3_UNITY()   { return vec3{ 0, 1, 0}; }
 DESHI_MATH_FUNC inline vec3 vec3_UNITZ()   { return vec3{ 0, 0, 1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const vec3 vec3::ZERO     = vec3{ 0, 0, 0};
 inline const vec3 vec3::ONE      = vec3{ 1, 1, 1};
 inline const vec3 vec3::LEFT     = vec3{-1, 0, 0};
@@ -2415,26 +2422,26 @@ inline const vec3 vec3::FORWARD  = vec3{ 0, 0, 1};
 inline const vec3 vec3::UNITX    = vec3{ 1, 0, 0};
 inline const vec3 vec3::UNITY    = vec3{ 0, 1, 0};
 inline const vec3 vec3::UNITZ    = vec3{ 0, 0, 1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3_index(vec3 lhs, u32 index){DESHI_MATH_FUNCTION_START;
 	return lhs.arr[index];
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& vec3::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_add(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2445,7 +2452,7 @@ vec3_add(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator+ (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2454,16 +2461,16 @@ operator+ (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z + rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator+=(const vec3& rhs){DESHI_MATH_FUNCTION_START;
 	this->x += rhs.x;
 	this->y += rhs.y;
 	this->z += rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_sub(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2474,7 +2481,7 @@ vec3_sub(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator- (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2483,16 +2490,16 @@ operator- (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z - rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator-=(const vec3& rhs){DESHI_MATH_FUNCTION_START;
 	this->x -= rhs.x;
 	this->y -= rhs.y;
 	this->z -= rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_mul(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2503,7 +2510,7 @@ vec3_mul(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator* (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2512,16 +2519,16 @@ operator* (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z * rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator*=(const vec3& rhs){DESHI_MATH_FUNCTION_START;
 	this->x *= rhs.x;
 	this->y *= rhs.y;
 	this->z *= rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_mul_f32(vec3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -2532,7 +2539,7 @@ vec3_mul_f32(vec3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2541,23 +2548,23 @@ operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z * rhs;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x *= rhs;
 	this->y *= rhs;
 	this->z *= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 operator* (f32 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_div(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2568,7 +2575,7 @@ vec3_div(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator/ (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2577,16 +2584,16 @@ operator/ (const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z / rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator/=(const vec3& rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs.x;
 	this->y /= rhs.y;
 	this->z /= rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_div_f32(vec3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -2597,7 +2604,7 @@ vec3_div_f32(vec3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2606,16 +2613,16 @@ operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z / rhs;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs;
 	this->y /= rhs;
 	this->z /= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -2626,7 +2633,7 @@ vec3_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator- ()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2635,7 +2642,7 @@ operator- ()const{DESHI_MATH_FUNCTION_START;
 	v.z = -(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec3_equal(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2644,14 +2651,14 @@ vec3_equal(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 		&& (DESHI_ABSF(lhs.z - rhs.z) < DESHI_MATH_EPSILON_F32);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec3::
 operator==(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (DESHI_ABSF(this->x - rhs.x) < DESHI_MATH_EPSILON_F32)
 		&& (DESHI_ABSF(this->y - rhs.y) < DESHI_MATH_EPSILON_F32)
 		&& (DESHI_ABSF(this->z - rhs.z) < DESHI_MATH_EPSILON_F32);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec3_nequal(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2660,14 +2667,14 @@ vec3_nequal(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 		|| (DESHI_ABSF(lhs.z - rhs.z) > DESHI_MATH_EPSILON_F32);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec3::
 operator!=(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (DESHI_ABSF(this->x - rhs.x) > DESHI_MATH_EPSILON_F32)
 		|| (DESHI_ABSF(this->y - rhs.y) > DESHI_MATH_EPSILON_F32)
 		|| (DESHI_ABSF(this->z - rhs.z) > DESHI_MATH_EPSILON_F32);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_abs(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -2678,7 +2685,7 @@ vec3_abs(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 abs()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2687,19 +2694,19 @@ abs()const{DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_ABSF(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3_dot(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 dot(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (this->x * rhs.x) + (this->y * rhs.y) + (this->z * rhs.z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_cross(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2710,7 +2717,7 @@ vec3_cross(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 cross(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2719,31 +2726,31 @@ cross(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->x * rhs.y) - (this->y * rhs.x);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3_mag(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 mag()const{DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((this->x * this->x) + (this->y * this->y) + (this->z * this->z));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32 
 vec3_mag_sq(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return (lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 mag_sq()const{DESHI_MATH_FUNCTION_START;
 	return (this->x * this->x) + (this->y * this->y) + (this->z * this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_normalize(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -2754,7 +2761,7 @@ vec3_normalize(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 normalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->x > DESHI_MATH_EPSILON_F32 || this->y > DESHI_MATH_EPSILON_F32 || this->z > DESHI_MATH_EPSILON_F32){
@@ -2763,31 +2770,31 @@ normalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3_distance(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return vec3_mag(vec3_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 distance(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3_distance_sq(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return vec3_mag_sq(vec3_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 distance_sq(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag_sq();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the scalar projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline f32
@@ -2800,7 +2807,7 @@ vec3_projection_scalar(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the scalar projection of `lhs` on `rhs`
 inline f32 vec3::
 projection_scalar(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -2811,7 +2818,7 @@ projection_scalar(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0.0f;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec3
@@ -2824,7 +2831,7 @@ vec3_projection_vector(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the vector projection of `lhs` on `rhs`
 inline vec3 vec3::
 projection_vector(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -2835,7 +2842,7 @@ projection_vector(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 		return vec3::ZERO;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_midpoint(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2846,7 +2853,7 @@ vec3_midpoint(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 midpoint(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2855,7 +2862,7 @@ midpoint(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z + rhs.z) / 2.0f;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3_radians_between(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2867,7 +2874,7 @@ vec3_radians_between(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3::
 radians_between(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
@@ -2877,7 +2884,7 @@ radians_between(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_floor(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -2888,7 +2895,7 @@ vec3_floor(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 floor()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2897,9 +2904,9 @@ floor()const{DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_FLOORF(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 floor(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2908,7 +2915,7 @@ floor(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_FLOORF(lhs.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_ceil(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -2919,7 +2926,7 @@ vec3_ceil(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 ceil()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2928,9 +2935,9 @@ ceil()const{DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_CEILF(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 ceil(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2939,7 +2946,7 @@ ceil(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_CEILF(lhs.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_round(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -2950,7 +2957,7 @@ vec3_round(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 round()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2959,9 +2966,9 @@ round()const{DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_ROUNDF(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 round(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2970,7 +2977,7 @@ round(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	v.z = DESHI_ROUNDF(lhs.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_min(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -2981,7 +2988,7 @@ vec3_min(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 min(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -2990,9 +2997,9 @@ min(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < rhs.z) ? this->z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 min(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3001,7 +3008,7 @@ min(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	v.z = (lhs.z < rhs.z) ? lhs.z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_max(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
@@ -3012,7 +3019,7 @@ vec3_max(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 max(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3021,9 +3028,9 @@ max(const vec3& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z > rhs.z) ? this->z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 max(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3032,7 +3039,7 @@ max(vec3 lhs, vec3 rhs){DESHI_MATH_FUNCTION_START;
 	v.z = (lhs.z > rhs.z) ? lhs.z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_clamp(vec3 value, vec3 min, vec3 max){DESHI_MATH_FUNCTION_START;
@@ -3043,7 +3050,7 @@ vec3_clamp(vec3 value, vec3 min, vec3 max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 clamp(const vec3& min, const vec3& max)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3052,9 +3059,9 @@ clamp(const vec3& min, const vec3& max)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < min.z) ? min.z : ((this->z > max.z) ? max.z : this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 clamp(vec3 value, vec3 min, vec3 max){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3063,7 +3070,7 @@ clamp(vec3 value, vec3 min, vec3 max){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z < min.z) ? min.z : ((value.z > max.z) ? max.z : value.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_clamp_min(vec3 value, vec3 min){DESHI_MATH_FUNCTION_START;
@@ -3074,7 +3081,7 @@ vec3_clamp_min(vec3 value, vec3 min){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 clamp_min(const vec3& min)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3083,9 +3090,9 @@ clamp_min(const vec3& min)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < min.z) ? min.z : this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 clamp_min(vec3 value, vec3 min){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3094,7 +3101,7 @@ clamp_min(vec3 value, vec3 min){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z < min.z) ? min.z : value.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_clamp_max(vec3 value, vec3 max){DESHI_MATH_FUNCTION_START;
@@ -3105,7 +3112,7 @@ vec3_clamp_max(vec3 value, vec3 max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 clamp_max(const vec3& max)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3114,9 +3121,9 @@ clamp_max(const vec3& max)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z > max.z) ? max.z : this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 clamp_max(vec3 value, vec3 max){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3125,7 +3132,7 @@ clamp_max(vec3 value, vec3 max){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z > max.z) ? max.z : value.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_clamp_mag(vec3 lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
@@ -3139,7 +3146,7 @@ vec3_clamp_mag(vec3 lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 	f32 m = this->mag();
@@ -3151,7 +3158,7 @@ clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_nudge(vec3 value, vec3 target, vec3 delta){DESHI_MATH_FUNCTION_START;
@@ -3162,7 +3169,7 @@ vec3_nudge(vec3 value, vec3 target, vec3 delta){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 nudge(vec3 target, vec3 delta){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3171,9 +3178,9 @@ nudge(vec3 target, vec3 delta){DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < target.z) ? ((this->z + delta.z < target.z) ? this->z + delta.z : target.z) : ((this->z - delta.z > target.z) ? this->z - delta.z : target.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 nudge(vec3 value, vec3 target, vec3 delta){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3182,7 +3189,7 @@ nudge(vec3 value, vec3 target, vec3 delta){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z < target.z) ? ((value.z + delta.z < target.z) ? value.z + delta.z : target.z) : ((value.z - delta.z > target.z) ? value.z - delta.z : target.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_lerp(vec3 lhs, vec3 rhs, f32 t){DESHI_MATH_FUNCTION_START;
@@ -3193,7 +3200,7 @@ vec3_lerp(vec3 lhs, vec3 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 lerp(vec3 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3202,9 +3209,9 @@ lerp(vec3 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.z = (this->z * (1.0f - t)) + (rhs.z * t);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 lerp(vec3 lhs, vec3 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3213,7 +3220,7 @@ lerp(vec3 lhs, vec3 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.z = (lhs.z * (1.0f - t)) + (rhs.z * t);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_x_zero(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3224,7 +3231,7 @@ vec3_x_zero(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 x_zero()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3233,7 +3240,7 @@ x_zero()const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_y_zero(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3244,7 +3251,7 @@ vec3_y_zero(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 y_zero()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3253,7 +3260,7 @@ y_zero()const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_z_zero(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3264,7 +3271,7 @@ vec3_z_zero(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 z_zero()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3273,7 +3280,7 @@ z_zero()const{DESHI_MATH_FUNCTION_START;
 	v.z = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_x_only(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3284,7 +3291,7 @@ vec3_x_only(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 x_only()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3293,7 +3300,7 @@ x_only()const{DESHI_MATH_FUNCTION_START;
 	v.z = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_y_only(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3304,7 +3311,7 @@ vec3_y_only(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 y_only()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3313,7 +3320,7 @@ y_only()const{DESHI_MATH_FUNCTION_START;
 	v.z = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_z_only(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3324,7 +3331,7 @@ vec3_z_only(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 z_only()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3333,7 +3340,7 @@ z_only()const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_x_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3344,7 +3351,7 @@ vec3_x_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 x_negate()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3353,7 +3360,7 @@ x_negate()const{DESHI_MATH_FUNCTION_START;
 	v.z =   this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_y_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3364,7 +3371,7 @@ vec3_y_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 y_negate()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3373,7 +3380,7 @@ y_negate()const{DESHI_MATH_FUNCTION_START;
 	v.z =   this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_z_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
@@ -3384,7 +3391,7 @@ vec3_z_negate(vec3 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 z_negate()const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3393,7 +3400,7 @@ z_negate()const{DESHI_MATH_FUNCTION_START;
 	v.z = -(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_x_set(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -3404,7 +3411,7 @@ vec3_x_set(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 x_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3413,7 +3420,7 @@ x_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_y_set(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -3424,7 +3431,7 @@ vec3_y_set(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 y_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3433,7 +3440,7 @@ y_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_z_set(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -3444,7 +3451,7 @@ vec3_z_set(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 z_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3453,7 +3460,7 @@ z_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_x_add(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -3464,7 +3471,7 @@ vec3_x_add(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 x_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3473,7 +3480,7 @@ x_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_y_add(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -3484,7 +3491,7 @@ vec3_y_add(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 y_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3493,7 +3500,7 @@ y_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_z_add(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -3504,7 +3511,7 @@ vec3_z_add(vec3 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 z_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3 v;
@@ -3513,7 +3520,7 @@ z_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z + a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3530,7 +3537,7 @@ vec3i{
 		struct{ s32 _x0; vec2i yz; };
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const vec3i ZERO;
 	static const vec3i ONE;
 	static const vec3i LEFT;
@@ -3599,7 +3606,7 @@ vec3i{
 	vec3  to_vec3()const;
 	vec4  to_vec4()const;
 	vec4i to_vec4i()const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }vec3i;
 
 DESHI_MATH_FUNC inline vec3i
@@ -3619,7 +3626,7 @@ DESHI_MATH_FUNC inline vec3i vec3i_UNITX()   { return vec3i{ 1, 0, 0}; }
 DESHI_MATH_FUNC inline vec3i vec3i_UNITY()   { return vec3i{ 0, 1, 0}; }
 DESHI_MATH_FUNC inline vec3i vec3i_UNITZ()   { return vec3i{ 0, 0, 1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const vec3i vec3i::ZERO     = vec3i{ 0, 0, 0};
 inline const vec3i vec3i::ONE      = vec3i{ 1, 1, 1};
 inline const vec3i vec3i::LEFT     = vec3i{-1, 0, 0};
@@ -3631,26 +3638,26 @@ inline const vec3i vec3i::FORWARD  = vec3i{ 0, 0, 1};
 inline const vec3i vec3i::UNITX    = vec3i{ 1, 0, 0};
 inline const vec3i vec3i::UNITY    = vec3i{ 0, 1, 0};
 inline const vec3i vec3i::UNITZ    = vec3i{ 0, 0, 1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline s32
 vec3i_index(vec3i lhs, u32 index){DESHI_MATH_FUNCTION_START;
 	return lhs.arr[index];
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline s32 vec3i::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline s32& vec3i::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_add(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3661,7 +3668,7 @@ vec3i_add(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator+ (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3670,16 +3677,16 @@ operator+ (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z + rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3i::
 operator+=(const vec3i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x += rhs.x;
 	this->y += rhs.y;
 	this->z += rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_sub(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3690,7 +3697,7 @@ vec3i_sub(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator- (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3699,16 +3706,16 @@ operator- (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z - rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3i::
 operator-=(const vec3i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x -= rhs.x;
 	this->y -= rhs.y;
 	this->z -= rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_mul(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3719,7 +3726,7 @@ vec3i_mul(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator* (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3728,16 +3735,16 @@ operator* (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z * rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3i::
 operator*=(const vec3i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x *= rhs.x;
 	this->y *= rhs.y;
 	this->z *= rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_mul_f32(vec3i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -3748,7 +3755,7 @@ vec3i_mul_f32(vec3i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3757,23 +3764,23 @@ operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (s32)((f32)this->z * rhs);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3i::
 operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x = (s32)((f32)this->x * rhs);
 	this->y = (s32)((f32)this->y * rhs);
 	this->z = (s32)((f32)this->z * rhs);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 operator* (f32 lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_div(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3784,7 +3791,7 @@ vec3i_div(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator/ (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3793,16 +3800,16 @@ operator/ (const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z / rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3i::
 operator/=(const vec3i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs.x;
 	this->y /= rhs.y;
 	this->z /= rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_div_f32(vec3i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -3813,7 +3820,7 @@ vec3i_div_f32(vec3i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3822,16 +3829,16 @@ operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z / rhs;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3i::
 operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs;
 	this->y /= rhs;
 	this->z /= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -3842,7 +3849,7 @@ vec3i_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 operator- ()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3851,7 +3858,7 @@ operator- ()const{DESHI_MATH_FUNCTION_START;
 	v.z = -(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec3i_equal(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3860,14 +3867,14 @@ vec3i_equal(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 		&& lhs.z == rhs.z;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec3i::
 operator==(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return this->x == rhs.x
 		&& this->y == rhs.y
 		&& this->z == rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec3i_nequal(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3876,14 +3883,14 @@ vec3i_nequal(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 		&& lhs.z != rhs.z;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec3i::
 operator!=(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return this->x != rhs.x
 		&& this->y != rhs.y
 		&& this->z != rhs.z;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_abs(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -3894,7 +3901,7 @@ vec3i_abs(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 abs()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3903,19 +3910,19 @@ abs()const{DESHI_MATH_FUNCTION_START;
 	v.z = ::DESHI_ABS(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3i_dot(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3i::
 dot(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (this->x * rhs.x) + (this->y * rhs.y) + (this->z * rhs.z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_cross(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -3926,7 +3933,7 @@ vec3i_cross(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 cross(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -3935,31 +3942,31 @@ cross(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->x * rhs.y) - (this->y * rhs.x);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3i_mag(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3i::
 mag()const{DESHI_MATH_FUNCTION_START;
 	return DESHI_SQRTF((this->x * this->x) + (this->y * this->y) + (this->z * this->z));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32 
 vec3i_mag_sq(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return (lhs.x * lhs.x) + (lhs.y * lhs.y) + (lhs.z * lhs.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3i::
 mag_sq()const{DESHI_MATH_FUNCTION_START;
 	return (this->x * this->x) + (this->y * this->y) + (this->z * this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_normalize(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -3970,7 +3977,7 @@ vec3i_normalize(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 normalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->x != 0 || this->y != 0 || this->z != 0){
@@ -3979,31 +3986,31 @@ normalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3i_distance(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return vec3i_mag(vec3i_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3i::
 distance(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3i_distance_sq(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return vec3i_mag_sq(vec3i_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3i::
 distance_sq(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag_sq();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the scalar projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline f32
@@ -4016,7 +4023,7 @@ vec3i_projection_scalar(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the scalar projection of `lhs` on `rhs`
 inline f32 vec3i:: 
 projection_scalar(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -4027,7 +4034,7 @@ projection_scalar(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0.0f;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec3i
@@ -4041,7 +4048,7 @@ vec3i_projection_vector(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the vector projection of `lhs` on `rhs`
 inline vec3i vec3i:: 
 projection_vector(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -4053,7 +4060,7 @@ projection_vector(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return vec3i::ZERO;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_midpoint(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -4064,7 +4071,7 @@ vec3i_midpoint(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 midpoint(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4073,7 +4080,7 @@ midpoint(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (s32)((f32)(this->z + rhs.z) / 2.0f);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec3i_radians_between(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -4085,7 +4092,7 @@ vec3i_radians_between(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec3i::
 radians_between(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
@@ -4095,7 +4102,7 @@ radians_between(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_min(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -4106,7 +4113,7 @@ vec3i_min(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 min(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4115,9 +4122,9 @@ min(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < rhs.z) ? this->z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 min(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4126,7 +4133,7 @@ min(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	v.z = (lhs.z < rhs.z) ? lhs.z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_max(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
@@ -4137,7 +4144,7 @@ vec3i_max(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 max(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4146,9 +4153,9 @@ max(const vec3i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z > rhs.z) ? this->z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 max(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4157,7 +4164,7 @@ max(vec3i lhs, vec3i rhs){DESHI_MATH_FUNCTION_START;
 	v.z = (lhs.z > rhs.z) ? lhs.z : rhs.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_clamp(vec3i value, vec3i min, vec3i max){DESHI_MATH_FUNCTION_START;
@@ -4168,7 +4175,7 @@ vec3i_clamp(vec3i value, vec3i min, vec3i max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 clamp(const vec3i& min, const vec3i& max)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4177,9 +4184,9 @@ clamp(const vec3i& min, const vec3i& max)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < min.z) ? min.z : ((this->z > max.z) ? max.z : this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 clamp(vec3i value, vec3i min, vec3i max){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4188,7 +4195,7 @@ clamp(vec3i value, vec3i min, vec3i max){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z < min.z) ? min.z : ((value.z > max.z) ? max.z : value.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_clamp_min(vec3i value, vec3i min){DESHI_MATH_FUNCTION_START;
@@ -4199,7 +4206,7 @@ vec3i_clamp_min(vec3i value, vec3i min){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 clamp_min(const vec3i& min)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4208,9 +4215,9 @@ clamp_min(const vec3i& min)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < min.z) ? min.z : this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 clamp_min(vec3i value, vec3i min){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4219,7 +4226,7 @@ clamp_min(vec3i value, vec3i min){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z < min.z) ? min.z : value.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_clamp_max(vec3i value, vec3i max){DESHI_MATH_FUNCTION_START;
@@ -4230,7 +4237,7 @@ vec3i_clamp_max(vec3i value, vec3i max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 clamp_max(const vec3i& max)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4239,9 +4246,9 @@ clamp_max(const vec3i& max)const{DESHI_MATH_FUNCTION_START;
 	v.z = (this->z > max.z) ? max.z : this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 clamp_max(vec3i value, vec3i max){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4250,7 +4257,7 @@ clamp_max(vec3i value, vec3i max){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z > max.z) ? max.z : value.z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_clamp_mag(vec3i lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
@@ -4264,7 +4271,7 @@ vec3i_clamp_mag(vec3i lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 	f32 m = this->mag();
@@ -4276,7 +4283,7 @@ clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_nudge(vec3i value, vec3i target, vec3i delta){DESHI_MATH_FUNCTION_START;
@@ -4287,7 +4294,7 @@ vec3i_nudge(vec3i value, vec3i target, vec3i delta){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 nudge(vec3i target, vec3i delta){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4296,9 +4303,9 @@ nudge(vec3i target, vec3i delta){DESHI_MATH_FUNCTION_START;
 	v.z = (this->z < target.z) ? ((this->z + delta.z < target.z) ? this->z + delta.z : target.z) : ((this->z - delta.z > target.z) ? this->z - delta.z : target.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 nudge(vec3i value, vec3i target, vec3i delta){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4307,7 +4314,7 @@ nudge(vec3i value, vec3i target, vec3i delta){DESHI_MATH_FUNCTION_START;
 	v.z = (value.z < target.z) ? ((value.z + delta.z < target.z) ? value.z + delta.z : target.z) : ((value.z - delta.z > target.z) ? value.z - delta.z : target.z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_lerp(vec3i lhs, vec3i rhs, f32 t){DESHI_MATH_FUNCTION_START;
@@ -4318,7 +4325,7 @@ vec3i_lerp(vec3i lhs, vec3i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 lerp(vec3i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4327,9 +4334,9 @@ lerp(vec3i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.z = (s32)(((f32)this->z * (1.0f - t)) + ((f32)rhs.z * t));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 lerp(vec3i lhs, vec3i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4338,7 +4345,7 @@ lerp(vec3i lhs, vec3i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.z = (s32)(((f32)lhs.z * (1.0f - t)) + ((f32)rhs.z * t));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_x_zero(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4349,7 +4356,7 @@ vec3i_x_zero(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 x_zero()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4358,7 +4365,7 @@ x_zero()const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_y_zero(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4369,7 +4376,7 @@ vec3i_y_zero(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 y_zero()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4378,7 +4385,7 @@ y_zero()const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_z_zero(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4389,7 +4396,7 @@ vec3i_z_zero(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 z_zero()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4398,7 +4405,7 @@ z_zero()const{DESHI_MATH_FUNCTION_START;
 	v.z = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_x_only(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4409,7 +4416,7 @@ vec3i_x_only(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 x_only()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4418,7 +4425,7 @@ x_only()const{DESHI_MATH_FUNCTION_START;
 	v.z = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_y_only(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4429,7 +4436,7 @@ vec3i_y_only(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 y_only()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4438,7 +4445,7 @@ y_only()const{DESHI_MATH_FUNCTION_START;
 	v.z = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_z_only(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4449,7 +4456,7 @@ vec3i_z_only(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 z_only()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4458,7 +4465,7 @@ z_only()const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_x_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4469,7 +4476,7 @@ vec3i_x_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 x_negate()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4478,7 +4485,7 @@ x_negate()const{DESHI_MATH_FUNCTION_START;
 	v.z =   this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_y_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4489,7 +4496,7 @@ vec3i_y_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 y_negate()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4498,7 +4505,7 @@ y_negate()const{DESHI_MATH_FUNCTION_START;
 	v.z =   this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_z_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
@@ -4509,7 +4516,7 @@ vec3i_z_negate(vec3i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 z_negate()const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4518,7 +4525,7 @@ z_negate()const{DESHI_MATH_FUNCTION_START;
 	v.z = -(this->z);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_x_set(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -4529,7 +4536,7 @@ vec3i_x_set(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 x_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4538,7 +4545,7 @@ x_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_y_set(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -4549,7 +4556,7 @@ vec3i_y_set(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 y_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4558,7 +4565,7 @@ y_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_z_set(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -4569,7 +4576,7 @@ vec3i_z_set(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 z_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4578,7 +4585,7 @@ z_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_x_add(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -4589,7 +4596,7 @@ vec3i_x_add(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 x_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4598,7 +4605,7 @@ x_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_y_add(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -4609,7 +4616,7 @@ vec3i_y_add(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 y_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4618,7 +4625,7 @@ y_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3i
 vec3i_z_add(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -4629,7 +4636,7 @@ vec3i_z_add(vec3i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i vec3i::
 z_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec3i v;
@@ -4638,7 +4645,7 @@ z_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.z = this->z + a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4683,7 +4690,7 @@ vec4{
 #endif //#if DESHI_MATH_USE_SSE
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const vec4 ZERO;
 	static const vec4 ONE;
 	static const vec4 UNITX;
@@ -4757,7 +4764,7 @@ vec4{
 	vec3  to_vec3()const;
 	vec3i to_vec3i()const;
 	vec4i to_vec4i()const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }vec4;
 
 DESHI_MATH_FUNC inline vec4
@@ -4772,33 +4779,33 @@ DESHI_MATH_FUNC inline vec4 vec4_UNITY(){ return vec4{0,1,0,0}; }
 DESHI_MATH_FUNC inline vec4 vec4_UNITZ(){ return vec4{0,0,1,0}; }
 DESHI_MATH_FUNC inline vec4 vec4_UNITW(){ return vec4{0,0,0,1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const vec4 vec4::ZERO  = vec4{0,0,0,0};
 inline const vec4 vec4::ONE   = vec4{1,1,1,1};
 inline const vec4 vec4::UNITX = vec4{1,0,0,0};
 inline const vec4 vec4::UNITY = vec4{0,1,0,0};
 inline const vec4 vec4::UNITZ = vec4{0,0,1,0};
 inline const vec4 vec4::UNITW = vec4{0,0,0,1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4_index(vec4 lhs, u32 index){DESHI_MATH_FUNCTION_START;
 	return lhs.arr[index];
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& vec4::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_add(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -4814,7 +4821,7 @@ vec4_add(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator+ (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -4828,9 +4835,9 @@ operator+ (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator+=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -4842,7 +4849,7 @@ operator+=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 	this->w += rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_sub(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -4858,7 +4865,7 @@ vec4_sub(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator- (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -4872,9 +4879,9 @@ operator- (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator-=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -4886,7 +4893,7 @@ operator-=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 	this->w -= rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_mul(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -4902,7 +4909,7 @@ vec4_mul(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator* (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -4916,9 +4923,9 @@ operator* (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator*=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -4930,7 +4937,7 @@ operator*=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 	this->w *= rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_mul_f32(vec4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -4946,7 +4953,7 @@ vec4_mul_f32(vec4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -4960,9 +4967,9 @@ operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -4974,14 +4981,14 @@ operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->w *= rhs;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 operator* (s32 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_div(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -4997,7 +5004,7 @@ vec4_div(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator/ (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5011,9 +5018,9 @@ operator/ (const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator/=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -5025,7 +5032,7 @@ operator/=(const vec4& rhs){DESHI_MATH_FUNCTION_START;
 	this->w /= rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_div_f32(vec4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -5041,7 +5048,7 @@ vec4_div_f32(vec4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5055,9 +5062,9 @@ operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -5069,7 +5076,7 @@ operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->w /= rhs;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5085,7 +5092,7 @@ vec4_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator- ()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5099,7 +5106,7 @@ operator- ()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec4_equal(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5113,7 +5120,7 @@ vec4_equal(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec4::
 operator==(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -5125,7 +5132,7 @@ operator==(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 			&& DESHI_ABSF(this->w - rhs.w) < DESHI_MATH_EPSILON_F32);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec4_nequal(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5139,7 +5146,7 @@ vec4_nequal(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec4::
 operator!=(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -5151,7 +5158,7 @@ operator!=(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 			|| DESHI_ABSF(this->w - rhs.w) > DESHI_MATH_EPSILON_F32);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_abs(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5167,7 +5174,7 @@ vec4_abs(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 abs()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5181,7 +5188,7 @@ abs()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4_dot(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5199,7 +5206,7 @@ vec4_dot(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 dot(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 result;
@@ -5215,7 +5222,7 @@ dot(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4_mag(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5234,7 +5241,7 @@ vec4_mag(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 mag()const{DESHI_MATH_FUNCTION_START;
 	f32 result;
@@ -5251,7 +5258,7 @@ mag()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4_mag_sq(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5269,7 +5276,7 @@ vec4_mag_sq(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 mag_sq()const{DESHI_MATH_FUNCTION_START;
 	f32 result;
@@ -5285,7 +5292,7 @@ mag_sq()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_normalize(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5296,7 +5303,7 @@ vec4_normalize(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 normalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->x > DESHI_MATH_EPSILON_F32 || this->y > DESHI_MATH_EPSILON_F32 || this->z > DESHI_MATH_EPSILON_F32 || this->w > DESHI_MATH_EPSILON_F32){
@@ -5305,7 +5312,7 @@ normalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_wnormalize(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5316,7 +5323,7 @@ vec4_wnormalize(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 wnormalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->w > DESHI_MATH_EPSILON_F32){
@@ -5325,7 +5332,7 @@ wnormalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 DESHI_MATH_FUNC inline f32
@@ -5333,24 +5340,24 @@ vec4_distance(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return vec4_mag(vec4_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 distance(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4_distance_sq(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return vec4_mag_sq(vec4_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 distance_sq(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag_sq();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the scalar projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline f32
@@ -5363,7 +5370,7 @@ vec4_projection_scalar(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the scalar projection of `lhs` on `rhs`
 inline f32 vec4::
 projection_scalar(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -5374,7 +5381,7 @@ projection_scalar(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0.0f;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec4
@@ -5387,7 +5394,7 @@ vec4_projection_vector(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the vector projection of `lhs` on `rhs`
 inline vec4 vec4::
 projection_vector(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -5398,7 +5405,7 @@ projection_vector(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 		return vec4::ZERO;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_midpoint(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5414,7 +5421,7 @@ vec4_midpoint(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 midpoint(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5428,7 +5435,7 @@ midpoint(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4_radians_between(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5440,7 +5447,7 @@ vec4_radians_between(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4::
 radians_between(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
@@ -5450,7 +5457,7 @@ radians_between(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_floor(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5466,7 +5473,7 @@ vec4_floor(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 floor()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5480,9 +5487,9 @@ floor()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 floor(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5496,7 +5503,7 @@ floor(vec4 lhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_ceil(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5512,7 +5519,7 @@ vec4_ceil(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 ceil()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5526,9 +5533,9 @@ ceil()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 ceil(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5542,7 +5549,7 @@ ceil(vec4 lhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_round(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5558,7 +5565,7 @@ vec4_round(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 round()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5572,9 +5579,9 @@ round()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 round(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5588,7 +5595,7 @@ round(vec4 lhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_min(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5604,7 +5611,7 @@ vec4_min(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 min(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5618,9 +5625,9 @@ min(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 min(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5634,7 +5641,7 @@ min(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_max(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
@@ -5650,7 +5657,7 @@ vec4_max(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 max(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5664,9 +5671,9 @@ max(const vec4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 max(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5680,7 +5687,7 @@ max(vec4 lhs, vec4 rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_clamp(vec4 value, vec4 min, vec4 max){DESHI_MATH_FUNCTION_START;
@@ -5696,7 +5703,7 @@ vec4_clamp(vec4 value, vec4 min, vec4 max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 clamp(const vec4& min, const vec4& max)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5710,9 +5717,9 @@ clamp(const vec4& min, const vec4& max)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 clamp(vec4 value, vec4 min, vec4 max){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5726,7 +5733,7 @@ clamp(vec4 value, vec4 min, vec4 max){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_clamp_min(vec4 value, vec4 min){DESHI_MATH_FUNCTION_START;
@@ -5742,7 +5749,7 @@ vec4_clamp_min(vec4 value, vec4 min){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 clamp_min(const vec4& min)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5756,9 +5763,9 @@ clamp_min(const vec4& min)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 clamp_min(vec4 value, vec4 min){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5772,7 +5779,7 @@ clamp_min(vec4 value, vec4 min){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_clamp_max(vec4 value, vec4 max){DESHI_MATH_FUNCTION_START;
@@ -5788,7 +5795,7 @@ vec4_clamp_max(vec4 value, vec4 max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 clamp_max(const vec4& max)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5802,9 +5809,9 @@ clamp_max(const vec4& max)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 clamp_max(vec4 value, vec4 max){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5818,7 +5825,7 @@ clamp_max(vec4 value, vec4 max){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_clamp_mag(vec4 lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
@@ -5832,7 +5839,7 @@ vec4_clamp_mag(vec4 lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 	f32 m = this->mag();
@@ -5844,7 +5851,7 @@ clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_nudge(vec4 value, vec4 target, vec4 delta){DESHI_MATH_FUNCTION_START;
@@ -5856,7 +5863,7 @@ vec4_nudge(vec4 value, vec4 target, vec4 delta){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 nudge(vec4 target, vec4 delta){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5866,9 +5873,9 @@ nudge(vec4 target, vec4 delta){DESHI_MATH_FUNCTION_START;
 	v.w = (this->w < target.w) ? ((this->w + delta.w < target.w) ? this->w + delta.w : target.w) : ((this->w - delta.w > target.w) ? this->w - delta.w : target.w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 nudge(vec4 value, vec4 target, vec4 delta){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5878,7 +5885,7 @@ nudge(vec4 value, vec4 target, vec4 delta){DESHI_MATH_FUNCTION_START;
 	v.w = (value.w < target.w) ? ((value.w + delta.w < target.w) ? value.w + delta.w : target.w) : ((value.w - delta.w > target.w) ? value.w - delta.w : target.w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_lerp(vec4 lhs, vec4 rhs, f32 t){DESHI_MATH_FUNCTION_START;
@@ -5890,7 +5897,7 @@ vec4_lerp(vec4 lhs, vec4 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 lerp(vec4 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5900,9 +5907,9 @@ lerp(vec4 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.w = (this->w * (1.0f - t)) + (rhs.w * t);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 lerp(vec4 lhs, vec4 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5912,7 +5919,7 @@ lerp(vec4 lhs, vec4 rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.w = (lhs.w * (1.0f - t)) + (rhs.w * t);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_x_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5924,7 +5931,7 @@ vec4_x_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 x_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5934,7 +5941,7 @@ x_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_y_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5946,7 +5953,7 @@ vec4_y_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 y_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5956,7 +5963,7 @@ y_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_z_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5968,7 +5975,7 @@ vec4_z_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 z_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -5978,7 +5985,7 @@ z_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_w_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -5990,7 +5997,7 @@ vec4_w_zero(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 w_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6000,7 +6007,7 @@ w_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_x_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6012,7 +6019,7 @@ vec4_x_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 x_only()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6022,7 +6029,7 @@ x_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_y_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6034,7 +6041,7 @@ vec4_y_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 y_only()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6044,7 +6051,7 @@ y_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_z_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6056,7 +6063,7 @@ vec4_z_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 z_only()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6066,7 +6073,7 @@ z_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_w_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6078,7 +6085,7 @@ vec4_w_only(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 w_only()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6088,7 +6095,7 @@ w_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_x_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6100,7 +6107,7 @@ vec4_x_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 x_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6110,7 +6117,7 @@ x_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w =   this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_y_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6122,7 +6129,7 @@ vec4_y_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 y_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6132,7 +6139,7 @@ y_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w =   this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_z_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6144,7 +6151,7 @@ vec4_z_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 z_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6154,7 +6161,7 @@ z_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w =   this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_w_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
@@ -6166,7 +6173,7 @@ vec4_w_negate(vec4 lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 w_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6176,7 +6183,7 @@ w_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w = -(this->w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_x_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6188,7 +6195,7 @@ vec4_x_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 x_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6198,7 +6205,7 @@ x_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_y_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6210,7 +6217,7 @@ vec4_y_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 y_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6220,7 +6227,7 @@ y_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_z_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6232,7 +6239,7 @@ vec4_z_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 z_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6242,7 +6249,7 @@ z_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_w_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6254,7 +6261,7 @@ vec4_w_set(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 w_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6264,7 +6271,7 @@ w_set(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_x_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6276,7 +6283,7 @@ vec4_x_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 x_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6286,7 +6293,7 @@ x_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_y_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6298,7 +6305,7 @@ vec4_y_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 y_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6308,7 +6315,7 @@ y_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v; 
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_z_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6320,7 +6327,7 @@ vec4_z_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 z_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6330,7 +6337,7 @@ z_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_w_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
@@ -6342,7 +6349,7 @@ vec4_w_add(vec4 lhs, f32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 w_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4 v;
@@ -6352,7 +6359,7 @@ w_add(f32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w + a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6397,7 +6404,7 @@ vec4i{
 #endif //#ifdef DESHI_MATH_USE_SSE
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const vec4i ZERO;
 	static const vec4i ONE;
 	static const vec4i UNITX;
@@ -6467,7 +6474,7 @@ vec4i{
 	vec3  to_vec3()const;
 	vec3i to_vec3i()const;
 	vec4  to_vec4()const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }vec4i;
 
 DESHI_MATH_FUNC inline vec4i
@@ -6482,33 +6489,33 @@ DESHI_MATH_FUNC inline vec4i vec4i_UNITY(){ return vec4i{0,1,0,0}; }
 DESHI_MATH_FUNC inline vec4i vec4i_UNITZ(){ return vec4i{0,0,1,0}; }
 DESHI_MATH_FUNC inline vec4i vec4i_UNITW(){ return vec4i{0,0,0,1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const vec4i vec4i::ZERO  = vec4i{0,0,0,0};
 inline const vec4i vec4i::ONE   = vec4i{1,1,1,1};
 inline const vec4i vec4i::UNITX = vec4i{1,0,0,0};
 inline const vec4i vec4i::UNITY = vec4i{0,1,0,0};
 inline const vec4i vec4i::UNITZ = vec4i{0,0,1,0};
 inline const vec4i vec4i::UNITW = vec4i{0,0,0,1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline s32
 vec4i_index(vec4i lhs, u32 index){DESHI_MATH_FUNCTION_START;
 	return lhs.arr[index];
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline s32 vec4i::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline s32& vec4i::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_add(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6524,7 +6531,7 @@ vec4i_add(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator+ (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6538,9 +6545,9 @@ operator+ (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4i::
 operator+=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -6552,7 +6559,7 @@ operator+=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 	this->w += rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_sub(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6568,7 +6575,7 @@ vec4i_sub(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator- (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6582,9 +6589,9 @@ operator- (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4i::
 operator-=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -6596,7 +6603,7 @@ operator-=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 	this->w -= rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_mul(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6612,7 +6619,7 @@ vec4i_mul(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator* (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6626,9 +6633,9 @@ operator* (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4i::
 operator*=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -6640,7 +6647,7 @@ operator*=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 	this->w *= rhs.w;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_mul_f32(vec4i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -6656,7 +6663,7 @@ vec4i_mul_f32(vec4i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6670,9 +6677,9 @@ operator* (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4i::
 operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -6684,14 +6691,14 @@ operator*=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->w *= rhs;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 operator* (s32 lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_div(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6703,7 +6710,7 @@ vec4i_div(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator/ (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6713,9 +6720,9 @@ operator/ (const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w / rhs.w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4i::
 operator/=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs.x;
@@ -6723,7 +6730,7 @@ operator/=(const vec4i& rhs){DESHI_MATH_FUNCTION_START;
 	this->z /= rhs.z;
 	this->w /= rhs.w;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_div_f32(vec4i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -6735,7 +6742,7 @@ vec4i_div_f32(vec4i lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6745,9 +6752,9 @@ operator/ (f32 rhs)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w / rhs;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4i::
 operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->x /= rhs;
@@ -6755,7 +6762,7 @@ operator/=(f32 rhs){DESHI_MATH_FUNCTION_START;
 	this->z /= rhs;
 	this->w /= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -6771,7 +6778,7 @@ vec4i_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 operator- ()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6785,7 +6792,7 @@ operator- ()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec4i_equal(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6799,7 +6806,7 @@ vec4i_equal(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec4i::
 operator==(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -6811,7 +6818,7 @@ operator==(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 			&& this->w == rhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 vec4i_nequal(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6825,7 +6832,7 @@ vec4i_nequal(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 vec4i::
 operator!=(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -6837,7 +6844,7 @@ operator!=(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 			&& this->w != rhs.w);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_abs(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -6853,7 +6860,7 @@ vec4i_abs(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 abs()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -6867,7 +6874,7 @@ abs()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4i_dot(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -6885,7 +6892,7 @@ vec4i_dot(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4i::
 dot(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 result;
@@ -6901,7 +6908,7 @@ dot(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4i_mag(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -6919,7 +6926,7 @@ vec4i_mag(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4i::
 mag()const{DESHI_MATH_FUNCTION_START;
 	f32 result;
@@ -6935,7 +6942,7 @@ mag()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4i_mag_sq(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -6953,7 +6960,7 @@ vec4i_mag_sq(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4i::
 mag_sq()const{DESHI_MATH_FUNCTION_START;
 	f32 result;
@@ -6969,7 +6976,7 @@ mag_sq()const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_normalize(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -6980,7 +6987,7 @@ vec4i_normalize(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 normalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->x != 0 || this->y != 0 || this->z != 0 || this->w != 0){
@@ -6989,7 +6996,7 @@ normalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_wnormalize(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7000,7 +7007,7 @@ vec4i_wnormalize(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 wnormalize()const{DESHI_MATH_FUNCTION_START;
 	if(this->w != 0){
@@ -7009,31 +7016,31 @@ wnormalize()const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4i_distance(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return vec4i_mag(vec4i_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4i::
 distance(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4i_distance_sq(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return vec4i_mag_sq(vec4i_sub(lhs,rhs));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4i::
 distance_sq(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	return (*this - rhs).mag_sq();
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the scalar projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline f32
@@ -7046,7 +7053,7 @@ vec4i_projection_scalar(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the scalar projection of `lhs` on `rhs`
 inline f32 vec4i::
 projection_scalar(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -7057,7 +7064,7 @@ projection_scalar(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0.0f;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //Returns the vector projection of `lhs` on `rhs`
 DESHI_MATH_FUNC inline vec4i
@@ -7071,7 +7078,7 @@ vec4i_projection_vector(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 //Returns the vector projection of `lhs` on `rhs`
 inline vec4i vec4i:: 
 projection_vector(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
@@ -7083,7 +7090,7 @@ projection_vector(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return vec4i::ZERO;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_midpoint(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -7095,7 +7102,7 @@ vec4i_midpoint(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 midpoint(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7105,7 +7112,7 @@ midpoint(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	v.w = (s32)((f32)(this->w + rhs.w) / 2.0f);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 vec4i_radians_between(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -7117,7 +7124,7 @@ vec4i_radians_between(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 vec4i::
 radians_between(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	f32 m = DESHI_SQRTF(this->mag_sq() * rhs.mag_sq());
@@ -7127,7 +7134,7 @@ radians_between(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 		return 0;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_min(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -7143,7 +7150,7 @@ vec4i_min(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 min(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7157,9 +7164,9 @@ min(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 min(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7173,7 +7180,7 @@ min(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_max(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
@@ -7189,7 +7196,7 @@ vec4i_max(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 max(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7203,9 +7210,9 @@ max(const vec4i& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus 
+#endif //#if DESHI_MATH_USE_CPP 
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 max(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7219,7 +7226,7 @@ max(vec4i lhs, vec4i rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_clamp(vec4i value, vec4i min, vec4i max){DESHI_MATH_FUNCTION_START;
@@ -7231,7 +7238,7 @@ vec4i_clamp(vec4i value, vec4i min, vec4i max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 clamp(const vec4i& min, const vec4i& max)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7241,9 +7248,9 @@ clamp(const vec4i& min, const vec4i& max)const{DESHI_MATH_FUNCTION_START;
 	v.w = (this->w < min.w) ? min.w : ((this->w > max.w) ? max.w : this->w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 clamp(vec4i value, vec4i min, vec4i max){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7253,7 +7260,7 @@ clamp(vec4i value, vec4i min, vec4i max){DESHI_MATH_FUNCTION_START;
 	v.w = (value.w < min.w) ? min.w : ((value.w > max.w) ? max.w : value.w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_clamp_min(vec4i value, vec4i min){DESHI_MATH_FUNCTION_START;
@@ -7269,7 +7276,7 @@ vec4i_clamp_min(vec4i value, vec4i min){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 clamp_min(const vec4i& min)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7283,9 +7290,9 @@ clamp_min(const vec4i& min)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 clamp_min(vec4i value, vec4i min){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7299,7 +7306,7 @@ clamp_min(vec4i value, vec4i min){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_clamp_max(vec4i value, vec4i max){DESHI_MATH_FUNCTION_START;
@@ -7315,7 +7322,7 @@ vec4i_clamp_max(vec4i value, vec4i max){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 clamp_max(const vec4i& max)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7329,9 +7336,9 @@ clamp_max(const vec4i& max)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 clamp_max(vec4i value, vec4i max){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7345,7 +7352,7 @@ clamp_max(vec4i value, vec4i max){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_clamp_mag(vec4i lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
@@ -7359,7 +7366,7 @@ vec4i_clamp_mag(vec4i lhs, f32 min, f32 max){DESHI_MATH_FUNCTION_START;
 	}
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 	f32 m = this->mag();
@@ -7371,7 +7378,7 @@ clamp_mag(f32 min, f32 max)const{DESHI_MATH_FUNCTION_START;
 		return *this;
 	}
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_nudge(vec4i value, vec4i target, vec4i delta){DESHI_MATH_FUNCTION_START;
@@ -7383,7 +7390,7 @@ vec4i_nudge(vec4i value, vec4i target, vec4i delta){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 nudge(vec4i target, vec4i delta){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7393,9 +7400,9 @@ nudge(vec4i target, vec4i delta){DESHI_MATH_FUNCTION_START;
 	v.w = (this->w < target.w) ? ((this->w + delta.w < target.w) ? this->w + delta.w : target.w) : ((this->w - delta.w > target.w) ? this->w - delta.w : target.w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 nudge(vec4i value, vec4i target, vec4i delta){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7405,7 +7412,7 @@ nudge(vec4i value, vec4i target, vec4i delta){DESHI_MATH_FUNCTION_START;
 	v.w = (value.w < target.w) ? ((value.w + delta.w < target.w) ? value.w + delta.w : target.w) : ((value.w - delta.w > target.w) ? value.w - delta.w : target.w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_lerp(vec4i lhs, vec4i rhs, f32 t){DESHI_MATH_FUNCTION_START;
@@ -7417,7 +7424,7 @@ vec4i_lerp(vec4i lhs, vec4i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 lerp(vec4i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7427,9 +7434,9 @@ lerp(vec4i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.w = (s32)(((f32)this->w * (1.0f - t)) + ((f32)rhs.w * t));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 lerp(vec4i lhs, vec4i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7439,7 +7446,7 @@ lerp(vec4i lhs, vec4i rhs, f32 t){DESHI_MATH_FUNCTION_START;
 	v.w = (s32)(((f32)lhs.w * (1.0f - t)) + ((f32)rhs.w * t));
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_x_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7451,7 +7458,7 @@ vec4i_x_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 x_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7461,7 +7468,7 @@ x_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_y_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7473,7 +7480,7 @@ vec4i_y_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 y_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7483,7 +7490,7 @@ y_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_z_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7495,7 +7502,7 @@ vec4i_z_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 z_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7505,7 +7512,7 @@ z_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_w_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7517,7 +7524,7 @@ vec4i_w_zero(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 w_zero()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7527,7 +7534,7 @@ w_zero()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_x_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7539,7 +7546,7 @@ vec4i_x_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 x_only()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7549,7 +7556,7 @@ x_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_y_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7561,7 +7568,7 @@ vec4i_y_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 y_only()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7571,7 +7578,7 @@ y_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_z_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7583,7 +7590,7 @@ vec4i_z_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 z_only()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7593,7 +7600,7 @@ z_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = 0;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_w_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7605,7 +7612,7 @@ vec4i_w_only(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 w_only()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7615,7 +7622,7 @@ w_only()const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_x_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7627,7 +7634,7 @@ vec4i_x_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 x_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7637,7 +7644,7 @@ x_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w =   this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_y_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7649,7 +7656,7 @@ vec4i_y_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 y_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7659,7 +7666,7 @@ y_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w =   this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_z_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7671,7 +7678,7 @@ vec4i_z_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 z_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7681,7 +7688,7 @@ z_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w =   this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_w_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
@@ -7693,7 +7700,7 @@ vec4i_w_negate(vec4i lhs){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 w_negate()const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7703,7 +7710,7 @@ w_negate()const{DESHI_MATH_FUNCTION_START;
 	v.w = -(this->w);
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_x_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7715,7 +7722,7 @@ vec4i_x_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 x_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7725,7 +7732,7 @@ x_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_y_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7737,7 +7744,7 @@ vec4i_y_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 y_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7747,7 +7754,7 @@ y_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_z_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7759,7 +7766,7 @@ vec4i_z_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 z_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7769,7 +7776,7 @@ z_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_w_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7781,7 +7788,7 @@ vec4i_w_set(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 w_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7791,7 +7798,7 @@ w_set(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_x_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7803,7 +7810,7 @@ vec4i_x_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 x_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7813,7 +7820,7 @@ x_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_y_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7825,7 +7832,7 @@ vec4i_y_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 y_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7835,7 +7842,7 @@ y_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v; 
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_z_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7847,7 +7854,7 @@ vec4i_z_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 z_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7857,7 +7864,7 @@ z_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4i
 vec4i_w_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
@@ -7869,7 +7876,7 @@ vec4i_w_add(vec4i lhs, s32 a){DESHI_MATH_FUNCTION_START;
 	return v;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i vec4i::
 w_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	vec4i v;
@@ -7879,7 +7886,7 @@ w_add(s32 a)const{DESHI_MATH_FUNCTION_START;
 	v.w = this->w + a;
 	return v;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -7891,366 +7898,366 @@ vec2_to_vec2i(vec2 a){DESHI_MATH_FUNCTION_START;
 	return Vec2i((s32)a.x, (s32)a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 vec2::to_vec2i()const{DESHI_MATH_FUNCTION_START;
 	return Vec2i((s32)this->x, (s32)this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3
 vec2_to_vec3(vec2 a){DESHI_MATH_FUNCTION_START;
 	return Vec3(a.x, a.y, 0.0f);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 vec2::to_vec3()const{DESHI_MATH_FUNCTION_START;
 	return Vec3(this->x, this->y, 0.0f);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3i
 vec2_to_vec3i(vec2 a){DESHI_MATH_FUNCTION_START;
 	return Vec3i((s32)a.x, (s32)a.y, 0);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 vec2::to_vec3i()const{DESHI_MATH_FUNCTION_START;
 	return Vec3i((s32)this->x, (s32)this->y, 0);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4
 vec2_to_vec4(vec2 a){DESHI_MATH_FUNCTION_START;
 	return Vec4(a.x, a.y, 0.0f, 0.0f);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 vec2::to_vec4()const{DESHI_MATH_FUNCTION_START;
 	return Vec4(this->x, this->y, 0.0f, 0.0f);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4i
 vec2_to_vec4i(vec2 a){DESHI_MATH_FUNCTION_START;
 	return Vec4i((s32)a.x, (s32)a.y, 0, 0);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 vec2::to_vec4i()const{DESHI_MATH_FUNCTION_START;
 	return Vec4i(this->x, this->y, 0, 0);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2
 vec2i_to_vec2(vec2i a){DESHI_MATH_FUNCTION_START;
 	return Vec2((f32)a.x, (f32)a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 vec2i::to_vec2()const{DESHI_MATH_FUNCTION_START;
 	return Vec2((f32)this->x, (f32)this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3
 vec2i_to_vec3(vec2i a){DESHI_MATH_FUNCTION_START;
 	return Vec3((f32)a.x, (f32)a.y, 0.0f);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 vec2i::to_vec3()const{DESHI_MATH_FUNCTION_START;
 	return Vec3((f32)this->x, (f32)this->y, 0.0f);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3i
 vec2i_to_vec3i(vec2i a){DESHI_MATH_FUNCTION_START;
 	return Vec3i(a.x, a.y, 0);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 vec2i::to_vec3i()const{DESHI_MATH_FUNCTION_START;
 	return Vec3i(this->x, this->y, 0);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4
 vec2i_to_vec4(vec2i a){DESHI_MATH_FUNCTION_START;
 	return Vec4((f32)a.x, (f32)a.y, 0.0f, 0.0f);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 vec2i::to_vec4()const{DESHI_MATH_FUNCTION_START;
 	return Vec4((f32)this->x, (f32)this->y, 0.0f, 0.0f);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4i
 vec2i_to_vec4i(vec2i a){DESHI_MATH_FUNCTION_START;
 	return Vec4i(a.x, a.y, 0, 0);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 vec2i::to_vec4i()const{DESHI_MATH_FUNCTION_START;
 	return Vec4i(this->x, this->y, 0, 0);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2
 vec3_to_vec2(vec3 a){DESHI_MATH_FUNCTION_START;
 	return Vec2(a.x, a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 vec3::to_vec2()const{DESHI_MATH_FUNCTION_START;
 	return Vec2(this->x, this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2i
 vec3_to_vec2i(vec3 a){DESHI_MATH_FUNCTION_START;
 	return Vec2i((s32)a.x, (s32)a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 vec3::to_vec2i()const{DESHI_MATH_FUNCTION_START;
 	return Vec2i((s32)this->x, (s32)this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3i
 vec3_to_vec3i(vec3 a){DESHI_MATH_FUNCTION_START;
 	return Vec3i((s32)a.x, (s32)a.y, (s32)a.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 vec3::to_vec3i()const{DESHI_MATH_FUNCTION_START;
 	return Vec3i((s32)this->x, (s32)this->y, (s32)this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4
 vec3_to_vec4(vec3 a){DESHI_MATH_FUNCTION_START;
 	return Vec4(a.x, a.y, a.z, 0.0f);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 vec3::to_vec4()const{DESHI_MATH_FUNCTION_START;
 	return Vec4(this->x, this->y, this->z, 0.0f);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4i
 vec3_to_vec4i(vec3 a){DESHI_MATH_FUNCTION_START;
 	return Vec4i((s32)a.x, (s32)a.y, (s32)a.z, 0);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 vec3::to_vec4i()const{DESHI_MATH_FUNCTION_START;
 	return Vec4i((s32)this->x, (s32)this->y, (s32)this->z, 0);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2
 vec3i_to_vec2(vec3i a){DESHI_MATH_FUNCTION_START;
 	return Vec2((f32)a.x, (f32)a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 vec3i::to_vec2()const{DESHI_MATH_FUNCTION_START;
 	return Vec2((f32)this->x, (f32)this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2i
 vec3i_to_vec2i(vec3i a){DESHI_MATH_FUNCTION_START;
 	return Vec2i(a.x, a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 vec3i::to_vec2i()const{DESHI_MATH_FUNCTION_START;
 	return Vec2i(this->x, this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3
 vec3i_to_vec3(vec3i a){DESHI_MATH_FUNCTION_START;
 	return Vec3((f32)a.x, (f32)a.y, (f32)a.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 vec3i::to_vec3()const{DESHI_MATH_FUNCTION_START;
 	return Vec3((f32)this->x, (f32)this->y, (f32)this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4
 vec3i_to_vec4(vec3i a){DESHI_MATH_FUNCTION_START;
 	return Vec4((f32)a.x, (f32)a.y, (f32)a.z, 0.0f);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 vec3i::to_vec4()const{DESHI_MATH_FUNCTION_START;
 	return Vec4((f32)this->x, (f32)this->y, (f32)this->z, 0.0f);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4i
 vec3i_to_vec4i(vec3i a){DESHI_MATH_FUNCTION_START;
 	return Vec4i(a.x, a.y, a.z, 0);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 vec3i::to_vec4i()const{DESHI_MATH_FUNCTION_START;
 	return Vec4i(this->x, this->y, this->z, 0);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2
 vec4_to_vec2(vec4 a){DESHI_MATH_FUNCTION_START;
 	return Vec2(a.x, a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 vec4::to_vec2()const{DESHI_MATH_FUNCTION_START;
 	return Vec2(this->x, this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2i
 vec4_to_vec2i(vec4 a){DESHI_MATH_FUNCTION_START;
 	return Vec2i((s32)a.x, (s32)a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 vec4::to_vec2i()const{DESHI_MATH_FUNCTION_START;
 	return Vec2i((s32)this->x, (s32)this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3
 vec4_to_vec3(vec4 a){DESHI_MATH_FUNCTION_START;
 	return Vec3(a.x, a.y, a.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 vec4::to_vec3()const{DESHI_MATH_FUNCTION_START;
 	return Vec3(this->x, this->y, this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3i
 vec4_to_vec3i(vec4 a){DESHI_MATH_FUNCTION_START;
 	return Vec3i((s32)a.x, (s32)a.y, (s32)a.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 vec4::to_vec3i()const{DESHI_MATH_FUNCTION_START;
 	return Vec3i((s32)this->x, (s32)this->y, (s32)this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4i
 vec4_to_vec4i(vec4 a){DESHI_MATH_FUNCTION_START;
 	return Vec4i((s32)a.x, (s32)a.y, (s32)a.z, (s32)a.w);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4i
 vec4::to_vec4i()const{DESHI_MATH_FUNCTION_START;
 	return Vec4i((s32)this->x, (s32)this->y, (s32)this->z, (s32)this->w);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2
 vec4i_to_vec2(vec4i a){DESHI_MATH_FUNCTION_START;
 	return Vec2((f32)a.x, (f32)a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2
 vec4i::to_vec2()const{DESHI_MATH_FUNCTION_START;
 	return Vec2((f32)this->x, (f32)this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec2i
 vec4i_to_vec2i(vec4i a){DESHI_MATH_FUNCTION_START;
 	return Vec2i(a.x, a.y);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec2i
 vec4i::to_vec2i()const{DESHI_MATH_FUNCTION_START;
 	return Vec2i(this->x, this->y);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3
 vec4i_to_vec3(vec4i a){DESHI_MATH_FUNCTION_START;
 	return Vec3((f32)a.x, (f32)a.y, (f32)a.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3
 vec4i::to_vec3()const{DESHI_MATH_FUNCTION_START;
 	return Vec3((f32)this->x, (f32)this->y, (f32)this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec3i
 vec4i_to_vec3i(vec4i a){DESHI_MATH_FUNCTION_START;
 	return Vec3i(a.x, a.y, a.z);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3i
 vec4i::to_vec3i()const{DESHI_MATH_FUNCTION_START;
 	return Vec3i(this->x, this->y, this->z);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 inline vec4
 vec4i_to_vec4(vec4i a){DESHI_MATH_FUNCTION_START;
 	return Vec4((f32)a.x, (f32)a.y, (f32)a.z, (f32)a.w);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4
 vec4i::to_vec4()const{DESHI_MATH_FUNCTION_START;
 	return Vec4((f32)this->x, (f32)this->y, (f32)this->z, (f32)this->w);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @vec_hashing
 #ifndef DESHI_MATH_DISABLE_HASHING
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 
 
 //TODO(sushi) always explain your hashing
@@ -8327,7 +8334,7 @@ struct hash<vec4i>{
 };
 
 
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 #endif //#ifndef DESHI_MATH_DISABLE_HASHING
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @vec_tostring
@@ -8344,7 +8351,7 @@ vec2_to_dstr8(vec2 x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8(const vec2& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8354,7 +8361,7 @@ to_dstr8(const vec2& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTIO
 	snprintf((char*)s.str, s.count+1, "(%g, %g)", x.x, x.y);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec2_to_dstr8p(vec2 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8366,7 +8373,7 @@ vec2_to_dstr8p(vec2 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8p(const vec2& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8376,7 +8383,7 @@ to_dstr8p(const vec2& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DE
 	snprintf((char*)s.str, s.count+1, "(%.*f, %.*f)", precision, x.x, precision, x.y);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec2i_to_dstr8(vec2i x, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8388,7 +8395,7 @@ vec2i_to_dstr8(vec2i x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8(const vec2i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8398,7 +8405,7 @@ to_dstr8(const vec2i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTI
 	snprintf((char*)s.str, s.count+1, "(%i, %i)", x.x, x.y);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec3_to_dstr8(vec3 x, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8410,7 +8417,7 @@ vec3_to_dstr8(vec3 x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8(const vec3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8420,7 +8427,7 @@ to_dstr8(const vec3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTIO
 	snprintf((char*)s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec3_to_dstr8p(vec3 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8432,7 +8439,7 @@ vec3_to_dstr8p(vec3 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8p(const vec3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8442,7 +8449,7 @@ to_dstr8p(const vec3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DE
 	snprintf((char*)s.str, s.count+1, "(%.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec3i_to_dstr8(vec3i x, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8454,7 +8461,7 @@ vec3i_to_dstr8(vec3i x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8(const vec3i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8464,7 +8471,7 @@ to_dstr8(const vec3i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTI
 	snprintf((char*)s.str, s.count+1, "(%i, %i, %i)", x.x, x.y, x.z);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec4_to_dstr8(vec4 x, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8476,7 +8483,7 @@ vec4_to_dstr8(vec4 x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8(const vec4& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8486,7 +8493,7 @@ to_dstr8(const vec4& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTIO
 	snprintf((char*)s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec4_to_dstr8p(vec4 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8498,7 +8505,7 @@ vec4_to_dstr8p(vec4 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8p(const vec4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8508,7 +8515,7 @@ to_dstr8p(const vec4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DE
 	snprintf((char*)s.str, s.count+1, "(%.*f, %.*f, %.*f, %.*f)", precision, x.x, precision, x.y, precision, x.z, precision, x.w);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 vec4i_to_dstr8(vec4i x, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -8520,7 +8527,7 @@ vec4i_to_dstr8(vec4i x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 dstr8
 to_dstr8(const vec4i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s; s.allocator = a;
@@ -8530,7 +8537,7 @@ to_dstr8(const vec4i& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTI
 	snprintf((char*)s.str, s.count+1, "(%i, %i, %i, %i)", x.x, x.y, x.z, x.w);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 #endif //#ifndef DESHI_MATH_DISABLE_TOSTRING
@@ -8554,7 +8561,7 @@ mat3{
 		};
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const mat3 ZERO;
 	static const mat3 ONE;
 	static const mat3 IDENTITY;
@@ -8587,7 +8594,7 @@ mat3{
 	mat4 to_mat4()const;
 	vec3 row(u32 row)const;
 	vec3 col(u32 col)const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }mat3;
 
 DESHI_MATH_FUNC inline mat3
@@ -8606,47 +8613,47 @@ DESHI_MATH_FUNC inline mat3 mat3_ZERO()    { return mat3{0,0,0,0,0,0,0,0,0}; }
 DESHI_MATH_FUNC inline mat3 mat3_ONE()     { return mat3{1,1,1,1,1,1,1,1,1}; }
 DESHI_MATH_FUNC inline mat3 mat3_IDENTITY(){ return mat3{1,0,0,0,1,0,0,0,1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const mat3 mat3::ZERO     = mat3{0,0,0,0,0,0,0,0,0};
 inline const mat3 mat3::ONE      = mat3{1,1,1,1,1,1,1,1,1};
 inline const mat3 mat3::IDENTITY = mat3{1,0,0,0,1,0,0,0,1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 #define mat3_coord(m,row,col) (m.arr[3*(row) + (col)])
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat3::
 operator()(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	return this->arr[3 * row + col];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& mat3::
 operator()(u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	return this->arr[3*row + col];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 #define mat3_index(m,index) (m.arr[(index)])
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat3::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	Assert(index < 9, "mat3 subscript out of bounds");
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& mat3::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	Assert(index < 9, "mat3 subscript out of bounds");
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_add_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -8663,7 +8670,7 @@ mat3_add_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator+ (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat3 result;
@@ -8678,9 +8685,9 @@ operator+ (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[8] + rhs.arr[8];
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator+=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[0] += rhs.arr[0];
@@ -8693,7 +8700,7 @@ operator+=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[7] += rhs.arr[7];
 	this->arr[8] += rhs.arr[8];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_sub_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -8710,7 +8717,7 @@ mat3_sub_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator- (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat3 result;
@@ -8725,9 +8732,9 @@ operator- (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[8] - rhs.arr[8];
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator-=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[0] -= rhs.arr[0];
@@ -8740,7 +8747,7 @@ operator-=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[7] -= rhs.arr[7];
 	this->arr[8] -= rhs.arr[8];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_mul_f32(mat3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -8757,7 +8764,7 @@ mat3_mul_f32(mat3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator* (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat3 result;
@@ -8772,9 +8779,9 @@ operator* (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[8] * rhs;
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator*=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[0] *= rhs;
@@ -8787,14 +8794,14 @@ operator*=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[7] *= rhs;
 	this->arr[8] *= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3
 operator* (const f32& lhs, const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_mul_mat3(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -8811,7 +8818,7 @@ mat3_mul_mat3(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator* (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat3 result;
@@ -8826,9 +8833,9 @@ operator* (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[6]*rhs.arr[2] + this->arr[7]*rhs.arr[5] + this->arr[8]*rhs.arr[8];
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator*=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	mat3 result;
@@ -8843,7 +8850,7 @@ operator*=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[6]*rhs.arr[2] + this->arr[7]*rhs.arr[5] + this->arr[8]*rhs.arr[8];
 	*this = result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_mul_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -8860,7 +8867,7 @@ mat3_mul_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator^ (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat3 result;
@@ -8875,9 +8882,9 @@ operator^ (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[8] * rhs.arr[8];
 	return result;
 } 
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator^=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[0] *= rhs.arr[0];
@@ -8890,7 +8897,7 @@ operator^=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[7] *= rhs.arr[7];
 	this->arr[8] *= rhs.arr[8];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_div_f32(mat3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -8908,7 +8915,7 @@ mat3_div_f32(mat3 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator/ (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
@@ -8924,9 +8931,9 @@ operator/ (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[8] / rhs;
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator/=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
@@ -8940,7 +8947,7 @@ operator/=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[7] /= rhs;
 	this->arr[8] /= rhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_div_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -8961,7 +8968,7 @@ mat3_div_elements(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 operator% (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	Assert(rhs.arr[0] != 0 && rhs.arr[1] != 0 && rhs.arr[2] != 0 &&
@@ -8980,9 +8987,9 @@ operator% (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.arr[8] = this->arr[8] / rhs.arr[8];
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat3::
 operator%=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	Assert(rhs.arr[0] != 0 && rhs.arr[1] != 0 && rhs.arr[2] != 0 &&
@@ -9000,7 +9007,7 @@ operator%=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[7] /= rhs.arr[7];
 	this->arr[8] /= rhs.arr[8];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 mat3_equal(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -9015,7 +9022,7 @@ mat3_equal(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 		&& DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 mat3::
 operator==(const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) < DESHI_MATH_EPSILON_F32
@@ -9028,7 +9035,7 @@ operator==(const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 		&& DESHI_ABSF(this->arr[7] - rhs.arr[7]) < DESHI_MATH_EPSILON_F32
 		&& DESHI_ABSF(this->arr[8] - rhs.arr[8]) < DESHI_MATH_EPSILON_F32;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 mat3_nequal(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
@@ -9043,7 +9050,7 @@ mat3_nequal(mat3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 		|| DESHI_ABSF(lhs.arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 mat3::
 operator!=(const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	return DESHI_ABSF(this->arr[0] - rhs.arr[0]) > DESHI_MATH_EPSILON_F32
@@ -9056,7 +9063,7 @@ operator!=(const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 		|| DESHI_ABSF(this->arr[7] - rhs.arr[7]) > DESHI_MATH_EPSILON_F32
 		|| DESHI_ABSF(this->arr[8] - rhs.arr[8]) > DESHI_MATH_EPSILON_F32;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_transpose(mat3 lhs){DESHI_MATH_FUNCTION_START;
@@ -9065,14 +9072,14 @@ mat3_transpose(mat3 lhs){DESHI_MATH_FUNCTION_START;
 				lhs.arr[2], lhs.arr[5], lhs.arr[8]);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 transpose()const{DESHI_MATH_FUNCTION_START;
 	return Mat3(this->arr[0], this->arr[3], this->arr[6],
 				this->arr[1], this->arr[4], this->arr[7],
 				this->arr[2], this->arr[5], this->arr[8]);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 mat3_determinant(mat3 lhs){DESHI_MATH_FUNCTION_START;
@@ -9085,7 +9092,7 @@ mat3_determinant(mat3 lhs){DESHI_MATH_FUNCTION_START;
 	return aei + bfg + cdh - ceg - bdi - afh;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat3::
 determinant()const{DESHI_MATH_FUNCTION_START;
 	f32 aei = this->arr[0] * this->arr[4] * this->arr[8];
@@ -9096,7 +9103,7 @@ determinant()const{DESHI_MATH_FUNCTION_START;
 	f32 afh = this->arr[0] * this->arr[5] * this->arr[7];
 	return aei + bfg + cdh - ceg - bdi - afh;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 mat3_minor(mat3 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
@@ -9104,59 +9111,59 @@ mat3_minor(mat3 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	switch(row){
 		case 0:{
 			switch(col){
-				case 0: return (lhs.arr[4] * lhs.arr[5]) - (lhs.arr[7] * lhs.arr[8]);
-				case 1: return (lhs.arr[3] * lhs.arr[5]) - (lhs.arr[6] * lhs.arr[8]);
-				case 2: return (lhs.arr[4] * lhs.arr[4]) - (lhs.arr[6] * lhs.arr[7]);
+				case 0: return (lhs.arr[4] * lhs.arr[8]) - (lhs.arr[5] * lhs.arr[7]);
+				case 1: return (lhs.arr[3] * lhs.arr[8]) - (lhs.arr[5] * lhs.arr[6]);
+				case 2: return (lhs.arr[3] * lhs.arr[7]) - (lhs.arr[4] * lhs.arr[6]);
 			}
 		}break;
 		case 1:{
 			switch(col){
-				case 0: return (lhs.arr[1] * lhs.arr[2]) - (lhs.arr[7] * lhs.arr[8]);
-				case 1: return (lhs.arr[0] * lhs.arr[2]) - (lhs.arr[6] * lhs.arr[8]);
-				case 2: return (lhs.arr[0] * lhs.arr[1]) - (lhs.arr[6] * lhs.arr[7]);
+				case 0: return (lhs.arr[1] * lhs.arr[8]) - (lhs.arr[2] * lhs.arr[7]);
+				case 1: return (lhs.arr[0] * lhs.arr[8]) - (lhs.arr[2] * lhs.arr[6]);
+				case 2: return (lhs.arr[0] * lhs.arr[7]) - (lhs.arr[1] * lhs.arr[6]);
 			}
 		}break;
 		case 2:{
 			switch(col){
-				case 0: return (lhs.arr[1] * lhs.arr[2]) - (lhs.arr[4] * lhs.arr[5]);
-				case 1: return (lhs.arr[0] * lhs.arr[2]) - (lhs.arr[3] * lhs.arr[5]);
-				case 2: return (lhs.arr[0] * lhs.arr[1]) - (lhs.arr[3] * lhs.arr[4]);
+				case 0: return (lhs.arr[1] * lhs.arr[5]) - (lhs.arr[2] * lhs.arr[4]);
+				case 1: return (lhs.arr[0] * lhs.arr[5]) - (lhs.arr[2] * lhs.arr[3]);
+				case 2: return (lhs.arr[0] * lhs.arr[4]) - (lhs.arr[1] * lhs.arr[3]);
 			}
 		}break;
 	}
 	return 0;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat3::
 minor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	switch(row){
 		case 0:{
 			switch(col){
-				case 0: return (this->arr[4] * this->arr[5]) - (this->arr[7] * this->arr[8]);
-				case 1: return (this->arr[3] * this->arr[5]) - (this->arr[6] * this->arr[8]);
-				case 2: return (this->arr[4] * this->arr[4]) - (this->arr[6] * this->arr[7]);
+				case 0: return (this->arr[4] * this->arr[8]) - (this->arr[5] * this->arr[7]);
+				case 1: return (this->arr[3] * this->arr[8]) - (this->arr[5] * this->arr[6]);
+				case 2: return (this->arr[3] * this->arr[7]) - (this->arr[4] * this->arr[6]);
 			}
 		}break;
 		case 1:{
 			switch(col){
-				case 0: return (this->arr[1] * this->arr[2]) - (this->arr[7] * this->arr[8]);
-				case 1: return (this->arr[0] * this->arr[2]) - (this->arr[6] * this->arr[8]);
-				case 2: return (this->arr[0] * this->arr[1]) - (this->arr[6] * this->arr[7]);
+				case 0: return (this->arr[1] * this->arr[8]) - (this->arr[2] * this->arr[7]);
+				case 1: return (this->arr[0] * this->arr[8]) - (this->arr[2] * this->arr[6]);
+				case 2: return (this->arr[0] * this->arr[7]) - (this->arr[1] * this->arr[6]);
 			}
 		}break;
 		case 2:{
 			switch(col){
-				case 0: return (this->arr[1] * this->arr[2]) - (this->arr[4] * this->arr[5]);
-				case 1: return (this->arr[0] * this->arr[2]) - (this->arr[3] * this->arr[5]);
-				case 2: return (this->arr[0] * this->arr[1]) - (this->arr[3] * this->arr[4]);
+				case 0: return (this->arr[1] * this->arr[5]) - (this->arr[2] * this->arr[4]);
+				case 1: return (this->arr[0] * this->arr[5]) - (this->arr[2] * this->arr[3]);
+				case 2: return (this->arr[0] * this->arr[4]) - (this->arr[1] * this->arr[3]);
 			}
 		}break;
 	}
 	return 0;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 mat3_cofactor(mat3 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
@@ -9164,125 +9171,125 @@ mat3_cofactor(mat3 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	switch(row){
 		case 0:{
 			switch(col){
-				case 0: return (lhs.arr[4] * lhs.arr[5]) - (lhs.arr[7] * lhs.arr[8]);
-				case 1: return (lhs.arr[6] * lhs.arr[8]) - (lhs.arr[3] * lhs.arr[5]);
-				case 2: return (lhs.arr[4] * lhs.arr[4]) - (lhs.arr[6] * lhs.arr[7]);
+				case 0: return (lhs.arr[4] * lhs.arr[8]) - (lhs.arr[5] * lhs.arr[7]);
+				case 1: return (lhs.arr[5] * lhs.arr[6]) - (lhs.arr[3] * lhs.arr[8]);
+				case 2: return (lhs.arr[3] * lhs.arr[7]) - (lhs.arr[4] * lhs.arr[6]);
 			}
 		}break;
 		case 1:{
 			switch(col){
-				case 0: return (lhs.arr[7] * lhs.arr[8]) - (lhs.arr[1] * lhs.arr[2]);
-				case 1: return (lhs.arr[0] * lhs.arr[2]) - (lhs.arr[6] * lhs.arr[8]);
-				case 2: return (lhs.arr[6] * lhs.arr[7]) - (lhs.arr[0] * lhs.arr[1]);
+				case 0: return (lhs.arr[2] * lhs.arr[7]) - (lhs.arr[1] * lhs.arr[8]);
+				case 1: return (lhs.arr[0] * lhs.arr[8]) - (lhs.arr[2] * lhs.arr[6]);
+				case 2: return (lhs.arr[1] * lhs.arr[6]) - (lhs.arr[0] * lhs.arr[7]);
 			}
 		}break;
 		case 2:{
 			switch(col){
-				case 0: return (lhs.arr[1] * lhs.arr[2]) - (lhs.arr[4] * lhs.arr[5]);
-				case 1: return (lhs.arr[3] * lhs.arr[5]) - (lhs.arr[0] * lhs.arr[2]);
-				case 2: return (lhs.arr[0] * lhs.arr[1]) - (lhs.arr[3] * lhs.arr[4]);
+				case 0: return (lhs.arr[1] * lhs.arr[5]) - (lhs.arr[2] * lhs.arr[4]);
+				case 1: return (lhs.arr[2] * lhs.arr[3]) - (lhs.arr[0] * lhs.arr[5]);
+				case 2: return (lhs.arr[0] * lhs.arr[4]) - (lhs.arr[1] * lhs.arr[3]);
 			}
 		}break;
 	}
 	return 0;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat3::
 cofactor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	switch(row){
 		case 0:{
 			switch(col){
-				case 0: return (this->arr[4] * this->arr[5]) - (this->arr[7] * this->arr[8]);
-				case 1: return (this->arr[6] * this->arr[8]) - (this->arr[3] * this->arr[5]);
-				case 2: return (this->arr[4] * this->arr[4]) - (this->arr[6] * this->arr[7]);
+				case 0: return (this->arr[4] * this->arr[8]) - (this->arr[5] * this->arr[7]);
+				case 1: return (this->arr[5] * this->arr[6]) - (this->arr[3] * this->arr[8]);
+				case 2: return (this->arr[3] * this->arr[7]) - (this->arr[4] * this->arr[6]);
 			}
 		}break;
 		case 1:{
 			switch(col){
-				case 0: return (this->arr[7] * this->arr[8]) - (this->arr[1] * this->arr[2]);
-				case 1: return (this->arr[0] * this->arr[2]) - (this->arr[6] * this->arr[8]);
-				case 2: return (this->arr[6] * this->arr[7]) - (this->arr[0] * this->arr[1]);
+				case 0: return (this->arr[2] * this->arr[7]) - (this->arr[1] * this->arr[8]);
+				case 1: return (this->arr[0] * this->arr[8]) - (this->arr[2] * this->arr[6]);
+				case 2: return (this->arr[1] * this->arr[6]) - (this->arr[0] * this->arr[7]);
 			}
 		}break;
 		case 2:{
 			switch(col){
-				case 0: return (this->arr[1] * this->arr[2]) - (this->arr[4] * this->arr[5]);
-				case 1: return (this->arr[3] * this->arr[5]) - (this->arr[0] * this->arr[2]);
-				case 2: return (this->arr[0] * this->arr[1]) - (this->arr[3] * this->arr[4]);
+				case 0: return (this->arr[1] * this->arr[5]) - (this->arr[2] * this->arr[4]);
+				case 1: return (this->arr[2] * this->arr[3]) - (this->arr[0] * this->arr[5]);
+				case 2: return (this->arr[0] * this->arr[4]) - (this->arr[1] * this->arr[3]);
 			}
 		}break;
 	}
 	return 0;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_adjoint(mat3 lhs){DESHI_MATH_FUNCTION_START;
 	mat3 result;
-	result.arr[0] = (lhs.arr[4] * lhs.arr[5]) - (lhs.arr[7] * lhs.arr[8]);
-	result.arr[1] = (lhs.arr[7] * lhs.arr[8]) - (lhs.arr[1] * lhs.arr[2]);
-	result.arr[2] = (lhs.arr[1] * lhs.arr[2]) - (lhs.arr[4] * lhs.arr[5]);
-	result.arr[3] = (lhs.arr[6] * lhs.arr[8]) - (lhs.arr[3] * lhs.arr[5]);
-	result.arr[4] = (lhs.arr[0] * lhs.arr[2]) - (lhs.arr[6] * lhs.arr[8]);
-	result.arr[5] = (lhs.arr[3] * lhs.arr[5]) - (lhs.arr[0] * lhs.arr[2]);
-	result.arr[6] = (lhs.arr[4] * lhs.arr[4]) - (lhs.arr[6] * lhs.arr[7]);
-	result.arr[7] = (lhs.arr[6] * lhs.arr[7]) - (lhs.arr[0] * lhs.arr[1]);
-	result.arr[8] = (lhs.arr[0] * lhs.arr[1]) - (lhs.arr[3] * lhs.arr[4]);
+	result.arr[0] = (lhs.arr[4] * lhs.arr[8]) - (lhs.arr[5] * lhs.arr[7]);
+	result.arr[1] = (lhs.arr[2] * lhs.arr[7]) - (lhs.arr[1] * lhs.arr[8]);
+	result.arr[2] = (lhs.arr[1] * lhs.arr[5]) - (lhs.arr[2] * lhs.arr[4]);
+	result.arr[3] = (lhs.arr[5] * lhs.arr[6]) - (lhs.arr[3] * lhs.arr[8]);
+	result.arr[4] = (lhs.arr[0] * lhs.arr[8]) - (lhs.arr[2] * lhs.arr[6]);
+	result.arr[5] = (lhs.arr[2] * lhs.arr[3]) - (lhs.arr[0] * lhs.arr[5]);
+	result.arr[6] = (lhs.arr[3] * lhs.arr[7]) - (lhs.arr[4] * lhs.arr[6]);
+	result.arr[7] = (lhs.arr[1] * lhs.arr[6]) - (lhs.arr[0] * lhs.arr[7]);
+	result.arr[8] = (lhs.arr[0] * lhs.arr[4]) - (lhs.arr[1] * lhs.arr[3]);
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 adjoint()const{DESHI_MATH_FUNCTION_START;
 	mat3 result;
-	result.arr[0] = (this->arr[4] * this->arr[5]) - (this->arr[7] * this->arr[8]);
-	result.arr[1] = (this->arr[7] * this->arr[8]) - (this->arr[1] * this->arr[2]);
-	result.arr[2] = (this->arr[1] * this->arr[2]) - (this->arr[4] * this->arr[5]);
-	result.arr[3] = (this->arr[6] * this->arr[8]) - (this->arr[3] * this->arr[5]);
-	result.arr[4] = (this->arr[0] * this->arr[2]) - (this->arr[6] * this->arr[8]);
-	result.arr[5] = (this->arr[3] * this->arr[5]) - (this->arr[0] * this->arr[2]);
-	result.arr[6] = (this->arr[4] * this->arr[4]) - (this->arr[6] * this->arr[7]);
-	result.arr[7] = (this->arr[6] * this->arr[7]) - (this->arr[0] * this->arr[1]);
-	result.arr[8] = (this->arr[0] * this->arr[1]) - (this->arr[3] * this->arr[4]);
+	result.arr[0] = (this->arr[4] * this->arr[8]) - (this->arr[5] * this->arr[7]);
+	result.arr[1] = (this->arr[2] * this->arr[7]) - (this->arr[1] * this->arr[8]);
+	result.arr[2] = (this->arr[1] * this->arr[5]) - (this->arr[2] * this->arr[4]);
+	result.arr[3] = (this->arr[5] * this->arr[6]) - (this->arr[3] * this->arr[8]);
+	result.arr[4] = (this->arr[0] * this->arr[8]) - (this->arr[2] * this->arr[6]);
+	result.arr[5] = (this->arr[2] * this->arr[3]) - (this->arr[0] * this->arr[5]);
+	result.arr[6] = (this->arr[3] * this->arr[7]) - (this->arr[4] * this->arr[6]);
+	result.arr[7] = (this->arr[1] * this->arr[6]) - (this->arr[0] * this->arr[7]);
+	result.arr[8] = (this->arr[0] * this->arr[4]) - (this->arr[1] * this->arr[3]);
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat3
 mat3_inverse(mat3 lhs){DESHI_MATH_FUNCTION_START;
 	f32 d = mat3_determinant(lhs);
 	mat3 result;
-	result.arr[0] = ((lhs.arr[4] * lhs.arr[5]) - (lhs.arr[7] * lhs.arr[8])) / d;
-	result.arr[1] = ((lhs.arr[7] * lhs.arr[8]) - (lhs.arr[1] * lhs.arr[2])) / d;
-	result.arr[2] = ((lhs.arr[1] * lhs.arr[2]) - (lhs.arr[4] * lhs.arr[5])) / d;
-	result.arr[3] = ((lhs.arr[6] * lhs.arr[8]) - (lhs.arr[3] * lhs.arr[5])) / d;
-	result.arr[4] = ((lhs.arr[0] * lhs.arr[2]) - (lhs.arr[6] * lhs.arr[8])) / d;
-	result.arr[5] = ((lhs.arr[3] * lhs.arr[5]) - (lhs.arr[0] * lhs.arr[2])) / d;
-	result.arr[6] = ((lhs.arr[4] * lhs.arr[4]) - (lhs.arr[6] * lhs.arr[7])) / d;
-	result.arr[7] = ((lhs.arr[6] * lhs.arr[7]) - (lhs.arr[0] * lhs.arr[1])) / d;
-	result.arr[8] = ((lhs.arr[0] * lhs.arr[1]) - (lhs.arr[3] * lhs.arr[4])) / d;
+	result.arr[0] = ((lhs.arr[4] * lhs.arr[8]) - (lhs.arr[5] * lhs.arr[7])) / d;
+	result.arr[1] = ((lhs.arr[2] * lhs.arr[7]) - (lhs.arr[1] * lhs.arr[8])) / d;
+	result.arr[2] = ((lhs.arr[1] * lhs.arr[5]) - (lhs.arr[2] * lhs.arr[4])) / d;
+	result.arr[3] = ((lhs.arr[5] * lhs.arr[6]) - (lhs.arr[3] * lhs.arr[8])) / d;
+	result.arr[4] = ((lhs.arr[0] * lhs.arr[8]) - (lhs.arr[2] * lhs.arr[6])) / d;
+	result.arr[5] = ((lhs.arr[2] * lhs.arr[3]) - (lhs.arr[0] * lhs.arr[5])) / d;
+	result.arr[6] = ((lhs.arr[3] * lhs.arr[7]) - (lhs.arr[4] * lhs.arr[6])) / d;
+	result.arr[7] = ((lhs.arr[1] * lhs.arr[6]) - (lhs.arr[0] * lhs.arr[7])) / d;
+	result.arr[8] = ((lhs.arr[0] * lhs.arr[4]) - (lhs.arr[1] * lhs.arr[3])) / d;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat3 mat3::
 inverse()const{DESHI_MATH_FUNCTION_START;
 	f32 d = this->determinant();
 	mat3 result;
-	result.arr[0] = ((this->arr[4] * this->arr[5]) - (this->arr[7] * this->arr[8])) / d;
-	result.arr[1] = ((this->arr[7] * this->arr[8]) - (this->arr[1] * this->arr[2])) / d;
-	result.arr[2] = ((this->arr[1] * this->arr[2]) - (this->arr[4] * this->arr[5])) / d;
-	result.arr[3] = ((this->arr[6] * this->arr[8]) - (this->arr[3] * this->arr[5])) / d;
-	result.arr[4] = ((this->arr[0] * this->arr[2]) - (this->arr[6] * this->arr[8])) / d;
-	result.arr[5] = ((this->arr[3] * this->arr[5]) - (this->arr[0] * this->arr[2])) / d;
-	result.arr[6] = ((this->arr[4] * this->arr[4]) - (this->arr[6] * this->arr[7])) / d;
-	result.arr[7] = ((this->arr[6] * this->arr[7]) - (this->arr[0] * this->arr[1])) / d;
-	result.arr[8] = ((this->arr[0] * this->arr[1]) - (this->arr[3] * this->arr[4])) / d;
+	result.arr[0] = ((this->arr[4] * this->arr[8]) - (this->arr[5] * this->arr[7])) / d;
+	result.arr[1] = ((this->arr[2] * this->arr[7]) - (this->arr[1] * this->arr[8])) / d;
+	result.arr[2] = ((this->arr[1] * this->arr[5]) - (this->arr[2] * this->arr[4])) / d;
+	result.arr[3] = ((this->arr[5] * this->arr[6]) - (this->arr[3] * this->arr[8])) / d;
+	result.arr[4] = ((this->arr[0] * this->arr[8]) - (this->arr[2] * this->arr[6])) / d;
+	result.arr[5] = ((this->arr[2] * this->arr[3]) - (this->arr[0] * this->arr[5])) / d;
+	result.arr[6] = ((this->arr[3] * this->arr[7]) - (this->arr[4] * this->arr[6])) / d;
+	result.arr[7] = ((this->arr[1] * this->arr[6]) - (this->arr[0] * this->arr[7])) / d;
+	result.arr[8] = ((this->arr[0] * this->arr[4]) - (this->arr[1] * this->arr[3])) / d;
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //returns a LH rotation matrix based on input in radians
 DESHI_MATH_FUNC inline mat3
@@ -9342,6 +9349,28 @@ mat3_rotation_matrix_radians(f32 x, f32 y, f32 z){DESHI_MATH_FUNCTION_START;
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in degrees
 #define mat3_rotation_matrix_degrees(x,y,z) mat3_rotation_matrix_radians(DESHI_DEGREES_TO_RADIANS_F32(x), DESHI_DEGREES_TO_RADIANS_F32(y), DESHI_DEGREES_TO_RADIANS_F32(z))
 
+//returns a LH rotation matrix for `a` radians around the axis (`x`, `y`, `z`)
+//NOTE: the axis should be a normalized vector
+DESHI_MATH_FUNC inline mat3
+mat3_axis_rotation_matrix_radians(f32 x, f32 y, f32 z, f32 a){DESHI_MATH_FUNCTION_START;
+	f32 cA = DESHI_COSF(a); f32 sA = DESHI_SINF(a);
+	mat3 result;
+	result.arr[0] = x*x*(1.0f - cA) + cA;
+	result.arr[1] = x*y*(1.0f - cA) + z*sA;
+	result.arr[2] = x*z*(1.0f - cA) + y*sA;
+	result.arr[3] = x*y*(1.0f - cA) - z*sA;
+	result.arr[4] = y*y*(1.0f - cA) + cA;
+	result.arr[5] = y*z*(1.0f - cA) - x*sA;
+	result.arr[6] = x*z*(1.0f - cA) + y*sA;
+	result.arr[7] = y*z*(1.0f - cA) - x*sA;
+	result.arr[8] = z*z*(1.0f - cA) + cA;
+	return result;
+}
+
+//returns a LH rotation matrix for `a` degrees around the axis (`x`, `y`, `z`)
+//NOTE: the axis should be a normalized vector
+#define mat3_axis_rotation_matrix_degrees(x,y,z,a) mat3_axis_rotation_matrix_radians((x), (y), (z), DESHI_DEGREES_TO_RADIANS_F32(a))
+
 DESHI_MATH_FUNC inline mat3
 mat3_scale_matrix(f32 x, f32 y, f32 z){DESHI_MATH_FUNCTION_START;
 	return Mat3(x, 0, 0,
@@ -9374,7 +9403,7 @@ mat4{
 #endif //#if DESHI_MATH_USE_SSE
 	};
 	
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	static const mat4 ZERO;
 	static const mat4 ONE;
 	static const mat4 IDENTITY;
@@ -9407,7 +9436,7 @@ mat4{
 	mat3 to_mat3()const;
 	vec4 row(u32 row)const;
 	vec4 col(u32 col)const;
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 }mat4;
 
 DESHI_MATH_FUNC inline mat4
@@ -9427,47 +9456,47 @@ DESHI_MATH_FUNC inline mat4 mat4_ZERO()    { return mat4{0,0,0,0,0,0,0,0,0,0,0,0
 DESHI_MATH_FUNC inline mat4 mat4_ONE()     { return mat4{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}; }
 DESHI_MATH_FUNC inline mat4 mat4_IDENTITY(){ return mat4{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}; }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline const mat4 mat4::ZERO     = mat4{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 inline const mat4 mat4::ONE      = mat4{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 inline const mat4 mat4::IDENTITY = mat4{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 #define mat4_coord(m,row,col) m.arr[4*row + col]
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat4::
 operator()(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
 	return this->arr[4*row + col];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& mat4::
 operator()(u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
 	return this->arr[4*row + col];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 #define mat4_index(m,index) m.arr[index]
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat4::
 operator[](u32 index)const{DESHI_MATH_FUNCTION_START;
 	Assert(index < 16, "mat4 subscript out of bounds");
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32& mat4::
 operator[](u32 index){DESHI_MATH_FUNCTION_START;
 	Assert(index < 16, "mat4 subscript out of bounds");
 	return this->arr[index];
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_add_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -9498,7 +9527,7 @@ mat4_add_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator+ (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -9527,9 +9556,9 @@ operator+ (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator+=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -9556,7 +9585,7 @@ operator+=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[15] += rhs.arr[15];
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_sub_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -9587,7 +9616,7 @@ mat4_sub_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator- (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -9616,9 +9645,9 @@ operator- (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator-=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -9645,7 +9674,7 @@ operator-=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[15] -= rhs.arr[15];
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_mul_f32(mat4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -9677,7 +9706,7 @@ mat4_mul_f32(mat4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator* (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -9707,9 +9736,9 @@ operator* (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator*=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -9737,14 +9766,14 @@ operator*=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[15] *= rhs;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4
 operator* (const f32& lhs, const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	return rhs * lhs;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_mul_mat4(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -9787,7 +9816,7 @@ mat4_mul_mat4(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator* (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -9828,9 +9857,9 @@ operator* (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator*=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -9871,7 +9900,7 @@ operator*=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	*this = result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_mul_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -9902,7 +9931,7 @@ mat4_mul_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator^ (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -9931,9 +9960,9 @@ operator^ (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 } 
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator^=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -9960,7 +9989,7 @@ operator^=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[15] *= rhs.arr[15];
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_div_f32(mat4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
@@ -9993,7 +10022,7 @@ mat4_div_f32(mat4 lhs, f32 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator/ (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
@@ -10024,9 +10053,9 @@ operator/ (const f32& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator/=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
@@ -10055,7 +10084,7 @@ operator/=(const f32& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[15] /= rhs;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_div_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -10091,7 +10120,7 @@ mat4_div_elements(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 operator% (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	Assert(rhs.arr[ 0] != 0 && rhs.arr[ 1] != 0 && rhs.arr[ 2] != 0 && rhs.arr[ 3] != 0 &&
@@ -10125,9 +10154,9 @@ operator% (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void mat4::
 operator%=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	Assert(rhs.arr[ 0] != 0 && rhs.arr[ 1] != 0 && rhs.arr[ 2] != 0 && rhs.arr[ 3] != 0 &&
@@ -10159,7 +10188,7 @@ operator%=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	this->arr[15] /= rhs.arr[15];
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 mat4_equal(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -10188,7 +10217,7 @@ mat4_equal(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 mat4::
 operator==(const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -10215,7 +10244,7 @@ operator==(const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 		&& DESHI_ABSF(this->arr[15] - rhs.arr[15]) < DESHI_MATH_EPSILON_F32;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline b32
 mat4_nequal(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -10244,7 +10273,7 @@ mat4_nequal(mat4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline b32 mat4::
 operator!=(const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -10271,7 +10300,7 @@ operator!=(const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 		|| DESHI_ABSF(this->arr[15] - rhs.arr[15]) > DESHI_MATH_EPSILON_F32;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_transpose(mat4 lhs){DESHI_MATH_FUNCTION_START;
@@ -10286,7 +10315,7 @@ mat4_transpose(mat4 lhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 transpose()const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -10300,7 +10329,7 @@ transpose()const{DESHI_MATH_FUNCTION_START;
 				this->arr[3], this->arr[7], this->arr[11], this->arr[15]);
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 mat4_determinant(mat4 lhs){DESHI_MATH_FUNCTION_START;
@@ -10322,7 +10351,7 @@ mat4_determinant(mat4 lhs){DESHI_MATH_FUNCTION_START;
 					   lhs.arr[ 9] * (lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]));
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat4::
 determinant()const{DESHI_MATH_FUNCTION_START;
 	return
@@ -10342,7 +10371,7 @@ determinant()const{DESHI_MATH_FUNCTION_START;
 						 this->arr[ 5] * (this->arr[ 2] * this->arr[11] - this->arr[ 3] * this->arr[10]) +
 						 this->arr[ 9] * (this->arr[ 2] * this->arr[ 7] - this->arr[ 3] * this->arr[ 6]));
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 mat4_minor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
@@ -10465,7 +10494,7 @@ mat4_minor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	return 0;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat4::
 minor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
@@ -10585,7 +10614,7 @@ minor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	}
 	return 0;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline f32
 mat4_cofactor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
@@ -10708,7 +10737,7 @@ mat4_cofactor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	return 0;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline f32 mat4::
 cofactor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
@@ -10828,7 +10857,7 @@ cofactor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	}
 	return 0;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_adjoint(mat4 lhs){DESHI_MATH_FUNCTION_START;
@@ -10933,7 +10962,7 @@ mat4_adjoint(mat4 lhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 adjoint()const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
@@ -11035,7 +11064,7 @@ adjoint()const{DESHI_MATH_FUNCTION_START;
 					  - (this->arr[ 2] * this->arr[ 4] * this->arr[ 9]));
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_inverse(mat4 lhs){DESHI_MATH_FUNCTION_START;
@@ -11097,7 +11126,7 @@ mat4_inverse(mat4 lhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline mat4 mat4::
 inverse()const{DESHI_MATH_FUNCTION_START;
 #if DESHI_MATH_USE_SSE
@@ -11157,7 +11186,7 @@ inverse()const{DESHI_MATH_FUNCTION_START;
 	return this->adjoint() / this->determinant();
 #endif //#else //#if DESHI_MATH_USE_SSE
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline mat4
 mat4_inverse_transformation_matrix(mat4 lhs){DESHI_MATH_FUNCTION_START;
@@ -11393,7 +11422,7 @@ mat4_to_mat3(mat4 lhs){DESHI_MATH_FUNCTION_START;
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @mat_hashing
 #ifndef DESHI_MATH_DISABLE_HASHING
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 
 
 template<> 
@@ -11427,7 +11456,7 @@ struct hash<mat4>{
 };
 
 
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 #endif //#ifndef DESHI_MATH_DISABLE_HASHING
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @mat_tostring
@@ -11451,7 +11480,7 @@ mat3_to_dstr8(mat3 x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline dstr8
 to_dstr8(const mat3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s;
@@ -11468,7 +11497,7 @@ to_dstr8(const mat3& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTIO
 			 x.arr[6], x.arr[7], x.arr[8]);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline dstr8
 mat3_to_dstr8p(mat3 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -11487,7 +11516,7 @@ mat3_to_dstr8p(mat3 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline dstr8
 to_dstr8p(const mat3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s;
@@ -11504,7 +11533,7 @@ to_dstr8p(const mat3& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DE
 			 precision, x.arr[6], precision, x.arr[7], precision, x.arr[8]);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline dstr8
 mat4_to_dstr8(mat4 x, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -11525,7 +11554,7 @@ mat4_to_dstr8(mat4 x, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline dstr8
 to_dstr8(const mat4& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s;
@@ -11544,7 +11573,7 @@ to_dstr8(const mat4& x, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTIO
 			 x.arr[12], x.arr[13], x.arr[14], x.arr[15]);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC dstr8
 mat4_to_dstr8p(mat4 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
@@ -11565,7 +11594,7 @@ mat4_to_dstr8p(mat4 x, int precision, Allocator* a){DESHI_MATH_FUNCTION_START;
 	return s;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 global dstr8
 to_dstr8p(const mat4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DESHI_MATH_FUNCTION_START;
 	dstr8 s;
@@ -11584,7 +11613,7 @@ to_dstr8p(const mat4& x, int precision, Allocator* a = KIGU_STRING_ALLOCATOR){DE
 			 precision, x.arr[12], precision, x.arr[13], precision, x.arr[14], precision, x.arr[15]);
 	return s;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 
 #endif //#ifndef DESHI_MATH_DISABLE_TOSTRING
@@ -11627,7 +11656,7 @@ vec3_mul_mat3(vec3 lhs, mat3 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator* (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 result;
@@ -11636,9 +11665,9 @@ operator* (const mat3& rhs)const{DESHI_MATH_FUNCTION_START;
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[8]);
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator*=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	vec3 result;
@@ -11647,7 +11676,7 @@ operator*=(const mat3& rhs){DESHI_MATH_FUNCTION_START;
 	result.z = (this->x * rhs.arr[2]) + (this->y * rhs.arr[5]) + (this->z * rhs.arr[8]);
 	*this = result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 vec3_mul_mat4(vec3 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -11668,7 +11697,7 @@ vec3_mul_mat4(vec3 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 vec3::
 operator* (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec3 result;
@@ -11687,9 +11716,9 @@ operator* (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec3::
 operator*=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	vec3 result;
@@ -11708,7 +11737,7 @@ operator*=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	*this = result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 vec4_mul_mat4(vec4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
@@ -11727,7 +11756,7 @@ vec4_mul_mat4(vec4 lhs, mat4 rhs){DESHI_MATH_FUNCTION_START;
 	return result;
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 vec4::
 operator* (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 	vec4 result;
@@ -11744,9 +11773,9 @@ operator* (const mat4& rhs)const{DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	return result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline void vec4::
 operator*=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 	vec4 result;
@@ -11763,7 +11792,7 @@ operator*=(const mat4& rhs){DESHI_MATH_FUNCTION_START;
 #endif //#else //#if DESHI_MATH_USE_SSE
 	*this = result;
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 mat3_row(mat3 lhs, u32 row){DESHI_MATH_FUNCTION_START;
@@ -11771,13 +11800,13 @@ mat3_row(mat3 lhs, u32 row){DESHI_MATH_FUNCTION_START;
 	return Vec3(lhs.arr[3*row], lhs.arr[3*row+1], lhs.arr[3*row+2]);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 mat3::
 row(u32 row)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 3, "mat3 subscript out of bounds");
 	return Vec3(this->arr[3*row], this->arr[3*row+1], this->arr[3*row+2]);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec3
 mat3_col(mat3 lhs, u32 col){DESHI_MATH_FUNCTION_START;
@@ -11785,13 +11814,13 @@ mat3_col(mat3 lhs, u32 col){DESHI_MATH_FUNCTION_START;
 	return Vec3(lhs.arr[col], lhs.arr[3+col], lhs.arr[6+col]);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec3 mat3::
 col(u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(col < 3, "mat3 subscript out of bounds");
 	return Vec3(this->arr[col], this->arr[3+col], this->arr[6+col]);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 mat4_row(mat4 lhs, u32 row){DESHI_MATH_FUNCTION_START;
@@ -11799,13 +11828,13 @@ mat4_row(mat4 lhs, u32 row){DESHI_MATH_FUNCTION_START;
 	return Vec4(lhs.arr[4*row], lhs.arr[4*row+1], lhs.arr[4*row+2], lhs.arr[4*row+3]);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 mat4::
 row(u32 row)const{DESHI_MATH_FUNCTION_START;
 	Assert(row < 4, "mat4 subscript out of bounds");
 	return Vec4(this->arr[4*row], this->arr[4*row+1], this->arr[4*row+2], this->arr[4*row+3]);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 DESHI_MATH_FUNC inline vec4
 mat4_col(mat4 lhs, u32 col){DESHI_MATH_FUNCTION_START;
@@ -11813,13 +11842,13 @@ mat4_col(mat4 lhs, u32 col){DESHI_MATH_FUNCTION_START;
 	return Vec4(lhs.arr[col], lhs.arr[4+col], lhs.arr[8+col], lhs.arr[12+col]);
 }
 
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 inline vec4 mat4::
 col(u32 col)const{DESHI_MATH_FUNCTION_START;
 	Assert(col < 4, "mat4 subscript out of bounds");
 	return Vec4(this->arr[col], this->arr[4+col], this->arr[8+col], this->arr[12+col]);
 }
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 DESHI_MATH_FUNC mat3
@@ -11939,15 +11968,15 @@ point_is_in_rectangle(vec2 point, vec2 rect_pos, vec2 rect_size){DESHI_MATH_FUNC
 
 DESHI_MATH_FUNC inline b32
 point_is_in_triangle(vec2 point, vec2 p0, vec2 p1, vec2 p2){DESHI_MATH_FUNCTION_START;
-	vec2 p01 = p1 - p0;
-	vec2 p12 = p2 - p1;
+	vec2 p01 = vec2_sub(p1, p0);
+	vec2 p12 = vec2_sub(p2, p1);
 	b32 b0 = vec2_dot(vec2_sub(point, p0), Vec2(-p01.y, p01.x)) < 0.0f;
 	b32 b1 = vec2_dot(vec2_sub(point, p1), Vec2(-p12.y, p12.x)) < 0.0f;
 	if(b0 != b1){
 		return false;
 	}
 	
-	vec2 p20 = p0 - p2;
+	vec2 p20 = vec2_sub(p0, p2);
 	b32 b2 = vec2_dot(vec2_sub(point, p2), Vec2(-p20.y, p20.x)) < 0.0f;
 	if(b1 != b2){
 		return false;
@@ -12123,7 +12152,7 @@ mat4_orthographic_projection_matrix(f32 top, f32 bottom, f32 left, f32 right, f3
 //Returns a look-at matrix which tells a vector how to look at a specific point
 DESHI_MATH_FUNC inline mat4
 mat4_lookat_matrix(vec3 position, vec3 target){DESHI_MATH_FUNCTION_START;
-	Assert(position != target);
+	Assert(vec3_nequal(position, target));
 	vec3 forward = vec3_normalize(vec3_sub(target, position));
 	vec3 right = (vec3_nequal(forward, vec3_UP()) && vec3_nequal(forward, vec3_DOWN())) ? vec3_normalize(vec3_cross(vec3_UP(), forward)) : vec3_RIGHT();
 	vec3 up = vec3_cross(forward, right);
@@ -12137,7 +12166,7 @@ mat4_lookat_matrix(vec3 position, vec3 target){DESHI_MATH_FUNCTION_START;
 //  this function is unsafe in that it assumes the forward vector is not parallel to the z-axis
 DESHI_MATH_FUNC inline mat4
 mat4_lookat_matrix_unsafe(vec3 position, vec3 target){DESHI_MATH_FUNCTION_START;
-	Assert(position != target);
+	Assert(vec3_nequal(position, target));
 	vec3 forward = vec3_normalize(vec3_sub(target, position));
 	vec3 right = vec3_normalize(vec3_cross(vec3_UP(), forward));
 	vec3 up = vec3_cross(forward, right);
@@ -12285,7 +12314,7 @@ map_screen_to_world(vec2 point, vec2 screen_dimensions, mat4 projection_matrix, 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @cpp_only
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 
 
 //returns the average of the last `width` values
@@ -12309,7 +12338,7 @@ lerp(T lhs, T rhs, f32 t){DESHI_MATH_FUNCTION_START;
 }
 
 
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 // @other
 
@@ -13162,7 +13191,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_UNITX(), 1.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2_UNITY(), 0.0f, 1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(vec2::ZERO,  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2::ONE,   1.0f, 1.0f);
 		ASSERT_VEC2_VALUES(vec2::UP,    0.0f, 1.0f);
@@ -13171,38 +13200,38 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2::RIGHT, 1.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2::UNITX, 1.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2::UNITY, 0.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		a = Vec2(1.0f,-2.3f);
 		ASSERT_F32_EQUAL(vec2_index(a, 0),  1.0f);
 		ASSERT_F32_EQUAL(vec2_index(a, 1), -2.3f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a = Vec2(1.0f,-2.3f);
 		ASSERT_F32_EQUAL(a[0],  1.0f);
 		ASSERT_F32_EQUAL(a[1], -2.3f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a[0] =  2.0f;
 		a[1] = -4.6f;
 		ASSERT_F32_EQUAL(a.arr[0],  2.0f);
 		ASSERT_F32_EQUAL(a.arr[1], -4.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_add(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_add(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  1.0f,2.0f);
 		ASSERT_VEC2_VALUES(vec2_add(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  2.0f,3.0f);
 		ASSERT_VEC2_VALUES(vec2_add(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -0.9f,1.8f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) + Vec2( 0.0f,0.0f),  0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) + Vec2( 1.0f,2.0f),  1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) + Vec2( 1.0f,2.0f),  2.0f,3.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) + Vec2(-2.0f,4.0f), -0.9f,1.8f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2( 0.0f, 0.0f);
 		a += Vec2( 0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(a,  0.0f,0.0f);
@@ -13215,21 +13244,21 @@ void TEST_deshi_math(){
 		a  = Vec2( 1.1f,-2.2f);
 		a += Vec2(-2.0f, 4.0f);
 		ASSERT_VEC2_VALUES(a, -0.9f,1.8f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_sub(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2_sub(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)), -1.0f,-2.0f);
 		ASSERT_VEC2_VALUES(vec2_sub(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  0.0f,-1.0f);
 		ASSERT_VEC2_VALUES(vec2_sub(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)),  3.1f,-6.2f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) - Vec2( 0.0f,0.0f),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) - Vec2( 1.0f,2.0f), -1.0f,-2.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) - Vec2( 1.0f,2.0f),  0.0f,-1.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) - Vec2(-2.0f,4.0f),  3.1f,-6.2f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2( 0.0f, 0.0f);
 		a -= Vec2( 0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
@@ -13242,21 +13271,21 @@ void TEST_deshi_math(){
 		a  = Vec2( 1.1f,-2.2f);
 		a -= Vec2(-2.0f, 4.0f);
 		ASSERT_VEC2_VALUES(a,  3.1f,-6.2f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_mul(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2_mul(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2_mul(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.0f, 2.0f);
 		ASSERT_VEC2_VALUES(vec2_mul(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -2.2f,-8.8f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) * Vec2( 0.0f,0.0f),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) * Vec2( 1.0f,2.0f),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) * Vec2( 1.0f,2.0f),  1.0f, 2.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) * Vec2(-2.0f,4.0f), -2.2f,-8.8f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2( 0.0f, 0.0f);
 		a *= Vec2( 0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
@@ -13269,21 +13298,21 @@ void TEST_deshi_math(){
 		a  = Vec2( 1.1f,-2.2f);
 		a *= Vec2(-2.0f, 4.0f);
 		ASSERT_VEC2_VALUES(a, -2.2f,-8.8f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(0.0f, 0.0f),  0.0f),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(0.0f, 0.0f),  1.0f),  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(1.0f, 1.0f),  2.0f),  2.0f, 2.0f);
 		ASSERT_VEC2_VALUES(vec2_mul_f32(Vec2(1.1f,-2.2f), -2.0f), -2.2f, 4.4f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) *  0.0f,  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) *  1.0f,  0.0f, 0.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) *  2.0f,  2.0f, 2.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) * -2.0f, -2.2f, 4.4f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2( 0.0f, 0.0f);
 		a *= 0.0f;
 		ASSERT_VEC2_VALUES(a,  0.0f, 0.0f);
@@ -13296,21 +13325,21 @@ void TEST_deshi_math(){
 		a  = Vec2( 1.1f,-2.2f);
 		a *= -2.0f;
 		ASSERT_VEC2_VALUES(a, -2.2f, 4.4f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_div(Vec2(1.0f, 1.0f), Vec2( 1.0f,1.0f)),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(vec2_div(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  0.00f, 0.00f);
 		ASSERT_VEC2_VALUES(vec2_div(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.00f, 0.50f);
 		ASSERT_VEC2_VALUES(vec2_div(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -0.55f,-0.55f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) / Vec2( 1.0f,1.0f),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) / Vec2( 1.0f,2.0f),  0.00f, 0.00f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) / Vec2( 1.0f,2.0f),  1.00f, 0.50f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) / Vec2(-2.0f,4.0f), -0.55f,-0.55f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2( 1.0f, 1.00f);
 		a /= Vec2( 1.0f, 1.0f);
 		ASSERT_VEC2_VALUES(a,  1.00f, 1.00f);
@@ -13323,21 +13352,21 @@ void TEST_deshi_math(){
 		a  = Vec2( 1.1f,-2.2f);
 		a /= Vec2(-2.0f, 4.0f);
 		ASSERT_VEC2_VALUES(a, -0.55f,-0.55f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(1.0f, 1.0f),  1.0f),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(0.0f, 0.0f),  1.0f),  0.00f, 0.00f);
 		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(1.0f, 1.0f),  2.0f),  0.50f, 0.50f);
 		ASSERT_VEC2_VALUES(vec2_div_f32(Vec2(1.1f,-2.2f), -2.0f), -0.55f, 1.10f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) /  1.0f,  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f) /  1.0f,  0.00f, 0.00f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f) /  2.0f,  0.50f, 0.50f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f) / -2.0f, -0.55f, 1.10f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2( 1.0f, 1.00f);
 		a /= 1.0f;
 		ASSERT_VEC2_VALUES(a,  1.00f, 1.00f);
@@ -13350,17 +13379,17 @@ void TEST_deshi_math(){
 		a  = Vec2( 1.1f,-2.2f);
 		a /= -2.0f;
 		ASSERT_VEC2_VALUES(a, -0.55f, 1.10f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_negate(Vec2(0.0f, 0.0f)), -0.0f,-0.0f);
 		ASSERT_VEC2_VALUES(vec2_negate(Vec2(1.0f, 1.0f)), -1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(vec2_negate(Vec2(1.1f,-2.2f)), -1.1f, 2.2f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(-Vec2(0.0f, 0.0f), -0.0f,-0.0f);
 		ASSERT_VEC2_VALUES(-Vec2(1.0f, 1.0f), -1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(-Vec2(1.1f,-2.2f), -1.1f, 2.2f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec2_equal(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)));
 		Assert(vec2_equal(Vec2( 1.0f, 1.0f), Vec2( 1.0f, 1.0f)));
@@ -13371,7 +13400,7 @@ void TEST_deshi_math(){
 		Assert(vec2_equal(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)), Vec2( 1.0f, 1.0f)));
 		Assert(vec2_equal(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)), Vec2( 0.0f, 0.0f)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec2( 0.0f, 0.0f) == Vec2( 0.0f, 0.0f));
 		Assert(Vec2( 1.0f, 1.0f) == Vec2( 1.0f, 1.0f));
 		Assert(Vec2(-1.1f, 2.2f) == Vec2(-1.1f, 2.2f));
@@ -13380,7 +13409,7 @@ void TEST_deshi_math(){
 		Assert(!(Vec2(-1.1f, 2.2f) == Vec2( 1.1f,-2.2f)));
 		Assert(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)) == Vec2( 1.0f, 1.0f));
 		Assert(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)) == Vec2( 0.0f, 0.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec2_nequal(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)));
 		Assert(vec2_nequal(Vec2( 1.0f, 1.0f), Vec2( 2.0f, 2.0f)));
@@ -13391,7 +13420,7 @@ void TEST_deshi_math(){
 		Assert(vec2_nequal(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)), Vec2( 2.0f, 2.0f)));
 		Assert(vec2_nequal(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)), Vec2( 1.0f, 1.0f)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec2( 0.0f, 0.0f) != Vec2( 1.0f, 1.0f));
 		Assert(Vec2( 1.0f, 1.0f) != Vec2( 2.0f, 2.0f));
 		Assert(Vec2(-1.1f, 2.2f) != Vec2( 1.1f,-2.2f));
@@ -13400,103 +13429,103 @@ void TEST_deshi_math(){
 		Assert(!(Vec2(-1.1f, 2.2f) != Vec2(-1.1f, 2.2f)));
 		Assert(vec2_add(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f)) != Vec2( 2.0f, 2.0f));
 		Assert(vec2_add(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f)) != Vec2( 1.0f, 1.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_abs(Vec2(-1.0f,-1.0f)), 1.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_abs(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_abs(Vec2( 1.0f, 1.0f)), 1.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_abs(Vec2( 1.1f,-2.2f)), 1.1f,2.2f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(-1.0f,-1.0f).abs(), 1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).abs(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).abs(), 1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.1f,-2.2f).abs(), 1.1f,2.2f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_dot(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),   0.0f);
 		ASSERT_F32_EQUAL(vec2_dot(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),   0.0f);
 		ASSERT_F32_EQUAL(vec2_dot(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),   3.0f);
 		ASSERT_F32_EQUAL(vec2_dot(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -11.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).dot(Vec2( 0.0f,0.0f)),   0.0f);
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).dot(Vec2( 1.0f,2.0f)),   0.0f);
 		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).dot(Vec2( 1.0f,2.0f)),   3.0f);
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).dot(Vec2(-2.0f,4.0f)), -11.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_cross(Vec2(0.0f, 0.0f)),  0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_cross(Vec2(1.0f, 1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_cross(Vec2(1.0f, 2.0f)), -2.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_cross(Vec2(1.1f,-2.2f)),  2.2f,1.1f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).cross(),  0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f).cross(), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 2.0f).cross(), -2.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f).cross(),  2.2f,1.1f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_mag(Vec2(0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec2_mag(Vec2(1.0f, 1.0f)), DESHI_SQRTF(2.00f));
 		ASSERT_F32_EQUAL(vec2_mag(Vec2(1.0f, 2.0f)), DESHI_SQRTF(5.00f));
 		ASSERT_F32_EQUAL(vec2_mag(Vec2(1.1f,-2.2f)), DESHI_SQRTF(6.05f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).mag(), 0.0f);
 		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).mag(), DESHI_SQRTF(2.00f));
 		ASSERT_F32_EQUAL(Vec2(1.0f, 2.0f).mag(), DESHI_SQRTF(5.00f));
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).mag(), DESHI_SQRTF(6.05f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(1.0f, 1.0f)), 2.00f);
 		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(1.0f, 2.0f)), 5.00f);
 		ASSERT_F32_EQUAL(vec2_mag_sq(Vec2(1.1f,-2.2f)), 6.05f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).mag_sq(), 0.0f);
 		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).mag_sq(), 2.00f);
 		ASSERT_F32_EQUAL(Vec2(1.0f, 2.0f).mag_sq(), 5.00f);
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).mag_sq(), 6.05f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(1.0f, 1.0f)), 1.0f/DESHI_SQRTF(2.00f), 1.0f/DESHI_SQRTF(2.00f));
 		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(1.0f, 2.0f)), 1.0f/DESHI_SQRTF(5.00f), 2.0f/DESHI_SQRTF(5.00f));
 		ASSERT_VEC2_VALUES(vec2_normalize(Vec2(1.1f,-2.2f)), 1.1f/DESHI_SQRTF(6.05f),-2.2f/DESHI_SQRTF(6.05f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).normalize(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f).normalize(), 1.0f/DESHI_SQRTF(2.00f), 1.0f/DESHI_SQRTF(2.00f));
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 2.0f).normalize(), 1.0f/DESHI_SQRTF(5.00f), 2.0f/DESHI_SQRTF(5.00f));
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f).normalize(), 1.1f/DESHI_SQRTF(6.05f),-2.2f/DESHI_SQRTF(6.05f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_distance(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.00f);
 		ASSERT_F32_EQUAL(vec2_distance(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)), DESHI_SQRTF(5.00f));
 		ASSERT_F32_EQUAL(vec2_distance(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)), 1.00f);
 		ASSERT_F32_EQUAL(vec2_distance(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), DESHI_SQRTF(48.05f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance(Vec2( 0.0f,0.0f)), 0.00f);
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance(Vec2( 1.0f,2.0f)), DESHI_SQRTF(5.00f));
 		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).distance(Vec2( 1.0f,2.0f)), 1.00f);
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).distance(Vec2(-2.0f,4.0f)), DESHI_SQRTF(48.05f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.00f);
 		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  5.00f);
 		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.00f);
 		ASSERT_F32_EQUAL(vec2_distance_sq(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), 48.05f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance_sq(Vec2( 0.0f,0.0f)),  0.00f);
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).distance_sq(Vec2( 1.0f,2.0f)),  5.00f);
 		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).distance_sq(Vec2( 1.0f,2.0f)),  1.00f);
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).distance_sq(Vec2(-2.0f,4.0f)), 48.05f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 2.0f)), 0.0f);
@@ -13508,7 +13537,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2( 1.0f, 2.0f), Vec2( 1.0f, 1.0f)), 3.0f/DESHI_SQRTF(2.0f));
 		ASSERT_F32_EQUAL(vec2_projection_scalar(Vec2(-2.0f, 4.0f), Vec2( 1.1f,-2.2f)), -11.0f/DESHI_SQRTF(6.05f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2( 0.0f, 0.0f).projection_scalar(Vec2( 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2( 0.0f, 0.0f).projection_scalar(Vec2( 1.0f, 2.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2( 2.0f, 2.0f).projection_scalar(Vec2( 5.0f, 0.0f)), 2.0f);
@@ -13518,7 +13547,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec2( 1.0f, 2.0f).projection_scalar(Vec2( 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2( 1.0f, 2.0f).projection_scalar(Vec2( 1.0f, 1.0f)), 3.0f/DESHI_SQRTF(2.0f));
 		ASSERT_F32_EQUAL(Vec2(-2.0f, 4.0f).projection_scalar(Vec2( 1.1f,-2.2f)), -11.0f/DESHI_SQRTF(6.05f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
@@ -13530,7 +13559,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2( 1.0f, 2.0f), Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
 		ASSERT_VEC2_VALUES(vec2_projection_vector(Vec2(-2.0f, 4.0f), Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection_vector(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).projection_vector(Vec2( 1.0f, 2.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 2.0f, 2.0f).projection_vector(Vec2( 5.0f, 0.0f)), 2.0f,0.0f);
@@ -13540,29 +13569,29 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection_vector(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).projection_vector(Vec2( 1.0f, 1.0f)), 3.0f/2.0f,3.0f/2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-2.0f, 4.0f).projection_vector(Vec2( 1.1f,-2.2f)), -2.0f,4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)),  0.00f,0.00f);
 		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  0.50f,1.00f);
 		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(1.0f, 1.0f), Vec2( 1.0f,2.0f)),  1.00f,1.50f);
 		ASSERT_VEC2_VALUES(vec2_midpoint(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -0.45f,0.90f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).midpoint(Vec2( 0.0f,0.0f)),  0.00f,0.00f);
 		ASSERT_VEC2_VALUES(Vec2(0.0f, 0.0f).midpoint(Vec2( 1.0f,2.0f)),  0.50f,1.00f);
 		ASSERT_VEC2_VALUES(Vec2(1.0f, 1.0f).midpoint(Vec2( 1.0f,2.0f)),  1.00f,1.50f);
 		ASSERT_VEC2_VALUES(Vec2(1.1f,-2.2f).midpoint(Vec2(-2.0f,4.0f)), -0.45f,0.90f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_slope(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)),  2.0f);
 		ASSERT_F32_EQUAL(vec2_slope(Vec2(1.0f, 1.0f), Vec2( 2.0f,2.0f)),  1.0f);
 		ASSERT_F32_EQUAL(vec2_slope(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), -2.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).slope(Vec2( 1.0f,2.0f)),  2.0f);
 		ASSERT_F32_EQUAL(Vec2(1.0f, 1.0f).slope(Vec2( 2.0f,2.0f)),  1.0f);
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).slope(Vec2(-2.0f,4.0f)), -2.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(0.0f, 0.0f), Vec2( 1.0f,2.0f)), 0.0f);
@@ -13570,13 +13599,13 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(0.0f, 1.0f), Vec2( 1.0f,0.0f)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(vec2_radians_between(Vec2(1.1f,-2.2f), Vec2(-2.0f,4.0f)), DESHI_MATH_PI_F32);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).radians_between(Vec2( 0.0f,0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2(0.0f, 0.0f).radians_between(Vec2( 1.0f,2.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2(5.0f, 5.0f).radians_between(Vec2( 3.0f,3.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2(0.0f, 1.0f).radians_between(Vec2( 1.0f,0.0f)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(Vec2(1.1f,-2.2f).radians_between(Vec2(-2.0f,4.0f)), DESHI_MATH_PI_F32);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(vec2_floor(Vec2(-1.90f,-1.90f)), -2.00f,-2.00f);
@@ -13604,7 +13633,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 1.90f, 1.90f)),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(vec2_floor(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).floor(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).floor(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).floor(), -2.00f,-2.00f);
@@ -13630,7 +13659,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).floor(),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).floor(),  1.00f, 1.00f);
 		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).floor(),  2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2(-1.90f,-1.90f)), -1.00f,-1.00f);
@@ -13658,7 +13687,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 1.90f, 1.90f)),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(vec2_ceil(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).ceil(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).ceil(), -1.00f,-1.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).ceil(), -1.00f,-1.00f);
@@ -13684,7 +13713,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).ceil(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).ceil(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).ceil(),  2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_round(Vec2(-2.00f,-2.00f)), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(vec2_round(Vec2(-1.90f,-1.90f)), -2.00f,-2.00f);
@@ -13712,7 +13741,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_round(Vec2( 1.90f, 1.90f)),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(vec2_round(Vec2( 2.00f, 2.00f)),  2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2(-2.00f,-2.00f).round(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.90f,-1.90f).round(), -2.00f,-2.00f);
 		ASSERT_VEC2_VALUES(Vec2(-1.55f,-1.55f).round(), -2.00f,-2.00f);
@@ -13738,7 +13767,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.55f, 1.55f).round(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 1.90f, 1.90f).round(),  2.00f, 2.00f);
 		ASSERT_VEC2_VALUES(Vec2( 2.00f, 2.00f).round(),  2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_min(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_min(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.0f,2.0f);
@@ -13749,7 +13778,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_min(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.5f,1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).min(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 1.2f,2.3f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).min(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13758,7 +13787,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).min(Vec2( 1.0f,2.0f)), 1.0f,-2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).min(Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).min(Vec2(-1.5f,1.0f)), -1.5f,1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_max(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_max(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.2f,2.3f);
@@ -13769,7 +13798,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(vec2_max(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.0f,2.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).max(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 1.2f,2.3f)), 1.2f,2.3f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13778,7 +13807,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).max(Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).max(Vec2(-1.5f,1.0f)), -1.0f,2.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_clamp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_clamp(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f), Vec2( 5.0f, 5.0f)), 1.0f,1.0f);
@@ -13790,7 +13819,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_clamp(Vec2( 1.2f, 2.3f), Vec2( 2.0f, 2.0f), Vec2( 5.0f, 5.0f)), 2.0f,2.3f);
 		ASSERT_VEC2_VALUES(vec2_clamp(Vec2(-1.5f, 1.0f), Vec2(-5.0f,-5.0f), Vec2(-1.0f,-1.0f)), -1.5f,-1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).clamp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).clamp(Vec2( 1.0f, 1.0f), Vec2( 5.0f, 5.0f)), 1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 5.0f).clamp(Vec2( 1.0f, 1.0f), Vec2( 5.0f, 5.0f)), 1.0f,5.0f);
@@ -13800,9 +13829,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2(-5.0f, 0.0f).clamp(Vec2(-5.0f,-5.0f), Vec2(-1.0f,-1.0f)), -5.0f,-1.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.2f, 2.3f).clamp(Vec2( 2.0f, 2.0f), Vec2( 5.0f, 5.0f)), 2.0f,2.3f);
 		ASSERT_VEC2_VALUES(Vec2(-1.5f, 1.0f).clamp(Vec2(-5.0f,-5.0f), Vec2(-1.0f,-1.0f)), -1.5f,-1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(clamp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(clamp(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f), Vec2( 5.0f, 5.0f)), 1.0f,1.0f);
 		ASSERT_VEC2_VALUES(clamp(Vec2( 0.0f, 5.0f), Vec2( 1.0f, 1.0f), Vec2( 5.0f, 5.0f)), 1.0f,5.0f);
@@ -13812,7 +13841,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(clamp(Vec2(-5.0f, 0.0f), Vec2(-5.0f,-5.0f), Vec2(-1.0f,-1.0f)), -5.0f,-1.0f);
 		ASSERT_VEC2_VALUES(clamp(Vec2( 1.2f, 2.3f), Vec2( 2.0f, 2.0f), Vec2( 5.0f, 5.0f)), 2.0f,2.3f);
 		ASSERT_VEC2_VALUES(clamp(Vec2(-1.5f, 1.0f), Vec2(-5.0f,-5.0f), Vec2(-1.0f,-1.0f)), -1.5f,-1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_clamp_min(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_clamp_min(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.2f,2.3f);
@@ -13823,7 +13852,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_clamp_min(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(vec2_clamp_min(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.0f,2.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).clamp_min(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).clamp_min(Vec2( 1.2f,2.3f)), 1.2f,2.3f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).clamp_min(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13832,9 +13861,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).clamp_min(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).clamp_min(Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).clamp_min(Vec2(-1.5f,1.0f)), -1.0f,2.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(clamp_min(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(clamp_min(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.2f,2.3f);
 		ASSERT_VEC2_VALUES(clamp_min(Vec2( 1.0f, 2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13843,7 +13872,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(clamp_min(Vec2( 1.0f,-2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(clamp_min(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), 2.0f,2.0f);
 		ASSERT_VEC2_VALUES(clamp_min(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.0f,2.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_clamp_max(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_clamp_max(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.0f,2.0f);
@@ -13854,7 +13883,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_clamp_max(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(vec2_clamp_max(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.5f,1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).clamp_max(Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).clamp_max(Vec2( 1.2f,2.3f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).clamp_max(Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13863,9 +13892,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).clamp_max(Vec2( 1.0f,2.0f)), 1.0f,-2.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).clamp_max(Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).clamp_max(Vec2(-1.5f,1.0f)), -1.5f,1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(clamp_max(Vec2( 0.0f, 0.0f), Vec2( 0.0f,0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(clamp_max(Vec2( 1.0f, 2.0f), Vec2( 1.2f,2.3f)), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(clamp_max(Vec2( 1.0f, 2.0f), Vec2( 1.0f,2.0f)), 1.0f,2.0f);
@@ -13874,7 +13903,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(clamp_max(Vec2( 1.0f,-2.0f), Vec2( 1.0f,2.0f)), 1.0f,-2.0f);
 		ASSERT_VEC2_VALUES(clamp_max(Vec2(-1.0f, 2.0f), Vec2( 2.0f,1.0f)), -1.0f,1.0f);
 		ASSERT_VEC2_VALUES(clamp_max(Vec2(-1.0f, 2.0f), Vec2(-1.5f,1.0f)), -1.5f,1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_clamp_mag(Vec2( 0.0f, 0.0f), 0.0f, 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_clamp_mag(Vec2( 1.0f, 2.0f), 1.0f,99.0f), 1.0f,2.0f);
@@ -13886,7 +13915,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_clamp_mag(Vec2(-1.0f, 2.0f), 0.0f, 2.0f), -2.0f/DESHI_SQRTF(5.0f),4.0f/DESHI_SQRTF(5.0f));
 		ASSERT_VEC2_VALUES(vec2_clamp_mag(Vec2(-1.0f, 2.0f), 0.0f, 3.0f), -1.0f,2.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).clamp_mag(0.0f, 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).clamp_mag(1.0f,99.0f), 1.0f,2.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 2.0f).clamp_mag(3.0f,99.0f), 3.0f/DESHI_SQRTF(5.0f),6.0f/DESHI_SQRTF(5.0f));
@@ -13896,7 +13925,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f,-2.0f).clamp_mag(3.0f,99.0f), 3.0f/DESHI_SQRTF(5.0f),-6.0f/DESHI_SQRTF(5.0f));
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).clamp_mag(0.0f, 2.0f), -2.0f/DESHI_SQRTF(5.0f),4.0f/DESHI_SQRTF(5.0f));
 		ASSERT_VEC2_VALUES(Vec2(-1.0f, 2.0f).clamp_mag(0.0f, 3.0f), -1.0f,2.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_nudge(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_nudge(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f), Vec2( 0.1f, 0.1f)), 0.1f,0.1f);
@@ -13908,7 +13937,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_nudge(Vec2( 1.0f, 1.0f), Vec2(-1.0f,-1.0f), Vec2( 0.5f, 0.5f)), 0.5f,0.5f);
 		ASSERT_VEC2_VALUES(vec2_nudge(Vec2( 5.0f, 5.0f), Vec2( 1.0f, 1.0f), Vec2( 0.5f, 0.5f)), 4.5f,4.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).nudge(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).nudge(Vec2( 1.0f, 1.0f), Vec2( 0.1f, 0.1f)), 0.1f,0.1f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).nudge(Vec2( 1.0f, 1.0f), Vec2( 0.5f, 0.5f)), 0.5f,0.5f);
@@ -13918,9 +13947,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 0.9f, 0.9f).nudge(Vec2(-1.0f,-1.0f), Vec2( 0.5f, 0.5f)), 0.4f,0.4f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).nudge(Vec2(-1.0f,-1.0f), Vec2( 0.5f, 0.5f)), 0.5f,0.5f);
 		ASSERT_VEC2_VALUES(Vec2( 5.0f, 5.0f).nudge(Vec2( 1.0f, 1.0f), Vec2( 0.5f, 0.5f)), 4.5f,4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(nudge(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(nudge(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f), Vec2( 0.1f, 0.1f)), 0.1f,0.1f);
 		ASSERT_VEC2_VALUES(nudge(Vec2( 0.0f, 0.0f), Vec2( 1.0f, 1.0f), Vec2( 0.5f, 0.5f)), 0.5f,0.5f);
@@ -13930,7 +13959,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(nudge(Vec2( 0.9f, 0.9f), Vec2(-1.0f,-1.0f), Vec2( 0.5f, 0.5f)), 0.4f,0.4f);
 		ASSERT_VEC2_VALUES(nudge(Vec2( 1.0f, 1.0f), Vec2(-1.0f,-1.0f), Vec2( 0.5f, 0.5f)), 0.5f,0.5f);
 		ASSERT_VEC2_VALUES(nudge(Vec2( 5.0f, 5.0f), Vec2( 1.0f, 1.0f), Vec2( 0.5f, 0.5f)), 4.5f,4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_lerp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_lerp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), 0.5f), 0.0f,0.0f);
@@ -13942,7 +13971,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_lerp(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f), 0.5f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_lerp(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f), 1.0f), 1.0f,1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).lerp(Vec2( 0.0f, 0.0f), 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).lerp(Vec2( 0.0f, 0.0f), 0.5f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).lerp(Vec2( 0.0f, 0.0f), 1.0f), 0.0f,0.0f);
@@ -13952,9 +13981,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2(-1.0f,-1.0f).lerp(Vec2( 1.0f, 1.0f), 0.0f), -1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f,-1.0f).lerp(Vec2( 1.0f, 1.0f), 0.5f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2(-1.0f,-1.0f).lerp(Vec2( 1.0f, 1.0f), 1.0f), 1.0f,1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(lerp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(lerp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), 0.5f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(lerp(Vec2( 0.0f, 0.0f), Vec2( 0.0f, 0.0f), 1.0f), 0.0f,0.0f);
@@ -13964,7 +13993,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(lerp(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f), 0.0f), -1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(lerp(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f), 0.5f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(lerp(Vec2(-1.0f,-1.0f), Vec2( 1.0f, 1.0f), 1.0f), 1.0f,1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_rotate_radians(Vec2( 0.0f, 0.0f), 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_rotate_radians(Vec2( 1.0f, 0.0f), 0.0f), 1.0f,0.0f);
@@ -13983,7 +14012,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_rotate_radians(Vec2( 1.0f, 1.0f), DESHI_MATH_THREEHALVES_PI_F32), 1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(vec2_rotate_radians(Vec2( 1.0f, 1.0f), DESHI_MATH_TAU_F32), 1.0f,1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).rotate_radians(0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).rotate_radians(0.0f), 1.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).rotate_radians(DESHI_MATH_HALF_PI_F32), 0.0f,1.0f);
@@ -14000,7 +14029,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).rotate_radians(DESHI_MATH_PI_F32), -1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).rotate_radians(DESHI_MATH_THREEHALVES_PI_F32), 1.0f,-1.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 1.0f).rotate_radians(DESHI_MATH_TAU_F32), 1.0f,1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_rotate_degrees(Vec2( 0.0f, 0.0f), 0.0f), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_rotate_degrees(Vec2( 1.0f, 0.0f), 0.0f), 1.0f,0.0f);
@@ -14028,7 +14057,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_x_zero(Vec2( 0.0f, 1.5f)), 0.0f,1.5f);
 		ASSERT_VEC2_VALUES(vec2_x_zero(Vec2( 1.5f, 1.5f)), 0.0f,1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).x_zero(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).x_zero(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).x_zero(), 0.0f,1.0f);
@@ -14037,7 +14066,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).x_zero(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).x_zero(), 0.0f,1.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).x_zero(), 0.0f,1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_y_zero(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_y_zero(Vec2( 1.0f, 0.0f)), 1.0f,0.0f);
@@ -14048,7 +14077,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_y_zero(Vec2( 0.0f, 1.5f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_y_zero(Vec2( 1.5f, 1.5f)), 1.5f,0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).y_zero(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).y_zero(), 1.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).y_zero(), 0.0f,0.0f);
@@ -14057,7 +14086,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).y_zero(), 1.5f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).y_zero(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).y_zero(), 1.5f,0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_x_only(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_x_only(Vec2( 1.0f, 0.0f)), 1.0f,0.0f);
@@ -14068,7 +14097,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_x_only(Vec2( 0.0f, 1.5f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_x_only(Vec2( 1.5f, 1.5f)), 1.5f,0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).x_only(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).x_only(), 1.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).x_only(), 0.0f,0.0f);
@@ -14077,7 +14106,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).x_only(), 1.5f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).x_only(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).x_only(), 1.5f,0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_y_only(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_y_only(Vec2( 1.0f, 0.0f)), 0.0f,0.0f);
@@ -14088,7 +14117,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_y_only(Vec2( 0.0f, 1.5f)), 0.0f,1.5f);
 		ASSERT_VEC2_VALUES(vec2_y_only(Vec2( 1.5f, 1.5f)), 0.0f,1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).y_only(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).y_only(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).y_only(), 0.0f,1.0f);
@@ -14097,7 +14126,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).y_only(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).y_only(), 0.0f,1.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).y_only(), 0.0f,1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_x_negate(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_x_negate(Vec2( 1.0f, 0.0f)), -1.0f,0.0f);
@@ -14108,7 +14137,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_x_negate(Vec2( 0.0f, 1.5f)), 0.0f,1.5f);
 		ASSERT_VEC2_VALUES(vec2_x_negate(Vec2( 1.5f, 1.5f)), -1.5f,1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).x_negate(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).x_negate(), -1.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).x_negate(), 0.0f,1.0f);
@@ -14117,7 +14146,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).x_negate(), -1.5f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).x_negate(), 0.0f,1.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).x_negate(), -1.5f,1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_y_negate(Vec2( 0.0f, 0.0f)), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_y_negate(Vec2( 1.0f, 0.0f)), 1.0f,0.0f);
@@ -14128,7 +14157,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_y_negate(Vec2( 0.0f, 1.5f)), 0.0f,-1.5f);
 		ASSERT_VEC2_VALUES(vec2_y_negate(Vec2( 1.5f, 1.5f)), 1.5f,-1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).y_negate(), 0.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).y_negate(), 1.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).y_negate(), 0.0f,-1.0f);
@@ -14137,7 +14166,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).y_negate(), 1.5f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).y_negate(), 0.0f,-1.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).y_negate(), 1.5f,-1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_x_set(Vec2( 0.0f, 0.0f), 10.0f), 10.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_x_set(Vec2( 1.0f, 0.0f), 10.0f), 10.0f,0.0f);
@@ -14148,7 +14177,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_x_set(Vec2( 0.0f, 1.5f), 10.0f), 10.0f,1.5f);
 		ASSERT_VEC2_VALUES(vec2_x_set(Vec2( 1.5f, 1.5f), 10.0f), 10.0f,1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).x_set(10.0f), 10.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).x_set(10.0f), 10.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).x_set(10.0f), 10.0f,1.0f);
@@ -14157,7 +14186,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).x_set(10.0f), 10.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).x_set(10.0f), 10.0f,1.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).x_set(10.0f), 10.0f,1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_y_set(Vec2( 0.0f, 0.0f), 10.0f), 0.0f,10.0f);
 		ASSERT_VEC2_VALUES(vec2_y_set(Vec2( 1.0f, 0.0f), 10.0f), 1.0f,10.0f);
@@ -14168,7 +14197,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_y_set(Vec2( 0.0f, 1.5f), 10.0f), 0.0f,10.0f);
 		ASSERT_VEC2_VALUES(vec2_y_set(Vec2( 1.5f, 1.5f), 10.0f), 1.5f,10.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).y_set(10.0f), 0.0f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).y_set(10.0f), 1.0f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).y_set(10.0f), 0.0f,10.0f);
@@ -14177,7 +14206,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).y_set(10.0f), 1.5f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).y_set(10.0f), 0.0f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).y_set(10.0f), 1.5f,10.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_x_add(Vec2( 0.0f, 0.0f), 10.0f), 10.0f,0.0f);
 		ASSERT_VEC2_VALUES(vec2_x_add(Vec2( 1.0f, 0.0f), 10.0f), 11.0f,0.0f);
@@ -14188,7 +14217,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_x_add(Vec2( 0.0f, 1.5f), 10.0f), 10.0f,1.5f);
 		ASSERT_VEC2_VALUES(vec2_x_add(Vec2( 1.5f, 1.5f), 10.0f), 11.5f,1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).x_add(10.0f), 10.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).x_add(10.0f), 11.0f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).x_add(10.0f), 10.0f,1.0f);
@@ -14197,7 +14226,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).x_add(10.0f), 11.5f,0.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).x_add(10.0f), 10.0f,1.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).x_add(10.0f), 11.5f,1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2_VALUES(vec2_y_add(Vec2( 0.0f, 0.0f), 10.0f), 0.0f,10.0f);
 		ASSERT_VEC2_VALUES(vec2_y_add(Vec2( 1.0f, 0.0f), 10.0f), 1.0f,10.0f);
@@ -14208,7 +14237,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(vec2_y_add(Vec2( 0.0f, 1.5f), 10.0f), 0.0f,11.5f);
 		ASSERT_VEC2_VALUES(vec2_y_add(Vec2( 1.5f, 1.5f), 10.0f), 1.5f,11.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 0.0f).y_add(10.0f), 0.0f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 1.0f, 0.0f).y_add(10.0f), 1.0f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.0f).y_add(10.0f), 0.0f,11.0f);
@@ -14217,7 +14246,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 0.0f).y_add(10.0f), 1.5f,10.0f);
 		ASSERT_VEC2_VALUES(Vec2( 0.0f, 1.5f).y_add(10.0f), 0.0f,11.5f);
 		ASSERT_VEC2_VALUES(Vec2( 1.5f, 1.5f).y_add(10.0f), 1.5f,11.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 #undef ASSERT_VEC2_VALUES
 	}
@@ -14267,7 +14296,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_UNITX(), 1, 0);
 		ASSERT_VEC2I_VALUES(vec2i_UNITY(), 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(vec2i::ZERO,  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i::ONE,   1, 1);
 		ASSERT_VEC2I_VALUES(vec2i::UP,    0, 1);
@@ -14276,38 +14305,38 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i::RIGHT, 1, 0);
 		ASSERT_VEC2I_VALUES(vec2i::UNITX, 1, 0);
 		ASSERT_VEC2I_VALUES(vec2i::UNITY, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		a = Vec2i(1,-2);
 		ASSERT_S32_EQUAL(vec2i_index(a, 0),  1);
 		ASSERT_S32_EQUAL(vec2i_index(a, 1), -2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a = Vec2i(1,-2);
 		ASSERT_S32_EQUAL(a[0],  1);
 		ASSERT_S32_EQUAL(a[1], -2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a[0] =  2;
 		a[1] = -4;
 		ASSERT_S32_EQUAL(a.arr[0],  2);
 		ASSERT_S32_EQUAL(a.arr[1], -4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(0, 0), Vec2i( 0,0)),  0,0);
 		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(0, 0), Vec2i( 1,2)),  1,2);
 		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(1, 1), Vec2i( 1,2)),  2,3);
 		ASSERT_VEC2I_VALUES(vec2i_add(Vec2i(1,-2), Vec2i(-2,4)), -1,2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) + Vec2i( 0,0),  0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) + Vec2i( 1,2),  1,2);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) + Vec2i( 1,2),  2,3);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2) + Vec2i(-2,4), -1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2i( 0, 0);
 		a += Vec2i( 0, 0);
 		ASSERT_VEC2I_VALUES(a,  0,0);
@@ -14320,21 +14349,21 @@ void TEST_deshi_math(){
 		a  = Vec2i( 1,-2);
 		a += Vec2i(-2, 4);
 		ASSERT_VEC2I_VALUES(a, -1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(0, 0), Vec2i( 0,0)),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(0, 0), Vec2i( 1,2)), -1,-2);
 		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(1, 1), Vec2i( 1,2)),  0,-1);
 		ASSERT_VEC2I_VALUES(vec2i_sub(Vec2i(1,-2), Vec2i(-2,4)),  3,-6);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) - Vec2i( 0,0),  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) - Vec2i( 1,2), -1,-2);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) - Vec2i( 1,2),  0,-1);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2) - Vec2i(-2,4),  3,-6);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2i( 0, 0);
 		a -= Vec2i( 0, 0);
 		ASSERT_VEC2I_VALUES(a,  0, 0);
@@ -14347,21 +14376,21 @@ void TEST_deshi_math(){
 		a  = Vec2i( 1,-2);
 		a -= Vec2i(-2, 4);
 		ASSERT_VEC2I_VALUES(a,  3,-6);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(0, 0), Vec2i( 0,0)),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(0, 0), Vec2i( 1,2)),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(1, 1), Vec2i( 1,2)),  1, 2);
 		ASSERT_VEC2I_VALUES(vec2i_mul(Vec2i(1,-2), Vec2i(-2,4)), -2,-8);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) * Vec2i( 0,0),  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) * Vec2i( 1,2),  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) * Vec2i( 1,2),  1, 2);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2) * Vec2i(-2,4), -2,-8);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2i( 0, 0);
 		a *= Vec2i( 0, 0);
 		ASSERT_VEC2I_VALUES(a,  0, 0);
@@ -14374,21 +14403,21 @@ void TEST_deshi_math(){
 		a  = Vec2i( 1,-2);
 		a *= Vec2i(-2, 4);
 		ASSERT_VEC2I_VALUES(a, -2,-8);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(0, 0),  0),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(0, 0),  1),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(1, 1),  2),  2, 2);
 		ASSERT_VEC2I_VALUES(vec2i_mul_f32(Vec2i(1,-2), -2), -2, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) *  0,  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) *  1,  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) *  2,  2, 2);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2) * -2, -2, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2i( 0, 0);
 		a *= 0;
 		ASSERT_VEC2I_VALUES(a,  0, 0);
@@ -14401,21 +14430,21 @@ void TEST_deshi_math(){
 		a  = Vec2i( 1,-2);
 		a *= -2;
 		ASSERT_VEC2I_VALUES(a, -2, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(1, 1), Vec2i( 1,1)),  1, 1);
 		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(0, 0), Vec2i( 1,2)),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(1, 1), Vec2i( 1,2)),  1, 0);
 		ASSERT_VEC2I_VALUES(vec2i_div(Vec2i(1,-2), Vec2i(-2,4)), -0,-0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) / Vec2i( 1,1),  1, 1);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) / Vec2i( 1,2),  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) / Vec2i( 1,2),  1, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2) / Vec2i(-2,4), -0,-0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2i( 1, 1);
 		a /= Vec2i( 1, 1);
 		ASSERT_VEC2I_VALUES(a,  1, 1);
@@ -14428,21 +14457,21 @@ void TEST_deshi_math(){
 		a  = Vec2i( 1,-2);
 		a /= Vec2i(-2, 4);
 		ASSERT_VEC2I_VALUES(a, -0,-0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(1, 1),  1),  1, 1);
 		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(0, 0),  1),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(1, 1),  2),  0, 0);
 		ASSERT_VEC2I_VALUES(vec2i_div_f32(Vec2i(1,-2), -2), -0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) /  1,  1, 1);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0) /  1,  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1) /  2,  0, 0);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2) / -2, -0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec2i( 1, 1);
 		a /= 1;
 		ASSERT_VEC2I_VALUES(a,  1, 1);
@@ -14455,17 +14484,17 @@ void TEST_deshi_math(){
 		a  = Vec2i( 1,-2);
 		a /= -2;
 		ASSERT_VEC2I_VALUES(a, -0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_negate(Vec2i(0, 0)), -0,-0);
 		ASSERT_VEC2I_VALUES(vec2i_negate(Vec2i(1, 1)), -1,-1);
 		ASSERT_VEC2I_VALUES(vec2i_negate(Vec2i(1,-2)), -1, 2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(-Vec2i(0, 0), -0,-0);
 		ASSERT_VEC2I_VALUES(-Vec2i(1, 1), -1,-1);
 		ASSERT_VEC2I_VALUES(-Vec2i(1,-2), -1, 2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec2i_equal(Vec2i( 0, 0), Vec2i( 0, 0)));
 		Assert(vec2i_equal(Vec2i( 1, 1), Vec2i( 1, 1)));
@@ -14476,7 +14505,7 @@ void TEST_deshi_math(){
 		Assert(vec2i_equal(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)), Vec2i( 1, 1)));
 		Assert(vec2i_equal(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)), Vec2i( 0, 0)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec2i( 0, 0) == Vec2i( 0, 0));
 		Assert(Vec2i( 1, 1) == Vec2i( 1, 1));
 		Assert(Vec2i(-1, 2) == Vec2i(-1, 2));
@@ -14485,7 +14514,7 @@ void TEST_deshi_math(){
 		Assert(!(Vec2i(-1, 2) == Vec2i( 1,-2)));
 		Assert(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)) == Vec2i( 1, 1));
 		Assert(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)) == Vec2i( 0, 0));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec2i_nequal(Vec2i( 0, 0), Vec2i( 1, 1)));
 		Assert(vec2i_nequal(Vec2i( 1, 1), Vec2i( 2, 2)));
@@ -14496,7 +14525,7 @@ void TEST_deshi_math(){
 		Assert(vec2i_nequal(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)), Vec2i( 2, 2)));
 		Assert(vec2i_nequal(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)), Vec2i( 1, 1)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec2i( 0, 0) != Vec2i( 1, 1));
 		Assert(Vec2i( 1, 1) != Vec2i( 2, 2));
 		Assert(Vec2i(-1, 2) != Vec2i( 1,-2));
@@ -14505,103 +14534,103 @@ void TEST_deshi_math(){
 		Assert(!(Vec2i(-1, 2) != Vec2i(-1, 2)));
 		Assert(vec2i_add(Vec2i( 0, 0), Vec2i( 1, 1)) != Vec2i( 2, 2));
 		Assert(vec2i_add(Vec2i(-1,-1), Vec2i( 1, 1)) != Vec2i( 1, 1));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i(-1,-1)), 1,1);
 		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i( 1, 1)), 1,1);
 		ASSERT_VEC2I_VALUES(vec2i_abs(Vec2i( 1,-2)), 1,2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(-1,-1).abs(), 1,1);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).abs(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).abs(), 1,1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).abs(), 1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(0, 0), Vec2i( 0,0)),   0.0f);
 		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(0, 0), Vec2i( 1,2)),   0.0f);
 		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(1, 1), Vec2i( 1,2)),   3.0f);
 		ASSERT_F32_EQUAL(vec2i_dot(Vec2i(1,-2), Vec2i(-2,4)), -10.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).dot(Vec2i( 0,0)),   0.0f);
 		ASSERT_F32_EQUAL(Vec2i(0, 0).dot(Vec2i( 1,2)),   0.0f);
 		ASSERT_F32_EQUAL(Vec2i(1, 1).dot(Vec2i( 1,2)),   3.0f);
 		ASSERT_F32_EQUAL(Vec2i(1,-2).dot(Vec2i(-2,4)), -10.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(0, 0)),  0,0);
 		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(1, 1)), -1,1);
 		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(1, 2)), -2,1);
 		ASSERT_VEC2I_VALUES(vec2i_cross(Vec2i(1,-2)),  2,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0).cross(),  0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1).cross(), -1,1);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 2).cross(), -2,1);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2).cross(),  2,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(1, 1)), DESHI_SQRTF(2.0f));
 		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(1, 2)), DESHI_SQRTF(5.0f));
 		ASSERT_F32_EQUAL(vec2i_mag(Vec2i(1,-2)), DESHI_SQRTF(5.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).mag(), 0.00f);
 		ASSERT_F32_EQUAL(Vec2i(1, 1).mag(), DESHI_SQRTF(2.0f));
 		ASSERT_F32_EQUAL(Vec2i(1, 2).mag(), DESHI_SQRTF(5.0f));
 		ASSERT_F32_EQUAL(Vec2i(1,-2).mag(), DESHI_SQRTF(5.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(1, 1)), 2.0f);
 		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(1, 2)), 5.0f);
 		ASSERT_F32_EQUAL(vec2i_mag_sq(Vec2i(1,-2)), 5.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).mag_sq(), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i(1, 1).mag_sq(), 2.0f);
 		ASSERT_F32_EQUAL(Vec2i(1, 2).mag_sq(), 5.0f);
 		ASSERT_F32_EQUAL(Vec2i(1,-2).mag_sq(), 5.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(1, 1)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(1, 2)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_normalize(Vec2i(1,-2)), 0,0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0).normalize(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1).normalize(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 2).normalize(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2).normalize(), 0,0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(0, 0), Vec2i( 0,0)), 0.0f);
 		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(0, 0), Vec2i( 1,2)), DESHI_SQRTF(5.0f));
 		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(1, 1), Vec2i( 1,2)), 1.0f);
 		ASSERT_F32_EQUAL(vec2i_distance(Vec2i(1,-2), Vec2i(-2,4)), DESHI_SQRTF(45.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).distance(Vec2i( 0,0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i(0, 0).distance(Vec2i( 1,2)), DESHI_SQRTF(5.0f));
 		ASSERT_F32_EQUAL(Vec2i(1, 1).distance(Vec2i( 1,2)), 1.0f);
 		ASSERT_F32_EQUAL(Vec2i(1,-2).distance(Vec2i(-2,4)), DESHI_SQRTF(45.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(0, 0), Vec2i( 0,0)),  0.0f);
 		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(0, 0), Vec2i( 1,2)),  5.0f);
 		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(1, 1), Vec2i( 1,2)),  1.0f);
 		ASSERT_F32_EQUAL(vec2i_distance_sq(Vec2i(1,-2), Vec2i(-2,4)), 45.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).distance_sq(Vec2i( 0,0)),  0.0f);
 		ASSERT_F32_EQUAL(Vec2i(0, 0).distance_sq(Vec2i( 1,2)),  5.0f);
 		ASSERT_F32_EQUAL(Vec2i(1, 1).distance_sq(Vec2i( 1,2)),  1.0f);
 		ASSERT_F32_EQUAL(Vec2i(1,-2).distance_sq(Vec2i(-2,4)), 45.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 0, 0), Vec2i( 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 0, 0), Vec2i( 1, 2)), 0.0f);
@@ -14613,7 +14642,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i( 1, 2), Vec2i( 1, 1)), 3.0f/DESHI_SQRTF(2.0f));
 		ASSERT_F32_EQUAL(vec2i_projection_scalar(Vec2i(-2, 4), Vec2i( 1,-2)), -10.0f/DESHI_SQRTF(5.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i( 0, 0).projection_scalar(Vec2i( 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i( 0, 0).projection_scalar(Vec2i( 1, 2)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i( 2, 2).projection_scalar(Vec2i( 5, 0)), 2.0f);
@@ -14623,7 +14652,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec2i( 1, 2).projection_scalar(Vec2i( 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i( 1, 2).projection_scalar(Vec2i( 1, 1)), 3.0f/DESHI_SQRTF(2.0f));
 		ASSERT_F32_EQUAL(Vec2i(-2, 4).projection_scalar(Vec2i( 1,-2)), -10.0f/DESHI_SQRTF(5.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 0, 0), Vec2i( 1, 2)), 0,0);
@@ -14635,7 +14664,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i( 1, 2), Vec2i( 1, 1)), 1,1);
 		ASSERT_VEC2I_VALUES(vec2i_projection_vector(Vec2i(-2, 4), Vec2i( 1,-2)), -2,4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection_vector(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).projection_vector(Vec2i( 1, 2)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 2, 2).projection_vector(Vec2i( 5, 0)), 2,0);
@@ -14645,29 +14674,29 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection_vector(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).projection_vector(Vec2i( 1, 1)), 1,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-2, 4).projection_vector(Vec2i( 1,-2)), -2,4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(0, 0), Vec2i( 1,2)), 0,1);
 		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(1, 1), Vec2i( 1,2)), 1,1);
 		ASSERT_VEC2I_VALUES(vec2i_midpoint(Vec2i(1,-2), Vec2i(-2,4)), 0,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0).midpoint(Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(0, 0).midpoint(Vec2i( 1,2)), 0,1);
 		ASSERT_VEC2I_VALUES(Vec2i(1, 1).midpoint(Vec2i( 1,2)), 1,1);
 		ASSERT_VEC2I_VALUES(Vec2i(1,-2).midpoint(Vec2i(-2,4)), 0,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_slope(Vec2i(0, 0), Vec2i( 1,2)),  2.0f);
 		ASSERT_F32_EQUAL(vec2i_slope(Vec2i(1, 1), Vec2i( 2,2)),  1.0f);
 		ASSERT_F32_EQUAL(vec2i_slope(Vec2i(1,-2), Vec2i(-2,4)), -2.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).slope(Vec2i( 1,2)),  2.0f);
 		ASSERT_F32_EQUAL(Vec2i(1, 1).slope(Vec2i( 2,2)),  1.0f);
 		ASSERT_F32_EQUAL(Vec2i(1,-2).slope(Vec2i(-2,4)), -2.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(0, 0), Vec2i( 0,0)), 0.0f);
 		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(0, 0), Vec2i( 1,2)), 0.0f);
@@ -14675,13 +14704,13 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(0, 1), Vec2i( 1,0)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(vec2i_radians_between(Vec2i(1,-2), Vec2i(-2,4)), DESHI_MATH_PI_F32);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec2i(0, 0).radians_between(Vec2i( 0,0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i(0, 0).radians_between(Vec2i( 1,2)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i(5, 5).radians_between(Vec2i( 3,3)), 0.0f);
 		ASSERT_F32_EQUAL(Vec2i(0, 1).radians_between(Vec2i( 1,0)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(Vec2i(1,-2).radians_between(Vec2i(-2,4)), DESHI_MATH_PI_F32);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
@@ -14692,7 +14721,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i(-1, 2), Vec2i( 2,1)), -1,1);
 		ASSERT_VEC2I_VALUES(vec2i_min(Vec2i(-1, 2), Vec2i(-1,1)), -1,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).min(Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).min(Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).min(Vec2i( 1,2)), 1,2);
@@ -14701,7 +14730,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).min(Vec2i( 1,2)), 1,-2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).min(Vec2i( 2,1)), -1,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).min(Vec2i(-1,1)), -1,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
@@ -14712,7 +14741,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i(-1, 2), Vec2i( 2,1)), 2,2);
 		ASSERT_VEC2I_VALUES(vec2i_max(Vec2i(-1, 2), Vec2i(-1,1)), -1,2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).max(Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).max(Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).max(Vec2i( 1,2)), 1,2);
@@ -14721,7 +14750,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).max(Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).max(Vec2i( 2,1)), 2,2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).max(Vec2i(-1,1)), -1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_clamp(Vec2i( 0, 0), Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_clamp(Vec2i( 0, 0), Vec2i( 1, 1), Vec2i( 5, 5)), 1,1);
@@ -14733,7 +14762,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_clamp(Vec2i( 1, 2), Vec2i( 2, 2), Vec2i( 5, 5)), 2,2);
 		ASSERT_VEC2I_VALUES(vec2i_clamp(Vec2i(-1, 1), Vec2i(-5,-5), Vec2i(-1,-1)), -1,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).clamp(Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).clamp(Vec2i( 1, 1), Vec2i( 5, 5)), 1,1);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 5).clamp(Vec2i( 1, 1), Vec2i( 5, 5)), 1,5);
@@ -14743,9 +14772,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i(-5, 0).clamp(Vec2i(-5,-5), Vec2i(-1,-1)), -5,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp(Vec2i( 2, 2), Vec2i( 5, 5)), 2,2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 1).clamp(Vec2i(-5,-5), Vec2i(-1,-1)), -1,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(clamp(Vec2i( 0, 0), Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(clamp(Vec2i( 0, 0), Vec2i( 1, 1), Vec2i( 5, 5)), 1,1);
 		ASSERT_VEC2I_VALUES(clamp(Vec2i( 0, 5), Vec2i( 1, 1), Vec2i( 5, 5)), 1,5);
@@ -14755,7 +14784,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(clamp(Vec2i(-5, 0), Vec2i(-5,-5), Vec2i(-1,-1)), -5,-1);
 		ASSERT_VEC2I_VALUES(clamp(Vec2i( 1, 2), Vec2i( 2, 2), Vec2i( 5, 5)), 2,2);
 		ASSERT_VEC2I_VALUES(clamp(Vec2i(-1, 1), Vec2i(-5,-5), Vec2i(-1,-1)), -1,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_clamp_min(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_clamp_min(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
@@ -14765,7 +14794,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_clamp_min(Vec2i(-1, 2), Vec2i( 2,1)), 2,2);
 		ASSERT_VEC2I_VALUES(vec2i_clamp_min(Vec2i(-1, 2), Vec2i(-1,1)), -1,2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).clamp_min(Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp_min(Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp_min(Vec2i( 2,1)), 2,2);
@@ -14773,9 +14802,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).clamp_min(Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).clamp_min(Vec2i( 2,1)), 2,2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).clamp_min(Vec2i(-1,1)), -1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(clamp_min(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(clamp_min(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(clamp_min(Vec2i( 1, 2), Vec2i( 2,1)), 2,2);
@@ -14783,7 +14812,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(clamp_min(Vec2i( 1,-2), Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(clamp_min(Vec2i(-1, 2), Vec2i( 2,1)), 2,2);
 		ASSERT_VEC2I_VALUES(clamp_min(Vec2i(-1, 2), Vec2i(-1,1)), -1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_clamp_max(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_clamp_max(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
@@ -14793,7 +14822,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_clamp_max(Vec2i(-1, 2), Vec2i( 2,1)), -1,1);
 		ASSERT_VEC2I_VALUES(vec2i_clamp_max(Vec2i(-1, 2), Vec2i(-1,1)), -1,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).clamp_max(Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp_max(Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp_max(Vec2i( 2,1)), 1,1);
@@ -14801,9 +14830,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).clamp_max(Vec2i( 1,2)), 1,-2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).clamp_max(Vec2i( 2,1)), -1,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).clamp_max(Vec2i(-1,1)), -1,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(clamp_max(Vec2i( 0, 0), Vec2i( 0,0)), 0,0);
 		ASSERT_VEC2I_VALUES(clamp_max(Vec2i( 1, 2), Vec2i( 1,2)), 1,2);
 		ASSERT_VEC2I_VALUES(clamp_max(Vec2i( 1, 2), Vec2i( 2,1)), 1,1);
@@ -14811,7 +14840,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(clamp_max(Vec2i( 1,-2), Vec2i( 1,2)), 1,-2);
 		ASSERT_VEC2I_VALUES(clamp_max(Vec2i(-1, 2), Vec2i( 2,1)), -1,1);
 		ASSERT_VEC2I_VALUES(clamp_max(Vec2i(-1, 2), Vec2i(-1,1)), -1,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_clamp_mag(Vec2i( 0, 0), 0, 0), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_clamp_mag(Vec2i( 1, 2), 1,99), 1,2);
@@ -14823,7 +14852,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_clamp_mag(Vec2i(-1, 2), 0, 2), 0,1);
 		ASSERT_VEC2I_VALUES(vec2i_clamp_mag(Vec2i(-1, 2), 0, 3), -1,2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).clamp_mag(0, 0), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp_mag(1,99), 1,2);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 2).clamp_mag(3,99), 1,2);
@@ -14833,7 +14862,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1,-2).clamp_mag(3,99), 1,-2);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).clamp_mag(0, 2), 0,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 2).clamp_mag(0, 3), -1,2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_nudge(Vec2i( 0, 0), Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_nudge(Vec2i( 0, 0), Vec2i( 1, 1), Vec2i( 1, 1)), 1,1);
@@ -14845,7 +14874,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_nudge(Vec2i( 1, 1), Vec2i(-1,-1), Vec2i( 1, 1)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_nudge(Vec2i( 5, 5), Vec2i( 1, 1), Vec2i( 1, 1)), 4,4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).nudge(Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).nudge(Vec2i( 1, 1), Vec2i( 1, 1)), 1,1);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).nudge(Vec2i( 2, 2), Vec2i( 1, 1)), 1,1);
@@ -14855,9 +14884,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).nudge(Vec2i(-1,-1), Vec2i( 1, 1)), -1,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).nudge(Vec2i(-1,-1), Vec2i( 1, 1)), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 5, 5).nudge(Vec2i( 1, 1), Vec2i( 1, 1)), 4,4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(nudge(Vec2i( 0, 0), Vec2i( 0, 0), Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(nudge(Vec2i( 0, 0), Vec2i( 1, 1), Vec2i( 1, 1)), 1,1);
 		ASSERT_VEC2I_VALUES(nudge(Vec2i( 0, 0), Vec2i( 2, 2), Vec2i( 1, 1)), 1,1);
@@ -14867,7 +14896,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(nudge(Vec2i( 0, 0), Vec2i(-1,-1), Vec2i( 1, 1)), -1,-1);
 		ASSERT_VEC2I_VALUES(nudge(Vec2i( 1, 1), Vec2i(-1,-1), Vec2i( 1, 1)), 0,0);
 		ASSERT_VEC2I_VALUES(nudge(Vec2i( 5, 5), Vec2i( 1, 1), Vec2i( 1, 1)), 4,4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_lerp(Vec2i( 0, 0), Vec2i( 0, 0), 0.0f), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_lerp(Vec2i( 0, 0), Vec2i( 0, 0), 0.5f), 0,0);
@@ -14879,7 +14908,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_lerp(Vec2i(-1,-1), Vec2i( 1, 1), 0.5f), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_lerp(Vec2i(-1,-1), Vec2i( 1, 1), 1.0f), 1,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).lerp(Vec2i( 0, 0), 0.0f), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).lerp(Vec2i( 0, 0), 0.5f), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).lerp(Vec2i( 0, 0), 1.0f), 0,0);
@@ -14889,9 +14918,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i(-1,-1).lerp(Vec2i( 1, 1), 0.0f), -1,-1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1,-1).lerp(Vec2i( 1, 1), 0.5f), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(-1,-1).lerp(Vec2i( 1, 1), 1.0f), 1,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(lerp(Vec2i( 0, 0), Vec2i( 0, 0), 0.0f), 0,0);
 		ASSERT_VEC2I_VALUES(lerp(Vec2i( 0, 0), Vec2i( 0, 0), 0.5f), 0,0);
 		ASSERT_VEC2I_VALUES(lerp(Vec2i( 0, 0), Vec2i( 0, 0), 1.0f), 0,0);
@@ -14901,7 +14930,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(lerp(Vec2i(-1,-1), Vec2i( 1, 1), 0.0f), -1,-1);
 		ASSERT_VEC2I_VALUES(lerp(Vec2i(-1,-1), Vec2i( 1, 1), 0.5f), 0,0);
 		ASSERT_VEC2I_VALUES(lerp(Vec2i(-1,-1), Vec2i( 1, 1), 1.0f), 1,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_rotate_radians(Vec2i( 0, 0), 0.0f), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_rotate_radians(Vec2i( 1, 0), 0.0f), 1,0);
@@ -14920,7 +14949,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_rotate_radians(Vec2i( 1, 1), DESHI_MATH_THREEHALVES_PI_F32), 1,-1);
 		ASSERT_VEC2I_VALUES(vec2i_rotate_radians(Vec2i( 1, 1), DESHI_MATH_TAU_F32), 0,1); //NOTE(delle) 1,1 is the proper answer but libc cosf() is too inaccurate
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).rotate_radians(0.0f), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).rotate_radians(0.0f), 1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).rotate_radians(DESHI_MATH_HALF_PI_F32), 0,1);
@@ -14937,7 +14966,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).rotate_radians(DESHI_MATH_PI_F32), 0,-1); //NOTE(delle) -1,-1 is the proper answer but libc cosf() is too inaccurate
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).rotate_radians(DESHI_MATH_THREEHALVES_PI_F32), 1,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).rotate_radians(DESHI_MATH_TAU_F32), 0,1); //NOTE(delle) 1,1 is the proper answer but libc cosf() is too inaccurate
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_rotate_degrees(Vec2i( 0, 0), 0.0f), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_rotate_degrees(Vec2i( 1, 0), 0.0f), 1,0);
@@ -14963,14 +14992,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_x_zero(Vec2i( 0,-1)), 0,-1);
 		ASSERT_VEC2I_VALUES(vec2i_x_zero(Vec2i( 1, 1)), 0,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).x_zero(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).x_zero(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).x_zero(), 0,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).x_zero(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).x_zero(), 0,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).x_zero(), 0,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_y_zero(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_y_zero(Vec2i( 1, 0)), 1,0);
@@ -14979,14 +15008,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_y_zero(Vec2i( 0,-1)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_y_zero(Vec2i( 1, 1)), 1,0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).y_zero(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).y_zero(), 1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).y_zero(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).y_zero(), -1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).y_zero(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).y_zero(), 1,0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_x_only(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_x_only(Vec2i( 1, 0)), 1,0);
@@ -14995,14 +15024,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_x_only(Vec2i( 0,-1)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_x_only(Vec2i( 1, 1)), 1,0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).x_only(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).x_only(), 1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).x_only(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).x_only(), -1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).x_only(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).x_only(), 1,0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_y_only(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_y_only(Vec2i( 1, 0)), 0,0);
@@ -15011,14 +15040,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_y_only(Vec2i( 0,-1)), 0,-1);
 		ASSERT_VEC2I_VALUES(vec2i_y_only(Vec2i( 1, 1)), 0,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).y_only(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).y_only(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).y_only(), 0,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).y_only(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).y_only(), 0,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).y_only(), 0,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_x_negate(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_x_negate(Vec2i( 1, 0)), -1,0);
@@ -15027,14 +15056,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_x_negate(Vec2i( 0,-1)), 0,-1);
 		ASSERT_VEC2I_VALUES(vec2i_x_negate(Vec2i( 1, 1)), -1,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).x_negate(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).x_negate(), -1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).x_negate(), 0,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).x_negate(), 1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).x_negate(), 0,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).x_negate(), -1,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_y_negate(Vec2i( 0, 0)), 0,0);
 		ASSERT_VEC2I_VALUES(vec2i_y_negate(Vec2i( 1, 0)), 1,0);
@@ -15043,14 +15072,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_y_negate(Vec2i( 0,-1)), 0,1);
 		ASSERT_VEC2I_VALUES(vec2i_y_negate(Vec2i( 1, 1)), 1,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).y_negate(), 0,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).y_negate(), 1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).y_negate(), 0,-1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).y_negate(), -1,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).y_negate(), 0,1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).y_negate(), 1,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_x_set(Vec2i( 0, 0), 10), 10,0);
 		ASSERT_VEC2I_VALUES(vec2i_x_set(Vec2i( 1, 0), 10), 10,0);
@@ -15059,14 +15088,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_x_set(Vec2i( 0,-1), 10), 10,-1);
 		ASSERT_VEC2I_VALUES(vec2i_x_set(Vec2i( 1, 1), 10), 10,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).x_set(10), 10,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).x_set(10), 10,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).x_set(10), 10,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).x_set(10), 10,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).x_set(10), 10,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).x_set(10), 10,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_y_set(Vec2i( 0, 0), 10), 0,10);
 		ASSERT_VEC2I_VALUES(vec2i_y_set(Vec2i( 1, 0), 10), 1,10);
@@ -15075,14 +15104,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_y_set(Vec2i( 0,-1), 10), 0,10);
 		ASSERT_VEC2I_VALUES(vec2i_y_set(Vec2i( 1, 1), 10), 1,10);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).y_set(10), 0,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).y_set(10), 1,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).y_set(10), 0,10);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).y_set(10), -1,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).y_set(10), 0,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).y_set(10), 1,10);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_x_add(Vec2i( 0, 0), 10), 10,0);
 		ASSERT_VEC2I_VALUES(vec2i_x_add(Vec2i( 1, 0), 10), 11,0);
@@ -15091,14 +15120,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_x_add(Vec2i( 0,-1), 10), 10,-1);
 		ASSERT_VEC2I_VALUES(vec2i_x_add(Vec2i( 1, 1), 10), 11,1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).x_add(10), 10,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).x_add(10), 11,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).x_add(10), 10,1);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).x_add(10),  9,0);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).x_add(10), 10,-1);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).x_add(10), 11,1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC2I_VALUES(vec2i_y_add(Vec2i( 0, 0), 10), 0,10);
 		ASSERT_VEC2I_VALUES(vec2i_y_add(Vec2i( 1, 0), 10), 1,10);
@@ -15107,14 +15136,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC2I_VALUES(vec2i_y_add(Vec2i( 0,-1), 10), 0, 9);
 		ASSERT_VEC2I_VALUES(vec2i_y_add(Vec2i( 1, 1), 10), 1,11);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 0).y_add(10), 0,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 0).y_add(10), 1,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 0, 1).y_add(10), 0,11);
 		ASSERT_VEC2I_VALUES(Vec2i(-1, 0).y_add(10), -1,10);
 		ASSERT_VEC2I_VALUES(Vec2i( 0,-1).y_add(10), 0, 9);
 		ASSERT_VEC2I_VALUES(Vec2i( 1, 1).y_add(10), 1,11);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 #undef ASSERT_VEC2I_VALUES
 	}
@@ -15184,7 +15213,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_UNITY(),   0.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_UNITZ(),   0.0f, 0.0f, 1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(vec3::ZERO,     0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3::ONE,      1.0f, 1.0f, 1.0f);
 		ASSERT_VEC3_VALUES(vec3::UP,       0.0f, 1.0f, 0.0f);
@@ -15196,42 +15225,42 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3::UNITX,    1.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3::UNITY,    0.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3::UNITZ,    0.0f, 0.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		a = Vec3(1.0f,-2.3f,0.4f);
 		ASSERT_F32_EQUAL(vec3_index(a, 0),  1.0f);
 		ASSERT_F32_EQUAL(vec3_index(a, 1), -2.3f);
 		ASSERT_F32_EQUAL(vec3_index(a, 2),  0.4f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a = Vec3(1.0f,-2.3f,0.4f);
 		ASSERT_F32_EQUAL(a[0],  1.0f);
 		ASSERT_F32_EQUAL(a[1], -2.3f);
 		ASSERT_F32_EQUAL(a[2],  0.4f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a[0] =  2.0f;
 		a[1] = -4.6f;
 		a[2] =  0.8f;
 		ASSERT_F32_EQUAL(a.arr[0],  2.0f);
 		ASSERT_F32_EQUAL(a.arr[1], -4.6f);
 		ASSERT_F32_EQUAL(a.arr[2],  0.8f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_add(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(vec3_add(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,2.0f,3.0f);
 		ASSERT_VEC3_VALUES(vec3_add(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  2.0f,3.0f,4.0f);
 		ASSERT_VEC3_VALUES(vec3_add(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.9f,1.8f,0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) + Vec3( 0.0f, 0.0f, 0.0f),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) + Vec3( 1.0f, 2.0f, 3.0f),  1.0f,2.0f,3.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) + Vec3( 1.0f, 2.0f, 3.0f),  2.0f,3.0f,4.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) + Vec3(-2.0f, 4.0f,-0.3f), -0.9f,1.8f,0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3( 0.0f, 0.0f, 0.0f);
 		a += Vec3( 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(a,  0.0f,0.0f,0.0f);
@@ -15244,21 +15273,21 @@ void TEST_deshi_math(){
 		a  = Vec3( 1.1f,-2.2f, 0.3f);
 		a += Vec3(-2.0f, 4.0f,-0.3f);
 		ASSERT_VEC3_VALUES(a, -0.9f,1.8f,0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_sub(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_sub(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), -1.0f,-2.0f,-3.0f);
 		ASSERT_VEC3_VALUES(vec3_sub(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.0f,-1.0f,-2.0f);
 		ASSERT_VEC3_VALUES(vec3_sub(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)),  3.1f,-6.2f, 0.6f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) - Vec3( 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) - Vec3( 1.0f, 2.0f, 3.0f), -1.0f,-2.0f,-3.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) - Vec3( 1.0f, 2.0f, 3.0f),  0.0f,-1.0f,-2.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) - Vec3(-2.0f, 4.0f,-0.3f),  3.1f,-6.2f, 0.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3( 0.0f, 0.0f, 0.0f);
 		a -= Vec3( 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
@@ -15271,21 +15300,21 @@ void TEST_deshi_math(){
 		a  = Vec3( 1.1f,-2.2f, 0.3f);
 		a -= Vec3(-2.0f, 4.0f,-0.3f);
 		ASSERT_VEC3_VALUES(a,  3.1f,-6.2f, 0.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_mul(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_mul(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_mul(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(vec3_mul(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -2.2f,-8.8f,-0.09f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) * Vec3( 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) * Vec3( 1.0f, 2.0f, 3.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) * Vec3( 1.0f, 2.0f, 3.0f),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) * Vec3(-2.0f, 4.0f,-0.3f), -2.2f,-8.8f,-0.09f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3( 0.0f, 0.0f, 0.0f);
 		a *= Vec3( 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
@@ -15298,21 +15327,21 @@ void TEST_deshi_math(){
 		a  = Vec3( 1.1f,-2.2f, 0.3f);
 		a *= Vec3(-2.0f, 4.0f,-0.3f);
 		ASSERT_VEC3_VALUES(a, -2.2f,-8.8f,-0.09f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(0.0f, 0.0f, 0.0f),  0.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(0.0f, 0.0f, 0.0f),  1.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(1.0f, 1.0f, 1.0f),  2.0f),  2.0f, 2.0f, 2.0f);
 		ASSERT_VEC3_VALUES(vec3_mul_f32(Vec3(1.1f,-2.2f, 0.3f), -2.0f), -2.2f, 4.4f,-0.6f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) *  0.0f,  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) *  1.0f,  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) *  2.0f,  2.0f, 2.0f, 2.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) * -2.0f, -2.2f, 4.4f,-0.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3( 0.0f, 0.0f, 0.0f);
 		a *= 0.0f;
 		ASSERT_VEC3_VALUES(a,  0.0f, 0.0f, 0.0f);
@@ -15325,21 +15354,21 @@ void TEST_deshi_math(){
 		a  = Vec3( 1.1f,-2.2f, 0.3f);
 		a *= -2.0f;
 		ASSERT_VEC3_VALUES(a, -2.2f, 4.4f,-0.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_div(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f)),  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(vec3_div(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.00f, 0.00f, 0.00f);
 		ASSERT_VEC3_VALUES(vec3_div(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.00f, 0.50f, 1.0f/3.0f);
 		ASSERT_VEC3_VALUES(vec3_div(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.55f,-0.55f,-1.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) / Vec3( 1.0f, 1.0f, 1.0f),  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) / Vec3( 1.0f, 2.0f, 3.0f),  0.00f, 0.00f, 0.00f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) / Vec3( 1.0f, 2.0f, 3.0f),  1.00f, 0.50f, 1.0f/3.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) / Vec3(-2.0f, 4.0f,-0.3f), -0.55f,-0.55f,-1.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3( 1.0f, 1.0f, 1.0f);
 		a /= Vec3( 1.0f, 1.0f, 1.0f);
 		ASSERT_VEC3_VALUES(a,  1.00f, 1.00f, 1.00f);
@@ -15352,21 +15381,21 @@ void TEST_deshi_math(){
 		a  = Vec3( 1.1f,-2.2f, 0.3f);
 		a /= Vec3(-2.0f, 4.0f,-0.3f);
 		ASSERT_VEC3_VALUES(a, -0.55f,-0.55f,-1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(1.0f, 1.0f, 1.0f),  1.0f),  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(0.0f, 0.0f, 0.0f),  1.0f),  0.00f, 0.00f, 0.00f);
 		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(1.0f, 1.0f, 1.0f),  2.0f),  0.50f, 0.50f, 0.50f);
 		ASSERT_VEC3_VALUES(vec3_div_f32(Vec3(1.1f,-2.2f, 0.3f), -2.0f), -0.55f, 1.10f,-0.15f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) /  1.0f,  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f) /  1.0f,  0.00f, 0.00f, 0.00f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f) /  2.0f,  0.50f, 0.50f, 0.50f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f) / -2.0f, -0.55f, 1.10f,-0.15f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3( 1.0f, 1.0f, 1.0f);
 		a /= 1.0f;
 		ASSERT_VEC3_VALUES(a,  1.00f, 1.00f, 1.00f);
@@ -15379,17 +15408,17 @@ void TEST_deshi_math(){
 		a  = Vec3( 1.1f,-2.2f, 0.3f);
 		a /= -2.0f;
 		ASSERT_VEC3_VALUES(a, -0.55f, 1.10f,-0.15f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_negate(Vec3(0.0f, 0.0f, 0.0f)), -0.0f,-0.0f,-0.0f);
 		ASSERT_VEC3_VALUES(vec3_negate(Vec3(1.0f, 1.0f, 1.0f)), -1.0f,-1.0f,-1.0f);
 		ASSERT_VEC3_VALUES(vec3_negate(Vec3(1.1f,-2.2f, 0.3f)), -1.1f, 2.2f,-0.3f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(-Vec3(0.0f, 0.0f, 0.0f), -0.0f,-0.0f,-0.0f);
 		ASSERT_VEC3_VALUES(-Vec3(1.0f, 1.0f, 1.0f), -1.0f,-1.0f,-1.0f);
 		ASSERT_VEC3_VALUES(-Vec3(1.1f,-2.2f, 0.3f), -1.1f, 2.2f,-0.3f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec3_equal(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)));
 		Assert(vec3_equal(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 1.0f, 1.0f, 1.0f)));
@@ -15400,7 +15429,7 @@ void TEST_deshi_math(){
 		Assert(vec3_equal(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 1.0f, 1.0f, 1.0f)));
 		Assert(vec3_equal(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 0.0f, 0.0f, 0.0f)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec3( 0.0f, 0.0f, 0.0f) == Vec3( 0.0f, 0.0f, 0.0f));
 		Assert(Vec3( 1.0f, 1.0f, 1.0f) == Vec3( 1.0f, 1.0f, 1.0f));
 		Assert(Vec3(-1.1f, 2.2f, 0.3f) == Vec3(-1.1f, 2.2f, 0.3f));
@@ -15409,7 +15438,7 @@ void TEST_deshi_math(){
 		Assert(!(Vec3(-1.1f, 2.2f, 0.3f) == Vec3( 1.1f,-2.2f,-0.3f)));
 		Assert(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)) == Vec3( 1.0f, 1.0f, 1.0f));
 		Assert(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)) == Vec3( 0.0f, 0.0f, 0.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec3_nequal(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)));
 		Assert(vec3_nequal(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 2.0f, 2.0f, 2.0f)));
@@ -15420,7 +15449,7 @@ void TEST_deshi_math(){
 		Assert(vec3_nequal(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 2.0f, 2.0f, 2.0f)));
 		Assert(vec3_nequal(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)), Vec3( 1.0f, 1.0f, 1.0f)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec3( 0.0f, 0.0f, 0.0f) != Vec3( 1.0f, 1.0f, 1.0f));
 		Assert(Vec3( 1.0f, 1.0f, 1.0f) != Vec3( 2.0f, 2.0f, 2.0f));
 		Assert(Vec3(-1.1f, 2.2f, 0.3f) != Vec3( 1.1f,-2.2f,-0.3f));
@@ -15429,31 +15458,31 @@ void TEST_deshi_math(){
 		Assert(!(Vec3(-1.1f, 2.2f, 0.3f) != Vec3(-1.1f, 2.2f, 0.3f)));
 		Assert(vec3_add(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f)) != Vec3( 2.0f, 2.0f, 2.0f));
 		Assert(vec3_add(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f)) != Vec3( 1.0f, 1.0f, 1.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_abs(Vec3(-1.0f,-1.0f,-1.0f)), 1.0f,1.0f,1.0f);
 		ASSERT_VEC3_VALUES(vec3_abs(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(vec3_abs(Vec3( 1.0f, 1.0f, 1.0f)), 1.0f,1.0f,1.0f);
 		ASSERT_VEC3_VALUES(vec3_abs(Vec3( 1.1f,-2.2f,-0.3f)), 1.1f,2.2f,0.3f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).abs(), 1.0f,1.0f,1.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).abs(), 0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 1.0f, 1.0f).abs(), 1.0f,1.0f,1.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.1f,-2.2f,-0.3f).abs(), 1.1f,2.2f,0.3f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_dot(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),   0.0f);
 		ASSERT_F32_EQUAL(vec3_dot(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),   0.0f);
 		ASSERT_F32_EQUAL(vec3_dot(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),   6.0f);
 		ASSERT_F32_EQUAL(vec3_dot(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -11.09f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).dot(Vec3( 0.0f, 0.0f, 0.0f)),   0.0f);
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).dot(Vec3( 1.0f, 2.0f, 3.0f)),   0.0f);
 		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).dot(Vec3( 1.0f, 2.0f, 3.0f)),   6.0f);
 		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).dot(Vec3(-2.0f, 4.0f,-0.3f)), -11.09f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_cross(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_cross(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.00f, 0.00f, 0.0f);
@@ -15461,73 +15490,73 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_cross(Vec3(1.0f, 2.0f, 3.0f), Vec3( 1.0f, 1.0f, 1.0f)), -1.00f, 2.00f,-1.0f);
 		ASSERT_VEC3_VALUES(vec3_cross(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.54f,-0.27f, 0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).cross(Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).cross(Vec3( 1.0f, 2.0f, 3.0f)),  0.00f, 0.00f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f).cross(Vec3( 1.0f, 2.0f, 3.0f)),  1.00f,-2.00f, 1.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 2.0f, 3.0f).cross(Vec3( 1.0f, 1.0f, 1.0f)), -1.00f, 2.00f,-1.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f).cross(Vec3(-2.0f, 4.0f,-0.3f)), -0.54f,-0.27f, 0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_mag(Vec3(0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec3_mag(Vec3(1.0f, 1.0f, 1.0f)), DESHI_SQRTF( 3.00f));
 		ASSERT_F32_EQUAL(vec3_mag(Vec3(1.0f, 2.0f, 3.0f)), DESHI_SQRTF(14.00f));
 		ASSERT_F32_EQUAL(vec3_mag(Vec3(1.1f,-2.2f, 0.3f)), DESHI_SQRTF( 6.14f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).mag(), 0.0f);
 		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).mag(), DESHI_SQRTF( 3.00f));
 		ASSERT_F32_EQUAL(Vec3(1.0f, 2.0f, 3.0f).mag(), DESHI_SQRTF(14.00f));
 		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).mag(), DESHI_SQRTF( 6.14f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(1.0f, 1.0f, 1.0f)), 3.00f);
 		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(1.0f, 2.0f, 3.0f)), 14.00f);
 		ASSERT_F32_EQUAL(vec3_mag_sq(Vec3(1.1f,-2.2f, 0.3f)), 6.14f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).mag_sq(), 0.0f);
 		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).mag_sq(), 3.00f);
 		ASSERT_F32_EQUAL(Vec3(1.0f, 2.0f, 3.0f).mag_sq(), 14.00f);
 		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).mag_sq(), 6.14f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(1.0f, 1.0f, 1.0f)), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f));
 		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(1.0f, 2.0f, 3.0f)), 1.0f/DESHI_SQRTF(14.00f), 2.0f/DESHI_SQRTF(14.00f), 3.0f/DESHI_SQRTF(14.00f));
 		ASSERT_VEC3_VALUES(vec3_normalize(Vec3(1.1f,-2.2f, 0.3f)), 1.1f/DESHI_SQRTF( 6.14f),-2.2f/DESHI_SQRTF( 6.14f), 0.3f/DESHI_SQRTF( 6.14f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).normalize(), 0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f).normalize(), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f), 1.0f/DESHI_SQRTF( 3.00f));
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 2.0f, 3.0f).normalize(), 1.0f/DESHI_SQRTF(14.00f), 2.0f/DESHI_SQRTF(14.00f), 3.0f/DESHI_SQRTF(14.00f));
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f).normalize(), 1.1f/DESHI_SQRTF( 6.14f),-2.2f/DESHI_SQRTF( 6.14f), 0.3f/DESHI_SQRTF( 6.14f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_distance(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.00f);
 		ASSERT_F32_EQUAL(vec3_distance(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF(14.00f));
 		ASSERT_F32_EQUAL(vec3_distance(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF( 5.00f));
 		ASSERT_F32_EQUAL(vec3_distance(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), DESHI_SQRTF(48.41f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance(Vec3( 0.0f, 0.0f, 0.0f)), 0.00f);
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance(Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF(14.00f));
 		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).distance(Vec3( 1.0f, 2.0f, 3.0f)), DESHI_SQRTF( 5.00f));
 		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).distance(Vec3(-2.0f, 4.0f,-0.3f)), DESHI_SQRTF(48.41f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.00f);
 		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 14.00f);
 		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  5.00f);
 		ASSERT_F32_EQUAL(vec3_distance_sq(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), 48.41f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance_sq(Vec3( 0.0f, 0.0f, 0.0f)),  0.00f);
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).distance_sq(Vec3( 1.0f, 2.0f, 3.0f)), 14.00f);
 		ASSERT_F32_EQUAL(Vec3(1.0f, 1.0f, 1.0f).distance_sq(Vec3( 1.0f, 2.0f, 3.0f)),  5.00f);
 		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).distance_sq(Vec3(-2.0f, 4.0f,-0.3f)), 48.41f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
@@ -15540,7 +15569,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 1.0f, 1.0f)), 6.0f/DESHI_SQRTF(3.0f));
 		ASSERT_F32_EQUAL(vec3_projection_scalar(Vec3(-2.0f, 4.0f,-0.3f), Vec3( 1.1f,-2.2f, 0.3f)), -11.09f/DESHI_SQRTF(6.14f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3( 0.0f, 0.0f, 0.0f).projection_scalar(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3( 0.0f, 0.0f, 0.0f).projection_scalar(Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3( 2.0f, 2.0f, 2.0f).projection_scalar(Vec3( 5.0f, 0.0f, 0.0f)), 2.0f);
@@ -15551,7 +15580,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec3( 1.0f, 2.0f, 3.0f).projection_scalar(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3( 1.0f, 2.0f, 3.0f).projection_scalar(Vec3( 1.0f, 1.0f, 1.0f)), 6.0f/DESHI_SQRTF(3.0f));
 		ASSERT_F32_EQUAL(Vec3(-2.0f, 4.0f,-0.3f).projection_scalar(Vec3( 1.1f,-2.2f, 0.3f)), -11.09f/DESHI_SQRTF(6.14f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 0.0f, 0.0f, 0.0f);
@@ -15564,7 +15593,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 1.0f, 1.0f)), 2.0f, 2.0f, 2.0f);
 		ASSERT_VEC3_VALUES(vec3_projection_vector(Vec3(-2.0f, 4.0f,-0.3f), Vec3( 1.1f,-2.2f, 0.3f)),-12.199f/6.14f, 24.398f/6.14f,-3.327f/6.14f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).projection_vector(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).projection_vector(Vec3( 1.0f, 2.0f, 3.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 2.0f, 2.0f, 2.0f).projection_vector(Vec3( 5.0f, 0.0f, 0.0f)), 2.0f, 0.0f, 0.0f);
@@ -15575,19 +15604,19 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).projection_vector(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).projection_vector(Vec3( 1.0f, 1.0f, 1.0f)), 2.0f, 2.0f, 2.0f);
 		ASSERT_VEC3_VALUES(Vec3(-2.0f, 4.0f,-0.3f).projection_vector(Vec3( 1.1f,-2.2f, 0.3f)),-12.199f/6.14f, 24.398f/6.14f,-3.327f/6.14f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f);
 		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)),  0.50f, 1.00f, 1.50f);
 		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(1.0f, 1.0f, 1.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.00f, 1.50f, 2.00f);
 		ASSERT_VEC3_VALUES(vec3_midpoint(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), -0.45f, 0.90f, 0.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).midpoint(Vec3( 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f);
 		ASSERT_VEC3_VALUES(Vec3(0.0f, 0.0f, 0.0f).midpoint(Vec3( 1.0f, 2.0f, 3.0f)),  0.50f, 1.00f, 1.50f);
 		ASSERT_VEC3_VALUES(Vec3(1.0f, 1.0f, 1.0f).midpoint(Vec3( 1.0f, 2.0f, 3.0f)),  1.00f, 1.50f, 2.00f);
 		ASSERT_VEC3_VALUES(Vec3(1.1f,-2.2f, 0.3f).midpoint(Vec3(-2.0f, 4.0f,-0.3f)), -0.45f, 0.90f, 0.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(0.0f, 0.0f, 0.0f), Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
@@ -15595,13 +15624,13 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(0.0f, 1.0f, 0.0f), Vec3( 1.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(vec3_radians_between(Vec3(1.1f,-2.2f, 0.3f), Vec3(-2.0f, 4.0f,-0.3f)), 3.0872f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).radians_between(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3(0.0f, 0.0f, 0.0f).radians_between(Vec3( 1.0f, 2.0f, 3.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3(5.0f, 5.0f, 5.0f).radians_between(Vec3( 3.0f, 3.0f, 3.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3(0.0f, 1.0f, 0.0f).radians_between(Vec3( 1.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(Vec3(1.1f,-2.2f, 0.3f).radians_between(Vec3(-2.0f, 4.0f,-0.3f)), 3.0872f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(vec3_floor(Vec3(-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f);
@@ -15629,7 +15658,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 1.90f, 1.90f, 1.90f)),  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(vec3_floor(Vec3( 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(-2.00f,-2.00f,-2.00f).floor(), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(Vec3(-1.90f,-1.90f,-1.90f).floor(), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(Vec3(-1.55f,-1.55f,-1.55f).floor(), -2.00f,-2.00f,-2.00f);
@@ -15655,7 +15684,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.55f, 1.55f, 1.55f).floor(),  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(Vec3( 1.90f, 1.90f, 1.90f).floor(),  1.00f, 1.00f, 1.00f);
 		ASSERT_VEC3_VALUES(Vec3( 2.00f, 2.00f, 2.00f).floor(),  2.00f, 2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(vec3_ceil(Vec3(-1.90f,-1.90f,-1.90f)), -1.00f,-1.00f,-1.00f);
@@ -15683,7 +15712,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f);
 		ASSERT_VEC3_VALUES(vec3_ceil(Vec3( 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(-2.00f,-2.00f,-2.00f).ceil(), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(Vec3(-1.90f,-1.90f,-1.90f).ceil(), -1.00f,-1.00f,-1.00f);
 		ASSERT_VEC3_VALUES(Vec3(-1.55f,-1.55f,-1.55f).ceil(), -1.00f,-1.00f,-1.00f);
@@ -15709,7 +15738,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.55f, 1.55f, 1.55f).ceil(),  2.00f, 2.00f, 2.00f);
 		ASSERT_VEC3_VALUES(Vec3( 1.90f, 1.90f, 1.90f).ceil(),  2.00f, 2.00f, 2.00f);
 		ASSERT_VEC3_VALUES(Vec3( 2.00f, 2.00f, 2.00f).ceil(),  2.00f, 2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_round(Vec3(-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(vec3_round(Vec3(-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f);
@@ -15737,7 +15766,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_round(Vec3( 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f);
 		ASSERT_VEC3_VALUES(vec3_round(Vec3( 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3(-2.00f,-2.00f,-2.00f).round(), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(Vec3(-1.90f,-1.90f,-1.90f).round(), -2.00f,-2.00f,-2.00f);
 		ASSERT_VEC3_VALUES(Vec3(-1.55f,-1.55f,-1.55f).round(), -2.00f,-2.00f,-2.00f);
@@ -15763,7 +15792,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.55f, 1.55f, 1.55f).round(),  2.00f, 2.00f, 2.00f);
 		ASSERT_VEC3_VALUES(Vec3( 1.90f, 1.90f, 1.90f).round(),  2.00f, 2.00f, 2.00f);
 		ASSERT_VEC3_VALUES(Vec3( 2.00f, 2.00f, 2.00f).round(),  2.00f, 2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_min(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
@@ -15774,7 +15803,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).min(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).min(Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
@@ -15783,7 +15812,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).min(Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).min(Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_max(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
@@ -15794,7 +15823,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(vec3_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).max(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).max(Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
@@ -15803,7 +15832,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).max(Vec3( 1.0f, 2.0f, 0.0f)),  1.0f, 2.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).max(Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).max(Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f);
@@ -15821,7 +15850,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_clamp(Vec3(-1.5f, 1.0f,-1.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f);
 		ASSERT_VEC3_VALUES(vec3_clamp(Vec3(-1.5f, 1.0f,-6.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 5.0f).clamp(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f);
@@ -15837,9 +15866,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3(-1.5f, 1.0f,-0.5f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.5f, 1.0f,-1.5f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f);
 		ASSERT_VEC3_VALUES(Vec3(-1.5f, 1.0f,-6.5f).clamp(Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f);
 		ASSERT_VEC3_VALUES(clamp(Vec3( 0.0f, 0.0f, 5.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 5.0f);
@@ -15855,7 +15884,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(clamp(Vec3(-1.5f, 1.0f,-0.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f);
 		ASSERT_VEC3_VALUES(clamp(Vec3(-1.5f, 1.0f,-1.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f);
 		ASSERT_VEC3_VALUES(clamp(Vec3(-1.5f, 1.0f,-6.5f), Vec3(-5.0f,-5.0f,-5.0f), Vec3(-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
@@ -15866,7 +15895,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(vec3_clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp_min(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_min(Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
@@ -15875,9 +15904,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).clamp_min(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_min(Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_min(Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(clamp_min(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.2f, 2.3f, 3.3f);
 		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
@@ -15886,7 +15915,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(clamp_min(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)),  2.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(clamp_min(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.0f, 2.0f, 3.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
@@ -15897,7 +15926,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp_max(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_max(Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
@@ -15906,9 +15935,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).clamp_max(Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_max(Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_max(Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(clamp_max(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.2f, 2.3f, 3.3f)),  1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f, 2.0f, 3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f, 2.0f, 3.0f);
@@ -15917,7 +15946,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(clamp_max(Vec3( 1.0f,-2.0f,-3.0f), Vec3( 1.0f, 2.0f, 3.0f)),  1.0f,-2.0f,-3.0f);
 		ASSERT_VEC3_VALUES(clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3( 2.0f, 1.0f, 0.0f)), -1.0f, 1.0f, 0.0f);
 		ASSERT_VEC3_VALUES(clamp_max(Vec3(-1.0f, 2.0f, 3.0f), Vec3(-1.5f, 1.0f, 3.5f)), -1.5f, 1.0f, 3.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 0.0f, 0.0f, 0.0f), 0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3( 1.0f, 2.0f, 3.0f), 1.0f,99.0f), 1.0f, 2.0f, 3.0f);
@@ -15929,7 +15958,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3(-1.0f, 2.0f, 3.0f), 0.0f, 2.0f), -2.0f/DESHI_SQRTF(14.0f), 4.0f/DESHI_SQRTF(14.0f), 6.0f/DESHI_SQRTF(14.0f));
 		ASSERT_VEC3_VALUES(vec3_clamp_mag(Vec3(-1.0f, 2.0f, 3.0f), 0.0f, 4.0f), -1.0f, 2.0f, 3.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).clamp_mag(0.0f, 0.0f), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_mag(1.0f,99.0f), 1.0f, 2.0f, 3.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 2.0f, 3.0f).clamp_mag(4.0f,99.0f), 4.0f/DESHI_SQRTF(14.0f), 8.0f/DESHI_SQRTF(14.0f), 12.0f/DESHI_SQRTF(14.0f));
@@ -15939,7 +15968,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 1.0f,-2.0f,-3.0f).clamp_mag(4.0f,99.0f), 4.0f/DESHI_SQRTF(14.0f),-8.0f/DESHI_SQRTF(14.0f),-12.0f/DESHI_SQRTF(14.0f));
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_mag(0.0f, 2.0f), -2.0f/DESHI_SQRTF(14.0f), 4.0f/DESHI_SQRTF(14.0f), 6.0f/DESHI_SQRTF(14.0f));
 		ASSERT_VEC3_VALUES(Vec3(-1.0f, 2.0f, 3.0f).clamp_mag(0.0f, 4.0f), -1.0f, 2.0f, 3.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f);
@@ -15951,7 +15980,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
 		ASSERT_VEC3_VALUES(vec3_nudge(Vec3( 5.0f, 5.0f, 5.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
@@ -15961,9 +15990,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.9f, 0.9f, 0.9f).nudge(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 1.0f, 1.0f).nudge(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
 		ASSERT_VEC3_VALUES(Vec3( 5.0f, 5.0f, 5.0f).nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f);
 		ASSERT_VEC3_VALUES(nudge(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 1.0f, 1.0f, 1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
@@ -15973,7 +16002,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(nudge(Vec3( 0.9f, 0.9f, 0.9f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f);
 		ASSERT_VEC3_VALUES(nudge(Vec3( 1.0f, 1.0f, 1.0f), Vec3(-1.0f,-1.0f,-1.0f), Vec3( 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f);
 		ASSERT_VEC3_VALUES(nudge(Vec3( 5.0f, 5.0f, 5.0f), Vec3( 1.0f, 1.0f, 0.0f), Vec3( 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f);
@@ -15985,7 +16014,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).lerp(Vec3( 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f);
@@ -15995,9 +16024,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3(-1.0f,-1.0f,-1.0f).lerp(Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(lerp(Vec3( 0.0f, 0.0f, 0.0f), Vec3( 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f);
@@ -16007,7 +16036,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f);
 		ASSERT_VEC3_VALUES(lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(lerp(Vec3(-1.0f,-1.0f,-1.0f), Vec3( 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
@@ -16021,7 +16050,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_x_zero(Vec3( 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_zero(), 0.0f, 1.0f, 0.0f);
@@ -16033,7 +16062,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_zero(), 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_zero(), 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_zero(), 0.0f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
@@ -16047,7 +16076,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_y_zero(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f, 0.0f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_zero(),  1.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
@@ -16059,7 +16088,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_zero(),  0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_zero(),  1.5f, 0.0f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
@@ -16073,7 +16102,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_z_zero(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_zero(),  1.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_zero(),  0.0f, 1.0f, 0.0f);
@@ -16085,7 +16114,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_zero(),  0.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_zero(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_zero(),  1.5f, 1.5f, 0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f,0.0f,0.0f);
@@ -16099,7 +16128,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(vec3_x_only(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f,0.0f,0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_only(),  1.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
@@ -16111,7 +16140,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_only(),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_only(),  0.0f,0.0f,0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_only(),  1.5f,0.0f,0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
@@ -16125,7 +16154,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_y_only(Vec3( 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_only(), 0.0f, 1.0f, 0.0f);
@@ -16137,7 +16166,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_only(), 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_only(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_only(), 0.0f, 1.5f, 0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 1.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f);
@@ -16151,7 +16180,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_z_only(Vec3( 1.5f, 1.5f, 1.5f)), 0.0f, 0.0f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
@@ -16163,7 +16192,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_only(), 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_only(), 0.0f, 0.0f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 1.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f);
@@ -16177,7 +16206,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_x_negate(Vec3( 1.5f, 1.5f, 1.5f)), -1.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_negate(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_negate(), -1.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_negate(),  0.0f, 1.0f, 0.0f);
@@ -16189,7 +16218,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_negate(),  0.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_negate(),  0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_negate(), -1.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
@@ -16203,7 +16232,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_y_negate(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f,-1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_negate(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_negate(),  1.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_negate(),  0.0f,-1.0f, 0.0f);
@@ -16215,7 +16244,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_negate(),  0.0f,-1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_negate(),  0.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_negate(),  1.5f,-1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 1.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f);
@@ -16229,7 +16258,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f,-1.5f);
 		ASSERT_VEC3_VALUES(vec3_z_negate(Vec3( 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f,-1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_negate(),  0.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_negate(),  1.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_negate(),  0.0f, 1.0f, 0.0f);
@@ -16241,7 +16270,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_negate(),  0.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_negate(),  0.0f, 0.0f,-1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_negate(),  1.5f, 1.5f,-1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 1.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
@@ -16255,7 +16284,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_x_set(Vec3( 1.5f, 1.5f, 1.5f), 10.0f), 10.0f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_set(10.0f), 10.0f, 1.0f, 0.0f);
@@ -16267,7 +16296,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_set(10.0f), 10.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_set(10.0f), 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_set(10.0f), 10.0f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f);
@@ -16281,7 +16310,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_y_set(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 10.0f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_set(10.0f),  1.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
@@ -16293,7 +16322,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_set(10.0f),  0.0f, 10.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_set(10.0f),  1.5f, 10.0f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f);
@@ -16307,7 +16336,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(vec3_z_set(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 10.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_set(10.0f),  1.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_set(10.0f),  0.0f, 1.0f, 10.0f);
@@ -16319,7 +16348,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_set(10.0f),  0.0f, 1.5f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_set(10.0f),  0.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_set(10.0f),  1.5f, 1.5f, 10.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 1.0f, 0.0f, 0.0f), 10.0f), 11.0f, 0.0f, 0.0f);
@@ -16333,7 +16362,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_x_add(Vec3( 1.5f, 1.5f, 1.5f), 10.0f), 11.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).x_add(10.0f), 11.0f, 0.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).x_add(10.0f), 10.0f, 1.0f, 0.0f);
@@ -16345,7 +16374,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).x_add(10.0f), 10.0f, 1.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).x_add(10.0f), 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).x_add(10.0f), 11.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f);
@@ -16359,7 +16388,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 1.5f);
 		ASSERT_VEC3_VALUES(vec3_y_add(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 11.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).y_add(10.0f),  1.0f, 10.0f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).y_add(10.0f),  0.0f, 11.0f, 0.0f);
@@ -16371,7 +16400,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).y_add(10.0f),  0.0f, 11.5f, 0.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).y_add(10.0f),  0.0f, 10.0f, 1.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).y_add(10.0f),  1.5f, 11.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 1.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f);
@@ -16385,7 +16414,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 11.5f);
 		ASSERT_VEC3_VALUES(vec3_z_add(Vec3( 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 11.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 1.0f, 0.0f, 0.0f).z_add(10.0f),  1.0f, 0.0f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.0f, 0.0f).z_add(10.0f),  0.0f, 1.0f, 10.0f);
@@ -16397,7 +16426,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 1.5f, 0.0f).z_add(10.0f),  0.0f, 1.5f, 10.0f);
 		ASSERT_VEC3_VALUES(Vec3( 0.0f, 0.0f, 1.5f).z_add(10.0f),  0.0f, 0.0f, 11.5f);
 		ASSERT_VEC3_VALUES(Vec3( 1.5f, 1.5f, 1.5f).z_add(10.0f),  1.5f, 1.5f, 11.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 #undef ASSERT_VEC3_VALUES
 	}
@@ -16460,7 +16489,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_UNITY(),    0, 1, 0);
 		ASSERT_VEC3I_VALUES(vec3i_UNITZ(),    0, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(vec3i::ZERO,     0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i::ONE,      1, 1, 1);
 		ASSERT_VEC3I_VALUES(vec3i::LEFT,    -1, 0, 0);
@@ -16472,42 +16501,42 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i::UNITX,    1, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i::UNITY,    0, 1, 0);
 		ASSERT_VEC3I_VALUES(vec3i::UNITZ,    0, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		a = Vec3i(1,-2,3);
 		ASSERT_S32_EQUAL(vec3i_index(a, 0),  1);
 		ASSERT_S32_EQUAL(vec3i_index(a, 1), -2);
 		ASSERT_S32_EQUAL(vec3i_index(a, 2),  3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a = Vec3i(1,-2,3);
 		ASSERT_S32_EQUAL(a[0],  1);
 		ASSERT_S32_EQUAL(a[1], -2);
 		ASSERT_S32_EQUAL(a[2],  3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a[0] =  2;
 		a[1] = -4;
 		a[2] = -3;
 		ASSERT_S32_EQUAL(a.arr[0],  2);
 		ASSERT_S32_EQUAL(a.arr[1], -4);
 		ASSERT_S32_EQUAL(a.arr[2], -3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  2, 3, 4);
 		ASSERT_VEC3I_VALUES(vec3i_add(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -1, 2, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) + Vec3i( 0, 0, 0),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) + Vec3i( 1, 2, 3),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) + Vec3i( 1, 2, 3),  2, 3, 4);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) + Vec3i(-2, 4,-3), -1, 2, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3i( 0, 0, 0);
 		a += Vec3i( 0, 0, 0);
 		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
@@ -16520,21 +16549,21 @@ void TEST_deshi_math(){
 		a  = Vec3i( 1,-2, 3);
 		a += Vec3i(-2, 4,-3);
 		ASSERT_VEC3I_VALUES(a, -1, 2, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), -1,-2,-3);
 		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  0,-1,-2);
 		ASSERT_VEC3I_VALUES(vec3i_sub(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)),  3,-6, 6);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) - Vec3i( 0, 0, 0),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) - Vec3i( 1, 2, 3), -1,-2,-3);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) - Vec3i( 1, 2, 3),  0,-1,-2);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) - Vec3i(-2, 4,-3),  3,-6, 6);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3i( 0, 0, 0);
 		a -= Vec3i( 0, 0, 0);
 		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
@@ -16547,21 +16576,21 @@ void TEST_deshi_math(){
 		a  = Vec3i( 1,-2, 3);
 		a -= Vec3i(-2, 4,-3);
 		ASSERT_VEC3I_VALUES(a,  3,-6, 6);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(vec3i_mul(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -2,-8,-9);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) * Vec3i( 0, 0, 0),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) * Vec3i( 1, 2, 3),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) * Vec3i( 1, 2, 3),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) * Vec3i(-2, 4,-3), -2,-8,-9);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3i( 0, 0, 0);
 		a *= Vec3i( 0, 0, 0);
 		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
@@ -16574,21 +16603,21 @@ void TEST_deshi_math(){
 		a  = Vec3i( 1,-2, 3);
 		a *= Vec3i(-2, 4,-3);
 		ASSERT_VEC3I_VALUES(a, -2,-8,-9);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(0, 0, 0),  0),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(0, 0, 0),  1),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(1, 1, 1),  2),  2, 2, 2);
 		ASSERT_VEC3I_VALUES(vec3i_mul_f32(Vec3i(1,-2, 3), -2), -2, 4,-6);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) *  0,  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) *  1,  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) *  2,  2, 2, 2);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) * -2, -2, 4,-6);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3i( 0, 0, 0);
 		a *= 0;
 		ASSERT_VEC3I_VALUES(a,  0, 0, 0);
@@ -16601,21 +16630,21 @@ void TEST_deshi_math(){
 		a  = Vec3i( 1,-2, 3);
 		a *= -2;
 		ASSERT_VEC3I_VALUES(a, -2, 4,-6);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_div(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -0,-0,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) / Vec3i( 1, 1, 1),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) / Vec3i( 1, 2, 3),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) / Vec3i( 1, 2, 3),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) / Vec3i(-2, 4,-3), -0,-0,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3i( 1, 1, 1);
 		a /= Vec3i( 1, 1, 1);
 		ASSERT_VEC3I_VALUES(a,  1, 1, 1);
@@ -16628,21 +16657,21 @@ void TEST_deshi_math(){
 		a  = Vec3i( 1,-2, 3);
 		a /= Vec3i(-2, 4,-3);
 		ASSERT_VEC3I_VALUES(a, -0,-0,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(1, 1, 1),  1),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(0, 0, 0),  1),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(1, 1, 1),  2),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_div_f32(Vec3i(1,-2, 3), -2), -0, 1,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) /  1,  1, 1, 1);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0) /  1,  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1) /  2,  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3) / -2, -0, 1,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec3i( 1, 1, 1);
 		a /= 1;
 		ASSERT_VEC3I_VALUES(a,  1, 1, 1);
@@ -16655,17 +16684,17 @@ void TEST_deshi_math(){
 		a  = Vec3i( 1,-2, 3);
 		a /= -2;
 		ASSERT_VEC3I_VALUES(a, -0, 1, -1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_negate(Vec3i(0, 0, 0)), -0,-0,-0);
 		ASSERT_VEC3I_VALUES(vec3i_negate(Vec3i(1, 1, 1)), -1,-1,-1);
 		ASSERT_VEC3I_VALUES(vec3i_negate(Vec3i(1,-2, 3)), -1, 2,-3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(-Vec3i(0, 0, 0), -0,-0,-0);
 		ASSERT_VEC3I_VALUES(-Vec3i(1, 1, 1), -1,-1,-1);
 		ASSERT_VEC3I_VALUES(-Vec3i(1,-2, 3), -1, 2,-3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec3i_equal(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)));
 		Assert(vec3i_equal(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)));
@@ -16676,7 +16705,7 @@ void TEST_deshi_math(){
 		Assert(vec3i_equal(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)), Vec3i( 1, 1, 1)));
 		Assert(vec3i_equal(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), Vec3i( 0, 0, 0)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec3i( 0, 0, 0) == Vec3i( 0, 0, 0));
 		Assert(Vec3i( 1, 1, 1) == Vec3i( 1, 1, 1));
 		Assert(Vec3i(-1, 2, 3) == Vec3i(-1, 2, 3));
@@ -16685,7 +16714,7 @@ void TEST_deshi_math(){
 		Assert(!(Vec3i(-1, 2, 3) == Vec3i( 1,-2,-3)));
 		Assert(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)) == Vec3i( 1, 1, 1));
 		Assert(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)) == Vec3i( 0, 0, 0));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec3i_nequal(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)));
 		Assert(vec3i_nequal(Vec3i( 1, 1, 1), Vec3i( 2, 2, 2)));
@@ -16696,7 +16725,7 @@ void TEST_deshi_math(){
 		Assert(vec3i_nequal(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)), Vec3i( 2, 2, 2)));
 		Assert(vec3i_nequal(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), Vec3i( 1, 1, 1)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec3i( 0, 0, 0) != Vec3i( 1, 1, 1));
 		Assert(Vec3i( 1, 1, 1) != Vec3i( 2, 2, 2));
 		Assert(Vec3i(-1, 2, 3) != Vec3i( 1,-2,-3));
@@ -16705,67 +16734,67 @@ void TEST_deshi_math(){
 		Assert(!(Vec3i(-1, 2, 3) != Vec3i(-1, 2,-3)));
 		Assert(vec3i_add(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1)) != Vec3i( 2, 2, 2));
 		Assert(vec3i_add(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)) != Vec3i( 1, 1, 1));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i(-1,-1,-1)), 1,1,1);
 		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i( 0, 0, 0)), 0,0,0);
 		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i( 1, 1, 1)), 1,1,1);
 		ASSERT_VEC3I_VALUES(vec3i_abs(Vec3i( 1,-2,-3)), 1,2,3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).abs(), 1,1,1);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).abs(), 0,0,0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).abs(), 1,1,1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).abs(), 1,2,3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),   0.0f);
 		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)),   0.0f);
 		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),   6.0f);
 		ASSERT_F32_EQUAL(vec3i_dot(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), -19.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).dot(Vec3i( 0, 0, 0)),   0.0f);
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).dot(Vec3i( 1, 2, 1)),   0.0f);
 		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).dot(Vec3i( 1, 2, 3)),   6.0f);
 		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).dot(Vec3i(-2, 4,-3)), -19.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(0, 0, 0), Vec3i(0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(0, 0, 0), Vec3i(1, 2, 3)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(1, 1, 1), Vec3i(1, 2, 3)),  1,-2, 1);
 		ASSERT_VEC3I_VALUES(vec3i_cross(Vec3i(1, 2, 3), Vec3i(1, 1, 1)), -1, 2,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).cross(Vec3i(0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).cross(Vec3i(1, 2, 3)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1).cross(Vec3i(1, 2, 3)),  1,-2, 1);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 2, 3).cross(Vec3i(1, 1, 1)), -1, 2,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(1, 1, 1)), DESHI_SQRTF( 3.0f));
 		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(1, 2, 3)), DESHI_SQRTF(14.0f));
 		ASSERT_F32_EQUAL(vec3i_mag(Vec3i(1,-2, 3)), DESHI_SQRTF(14.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).mag(), 0.00f);
 		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).mag(), DESHI_SQRTF( 3.0f));
 		ASSERT_F32_EQUAL(Vec3i(1, 2, 3).mag(), DESHI_SQRTF(14.0f));
 		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).mag(), DESHI_SQRTF(14.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(0, 0, 0)),  0.0f);
 		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(1, 1, 1)),  3.0f);
 		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(1, 2, 3)), 14.0f);
 		ASSERT_F32_EQUAL(vec3i_mag_sq(Vec3i(1,-2, 3)), 14.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).mag_sq(),  0.0f);
 		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).mag_sq(),  3.0f);
 		ASSERT_F32_EQUAL(Vec3i(1, 2, 3).mag_sq(), 14.0f);
 		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).mag_sq(), 14.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(0, 0, 0)), 0,0,0);
 		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1, 0, 0)), 1,0,0);
@@ -16773,37 +16802,37 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1, 2, 3)), 0,0,0);
 		ASSERT_VEC3I_VALUES(vec3i_normalize(Vec3i(1,-2, 3)), 0,0,0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).normalize(), 0,0,0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1).normalize(), 0,0,0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 0, 0).normalize(), 1,0,0);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 2, 3).normalize(), 0,0,0);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3).normalize(), 0,0,0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), DESHI_SQRTF(14.0f));
 		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)), DESHI_SQRTF( 5.0f));
 		ASSERT_F32_EQUAL(vec3i_distance(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 9.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance(Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance(Vec3i( 1, 2, 3)), DESHI_SQRTF(14.0f));
 		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).distance(Vec3i( 1, 2, 3)), DESHI_SQRTF( 5.0f));
 		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).distance(Vec3i(-2, 4,-3)), 9.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)),  0.0f);
 		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), 14.0f);
 		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)),  5.0f);
 		ASSERT_F32_EQUAL(vec3i_distance_sq(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 81.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance_sq(Vec3i( 0, 0, 0)),  0.0f);
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).distance_sq(Vec3i( 1, 2, 3)), 14.0f);
 		ASSERT_F32_EQUAL(Vec3i(1, 1, 1).distance_sq(Vec3i( 1, 2, 3)),  5.0f);
 		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).distance_sq(Vec3i(-2, 4,-3)), 81.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 0, 0, 0), Vec3i( 1, 2, 3)), 0.0f);
@@ -16816,7 +16845,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i( 1, 2, 3), Vec3i( 1, 1, 1)), 6.0f/DESHI_SQRTF(3.0f));
 		ASSERT_F32_EQUAL(vec3i_projection_scalar(Vec3i(-2, 4,-3), Vec3i( 1,-2, 3)), -19.0f/DESHI_SQRTF(14.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i( 0, 0, 0).projection_scalar(Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i( 0, 0, 0).projection_scalar(Vec3i( 1, 2, 3)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i( 2, 2, 2).projection_scalar(Vec3i( 5, 0, 0)), 2.0f);
@@ -16827,7 +16856,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec3i( 1, 2, 3).projection_scalar(Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i( 1, 2, 3).projection_scalar(Vec3i( 1, 1, 1)), 6.0f/DESHI_SQRTF(3.0f));
 		ASSERT_F32_EQUAL(Vec3i(-2, 4,-3).projection_scalar(Vec3i( 1,-2, 3)), -19.0f/DESHI_SQRTF(14.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 0, 0, 0), Vec3i( 1, 2, 3)),  0, 0, 0);
@@ -16840,7 +16869,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i( 1, 2, 3), Vec3i( 1, 1, 1)),  2, 2, 2);
 		ASSERT_VEC3I_VALUES(vec3i_projection_vector(Vec3i(-2, 4,-3), Vec3i( 1,-2, 3)), -1, 2,-4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).projection_vector(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).projection_vector(Vec3i( 1, 2, 3)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 2, 2, 2).projection_vector(Vec3i( 5, 0, 0)),  2, 0, 0);
@@ -16851,19 +16880,19 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).projection_vector(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).projection_vector(Vec3i( 1, 1, 1)),  2, 2, 2);
 		ASSERT_VEC3I_VALUES(Vec3i(-2, 4,-3).projection_vector(Vec3i( 1,-2, 3)), -1, 2,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), 0, 1, 1);
 		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(1, 1, 1), Vec3i( 1, 2, 3)), 1, 1, 2);
 		ASSERT_VEC3I_VALUES(vec3i_midpoint(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 0, 1, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).midpoint(Vec3i( 0, 0, 0)), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(0, 0, 0).midpoint(Vec3i( 1, 2, 3)), 0, 1, 1);
 		ASSERT_VEC3I_VALUES(Vec3i(1, 1, 1).midpoint(Vec3i( 1, 2, 3)), 1, 1, 2);
 		ASSERT_VEC3I_VALUES(Vec3i(1,-2, 3).midpoint(Vec3i(-2, 4,-3)), 0, 1, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(0, 0, 0), Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(0, 0, 0), Vec3i( 1, 2, 3)), 0.0f);
@@ -16871,13 +16900,13 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(0, 1, 0), Vec3i( 1, 0, 0)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(vec3i_radians_between(Vec3i(1,-2, 3), Vec3i(-2, 4,-3)), 2.8021914f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).radians_between(Vec3i( 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i(0, 0, 0).radians_between(Vec3i( 1, 2, 3)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i(5, 5, 5).radians_between(Vec3i( 3, 3, 3)), 0.0f);
 		ASSERT_F32_EQUAL(Vec3i(0, 1, 0).radians_between(Vec3i( 1, 0, 0)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(Vec3i(1,-2, 3).radians_between(Vec3i(-2, 4,-3)), 2.8021914f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
@@ -16887,7 +16916,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)), -1, 1, 0);
 		ASSERT_VEC3I_VALUES(vec3i_min(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 1, 3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).min(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).min(Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).min(Vec3i( 2, 1, 0)),  1, 1, 0);
@@ -16895,7 +16924,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).min(Vec3i( 1, 2, 3)),  1,-2,-3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).min(Vec3i( 2, 1, 0)), -1, 1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).min(Vec3i(-1, 1, 4)), -1, 1, 3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
@@ -16905,7 +16934,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(vec3i_max(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 2, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).max(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).max(Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).max(Vec3i( 2, 1, 0)),  2, 2, 3);
@@ -16913,7 +16942,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).max(Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).max(Vec3i( 2, 1, 0)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).max(Vec3i(-1, 1, 4)), -1, 2, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 1);
@@ -16927,7 +16956,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i( 1, 2, 3), Vec3i( 2, 2, 2), Vec3i( 5, 5, 5)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(vec3i_clamp(Vec3i(-1, 1,-3), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp(Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(Vec3i( 5, 0, 0).clamp(Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  5, 1, 1);
@@ -16939,9 +16968,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-5).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-5);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp(Vec3i( 2, 2, 2), Vec3i( 5, 5, 5)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 1,-3).clamp(Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(clamp(Vec3i( 5, 0, 0), Vec3i( 1, 1, 1), Vec3i( 5, 5, 5)),  5, 1, 1);
@@ -16953,7 +16982,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(clamp(Vec3i( 0, 0,-5), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-5);
 		ASSERT_VEC3I_VALUES(clamp(Vec3i( 1, 2, 3), Vec3i( 2, 2, 2), Vec3i( 5, 5, 5)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(clamp(Vec3i(-1, 1,-3), Vec3i(-5,-5,-5), Vec3i(-1,-1,-1)), -1,-1,-3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
@@ -16963,7 +16992,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(vec3i_clamp_min(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 2, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp_min(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_min(Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_min(Vec3i( 2, 1, 0)),  2, 2, 3);
@@ -16971,9 +17000,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).clamp_min(Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_min(Vec3i( 2, 1, 0)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_min(Vec3i(-1, 1, 4)), -1, 2, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
@@ -16981,7 +17010,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(clamp_min(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(clamp_min(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)),  2, 2, 3);
 		ASSERT_VEC3I_VALUES(clamp_min(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 2, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
@@ -16991,7 +17020,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)), -1, 1, 0);
 		ASSERT_VEC3I_VALUES(vec3i_clamp_max(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 1, 3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp_max(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_max(Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_max(Vec3i( 2, 1, 0)),  1, 1, 0);
@@ -16999,9 +17028,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).clamp_max(Vec3i( 1, 2, 3)),  1,-2,-3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_max(Vec3i( 2, 1, 0)), -1, 1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_max(Vec3i(-1, 1, 4)), -1, 1, 3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 1, 2, 3), Vec3i( 1, 2, 3)),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 1, 2, 3), Vec3i( 2, 1, 0)),  1, 1, 0);
@@ -17009,7 +17038,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(clamp_max(Vec3i( 1,-2,-3), Vec3i( 1, 2, 3)),  1,-2,-3);
 		ASSERT_VEC3I_VALUES(clamp_max(Vec3i(-1, 2, 3), Vec3i( 2, 1, 0)), -1, 1, 0);
 		ASSERT_VEC3I_VALUES(clamp_max(Vec3i(-1, 2, 3), Vec3i(-1, 1, 4)), -1, 1, 3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 0, 0, 0), 0, 0),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i( 1, 2, 3), 1,99),  1, 2, 3);
@@ -17021,7 +17050,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i(-1, 2, 3), 0, 2),  0, 1, 1);
 		ASSERT_VEC3I_VALUES(vec3i_clamp_mag(Vec3i(-1, 2, 3), 0, 4), -1, 2, 3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).clamp_mag(0, 0),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_mag(1,99),  1, 2, 3);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 2, 3).clamp_mag(4,99),  1, 2, 3);
@@ -17031,7 +17060,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 1,-2,-3).clamp_mag(4,99),  1,-2,-3);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_mag(0, 2),  0, 1, 1);
 		ASSERT_VEC3I_VALUES(Vec3i(-1, 2, 3).clamp_mag(0, 4), -1, 2, 3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
@@ -17043,7 +17072,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 1, 1, 1), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_nudge(Vec3i( 5, 5, 5), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  4, 4, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i( 2, 2, 2), Vec3i( 1, 1, 1)),  1, 1, 1);
@@ -17053,9 +17082,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).nudge(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), -1,-1,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).nudge(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 5, 5, 5).nudge(Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  4, 4, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  1, 1, 1);
 		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i( 2, 2, 2), Vec3i( 1, 1, 1)),  1, 1, 1);
@@ -17065,7 +17094,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(nudge(Vec3i( 0, 0, 0), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)), -1,-1,-1);
 		ASSERT_VEC3I_VALUES(nudge(Vec3i( 1, 1, 1), Vec3i(-1,-1,-1), Vec3i( 1, 1, 1)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(nudge(Vec3i( 5, 5, 5), Vec3i( 1, 1, 1), Vec3i( 1, 1, 1)),  4, 4, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.0f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.5f),  0, 0, 0);
@@ -17077,7 +17106,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 0, 0, 0), 0.0f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 0, 0, 0), 0.5f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).lerp(Vec3i( 0, 0, 0), 1.0f),  0, 0, 0);
@@ -17087,9 +17116,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).lerp(Vec3i( 1, 1, 1), 0.0f), -1,-1,-1);
 		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).lerp(Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i(-1,-1,-1).lerp(Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.0f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 0.5f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(lerp(Vec3i( 0, 0, 0), Vec3i( 0, 0, 0), 1.0f),  0, 0, 0);
@@ -17099,7 +17128,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.0f), -1,-1,-1);
 		ASSERT_VEC3I_VALUES(lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 0.5f),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(lerp(Vec3i(-1,-1,-1), Vec3i( 1, 1, 1), 1.0f),  1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0, 0, 0)), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 1, 0, 0)), 0, 0, 0);
@@ -17110,7 +17139,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 0, 0,-1)), 0, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_x_zero(Vec3i( 1, 1, 1)), 0, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_zero(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_zero(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_zero(), 0, 1, 0);
@@ -17119,7 +17148,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_zero(), 0,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_zero(), 0, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_zero(), 0, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 1, 0, 0)),  1, 0, 0);
@@ -17130,7 +17159,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 0, 0,-1)),  0, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_y_zero(Vec3i( 1, 1, 1)),  1, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_zero(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_zero(),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_zero(),  0, 0, 0);
@@ -17139,7 +17168,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_zero(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_zero(),  0, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_zero(),  1, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 1, 0, 0)),  1, 0, 0);
@@ -17150,7 +17179,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 0, 0,-1)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_z_zero(Vec3i( 1, 1, 1)),  1, 1, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_zero(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_zero(),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_zero(),  0, 1, 0);
@@ -17159,7 +17188,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_zero(),  0,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_zero(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_zero(),  1, 1, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 1, 0, 0)),  1, 0, 0);
@@ -17170,7 +17199,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 0, 0,-1)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_x_only(Vec3i( 1, 1, 1)),  1, 0, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_only(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_only(),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_only(),  0, 0, 0);
@@ -17179,7 +17208,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_only(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_only(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_only(),  1, 0, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0, 0, 0)), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 1, 0, 0)), 0, 0, 0);
@@ -17190,7 +17219,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 0, 0,-1)), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_y_only(Vec3i( 1, 1, 1)), 0, 1, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_only(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_only(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_only(), 0, 1, 0);
@@ -17199,7 +17228,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_only(), 0,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_only(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_only(), 0, 1, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0, 0, 0)), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 1, 0, 0)), 0, 0, 0);
@@ -17210,7 +17239,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 0, 0,-1)), 0, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_z_only(Vec3i( 1, 1, 1)), 0, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_only(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_only(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_only(), 0, 0, 0);
@@ -17219,7 +17248,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_only(), 0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_only(), 0, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_only(), 0, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 1, 0, 0)), -1, 0, 0);
@@ -17230,7 +17259,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 0, 0,-1)),  0, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_x_negate(Vec3i( 1, 1, 1)), -1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_negate(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_negate(), -1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_negate(),  0, 1, 0);
@@ -17239,7 +17268,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_negate(),  0,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_negate(),  0, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_negate(), -1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 1, 0, 0)),  1, 0, 0);
@@ -17250,7 +17279,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 0, 0,-1)),  0, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_y_negate(Vec3i( 1, 1, 1)),  1,-1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_negate(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_negate(),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_negate(),  0,-1, 0);
@@ -17259,7 +17288,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_negate(),  0, 1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_negate(),  0, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_negate(),  1,-1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0, 0, 0)),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 1, 0, 0)),  1, 0, 0);
@@ -17270,7 +17299,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 0, 0,-1)),  0, 0, 1);
 		ASSERT_VEC3I_VALUES(vec3i_z_negate(Vec3i( 1, 1, 1)),  1, 1,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_negate(),  0, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_negate(),  1, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_negate(),  0, 1, 0);
@@ -17279,7 +17308,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_negate(),  0,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_negate(),  0, 0, 1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_negate(),  1, 1,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0, 0, 0), 10), 10, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 1, 0, 0), 10), 10, 0, 0);
@@ -17290,7 +17319,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 0, 0,-1), 10), 10, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_x_set(Vec3i( 1, 1, 1), 10), 10, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_set(10), 10, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_set(10), 10, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_set(10), 10, 1, 0);
@@ -17299,7 +17328,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_set(10), 10,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_set(10), 10, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_set(10), 10, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0, 0, 0), 10),  0, 10, 0);
 		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 1, 0, 0), 10),  1, 10, 0);
@@ -17310,7 +17339,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 0, 0,-1), 10),  0, 10,-1);
 		ASSERT_VEC3I_VALUES(vec3i_y_set(Vec3i( 1, 1, 1), 10),  1, 10, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_set(10),  0, 10, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_set(10),  1, 10, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_set(10),  0, 10, 0);
@@ -17319,7 +17348,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_set(10),  0, 10, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_set(10),  0, 10,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_set(10),  1, 10, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0, 0, 0), 10),  0, 0, 10);
 		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 1, 0, 0), 10),  1, 0, 10);
@@ -17330,7 +17359,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 0, 0,-1), 10),  0, 0, 10);
 		ASSERT_VEC3I_VALUES(vec3i_z_set(Vec3i( 1, 1, 1), 10),  1, 1, 10);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_set(10),  0, 0, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_set(10),  1, 0, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_set(10),  0, 1, 10);
@@ -17339,7 +17368,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_set(10),  0,-1, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_set(10),  0, 0, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_set(10),  1, 1, 10);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0, 0, 0), 10), 10, 0, 0);
 		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 1, 0, 0), 10), 11, 0, 0);
@@ -17350,7 +17379,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 0, 0,-1), 10), 10, 0,-1);
 		ASSERT_VEC3I_VALUES(vec3i_x_add(Vec3i( 1, 1, 1), 10), 11, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).x_add(10), 10, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).x_add(10), 11, 0, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).x_add(10), 10, 1, 0);
@@ -17359,7 +17388,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).x_add(10), 10,-1, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).x_add(10), 10, 0,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).x_add(10), 11, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0, 0, 0), 10),  0, 10, 0);
 		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 1, 0, 0), 10),  1, 10, 0);
@@ -17370,7 +17399,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 0, 0,-1), 10),  0, 10,-1);
 		ASSERT_VEC3I_VALUES(vec3i_y_add(Vec3i( 1, 1, 1), 10),  1, 11, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).y_add(10),  0, 10, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).y_add(10),  1, 10, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).y_add(10),  0, 11, 0);
@@ -17379,7 +17408,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).y_add(10),  0,  9, 0);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).y_add(10),  0, 10,-1);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).y_add(10),  1, 11, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0, 0, 0), 10),  0, 0, 10);
 		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 1, 0, 0), 10),  1, 0, 10);
@@ -17390,7 +17419,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 0, 0,-1), 10),  0, 0,  9);
 		ASSERT_VEC3I_VALUES(vec3i_z_add(Vec3i( 1, 1, 1), 10),  1, 1, 11);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0, 0).z_add(10),  0, 0, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 0, 0).z_add(10),  1, 0, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 1, 0).z_add(10),  0, 1, 10);
@@ -17399,7 +17428,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC3I_VALUES(Vec3i( 0,-1, 0).z_add(10),  0,-1, 10);
 		ASSERT_VEC3I_VALUES(Vec3i( 0, 0,-1).z_add(10),  0, 0,  9);
 		ASSERT_VEC3I_VALUES(Vec3i( 1, 1, 1).z_add(10),  1, 1, 11);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 #undef ASSERT_VEC3I_VALUES
 	}
@@ -17458,14 +17487,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_UNITZ(), 0.0f, 0.0f, 1.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_UNITW(), 0.0f, 0.0f, 0.0f, 1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(vec4::ZERO,  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4::ONE,   1.0f, 1.0f, 1.0f, 1.0f);
 		ASSERT_VEC4_VALUES(vec4::UNITX, 1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4::UNITY, 0.0f, 1.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4::UNITZ, 0.0f, 0.0f, 1.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4::UNITW, 0.0f, 0.0f, 0.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		a = Vec4(1.0f,-2.3f,0.4f,5.0f);
 		ASSERT_F32_EQUAL(vec4_index(a, 0),  1.0f);
@@ -17473,15 +17502,15 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec4_index(a, 2),  0.4f);
 		ASSERT_F32_EQUAL(vec4_index(a, 3),  5.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a = Vec4(1.0f,-2.3f,0.4f,5.0f);
 		ASSERT_F32_EQUAL(a[0],  1.0f);
 		ASSERT_F32_EQUAL(a[1], -2.3f);
 		ASSERT_F32_EQUAL(a[2],  0.4f);
 		ASSERT_F32_EQUAL(a[3],  5.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a[0] =  2.0f;
 		a[1] = -4.6f;
 		a[2] =  0.8f;
@@ -17490,21 +17519,21 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(a.arr[1], -4.6f);
 		ASSERT_F32_EQUAL(a.arr[2],  0.8f);
 		ASSERT_F32_EQUAL(a.arr[3],  6.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_add(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_add(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(vec4_add(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  2.0f, 3.0f, 4.0f, 5.0f);
 		ASSERT_VEC4_VALUES(vec4_add(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.9f, 1.8f, 0.0f, 4.4f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) + Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) + Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) + Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  2.0f, 3.0f, 4.0f, 5.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) + Vec4(-2.0f, 4.0f,-0.3f, 0.4f), -0.9f, 1.8f, 0.0f, 4.4f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		a += Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
@@ -17517,21 +17546,21 @@ void TEST_deshi_math(){
 		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
 		a += Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
 		ASSERT_VEC4_VALUES(a, -0.9f, 1.8f, 0.0f, 4.4f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_sub(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_sub(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), -1.0f,-2.0f,-3.0f,-4.0f);
 		ASSERT_VEC4_VALUES(vec4_sub(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.0f,-1.0f,-2.0f,-3.0f);
 		ASSERT_VEC4_VALUES(vec4_sub(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)),  3.1f,-6.2f, 0.6f, 3.6f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) - Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) - Vec4( 1.0f, 2.0f, 3.0f, 4.0f), -1.0f,-2.0f,-3.0f,-4.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) - Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  0.0f,-1.0f,-2.0f,-3.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) - Vec4(-2.0f, 4.0f,-0.3f, 0.4f),  3.1f,-6.2f, 0.6f, 3.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		a -= Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
@@ -17544,21 +17573,21 @@ void TEST_deshi_math(){
 		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
 		a -= Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
 		ASSERT_VEC4_VALUES(a,  3.1f,-6.2f, 0.6f, 3.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_mul(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.00f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_mul(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.0f, 0.0f, 0.00f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_mul(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.00f, 4.0f);
 		ASSERT_VEC4_VALUES(vec4_mul(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -2.2f,-8.8f,-0.09f, 1.6f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) * Vec4( 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.00f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) * Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  0.0f, 0.0f, 0.00f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) * Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.0f, 2.0f, 3.00f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) * Vec4(-2.0f, 4.0f,-0.3f, 0.4f), -2.2f,-8.8f,-0.09f, 1.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		a *= Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.00f, 0.0f);
@@ -17571,21 +17600,21 @@ void TEST_deshi_math(){
 		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
 		a *= Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
 		ASSERT_VEC4_VALUES(a, -2.2f,-8.8f,-0.09f, 1.6f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(0.0f, 0.0f, 0.0f, 0.0f),  0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(0.0f, 0.0f, 0.0f, 0.0f),  1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(1.0f, 1.0f, 1.0f, 1.0f),  2.0f),  2.0f, 2.0f, 2.0f, 2.0f);
 		ASSERT_VEC4_VALUES(vec4_mul_f32(Vec4(1.1f,-2.2f, 0.3f, 4.0f), -2.0f), -2.2f, 4.4f,-0.6f,-8.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) *  0.0f,  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) *  1.0f,  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) *  2.0f,  2.0f, 2.0f, 2.0f, 2.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) * -2.0f, -2.2f, 4.4f,-0.6f,-8.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4( 0.0f, 0.0f, 0.0f, 0.0f);
 		a *= 0.0f;
 		ASSERT_VEC4_VALUES(a,  0.0f, 0.0f, 0.0f, 0.0f);
@@ -17598,21 +17627,21 @@ void TEST_deshi_math(){
 		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
 		a *= -2.0f;
 		ASSERT_VEC4_VALUES(a, -2.2f, 4.4f,-0.6f,-8.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_div(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)),  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(vec4_div(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.00f, 0.00f, 0.00f, 0.00f);
 		ASSERT_VEC4_VALUES(vec4_div(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.00f, 0.50f, 1.0f/3.0f, 0.25f);
 		ASSERT_VEC4_VALUES(vec4_div(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.55f,-0.55f,-1.00f, 10.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) / Vec4( 1.0f, 1.0f, 1.0f, 1.0f),  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) / Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  0.00f, 0.00f, 0.00f, 0.00f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) / Vec4( 1.0f, 2.0f, 3.0f, 4.0f),  1.00f, 0.50f, 1.0f/3.0f, 0.25f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) / Vec4(-2.0f, 4.0f,-0.3f, 0.4f), -0.55f,-0.55f,-1.00f, 10.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
 		a /= Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
 		ASSERT_VEC4_VALUES(a,  1.00f, 1.00f, 1.00f, 1.00f);
@@ -17625,21 +17654,21 @@ void TEST_deshi_math(){
 		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
 		a /= Vec4(-2.0f, 4.0f,-0.3f, 0.4f);
 		ASSERT_VEC4_VALUES(a, -0.55f,-0.55f,-1.0f, 10.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(1.0f, 1.0f, 1.0f, 1.0f),  1.0f),  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(0.0f, 0.0f, 0.0f, 0.0f),  1.0f),  0.00f, 0.00f, 0.00f, 0.00f);
 		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(1.0f, 1.0f, 1.0f, 1.0f),  2.0f),  0.50f, 0.50f, 0.50f, 0.50f);
 		ASSERT_VEC4_VALUES(vec4_div_f32(Vec4(1.1f,-2.2f, 0.3f, 4.0f), -2.0f), -0.55f, 1.10f,-0.15f,-2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) /  1.0f,  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f) /  1.0f,  0.00f, 0.00f, 0.00f, 0.00f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f) /  2.0f,  0.50f, 0.50f, 0.50f, 0.50f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f) / -2.0f, -0.55f, 1.10f,-0.15f,-2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4( 1.0f, 1.0f, 1.0f, 1.0f);
 		a /= 1.0f;
 		ASSERT_VEC4_VALUES(a,  1.00f, 1.00f, 1.00f, 1.00f);
@@ -17652,17 +17681,17 @@ void TEST_deshi_math(){
 		a  = Vec4( 1.1f,-2.2f, 0.3f, 4.0f);
 		a /= -2.0f;
 		ASSERT_VEC4_VALUES(a, -0.55f, 1.10f,-0.15f,-2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_negate(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), -0.0f,-0.0f,-0.0f,-0.0f);
 		ASSERT_VEC4_VALUES(vec4_negate(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), -1.0f,-1.0f,-1.0f,-1.0f);
 		ASSERT_VEC4_VALUES(vec4_negate(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), -1.1f, 2.2f,-0.3f,-4.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(-Vec4(0.0f, 0.0f, 0.0f, 0.0f), -0.0f,-0.0f,-0.0f,-0.0f);
 		ASSERT_VEC4_VALUES(-Vec4(1.0f, 1.0f, 1.0f, 1.0f), -1.0f,-1.0f,-1.0f,-1.0f);
 		ASSERT_VEC4_VALUES(-Vec4(1.1f,-2.2f, 0.3f, 4.0f), -1.1f, 2.2f,-0.3f,-4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec4_equal(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)));
 		Assert(vec4_equal(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
@@ -17673,7 +17702,7 @@ void TEST_deshi_math(){
 		Assert(vec4_equal(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
 		Assert(vec4_equal(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec4( 0.0f, 0.0f, 0.0f, 0.0f) == Vec4( 0.0f, 0.0f, 0.0f, 0.0f));
 		Assert(Vec4( 1.0f, 1.0f, 1.0f, 1.0f) == Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
 		Assert(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) == Vec4(-1.1f, 2.2f, 0.3f, 4.0f));
@@ -17682,7 +17711,7 @@ void TEST_deshi_math(){
 		Assert(!(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) == Vec4( 1.1f,-2.2f,-0.3f, 0.4f)));
 		Assert(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) == Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
 		Assert(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) == Vec4( 0.0f, 0.0f, 0.0f, 0.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec4_nequal(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
 		Assert(vec4_nequal(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 2.0f, 2.0f, 2.0f, 2.0f)));
@@ -17693,7 +17722,7 @@ void TEST_deshi_math(){
 		Assert(vec4_nequal(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 2.0f, 2.0f, 2.0f, 2.0f)));
 		Assert(vec4_nequal(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec4( 0.0f, 0.0f, 0.0f, 0.0f) != Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
 		Assert(Vec4( 1.0f, 1.0f, 1.0f, 1.0f) != Vec4( 2.0f, 2.0f, 2.0f, 2.0f));
 		Assert(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) != Vec4( 1.1f,-2.2f,-0.3f, 0.4f));
@@ -17702,91 +17731,91 @@ void TEST_deshi_math(){
 		Assert(!(Vec4(-1.1f, 2.2f, 0.3f, 4.0f) != Vec4(-1.1f, 2.2f, 0.3f, 4.0f)));
 		Assert(vec4_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) != Vec4( 2.0f, 2.0f, 2.0f, 2.0f));
 		Assert(vec4_add(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)) != Vec4( 1.0f, 1.0f, 1.0f, 1.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_abs(Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_VEC4_VALUES(vec4_abs(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(vec4_abs(Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_VEC4_VALUES(vec4_abs(Vec4( 1.1f,-2.2f,-0.3f, 4.0f)), 1.1f,2.2f,0.3f,4.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).abs(), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).abs(), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).abs(), 1.0f,1.0f,1.0f,1.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.1f,-2.2f,-0.3f, 4.0f).abs(), 1.1f,2.2f,0.3f,4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_dot(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec4_dot(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec4_dot(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f);
 		ASSERT_F32_EQUAL(vec4_dot(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -9.49f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).dot(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).dot(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).dot(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 10.0f);
 		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).dot(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -9.49f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_mag(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec4_mag(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), DESHI_SQRTF( 4.00f));
 		ASSERT_F32_EQUAL(vec4_mag(Vec4(1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(30.00f));
 		ASSERT_F32_EQUAL(vec4_mag(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), DESHI_SQRTF(22.14f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).mag(), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).mag(), DESHI_SQRTF( 4.00f));
 		ASSERT_F32_EQUAL(Vec4(1.0f, 2.0f, 3.0f, 4.0f).mag(), DESHI_SQRTF(30.00f));
 		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).mag(), DESHI_SQRTF(22.14f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), 4.00f);
 		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(1.0f, 2.0f, 3.0f, 4.0f)), 30.00f);
 		ASSERT_F32_EQUAL(vec4_mag_sq(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), 22.14f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).mag_sq(), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).mag_sq(), 4.00f);
 		ASSERT_F32_EQUAL(Vec4(1.0f, 2.0f, 3.0f, 4.0f).mag_sq(), 30.00f);
 		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).mag_sq(), 22.14f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(0.0f, 0.0f, 0.0f, 0.0f)), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(1.0f, 1.0f, 1.0f, 1.0f)), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f));
 		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(1.0f, 2.0f, 3.0f, 4.0f)), 1.0f/DESHI_SQRTF(30.00f), 2.0f/DESHI_SQRTF(30.00f), 3.0f/DESHI_SQRTF(30.00f), 4.0f/DESHI_SQRTF(30.00f));
 		ASSERT_VEC4_VALUES(vec4_normalize(Vec4(1.1f,-2.2f, 0.3f, 4.0f)), 1.1f/DESHI_SQRTF(22.14f),-2.2f/DESHI_SQRTF(22.14f), 0.3f/DESHI_SQRTF(22.14f), 4.0f/DESHI_SQRTF(22.14f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f).normalize(), 0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f).normalize(), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f), 1.0f/DESHI_SQRTF( 4.00f));
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 2.0f, 3.0f, 4.0f).normalize(), 1.0f/DESHI_SQRTF(30.00f), 2.0f/DESHI_SQRTF(30.00f), 3.0f/DESHI_SQRTF(30.00f), 4.0f/DESHI_SQRTF(30.00f));
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f).normalize(), 1.1f/DESHI_SQRTF(22.14f),-2.2f/DESHI_SQRTF(22.14f), 0.3f/DESHI_SQRTF(22.14f), 4.0f/DESHI_SQRTF(22.14f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_distance(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.00f);
 		ASSERT_F32_EQUAL(vec4_distance(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(30.00f));
 		ASSERT_F32_EQUAL(vec4_distance(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(14.00f));
 		ASSERT_F32_EQUAL(vec4_distance(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), DESHI_SQRTF(61.37f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.00f);
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(30.00f));
 		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).distance(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), DESHI_SQRTF(14.00f));
 		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).distance(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), DESHI_SQRTF(61.37f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f);
 		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 30.00f);
 		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 14.00f);
 		ASSERT_F32_EQUAL(vec4_distance_sq(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 61.37f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance_sq(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f);
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).distance_sq(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 30.00f);
 		ASSERT_F32_EQUAL(Vec4(1.0f, 1.0f, 1.0f, 1.0f).distance_sq(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 14.00f);
 		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).distance_sq(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 61.37f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
@@ -17800,7 +17829,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 5.0f);
 		ASSERT_F32_EQUAL(vec4_projection_scalar(Vec4(-2.0f, 4.0f,-0.3f, 0.4f), Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -9.49f/DESHI_SQRTF(22.14f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_scalar(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_scalar(Vec4( 5.0f, 0.0f, 0.0f, 0.0f)), 2.0f);
@@ -17812,7 +17841,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_scalar(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_scalar(Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 5.0f);
 		ASSERT_F32_EQUAL(Vec4(-2.0f, 4.0f,-0.3f, 0.4f).projection_scalar(Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -9.49f/DESHI_SQRTF(22.14f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -17826,7 +17855,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f);
 		ASSERT_VEC4_VALUES(vec4_projection_vector(Vec4(-2.0f, 4.0f,-0.3f, 0.4f), Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -10.439f/22.14f, 20.878f/22.14f, -2.847f/22.14f, -37.96f/22.14f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).projection_vector(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 2.0f, 2.0f, 2.0f, 2.0f).projection_vector(Vec4( 5.0f, 0.0f, 0.0f, 0.0f)), 2.0f, 0.0f, 0.0f, 0.0f);
@@ -17838,19 +17867,19 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_vector(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).projection_vector(Vec4( 1.0f, 1.0f, 1.0f, 1.0f)), 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f, 10.0f/4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-2.0f, 4.0f,-0.3f, 0.4f).projection_vector(Vec4( 1.1f,-2.2f, 0.3f, 4.0f)), -10.439f/22.14f, 20.878f/22.14f, -2.847f/22.14f, -37.96f/22.14f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f, 0.00f);
 		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.50f, 1.00f, 1.50f, 2.00f);
 		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(1.0f, 1.0f, 1.0f, 1.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.00f, 1.50f, 2.00f, 2.50f);
 		ASSERT_VEC4_VALUES(vec4_midpoint(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.45f, 0.90f, 0.00f, 2.20f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f).midpoint(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.00f, 0.00f, 0.00f, 0.00f);
 		ASSERT_VEC4_VALUES(Vec4(0.0f, 0.0f, 0.0f, 0.0f).midpoint(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  0.50f, 1.00f, 1.50f, 2.00f);
 		ASSERT_VEC4_VALUES(Vec4(1.0f, 1.0f, 1.0f, 1.0f).midpoint(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.00f, 1.50f, 2.00f, 2.50f);
 		ASSERT_VEC4_VALUES(Vec4(1.1f,-2.2f, 0.3f, 4.0f).midpoint(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), -0.45f, 0.90f, 0.00f, 2.20f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
@@ -17858,13 +17887,13 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(0.0f, 1.0f, 0.0f, 0.0f), Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(vec4_radians_between(Vec4(1.1f,-2.2f, 0.3f, 4.0f), Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 2.03553f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).radians_between(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(0.0f, 0.0f, 0.0f, 0.0f).radians_between(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(5.0f, 5.0f, 5.0f, 5.0f).radians_between(Vec4( 3.0f, 3.0f, 3.0f, 3.0f)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4(0.0f, 1.0f, 0.0f, 0.0f).radians_between(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(Vec4(1.1f,-2.2f, 0.3f, 4.0f).radians_between(Vec4(-2.0f, 4.0f,-0.3f, 0.4f)), 2.03553f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-2.00f,-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(vec4_floor(Vec4(-1.90f,-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f,-2.00f);
@@ -17892,7 +17921,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 1.90f, 1.90f, 1.90f, 1.90f)),  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(vec4_floor(Vec4( 2.00f, 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(-2.00f,-2.00f,-2.00f,-2.00f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(Vec4(-1.90f,-1.90f,-1.90f,-1.90f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(Vec4(-1.55f,-1.55f,-1.55f,-1.55f).floor(), -2.00f,-2.00f,-2.00f,-2.00f);
@@ -17918,7 +17947,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.55f, 1.55f, 1.55f, 1.55f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(Vec4( 1.90f, 1.90f, 1.90f, 1.90f).floor(),  1.00f, 1.00f, 1.00f, 1.00f);
 		ASSERT_VEC4_VALUES(Vec4( 2.00f, 2.00f, 2.00f, 2.00f).floor(),  2.00f, 2.00f, 2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-2.00f,-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(vec4_ceil(Vec4(-1.90f,-1.90f,-1.90f,-1.90f)), -1.00f,-1.00f,-1.00f,-1.00f);
@@ -17946,7 +17975,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 1.90f, 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f, 2.00f);
 		ASSERT_VEC4_VALUES(vec4_ceil(Vec4( 2.00f, 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(-2.00f,-2.00f,-2.00f,-2.00f).ceil(), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(Vec4(-1.90f,-1.90f,-1.90f,-1.90f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
 		ASSERT_VEC4_VALUES(Vec4(-1.55f,-1.55f,-1.55f,-1.55f).ceil(), -1.00f,-1.00f,-1.00f,-1.00f);
@@ -17972,7 +18001,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.55f, 1.55f, 1.55f, 1.55f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
 		ASSERT_VEC4_VALUES(Vec4( 1.90f, 1.90f, 1.90f, 1.90f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
 		ASSERT_VEC4_VALUES(Vec4( 2.00f, 2.00f, 2.00f, 2.00f).ceil(),  2.00f, 2.00f, 2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_round(Vec4(-2.00f,-2.00f,-2.00f,-2.00f)), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(vec4_round(Vec4(-1.90f,-1.90f,-1.90f,-1.90f)), -2.00f,-2.00f,-2.00f,-2.00f);
@@ -18000,7 +18029,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_round(Vec4( 1.90f, 1.90f, 1.90f, 1.90f)),  2.00f, 2.00f, 2.00f, 2.00f);
 		ASSERT_VEC4_VALUES(vec4_round(Vec4( 2.00f, 2.00f, 2.00f, 2.00f)),  2.00f, 2.00f, 2.00f, 2.00f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4(-2.00f,-2.00f,-2.00f,-2.00f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(Vec4(-1.90f,-1.90f,-1.90f,-1.90f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
 		ASSERT_VEC4_VALUES(Vec4(-1.55f,-1.55f,-1.55f,-1.55f).round(), -2.00f,-2.00f,-2.00f,-2.00f);
@@ -18026,7 +18055,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.55f, 1.55f, 1.55f, 1.55f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
 		ASSERT_VEC4_VALUES(Vec4( 1.90f, 1.90f, 1.90f, 1.90f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
 		ASSERT_VEC4_VALUES(Vec4( 2.00f, 2.00f, 2.00f, 2.00f).round(),  2.00f, 2.00f, 2.00f, 2.00f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18037,7 +18066,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
 		ASSERT_VEC4_VALUES(vec4_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18046,7 +18075,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).min(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).min(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
@@ -18057,7 +18086,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(vec4_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18066,7 +18095,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).max(Vec4( 1.0f, 2.0f, 0.0f, 4.0f)),  1.0f, 2.0f, 0.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).max(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).max(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 1.0f);
@@ -18086,7 +18115,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_clamp(Vec4(-1.5f, 1.0f,-1.5f,-1.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f,-1.5f);
 		ASSERT_VEC4_VALUES(vec4_clamp(Vec4(-1.5f, 1.0f,-6.5f,-6.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f,-5.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 1.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 5.0f).clamp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 5.0f);
@@ -18104,9 +18133,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4(-1.5f, 1.0f,-0.5f,-0.4f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f,-1.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.5f, 1.0f,-1.5f,-1.5f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f,-1.5f);
 		ASSERT_VEC4_VALUES(Vec4(-1.5f, 1.0f,-6.5f,-6.5f).clamp(Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f,-5.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 1.0f);
 		ASSERT_VEC4_VALUES(clamp(Vec4( 0.0f, 0.0f, 0.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 5.0f, 5.0f, 5.0f, 5.0f)),  1.0f, 1.0f, 1.0f, 5.0f);
@@ -18124,7 +18153,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(clamp(Vec4(-1.5f, 1.0f,-0.5f,-0.4f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.0f,-1.0f);
 		ASSERT_VEC4_VALUES(clamp(Vec4(-1.5f, 1.0f,-1.5f,-1.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-1.5f,-1.5f);
 		ASSERT_VEC4_VALUES(clamp(Vec4(-1.5f, 1.0f,-6.5f,-6.5f), Vec4(-5.0f,-5.0f,-5.0f,-5.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f)), -1.5f,-1.0f,-5.0f,-5.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
@@ -18135,7 +18164,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(vec4_clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18144,9 +18173,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_min(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(clamp_min(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.2f, 2.3f, 3.3f, 4.4f);
 		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18155,7 +18184,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(clamp_min(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)),  2.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(clamp_min(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.0f, 2.0f, 3.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18166,7 +18195,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
 		ASSERT_VEC4_VALUES(vec4_clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18175,9 +18204,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_max(Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(clamp_max(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.2f, 2.3f, 3.3f, 4.4f)),  1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f, 2.0f, 3.0f, 4.0f);
@@ -18186,7 +18215,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(clamp_max(Vec4( 1.0f,-2.0f,-3.0f,-4.0f), Vec4( 1.0f, 2.0f, 3.0f, 4.0f)),  1.0f,-2.0f,-3.0f,-4.0f);
 		ASSERT_VEC4_VALUES(clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4( 2.0f, 1.0f, 0.0f,-1.0f)), -1.0f, 1.0f, 0.0f,-1.0f);
 		ASSERT_VEC4_VALUES(clamp_max(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), Vec4(-1.5f, 1.0f, 3.5f, 4.5f)), -1.5f, 1.0f, 3.0f, 4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4( 1.0f, 2.0f, 3.0f, 4.0f), 1.0f,99.0f), 1.0f, 2.0f, 3.0f, 4.0f);
@@ -18198,7 +18227,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), 0.0f, 2.0f), -2.0f/DESHI_SQRTF(30.0f), 4.0f/DESHI_SQRTF(30.0f), 6.0f/DESHI_SQRTF(30.0f), 8.0f/DESHI_SQRTF(30.0f));
 		ASSERT_VEC4_VALUES(vec4_clamp_mag(Vec4(-1.0f, 2.0f, 3.0f, 4.0f), 0.0f, 6.0f), -1.0f, 2.0f, 3.0f, 4.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).clamp_mag(0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(1.0f,99.0f), 1.0f, 2.0f, 3.0f, 4.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(6.0f,99.0f), 6.0f/DESHI_SQRTF(30.0f), 12.0f/DESHI_SQRTF(30.0f), 18.0f/DESHI_SQRTF(30.0f), 24.0f/DESHI_SQRTF(30.0f));
@@ -18208,7 +18237,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 1.0f,-2.0f,-3.0f,-4.0f).clamp_mag(6.0f,99.0f), 6.0f/DESHI_SQRTF(30.0f),-12.0f/DESHI_SQRTF(30.0f),-18.0f/DESHI_SQRTF(30.0f),-24.0f/DESHI_SQRTF(30.0f));
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(0.0f, 2.0f), -2.0f/DESHI_SQRTF(30.0f), 4.0f/DESHI_SQRTF(30.0f), 6.0f/DESHI_SQRTF(30.0f), 8.0f/DESHI_SQRTF(30.0f));
 		ASSERT_VEC4_VALUES(Vec4(-1.0f, 2.0f, 3.0f, 4.0f).clamp_mag(0.0f, 6.0f), -1.0f, 2.0f, 3.0f, 4.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.1f, 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f, 0.1f);
@@ -18220,7 +18249,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
 		ASSERT_VEC4_VALUES(vec4_nudge(Vec4( 5.0f, 5.0f, 5.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f, 4.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.1f, 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f, 0.1f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
@@ -18230,9 +18259,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.9f, 0.9f, 0.9f, 0.9f).nudge(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f, 0.4f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 1.0f, 1.0f, 1.0f).nudge(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
 		ASSERT_VEC4_VALUES(Vec4( 5.0f, 5.0f, 5.0f, 5.0f).nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.1f, 0.1f, 0.1f, 0.1f)),  0.1f, 0.1f, 0.1f, 0.1f);
 		ASSERT_VEC4_VALUES(nudge(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
@@ -18242,7 +18271,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(nudge(Vec4( 0.9f, 0.9f, 0.9f, 0.9f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.4f, 0.4f, 0.4f, 0.4f);
 		ASSERT_VEC4_VALUES(nudge(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  0.5f, 0.5f, 0.5f, 0.5f);
 		ASSERT_VEC4_VALUES(nudge(Vec4( 5.0f, 5.0f, 5.0f, 5.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), Vec4( 0.5f, 0.5f, 0.5f, 0.5f)),  4.5f, 4.5f, 4.5f, 4.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
@@ -18254,7 +18283,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
@@ -18264,9 +18293,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f,-1.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4(-1.0f,-1.0f,-1.0f,-1.0f).lerp(Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.0f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(lerp(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 1.0f),  0.0f, 0.0f, 0.0f, 0.0f);
@@ -18276,7 +18305,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.0f), -1.0f,-1.0f,-1.0f,-1.0f);
 		ASSERT_VEC4_VALUES(lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 0.5f),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(lerp(Vec4(-1.0f,-1.0f,-1.0f,-1.0f), Vec4( 1.0f, 1.0f, 1.0f, 1.0f), 1.0f),  1.0f, 1.0f, 1.0f, 1.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -18293,7 +18322,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_x_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_zero(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_zero(), 0.0f, 1.0f, 0.0f, 0.0f);
@@ -18308,7 +18337,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_zero(), 0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_zero(), 0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_zero(), 0.0f, 1.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
@@ -18325,7 +18354,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_y_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 0.0f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_zero(),  1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
@@ -18340,7 +18369,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_zero(),  0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_zero(),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_zero(),  1.5f, 0.0f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
@@ -18357,7 +18386,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_z_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 0.0f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_zero(),  1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_zero(),  0.0f, 1.0f, 0.0f, 0.0f);
@@ -18372,7 +18401,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_zero(),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_zero(),  1.5f, 1.5f, 0.0f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
@@ -18389,7 +18418,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_w_zero(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 1.5f, 0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_zero(),  1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_zero(),  0.0f, 1.0f, 0.0f, 0.0f);
@@ -18404,7 +18433,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_zero(),  0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_zero(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_zero(),  1.5f, 1.5f, 1.5f, 0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f,0.0f,0.0f,0.0f);
@@ -18421,7 +18450,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(vec4_x_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f,0.0f,0.0f,0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_only(),  1.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
@@ -18436,7 +18465,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_only(),  0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_only(),  0.0f,0.0f,0.0f,0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_only(),  1.5f,0.0f,0.0f,0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -18453,7 +18482,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_y_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 1.5f, 0.0f, 0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_only(), 0.0f, 1.0f, 0.0f, 0.0f);
@@ -18468,7 +18497,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_only(), 0.0f, 1.5f, 0.0f, 0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -18485,7 +18514,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_z_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 0.0f, 1.5f, 0.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -18500,7 +18529,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_only(), 0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_only(), 0.0f, 0.0f, 1.5f, 0.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -18517,7 +18546,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)), 0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_w_only(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), 0.0f, 0.0f, 0.0f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -18532,7 +18561,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_only(), 0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_only(), 0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_only(), 0.0f, 0.0f, 0.0f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)), -1.0f, 0.0f, 0.0f, 0.0f);
@@ -18549,7 +18578,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_x_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)), -1.5f, 1.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_negate(), -1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
@@ -18564,7 +18593,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_negate(),  0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_negate(),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_negate(), -1.5f, 1.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
@@ -18581,7 +18610,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_y_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f,-1.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_negate(),  0.0f,-1.0f, 0.0f, 0.0f);
@@ -18596,7 +18625,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_negate(),  0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_negate(),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_negate(),  1.5f,-1.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
@@ -18613,7 +18642,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_z_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f,-1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
@@ -18628,7 +18657,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_negate(),  0.0f, 0.0f,-1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_negate(),  0.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_negate(),  1.5f, 1.5f,-1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 0.0f, 0.0f)),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 1.0f, 0.0f, 0.0f, 0.0f)),  1.0f, 0.0f, 0.0f, 0.0f);
@@ -18645,7 +18674,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 0.0f, 0.0f, 0.0f, 1.5f)),  0.0f, 0.0f, 0.0f,-1.5f);
 		ASSERT_VEC4_VALUES(vec4_w_negate(Vec4( 1.5f, 1.5f, 1.5f, 1.5f)),  1.5f, 1.5f, 1.5f,-1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_negate(),  0.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_negate(),  1.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_negate(),  0.0f, 1.0f, 0.0f, 0.0f);
@@ -18660,7 +18689,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_negate(),  0.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_negate(),  0.0f, 0.0f, 0.0f,-1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_negate(),  1.5f, 1.5f, 1.5f,-1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
@@ -18677,7 +18706,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_x_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f), 10.0f, 1.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_set(10.0f), 10.0f, 1.0f, 0.0f, 0.0f);
@@ -18692,7 +18721,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_set(10.0f), 10.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_set(10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_set(10.0f), 10.0f, 1.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
@@ -18709,7 +18738,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_y_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 10.0f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_set(10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
@@ -18724,7 +18753,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_set(10.0f),  0.0f, 10.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_set(10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_set(10.0f),  1.5f, 10.0f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
@@ -18741,7 +18770,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_z_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 10.0f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_set(10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_set(10.0f),  0.0f, 1.0f, 10.0f, 0.0f);
@@ -18756,7 +18785,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_set(10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_set(10.0f),  1.5f, 1.5f, 10.0f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
@@ -18773,7 +18802,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(vec4_w_set(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 1.5f, 10.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_set(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_set(10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_set(10.0f),  0.0f, 1.0f, 0.0f, 10.0f);
@@ -18788,7 +18817,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_set(10.0f),  0.0f, 0.0f, 1.5f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_set(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_set(10.0f),  1.5f, 1.5f, 1.5f, 10.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f), 11.0f, 0.0f, 0.0f, 0.0f);
@@ -18805,7 +18834,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_x_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f), 11.5f, 1.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).x_add(10.0f), 11.0f, 0.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).x_add(10.0f), 10.0f, 1.0f, 0.0f, 0.0f);
@@ -18820,7 +18849,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).x_add(10.0f), 10.0f, 0.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).x_add(10.0f), 10.0f, 0.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).x_add(10.0f), 11.5f, 1.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
@@ -18837,7 +18866,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_y_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 11.5f, 1.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).y_add(10.0f),  1.0f, 10.0f, 0.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).y_add(10.0f),  0.0f, 11.0f, 0.0f, 0.0f);
@@ -18852,7 +18881,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).y_add(10.0f),  0.0f, 10.0f, 1.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).y_add(10.0f),  0.0f, 10.0f, 0.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).y_add(10.0f),  1.5f, 11.5f, 1.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
@@ -18869,7 +18898,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
 		ASSERT_VEC4_VALUES(vec4_z_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 11.5f, 1.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).z_add(10.0f),  1.0f, 0.0f, 10.0f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).z_add(10.0f),  0.0f, 1.0f, 10.0f, 0.0f);
@@ -18884,7 +18913,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).z_add(10.0f),  0.0f, 0.0f, 11.5f, 0.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).z_add(10.0f),  0.0f, 0.0f, 10.0f, 1.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).z_add(10.0f),  1.5f, 1.5f, 11.5f, 1.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 0.0f, 0.0f), 10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 1.0f, 0.0f, 0.0f, 0.0f), 10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
@@ -18901,7 +18930,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 0.0f, 0.0f, 0.0f, 1.5f), 10.0f),  0.0f, 0.0f, 0.0f, 11.5f);
 		ASSERT_VEC4_VALUES(vec4_w_add(Vec4( 1.5f, 1.5f, 1.5f, 1.5f), 10.0f),  1.5f, 1.5f, 1.5f, 11.5f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 0.0f).w_add(10.0f),  0.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 1.0f, 0.0f, 0.0f, 0.0f).w_add(10.0f),  1.0f, 0.0f, 0.0f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 1.0f, 0.0f, 0.0f).w_add(10.0f),  0.0f, 1.0f, 0.0f, 10.0f);
@@ -18916,7 +18945,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 1.5f, 0.0f).w_add(10.0f),  0.0f, 0.0f, 1.5f, 10.0f);
 		ASSERT_VEC4_VALUES(Vec4( 0.0f, 0.0f, 0.0f, 1.5f).w_add(10.0f),  0.0f, 0.0f, 0.0f, 11.5f);
 		ASSERT_VEC4_VALUES(Vec4( 1.5f, 1.5f, 1.5f, 1.5f).w_add(10.0f),  1.5f, 1.5f, 1.5f, 11.5f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 #undef ASSERT_VEC4_VALUES
 	}
@@ -18974,14 +19003,14 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_UNITZ(), 0, 0, 1, 0);
 		ASSERT_VEC4I_VALUES(vec4i_UNITW(), 0, 0, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(vec4i::ZERO,  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i::ONE,   1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(vec4i::UNITX, 1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i::UNITY, 0, 1, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i::UNITZ, 0, 0, 1, 0);
 		ASSERT_VEC4I_VALUES(vec4i::UNITW, 0, 0, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		a = Vec4i(1,-2,3,-4);
 		ASSERT_S32_EQUAL(vec4i_index(a, 0),  1);
@@ -18989,15 +19018,15 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(vec4i_index(a, 2),  3);
 		ASSERT_S32_EQUAL(vec4i_index(a, 3), -4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a = Vec4i(1,-2,3,-4);
 		ASSERT_S32_EQUAL(a[0],  1);
 		ASSERT_S32_EQUAL(a[1], -2);
 		ASSERT_S32_EQUAL(a[2],  3);
 		ASSERT_S32_EQUAL(a[3], -4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a[0] =  2;
 		a[1] = -4;
 		a[2] = -3;
@@ -19006,21 +19035,21 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(a.arr[1], -4);
 		ASSERT_S32_EQUAL(a.arr[2], -3);
 		ASSERT_S32_EQUAL(a.arr[3],  4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  2, 3, 4, 5);
 		ASSERT_VEC4I_VALUES(vec4i_add(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -1, 2, 0, 3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) + Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) + Vec4i( 1, 2, 3, 4),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) + Vec4i( 1, 2, 3, 4),  2, 3, 4, 5);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) + Vec4i(-2, 4,-3,-1), -1, 2, 0, 3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4i( 0, 0, 0, 0);
 		a += Vec4i( 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
@@ -19033,21 +19062,21 @@ void TEST_deshi_math(){
 		a  = Vec4i( 1,-2, 3, 4);
 		a += Vec4i(-2, 4,-3,-1);
 		ASSERT_VEC4I_VALUES(a, -1, 2, 0, 3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), -1,-2,-3,-4);
 		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  0,-1,-2,-3);
 		ASSERT_VEC4I_VALUES(vec4i_sub(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)),  3,-6, 6, 5);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) - Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) - Vec4i( 1, 2, 3, 4), -1,-2,-3,-4);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) - Vec4i( 1, 2, 3, 4),  0,-1,-2,-3);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) - Vec4i(-2, 4,-3,-1),  3,-6, 6, 5);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4i( 0, 0, 0, 0);
 		a -= Vec4i( 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
@@ -19060,21 +19089,21 @@ void TEST_deshi_math(){
 		a  = Vec4i( 1,-2, 3, 4);
 		a -= Vec4i(-2, 4,-3,-1);
 		ASSERT_VEC4I_VALUES(a,  3,-6, 6, 5);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(vec4i_mul(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -2,-8,-9,-4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) * Vec4i( 0, 0, 0, 0),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) * Vec4i( 1, 2, 3, 4),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) * Vec4i( 1, 2, 3, 4),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) * Vec4i(-2, 4,-3,-1), -2,-8,-9,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4i( 0, 0, 0, 0);
 		a *= Vec4i( 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
@@ -19087,21 +19116,21 @@ void TEST_deshi_math(){
 		a  = Vec4i( 1,-2, 3, 4);
 		a *= Vec4i(-2, 4,-3,-1);
 		ASSERT_VEC4I_VALUES(a, -2,-8,-9,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(0, 0, 0, 0),  0),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(0, 0, 0, 0),  1),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(1, 1, 1, 1),  2),  2, 2, 2, 2);
 		ASSERT_VEC4I_VALUES(vec4i_mul_f32(Vec4i(1,-2, 3, 4), -2), -2, 4,-6,-8);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) *  0,  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) *  1,  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) *  2,  2, 2, 2, 2);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) * -2, -2, 4,-6,-8);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4i( 0, 0, 0, 0);
 		a *= 0;
 		ASSERT_VEC4I_VALUES(a,  0, 0, 0, 0);
@@ -19114,21 +19143,21 @@ void TEST_deshi_math(){
 		a  = Vec4i( 1,-2, 3, 4);
 		a *= -2;
 		ASSERT_VEC4I_VALUES(a, -2, 4,-6,-8);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_div(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -0,-0,-1,-4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) / Vec4i( 1, 1, 1, 1),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) / Vec4i( 1, 2, 3, 4),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) / Vec4i( 1, 2, 3, 4),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) / Vec4i(-2, 4,-3,-1), -0,-0,-1,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4i( 1, 1, 1, 1);
 		a /= Vec4i( 1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(a,  1, 1, 1, 1);
@@ -19141,21 +19170,21 @@ void TEST_deshi_math(){
 		a  = Vec4i( 1,-2, 3, 4);
 		a /= Vec4i(-2, 4,-3,-1);
 		ASSERT_VEC4I_VALUES(a, -0,-0,-1,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(1, 1, 1, 1),  1),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(0, 0, 0, 0),  1),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(1, 1, 1, 1),  2),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_div_f32(Vec4i(1,-2, 3, 4), -2), -0, 1,-1,-2);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) /  1,  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0) /  1,  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1) /  2,  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4) / -2, -0, 1,-1,-2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		a  = Vec4i( 1, 1, 1, 1);
 		a /= 1;
 		ASSERT_VEC4I_VALUES(a,  1, 1, 1, 1);
@@ -19168,17 +19197,17 @@ void TEST_deshi_math(){
 		a  = Vec4i( 1,-2, 3, 4);
 		a /= -2;
 		ASSERT_VEC4I_VALUES(a, -0, 1, -1,-2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_negate(Vec4i(0, 0, 0, 0)), -0,-0,-0,-0);
 		ASSERT_VEC4I_VALUES(vec4i_negate(Vec4i(1, 1, 1, 1)), -1,-1,-1,-1);
 		ASSERT_VEC4I_VALUES(vec4i_negate(Vec4i(1,-2, 3, 4)), -1, 2,-3,-4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(-Vec4i(0, 0, 0, 0), -0,-0,-0,-0);
 		ASSERT_VEC4I_VALUES(-Vec4i(1, 1, 1, 1), -1,-1,-1,-1);
 		ASSERT_VEC4I_VALUES(-Vec4i(1,-2, 3, 4), -1, 2,-3,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec4i_equal(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)));
 		Assert(vec4i_equal(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)));
@@ -19189,7 +19218,7 @@ void TEST_deshi_math(){
 		Assert(vec4i_equal(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)), Vec4i( 1, 1, 1, 1)));
 		Assert(vec4i_equal(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), Vec4i( 0, 0, 0, 0)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec4i( 0, 0, 0, 0) == Vec4i( 0, 0, 0, 0));
 		Assert(Vec4i( 1, 1, 1, 1) == Vec4i( 1, 1, 1, 1));
 		Assert(Vec4i(-1, 2, 3,-4) == Vec4i(-1, 2, 3,-4));
@@ -19198,7 +19227,7 @@ void TEST_deshi_math(){
 		Assert(!(Vec4i(-1, 2, 3,-4) == Vec4i( 1,-2,-3, 4)));
 		Assert(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)) == Vec4i( 1, 1, 1, 1));
 		Assert(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)) == Vec4i( 0, 0, 0, 0));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		Assert(vec4i_nequal(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)));
 		Assert(vec4i_nequal(Vec4i( 1, 1, 1, 1), Vec4i( 2, 2, 2, 2)));
@@ -19209,7 +19238,7 @@ void TEST_deshi_math(){
 		Assert(vec4i_nequal(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)), Vec4i( 2, 2, 2, 2)));
 		Assert(vec4i_nequal(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), Vec4i( 1, 1, 1, 1)));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		Assert(Vec4i( 0, 0, 0, 0) != Vec4i( 1, 1, 1, 1));
 		Assert(Vec4i( 1, 1, 1, 1) != Vec4i( 2, 2, 2, 2));
 		Assert(Vec4i(-1, 2, 3,-4) != Vec4i( 1,-2,-3, 4));
@@ -19218,55 +19247,55 @@ void TEST_deshi_math(){
 		Assert(!(Vec4i(-1, 2, 3,-4) != Vec4i(-1, 2,-3, 4)));
 		Assert(vec4i_add(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1)) != Vec4i( 2, 2, 2, 2));
 		Assert(vec4i_add(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)) != Vec4i( 1, 1, 1, 1));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i(-1,-1,-1,-1)), 1,1,1,1);
 		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i( 0, 0, 0, 0)), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i( 1, 1, 1, 1)), 1,1,1,1);
 		ASSERT_VEC4I_VALUES(vec4i_abs(Vec4i( 1,-2,-3, 4)), 1,2,3,4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).abs(), 1,1,1,1);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).abs(), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).abs(), 1,1,1,1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3, 4).abs(), 1,2,3,4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),   0.0f);
 		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)),   0.0f);
 		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)),  10.0f);
 		ASSERT_F32_EQUAL(vec4i_dot(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), -23.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).dot(Vec4i( 0, 0, 0, 0)),   0.0f);
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).dot(Vec4i( 1, 2, 1, 1)),   0.0f);
 		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).dot(Vec4i( 1, 2, 3, 4)),  10.0f);
 		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).dot(Vec4i(-2, 4,-3,-1)), -23.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(1, 1, 1, 1)), DESHI_SQRTF( 4.0f));
 		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(1, 2, 3, 4)), DESHI_SQRTF(30.0f));
 		ASSERT_F32_EQUAL(vec4i_mag(Vec4i(1,-2, 3, 4)), DESHI_SQRTF(30.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).mag(), 0.00f);
 		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).mag(), DESHI_SQRTF( 4.0f));
 		ASSERT_F32_EQUAL(Vec4i(1, 2, 3, 4).mag(), DESHI_SQRTF(30.0f));
 		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).mag(), DESHI_SQRTF(30.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(0, 0, 0, 0)),  0.0f);
 		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(1, 1, 1, 1)),  4.0f);
 		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(1, 2, 3, 4)), 30.0f);
 		ASSERT_F32_EQUAL(vec4i_mag_sq(Vec4i(1,-2, 3, 4)), 30.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).mag_sq(),  0.0f);
 		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).mag_sq(),  4.0f);
 		ASSERT_F32_EQUAL(Vec4i(1, 2, 3, 4).mag_sq(), 30.0f);
 		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).mag_sq(), 30.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(0, 0, 0, 0)), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1, 0, 0, 0)), 1,0,0,0);
@@ -19274,37 +19303,37 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1, 2, 3, 4)), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(vec4i_normalize(Vec4i(1,-2, 3, 4)), 0,0,0,0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0).normalize(), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1).normalize(), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 0, 0, 0).normalize(), 1,0,0,0);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 2, 3, 4).normalize(), 0,0,0,0);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4).normalize(), 0,0,0,0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(30.0f));
 		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(14.0f));
 		ASSERT_F32_EQUAL(vec4i_distance(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), DESHI_SQRTF(106.0f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance(Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance(Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(30.0f));
 		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).distance(Vec4i( 1, 2, 3, 4)), DESHI_SQRTF(14.0f));
 		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).distance(Vec4i(-2, 4,-3,-1)), DESHI_SQRTF(106.0f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0.0f);
 		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 30.0f);
 		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), 14.0f);
 		ASSERT_F32_EQUAL(vec4i_distance_sq(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 106.0f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance_sq(Vec4i( 0, 0, 0, 0)),  0.0f);
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).distance_sq(Vec4i( 1, 2, 3, 4)), 30.0f);
 		ASSERT_F32_EQUAL(Vec4i(1, 1, 1, 1).distance_sq(Vec4i( 1, 2, 3, 4)), 14.0f);
 		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).distance_sq(Vec4i(-2, 4,-3,-1)), 106.0f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0.0f);
@@ -19318,7 +19347,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i( 1, 2, 3, 4), Vec4i( 1, 1, 1, 1)), 5.0f);
 		ASSERT_F32_EQUAL(vec4i_projection_scalar(Vec4i(-2, 4,-3,-1), Vec4i( 1,-2, 3, 4)), -23.0f/DESHI_SQRTF(30.00f));
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i( 0, 0, 0, 0).projection_scalar(Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i( 0, 0, 0, 0).projection_scalar(Vec4i( 1, 2, 3, 4)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i( 2, 2, 2, 2).projection_scalar(Vec4i( 5, 0, 0, 0)), 2.0f);
@@ -19330,7 +19359,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(Vec4i( 1, 2, 3, 4).projection_scalar(Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i( 1, 2, 3, 4).projection_scalar(Vec4i( 1, 1, 1, 1)), 5.0f);
 		ASSERT_F32_EQUAL(Vec4i(-2, 4,-3,-1).projection_scalar(Vec4i( 1,-2, 3, 4)), -23.0f/DESHI_SQRTF(30.00f));
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0, 0, 0, 0);
@@ -19344,7 +19373,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i( 1, 2, 3, 4), Vec4i( 1, 1, 1, 1)), 2, 2, 2, 2);
 		ASSERT_VEC4I_VALUES(vec4i_projection_vector(Vec4i(-2, 4,-3,-1), Vec4i( 1,-2, 3, 4)), 0, 1,-2,-3);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).projection_vector(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).projection_vector(Vec4i( 1, 2, 3, 4)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 2, 2, 2, 2).projection_vector(Vec4i( 5, 0, 0, 0)), 2, 0, 0, 0);
@@ -19356,19 +19385,19 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).projection_vector(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).projection_vector(Vec4i( 1, 1, 1, 1)), 2, 2, 2, 2);
 		ASSERT_VEC4I_VALUES(Vec4i(-2, 4,-3,-1).projection_vector(Vec4i( 1,-2, 3, 4)), 0, 1,-2,-3);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0, 1, 1, 2);
 		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(1, 1, 1, 1), Vec4i( 1, 2, 3, 4)), 1, 1, 2, 2);
 		ASSERT_VEC4I_VALUES(vec4i_midpoint(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 0, 1, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0).midpoint(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(0, 0, 0, 0).midpoint(Vec4i( 1, 2, 3, 4)), 0, 1, 1, 2);
 		ASSERT_VEC4I_VALUES(Vec4i(1, 1, 1, 1).midpoint(Vec4i( 1, 2, 3, 4)), 1, 1, 2, 2);
 		ASSERT_VEC4I_VALUES(Vec4i(1,-2, 3, 4).midpoint(Vec4i(-2, 4,-3,-1)), 0, 1, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(0, 0, 0, 0), Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(0, 0, 0, 0), Vec4i( 1, 2, 3, 4)), 0.0f);
@@ -19376,13 +19405,13 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(0, 1, 0, 0), Vec4i( 1, 0, 0, 0)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(vec4i_radians_between(Vec4i(1,-2, 3, 4), Vec4i(-2, 4,-3,-1)), 2.44443f);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).radians_between(Vec4i( 0, 0, 0, 0)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i(0, 0, 0, 0).radians_between(Vec4i( 1, 2, 3, 4)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i(5, 5, 5, 5).radians_between(Vec4i( 3, 3, 3, 3)), 0.0f);
 		ASSERT_F32_EQUAL(Vec4i(0, 1, 0, 0).radians_between(Vec4i( 1, 0, 0, 0)), DESHI_MATH_PI_F32/2.0f);
 		ASSERT_F32_EQUAL(Vec4i(1,-2, 3, 4).radians_between(Vec4i(-2, 4,-3,-1)), 2.44443f);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
@@ -19392,7 +19421,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_min(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).min(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).min(Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
@@ -19400,7 +19429,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).min(Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).min(Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).min(Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
@@ -19410,7 +19439,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(vec4i_max(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).max(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).max(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
@@ -19418,7 +19447,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).max(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).max(Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 1);
@@ -19434,7 +19463,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i( 1, 2, 3, 4), Vec4i( 2, 2, 2, 2), Vec4i( 5, 5, 5, 5)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(vec4i_clamp(Vec4i(-1, 1,-3,-4), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-3,-4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(Vec4i( 5, 0, 0, 0).clamp(Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  5, 1, 1, 1);
@@ -19448,9 +19477,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-5).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-5);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp(Vec4i( 2, 2, 2, 2), Vec4i( 5, 5, 5, 5)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 1,-3,-4).clamp(Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-3,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(clamp(Vec4i( 5, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 5, 5, 5, 5)),  5, 1, 1, 1);
@@ -19464,7 +19493,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(clamp(Vec4i( 0, 0, 0,-5), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-1,-5);
 		ASSERT_VEC4I_VALUES(clamp(Vec4i( 1, 2, 3, 4), Vec4i( 2, 2, 2,-2), Vec4i( 5, 5, 5, 5)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(clamp(Vec4i(-1, 1,-3,-4), Vec4i(-5,-5,-5,-5), Vec4i(-1,-1,-1,-1)), -1,-1,-3,-4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
@@ -19474,7 +19503,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(vec4i_clamp_min(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp_min(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_min(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
@@ -19482,9 +19511,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).clamp_min(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_min(Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_min(Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
@@ -19492,7 +19521,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(clamp_min(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(clamp_min(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  2, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(clamp_min(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 2, 4, 5);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
@@ -19502,7 +19531,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_clamp_max(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp_max(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_max(Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_max(Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
@@ -19510,9 +19539,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).clamp_max(Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_max(Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_max(Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 1, 2, 3, 4)),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 1, 2, 3, 4), Vec4i( 2, 1, 0,-1)),  1, 1, 0,-1);
@@ -19520,7 +19549,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(clamp_max(Vec4i( 1,-2,-3,-4), Vec4i( 1, 2, 3, 4)),  1,-2,-3,-4);
 		ASSERT_VEC4I_VALUES(clamp_max(Vec4i(-1, 2, 3, 4), Vec4i( 2, 1, 0,-1)), -1, 1, 0,-1);
 		ASSERT_VEC4I_VALUES(clamp_max(Vec4i(-1, 2, 3, 4), Vec4i(-1, 1, 4, 5)), -1, 1, 3, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 0, 0, 0, 0), 0, 0),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i( 1, 2, 3, 4), 1,99),  1, 2, 3, 4);
@@ -19532,7 +19561,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i(-1, 2, 3, 4), 0, 2),  0, 0, 1, 1);
 		ASSERT_VEC4I_VALUES(vec4i_clamp_mag(Vec4i(-1, 2, 3, 4), 0, 6), -1, 2, 3, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).clamp_mag(0, 0),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_mag(1,99),  1, 2, 3, 4);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 2, 3, 4).clamp_mag(6,99),  1, 2, 3, 4);
@@ -19542,7 +19571,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 1,-2,-3,-4).clamp_mag(6,99),  1,-2,-3,-4);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_mag(0, 2),  0, 0, 1, 1);
 		ASSERT_VEC4I_VALUES(Vec4i(-1, 2, 3, 4).clamp_mag(0, 6), -1, 2, 3, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
@@ -19554,7 +19583,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 1, 1, 1, 1), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_nudge(Vec4i( 5, 5, 5, 5), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  4, 4, 4, 4);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i( 2, 2, 2, 2), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
@@ -19564,9 +19593,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).nudge(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), -1,-1,-1,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).nudge(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 5, 5, 5, 5).nudge(Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  4, 4, 4, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
 		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i( 2, 2, 2, 2), Vec4i( 1, 1, 1, 1)),  1, 1, 1, 1);
@@ -19576,7 +19605,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(nudge(Vec4i( 0, 0, 0, 0), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)), -1,-1,-1,-1);
 		ASSERT_VEC4I_VALUES(nudge(Vec4i( 1, 1, 1, 1), Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(nudge(Vec4i( 5, 5, 5, 5), Vec4i( 1, 1, 1, 1), Vec4i( 1, 1, 1, 1)),  4, 4, 4, 4);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.0f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.5f),  0, 0, 0, 0);
@@ -19588,7 +19617,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 0, 0, 0, 0), 0.0f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 0, 0, 0, 0), 0.5f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).lerp(Vec4i( 0, 0, 0, 0), 1.0f),  0, 0, 0, 0);
@@ -19598,9 +19627,9 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).lerp(Vec4i( 1, 1, 1, 1), 0.0f), -1,-1,-1,-1);
 		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).lerp(Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i(-1,-1,-1,-1).lerp(Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.0f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 0.5f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(lerp(Vec4i( 0, 0, 0, 0), Vec4i( 0, 0, 0, 0), 1.0f),  0, 0, 0, 0);
@@ -19610,7 +19639,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.0f), -1,-1,-1,-1);
 		ASSERT_VEC4I_VALUES(lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 0.5f),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(lerp(Vec4i(-1,-1,-1,-1), Vec4i( 1, 1, 1, 1), 1.0f),  1, 1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
@@ -19623,7 +19652,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 0, 0, 0,-1)), 0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_x_zero(Vec4i( 1, 1, 1, 1)), 0, 1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_zero(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_zero(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_zero(), 0, 1, 0, 0);
@@ -19634,7 +19663,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_zero(), 0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_zero(), 0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_zero(), 0, 1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19647,7 +19676,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_y_zero(Vec4i( 1, 1, 1, 1)),  1, 0, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_zero(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_zero(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_zero(),  0, 0, 0, 0);
@@ -19658,7 +19687,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_zero(),  0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_zero(),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_zero(),  1, 0, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19671,7 +19700,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_z_zero(Vec4i( 1, 1, 1, 1)),  1, 1, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_zero(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_zero(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_zero(),  0, 1, 0, 0);
@@ -19682,7 +19711,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_zero(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_zero(),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_zero(),  1, 1, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19695,7 +19724,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 0, 0, 0,-1)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_w_zero(Vec4i( 1, 1, 1, 1)),  1, 1, 1, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_zero(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_zero(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_zero(),  0, 1, 0, 0);
@@ -19706,7 +19735,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_zero(),  0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_zero(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_zero(),  1, 1, 1, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19719,7 +19748,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 0, 0, 0,-1)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_x_only(Vec4i( 1, 1, 1, 1)),  1, 0, 0, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_only(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_only(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_only(),  0, 0, 0, 0);
@@ -19730,7 +19759,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_only(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_only(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_only(),  1, 0, 0, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
@@ -19743,7 +19772,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 0, 0, 0,-1)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_y_only(Vec4i( 1, 1, 1, 1)), 0, 1, 0, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_only(), 0, 1, 0, 0);
@@ -19754,7 +19783,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_only(), 0, 1, 0, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
@@ -19767,7 +19796,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 0, 0, 0,-1)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_z_only(Vec4i( 1, 1, 1, 1)), 0, 0, 1, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_only(), 0, 0, 0, 0);
@@ -19778,7 +19807,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_only(), 0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_only(), 0, 0, 1, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0, 0, 0)), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 1, 0, 0, 0)), 0, 0, 0, 0);
@@ -19791,7 +19820,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 0, 0, 0,-1)), 0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_w_only(Vec4i( 1, 1, 1, 1)), 0, 0, 0, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_only(), 0, 0, 0, 0);
@@ -19802,7 +19831,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_only(), 0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_only(), 0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_only(), 0, 0, 0, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 1, 0, 0, 0)), -1, 0, 0, 0);
@@ -19815,7 +19844,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_x_negate(Vec4i( 1, 1, 1, 1)), -1, 1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_negate(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_negate(), -1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_negate(),  0, 1, 0, 0);
@@ -19826,7 +19855,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_negate(),  0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_negate(),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_negate(), -1, 1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19839,7 +19868,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_y_negate(Vec4i( 1, 1, 1, 1)),  1,-1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_negate(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_negate(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_negate(),  0,-1, 0, 0);
@@ -19850,7 +19879,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_negate(),  0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_negate(),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_negate(),  1,-1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19863,7 +19892,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_z_negate(Vec4i( 1, 1, 1, 1)),  1, 1,-1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_negate(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_negate(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_negate(),  0, 1, 0, 0);
@@ -19874,7 +19903,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_negate(),  0, 0, 1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_negate(),  0, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_negate(),  1, 1,-1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0, 0, 0)),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 1, 0, 0, 0)),  1, 0, 0, 0);
@@ -19887,7 +19916,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 0, 0, 0,-1)),  0, 0, 0, 1);
 		ASSERT_VEC4I_VALUES(vec4i_w_negate(Vec4i( 1, 1, 1, 1)),  1, 1, 1,-1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_negate(),  0, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_negate(),  1, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_negate(),  0, 1, 0, 0);
@@ -19898,7 +19927,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_negate(),  0, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_negate(),  0, 0, 0, 1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_negate(),  1, 1, 1,-1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0, 0, 0), 10), 10, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 1, 0, 0, 0), 10), 10, 0, 0, 0);
@@ -19911,7 +19940,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 0, 0, 0,-1), 10), 10, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_x_set(Vec4i( 1, 1, 1, 1), 10), 10, 1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_set(10), 10, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_set(10), 10, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_set(10), 10, 1, 0, 0);
@@ -19922,7 +19951,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_set(10), 10, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_set(10), 10, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_set(10), 10, 1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0, 0, 0), 10),  0, 10, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 1, 0, 0, 0), 10),  1, 10, 0, 0);
@@ -19935,7 +19964,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 0, 0, 0,-1), 10),  0, 10, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_y_set(Vec4i( 1, 1, 1, 1), 10),  1, 10, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_set(10),  0, 10, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_set(10),  1, 10, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_set(10),  0, 10, 0, 0);
@@ -19946,7 +19975,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_set(10),  0, 10,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_set(10),  0, 10, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_set(10),  1, 10, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0, 0, 0), 10),  0, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 1, 0, 0, 0), 10),  1, 0, 10, 0);
@@ -19959,7 +19988,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 0, 0, 0,-1), 10),  0, 0, 10,-1);
 		ASSERT_VEC4I_VALUES(vec4i_z_set(Vec4i( 1, 1, 1, 1), 10),  1, 1, 10, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_set(10),  0, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_set(10),  1, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_set(10),  0, 1, 10, 0);
@@ -19970,7 +19999,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_set(10),  0, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_set(10),  0, 0, 10,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_set(10),  1, 1, 10, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0, 0, 0), 10),  0, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 1, 0, 0, 0), 10),  1, 0, 0, 10);
@@ -19983,7 +20012,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 0, 0, 0,-1), 10),  0, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(vec4i_w_set(Vec4i( 1, 1, 1, 1), 10),  1, 1, 1, 10);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_set(10),  0, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_set(10),  1, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_set(10),  0, 1, 0, 10);
@@ -19994,7 +20023,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_set(10),  0, 0,-1, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_set(10),  0, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_set(10),  1, 1, 1, 10);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0, 0, 0), 10), 10, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 1, 0, 0, 0), 10), 11, 0, 0, 0);
@@ -20007,7 +20036,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 0, 0, 0,-1), 10), 10, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_x_add(Vec4i( 1, 1, 1, 1), 10), 11, 1, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).x_add(10), 10, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).x_add(10), 11, 0, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).x_add(10), 10, 1, 0, 0);
@@ -20018,7 +20047,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).x_add(10), 10, 0,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).x_add(10), 10, 0, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).x_add(10), 11, 1, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0, 0, 0), 10),  0, 10, 0, 0);
 		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 1, 0, 0, 0), 10),  1, 10, 0, 0);
@@ -20031,7 +20060,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 0, 0, 0,-1), 10),  0, 10, 0,-1);
 		ASSERT_VEC4I_VALUES(vec4i_y_add(Vec4i( 1, 1, 1, 1), 10),  1, 11, 1, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).y_add(10),  0, 10, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).y_add(10),  1, 10, 0, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).y_add(10),  0, 11, 0, 0);
@@ -20042,7 +20071,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).y_add(10),  0, 10,-1, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).y_add(10),  0, 10, 0,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).y_add(10),  1, 11, 1, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0, 0, 0), 10),  0, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 1, 0, 0, 0), 10),  1, 0, 10, 0);
@@ -20055,7 +20084,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 0, 0, 0,-1), 10),  0, 0, 10,-1);
 		ASSERT_VEC4I_VALUES(vec4i_z_add(Vec4i( 1, 1, 1, 1), 10),  1, 1, 11, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).z_add(10),  0, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).z_add(10),  1, 0, 10, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).z_add(10),  0, 1, 10, 0);
@@ -20066,7 +20095,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).z_add(10),  0, 0,  9, 0);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).z_add(10),  0, 0, 10,-1);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).z_add(10),  1, 1, 11, 1);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0, 0, 0), 10),  0, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 1, 0, 0, 0), 10),  1, 0, 0, 10);
@@ -20079,7 +20108,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 0, 0, 0,-1), 10),  0, 0, 0,  9);
 		ASSERT_VEC4I_VALUES(vec4i_w_add(Vec4i( 1, 1, 1, 1), 10),  1, 1, 1, 11);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0, 0).w_add(10),  0, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 0, 0, 0).w_add(10),  1, 0, 0, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 1, 0, 0).w_add(10),  0, 1, 0, 10);
@@ -20090,7 +20119,7 @@ void TEST_deshi_math(){
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0,-1, 0).w_add(10),  0, 0,-1, 10);
 		ASSERT_VEC4I_VALUES(Vec4i( 0, 0, 0,-1).w_add(10),  0, 0, 0,  9);
 		ASSERT_VEC4I_VALUES(Vec4i( 1, 1, 1, 1).w_add(10),  1, 1, 1, 11);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 #undef ASSERT_VEC4I_VALUES
 	}
@@ -20130,7 +20159,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.z, 0);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		v2f32 = Vec2(2.0f,2.0f);
 		v2s32 = v2f32.to_vec2i();
 		v3f32 = v2f32.to_vec3();
@@ -20155,7 +20184,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.y, 2);
 		ASSERT_S32_EQUAL(v4s32.z, 0);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		v2s32 = Vec2i(1,1);
 		v2f32 = vec2i_to_vec2 (v2s32);
@@ -20182,7 +20211,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.z, 0);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		v2s32 = Vec2i(2,2);
 		v2f32 = v2s32.to_vec2();
 		v3f32 = v2s32.to_vec3();
@@ -20207,7 +20236,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.y, 2);
 		ASSERT_S32_EQUAL(v4s32.z, 0);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		v3f32 = Vec3(1.0f,1.0f,1.0f);
 		v2f32 = vec3_to_vec2 (v3f32);
@@ -20234,7 +20263,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.z, 1);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		v3f32 = Vec3(2.0f,2.0f,2.0f);
 		v2f32 = v3f32.to_vec2();
 		v2s32 = v3f32.to_vec2i();
@@ -20259,7 +20288,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.y, 2);
 		ASSERT_S32_EQUAL(v4s32.z, 2);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		v3s32 = Vec3i(1,1,1);
 		v2f32 = vec3i_to_vec2 (v3s32);
@@ -20286,7 +20315,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.z, 1);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		v3s32 = Vec3i(2,2,2);
 		v2f32 = v3s32.to_vec2();
 		v2s32 = v3s32.to_vec2i();
@@ -20311,7 +20340,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.y, 2);
 		ASSERT_S32_EQUAL(v4s32.z, 2);
 		ASSERT_S32_EQUAL(v4s32.w, 0);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		v4f32 = Vec4(1.0f,1.0f,1.0f,1.0f);
 		v2f32 = vec4_to_vec2 (v4f32);
@@ -20338,7 +20367,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.z, 1);
 		ASSERT_S32_EQUAL(v4s32.w, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		v4f32 = Vec4(2.0f,2.0f,2.0f,2.0f);
 		v2f32 = v4f32.to_vec2();
 		v2s32 = v4f32.to_vec2i();
@@ -20363,7 +20392,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.y, 2);
 		ASSERT_S32_EQUAL(v4s32.z, 2);
 		ASSERT_S32_EQUAL(v4s32.w, 2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 		
 		v4s32 = Vec4i(1,1,1,1);
 		v2f32 = vec4i_to_vec2 (v4s32);
@@ -20390,7 +20419,7 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.z, 1);
 		ASSERT_S32_EQUAL(v4s32.w, 1);
 		
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 		v4s32 = Vec4i(2,2,2,2);
 		v2f32 = v4s32.to_vec2();
 		v2s32 = v4s32.to_vec2i();
@@ -20415,17 +20444,17 @@ void TEST_deshi_math(){
 		ASSERT_S32_EQUAL(v4s32.y, 2);
 		ASSERT_S32_EQUAL(v4s32.z, 2);
 		ASSERT_S32_EQUAL(v4s32.w, 2);
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 	}
 	
 	
 	//// vec_hashing ////
 #ifndef DESHI_MATH_DISABLE_HASHING
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	{
 		//TODO test vec_hashing
 	}
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 #endif //#ifndef DESHI_MATH_DISABLE_HASHING
 	
 	
@@ -20439,7 +20468,459 @@ void TEST_deshi_math(){
 	
 	//// mat3 ////
 	{
+		mat3 a;
+		mat3 b;
+#define ASSERT_MAT3_VALUES(lhs,_00_,_10_,_20_,_01_,_11_,_21_,_02_,_12_,_22_) a = (lhs); \
+	ASSERT_F32_EQUAL(a._00,(_00_)); ASSERT_F32_EQUAL(a._10,(_10_)); ASSERT_F32_EQUAL(a._20,(_20_)); \
+	ASSERT_F32_EQUAL(a._01,(_01_)); ASSERT_F32_EQUAL(a._11,(_11_)); ASSERT_F32_EQUAL(a._21,(_21_)); \
+	ASSERT_F32_EQUAL(a._02,(_02_)); ASSERT_F32_EQUAL(a._12,(_12_)); ASSERT_F32_EQUAL(a._22,(_22_));
 		
+		
+		a = mat3{0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		b = mat3{0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		ASSERT_F32_EQUAL(a.arr[0], 0.0f); ASSERT_F32_EQUAL(a.arr[1], 0.0f); ASSERT_F32_EQUAL(a.arr[2], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[3], 0.0f); ASSERT_F32_EQUAL(a.arr[4], 0.0f); ASSERT_F32_EQUAL(a.arr[5], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[6], 0.0f); ASSERT_F32_EQUAL(a.arr[7], 0.0f); ASSERT_F32_EQUAL(a.arr[8], 0.0f);
+		ASSERT_F32_EQUAL(a._00, 0.0f); ASSERT_F32_EQUAL(a._10, 0.0f); ASSERT_F32_EQUAL(a._20, 0.0f);
+		ASSERT_F32_EQUAL(a._01, 0.0f); ASSERT_F32_EQUAL(a._11, 0.0f); ASSERT_F32_EQUAL(a._21, 0.0f);
+		ASSERT_F32_EQUAL(a._02, 0.0f); ASSERT_F32_EQUAL(a._12, 0.0f); ASSERT_F32_EQUAL(a._22, 0.0f);
+		ASSERT_F32_EQUAL(a.row0.x, 0.0f); ASSERT_F32_EQUAL(a.row0.y, 0.0f); ASSERT_F32_EQUAL(a.row0.z, 0.0f);
+		ASSERT_F32_EQUAL(a.row1.x, 0.0f); ASSERT_F32_EQUAL(a.row1.y, 0.0f); ASSERT_F32_EQUAL(a.row1.z, 0.0f);
+		ASSERT_F32_EQUAL(a.row2.x, 0.0f); ASSERT_F32_EQUAL(a.row2.y, 0.0f); ASSERT_F32_EQUAL(a.row2.z, 0.0f);
+		
+		ASSERT_MAT3_VALUES(Mat3(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f), -1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f);
+		ASSERT_MAT3_VALUES(Mat3(-0.1f,-0.2f,-0.3f,-0.4f,-0.5f,-0.6f,-0.7f,-0.8f,-0.9f), -0.1f,-0.2f,-0.3f,-0.4f,-0.5f,-0.6f,-0.7f,-0.8f,-0.9f);
+		ASSERT_MAT3_VALUES(Mat3( 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(Mat3( 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f),  0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f);
+		ASSERT_MAT3_VALUES(Mat3( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f),  1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		
+		f32 arr0[] = {-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f};
+		ASSERT_MAT3_VALUES(array_to_mat3(arr0), -1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f);
+		f32 arr1[] = {-0.1f,-0.2f,-0.3f,-0.4f,-0.5f,-0.6f,-0.7f,-0.8f,-0.9f};
+		ASSERT_MAT3_VALUES(array_to_mat3(arr1), -0.1f,-0.2f,-0.3f,-0.4f,-0.5f,-0.6f,-0.7f,-0.8f,-0.9f);
+		f32 arr2[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+		ASSERT_MAT3_VALUES(array_to_mat3(arr2), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		f32 arr3[] = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f};
+		ASSERT_MAT3_VALUES(array_to_mat3(arr3), 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f);
+		f32 arr4[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+		ASSERT_MAT3_VALUES(array_to_mat3(arr4), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_ZERO(),     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_ONE(),      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_IDENTITY(), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+#if DESHI_MATH_USE_CPP
+		ASSERT_MAT3_VALUES(mat3::ZERO,     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3::ONE,      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3::IDENTITY, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(mat3_coord(a,0,0), 1.0f); ASSERT_F32_EQUAL(mat3_coord(a,0,1), 2.0f); ASSERT_F32_EQUAL(mat3_coord(a,0,2), 3.0f);
+		ASSERT_F32_EQUAL(mat3_coord(a,1,0), 4.0f); ASSERT_F32_EQUAL(mat3_coord(a,1,1), 5.0f); ASSERT_F32_EQUAL(mat3_coord(a,1,2), 6.0f);
+		ASSERT_F32_EQUAL(mat3_coord(a,2,0), 7.0f); ASSERT_F32_EQUAL(mat3_coord(a,2,1), 8.0f); ASSERT_F32_EQUAL(mat3_coord(a,2,2), 9.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(a(0,0), 1.0f); ASSERT_F32_EQUAL(a(0,1), 2.0f); ASSERT_F32_EQUAL(a(0,2), 3.0f);
+		ASSERT_F32_EQUAL(a(1,0), 4.0f); ASSERT_F32_EQUAL(a(1,1), 5.0f); ASSERT_F32_EQUAL(a(1,2), 6.0f);
+		ASSERT_F32_EQUAL(a(2,0), 7.0f); ASSERT_F32_EQUAL(a(2,1), 8.0f); ASSERT_F32_EQUAL(a(2,2), 9.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a(0,0) = 0.1f; a(0,1) = 0.2f; a(0,2) = 0.3f;
+		a(1,0) = 0.4f; a(1,1) = 0.5f; a(1,2) = 0.6f;
+		a(2,0) = 0.7f; a(2,1) = 0.8f; a(2,2) = 0.9f;
+		ASSERT_F32_EQUAL(a(0,0), 0.1f); ASSERT_F32_EQUAL(a(0,1), 0.2f); ASSERT_F32_EQUAL(a(0,2), 0.3f);
+		ASSERT_F32_EQUAL(a(1,0), 0.4f); ASSERT_F32_EQUAL(a(1,1), 0.5f); ASSERT_F32_EQUAL(a(1,2), 0.6f);
+		ASSERT_F32_EQUAL(a(2,0), 0.7f); ASSERT_F32_EQUAL(a(2,1), 0.8f); ASSERT_F32_EQUAL(a(2,2), 0.9f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(mat3_index(a,0), 1.0f); ASSERT_F32_EQUAL(mat3_index(a,1), 2.0f); ASSERT_F32_EQUAL(mat3_index(a,2), 3.0f);
+		ASSERT_F32_EQUAL(mat3_index(a,3), 4.0f); ASSERT_F32_EQUAL(mat3_index(a,4), 5.0f); ASSERT_F32_EQUAL(mat3_index(a,5), 6.0f);
+		ASSERT_F32_EQUAL(mat3_index(a,6), 7.0f); ASSERT_F32_EQUAL(mat3_index(a,7), 8.0f); ASSERT_F32_EQUAL(mat3_index(a,8), 9.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(a[0], 1.0f); ASSERT_F32_EQUAL(a[1], 2.0f); ASSERT_F32_EQUAL(a[2], 3.0f);
+		ASSERT_F32_EQUAL(a[3], 4.0f); ASSERT_F32_EQUAL(a[4], 5.0f); ASSERT_F32_EQUAL(a[5], 6.0f);
+		ASSERT_F32_EQUAL(a[6], 7.0f); ASSERT_F32_EQUAL(a[7], 8.0f); ASSERT_F32_EQUAL(a[8], 9.0f);
+#endif //#if DESHI_MATH_USE_CPP
+
+#if DESHI_MATH_USE_CPP		
+		a[0] = 0.1f; a[1] = 0.2f; a[2] = 0.3f;
+		a[3] = 0.4f; a[4] = 0.5f; a[5] = 0.6f;
+		a[6] = 0.7f; a[7] = 0.8f; a[8] = 0.9f;
+		ASSERT_F32_EQUAL(a[0], 0.1f); ASSERT_F32_EQUAL(a[1], 0.2f); ASSERT_F32_EQUAL(a[2], 0.3f);
+		ASSERT_F32_EQUAL(a[3], 0.4f); ASSERT_F32_EQUAL(a[4], 0.5f); ASSERT_F32_EQUAL(a[5], 0.6f);
+		ASSERT_F32_EQUAL(a[6], 0.7f); ASSERT_F32_EQUAL(a[7], 0.8f); ASSERT_F32_EQUAL(a[8], 0.9f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_add_elements(a, b), 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(mat3_add_elements(a, b), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a + b, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a + b, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a += Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f);
+		a  = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		a += Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_sub_elements(a, b), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(mat3_sub_elements(a, b), -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a - b, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a - b, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a -= Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		a  = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		a -= Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_mul_f32(a, 1.0f), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_mul_f32(a, -2.0f), -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a * 1.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a * -2.0f, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a *= 1.0f;
+		ASSERT_MAT3_VALUES(a, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a *= -2.0f;
+		ASSERT_MAT3_VALUES(a, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_mul_mat3(a, b), 30.0f, 36.0f, 42.0f, 66.0f, 81.0f, 96.0f, 102.0f, 126.0f, 150.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(mat3_mul_mat3(a, b), -30.0f, -36.0f, -42.0f, -66.0f, -81.0f, -96.0f, -102.0f, -126.0f, -150.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a * b, 30.0f, 36.0f, 42.0f, 66.0f, 81.0f, 96.0f, 102.0f, 126.0f, 150.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a * b, -30.0f, -36.0f, -42.0f, -66.0f, -81.0f, -96.0f, -102.0f, -126.0f, -150.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a *= Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a, 30.0f, 36.0f, 42.0f, 66.0f, 81.0f, 96.0f, 102.0f, 126.0f, 150.0f);
+		a  = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		a *= Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a, -30.0f, -36.0f, -42.0f, -66.0f, -81.0f, -96.0f, -102.0f, -126.0f, -150.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_mul_elements(a, b), 1.0f, 4.0f, 9.0f, 16.0f, 25.0f, 36.0f, 49.0f, 64.0f, 81.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(mat3_mul_elements(a, b), -1.0f, -4.0f, -9.0f, -16.0f, -25.0f, -36.0f, -49.0f, -64.0f, -81.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a ^ b, 1.0f, 4.0f, 9.0f, 16.0f, 25.0f, 36.0f, 49.0f, 64.0f, 81.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a ^ b, -1.0f, -4.0f, -9.0f, -16.0f, -25.0f, -36.0f, -49.0f, -64.0f, -81.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a ^= Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a, 1.0f, 4.0f, 9.0f, 16.0f, 25.0f, 36.0f, 49.0f, 64.0f, 81.0f);
+		a  = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		a ^= Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a, -1.0f, -4.0f, -9.0f, -16.0f, -25.0f, -36.0f, -49.0f, -64.0f, -81.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_div_f32(a, 1.0f), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_div_f32(a, -2.0f), -0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f, -3.5f, -4.0f, -4.5f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a / 1.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a / -2.0f, -0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f, -3.5f, -4.0f, -4.5f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a /= 1.0f;
+		ASSERT_MAT3_VALUES(a, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a /= -2.0f;
+		ASSERT_MAT3_VALUES(a, -0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f, -3.5f, -4.0f, -4.5f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_div_elements(a, b), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(mat3_div_elements(a, b), -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a % b, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		a = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		b = Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a % b, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		a %= Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		a  = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		a %= Mat3( 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,  9.0f);
+		ASSERT_MAT3_VALUES(a, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		Assert(mat3_equal(a, b));
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		Assert(!mat3_equal(a, b));
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		Assert(a == b);
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		Assert(!(a == b));
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		Assert(mat3_nequal(a, b));
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		Assert(!mat3_nequal(a, b));
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		Assert(a != b);
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		b = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		Assert(!(a != b));
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_transpose(a), 1.0f, 4.0f, 7.0f, 2.0f, 5.0f, 8.0f, 3.0f, 6.0f, 9.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a.transpose(), 1.0f, 4.0f, 7.0f, 2.0f, 5.0f, 8.0f, 3.0f, 6.0f, 9.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(mat3_determinant(a), 0.0f);
+		a = Mat3(1.0f, 20.0f, 3.0f, 40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_F32_EQUAL(mat3_determinant(a), 5940.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(a.determinant(), 0.0f);
+		a = Mat3(1.0f, 20.0f, 3.0f, 40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_F32_EQUAL(a.determinant(), 5940.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 0,0), -3.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 0,1), -6.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 0,2), -3.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 1,0), -6.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 1,1), -12.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 1,2), -6.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 2,0), -3.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 2,1), -6.0f);
+		ASSERT_F32_EQUAL(mat3_minor(a, 2,2), -3.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(a.minor(0,0), -3.0f);
+		ASSERT_F32_EQUAL(a.minor(0,1), -6.0f);
+		ASSERT_F32_EQUAL(a.minor(0,2), -3.0f);
+		ASSERT_F32_EQUAL(a.minor(1,0), -6.0f);
+		ASSERT_F32_EQUAL(a.minor(1,1), -12.0f);
+		ASSERT_F32_EQUAL(a.minor(1,2), -6.0f);
+		ASSERT_F32_EQUAL(a.minor(2,0), -3.0f);
+		ASSERT_F32_EQUAL(a.minor(2,1), -6.0f);
+		ASSERT_F32_EQUAL(a.minor(2,2), -3.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 0,0), -3.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 0,1),  6.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 0,2), -3.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 1,0),  6.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 1,1), -12.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 1,2),  6.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 2,0), -3.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 2,1),  6.0f);
+		ASSERT_F32_EQUAL(mat3_cofactor(a, 2,2), -3.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,0), -3.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,1),  6.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,2), -3.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,0),  6.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,1), -12.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,2),  6.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,0), -3.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,1),  6.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,2), -3.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_adjoint(a), -3.0f, 6.0f, -3.0f, 6.0f, -12.0f, 6.0f, -3.0f, 6.0f, -3.0f);
+		a = Mat3(1.0f, 20.0f, 3.0f, 40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_adjoint(a), -4755.0f, 60.0f, 1185.0f, 60.0f, -12.0f, 60.0f, 3165.0f, 60.0f, -795.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a.adjoint(), -3.0f, 6.0f, -3.0f, 6.0f, -12.0f, 6.0f, -3.0f, 6.0f, -3.0f);
+		a = Mat3(1.0f, 20.0f, 3.0f, 40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a.adjoint(), -4755.0f, 60.0f, 1185.0f, 60.0f, -12.0f, 60.0f, 3165.0f, 60.0f, -795.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat3(1.0f, 20.0f, 3.0f, 40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_inverse(a), -317.0f/396.0f, 1.0f/99.0f, 79.0f/396.0f, 1.0f/99.0f, -1.0f/495.0f, 1.0f/99.0f, 211.0f/396.0f, 1.0f/99.0f, -53.0f/396.0f);
+		a = Mat3(-1.0f, -20.0f, -3.0f, -40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_MAT3_VALUES(mat3_inverse(a), 317.0f/76.0f, 1.0f/19.0f, 79.0f/76.0f, -13.0f/19.0f, -1.0f/95.0f, -3.0f/19.0f, 647.0f/228.0f, 1.0f/19.0f, 161.0f/228.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat3(1.0f, 20.0f, 3.0f, 40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a.inverse(), -317.0f/396.0f, 1.0f/99.0f, 79.0f/396.0f, 1.0f/99.0f, -1.0f/495.0f, 1.0f/99.0f, 211.0f/396.0f, 1.0f/99.0f, -53.0f/396.0f);
+		a = Mat3(-1.0f, -20.0f, -3.0f, -40.0f, 5.0f, 60.0f, 7.0f, 80.0f, 9.0f);
+		ASSERT_MAT3_VALUES(a.inverse(), 317.0f/76.0f, 1.0f/19.0f, 79.0f/76.0f, -13.0f/19.0f, -1.0f/95.0f, -3.0f/19.0f, 647.0f/228.0f, 1.0f/19.0f, 161.0f/228.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_radians(1.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_radians(2.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_radians(3.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_radians(4.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_degrees(0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_degrees(45.0f), 1.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_degrees(90.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_degrees(135.0f), 1.0f, 0.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_x_degrees(180.0f), 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_radians(1.0f*DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_radians(2.0f*DESHI_MATH_PI_F32/4.0f), 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_radians(3.0f*DESHI_MATH_PI_F32/4.0f), -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_radians(4.0f*DESHI_MATH_PI_F32/4.0f), -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_degrees(0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_degrees(45.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_degrees(90.0f), 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_degrees(135.0f), -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_y_degrees(180.0f), -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_radians(1.0f*DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_radians(2.0f*DESHI_MATH_PI_F32/4.0f), 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_radians(3.0f*DESHI_MATH_PI_F32/4.0f), -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_radians(4.0f*DESHI_MATH_PI_F32/4.0f), -1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_degrees(0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_degrees(45.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_degrees(90.0f), 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_degrees(135.0f), -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_z_degrees(180.0f), -1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_radians(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_radians(DESHI_MATH_PI_F32/4.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_radians(0.0f, DESHI_MATH_PI_F32/4.0f, 0.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_radians(0.0f, 0.0f, DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_radians(DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f), 0.5f, 0.5f, -DESHI_SQRTF(2.0f)/2.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_radians(DESHI_MATH_PI_F32/5.0f, DESHI_MATH_PI_F32/8.0f, DESHI_MATH_PI_F32/9.0f), 0.868163f, 0.315985f, -0.382684f, -0.0653297f, 0.8371599f, 0.543043f, 0.491961f, -0.446449f, 0.747434f);
+		
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_degrees(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_degrees(45.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_degrees(0.0f, 45.0f, 0.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_degrees(0.0f, 0.0f, 45.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_degrees(45.0f, 45.0f, 45.0f), 0.5f, 0.5f, -DESHI_SQRTF(2.0f)/2.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f);
+		ASSERT_MAT3_VALUES(mat3_rotation_matrix_degrees(36.0f, 22.5f, 20.0f), 0.868163f, 0.315985f, -0.382684f, -0.0653297f, 0.8371599f, 0.543043f, 0.491961f, -0.446449f, 0.747434f);
+		
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(1.0f, 0.0f, 0.0f, DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(1.0f, 0.0f, 0.0f, DESHI_MATH_PI_F32/2.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(0.0f, 1.0f, 0.0f, DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(0.0f, 1.0f, 0.0f, DESHI_MATH_PI_F32/2.0f), 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(0.0f, 0.0f, 1.0f, DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(0.0f, 0.0f, 1.0f, DESHI_MATH_PI_F32/2.0f), 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(1.0f, 1.0f, 1.0f, DESHI_MATH_PI_F32/4.0f), 1.0f, 1.0f, 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_radians(1.0f, 1.0f, 1.0f, DESHI_MATH_PI_F32/2.0f), 1.0f, 2.0f, 2.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(1.0f, 0.0f, 0.0f, 45.0f), 1.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(1.0f, 0.0f, 0.0f, 90.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(0.0f, 1.0f, 0.0f, 45.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(0.0f, 1.0f, 0.0f, 90.0f), 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(0.0f, 0.0f, 1.0f, 45.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(0.0f, 0.0f, 1.0f, 90.0f), 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(1.0f, 1.0f, 1.0f, 45.0f), 1.0f, 1.0f, 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f);
+		ASSERT_MAT3_VALUES(mat3_axis_rotation_matrix_degrees(1.0f, 1.0f, 1.0f, 90.0f), 1.0f, 2.0f, 2.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT3_VALUES(mat3_scale_matrix(1.0f, 1.0f, 1.0f), 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT3_VALUES(mat3_scale_matrix(1.0f, -2.0f, 3.0f), 1.0f, 0.0f, 0.0f, 0.0f, -2.0f, 0.0f, 0.0f, 0.0f, 3.0f);
+		
+		
+#undef ASSERT_MAT3_VALUES
 	}
 	
 	
@@ -20457,11 +20938,11 @@ void TEST_deshi_math(){
 	
 	//// mat_hashing ////
 #ifndef DESHI_MATH_DISABLE_HASHING
-#ifdef __cplusplus
+#if DESHI_MATH_USE_CPP
 	{
 		//TODO test mat_hashing
 	}
-#endif //#ifdef __cplusplus
+#endif //#if DESHI_MATH_USE_CPP
 #endif //#ifndef DESHI_MATH_DISABLE_HASHING
 	
 	
