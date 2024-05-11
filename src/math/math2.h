@@ -1,6 +1,7 @@
 /* deshi Math Module
 Notes:
 - October 2021 Steam Hardware Survey says 98% of users support SSE4.2 and below; 94% AVX; 84% AVX2; 30% SSE4a; <4% AVX512
+- Jaguar AMD CPU (PlayStation 4 and Xbox One) supports SSE4.2 (and below); AVX; SSE4a; F16C
 - Matrices are in row-major format and all the functionality follows that format
 - Matrices are Left-Handed meaning that multiplication travels right and rotation is clockwise 
 - Little-endian will reverse the byte ordering of the arguments you pass in to set() SIMD functions.
@@ -9388,6 +9389,12 @@ mat4{
 	union{
 		f32 arr[16];
 		struct{
+			f32 _00, _10, _20, _30;
+			f32 _01, _11, _21, _31;
+			f32 _02, _12, _22, _32;
+			f32 _03, _13, _23, _33;
+		};
+		struct{
 			vec4 row0;
 			vec4 row1;
 			vec4 row2;
@@ -9462,7 +9469,7 @@ inline const mat4 mat4::ONE      = mat4{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 inline const mat4 mat4::IDENTITY = mat4{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 #endif //#if DESHI_MATH_USE_CPP
 
-#define mat4_coord(m,row,col) m.arr[4*row + col]
+#define mat4_coord(m,row,col) m.arr[4*(row) + (col)]
 
 #if DESHI_MATH_USE_CPP
 inline f32 mat4::
@@ -9480,7 +9487,7 @@ operator()(u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 }
 #endif //#if DESHI_MATH_USE_CPP
 
-#define mat4_index(m,index) m.arr[index]
+#define mat4_index(m,index) m.arr[(index)]
 
 #if DESHI_MATH_USE_CPP
 inline f32 mat4::
@@ -10623,114 +10630,114 @@ mat4_cofactor(mat4 lhs, u32 row, u32 col){DESHI_MATH_FUNCTION_START;
 	switch(row){
 		case 0:{
 			switch(col){
-				case 0: return (  (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
-								+ (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
-								+ (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14])
-								- (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
-								- (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
-								- (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14]));
-				case 1: return (  (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
-								+ (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
-								+ (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14])
-								- (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
-								- (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
-								- (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14]));
-				case 2: return (  (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
-								+ (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
-								+ (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13])
-								- (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
-								- (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
-								- (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13]));
-				case 3: return (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
-								+ (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
-								+ (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13])
-								- (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
-								- (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
-								- (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13]));
+				case 0: return (  (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
+								+ (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14])
+								- (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
+								- (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
+								- (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
+								+ (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
+								+ (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14])
+								- (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
+								- (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
+								- (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
+								+ (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
+								+ (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
+								+ (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13])
+								- (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
+								- (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
+								- (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13]));
 			}
 		}break;
 		case 1:{
 			switch(col){
-				case 0: return (  (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
-								+ (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
-								+ (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14])
-								- (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
-								- (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
-								- (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14]));
-				case 1: return (  (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
-								+ (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
-								+ (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14])
-								- (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
-								- (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
-								- (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14]));
-				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
-								+ (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
-								+ (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13])
-								- (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
-								- (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
-								- (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13]));
-				case 3: return (  (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
-								+ (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
-								+ (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13])
-								- (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
-								- (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
-								- (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13]));
+				case 0: return (  (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
+								+ (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
+								+ (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14])
+								- (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
+								- (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
+								- (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
+								- (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
+								+ (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
+								+ (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13])
+								- (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
+								- (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
+								- (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
+								+ (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
+								+ (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
+								- (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13]));
 			}
 		}break;
 		case 2:{
 			switch(col){
-				case 0: return (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
-								+ (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
-								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14])
-								- (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
-								- (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
-								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14]));
-				case 1: return (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
-								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
-								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14])
-								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
-								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
-								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14]));
-				case 2: return (  (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
-								+ (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
-								+ (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13])
-								- (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
-								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
-								- (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13]));
-				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
-								+ (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
-								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13])
-								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
-								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
-								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13]));
+				case 0: return (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
+								+ (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
+								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14]));
+				case 1: return (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
+								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
+								+ (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14])
+								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
+								- (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
+								- (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14]));
+				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
+								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13])
+								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13]));
+				case 3: return (  (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
+								+ (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
+								+ (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13])
+								- (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
+								- (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
+								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13]));
 			}
 		}break;
 		case 3:{
 			switch(col){
-				case 0: return (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
-								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
-								+ (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10])
-								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
-								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
-								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10]));
-				case 1: return (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
-								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
-								+ (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10])
-								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
-								- (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
-								- (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10]));
-				case 2: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
-								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
-								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9])
-								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
-								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
-								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9]));
-				case 3: return (  (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
-								+ (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
-								+ (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9])
-								- (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
-								- (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
-								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9]));
+				case 0: return (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
+								+ (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
+								+ (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10])
+								- (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
+								- (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
+								- (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10]));
+				case 1: return (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
+								+ (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
+								+ (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10])
+								- (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
+								- (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
+								- (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10]));
+				case 2: return (  (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
+								+ (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
+								+ (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9])
+								- (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
+								- (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
+								- (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9]));
+				case 3: return (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
+								+ (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
+								+ (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9])
+								- (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
+								- (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
+								- (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9]));
 			}
 		}break;
 	}
@@ -10744,114 +10751,114 @@ cofactor(u32 row, u32 col)const{DESHI_MATH_FUNCTION_START;
 	switch(row){
 		case 0:{
 			switch(col){
-				case 0: return (  (this->arr[ 7] * this->arr[10] * this->arr[13])
-								+ (this->arr[ 6] * this->arr[ 9] * this->arr[15])
-								+ (this->arr[ 5] * this->arr[11] * this->arr[14])
-								- (this->arr[ 5] * this->arr[10] * this->arr[15])
-								- (this->arr[ 6] * this->arr[11] * this->arr[13])
-								- (this->arr[ 7] * this->arr[ 9] * this->arr[14]));
-				case 1: return (  (this->arr[ 4] * this->arr[10] * this->arr[15])
-								+ (this->arr[ 6] * this->arr[11] * this->arr[12])
-								+ (this->arr[ 7] * this->arr[ 8] * this->arr[14])
-								- (this->arr[ 7] * this->arr[10] * this->arr[12])
-								- (this->arr[ 6] * this->arr[ 8] * this->arr[15])
-								- (this->arr[ 4] * this->arr[11] * this->arr[14]));
-				case 2: return (  (this->arr[ 7] * this->arr[ 9] * this->arr[12])
-								+ (this->arr[ 5] * this->arr[ 8] * this->arr[15])
-								+ (this->arr[ 4] * this->arr[11] * this->arr[13])
-								- (this->arr[ 4] * this->arr[ 9] * this->arr[15])
-								- (this->arr[ 5] * this->arr[11] * this->arr[12])
-								- (this->arr[ 7] * this->arr[ 8] * this->arr[13]));
-				case 3: return (  (this->arr[ 4] * this->arr[ 9] * this->arr[14])
-								+ (this->arr[ 5] * this->arr[10] * this->arr[12])
-								+ (this->arr[ 6] * this->arr[ 8] * this->arr[13])
-								- (this->arr[ 6] * this->arr[ 9] * this->arr[12])
-								- (this->arr[ 5] * this->arr[ 8] * this->arr[14])
-								- (this->arr[ 4] * this->arr[10] * this->arr[13]));
+				case 0: return (  (this->arr[ 5] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 6] * this->arr[11] * this->arr[13])
+								+ (this->arr[ 7] * this->arr[ 9] * this->arr[14])
+								- (this->arr[ 7] * this->arr[10] * this->arr[13])
+								- (this->arr[ 6] * this->arr[ 9] * this->arr[15])
+								- (this->arr[ 5] * this->arr[11] * this->arr[14]));
+				case 1: return (  (this->arr[ 7] * this->arr[10] * this->arr[12])
+								+ (this->arr[ 6] * this->arr[ 8] * this->arr[15])
+								+ (this->arr[ 4] * this->arr[11] * this->arr[14])
+								- (this->arr[ 4] * this->arr[10] * this->arr[15])
+								- (this->arr[ 6] * this->arr[11] * this->arr[12])
+								- (this->arr[ 7] * this->arr[ 8] * this->arr[14]));
+				case 2: return (  (this->arr[ 4] * this->arr[ 9] * this->arr[15])
+								+ (this->arr[ 5] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 7] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 7] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 5] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 4] * this->arr[11] * this->arr[13]));
+				case 3: return (  (this->arr[ 6] * this->arr[ 9] * this->arr[12])
+								+ (this->arr[ 5] * this->arr[ 8] * this->arr[14])
+								+ (this->arr[ 4] * this->arr[10] * this->arr[13])
+								- (this->arr[ 4] * this->arr[ 9] * this->arr[14])
+								- (this->arr[ 5] * this->arr[10] * this->arr[12])
+								- (this->arr[ 6] * this->arr[ 8] * this->arr[13]));
 			}
 		}break;
 		case 1:{
 			switch(col){
-				case 0: return (  (this->arr[ 1] * this->arr[10] * this->arr[15])
-								+ (this->arr[ 2] * this->arr[11] * this->arr[13])
-								+ (this->arr[ 3] * this->arr[ 9] * this->arr[14])
-								- (this->arr[ 3] * this->arr[10] * this->arr[13])
-								- (this->arr[ 2] * this->arr[ 9] * this->arr[15])
-								- (this->arr[ 1] * this->arr[11] * this->arr[14]));
-				case 1: return (  (this->arr[ 3] * this->arr[10] * this->arr[12])
-								+ (this->arr[ 2] * this->arr[ 8] * this->arr[15])
-								+ (this->arr[ 0] * this->arr[11] * this->arr[14])
-								- (this->arr[ 0] * this->arr[10] * this->arr[15])
-								- (this->arr[ 2] * this->arr[11] * this->arr[12])
-								- (this->arr[ 3] * this->arr[ 8] * this->arr[14]));
-				case 2: return (  (this->arr[ 0] * this->arr[ 9] * this->arr[15])
-								+ (this->arr[ 1] * this->arr[11] * this->arr[12])
-								+ (this->arr[ 3] * this->arr[ 8] * this->arr[13])
-								- (this->arr[ 3] * this->arr[ 9] * this->arr[12])
-								- (this->arr[ 1] * this->arr[ 8] * this->arr[15])
-								- (this->arr[ 0] * this->arr[11] * this->arr[13]));
-				case 3: return (  (this->arr[ 2] * this->arr[ 9] * this->arr[12])
-								+ (this->arr[ 1] * this->arr[ 8] * this->arr[14])
-								+ (this->arr[ 0] * this->arr[10] * this->arr[13])
-								- (this->arr[ 0] * this->arr[ 9] * this->arr[14])
-								- (this->arr[ 1] * this->arr[10] * this->arr[12])
-								- (this->arr[ 2] * this->arr[ 8] * this->arr[13]));
+				case 0: return (  (this->arr[ 3] * this->arr[10] * this->arr[13])
+								+ (this->arr[ 2] * this->arr[ 9] * this->arr[15])
+								+ (this->arr[ 1] * this->arr[11] * this->arr[14])
+								- (this->arr[ 1] * this->arr[10] * this->arr[15])
+								- (this->arr[ 2] * this->arr[11] * this->arr[13])
+								- (this->arr[ 3] * this->arr[ 9] * this->arr[14]));
+				case 1: return (  (this->arr[ 0] * this->arr[10] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[11] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 3] * this->arr[10] * this->arr[12])
+								- (this->arr[ 2] * this->arr[ 8] * this->arr[15])
+								- (this->arr[ 0] * this->arr[11] * this->arr[14]));
+				case 2: return (  (this->arr[ 3] * this->arr[ 9] * this->arr[12])
+								+ (this->arr[ 1] * this->arr[ 8] * this->arr[15])
+								+ (this->arr[ 0] * this->arr[11] * this->arr[13])
+								- (this->arr[ 0] * this->arr[ 9] * this->arr[15])
+								- (this->arr[ 1] * this->arr[11] * this->arr[12])
+								- (this->arr[ 3] * this->arr[ 8] * this->arr[13]));
+				case 3: return (  (this->arr[ 0] * this->arr[ 9] * this->arr[14])
+								+ (this->arr[ 1] * this->arr[10] * this->arr[12])
+								+ (this->arr[ 2] * this->arr[ 8] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 9] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 8] * this->arr[14])
+								- (this->arr[ 0] * this->arr[10] * this->arr[13]));
 			}
 		}break;
 		case 2:{
 			switch(col){
-				case 0: return (  (this->arr[ 3] * this->arr[ 6] * this->arr[13])
-								+ (this->arr[ 2] * this->arr[ 5] * this->arr[15])
-								+ (this->arr[ 1] * this->arr[ 7] * this->arr[14])
-								- (this->arr[ 1] * this->arr[ 6] * this->arr[15])
-								- (this->arr[ 2] * this->arr[ 7] * this->arr[13])
-								- (this->arr[ 3] * this->arr[ 5] * this->arr[14]));
-				case 1: return (  (this->arr[ 0] * this->arr[ 6] * this->arr[15])
-								+ (this->arr[ 2] * this->arr[ 7] * this->arr[12])
-								+ (this->arr[ 3] * this->arr[ 4] * this->arr[14])
-								- (this->arr[ 3] * this->arr[ 6] * this->arr[12])
-								- (this->arr[ 2] * this->arr[ 4] * this->arr[15])
-								- (this->arr[ 0] * this->arr[ 7] * this->arr[14]));
-				case 2: return (  (this->arr[ 3] * this->arr[ 5] * this->arr[12])
-								+ (this->arr[ 1] * this->arr[ 4] * this->arr[15])
-								+ (this->arr[ 0] * this->arr[ 7] * this->arr[13])
-								- (this->arr[ 0] * this->arr[ 5] * this->arr[15])
-								- (this->arr[ 1] * this->arr[ 7] * this->arr[12])
-								- (this->arr[ 3] * this->arr[ 4] * this->arr[13]));
-				case 3: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[14])
-								+ (this->arr[ 1] * this->arr[ 6] * this->arr[12])
-								+ (this->arr[ 2] * this->arr[ 4] * this->arr[13])
-								- (this->arr[ 2] * this->arr[ 5] * this->arr[12])
-								- (this->arr[ 1] * this->arr[ 4] * this->arr[14])
-								- (this->arr[ 0] * this->arr[ 6] * this->arr[13]));
+				case 0: return (  (this->arr[ 1] * this->arr[ 6] * this->arr[15])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[13])
+								+ (this->arr[ 3] * this->arr[ 5] * this->arr[14])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[13])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[15])
+								- (this->arr[ 1] * this->arr[ 7] * this->arr[14]));
+				case 1: return (  (this->arr[ 3] * this->arr[ 6] * this->arr[12])
+								+ (this->arr[ 2] * this->arr[ 4] * this->arr[15])
+								+ (this->arr[ 0] * this->arr[ 7] * this->arr[14])
+								- (this->arr[ 0] * this->arr[ 6] * this->arr[15])
+								- (this->arr[ 2] * this->arr[ 7] * this->arr[12])
+								- (this->arr[ 3] * this->arr[ 4] * this->arr[14]));
+				case 2: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[15])
+								+ (this->arr[ 1] * this->arr[ 7] * this->arr[12])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[13])
+								- (this->arr[ 3] * this->arr[ 5] * this->arr[12])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[15])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[13]));
+				case 3: return (  (this->arr[ 2] * this->arr[ 5] * this->arr[12])
+								+ (this->arr[ 1] * this->arr[ 4] * this->arr[14])
+								+ (this->arr[ 0] * this->arr[ 6] * this->arr[13])
+								- (this->arr[ 0] * this->arr[ 5] * this->arr[14])
+								- (this->arr[ 1] * this->arr[ 6] * this->arr[12])
+								- (this->arr[ 2] * this->arr[ 4] * this->arr[13]));
 			}
 		}break;
 		case 3:{
 			switch(col){
-				case 0: return (  (this->arr[ 1] * this->arr[ 6] * this->arr[11])
-								+ (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
-								+ (this->arr[ 3] * this->arr[ 5] * this->arr[10])
-								- (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
-								- (this->arr[ 2] * this->arr[ 5] * this->arr[11])
-								- (this->arr[ 1] * this->arr[ 7] * this->arr[10]));
-				case 1: return (  (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
-								+ (this->arr[ 2] * this->arr[ 4] * this->arr[11])
-								+ (this->arr[ 0] * this->arr[ 7] * this->arr[10])
-								- (this->arr[ 0] * this->arr[ 6] * this->arr[11])
-								- (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
-								- (this->arr[ 3] * this->arr[ 4] * this->arr[10]));
-				case 2: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[11])
-								+ (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
-								+ (this->arr[ 3] * this->arr[ 4] * this->arr[ 9])
-								- (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
-								- (this->arr[ 1] * this->arr[ 4] * this->arr[11])
-								- (this->arr[ 0] * this->arr[ 7] * this->arr[ 9]));
-				case 3: return (  (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
-								+ (this->arr[ 1] * this->arr[ 4] * this->arr[10])
-								+ (this->arr[ 0] * this->arr[ 6] * this->arr[ 9])
-								- (this->arr[ 0] * this->arr[ 5] * this->arr[10])
-								- (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
-								- (this->arr[ 2] * this->arr[ 4] * this->arr[ 9]));
+				case 0: return (  (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
+								+ (this->arr[ 2] * this->arr[ 5] * this->arr[11])
+								+ (this->arr[ 1] * this->arr[ 7] * this->arr[10])
+								- (this->arr[ 1] * this->arr[ 6] * this->arr[11])
+								- (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
+								- (this->arr[ 3] * this->arr[ 5] * this->arr[10]));
+				case 1: return (  (this->arr[ 0] * this->arr[ 6] * this->arr[11])
+								+ (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
+								+ (this->arr[ 3] * this->arr[ 4] * this->arr[10])
+								- (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
+								- (this->arr[ 2] * this->arr[ 4] * this->arr[11])
+								- (this->arr[ 0] * this->arr[ 7] * this->arr[10]));
+				case 2: return (  (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
+								+ (this->arr[ 1] * this->arr[ 4] * this->arr[11])
+								+ (this->arr[ 0] * this->arr[ 7] * this->arr[ 9])
+								- (this->arr[ 0] * this->arr[ 5] * this->arr[11])
+								- (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
+								- (this->arr[ 3] * this->arr[ 4] * this->arr[ 9]));
+				case 3: return (  (this->arr[ 0] * this->arr[ 5] * this->arr[10])
+								+ (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
+								+ (this->arr[ 2] * this->arr[ 4] * this->arr[ 9])
+								- (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
+								- (this->arr[ 1] * this->arr[ 4] * this->arr[10])
+								- (this->arr[ 0] * this->arr[ 6] * this->arr[ 9]));
 			}
 		}break;
 	}
@@ -10863,102 +10870,102 @@ DESHI_MATH_FUNC inline mat4
 mat4_adjoint(mat4 lhs){DESHI_MATH_FUNCTION_START;
 	//NOTE(delle) I guess in this case it really shows how expensive this operation is
 	mat4 result;
-	result.arr[ 0] = (  (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
-					  + (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
-					  + (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14])
-					  - (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
-					  - (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
-					  - (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14]));
-	result.arr[ 1] = (  (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
-					  + (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
-					  + (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14])
-					  - (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
-					  - (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
-					  - (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14]));
-	result.arr[ 2] = (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
-					  + (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
-					  + (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14])
-					  - (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
-					  - (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
-					  - (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14]));
-	result.arr[ 3] = (  (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
-					  + (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
-					  + (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10])
-					  - (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
-					  - (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
-					  - (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10]));
-	result.arr[ 4] = (  (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
-					  + (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
-					  + (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14])
-					  - (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
-					  - (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
-					  - (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14]));
-	result.arr[ 5] = (  (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
-					  + (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
-					  + (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14])
-					  - (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
-					  - (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
-					  - (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14]));
-	result.arr[ 6] = (  (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
-					  + (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
-					  + (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14])
-					  - (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
-					  - (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
-					  - (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14]));
-	result.arr[ 7] = (  (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
-					  + (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
-					  + (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10])
-					  - (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
-					  - (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
-					  - (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10]));
-	result.arr[ 8] = (  (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
-					  + (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
-					  + (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13])
-					  - (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
-					  - (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
-					  - (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13]));;
-	result.arr[ 9] = (  (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
-					  + (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
-					  + (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13])
-					  - (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
-					  - (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
-					  - (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13]));
-	result.arr[10] = (  (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
-					  + (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
-					  + (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13])
-					  - (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
-					  - (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
-					  - (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13]));
-	result.arr[11] = (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
-					  + (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
-					  + (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9])
-					  - (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
-					  - (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
-					  - (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9]));
-	result.arr[12] = (  (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
-					  + (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
-					  + (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13])
-					  - (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
-					  - (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
-					  - (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13]));
-	result.arr[13] = (  (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
-					  + (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
-					  + (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13])
-					  - (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
-					  - (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
-					  - (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13]));
-	result.arr[14] = (  (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
-					  + (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
-					  + (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13])
-					  - (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
-					  - (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
-					  - (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13]));
-	result.arr[15] = (  (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
-					  + (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
-					  + (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9])
-					  - (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
-					  - (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
-					  - (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9]));
+	result.arr[ 0] = (+ (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[15])
+					  + (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[13])
+					  + (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[14])
+					  - (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[13])
+					  - (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[15])
+					  - (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[14]));
+	result.arr[ 1] = (+ (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[13])
+					  + (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[15])
+					  + (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[14])
+					  - (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[15])
+					  - (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[13])
+					  - (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[14]));
+	result.arr[ 2] = (+ (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[15])
+					  + (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[13])
+					  + (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[14])
+					  - (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[13])
+					  - (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[15])
+					  - (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[14]));
+	result.arr[ 3] = (+ (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 9])
+					  + (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[11])
+					  + (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[10])
+					  - (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[11])
+					  - (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 9])
+					  - (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[10]));
+	result.arr[ 4] = (+ (lhs.arr[ 7] * lhs.arr[10] * lhs.arr[12])
+					  + (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[15])
+					  + (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[14])
+					  - (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[15])
+					  - (lhs.arr[ 6] * lhs.arr[11] * lhs.arr[12])
+					  - (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[14]));
+	result.arr[ 5] = (+ (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[15])
+					  + (lhs.arr[ 2] * lhs.arr[11] * lhs.arr[12])
+					  + (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[14])
+					  - (lhs.arr[ 3] * lhs.arr[10] * lhs.arr[12])
+					  - (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[15])
+					  - (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[14]));
+	result.arr[ 6] = (+ (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[12])
+					  + (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[15])
+					  + (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[14])
+					  - (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[15])
+					  - (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[12])
+					  - (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[14]));
+	result.arr[ 7] = (+ (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[11])
+					  + (lhs.arr[ 2] * lhs.arr[ 7] * lhs.arr[ 8])
+					  + (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[10])
+					  - (lhs.arr[ 3] * lhs.arr[ 6] * lhs.arr[ 8])
+					  - (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[11])
+					  - (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[10]));
+	result.arr[ 8] = (+ (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[15])
+					  + (lhs.arr[ 5] * lhs.arr[11] * lhs.arr[12])
+					  + (lhs.arr[ 7] * lhs.arr[ 8] * lhs.arr[13])
+					  - (lhs.arr[ 7] * lhs.arr[ 9] * lhs.arr[12])
+					  - (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[15])
+					  - (lhs.arr[ 4] * lhs.arr[11] * lhs.arr[13]));
+	result.arr[ 9] = (+ (lhs.arr[ 3] * lhs.arr[ 9] * lhs.arr[12])
+					  + (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[15])
+					  + (lhs.arr[ 0] * lhs.arr[11] * lhs.arr[13])
+					  - (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[15])
+					  - (lhs.arr[ 1] * lhs.arr[11] * lhs.arr[12])
+					  - (lhs.arr[ 3] * lhs.arr[ 8] * lhs.arr[13]));
+	result.arr[10] = (+ (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[15])
+					  + (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[12])
+					  + (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[13])
+					  - (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[12])
+					  - (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[15])
+					  - (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[13]));
+	result.arr[11] = (+ (lhs.arr[ 3] * lhs.arr[ 5] * lhs.arr[ 8])
+					  + (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[11])
+					  + (lhs.arr[ 0] * lhs.arr[ 7] * lhs.arr[ 9])
+					  - (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[11])
+					  - (lhs.arr[ 1] * lhs.arr[ 7] * lhs.arr[ 8])
+					  - (lhs.arr[ 3] * lhs.arr[ 4] * lhs.arr[ 9]));
+	result.arr[12] = (+ (lhs.arr[ 6] * lhs.arr[ 9] * lhs.arr[12])
+					  + (lhs.arr[ 5] * lhs.arr[ 8] * lhs.arr[14])
+					  + (lhs.arr[ 4] * lhs.arr[10] * lhs.arr[13])
+					  - (lhs.arr[ 4] * lhs.arr[ 9] * lhs.arr[14])
+					  - (lhs.arr[ 5] * lhs.arr[10] * lhs.arr[12])
+					  - (lhs.arr[ 6] * lhs.arr[ 8] * lhs.arr[13]));
+	result.arr[13] = (+ (lhs.arr[ 0] * lhs.arr[ 9] * lhs.arr[14])
+					  + (lhs.arr[ 1] * lhs.arr[10] * lhs.arr[12])
+					  + (lhs.arr[ 2] * lhs.arr[ 8] * lhs.arr[13])
+					  - (lhs.arr[ 2] * lhs.arr[ 9] * lhs.arr[12])
+					  - (lhs.arr[ 1] * lhs.arr[ 8] * lhs.arr[14])
+					  - (lhs.arr[ 0] * lhs.arr[10] * lhs.arr[13]));
+	result.arr[14] = (+ (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[12])
+					  + (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[14])
+					  + (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[13])
+					  - (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[14])
+					  - (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[12])
+					  - (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[13]));
+	result.arr[15] = (+ (lhs.arr[ 0] * lhs.arr[ 5] * lhs.arr[10])
+					  + (lhs.arr[ 1] * lhs.arr[ 6] * lhs.arr[ 8])
+					  + (lhs.arr[ 2] * lhs.arr[ 4] * lhs.arr[ 9])
+					  - (lhs.arr[ 2] * lhs.arr[ 5] * lhs.arr[ 8])
+					  - (lhs.arr[ 1] * lhs.arr[ 4] * lhs.arr[10])
+					  - (lhs.arr[ 0] * lhs.arr[ 6] * lhs.arr[ 9]));
 	return result;
 }
 
@@ -10966,102 +10973,102 @@ mat4_adjoint(mat4 lhs){DESHI_MATH_FUNCTION_START;
 inline mat4 mat4::
 adjoint()const{DESHI_MATH_FUNCTION_START;
 	mat4 result;
-	result.arr[ 0] = (  (this->arr[ 7] * this->arr[10] * this->arr[13])
-					  + (this->arr[ 6] * this->arr[ 9] * this->arr[15])
-					  + (this->arr[ 5] * this->arr[11] * this->arr[14])
-					  - (this->arr[ 5] * this->arr[10] * this->arr[15])
-					  - (this->arr[ 6] * this->arr[11] * this->arr[13])
-					  - (this->arr[ 7] * this->arr[ 9] * this->arr[14]));
-	result.arr[ 1] = (  (this->arr[ 1] * this->arr[10] * this->arr[15])
-					  + (this->arr[ 2] * this->arr[11] * this->arr[13])
-					  + (this->arr[ 3] * this->arr[ 9] * this->arr[14])
-					  - (this->arr[ 3] * this->arr[10] * this->arr[13])
-					  - (this->arr[ 2] * this->arr[ 9] * this->arr[15])
-					  - (this->arr[ 1] * this->arr[11] * this->arr[14]));
-	result.arr[ 2] = (  (this->arr[ 3] * this->arr[ 6] * this->arr[13])
-					  + (this->arr[ 2] * this->arr[ 5] * this->arr[15])
-					  + (this->arr[ 1] * this->arr[ 7] * this->arr[14])
-					  - (this->arr[ 1] * this->arr[ 6] * this->arr[15])
-					  - (this->arr[ 2] * this->arr[ 7] * this->arr[13])
-					  - (this->arr[ 3] * this->arr[ 5] * this->arr[14]));
-	result.arr[ 3] = (  (this->arr[ 1] * this->arr[ 6] * this->arr[11])
-					  + (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
-					  + (this->arr[ 3] * this->arr[ 5] * this->arr[10])
-					  - (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
-					  - (this->arr[ 2] * this->arr[ 5] * this->arr[11])
-					  - (this->arr[ 1] * this->arr[ 7] * this->arr[10]));
-	result.arr[ 4] = (  (this->arr[ 4] * this->arr[10] * this->arr[15])
-					  + (this->arr[ 6] * this->arr[11] * this->arr[12])
-					  + (this->arr[ 7] * this->arr[ 8] * this->arr[14])
-					  - (this->arr[ 7] * this->arr[10] * this->arr[12])
-					  - (this->arr[ 6] * this->arr[ 8] * this->arr[15])
-					  - (this->arr[ 4] * this->arr[11] * this->arr[14]));
-	result.arr[ 5] = (  (this->arr[ 3] * this->arr[10] * this->arr[12])
-					  + (this->arr[ 2] * this->arr[ 8] * this->arr[15])
-					  + (this->arr[ 0] * this->arr[11] * this->arr[14])
-					  - (this->arr[ 0] * this->arr[10] * this->arr[15])
-					  - (this->arr[ 2] * this->arr[11] * this->arr[12])
-					  - (this->arr[ 3] * this->arr[ 8] * this->arr[14]));
-	result.arr[ 6] = (  (this->arr[ 0] * this->arr[ 6] * this->arr[15])
-					  + (this->arr[ 2] * this->arr[ 7] * this->arr[12])
-					  + (this->arr[ 3] * this->arr[ 4] * this->arr[14])
-					  - (this->arr[ 3] * this->arr[ 6] * this->arr[12])
-					  - (this->arr[ 2] * this->arr[ 4] * this->arr[15])
-					  - (this->arr[ 0] * this->arr[ 7] * this->arr[14]));
-	result.arr[ 7] = (  (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
-					  + (this->arr[ 2] * this->arr[ 4] * this->arr[11])
-					  + (this->arr[ 0] * this->arr[ 7] * this->arr[10])
-					  - (this->arr[ 0] * this->arr[ 6] * this->arr[11])
-					  - (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
-					  - (this->arr[ 3] * this->arr[ 4] * this->arr[10]));
-	result.arr[ 8] = (  (this->arr[ 7] * this->arr[ 9] * this->arr[12])
-					  + (this->arr[ 5] * this->arr[ 8] * this->arr[15])
-					  + (this->arr[ 4] * this->arr[11] * this->arr[13])
-					  - (this->arr[ 4] * this->arr[ 9] * this->arr[15])
-					  - (this->arr[ 5] * this->arr[11] * this->arr[12])
-					  - (this->arr[ 7] * this->arr[ 8] * this->arr[13]));;
-	result.arr[ 9] = (  (this->arr[ 0] * this->arr[ 9] * this->arr[15])
-					  + (this->arr[ 1] * this->arr[11] * this->arr[12])
-					  + (this->arr[ 3] * this->arr[ 8] * this->arr[13])
-					  - (this->arr[ 3] * this->arr[ 9] * this->arr[12])
-					  - (this->arr[ 1] * this->arr[ 8] * this->arr[15])
-					  - (this->arr[ 0] * this->arr[11] * this->arr[13]));
-	result.arr[10] = (  (this->arr[ 3] * this->arr[ 5] * this->arr[12])
-					  + (this->arr[ 1] * this->arr[ 4] * this->arr[15])
-					  + (this->arr[ 0] * this->arr[ 7] * this->arr[13])
-					  - (this->arr[ 0] * this->arr[ 5] * this->arr[15])
-					  - (this->arr[ 1] * this->arr[ 7] * this->arr[12])
-					  - (this->arr[ 3] * this->arr[ 4] * this->arr[13]));
-	result.arr[11] = (  (this->arr[ 0] * this->arr[ 5] * this->arr[11])
-					  + (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
-					  + (this->arr[ 3] * this->arr[ 4] * this->arr[ 9])
-					  - (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
-					  - (this->arr[ 1] * this->arr[ 4] * this->arr[11])
-					  - (this->arr[ 0] * this->arr[ 7] * this->arr[ 9]));
-	result.arr[12] = (  (this->arr[ 4] * this->arr[ 9] * this->arr[14])
-					  + (this->arr[ 5] * this->arr[10] * this->arr[12])
-					  + (this->arr[ 6] * this->arr[ 8] * this->arr[13])
-					  - (this->arr[ 6] * this->arr[ 9] * this->arr[12])
-					  - (this->arr[ 5] * this->arr[ 8] * this->arr[14])
-					  - (this->arr[ 4] * this->arr[10] * this->arr[13]));
-	result.arr[13] = (  (this->arr[ 2] * this->arr[ 9] * this->arr[12])
-					  + (this->arr[ 1] * this->arr[ 8] * this->arr[14])
-					  + (this->arr[ 0] * this->arr[10] * this->arr[13])
-					  - (this->arr[ 0] * this->arr[ 9] * this->arr[14])
-					  - (this->arr[ 1] * this->arr[10] * this->arr[12])
-					  - (this->arr[ 2] * this->arr[ 8] * this->arr[13]));
-	result.arr[14] = (  (this->arr[ 0] * this->arr[ 5] * this->arr[14])
-					  + (this->arr[ 1] * this->arr[ 6] * this->arr[12])
-					  + (this->arr[ 2] * this->arr[ 4] * this->arr[13])
-					  - (this->arr[ 2] * this->arr[ 5] * this->arr[12])
-					  - (this->arr[ 1] * this->arr[ 4] * this->arr[14])
-					  - (this->arr[ 0] * this->arr[ 6] * this->arr[13]));
-	result.arr[15] = (  (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
-					  + (this->arr[ 1] * this->arr[ 4] * this->arr[10])
-					  + (this->arr[ 0] * this->arr[ 6] * this->arr[ 9])
-					  - (this->arr[ 0] * this->arr[ 5] * this->arr[10])
-					  - (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
-					  - (this->arr[ 2] * this->arr[ 4] * this->arr[ 9]));
+	result.arr[ 0] = (+ (this->arr[ 5] * this->arr[10] * this->arr[15])
+					  + (this->arr[ 6] * this->arr[11] * this->arr[13])
+					  + (this->arr[ 7] * this->arr[ 9] * this->arr[14])
+					  - (this->arr[ 7] * this->arr[10] * this->arr[13])
+					  - (this->arr[ 6] * this->arr[ 9] * this->arr[15])
+					  - (this->arr[ 5] * this->arr[11] * this->arr[14]));
+	result.arr[ 1] = (+ (this->arr[ 3] * this->arr[10] * this->arr[13])
+					  + (this->arr[ 2] * this->arr[ 9] * this->arr[15])
+					  + (this->arr[ 1] * this->arr[11] * this->arr[14])
+					  - (this->arr[ 1] * this->arr[10] * this->arr[15])
+					  - (this->arr[ 2] * this->arr[11] * this->arr[13])
+					  - (this->arr[ 3] * this->arr[ 9] * this->arr[14]));
+	result.arr[ 2] = (+ (this->arr[ 1] * this->arr[ 6] * this->arr[15])
+					  + (this->arr[ 2] * this->arr[ 7] * this->arr[13])
+					  + (this->arr[ 3] * this->arr[ 5] * this->arr[14])
+					  - (this->arr[ 3] * this->arr[ 6] * this->arr[13])
+					  - (this->arr[ 2] * this->arr[ 5] * this->arr[15])
+					  - (this->arr[ 1] * this->arr[ 7] * this->arr[14]));
+	result.arr[ 3] = (+ (this->arr[ 3] * this->arr[ 6] * this->arr[ 9])
+					  + (this->arr[ 2] * this->arr[ 5] * this->arr[11])
+					  + (this->arr[ 1] * this->arr[ 7] * this->arr[10])
+					  - (this->arr[ 1] * this->arr[ 6] * this->arr[11])
+					  - (this->arr[ 2] * this->arr[ 7] * this->arr[ 9])
+					  - (this->arr[ 3] * this->arr[ 5] * this->arr[10]));
+	result.arr[ 4] = (+ (this->arr[ 7] * this->arr[10] * this->arr[12])
+					  + (this->arr[ 6] * this->arr[ 8] * this->arr[15])
+					  + (this->arr[ 4] * this->arr[11] * this->arr[14])
+					  - (this->arr[ 4] * this->arr[10] * this->arr[15])
+					  - (this->arr[ 6] * this->arr[11] * this->arr[12])
+					  - (this->arr[ 7] * this->arr[ 8] * this->arr[14]));
+	result.arr[ 5] = (+ (this->arr[ 0] * this->arr[10] * this->arr[15])
+					  + (this->arr[ 2] * this->arr[11] * this->arr[12])
+					  + (this->arr[ 3] * this->arr[ 8] * this->arr[14])
+					  - (this->arr[ 3] * this->arr[10] * this->arr[12])
+					  - (this->arr[ 2] * this->arr[ 8] * this->arr[15])
+					  - (this->arr[ 0] * this->arr[11] * this->arr[14]));
+	result.arr[ 6] = (+ (this->arr[ 3] * this->arr[ 6] * this->arr[12])
+					  + (this->arr[ 2] * this->arr[ 4] * this->arr[15])
+					  + (this->arr[ 0] * this->arr[ 7] * this->arr[14])
+					  - (this->arr[ 0] * this->arr[ 6] * this->arr[15])
+					  - (this->arr[ 2] * this->arr[ 7] * this->arr[12])
+					  - (this->arr[ 3] * this->arr[ 4] * this->arr[14]));
+	result.arr[ 7] = (+ (this->arr[ 0] * this->arr[ 6] * this->arr[11])
+					  + (this->arr[ 2] * this->arr[ 7] * this->arr[ 8])
+					  + (this->arr[ 3] * this->arr[ 4] * this->arr[10])
+					  - (this->arr[ 3] * this->arr[ 6] * this->arr[ 8])
+					  - (this->arr[ 2] * this->arr[ 4] * this->arr[11])
+					  - (this->arr[ 0] * this->arr[ 7] * this->arr[10]));
+	result.arr[ 8] = (+ (this->arr[ 4] * this->arr[ 9] * this->arr[15])
+					  + (this->arr[ 5] * this->arr[11] * this->arr[12])
+					  + (this->arr[ 7] * this->arr[ 8] * this->arr[13])
+					  - (this->arr[ 7] * this->arr[ 9] * this->arr[12])
+					  - (this->arr[ 5] * this->arr[ 8] * this->arr[15])
+					  - (this->arr[ 4] * this->arr[11] * this->arr[13]));
+	result.arr[ 9] = (+ (this->arr[ 3] * this->arr[ 9] * this->arr[12])
+					  + (this->arr[ 1] * this->arr[ 8] * this->arr[15])
+					  + (this->arr[ 0] * this->arr[11] * this->arr[13])
+					  - (this->arr[ 0] * this->arr[ 9] * this->arr[15])
+					  - (this->arr[ 1] * this->arr[11] * this->arr[12])
+					  - (this->arr[ 3] * this->arr[ 8] * this->arr[13]));
+	result.arr[10] = (+ (this->arr[ 0] * this->arr[ 5] * this->arr[15])
+					  + (this->arr[ 1] * this->arr[ 7] * this->arr[12])
+					  + (this->arr[ 3] * this->arr[ 4] * this->arr[13])
+					  - (this->arr[ 3] * this->arr[ 5] * this->arr[12])
+					  - (this->arr[ 1] * this->arr[ 4] * this->arr[15])
+					  - (this->arr[ 0] * this->arr[ 7] * this->arr[13]));
+	result.arr[11] = (+ (this->arr[ 3] * this->arr[ 5] * this->arr[ 8])
+					  + (this->arr[ 1] * this->arr[ 4] * this->arr[11])
+					  + (this->arr[ 0] * this->arr[ 7] * this->arr[ 9])
+					  - (this->arr[ 0] * this->arr[ 5] * this->arr[11])
+					  - (this->arr[ 1] * this->arr[ 7] * this->arr[ 8])
+					  - (this->arr[ 3] * this->arr[ 4] * this->arr[ 9]));
+	result.arr[12] = (+ (this->arr[ 6] * this->arr[ 9] * this->arr[12])
+					  + (this->arr[ 5] * this->arr[ 8] * this->arr[14])
+					  + (this->arr[ 4] * this->arr[10] * this->arr[13])
+					  - (this->arr[ 4] * this->arr[ 9] * this->arr[14])
+					  - (this->arr[ 5] * this->arr[10] * this->arr[12])
+					  - (this->arr[ 6] * this->arr[ 8] * this->arr[13]));
+	result.arr[13] = (+ (this->arr[ 0] * this->arr[ 9] * this->arr[14])
+					  + (this->arr[ 1] * this->arr[10] * this->arr[12])
+					  + (this->arr[ 2] * this->arr[ 8] * this->arr[13])
+					  - (this->arr[ 2] * this->arr[ 9] * this->arr[12])
+					  - (this->arr[ 1] * this->arr[ 8] * this->arr[14])
+					  - (this->arr[ 0] * this->arr[10] * this->arr[13]));
+	result.arr[14] = (+ (this->arr[ 2] * this->arr[ 5] * this->arr[12])
+					  + (this->arr[ 1] * this->arr[ 4] * this->arr[14])
+					  + (this->arr[ 0] * this->arr[ 6] * this->arr[13])
+					  - (this->arr[ 0] * this->arr[ 5] * this->arr[14])
+					  - (this->arr[ 1] * this->arr[ 6] * this->arr[12])
+					  - (this->arr[ 2] * this->arr[ 4] * this->arr[13]));
+	result.arr[15] = (+ (this->arr[ 0] * this->arr[ 5] * this->arr[10])
+					  + (this->arr[ 1] * this->arr[ 6] * this->arr[ 8])
+					  + (this->arr[ 2] * this->arr[ 4] * this->arr[ 9])
+					  - (this->arr[ 2] * this->arr[ 5] * this->arr[ 8])
+					  - (this->arr[ 1] * this->arr[ 4] * this->arr[10])
+					  - (this->arr[ 0] * this->arr[ 6] * this->arr[ 9]));
 	return result;
 }
 #endif //#if DESHI_MATH_USE_CPP
@@ -11081,7 +11088,7 @@ mat4_inverse(mat4 lhs){DESHI_MATH_FUNCTION_START;
 	__m128 D = m128_shuffle_2323(lhs.sse_row2, lhs.sse_row3); //bot right
 	
 	//calculate determinants (and broadcast across m128)
-	//TODO test the shuffle determinant calculation
+	//TODO test the shuffle determinant calculation from the reference
 	__m128 detA = _mm_set1_ps(lhs.arr[ 0] * lhs.arr[ 5] - lhs.arr[ 1] * lhs.arr[ 4]);
 	__m128 detB = _mm_set1_ps(lhs.arr[ 2] * lhs.arr[ 7] - lhs.arr[ 3] * lhs.arr[ 6]);
 	__m128 detC = _mm_set1_ps(lhs.arr[ 8] * lhs.arr[13] - lhs.arr[ 9] * lhs.arr[12]);
@@ -11207,8 +11214,12 @@ mat4_inverse_transformation_matrix(mat4 lhs){DESHI_MATH_FUNCTION_START;
 	sizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row1, result.sse_row1));
 	sizeSq = m128_add_4f32(sizeSq, m128_mul_4f32(result.sse_row2, result.sse_row2));
 	
+	//avoid divide-by-zero
+	__m128 one = m128_fill_4f32(1.0f);
+	sizeSq = _mm_blendv_ps(sizeSq, one, _mm_cmplt_ps(sizeSq, _mm_set1_ps(1.0e-8f)));
+	
 	//divide by squared scale
-	sizeSq = m128_div_4f32(m128_fill_4f32(1.0f), sizeSq);
+	sizeSq = m128_div_4f32(one, sizeSq);
 	result.sse_row0 = m128_mul_4f32(result.sse_row0, sizeSq);
 	result.sse_row1 = m128_mul_4f32(result.sse_row1, sizeSq);
 	result.sse_row2 = m128_mul_4f32(result.sse_row2, sizeSq);
@@ -11227,14 +11238,17 @@ mat4_inverse_transformation_matrix(mat4 lhs){DESHI_MATH_FUNCTION_START;
 	
 	//extract and divide by the squared scale
 	temp = (result.arr[0] * result.arr[0]) + (result.arr[4] * result.arr[4]) + (result.arr[8] * result.arr[8]);
+	if(temp < 1.0e-8f) temp = 1.0f;
 	result.arr[0] /= temp;
 	result.arr[4] /= temp;
 	result.arr[8] /= temp;
 	temp = (result.arr[1] * result.arr[1]) + (result.arr[5] * result.arr[5]) + (result.arr[9] * result.arr[9]);
+	if(temp < 1.0e-8f) temp = 1.0f;
 	result.arr[1] /= temp;
 	result.arr[5] /= temp;
 	result.arr[9] /= temp;
 	temp = (result.arr[2] * result.arr[2]) + (result.arr[6] * result.arr[6]) + (result.arr[10] * result.arr[10]);
+	if(temp < 1.0e-8f) temp = 1.0f;
 	result.arr[ 2] /= temp;
 	result.arr[ 6] /= temp;
 	result.arr[10] /= temp;
@@ -11324,6 +11338,35 @@ mat4_rotation_matrix_z_radians(f32 angle){DESHI_MATH_FUNCTION_START;
 //returns a LH rotation matrix based on input in degrees
 #define mat4_rotation_matrix_z_degrees(angle) mat4_rotation_matrix_z_radians(DESHI_DEGREES_TO_RADIANS_F32(angle))
 
+//returns a LH rotation matrix for `a` radians around the axis (`x`, `y`, `z`)
+//NOTE: the axis should be a normalized vector
+DESHI_MATH_FUNC inline mat4
+mat4_axis_rotation_matrix_radians(f32 x, f32 y, f32 z, f32 a){DESHI_MATH_FUNCTION_START;
+	f32 cA = DESHI_COSF(a); f32 sA = DESHI_SINF(a);
+	mat4 result;
+	result.arr[ 0] = x*x*(1.0f - cA) + cA;
+	result.arr[ 1] = x*y*(1.0f - cA) + z*sA;
+	result.arr[ 2] = x*z*(1.0f - cA) + y*sA;
+	result.arr[ 3] = 0.0f;
+	result.arr[ 4] = x*y*(1.0f - cA) - z*sA;
+	result.arr[ 5] = y*y*(1.0f - cA) + cA;
+	result.arr[ 6] = y*z*(1.0f - cA) - x*sA;
+	result.arr[ 7] = 0.0f;
+	result.arr[ 8] = x*z*(1.0f - cA) + y*sA;
+	result.arr[ 9] = y*z*(1.0f - cA) - x*sA;
+	result.arr[10] = z*z*(1.0f - cA) + cA;
+	result.arr[11] = 0.0f;
+	result.arr[12] = 0.0f;
+	result.arr[13] = 0.0f;
+	result.arr[14] = 0.0f;
+	result.arr[15] = 1.0f;
+	return result;
+}
+
+//returns a LH rotation matrix for `a` degrees around the axis (`x`, `y`, `z`)
+//NOTE: the axis should be a normalized vector
+#define mat4_axis_rotation_matrix_degrees(x,y,z,a) mat4_axis_rotation_matrix_radians((x), (y), (z), DESHI_DEGREES_TO_RADIANS_F32(a))
+
 //returns a pre-multiplied X->Y->Z LH rotation matrix based on input in radians
 DESHI_MATH_FUNC inline mat4
 mat4_rotation_matrix_radians(f32 x, f32 y, f32 z){DESHI_MATH_FUNCTION_START;
@@ -11384,8 +11427,8 @@ mat4_transformation_matrix_radians(f32 translation_x, f32 translation_y, f32 tra
 	result.arr[ 5] = scale_y * (cZ*cX + sX*sY*sZ);
 	result.arr[ 6] = scale_y * (sX*cY);
 	result.arr[ 7] = 0;
-	result.arr[ 8] = scale_y * (cZ*cX*sY + sX*sZ);
-	result.arr[ 9] = scale_y * (cX*sY*sZ - cZ*sX);
+	result.arr[ 8] = scale_z * (cZ*cX*sY + sX*sZ);
+	result.arr[ 9] = scale_z * (cX*sY*sZ - cZ*sX);
 	result.arr[10] = scale_z * (cX*cY);
 	result.arr[11] = 0;
 	result.arr[12] = translation_x;
@@ -11939,8 +11982,8 @@ mat4_transformation_matrix_radians_vec3(vec3 translation, vec3 rotation, vec3 sc
 	result.arr[ 5] = scale.y * (cZ*cX + sX*sY*sZ);
 	result.arr[ 6] = scale.y * (sX*cY);
 	result.arr[ 7] = 0;
-	result.arr[ 8] = scale.y * (cZ*cX*sY + sX*sZ);
-	result.arr[ 9] = scale.y * (cX*sY*sZ - cZ*sX);
+	result.arr[ 8] = scale.z * (cZ*cX*sY + sX*sZ);
+	result.arr[ 9] = scale.z * (cX*sY*sZ - cZ*sX);
 	result.arr[10] = scale.z * (cX*cY);
 	result.arr[11] = 0;
 	result.arr[12] = translation.x;
@@ -20473,7 +20516,7 @@ void TEST_deshi_math(){
 #define ASSERT_MAT3_VALUES(lhs,_00_,_10_,_20_,_01_,_11_,_21_,_02_,_12_,_22_) a = (lhs); \
 	ASSERT_F32_EQUAL(a._00,(_00_)); ASSERT_F32_EQUAL(a._10,(_10_)); ASSERT_F32_EQUAL(a._20,(_20_)); \
 	ASSERT_F32_EQUAL(a._01,(_01_)); ASSERT_F32_EQUAL(a._11,(_11_)); ASSERT_F32_EQUAL(a._21,(_21_)); \
-	ASSERT_F32_EQUAL(a._02,(_02_)); ASSERT_F32_EQUAL(a._12,(_12_)); ASSERT_F32_EQUAL(a._22,(_22_));
+	ASSERT_F32_EQUAL(a._02,(_02_)); ASSERT_F32_EQUAL(a._12,(_12_)); ASSERT_F32_EQUAL(a._22,(_22_))
 		
 		
 		a = mat3{0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
@@ -20926,13 +20969,546 @@ void TEST_deshi_math(){
 	
 	//// mat4 ////
 	{
+		mat4 a, b;
+#define ASSERT_MAT4_VALUES(lhs,_00_,_10_,_20_,_30_,_01_,_11_,_21_,_31_,_02_,_12_,_22_,_32_,_03_,_13_,_23_,_33_) a = (lhs); \
+	ASSERT_F32_EQUAL(a._00,(_00_)); ASSERT_F32_EQUAL(a._10,(_10_)); ASSERT_F32_EQUAL(a._20,(_20_)); ASSERT_F32_EQUAL(a._30,(_30_)); \
+	ASSERT_F32_EQUAL(a._01,(_01_)); ASSERT_F32_EQUAL(a._11,(_11_)); ASSERT_F32_EQUAL(a._21,(_21_)); ASSERT_F32_EQUAL(a._31,(_31_)); \
+	ASSERT_F32_EQUAL(a._02,(_02_)); ASSERT_F32_EQUAL(a._12,(_12_)); ASSERT_F32_EQUAL(a._22,(_22_)); ASSERT_F32_EQUAL(a._32,(_32_)); \
+	ASSERT_F32_EQUAL(a._03,(_03_)); ASSERT_F32_EQUAL(a._13,(_13_)); ASSERT_F32_EQUAL(a._23,(_23_)); ASSERT_F32_EQUAL(a._33,(_33_))
 		
+		
+		a = mat4{0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		ASSERT_F32_EQUAL(a.arr[ 0], 0.0f); ASSERT_F32_EQUAL(a.arr[ 1], 0.0f); ASSERT_F32_EQUAL(a.arr[ 2], 0.0f); ASSERT_F32_EQUAL(a.arr[ 3], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[ 4], 0.0f); ASSERT_F32_EQUAL(a.arr[ 5], 0.0f); ASSERT_F32_EQUAL(a.arr[ 6], 0.0f); ASSERT_F32_EQUAL(a.arr[ 7], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[ 8], 0.0f); ASSERT_F32_EQUAL(a.arr[ 9], 0.0f); ASSERT_F32_EQUAL(a.arr[10], 0.0f); ASSERT_F32_EQUAL(a.arr[11], 0.0f);
+		ASSERT_F32_EQUAL(a.arr[12], 0.0f); ASSERT_F32_EQUAL(a.arr[13], 0.0f); ASSERT_F32_EQUAL(a.arr[14], 0.0f); ASSERT_F32_EQUAL(a.arr[15], 0.0f);
+		ASSERT_F32_EQUAL(a._00, 0.0f); ASSERT_F32_EQUAL(a._10, 0.0f); ASSERT_F32_EQUAL(a._20, 0.0f); ASSERT_F32_EQUAL(a._30, 0.0f);
+		ASSERT_F32_EQUAL(a._01, 0.0f); ASSERT_F32_EQUAL(a._11, 0.0f); ASSERT_F32_EQUAL(a._21, 0.0f); ASSERT_F32_EQUAL(a._31, 0.0f);
+		ASSERT_F32_EQUAL(a._02, 0.0f); ASSERT_F32_EQUAL(a._12, 0.0f); ASSERT_F32_EQUAL(a._22, 0.0f); ASSERT_F32_EQUAL(a._32, 0.0f);
+		ASSERT_F32_EQUAL(a._03, 0.0f); ASSERT_F32_EQUAL(a._13, 0.0f); ASSERT_F32_EQUAL(a._23, 0.0f); ASSERT_F32_EQUAL(a._33, 0.0f);
+		ASSERT_F32_EQUAL(a.row0.x, 0.0f); ASSERT_F32_EQUAL(a.row0.y, 0.0f); ASSERT_F32_EQUAL(a.row0.z, 0.0f); ASSERT_F32_EQUAL(a.row0.w, 0.0f);
+		ASSERT_F32_EQUAL(a.row1.x, 0.0f); ASSERT_F32_EQUAL(a.row1.y, 0.0f); ASSERT_F32_EQUAL(a.row1.z, 0.0f); ASSERT_F32_EQUAL(a.row1.w, 0.0f);
+		ASSERT_F32_EQUAL(a.row2.x, 0.0f); ASSERT_F32_EQUAL(a.row2.y, 0.0f); ASSERT_F32_EQUAL(a.row2.z, 0.0f); ASSERT_F32_EQUAL(a.row2.w, 0.0f);
+		ASSERT_F32_EQUAL(a.row3.x, 0.0f); ASSERT_F32_EQUAL(a.row3.y, 0.0f); ASSERT_F32_EQUAL(a.row3.z, 0.0f); ASSERT_F32_EQUAL(a.row3.w, 0.0f);
+		
+		ASSERT_MAT4_VALUES(Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f), -1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		ASSERT_MAT4_VALUES(Mat4(0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f), 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		ASSERT_MAT4_VALUES(Mat4(1.0f,2.0f,3.0f,4.0f,5.0f,6.0f,7.0f,8.0f,9.0f,10.0f,11.0f,12.0f,13.0f,14.0f,15.0f,16.0f), 1.0f,2.0f,3.0f,4.0f,5.0f,6.0f,7.0f,8.0f,9.0f,10.0f,11.0f,12.0f,13.0f,14.0f,15.0f,16.0f);
+		
+		f32 arr1[16] = {-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f};
+		ASSERT_MAT4_VALUES(array_to_mat4(arr1), -1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		f32 arr2[16] = {0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f};
+		ASSERT_MAT4_VALUES(array_to_mat4(arr2), 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		f32 arr3[16] = {1.0f,2.0f,3.0f,4.0f,5.0f,6.0f,7.0f,8.0f,9.0f,10.0f,11.0f,12.0f,13.0f,14.0f,15.0f,16.0f};
+		ASSERT_MAT4_VALUES(array_to_mat4(arr3), 1.0f,2.0f,3.0f,4.0f,5.0f,6.0f,7.0f,8.0f,9.0f,10.0f,11.0f,12.0f,13.0f,14.0f,15.0f,16.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_ZERO(), 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		ASSERT_MAT4_VALUES(mat4_ONE(), 1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f);
+		ASSERT_MAT4_VALUES(mat4_IDENTITY(), 1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f);
+		
+#if DESHI_MATH_USE_CPP
+		ASSERT_MAT4_VALUES(mat4::ZERO, 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		ASSERT_MAT4_VALUES(mat4::ONE, 1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f);
+		ASSERT_MAT4_VALUES(mat4::IDENTITY, 1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(mat4_coord(a,0,0),  1.0f); ASSERT_F32_EQUAL(mat4_coord(a,0,1),  2.0f); ASSERT_F32_EQUAL(mat4_coord(a,0,2),  3.0f); ASSERT_F32_EQUAL(mat4_coord(a,0,3),  4.0f);
+		ASSERT_F32_EQUAL(mat4_coord(a,1,0),  5.0f); ASSERT_F32_EQUAL(mat4_coord(a,1,1),  6.0f); ASSERT_F32_EQUAL(mat4_coord(a,1,2),  7.0f); ASSERT_F32_EQUAL(mat4_coord(a,1,3),  8.0f);
+		ASSERT_F32_EQUAL(mat4_coord(a,2,0),  9.0f); ASSERT_F32_EQUAL(mat4_coord(a,2,1), 10.0f); ASSERT_F32_EQUAL(mat4_coord(a,2,2), 11.0f); ASSERT_F32_EQUAL(mat4_coord(a,2,3), 12.0f);
+		ASSERT_F32_EQUAL(mat4_coord(a,3,0), 13.0f); ASSERT_F32_EQUAL(mat4_coord(a,3,1), 14.0f); ASSERT_F32_EQUAL(mat4_coord(a,3,2), 15.0f); ASSERT_F32_EQUAL(mat4_coord(a,3,3), 16.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(a(0,0),  1.0f); ASSERT_F32_EQUAL(a(0,1),  2.0f); ASSERT_F32_EQUAL(a(0,2),  3.0f); ASSERT_F32_EQUAL(a(0,3),  4.0f);
+		ASSERT_F32_EQUAL(a(1,0),  5.0f); ASSERT_F32_EQUAL(a(1,1),  6.0f); ASSERT_F32_EQUAL(a(1,2),  7.0f); ASSERT_F32_EQUAL(a(1,3),  8.0f);
+		ASSERT_F32_EQUAL(a(2,0),  9.0f); ASSERT_F32_EQUAL(a(2,1), 10.0f); ASSERT_F32_EQUAL(a(2,2), 11.0f); ASSERT_F32_EQUAL(a(2,3), 12.0f);
+		ASSERT_F32_EQUAL(a(3,0), 13.0f); ASSERT_F32_EQUAL(a(3,1), 14.0f); ASSERT_F32_EQUAL(a(3,2), 15.0f); ASSERT_F32_EQUAL(a(3,3), 16.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(mat4_index(a, 0),  1.0f); ASSERT_F32_EQUAL(mat4_index(a, 1),  2.0f); ASSERT_F32_EQUAL(mat4_index(a, 2),  3.0f); ASSERT_F32_EQUAL(mat4_index(a, 3),  4.0f);
+		ASSERT_F32_EQUAL(mat4_index(a, 4),  5.0f); ASSERT_F32_EQUAL(mat4_index(a, 5),  6.0f); ASSERT_F32_EQUAL(mat4_index(a, 6),  7.0f); ASSERT_F32_EQUAL(mat4_index(a, 7),  8.0f);
+		ASSERT_F32_EQUAL(mat4_index(a, 8),  9.0f); ASSERT_F32_EQUAL(mat4_index(a, 9), 10.0f); ASSERT_F32_EQUAL(mat4_index(a,10), 11.0f); ASSERT_F32_EQUAL(mat4_index(a,11), 12.0f);
+		ASSERT_F32_EQUAL(mat4_index(a,12), 13.0f); ASSERT_F32_EQUAL(mat4_index(a,13), 14.0f); ASSERT_F32_EQUAL(mat4_index(a,14), 15.0f); ASSERT_F32_EQUAL(mat4_index(a,15), 16.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(a[ 0],  1.0f); ASSERT_F32_EQUAL(a[ 1],  2.0f); ASSERT_F32_EQUAL(a[ 2],  3.0f); ASSERT_F32_EQUAL(a[ 3],  4.0f);
+		ASSERT_F32_EQUAL(a[ 4],  5.0f); ASSERT_F32_EQUAL(a[ 5],  6.0f); ASSERT_F32_EQUAL(a[ 6],  7.0f); ASSERT_F32_EQUAL(a[ 7],  8.0f);
+		ASSERT_F32_EQUAL(a[ 8],  9.0f); ASSERT_F32_EQUAL(a[ 9], 10.0f); ASSERT_F32_EQUAL(a[10], 11.0f); ASSERT_F32_EQUAL(a[11], 12.0f);
+		ASSERT_F32_EQUAL(a[12], 13.0f); ASSERT_F32_EQUAL(a[13], 14.0f); ASSERT_F32_EQUAL(a[14], 15.0f); ASSERT_F32_EQUAL(a[15], 16.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a[ 0] = 0.01f; a[ 1] = 0.02f; a[ 2] = 0.03f; a[ 3] = 0.04f;
+		a[ 4] = 0.05f; a[ 5] = 0.06f; a[ 6] = 0.07f; a[ 7] = 0.08f;
+		a[ 8] = 0.09f; a[ 9] = 0.10f; a[10] = 0.11f; a[11] = 0.12f;
+		a[12] = 0.13f; a[13] = 0.14f; a[14] = 0.15f; a[15] = 0.16f;
+		ASSERT_F32_EQUAL(a[ 0], 0.01f); ASSERT_F32_EQUAL(a[ 1], 0.02f); ASSERT_F32_EQUAL(a[ 2], 0.03f); ASSERT_F32_EQUAL(a[ 3], 0.04f);
+		ASSERT_F32_EQUAL(a[ 4], 0.05f); ASSERT_F32_EQUAL(a[ 5], 0.06f); ASSERT_F32_EQUAL(a[ 6], 0.07f); ASSERT_F32_EQUAL(a[ 7], 0.08f);
+		ASSERT_F32_EQUAL(a[ 8], 0.09f); ASSERT_F32_EQUAL(a[ 9], 0.10f); ASSERT_F32_EQUAL(a[10], 0.11f); ASSERT_F32_EQUAL(a[11], 0.12f);
+		ASSERT_F32_EQUAL(a[12], 0.13f); ASSERT_F32_EQUAL(a[13], 0.14f); ASSERT_F32_EQUAL(a[14], 0.15f); ASSERT_F32_EQUAL(a[15], 0.16f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_add_elements(a, b), 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 22.0f, 24.0f, 26.0f, 28.0f, 30.0f, 32.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_add_elements(a, b), 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a + b), 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 22.0f, 24.0f, 26.0f, 28.0f, 30.0f, 32.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a + b), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a += Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 22.0f, 24.0f, 26.0f, 28.0f, 30.0f, 32.0f);
+		a  = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		a += Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_sub_elements(a, b), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_sub_elements(a, b), -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a - b), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a - b), -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a -= Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		a  = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		a -= Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_mul_f32(a, 1.0f), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_mul_f32(a, -2.0f), -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a * 1.0f), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a * -2.0f), -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a *= 1.0f;
+		ASSERT_MAT4_VALUES(a, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a *= -2.0f;
+		ASSERT_MAT4_VALUES(a, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+#endif //#if DESHI_MATH_USE_CPP
+
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = 1.0f * a;
+		ASSERT_MAT4_VALUES(a, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = -2.0f * a;
+		ASSERT_MAT4_VALUES(a, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_mul_mat4(a, b), 90.0f, 100.0f, 110.0f, 120.0f, 202.0f, 228.0f, 254.0f, 280.0f, 314.0f, 356.0f, 398.0f, 440.0f, 426.0f, 484.0f, 542.0f, 600.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_mul_mat4(a, b), -90.0f, -100.0f, -110.0f, -120.0f, -202.0f, -228.0f, -254.0f, -280.0f, -314.0f, -356.0f, -398.0f, -440.0f, -426.0f, -484.0f, -542.0f, -600.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a * b), 90.0f, 100.0f, 110.0f, 120.0f, 202.0f, 228.0f, 254.0f, 280.0f, 314.0f, 356.0f, 398.0f, 440.0f, 426.0f, 484.0f, 542.0f, 600.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a * b), -90.0f, -100.0f, -110.0f, -120.0f, -202.0f, -228.0f, -254.0f, -280.0f, -314.0f, -356.0f, -398.0f, -440.0f, -426.0f, -484.0f, -542.0f, -600.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a *= Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, 90.0f, 100.0f, 110.0f, 120.0f, 202.0f, 228.0f, 254.0f, 280.0f, 314.0f, 356.0f, 398.0f, 440.0f, 426.0f, 484.0f, 542.0f, 600.0f);
+		a  = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		a *= Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, -90.0f, -100.0f, -110.0f, -120.0f, -202.0f, -228.0f, -254.0f, -280.0f, -314.0f, -356.0f, -398.0f, -440.0f, -426.0f, -484.0f, -542.0f, -600.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_mul_elements(a, b), 1.0f, 4.0f, 9.0f, 16.0f, 25.0f, 36.0f, 49.0f, 64.0f, 81.0f, 100.0f, 121.0f, 144.0f, 169.0f, 196.0f, 225.0f, 256.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_mul_elements(a, b), -1.0f, -4.0f, -9.0f, -16.0f, -25.0f, -36.0f, -49.0f, -64.0f, -81.0f, -100.0f, -121.0f, -144.0f, -169.0f, -196.0f, -225.0f, -256.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a ^ b), 1.0f, 4.0f, 9.0f, 16.0f, 25.0f, 36.0f, 49.0f, 64.0f, 81.0f, 100.0f, 121.0f, 144.0f, 169.0f, 196.0f, 225.0f, 256.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a ^ b), -1.0f, -4.0f, -9.0f, -16.0f, -25.0f, -36.0f, -49.0f, -64.0f, -81.0f, -100.0f, -121.0f, -144.0f, -169.0f, -196.0f, -225.0f, -256.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a ^= Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, 1.0f, 4.0f, 9.0f, 16.0f, 25.0f, 36.0f, 49.0f, 64.0f, 81.0f, 100.0f, 121.0f, 144.0f, 169.0f, 196.0f, 225.0f, 256.0f);
+		a  = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		a ^= Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, -1.0f, -4.0f, -9.0f, -16.0f, -25.0f, -36.0f, -49.0f, -64.0f, -81.0f, -100.0f, -121.0f, -144.0f, -169.0f, -196.0f, -225.0f, -256.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_div_f32(a, 1.0f), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_div_f32(a, -2.0f), -0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f, -3.5f, -4.0f, -4.5f, -5.0f, -5.5f, -6.0f, -6.5f, -7.0f, -7.5f, -8.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a / 1.0f), 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a / -2.0f), -0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f, -3.5f, -4.0f, -4.5f, -5.0f, -5.5f, -6.0f, -6.5f, -7.0f, -7.5f, -8.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a /= 1.0f;
+		ASSERT_MAT4_VALUES(a, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a /= -2.0f;
+		ASSERT_MAT4_VALUES(a, -0.5f, -1.0f, -1.5f, -2.0f, -2.5f, -3.0f, -3.5f, -4.0f, -4.5f, -5.0f, -5.5f, -6.0f, -6.5f, -7.0f, -7.5f, -8.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_div_elements(a, b), 1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_div_elements(a, b), -1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a % b), 1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f);
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES((a % b), -1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		a  = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		a %= Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, 1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f);
+		a  = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		a %= Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a, -1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f,-1.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert(mat4_equal(a, b));
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert(!mat4_equal(a, b));
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert((a == b));
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert(!(a == b));
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert(mat4_nequal(a, b));
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert(!mat4_nequal(a, b));
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(-1.0f,-2.0f,-3.0f,-4.0f,-5.0f,-6.0f,-7.0f,-8.0f,-9.0f,-10.0f,-11.0f,-12.0f,-13.0f,-14.0f,-15.0f,-16.0f);
+		b = Mat4( 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert((a != b));
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		b = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		Assert(!(a != b));
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_transpose(a), 1.0f, 5.0f, 9.0f, 13.0f, 2.0f, 6.0f, 10.0f, 14.0f, 3.0f, 7.0f, 11.0f, 15.0f, 4.0f, 8.0f, 12.0f, 16.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a.transpose(), 1.0f, 5.0f, 9.0f, 13.0f, 2.0f, 6.0f, 10.0f, 14.0f, 3.0f, 7.0f, 11.0f, 15.0f, 4.0f, 8.0f, 12.0f, 16.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(mat4_determinant(a), 0.0f);
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_F32_EQUAL(mat4_determinant(a), -25600.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(a.determinant(), 0.0f);
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_F32_EQUAL(a.determinant(), -25600.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 0,0), 11200.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 0,1), 1280.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 0,2), -8000.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 0,3), -960.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 1,0), 4800.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 1,1), 640.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 1,2), -1600.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 1,3), -320.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 2,0), 24000.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 2,1), -2560.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 2,2), -20800.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 2,3), 2240.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 3,0), 17600.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 3,1), -1920.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 3,2), -14400.0f);
+		ASSERT_F32_EQUAL(mat4_minor(a, 3,3), 1600.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_F32_EQUAL(a.minor(0,0), 11200.0f);
+		ASSERT_F32_EQUAL(a.minor(0,1), 1280.0f);
+		ASSERT_F32_EQUAL(a.minor(0,2), -8000.0f);
+		ASSERT_F32_EQUAL(a.minor(0,3), -960.0f);
+		ASSERT_F32_EQUAL(a.minor(1,0), 4800.0f);
+		ASSERT_F32_EQUAL(a.minor(1,1), 640.0f);
+		ASSERT_F32_EQUAL(a.minor(1,2), -1600.0f);
+		ASSERT_F32_EQUAL(a.minor(1,3), -320.0f);
+		ASSERT_F32_EQUAL(a.minor(2,0), 24000.0f);
+		ASSERT_F32_EQUAL(a.minor(2,1), -2560.0f);
+		ASSERT_F32_EQUAL(a.minor(2,2), -20800.0f);
+		ASSERT_F32_EQUAL(a.minor(2,3), 2240.0f);
+		ASSERT_F32_EQUAL(a.minor(3,0), 17600.0f);
+		ASSERT_F32_EQUAL(a.minor(3,1), -1920.0f);
+		ASSERT_F32_EQUAL(a.minor(3,2), -14400.0f);
+		ASSERT_F32_EQUAL(a.minor(3,3), 1600.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 0,0), 11200.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 0,1), -1280.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 0,2), -8000.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 0,3), 960.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 1,0), -4800.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 1,1), 640.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 1,2), 1600.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 1,3), -320.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 2,0), 24000.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 2,1), 2560.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 2,2), -20800.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 2,3), -2240.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 3,0), -17600.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 3,1), -1920.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 3,2), 14400.0f);
+		ASSERT_F32_EQUAL(mat4_cofactor(a, 3,3), 1600.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,0), 11200.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,1), -1280.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,2), -8000.0f);
+		ASSERT_F32_EQUAL(a.cofactor(0,3), 960.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,0), -4800.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,1), 640.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,2), 1600.0f);
+		ASSERT_F32_EQUAL(a.cofactor(1,3), -320.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,0), 24000.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,1), 2560.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,2), -20800.0f);
+		ASSERT_F32_EQUAL(a.cofactor(2,3), -2240.0f);
+		ASSERT_F32_EQUAL(a.cofactor(3,0), -17600.0f);
+		ASSERT_F32_EQUAL(a.cofactor(3,1), -1920.0f);
+		ASSERT_F32_EQUAL(a.cofactor(3,2), 14400.0f);
+		ASSERT_F32_EQUAL(a.cofactor(3,3), 1600.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(mat4_adjoint(a), 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_MAT4_VALUES(mat4_adjoint(a), 11200.0f, -4800.0f, 24000.0f, -17600.0f, -1280.0f, 640.0f, 2560.0f, -1920.0f, -8000.0f, 1600.0f, -20800.0f, 14400.0f, 960.0f, -320.0f, -2240.0f, 1600.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_MAT4_VALUES(a.adjoint(), 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_MAT4_VALUES(a.adjoint(), 11200.0f, -4800.0f, 24000.0f, -17600.0f, -1280.0f, 640.0f, 2560.0f, -1920.0f, -8000.0f, 1600.0f, -20800.0f, 14400.0f, 960.0f, -320.0f, -2240.0f, 1600.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_MAT4_VALUES(mat4_inverse(a), -7.0f/16.0f, 3.0f/16.0f, -15.0f/16.0f, 11.0f/16.0f, 1.0f/20.0f, -1.0f/40.0f, -1.0f/10.0f, 3.0f/40.0f, 5.0f/16.0f, -1.0f/16.0f, 13.0f/16.0f, -9.0f/16.0f, -3.0f/80.0f, 1.0f/80.0f, 7.0f/80.0f, -1.0f/16.0f);
+		
+#if DESHI_MATH_USE_CPP
+		a = Mat4(1.0f, -20.0f, 3.0f, -40.0f, 5.0f, -60.0f, 7.0f, -80.0f, 9.0f, 100.0f, 11.0f, 120.0f, 13.0f, 140.0f, 15.0f, 160.0f);
+		ASSERT_MAT4_VALUES(a.inverse(), -7.0f/16.0f, 3.0f/16.0f, -15.0f/16.0f, 11.0f/16.0f, 1.0f/20.0f, -1.0f/40.0f, -1.0f/10.0f, 3.0f/40.0f, 5.0f/16.0f, -1.0f/16.0f, 13.0f/16.0f, -9.0f/16.0f, -3.0f/80.0f, 1.0f/80.0f, 7.0f/80.0f, -1.0f/16.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(1.0f, 1.0f, 1.0f)
+		a = Mat4( 0.5f,                         0.5f,                       -DESHI_SQRTF(2.0f)/2.0f, 0.0f,
+				 -0.5f+DESHI_SQRTF(2.0f)/4.0f,  0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
+				  0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
+				  1.0f,                         2.0f,                        3.0f,                   1.0f);
+		b = Mat4( 0.5f,                  -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				  0.5f,                   0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 -DESHI_SQRTF(2.0f)/2.0f, 0.5f,                        0.5f,                        0.0f,
+				  0.621320009f,          -3.06065989f,                -2.06065989f,                 1.0f);
+		Assert(mat4_equal(mat4_inverse_transformation_matrix(a), b));
+		
+		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(3.0f, 2.0f, 1.0f)
+		a = Mat4( 1.5f,                        1.5f,                       -3.0f*DESHI_SQRTF(2.0f)/2.0f, 0.0f,
+				 -1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f,                        0.0f,
+				  0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                        0.0f,
+				  1.0f,                        2.0f,                        3.0f,                        1.0f);
+		b = Mat4( 1.5f/9.0f,             -0.25f+DESHI_SQRTF(2.0f)/8.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				  1.5f/9.0f,              0.25f+DESHI_SQRTF(2.0f)/8.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 -DESHI_SQRTF(2.0f)/6.0f, 0.25f,                        0.5f,                        0.0f,
+				  0.207100004f,          -1.53032994f,                 -2.06065989f,                 1.0f);
+		Assert(mat4_equal(mat4_inverse_transformation_matrix(a), b));
+		
+		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(1.0f, 1.0f, 1.0f)
+		a = Mat4( 0.5f,                         0.5f,                       -DESHI_SQRTF(2.0f)/2.0f, 0.0f,
+				 -0.5f+DESHI_SQRTF(2.0f)/4.0f,  0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
+				  0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
+				  1.0f,                         2.0f,                        3.0f,                   1.0f);
+		b = Mat4( 0.5f,                  -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				  0.5f,                   0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 -DESHI_SQRTF(2.0f)/2.0f, 0.5f,                        0.5f,                        0.0f,
+				  0.621320009f,          -3.06065989f,                -2.06065989f,                 1.0f);
+		Assert(mat4_equal(mat4_inverse_transformation_matrix_no_scale(a), b));
+		
+		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(3.0f, 2.0f, 1.0f)
+		//NOTE(delle): this produces an invalid inverse matrix, but test the math anyways
+		a = Mat4( 1.5f,                        1.5f,                       -3.0f*DESHI_SQRTF(2.0f)/2.0f, 0.0f,
+				 -1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f,                        0.0f,
+				  0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                        0.0f,
+				  1.0f,                        2.0f,                        3.0f,                        1.0f);
+		b = Mat4( 1.5f,                       -1.0f+DESHI_SQRTF(2.0f)/2.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				  1.5f,                        1.0f+DESHI_SQRTF(2.0f)/2.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 -3.0f*DESHI_SQRTF(2.0f)/2.0f, 1.0f,                        0.5f,                        0.0f,
+				  1.86396074f,                -6.12132072f,                -2.06065989f,                 1.0f);
+		Assert(mat4_equal(mat4_inverse_transformation_matrix_no_scale(a), b));
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_radians(1.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_radians(2.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_radians(3.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_radians(4.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_degrees(0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_degrees(45.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_degrees(90.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_degrees(135.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_degrees(180.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_radians(1.0f*DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_radians(2.0f*DESHI_MATH_PI_F32/4.0f), 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_radians(3.0f*DESHI_MATH_PI_F32/4.0f), -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_radians(4.0f*DESHI_MATH_PI_F32/4.0f), -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_degrees(0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_degrees(45.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_degrees(90.0f), 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_degrees(135.0f), -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_y_degrees(180.0f), -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_radians(1.0f*DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_radians(2.0f*DESHI_MATH_PI_F32/4.0f), 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_radians(3.0f*DESHI_MATH_PI_F32/4.0f), -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_radians(4.0f*DESHI_MATH_PI_F32/4.0f), -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_degrees(0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_degrees(45.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_degrees(90.0f), 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_degrees(135.0f), -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_z_degrees(180.0f), -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_radians(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_radians(DESHI_MATH_PI_F32/4.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_radians(0.0f, DESHI_MATH_PI_F32/4.0f, 0.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_radians(0.0f, 0.0f, DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_radians(DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f), 0.5f, 0.5f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_radians(DESHI_MATH_PI_F32/5.0f, DESHI_MATH_PI_F32/8.0f, DESHI_MATH_PI_F32/9.0f), 0.868163f, 0.315985f, -0.382684f, 0.0f, -0.0653297f, 0.8371599f, 0.543043f, 0.0f, 0.491961f, -0.446449f, 0.747434f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_degrees(0.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_degrees(45.0f, 0.0f, 0.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_degrees(0.0f, 45.0f, 0.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_degrees(0.0f, 0.0f, 45.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_degrees(45.0f, 45.0f, 45.0f), 0.5f, 0.5f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_rotation_matrix_degrees(36.0f, 22.5f, 20.0f), 0.868163f, 0.315985f, -0.382684f, 0.0f, -0.0653297f, 0.8371599f, 0.543043f, 0.0f, 0.491961f, -0.446449f, 0.747434f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(1.0f, 0.0f, 0.0f, DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(1.0f, 0.0f, 0.0f, DESHI_MATH_PI_F32/2.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(0.0f, 1.0f, 0.0f, DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(0.0f, 1.0f, 0.0f, DESHI_MATH_PI_F32/2.0f), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(0.0f, 0.0f, 1.0f, DESHI_MATH_PI_F32/4.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(0.0f, 0.0f, 1.0f, DESHI_MATH_PI_F32/2.0f), 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(1.0f, 1.0f, 1.0f, DESHI_MATH_PI_F32/4.0f), 1.0f, 1.0f, 1.0f, 0.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 1.0f-DESHI_SQRTF(2.0f), 0.0f, 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_radians(1.0f, 1.0f, 1.0f, DESHI_MATH_PI_F32/2.0f), 1.0f, 2.0f, 2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 2.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(1.0f, 0.0f, 0.0f, 45.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(1.0f, 0.0f, 0.0f, 90.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(0.0f, 1.0f, 0.0f, 45.0f), DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(0.0f, 1.0f, 0.0f, 90.0f), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(0.0f, 0.0f, 1.0f, 45.0f), DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(0.0f, 0.0f, 1.0f, 90.0f), 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(1.0f, 1.0f, 1.0f, 45.0f), 1.0f, 1.0f, 1.0f, 0.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 1.0f-DESHI_SQRTF(2.0f), 0.0f, 1.0f, 1.0f-DESHI_SQRTF(2.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_axis_rotation_matrix_degrees(1.0f, 1.0f, 1.0f, 90.0f), 1.0f, 2.0f, 2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 2.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_scale_matrix(1.0f, 1.0f, 1.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_scale_matrix(1.0f, -2.0f, 3.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_radians(1.0f,2.0f,3.0f, DESHI_MATH_PI_F32/4.0f,0.0f,0.0f, 1.0f,1.0f,1.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_radians(1.0f,2.0f,3.0f, DESHI_MATH_PI_F32/4.0f,0.0f,0.0f, 3.0f,2.0f,1.0f), 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f), DESHI_SQRTF(2.0f), 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_radians(1.0f,2.0f,3.0f, DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f, 1.0f,1.0f,1.0f), 0.5f, 0.5f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_radians(1.0f,2.0f,3.0f, DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f, 3.0f,2.0f,1.0f), 1.5f, 1.5f, -3.0f*DESHI_SQRTF(2.0f)/2.0f, 0.0f, -1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f, 0.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_degrees(1.0f,2.0f,3.0f, 45.0f, 0.0f, 0.0f, 1.0f,1.0f,1.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_degrees(1.0f,2.0f,3.0f, 45.0f, 0.0f, 0.0f, 3.0f,2.0f,1.0f), 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, DESHI_SQRTF(2.0f), DESHI_SQRTF(2.0f), 0.0f, 0.0f, -DESHI_SQRTF(2.0f)/2.0f, DESHI_SQRTF(2.0f)/2.0f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_degrees(1.0f,2.0f,3.0f, 45.0f,45.0f,45.0f, 1.0f,1.0f,1.0f), 0.5f, 0.5f, -DESHI_SQRTF(2.0f)/2.0f, 0.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		ASSERT_MAT4_VALUES(mat4_transformation_matrix_degrees(1.0f,2.0f,3.0f, 45.0f,45.0f,45.0f, 3.0f,2.0f,1.0f), 1.5f, 1.5f, -3.0f*DESHI_SQRTF(2.0f)/2.0f, 0.0f, -1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f, 0.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
+		
+		
+#undef ASSERT_MAT4_VALUES
 	}
 	
 	
 	//// mat_conversions ////
 	{
-		
+	
 	}
 	
 	
