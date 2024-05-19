@@ -153,7 +153,7 @@ PrintDx(u32 level, Args... args){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){ //!Incomplete
-	DeshiStageInitStart(DS_IMGUI, DS_RENDER, "Attempted to initialize ImGui module before initializing Render module");
+	DeshiStageInitStart(DS_IMGUI, DS_GRAPHICS, "Attempted to initialize the ImGui module before initializing the Graphcis module.");
 	
 	//Setup Dear ImGui context
 	
@@ -869,7 +869,7 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 
 void Render::
 Init(){ //!Incomplete
-	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_WINDOW, "Attempted to initialize DirectX module before initializing Memory/Window modules");
+	DeshiStageInitStart(DS_GRAPHICS, DS_MEMORY|DS_WINDOW, "Attempted to initialize the DirectX Graphics module before initializing the Memory/Window modules.");
 	
 	//create the shaders directory if it doesn't exist already
 	file_create(str8_lit("data/shaders/"));
@@ -922,7 +922,7 @@ Init(){ //!Incomplete
 	
 	
 	initialized = true;
-	DeshiStageInitEnd(DS_RENDER);
+	DeshiStageInitEnd(DS_GRAPHICS);
 }
 
 local void Resize(u32 _width, u32 _height) {

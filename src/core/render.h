@@ -1,13 +1,19 @@
 /* deshi render module
+Index:
+@scene
+@camera
+@model
+@temp
+@voxel
 
-	An api for typical operations used to interact with a 3D scene.
-	While asset's purpose is to provide an api for un/loading and storing 
-	various things w/o having to interact with the render, scene's purpose 
-	is to provide an api for actually rendering those things w/o having to 
-	interact with the render api directly.
+An api for typical operations used to interact with a 3D scene.
+While asset's purpose is to provide an api for un/loading and storing 
+various things w/o having to interact with the render, scene's purpose 
+is to provide an api for actually rendering those things w/o having to 
+interact with the render api directly.
 
-	render_draw_* functions record a thing to draw, but nothing is actually rendered
-	until render_render() is called.
+render_draw_* functions record a thing to draw, but nothing is actually rendered
+until render_render() is called.
 */
 #ifndef DESHI_RENDER_H
 #define DESHI_RENDER_H

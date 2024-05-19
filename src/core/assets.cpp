@@ -66,7 +66,7 @@ __uid_of_name(str8 name){DPZoneScoped;
 
 void
 assets_init(Window* window){DPZoneScoped;
-	DeshiStageInitStart(DS_ASSETS, DS_RENDER, "Attempted to initialize Assets module before initializing Graphics module");
+	DeshiStageInitStart(DS_ASSETS, DS_MEMORY|DS_GRAPHICS, "Attempted to initialize the Assets module before initializing the Memory or Graphics modules.");
 	
 	// setup pools
 	memory_pool_init(g_assets->mesh_pool, 8);

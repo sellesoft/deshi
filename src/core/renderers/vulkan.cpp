@@ -1548,7 +1548,7 @@ create_sync_objects(){DPZoneScoped;
 
 void
 graphics_init(Window* window){DPZoneScoped;
-	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to reinitialize the Graphics module or initialzie it before initializing the Platform module");
+	DeshiStageInitStart(DS_GRAPHICS, DS_MEMORY|DS_PLATFORM, "Attempted to initialize the Vulkan Graphics module before initializing the Memory or Platform modules.");
 	if(!window){
 		VulkanFatal("passed a null window pointer.");
 		return;
@@ -1601,7 +1601,7 @@ graphics_init(Window* window){DPZoneScoped;
 	
 	g_graphics->initialized = true;
 	VulkanNotice("finished initialization in ", peek_stopwatch(watch), "ms.");
-	DeshiStageInitEnd(DS_RENDER);
+	DeshiStageInitEnd(DS_GRAPHICS);
 }
 
 

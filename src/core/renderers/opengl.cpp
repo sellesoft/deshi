@@ -167,7 +167,7 @@ GladDebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_
 void
 graphics_init(Window* window){DPZoneScoped;
 	AssertAlways(window);
-	DeshiStageInitStart(DS_RENDER, DS_PLATFORM, "Attempted to reinitialize the Graphics module or initialzie it before initializing the Platform module.");
+	DeshiStageInitStart(DS_GRAPHICS, DS_MEMORY|DS_PLATFORM, "Attempted to initialize the OpenGL Graphics module before initializing the Memory or Platform modules.");
 	Log("opengl","Starting OpenGL graphics backend initialization.");
 	
 	graphics_init_shared(window);
@@ -452,7 +452,7 @@ graphics_init(Window* window){DPZoneScoped;
 	window_info->framebuffer->__internal.handle = 0; //NOTE(delle) OpenGL default framebuffer handle is zero
 	
 	g_graphics->initialized = true;
-	DeshiStageInitEnd(DS_RENDER);
+	DeshiStageInitEnd(DS_GRAPHICS);
 }
 
 

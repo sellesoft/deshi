@@ -207,6 +207,8 @@ graphics_command_buffer_allocate(){
 
 void
 graphics_init_shared(Window* window){DPZoneScoped;
+	DeshiStageInitStart(DS_GRAPHICS, DS_MEMORY, "Attempted to initialize the Graphics module before initializing the Memory module");
+	
 	//// init settings ////
 	
 	g_graphics->debugging = true;
@@ -231,4 +233,6 @@ graphics_init_shared(Window* window){DPZoneScoped;
 	memory_pool_init(g_graphics->pools.render_passes, 8);
 	memory_pool_init(g_graphics->pools.framebuffers, 8);
 	memory_pool_init(g_graphics->pools.shaders, 8);
+	
+	DeshiStageInitEnd(DS_GRAPHICS);
 }

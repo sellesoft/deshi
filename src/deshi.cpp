@@ -209,8 +209,7 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 
 //// deshi stages ////
 typedef Flags DeshiStage;
-enum
-{
+enum{
     DS_NONE     = 0,
     DS_MEMORY   = 1 << 0,
     DS_PLATFORM = 1 << 1,
@@ -219,11 +218,11 @@ enum
     DS_THREAD   = 1 << 4,
     DS_WINDOW   = 1 << 5,
     DS_RENDER   = 1 << 6,
-    DS_IMGUI    = 1 << 7,
-    DS_ASSETS   = 1 << 8,
-    DS_UI       = 1 << 9,
-    DS_CONSOLE  = 1 << 10,
-    DS_CMD      = 1 << 11,
+    DS_ASSETS   = 1 << 7,
+    DS_UI       = 1 << 8,
+    DS_CONSOLE  = 1 << 9,
+    DS_CMD      = 1 << 10,
+    DS_GRAPHICS = 1 << 11,
 };
 local DeshiStage deshiStage = DS_NONE;
 
@@ -231,6 +230,7 @@ local DeshiStage deshiStage = DS_NONE;
   Assert(((deshiStage & (dependencies)) == (dependencies)) && (deshiStage & (stage)) != (stage)); \
   Stopwatch stopwatch##stage = start_stopwatch()
 
+#define DESHI_LOG_MODULE_INIT 1
 #if DESHI_LOG_MODULE_INIT
 #  define DeshiStageInitEnd(stage) deshiStage |= stage; LogS("deshi", "Finished " #stage " module initialization in ", peek_stopwatch(stopwatch##stage), "ms")
 #else

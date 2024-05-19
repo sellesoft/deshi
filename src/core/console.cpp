@@ -146,7 +146,7 @@ void console_init(){DPZoneScoped;
 	console.state = ConsoleState_Closed;
 	
 	uiStyle base = {0};
-	base.font = assets_font_create_from_path_bdf(STR8("gohufont-11.bdf"));
+	base.font = assets_font_create_from_path_bdf(STR8("data/fonts/gohufont-11.bdf"));
 	base.font_height = 11;
 	base.text_color = color(255,255,255);
 	base.overflow = overflow_scroll;

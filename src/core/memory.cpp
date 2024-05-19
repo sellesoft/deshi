@@ -1792,6 +1792,8 @@ deshi__memory_bytes_draw() {
 //// @memory_state
 void
 memory_init(upt main_size, upt temp_size){DPZoneScoped;
+	DeshiStageInitStart(DS_MEMORY, DS_NONE);
+	
 	void* base_address = 0;
 	u8*   allocation   = 0;
 	u64   total_size   = main_size + temp_size + sizeof(MemoryContext);
@@ -1842,7 +1844,7 @@ memory_init(upt main_size, upt temp_size){DPZoneScoped;
 	g_memory->temp_arena.used   = 0;
 	deshi__memory_allocinfo_set(&g_memory->temp_arena, str8_lit("Temp Arena"), 0);
 	
-	deshiStage |= DS_MEMORY;
+	DeshiStageInitEnd(DS_MEMORY);
 }
 
 

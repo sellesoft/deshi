@@ -6,6 +6,8 @@ RenderGlobal* g_scene = &__deshi__g_scene;
 
 void 
 render_init(){DPZoneScoped;
+	DeshiStageInitStart(DS_RENDER, DS_MEMORY|DS_GRAPHICS|DS_ASSETS, "Attempted to initialize the Render module before initializing the Memory, Graphics, or Assets modules.");
+	
 	*g_scene = {};
 	memory_pool_init(g_scene->pools.camera, 4);
 	memory_pool_init(g_scene->pools.voxel_chunks, 8);
@@ -29,6 +31,8 @@ render_init(){DPZoneScoped;
 	voxel_pc_resource->push_constant_size = sizeof(mat4);
 	
 	g_scene->voxel_material = assets_material_create(str8l("<scene> voxels"), stages, voxel_resources);
+	
+	DeshiStageInitEnd(DS_RENDER);
 }
 
 void
