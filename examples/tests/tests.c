@@ -5,8 +5,9 @@
 
 //#define DESHI_MATH_DISABLE_LIBC
 //#define DESHI_MATH_DISABLE_SSE
-#include "math/math2.h"
+#define DESHI_MATH_DISABLE_CPP
+#include "core/math.h"
 
 int main(){
-		TEST_deshi_math();
+	TEST_deshi_math();
 }

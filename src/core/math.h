@@ -11994,7 +11994,7 @@ mat4_transformation_matrix_radians_vec3(vec3 translation, vec3 rotation, vec3 sc
 }
 
 //returns a pre-multiplied X->Y->Z LH transformation matrix based on input in degrees
-#define mat4_transformation_matrix_degrees_vec3(translation,rotation,scale) mat4_rotation_matrix_radians_vec3(translation, Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)), scale)
+#define mat4_transformation_matrix_degrees_vec3(translation,rotation,scale) mat4_transformation_matrix_radians_vec3(translation, Vec3(DESHI_DEGREES_TO_RADIANS_F32((rotation).x), DESHI_DEGREES_TO_RADIANS_F32((rotation).y), DESHI_DEGREES_TO_RADIANS_F32((rotation).z)), scale)
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
@@ -12360,7 +12360,7 @@ map_screen_to_world(vec2 point, vec2 screen_dimensions, mat4 projection_matrix, 
 #if DESHI_MATH_USE_CPP
 
 
-//returns the average of the last `width` values
+//Returns the average of the last `width` values
 #define RUNNING_AVGF(width,value) ([&]{ \
 	persist f32 floats[width] = {0};    \
 	persist f32 average = 0;            \
@@ -20590,7 +20590,7 @@ void TEST_deshi_math(){
 		ASSERT_F32_EQUAL(a[3], 4.0f); ASSERT_F32_EQUAL(a[4], 5.0f); ASSERT_F32_EQUAL(a[5], 6.0f);
 		ASSERT_F32_EQUAL(a[6], 7.0f); ASSERT_F32_EQUAL(a[7], 8.0f); ASSERT_F32_EQUAL(a[8], 9.0f);
 #endif //#if DESHI_MATH_USE_CPP
-
+		
 #if DESHI_MATH_USE_CPP		
 		a[0] = 0.1f; a[1] = 0.2f; a[2] = 0.3f;
 		a[3] = 0.4f; a[4] = 0.5f; a[5] = 0.6f;
@@ -21121,7 +21121,7 @@ void TEST_deshi_math(){
 		a *= -2.0f;
 		ASSERT_MAT4_VALUES(a, -2.0f, -4.0f, -6.0f, -8.0f, -10.0f, -12.0f, -14.0f, -16.0f, -18.0f, -20.0f, -22.0f, -24.0f, -26.0f, -28.0f, -30.0f, -32.0f);
 #endif //#if DESHI_MATH_USE_CPP
-
+		
 #if DESHI_MATH_USE_CPP
 		a = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
 		a = 1.0f * a;
@@ -21378,46 +21378,46 @@ void TEST_deshi_math(){
 		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(1.0f, 1.0f, 1.0f)
 		a = Mat4( 0.5f,                         0.5f,                       -DESHI_SQRTF(2.0f)/2.0f, 0.0f,
 				 -0.5f+DESHI_SQRTF(2.0f)/4.0f,  0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
-				  0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
-				  1.0f,                         2.0f,                        3.0f,                   1.0f);
+				 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
+				 1.0f,                         2.0f,                        3.0f,                   1.0f);
 		b = Mat4( 0.5f,                  -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
-				  0.5f,                   0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 0.5f,                   0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
 				 -DESHI_SQRTF(2.0f)/2.0f, 0.5f,                        0.5f,                        0.0f,
-				  0.621320009f,          -3.06065989f,                -2.06065989f,                 1.0f);
+				 0.621320009f,          -3.06065989f,                -2.06065989f,                 1.0f);
 		Assert(mat4_equal(mat4_inverse_transformation_matrix(a), b));
 		
 		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(3.0f, 2.0f, 1.0f)
 		a = Mat4( 1.5f,                        1.5f,                       -3.0f*DESHI_SQRTF(2.0f)/2.0f, 0.0f,
 				 -1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f,                        0.0f,
-				  0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                        0.0f,
-				  1.0f,                        2.0f,                        3.0f,                        1.0f);
+				 0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                        0.0f,
+				 1.0f,                        2.0f,                        3.0f,                        1.0f);
 		b = Mat4( 1.5f/9.0f,             -0.25f+DESHI_SQRTF(2.0f)/8.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
-				  1.5f/9.0f,              0.25f+DESHI_SQRTF(2.0f)/8.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 1.5f/9.0f,              0.25f+DESHI_SQRTF(2.0f)/8.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
 				 -DESHI_SQRTF(2.0f)/6.0f, 0.25f,                        0.5f,                        0.0f,
-				  0.207100004f,          -1.53032994f,                 -2.06065989f,                 1.0f);
+				 0.207100004f,          -1.53032994f,                 -2.06065989f,                 1.0f);
 		Assert(mat4_equal(mat4_inverse_transformation_matrix(a), b));
 		
 		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(1.0f, 1.0f, 1.0f)
 		a = Mat4( 0.5f,                         0.5f,                       -DESHI_SQRTF(2.0f)/2.0f, 0.0f,
 				 -0.5f+DESHI_SQRTF(2.0f)/4.0f,  0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
-				  0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
-				  1.0f,                         2.0f,                        3.0f,                   1.0f);
+				 0.5f+DESHI_SQRTF(2.0f)/4.0f, -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                   0.0f,
+				 1.0f,                         2.0f,                        3.0f,                   1.0f);
 		b = Mat4( 0.5f,                  -0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
-				  0.5f,                   0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 0.5f,                   0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
 				 -DESHI_SQRTF(2.0f)/2.0f, 0.5f,                        0.5f,                        0.0f,
-				  0.621320009f,          -3.06065989f,                -2.06065989f,                 1.0f);
+				 0.621320009f,          -3.06065989f,                -2.06065989f,                 1.0f);
 		Assert(mat4_equal(mat4_inverse_transformation_matrix_no_scale(a), b));
 		
 		//translation(1.0f, 2.0f, 3.0f), rotation_degrees(45.0f, 45.0f, 45.0f), scale(3.0f, 2.0f, 1.0f)
 		//NOTE(delle): this produces an invalid inverse matrix, but test the math anyways
 		a = Mat4( 1.5f,                        1.5f,                       -3.0f*DESHI_SQRTF(2.0f)/2.0f, 0.0f,
 				 -1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f+DESHI_SQRTF(2.0f)/2.0f, 1.0f,                        0.0f,
-				  0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                        0.0f,
-				  1.0f,                        2.0f,                        3.0f,                        1.0f);
+				 0.5f+DESHI_SQRTF(2.0f)/4.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.5f,                        0.0f,
+				 1.0f,                        2.0f,                        3.0f,                        1.0f);
 		b = Mat4( 1.5f,                       -1.0f+DESHI_SQRTF(2.0f)/2.0f, 0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
-				  1.5f,                        1.0f+DESHI_SQRTF(2.0f)/2.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
+				 1.5f,                        1.0f+DESHI_SQRTF(2.0f)/2.0f,-0.5f+DESHI_SQRTF(2.0f)/4.0f, 0.0f,
 				 -3.0f*DESHI_SQRTF(2.0f)/2.0f, 1.0f,                        0.5f,                        0.0f,
-				  1.86396074f,                -6.12132072f,                -2.06065989f,                 1.0f);
+				 1.86396074f,                -6.12132072f,                -2.06065989f,                 1.0f);
 		Assert(mat4_equal(mat4_inverse_transformation_matrix_no_scale(a), b));
 		
 		ASSERT_MAT4_VALUES(mat4_rotation_matrix_x_radians(0.0f*DESHI_MATH_PI_F32/4.0f), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -21508,7 +21508,7 @@ void TEST_deshi_math(){
 	
 	//// mat_conversions ////
 	{
-	
+		
 	}
 	
 	
