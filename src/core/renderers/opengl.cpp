@@ -619,7 +619,6 @@ graphics_update(Window* window){DPZoneScoped;
 					glLineWidth((GLfloat)cmd->bind_pipeline.handle->line_width);
 				}
 				
-				//NOTE(delle): compare ops are inverted for depth testing because openGL Z direction is opposite deshi's
 				if(cmd->bind_pipeline.handle->depth_test){
 					glEnable(GL_DEPTH_TEST);
 					glDepthMask((cmd->bind_pipeline.handle->depth_writes) ? GL_TRUE : GL_FALSE);
@@ -628,22 +627,22 @@ graphics_update(Window* window){DPZoneScoped;
 							glDepthFunc(GL_NEVER);
 						}break;
 						case GraphicsCompareOp_Less:{
-							glDepthFunc(GL_GREATER);
+							glDepthFunc(GL_LESS);
 						}break;
 						case GraphicsCompareOp_Equal:{
 							glDepthFunc(GL_EQUAL);
 						}break;
 						case GraphicsCompareOp_Less_Or_Equal:{
-							glDepthFunc(GL_GEQUAL);
+							glDepthFunc(GL_LEQUAL);
 						}break;
 						case GraphicsCompareOp_Greater:{
-							glDepthFunc(GL_LESS);
+							glDepthFunc(GL_GREATER);
 						}break;
 						case GraphicsCompareOp_Not_Equal:{
 							glDepthFunc(GL_NOTEQUAL);
 						}break;
 						case GraphicsCompareOp_Greater_Or_Equal:{
-							glDepthFunc(GL_LEQUAL);
+							glDepthFunc(GL_GEQUAL);
 						}break;
 						case GraphicsCompareOp_Always:{
 							glDepthFunc(GL_ALWAYS);
