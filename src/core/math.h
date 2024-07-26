@@ -21508,7 +21508,16 @@ void TEST_deshi_math(){
 	
 	//// mat_conversions ////
 	{
+		mat4 m4 = mat3_to_mat4(Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f));
+		ASSERT_F32_EQUAL(m4.arr[ 0], 1.0f); ASSERT_F32_EQUAL(m4.arr[ 1], 2.0f); ASSERT_F32_EQUAL(m4.arr[ 2], 3.0f); ASSERT_F32_EQUAL(m4.arr[ 3], 0.0f);
+		ASSERT_F32_EQUAL(m4.arr[ 4], 4.0f); ASSERT_F32_EQUAL(m4.arr[ 5], 5.0f); ASSERT_F32_EQUAL(m4.arr[ 6], 6.0f); ASSERT_F32_EQUAL(m4.arr[ 7], 0.0f);
+		ASSERT_F32_EQUAL(m4.arr[ 8], 7.0f); ASSERT_F32_EQUAL(m4.arr[ 9], 8.0f); ASSERT_F32_EQUAL(m4.arr[10], 9.0f); ASSERT_F32_EQUAL(m4.arr[11], 0.0f);
+		ASSERT_F32_EQUAL(m4.arr[12], 0.0f); ASSERT_F32_EQUAL(m4.arr[13], 0.0f); ASSERT_F32_EQUAL(m4.arr[14], 0.0f); ASSERT_F32_EQUAL(m4.arr[15], 1.0f);
 		
+		mat3 m3 = mat4_to_mat3(Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f));
+		ASSERT_F32_EQUAL(m3.arr[0], 1.0f); ASSERT_F32_EQUAL(m3.arr[1], 2.0f); ASSERT_F32_EQUAL(m3.arr[2], 3.0f);
+		ASSERT_F32_EQUAL(m3.arr[3], 5.0f); ASSERT_F32_EQUAL(m3.arr[4], 6.0f); ASSERT_F32_EQUAL(m3.arr[5], 7.0f);
+		ASSERT_F32_EQUAL(m3.arr[6], 9.0f); ASSERT_F32_EQUAL(m3.arr[7],10.0f); ASSERT_F32_EQUAL(m3.arr[8],11.0f);
 	}
 	
 	
@@ -21532,7 +21541,174 @@ void TEST_deshi_math(){
 	
 	//// mat_vec_interactions ////
 	{
+		mat3 m3 = vec3_rows_to_mat3(Vec3(1.0f, 2.0f, 3.0f), Vec3(4.0f, 5.0f, 6.0f), Vec3(7.0f, 8.0f, 9.0f));
+		ASSERT_F32_EQUAL(m3.arr[0], 1.0f); ASSERT_F32_EQUAL(m3.arr[1], 2.0f); ASSERT_F32_EQUAL(m3.arr[2], 3.0f);
+		ASSERT_F32_EQUAL(m3.arr[3], 4.0f); ASSERT_F32_EQUAL(m3.arr[4], 5.0f); ASSERT_F32_EQUAL(m3.arr[5], 6.0f);
+		ASSERT_F32_EQUAL(m3.arr[6], 7.0f); ASSERT_F32_EQUAL(m3.arr[7], 8.0f); ASSERT_F32_EQUAL(m3.arr[8], 9.0f);
 		
+		mat4 m4 = vec4_rows_to_mat4(Vec4(1.0f, 2.0f, 3.0f, 4.0f), Vec4(5.0f, 6.0f, 7.0f, 8.0f), Vec4(9.0f, 10.0f, 11.0f, 12.0f), Vec4(13.0f, 14.0f, 15.0f, 16.0f));
+		ASSERT_F32_EQUAL(m4.arr[ 0], 1.0f); ASSERT_F32_EQUAL(m4.arr[ 1], 2.0f); ASSERT_F32_EQUAL(m4.arr[ 2], 3.0f); ASSERT_F32_EQUAL(m4.arr[ 3], 4.0f);
+		ASSERT_F32_EQUAL(m4.arr[ 4], 5.0f); ASSERT_F32_EQUAL(m4.arr[ 5], 6.0f); ASSERT_F32_EQUAL(m4.arr[ 6], 7.0f); ASSERT_F32_EQUAL(m4.arr[ 7], 8.0f);
+		ASSERT_F32_EQUAL(m4.arr[ 8], 9.0f); ASSERT_F32_EQUAL(m4.arr[ 9],10.0f); ASSERT_F32_EQUAL(m4.arr[10],11.0f); ASSERT_F32_EQUAL(m4.arr[11],12.0f);
+		ASSERT_F32_EQUAL(m4.arr[12],13.0f); ASSERT_F32_EQUAL(m4.arr[13],14.0f); ASSERT_F32_EQUAL(m4.arr[14],15.0f); ASSERT_F32_EQUAL(m4.arr[15],16.0f);
+		
+		vec3 v3 = vec3_mul_mat3(Vec3(1.0f, 2.0f, 3.0f), Mat3(4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f));
+		ASSERT_F32_EQUAL(v3.x, 48.0f); ASSERT_F32_EQUAL(v3.y, 54.0f); ASSERT_F32_EQUAL(v3.z, 60.0f);
+		
+#if DESHI_MATH_USE_CPP
+		v3 = Vec3(1.0f, 2.0f, 3.0f) * Mat3(4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f);
+		ASSERT_F32_EQUAL(v3.x, 48.0f); ASSERT_F32_EQUAL(v3.y, 54.0f); ASSERT_F32_EQUAL(v3.z, 60.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		v3  = Vec3(1.0f, 2.0f, 3.0f);
+		v3 *= Mat3(4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f);
+		ASSERT_F32_EQUAL(v3.x, 48.0f); ASSERT_F32_EQUAL(v3.y, 54.0f); ASSERT_F32_EQUAL(v3.z, 60.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		v3 = vec3_mul_mat4(Vec3(1.0f, 2.0f, 3.0f), Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f));
+		ASSERT_F32_EQUAL(v3.x, 51.0f); ASSERT_F32_EQUAL(v3.y, 58.0f); ASSERT_F32_EQUAL(v3.z, 65.0f);
+		
+#if DESHI_MATH_USE_CPP
+		v3 = Vec3(1.0f, 2.0f, 3.0f) * Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(v3.x, 51.0f); ASSERT_F32_EQUAL(v3.y, 58.0f); ASSERT_F32_EQUAL(v3.z, 65.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		v3  = Vec3(1.0f, 2.0f, 3.0f);
+		v3 *= Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(v3.x, 51.0f); ASSERT_F32_EQUAL(v3.y, 58.0f); ASSERT_F32_EQUAL(v3.z, 65.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		vec4 v4 = vec4_mul_mat4(Vec4(1.0f, 2.0f, 3.0f, 4.0f), Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f));
+		ASSERT_F32_EQUAL(v4.x, 90.0f); ASSERT_F32_EQUAL(v4.y, 100.0f); ASSERT_F32_EQUAL(v4.z, 110.0f); ASSERT_F32_EQUAL(v4.w, 120.0f);
+		
+#if DESHI_MATH_USE_CPP
+		v4 = Vec4(1.0f, 2.0f, 3.0f, 4.0f) * Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(v4.x, 90.0f); ASSERT_F32_EQUAL(v4.y, 100.0f); ASSERT_F32_EQUAL(v4.z, 110.0f); ASSERT_F32_EQUAL(v4.w, 120.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+#if DESHI_MATH_USE_CPP
+		v4  = Vec4(1.0f, 2.0f, 3.0f, 4.0f);
+		v4 *= Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		ASSERT_F32_EQUAL(v4.x, 90.0f); ASSERT_F32_EQUAL(v4.y, 100.0f); ASSERT_F32_EQUAL(v4.z, 110.0f); ASSERT_F32_EQUAL(v4.w, 120.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		m3 = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		vec3 v31 = mat3_row(m3, 0);
+		vec3 v32 = mat3_row(m3, 1);
+		vec3 v33 = mat3_row(m3, 2);
+		ASSERT_F32_EQUAL(v31.x, 1.0f); ASSERT_F32_EQUAL(v31.y, 2.0f); ASSERT_F32_EQUAL(v31.z, 3.0f);
+		ASSERT_F32_EQUAL(v32.x, 4.0f); ASSERT_F32_EQUAL(v32.y, 5.0f); ASSERT_F32_EQUAL(v32.z, 6.0f);
+		ASSERT_F32_EQUAL(v33.x, 7.0f); ASSERT_F32_EQUAL(v33.y, 8.0f); ASSERT_F32_EQUAL(v33.z, 9.0f);
+		
+#if DESHI_MATH_USE_CPP
+		m3 = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		v31 = m3.row(0);
+		v32 = m3.row(1);
+		v33 = m3.row(2);
+		ASSERT_F32_EQUAL(v31.x, -1.0f); ASSERT_F32_EQUAL(v31.y, -2.0f); ASSERT_F32_EQUAL(v31.z, -3.0f);
+		ASSERT_F32_EQUAL(v32.x, -4.0f); ASSERT_F32_EQUAL(v32.y, -5.0f); ASSERT_F32_EQUAL(v32.z, -6.0f);
+		ASSERT_F32_EQUAL(v33.x, -7.0f); ASSERT_F32_EQUAL(v33.y, -8.0f); ASSERT_F32_EQUAL(v33.z, -9.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		m3 = Mat3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f);
+		v31 = mat3_col(m3, 0);
+		v32 = mat3_col(m3, 1);
+		v33 = mat3_col(m3, 2);
+		ASSERT_F32_EQUAL(v31.x, 1.0f); ASSERT_F32_EQUAL(v31.y, 4.0f); ASSERT_F32_EQUAL(v31.z, 7.0f);
+		ASSERT_F32_EQUAL(v32.x, 2.0f); ASSERT_F32_EQUAL(v32.y, 5.0f); ASSERT_F32_EQUAL(v32.z, 8.0f);
+		ASSERT_F32_EQUAL(v33.x, 3.0f); ASSERT_F32_EQUAL(v33.y, 6.0f); ASSERT_F32_EQUAL(v33.z, 9.0f);
+		
+#if DESHI_MATH_USE_CPP
+		m3 = Mat3(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f);
+		v31 = m3.col(0);
+		v32 = m3.col(1);
+		v33 = m3.col(2);
+		ASSERT_F32_EQUAL(v31.x, -1.0f); ASSERT_F32_EQUAL(v31.y, -4.0f); ASSERT_F32_EQUAL(v31.z, -7.0f);
+		ASSERT_F32_EQUAL(v32.x, -2.0f); ASSERT_F32_EQUAL(v32.y, -5.0f); ASSERT_F32_EQUAL(v32.z, -8.0f);
+		ASSERT_F32_EQUAL(v33.x, -3.0f); ASSERT_F32_EQUAL(v33.y, -6.0f); ASSERT_F32_EQUAL(v33.z, -9.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		m4 = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		vec4 v41 = mat4_row(m4, 0);
+		vec4 v42 = mat4_row(m4, 1);
+		vec4 v43 = mat4_row(m4, 2);
+		vec4 v44 = mat4_row(m4, 3);
+		ASSERT_F32_EQUAL(v41.x, 1.0f); ASSERT_F32_EQUAL(v41.y, 2.0f); ASSERT_F32_EQUAL(v41.z, 3.0f); ASSERT_F32_EQUAL(v41.w, 4.0f);
+		ASSERT_F32_EQUAL(v42.x, 5.0f); ASSERT_F32_EQUAL(v42.y, 6.0f); ASSERT_F32_EQUAL(v42.z, 7.0f); ASSERT_F32_EQUAL(v42.w, 8.0f);
+		ASSERT_F32_EQUAL(v43.x, 9.0f); ASSERT_F32_EQUAL(v43.y,10.0f); ASSERT_F32_EQUAL(v43.z,11.0f); ASSERT_F32_EQUAL(v43.w,12.0f);
+		ASSERT_F32_EQUAL(v44.x,13.0f); ASSERT_F32_EQUAL(v44.y,14.0f); ASSERT_F32_EQUAL(v44.z,15.0f); ASSERT_F32_EQUAL(v44.w,16.0f);
+		
+#if DESHI_MATH_USE_CPP
+		m4 = Mat4(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f, -10.0f, -11.0f, -12.0f, -13.0f, -14.0f, -15.0f, -16.0f);
+		v41 = m4.row(0);
+		v42 = m4.row(1);
+		v43 = m4.row(2);
+		v44 = m4.row(3);
+		ASSERT_F32_EQUAL(v41.x, -1.0f); ASSERT_F32_EQUAL(v41.y, -2.0f); ASSERT_F32_EQUAL(v41.z, -3.0f); ASSERT_F32_EQUAL(v41.w, -4.0f);
+		ASSERT_F32_EQUAL(v42.x, -5.0f); ASSERT_F32_EQUAL(v42.y, -6.0f); ASSERT_F32_EQUAL(v42.z, -7.0f); ASSERT_F32_EQUAL(v42.w, -8.0f);
+		ASSERT_F32_EQUAL(v43.x, -9.0f); ASSERT_F32_EQUAL(v43.y,-10.0f); ASSERT_F32_EQUAL(v43.z,-11.0f); ASSERT_F32_EQUAL(v43.w,-12.0f);
+		ASSERT_F32_EQUAL(v44.x,-13.0f); ASSERT_F32_EQUAL(v44.y,-14.0f); ASSERT_F32_EQUAL(v44.z,-15.0f); ASSERT_F32_EQUAL(v44.w,-16.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		m4 = Mat4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+		v41 = mat4_col(m4, 0);
+		v42 = mat4_col(m4, 1);
+		v43 = mat4_col(m4, 2);
+		v44 = mat4_col(m4, 3);
+		ASSERT_F32_EQUAL(v41.x, 1.0f); ASSERT_F32_EQUAL(v41.y, 5.0f); ASSERT_F32_EQUAL(v41.z, 9.0f); ASSERT_F32_EQUAL(v41.w,13.0f);
+		ASSERT_F32_EQUAL(v42.x, 2.0f); ASSERT_F32_EQUAL(v42.y, 6.0f); ASSERT_F32_EQUAL(v42.z,10.0f); ASSERT_F32_EQUAL(v42.w,14.0f);
+		ASSERT_F32_EQUAL(v43.x, 3.0f); ASSERT_F32_EQUAL(v43.y, 7.0f); ASSERT_F32_EQUAL(v43.z,11.0f); ASSERT_F32_EQUAL(v43.w,15.0f);
+		ASSERT_F32_EQUAL(v44.x, 4.0f); ASSERT_F32_EQUAL(v44.y, 8.0f); ASSERT_F32_EQUAL(v44.z,12.0f); ASSERT_F32_EQUAL(v44.w,16.0f);
+		
+#if DESHI_MATH_USE_CPP
+		m4 = Mat4(-1.0f, -2.0f, -3.0f, -4.0f, -5.0f, -6.0f, -7.0f, -8.0f, -9.0f, -10.0f, -11.0f, -12.0f, -13.0f, -14.0f, -15.0f, -16.0f);
+		v41 = m4.col(0);
+		v42 = m4.col(1);
+		v43 = m4.col(2);
+		v44 = m4.col(3);
+		ASSERT_F32_EQUAL(v41.x, -1.0f); ASSERT_F32_EQUAL(v41.y, -5.0f); ASSERT_F32_EQUAL(v41.z, -9.0f); ASSERT_F32_EQUAL(v41.w,-13.0f);
+		ASSERT_F32_EQUAL(v42.x, -2.0f); ASSERT_F32_EQUAL(v42.y, -6.0f); ASSERT_F32_EQUAL(v42.z,-10.0f); ASSERT_F32_EQUAL(v42.w,-14.0f);
+		ASSERT_F32_EQUAL(v43.x, -3.0f); ASSERT_F32_EQUAL(v43.y, -7.0f); ASSERT_F32_EQUAL(v43.z,-11.0f); ASSERT_F32_EQUAL(v43.w,-15.0f);
+		ASSERT_F32_EQUAL(v44.x, -4.0f); ASSERT_F32_EQUAL(v44.y, -8.0f); ASSERT_F32_EQUAL(v44.z,-12.0f); ASSERT_F32_EQUAL(v44.w,-16.0f);
+#endif //#if DESHI_MATH_USE_CPP
+		
+		mat3 m31 = mat3_rotation_matrix_radians(DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f);
+		mat3 m32 = mat3_rotation_matrix_radians_vec3(Vec3(DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f));
+		Assert(mat3_equal(m31, m32));
+		
+		m31 = mat3_rotation_matrix_degrees(45.0f, 45.0f, 45.0f);
+		m32 = mat3_rotation_matrix_degrees_vec3(Vec3(45.0f, 45.0f, 45.0f));
+		Assert(mat3_equal(m31, m32));
+		
+		m31 = mat3_scale_matrix(1.0f, 2.0f, 3.0f);
+		m32 = mat3_scale_matrix_vec3(Vec3(1.0f, 2.0f, 3.0f));
+		Assert(mat3_equal(m31, m32));
+		
+		mat4 m41 = mat4_rotation_matrix_radians(DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f);
+		mat4 m42 = mat4_rotation_matrix_radians_vec3(Vec3(DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f, DESHI_MATH_PI_F32/4.0f));
+		Assert(mat4_equal(m41, m42));
+		
+		m41 = mat4_rotation_matrix_degrees(45.0f, 45.0f, 45.0f);
+		m42 = mat4_rotation_matrix_degrees_vec3(Vec3(45.0f, 45.0f, 45.0f));
+		Assert(mat4_equal(m41, m42));
+		
+		m41 = mat4_translation_matrix(1.0f, 2.0f, 3.0f);
+		m42 = mat4_translation_matrix_vec3(Vec3(1.0f, 2.0f, 3.0f));
+		Assert(mat4_equal(m41, m42));
+		
+		m41 = mat4_scale_matrix(1.0f, 2.0f, 3.0f);
+		m42 = mat4_scale_matrix_vec3(Vec3(1.0f, 2.0f, 3.0f));
+		Assert(mat4_equal(m41, m42));
+		
+		m41 = mat4_transformation_matrix_radians(1.0f,2.0f,3.0f, DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f, 3.0f,2.0f,1.0f);
+		m42 = mat4_transformation_matrix_radians_vec3(Vec3(1.0f,2.0f,3.0f), Vec3(DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f,DESHI_MATH_PI_F32/4.0f), Vec3(3.0f,2.0f,1.0f));
+		Assert(mat4_equal(m41, m42));
+		
+		m41 = mat4_transformation_matrix_degrees(1.0f,2.0f,3.0f, 45.0f,45.0f,45.0f, 3.0f,2.0f,1.0f);
+		m42 = mat4_transformation_matrix_degrees_vec3(Vec3(1.0f,2.0f,3.0f), Vec3(45.0f,45.0f,45.0f), Vec3(3.0f,2.0f,1.0f));
+		Assert(mat4_equal(m41, m42));
 	}
 	
 	
