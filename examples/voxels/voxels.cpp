@@ -1,5 +1,6 @@
 #include <random>
 #include "deshi.h"
+#include "core/baked/fonts.h"
 #include "kigu/array.h"
 
 int main(int args_count, char** args){
@@ -7,7 +8,12 @@ int main(int args_count, char** args){
 	
 	//init ui
 	{
-		g_ui->base.style.font        = assets_font_create_from_path_bdf(STR8("gohufont-11.bdf"));
+		Font* default_font = assets_font_get_by_name(STR8("baked_gohufont_11_bdf"));
+		if(!default_font){
+			default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
+		}
+		
+		g_ui->base.style.font        = default_font;
 		g_ui->base.style.font_height = 11;
 		g_ui->base.style.text_color  = Color_White;
 	}

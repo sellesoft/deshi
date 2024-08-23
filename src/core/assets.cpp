@@ -2383,11 +2383,6 @@ font_visual_size(Font* font, str8 text){DPZoneScoped;
 }
 
 Font*
-assets_font_create_from_file(str8 name, u32 height){DPZoneScoped;
-	return assets_font_create_from_path(str8_concat(STR8("data/fonts/"),name, deshi_temp_allocator), height);
-}
-
-Font*
 assets_font_create_from_path(str8 path, u32 height){DPZoneScoped;
 	if(str8_ends_with(path, STR8(".bdf"))){
 		return assets_font_create_from_path_bdf(path);
@@ -2399,6 +2394,198 @@ assets_font_create_from_path(str8 path, u32 height){DPZoneScoped;
 	
 	LogE("assets","Failed to load font '",path,"'. We only support loading TTF/OTF and BDF fonts at the moment.");
 	return assets_font_null();
+}
+
+Font*
+assets_font_create_from_memory_bdf(void* data, u64 data_size, str8 name){DPZoneScoped;
+	//check if font was loaded already
+	u64 uid = __uid_of_name(name);
+	auto [index, found] = __find_resource(uid, g_assets->font_map);
+	if(found){
+		AssetsExistanceWarning(name, Font);
+		return g_assets->font_map[index];
+	}
+	
+	b32 in_char   = false;
+	b32 in_bitmap = false;
+	u32 char_idx = 0;
+	u32 bitmap_row = 0;
+	u32 glyph_offset = 0;
+	u32 top_offset = 0;
+	u32 left_offset = 0;
+	vec4 current_bbx = vec4::ZERO;
+	vec4 font_bbx = vec4::ZERO;
+	vec2 font_dpi = vec2::ZERO;
+	u16* encodings = 0;
+	u8*  pixels = 0;
+	
+	str8 contents = str8{(u8*)data, (s64)data_size};
+	if(!str8_begins_with(contents, STR8("STARTFONT"))){
+		LogE("assets","Error parsing BDF '",name,"' from memory. The data did not begin with 'STARTFONT'.");
+		return assets_font_null();
+	}
+	
+	str8_advance_beyond(&contents, '\n');
+	if(!str8_valid(contents)){
+		LogE("assets","Error parsing BDF '",name,"' from memory. The data did not contain anything beyond 'STARTFONT'.");
+		return assets_font_null();
+	}
+	
+	Font* font = memory_pool_push(g_assets->font_pool);
+	font->type = FontType_BDF;
+	font->name = name;
+	font->uid  = uid;
+	array_insert_value(g_assets->font_map, index, font);
+	u32 line_number = 1;
+	while(str8_valid(contents)){
+		line_number += 1;
+		
+		//next line
+		str8 line = str8_eat_until(contents, '\n');
+		if(!line) continue;
+		str8_increment(&contents, line.count);
+		str8_advance_beyond(&contents, '\n');
+		
+		//skip leading whitespace
+		str8_advance_while(&line, ' ');
+		if(!line) continue;
+		
+		//parse key
+		str8 key = str8_eat_until(line, ' ');
+		str8_increment(&line, key.count);
+		
+		//skip separating whitespace
+		str8_advance_while(&line, ' ');
+		
+		if(in_bitmap){
+			if(str8_equal_lazy(key, STR8("ENDCHAR"))){
+				in_char = false;
+				in_bitmap = false;
+				char_idx++;
+				bitmap_row = 0;
+				continue;
+			}
+			Assert(bitmap_row < current_bbx.y);
+			
+			s32 chars = (s32)key.count;
+			Assert(chars <= 4); //TODO(delle) error handling: max 16 pixel width
+			u8 scaled[16]{};
+			
+			//scale each byte to represent one pixel per bit then byteswap the u64 //TODO(delle) only byteswap if little-endian
+			//ref: https://stackoverflow.com/questions/9023129/algorithm-for-bit-expansion-duplication/9044057#9044057
+			//scale = 8 (1 bit to 1 byte)
+			//mask0 = 0x0000000f0000000f, mask1 = 0x0003000300030003, mask2 = 0x0101010101010101
+			//shift0 = (1 << 28) + 1, shift1 = (1 << 14) + 1, shift2 = (1 << 7) + 1
+			for(s32 i=0; i<chars; i+=2){
+				u64 reversed = (((strtoll((const char*)key.str+i,0,16) * 0x10000001 & 0x0000000f0000000f) 
+								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
+				*(u64*)(scaled+i) = ByteSwap64(reversed);
+			}
+			CopyMemory(pixels+2*font->max_width+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, upt(current_bbx.x*sizeof(u8)));
+			
+			bitmap_row++;
+			continue;
+		}
+		
+		if(in_char){
+			if      (str8_equal_lazy(key, STR8("ENCODING"))){
+				encodings[char_idx] = strtol((const char*)line.str, 0, 10);
+			}else if(str8_equal_lazy(key, STR8("BITMAP"))){
+				in_bitmap = true;
+			}else if(str8_equal_lazy(key, STR8("SWIDTH"))){
+				//unused
+			}else if(str8_equal_lazy(key, STR8("DWIDTH"))){
+				//unused in monospace fonts
+			}else if(str8_equal_lazy(key, STR8("BBX"))){
+				char* cursor = (char*)line.str;
+				current_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
+				current_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
+				current_bbx.z = (f32)strtol(cursor+1, &cursor, 10); //lower-left x
+				current_bbx.w = (f32)strtol(cursor+1, &cursor, 10); //lower-left y
+				glyph_offset = char_idx*font->max_height*font->max_width;
+				top_offset   = u32(font->max_height-(current_bbx.w-font_bbx.w)-current_bbx.y);
+				left_offset  = u32(current_bbx.z-font_bbx.z);
+				
+				Assert(current_bbx.x <= font_bbx.x);
+				Assert(current_bbx.y <= font_bbx.y);
+				Assert(current_bbx.z >= font_bbx.z);
+				Assert(current_bbx.w >= font_bbx.w);
+			}else{
+				Assert(!"unhandled key");
+			}
+			continue;
+		}
+		
+		if      (str8_equal_lazy(key, STR8("STARTCHAR"))){
+			in_char = true;
+		}else if(str8_equal_lazy(key, STR8("SIZE"))){
+			if(!line){
+				LogE("assets","Error parsing BDF '",name,"' from memory on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			char* cursor = (char*)line.str;
+			font_dpi.x = (f32)strtol(cursor+1, &cursor, 10);
+			font_dpi.y = (f32)strtol(cursor+1, &cursor, 10);
+		}else if(str8_equal_lazy(key, STR8("FONTBOUNDINGBOX"))){
+			if(!line){
+				LogE("assets","Error parsing BDF '",name,"' from memory on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			char* cursor = (char*)line.str;
+			font_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
+			font_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
+			font_bbx.z = (f32)strtol(cursor+1, &cursor, 10); //lower-left x
+			font_bbx.w = (f32)strtol(cursor+1, &cursor, 10); //lower-left y
+			font->max_width  = (u32)font_bbx.x;
+			font->max_height = (u32)font_bbx.y;
+		}else if(str8_equal_lazy(key, STR8("FONT_NAME"))){
+			if(!line){
+				LogE("assets","Error parsing BDF '",name,"' from memory on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
+				LogE("assets","Error parsing BDF '",name,"' from memory on line ",line_number,". FONT_NAME must be wrapped in double quotes.");
+				continue;
+			}
+			str8 font_name = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			//TODO(sushi) replace name on Font with filename and add a name for this guy right here!
+		}else if(str8_equal_lazy(key, STR8("WEIGHT_NAME"))){
+			if(!line){
+				LogE("assets","Error parsing BDF '",name,"' from memory on line ",line_number,". No value passed to key: ",key);
+				continue;
+			}
+			if(decoded_codepoint_from_utf8(line.str, 4).codepoint != '\"'){
+				LogE("assets","Error parsing BDF '",name,"' from memory on line ",line_number,". WEIGHT_NAME must be wrapped in double quotes.");
+				continue;
+			}
+			str8 font_weight = str8_copy(str8_eat_until(str8{line.str+1,line.count-1}, '\"'), deshi_temp_allocator);
+			cpystr(font->weight, (const char*)font_weight.str, 64);
+		}else if(str8_equal_lazy(key, STR8("CHARS"))){
+			font->count = strtol((const char*)line.str, 0, 10);
+			Assert(font->max_width && font->max_height && font->count);
+			encodings = (u16*)memory_talloc(font->count*sizeof(u16));
+			pixels = (u8*)memory_talloc(font->count * ((font->max_width*font->max_height + 2*font->max_width) * sizeof(u8)));
+			pixels[0] = 255;
+			pixels[1] = 255;
+			pixels[font->max_width] = 255;
+			pixels[font->max_width + 1] = 255;
+			font->uv_yoffset = 2.f / (font->max_height * font->count + 2);
+		}else if(str8_equal_lazy(key, STR8("ENDFONT"))){
+			break;
+		}else{
+			continue;
+		}
+	}
+	
+	Texture* texture = assets_texture_create_from_memory(pixels, name, font->max_width, font->max_height*font->count,
+														 ImageFormat_BW, TextureType_TwoDimensional, TextureFilter_Nearest,
+														 TextureAddressMode_ClampToBlack, false);
+	
+	font->aspect_ratio = (f32)font->max_height / font->max_width;
+	font->tex = texture;
+	
+	array_insert_value(g_assets->font_map, index, font);
+	return font;
 }
 
 Font*
@@ -2592,11 +2779,11 @@ assets_font_create_from_path_bdf(str8 path){DPZoneScoped;
 
 Font*
 assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
-	//TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
+	str8 filename = str8_skip_until_last(path, '/');
+	str8_advance(&filename);
 	
 	//check if font was loaded already
-	//TODO look into why if we load the same font w a different size it gets weird (i took that check out of here for now)
-	str8 filename = str8_skip_until_last(path, '/'); str8_advance(&filename);
+	//TODO check against the font size as well
 	u64 uid = __uid_of_name(filename);
 	auto [index, found] = __find_resource(uid, g_assets->font_map);
 	if(found){
@@ -2605,7 +2792,25 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	}
 	
 	str8 contents = file_read_simple(path, deshi_temp_allocator);
-	if(!contents) return assets_font_null();
+	if(contents){
+		return assets_font_create_from_memory_ttf(contents.str, contents.count, filename, size);
+	}
+	
+	return assets_font_null();
+}
+
+Font*
+assets_font_create_from_memory_ttf(void* data, u64 data_size, str8 name, u32 size){DPZoneScoped;
+	//TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
+	
+	//check if font was loaded already
+	//TODO check against the font size as well
+	u64 uid = __uid_of_name(name);
+	auto [index, found] = __find_resource(uid, g_assets->font_map);
+	if(found){
+		AssetsExistanceWarning(name, Font);
+		return g_assets->font_map[index];
+	}
 	
 	//Codepoint Ranges to Load:
 	// ASCII              32 - 126  ~  94 chars
@@ -2665,7 +2870,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	//init the font info
 	int success;
 	stbtt_fontinfo info;
-	success = stbtt_InitFont(&info, contents.str, 0); Assert(success);
+	success = stbtt_InitFont(&info, (const unsigned char*)data, 0); Assert(success);
 	
 	//determine surface area of loadable codepoints  !ref:imgui_draw.cpp@ImFontAtlasBuildWithStbTruetype()
 	//TODO(delle) maybe use this info to index into the final texture for rendering
@@ -2702,7 +2907,7 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	stbtt_pack_context* pc = (stbtt_pack_context*)memory_talloc(1*sizeof(stbtt_pack_context));
 	success = stbtt_PackBegin(pc, pixels + 2*texture_size_x, texture_size_x, texture_size_y-2, 0, glyph_padding, 0); Assert(success);
 	stbtt_PackSetSkipMissingCodepoints(pc, true);
-	success = stbtt_PackFontRanges(pc, contents.str, 0, ranges, num_ranges); //NOTE(delle) this will return 0 if there are any missing codepoints
+	success = stbtt_PackFontRanges(pc, (const unsigned char*)data, 0, ranges, num_ranges); //NOTE(delle) this will return 0 if there are any missing codepoints
 	stbtt_PackEnd(pc);
 	
 	/*
@@ -2719,19 +2924,19 @@ assets_font_create_from_path_ttf(str8 path, u32 size){DPZoneScoped;
 	
 	//get extra font rendering info
 	f32 ascent, descent, lineGap;
-	stbtt_GetScaledFontVMetrics(contents.str, 0, (f32)size, &ascent, &descent, &lineGap);
+	stbtt_GetScaledFontVMetrics((const unsigned char*)data, 0, (f32)size, &ascent, &descent, &lineGap);
 	int x0, y0, x1, y1;
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
 	int max_width = x1 - x0, max_height = y1 - y0;
 	f32 aspect_ratio = (f32)max_height / (f32)max_width;
 	
-	Texture* texture = assets_texture_create_from_memory(pixels, filename, texture_size_x, texture_size_y,
+	Texture* texture = assets_texture_create_from_memory(pixels, name, texture_size_x, texture_size_y,
 														 ImageFormat_BW, TextureType_TwoDimensional, TextureFilter_Nearest,
 														 TextureAddressMode_ClampToWhite, false);
 	
 	Font* font = (Font*)memory_alloc(sizeof(Font));
 	font->type         = FontType_TTF;
-	font->name         = filename;
+	font->name         = name;
 	font->uid          = uid;
 	font->max_width    = (u32)((f32)max_width / (f32)max_height * (f32)size);
 	font->max_height   = size;
@@ -2773,4 +2978,23 @@ assets_font_delete(Font* font){DPZoneScoped;
 	}
 	assets_texture_delete(font->tex);
 	memory_pool_delete(g_assets->font_pool, font);
+}
+
+Font*
+assets_font_get_by_name(str8 name){
+	u64 uid = __uid_of_name(name);
+	auto [index, found] = __find_resource(uid, g_assets->font_map);
+	if(found){
+		return g_assets->font_map[index];
+	}
+	return 0;
+}
+
+Font*
+assets_font_get_by_uid(u64 uid){
+	auto [index, found] = __find_resource(uid, g_assets->font_map);
+	if(found){
+		return g_assets->font_map[index];
+	}
+	return 0;
 }

@@ -652,12 +652,21 @@ vec2 font_visual_size(Font* font, str8 text);
 
 //Returns a pointer to the created `Font` object from a `TTF` or `BDF` file at `path` with `height` in pixels
 //  loading a `BDF` font ignores the `height` argument since the font height is baked into the file
+//  the path is expected to only use forward slashes '/'
 Font* assets_font_create_from_path(str8 path, u32 height);
 
+//Returns a pointer to the created `Font` object from a `BDF` file at `data`
+Font* assets_font_create_from_memory_bdf(void* data, u64 data_size, str8 name);
+
 //Returns a pointer to the created `Font` object from a `BDF` file at `path`
+//  the path is expected to only use forward slashes '/'
 Font* assets_font_create_from_path_bdf(str8 path);
 
+//Returns a pointer to the created `Font` object from a `TTF` file at `data` with `height` in pixels
+Font* assets_font_create_from_memory_ttf(void* data, u64 data_size, str8 name, u32 height);
+
 //Returns a pointer to the created `Font` object from a `TTF` file at `path` with `height` in pixels
+//  the path is expected to only use forward slashes '/'
 Font* assets_font_create_from_path_ttf(str8 path, u32 height);
 
 //Deletes the `Font` object at `font` after calling `assets_texture_delete()` on the font's texture

@@ -269,6 +269,7 @@ local DeshiStage deshiStage = DS_NONE;
 
 
 //// baked data ////
+#include "core/baked/fonts.h"
 #include "core/baked/shaders.h"
 #include "core/baked/textures.h"
 

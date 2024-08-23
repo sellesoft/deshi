@@ -145,8 +145,13 @@ void console_init(){DPZoneScoped;
 	console.chunk_render_arena = memory_create_arena(512);
 	console.state = ConsoleState_Closed;
 	
+	Font* default_font = assets_font_get_by_name(STR8("baked_gohufont_11_bdf"));
+	if(!default_font){
+		default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
+	}
+	
 	uiStyle base = {0};
-	base.font = assets_font_create_from_path_bdf(STR8("data/fonts/gohufont-11.bdf"));
+	base.font = default_font;
 	base.font_height = 11;
 	base.text_color = color(255,255,255);
 	base.overflow = overflow_scroll;

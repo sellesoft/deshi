@@ -1588,11 +1588,16 @@ void ui_debug(){
 	if(!ui_dwi.init){
 		ui_dwi = {0};
 		
+		Font* default_font = assets_font_get_by_name(STR8("baked_gohufont_11_bdf"));
+		if(!default_font){
+			default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
+		}
+		
 		uiStyle def_style{0};
 		def_style.sizing = size_auto;
 		def_style.text_color = Color_White;
 		def_style.text_wrap = text_wrap_none;
-		def_style.font = assets_font_create_from_path_bdf(STR8("gohufont-11.bdf"));
+		def_style.font = default_font;
 		def_style.font_height = 11;
 		def_style.background_color = color(14,14,14);
 		def_style.tab_spaces = 4;
@@ -1799,6 +1804,11 @@ void ui_demo(){
 		return;
 	}
 	
+	Font* default_font = assets_font_get_by_name(STR8("baked_gohufont_11_bdf"));
+	if(!default_font){
+		default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
+	}
+	
 	deshi__ui_demo_window = ui_begin_item(0);{
 		uiItem* window = deshi__ui_demo_window;
 		window->id = STR8("demo.window");
@@ -1809,7 +1819,7 @@ void ui_demo(){
 		window->style.border_style = border_solid;
 		window->style.border_color = Color_DarkCyan;
 		window->style.border_width = 1/*pixels*/;
-		window->style.font = assets_font_create_from_file(STR8("gohufont-uni-14.ttf"), 14);
+		window->style.font = default_font;
 		window->style.font_height = 14/*pixels*/;
 		window->style.text_color = Color_White;
 		window->style.focus = true;
