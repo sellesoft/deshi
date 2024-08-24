@@ -63,7 +63,7 @@ struct netSocket{
 struct netAddress{
     void* handle;
     u32   host;
-    u8    port;
+    u16   port;
 };
 
 struct netIPHeader{
@@ -116,11 +116,11 @@ void net_deinit();
 //// @net_socket
 
 //initializes a socket and binds it to a port
-// |   socket: a ptr to a netSocket object to bind to a given port
-// |     port: port to bind socket to; use 0 to bind to random port
-// | blocking: determines if the socket should be blocking or not
+// |       socket: a ptr to a netSocket object to bind to a given port
+// |         port: port to bind socket to; use 0 to bind to random port
+// | non_blocking: determines if the socket should be blocking or not
 // returns 0 if successful, non-zero otherwise
-u64 net_socket_open(netSocket* socket, u8 port, b32 blocking);
+u64 net_socket_open(netSocket* socket, u16 port, b32 non_blocking);
 
 //closes a previously opened socket
 // socket: a ptr to a netSocket obj. if it has not yet been opened the function does nothing

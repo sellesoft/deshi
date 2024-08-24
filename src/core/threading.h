@@ -7,8 +7,6 @@
 #endif
 
 #include "kigu/common.h"
-#include "kigu/unicode.h"
-#include "kigu/ring_array.h"
 #include "kigu/node.h"
 StartLinkageC();
 
@@ -157,7 +155,7 @@ struct Thread{
 
 struct ThreadManager{
     mutex worker_message_lock; // debug, when workers send messages we dont want them to overlap
-
+	
     // locked by a thread who wants to take a new job
 	mutex find_job_lock;
     // prevents > max_awake_threads from running at the same time
@@ -192,12 +190,6 @@ extern ThreadManager* g_threader;
 // will allow to run at the same time 
 void threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs = 255);
 
-// spawns a new thread 
-void threader_spawn_thread(u32 count = 1);  
-
-// closes all threads
-void threader_close_all_threads(); 
-
 // adds a new ThreadJob to the job ring.
 void threader_add_job(ThreadJob job, u8 priority = 0);
 
@@ -209,11 +201,8 @@ void threader_cancel_all_jobs();
 // NOTE(sushi) this will only wake up to (max_awake_threads - awake_threads) threads
 void threader_wake_threads(u32 count = 0);
 
-// sets a name for the calling thread
-void threader_set_thread_name(str8 name);
+upt threader_get_thread_id();
 
-upt 
-threader_get_thread_id();
 
 EndLinkageC();
 #endif //DESHI_THREADING_H

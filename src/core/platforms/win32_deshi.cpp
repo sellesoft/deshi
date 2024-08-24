@@ -683,14 +683,14 @@ platform_get_process_by_name(str8 name){DPZoneScoped;
 
 u64 
 platform_process_read(Process p, upt address, void* out, upt size){DPZoneScoped;
-	if(ReadProcessMemory(p.handle, (LPCVOID)address, out, size, 0)) return 1;
+	if(::ReadProcessMemory(p.handle, (LPCVOID)address, out, size, 0)) return 1;
 	win32_log_last_error("ReadProcessMemory");
 	return 0;
 }
 
 u64 
 platform_process_write(Process p, upt address, void* data, upt size){DPZoneScoped;
-	if(WriteProcessMemory(p.handle, (LPVOID)address, data, size, 0)) return 1;
+	if(::WriteProcessMemory(p.handle, (LPVOID)address, data, size, 0)) return 1;
 	win32_log_last_error("WriteProcessMemory");
 	return 0;
 }
@@ -1805,8 +1805,10 @@ platform_set_clipboard(str8 text){DPZoneScoped;
 mutex
 mutex_init(){DPZoneScoped;
 	mutex m;
-	if(m.handle = ::CreateMutex(NULL, FALSE, NULL); !m.handle)
+	m.handle = ::CreateMutex(NULL, FALSE, NULL);
+	if(!m.handle){
 		win32_log_last_error("CreateMutex");
+	}
 	return m;
 }
 
@@ -1830,7 +1832,7 @@ mutex_lock(mutex* m){DPZoneScoped;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
-	m->is_locked = 1;
+	m->is_locked = true;
 }
 
 b32 
@@ -1851,7 +1853,7 @@ mutex_try_lock(mutex* m){DPZoneScoped;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
-	m->is_locked = 1;
+	m->is_locked = true;
 	return true;
 }
 
@@ -1873,18 +1875,20 @@ mutex_try_lock_for(mutex* m, u64 milliseconds){DPZoneScoped;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
 		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
 	}
-	m->is_locked = 1;
+	m->is_locked = true;
 	return true;
 }
 
-void 
+void
 mutex_unlock(mutex* m){DPZoneScoped;
-	if(!ReleaseMutex(m->handle)){ win32_log_last_error("ReleaseMutex"); Assert(0); }
-	m->is_locked = 0;
+	if(!::ReleaseMutex(m->handle)){
+		win32_log_last_error("ReleaseMutex");
+		Assert(0);
+	}
+	m->is_locked = false;
 }
 
-
-condvar
+condition_variable
 condition_variable_init(){DPZoneScoped;
 	//NOTE i have to use std mem here in the case that condvar is used before memory is initialized (eg. a condvar global var)
 	condition_variable cv;
@@ -1895,23 +1899,24 @@ condition_variable_init(){DPZoneScoped;
 	return cv;
 }
 
-void 
-condition_variable_deinit(condvar* cv){DPZoneScoped;
+void
+condition_variable_deinit(condition_variable* cv){DPZoneScoped;
 	free(cv->cvhandle);
 	free(cv->cshandle);
 }
 
-void 
-condition_variable_notify_one(condvar* cv){DPZoneScoped;
+void
+condition_variable_notify_one(condition_variable* cv){DPZoneScoped;
 	::WakeConditionVariable((CONDITION_VARIABLE*)cv->cvhandle);
 }
 
-void condition_variable_notify_all(condvar* cv){DPZoneScoped;
+void
+condition_variable_notify_all(condition_variable* cv){DPZoneScoped;
 	::WakeAllConditionVariable((CONDITION_VARIABLE*)cv->cvhandle);
 }
 
-void 
-condition_variable_wait(condvar* cv){DPZoneScoped;
+void
+condition_variable_wait(mutex* m, condition_variable* cv){DPZoneScoped;
 	semaphore_leave(&DeshThreader->wake_up_barrier);
 	::EnterCriticalSection((CRITICAL_SECTION*)cv->cshandle);
 	if(!::SleepConditionVariableCS((CONDITION_VARIABLE*)cv->cvhandle, (CRITICAL_SECTION*)cv->cshandle, INFINITE)){
@@ -1921,8 +1926,8 @@ condition_variable_wait(condvar* cv){DPZoneScoped;
 	semaphore_enter(&DeshThreader->wake_up_barrier);
 }
 
-void 
-condition_variable_wait_for(condvar* cv, u64 milliseconds){DPZoneScoped;
+void
+condition_variable_wait_for(mutex* m, condition_variable* cv, u64 milliseconds){DPZoneScoped;
 	::EnterCriticalSection((CRITICAL_SECTION*)cv->cshandle);
 	::SleepConditionVariableCS((CONDITION_VARIABLE*)cv->cvhandle, (CRITICAL_SECTION*)cv->cshandle, milliseconds);
 	::LeaveCriticalSection((CRITICAL_SECTION*)cv->cshandle);	
@@ -1932,7 +1937,7 @@ condition_variable_wait_for(condvar* cv, u64 milliseconds){DPZoneScoped;
 semaphore
 semaphore_init(u64 mval){
 	semaphore se;
-	if(se.handle = CreateSemaphore(0, mval, 0, 0); !se.handle){
+	if(se.handle = ::CreateSemaphore(0, mval, mval, 0); !se.handle){
 		win32_log_last_error("CreateSemaphore");
 	}
 	return se;
@@ -1940,19 +1945,22 @@ semaphore_init(u64 mval){
 
 void 
 semaphore_deinit(semaphore* se){
-	CloseHandle(se->handle);
+	::CloseHandle(se->handle);
 }
 
 void 
 semaphore_enter(semaphore* se){
-	DWORD waitres = WaitForSingleObject(se->handle, INFINITE);
+	DWORD waitres = ::WaitForSingleObject(se->handle, INFINITE);
 	switch(waitres){
 		case WAIT_ABANDONED:{
 			//TODO maybe have an option somewhere to suppress this error
 			LogE("threading-win32", "Locking an abandoned mutex. This mutex was not released by the thread that owned it before the thread terminated.");
 		}break;
 		//TODO set up our own error reporting once i figure out what error codes are what for this
-		case WAIT_FAILED:{ win32_log_last_error("WaitForSingleObject"); Assert(0); }break;
+		case WAIT_FAILED:{
+			win32_log_last_error("WaitForSingleObject");
+			Assert(0);
+		}break;
 	}
 	//TODO(sushi) need to see if this should be locked!
 	se->count--;
@@ -1960,175 +1968,140 @@ semaphore_enter(semaphore* se){
 
 void 
 semaphore_leave(semaphore* se){
-	if(!ReleaseSemaphore(se->handle, 1, 0)){
+	if(!::ReleaseSemaphore(se->handle, 1, 0)){
 		win32_log_last_error("ReleaseSemaphore");
 	}
 	se->count++;
 }
-
 
 #ifdef BUILD_SLOW
 #define WorkerLog(message) //DPTracyDynMessage(toStr("worker ", me->idx, " : " message)) //Log("thread", "worker ", me, ": ", message)
 #else
 #define WorkerLog(message)
 #endif
+
 //infinite loop worker thread
 // all this does is check for a job from ThreadManager's job_ring and if it finds one it runs it immediately
 // after running the job it continues looking for more jobs
 // if it can't find any jobs to run it just goes to sleep
-void
-deshi__thread_worker(Thread* me){DPZoneScoped;
-	NotImplemented;
-	/*
-	ThreadManager* man = DeshThreader;
-	WorkerLog("spawned");
-	semaphore_enter(&man->wake_up_barrier);
-	SetThreadDescription(GetCurrentThread(), wchar_from_str8(to_dstr8v(deshi_temp_allocator, "worker ", me->idx).fin, 0, deshi_temp_allocator));
-	while(!me->close){
-		while(man->job_ring.count){//lock and retrieve a job from ThreadManager
-			WorkerLog("looking to take a job from job ring");
-			ThreadJob tj;
-			//TODO look into how DOOM3 does this w/o locking, I don't understand currently how they atomically do this 
-			
-			mutex_lock(&man->find_job_lock);
-			
-			//check once more that there are jobs since the locking thread could have taken the last one
-			//im sure theres a better way to do this
-			if(!man->job_ring.count){
-				mutex_unlock(&man->find_job_lock);
-				break; 
-			} 	
-			WorkerLog("locked job ring and taking a job");
-			//take the job and remove it from the ring
-			tj = man->job_ring[0];
-			man->job_ring.remove(1);
-			
-			mutex_unlock(&man->find_job_lock);
-			
-			//run the function
-			WorkerLog("running job");
-			me->running = true;
-			tj.func(tj.data);
-			me->running = false;
-			WorkerLog("finished running job");
-			if(!threader_worker_should_continue()) break;
-		}
-		//when there are no more jobs go to sleep until notified again by thread manager
-		WorkerLog("going to sleep");
-		threader_set_thread_name(STR8("sleeping..."));
-		condition_variable_wait(&man->idle);
-		threader_set_thread_name(STR8("waking up"));
-		WorkerLog("woke up");
-		
-	}
-	WorkerLog("closing");
-	*/
-}
-
 DWORD WINAPI
-deshi__thread_worker__win32_stub(LPVOID in){DPZoneScoped;
-	NotImplemented;
-	/*
-deshi__thread_worker((Thread*)in);
-*/
+deshi__thread_worker(LPVOID data){DPZoneScoped;
+	Thread* manager_thread = (Thread*)data;
+	
+	WorkerLog("* spawned");
+	semaphore_enter(&g_threader->wake_up_barrier);
+	
+	while(!manager_thread->close){
+		WorkerLog("? looking for a job");
+		ThreadJob* job = 0;
+		
+		mutex_lock(&g_threader->find_job_lock);
+		forI(DESHI_THREAD_PRIORITY_LAYERS){
+			if(g_threader->priorities[i]){
+				job = g_threader->priorities[i];
+				g_threader->priorities[i] = (job->node.next == &job->node) ? 0 : (ThreadJob*)job->node.next;
+				NodeRemove(&job->node);
+				NodeInsertPrev(&g_threader->free_jobs, &job->node);
+				break;
+			}
+		}
+		mutex_unlock(&g_threader->find_job_lock);
+		
+		if(job){
+			WorkerLog("> running job");
+			semaphore_enter(&g_threader->wake_up_barrier);
+			manager_thread->running = true;
+			job->func(job->data);
+			manager_thread->running = false;
+			semaphore_leave(&g_threader->wake_up_barrier);
+			WorkerLog("! finished job");
+		}else{
+			WorkerLog("# sleeping");
+			mutex_lock(&g_threader->idlemx);
+			condition_variable_wait(&g_threader->idlemx, &g_threader->idle);
+			mutex_unlock(&g_threader->idlemx);
+			WorkerLog("@ waking up");
+		}
+	}
+	
 	return 0;
 }
 
 void 
 threader_init(u32 max_threads, u32 max_awake_threads, u32 max_jobs){DPZoneScoped;
-	NotImplemented;
-	/*
-	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempt to init threader loading Memory first");
-	g_threader->job_ring.init(max_jobs, deshi_allocator);
-	DeshThreader->wake_up_queue.init(DeshThreader->max_awake_threads*4);
-	//TODO(sushi) query for max amount of threads 
-	DeshThreader->wake_up_barrier = semaphore_init(8,8);
-	semaphore_enter(&DeshThreader->wake_up_barrier);
-	DeshThreader->idle = condition_variable_init();
-	DeshThreader->find_job_lock = mutex_init();
+	DeshiStageInitStart(DS_THREAD, DS_MEMORY, "Attempted to initialize the threader before initializing the Memory module.");
+	
+	g_threader->max_threads = max_threads;
+	g_threader->max_awake_threads = max_awake_threads;
+	g_threader->threads = (Thread*)memalloc(max_threads * sizeof(Thread));
+	g_threader->jobs = (ThreadJob*)memalloc(max_jobs * sizeof(ThreadJob));
+	
+	g_threader->free_jobs.next = &g_threader->free_jobs;
+	g_threader->free_jobs.prev = &g_threader->free_jobs;
+	for(ThreadJob* it = g_threader->jobs; it < g_threader->jobs + max_jobs; it++){
+		NodeInsertPrev(&g_threader->free_jobs, (Node*)it);
+	}
+	
+	g_threader->wake_up_barrier = semaphore_init(max_awake_threads);
+	semaphore_enter(&g_threader->wake_up_barrier);
+	
+	g_threader->idle = condition_variable_init();
+	g_threader->find_job_lock = mutex_init();
+	g_threader->worker_message_lock = mutex_init();
+	g_threader->idlemx = mutex_init();
+	
+	//create requested amount of threads
+	for(Thread* it = g_threader->threads; it < g_threader->threads + max_threads; it++){
+		it->handle = ::CreateThread(0, 0, deshi__thread_worker, it, 0, 0);
+		if(it->handle == NULL){
+			win32_log_last_error("CreateThread");
+		}
+	}
+	
 	DeshiStageInitEnd(DS_THREAD);
-*/
 }
 
 void 
-threader_spawn_thread(u32 count){DPZoneScoped;
-	NotImplemented;
-	/*
-	if(DeshThreader->max_threads && DeshThreader->threads.count + count > DeshThreader->max_threads){
-		LogE("threading-win32", "Attempt to create more threads than the maximum set on manager: ", DeshThreader->max_threads);
+threader_add_job(ThreadJob job, u8 priority){DPZoneScoped;
+	Assert(priority <= DESHI_THREAD_PRIORITY_LAYERS, "Only DESHI_THREAD_PRIORITY_LAYERS priority levels are allowed");
+	ThreadJob* current = (ThreadJob*)g_threader->free_jobs.next;
+	NodeRemove(&current->node);
+	*current = job;
+	
+	if(g_threader->priorities[priority] == 0){
+		g_threader->priorities[priority] = current;
+		current->node.next = &current->node;
+		current->node.prev = &current->node;
+	}else{
+		NodeInsertPrev(&g_threader->priorities[priority]->node, &current->node);
 	}
-	forI(count){
-		DeshThreader->awake_threads++;
-		Thread* t = (Thread*)memalloc(sizeof(Thread));
-		if(DeshThreader->threads.count)
-			t->idx = (*DeshThreader->threads.last)->idx + 1;
-		else
-			t->idx = 0;
-		DeshThreader->threads.add(t);
-		::CreateThread(0, 0, deshi__thread_worker__win32_stub, (void*)t, 0, 0);
-	}
-*/
-}
-
-void 
-threader_close_all_threads(){DPZoneScoped;
-	NotImplemented;
-	/*
-	forI(DeshThreader->threads.count) DeshThreader->threads[i]->close = true;
-	threader_wake_threads(0);
-	DeshThreader->threads.clear();
-	*/
-}
-
-void 
-threader_add_job(ThreadJob job){DPZoneScoped;
-	NotImplemented;
-	/*
-	DeshThreader->job_ring.add(job);
-*/
-}
-
-void 
-threader_add_jobs(carray<ThreadJob> jobs){DPZoneScoped;
-	NotImplemented;
-	/*
-	forI(jobs.count) DeshThreader->job_ring.add(jobs[i]);
-*/
 }
 
 void 
 threader_cancel_all_jobs(){DPZoneScoped;
-	NotImplemented;
-	/*
-	DeshThreader->job_ring.clear();
-} 
-
-void 
-threader_wake_threads(u32 count){DPZoneScoped;
-	NotImplemented;
-	/*
-	if(!DeshThreader->threads.count){ LogW("Thread", "Attempt to use wake_threads without spawning any threads first"); }
-	else if(!count){
-		condition_variable_notify_all(&DeshThreader->idle);
-	}  
-	else{
-		forI(count) 
-			condition_variable_notify_one(&DeshThreader->idle);
+	g_threader->free_jobs.next = &g_threader->free_jobs;
+	g_threader->free_jobs.prev = &g_threader->free_jobs;
+	for(ThreadJob* it = g_threader->jobs; it < g_threader->jobs + g_threader->max_jobs; it++){
+		NodeInsertNext((Node*)it, (Node*)(it+1));
 	}
-	*/
 }
 
-void 
-threader_set_thread_name(str8 name){
-	NotImplemented;
-	/*
-	SetThreadDescription(GetCurrentThread(), wchar_from_str8(name, 0, deshi_temp_allocator));
-*/
+void
+threader_wake_threads(u32 count){
+	if(count){
+		forI(count){
+			condition_variable_notify_one(&g_threader->idle);
+		}
+	}else{
+		condition_variable_notify_all(&g_threader->idle);
+	}
 }
 
 
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @window
+
+
 Window*
 window_create(str8 title, s32 width, s32 height, s32 x, s32 y, DisplayMode display_mode, Decoration decorations){DPZoneScoped;
 	DeshiStageInitStart(DS_WINDOW, DS_PLATFORM, "Called window_create() before initializing Platform module");
@@ -2371,8 +2344,10 @@ window_set_cursor_position(Window* window, s32 x, s32 y){DPZoneScoped;
 	DeshInput->screenMouseY = p.y;
 }
 
+
 //~////////////////////////////////////////////////////////////////////////////////////////////////
 //// @networking
+
 
 //collection of error codes and their messages, so this list isnt typed out in every function
 //some of these should just never happen but I'm including them just in case
@@ -2493,7 +2468,7 @@ void net_deinit(){
 	if(WSACleanup()) return WSA_log_error(STR8("net_deinit()"));
 }
 
-u64 net_socket_open(netSocket* sock, u8 port, b32 non_blocking){
+u64 net_socket_open(netSocket* sock, u16 port, b32 non_blocking){
 	if(!sock) return netLogE("net_socket_open()", "sock parameter was null"), 1;
 	
 	//get handle to sock from win32
@@ -2503,7 +2478,7 @@ u64 net_socket_open(netSocket* sock, u8 port, b32 non_blocking){
 	//bind sock to port
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port); //htons converts the u8 from host byte order to network byte order
+	addr.sin_port = htons(port); //htons converts the u16 from host byte order to network byte order
 	addr.sin_addr.s_addr = INADDR_ANY;
 	if(bind(sock->handle, (sockaddr*)&addr, sizeof(sockaddr_in))) return WSA_log_error(STR8("net_socket_open()->bind()")), 1;
 	
@@ -2537,7 +2512,7 @@ u64 net_socket_send(netSocket* socket, netAddress destination, void* data, s32 s
 
 u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, s32 size){
 	if(!socket) return LogE("net_socket_recv()","socket parameter was null"), 1;
-	sockaddr_in	from;
+	sockaddr_in from;
 	s32 fromsize = sizeof(sockaddr_in); //so retarded
 	
 	s32 recieved_bytes = recvfrom(socket->handle, (char*)data, size, 0, (sockaddr*)&from, &fromsize);
@@ -2563,13 +2538,17 @@ u64 net_socket_recv(netSocket* socket, netAddress* sender, void* data, s32 size)
 //from https://stackoverflow.com/questions/1824279/how-to-get-ip-address-from-sockaddr
 //so from http://beej.us/guide/bgnet/examples/client.c
 void* getinaddr(sockaddr* sa){
-	if (sa->sa_family == AF_INET) return &(((struct sockaddr_in*)sa)->sin_addr);
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+	if(sa->sa_family == AF_INET){
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}else{
+		return &(((struct sockaddr_in6*)sa)->sin6_addr);
+	}
 }
 
 u64 net_address_init(netAddress* address, str8 host, str8 port){
-	if(host.str==0) address->host = INADDR_ANY;
-	else{
+	if(host.str==0){
+		address->host = INADDR_ANY;
+	}else{
 		addrinfo* result = 0, * ptr = 0, hints = {0};
 		hints.ai_family = AF_INET;
 		hints.ai_socktype = SOCK_DGRAM;
@@ -2584,17 +2563,11 @@ u64 net_address_init(netAddress* address, str8 host, str8 port){
 }
 
 str8 net_address_str(netAddress address, b32 incl_port){
-	NotImplemented;
-	/*
-	str8 out = {(u8*)memtalloc(21), 21}; 
-	inet_ntop(AF_INET, &address.host, (PSTR)out.str, out.count);
+	str8 out = {(u8*)memtalloc(23), 0}; 
+	inet_ntop(AF_INET, &address.host, (PSTR)out.str, 23);
+	out.count = strlen((const char*)out.str);
 	if(incl_port){
-		string c = to_string(address.port, deshi_allocator);
-		u8* p = out.str;
-		while(*p++ != 0);
-		memcpy(p, c.str, 5);
+		out.count += snprintf((char*)out.str + out.count, 7, ":%hu", address.port);
 	}
 	return out;
-*/
-	return str8{};
 }

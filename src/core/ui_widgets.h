@@ -1,55 +1,33 @@
-/* deshi UI2 Widgets Module
+/* deshi UI Widgets Module
 Index:
-@ui2_widgets_text
+@ui_widgets_text
   uiText
-  uiTextM(str8 text) -> uiItem*
-  uiTextMS(str8 text, uiStyle* style) -> uiItem*
-  uiTextML(string_literal) -> uiItem*
-  uiTextMSL(string_literal, uiStyle* style) -> uiItem*
-@ui2_widgets_inputtext
+  ui_make_text(str8 text, uiStyle* style) -> uiItem*
+@ui_widgets_inputtext
   uiInputText
-  uiInputTextM() -> uiItem*
-  uiInputTextMS(uiStyle* style) -> uiItem*
-  uiInputTextMP(str8 preview) -> uiItem*
-  uiInputTextMSP(uiStyle* style, str8 preview) -> uiItem*
-@ui2_widgets_slider
+  ui_make_input_text(str8 preview, uiStyle* style) -> uiItem*
+@ui_widgets_slider
   uiSlider
-  uiSliderf32(f32 min, f32 max, f32* var) -> uiItem*
-  uiSliderf32S(f32 min, f32 max, f32* var, uiStyle* style) -> uiItem*
-  uiSlideru32(u32 min, u32 max, u32* var) -> uiItem*
-  uiSlideru32S(u32 min, u32 max, u32* var, uiStyle* style) -> uiItem*
-  uiSliders32(s32 min, s32 max, s32* var) -> uiItem*
-  uiSliders32S(s32 min, s32 max, s32* var, uiStyle* style) -> uiItem*
-@ui2_widgets_checkbox
+  ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style) -> uiItem*
+  ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style) -> uiItem*
+  ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style) -> uiItem*
+@ui_widgets_checkbox
   uiCheckbox
-  uiCheckboxM(b32* var) -> uiItem*
-  uiCheckboxMS(b32* var, uiStyle* style) -> uiItem*
-@ui2_widgets_shared_impl
-  item_error(uiItem* item, ...) -> void
-  gen_error(str8 file, upt line, ...) -> void
-  find_text_breaks(arrayT<pair<s64,vec2>>* breaks, uiItem* item, Text text, f32 wrapspace, b32 do_wrapping, b32 reset_size) -> void
-  find_hovered_offset(carray<pair<s64,vec2>> breaks, uiItem* item, Text text) -> s64
-  render_ui_text(vec2i counts, uiDrawCmd* dc, uiVertex* vp, u32* ip, uiItem* item, Text text, carray<pair<s64,vec2>> breaks) -> vec2i
-@ui2_widgets_text_impl
-  ui_gen_text(uiItem* item) -> void
-  ui_eval_text(uiItem* item) -> void
-  ui_make_text(str8 text, uiStyle* style, str8 file, upt line) -> uiItem*
-@ui2_widgets_inputtext_impl
-  ui_gen_input_text(uiItem* item) -> void
-  ui_eval_input_text(uiItem* item) -> void
-  ui_update_input_text(uiItem* item) -> void
-  ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line) -> uiItem*
-@ui2_widgets_slider_impl
-  ui_gen_slider(uiItem* item) -> void
-  ui_slider_callback(uiItem* item) -> void
-  ui_make_slider(uiStyle* style, str8 file, upt line) -> uiItem*
-  ui_make_slider_f32(f32 min, f32 max, f32* var, uiStyle* style, str8 file, upt line) -> uiItem*
-  ui_make_slider_u32(u32 min, u32 max, u32* var, uiStyle* style, str8 file, upt line) -> uiItem*
-  ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file, upt line) -> uiItem*
-@ui2_widgets_checkbox_impl
-  ui_gen_checkbox(uiItem* item) -> void
-  ui_checkbox_callback(uiItem* item) -> void
-  ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line) -> uiItem*
+  ui_make_checkbox(b32* var, uiStyle* style) -> uiItem*
+@ui_widgets_tab
+  uiTabbed
+  ui_make_tabbed(uiStyle* style) -> uiItem*
+  ui_begin_tabbed(uiStyle* style) -> uiItem*
+  ui_end_tabbed() -> void
+  ui_make_tab(str8 title, uiStyle* style) -> uiItem*
+  ui_begin_tab(str8 title, uiStyle* style) -> uiItem*
+  ui_end_tab() -> void
+@ui_widgets_shared_impl
+@ui_widgets_text_impl
+@ui_widgets_inputtext_impl
+@ui_widgets_slider_impl
+@ui_widgets_checkbox_impl
+@ui_widgets_tab_impl
 */
 #ifndef DESHI_UI2_WIDGETS_H
 #define DESHI_UI2_WIDGETS_H
@@ -59,7 +37,7 @@ Index:
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_text
+//// @ui_widgets_text
 //uiText is a terminal node meaning it cannot have any children.
 
 
@@ -77,7 +55,7 @@ uiItem* deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_inputtext
+//// @ui_widgets_inputtext
 
 
 enum{
@@ -85,6 +63,11 @@ enum{
 	input_cursor_underline,
 	input_cursor_rect,
 	input_cursor_filled_rect,
+};
+
+enum{
+	input_filter_none = 0,
+	input_filter_numbers = 0,
 };
 
 struct uiInputText{
@@ -107,6 +90,7 @@ struct uiInputText{
 		Type cursor;
 		f32 hold_time;     //time until repeating starts in ms
 		f32 throttle_time; //time between repeats in ms
+		Type filter;
 	}style;
 };
 
@@ -115,8 +99,9 @@ struct uiInputText{
 uiItem* deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line);
 #define ui_make_input_text(preview, style) deshi__ui_make_input_text((preview), (style), str8l(__FILE__), __LINE__)
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_slider
+//// @ui_widgets_slider
 
 
 enum{
@@ -191,7 +176,7 @@ uiItem* deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, st
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_checkbox
+//// @ui_widgets_checkbox
 //uiCheckbox is a terminal node, so it cannot hold any children
 
 
@@ -232,7 +217,9 @@ uiItem* deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @tab
+// @ui_widgets_tab
+
+
 struct uiTabbed {
 	uiItem item;
 
@@ -322,7 +309,8 @@ void deshi__ui_end_tab(str8 file, upt line);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-// @tree
+// @ui_widgets_tree
+
 
 struct uiTree {
 	uiItem item;
@@ -360,6 +348,7 @@ uiItem* deshi__ui_begin_tree_node(str8 title, uiStyle* style, str8 file, upt lin
 void deshi__ui_end_tree_node(str8 file, upt line);
 #define ui_end_tree_node() deshi__ui_end_tree_node(str8l(__FILE__), __LINE__)
 
+
 #endif //DESHI_UI2_WIDGETS_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if defined(DESHI_IMPLEMENTATION)
@@ -367,7 +356,7 @@ void deshi__ui_end_tree_node(str8 file, upt line);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_shared_impl
+//// @ui_widgets_shared_impl
 
 
 #define item_error(item, ...)\
@@ -499,7 +488,7 @@ ui_draw_text_into_region(str8 text, vec2 pos, vec2 size, uiDrawCmd* dc) {
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_text_impl
+//// @ui_widgets_text_impl
 
 
 void
@@ -645,7 +634,7 @@ deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_inputtext_impl
+//// @ui_widgets_inputtext_impl
 
 
 void
@@ -763,8 +752,10 @@ ui_update_input_text(uiItem* item){DPZoneScoped;
 	//text input
 	// NOTE(sushi) manually filter out control characters until I setup linux's input to do so there
 	if(DeshInput->charCount && !iscntrl(DeshInput->charIn[0])){
-		text_insert_string(t, {DeshInput->charIn,(s64)DeshInput->charCount});
-		item->dirty = 1;
+		if(!(data->style.filter != input_filter_numbers && !isdigit(DeshInput->charIn[0]))){
+			text_insert_string(t, {DeshInput->charIn,(s64)DeshInput->charCount});
+			item->dirty = 1;
+		}
 	}
 	
 	if(g_ui->hovered == item && input_lmouse_pressed()){
@@ -833,7 +824,7 @@ deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZ
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_slider_impl
+//// @ui_widgets_slider_impl
 
 
 void
@@ -983,7 +974,7 @@ deshi__ui_make_slider_s32(s32 min, s32 max, s32* var, uiStyle* style, str8 file,
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @ui2_widgets_checkbox_impl
+//// @ui_widgets_checkbox_impl
 
 
 void
@@ -1053,8 +1044,10 @@ deshi__ui_make_checkbox(b32* var, uiStyle* style, str8 file, upt line){
 	return item;
 }
 
+
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @tabs_implementation
+//// @ui_widgets_tab_impl
+
 
 struct TabbedInfo {
 	u32 n_tabs;
@@ -1251,7 +1244,8 @@ deshi__ui_end_tab(str8 file, upt line) {
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @tree_implementation
+//// @ui_widgets_tree_impl
+
 
 void
 ui_gen_tree(uiItem* item) {
@@ -1283,9 +1277,6 @@ deshi__ui_end_tree(str8 file, upt line) {
 	deshi__ui_end_item(file, line);
 }
 
-//-////////////////////////////////////////////////////////////////////////////////////////////////
-//// @tree_node_implementation
-//
 //uiItem* 
 //deshi__ui_make_tree_node(str8 title, uiStyle* style, str8 file, upt line) {
 //
@@ -1300,5 +1291,6 @@ deshi__ui_end_tree(str8 file, upt line) {
 //deshi__ui_end_tree_node(str8 file, upt line) {
 //
 //}
+
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)
