@@ -1366,7 +1366,6 @@ void setup_ui(){
 		main->style.sizing = size_percent;
 		main->style.size = {100,100};
 		main->style.display = display_horizontal;
-		main->style.background_color = {20,20,20,255};
 		
 		ui.universe = ui_begin_item(0);{ ui.universe->id = STR8("ant_sim.universe");
 			ui.universe->style.sizing = size_percent;
@@ -1403,6 +1402,7 @@ void setup_ui(){
 			ui.info->style.sizing = size_percent;
 			ui.info->style.size = {40, 100};
 			ui.info->style.padding = {10,10,10,10};
+			ui.info->style.background_color = {20,20,20,255};
 			
 			//TODO replace with tab widget
 			uiItem* tool_select = ui_begin_item(0);{ tool_select->id = STR8("ant_sim.info.tool_select");
