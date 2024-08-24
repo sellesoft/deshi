@@ -1307,21 +1307,38 @@ void drag_item(uiItem* item){DPZoneScoped;
 //depth first walk to ensure we find topmost hovered item
 //TODO(sushi) remove this in favor of doing it where its needed instead of every frame
 b32 find_hovered_item(uiItem* item){DPZoneScoped;
-	//early out if the mouse is not within the item's known children bbx 
-	//NOTE(sushi) this does not work properly anymore now that we support immediate mode blocks
-	//TODO(sushi) come up with a way around this
-	//if(!Math::PointInRectangle(input_mouse_position(),item->children_bbx_pos,item->children_bbx_size)) return false;
+	//TODO(sushi) early out if the mouse is not within the item's known children bbx (there might be issues with immediate mode)
+	//if(!Math::PointInRectangle(input_mouse_position(),item->children_bbx_pos,item->children_bbx_size)){
+	//	return false;
+	//}
+	
 	for_node_reverse(item->node.last_child){
-		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden) || item->style.positioning == pos_fixed) continue;
-		if(find_hovered_item(uiItemFromNode(it))) return 1;
+		if(uiItemFromNode(it)->style.focus && !HasFlag(uiItemFromNode(it)->style.display, display_hidden)){
+			if(find_hovered_item(uiItemFromNode(it))){
+				return true;
+			}
+		}
 	}
+	
+	for_node_reverse(item->node.last_child){
+		if(HasFlag(uiItemFromNode(it)->style.display, display_hidden) || item->style.positioning == pos_fixed){
+			continue;
+		}
+		if(find_hovered_item(uiItemFromNode(it))){
+			return true;
+		}
+	}
+	
 	if(mouse_in_item(item)){
 		uiItem* cur = item;
-		while(cur->style.hover_passthrough) cur = uiItemFromNode(cur->node.parent);
+		while(cur->style.hover_passthrough){
+			cur = uiItemFromNode(cur->node.parent);
+		}
 		g_ui->hovered = cur;
-		return 1;
+		return true;
 	}
-	return 0;
+	
+	return false;
 }	
 
 
@@ -1544,7 +1561,7 @@ deshi__ui_update(Window* window) {
 	
 	forI(g_ui->immediate_items.count){
 		uiItem* item = g_ui->immediate_items[i];
-		remove(&item->node);
+		change_parent(0, &item->node);
 	}
 	g_ui->immediate_items.clear();
 	
@@ -1646,6 +1663,7 @@ void ui_debug(){
 				panel->action_trigger = action_act_always;
 				panel->style.width = 1;
 				panel->style.margin_right = 1;
+				panel->style.hover_passthrough = true;
 				
 				{ui_dwi.internal_info = ui_begin_item(0); 
 					ui_dwi.internal_info->style = def_style;
@@ -1655,7 +1673,7 @@ void ui_debug(){
 					ui_dwi.internal_info->style.height = 100;
 					ui_dwi.internal_info->style.background_color = color(14,14,14);
 					ui_dwi.internal_info->style.content_align = {0.5, 0.5};
-					
+					ui_dwi.internal_info->style.hover_passthrough = true;
 					
 					ui_end_item();
 				}
@@ -1668,6 +1686,7 @@ void ui_debug(){
 				panel->action = &ui_debug_panel_callback;
 				panel->action_trigger = action_act_always;
 				panel->style.width = 0.5;
+				panel->style.hover_passthrough = true;
 				
 				ui_dwi.panel1text = ui_make_text(str8l("stats"), 0);
 				

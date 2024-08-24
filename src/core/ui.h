@@ -201,8 +201,11 @@ Item Style
 
     margintl is margin_top and margin_left, and marginbr is similar.
 
-     ┌----------------------------┑ |     |─────────────────────────── margin_top |    ┌------------------┑    | |━━━━|                  |    | |  | |
-     child item    |    |
+     ┌----------------------------┑
+     |  |─────────────────────────── margin_top
+     |    ┌------------------┑    |
+     |━━━━|                  |    |
+     |  | |    child item    |    |
      |  | |                  |    |
      |  | |                  |    |
      |  | |                  |    |
@@ -227,7 +230,9 @@ Item Style
 
      ┌----------------------------┑
      |                            |
-     |    ┌------------------┑    | |    |    |─────────────────────────── padding_top |    |----text in item  |    |
+     |    ┌------------------┑    |
+     |    |    |─────────────────────────── padding_top
+     |    |----text in item  |    |
      |    | |                |    |
      |    | |                |    |
      |    | |                |    |
@@ -348,8 +353,9 @@ TODO(sushi) example
     ---
     Flag that determines if an item should focus over its siblings when clicked by the mouse.
 
--   Catches: When using this on an item whose positioning is not fixed, it will affect the positioning of items in the same item as it.. This is
+-   When using this on an item whose positioning is not fixed, it will affect the positioning of items in the same item as it. This is
         because focusing an item will make it the last child of the parent, so that it is rendered on top of its siblings.
+-   When multiple sibling items have the focus flag, the latest-added sibling will be favored.
 
 
 ------------------------------------------------------------------------------------------------------------
