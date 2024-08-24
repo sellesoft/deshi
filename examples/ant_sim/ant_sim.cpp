@@ -952,35 +952,37 @@ void perform_actions(Agent* agent){
 	}
 }
 
-// NOTE(sushi) this is separated into another function because i call it again on leaves that are above leaves that are moved because there are too many above it
-// https://encycolorpedia.com/d57835
+//TODO(sushi) leaf decay: https://encycolorpedia.com/d57835
 void eval_leaf(Entity* e){
 	if(!e->pos.y || get_entity(e->pos.x,e->pos.y-1)){
 		// stupid way to try and get leaves to spread out 
 		vec2i search = e->pos;
-		while(search.y < WORLD_HEIGHT && get_entity(search.x,search.y)) search.y++;
-		if(search.y-e->pos.y > 1){
-			if(e->pos.x == 0 && !get_entity(e->pos.x+1,e->pos.y)){
-				move_entity(e,{e->pos.x+1,e->pos.y});
-			}else if(e->pos.x == WORLD_WIDTH-1 && !get_entity(e->pos.x-1,e->pos.y)){
-				move_entity(e,{e->pos.x-1,e->pos.y});
-			}else{
-				Entity* l = get_entity(e->pos.x-1,e->pos.y);
-				Entity* r = get_entity(e->pos.x+1,e->pos.y);
-				if(!l&&!r) move_entity(e,{e->pos.x+(rand()%2?1:-1),e->pos.y});
-				else if(l) move_entity(e,{e->pos.x+1,e->pos.y});
-				else if(r) move_entity(e,{e->pos.x-1,e->pos.y});
-			}
+		while(search.y < WORLD_HEIGHT && get_entity(search.x,search.y)){
+			search.y++;
 		}
-		if(search.x != e->pos.x){
-			forI(search.y - e->pos.y - 1){
-				Entity* above = get_entity(search.x, e->pos.y + i + 1);
-				if(!above) continue;
-				u32 col = get_pixelfg(above->pos.x, above->pos.y);
-				move_entity(above, {above->pos.x, above->pos.y-1});
+		
+		if(search.y - e->pos.y > 1){
+			if(e->pos.x == 0 && !get_entity(e->pos.x+1, e->pos.y)){
+				move_entity(e, {e->pos.x+1, e->pos.y});
+			}else if(e->pos.x == WORLD_WIDTH-1 && !get_entity(e->pos.x-1, e->pos.y)){
+				move_entity(e, {e->pos.x-1, e->pos.y});
+			}else{
+				Entity* l = get_entity(e->pos.x-1, e->pos.y);
+				Entity* r = get_entity(e->pos.x+1, e->pos.y);
+				if(!l&&!r) move_entity(e, {e->pos.x+(rand()%2?1:-1), e->pos.y});
+				else if(l) move_entity(e, {e->pos.x+1, e->pos.y});
+				else if(r) move_entity(e, {e->pos.x-1, e->pos.y});
 			}
 		}
 		
+		if(search.x != e->pos.x){
+			forI(search.y - e->pos.y - 1){
+				Entity* above = get_entity(search.x, e->pos.y + i + 1);
+				if(above && above->type == Entity_Leaf){
+					move_entity(above, {above->pos.x, above->pos.y-1});
+				}
+			}
+		}
 	}else{
 		if(e->age % 5) return;
 		vec2i nupos = e->pos;
@@ -1363,12 +1365,12 @@ void setup_ui(){
 	uiItem* main = ui_begin_item(0);{ main->id = STR8("ant_sim.main");
 		main->style.sizing = size_percent;
 		main->style.size = {100,100};
-		main->style.display = display_flex | display_horizontal;
+		main->style.display = display_horizontal;
 		main->style.background_color = {20,20,20,255};
 		
 		ui.universe = ui_begin_item(0);{ ui.universe->id = STR8("ant_sim.universe");
-			ui.universe->style.sizing = size_flex | size_percent_y;
-			ui.universe->style.size = {512, 100};
+			ui.universe->style.sizing = size_percent;
+			ui.universe->style.size = {60, 100};
 			ui.universe->style.background_color = {5,5,5,255};
 			
 			//TODO multiple views on the world
@@ -1384,14 +1386,14 @@ void setup_ui(){
 					ui.background->style.background_image = rendering.background.texture;
 					ui.background->style.background_color = Color_White;
 					ui.background->style.size = {100,100};
-					ui.background->style.hover_passthrough = 1;
+					ui.background->style.hover_passthrough = true;
 					
 					ui.foreground = ui_begin_item(0);{ ui.foreground->id = STR8("ant_sim.universe.world.foreground");
 						ui.foreground->style.background_image = rendering.foreground.texture;
 						ui.foreground->style.background_color = Color_White;
 						ui.foreground->style.sizing = size_percent;
 						ui.foreground->style.size = {100,100};
-						ui.foreground->style.hover_passthrough = 1;
+						ui.foreground->style.hover_passthrough = true;
 					}ui_end_item();
 				}ui_end_item();
 			}ui_end_item();
@@ -1414,7 +1416,7 @@ void setup_ui(){
 					navigate->style.sizing = size_auto;
 					navigate->style.padding = {2,2,2,2};
 					
-					ui_make_text(STR8("Nav"), 0)->style.hover_passthrough = 1;
+					ui_make_text(STR8("Nav"), 0)->style.hover_passthrough = true;
 					
 					navigate->action_trigger = action_act_mouse_released;
 					navigate->action = [](uiItem* item){
@@ -1435,7 +1437,7 @@ void setup_ui(){
 					draw->style.sizing = size_auto;
 					draw->style.padding = {2,2,2,2};
 					
-					ui_make_text(STR8("Draw"), 0)->style.hover_passthrough = 1;
+					ui_make_text(STR8("Draw"), 0)->style.hover_passthrough = true;
 					
 					draw->action_trigger = action_act_mouse_released;
 					draw->action = [](uiItem* item){
@@ -1462,7 +1464,7 @@ void setup_ui(){
 				break_button->style.border_style = border_solid;
 				break_button->style.padding = {2,2,2,2};
 				
-				ui_make_text(STR8("break on click"), 0)->style.hover_passthrough = 1;
+				ui_make_text(STR8("break on click"), 0)->style.hover_passthrough = true;
 				
 				break_button->action_trigger = action_act_mouse_released;
 				break_button->action = [](uiItem* item){
@@ -1510,7 +1512,7 @@ void setup_ui(){
 							item->style.sizing = size_auto_y | size_percent_x;
 							item->style.padding_left = 1;
 							
-							ui_make_text(EntityStrings[i], 0)->style.hover_passthrough = 1;
+							ui_make_text(EntityStrings[i], 0)->style.hover_passthrough = true;
 							
 							item->action_trigger = action_act_mouse_released;
 							item->action = [](uiItem* item){
@@ -1540,7 +1542,7 @@ void setup_ui(){
 							item->style.sizing = size_auto_y | size_percent_x;
 							item->style.padding_left = 1;
 							
-							ui_make_text(RaceStrings[i], 0)->style.hover_passthrough = 1;
+							ui_make_text(RaceStrings[i], 0)->style.hover_passthrough = true;
 							
 							item->action_trigger = action_act_mouse_released;
 							item->action = [](uiItem* item){
@@ -1596,7 +1598,7 @@ void setup_ui(){
 					ui.entity.adverts.header->style.padding_left = 5/*pixels*/;
 					ui.entity.adverts.header->style.background_color = Color_DarkGrey;
 					
-					ui_make_text(STR8("Adverts ---------------"), 0)->style.hover_passthrough = 1;
+					ui_make_text(STR8("Adverts ---------------"), 0)->style.hover_passthrough = true;
 					
 					ui.entity.adverts.header->action_trigger = action_act_mouse_released;
 					ui.entity.adverts.header->action = [](uiItem* item){
@@ -1634,7 +1636,6 @@ void update_ui(){
 			ui_make_text(to_dstr8v(deshi_temp_allocator, (int)F_AVG(100,1000/DeshTime->deltaTime)," fps").fin, 0)->id = STR8("ant_sim.info_window.fps");
 			if(sim.paused){ 
 				uiItem* pausebox = ui_begin_item(0);{
-					pausebox->style.anchor = anchor_bottom_right;
 					pausebox->style.sizing = size_auto;
 					pausebox->style.padding = {2,2,2,2};
 					pausebox->style.background_color = color(255*(sin(1.5*DeshTime->totalTime/1000 + cos(1.5*DeshTime->totalTime/1000))+1)/2, 0, 0, 255);
@@ -1731,7 +1732,7 @@ void update_ui(){
 						item->style.width = 100/*percent*/;
 						item->style.padding_left = 1;
 						
-						ui_make_text(advert_name, 0)->style.hover_passthrough = 1;
+						ui_make_text(advert_name, 0)->style.hover_passthrough = true;
 						
 						item->action_trigger = action_act_mouse_released;
 						item->action = [](uiItem* item){
