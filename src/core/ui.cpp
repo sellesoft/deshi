@@ -681,7 +681,7 @@ deshi__ui_init(Window* window) {
 	g_ui->render_pass->debug_name = str8l("<ui> render pass");
 	g_ui->render_pass->use_color_attachment = true;
 	g_ui->render_pass->color_attachment.          format = graphics_format_of_presentation_frames(window);
-	g_ui->render_pass->color_attachment.         load_op = GraphicsLoadOp_Load;
+	g_ui->render_pass->color_attachment.         load_op = GraphicsLoadOp_Clear;
 	g_ui->render_pass->color_attachment.        store_op = GraphicsStoreOp_Store;
 	g_ui->render_pass->color_attachment. stencil_load_op = GraphicsLoadOp_Dont_Care;
 	g_ui->render_pass->color_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
