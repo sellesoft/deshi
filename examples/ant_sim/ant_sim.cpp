@@ -28,8 +28,8 @@ struct Advert;
 #define TICKS_PER_WORLD_MONTH  2629740
 #define TICKS_PER_WORLD_YEAR   31536000
 
-#define WORLD_WIDTH 32
-#define WORLD_HEIGHT 32
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
 
 enum{
 	north,
@@ -310,8 +310,8 @@ typedef struct AdvertDef{
 typedef struct Advert{
 	AdvertDef* def;
 	Entity* owner;
-	Action* actions_array;
-	u32 actions_count; //NOTE new actions can be inserted during progress towards advert
+	Action actions_array[MAX_ADVERT_DEF_ACTIONS];
+	u32 actions_count;
 	u32 completion_time;
 	u32 ongoing_time;
 }Advert;
@@ -738,7 +738,6 @@ Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
 	Advert* advert = memory_pool_push(adverts_pool);
 	advert->def = def;
 	advert->owner = owner;
-	advert->actions_array = (Action*)memory_alloc(MAX_ADVERT_DEF_ACTIONS*sizeof(Action));
 	forI(MAX_ADVERT_DEF_ACTIONS){
 		if(def->actions[i] == 0) break;
 		
