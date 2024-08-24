@@ -2326,7 +2326,7 @@ ui_put_text(uiVertex* putverts, u32* putindices, vec2i offsets, str8 text, Font*
 				f32 h = font->max_height * scale.y;
 				f32 dy = 1.f / (f32)font->count;
 				
-				f32 idx = f32(codepoint - 32);
+				f32 idx = (codepoint < 32) ? 0.0f : (f32)(codepoint - 32);
 				f32 topoff = (idx * dy) + font->uv_yoffset;
 				f32 botoff = topoff + dy;
 				
