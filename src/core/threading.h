@@ -1,14 +1,24 @@
-#pragma once
+/* deshi Threading Module
+Index:
+@mutex
+@condition_variable
+@semaphore
+@thread_manager
+*/
 #ifndef DESHI_THREADING_H
 #define DESHI_THREADING_H
+#include "kigu/common.h"
+#include "kigu/node.h"
+StartLinkageC();
 
 #ifndef DESHI_THREAD_PRIORITY_LAYERS
 #  define DESHI_THREAD_PRIORITY_LAYERS 4 
 #endif
 
-#include "kigu/common.h"
-#include "kigu/node.h"
-StartLinkageC();
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @mutex
+
 
 // used for thread syncronization. 
 // when a thread wants to use a resource that is not guaranteed not to be changed by another thread          
@@ -18,10 +28,10 @@ StartLinkageC();
 // Windows: functional
 // Linux: TODO
 // Mac: TODO
-struct mutex{
-    void* handle;
-    b32 is_locked;
-};
+typedef struct mutex{
+	void* handle;
+	b32 is_locked;
+}mutex;
 
 // initialize a mutex and returns it
 mutex mutex_init();
@@ -55,10 +65,9 @@ void mutex_unlock(mutex* m);
 // !!!! A shared_mutex CANNOT be used recursively like a normal mutex can
 //      eg. you cannot lock normally and then, with the same thread, try to 
 //          to lock the same mutex again. There are no checks for this!
-struct shared_mutex {
-    void* handle;
-};
-typedef shared_mutex shmutex;
+typedef struct shared_mutex{
+	void* handle;
+}shared_mutex, shmutex;
 
 // initializes a shared mutex and returns it 
 shared_mutex shared_mutex_init();
@@ -91,15 +100,19 @@ b32 shared_mutex_try_lock_for_shared(shared_mutex* m, u64 millis);
 // unlocks the given mutex
 void shared_mutex_unlock(shared_mutex* m);
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @condition_variable
+
+
 // used for thread syncronization
 // this struct allows for making threads go to sleep until notified.
 // a thread calls wait() on a condition variable and doesn't wake up until 
 // another thread calls notify on the same condition variable
-struct condition_variable{
-    void* cvhandle = 0; //win32: CONDITION_VARIABLE
-    void* cshandle = 0; //win32: CRITICAL_SECTION
-};
-typedef condition_variable condvar;
+typedef struct condition_variable{
+    void* cvhandle; //win32: CONDITION_VARIABLE
+    void* cshandle; //win32: CRITICAL_SECTION
+}condition_variable, condvar;
 
 // initializes a condition_variable
 condition_variable condition_variable_init();
@@ -121,12 +134,16 @@ void condition_variable_wait(mutex* m, condition_variable* cv);
 //or until another thread calls one of the notify functions.
 void condition_variable_wait_for(mutex* m, condition_variable* cv, u64 milliseconds);
 
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @semaphore
+
+
 //TODO(sushi) explain semaphores
-struct semaphore{
-    void* handle = 0;
-    //count that should match the semaphores count but im not sure yet if it accurately does!
-    u64 count;
-};
+typedef struct semaphore{
+    void* handle;
+    u64 count; //count that should match the semaphores count but im not sure yet if it accurately does!
+}semaphore;
 
 // initializes a semaphore and returns it 
 semaphore semaphore_init(u64 max_val);
@@ -135,25 +152,31 @@ semaphore semaphore_init(u64 max_val);
 void semaphore_deinit(semaphore* se);
 
 void semaphore_enter(semaphore* se);
+
 void semaphore_leave(semaphore* se);
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @thread_manager
+
 
 // a job that a thread attempts to take upon waking up.
 //TODO job priorities
-struct ThreadJob{
+typedef struct ThreadJob{
     Node node;
     void (*func)(void*); //job function pointer
     void* data;
-};
+}ThreadJob;
 
-struct Thread{
+typedef struct Thread{
     void* handle;
     b32 running = 0; //this is only set by the worker
     b32 close = 0; //this is only set by the thread manager
     u32 idx;
     str8 name; //for debugging. 
-};
+}Thread;
 
-struct ThreadManager{
+typedef struct ThreadManager{
     mutex worker_message_lock; // debug, when workers send messages we dont want them to overlap
 	
     // locked by a thread who wants to take a new job
@@ -176,7 +199,7 @@ struct ThreadManager{
     u32 awake_threads = 1; //main thread counts towards awake threads 
 	
     ThreadJob* priorities[DESHI_THREAD_PRIORITY_LAYERS];
-};
+}ThreadManager;
 
 //global ThreadManager
 extern ThreadManager* g_threader;

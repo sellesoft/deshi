@@ -1159,7 +1159,7 @@ void eval_water(Entity* e){
 
 void setup_simulation(){
 	//init RNG
-	srand(13535153135);
+	srand(135351);
 	
 	//init storage
 	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
@@ -1518,7 +1518,7 @@ void setup_ui(){
 							item->action = [](uiItem* item){
 								sim.drawing.entity_type = item->userVar;
 								sim.drawing.agent_race = Race_COUNT;
-								item->dirty = 1;
+								item->dirty = true;
 							};
 							
 							item->update_trigger = action_act_always;
@@ -1548,7 +1548,7 @@ void setup_ui(){
 							item->action = [](uiItem* item){
 								sim.drawing.entity_type = Entity_Agent;
 								sim.drawing.agent_race = item->userVar;
-								item->dirty = 1;
+								item->dirty = true;
 							};
 							
 							item->update_trigger = action_act_always;
@@ -1737,7 +1737,7 @@ void update_ui(){
 						item->action_trigger = action_act_mouse_released;
 						item->action = [](uiItem* item){
 							ui.entity.adverts.selected = (Advert*)item->userVar;
-							item->dirty = 1;
+							item->dirty = true;
 						};
 						
 						item->update_trigger = action_act_always;
@@ -1790,6 +1790,7 @@ void update_input(){
 							set_entity(pos.x,pos.y, e);
 						}else{
 							//TODO make agents
+							//Agent* a = make_agent(sim.drawing.agent_race, 1, pos);
 						}
 					}
 				}break;
