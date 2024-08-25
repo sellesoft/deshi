@@ -1436,7 +1436,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 					Assert(part.str[part.count] == '\\' || part.str[part.count] == '/');
 					if((::CreateDirectoryW(wpath, 0) == 0) && (::GetLastError() != ERROR_ALREADY_EXISTS)){
 						FileLogWin32Error("CreateDirectoryW", str8_from_wchar(wpath,deshi_temp_allocator));
-						return false;
+						return 0;
 					}
 					str8_increment(&temp_path, part.count+1);
 					parts.count += 1;
@@ -1444,7 +1444,7 @@ deshi__file_init(str8 caller_file, upt caller_line, str8 path, FileAccess flags,
 					handle = ::CreateFileW(prefixed_wpath, GENERIC_READ|GENERIC_WRITE, 0,0, CREATE_NEW, 0,0);
 					if((handle == INVALID_HANDLE_VALUE) && (::GetLastError() != ERROR_FILE_EXISTS)){
 						FileLogWin32Error("CreateFileW", str8_from_wchar(wpath,deshi_temp_allocator));
-						return false;
+						return 0;
 					}
 					break;
 				}
