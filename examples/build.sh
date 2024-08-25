@@ -2,7 +2,7 @@
 #_____________________________________________________________________________________________________
 #                                            Usage
 #_____________________________________________________________________________________________________
-# build.sh <example> [arguments...]
+# bash build.sh <example> [arguments...]
 #
 # Arguments:
 #   --v    Echo build commands to the console
@@ -19,12 +19,9 @@
 #   -linker <link,ld,lld,lld-link>        Build using the specified linker (default: link on Windows, ld on Mac and Linux)
 #   -vulkan_path <path_to_vulkan>         Override the default $VULKAN_SDK path with this path
 #
-# Notes:
-#   >For some reason, the argument count is wrong if you don't add sh.exe before build.sh even if 
-#      it's the default program. Windows usage: "sh build.sh <command> [arguments...]"
-#
 # Examples:
-#   >sh.exe build.sh voxels --d --time -graphics vulkan
+#   >bash.exe build.sh voxels --d --time -graphics vulkan
+#   >./build.sh ant_sim -graphics opengl -compiler clang++
 #
 # TODOs:
 #   >setup gcc
@@ -38,27 +35,27 @@
 builder_platform="unknown"
 builder_compiler="unknown"
 builder_linker="unknown"
-if [ "$OSTYPE" == "linux-gnu" ]; then
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   builder_platform="linux"
   builder_compiler="gcc"
   builder_linker="ld"
-elif [ "$OSTYPE" == "darwin" ]; then
+elif [[ "$OSTYPE" == "darwin"* ]]; then
   builder_platform="mac"
   builder_compiler="gcc"
   builder_linker="ld"
-elif [ "$OSTYPE" == "cygwin" ]; then
+elif [[ "$OSTYPE" == "cygwin" ]]; then
   builder_platform="win32"
   builder_compiler="cl"
   builder_linker="link"
-elif [ "$OSTYPE" == "msys" ]; then
+elif [[ "$OSTYPE" == "msys" ]]; then
   builder_platform="win32"
   builder_compiler="cl"
   builder_linker="link"
-elif [ "$OSTYPE" == "win32" ]; then
+elif [[ "$OSTYPE" == "win32" ]]; then
   builder_platform="win32"
   builder_compiler="cl"
   builder_linker="link"
-elif [ "$OSTYPE" == "freebsd" ]; then
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
   builder_platform="linux"
   builder_compiler="gcc"
   builder_linker="ld"
@@ -229,6 +226,7 @@ elif [ $build_platform == "linux" ]; then
   if [ $build_graphics == "opengl" ]; then
     libs+=(
       X11
+      Xcursor
       Xrandr
       GL
     )
