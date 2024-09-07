@@ -22,6 +22,8 @@ struct Advert;
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @utils
+
+
 #define TICKS_PER_WORLD_SECOND 1
 #define TICKS_PER_WORLD_MINUTE 60
 #define TICKS_PER_WORLD_DAY    86400
@@ -146,7 +148,6 @@ const str8 NeedStrings[] = {
 StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
 
 typedef struct Need{
-	Type type;
 	f32 value;
 	f32 delta;
 }Need;
@@ -279,17 +280,82 @@ str8 RaceSpeciesStrings[] = {
 };
 StaticAssert(ArrayCount(RaceSpeciesStrings) == Race_COUNT);
 
+Need RaceNeedDefinitions[][Need_COUNT] = {
+	/*Race_BlackGardenAntQueen*/ { //TODO(caj) queen ants
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+	/*Race_BlackGardenAntMale*/ { //TODO(caj) male ants
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+	/*Race_BlackGardenAntWorker*/ {
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE}, //NOTE worker ants don't mate
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+	/*Race_CottonAntQueen*/ { //TODO(caj) queen ants
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+	/*Race_CottonAntMale*/ { //TODO(caj) male ants
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+	/*Race_CottonAntMinorWorker*/ {
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE}, //NOTE worker ants don't mate
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+	/*Race_CottonAntMajorWorker*/ {
+		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE}, //NOTE worker ants don't mate
+		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	},
+};
+StaticAssert(ArrayCount(RaceNeedDefinitions[0]) == Need_COUNT);
+StaticAssert(ArrayCount(RaceNeedDefinitions) == Race_COUNT);
+
 typedef struct Agent{
-	Node node;
-	
 	Entity entity;
 	Type race;
 	
 	u32 action_index;
 	Advert* active_advert;
 	
-	Need* needs_array;
-	u32 needs_count;
+	Need needs[Need_COUNT];
 	
 	u8* path_nodes; //movement direction steps (north, east, south, west)
 	u32 path_count;
@@ -407,19 +473,19 @@ f32 distance_attenuation(f32 score, vec2i pos1, vec2i pos2){
 //score the advert based on its positive/negative costs, completion time, distance, ...
 f32 score_advert(Agent* agent, Advert* advert){
 	f32 average = 0;
-	ForX(need, agent->needs_array, agent->needs_count){
-		f32 current_score = need->value;
-		f32 future_score  = current_score + advert->def->costs[need->type];
+    forX(need_type, Need_COUNT){
+        f32 current_score = agent->needs[need_type].value;
+        f32 future_score  = current_score + advert->def->costs[need_type];
 		if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
 		
-		if(advert->def->costs[need->type] > 0){
+        if(advert->def->costs[need_type] > 0){
 			average += need_attenuation(current_score, future_score);
 		}else{
 			//TODO(delle) weight negative costs heavier
 			average += need_attenuation(current_score, future_score);
 		}
 	}
-	average /= agent->needs_count;
+    average /= Need_COUNT;
 	
 	//TODO(delle) better factor in whether something will become more important due to time (mining for a whole day instead of eating) see Fero::TimeAspect
 	return distance_attenuation(average, agent->entity.pos, advert->owner->pos) / advert->completion_time;
@@ -451,7 +517,7 @@ Advert* select_advert(Agent* agent, Advert** adverts, u32 adverts_count){
 			}else{
 				best_ads[i] = compare_ad;
 				best_scores[i] = compare_score;
-				score_count++;
+				score_count += 1;
 				break;
 			}
 		}
@@ -597,16 +663,16 @@ struct{
 struct{
 	u32 entity[Entity_COUNT]; // count of each entity
 	u32 entities; // total entities
+	u32 agent[Race_COUNT];
 	u32 agents; // sub count of entities
 	u32 actions;
 	u32 advert[Advert_COUNT];
 	u32 adverts;
 }counts = {0};
 
-Heap* agents_heap;
-Node agents_node;
 Advert* adverts_pool;
 Entity* entities_pool;
+Agent* agents_pool;
 
 void change_mode(Type mode){
 	switch(mode){
@@ -644,7 +710,7 @@ b32 move_entity(Entity* e, vec2i pos){
 }
 FORCE_INLINE b32 move_entity(Entity* e, u32 x, u32 y){ return move_entity(e,Vec2i(x,y)); }
 
-void swap_entities(Entity* e0, Entity* e1) {
+void swap_entities(Entity* e0, Entity* e1){
 	auto pos0 = e0->pos;
 	auto pos1 = e1->pos;
 	set_entity(pos0, e1);
@@ -789,21 +855,21 @@ Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
 	return advert;
 }
 
-template<typename... Args>
-Agent* make_agent(Type race, u32 age, vec2i pos, Args... args){
-	constexpr u32 arg_count = sizeof...(Args);
-	Agent* agent = (Agent*)memory_heap_add_bytes(agents_heap, sizeof(Agent) + arg_count*sizeof(Need));
+Agent* make_agent(Type race, u32 age, vec2i pos){
+	Agent* agent = (Agent*)memory_pool_push(agents_pool);
+	agent->entity.type   = Entity_Agent;
 	agent->entity.name   = str8{0};
 	agent->entity.age    = age;
 	agent->entity.pos    = pos;
 	agent->race          = race;
 	agent->action_index  = -1;
 	agent->active_advert = 0;
-	agent->needs_array   = (Need*)(agent+1);
-	agent->needs_count   = arg_count;
-	Need needs[arg_count] = {args...};
-	CopyMemory(agent->needs_array, needs, arg_count*sizeof(Need));
-	counts.agents++;
+	CopyMemory(agent->needs, RaceNeedDefinitions[race], Need_COUNT*sizeof(Need));
+
+	counts.agents += 1;
+	counts.agent[race] += 1;
+	counts.entities += 1;
+	counts.entity[Entity_Agent] += 1;
 	return agent;
 }
 
@@ -824,8 +890,8 @@ Entity* make_entity(Type type, vec2i pos, u32 age){
 			make_advert(Advert_DrinkWater, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
 		}break;
 	}
-	counts.entities++;
-	counts.entity[type]++;
+	counts.entities += 1;
+	counts.entity[type] += 1;
 	return entity;
 }
 
@@ -837,11 +903,15 @@ void delete_entity(Entity* entity){
 	
 	if(entity->type == Entity_Agent){
 		Agent* agent = AgentFromEntity(entity);
-		memory_heap_remove(agents_heap, agent);
-	}else{
+		counts.agent[agent->race] -= 1;
+		counts.agents -= 1;
+		memory_pool_delete(agents_pool, agent);
+	}
+	
+	counts.entity[entity->type] -= 1;
+	counts.entities -= 1;
+	
 		//TODO(sushi) handle entity->ui
-		
-		entity->type = Entity_NULL;
 		memory_pool_delete(entities_pool, entity);
 	}
 }
@@ -950,12 +1020,12 @@ void perform_actions(Agent* agent){
 	//if action completed
 	if(action->progress >= 1.0f){
 		//award costs
-		ForX(need, agent->needs_array, agent->needs_count){
-			if(abs(advert->def->costs[need->type] - action->def->costs[need->type]) > ADVERT_COST_DELTA_EPSILON){
+		forX(need_type, Need_COUNT){
+			if(abs(advert->def->costs[need_type] - action->def->costs[need_type]) > ADVERT_COST_DELTA_EPSILON){
 				//TODO(delle) make a memory if adverted completion reward didnt match actual
 			}
 			
-			delta_need(need, advert->def->costs[need->type]);
+			delta_need(&agent->needs[need_type], advert->def->costs[need_type]);
 		}
 		
 		//next action
@@ -1192,9 +1262,9 @@ void setup_simulation(){
 	
 	//init storage
 	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
-	agents_heap = memory_heap_init_bytes(Megabytes(1));
-	memory_pool_init(adverts_pool, 1024);
+	memory_pool_init(agents_pool, 1024);
 	memory_pool_init(entities_pool, 1024);
+	memory_pool_init(adverts_pool, 1024);
 	
 	//init weather
 	world.weather.type = Weather_Clear;
@@ -1242,11 +1312,14 @@ void update_simulation(){
 		sim.step = false;
 		
 		//agents tick needs and choose adverts
-		for_node(agents_node.next){
-			Agent* agent = AgentFromNode(it);
+		for_pool(agents_pool){
+			Agent* agent = it;
+			if(agent->entity.type == Entity_NULL){
+				continue;
+			}
 			
-			ForX(need, agent->needs_array, agent->needs_count){
-				delta_need(need, need->delta);
+			forX(need_type, Need_COUNT){
+				delta_need(&agent->needs[need_type], agent->needs[need_type].delta);
 			}
 			
 			if(agent->active_advert == 0){
@@ -1256,8 +1329,10 @@ void update_simulation(){
 		}
 		
 		//agents perform actions (after all agents decide what to do)
-		for_node(agents_node.next){
-			perform_actions(AgentFromNode(it));
+		for_pool(agents_pool){
+			if(it->entity.type != Entity_NULL){
+				perform_actions(it);
+			}
 		}
 		
 		//update entities
@@ -1719,9 +1794,9 @@ void update_ui(){
 					
 					dstr8 needs_builder;
 					dstr8_init(&needs_builder, str8{}, deshi_temp_allocator);
-					ForX(need,agent->needs_array,agent->needs_count){
+					forX(need_type, Need_COUNT){
 						dstr8_append(&needs_builder, STR8("["));
-						f32 need_percent = need->value / MAX_NEED_VALUE;
+						f32 need_percent = agent->needs[need_type].value / MAX_NEED_VALUE;
 						u32 need_percent_whole = (u32)(need_percent * 100.f);
 						u32 dash_count = (u32)(need_percent / 10.f);
 						u32 space_count = 10 - dash_count;
@@ -1730,7 +1805,7 @@ void update_ui(){
 						dstr8_append(&needs_builder, STR8("] ("));
 						dstr8_append(&needs_builder, to_dstr8(need_percent_whole, deshi_temp_allocator));
 						dstr8_append(&needs_builder, STR8("%) "));
-						dstr8_append(&needs_builder, NeedStrings[need->type]);
+						dstr8_append(&needs_builder, NeedStrings[need_type]);
 						dstr8_append(&needs_builder, STR8("\n"));
 					}
 					ui_make_text(dstr8_peek(&needs_builder), 0)->id = STR8("ant_sim.info.entity.agent.needs_list");
@@ -1822,13 +1897,23 @@ void update_input(){
 							e->name = EntityStrings[sim.drawing.entity_type];
 							set_entity(pos.x,pos.y, e);
 						}else{
-							//TODO make agents
-							//Agent* a = make_agent(sim.drawing.agent_race, 1, pos);
+							Agent* a = make_agent(sim.drawing.agent_race, 1, pos);
+							a->entity.color = 0xff000000 | (rand() & 0xffffff); // Random color for agents
+							a->entity.name = RaceStrings[sim.drawing.agent_race];
+							set_entity(pos.x, pos.y, &a->entity);
 						}
 					}
 				}break;
 				case DrawTool_Erase_Square:{
-					//TODO entity/agent deletion
+					if(input_lmouse_down()){
+						Entity* e = get_entity(pos.x, pos.y);
+						if(e){
+							if(e == sim.selected_entity){
+								sim.selected_entity = 0;
+							}
+							delete_entity(e);
+						}
+					}
 				}break;
 			}
 		}break;
