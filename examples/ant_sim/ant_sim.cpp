@@ -472,6 +472,9 @@ f32 distance_attenuation(f32 score, vec2i pos1, vec2i pos2){
 	return score / ((d > 1.f) ? d : 1.f);
 }
 
+// Add this near the top of the file, with other global variables
+f32 g_negative_cost_weight = 1.5f;
+
 //score the advert based on its positive/negative costs, completion time, distance, ...
 f32 score_advert(Agent* agent, Advert* advert){
 	f32 average = 0;
@@ -483,8 +486,7 @@ f32 score_advert(Agent* agent, Advert* advert){
         if(advert->def->costs[need_type] > 0){
 			average += need_attenuation(current_score, future_score);
 		}else{
-			//TODO(delle) weight negative costs heavier
-			average += need_attenuation(current_score, future_score);
+            average += g_negative_cost_weight * need_attenuation(current_score, future_score);
 		}
 	}
     average /= Need_COUNT;
@@ -1694,6 +1696,29 @@ void setup_ui(){
 										  STR8("navigate"), STR8(" - "), STR8("lshift + n"),
 										  STR8("select"),   STR8(" - "), STR8("right click"),
 									  }), 0)->id = STR8("ant_sim.info.keys");
+			
+			ui_make_text(STR8("Settings ---------------"), 0); //TODO replace with header widget
+			uiItem* negative_cost_wrapper = ui_begin_item(0);{
+				negative_cost_wrapper->id = STR8("ant_sim.info.negative_cost_wrapper");
+				negative_cost_wrapper->style.sizing = size_auto;;
+				negative_cost_wrapper->style.height = g_ui->base.style.font_height + 2;
+				negative_cost_wrapper->style.padding = {2,2,2,2};
+				negative_cost_wrapper->style.display = display_horizontal;
+				
+				ui_make_text(STR8("Negative Cost Weight: "), 0)->style.hover_passthrough = true;
+				
+				uiItem* slider = ui_make_slider_f32(1.0f, 3.0f, &g_negative_cost_weight, 0);
+				slider->id = STR8("ant_sim.info.negative_cost_wrapper.slider");
+				slider->style.size = {100, (f32)g_ui->base.style.font_height};
+				slider->style.background_color = Color_DarkGrey;
+				
+				uiItem* value_text = ui_make_text(to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin, 0);
+				value_text->style.pos = {4, 0};
+				value_text->update_trigger = action_act_always;
+				value_text->__update = [](uiItem* item){
+					text_clear_and_replace(&((uiText*)item)->text, to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin);
+				};
+			}ui_end_item();
 			
 			ui_make_text(STR8("Hovered ---------------"), 0); //TODO replace with header widget
 			ui.hover_container = ui_begin_item(0);{ ui.hover_container->id = STR8("ant_sim.info.hover_container");
