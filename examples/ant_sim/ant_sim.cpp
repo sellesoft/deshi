@@ -15,6 +15,7 @@ Index:
 @main
 
 TODOs:
+dirt background
 leaf aging
 advert scoring info
 action execution
@@ -1447,7 +1448,7 @@ void setup_simulation(){
 		}
 	}
 	
-	sim.mode = Mode_Navigate;
+	sim.tool = Tool_Navigate;
 	sim.break_on_me = 0;
 	sim.selected_entity = 0;
 	sim.selected_advert = 0;
@@ -1694,12 +1695,12 @@ void setup_ui(){
 					
 					navigate->action_trigger = action_act_mouse_released;
 					navigate->action = [](uiItem* item){
-						change_mode(Mode_Navigate);
+						change_tool(Tool_Navigate);
 					};
 					
 					navigate->update_trigger = action_act_always;
 					navigate->__update = [](uiItem* item){
-						if(sim.mode == Mode_Navigate){
+						if(sim.tool == Tool_Navigate){
 							item->style.background_color = Color_DarkRed;
 						}else{
 							item->style.background_color = {0};
@@ -1715,12 +1716,12 @@ void setup_ui(){
 					
 					draw->action_trigger = action_act_mouse_released;
 					draw->action = [](uiItem* item){
-						change_mode(Mode_Draw);
+						change_tool(Tool_Draw);
 					};
 					
 					draw->update_trigger = action_act_always;
 					draw->__update = [](uiItem* item){
-						if(sim.mode == Mode_Draw){
+						if(sim.tool == Tool_Draw){
 							item->style.background_color = Color_DarkRed;
 						}else{
 							item->style.background_color = {0};
@@ -1736,12 +1737,12 @@ void setup_ui(){
 					
 					erase->action_trigger = action_act_mouse_released;
 					erase->action = [](uiItem* item){
-						change_mode(Mode_Erase);
+						change_tool(Tool_Erase);
 					};
 					
 					erase->update_trigger = action_act_always;
 					erase->__update = [](uiItem* item){
-						if(sim.mode == Mode_Erase){
+						if(sim.tool == Tool_Erase){
 							item->style.background_color = Color_DarkRed;
 						}else{
 							item->style.background_color = {0};
@@ -2104,17 +2105,17 @@ void update_input(){
 	if(key_pressed(Key_SPACE | InputMod_None)) sim.paused = !sim.paused;
 	if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = true;
 	
-	if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
-	if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
-	if(key_pressed(Key_E | InputMod_Lshift)) change_mode(Mode_Erase);
+	if(key_pressed(Key_N | InputMod_Lshift)) change_tool(Tool_Navigate);
+	if(key_pressed(Key_D | InputMod_Lshift)) change_tool(Tool_Draw);
+	if(key_pressed(Key_E | InputMod_Lshift)) change_tool(Tool_Erase);
 	
 	if(input_rmouse_released()) sim.selected_entity = get_entity_under_mouse();
 	
-	switch(sim.mode){
-		case Mode_Navigate:{
+	switch(sim.tool){
+		case Tool_Navigate:{
 			//do nothing
 		}break;
-		case Mode_Draw:{
+		case Tool_Draw:{
 			if(input_lmouse_pressed() || (input_lmouse_down() && input_mods_down(InputMod_Lshift))){
 				auto [pos, ok] = get_tile_under_mouse();
 				if(!ok || sim.break_on_me || get_entity(pos.x, pos.y)) break;
@@ -2132,7 +2133,7 @@ void update_input(){
 				}
 			}
 		}break;
-		case Mode_Erase:{
+		case Tool_Erase:{
 			if(input_lmouse_down() || (input_lmouse_down() && input_mods_down(InputMod_Lshift))){
 				auto [pos, ok] = get_tile_under_mouse();
 				if(!ok || sim.break_on_me) break;
