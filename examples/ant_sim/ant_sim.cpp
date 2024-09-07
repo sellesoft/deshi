@@ -478,18 +478,18 @@ f32 g_negative_cost_weight = 1.5f;
 //score the advert based on its positive/negative costs, completion time, distance, ...
 f32 score_advert(Agent* agent, Advert* advert){
 	f32 average = 0;
-    forX(need_type, Need_COUNT){
-        f32 current_score = agent->needs[need_type].value;
-        f32 future_score  = current_score + advert->def->costs[need_type];
+	forX(need_type, Need_COUNT){
+		f32 current_score = agent->needs[need_type].value;
+		f32 future_score  = current_score + advert->def->costs[need_type];
 		if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
 		
-        if(advert->def->costs[need_type] > 0){
+		if(advert->def->costs[need_type] > 0){
 			average += need_attenuation(current_score, future_score);
 		}else{
-            average += g_negative_cost_weight * need_attenuation(current_score, future_score);
+			average += g_negative_cost_weight * need_attenuation(current_score, future_score);
 		}
 	}
-    average /= Need_COUNT;
+	average /= Need_COUNT;
 	
 	//TODO(delle) better factor in whether something will become more important due to time (mining for a whole day instead of eating) see Fero::TimeAspect
 	return distance_attenuation(average, agent->entity.pos, advert->owner->pos) / advert->completion_time;
@@ -632,13 +632,9 @@ enum{
 };
 
 enum{
-	DrawTool_Draw_Square,
-	DrawTool_Erase_Square,
-};
-
-enum{
 	Mode_Navigate,
 	Mode_Draw,
+	Mode_Erase,
 };
 
 struct{
@@ -654,7 +650,6 @@ struct{
 struct{
 	Type mode;
 	struct{
-		Type tool;
 		Type entity_type;
 		Type agent_race;
 	}drawing;
@@ -686,6 +681,9 @@ void change_mode(Type mode){
 			g_ui->keys.drag_item = Mouse_LEFT;
 		}break;
 		case Mode_Draw:{
+			g_ui->keys.drag_item = Mouse_MIDDLE;
+		}break;
+		case Mode_Erase:{
 			g_ui->keys.drag_item = Mouse_MIDDLE;
 		}break;
 	}
@@ -917,9 +915,9 @@ void delete_entity(Entity* entity){
 	counts.entity[entity->type] -= 1;
 	counts.entities -= 1;
 	
-		//TODO(sushi) handle entity->ui
-		memory_pool_delete(entities_pool, entity);
-	}
+	//TODO(sushi) handle entity->ui
+	memory_pool_delete(entities_pool, entity);
+}
 
 #define MAX_COLLECTED_ADVERTS 50
 Advert** collect_adverts(Agent* agent, u32* out_count){
@@ -1356,7 +1354,10 @@ void update_simulation(){
 		
 		//update entities
 		for_pool(entities_pool){
-			//if(it == sim.break_on_me) sim.break_on_me = 0, DebugBreakpoint;
+			if(it == sim.break_on_me){
+				sim.break_on_me = 0;
+				DebugBreakpoint;
+			}
 			switch(it->type){
 				case Entity_Leaf: eval_leaf(it); break;
 				case Entity_Dirt:{
@@ -1583,6 +1584,27 @@ void setup_ui(){
 						}
 					};
 				}ui_end_item();
+
+				uiItem* erase = ui_begin_item(0);{ erase->id = STR8("ant_sim.info.tool_select.erase");
+					erase->style.sizing = size_auto;
+					erase->style.padding = {2,2,2,2};
+					
+					ui_make_text(STR8("Erase"), 0)->style.hover_passthrough = true;
+					
+					erase->action_trigger = action_act_mouse_released;
+					erase->action = [](uiItem* item){
+						change_mode(Mode_Erase);
+					};
+					
+					erase->update_trigger = action_act_always;
+					erase->__update = [](uiItem* item){
+						if(sim.mode == Mode_Erase){
+							item->style.background_color = Color_DarkRed;
+						}else{
+							item->style.background_color = {0};
+						}
+					};
+				}ui_end_item();
 			}ui_end_item();
 			
 			uiItem* break_button = ui_begin_item(0);{ //TODO replace with button widget
@@ -1695,10 +1717,11 @@ void setup_ui(){
 			}ui_end_item();
 			
 			ui_make_text(STR8("Keys ---------------"), 0); //TODO replace with header widget
-			ui_make_text(aligned_text(4,3,{
+			ui_make_text(aligned_text(5,3,{
 										  STR8("pause"),    STR8(" - "), STR8("space"),
-										  STR8("draw"),     STR8(" - "), STR8("lshift + d"),
 										  STR8("navigate"), STR8(" - "), STR8("lshift + n"),
+										  STR8("draw"),     STR8(" - "), STR8("lshift + d"),
+										  STR8("erase"),    STR8(" - "), STR8("lshift + e"),
 										  STR8("select"),   STR8(" - "), STR8("right click"),
 									  }), 0)->id = STR8("ant_sim.info.keys");
 			
@@ -1919,6 +1942,7 @@ void update_input(){
 	
 	if(key_pressed(Key_N | InputMod_Lshift)) change_mode(Mode_Navigate);
 	if(key_pressed(Key_D | InputMod_Lshift)) change_mode(Mode_Draw);
+	if(key_pressed(Key_E | InputMod_Lshift)) change_mode(Mode_Erase);
 	
 	if(input_rmouse_released()) sim.selected_entity = get_entity_under_mouse();
 	
@@ -1927,41 +1951,35 @@ void update_input(){
 			//do nothing
 		}break;
 		case Mode_Draw:{
-			if(key_pressed(Key_1)) sim.drawing.tool = DrawTool_Draw_Square;
-			if(key_pressed(Key_2)) sim.drawing.tool = DrawTool_Erase_Square;
-			
-			if(get_entity_under_mouse()) break;
-			
-			auto [pos, ok] = get_tile_under_mouse();
-			if(!ok || sim.break_on_me) break;
-			
-			switch(sim.drawing.tool){
-				case DrawTool_Draw_Square:{
-					if(input_lmouse_down()){
-						if(sim.drawing.entity_type != Entity_Agent){
-							Entity* e = make_entity(sim.drawing.entity_type, pos, 0);
-							e->color = EntityColors[sim.drawing.entity_type][rand()%7];
-							e->name = EntityStrings[sim.drawing.entity_type];
-							set_entity(pos.x,pos.y, e);
-						}else{
-							Agent* a = make_agent(sim.drawing.agent_race, 1, pos);
-							a->entity.color = 0xff000000 | (rand() & 0xffffff); // Random color for agents
-							a->entity.name = RaceStrings[sim.drawing.agent_race];
-							set_entity(pos.x, pos.y, &a->entity);
-						}
+			if(input_lmouse_pressed() || (input_lmouse_down() && input_mods_down(InputMod_Lshift))){
+				auto [pos, ok] = get_tile_under_mouse();
+				if(!ok || sim.break_on_me || get_entity(pos.x, pos.y)) break;
+				
+				if(sim.drawing.entity_type != Entity_Agent){
+					Entity* e = make_entity(sim.drawing.entity_type, pos, 0);
+					e->color = EntityColors[sim.drawing.entity_type][rand()%7];
+					e->name = EntityStrings[sim.drawing.entity_type];
+					set_entity(pos.x,pos.y, e);
+				}else{
+					Agent* a = make_agent(sim.drawing.agent_race, 1, pos);
+					a->entity.color = 0xff000000 | (rand() & 0xffffff); // Random color for agents
+					a->entity.name = RaceStrings[sim.drawing.agent_race];
+					set_entity(pos.x, pos.y, &a->entity);
+				}
+			}
+		}break;
+		case Mode_Erase:{
+			if(input_lmouse_down() || (input_lmouse_down() && input_mods_down(InputMod_Lshift))){
+				auto [pos, ok] = get_tile_under_mouse();
+				if(!ok || sim.break_on_me) break;
+				
+				Entity* e = get_entity(pos.x, pos.y);
+				if(e){
+					if(e == sim.selected_entity){
+						sim.selected_entity = 0;
 					}
-				}break;
-				case DrawTool_Erase_Square:{
-					if(input_lmouse_down()){
-						Entity* e = get_entity(pos.x, pos.y);
-						if(e){
-							if(e == sim.selected_entity){
-								sim.selected_entity = 0;
-							}
-							delete_entity(e);
-						}
-					}
-				}break;
+					delete_entity(e);
+				}
 			}
 		}break;
 	}
