@@ -933,7 +933,6 @@ Advert** collect_adverts(Agent* agent, u32* out_count){
 			if(count < MAX_COLLECTED_ADVERTS){
 				adverts[count++] = it;
 			}else{
-				LogW("ant_sim", "Max adverts reached in collect_adverts");
 				break;
 			}
 		}
