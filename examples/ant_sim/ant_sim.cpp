@@ -1460,18 +1460,22 @@ str8 aligned_text(u32 rows, u32 columns, arrayT<str8> texts){
 	u32* max = (u32*)StackAlloc(sizeof(u32)*columns);
 	memset(max, 0, sizeof(u32)*columns);
 	
-	forI(rows*columns) {
+	forI(rows*columns){
 		u32 len = texts[i].count;
-		if(len > max[i%rows]) max[i%rows] = len;
+		if(len > max[i%columns]){
+			max[i%columns] = len;
+		}
 	}
 	
-	forI(rows*columns) {
-		u32 len = max[i%rows];
+	forI(rows*columns){
+		u32 len = max[i%columns];
 		dstr8_grow(&build, len);
 		memcpy(build.str+build.count, texts[i].str, texts[i].count);
 		memset(build.str+build.count+texts[i].count, ' ', len-texts[i].count);
 		build.count += len;
-		if(i%columns == columns-1)  dstr8_append(&build, STR8("\n"));
+		if(i%columns == columns-1 && i != rows*columns-1){
+			dstr8_append(&build, STR8("\n"));
+		}
 	}
 	
 	return build.fin;
@@ -1690,7 +1694,7 @@ void setup_ui(){
 			}ui_end_item();
 			
 			ui_make_text(STR8("Keys ---------------"), 0); //TODO replace with header widget
-			ui_make_text(aligned_text(3,3,{
+			ui_make_text(aligned_text(4,3,{
 										  STR8("pause"),    STR8(" - "), STR8("space"),
 										  STR8("draw"),     STR8(" - "), STR8("lshift + d"),
 										  STR8("navigate"), STR8(" - "), STR8("lshift + n"),
