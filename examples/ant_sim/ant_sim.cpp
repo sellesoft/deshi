@@ -13,6 +13,12 @@ Index:
 @ui
 @input
 @main
+
+TODOs:
+leaf aging
+advert scoring info
+action execution
+draw cursor size
 */
 #include "deshi.h"
 #include "core/baked/fonts.h"
@@ -49,8 +55,8 @@ struct Advert;
 #define ChunkIndexToChunkX(index) ((index) % WORLD_CHUNKS_X)
 #define ChunkIndexToChunkY(index) ((index) / WORLD_CHUNKS_X)
 
-#define ChunkStartX(chunk_x) ((chunk_x) * WORLD_CHUNK_SIZE)
-#define ChunkStartY(chunk_y) ((chunk_y) * WORLD_CHUNK_SIZE)
+#define ChunkStartX(chunk_x) ((chunk_x) * WORLD_CHUNKS_X)
+#define ChunkStartY(chunk_y) ((chunk_y) * WORLD_CHUNKS_Y)
 #define ChunkEndX(chunk_x) (ChunkStartX(chunk_x) + WORLD_CHUNK_SIZE - 1)
 #define ChunkEndY(chunk_y) (ChunkStartY(chunk_y) + WORLD_CHUNK_SIZE - 1)
 
@@ -193,7 +199,7 @@ enum{
 	Need_COUNT
 };
 
-const str8 NeedStrings[] = {
+str8 NeedStrings[] = {
 	STR8("Bladder"),
 	STR8("Food"),
 	STR8("Health"),
@@ -735,6 +741,9 @@ struct{
 	Entity* selected_entity;
 	Advert* selected_advert;
 	u64 ticks;
+	u32 ticks_per_second;
+	f64 tick_delta;
+	f64 tick_accumulator;
 	b32 paused;
 	b32 step;
 }sim;
@@ -1439,13 +1448,30 @@ void setup_simulation(){
 	}
 	
 	sim.mode = Mode_Navigate;
-	//sim.paused = 1;
+	sim.break_on_me = 0;
+	sim.selected_entity = 0;
+	sim.selected_advert = 0;
+	sim.ticks = 0;
+	sim.ticks_per_second = 10;
+	sim.tick_delta = 1.0 / (f64)sim.ticks_per_second;
+	sim.tick_accumulator = 0.0;
+	sim.paused = false;
+	sim.step = false;
 }
 
 void update_simulation(){
-	if(!sim.paused || sim.step){
+	if(sim.paused && !sim.step){
+		return;
+	}
+	
+	if(sim.step){
 		sim.step = false;
-		
+		sim.tick_accumulator += sim.tick_delta + M_EPSILON;
+	}else{
+		sim.tick_accumulator += g_time->deltaTime / 1000.0;
+	}
+	
+	while(sim.tick_accumulator - sim.tick_delta > (f64)M_EPSILON){
 		//agents tick needs and choose adverts
 		for_pool(agents_pool){
 			Agent* agent = it;
@@ -1513,6 +1539,8 @@ void update_simulation(){
 				}
 			}break;
 		}
+		
+		sim.tick_accumulator -= sim.tick_delta;
 		sim.ticks += 1;
 	}
 }
@@ -1841,8 +1869,7 @@ void setup_ui(){
 									  }), 0)->id = STR8("ant_sim.info.keys");
 			
 			ui_make_text(STR8("Settings ---------------"), 0); //TODO replace with header widget
-			uiItem* negative_cost_wrapper = ui_begin_item(0);{
-				negative_cost_wrapper->id = STR8("ant_sim.info.negative_cost_wrapper");
+			uiItem* negative_cost_wrapper = ui_begin_item(0);{ negative_cost_wrapper->id = STR8("ant_sim.info.negative_cost_wrapper");
 				negative_cost_wrapper->style.sizing = size_auto;;
 				negative_cost_wrapper->style.height = g_ui->base.style.font_height + 2;
 				negative_cost_wrapper->style.padding = {2,2,2,2};
@@ -1852,14 +1879,36 @@ void setup_ui(){
 				
 				uiItem* slider = ui_make_slider_f32(1.0f, 3.0f, &g_negative_cost_weight, 0);
 				slider->id = STR8("ant_sim.info.negative_cost_wrapper.slider");
-				slider->style.size = {100, (f32)g_ui->base.style.font_height};
+				slider->style.size = {200, (f32)g_ui->base.style.font_height};
 				slider->style.background_color = Color_DarkGrey;
 				
 				uiItem* value_text = ui_make_text(to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin, 0);
 				value_text->style.pos = {4, 0};
-				value_text->update_trigger = action_act_always;
+				value_text->update_trigger = action_act_hash_change;
 				value_text->__update = [](uiItem* item){
 					text_clear_and_replace(&((uiText*)item)->text, to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin);
+				};
+			}ui_end_item();
+			
+			uiItem* tps_wrapper = ui_begin_item(0);{ tps_wrapper->id = STR8("ant_sim.info.tps_wrapper");
+				tps_wrapper->style.sizing = size_auto;
+				tps_wrapper->style.height = g_ui->base.style.font_height + 2;
+				tps_wrapper->style.padding = {2,2,2,2};
+				tps_wrapper->style.display = display_horizontal;
+				
+				ui_make_text(STR8("Ticks Per Second: "), 0)->style.hover_passthrough = true;
+				
+				uiItem* slider = ui_make_slider_u32(1, 180, &sim.ticks_per_second, 0);
+				slider->id = STR8("ant_sim.info.tps_wrapper.slider");
+				slider->style.size = {200, (f32)g_ui->base.style.font_height};
+				slider->style.background_color = Color_DarkGrey;
+				
+				uiItem* value_text = ui_make_text(to_dstr8v(deshi_temp_allocator, sim.ticks_per_second).fin, 0);
+				value_text->style.pos = {4, 0};
+				value_text->update_trigger = action_act_hash_change;
+				value_text->__update = [](uiItem* item){
+					sim.tick_delta = 1.0 / (f64)sim.ticks_per_second;
+					text_clear_and_replace(&((uiText*)item)->text, to_dstr8v(deshi_temp_allocator, sim.ticks_per_second).fin);
 				};
 			}ui_end_item();
 			
