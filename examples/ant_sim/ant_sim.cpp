@@ -1354,10 +1354,6 @@ void update_simulation(){
 			}
 			switch(it->type){
 				case Entity_Leaf: eval_leaf(it); break;
-				case Entity_Dirt:{
-					if(!it->pos.y || get_entity(it->pos.x,it->pos.y-1)) break;
-					move_entity(it, vec2i{it->pos.x,it->pos.y-1});
-				}break;
 				case Entity_Water: eval_water(it); break;
 			}
 			it->age += 1;
