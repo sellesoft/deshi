@@ -889,6 +889,56 @@ ui_slider_callback(uiItem* item){DPZoneScoped;
 			s->width = dragwidth;
 			s->pos = dragpos;
 		} break;
+		case 1: {
+			u32 min = s->minu32;
+			u32 max = s->maxu32;
+			u32 *var = s->varu32;
+			
+			*var = Clamp(*var, min, max);
+			f32 dragwidth = item->width / 8.0f;
+			f32 dragpos = (f32)(*var - min) / (f32)(max - min) * (item->width - dragwidth);
+			if(input_lmouse_pressed() && 
+			   Math::PointInRectangle(lmp, Vec2(dragpos, 0), Vec2(dragwidth, item->height))) {
+				s->active = true;
+				s->mouse_offset = -lmp.x + dragpos;
+			}
+			if(s->active) {
+				*var = (u32)(Clamp(lmp.x + s->mouse_offset, 0.f, item->width - dragwidth) / (item->width - dragwidth) * (f32)((max - min) + min));
+				item->dirty = true;
+				item->action_trigger = action_act_always;
+			}
+			if(input_lmouse_released()) {
+				s->active = false;
+				item->action_trigger = action_act_mouse_hover;
+			}
+			s->width = dragwidth;
+			s->pos = dragpos;
+		} break;
+		case 2: {
+			s32 min = s->mins32;
+			s32 max = s->maxs32;
+			s32 *var = s->vars32;
+			
+			*var = Clamp(*var, min, max);
+			f32 dragwidth = item->width / 8.0f;
+			f32 dragpos = (f32)(*var - min) / (f32)(max - min) * (item->width - dragwidth);
+			if(input_lmouse_pressed() && 
+			   Math::PointInRectangle(lmp, Vec2(dragpos, 0), Vec2(dragwidth, item->height))) {
+				s->active = true;
+				s->mouse_offset = -lmp.x + dragpos;
+			}
+			if(s->active) {
+				*var = (s32)(Clamp(lmp.x + s->mouse_offset, 0.f, item->width - dragwidth) / (item->width - dragwidth) * (f32)((max - min) + min));
+				item->dirty = true;
+				item->action_trigger = action_act_always;
+			}
+			if(input_lmouse_released()) {
+				s->active = false;
+				item->action_trigger = action_act_mouse_hover;
+			}
+			s->width = dragwidth;
+			s->pos = dragpos;
+		} break;
 		default: NotImplemented;
 	}
 }
