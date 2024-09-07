@@ -1513,7 +1513,8 @@ void setup_ui(){
 				ui.background = ui_begin_item(0);{ ui.background->id = STR8("ant_sim.universe.world.background");
 					ui.background->style.background_image = rendering.background.texture;
 					ui.background->style.background_color = Color_White;
-					ui.background->style.size = {100,100};
+					f32 initial_size = Min(0.6f * (f32)g_window->width - 28, (f32)g_window->height - 28);
+					ui.background->style.size = {initial_size, initial_size};
 					ui.background->style.hover_passthrough = true;
 					
 					ui.foreground = ui_begin_item(0);{ ui.foreground->id = STR8("ant_sim.universe.world.foreground");
