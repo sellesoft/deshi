@@ -34,11 +34,13 @@ struct Advert;
 #define WORLD_WIDTH 512
 #define WORLD_HEIGHT 512
 
+typedef Type Direction;
 enum{
-	north,
-	east,
-	south,
-	west
+	Direction_North,
+	Direction_East,
+	Direction_South,
+	Direction_West,
+	Direction_COUNT
 };
 
 vec2i direction_to_movement[] = {
@@ -60,6 +62,7 @@ u32 divide_color(u32 color, u32 divisor){
 //// @entity
 
 
+typedef Type EntityType;
 enum{
 	Entity_NULL = 0,
 	Entity_Wall,
@@ -80,6 +83,11 @@ str8 EntityStrings[] = {
 };
 StaticAssert(ArrayCount(EntityStrings) == Entity_COUNT);
 
+typedef Flags EntityFlags;
+enum{
+	EntityFlags_Water_Evaluated = 1 << 0,
+};
+
 // color palettes for entities that randomly choose color
 u32 EntityColors[Entity_COUNT][7] = {
 	0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff, 0xff0000ff,
@@ -92,12 +100,12 @@ u32 EntityColors[Entity_COUNT][7] = {
 
 typedef struct Entity{
 	Node overlap_node; // connection to other entities occupying the same world tile
-	Type type;
+	EntityType type;
 	u32 color;
 	str8 name;
 	u64 age;
 	vec2i pos;
-	Flags flags;
+	EntityFlags flags;
 	
 	Advert* adverts_array[4]; //TODO make this dynamic
 	u64 adverts_count;
@@ -112,10 +120,6 @@ typedef struct Entity{
 	};
 }Entity;
 
-enum{
-	Flags_Water_Evaluated = 1 << 0,
-};
-
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @need/cost
@@ -124,6 +128,7 @@ enum{
 #define MAX_NEED_VALUE 100000
 #define MIN_NEED_VALUE      0
 
+typedef Type NeedType;
 enum{
 	Need_Bladder,
 	Need_Food,
@@ -162,6 +167,7 @@ void delta_need(Need* need, f32 delta){
 
 #define UNKNOWN_ACTION_COMPLETION_TIME 0
 
+typedef Type ActionType;
 enum{
 	Action_Idle,
 	Action_Walk,
@@ -172,7 +178,7 @@ enum{
 };
 
 typedef struct ActionDef{
-	Type type;
+	ActionType type;
 	str8 name;
 	u32 time;
 	f32 costs[Need_COUNT];
@@ -246,18 +252,19 @@ StaticAssert(ArrayCount(ActionDefinitions) == Action_COUNT);
 //// @agent
 
 
+typedef Type AgentType;
 enum{
-	Race_BlackGardenAntQueen,
-	Race_BlackGardenAntMale,
-	Race_BlackGardenAntWorker,
-	Race_CottonAntQueen,
-	Race_CottonAntMale,
-	Race_CottonAntMinorWorker,
-	Race_CottonAntMajorWorker,
-	Race_COUNT
+	Agent_BlackGardenAntQueen,
+	Agent_BlackGardenAntMale,
+	Agent_BlackGardenAntWorker,
+	Agent_CottonAntQueen,
+	Agent_CottonAntMale,
+	Agent_CottonAntMinorWorker,
+	Agent_CottonAntMajorWorker,
+	Agent_COUNT
 };
 
-str8 RaceStrings[] = {
+str8 AgentStrings[] = {
 	STR8("Queen Black Garden Ant"),
 	STR8("Male Black Garden Ant"),
 	STR8("Worker Black Garden Ant"),
@@ -266,9 +273,9 @@ str8 RaceStrings[] = {
 	STR8("Minor Worker Cotton Ant"),
 	STR8("Major Worker Cotton Ant"),
 };
-StaticAssert(ArrayCount(RaceStrings) == Race_COUNT);
+StaticAssert(ArrayCount(AgentStrings) == Agent_COUNT);
 
-str8 RaceSpeciesStrings[] = {
+str8 AgentSpeciesStrings[] = {
 	STR8("Lasius Niger"),
 	STR8("Lasius Niger"),
 	STR8("Lasius Niger"),
@@ -277,10 +284,10 @@ str8 RaceSpeciesStrings[] = {
 	STR8("Solenopsis xyloni"),
 	STR8("Solenopsis xyloni"),
 };
-StaticAssert(ArrayCount(RaceSpeciesStrings) == Race_COUNT);
+StaticAssert(ArrayCount(AgentSpeciesStrings) == Agent_COUNT);
 
-Need RaceNeedDefinitions[][Need_COUNT] = {
-	/*Race_BlackGardenAntQueen*/ { //TODO(caj) queen ants
+Need AgentNeedDefinitions[][Need_COUNT] = {
+	/*Agent_BlackGardenAntQueen*/ { //TODO(caj) queen ants
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -289,7 +296,7 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
-	/*Race_BlackGardenAntMale*/ { //TODO(caj) male ants
+	/*Agent_BlackGardenAntMale*/ { //TODO(caj) male ants
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -298,7 +305,7 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
-	/*Race_BlackGardenAntWorker*/ {
+	/*Agent_BlackGardenAntWorker*/ {
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -307,7 +314,7 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
-	/*Race_CottonAntQueen*/ { //TODO(caj) queen ants
+	/*Agent_CottonAntQueen*/ { //TODO(caj) queen ants
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -316,7 +323,7 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
-	/*Race_CottonAntMale*/ { //TODO(caj) male ants
+	/*Agent_CottonAntMale*/ { //TODO(caj) male ants
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -325,7 +332,7 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
-	/*Race_CottonAntMinorWorker*/ {
+	/*Agent_CottonAntMinorWorker*/ {
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -334,7 +341,7 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
-	/*Race_CottonAntMajorWorker*/ {
+	/*Agent_CottonAntMajorWorker*/ {
 		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
@@ -344,12 +351,12 @@ Need RaceNeedDefinitions[][Need_COUNT] = {
 		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
 	},
 };
-StaticAssert(ArrayCount(RaceNeedDefinitions[0]) == Need_COUNT);
-StaticAssert(ArrayCount(RaceNeedDefinitions) == Race_COUNT);
+StaticAssert(ArrayCount(AgentNeedDefinitions[0]) == Need_COUNT);
+StaticAssert(ArrayCount(AgentNeedDefinitions) == Agent_COUNT);
 
 typedef struct Agent{
 	Entity entity;
-	Type race;
+	AgentType type;
 	
 	u32 action_index;
 	Advert* active_advert;
@@ -373,6 +380,7 @@ typedef struct Agent{
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
 #define MIN_ADVERT_SELECTION_SCORE (1.0f)
 
+typedef Type AdvertType;
 enum{
 	Advert_Dig,
 	Advert_EatLeaf,
@@ -380,15 +388,16 @@ enum{
 	Advert_COUNT
 };
 
+typedef Flags AdvertDefFlags;
 enum{
-	AdvertFlags_None                      = 0,
-	AdvertFlags_ConsumeAdvertOnCompletion = (1 << 0),
-	AdvertFlags_ConsumeOwnerOnCompletion  = (1 << 1),
+	AdvertDefFlags_None                      = 0,
+	AdvertDefFlags_ConsumeAdvertOnCompletion = (1 << 0),
+	AdvertDefFlags_ConsumeOwnerOnCompletion  = (1 << 1),
 };
 
 typedef struct AdvertDef{
 	str8 name;
-	Flags flags;
+	AdvertDefFlags flags;
 	u32 rangeSq;
 	f32 costs[Need_COUNT];
 	ActionDef* actions[MAX_ADVERT_DEF_ACTIONS];
@@ -405,7 +414,7 @@ typedef struct Advert{
 
 AdvertDef AdvertDefinitions[] = {
 	{STR8("Dig"),
-		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
+		/*flags  */ AdvertDefFlags_ConsumeOwnerOnCompletion,
 		/*rangeSq*/ (u32)-1,
 		/*costs  */ {
 			/*bladder*/  0.00f*MAX_NEED_VALUE,
@@ -421,7 +430,7 @@ AdvertDef AdvertDefinitions[] = {
 		},
 	},
 	{STR8("Eat Leaf"),
-		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
+		/*flags  */ AdvertDefFlags_ConsumeOwnerOnCompletion,
 		/*rangeSq*/ (u32)-1,
 		/*costs  */ {
 			/*bladder*/ -0.30f*MAX_NEED_VALUE,
@@ -437,7 +446,7 @@ AdvertDef AdvertDefinitions[] = {
 		},
 	},
 	{STR8("Drink Water"),
-		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
+		/*flags  */ AdvertDefFlags_ConsumeOwnerOnCompletion,
 		/*rangeSq*/ (u32)-1,
 		/*costs  */ {
 			/*bladder*/ -0.30f*MAX_NEED_VALUE,
@@ -649,7 +658,7 @@ struct{
 	Type mode;
 	struct{
 		Type entity_type;
-		Type agent_race;
+		Type agent_type;
 	}drawing;
 	Entity* break_on_me;
 	Entity* selected_entity;
@@ -662,7 +671,7 @@ struct{
 struct{
 	u32 entity[Entity_COUNT]; // count of each entity
 	u32 entities; // total entities
-	u32 agent[Race_COUNT];
+	u32 agent[Agent_COUNT];
 	u32 agents; // sub count of entities
 	u32 actions;
 	u32 advert[Advert_COUNT];
@@ -856,19 +865,19 @@ Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
 	return advert;
 }
 
-Agent* make_agent(Type race, u32 age, vec2i pos){
+Agent* make_agent(AgentType type, u32 age, vec2i pos){
 	Agent* agent = (Agent*)memory_pool_push(agents_pool);
 	agent->entity.type   = Entity_Agent;
 	agent->entity.name   = str8{0};
 	agent->entity.age    = age;
 	agent->entity.pos    = pos;
-	agent->race          = race;
+	agent->type          = type;
 	agent->action_index  = -1;
 	agent->active_advert = 0;
-	CopyMemory(agent->needs, RaceNeedDefinitions[race], Need_COUNT*sizeof(Need));
+	CopyMemory(agent->needs, AgentNeedDefinitions[type], Need_COUNT*sizeof(Need));
 
 	counts.agents += 1;
-	counts.agent[race] += 1;
+	counts.agent[type] += 1;
 	counts.entities += 1;
 	counts.entity[Entity_Agent] += 1;
 	return agent;
@@ -882,13 +891,13 @@ Entity* make_entity(Type type, vec2i pos, u32 age){
 	entity->name = str8{0};
 	switch(type){
 		case Entity_Leaf:{
-			make_advert(Advert_EatLeaf, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
+			make_advert(Advert_EatLeaf, AdvertDefFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
 		}break;
 		case Entity_Dirt:{
-			make_advert(Advert_Dig, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
+			make_advert(Advert_Dig, AdvertDefFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
 		}break;
 		case Entity_Water:{
-			make_advert(Advert_DrinkWater, AdvertFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
+			make_advert(Advert_DrinkWater, AdvertDefFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
 		}break;
 	}
 	counts.entities += 1;
@@ -904,7 +913,7 @@ void delete_entity(Entity* entity){
 	
 	if(entity->type == Entity_Agent){
 		Agent* agent = AgentFromEntity(entity);
-		counts.agent[agent->race] -= 1;
+		counts.agent[agent->type] -= 1;
 		counts.agents -= 1;
 		memory_pool_delete(agents_pool, agent);
 	}
@@ -965,9 +974,9 @@ void perform_actions(Agent* agent){
 				if(move_entity(&agent->entity, next_node)){
 					agent->path_index += 1;
 				}else{
-					//entity in the way of the path, so generate new path or stack on top if same race
+					//entity in the way of the path, so generate new path or stack on top if same agent
 					Entity* entity_in_way = get_entity(next_node);
-					if((entity_in_way->type == Entity_Agent) && (AgentFromEntity(entity_in_way)->race == agent->race)){
+					if((entity_in_way->type == Entity_Agent) && (AgentFromEntity(entity_in_way)->type == agent->type)){
 						//TODO(delle) handle entity stacking
 					}else{
 						generate_path(agent, action->target);
@@ -1053,10 +1062,10 @@ void perform_actions(Agent* agent){
 		agent->active_advert = 0;
 		
 		//delete the advert
-		if(HasFlag(advert->def->flags, AdvertFlags_ConsumeOwnerOnCompletion)){
+		if(HasFlag(advert->def->flags, AdvertDefFlags_ConsumeOwnerOnCompletion)){
 			delete_entity(advert->owner);
 		}
-		if(HasFlag(advert->def->flags, AdvertFlags_ConsumeAdvertOnCompletion)){
+		if(HasFlag(advert->def->flags, AdvertDefFlags_ConsumeAdvertOnCompletion)){
 			//TODO(delle) handle deletion
 		}
 	}
@@ -1269,7 +1278,7 @@ void eval_water(Entity* e){
 
 void setup_simulation(){
 	//init RNG
-	srand(135351);
+	srand(12345);
 	
 	//init storage
 	world.map = (Entity**)memalloc(sizeof(Entity*) * WORLD_WIDTH * WORLD_HEIGHT);
@@ -1642,7 +1651,7 @@ void setup_ui(){
 					entity_list->style.width = 100/*percent*/;
 					entity_list->style.sizing = size_auto_y | size_percent_x;
 					forI(Entity_COUNT){
-						if(i == Entity_Agent) continue; //handle agent races below
+						if(i == Entity_Agent) continue; //handle agents below
 						
 						uiItem* item = ui_begin_item(0);{
 							item->id = to_dstr8v(deshi_allocator, "ant_sim.info.draw_menu.entity_list.", EntityStrings[i]).fin;
@@ -1659,7 +1668,7 @@ void setup_ui(){
 							item->action_trigger = action_act_mouse_released;
 							item->action = [](uiItem* item){
 								sim.drawing.entity_type = item->userVar;
-								sim.drawing.agent_race = Race_COUNT;
+								sim.drawing.agent_type = Agent_COUNT;
 								item->dirty = true;
 							};
 							
@@ -1674,8 +1683,8 @@ void setup_ui(){
 						}ui_end_item();
 					}
 					
-					forI(Race_COUNT){
-						uiItem* item = ui_begin_item(0);{ item->id = to_dstr8v(deshi_allocator, "ant_sim.info.draw_menu.entity_list.Agent.", RaceStrings[i]).fin;
+					forI(Agent_COUNT){
+						uiItem* item = ui_begin_item(0);{ item->id = to_dstr8v(deshi_allocator, "ant_sim.info.draw_menu.entity_list.Agent.", AgentStrings[i]).fin;
 							item->userVar = i;
 							item->style.background_color = Color_VeryDarkCyan;
 							item->style.margin_bottom = 2;
@@ -1684,18 +1693,18 @@ void setup_ui(){
 							item->style.sizing = size_auto_y | size_percent_x;
 							item->style.padding_left = 1;
 							
-							ui_make_text(RaceStrings[i], 0)->style.hover_passthrough = true;
+							ui_make_text(AgentStrings[i], 0)->style.hover_passthrough = true;
 							
 							item->action_trigger = action_act_mouse_released;
 							item->action = [](uiItem* item){
 								sim.drawing.entity_type = Entity_Agent;
-								sim.drawing.agent_race = item->userVar;
+								sim.drawing.agent_type = item->userVar;
 								item->dirty = true;
 							};
 							
 							item->update_trigger = action_act_always;
 							item->__update = [](uiItem* item){
-								if(sim.drawing.entity_type == Entity_Agent && sim.drawing.agent_race == item->userVar){
+								if(sim.drawing.entity_type == Entity_Agent && sim.drawing.agent_type == item->userVar){
 									item->style.background_color = Color_DarkRed;
 								}else{
 									item->style.background_color = Color_VeryDarkCyan;
@@ -1848,8 +1857,8 @@ void update_ui(){
 			switch(sim.selected_entity->type){
 				case Entity_Agent:{
 					Agent* agent = AgentFromEntity(sim.selected_entity);
-					ui_make_text(to_dstr8v(deshi_temp_allocator, "species: ", RaceSpeciesStrings[agent->race]).fin, 0)->id = STR8("ant_sim.info.entity.agent.species");
-					ui_make_text(to_dstr8v(deshi_temp_allocator, "race   : ", RaceStrings[agent->race]).fin, 0)->id = STR8("ant_sim.info.entity.agent.race");
+					ui_make_text(to_dstr8v(deshi_temp_allocator, "species: ", AgentSpeciesStrings[agent->type]).fin, 0)->id = STR8("ant_sim.info.entity.agent.species");
+					ui_make_text(to_dstr8v(deshi_temp_allocator, "type   : ", AgentStrings[agent->type]).fin, 0)->id = STR8("ant_sim.info.entity.agent.type");
 					ui_make_text(STR8("Needs ----------"), 0)->id = STR8("ant_sim.info.entity.agent.needs_header");
 					
 					dstr8 needs_builder;
@@ -1951,9 +1960,9 @@ void update_input(){
 					e->name = EntityStrings[sim.drawing.entity_type];
 					set_entity(pos.x,pos.y, e);
 				}else{
-					Agent* a = make_agent(sim.drawing.agent_race, 1, pos);
+					Agent* a = make_agent(sim.drawing.agent_type, 1, pos);
 					a->entity.color = 0xff000000 | (rand() & 0xffffff); // Random color for agents
-					a->entity.name = RaceStrings[sim.drawing.agent_race];
+					a->entity.name = AgentStrings[sim.drawing.agent_type];
 					set_entity(pos.x, pos.y, &a->entity);
 				}
 			}
