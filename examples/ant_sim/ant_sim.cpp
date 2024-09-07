@@ -373,6 +373,7 @@ typedef struct Agent{
 #define MAX_ADVERT_DEF_ACTIONS (4) //arbitrary value, increase if needed
 #define ADVERT_COST_DELTA_EPSILON (10)
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
+#define MIN_ADVERT_SELECTION_SCORE (1.0f)
 
 enum{
 	Advert_Dig,
@@ -525,11 +526,13 @@ Advert* select_advert(Agent* agent, Advert** adverts, u32 adverts_count){
 	}
 	
 	//choose from the best three scores by normalizing them into a range and choosing randomly in that range
-	if(score_count == 0){
-		return 0;
-	}else if(score_count == 1){
-		return best_ads[0];
+	if(score_count == 0 || best_scores[0] < MIN_ADVERT_SELECTION_SCORE){
+		return 0; //idle if nothing is worth doing
 	}else{
+		if(score_count == 1){
+			return best_ads[0];
+		}
+		
 		f32 scores_sum = 0;
 		forI(score_count){
 			scores_sum += best_scores[i];
