@@ -17,6 +17,7 @@ Index:
 #include "deshi.h"
 #include "core/baked/fonts.h"
 #include "kigu/array_utils.h"
+#include "kigu/array.h"
 struct Advert;
 
 
@@ -914,16 +915,28 @@ void delete_entity(Entity* entity){
 		//TODO(sushi) handle entity->ui
 		memory_pool_delete(entities_pool, entity);
 	}
-}
 
-arrayT<Advert*> collect_adverts(Agent* agent){
-	arrayT<Advert*> adverts(deshi_temp_allocator);
+#define MAX_COLLECTED_ADVERTS 50
+Advert** collect_adverts(Agent* agent, u32* out_count){
+	Assert(agent != 0);
+	Assert(out_count != 0);
+	
+	static Advert* adverts[MAX_COLLECTED_ADVERTS];
+	u32 count = 0;
+	
 	for_pool(adverts_pool){
 		if(!it->def) continue;
-		if(vec2i_distanceToSq(agent->entity.pos,it->owner->pos) <= it->def->rangeSq){
-			adverts.add(it);
+		if(vec2i_distanceToSq(agent->entity.pos, it->owner->pos) <= it->def->rangeSq){
+			if(count < MAX_COLLECTED_ADVERTS){
+				adverts[count++] = it;
+			}else{
+				LogW("ant_sim", "Max adverts reached in collect_adverts");
+				break;
+			}
 		}
 	}
+	
+	*out_count = count;
 	return adverts;
 }
 
@@ -1323,8 +1336,9 @@ void update_simulation(){
 			}
 			
 			if(agent->active_advert == 0){
-				arrayT<Advert*> adverts = collect_adverts(agent);
-				agent->active_advert = select_advert(agent, adverts.data, adverts.count);
+				u32 adverts_count;
+				Advert** adverts = collect_adverts(agent, &adverts_count);
+				agent->active_advert = select_advert(agent, adverts, adverts_count);
 			}
 		}
 		
