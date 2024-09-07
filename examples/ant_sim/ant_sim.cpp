@@ -110,8 +110,6 @@ typedef struct Entity{
 			Node node; // connects the surface of a body of water
 		}water;
 	};
-	
-	uiItem* ui;
 }Entity;
 
 enum{
@@ -699,8 +697,7 @@ FORCE_INLINE Entity* get_entity(u32 x, u32 y){ return get_entity(Vec2i(x,y)); }
 b32 set_entity(vec2i pos, Entity* entity){
 	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return false;
 	world.map[pos.x + pos.y * WORLD_WIDTH] = entity;
-	if(entity) set_pixelfg(pos.x,pos.y,entity->color);
-	else set_pixelfg(pos.x,pos.y,0);
+	set_pixelfg(pos.x,pos.y, (entity) ? entity->color : 0);
 	return true;
 }
 FORCE_INLINE b32 set_entity(u32 x, u32 y, Entity* entity){ return set_entity(Vec2i(x,y), entity); }
@@ -915,7 +912,6 @@ void delete_entity(Entity* entity){
 	counts.entity[entity->type] -= 1;
 	counts.entities -= 1;
 	
-	//TODO(sushi) handle entity->ui
 	memory_pool_delete(entities_pool, entity);
 }
 
@@ -1308,13 +1304,12 @@ void setup_simulation(){
 		forX(j,pos){
 			if(rand()%2==0) color = EntityColors[Entity_Dirt][rand()%7];
 			Entity* e = make_entity(Entity_Dirt, {i,j}, 0);
+			e->name = STR8("dirt");
 			e->color = color;
 			set_entity(i,j,e);
-			e->name = STR8("dirt");
-			set_pixelbg(i,j,e->color);
 		}
-		forX(j,WORLD_HEIGHT-pos){
-			set_pixelbg(i,pos+j,0xffcd7f07);
+		forX(j,WORLD_HEIGHT){
+			set_pixelbg(i,j,0xffcd7f07);
 		}
 	}
 	
