@@ -55,6 +55,8 @@ u32 divide_color(u32 color, u32 divisor){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @entity
+
+
 enum{
 	Entity_NULL = 0,
 	Entity_Wall,
@@ -72,7 +74,8 @@ str8 EntityStrings[] = {
 	STR8("Leaf"),
 	STR8("Dirt"),
 	STR8("Water"),
-};StaticAssert(ArrayCount(EntityStrings) == Entity_COUNT);
+};
+StaticAssert(ArrayCount(EntityStrings) == Entity_COUNT);
 
 // color palettes for entities that randomly choose color
 u32 EntityColors[Entity_COUNT][7] = {
@@ -115,6 +118,8 @@ enum{
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @need/cost
+
+
 #define MAX_NEED_VALUE 100000
 #define MIN_NEED_VALUE      0
 
@@ -125,8 +130,10 @@ enum{
 	Need_Mating,
 	Need_Sleep,
 	Need_Water,
+	Need_Colony,
 	Need_COUNT
 };
+
 const str8 NeedStrings[] = {
 	STR8("Bladder"),
 	STR8("Food"),
@@ -134,9 +141,9 @@ const str8 NeedStrings[] = {
 	STR8("Mating"),
 	STR8("Sleep"),
 	STR8("Water"),
-};StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
-
-const u32 NeedStringsMaxWidth = 7;
+	STR8("Colony"),
+};
+StaticAssert(ArrayCount(NeedStrings) == Need_COUNT);
 
 typedef struct Need{
 	Type type;
@@ -151,6 +158,8 @@ void delta_need(Need* need, f32 delta){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @action
+
+
 #define UNKNOWN_ACTION_COMPLETION_TIME 0
 
 enum{
@@ -192,12 +201,13 @@ ActionDef ActionDefinitions[] = {
 		/*name */ STR8("Dig"),
 		/*time */ 90*TICKS_PER_WORLD_SECOND,
 		/*costs*/ {
-			/*bladder*/ .00f*MAX_NEED_VALUE,
-			/*food   */ .00f*MAX_NEED_VALUE,
-			/*health */ .00f*MAX_NEED_VALUE,
-			/*mating */ .00f*MAX_NEED_VALUE,
-			/*sleep  */ .01f*MAX_NEED_VALUE,
-			/*water  */ .00f*MAX_NEED_VALUE,
+			/*bladder*/  0.00f*MAX_NEED_VALUE,
+			/*food   */  0.00f*MAX_NEED_VALUE,
+			/*health */  0.00f*MAX_NEED_VALUE,
+			/*mating */  0.00f*MAX_NEED_VALUE,
+			/*sleep  */ -0.01f*MAX_NEED_VALUE,
+			/*water  */  0.00f*MAX_NEED_VALUE,
+			/*colony */  0.00f*MAX_NEED_VALUE,
 		},
 	},
 	
@@ -205,12 +215,13 @@ ActionDef ActionDefinitions[] = {
 		/*name */ STR8("Eat Leaf"),
 		/*time */ 60*TICKS_PER_WORLD_SECOND,
 		/*costs*/ {
-			/*bladder*/ .30f*MAX_NEED_VALUE,
-			/*food   */ .30f*MAX_NEED_VALUE,
-			/*health */ .00f*MAX_NEED_VALUE,
-			/*mating */ .00f*MAX_NEED_VALUE,
-			/*sleep  */ .00f*MAX_NEED_VALUE,
-			/*water  */ .10f*MAX_NEED_VALUE,
+			/*bladder*/ -0.30f*MAX_NEED_VALUE,
+			/*food   */  0.30f*MAX_NEED_VALUE,
+			/*health */  0.00f*MAX_NEED_VALUE,
+			/*mating */  0.00f*MAX_NEED_VALUE,
+			/*sleep  */  0.00f*MAX_NEED_VALUE,
+			/*water  */  0.10f*MAX_NEED_VALUE,
+			/*colony */  0.00f*MAX_NEED_VALUE,
 		},
 	},
 	
@@ -218,19 +229,23 @@ ActionDef ActionDefinitions[] = {
 		/*name */ STR8("Drink Water"),
 		/*time */ 30*TICKS_PER_WORLD_SECOND,
 		/*costs*/ {
-			/*bladder*/ .30f*MAX_NEED_VALUE,
-			/*food   */ .00f*MAX_NEED_VALUE,
-			/*health */ .00f*MAX_NEED_VALUE,
-			/*mating */ .00f*MAX_NEED_VALUE,
-			/*sleep  */ .00f*MAX_NEED_VALUE,
-			/*water  */ .90f*MAX_NEED_VALUE,
+			/*bladder*/ -0.30f*MAX_NEED_VALUE,
+			/*food   */  0.00f*MAX_NEED_VALUE,
+			/*health */  0.00f*MAX_NEED_VALUE,
+			/*mating */  0.00f*MAX_NEED_VALUE,
+			/*sleep  */  0.00f*MAX_NEED_VALUE,
+			/*water  */  0.90f*MAX_NEED_VALUE,
+			/*colony */  0.00f*MAX_NEED_VALUE,
 		},
 	},
-};StaticAssert(ArrayCount(ActionDefinitions) == Action_COUNT);
+};
+StaticAssert(ArrayCount(ActionDefinitions) == Action_COUNT);
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @agent
+
+
 enum{
 	Race_BlackGardenAntQueen,
 	Race_BlackGardenAntMale,
@@ -241,6 +256,7 @@ enum{
 	Race_CottonAntMajorWorker,
 	Race_COUNT
 };
+
 str8 RaceStrings[] = {
 	STR8("Queen Black Garden Ant"),
 	STR8("Male Black Garden Ant"),
@@ -249,7 +265,9 @@ str8 RaceStrings[] = {
 	STR8("Male Cotton Ant"),
 	STR8("Minor Worker Cotton Ant"),
 	STR8("Major Worker Cotton Ant"),
-};StaticAssert(ArrayCount(RaceStrings) == Race_COUNT);
+};
+StaticAssert(ArrayCount(RaceStrings) == Race_COUNT);
+
 str8 RaceSpeciesStrings[] = {
 	STR8("Lasius Niger"),
 	STR8("Lasius Niger"),
@@ -258,7 +276,8 @@ str8 RaceSpeciesStrings[] = {
 	STR8("Solenopsis xyloni"),
 	STR8("Solenopsis xyloni"),
 	STR8("Solenopsis xyloni"),
-};StaticAssert(ArrayCount(RaceSpeciesStrings) == Race_COUNT);
+};
+StaticAssert(ArrayCount(RaceSpeciesStrings) == Race_COUNT);
 
 typedef struct Agent{
 	Node node;
@@ -282,7 +301,9 @@ typedef struct Agent{
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @advert
-#define MAX_ADVERT_DEF_ACTIONS 4 //arbitrary value, increase if needed
+
+
+#define MAX_ADVERT_DEF_ACTIONS (4) //arbitrary value, increase if needed
 #define ADVERT_COST_DELTA_EPSILON (10)
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
 
@@ -321,12 +342,13 @@ AdvertDef AdvertDefinitions[] = {
 		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
 		/*rangeSq*/ (u32)-1,
 		/*costs  */ {
-			/*bladder*/ .00f*MAX_NEED_VALUE,
-			/*food   */ .00f*MAX_NEED_VALUE,
-			/*health */ .00f*MAX_NEED_VALUE,
-			/*mating */ .00f*MAX_NEED_VALUE,
-			/*sleep  */ .01f*MAX_NEED_VALUE,
-			/*water  */ .00f*MAX_NEED_VALUE,
+			/*bladder*/  0.00f*MAX_NEED_VALUE,
+			/*food   */  0.00f*MAX_NEED_VALUE,
+			/*health */  0.00f*MAX_NEED_VALUE,
+			/*mating */  0.00f*MAX_NEED_VALUE,
+			/*sleep  */ -0.01f*MAX_NEED_VALUE,
+			/*water  */  0.00f*MAX_NEED_VALUE,
+			/*colony */  0.00f*MAX_NEED_VALUE,
 		},
 		/*actions*/ {
 			&ActionDefinitions[Action_Dig],
@@ -336,12 +358,13 @@ AdvertDef AdvertDefinitions[] = {
 		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
 		/*rangeSq*/ (u32)-1,
 		/*costs  */ {
-			/*bladder*/ .30f*MAX_NEED_VALUE,
-			/*food   */ .30f*MAX_NEED_VALUE,
-			/*health */ .00f*MAX_NEED_VALUE,
-			/*mating */ .00f*MAX_NEED_VALUE,
-			/*sleep  */ .00f*MAX_NEED_VALUE,
-			/*water  */ .10f*MAX_NEED_VALUE,
+			/*bladder*/ -0.30f*MAX_NEED_VALUE,
+			/*food   */  0.30f*MAX_NEED_VALUE,
+			/*health */  0.00f*MAX_NEED_VALUE,
+			/*mating */  0.00f*MAX_NEED_VALUE,
+			/*sleep  */  0.00f*MAX_NEED_VALUE,
+			/*water  */  0.10f*MAX_NEED_VALUE,
+			/*colony */  0.00f*MAX_NEED_VALUE,
 		},
 		/*actions*/ {
 			&ActionDefinitions[Action_EatLeaf],
@@ -351,18 +374,20 @@ AdvertDef AdvertDefinitions[] = {
 		/*flags  */ AdvertFlags_ConsumeOwnerOnCompletion,
 		/*rangeSq*/ (u32)-1,
 		/*costs  */ {
-			/*bladder*/ .30f*MAX_NEED_VALUE,
-			/*food   */ .00f*MAX_NEED_VALUE,
-			/*health */ .00f*MAX_NEED_VALUE,
-			/*mating */ .00f*MAX_NEED_VALUE,
-			/*sleep  */ .00f*MAX_NEED_VALUE,
-			/*water  */ .90f*MAX_NEED_VALUE,
+			/*bladder*/ -0.30f*MAX_NEED_VALUE,
+			/*food   */  0.00f*MAX_NEED_VALUE,
+			/*health */  0.00f*MAX_NEED_VALUE,
+			/*mating */  0.00f*MAX_NEED_VALUE,
+			/*sleep  */  0.00f*MAX_NEED_VALUE,
+			/*water  */  0.90f*MAX_NEED_VALUE,
+			/*colony */  0.00f*MAX_NEED_VALUE,
 		},
 		/*actions*/ {
 			&ActionDefinitions[Action_DrinkWater],
 		},
 	},
-};StaticAssert(ArrayCount(AdvertDefinitions) == Advert_COUNT);
+};
+StaticAssert(ArrayCount(AdvertDefinitions) == Advert_COUNT);
 
 //scales a score value based on the need increase's distance from zero (so the change from 70-80 has less value than 10-30)
 //NOTE usually returns a value between -1 and 1
@@ -468,6 +493,8 @@ void add_action(Advert* advert, u32 action_index, ActionDef* action_def, vec2i t
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @render
+
+
 struct{
 	struct{
 		u32* data;
@@ -483,23 +510,23 @@ struct{
 	vec2i visual_position;
 }rendering;
 
-u32 get_pixelfg(u32 x, u32 y) {	
+u32 get_pixelfg(u32 x, u32 y){	
 	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
 	return rendering.foreground.data[x+y*WORLD_WIDTH];
 }
 
-b32 set_pixelfg(u32 x, u32 y, u32 val) {
+b32 set_pixelfg(u32 x, u32 y, u32 val){
 	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
 	rendering.foreground.data[x+y*WORLD_WIDTH] = val;
 	return 1;
 }
 
-u32 get_pixelbg(u32 x, u32 y) {	
+u32 get_pixelbg(u32 x, u32 y){	
 	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
 	return rendering.background.data[x+y*WORLD_WIDTH];
 }
 
-b32 set_pixelbg(u32 x, u32 y, u32 val) {
+b32 set_pixelbg(u32 x, u32 y, u32 val){
 	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
 	rendering.background.data[x+y*WORLD_WIDTH] = val;
 	return 1;
@@ -522,6 +549,8 @@ void setup_rendering(){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @simulation
+
+
 enum{
 	Weather_Clear,
 	Weather_Cloudy,
@@ -958,7 +987,7 @@ void eval_leaf(Entity* e){
 		// stupid way to try and get leaves to spread out 
 		vec2i search = e->pos;
 		while(search.y < WORLD_HEIGHT && get_entity(search.x,search.y)){
-			search.y++;
+			search.y += 1;
 		}
 		
 		if(search.y - e->pos.y > 1){
@@ -1178,9 +1207,9 @@ void setup_simulation(){
 	forI(WORLD_WIDTH){
 		if(i%WORLD_WIDTH/(rand() % 8 + 8)){
 			u32 mag = 0;
-			if     (rand()%16==0) { mag = 8; }
-			else if(rand()% 8==0) { mag = 6; }
-			else if(rand()% 4==0) { mag = 4; }
+			if     (rand()%16==0){ mag = 8; }
+			else if(rand()% 8==0){ mag = 6; }
+			else if(rand()% 4==0){ mag = 4; }
 			else                    mag = 2;
 			
 			if(pos < u32(WORLD_HEIGHT/6.f)) vel = rand() % mag+1;
@@ -1242,7 +1271,7 @@ void update_simulation(){
 				}break;
 				case Entity_Water: eval_water(it); break;
 			}
-			it->age++;
+			it->age += 1;
 		}
 		
 		//spawn more leaves
@@ -1274,13 +1303,15 @@ void update_simulation(){
 				}
 			}break;
 		}
-		sim.ticks++;
+		sim.ticks += 1;
 	}
 }
 
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @ui
+
+
 struct{
 	uiItem* universe;
 	uiItem* world;
@@ -1758,6 +1789,8 @@ void update_ui(){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @input
+
+
 void update_input(){
 	if(key_pressed(Key_SPACE | InputMod_None)) sim.paused = !sim.paused;
 	if(key_pressed(Key_SPACE | InputMod_Lctrl)) sim.step = true;
@@ -1769,7 +1802,7 @@ void update_input(){
 	
 	switch(sim.mode){
 		case Mode_Navigate:{
-			
+			//do nothing
 		}break;
 		case Mode_Draw:{
 			if(key_pressed(Key_1)) sim.drawing.tool = DrawTool_Draw_Square;
@@ -1805,8 +1838,10 @@ void update_input(){
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 //// @main
+
+
 int main(int args_count, char** args){
-	deshi_init_specify("ant_sim",Megabytes(256),Megabytes(512));
+	deshi_init_specify("ant_sim",Megabytes(256),Megabytes(256));
 	
 	setup_rendering();
 	setup_simulation();
