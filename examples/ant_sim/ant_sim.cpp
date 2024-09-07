@@ -34,6 +34,26 @@ struct Advert;
 #define WORLD_WIDTH 512
 #define WORLD_HEIGHT 512
 
+#define WorldX(index) ((index) % WORLD_WIDTH)
+#define WorldY(index) ((index) / WORLD_WIDTH)
+#define WorldIndex(x, y) ((y) * WORLD_WIDTH + (x))
+
+#define WORLD_CHUNK_SIZE 16
+#define WORLD_CHUNKS_X (WORLD_WIDTH / WORLD_CHUNK_SIZE)
+#define WORLD_CHUNKS_Y (WORLD_HEIGHT / WORLD_CHUNK_SIZE)
+
+#define WorldToChunkX(x) ((x) / WORLD_CHUNK_SIZE)
+#define WorldToChunkY(y) ((y) / WORLD_CHUNK_SIZE)
+#define WorldToChunkIndex(x, y) (WorldToChunkY(y) * WORLD_CHUNKS_X + WorldToChunkX(x))
+
+#define ChunkIndexToChunkX(index) ((index) % WORLD_CHUNKS_X)
+#define ChunkIndexToChunkY(index) ((index) / WORLD_CHUNKS_X)
+
+#define ChunkStartX(chunk_x) ((chunk_x) * WORLD_CHUNK_SIZE)
+#define ChunkStartY(chunk_y) ((chunk_y) * WORLD_CHUNK_SIZE)
+#define ChunkEndX(chunk_x) (ChunkStartX(chunk_x) + WORLD_CHUNK_SIZE - 1)
+#define ChunkEndY(chunk_y) (ChunkStartY(chunk_y) + WORLD_CHUNK_SIZE - 1)
+
 typedef u32 Direction;
 enum{
 	Direction_North,
@@ -55,6 +75,36 @@ u32 divide_color(u32 color, u32 divisor){
 	u32 g = (color >>  8 & 0x000000ff) / divisor;
 	u32 b = (color >> 16 & 0x000000ff) / divisor;
 	return PackColorU32(255,b,g,r);
+}
+
+// Check if the positions are in orthogonally adjacent chunks
+// O?O  X = basis
+// ?X?  ? = checked
+// O?O  O = ignored
+b32 in_orthogonal_neighbor_chunk(vec2i pos1, vec2i pos2){
+	s32 dx = abs(WorldToChunkX(pos1.x) - WorldToChunkX(pos2.x));
+	s32 dy = abs(WorldToChunkY(pos1.y) - WorldToChunkY(pos2.y));
+	return (dx == 1 && dy == 0) || (dx == 0 && dy == 1);
+}
+
+// Check if the positions are in diagonally adjacent chunks
+// ?O?  X = basis
+// OXO  ? = checked
+// ?O?  O = ignored
+b32 in_diagonal_neighbor_chunk(vec2i pos1, vec2i pos2){
+	s32 dx = abs(WorldToChunkX(pos1.x) - WorldToChunkX(pos2.x));
+	s32 dy = abs(WorldToChunkY(pos1.y) - WorldToChunkY(pos2.y));
+	return (dx == 1 && dy == 1);
+}
+
+// Check if the positions are in surrounding adjacent chunks
+// ???  X = basis
+// ?X?  ? = checked
+// ???  O = ignored
+b32 in_surrounding_neighbor_chunk(vec2i pos1, vec2i pos2){
+	s32 dx = abs(WorldToChunkX(pos1.x) - WorldToChunkX(pos2.x));
+	s32 dy = abs(WorldToChunkY(pos1.y) - WorldToChunkY(pos2.y));
+	return (dx <= 1 && dy <= 1) && !(dx == 0 && dy == 0);
 }
 
 
@@ -475,12 +525,12 @@ AdvertDef AdvertDefinitions[] = {
 StaticAssert(ArrayCount(AdvertDefinitions) == Advert_COUNT);
 
 AdvertType EntityInnateAdverts[][MAX_ENTITY_INNATE_ADVERTS] = {
-    /*Entity_NULL */ {},
-    /*Entity_Wall */ {},
-    /*Entity_Agent*/ {},
-    /*Entity_Leaf */ {Advert_EatLeaf},
-    /*Entity_Dirt */ {Advert_Dig},
-    /*Entity_Water*/ {Advert_DrinkWater},
+	/*Entity_NULL */ {},
+	/*Entity_Wall */ {},
+	/*Entity_Agent*/ {},
+	/*Entity_Leaf */ {Advert_EatLeaf},
+	/*Entity_Dirt */ {Advert_Dig},
+	/*Entity_Water*/ {Advert_DrinkWater},
 };
 StaticAssert(ArrayCount(EntityInnateAdverts) == Entity_COUNT);
 
@@ -611,23 +661,23 @@ struct{
 
 u32 get_pixelfg(u32 x, u32 y){	
 	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
-	return rendering.foreground.data[x+y*WORLD_WIDTH];
+	return rendering.foreground.data[WorldIndex(x, y)];
 }
 
 b32 set_pixelfg(u32 x, u32 y, u32 val){
 	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
-	rendering.foreground.data[x+y*WORLD_WIDTH] = val;
+	rendering.foreground.data[WorldIndex(x, y)] = val;
 	return 1;
 }
 
 u32 get_pixelbg(u32 x, u32 y){	
 	Assert(x >= 0 && y >= 0 && x <= WORLD_WIDTH && y <= WORLD_HEIGHT);
-	return rendering.background.data[x+y*WORLD_WIDTH];
+	return rendering.background.data[WorldIndex(x, y)];
 }
 
 b32 set_pixelbg(u32 x, u32 y, u32 val){
 	if(x < 0 || y < 0 || x > WORLD_WIDTH || y > WORLD_HEIGHT) return 0;
-	rendering.background.data[x+y*WORLD_WIDTH] = val;
+	rendering.background.data[WorldIndex(x, y)] = val;
 	return 1;
 }
 
@@ -720,13 +770,13 @@ void change_mode(Type mode){
 
 Entity* get_entity(vec2i pos){
 	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return 0;
-	return world.map[pos.x + pos.y * WORLD_WIDTH];
+	return world.map[WorldIndex(pos.x, pos.y)];
 }
 FORCE_INLINE Entity* get_entity(u32 x, u32 y){ return get_entity(Vec2i(x,y)); }
 
 b32 set_entity(vec2i pos, Entity* entity){
 	if(pos.x < 0 || pos.y < 0 || pos.x > WORLD_WIDTH || pos.y > WORLD_HEIGHT) return false;
-	world.map[pos.x + pos.y * WORLD_WIDTH] = entity;
+	world.map[WorldIndex(pos.x, pos.y)] = entity;
 	set_pixelfg(pos.x,pos.y, (entity) ? entity->color : 0);
 	return true;
 }
@@ -907,21 +957,21 @@ Agent* make_agent(AgentType type, u32 age, vec2i pos){
 
 Entity* make_entity(EntityType type, vec2i pos, u32 age){
 	Assert(type < Entity_COUNT);
-    Entity* entity = memory_pool_push(entities_pool);
-    entity->type = type;
-    entity->age  = age;
-    entity->pos  = pos;
-    
-    for(u32 i = 0; i < MAX_ENTITY_INNATE_ADVERTS; i += 1){
-        AdvertType advert_type = EntityInnateAdverts[type][i];
-        if (advert_type != Advert_NULL){
+	Entity* entity = memory_pool_push(entities_pool);
+	entity->type = type;
+	entity->age  = age;
+	entity->pos  = pos;
+	
+	for(u32 i = 0; i < MAX_ENTITY_INNATE_ADVERTS; i += 1){
+		AdvertType advert_type = EntityInnateAdverts[type][i];
+		if (advert_type != Advert_NULL){
 			make_advert(advert_type, entity, vec2i{});
 		}
-    }
-    
-    counts.entities += 1;
-    counts.entity[type] += 1;
-    return entity;
+	}
+	
+	counts.entities += 1;
+	counts.entity[type] += 1;
+	return entity;
 }
 
 void delete_entity(Entity* entity){
@@ -945,8 +995,7 @@ void delete_entity(Entity* entity){
 	memory_pool_delete(entities_pool, entity);
 }
 
-#define MAX_ADVERT_RANGE_SQ 100
-#define MAX_COLLECTED_ADVERTS 50
+#define MAX_COLLECTED_ADVERTS 64
 Advert** collect_adverts(Agent* agent, u32* out_count){
 	Assert(agent != 0);
 	Assert(out_count != 0);
@@ -954,16 +1003,56 @@ Advert** collect_adverts(Agent* agent, u32* out_count){
 	static Advert* adverts[MAX_COLLECTED_ADVERTS];
 	u32 count = 0;
 	
-	for_pool(entities_pool){
-		if(it->type == Entity_NULL) continue;
-		
-		s32 dist_sq = vec2i_distanceToSq(agent->entity.pos, it->pos);
-		if(dist_sq <= MAX_ADVERT_RANGE_SQ){
-			for(u32 i = 0; i < it->adverts_count; i++){
-				if(dist_sq <= it->adverts_array[i]->def->range_sq){
+	//check the agent's current chunk
+	s32 agent_chunk_x = WorldToChunkX(agent->entity.pos.x);
+	s32 agent_chunk_y = WorldToChunkY(agent->entity.pos.y);
+	s32 agent_chunk_world_index = WorldIndex(ChunkStartX(agent_chunk_x), ChunkStartY(agent_chunk_y));
+	for(s32 i = agent_chunk_world_index; i < WORLD_CHUNK_SIZE*WORLD_CHUNK_SIZE; i += 1){
+		Entity* entity = world.map[i];
+		if(entity != 0){
+			Assert(entity->type != Entity_NULL);
+			s32 dist_sq = vec2i_distanceToSq(agent->entity.pos, entity->pos);
+			for(s32 i = 0; i < entity->adverts_count; i++){
+				if(dist_sq <= entity->adverts_array[i]->def->range_sq){
 					Assert(count < MAX_COLLECTED_ADVERTS);
-					adverts[count++] = it->adverts_array[i];
+					adverts[count++] = entity->adverts_array[i];
 					if(count >= MAX_COLLECTED_ADVERTS) goto end_collection;
+				}
+			}
+		}
+	}
+	
+	//randomize the order of the chunks checked
+	s32 chunk_offsets[8][2] = { {0,1}, {1,1}, {1,0}, {1,-1}, {0,-1}, {-1,-1}, {-1,0}, {-1,1} };
+	forI(8){
+		s32 random_index = rand() % 8;
+		s32 temp_offset_x = chunk_offsets[i][0];
+		s32 temp_offset_y = chunk_offsets[i][1];
+		chunk_offsets[i][0] = chunk_offsets[random_index][0];
+		chunk_offsets[i][1] = chunk_offsets[random_index][1];
+		chunk_offsets[random_index][0] = temp_offset_x;
+		chunk_offsets[random_index][1] = temp_offset_y;
+	}
+	
+	//check the surrounding chunks
+	//NOTE: this isn't ideal since it always starts searching at the top right of the chunk
+	for(s32 i = 0; i < 8; i += 1){
+		s32 chunk_x = agent_chunk_x + chunk_offsets[i][0];
+		s32 chunk_y = agent_chunk_y + chunk_offsets[i][1];
+		if(chunk_x >= 0 && chunk_y >= 0 && chunk_x < WORLD_CHUNKS_X && chunk_y < WORLD_CHUNKS_Y){
+			s32 chunk_world_index = WorldIndex(ChunkStartX(chunk_x), ChunkStartY(chunk_y));
+			for(s32 i = chunk_world_index; i < WORLD_CHUNK_SIZE*WORLD_CHUNK_SIZE; i += 1){
+				Entity* entity = world.map[i];
+				if(entity != 0){
+					Assert(entity->type != Entity_NULL);
+					s32 dist_sq = vec2i_distanceToSq(agent->entity.pos, entity->pos);
+					for(s32 i = 0; i < entity->adverts_count; i++){
+						if(dist_sq <= entity->adverts_array[i]->def->range_sq){
+							Assert(count < MAX_COLLECTED_ADVERTS);
+							adverts[count++] = entity->adverts_array[i];
+							if(count >= MAX_COLLECTED_ADVERTS) goto end_collection;
+						}
+					}
 				}
 			}
 		}
