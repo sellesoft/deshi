@@ -34,7 +34,7 @@ struct Advert;
 #define WORLD_WIDTH 512
 #define WORLD_HEIGHT 512
 
-typedef Type Direction;
+typedef u32 Direction;
 enum{
 	Direction_North,
 	Direction_East,
@@ -62,7 +62,7 @@ u32 divide_color(u32 color, u32 divisor){
 //// @entity
 
 
-typedef Type EntityType;
+typedef u32 EntityType;
 enum{
 	Entity_NULL = 0,
 	Entity_Wall,
@@ -98,6 +98,9 @@ u32 EntityColors[Entity_COUNT][7] = {
 	0xff595d47, 0xff60644d, 0xff666a54, 0xff6d715a, 0xff747861, 0xff7a7e67, 0xff81856e,
 };
 
+#define MAX_ENTITY_INNATE_ADVERTS 4
+#define MAX_ENTITY_ADVERTS (MAX_ENTITY_INNATE_ADVERTS + 4)
+
 typedef struct Entity{
 	Node overlap_node; // connection to other entities occupying the same world tile
 	EntityType type;
@@ -107,7 +110,7 @@ typedef struct Entity{
 	vec2i pos;
 	EntityFlags flags;
 	
-	Advert* adverts_array[4]; //TODO make this dynamic
+	Advert* adverts_array[MAX_ENTITY_ADVERTS];
 	u64 adverts_count;
 	
 	union{
@@ -128,7 +131,7 @@ typedef struct Entity{
 #define MAX_NEED_VALUE 100000
 #define MIN_NEED_VALUE      0
 
-typedef Type NeedType;
+typedef u32 NeedType;
 enum{
 	Need_Bladder,
 	Need_Food,
@@ -167,7 +170,7 @@ void delta_need(Need* need, f32 delta){
 
 #define UNKNOWN_ACTION_COMPLETION_TIME 0
 
-typedef Type ActionType;
+typedef u32 ActionType;
 enum{
 	Action_Idle,
 	Action_Walk,
@@ -252,7 +255,7 @@ StaticAssert(ArrayCount(ActionDefinitions) == Action_COUNT);
 //// @agent
 
 
-typedef Type AgentType;
+typedef u32 AgentType;
 enum{
 	Agent_BlackGardenAntQueen,
 	Agent_BlackGardenAntMale,
@@ -380,8 +383,9 @@ typedef struct Agent{
 #define ADVERT_TIME_DELTA_EPSILON (5*TICKS_PER_WORLD_SECOND)
 #define MIN_ADVERT_SELECTION_SCORE (1.0f)
 
-typedef Type AdvertType;
+typedef u32 AdvertType;
 enum{
+	Advert_NULL,
 	Advert_Dig,
 	Advert_EatLeaf,
 	Advert_DrinkWater,
@@ -398,7 +402,7 @@ enum{
 typedef struct AdvertDef{
 	str8 name;
 	AdvertDefFlags flags;
-	u32 rangeSq;
+	u32 range_sq;
 	f32 costs[Need_COUNT];
 	ActionDef* actions[MAX_ADVERT_DEF_ACTIONS];
 }AdvertDef;
@@ -413,10 +417,16 @@ typedef struct Advert{
 }Advert;
 
 AdvertDef AdvertDefinitions[] = {
+	{STR8("NULL"),
+		/*flags   */ AdvertDefFlags_None,
+		/*range_sq*/ (u32)-1,
+		/*costs   */ {0},
+		/*actions */ {0},
+	},
 	{STR8("Dig"),
-		/*flags  */ AdvertDefFlags_ConsumeOwnerOnCompletion,
-		/*rangeSq*/ (u32)-1,
-		/*costs  */ {
+		/*flags   */ AdvertDefFlags_ConsumeOwnerOnCompletion,
+		/*range_sq*/ (u32)-1,
+		/*costs   */ {
 			/*bladder*/  0.00f*MAX_NEED_VALUE,
 			/*food   */  0.00f*MAX_NEED_VALUE,
 			/*health */  0.00f*MAX_NEED_VALUE,
@@ -430,9 +440,9 @@ AdvertDef AdvertDefinitions[] = {
 		},
 	},
 	{STR8("Eat Leaf"),
-		/*flags  */ AdvertDefFlags_ConsumeOwnerOnCompletion,
-		/*rangeSq*/ (u32)-1,
-		/*costs  */ {
+		/*flags   */ AdvertDefFlags_ConsumeOwnerOnCompletion,
+		/*range_sq*/ (u32)-1,
+		/*costs   */ {
 			/*bladder*/ -0.30f*MAX_NEED_VALUE,
 			/*food   */  0.30f*MAX_NEED_VALUE,
 			/*health */  0.00f*MAX_NEED_VALUE,
@@ -446,9 +456,9 @@ AdvertDef AdvertDefinitions[] = {
 		},
 	},
 	{STR8("Drink Water"),
-		/*flags  */ AdvertDefFlags_ConsumeOwnerOnCompletion,
-		/*rangeSq*/ (u32)-1,
-		/*costs  */ {
+		/*flags   */ AdvertDefFlags_ConsumeOwnerOnCompletion,
+		/*range_sq*/ (u32)-1,
+		/*costs   */ {
 			/*bladder*/ -0.30f*MAX_NEED_VALUE,
 			/*food   */  0.00f*MAX_NEED_VALUE,
 			/*health */  0.00f*MAX_NEED_VALUE,
@@ -463,6 +473,16 @@ AdvertDef AdvertDefinitions[] = {
 	},
 };
 StaticAssert(ArrayCount(AdvertDefinitions) == Advert_COUNT);
+
+AdvertType EntityInnateAdverts[][MAX_ENTITY_INNATE_ADVERTS] = {
+    /*Entity_NULL */ {},
+    /*Entity_Wall */ {},
+    /*Entity_Agent*/ {},
+    /*Entity_Leaf */ {Advert_EatLeaf},
+    /*Entity_Dirt */ {Advert_Dig},
+    /*Entity_Water*/ {Advert_DrinkWater},
+};
+StaticAssert(ArrayCount(EntityInnateAdverts) == Entity_COUNT);
 
 //scales a score value based on the need increase's distance from zero (so the change from 70-80 has less value than 10-30)
 //NOTE usually returns a value between -1 and 1
@@ -630,6 +650,7 @@ void setup_rendering(){
 //// @simulation
 
 
+typedef u32 WeatherType;
 enum{
 	Weather_Clear,
 	Weather_Cloudy,
@@ -648,7 +669,7 @@ struct{
 	Entity** map;
 	
 	struct{
-		Type type;
+		WeatherType type;
 		s32 wind_strength;
 		s32 temperature; // celsius
 	}weather;
@@ -657,8 +678,8 @@ struct{
 struct{
 	Type mode;
 	struct{
-		Type entity_type;
-		Type agent_type;
+		EntityType entity_type;
+		AgentType agent_type;
 	}drawing;
 	Entity* break_on_me;
 	Entity* selected_entity;
@@ -837,7 +858,7 @@ void generate_path(Agent* agent, vec2i target){
 	}
 }
 
-Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
+Advert* make_advert(AdvertType type, Entity* owner, vec2i target){
 	Assert(type < Advert_COUNT);
 	AdvertDef* def = &AdvertDefinitions[type];
 	Advert* advert = memory_pool_push(adverts_pool);
@@ -855,7 +876,7 @@ Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
 	}
 	
 	if(owner){
-		Assert(owner->adverts_count < 4); //TODO make adverts_array dynamic
+		Assert(owner->adverts_count < MAX_ENTITY_ADVERTS);
 		owner->adverts_array[owner->adverts_count] = advert;
 		owner->adverts_count += 1;
 	}
@@ -866,6 +887,7 @@ Advert* make_advert(Type type, Flags flags, Entity* owner, vec2i target){
 }
 
 Agent* make_agent(AgentType type, u32 age, vec2i pos){
+	Assert(type < Agent_COUNT);
 	Agent* agent = (Agent*)memory_pool_push(agents_pool);
 	agent->entity.type   = Entity_Agent;
 	agent->entity.name   = str8{0};
@@ -883,29 +905,28 @@ Agent* make_agent(AgentType type, u32 age, vec2i pos){
 	return agent;
 }
 
-Entity* make_entity(Type type, vec2i pos, u32 age){
-	Entity* entity = memory_pool_push(entities_pool);
-	entity->type = type;
-	entity->age  = age;
-	entity->pos  = pos;
-	entity->name = str8{0};
-	switch(type){
-		case Entity_Leaf:{
-			make_advert(Advert_EatLeaf, AdvertDefFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
-		}break;
-		case Entity_Dirt:{
-			make_advert(Advert_Dig, AdvertDefFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
-		}break;
-		case Entity_Water:{
-			make_advert(Advert_DrinkWater, AdvertDefFlags_ConsumeOwnerOnCompletion, entity, vec2i{});
-		}break;
-	}
-	counts.entities += 1;
-	counts.entity[type] += 1;
-	return entity;
+Entity* make_entity(EntityType type, vec2i pos, u32 age){
+	Assert(type < Entity_COUNT);
+    Entity* entity = memory_pool_push(entities_pool);
+    entity->type = type;
+    entity->age  = age;
+    entity->pos  = pos;
+    
+    for(u32 i = 0; i < MAX_ENTITY_INNATE_ADVERTS; i += 1){
+        AdvertType advert_type = EntityInnateAdverts[type][i];
+        if (advert_type != Advert_NULL){
+			make_advert(advert_type, entity, vec2i{});
+		}
+    }
+    
+    counts.entities += 1;
+    counts.entity[type] += 1;
+    return entity;
 }
 
 void delete_entity(Entity* entity){
+	Assert(entity != 0);
+	
 	//TODO(delle) handle entity->overlap_node
 	if(entity == get_entity(entity->pos)){
 		set_entity(entity->pos, 0);
@@ -924,6 +945,7 @@ void delete_entity(Entity* entity){
 	memory_pool_delete(entities_pool, entity);
 }
 
+#define MAX_ADVERT_RANGE_SQ 100
 #define MAX_COLLECTED_ADVERTS 50
 Advert** collect_adverts(Agent* agent, u32* out_count){
 	Assert(agent != 0);
@@ -932,17 +954,22 @@ Advert** collect_adverts(Agent* agent, u32* out_count){
 	static Advert* adverts[MAX_COLLECTED_ADVERTS];
 	u32 count = 0;
 	
-	for_pool(adverts_pool){
-		if(!it->def) continue;
-		if(vec2i_distanceToSq(agent->entity.pos, it->owner->pos) <= it->def->rangeSq){
-			if(count < MAX_COLLECTED_ADVERTS){
-				adverts[count++] = it;
-			}else{
-				break;
+	for_pool(entities_pool){
+		if(it->type == Entity_NULL) continue;
+		
+		s32 dist_sq = vec2i_distanceToSq(agent->entity.pos, it->pos);
+		if(dist_sq <= MAX_ADVERT_RANGE_SQ){
+			for(u32 i = 0; i < it->adverts_count; i++){
+				if(dist_sq <= it->adverts_array[i]->def->range_sq){
+					Assert(count < MAX_COLLECTED_ADVERTS);
+					adverts[count++] = it->adverts_array[i];
+					if(count >= MAX_COLLECTED_ADVERTS) goto end_collection;
+				}
 			}
 		}
 	}
 	
+end_collection:
 	*out_count = count;
 	return adverts;
 }
