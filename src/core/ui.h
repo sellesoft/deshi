@@ -193,7 +193,7 @@ Item Style
 ------------------------------------------------------------------------------------------------------------
 *   margin, margintl, marginbr, margin_top, margin_bottom, margin_left, margin_right
     ---
-    Determines the spacing between a child's edges and its parents edges. 
+    Determines the spacing between a child's edges and its parent's/sibling's edges.
 
     margin is a vec4 that represents all sides, and so can be used to set all values on a single line 
 

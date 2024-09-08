@@ -399,7 +399,7 @@ ui_gen_background(uiItem* item, uiVertex* vp, u32* ip, vec2i counts){
 	vec2 mbr = floor(item->style.marginbr * item->scale);
 	vec2 bor = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
 	vec2 pos = item->pos_screen + mtl + bor;
-	vec2 siz = floor(item->size * item->scale); //NOTE(delle) item->size already has margins and borders applied in eval_item_branch
+	vec2 siz = floor(item->size * item->scale) - (mtl + mbr + bor + bor); //NOTE(delle) item->size already has margins and borders applied in eval_item_branch
 	return ui_put_filledrect(vp, ip, counts, pos, siz, item->style.background_color);
 }
 
