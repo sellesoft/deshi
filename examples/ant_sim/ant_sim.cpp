@@ -716,10 +716,11 @@ enum{
 	Weather_Snow,
 };
 
+typedef u32 ToolType;
 enum{
-	Mode_Navigate,
-	Mode_Draw,
-	Mode_Erase,
+	Tool_Navigate,
+	Tool_Draw,
+	Tool_Erase,
 };
 
 struct{
@@ -733,7 +734,7 @@ struct{
 }world;
 
 struct{
-	Type mode;
+	ToolType tool;
 	struct{
 		EntityType entity_type;
 		AgentType agent_type;
@@ -763,19 +764,19 @@ Advert* adverts_pool;
 Entity* entities_pool;
 Agent* agents_pool;
 
-void change_mode(Type mode){
-	switch(mode){
-		case Mode_Navigate:{
+void change_tool(ToolType tool){
+	switch(tool){
+		case Tool_Navigate:{
 			g_ui->keys.drag_item = Mouse_LEFT;
 		}break;
-		case Mode_Draw:{
+		case Tool_Draw:{
 			g_ui->keys.drag_item = Mouse_MIDDLE;
 		}break;
-		case Mode_Erase:{
+		case Tool_Erase:{
 			g_ui->keys.drag_item = Mouse_MIDDLE;
 		}break;
 	}
-	sim.mode = mode;
+	sim.tool = tool;
 }
 
 Entity* get_entity(vec2i pos){
@@ -1005,8 +1006,8 @@ void delete_entity(Entity* entity){
 	memory_pool_delete(entities_pool, entity);
 }
 
-#define MAX_COLLECTED_ADVERTS 64
 Advert** collect_adverts(Agent* agent, u32* out_count){
+#define MAX_COLLECTED_ADVERTS 64
 	Assert(agent != 0);
 	Assert(out_count != 0);
 	
@@ -1416,7 +1417,12 @@ void setup_simulation(){
 	world.weather.type = Weather_Clear;
 	world.weather.wind_strength = 0;
 	
-	//generate terrain
+	//blue background
+	forI(WORLD_HEIGHT*WORLD_WIDTH){
+		rendering.background.data[i] = 0xffcd7f07;
+	}
+	
+	//generate terrain foreground
 	//TODO(sushi) initialize world by spawning all items in mid air so they fall down and it looks cool
 	s32 vel = 0;
 	s32 pos = WORLD_HEIGHT / 2;
@@ -1426,7 +1432,35 @@ void setup_simulation(){
 			if     (rand()%16==0){ mag = 8; }
 			else if(rand()% 8==0){ mag = 6; }
 			else if(rand()% 4==0){ mag = 4; }
-			else                    mag = 2;
+			else                   mag = 2;
+			
+			if(pos < u32(WORLD_HEIGHT/6.f)) vel = rand() % mag+1;
+			else if(pos > u32(5.f*WORLD_HEIGHT/6.f)) vel = -(rand() % mag + 1);
+			else vel = rand() % (mag+1) - mag/2;
+		}
+		pos += vel;
+		pos = Clamp(pos,0, WORLD_HEIGHT-1);
+		
+		u32 color = EntityColors[Entity_Dirt][rand()%7];
+		forX(j,pos){
+			if(rand()%2 == 0) color = EntityColors[Entity_Dirt][rand()%7];
+			Entity* e = make_entity(Entity_Dirt, {i,j}, 0);
+			e->name = STR8("dirt");
+			e->color = color;
+			set_entity(i,j,e);
+		}
+	}
+	
+	//generate terrain background
+	vel = 0;
+	pos = WORLD_HEIGHT / 2;
+	forI(WORLD_WIDTH){
+		if(i%WORLD_WIDTH/(rand() % 8 + 8)){
+			u32 mag = 0;
+			if     (rand()%16==0){ mag = 8; }
+			else if(rand()% 8==0){ mag = 6; }
+			else if(rand()% 4==0){ mag = 4; }
+			else                   mag = 2;
 			
 			if(pos < u32(WORLD_HEIGHT/6.f)) vel = rand() % mag+1;
 			else if(pos > u32(5.f*WORLD_HEIGHT/6.f)) vel = -(rand() % mag + 1);
@@ -1438,13 +1472,8 @@ void setup_simulation(){
 		u32 color = EntityColors[Entity_Dirt][rand()%7];
 		forX(j,pos){
 			if(rand()%2==0) color = EntityColors[Entity_Dirt][rand()%7];
-			Entity* e = make_entity(Entity_Dirt, {i,j}, 0);
-			e->name = STR8("dirt");
-			e->color = color;
-			set_entity(i,j,e);
-		}
-		forX(j,WORLD_HEIGHT){
-			set_pixelbg(i,j,0xffcd7f07);
+			color = ((color & 0xfefefe) >> 1) | 0xff000000;
+			set_pixelbg(i,j,color);
 		}
 	}
 	
