@@ -75,11 +75,11 @@ vec2i direction_to_movement[] = {
 	vec2i{-1, 0}, //west
 };
 
-u32 divide_color(u32 color, u32 divisor){
-	u32 r = (color >>  0 & 0x000000ff) / divisor;
-	u32 g = (color >>  8 & 0x000000ff) / divisor;
-	u32 b = (color >> 16 & 0x000000ff) / divisor;
-	return PackColorU32(255,b,g,r);
+u32 divide_color(u32 color, f32 divisor){
+	u32 r = (u32)((f32)(color >>  0 & 0x000000ff) / divisor);
+	u32 g = (u32)((f32)(color >>  8 & 0x000000ff) / divisor);
+	u32 b = (u32)((f32)(color >> 16 & 0x000000ff) / divisor);
+	return PackColorU32(r,g,b,255);
 }
 
 // Check if the positions are in orthogonally adjacent chunks
@@ -149,8 +149,8 @@ u32 EntityColors[Entity_COUNT][7] = {
 	0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa, 0xffaaaaaa,
 	0,          0,          0,          0,          0,          0,          0         ,
 	0xff709a88, 0xff7ba694, 0xff86b19f, 0xff91bdab, 0xff9cc9b7, 0xffa8d5c3, 0xffb4e1cf,
-	0xff3d5f82, 0xff45678a, 0xff4c6e93, 0xff53769b, 0xff5a7ea3, 0xff6286ac, 0xff698eb4,
-	0xff595d47, 0xff60644d, 0xff666a54, 0xff6d715a, 0xff747861, 0xff7a7e67, 0xff81856e,
+	0xff85a3bc, 0xff8da9c1, 0xff93aec7, 0xff99b4cb, 0xff9fb9d0, 0xffa5bed5, 0xffaac3da,
+	0xff9ea18f, 0xffa4a794, 0xffa8ab9a, 0xffadb09f, 0xff747861, 0xffb2b5a4, 0xffbbbeae,
 };
 
 #define MAX_ENTITY_INNATE_ADVERTS 4
@@ -1467,7 +1467,7 @@ void setup_simulation(){
 	
 	//blue background
 	forI(WORLD_HEIGHT*WORLD_WIDTH){
-		rendering.background.data[i] = 0xffcd7f07;
+		rendering.background.data[i] = PackColorU32(178,219,243,255);
 	}
 	
 	//generate terrain foreground and background
@@ -1496,9 +1496,8 @@ void setup_simulation(){
 			e->color = color;
 			set_entity(i,j,e);
 			
-			color = EntityColors[Entity_Dirt][rand()%7];
-			color = ((color & 0xfefefe) >> 1) | 0xff000000;
-			set_pixelbg(i,j,color);
+			u32 bg_color = divide_color(EntityColors[Entity_Dirt][rand()%7], 1.5);
+			set_pixelbg(i,j,bg_color);
 		}
 	}
 	
