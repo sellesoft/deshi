@@ -1910,8 +1910,9 @@ void setup_ui(){
 			}ui_end_collapsing_header();
 			
 			uiItem* keybinds_header = ui_begin_collapsing_header(STR8("Keybinds"), false, 0);{ keybinds_header->id = STR8("ant_sim.info.keybinds");
-				ui_make_text(aligned_text(5,3,{
+				ui_make_text(aligned_text(6,3,{
 					STR8("pause"),    STR8(" - "), STR8("space"),
+					STR8("step"),     STR8(" - "), STR8("lctrl + space"),
 					STR8("navigate"), STR8(" - "), STR8("lshift + n"),
 					STR8("draw"),     STR8(" - "), STR8("lshift + d"),
 					STR8("erase"),    STR8(" - "), STR8("lshift + e"),
@@ -1950,9 +1951,12 @@ void setup_ui(){
 						
 						uiItem* value_text = ui_make_text(to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin, 0);
 						value_text->style.pos = {4, 0};
-						value_text->update_trigger = action_act_hash_change;
-						value_text->__update = [](uiItem* item){
-							text_clear_and_replace(&((uiText*)item)->text, to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin);
+						
+						slider->userVar = (u64)value_text;
+						slider->action_trigger = action_act_hash_change;
+						slider->action = [](uiItem* item){
+							uiItem* value_text = (uiItem*)item->userVar;
+							text_clear_and_replace(&ui_get_text(value_text)->text, to_dstr8v(deshi_temp_allocator, g_negative_cost_weight).fin);
 						};
 					}ui_end_item();
 					
@@ -1971,10 +1975,13 @@ void setup_ui(){
 						
 						uiItem* value_text = ui_make_text(to_dstr8v(deshi_temp_allocator, sim.ticks_per_second).fin, 0);
 						value_text->style.pos = {4, 0};
-						value_text->update_trigger = action_act_hash_change;
-						value_text->__update = [](uiItem* item){
+						
+						slider->userVar = (u64)value_text;
+						slider->action_trigger = action_act_hash_change;
+						slider->action = [](uiItem* item){
+							uiItem* value_text = (uiItem*)item->userVar;
 							sim.tick_delta = 1.0 / (f64)sim.ticks_per_second;
-							text_clear_and_replace(&((uiText*)item)->text, to_dstr8v(deshi_temp_allocator, sim.ticks_per_second).fin);
+							text_clear_and_replace(&ui_get_text(value_text)->text, to_dstr8v(deshi_temp_allocator, sim.ticks_per_second).fin);
 						};
 					}ui_end_item();
 				}ui_end_collapsing_header();
@@ -2120,8 +2127,8 @@ void setup_ui(){
 							dstr8_init(&needs_builder, STR8("needs:\n"), deshi_temp_allocator);
 							forX(need_type, Need_COUNT){
 								dstr8_append(&needs_builder, STR8("["));
-								f32 need_percent = agent->needs[need_type].value / MAX_NEED_VALUE;
-								u32 need_percent_whole = (u32)(need_percent * 100.0f);
+								f32 need_percent = (agent->needs[need_type].value / MAX_NEED_VALUE) * 100.0f;
+								u32 need_percent_whole = (u32)need_percent;
 								u32 dash_count = (u32)(need_percent / 10.0f);
 								u32 space_count = 10 - dash_count;
 								forI(dash_count) dstr8_append(&needs_builder, STR8("-"));
