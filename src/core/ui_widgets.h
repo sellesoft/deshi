@@ -22,12 +22,28 @@ Index:
   ui_make_tab(str8 title, uiStyle* style) -> uiItem*
   ui_begin_tab(str8 title, uiStyle* style) -> uiItem*
   ui_end_tab() -> void
+@ui_widgets_tree
+  uiTree
+  ui_make_tree(uiStyle* style) -> uiItem*
+  ui_begin_tree(uiStyle* style) -> uiItem*
+  ui_end_tree() -> void
+  uiTreeNode
+  ui_make_tree_node(str8 title, uiStyle* style) -> uiItem*
+  ui_begin_tree_node(str8 title, uiStyle* style) -> uiItem*
+  ui_end_tree_node() -> void
+@ui_widgets_collapsing_header
+  uiCollapsingHeader
+  ui_make_collapsing_header(str8 title, uiStyle* style) -> uiItem*
+  ui_begin_collapsing_header(str8 title, uiStyle* style) -> uiItem*
+  ui_end_collapsing_header() -> void
 @ui_widgets_shared_impl
 @ui_widgets_text_impl
 @ui_widgets_inputtext_impl
 @ui_widgets_slider_impl
 @ui_widgets_checkbox_impl
 @ui_widgets_tab_impl
+@ui_widgets_tree_impl
+@ui_widgets_collapsing_header_impl
 */
 #ifndef DESHI_UI2_WIDGETS_H
 #define DESHI_UI2_WIDGETS_H
@@ -349,6 +365,42 @@ void deshi__ui_end_tree_node(str8 file, upt line);
 #define ui_end_tree_node() deshi__ui_end_tree_node(str8l(__FILE__), __LINE__)
 
 
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+// @ui_widgets_collapsing_header
+
+
+struct uiCollapsingHeader{
+	uiItem item;
+	
+	b32 collapsed;
+	str8 title;
+	uiItem* content;
+};
+
+#define ui_get_collapsing_header(x) ((uiCollapsingHeader*)(x))
+
+inline u32 ui_collapsing_header_style_hash(uiItem* item) {
+	uiCollapsingHeader* ch = ui_get_collapsing_header(item);
+	
+	u32 seed = UI_HASH_SEED;
+	seed ^= ch->collapsed; seed *= UI_HASH_PRIME;
+	for(u32 i = 0; i < ch->title.count; ++i) {
+		seed ^= ch->title.str[i]; seed *= UI_HASH_PRIME;
+	}
+	
+	return seed;
+}
+
+uiItem* deshi__ui_make_collapsing_header(str8 title, b32 collapsed, uiStyle* style, str8 file, upt line);
+#define ui_make_collapsing_header(title, collapsed, style) deshi__ui_make_collapsing_header((title), (collapsed), (style), str8l(__FILE__), __LINE__)
+
+uiItem* deshi__ui_begin_collapsing_header(str8 title, b32 collapsed, uiStyle* style, str8 file, upt line);
+#define ui_begin_collapsing_header(title, collapsed, style) deshi__ui_begin_collapsing_header((title), (collapsed), (style), str8l(__FILE__), __LINE__)
+
+void deshi__ui_end_collapsing_header(str8 file, upt line);
+#define ui_end_collapsing_header() deshi__ui_end_collapsing_header(str8l(__FILE__), __LINE__)
+
+
 #endif //DESHI_UI2_WIDGETS_H
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if defined(DESHI_IMPLEMENTATION)
@@ -499,34 +551,13 @@ ui_gen_text(uiItem* item){DPZoneScoped;
 	uiText* data = (uiText*)item;
 	
 	dc->texture = item->style.font->tex;
-	//if(!dc->descriptor_set) {
-	//	dc->descriptor_set = render_descriptor_set_create();
-	//	dc->descriptor_set->layouts = g_ui->blank_descriptor_set->layouts;
-	//	render_descriptor_set_update(dc->descriptor_set);
-
-	//	RenderDescriptor* descriptors;
-	//	array_init(descriptors, 1, deshi_temp_allocator);
-	//	auto d = array_push(descriptors);
-	//	d->kind = RenderDescriptorType_Combined_Image_Sampler;
-	//	d->image.view = dc->texture->image_view;
-	//	d->image.sampler = dc->texture->sampler;
-	//	d->image.layout = RenderImageLayout_Shader_Read_Only_Optimal;
-	//	render_descriptor_set_write(dc->descriptor_set, descriptors);
-	//}
-
+	
 	//if there is an active selection we need to figure out how to render the selection boxes
 	//TODO(sushi) this kind of sucks because it means we do this pass twice when a selection is active
-	//            try and find a way to do this by gathering information as update happens 
+	//            try and find a way to do this by gathering information as update happens
 	u32 selection_lines = 0;
 	if(data->text.cursor.count){
 		//TODO(sushi) finish implementing this
-		//s32 break_start = -1;
-		//forI(data->breaks.count-1){
-		//	if(break_start != -1 && data->breaks[i].first > data->text.cursor.pos){
-		//		break_start = i-1;
-		//	}else if(data->breaks[i].first > data->selection){
-		//	}
-		//}
 	}
 	
 	// check how much draw data we need for the text and reallocate the drawcmd if needed
@@ -611,6 +642,7 @@ deshi__ui_make_text(str8 text, uiStyle* style, str8 file, upt line){DPZoneScoped
 	setup.file = file;
 	setup.line = line;
 	setup.update = ui_update_text;
+	setup.update_trigger = action_act_always;
 	setup.generate = ui_gen_text;
 	setup.evaluate = ui_eval_text;
 	setup.copy = ui_copy_text;
@@ -650,7 +682,7 @@ ui_gen_input_text(uiItem* item){DPZoneScoped;
 		ui_put_text_counts(str8_length(data->text.buffer.fin)) +
 		ui_put_filledrect_counts(); //cursor
 	if(nucounts.x != dc->counts_reserved.x || nucounts.y != dc->counts_reserved.y){
-	    item->drawcmds = ui_make_drawcmd(1);
+		item->drawcmds = ui_make_drawcmd(1);
 		ui_drawcmd_remove(dc);
 		dc = item->drawcmds;
 		ui_drawcmd_alloc(dc, nucounts);
@@ -800,6 +832,7 @@ deshi__ui_make_input_text(str8 preview, uiStyle* style, str8 file, upt line){DPZ
 	setup.file = file;
 	setup.line = line;
 	setup.update = ui_update_input_text;
+	setup.update_trigger = action_act_always;
 	setup.generate = ui_gen_input_text;
 	setup.evaluate = ui_eval_input_text;
 	setup.copy = ui_copy_input_text;
@@ -975,6 +1008,7 @@ ui_make_slider(uiStyle* style, str8 file, upt line){DPZoneScoped;
 	setup.drawcmd_count = 1;
 
 	auto item = ui_setup_item(setup);
+	item->dirty = true; //mark it dirty to force an initial update
 
 	auto s = ui_get_slider(item);
 	s->style.colors.rail = color(80,80,80);
@@ -1341,6 +1375,153 @@ deshi__ui_end_tree(str8 file, upt line) {
 //deshi__ui_end_tree_node(str8 file, upt line) {
 //
 //}
+
+
+//-////////////////////////////////////////////////////////////////////////////////////////////////
+//// @ui_widgets_collapsing_header_impl
+
+
+void
+ui_gen_collapsing_header(uiItem* item){DPZoneScoped;
+	uiCollapsingHeader* ch = ui_get_collapsing_header(item);
+	vec2 mtl = floor(item->style.margintl * item->scale);
+	vec2 mbr = floor(item->style.marginbr * item->scale);
+	vec2 bor = floor((item->style.border_style ? item->style.border_width : 0) * item->scale);
+	vec2 pos = item->pos_screen + mtl + bor;
+	vec2 siz = floor(item->size * item->scale) - (mtl + mbr + bor + bor); //NOTE(delle) item->size already has margins and borders applied in eval_item_branch
+	
+	uiDrawCmd* dc0 = &item->drawcmds[0];
+	uiDrawCmd* dc1 = &item->drawcmds[1];
+	auto [vp0, ip0] = ui_drawcmd_get_ptrs(dc0);
+	auto [vp1, ip1] = ui_drawcmd_get_ptrs(dc1);
+	vec2i counts0 = {0};
+	vec2i counts1 = {0};
+	
+	dc0->texture = item->style.background_image;
+	dc1->texture = item->style.font->tex;
+	
+	vec2i dc1_counts_needed = ui_put_text_counts(3) + ui_put_text_counts(str8_length(ch->title));
+	if(dc1_counts_needed.x > dc1->counts_reserved.x || dc1_counts_needed.y > dc1->counts_reserved.y){
+		ui_drawcmd_remove(dc1);
+		ui_drawcmd_alloc(dc1, dc1_counts_needed);
+		auto x = ui_drawcmd_get_ptrs(dc1);
+		vp1 = x.vertexes;
+		ip1 = x.indexes;
+	}
+	
+	//background
+	counts0 += ui_put_filledrect(vp0, ip0, counts0, pos, siz, item->style.background_color);
+	
+	//border
+	counts0 += ui_gen_border(item, vp0, ip0, counts0);
+	
+	//header arrow
+	str8 arrow_text = ch->collapsed ? STR8(" > ") : STR8(" v ");
+	vec2 arrow_pos = pos + vec2{item->style.padding_left, item->style.padding_top};
+	counts1 += ui_put_text(vp1, ip1, counts1, arrow_text, item->style.font, arrow_pos, item->style.text_color, item->scale);
+	
+	//header title
+	f32 header_arrow_width = font_visual_size(item->style.font, arrow_text).x * (item->style.font_height / item->style.font->max_height) * item->scale.x;
+	vec2 title_pos = arrow_pos + vec2{header_arrow_width, 0};
+	counts1 += ui_put_text(vp1, ip1, counts1, ch->title, item->style.font, title_pos, item->style.text_color, item->scale);
+	
+	dc0->counts_used = counts0;
+	dc1->counts_used = counts1;
+}
+
+void
+ui_eval_collapsing_header(uiItem* item){DPZoneScoped;
+	uiCollapsingHeader* ch = ui_get_collapsing_header(item);
+	
+	//NOTE(delle) eval_item_branch will add the bottom right padding/margin/border
+	f32 border = (item->style.border_style ? item->style.border_width : 0);
+	
+	if(HasFlag(item->style.sizing, size_auto_x)){
+		str8 arrow_text = ch->collapsed ? STR8(" > ") : STR8(" v ");
+		f32 header_arrow_width = font_visual_size(item->style.font, arrow_text).x * (item->style.font_height / item->style.font->max_height);
+		f32 header_title_width = font_visual_size(item->style.font, ch->title).x * (item->style.font_height / item->style.font->max_height);
+		item->width = header_arrow_width + header_title_width + item->style.padding_left + item->style.margin_left + border;
+	}
+	
+	if(HasFlag(item->style.sizing, size_auto_y)){
+		item->height = item->style.font_height + item->style.padding_top + item->style.margin_top + border;
+	}
+}
+
+void
+ui_update_collapsing_header(uiItem* item){DPZoneScoped;
+	uiCollapsingHeader* ch = ui_get_collapsing_header(item);
+	vec2 mouse_pos = input_mouse_position();
+	if (Math::PointInRectangle(mouse_pos, item->pos_screen, item->size)){
+		ch->collapsed = !ch->collapsed;
+		if(ch->collapsed){
+			AddFlag(ch->content->style.display, display_hidden);
+		}else{
+			RemoveFlag(ch->content->style.display, display_hidden);
+		}
+		item->dirty = true;
+	}
+}
+
+uiItem*
+deshi__ui_make_collapsing_header(str8 title, b32 collapsed, uiStyle* style, str8 file, upt line) {DPZoneScoped;
+	uiItemSetup setup = {0};
+	setup.size = sizeof(uiCollapsingHeader);
+	setup.style = style;
+	setup.file = file;
+	setup.line = line;
+	setup.hash = ui_collapsing_header_style_hash;
+	setup.generate = ui_gen_collapsing_header;
+	setup.evaluate = ui_eval_collapsing_header;
+	setup.update_trigger = action_act_mouse_released;
+	setup.update = ui_update_collapsing_header;
+	
+	vec2i counts[2] = {
+		{ui_put_filledrect_counts() + ui_put_rect_counts()},
+		{ui_put_text_counts(3) + ui_put_text_counts(str8_length(title))}
+	};
+	setup.drawinfo_reserve = counts;
+	setup.drawcmd_count = 2;
+
+	b32 retrieved = false;
+	uiItem* item = ui_setup_item(setup, &retrieved);
+	uiCollapsingHeader* ch = ui_get_collapsing_header(item);
+	
+	if(!retrieved){
+		ch->title = title;
+		ch->collapsed = collapsed;
+		ch->content = ui_make_item(0);
+		ch->content->style.display = (collapsed ? display_hidden : display_vertical);
+		ch->content->style.sizing = size_percent_x | size_auto_y;
+		ch->content->style.width = 100/*percent*/;
+		ch->content->style.padding_left = 5/*pixels*/;
+		ch->content->style.margin_bottom = 5/*pixels*/;
+		if(!style){
+			item->style.sizing = size_percent_x | size_auto_y;
+			item->style.width = 100/*percent*/;
+			item->style.padding_top = 1/*pixels*/;
+			item->style.padding_bottom = 1/*pixels*/;
+			item->style.margin_top = 5/*pixels*/;
+			item->style.margin_bottom = 5/*pixels*/;
+			item->style.background_color = Color_DarkCyan;
+		}
+	}
+
+	return item;
+}
+
+uiItem*
+deshi__ui_begin_collapsing_header(str8 title, b32 collapsed, uiStyle* style, str8 file, upt line) {DPZoneScoped;
+	uiItem* item = deshi__ui_make_collapsing_header(title, collapsed, style, file, line);
+	uiCollapsingHeader* ch = ui_get_collapsing_header(item);
+	ui_push_item(ch->content);
+	return item;
+}
+
+void
+deshi__ui_end_collapsing_header(str8 file, upt line) {DPZoneScoped;
+	deshi__ui_end_item(file, line);
+}
 
 
 #endif //defined(DESHI_IMPLEMENTATION) && !defined(DESHI_UI2_WIDGETS_IMPL)

@@ -41,6 +41,7 @@ TODOs:
 - maybe remove division by zero prevention?
 - maybe remove dependence on kigu?
 - add mat4_look_at_matrix_inverse if possible
+- f32_to_f16, f16_to_f32
 */
 #ifndef DESHI_MATH_H
 #define DESHI_MATH_H

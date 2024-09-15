@@ -1364,7 +1364,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		item->style_hash = nuhash; 
 		reset_stopwatch(&item->since_last_update);
 	}
-
+	
 	//call the items update function if it exists
 	if(item->__update && (
 			HasFlag(item->update_trigger, action_act_always) ||
@@ -1378,7 +1378,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			HasFlag(item->update_trigger, action_act_mouse_down) && input_lmouse_down()))) {
 		item->__update(item);
 	}
-
+	
 	//reevaluate the item, its children, and every child of its parents until a manually sized parent is found
 	if(changed){
 		uiItem* sspar = uiItemFromNode(ui_find_static_sized_parent(&item->node, 0));
