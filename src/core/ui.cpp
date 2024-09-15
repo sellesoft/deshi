@@ -975,7 +975,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 			}else{
 				//TODO(sushi) consider removing this error as the user may want this behavoir to happen on purpose
 				item_error(item, "Sizing flag 'size_percent_x' was specified but the item's parent's width is not explicitly sized.");
-				hauto = 1;
+				wauto = 1;
 			}
 		}else item->width = item->style.width + item->style.margin_left + item->style.margin_right + 2*wborder;
 	}else item->width = 0;
@@ -1355,12 +1355,7 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		item->dirty = true;
 	}
 	
-
-	//call the items update function if it exists
-	if(item->__update) item->__update(item);
-	
-	//check if an item's style was modified, if so reevaluate the item,
-	//its children, and every child of its parents until a manually sized parent is found
+	//check if an item's style was modified
 	u32 nuhash = ui_hash_style(item);
 	b32 changed = false;
 	if(item->dirty || nuhash!=item->style_hash){
@@ -1368,11 +1363,9 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		item->dirty = 0;
 		item->style_hash = nuhash; 
 		reset_stopwatch(&item->since_last_update);
-		uiItem* sspar = uiItemFromNode(ui_find_static_sized_parent(&item->node, 0));
-		eval_item_branch(sspar, {});
-		draw_item_branch(sspar);
 	}
 
+	//call the items update function if it exists
 	if(item->__update && (
 			HasFlag(item->update_trigger, action_act_always) ||
 			HasFlag(item->update_trigger, action_act_hash_change) && changed ||
@@ -1384,6 +1377,13 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			HasFlag(item->update_trigger, action_act_mouse_released) && input_lmouse_released() ||
 			HasFlag(item->update_trigger, action_act_mouse_down) && input_lmouse_down()))) {
 		item->__update(item);
+	}
+
+	//reevaluate the item, its children, and every child of its parents until a manually sized parent is found
+	if(changed){
+		uiItem* sspar = uiItemFromNode(ui_find_static_sized_parent(&item->node, 0));
+		eval_item_branch(sspar, {});
+		draw_item_branch(sspar);
 	}
 
 	if(item->action && (

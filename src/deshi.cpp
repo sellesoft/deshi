@@ -137,13 +137,11 @@ Common Tags: Feature, Tweak, Bug, System, PWide
 [!!!,*  ,21/07/10,Bug]     the program crashes if default asset files are not present
     maybe store the text in the actual source and create the file from the code (null128.png, gohufont-11.bdf)
 [!! ,** ,21/08/07,Tweak]   speedup OBJ parsing and face generation
-[!!!,*  ,21/08/22,Tweak]   store null128.png and null shader in code
 [!! ,*  ,21/08/22,Tweak]   add versioning to Mesh since its saved in a binary format
 [!  ,*  ,21/10/20,Tweak]   merge mesh faces with <10 degree normal difference (for physics)
 [!  ,** ,21/10/20,Tweak]   add edges and hulls to meshes, remove unused vars
 [!! ,** ,21/10/20,Feature] add OBJ MTL parsing
 [!!!,** ,21/12/31,Feature] data streaming (load in parts)
-[!!!,*  ,22/01/12,Feature] make an interface for updating textures that have already been created
 [!!!,** ,22/09/08,Feature] use worker threads to load in the background
 
 `Time`
