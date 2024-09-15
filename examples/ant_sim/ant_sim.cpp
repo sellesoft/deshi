@@ -2185,14 +2185,14 @@ void update_ui(){
 	assets_texture_update(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 	
 	//zooming (even though ui handles moving the world for us, we still need to handle zooming)
-	vec2 cursize = ui.background->style.size;
-	vec2 local_mouse = input_mouse_position() - ui.world->pos_screen;
-	ui.background->style.size.x += DeshInput->scrollY / 10.0 * cursize.x;
-	ui.background->style.size.y += DeshInput->scrollY / 10.0 * cursize.y;
-	vec2 diff = ui.background->style.size - cursize;
-	if(DeshInput->scrollY){
-		ui.world->style.pos.x -= local_mouse.x * ((ui.background->style.size.x / cursize.x) - 1);
-		ui.world->style.pos.y -= local_mouse.y * ((ui.background->style.size.y / cursize.y) - 1);
+	vec2 mouse_pos = input_mouse_position();
+	if(DeshInput->scrollY != 0 && ui_item_hovered(ui.universe, hovered_child)){
+		vec2 current_size = ui.background->style.size;
+		vec2 local_mouse = mouse_pos - ui.world->pos_screen;
+		ui.background->style.size.x += DeshInput->scrollY / 10.0 * current_size.x;
+		ui.background->style.size.y += DeshInput->scrollY / 10.0 * current_size.y;
+		ui.world->style.pos.x -= local_mouse.x * ((ui.background->style.size.x / current_size.x) - 1);
+		ui.world->style.pos.y -= local_mouse.y * ((ui.background->style.size.y / current_size.y) - 1);
 	}
 }
 
