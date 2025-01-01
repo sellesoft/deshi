@@ -112,7 +112,7 @@ ui_drawcmd_remove(uiDrawCmd* drawcmd){DPZoneScoped;
 		ui_drawcmd_delete(drawcmd);
 		return;
 	}
-
+	
 	carray<uiDrawCmd*> varr = {g_ui->inactive_drawcmds_vertex_sorted.data, g_ui->inactive_drawcmds_vertex_sorted.count};
 	carray<uiDrawCmd*> iarr = {g_ui->inactive_drawcmds_index_sorted.data, g_ui->inactive_drawcmds_index_sorted.count};
 	
@@ -216,7 +216,7 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 			g_ui->inactive_drawcmds_index_sorted.remove(i);
 			i--;
 		} 
-
+		
 		s64 iremain = dc->counts_reserved.y - counts.y;
 		if(iremain >= 0){
 			i_place_next = dc->index_offset;
@@ -247,7 +247,7 @@ ui_drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts){DPZoneScoped;
 		g_ui->index_buffer.cursor += counts.y;
 	} else drawcmd->index_offset = i_place_next;
 	drawcmd->counts_reserved = counts;
-
+	
 #if UI_PRINT_DRAWCMD_ALLOCS
 	Log("ui", "allocated drawcmd: vo(", drawcmd->vertex_offset, ") vc(", drawcmd->counts_reserved.x, ") io(", drawcmd->index_offset, ") ic(", drawcmd->counts_reserved.y, ")");
 #endif
@@ -374,7 +374,7 @@ uiItem* ui_setup_item(uiItemSetup setup, b32* retrieved){DPZoneScoped;
 			}
 		}
 	}
-
+	
 	item->since_last_update = start_stopwatch();
 	return item;
 }
@@ -463,30 +463,30 @@ ui_item_hovered(uiItem* item, u32 mode){
 uiItem*
 ui_deep_copy_lower(uiItem* item) {
 	Assert(item->__copy, "deep copied items are required to implemented __copy");
-
+	
 	// allocate a new item with the same size
 	auto nu = (uiItem*)memalloc(item->memsize);
-
+	
 	// copy all memory literally
 	CopyMemory(nu, item, item->memsize);
-
+	
 	// clear the node since we're about to replace all 
 	// children with copies
 	nu->node = {0};
-
+	
 	// invoke deep_copy on all children first
 	for(auto i = (uiItem*)item->node.first_child; i; i = (uiItem*)i->node.next) {
 		insert_last(&nu->node, &ui_deep_copy_lower(i)->node);
 	}
 	
 	nu->drawcmds = ui_make_drawcmd(item->drawcmd_count);
-
+	
 	// allocate drawcmds for this item
 	forI(item->drawcmd_count) {
 		auto dc = item->drawcmds + i;
 		ui_drawcmd_alloc(nu->drawcmds + i, dc->counts_reserved);
 	}
-
+	
 	nu->dirty = true;
 	
 	return nu;
@@ -496,10 +496,10 @@ uiItem*
 ui_deep_copy(uiItem* item) {
 	Assert(item, "ui_deep_copy passed a null item");
 	Assert(item != &g_ui->base, "cannot deep copy base item");
-
+	
 	auto i = ui_deep_copy_lower(item);
 	insert_last(item->node.parent, &i->node);
-
+	
 	return i;
 }
 
@@ -588,7 +588,7 @@ deshi__ui_end_item(str8 file, upt line){DPZoneScoped;
 void 
 deshi__ui_remove_item(uiItem* item, str8 file, upt line){DPZoneScoped;
 	NodeRemove(&item->link);
-
+	
 	forI(item->drawcmd_count){
 		ui_drawcmd_remove(item->drawcmds + i);
 	}
@@ -676,12 +676,12 @@ deshi__ui_init(Window* window) {
 	
 	g_ui->inactive_drawcmds.next = &g_ui->inactive_drawcmds;
 	g_ui->inactive_drawcmds.prev = &g_ui->inactive_drawcmds;
-
+	
 	g_ui->render_pass = graphics_render_pass_allocate();
 	g_ui->render_pass->debug_name = str8l("<ui> render pass");
 	g_ui->render_pass->use_color_attachment = true;
 	g_ui->render_pass->color_attachment.          format = graphics_format_of_presentation_frames(window);
-	g_ui->render_pass->color_attachment.         load_op = GraphicsLoadOp_Clear;
+	g_ui->render_pass->color_attachment.         load_op = GraphicsLoadOp_Load;
 	g_ui->render_pass->color_attachment.        store_op = GraphicsStoreOp_Store;
 	g_ui->render_pass->color_attachment. stencil_load_op = GraphicsLoadOp_Dont_Care;
 	g_ui->render_pass->color_attachment.stencil_store_op = GraphicsStoreOp_Dont_Care;
@@ -696,22 +696,22 @@ deshi__ui_init(Window* window) {
 	g_ui->render_pass->depth_attachment.  initial_layout = GraphicsImageLayout_Undefined;
 	g_ui->render_pass->depth_attachment.    final_layout = GraphicsImageLayout_Depth_Stencil_Attachment_Optimal;
 	graphics_render_pass_update(g_ui->render_pass);
-
+	
 	g_ui->pipeline = graphics_pipeline_allocate();
 	g_ui->pipeline->debug_name = str8l("<ui> pipeline");
-
+	
 	g_ui->pipeline->vertex_shader = graphics_shader_allocate();
 	g_ui->pipeline->vertex_shader->debug_name = str8l("<ui> vertex shader");
 	g_ui->pipeline->vertex_shader->shader_stage = GraphicsShaderStage_Vertex;
 	g_ui->pipeline->vertex_shader->source = baked_shader_twod_vert;
 	graphics_shader_update(g_ui->pipeline->vertex_shader);
-
+	
 	g_ui->pipeline->fragment_shader = graphics_shader_allocate();
 	g_ui->pipeline->fragment_shader->debug_name = str8l("<ui> fragment shader");
 	g_ui->pipeline->fragment_shader->shader_stage = GraphicsShaderStage_Fragment;
 	g_ui->pipeline->fragment_shader->source = baked_shader_twod_frag;
 	graphics_shader_update(g_ui->pipeline->fragment_shader);
-
+	
 	g_ui->pipeline->            front_face = GraphicsFrontFace_CCW;
 	g_ui->pipeline->               culling = GraphicsPipelineCulling_None;
 	g_ui->pipeline->          polygon_mode = GraphicsPolygonMode_Fill;
@@ -727,54 +727,54 @@ deshi__ui_init(Window* window) {
 	g_ui->pipeline->alpha_dst_blend_factor = GraphicsBlendFactor_Zero;
 	g_ui->pipeline->        blend_constant = color(10,10,10,255);
 	g_ui->pipeline->           render_pass = graphics_render_pass_of_window_presentation_frames(window);
-
+	
 	g_ui->pipeline->dynamic_viewport = 
-	g_ui->pipeline->dynamic_scissor  = true;
-
+		g_ui->pipeline->dynamic_scissor  = true;
+	
 	array_init_with_elements(g_ui->pipeline->vertex_input_bindings, 
-			{{0, sizeof(uiVertex)}}, deshi_allocator);
+							 {{0, sizeof(uiVertex)}}, deshi_allocator);
 	array_init_with_elements(g_ui->pipeline->vertex_input_attributes, {
-				{0, 0, GraphicsFormat_R32G32_Float,   offsetof(uiVertex, pos)},
-				{1, 0, GraphicsFormat_R32G32_Float,   offsetof(uiVertex, uv)},
-				{2, 0, GraphicsFormat_R8G8B8A8_UNorm, offsetof(uiVertex, color)},
-			}, deshi_allocator);
+								 {0, 0, GraphicsFormat_R32G32_Float,   offsetof(uiVertex, pos)},
+								 {1, 0, GraphicsFormat_R32G32_Float,   offsetof(uiVertex, uv)},
+								 {2, 0, GraphicsFormat_R8G8B8A8_UNorm, offsetof(uiVertex, color)},
+							 }, deshi_allocator);
 	auto layout = graphics_descriptor_set_layout_allocate();
 	layout->debug_name = str8l("ui descriptor layout");
 	array_init_with_elements(layout->bindings,{
-			{
-				GraphicsDescriptorType_Combined_Image_Sampler,
-				GraphicsShaderStage_Fragment,
-				0
-			}}, deshi_allocator);
+								 {
+									 GraphicsDescriptorType_Combined_Image_Sampler,
+									 GraphicsShaderStage_Fragment,
+									 0
+								 }}, deshi_allocator);
 	graphics_descriptor_set_layout_update(layout);
-
+	
 	g_ui->push_constant.size = 2 * sizeof(vec2);
 	g_ui->push_constant.offset = 0;
 	g_ui->push_constant.shader_stages = GraphicsShaderStage_Vertex;
 	g_ui->push_constant.name_in_shader = "PushConstant";
-
+	
 	auto pipeline_layout = graphics_pipeline_layout_allocate();
 	pipeline_layout->debug_name = str8l("ui pipeline layout");
 	array_init_with_elements(pipeline_layout->descriptor_layouts, {layout});
 	array_init_with_elements(pipeline_layout->push_constants, {g_ui->push_constant});
 	graphics_pipeline_layout_update(pipeline_layout);
-
+	
 	g_ui->pipeline->layout = pipeline_layout;
 	graphics_pipeline_update(g_ui->pipeline);
-
+	
 	g_ui->vertex_buffer.handle = graphics_buffer_create(
-			0, 
-			g_memory->arena_heap.size / 16,
-			GraphicsBufferUsage_VertexBuffer,
-			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
-			GraphicsMemoryMapping_Persistent);
+														0, 
+														g_memory->arena_heap.size / 16,
+														GraphicsBufferUsage_VertexBuffer,
+														GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+														GraphicsMemoryMapping_Persistent);
 	g_ui->vertex_buffer.handle->debug_name = str8l("<ui> vertex buffer");
 	g_ui->index_buffer.handle = graphics_buffer_create(
-			0, 
-			g_memory->arena_heap.size / 16,
-			GraphicsBufferUsage_IndexBuffer,
-			GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
-			GraphicsMemoryMapping_Persistent);
+													   0, 
+													   g_memory->arena_heap.size / 16,
+													   GraphicsBufferUsage_IndexBuffer,
+													   GraphicsMemoryPropertyFlag_HostVisible | GraphicsMemoryPropertyFlag_HostCoherent,
+													   GraphicsMemoryMapping_Persistent);
 	g_ui->index_buffer.handle->debug_name = str8l("<ui> index buffer");
 	
 	GraphicsDescriptor* descriptors = array_create(GraphicsDescriptor, 1, deshi_allocator);
@@ -784,15 +784,15 @@ deshi__ui_init(Window* window) {
 	descriptor->    image.view = assets_font_null()->tex->image_view;
 	descriptor-> image.sampler = assets_font_null()->tex->sampler;
 	descriptor->  image.layout = GraphicsImageLayout_Shader_Read_Only_Optimal;
-
+	
 	g_ui->blank_descriptor_set = graphics_descriptor_set_allocate();
 	g_ui->blank_descriptor_set->debug_name = str8l("ui blank descriptor set");
 	g_ui->blank_descriptor_set->descriptors = descriptors;
 	array_init_with_elements(g_ui->blank_descriptor_set->layouts, 
-			{g_ui->pipeline->layout->descriptor_layouts[0]});
+							 {g_ui->pipeline->layout->descriptor_layouts[0]});
 	graphics_descriptor_set_update(g_ui->blank_descriptor_set);
 	graphics_descriptor_set_write(g_ui->blank_descriptor_set);
-
+	
 	g_ui->base = uiItem{0};
 	g_ui->base.id = STR8("base");
 	g_ui->base.file_created = STR8(__FILE__);
@@ -834,7 +834,7 @@ deshi__ui_init(Window* window) {
 	
 	DeshiStageInitEnd(DS_UI);
 }
- 
+
 //pass 0 for child on first call
 //TODO(sushi) look into caching this while evaluating items
 TNode* ui_find_static_sized_parent(TNode* node, TNode* child){DPZoneScoped;
@@ -907,7 +907,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 #if BUILD_SLOW
 	if(item->break_on_evaluate) DebugBreakpoint;
 #endif
-
+	
 	//an array of item indexes into the child item list that indicate to the main eval loop that the item has already beem
 	//evaluated before it. currently this only happens when the item is a flex container and contains an automatically sized child.
 	arrayT<u32> already_evaluated;
@@ -1229,9 +1229,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		f32 padb = item->style.padding_bottom;
 		//space that children may actually occupy
 		vec2 child_space = Vec2(
-			(item->width  - ((padr == MAX_F32) ? padl : padr)) - padl, 
-			(item->height - ((padb == MAX_F32) ? padt : padb)) - padt
-		);
+								(item->width  - ((padr == MAX_F32) ? padl : padr)) - padl, 
+								(item->height - ((padb == MAX_F32) ? padt : padb)) - padt
+								);
 		f32 y_offset = ceil(item->style.content_align.y*(child_space.y - cursor.y));
 		for_node(item->node.first_child){
 			uiItem* child = uiItemFromNode(it);
@@ -1244,9 +1244,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				//the actual size the child occupies
 				//TODO(sushi) probably cache this
 				vec2 true_size = Vec2(
-					child->width + (marr==MAX_F32?marl:marr) + marl,
-					child->height + (marb==MAX_F32?mart:marb) +mart
-				);
+									  child->width + (marr==MAX_F32?marl:marr) + marl,
+									  child->height + (marb==MAX_F32?mart:marb) +mart
+									  );
 				child->pos_local.x = item->style.padding_left + child->style.margin_left + item->style.content_align.x * (child_space.x - true_size.x);
 				last_static_offset = child->pos_local.x - last_static_offset;
 				child->pos_local.y += y_offset;
@@ -1345,7 +1345,7 @@ b32 find_hovered_item(uiItem* item){DPZoneScoped;
 pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	uiItem* item = uiItemFromNode(node);
 	uiItem* parent = uiItemFromNode(node->parent);
-
+	
 #if BUILD_SLOW
 	if(item->break_on_update) DebugBreakpoint;
 #endif
@@ -1367,15 +1367,15 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 	
 	//call the items update function if it exists
 	if(item->__update && (
-			HasFlag(item->update_trigger, action_act_always) ||
-			HasFlag(item->update_trigger, action_act_hash_change) && changed ||
-			ui_item_hovered(item, hovered_area) && (
-			HasFlag(item->update_trigger, action_act_mouse_hover) && ui_item_hovered(item, hovered_strict) ||
-			HasFlag(item->update_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
-			HasFlag(item->update_trigger, action_act_mouse_scroll) && g_input->scrollY ||
-			HasFlag(item->update_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
-			HasFlag(item->update_trigger, action_act_mouse_released) && input_lmouse_released() ||
-			HasFlag(item->update_trigger, action_act_mouse_down) && input_lmouse_down()))) {
+						  HasFlag(item->update_trigger, action_act_always) ||
+						  HasFlag(item->update_trigger, action_act_hash_change) && changed ||
+						  ui_item_hovered(item, hovered_area) && (
+																  HasFlag(item->update_trigger, action_act_mouse_hover) && ui_item_hovered(item, hovered_strict) ||
+																  HasFlag(item->update_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
+																  HasFlag(item->update_trigger, action_act_mouse_scroll) && g_input->scrollY ||
+																  HasFlag(item->update_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
+																  HasFlag(item->update_trigger, action_act_mouse_released) && input_lmouse_released() ||
+																  HasFlag(item->update_trigger, action_act_mouse_down) && input_lmouse_down()))) {
 		item->__update(item);
 	}
 	
@@ -1385,17 +1385,17 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 		eval_item_branch(sspar, {});
 		draw_item_branch(sspar);
 	}
-
+	
 	if(item->action && (
-			HasFlag(item->action_trigger, action_act_always) ||
-			HasFlag(item->action_trigger, action_act_hash_change) && changed ||
-			ui_item_hovered(item, hovered_area) && (
-			HasFlag(item->action_trigger, action_act_mouse_hover) && ui_item_hovered(item, hovered_strict) ||
-			HasFlag(item->action_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
-			HasFlag(item->action_trigger, action_act_mouse_scroll) && g_input->scrollY ||
-			HasFlag(item->action_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
-			HasFlag(item->action_trigger, action_act_mouse_released) && input_lmouse_released() ||
-			HasFlag(item->action_trigger, action_act_mouse_down) && input_lmouse_down()))) {
+						HasFlag(item->action_trigger, action_act_always) ||
+						HasFlag(item->action_trigger, action_act_hash_change) && changed ||
+						ui_item_hovered(item, hovered_area) && (
+																HasFlag(item->action_trigger, action_act_mouse_hover) && ui_item_hovered(item, hovered_strict) ||
+																HasFlag(item->action_trigger, action_act_mouse_hover_children) && ui_item_hovered(item, hovered_child) ||
+																HasFlag(item->action_trigger, action_act_mouse_scroll) && g_input->scrollY ||
+																HasFlag(item->action_trigger, action_act_mouse_pressed) && input_lmouse_pressed() || 
+																HasFlag(item->action_trigger, action_act_mouse_released) && input_lmouse_released() ||
+																HasFlag(item->action_trigger, action_act_mouse_down) && input_lmouse_down()))) {
 		item->action(item);
 	}
 	
@@ -1434,9 +1434,9 @@ pair<vec2,vec2> ui_recur(TNode* node){DPZoneScoped;
 			g_ui->stats.drawcmds_visible++;
 			g_ui->stats.vertices_visible += item->drawcmds[i].counts_reserved.x;
 			g_ui->stats.indices_visible += item->drawcmds[i].counts_reserved.y;
-
+			
 			auto texture = item->drawcmds[i].texture;
-
+			
 			if(texture && texture != g_ui->last_texture) {
 				if(!texture->ui_descriptor_set) {
 					auto descriptors = array<GraphicsDescriptor>::create_with_count(1, deshi_allocator);
@@ -1492,7 +1492,7 @@ struct {
 void 
 deshi__ui_update(Window* window) {
 	g_ui->updating_window = window;
-
+	
 	pc = {
 #if DESHI_VULKAN
 		{2.0f/window->width, 2.0f/window->height},
@@ -1504,7 +1504,7 @@ deshi__ui_update(Window* window) {
 #  error "unhandled graphics backend"
 #endif //#else //#elif DESHI_OPENGL //#if DESHI_VULKAN
 	};
-
+	
 	graphics_cmd_begin_render_pass(window, g_ui->render_pass, graphics_current_present_frame_of_window(window));
 	graphics_cmd_bind_pipeline(window, g_ui->pipeline);
 	graphics_cmd_set_viewport(window, vec2_ZERO(), Vec2(window->width, window->height));
@@ -1527,7 +1527,7 @@ deshi__ui_update(Window* window) {
 		Log("", 
 			item->id, ".draws: ", item->debug_frame_stats.draws, "\n",
 			item->id, ".evals: ", item->debug_frame_stats.evals
-		);
+			);
 #endif
 		item->debug_frame_stats = {0};
 	}
@@ -1566,7 +1566,7 @@ deshi__ui_update(Window* window) {
 	g_ui->immediate_items.clear();
 	
 	g_ui->updating = 0;
-
+	
 	graphics_cmd_end_render_pass(window);
 	g_ui->updating_window = 0;
 }
@@ -1755,9 +1755,9 @@ void ui_debug(){
 						uiText* text = 0;
 						if(sel->memsize == sizeof(uiText)) text = ui_get_text(sel);
 						ui_make_text(to_dstr8v(deshi_temp_allocator,
-							sel->id,"\n",
-							sel->node.child_count
-						).fin, 0);
+											   sel->id,"\n",
+											   sel->node.child_count
+											   ).fin, 0);
 						if(text){
 							ui_make_text(text->text.buffer.fin, 0);
 						}
@@ -1780,33 +1780,33 @@ void ui_debug(){
 	
 	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
 	dstr8 t = to_dstr8v(deshi_temp_allocator,
-		"visible: \n",
-		"	   items: ", g_ui->stats.items_visible, "\n",
-		"	drawcmds: ", g_ui->stats.drawcmds_visible, "\n",
-		"	vertices: ", g_ui->stats.vertices_visible, "\n",
-		"	 indices: ", g_ui->stats.indices_visible, "\n",
-		"reserved: \n",
-		"	   items: ", g_ui->stats.items_reserved, "\n",
-		"	drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
-		"	vertices: ", g_ui->stats.vertices_reserved, "\n",
-		"	 indices: ", g_ui->stats.indices_reserved, "\n",
-		"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
-	);
+						"visible: \n",
+						"	   items: ", g_ui->stats.items_visible, "\n",
+						"	drawcmds: ", g_ui->stats.drawcmds_visible, "\n",
+						"	vertices: ", g_ui->stats.vertices_visible, "\n",
+						"	 indices: ", g_ui->stats.indices_visible, "\n",
+						"reserved: \n",
+						"	   items: ", g_ui->stats.items_reserved, "\n",
+						"	drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
+						"	vertices: ", g_ui->stats.vertices_reserved, "\n",
+						"	 indices: ", g_ui->stats.indices_reserved, "\n",
+						"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
+						);
 	defer{dstr8_deinit(&t);};
 	text_clear_and_replace(&ui_get_text(ui_dwi.panel1text)->text, t.fin);
 	ui_dwi.panel1text->dirty = 1;
 	
 	if(g_ui->hovered){
-	//	render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
-	//	vec2 ipos = g_ui->hovered->pos_screen;
-	//	vec2 mpos = ipos + g_ui->hovered->style.margintl;
-	//	vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
-	//	vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
-	//	
-	//	render_quad2(ipos, g_ui->hovered->size, Color_Red);
-	//	render_quad2(mpos, ui_margined_area(g_ui->hovered), Color_Magenta);
-	//	render_quad2(bpos, ui_bordered_area(g_ui->hovered), Color_Blue);
-	//	render_quad2(ppos, ui_padded_area(g_ui->hovered), Color_Green);
+		//	render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
+		//	vec2 ipos = g_ui->hovered->pos_screen;
+		//	vec2 mpos = ipos + g_ui->hovered->style.margintl;
+		//	vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
+		//	vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
+		//	
+		//	render_quad2(ipos, g_ui->hovered->size, Color_Red);
+		//	render_quad2(mpos, ui_margined_area(g_ui->hovered), Color_Magenta);
+		//	render_quad2(bpos, ui_bordered_area(g_ui->hovered), Color_Blue);
+		//	render_quad2(ppos, ui_padded_area(g_ui->hovered), Color_Green);
 	}
 }
 
@@ -2046,24 +2046,24 @@ ui_print_tree_recur(uiItem* item, void (*info)(dstr8*, uiItem*)) {
 	if(item->node.child_count) {
 		dstr8_append(&out, "(");
 	}
-
+	
 	if(item->id.count) {
 		dstr8_append(&out, item->id);
 	} else {
 		dstr8_append(&out, (void*)item);
 	}
-
+	
 	dstr8_append(&out, " ");
 	if(info) {
 		info(&out, item);
 	}
-
+	
 	dstr8_append(&out, "\n  ");
-
+	
 	for(uiItem* child = (uiItem*)item->node.first_child; child; child = (uiItem*)child->node.next) {
 		dstr8_append(&out, indent(ui_print_tree_recur(child, info).fin));
 	}
-
+	
 	return out;
 }
 
