@@ -176,80 +176,12 @@ void cmd_run(str8 input){
 void cmd_init(){
 	DeshiStageInitStart(DS_CMD, DS_MEMORY, "Attempted to initialize Cmd module before initializing Memory module");
 	
-	DESHI_CMD_START(dir, "List the contents of a directory"){
-		FixMe;
-		arrayT<File> files = {};file_search_directory(args[0]);
-		char time_str[1024];
-		if(files.count){
-			Log("cmd","Directory of '",args[0],"':");
-			forE(files){
-				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->last_write_time));
-				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->type == FileType_Directory)?"<DIR> ":"<FILE>"),
-					 (const char*)it->name.str,it->bytes);
-			}
-		}
-	}DESHI_CMD_END(dir, CmdArgument_String);
-	
-	DESHI_CMD_START(rm, "Remove a file"){
-		file_delete(args[0], FileDeleteFlags_File);
-	}DESHI_CMD_END(rm, CmdArgument_String);
-	
-	DESHI_CMD_START(cp, "Copies a file/directory to a new location"){
-		file_copy(args[0], args[1]);
-	}DESHI_CMD_END(cp, CmdArgument_String, CmdArgument_String);
-	
-	DESHI_CMD_START(file_exists, "Checks if a file exists"){
-		Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
-	}DESHI_CMD_END(file_exists, CmdArgument_String);
-	
-	DESHI_CMD_START(rename, "Renames a file"){
-		file_rename(args[0], args[1]);
-	}DESHI_CMD_END(rename, CmdArgument_String, CmdArgument_String);
-	
 	DESHI_CMD_START(add, "Adds two numbers together"){
 		//TODO rework this to be 'calc' instead of just 'add'
 		s32 i0 = atoi(temp_str8_cstr(args[0]));
 		s32 i1 = atoi(temp_str8_cstr(args[1]));
 		Log("cmd", i0," + ",i1," = ", i0+i1);
 	}DESHI_CMD_END(add, CmdArgument_S32, CmdArgument_S32);
-	
-	DESHI_CMD_START(daytime, "Logs the time in day-time format"){
-		u8 time_buffer[512];
-		time_t rawtime = time(0);
-		strftime((char*)time_buffer, 512, "%c", localtime(&rawtime));
-		Log("cmd",(const char*)time_buffer);
-	}DESHI_CMD_END_NO_ARGS(daytime);
-	
-	DESHI_CMD_START(list, "Lists available commands"){
-		dstr8 builder;
-		dstr8_init(&builder, {}, deshi_temp_allocator);
-		forE(deshi__cmd_commands){
-			dstr8_append(&builder, it->name);
-			dstr8_append(&builder, str8_lit(": "));
-			dstr8_append(&builder, it->desc);
-			dstr8_append(&builder, str8_lit("\n"));
-		}
-		Log("cmd", (const char*)builder.str);
-	}DESHI_CMD_END_NO_ARGS(list);
-	
-	DESHI_CMD_START(help, "Logs description and usage of specified command"){
-		if(arg_count){
-			b32 found = false;
-			forE(deshi__cmd_commands){
-				if(str8_equal(it->name, args[0])){
-					Log("cmd", (const char*)it->desc.str);
-					Log("cmd", (const char*)it->usage.str);
-					found = true;
-					break;
-				}
-			}
-			if(!found) LogE("cmd", "Command '",args[0],"' not found");
-		}else{
-			Log("cmd", "Use 'help <command>' to get a description and usage of the command");
-			Log("cmd", "Use 'list' to get a list of all available commands");
-			Log("cmd", "Usage Format: command <required> [optional]");
-		}
-	}DESHI_CMD_END(help, CmdArgument_String|CmdArgument_OPTIONAL);
 	
 	DESHI_CMD_START(alias, "Gives an alias to specified command and arguments"){
 		//check that alias' actual won't contain the alias
@@ -303,99 +235,65 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END_NO_ARGS(aliases);
 	
-	DESHI_CMD_START(window_display_mode, "Changes whether the window is in windowed(0), borderless(1), or fullscreen(2) mode"){
-		s32 mode = atoi((const char*)args[0].str);
-		switch(mode){
-			case 0:{
-				window_display_mode(window_active, DisplayMode_Windowed);
-				Log("cmd", "Window display mode updated to 'windowed'");
-			}break;
-			case 1:{
-				window_display_mode(window_active, DisplayMode_Borderless);
-				Log("cmd", "Window display mode updated to 'borderless'");
-			}break;
-			case 2:{
-				window_display_mode(window_active, DisplayMode_BorderlessMaximized);
-				Log("cmd", "Window display mode updated to 'borderless maximized'");
-			}break;
-			case 3:{
-				window_display_mode(window_active, DisplayMode_Fullscreen);
-				Log("cmd", "Window display mode updated to 'fullscreen'");
-			}break;
-			default:{
-				Log("cmd", "Display Modes: 0=Windowed, 1=Borderless, 2=Borderless Maximized, 3=Fullscreen");
-			}break;
-		}
-	}DESHI_CMD_END(window_display_mode, CmdArgument_S32);
+	DESHI_CMD_START(cp, "Copies a file/directory to a new location"){
+		file_copy(args[0], args[1]);
+	}DESHI_CMD_END(cp, CmdArgument_String, CmdArgument_String);
 	
-	DESHI_CMD_START(window_set_title, "Changes the title of the active window"){
-		window_set_title(window_active, args[0]);
-		Log("cmd","Updated active window's title to: ",args[0]);
-	}DESHI_CMD_END(window_set_title, CmdArgument_String);
+	DESHI_CMD_START(daytime, "Logs the time in day-time format"){
+		u8 time_buffer[512];
+		time_t rawtime = time(0);
+		strftime((char*)time_buffer, 512, "%c", localtime(&rawtime));
+		Log("cmd",(const char*)time_buffer);
+	}DESHI_CMD_END_NO_ARGS(daytime);
 	
-	DESHI_CMD_START(window_set_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
-		s32 mode = atoi((const char*)args[0].str);
-		switch(mode){
-			case 0:{
-				window_set_cursor_mode(window_active, CursorMode_Default);
-				Log("cmd", "Cursor mode updated to 'default'");
-			}break;
-			case 1:{
-				window_set_cursor_mode(window_active, CursorMode_FirstPerson);
-				Log("cmd", "Cursor mode updated to 'first person'");
-			}break;
-			default:{
-				Log("cmd", "Cursor Modes: 0=Default, 1=First Person");
-			}break;
+	DESHI_CMD_START(dir, "List the contents of a directory"){
+		FixMe;
+		arrayT<File> files = {};file_search_directory(args[0]);
+		char time_str[1024];
+		if(files.count){
+			Log("cmd","Directory of '",args[0],"':");
+			forE(files){
+				strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->last_write_time));
+				Logf("cmd","%s    %s  %-30s  %lu bytes", time_str,((it->type == FileType_Directory)?"<DIR> ":"<FILE>"),
+					 (const char*)it->name.str,it->bytes);
+			}
 		}
-	}DESHI_CMD_END(window_set_cursor_mode, CmdArgument_S32);
+	}DESHI_CMD_END(dir, CmdArgument_String);
 	
-	DESHI_CMD_START(window_raw_input, "Changes whether the window uses raw input"){
-		LogE("cmd","Raw Input not setup yet");
-		return;
-		
-		s32 mode = atoi((const char*)args[0].str);
-		switch(mode){
-			case 0:{
-				//window_active->UpdateRawInput(false);
-				Log("cmd", "Raw input updated to 'false'");
-			}break;
-			case 1:{
-				//window_active->UpdateRawInput(true);
-				Log("cmd", "Raw input updated to 'true'");
-			}break;
-			default:{
-				Log("cmd", "Raw Input: 0=False, 1=True");
-			}break;
-		}
-	}DESHI_CMD_END(window_raw_input, CmdArgument_S32);
+	DESHI_CMD_START(file_exists, "Checks if a file exists"){
+		Log("cmd","File '",args[0],"' ",(file_exists(args[0])) ? "exists." : "does not exist.");
+	}DESHI_CMD_END(file_exists, CmdArgument_String);
 	
-	DESHI_CMD_START(window_info, "Lists window's vars"){
-		str8 dispMode;
-		switch(window_active->display_mode){
-			case(DisplayMode_Windowed):           { dispMode = str8_lit("Windowed"); }break;
-			case(DisplayMode_Borderless):         { dispMode = str8_lit("Borderless"); }break;
-			case(DisplayMode_BorderlessMaximized):{ dispMode = str8_lit("Borderless Maximized"); }break;
-			case(DisplayMode_Fullscreen):         { dispMode = str8_lit("Fullscreen"); }break;
+	DESHI_CMD_START(help, "Logs description and usage of specified command"){
+		if(arg_count){
+			b32 found = false;
+			forE(deshi__cmd_commands){
+				if(str8_equal(it->name, args[0])){
+					Log("cmd", (const char*)it->desc.str);
+					Log("cmd", (const char*)it->usage.str);
+					found = true;
+					break;
+				}
+			}
+			if(!found) LogE("cmd", "Command '",args[0],"' not found");
+		}else{
+			Log("cmd", "Use 'help <command>' to get a description and usage of the command");
+			Log("cmd", "Use 'list' to get a list of all available commands");
+			Log("cmd", "Usage Format: command <required> [optional]");
 		}
-		str8 cursMode;
-		switch(window_active->cursor_mode){
-			case(CursorMode_Default):    { cursMode = str8_lit("Default"); }break;
-			case(CursorMode_FirstPerson):{ cursMode = str8_lit("First Person"); }break;
+	}DESHI_CMD_END(help, CmdArgument_String|CmdArgument_OPTIONAL);
+	
+	DESHI_CMD_START(list, "Lists available commands"){
+		dstr8 builder;
+		dstr8_init(&builder, {}, deshi_temp_allocator);
+		forE(deshi__cmd_commands){
+			dstr8_append(&builder, it->name);
+			dstr8_append(&builder, str8_lit(": "));
+			dstr8_append(&builder, it->desc);
+			dstr8_append(&builder, str8_lit("\n"));
 		}
-		Log("cmd",
-			"Window Info"
-			"\n    Index:          ",window_active->index,
-			"\n    Title:          ",window_active->title,
-			"\n    Client Pos:     ",window_active->x,",",window_active->y,
-			"\n    Client Dims:    ",window_active->width,"x",window_active->height,
-			"\n    Decorated Pos:  ",window_active->position_decorated.x,",",window_active->position_decorated.y,
-			"\n    Decorated Dims: ",window_active->dimensions_decorated.x,"x",window_active->dimensions_decorated.y,
-			"\n    Display Mode:   ",dispMode,
-			"\n    Cursor Mode:    ",cursMode,
-			"\n    Restore Pos:    ",window_active->restore.x,",",window_active->restore.y,
-			"\n    Restore Dims:   ",window_active->restore.width,"x",window_active->restore.height);
-	}DESHI_CMD_END_NO_ARGS(window_info);
+		Log("cmd", (const char*)builder.str);
+	}DESHI_CMD_END_NO_ARGS(list);
 	
 	DESHI_CMD_START(mat_list, "Lists the materials and their info"){
 		Log("", "Material List:");
@@ -416,34 +314,6 @@ void cmd_init(){
 			}
 		}
 	}DESHI_CMD_END_NO_ARGS(mat_list);
-	
-	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
-		Material* mat = assets_material_get_by_name(args[0]);
-		if(!mat){
-			LogE("cmd","Could not find a material named '", args[0], "'.");
-			return;
-		}
-		
-		if(!mat->texture_array){
-			LogE("cmd","The material '",args[0],"' has no texture slots.");
-			return;
-		}
-		
-		s32 texSlot = atoi(temp_str8_cstr(args[1]));
-		if(texSlot < 0 || texSlot >= array_count(mat->texture_array)){
-			LogE("cmd", "Given texture index '",texSlot,"' is outside of bounds '0..",array_count(mat->texture_array),"'.");
-			return;
-		}
-		
-		Texture* tex = assets_texture_get_by_name(args[2]);
-		if(!tex){
-			LogE("cmd", "Could not find a texture named '", args[2], "'.");
-			return;
-		}
-		
-		mat->texture_array[texSlot] = tex;
-		Log("cmd", "Updated material ",mat->name,"'s texture",texSlot," to ",tex->name);
-	}DESHI_CMD_END(mat_texture, CmdArgument_String, CmdArgument_S32, CmdArgument_String);
 	
 	DESHI_CMD_START(mat_shader, "Changes the shader of a material"){
 		Material* mat = assets_material_get_by_name(args[0]);
@@ -482,15 +352,45 @@ void cmd_init(){
 		graphics_pipeline_update(mat->pipeline);
 	}DESHI_CMD_END(mat_shader, CmdArgument_String, CmdArgument_String);
 	
-	DESHI_CMD_START(shader_reload, "Reloads specified shader"){
-		Shader* shader = assets_shader_get_by_name(args[0]);
-		if(!shader) {
-			LogE("cmd", "Could not find shader with the name '", args[0], "'.");
+	DESHI_CMD_START(mat_texture, "Changes a texture of a material"){
+		Material* mat = assets_material_get_by_name(args[0]);
+		if(!mat){
+			LogE("cmd","Could not find a material named '", args[0], "'.");
 			return;
 		}
 		
-		assets_shader_reload(shader);
-	}DESHI_CMD_END(shader_reload, CmdArgument_String);
+		if(!mat->texture_array){
+			LogE("cmd","The material '",args[0],"' has no texture slots.");
+			return;
+		}
+		
+		s32 texSlot = atoi(temp_str8_cstr(args[1]));
+		if(texSlot < 0 || texSlot >= array_count(mat->texture_array)){
+			LogE("cmd", "Given texture index '",texSlot,"' is outside of bounds '0..",array_count(mat->texture_array),"'.");
+			return;
+		}
+		
+		Texture* tex = assets_texture_get_by_name(args[2]);
+		if(!tex){
+			LogE("cmd", "Could not find a texture named '", args[2], "'.");
+			return;
+		}
+		
+		mat->texture_array[texSlot] = tex;
+		Log("cmd", "Updated material ",mat->name,"'s texture",texSlot," to ",tex->name);
+	}DESHI_CMD_END(mat_texture, CmdArgument_String, CmdArgument_S32, CmdArgument_String);
+	
+	DESHI_CMD_START(quit, "Exits the application"){
+		platform_exit();
+	}DESHI_CMD_END_NO_ARGS(quit);
+	
+	DESHI_CMD_START(rename, "Renames a file"){
+		file_rename(args[0], args[1]);
+	}DESHI_CMD_END(rename, CmdArgument_String, CmdArgument_String);
+	
+	DESHI_CMD_START(rm, "Remove a file"){
+		file_delete(args[0], FileDeleteFlags_File);
+	}DESHI_CMD_END(rm, CmdArgument_String);
 	
 	DESHI_CMD_START(shader_list, "Lists the shaders and their info"){
 		Log("", "Shaders:");
@@ -507,11 +407,23 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END_NO_ARGS(shader_list);
 	
-	DESHI_CMD_START(texture_load, "Loads a specific texture"){
-		Stopwatch load_stopwatch = start_stopwatch();
-		assets_texture_create_from_path_simple(args[0], args[1]);
-		Log("cmd", "Loaded texture '",args[0],"' in ",peek_stopwatch(load_stopwatch),"ms");
-	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_String);
+	DESHI_CMD_START(shader_reload, "Reloads specified shader"){
+		Shader* shader = assets_shader_get_by_name(args[0]);
+		if(!shader) {
+			LogE("cmd", "Could not find shader with the name '", args[0], "'.");
+			return;
+		}
+		
+		assets_shader_reload(shader);
+	}DESHI_CMD_END(shader_reload, CmdArgument_String);
+	
+	DESHI_CMD_START(show_ui_demo, "Toggles the visibility of the UI demo window"){
+		ui_demo();
+	}DESHI_CMD_END_NO_ARGS(show_ui_demo);
+	
+	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window//TODO(sushi) switch to ui2 metrics"){
+		//TODO(sushi) switch to ui2 metrics 
+	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("", "Textures: ");
@@ -528,17 +440,105 @@ void cmd_init(){
 		}
 	}DESHI_CMD_END_NO_ARGS(texture_list);
 	
-	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window//TODO(sushi) switch to ui2 metrics"){
-		//TODO(sushi) switch to ui2 metrics 
-	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
+	DESHI_CMD_START(texture_load, "Loads a specific texture"){
+		Stopwatch load_stopwatch = start_stopwatch();
+		assets_texture_create_from_path_simple(args[0], args[1]);
+		Log("cmd", "Loaded texture '",args[0],"' in ",peek_stopwatch(load_stopwatch),"ms");
+	}DESHI_CMD_END(texture_load, CmdArgument_String, CmdArgument_String);
 	
-	DESHI_CMD_START(show_ui_demo, "Toggles the visibility of the UI demo window"){
-		ui_demo();
-	}DESHI_CMD_END_NO_ARGS(show_ui_demo);
+	DESHI_CMD_START(window_display_mode, "Changes whether the window is in windowed(0), borderless(1), or fullscreen(2) mode"){
+		s32 mode = atoi((const char*)args[0].str);
+		switch(mode){
+			case 0:{
+				window_display_mode(window_active, DisplayMode_Windowed);
+				Log("cmd", "Window display mode updated to 'windowed'");
+			}break;
+			case 1:{
+				window_display_mode(window_active, DisplayMode_Borderless);
+				Log("cmd", "Window display mode updated to 'borderless'");
+			}break;
+			case 2:{
+				window_display_mode(window_active, DisplayMode_BorderlessMaximized);
+				Log("cmd", "Window display mode updated to 'borderless maximized'");
+			}break;
+			case 3:{
+				window_display_mode(window_active, DisplayMode_Fullscreen);
+				Log("cmd", "Window display mode updated to 'fullscreen'");
+			}break;
+			default:{
+				Log("cmd", "Display Modes: 0=Windowed, 1=Borderless, 2=Borderless Maximized, 3=Fullscreen");
+			}break;
+		}
+	}DESHI_CMD_END(window_display_mode, CmdArgument_S32);
 	
-	DESHI_CMD_START(quit, "Exits the application"){
-		platform_exit();
-	}DESHI_CMD_END_NO_ARGS(quit);
+	DESHI_CMD_START(window_info, "Lists window's vars"){
+		str8 dispMode;
+		switch(window_active->display_mode){
+			case(DisplayMode_Windowed):           { dispMode = str8_lit("Windowed"); }break;
+			case(DisplayMode_Borderless):         { dispMode = str8_lit("Borderless"); }break;
+			case(DisplayMode_BorderlessMaximized):{ dispMode = str8_lit("Borderless Maximized"); }break;
+			case(DisplayMode_Fullscreen):         { dispMode = str8_lit("Fullscreen"); }break;
+		}
+		str8 cursMode;
+		switch(window_active->cursor_mode){
+			case(CursorMode_Default):    { cursMode = str8_lit("Default"); }break;
+			case(CursorMode_FirstPerson):{ cursMode = str8_lit("First Person"); }break;
+		}
+		Log("cmd",
+			"Window Info"
+			"\n    Index:          ",window_active->index,
+			"\n    Title:          ",window_active->title,
+			"\n    Client Pos:     ",window_active->x,",",window_active->y,
+			"\n    Client Dims:    ",window_active->width,"x",window_active->height,
+			"\n    Decorated Pos:  ",window_active->position_decorated.x,",",window_active->position_decorated.y,
+			"\n    Decorated Dims: ",window_active->dimensions_decorated.x,"x",window_active->dimensions_decorated.y,
+			"\n    Display Mode:   ",dispMode,
+			"\n    Cursor Mode:    ",cursMode,
+			"\n    Restore Pos:    ",window_active->restore.x,",",window_active->restore.y,
+			"\n    Restore Dims:   ",window_active->restore.width,"x",window_active->restore.height);
+	}DESHI_CMD_END_NO_ARGS(window_info);
+	
+	DESHI_CMD_START(window_raw_input, "Changes whether the window uses raw input"){
+		LogE("cmd","Raw Input not setup yet");
+		return;
+		
+		s32 mode = atoi((const char*)args[0].str);
+		switch(mode){
+			case 0:{
+				//window_active->UpdateRawInput(false);
+				Log("cmd", "Raw input updated to 'false'");
+			}break;
+			case 1:{
+				//window_active->UpdateRawInput(true);
+				Log("cmd", "Raw input updated to 'true'");
+			}break;
+			default:{
+				Log("cmd", "Raw Input: 0=False, 1=True");
+			}break;
+		}
+	}DESHI_CMD_END(window_raw_input, CmdArgument_S32);
+	
+	DESHI_CMD_START(window_set_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
+		s32 mode = atoi((const char*)args[0].str);
+		switch(mode){
+			case 0:{
+				window_set_cursor_mode(window_active, CursorMode_Default);
+				Log("cmd", "Cursor mode updated to 'default'");
+			}break;
+			case 1:{
+				window_set_cursor_mode(window_active, CursorMode_FirstPerson);
+				Log("cmd", "Cursor mode updated to 'first person'");
+			}break;
+			default:{
+				Log("cmd", "Cursor Modes: 0=Default, 1=First Person");
+			}break;
+		}
+	}DESHI_CMD_END(window_set_cursor_mode, CmdArgument_S32);
+	
+	DESHI_CMD_START(window_set_title, "Changes the title of the active window"){
+		window_set_title(window_active, args[0]);
+		Log("cmd","Updated active window's title to: ",args[0]);
+	}DESHI_CMD_END(window_set_title, CmdArgument_String);
 	
 	DeshiStageInitEnd(DS_CMD);
 }
