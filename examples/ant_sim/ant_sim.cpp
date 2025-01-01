@@ -345,67 +345,67 @@ StaticAssert(ArrayCount(AgentSpeciesStrings) == Agent_COUNT);
 
 Need AgentNeedDefinitions[][Need_COUNT] = {
 	/*Agent_BlackGardenAntQueen*/ { //TODO(caj) queen ants
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*bladder*/ {MAX_NEED_VALUE, -0.010f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.010f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.010f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.010f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*sleep  */ {MAX_NEED_VALUE, -0.011f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY}, //90 times per day
+		/*water  */ {MAX_NEED_VALUE, -0.010f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.010f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
 	/*Agent_BlackGardenAntMale*/ { //TODO(caj) male ants
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*bladder*/ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*sleep  */ {MAX_NEED_VALUE, -0.006f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY}, //170 times per day
+		/*water  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
-	/*Agent_BlackGardenAntWorker*/ {
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE}, //NOTE worker ants don't mate
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	/*Agent_BlackGardenAntWorker*/ { //TODO(caj) worker ants
+		/*bladder*/ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY}, //NOTE worker ants don't mate
+		/*sleep  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY}, //250 times per day
+		/*water  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
 	/*Agent_CottonAntQueen*/ { //TODO(caj) queen ants
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*bladder*/ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*sleep  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*water  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
 	/*Agent_CottonAntMale*/ { //TODO(caj) male ants
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+		/*bladder*/ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*sleep  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*water  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
-	/*Agent_CottonAntMinorWorker*/ {
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE}, //NOTE worker ants don't mate
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	/*Agent_CottonAntMinorWorker*/ { //TODO(caj) worker ants
+		/*bladder*/ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY}, //NOTE worker ants don't mate
+		/*sleep  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*water  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
-	/*Agent_CottonAntMajorWorker*/ {
-		/*bladder*/ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*food   */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*health */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*mating */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE}, //NOTE worker ants don't mate
-		/*sleep  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*water  */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
-		/*colony */ {MAX_NEED_VALUE, 0.00f*MAX_NEED_VALUE},
+	/*Agent_CottonAntMajorWorker*/ { //TODO(caj) worker ants
+		/*bladder*/ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*food   */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*health */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*mating */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY}, //NOTE worker ants don't mate
+		/*sleep  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*water  */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
+		/*colony */ {MAX_NEED_VALUE, -0.000f*MAX_NEED_VALUE/TICKS_PER_WORLD_DAY},
 	},
 };
 StaticAssert(ArrayCount(AgentNeedDefinitions[0]) == Need_COUNT);
@@ -565,6 +565,7 @@ f32 score_advert(Agent* agent, Advert* advert){
 		f32 current_score = agent->needs[need_type].value;
 		f32 future_score  = current_score + advert->def->costs[need_type];
 		if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
+		if(future_score < 0) future_score = 0;
 		
 		if(advert->def->costs[need_type] > 0){
 			average += need_attenuation(current_score, future_score);
@@ -1608,6 +1609,7 @@ struct{
 	uiItem* background; // NOTE(sushi) the foreground is a child of the background so that it follows it and always draws over
 	uiItem* foreground;
 	uiItem* info;
+	uiItem* agent_collected_adverts_header;
 }ui;
 
 // returns a boolean indicating if the mouse is actually over the world 
@@ -2088,81 +2090,87 @@ void setup_ui(){
 					};
 				} //// Entity Info ////
 				
-				{ //// Agent Info ////
-					uiItem* agent_race = ui_make_text(STR8("race: ERROR"), 0);
-					agent_race->id = STR8("ant_sim.info.selected_entity.race");
-					agent_race->style.display = display_hidden;
-					agent_race->update_trigger = action_act_always;
-					agent_race->__update = [](uiItem* item){
+				uiItem* agent_info = ui_begin_item(0);{ agent_info->id = STR8("ant_sim.info.selected_entity.agent");
+					agent_info->style.sizing = size_percent_x | size_auto_y;
+					agent_info->style.width = 100/*percent*/;
+					agent_info->style.display = display_hidden;
+					agent_info->update_trigger = action_act_always;
+					agent_info->__update = [](uiItem* item){
 						if(sim.selected_entity && sim.selected_entity->type == Entity_Agent){
 							item->style.display = display_vertical;
-							text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "race: ", AgentStrings[AgentFromEntity(sim.selected_entity)->type]).fin);
 						}else{
 							item->style.display = display_hidden;
 						}
+					};
+					
+					uiItem* agent_race = ui_make_text(STR8("race: ERROR"), 0);
+					agent_race->id = STR8("ant_sim.info.selected_entity.agent.race");
+					agent_race->update_trigger = action_act_always;
+					agent_race->__update = [](uiItem* item){
+						text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "race: ", AgentStrings[AgentFromEntity(sim.selected_entity)->type]).fin);
 					};
 					
 					uiItem* agent_species = ui_make_text(STR8("species: ERROR"), 0);
 					agent_species->id = STR8("ant_sim.info.selected_entity.agent.species");
-					agent_species->style.display = display_hidden;
 					agent_species->update_trigger = action_act_always;
 					agent_species->__update = [](uiItem* item){
-						if(sim.selected_entity && sim.selected_entity->type == Entity_Agent){
+						text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "species: ", AgentSpeciesStrings[AgentFromEntity(sim.selected_entity)->type]).fin);
+					};
+					
+					uiItem* agent_needs = ui_begin_collapsing_header(STR8("Needs"), false, 0);{ agent_needs->id = STR8("ant_sim.info.selected_entity.agent.needs");
+						ui_get_collapsing_header(agent_needs)->content->style.background_color = Color_DarkGrey;
+						forX(need_type, Need_COUNT){
+							uiItem* need_item = ui_make_text(STR8(""), 0);
+							need_item->userVar = (u64)need_type;
+							need_item->style.margin_bottom = 2/*pixels*/;
+							need_item->__update = [](uiItem* item){
+								Agent* agent = AgentFromEntity(sim.selected_entity);
+								NeedType need_type = (NeedType)item->userVar;
+								
+								dstr8 need_text;
+								dstr8_init(&need_text, STR8("["), deshi_temp_allocator);
+								f32 need_percent = (agent->needs[need_type].value / MAX_NEED_VALUE) * 100.0f;
+								u32 need_percent_whole = (u32)need_percent;
+								u32 dash_count = (u32)(need_percent / 10.0f);
+								u32 space_count = 10 - dash_count;
+								forI(dash_count) dstr8_append(&need_text, STR8("-"));
+								forI(space_count) dstr8_append(&need_text, STR8(" "));
+								dstr8_append(&need_text, STR8("] ("));
+								dstr8_append(&need_text, to_dstr8(need_percent_whole, deshi_temp_allocator));
+								dstr8_append(&need_text, STR8("%) "));
+								dstr8_append(&need_text, NeedStrings[need_type]);
+								
+								text_clear_and_replace(&ui_get_text(item)->text, need_text.fin);
+							};
+						}
+					}ui_end_collapsing_header();
+					
+					ui.agent_collected_adverts_header = ui_make_collapsing_header(STR8("Collected Adverts"), false, 0);
+					ui.agent_collected_adverts_header->id = STR8("ant_sim.info.selected_entity.agent.collected_adverts");
+					ui_get_collapsing_header(ui.agent_collected_adverts_header)->content->style.background_color = Color_DarkGrey;
+				}ui_end_item();
+				
+				uiItem* water_info = ui_begin_item(0);{ water_info->id = STR8("ant_sim.info.selected_entity.water");
+					water_info->style.sizing = size_percent_x | size_auto_y;
+					water_info->style.width = 100/*percent*/;
+					water_info->style.display = display_hidden;
+					water_info->update_trigger = action_act_always;
+					water_info->__update = [](uiItem* item){
+						if(sim.selected_entity && sim.selected_entity->type == Entity_Water){
 							item->style.display = display_vertical;
-							text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "species: ", AgentSpeciesStrings[AgentFromEntity(sim.selected_entity)->type]).fin);
 						}else{
 							item->style.display = display_hidden;
 						}
 					};
 					
-					uiItem* agent_needs = ui_make_text(STR8("needs: ERROR"), 0);
-					agent_needs->id = STR8("ant_sim.info.selected_entity.agent.needs");
-					agent_needs->style.display = display_hidden;
-					agent_needs->update_trigger = action_act_always;
-					agent_needs->__update = [](uiItem* item){
-						if(sim.selected_entity && sim.selected_entity->type == Entity_Agent){
-							Agent* agent = AgentFromEntity(sim.selected_entity);
-							
-							dstr8 needs_builder;
-							dstr8_init(&needs_builder, STR8("needs:\n"), deshi_temp_allocator);
-							forX(need_type, Need_COUNT){
-								dstr8_append(&needs_builder, STR8("["));
-								f32 need_percent = (agent->needs[need_type].value / MAX_NEED_VALUE) * 100.0f;
-								u32 need_percent_whole = (u32)need_percent;
-								u32 dash_count = (u32)(need_percent / 10.0f);
-								u32 space_count = 10 - dash_count;
-								forI(dash_count) dstr8_append(&needs_builder, STR8("-"));
-								forI(space_count) dstr8_append(&needs_builder, STR8(" "));
-								dstr8_append(&needs_builder, STR8("] ("));
-								dstr8_append(&needs_builder, to_dstr8(need_percent_whole, deshi_temp_allocator));
-								dstr8_append(&needs_builder, STR8("%) "));
-								dstr8_append(&needs_builder, NeedStrings[need_type]);
-								dstr8_append(&needs_builder, STR8("\n"));
-							}
-							
-							item->style.display = display_vertical;
-							text_clear_and_replace(&ui_get_text(item)->text, dstr8_peek(&needs_builder));
-						}else{
-							item->style.display = display_hidden;
-						}
-					};
-				} //// Agent Info ////
-				
-				{ //// Water Info ////
 					uiItem* water_pressure = ui_make_text(STR8("pressure: ERROR"), 0);
 					water_pressure->id = STR8("ant_sim.info.selected_entity.water.pressure");
-					water_pressure->style.display = display_hidden;
 					water_pressure->update_trigger = action_act_always;
 					water_pressure->__update = [](uiItem* item){
-						if(sim.selected_entity && sim.selected_entity->type == Entity_Water){
-							item->style.display = display_vertical;
-							text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure).fin);
-						}else{
-							item->style.display = display_hidden;
-						}
+						text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "pressure: ", sim.selected_entity->water.pressure).fin);
 					};
-				} //// Water Info ////
-			}ui_end_collapsing_header();
+				}ui_end_item();
+			}ui_end_collapsing_header(/*Selected Entity*/);
 		}ui_end_item();
 	}ui_end_item();
 }
@@ -2187,6 +2195,103 @@ void update_ui(){
 			}
 		}ui_end_item();
 	}ui_end_immediate_branch();
+	
+	ui_begin_immediate_branch(ui_get_collapsing_header(ui.agent_collected_adverts_header)->content);{
+		if(!sim.paused){
+			sim.selected_advert = 0;
+			ui_make_text(STR8("pause simulation to view collected adverts"), 0);
+		}else{
+			Agent* agent = AgentFromEntity(sim.selected_entity);
+			u32 advert_count;
+			Advert** adverts = collect_adverts(agent, &advert_count);
+			
+			for (u32 i = 0; i < advert_count; ++i) {
+				Advert* advert = adverts[i];
+				f32 score = score_advert(agent, advert);
+				
+				uiItem* advert_item = ui_begin_item(0);{
+					advert_item->id = STR8("ant_sim.info.selected_entity.agent.collected_adverts.advert_item");
+					advert_item->style.sizing = size_percent_x | size_auto_y;
+					advert_item->style.width = 100/*percent*/;
+					advert_item->style.margin_bottom = 2/*pixels*/;
+					advert_item->style.padding_left = 1/*pixels*/;
+					advert_item->style.content_align = {0.0,0.5};
+					advert_item->style.background_color = Color_VeryDarkCyan;
+					
+					dstr8 advert_text = to_dstr8v(deshi_temp_allocator, advert->def->name, " ", advert->owner->pos, " Score: ", score);
+					ui_make_text(advert_text.fin, 0)->style.hover_passthrough = true;
+					
+					advert_item->userVar = (u64)advert;
+					advert_item->action_trigger = action_act_mouse_released;
+					advert_item->action = [](uiItem* item){
+						sim.selected_advert = (Advert*)item->userVar;
+					};
+				}ui_end_item();
+			}
+		}
+	}ui_end_immediate_branch();
+	
+	if(sim.selected_advert){
+		ui_begin_immediate_branch(0);
+		uiItem* breakdown = ui_begin_item(0);{ breakdown->id = STR8("ant_sim.advert_breakdown");
+			breakdown->style.sizing = size_auto;
+			breakdown->style.positioning = pos_draggable_fixed;
+			breakdown->style.pos = {100, 100};
+			breakdown->style.padding = {5,5,5,5};
+			breakdown->style.border_style = border_solid;
+			breakdown->style.border_width = 1;
+			breakdown->style.border_color = Color_White;
+			breakdown->style.background_color = Color_DarkGrey;
+			
+			Agent* agent = AgentFromEntity(sim.selected_entity);
+			Advert* advert = sim.selected_advert;
+			
+			ui_make_text(to_dstr8v(deshi_temp_allocator, "Advert Breakdown: ", advert->def->name).fin, 0);
+			
+			f32 total_score = 0;
+			forX(need_type, Need_COUNT){
+				f32 current_score = agent->needs[need_type].value;
+				f32 future_score  = current_score + advert->def->costs[need_type];
+				if(future_score > MAX_NEED_VALUE) future_score = MAX_NEED_VALUE;
+				if(future_score < 0) future_score = 0;
+				
+				f32 need_score;
+				if(advert->def->costs[need_type] > 0){
+					need_score = need_attenuation(current_score, future_score);
+				}else{
+					need_score = g_negative_cost_weight * need_attenuation(current_score, future_score);
+				}
+				total_score += need_score;
+				
+				dstr8 need_text = to_dstr8v(deshi_temp_allocator, NeedStrings[need_type], ": ", need_score);
+				ui_make_text(need_text.fin, 0);
+			}
+			
+			dstr8 total_text = to_dstr8v(deshi_temp_allocator, "Total (before distance): ", total_score / Need_COUNT);
+			ui_make_text(total_text.fin, 0);
+			
+			f32 distance_factor = vec2i_distanceToSq(agent->entity.pos, advert->owner->pos);
+			f32 final_score = (total_score / Need_COUNT) / distance_factor;
+			
+			dstr8 final_text = to_dstr8v(deshi_temp_allocator, "Final Score: ", final_score);
+			ui_make_text(final_text.fin, 0);
+			
+			uiItem* close_button = ui_begin_item(0);{
+				close_button->style.sizing = size_auto;
+				close_button->style.padding = {5,5,5,5};
+				close_button->style.margin_top = 10;
+				close_button->style.background_color = Color_DarkRed;
+				
+				ui_make_text(STR8("Close"), 0)->style.hover_passthrough = true;
+				
+				close_button->action_trigger = action_act_mouse_released;
+				close_button->action = [](uiItem* item){
+					sim.selected_advert = 0;
+				};
+			}ui_end_item();
+		}ui_end_item();
+		ui_end_immediate_branch();
+	}
 	
 	assets_texture_update(rendering.background.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
 	assets_texture_update(rendering.foreground.texture, vec2i{0,0}, vec2i{WORLD_WIDTH,WORLD_HEIGHT});
