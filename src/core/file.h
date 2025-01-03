@@ -556,14 +556,15 @@ deshi__file_read(str8 caller_file, upt caller_line, File* file, void* buffer, u6
 		
 		u64 restore_cursor = file->cursor;
 		if(c == EOF){
+			int error_num = ferror(file->handle);
 			if(feof(file->handle)){
 				clearerr(file->handle);
 				file->cursor = file->bytes;
-			}else if(ferror(file->handle)){
+			}else if(error_num){
 				if(!result){
-					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}else{
-					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"):",strerror(error_num));
 				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
@@ -603,14 +604,15 @@ deshi__file_read_alloc(str8 caller_file, upt caller_line, File* file, u64 bytes,
 		
 		u64 restore_cursor = file->cursor;
 		if(c == EOF){
+			int error_num = ferror(file->handle);
 			if(feof(file->handle)){
 				clearerr(file->handle);
 				file->cursor = file->bytes;
-			}else if(ferror(file->handle)){
+			}else if(error_num){
 				if(!result){
-					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}else{
-					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
@@ -652,14 +654,15 @@ deshi__file_read_line(str8 caller_file, upt caller_line, File* file, void* buffe
 		
 		u64 restore_cursor = file->cursor;
 		if(c == EOF){
+			int error_num = ferror(file->handle);
 			if(feof(file->handle)){
 				clearerr(file->handle);
 				file->cursor = file->bytes;
-			}else if(ferror(file->handle)){
+			}else if(error_num){
 				if(!result){
-					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					LogE("file","fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}else{
-					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
@@ -704,14 +707,15 @@ deshi__file_read_line_alloc(str8 caller_file, upt caller_line, File* file, Alloc
 		
 		u64 restore_cursor = file->cursor;
 		if(c == EOF){
+			int error_num = ferror(file->handle);
 			if(feof(file->handle)){
 				clearerr(file->handle);
 				file->cursor = file->bytes;
-			}else if(ferror(file->handle)){
+			}else if(error_num){
 				if(!result){
-					LogE("file","fgetc() failed in file_read_line_alloc() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					LogE("file","fgetc() failed in file_read_line_alloc() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}else{
-					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,")");
+					SetResultInfoD(FileResult_UnspecifiedError, "fgetc() failed in file_read_line() call on file '",file->path,"(",file->cursor,")' at ",caller_file,"(",caller_line,"): ",strerror(error_num));
 				}
 				fseek(file->handle, file->cursor, SEEK_SET);
 				clearerr(file->handle);
@@ -771,6 +775,7 @@ deshi__file_write_line(str8 caller_file, upt caller_line, File* file, str8 line,
 	if(file->handle){
 		size_t bytes_written = fwrite(line.str, 1,line.count, file->handle);
 		if(fputc('\n', file->handle) != EOF) bytes_written += 1;
+		fflush(file->handle);
 		file->cursor += bytes_written;
 		if(file->cursor > file->bytes) file->bytes = file->cursor;
 		return bytes_written;
@@ -789,8 +794,10 @@ deshi__file_append(str8 caller_file, upt caller_line, File* file, void* data, u6
 	}
 	
 	if(file->handle){
+		fflush(file->handle);
 		fseek(file->handle, file->bytes,  SEEK_SET);
 		size_t bytes_written = fwrite(data, 1,bytes, file->handle);
+		fflush(file->handle);
 		fseek(file->handle, file->cursor, SEEK_SET);
 		file->bytes += bytes_written;
 		return bytes_written;
@@ -809,9 +816,11 @@ deshi__file_append_line(str8 caller_file, upt caller_line, File* file, str8 line
 	}
 	
 	if(file->handle){
+		fflush(file->handle);
 		fseek(file->handle, file->bytes,  SEEK_SET);
 		size_t bytes_written = fwrite(line.str, 1,line.count, file->handle);
 		if(fputc('\n', file->handle) != EOF) bytes_written += 1;
+		fflush(file->handle);
 		fseek(file->handle, file->cursor, SEEK_SET);
 		file->bytes += bytes_written;
 		return bytes_written;
