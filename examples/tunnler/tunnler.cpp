@@ -995,7 +995,6 @@ int main(){
 		}else{
 			menu_update(window);
 		}
-		ui_debug();
 		ui_update(window);
 		graphics_update(window);
 		logger_update();

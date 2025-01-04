@@ -165,8 +165,6 @@ void console_init(){DPZoneScoped;
 		uiStyle* mains = &main->style;
 		main->id = STR8("console.main");
 		mains-> background_color = color(14,14,14);
-		mains->     border_style = border_solid;
-		mains->     border_width = 1;
 		mains->          display = display_flex;
 		mains->           sizing = size_percent;
 		mains->            width = 100;
@@ -206,7 +204,6 @@ void console_init(){DPZoneScoped;
 			inputt->id = STR8("console.inputtext");
 			inputts->sizing = size_percent;
 			inputts->size = {100,100};
-			uiInputText* it = (uiInputText*)inputt;	
 		}ui_end_item();
 	}ui_end_item();
 	
@@ -312,7 +309,7 @@ void console_update(){DPZoneScoped;
 			idx--;
 			if(!idx) break;
 		}
-		console.scroll = (idx?idx+1:0);
+		console.scroll = (idx ? idx + 1 : 0);
 	}
 	
 	//console openness

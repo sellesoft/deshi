@@ -8,29 +8,32 @@ Index:
 @ui_drawcmd
   drawcmd_remove(uiDrawCmd* drawcmd) -> void
   drawcmd_alloc(uiDrawCmd* drawcmd, vec2i counts) -> void
-@ui_item	
-  ui_setup_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void 
-  ui_gen_item(uiItem* item) -> void 
-  ui_make_item(uiStyle* style, str8 file, upt line) -> uiItem* 
-  ui_begin_item(uiStyle* style, str8 file, upt line) -> uiItem* 
-  ui_end_item(str8 file, upt line) -> void 
-  ui_remove_item(uiItem* item, str8 file, upt line) -> void 
+@ui_item
+  ui_setup_item(uiItem* item, uiStyle* style, str8 file, upt line) -> void
+  ui_gen_item(uiItem* item) -> void
+  ui_make_item(uiStyle* style, str8 file, upt line) -> uiItem*
+  ui_begin_item(uiStyle* style, str8 file, upt line) -> uiItem*
+  ui_end_item(str8 file, upt line) -> void
+  ui_remove_item(uiItem* item, str8 file, upt line) -> void
 @ui_context
-  ui_init(MemoryContext* memctx, uiContext* uictx) -> void 
-  ui_find_static_sized_parent(TNode* node, TNode* child) -> TNode* 
-  draw_item_branch(uiItem* item) -> void 
-  eval_item_branch(uiItem* item) -> void 
-  drag_item(uiItem* item) -> void 
-  find_hovered_item(uiItem* item) -> b32 
-  ui_recur(TNode* node) -> pair<vec2,vec2> 
-  ui_update() -> void 
+  ui_init(MemoryContext* memctx, uiContext* uictx) -> void
+  ui_find_static_sized_parent(TNode* node, TNode* child) -> TNode*
+  draw_item_branch(uiItem* item) -> void
+  eval_item_branch(uiItem* item) -> void
+  drag_item(uiItem* item) -> void
+  find_hovered_item(uiItem* item) -> b32
+  ui_recur(TNode* node) -> pair<vec2,vec2>
+  ui_update() -> void
 @ui_debug
-  ui_debug() -> void 
+  ui_toggle_debug_window() -> void
+  ui_update_debug_window() -> void
 @ui_demo
-  ui_demo() -> void 
+  ui_toggle_demo_window() -> void
 */
 
 #define UI_PRINT_DRAWCMD_ALLOCS false
+
+static void ui_update_debug_window();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_helpers
@@ -1493,6 +1496,8 @@ void
 deshi__ui_update(Window* window) {
 	g_ui->updating_window = window;
 	
+	ui_update_debug_window(); //NOTE(delle) do this before setting g_ui.updating
+	
 	pc = {
 #if DESHI_VULKAN
 		{2.0f/window->width, 2.0f/window->height},
@@ -1577,124 +1582,98 @@ deshi__ui_update(Window* window) {
 
 
 struct ui_debug_win_info{
-	b32 init = 0;
-	
-	uiItem* selected_item;
-	
 	b32 selecting_item;
+	uiItem* selected_item;
 	
 	uiItem* internal_info;
 	uiItem* panel0;
 	uiItem* panel1;
-	
 	uiItem* panel1text;
-	
 	uiStyle def_style;
 	
 	b32 internal_info_header = true;
+}ui_dwi;
+
+local uiItem* deshi__ui_debug_window = 0;
+void ui_toggle_debug_window(){
+	if(deshi__ui_debug_window){
+		ui_remove_item(deshi__ui_debug_window);
+		deshi__ui_debug_window = 0;
+		return;
+	}
 	
-}ui_dwi={0};
-
-void ui_debug_callback(uiItem* item){
-}
-
-void ui_debug_panel_callback(uiItem* item){
-}
-
-void ui_debug(){
-	if(!ui_dwi.init){
-		ui_dwi = {0};
+	Font* default_font = assets_font_get_by_name(STR8("baked_gohufont_11_bdf"));
+	if(!default_font){
+		default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
+	}
+	
+	uiStyle def_style{0};
+	def_style.sizing = size_auto;
+	def_style.text_color = Color_White;
+	def_style.text_wrap = text_wrap_none;
+	def_style.font = default_font;
+	def_style.font_height = 11;
+	def_style.background_color = color(14,14,14);
+	def_style.tab_spaces = 4;
+	def_style.border_color = color(188,188,188);
+	def_style.border_width = 1;
+	ui_dwi.def_style = def_style;
+	
+	uiStyle panel_style{0}; panel_style = def_style;
+	panel_style.paddingtl = {3,3};
+	panel_style.paddingbr = {3,3};
+	panel_style.sizing = size_flex | size_percent_y;
+	panel_style.height = 100;
+	panel_style.border_style = border_none;
+	panel_style.border_color = color(188,188,188);
+	panel_style.border_width = 1;
+	panel_style.background_color = color(50,50,50);
+	panel_style.margintl = {2,2};
+	panel_style.marginbr = {2,2};
+	
+	uiStyle* style;
+	deshi__ui_debug_window = ui_begin_item(0);{
+		deshi__ui_debug_window->id = STR8("ui_debug win");
+		deshi__ui_debug_window->style.positioning = pos_draggable_fixed;
+		deshi__ui_debug_window->style.background_color = color(14,14,14);
+		deshi__ui_debug_window->style.border_style = border_solid;
+		deshi__ui_debug_window->style.border_color = color(188,188,188);
+		deshi__ui_debug_window->style.border_width = 1;
+		deshi__ui_debug_window->style.focus = 1;
+		deshi__ui_debug_window->style.size = {500,300};
+		deshi__ui_debug_window->style.display = display_flex | display_horizontal;
+		deshi__ui_debug_window->style.padding = {5,5,5,5};
 		
-		Font* default_font = assets_font_get_by_name(STR8("baked_gohufont_11_bdf"));
-		if(!default_font){
-			default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
-		}
-		
-		uiStyle def_style{0};
-		def_style.sizing = size_auto;
-		def_style.text_color = Color_White;
-		def_style.text_wrap = text_wrap_none;
-		def_style.font = default_font;
-		def_style.font_height = 11;
-		def_style.background_color = color(14,14,14);
-		def_style.tab_spaces = 4;
-		def_style.border_color = color(188,188,188);
-		def_style.border_width = 1;
-		ui_dwi.def_style = def_style;
-		
-		uiStyle panel_style{0}; panel_style = def_style;
-		panel_style.paddingtl = {3,3};
-		panel_style.paddingbr = {3,3};
-		panel_style.sizing = size_flex | size_percent_y;
-		panel_style.height = 100;
-		panel_style.border_style = border_none;
-		panel_style.border_color = color(188,188,188);
-		panel_style.border_width = 1;
-		panel_style.background_color = color(50,50,50);
-		panel_style.margintl = {2,2};
-		panel_style.marginbr = {2,2};
-		
-		uiStyle itemlist_style{0}; itemlist_style = def_style;
-		itemlist_style.paddingtl = {2,2};
-		itemlist_style.paddingbr = {2,2};
-		itemlist_style.min_height = 100;
-		itemlist_style.sizing = size_percent_x;
-		itemlist_style.width = 100;
-		
-		uiStyle* style;
-		{uiItem* window = ui_begin_item(0);
-			window->id = STR8("ui_debug win");
-			window->action = &ui_debug_callback;
-			window->action_trigger = action_act_always;
-			style = &window->style;
-			style->positioning = pos_draggable_fixed;
-			style->background_color = color(14,14,14);
-			style->border_style = border_solid;
-			style->border_color = color(188,188,188);
-			style->border_width = 1;
-			style->focus = 1;
-			style->size = {500,300};
-			style->display = display_flex | display_horizontal;
-			style->padding = {5,5,5,5};
+		ui_dwi.panel0 = ui_begin_item(&panel_style);{ //selected information
+			ui_dwi.panel0->id = STR8("ui_debug win panel0");
+			ui_dwi.panel0->style.width = 1;
+			ui_dwi.panel0->style.margin_right = 1;
+			ui_dwi.panel0->style.hover_passthrough = true;
 			
-			{uiItem* panel = ui_begin_item(&panel_style); //selected information
-				panel->id = STR8("ui_debug win panel0");
-				panel->action = &ui_debug_panel_callback;
-				panel->action_trigger = action_act_always;
-				panel->style.width = 1;
-				panel->style.margin_right = 1;
-				panel->style.hover_passthrough = true;
-				
-				{ui_dwi.internal_info = ui_begin_item(0); 
-					ui_dwi.internal_info->style = def_style;
-					ui_dwi.internal_info->id = STR8("ui_debug internal info");
-					ui_dwi.internal_info->style.sizing = size_percent_x;
-					ui_dwi.internal_info->style.width = 100;
-					ui_dwi.internal_info->style.height = 100;
-					ui_dwi.internal_info->style.background_color = color(14,14,14);
-					ui_dwi.internal_info->style.content_align = {0.5, 0.5};
-					ui_dwi.internal_info->style.hover_passthrough = true;
-					
-					ui_end_item();
-				}
-				
-				ui_dwi.panel0 = panel;
+			ui_dwi.internal_info = ui_begin_item(0);{
+				ui_dwi.internal_info->style = def_style;
+				ui_dwi.internal_info->id = STR8("ui_debug internal info");
+				ui_dwi.internal_info->style.sizing = size_percent_x;
+				ui_dwi.internal_info->style.width = 100;
+				ui_dwi.internal_info->style.height = 100;
+				ui_dwi.internal_info->style.background_color = color(14,14,14);
+				ui_dwi.internal_info->style.content_align = {0.5, 0.5};
+				ui_dwi.internal_info->style.hover_passthrough = true;
 			}ui_end_item();
-			
-			{uiItem* panel = ui_begin_item(&panel_style);
-				panel->id = STR8("ui_debug win panel1");
-				panel->action = &ui_debug_panel_callback;
-				panel->action_trigger = action_act_always;
-				panel->style.width = 0.5;
-				panel->style.hover_passthrough = true;
-				
-				ui_dwi.panel1text = ui_make_text(str8l("stats"), 0);
-				
-				ui_end_item();
-				ui_dwi.panel1 = panel;
-			}
 		}ui_end_item();
-		ui_dwi.init = 1;
+		
+		ui_dwi.panel1 = ui_begin_item(&panel_style);{
+			ui_dwi.panel1->id = STR8("ui_debug win panel1");
+			ui_dwi.panel1->style.width = 0.5;
+			ui_dwi.panel1->style.hover_passthrough = true;
+			ui_dwi.panel1text = ui_make_text(str8l("stats"), 0);
+		}ui_end_item();
+	}ui_end_item();
+}
+
+static void ui_update_debug_window(){
+	if(!deshi__ui_debug_window){
+		return;
 	}
 	
 	ui_begin_immediate_branch(ui_dwi.panel0);{//make internal info header
@@ -1718,7 +1697,6 @@ void ui_debug(){
 		if(ui_dwi.internal_info_header){
 			{uiItem* cont = ui_begin_item(&ui_dwi.def_style);
 				cont->id = STR8("header cont");
-				
 				cont->style.sizing = size_percent_x;
 				cont->style.width = 100;
 				cont->style.height = 100;
@@ -1726,14 +1704,12 @@ void ui_debug(){
 				if(ui_dwi.selected_item){
 					
 				}else if(ui_dwi.selecting_item){
-					
 					ui_dwi.internal_info->style.content_align = {0.5,0.5};
 					ui_make_text(str8l("selecting item..."), 0);
 					
 					if(g_ui->hovered && input_lmouse_pressed()){
 						ui_dwi.selected_item = g_ui->hovered;
 					}
-					
 				}else{
 					{uiItem* item = ui_begin_item(0);
 						item->id = STR8("button");
@@ -1754,10 +1730,7 @@ void ui_debug(){
 						uiItem* sel = g_ui->active;
 						uiText* text = 0;
 						if(sel->memsize == sizeof(uiText)) text = ui_get_text(sel);
-						ui_make_text(to_dstr8v(deshi_temp_allocator,
-											   sel->id,"\n",
-											   sel->node.child_count
-											   ).fin, 0);
+						ui_make_text(to_dstr8v(deshi_temp_allocator, sel->id,"\n", sel->node.child_count).fin, 0);
 						if(text){
 							ui_make_text(text->text.buffer.fin, 0);
 						}
@@ -1792,7 +1765,7 @@ void ui_debug(){
 						"	 indices: ", g_ui->stats.indices_reserved, "\n",
 						"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
 						);
-	defer{dstr8_deinit(&t);};
+	defer{ dstr8_deinit(&t); };
 	text_clear_and_replace(&ui_get_text(ui_dwi.panel1text)->text, t.fin);
 	ui_dwi.panel1text->dirty = 1;
 	
@@ -1816,7 +1789,7 @@ void ui_debug(){
 
 
 local uiItem* deshi__ui_demo_window = 0;
-void ui_demo(){
+void ui_toggle_demo_window(){
 	if(deshi__ui_demo_window){
 		ui_remove_item(deshi__ui_demo_window);
 		deshi__ui_demo_window = 0;

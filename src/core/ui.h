@@ -1159,10 +1159,10 @@ global Allocator* deshi_ui_allocator = &_deshi_ui_allocator;
 
 // Creates a window containing information and tools for debugging ui
 // Very far from finished. 
-void ui_debug();
+void ui_toggle_debug_window();
 
 //Creates the demo window (or destroys if already created)
-void ui_demo();
+void ui_toggle_demo_window();
 
 void ui_print_tree(void (*info)(dstr8*,uiItem*));
 

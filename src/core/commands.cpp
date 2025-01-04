@@ -418,12 +418,12 @@ void cmd_init(){
 	}DESHI_CMD_END(shader_reload, CmdArgument_String);
 	
 	DESHI_CMD_START(show_ui_demo, "Toggles the visibility of the UI demo window"){
-		ui_demo();
+		ui_toggle_demo_window();
 	}DESHI_CMD_END_NO_ARGS(show_ui_demo);
 	
-	DESHI_CMD_START(show_ui_metrics, "Toggles the visibility of the UI metrics window//TODO(sushi) switch to ui2 metrics"){
-		//TODO(sushi) switch to ui2 metrics 
-	}DESHI_CMD_END_NO_ARGS(show_ui_metrics);
+	DESHI_CMD_START(show_ui_debug, "Toggles the visibility of the UI debug window"){
+		ui_toggle_debug_window();
+	}DESHI_CMD_END_NO_ARGS(show_ui_debug);
 	
 	DESHI_CMD_START(texture_list, "Lists the textures and their info"){
 		Log("", "Textures: ");
