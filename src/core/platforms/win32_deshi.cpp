@@ -185,102 +185,68 @@ win32_enable_cursor(Window* window){
 LRESULT CALLBACK
 win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneScoped;
 	Window* window = (Window*)::GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+	if(window == 0){ //ignore non-deshi windows
+		return ::DefWindowProcW(hwnd, msg, wParam, lParam);
+	}
+	
 	switch(msg){
 		case WM_SIZE:{ ////////////////////////////////////////////////////////////// Window Resized
-			if(window){
-				window->dimensions.x = LOWORD(lParam);
-				window->dimensions.y = HIWORD(lParam);// - window->titlebar_height;
-				window->dimensions_decorated.x = LOWORD(lParam);
-				window->dimensions_decorated.y = HIWORD(lParam);
-				window->center    = vec2i{(s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2};
-				window->minimized = (wParam == SIZE_MINIMIZED);
-				window->resized   = true;
-			}else{ Assert(!"WM_SIZE passed to win32 HWND that does not have matching deshi Window"); }
+			window->dimensions.x = LOWORD(lParam);
+			window->dimensions.y = HIWORD(lParam);// - window->titlebar_height;
+			window->dimensions_decorated.x = LOWORD(lParam);
+			window->dimensions_decorated.y = HIWORD(lParam);
+			window->center    = vec2i{(s32)LOWORD(lParam)/2, (s32)HIWORD(lParam)/2};
+			window->minimized = (wParam == SIZE_MINIMIZED);
+			window->resized   = true;
 		}break;
 		
 		case WM_MOVE:{ ////////////////////////////////////////////////////////////// Window Moved
-			if(window){
-				window->x = LOWORD(lParam);
-				window->y = HIWORD(lParam);
-				
-				RECT rect;
-				::GetWindowRect((HWND)window->handle, &rect);
-				window->position_decorated.x = rect.left;
-				window->position_decorated.y = rect.top;
-				window->dimensions_decorated.x = rect.right  - rect.left;
-				window->dimensions_decorated.y = rect.bottom - rect.top;
-			}else{ Assert(!"WM_MOVE passed to win32 HWND that does not have matching deshi Window"); }
+			window->x = LOWORD(lParam);
+			window->y = HIWORD(lParam);
+			
+			RECT rect;
+			::GetWindowRect((HWND)window->handle, &rect);
+			window->position_decorated.x = rect.left;
+			window->position_decorated.y = rect.top;
+			window->dimensions_decorated.x = rect.right  - rect.left;
+			window->dimensions_decorated.y = rect.bottom - rect.top;
 		}break;
 		
 		case WM_CLOSE:{ ///////////////////////////////////////////////////////////// Close Window (signal to destroy window)
-			if(window){
-				window->close_window += 1;
-				if(platform_fast_exit || window->close_window > 1){
-					::DestroyWindow(hwnd);
-				}else{
-					return 0;
-				}
-			}else{ Assert(!"WM_CLOSE passed to win32 HWND that does not have matching deshi Window"); }
+			window->close_window += 1;
+			if(platform_fast_exit || window->close_window > 1){
+				::DestroyWindow(hwnd);
+			}else{
+				return 0;
+			}
 		}break;
 		
 		case WM_DESTROY:{ /////////////////////////////////////////////////////////// Destroy Window
-			if(window){
-				Assert(window != &window_helper, "WM_DESTROY should not be called on helper_window");
-				
-				forI(window_windows.count){
-					if(window == window_windows[i]){
-						memory_zfree(window);
-						window_windows.remove_unordered(i);
-						if(window_windows.count){
-							window_windows[i]->index = i;
-							break;
-						}else{
-							return 0;
-						}
+			Assert(window != &window_helper, "WM_DESTROY should not be called on helper_window");
+			
+			forI(window_windows.count){
+				if(window == window_windows[i]){
+					memory_zfree(window);
+					window_windows.remove_unordered(i);
+					if(window_windows.count){
+						window_windows[i]->index = i;
+						break;
+					}else{
+						return 0;
 					}
 				}
-			}else{ Assert(!"WM_DESTROY passed to win32 HWND that does not have matching deshi Window"); }
+			}
 		}break;
 		
-		/*
-		case WM_NCHITTEST:{ ///////////////////////////////////////////////////////// Window Decoration Clicked
-			if(window){
-			s32  xPos = GET_X_LPARAM(lParam);
-			s32  yPos = GET_Y_LPARAM(lParam);
-			s32  x = window->x, y = window->y;
-			s32  width = window->width, height = window->height;
-			s32  cx = window->cx, cy = window->cy;
-			s32  cwidth = window->cwidth, cheight = window->cheight;
-			s32  tbh = window->titlebarheight;
-			s32  bt = window->borderthickness;
-			vec2 mp = input_mouse_position() + vec2(bt, tbh+bt*2);
-			u32  decor = window->decorations;
-			b32  hitset = 0;
-			if(Math::PointInRectangle(mp, vec2(cx, cy),                  vec2(cwidth, cheight)))                   return HTCLIENT;
-			if(Math::PointInRectangle(mp, vec2(bt, bt),                  vec2(width - 2*bt, window->titlebarheight))) return HTCAPTION;
-			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, bt)))                            return HTTOPLEFT;
-			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(bt, bt)))                            return HTBOTTOMLEFT;
-			if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, bt)))                            return HTTOPRIGHT;
-			if(Math::PointInRectangle(mp, vec2(width - bt, height - bt), vec2(bt, bt)))                            return HTBOTTOMRIGHT;
-			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(width, bt)))                         return HTTOP;
-			if(Math::PointInRectangle(mp, vec2(0, height - bt),          vec2(width, bt)))                         return HTBOTTOM;
-			if(Math::PointInRectangle(mp, vec2::ZERO,                    vec2(bt, height)))                        return HTLEFT;
-				if(Math::PointInRectangle(mp, vec2(width - bt, 0),           vec2(bt, height)))                        return HTRIGHT;
-			}else{ Assert(!"WM_NCHITTEST passed to win32 HWND that does not have matching deshi Window"); }
-		}
-		*/
-		
 		case WM_MOUSEMOVE:{ ///////////////////////////////////////////////////////// Mouse Moved
-			if(window){
-				const s32 xPos = GET_X_LPARAM(lParam);
-				const s32 yPos = GET_Y_LPARAM(lParam);
-				DeshInput->realMouseX = xPos;// - f64(window->borderthickness);
-				DeshInput->realMouseY = yPos;// - f64(window->titlebarheight + window->titlebarheight);
-				POINT p = { xPos, yPos };
-				::ClientToScreen((HWND)window->handle, &p);
-				DeshInput->realScreenMouseX = p.x;
-				DeshInput->realScreenMouseY = p.y;
-			}else{ Assert(!"WM_NCHITTEST passed to win32 HWND that does not have matching deshi Window"); }
+			const s32 xPos = GET_X_LPARAM(lParam);
+			const s32 yPos = GET_Y_LPARAM(lParam);
+			DeshInput->realMouseX = xPos;
+			DeshInput->realMouseY = yPos;
+			POINT p = { xPos, yPos };
+			::ClientToScreen((HWND)window->handle, &p);
+			DeshInput->realScreenMouseX = p.x;
+			DeshInput->realScreenMouseY = p.y;
 		}break;
 		
 		case WM_MOUSEWHEEL:{ //////////////////////////////////////////////////////// Mouse Scrolled
@@ -294,15 +260,15 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 		}break;
 		
 		///////////////////////////////////////////////////////////////////////////// Mouse Button Down
-		case WM_LBUTTONDOWN:{ DeshInput->realKeyState[Mouse_LEFT]   = true;  if(window) ::SetCapture((HWND)window->handle); }break;
-		case WM_RBUTTONDOWN:{ DeshInput->realKeyState[Mouse_RIGHT]  = true;  if(window) ::SetCapture((HWND)window->handle); }break;
-		case WM_MBUTTONDOWN:{ DeshInput->realKeyState[Mouse_MIDDLE] = true;  if(window) ::SetCapture((HWND)window->handle); }break;
+		case WM_LBUTTONDOWN:{ DeshInput->realKeyState[Mouse_LEFT]   = true; ::SetCapture((HWND)window->handle); }break;
+		case WM_RBUTTONDOWN:{ DeshInput->realKeyState[Mouse_RIGHT]  = true; ::SetCapture((HWND)window->handle); }break;
+		case WM_MBUTTONDOWN:{ DeshInput->realKeyState[Mouse_MIDDLE] = true; ::SetCapture((HWND)window->handle); }break;
 		case WM_XBUTTONDOWN:{ DeshInput->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Mouse_4 : Mouse_5)] = true; return true; }break;
 		
 		///////////////////////////////////////////////////////////////////////////// Mouse Button Up
-		case WM_LBUTTONUP:  { DeshInput->realKeyState[Mouse_LEFT]   = false; if(window) ::ReleaseCapture(); }break;
-		case WM_RBUTTONUP:  { DeshInput->realKeyState[Mouse_RIGHT]  = false; if(window) ::ReleaseCapture(); }break;
-		case WM_MBUTTONUP:  { DeshInput->realKeyState[Mouse_MIDDLE] = false; if(window) ::ReleaseCapture(); }break;
+		case WM_LBUTTONUP:  { DeshInput->realKeyState[Mouse_LEFT]   = false; ::ReleaseCapture(); }break;
+		case WM_RBUTTONUP:  { DeshInput->realKeyState[Mouse_RIGHT]  = false; ::ReleaseCapture(); }break;
+		case WM_MBUTTONUP:  { DeshInput->realKeyState[Mouse_MIDDLE] = false; ::ReleaseCapture(); }break;
 		case WM_XBUTTONUP:  { DeshInput->realKeyState[(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? Mouse_4 : Mouse_5)] = false; return true; }break;
 		
 		///////////////////////////////////////////////////////////////////////////// Key Down/Up
@@ -349,14 +315,14 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 				if(DeshInput->realKeyState[Key_LALT])   dstr8_append(&s, str8l(" + LALT"));
 				if(DeshInput->realKeyState[Key_RALT])   dstr8_append(&s, str8l(" + RALT"));
 				Log("input", dstr8_peek(&s)); 
-#endif
+#endif //#if LOG_INPUTS
 			}
 		}break;
 		
 		case WM_CHAR:{ ////////////////////////////////////////////////////////////// Char From Key (UTF-16)
 #ifndef DESHI_ALLOW_CHARINPUT_CONTROLCHARS
 			if(iswcntrl(LOWORD(wParam))) break; //NOTE skip control characters
-#endif
+#endif //#ifndef DESHI_ALLOW_CHARINPUT_CONTROLCHARS
 			//!ref: https://github.com/cmuratori/refterm/blob/main/refterm_example_terminal.c@ProcessMessages()
 			persist wchar_t inputPrevChar; //used for UTF-16 surrogate pairs
 			wchar_t wch = (wchar_t)wParam;
@@ -390,74 +356,60 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 		}break;
 		
 		case WM_ACTIVATE:{ ////////////////////////////////////////////////////////// Activated/Deactivated
-			if(window){
-				if(wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE){
-					window->focused = true;
-					
-					if(window->cursor_mode == CursorMode_FirstPerson){
-						win32_disable_cursor(window);
-					}
-				}else{
-					window->focused = false;
-					
-					//::SetCursor(::LoadCursorW(0, IDC_ARROW));
-					//::ClipCursor(0);
+			if(wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE){
+				window->focused = true;
+				if(window->cursor_mode == CursorMode_FirstPerson){
+					win32_disable_cursor(window);
 				}
-			}else{ Assert(!"WM_ACTIVATE passed to win32 HWND that does not have matching deshi Window"); }
+			}else{
+				window->focused = false;
+			}
 		}break;
 		
 		case WM_MOUSEACTIVATE:{ ///////////////////////////////////////////////////// Activated Thru Mouse
-			if(window){
-				//postpone cursor disabling when the window is activated by clicking decorations
-				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
-				if(HIWORD(lParam) == WM_LBUTTONDOWN && LOWORD(lParam) != HTCLIENT){
-					win32_delayed_activate = true;
-				}
-			}else{ Assert(!"WM_MOUSEACTIVATE passed to win32 HWND that does not have matching deshi Window"); }
+			//postpone cursor disabling when the window is activated by clicking decorations
+			//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+			if(HIWORD(lParam) == WM_LBUTTONDOWN && LOWORD(lParam) != HTCLIENT){
+				win32_delayed_activate = true;
+			}
 		}break;
 		
 		case WM_CAPTURECHANGED:{ //////////////////////////////////////////////////// Lost Mouse Capture
-			if(window){
-				//now we can disable the cursor
-				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
-				if(lParam == 0 && win32_delayed_activate){
-					if(window->cursor_mode == CursorMode_FirstPerson){
-						win32_disable_cursor(window);
-					}
-					
-					win32_delayed_activate = false;
-				}
-			}else{ Assert(!"WM_MOUSEACTIVATE passed to win32 HWND that does not have matching deshi Window"); }
-		}break;
-		
-		case WM_SETFOCUS:{ ////////////////////////////////////////////////////////// Gained Keyboard Focus
-			if(window){
-				//postpone cursor disabling when the window is clicking down on decorations
-				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
-				window->focused = true;
-				
-				if(win32_delayed_activate){
-					break;
-				}
-				
+			//now we can disable the cursor
+			//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+			if(lParam == 0 && win32_delayed_activate){
 				if(window->cursor_mode == CursorMode_FirstPerson){
 					win32_disable_cursor(window);
 				}
 				
-				return 0;
-			}else{ Assert(!"WM_SETFOCUS passed to win32 HWND that does not have matching deshi Window"); }
+				win32_delayed_activate = false;
+			}
+		}break;
+		
+		case WM_SETFOCUS:{ ////////////////////////////////////////////////////////// Gained Keyboard Focus
+			//postpone cursor disabling when the window is clicking down on decorations
+			//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+			window->focused = true;
+			
+			if(win32_delayed_activate){
+				break;
+			}
+			
+			if(window->cursor_mode == CursorMode_FirstPerson){
+				win32_disable_cursor(window);
+			}
+			
+			return 0;
 		}break;
 		
 		case WM_KILLFOCUS:{ ////////////////////////////////////////////////////////// Lost Keyboard Focus
-			if(window){
-				//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
-				if(window->cursor_mode == CursorMode_FirstPerson){
-					win32_enable_cursor(window);
-				}
-				
-				window->focused = false;
-				return 0;
-			}else{ Assert(!"WM_SETFOCUS passed to win32 HWND that does not have matching deshi Window"); }
+			//!ref: https://github.com/glfw/glfw/blob/master/src/win32_window.c
+			if(window->cursor_mode == CursorMode_FirstPerson){
+				win32_enable_cursor(window);
+			}
+			
+			window->focused = false;
+			return 0;
 		}break;
 		
 		case WM_ENTERSIZEMOVE:  ///////////////////////////////////////////////////// Start Moving/Resizing
@@ -485,7 +437,7 @@ win32_window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){DPZoneS
 		}break;
 	}
 	
-	if(window && ::GetForegroundWindow() == (HWND)window->handle){
+	if(::GetForegroundWindow() == (HWND)window->handle){
 		window_active = window;
 	}
 	return ::DefWindowProcW(hwnd, msg, wParam, lParam);
