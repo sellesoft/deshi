@@ -26,14 +26,12 @@ Index:
   ui_update() -> void
 @ui_debug
   ui_toggle_debug_window() -> void
-  ui_update_debug_window() -> void
 @ui_demo
   ui_toggle_demo_window() -> void
 */
 
 #define UI_PRINT_DRAWCMD_ALLOCS false
 
-static void ui_update_debug_window();
 
 //-////////////////////////////////////////////////////////////////////////////////////////////////
 // @ui_helpers
@@ -1496,8 +1494,6 @@ void
 deshi__ui_update(Window* window) {
 	g_ui->updating_window = window;
 	
-	ui_update_debug_window(); //NOTE(delle) do this before setting g_ui.updating
-	
 	pc = {
 #if DESHI_VULKAN
 		{2.0f/window->width, 2.0f/window->height},
@@ -1581,24 +1577,16 @@ deshi__ui_update(Window* window) {
 // @ui_debug
 
 
-struct ui_debug_win_info{
-	b32 selecting_item;
-	uiItem* selected_item;
-	
-	uiItem* internal_info;
-	uiItem* panel0;
-	uiItem* panel1;
-	uiItem* panel1text;
-	uiStyle def_style;
-	
-	b32 internal_info_header = true;
-}ui_dwi;
-
 local uiItem* deshi__ui_debug_window = 0;
 void ui_toggle_debug_window(){
+	persist b32 selecting_item = false;
+	persist uiItem* selected_item = 0;
+	
 	if(deshi__ui_debug_window){
 		ui_remove_item(deshi__ui_debug_window);
 		deshi__ui_debug_window = 0;
+		selecting_item = false;
+		selected_item = 0;
 		return;
 	}
 	
@@ -1607,180 +1595,296 @@ void ui_toggle_debug_window(){
 		default_font = assets_font_create_from_memory_bdf(baked_font_gohufont_11_bdf.str, baked_font_gohufont_11_bdf.count, STR8("baked_gohufont_11_bdf"));
 	}
 	
-	uiStyle def_style{0};
-	def_style.sizing = size_auto;
-	def_style.text_color = Color_White;
-	def_style.text_wrap = text_wrap_none;
-	def_style.font = default_font;
-	def_style.font_height = 11;
-	def_style.background_color = color(14,14,14);
-	def_style.tab_spaces = 4;
-	def_style.border_color = color(188,188,188);
-	def_style.border_width = 1;
-	ui_dwi.def_style = def_style;
-	
-	uiStyle panel_style{0}; panel_style = def_style;
-	panel_style.paddingtl = {3,3};
-	panel_style.paddingbr = {3,3};
-	panel_style.sizing = size_flex | size_percent_y;
-	panel_style.height = 100;
-	panel_style.border_style = border_none;
-	panel_style.border_color = color(188,188,188);
-	panel_style.border_width = 1;
-	panel_style.background_color = color(50,50,50);
-	panel_style.margintl = {2,2};
-	panel_style.marginbr = {2,2};
-	
 	uiStyle* style;
 	deshi__ui_debug_window = ui_begin_item(0);{
-		deshi__ui_debug_window->id = STR8("ui_debug win");
+		deshi__ui_debug_window->id = STR8("ui_debug.window");
+		deshi__ui_debug_window->style.display = display_flex | display_horizontal;
 		deshi__ui_debug_window->style.positioning = pos_draggable_fixed;
+		deshi__ui_debug_window->style.pos = {0.0, (f32)g_window->height / 2.0f - 2.0f}/*pixels*/;
+		deshi__ui_debug_window->style.size = {(f32)g_window->width / 2.0f, (f32)g_window->height / 2.0f}/*pixels*/;
+		deshi__ui_debug_window->style.padding = {5,5,5,5}/*pixels*/;
 		deshi__ui_debug_window->style.background_color = color(14,14,14);
 		deshi__ui_debug_window->style.border_style = border_solid;
 		deshi__ui_debug_window->style.border_color = color(188,188,188);
-		deshi__ui_debug_window->style.border_width = 1;
+		deshi__ui_debug_window->style.border_width = 1/*pixels*/;
+		deshi__ui_debug_window->style.text_color = Color_White;
+		deshi__ui_debug_window->style.font = default_font;
+		deshi__ui_debug_window->style.font_height = 11/*pixels*/;
+		deshi__ui_debug_window->style.tab_spaces = 4;
 		deshi__ui_debug_window->style.focus = 1;
-		deshi__ui_debug_window->style.size = {500,300};
-		deshi__ui_debug_window->style.display = display_flex | display_horizontal;
-		deshi__ui_debug_window->style.padding = {5,5,5,5};
 		
-		ui_dwi.panel0 = ui_begin_item(&panel_style);{ //selected information
-			ui_dwi.panel0->id = STR8("ui_debug win panel0");
-			ui_dwi.panel0->style.width = 1;
-			ui_dwi.panel0->style.margin_right = 1;
-			ui_dwi.panel0->style.hover_passthrough = true;
+		{uiItem* left_panel = ui_begin_item(0);
+			left_panel->id = STR8("ui_debug.window.left_panel");
+			left_panel->style.sizing = size_flex | size_percent_y;
+			left_panel->style.width = 1/*ratio*/;
+			left_panel->style.height = 100/*percent*/;
+			left_panel->style.margin_right = 1/*pixels*/;
+			left_panel->style.padding = {2,2,2,2}/*pixels*/;
+			left_panel->style.background_color = color(50,50,50);
 			
-			ui_dwi.internal_info = ui_begin_item(0);{
-				ui_dwi.internal_info->style = def_style;
-				ui_dwi.internal_info->id = STR8("ui_debug internal info");
-				ui_dwi.internal_info->style.sizing = size_percent_x;
-				ui_dwi.internal_info->style.width = 100;
-				ui_dwi.internal_info->style.height = 100;
-				ui_dwi.internal_info->style.background_color = color(14,14,14);
-				ui_dwi.internal_info->style.content_align = {0.5, 0.5};
-				ui_dwi.internal_info->style.hover_passthrough = true;
-			}ui_end_item();
+			uiItem* selected_text = ui_make_text(str8l("No item selected."), 0);
+			selected_text->action_trigger = action_act_always;
+			selected_text->action = [](uiItem* item){
+				if(selecting_item){
+					text_clear_and_replace(&ui_get_text(item)->text, STR8("Selecting item..."));
+				}else if(selected_item == 0){
+					text_clear_and_replace(&ui_get_text(item)->text, STR8("No item selected."));
+				}else{
+					dstr8 builder;
+					dstr8_init(&builder, {}, deshi_temp_allocator);
+					
+					//basic info section
+					dstr8_append(&builder, "ID: ", selected_item->id, "\n");
+					dstr8_append(&builder, "Created at: ", selected_item->file_created, ":", selected_item->line_created, "\n");
+					dstr8_append(&builder, "Memory size: ", selected_item->memsize, " bytes\n");
+					dstr8_append(&builder, "Child count: ", selected_item->node.child_count, "\n\n");
+					
+					//position and size section
+					dstr8_append(&builder, "Position (local): (", selected_item->pos_local.x, ", ", selected_item->pos_local.y, ")\n");
+					dstr8_append(&builder, "Position (screen): (", selected_item->pos_screen.x, ", ", selected_item->pos_screen.y, ")\n");
+					dstr8_append(&builder, "Size: (", selected_item->width, ", ", selected_item->height, ")\n");
+					dstr8_append(&builder, "Scale: (", selected_item->scale.x, ", ", selected_item->scale.y, ")\n\n");
+					
+					//style section
+					dstr8_append(&builder, "Positioning: ");
+					switch(selected_item->style.positioning){
+						case pos_static:             dstr8_append(&builder, "static"); break;
+						case pos_relative:           dstr8_append(&builder, "relative"); break;
+						case pos_absolute:           dstr8_append(&builder, "absolute"); break;
+						case pos_fixed:              dstr8_append(&builder, "fixed"); break;
+						case pos_sticky:             dstr8_append(&builder, "sticky"); break;
+						case pos_draggable_relative: dstr8_append(&builder, "draggable_relative"); break;
+						case pos_draggable_absolute: dstr8_append(&builder, "draggable_absolute"); break;
+						case pos_draggable_fixed:    dstr8_append(&builder, "draggable_fixed"); break;
+						default:                     dstr8_append(&builder, "unknown"); break;
+					}
+					dstr8_append(&builder, "\n");
+					
+					dstr8_append(&builder, "Sizing: ");
+					if(HasFlag(selected_item->style.sizing, size_auto_x)) dstr8_append(&builder, "auto_x ");
+					if(HasFlag(selected_item->style.sizing, size_auto_y)) dstr8_append(&builder, "auto_y ");
+					if(HasFlag(selected_item->style.sizing, size_percent_x)) dstr8_append(&builder, "percent_x ");
+					if(HasFlag(selected_item->style.sizing, size_percent_y)) dstr8_append(&builder, "percent_y ");
+					if(HasFlag(selected_item->style.sizing, size_square)) dstr8_append(&builder, "square ");
+					if(HasFlag(selected_item->style.sizing, size_flex)) dstr8_append(&builder, "flex ");
+					if(!selected_item->style.sizing) dstr8_append(&builder, "normal");
+					dstr8_append(&builder, "\n");
+					
+					dstr8_append(&builder, "Display: ");
+					if(HasFlag(selected_item->style.display, display_horizontal)) dstr8_append(&builder, "horizontal ");
+					if(HasFlag(selected_item->style.display, display_flex)) dstr8_append(&builder, "flex ");
+					if(HasFlag(selected_item->style.display, display_reverse)) dstr8_append(&builder, "reverse ");
+					if(HasFlag(selected_item->style.display, display_hidden)) dstr8_append(&builder, "hidden ");
+					if(!selected_item->style.display) dstr8_append(&builder, "vertical");
+					dstr8_append(&builder, "\n");
+					
+					dstr8_append(&builder, "Background color: rgba(",
+						(int)selected_item->style.background_color.r, ",",
+						(int)selected_item->style.background_color.g, ",",
+						(int)selected_item->style.background_color.b, ",",
+						(int)selected_item->style.background_color.a, ")\n");
+					
+					if(selected_item->style.border_style){
+						dstr8_append(&builder, "Border: ",
+							selected_item->style.border_style == border_solid ? "solid " : "unknown ",
+							selected_item->style.border_width, "px rgba(",
+							(int)selected_item->style.border_color.r, ",",
+							(int)selected_item->style.border_color.g, ",",
+							(int)selected_item->style.border_color.b, ",",
+							(int)selected_item->style.border_color.a, ")\n");
+					}
+					dstr8_append(&builder, "\n");
+					
+					//state section
+					dstr8_append(&builder, "Hash: ", selected_item->style_hash, "\n");
+					dstr8_append(&builder, "Dirty: ", selected_item->dirty ? "true" : "false", "\n");
+					dstr8_append(&builder, "Hovered: ", g_ui->hovered == selected_item ? "true" : "false", "\n");
+					dstr8_append(&builder, "Active: ", g_ui->active == selected_item ? "true" : "false", "\n");
+					dstr8_append(&builder, "Time since update: ", peek_stopwatch(selected_item->since_last_update), "ms\n");
+					dstr8_append(&builder, "Frame stats: draws: ", selected_item->debug_frame_stats.draws,
+						", evals: ", selected_item->debug_frame_stats.evals, "\n");
+					
+					text_clear_and_replace(&ui_get_text(item)->text, dstr8_peek(&builder));
+				}
+			};
 		}ui_end_item();
 		
-		ui_dwi.panel1 = ui_begin_item(&panel_style);{
-			ui_dwi.panel1->id = STR8("ui_debug win panel1");
-			ui_dwi.panel1->style.width = 0.5;
-			ui_dwi.panel1->style.hover_passthrough = true;
-			ui_dwi.panel1text = ui_make_text(str8l("stats"), 0);
+		{uiItem* right_panel = ui_begin_item(0);
+			right_panel->id = STR8("ui_debug.window.right_panel");
+			right_panel->style.display = display_flex | display_vertical;
+			right_panel->style.sizing = size_flex | size_percent_y;
+			right_panel->style.width = 1/*ratio*/;
+			right_panel->style.height = 100/*percent*/;
+			right_panel->style.margin_left = 1/*pixels*/;
+			right_panel->action_trigger = action_act_always;
+			right_panel->action = [](uiItem* item){
+				if(selecting_item && g_ui->hovered != 0 && input_lmouse_pressed()){
+					selected_item = g_ui->hovered;
+					selecting_item = false;
+				}
+			};
+			
+			{uiItem* top_right_panel = ui_begin_item(0);
+				top_right_panel->id = STR8("ui_debug.window.top_right_panel");
+				top_right_panel->style.sizing = size_percent_x | size_auto_y;
+				top_right_panel->style.width = 100/*percent*/;
+				top_right_panel->style.padding = {2,2,2,2}/*pixels*/;
+				top_right_panel->style.margin_bottom = 1/*pixels*/;
+				top_right_panel->style.background_color = color(50,50,50);
+				
+				uiItem* hovered_text = ui_make_text(str8l("Hovered: n/a"), 0);
+				hovered_text->id = STR8("ui_debug.window.top_right_panel.hovered_text");
+				hovered_text->action_trigger = action_act_always;
+				hovered_text->action = [](uiItem* item){
+					if(g_ui->hovered != 0){
+						text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "Hovered: ", g_ui->hovered->id).fin);
+					}else{
+						text_clear_and_replace(&ui_get_text(item)->text, STR8("Hovered: n/a"));
+					}
+				};
+				
+				uiItem* active_text = ui_make_text(str8l("Active: n/a"), 0);
+				active_text->id = STR8("ui_debug.window.top_right_panel.active_text");
+				active_text->action_trigger = action_act_always;
+				active_text->action = [](uiItem* item){
+					if(g_ui->active != 0){
+						text_clear_and_replace(&ui_get_text(item)->text, to_dstr8v(deshi_temp_allocator, "Active: ", g_ui->active->id).fin);
+					}else{
+						text_clear_and_replace(&ui_get_text(item)->text, STR8("Active: n/a"));
+					}
+				};
+				
+				{uiItem* select_item_button = ui_begin_item(0);
+					select_item_button->id = STR8("ui_debug.window.top_right_panel.select_item_button");
+					select_item_button->style.background_color = Color_VeryDarkCyan;
+					select_item_button->style.sizing = size_auto;
+					select_item_button->style.padding = {1,1,1,1};
+					select_item_button->action_trigger = action_act_mouse_pressed;
+					select_item_button->action = [](uiItem* item){
+						selecting_item = true;
+					};
+					ui_make_text(str8l("Select Item"), 0);
+				}ui_end_item();
+				
+				{uiItem* clear_selection_button = ui_begin_item(0);
+					clear_selection_button->id = STR8("ui_debug.window.top_right_panel.clear_selection_button");
+					clear_selection_button->style.background_color = Color_VeryDarkCyan;
+					clear_selection_button->style.sizing = size_auto;
+					clear_selection_button->style.padding = {1,1,1,1};
+					clear_selection_button->action_trigger = action_act_mouse_pressed;
+					clear_selection_button->action = [](uiItem* item){
+						if(!selecting_item){
+							selected_item = 0;
+						}
+					};
+					ui_make_text(str8l("Clear Selection"), 0);
+				}ui_end_item();
+				
+				{uiItem* break_update = ui_begin_item(0);
+					break_update->id = STR8("ui_debug.window.top_right_panel.break_update");
+					break_update->style.sizing = size_auto;
+					break_update->style.display = display_horizontal;
+					
+					{uiItem* checkbox = ui_begin_item(0);
+						checkbox->style.size = {11,11};
+						checkbox->style.margin_bottom = 1/*pixels*/;
+						checkbox->style.margin_right = 4/*pixels*/;
+						checkbox->style.background_color = Color_VeryDarkGrey;
+						checkbox->style.content_align = {0.5,0.5};
+						
+						ui_make_text(str8l(" "), 0);
+						
+						checkbox->action_trigger = action_act_mouse_pressed;
+						checkbox->action = [](uiItem* item){
+							if(selected_item){
+								selected_item->break_on_update = !selected_item->break_on_update;
+								
+								if(selected_item->break_on_update){
+									text_clear_and_replace(&ui_get_text(uiItemFromNode(item->node.first_child))->text, str8l("X"));
+								}else{
+									text_clear_and_replace(&ui_get_text(uiItemFromNode(item->node.first_child))->text, str8l(" "));
+								}
+							}
+						};
+					}ui_end_item();
+					
+					ui_make_text(str8l("Break On Update"), 0);
+				}ui_end_item();
+				
+				{uiItem* break_evaluate = ui_begin_item(0);
+					break_evaluate->id = STR8("ui_debug.window.top_right_panel.break_evaluate");
+					break_evaluate->style.sizing = size_auto;
+					break_evaluate->style.display = display_horizontal;
+					
+					{uiItem* checkbox = ui_begin_item(0);
+						checkbox->style.size = {11,11};
+						checkbox->style.padding = {1,1,1,1};
+						checkbox->style.margin_right = 4;
+						checkbox->style.background_color = Color_VeryDarkGrey;
+						checkbox->style.content_align = {0.5,0.5};
+						
+						ui_make_text(str8l(" "), 0);
+						
+						checkbox->action_trigger = action_act_mouse_pressed;
+						checkbox->action = [](uiItem* item){
+							if(selected_item){
+								selected_item->break_on_update = !selected_item->break_on_update;
+								
+								if(selected_item->break_on_update){
+									text_clear_and_replace(&ui_get_text(uiItemFromNode(item->node.first_child))->text, str8l("X"));
+								}else{
+									text_clear_and_replace(&ui_get_text(uiItemFromNode(item->node.first_child))->text, str8l(" "));
+								}
+							}
+						};
+					}ui_end_item();
+					
+					ui_make_text(str8l("Break On Evaluate"), 0);
+				}ui_end_item();
+			}ui_end_item();
+			
+			{uiItem* bot_right_panel = ui_begin_item(0);
+				bot_right_panel->id = STR8("ui_debug.window.bot_right_panel");
+				bot_right_panel->style.sizing = size_percent_x | size_flex;
+				bot_right_panel->style.width = 100/*percent*/;
+				bot_right_panel->style.height = 1/*ratio*/;
+				bot_right_panel->style.padding = {2,2,2,2}/*pixels*/;
+				bot_right_panel->style.margin_top = 1/*pixels*/;
+				bot_right_panel->style.background_color = color(50,50,50);
+				
+				uiItem* stats_text = ui_make_text(str8{}, 0);
+				stats_text->id = STR8("ui_debug.window.bot_right_panel.stats_text");
+				stats_text->action_trigger = action_act_always;
+				stats_text->action = [](uiItem* item){
+					u64 total_memory = 0;
+					for(auto n = g_ui->base.link.next; n != &g_ui->base.link; n = n->next){
+						total_memory += ui_item_from_link(n)->memsize;
+					}
+					forI(g_ui->immediate_items.count){
+						total_memory += g_ui->immediate_items[i]->memsize;
+					}
+					total_memory += g_ui->stats.vertices_reserved * sizeof(uiVertex);
+					total_memory += g_ui->stats.indices_reserved * sizeof(u32);
+					total_memory += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
+					
+					dstr8 builder = to_dstr8v(deshi_temp_allocator,
+						"visible: \n",
+						"     items: ", g_ui->stats.items_visible, "\n",
+						"  drawcmds: ", g_ui->stats.drawcmds_visible, "\n",
+						"  vertices: ", g_ui->stats.vertices_visible, "\n",
+						"   indices: ", g_ui->stats.indices_visible, "\n",
+						"reserved: \n",
+						"      items: ", g_ui->stats.items_reserved, "\n",
+						"   drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
+						"   vertices: ", g_ui->stats.vertices_reserved, "\n",
+						"    indices: ", g_ui->stats.indices_reserved, "\n",
+						"  total mem: ", total_memory / bytesDivisor(total_memory), bytesUnit(total_memory)
+					);
+					text_clear_and_replace(&ui_get_text(item)->text, dstr8_peek(&builder));
+				};
+			}ui_end_item();
 		}ui_end_item();
 	}ui_end_item();
-}
-
-static void ui_update_debug_window(){
-	if(!deshi__ui_debug_window){
-		return;
-	}
-	
-	ui_begin_immediate_branch(ui_dwi.panel0);{//make internal info header
-		//header stores an action that toggles its boolean in the data struct
-		{uiItem* header = ui_begin_item(&ui_dwi.def_style);
-			header->id = STR8("header");
-			header->style.sizing = size_auto_y | size_percent_x;
-			header->style.width = 100;
-			header->style.padding = {2,2,2,2};
-			header->style.background_color = color(14,14,14);
-			header->action = [](uiItem* item){
-				if(input_lmouse_pressed()){
-					ui_dwi.internal_info_header = !ui_dwi.internal_info_header;
-				}
-			};	
-			header->action_trigger = action_act_mouse_hover;
-			
-			//uiTextML("internal info")->id = STR8("header text");
-		}ui_end_item();
-		
-		if(ui_dwi.internal_info_header){
-			{uiItem* cont = ui_begin_item(&ui_dwi.def_style);
-				cont->id = STR8("header cont");
-				cont->style.sizing = size_percent_x;
-				cont->style.width = 100;
-				cont->style.height = 100;
-				
-				if(ui_dwi.selected_item){
-					
-				}else if(ui_dwi.selecting_item){
-					ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					ui_make_text(str8l("selecting item..."), 0);
-					
-					if(g_ui->hovered && input_lmouse_pressed()){
-						ui_dwi.selected_item = g_ui->hovered;
-					}
-				}else{
-					{uiItem* item = ui_begin_item(0);
-						item->id = STR8("button");
-						item->style.background_color = Color_VeryDarkCyan;
-						item->style.sizing = size_auto;
-						item->style.padding = {1,1,1,1};
-						item->style.margin = {1,1,1,1};
-						item->style.text_color = Color_White;
-						item->action = [](uiItem* item) {
-							ui_dwi.selecting_item = 1;
-						};
-						item->action_trigger = action_act_mouse_pressed;
-						ui_make_text(str8l("O"), 0);
-					}ui_end_item();
-					ui_dwi.internal_info->style.content_align = {0.5,0.5};
-					ui_make_text(str8l("no item selected."), 0);
-					if(g_ui->active){
-						uiItem* sel = g_ui->active;
-						uiText* text = 0;
-						if(sel->memsize == sizeof(uiText)) text = ui_get_text(sel);
-						ui_make_text(to_dstr8v(deshi_temp_allocator, sel->id,"\n", sel->node.child_count).fin, 0);
-						if(text){
-							ui_make_text(text->text.buffer.fin, 0);
-						}
-					}
-				}
-			}ui_end_item();
-		}
-	}ui_end_immediate_branch();
-	
-	u64 memsum = 0;
-	for(auto n = g_ui->base.link.next; n != &g_ui->base.link; n = n->next){
-		memsum += ui_item_from_link(n)->memsize;
-	}
-	forI(g_ui->immediate_items.count){
-		memsum += g_ui->immediate_items[i]->memsize;
-	}
-	memsum += g_ui->stats.vertices_reserved * sizeof(uiVertex);
-	memsum += g_ui->stats.indices_reserved * sizeof(u32);
-	memsum += g_ui->stats.drawcmds_reserved * sizeof(uiDrawCmd);
-	
-	ui_dwi.panel1text->style.text_wrap = text_wrap_none;
-	dstr8 t = to_dstr8v(deshi_temp_allocator,
-						"visible: \n",
-						"	   items: ", g_ui->stats.items_visible, "\n",
-						"	drawcmds: ", g_ui->stats.drawcmds_visible, "\n",
-						"	vertices: ", g_ui->stats.vertices_visible, "\n",
-						"	 indices: ", g_ui->stats.indices_visible, "\n",
-						"reserved: \n",
-						"	   items: ", g_ui->stats.items_reserved, "\n",
-						"	drawcmds: ", g_ui->stats.drawcmds_reserved, "\n",
-						"	vertices: ", g_ui->stats.vertices_reserved, "\n",
-						"	 indices: ", g_ui->stats.indices_reserved, "\n",
-						"  total mem: ", memsum / bytesDivisor(memsum), bytesUnit(memsum)
-						);
-	defer{ dstr8_deinit(&t); };
-	text_clear_and_replace(&ui_get_text(ui_dwi.panel1text)->text, t.fin);
-	ui_dwi.panel1text->dirty = 1;
-	
-	if(g_ui->hovered){
-		//	render_start_cmd2(7, 0, vec2::ZERO, Vec2(DeshWindow->width,DeshWindow->height));
-		//	vec2 ipos = g_ui->hovered->pos_screen;
-		//	vec2 mpos = ipos + g_ui->hovered->style.margintl;
-		//	vec2 bpos = mpos + (g_ui->hovered->style.border_style ? g_ui->hovered->style.border_width : 0) * vec2::ONE;
-		//	vec2 ppos = bpos + g_ui->hovered->style.paddingtl;
-		//	
-		//	render_quad2(ipos, g_ui->hovered->size, Color_Red);
-		//	render_quad2(mpos, ui_margined_area(g_ui->hovered), Color_Magenta);
-		//	render_quad2(bpos, ui_bordered_area(g_ui->hovered), Color_Blue);
-		//	render_quad2(ppos, ui_padded_area(g_ui->hovered), Color_Green);
-	}
 }
 
 
