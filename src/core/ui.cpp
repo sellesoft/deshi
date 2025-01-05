@@ -1073,14 +1073,11 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 		
 		switch(child->style.positioning){
 			case pos_static:{
-				//child->pos_local =  child->style.margin;
-				//if(item->style.border_style)
-				//child->pos_local += item->style.border_width * vec2::ONE;
 				child->pos_local = cursor;
-				if(HasFlag(item->style.display, display_horizontal))
-					cursor.x = child->pos_local.x + child->width;
-				else{
-					cursor.y = child->pos_local.y + child->height;
+				if(HasFlag(item->style.display, display_horizontal)){
+					cursor.x = child->pos_local.x + child->width + item->style.content_advance;
+				}else{
+					cursor.y = child->pos_local.y + child->height + item->style.content_advance;
 				}
 				
 				switch(child->style.anchor){
@@ -1109,6 +1106,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 					}break;
 				}
 			}break;
+			
 			case pos_relative:
 			case pos_draggable_relative:{
 				child->pos_local = child->style.margintl;
@@ -1117,9 +1115,9 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 				child->pos_local += cursor;
 				
 				if(HasFlag(item->style.display, display_horizontal)){
-					cursor.x = child->pos_local.x + child->width;
+					cursor.x = child->pos_local.x + child->width + item->style.content_advance;
 				}else{
-					cursor.y = child->pos_local.y + child->height;
+					cursor.y = child->pos_local.y + child->height + item->style.content_advance;
 				}
 				
 				switch(child->style.anchor){
@@ -1147,13 +1145,13 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
 				}
-				
-				
 			}break;
+			
 			case pos_fixed:
 			case pos_draggable_fixed:{
 				//do nothing, because this is just handled in draw_branch
 			}break;
+			
 			case pos_absolute:
 			case pos_draggable_absolute:{
 				switch(child->style.anchor){
@@ -1161,12 +1159,14 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						child->pos_local.x = child->style.x;
 						child->pos_local.y = child->style.y;
 					}break;
+					
 					case anchor_top_right:{
 						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as top_right, but the item's width is set to auto.");
 						
 						child->pos_local.y = child->style.y;
 					}break;
+					
 					case anchor_bottom_right:{
 						if(!wauto) child->pos_local.x = (ui_padded_width(item) - child->width) - child->style.x;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's width is set to auto.");
@@ -1174,6 +1174,7 @@ void eval_item_branch(uiItem* item, EvalContext* context){DPZoneScoped;
 						if(!hauto) child->pos_local.y = (ui_padded_height(item) - child->height) - child->style.y;
 						else item_error(item, "Item's anchor was specified as bottom_right, but the item's height is set to auto.");
 					}break;
+					
 					case anchor_bottom_left:{
 						child->pos_local.x = child->style.x;
 						
@@ -1731,6 +1732,7 @@ void ui_toggle_debug_window(){
 				top_right_panel->style.padding = {2,2,2,2}/*pixels*/;
 				top_right_panel->style.margin_bottom = 1/*pixels*/;
 				top_right_panel->style.background_color = color(50,50,50);
+				top_right_panel->style.content_advance = 1/*pixels*/;
 				
 				uiItem* hovered_text = ui_make_text(str8l("Hovered: n/a"), 0);
 				hovered_text->id = STR8("ui_debug.window.top_right_panel.hovered_text");
@@ -1787,7 +1789,6 @@ void ui_toggle_debug_window(){
 					
 					{uiItem* checkbox = ui_begin_item(0);
 						checkbox->style.size = {11,11};
-						checkbox->style.margin_bottom = 1/*pixels*/;
 						checkbox->style.margin_right = 4/*pixels*/;
 						checkbox->style.background_color = Color_VeryDarkGrey;
 						checkbox->style.content_align = {0.5,0.5};
@@ -1818,8 +1819,7 @@ void ui_toggle_debug_window(){
 					
 					{uiItem* checkbox = ui_begin_item(0);
 						checkbox->style.size = {11,11};
-						checkbox->style.padding = {1,1,1,1};
-						checkbox->style.margin_right = 4;
+						checkbox->style.margin_right = 4/*pixels*/;
 						checkbox->style.background_color = Color_VeryDarkGrey;
 						checkbox->style.content_align = {0.5,0.5};
 						

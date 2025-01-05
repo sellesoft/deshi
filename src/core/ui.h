@@ -82,7 +82,9 @@ Item Style
     ---
     Determines how a uiItem is positioned.
 
--   Example: in code: uiStyle style; style.positioning = pos_fixed; in string: positioning: static;
+-   Example:
+      in code:   uiStyle style; style.positioning = pos_fixed;
+      in string: positioning: static;
 
 -   Values: 
 		pos_static  |  static 
@@ -246,21 +248,36 @@ Item Style
 ------------------------------------------------------------------------------------------------------------
 *   scale, x_scale, y_scale
     ---
-    Scales an item's size, padding, border, margin, and children items. TODO(delle) scale item parts individually, currently scales everything at the
-    end (size{48,48},border{1,1,1,1} results in total size of {75,75} when it should be {74,74})
+    Scales an item's size, padding, border, margin, and children items.
 
--   Notes: y_scale affects text.  TODO(delle) support x_scale on text scale ignores minimum or maximum size.  TODO(delle) respect min and max size
-       when scaling scale on children items is scaled before application by its parent's scale. scale applies from the anchor, not from the center.
-       User is responsible for handling scale in custom __generate functions.
+-   Notes:
+      Text is only affected by y_scale.
+      When scaling, scale on children items is scaled before application by its parent's scale.
+      Scale applies from the anchor, not from the center.
+      User is responsible for handling scale in custom __generate functions.
 
--   Dev Notes: scale is applied during the generation step of UI. Sizes after scaling should be floored for pixel consistency.
+-   Defaults: x_scale and y_scale both default to 0 which means no scaling.
 
--   Defaults: x_scale and y_scale both default to 0, meaning don't scale
+-   Dev Notes:
+      Scale is applied during the generation step of UI. Sizes after scaling should be floored for pixel consistency.
+      TODO(delle) scale item parts individually, currently scales everything at the end (size{48,48},border{1,1,1,1} results in total size of {75,75} when it should be {74,74})
+      TODO(delle) support x_scale on text
+      TODO(delle) respect min and max size
 
--   Example: in code: uiStyle style; style.size = Vec2(20, 20); style.max_height = 25; //final total height will 32px style.border_style =
-        border_solid; style.border_color = Color_Black; style.border_width = 1; //final border width will be 1px style.scale = Vec2(1.5, 1.5); //final
-        total width will be 32px, content width will be 30px in string: size: 20px 20px; max_height: 25px; //final total height will 32px border:
-        solid 1px; //final border width will be 1px scale: 1.5 1.5; //final total width will be 32px
+-   Example:
+      in code:
+        uiStyle style;
+        style.size = Vec2(20, 20);
+        style.max_height = 25; //DOESNT WORK CURRENTLY
+        style.border_style = border_solid;
+        style.border_color = Color_Black;
+        style.border_width = 1; //final border width will be 1px because it's floored
+        style.scale = Vec2(1.5, 1.5); //final total width will be 32px, content width will be 30px
+      in string:
+        size: 20px 20px;
+        max_height: 25px; //DOESNT WORK CURRENTLY
+        border: solid 1px; //final border width will be 1px because it's floored
+        scale: 1.5 1.5; //final total width will be 32px
 
 
 ------------------------------------------------------------------------------------------------------------
@@ -272,7 +289,7 @@ Item Style
 
 -   Catches: Scrolling conflicts with setting content_align.
 
-TODO(sushi) examples
+TODO(sushi) example
 
 ------------------------------------------------------------------------------------------------------------
 *   content_align
@@ -288,6 +305,22 @@ TODO(sushi) examples
 -   Defaults: Defaults to 0
 
 TODO(sushi) example
+
+------------------------------------------------------------------------------------------------------------
+*   content_advance
+    ---
+    Determines the spacing between child items when they are laid out. This value is added after each child's width/height when advancing the cursor
+    position for the next item. For horizontal layouts (display_horizontal), this adds spacing after each item's width. For vertical layouts, this
+    adds spacing after each item's height.
+
+-   Defaults: Defaults to 0
+
+-   Example:
+      in code:
+        uiStyle style;
+        style.content_advance = 5; // adds 5 pixels between each child item
+      in string:
+        content_advance: 5px; // adds 5 pixels between each child item
 
 ------------------------------------------------------------------------------------------------------------
 *   font
@@ -646,6 +679,7 @@ external struct uiStyle{
 	Type  display;
 	Type  overflow;
 	vec2  content_align; 
+	f32   content_advance;
 	b32   hover_passthrough;
 	
 	void operator=(const uiStyle& rhs){ memcpy(this, &rhs, sizeof(uiStyle)); }
@@ -803,6 +837,7 @@ inline u32 ui_hash_style(uiItem* item){DPZoneScoped;
 	seed ^= *(u32*)&s->y_scale;         seed *= UI_HASH_PRIME;
 	seed ^= *(u32*)&s->content_align.x; seed *= UI_HASH_PRIME;
 	seed ^= *(u32*)&s->content_align.y; seed *= UI_HASH_PRIME;
+	seed ^= *(u32*)&s->content_advance; seed *= UI_HASH_PRIME;
 	seed ^= (u64)s->font;               seed *= UI_HASH_PRIME;
 	seed ^= s->font_height;             seed *= UI_HASH_PRIME;
 	seed ^= s->background_color.rgba;   seed *= UI_HASH_PRIME;
